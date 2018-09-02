@@ -6,12 +6,11 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 // OutputsResult the output json format
 type OutputsResult struct {
-	Outputs visor.ReadableOutputSet `json:"outputs"`
+	Outputs readable.OutputSet `json:"outputs"`
 }
 
 func getOutputsHandler(req Request, gateway Gatewayer) Response {

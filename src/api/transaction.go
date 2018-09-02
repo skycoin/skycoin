@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -43,7 +44,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			if len(txns) == 0 {
-				txns = []visor.ReadableUnconfirmedTxnVerbose{}
+				txns = []readable.UnconfirmedTxnVerbose{}
 			}
 
 			wh.SendJSONOr500(logger, w, txns)
@@ -54,9 +55,9 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			ret := make([]*visor.ReadableUnconfirmedTxn, len(txns))
+			ret := make([]*readable.UnconfirmedTxns, len(txns))
 			for i, unconfirmedTxn := range txns {
-				readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+				readable, err := readable.NewUnconfirmedTxn(&unconfirmedTxn)
 				if err != nil {
 					wh.Error500(w, err.Error())
 					return
@@ -120,7 +121,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txn, err := gateway.GetTransactionResultVerbose(h)
+			txn, err := gateway.GetTransactionWithStatusVerbose(h)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -150,7 +151,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 				Time:               txn.Time,
 			})
 		} else {
-			txn, err := gateway.GetTransactionResult(h)
+			txn, err := gateway.GetTransactionWithStatus(h)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -208,7 +209,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txnRlts, err := gateway.GetTransactionResultsVerbose(flts)
+			txnRlts, err := gateway.GetTransactionsWithStatusVerbose(flts)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -223,7 +224,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 			wh.SendJSONOr500(logger, w, txns)
 		} else {
 			// Gets transactions
-			txnRlts, err := gateway.GetTransactionResults(flts)
+			txnRlts, err := gateway.GetTransactionsWithStatus(flts)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return

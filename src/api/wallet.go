@@ -3,6 +3,7 @@ package api
 // APIs for wallet-related information
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -10,12 +11,11 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
-
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // HTTP401AuthHeader WWW-Authenticate value
@@ -23,19 +23,19 @@ const HTTP401AuthHeader = "SkycoinWallet"
 
 // SpendResult represents the result of spending
 type SpendResult struct {
-	Balance     *wallet.BalancePair        `json:"balance,omitempty"`
-	Transaction *visor.ReadableTransaction `json:"txn,omitempty"`
-	Error       string                     `json:"error,omitempty"`
+	Balance     *wallet.BalancePair   `json:"balance,omitempty"`
+	Transaction *readable.Transaction `json:"txn,omitempty"`
+	Error       string                `json:"error,omitempty"`
 }
 
 // UnconfirmedTxnsResponse contains unconfirmed transaction data
 type UnconfirmedTxnsResponse struct {
-	Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
+	Transactions []readable.UnconfirmedTxns `json:"transactions"`
 }
 
 // UnconfirmedTxnsVerboseResponse contains verbose unconfirmed transaction data
 type UnconfirmedTxnsVerboseResponse struct {
-	Transactions []visor.ReadableUnconfirmedTxnVerbose `json:"transactions"`
+	Transactions []readable.UnconfirmedTxnVerbose `json:"transactions"`
 }
 
 // WalletEntry the wallet entry struct
@@ -288,7 +288,8 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txStr, err := visor.TransactionToJSON(*tx)
+		// Format the transaction for logging
+		rTxn, err := visor.TransactionToJSON(*tx)
 		if err != nil {
 			logger.Error(err)
 			wh.SendJSONOr500(logger, w, SpendResult{
@@ -297,11 +298,20 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		logger.Infof("Spend: \ntx= \n %s \n", txStr)
+		rTxnBytes, err := json.MarshalIndent(rTxn, "", "  ")
+		if err != nil {
+			logger.WithError(err).Error("json.MarshalIndent(readableTransaction) failed")
+			wh.SendJSONOr500(logger, w, SpendResult{
+				Error: err.Error(),
+			})
+			return
+		}
+
+		logger.Infof("Spend: \ntx= \n %s \n", string(rTxnBytes))
 
 		var ret SpendResult
 
-		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+		ret.Transaction, err = readable.NewTransaction(&visor.Transaction{Txn: *tx}, false)
 		if err != nil {
 			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
 			logger.Error(err)
@@ -618,7 +628,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			if txns == nil {
-				txns = []visor.ReadableUnconfirmedTxnVerbose{}
+				txns = []readable.UnconfirmedTxnVerbose{}
 			}
 
 			wh.SendJSONOr500(logger, w, UnconfirmedTxnsVerboseResponse{
@@ -632,7 +642,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			unconfirmedTxns, err := visor.NewReadableUnconfirmedTxns(txns)
+			unconfirmedTxns, err := readable.NewUnconfirmedTxns(txns)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return

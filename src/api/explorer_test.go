@@ -17,12 +17,13 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputSet) *CoinSupply {
+func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.OutputSet) *CoinSupply {
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
 	var unlockedSupply uint64
 	// check confirmed unspents only
@@ -101,7 +102,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		err                                 string
 		addressParam                        string
 		gatewayGetTransactionsForAddressErr error
-		result                              []visor.ReadableTransactionVerbose
+		result                              []readable.TransactionVerbose
 		csrfDisabled                        bool
 	}{
 		{
@@ -138,10 +139,10 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			method:       http.MethodGet,
 			status:       http.StatusOK,
 			addressParam: address.String(),
-			result: []visor.ReadableTransactionVerbose{
+			result: []readable.TransactionVerbose{
 				{
-					ReadableBlockTransactionVerbose: visor.ReadableBlockTransactionVerbose{
-						In: []visor.ReadableTransactionInput{
+					readable.BlockTransactionVerbose: readable.BlockTransactionVerbose{
+						In: []readable.TransactionInput{
 							{
 								Hash:    validHash,
 								Address: successAddress,
@@ -191,7 +192,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []visor.ReadableTransactionVerbose
+				var msg []readable.TransactionVerbose
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
@@ -202,12 +203,12 @@ func TestGetTransactionsForAddress(t *testing.T) {
 
 func TestCoinSupply(t *testing.T) {
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
-	successGatewayGetUnspentOutputsResult := visor.ReadableOutputSet{
-		HeadOutputs: visor.ReadableOutputs{
-			visor.ReadableOutput{
+	successGatewayGetUnspentOutputsResult := readable.OutputSet{
+		HeadOutputs: readable.Outputs{
+			readable.Output{
 				Coins: "0",
 			},
-			visor.ReadableOutput{
+			readable.Output{
 				Coins: "0",
 			},
 		},
@@ -220,7 +221,7 @@ func TestCoinSupply(t *testing.T) {
 		status                         int
 		err                            string
 		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
-		gatewayGetUnspentOutputsResult *visor.ReadableOutputSet
+		gatewayGetUnspentOutputsResult *readable.OutputSet
 		gatewayGetUnspentOutputsErr    error
 		result                         *CoinSupply
 		csrfDisabled                   bool
@@ -253,13 +254,13 @@ func TestCoinSupply(t *testing.T) {
 			status:                      http.StatusInternalServerError,
 			err:                         "500 Internal Server Error - Invalid unlocked output balance string 9223372036854775807: Droplet string conversion failed: Value is too large",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
-					visor.ReadableOutput{
+			gatewayGetUnspentOutputsResult: &readable.OutputSet{
+				HeadOutputs: readable.Outputs{
+					readable.Output{
 						Coins:   "9223372036854775807",
 						Address: unlockedAddrs[0],
 					},
-					visor.ReadableOutput{
+					readable.Output{
 						Coins: "1",
 					},
 				},
@@ -271,12 +272,12 @@ func TestCoinSupply(t *testing.T) {
 			status: http.StatusOK,
 
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
-					visor.ReadableOutput{
+			gatewayGetUnspentOutputsResult: &readable.OutputSet{
+				HeadOutputs: readable.Outputs{
+					readable.Output{
 						Coins: "0",
 					},
-					visor.ReadableOutput{
+					readable.Output{
 						Coins: "0",
 					},
 				},

@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 func TestGetBalanceOfAddresses(t *testing.T) {
@@ -24,15 +24,15 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 
 	cases := []struct {
 		name   string
-		outs   visor.ReadableOutputSet
+		outs   readable.OutputSet
 		addrs  []string
 		result *BalanceResult
 		err    error
 	}{
 		{
 			name: "confirmed == spendable == expected",
-			outs: visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
+			outs: readable.OutputSet{
+				HeadOutputs: readable.Outputs{
 					{
 						Hash:            hashes[0],
 						Address:         addrs[0],
@@ -119,8 +119,8 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 
 		{
 			name: "confirmed != spendable != expected",
-			outs: visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
+			outs: readable.OutputSet{
+				HeadOutputs: readable.Outputs{
 					{
 						Hash:            hashes[0],
 						Address:         addrs[0],
@@ -152,7 +152,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 						CalculatedHours: 100,
 					},
 				},
-				OutgoingOutputs: visor.ReadableOutputs{
+				OutgoingOutputs: readable.Outputs{
 					{
 						Hash:            hashes[5],
 						Address:         addrs[0],
@@ -166,7 +166,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 						CalculatedHours: 100,
 					},
 				},
-				IncomingOutputs: visor.ReadableOutputs{
+				IncomingOutputs: readable.Outputs{
 					{
 						Hash:            hashes[3],
 						Address:         addrs[1],

@@ -28,6 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
@@ -479,7 +480,7 @@ func TestStableNoUnconfirmedOutputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			require.False(t, tc.addrs != nil && tc.hashes != nil)
 
-			var outputs *visor.ReadableOutputSet
+			var outputs *readable.OutputSet
 			var err error
 			switch {
 			case tc.addrs == nil && tc.hashes == nil:
@@ -497,7 +498,7 @@ func TestStableNoUnconfirmedOutputs(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected visor.ReadableOutputSet
+			var expected readable.OutputSet
 			checkGoldenFile(t, tc.golden, TestData{*outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
@@ -558,7 +559,7 @@ func TestStableOutputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			require.False(t, tc.addrs != nil && tc.hashes != nil)
 
-			var outputs *visor.ReadableOutputSet
+			var outputs *readable.OutputSet
 			var err error
 			switch {
 			case tc.addrs == nil && tc.hashes == nil:
@@ -576,7 +577,7 @@ func TestStableOutputs(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected visor.ReadableOutputSet
+			var expected readable.OutputSet
 			checkGoldenFile(t, tc.golden, TestData{*outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
@@ -690,7 +691,7 @@ func testKnownBlocks(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var b *visor.ReadableBlock
+			var b *readable.Block
 			var err error
 
 			if tc.hash != "" {
@@ -706,7 +707,7 @@ func testKnownBlocks(t *testing.T) {
 
 			require.NotNil(t, b)
 
-			var expected visor.ReadableBlock
+			var expected readable.Block
 			checkGoldenFile(t, tc.golden, TestData{*b, &expected})
 		})
 	}
@@ -717,7 +718,7 @@ func testKnownBlocks(t *testing.T) {
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
 
-	var prevBlock *visor.ReadableBlock
+	var prevBlock *readable.Block
 	for i := uint64(0); i < progress.Current; i++ {
 		t.Run(fmt.Sprintf("block-seq-%d", i), func(t *testing.T) {
 			b, err := c.BlockBySeq(i)
@@ -812,7 +813,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var b *visor.ReadableBlockVerbose
+			var b *readable.BlockVerbose
 			var err error
 
 			if tc.hash != "" {
@@ -829,7 +830,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 			require.NotNil(t, b)
 			assertVerboseBlockFee(t, b)
 
-			var expected visor.ReadableBlockVerbose
+			var expected readable.BlockVerbose
 			checkGoldenFile(t, tc.golden, TestData{*b, &expected})
 		})
 	}
@@ -840,7 +841,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
 
-	var prevBlock *visor.ReadableBlockVerbose
+	var prevBlock *readable.BlockVerbose
 	for i := uint64(0); i < progress.Current; i++ {
 		t.Run(fmt.Sprintf("block-seq-verbose-%d", i), func(t *testing.T) {
 			b, err := c.BlockBySeqVerbose(i)
@@ -864,7 +865,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 }
 
 // assertVerboseBlockFee checks that the block's fee matches the calculated fee of the block's transactions
-func assertVerboseBlockFee(t *testing.T, b *visor.ReadableBlockVerbose) {
+func assertVerboseBlockFee(t *testing.T, b *readable.BlockVerbose) {
 	fee := uint64(0)
 	for _, txn := range b.Body.Transactions {
 		var err error
@@ -1251,7 +1252,7 @@ func TestStableBlocks(t *testing.T) {
 			if tc.errMsg == "" {
 				resp := testBlocks(t, tc.start, tc.end)
 
-				var expected visor.ReadableBlocks
+				var expected readable.Blocks
 				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
 				_, err := c.Blocks(tc.start, tc.end)
@@ -1269,7 +1270,7 @@ func TestLiveBlocks(t *testing.T) {
 	testBlocks(t, 1, 10)
 }
 
-func testBlocks(t *testing.T, start, end uint64) *visor.ReadableBlocks {
+func testBlocks(t *testing.T, start, end uint64) *readable.Blocks {
 	c := api.NewClient(nodeAddress())
 
 	blocks, err := c.Blocks(start, end)
@@ -1281,7 +1282,7 @@ func testBlocks(t *testing.T, start, end uint64) *visor.ReadableBlocks {
 		require.Len(t, blocks.Blocks, int(end-start+1))
 	}
 
-	var prevBlock *visor.ReadableBlock
+	var prevBlock *readable.Block
 	for idx, b := range blocks.Blocks {
 		if prevBlock != nil {
 			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
@@ -1363,7 +1364,7 @@ func TestStableBlocksVerbose(t *testing.T) {
 			if tc.errMsg == "" {
 				resp := testBlocksVerbose(t, tc.start, tc.end)
 
-				var expected visor.ReadableBlocksVerbose
+				var expected readable.BlocksVerbose
 				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
 				blocks, err := c.BlocksVerbose(tc.start, tc.end)
@@ -1382,7 +1383,7 @@ func TestLiveBlocksVerbose(t *testing.T) {
 	testBlocksVerbose(t, 1, 10)
 }
 
-func testBlocksVerbose(t *testing.T, start, end uint64) *visor.ReadableBlocksVerbose {
+func testBlocksVerbose(t *testing.T, start, end uint64) *readable.BlocksVerbose {
 	c := api.NewClient(nodeAddress())
 
 	blocks, err := c.BlocksVerbose(start, end)
@@ -1394,7 +1395,7 @@ func testBlocksVerbose(t *testing.T, start, end uint64) *visor.ReadableBlocksVer
 		require.Len(t, blocks.Blocks, int(end-start+1))
 	}
 
-	var prevBlock *visor.ReadableBlockVerbose
+	var prevBlock *readable.BlockVerbose
 	for idx, b := range blocks.Blocks {
 		assertVerboseBlockFee(t, &b)
 
@@ -1424,10 +1425,10 @@ func TestStableLastBlocks(t *testing.T) {
 	blocks, err := c.LastBlocks(1)
 	require.NoError(t, err)
 
-	var expected *visor.ReadableBlocks
+	var expected *readable.Blocks
 	checkGoldenFile(t, "block-last.golden", TestData{blocks, &expected})
 
-	var prevBlock *visor.ReadableBlock
+	var prevBlock *readable.Block
 	blocks, err = c.LastBlocks(10)
 	require.NoError(t, err)
 	require.Equal(t, 10, len(blocks.Blocks))
@@ -1450,7 +1451,7 @@ func TestLiveLastBlocks(t *testing.T) {
 		return
 	}
 	c := api.NewClient(nodeAddress())
-	var prevBlock *visor.ReadableBlock
+	var prevBlock *readable.Block
 	blocks, err := c.LastBlocks(10)
 	require.NoError(t, err)
 	require.Equal(t, 10, len(blocks.Blocks))
@@ -1478,14 +1479,14 @@ func TestStableLastBlocksVerbose(t *testing.T) {
 	blocks, err := c.LastBlocksVerbose(1)
 	require.NoError(t, err)
 
-	var expected *visor.ReadableBlocksVerbose
+	var expected *readable.BlocksVerbose
 	checkGoldenFile(t, "block-last-verbose.golden", TestData{blocks, &expected})
 
 	blocks, err = c.LastBlocksVerbose(10)
 	require.NoError(t, err)
 	require.Equal(t, 10, len(blocks.Blocks))
 
-	var prevBlock *visor.ReadableBlockVerbose
+	var prevBlock *readable.BlockVerbose
 	for idx, b := range blocks.Blocks {
 		assertVerboseBlockFee(t, &b)
 
@@ -1512,7 +1513,7 @@ func TestLiveLastBlocksVerbose(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 10, len(blocks.Blocks))
 
-	var prevBlock *visor.ReadableBlockVerbose
+	var prevBlock *readable.BlockVerbose
 	for idx, b := range blocks.Blocks {
 		assertVerboseBlockFee(t, &b)
 
@@ -2862,7 +2863,7 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []visor.ReadableTransactionVerbose
+			var expected []readable.TransactionVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
@@ -2911,7 +2912,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []visor.ReadableTransactionVerbose
+			var expected []readable.TransactionVerbose
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
 
 			// Recaculate the height if it's live test
@@ -3054,7 +3055,7 @@ func TestStablePendingTransactions(t *testing.T) {
 		txns[i].Checked = txn.Checked.UTC()
 	}
 
-	var expect []visor.ReadableUnconfirmedTxn
+	var expect []readable.UnconfirmedTxns
 	checkGoldenFile(t, "pending-transactions.golden", TestData{txns, &expect})
 }
 
@@ -3100,7 +3101,7 @@ func TestStablePendingTransactionsVerbose(t *testing.T) {
 		txns[i].Checked = txn.Checked.UTC()
 	}
 
-	var expect []visor.ReadableUnconfirmedTxnVerbose
+	var expect []readable.UnconfirmedTxnVerbose
 	checkGoldenFile(t, "verbose-pending-transactions.golden", TestData{txns, &expect})
 }
 
@@ -3161,7 +3162,7 @@ func TestLiveWalletSpend(t *testing.T) {
 				require.Len(t, tx.Transaction.Out, 2)
 
 				// Gets the output of the second address in the transaction
-				getAddrOutputInTx := func(t *testing.T, tx *daemon.TransactionResult, addr string) *visor.ReadableTransactionOutput {
+				getAddrOutputInTx := func(t *testing.T, tx *daemon.TransactionResult, addr string) *readable.TransactionOutput {
 					for _, output := range tx.Transaction.Out {
 						if output.Address == addr {
 							return &output
@@ -3268,9 +3269,9 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 
 	// Split outputs into those held by the wallet and those not
 	var walletOutputHashes []string
-	var walletOutputs visor.ReadableOutputs
+	var walletOutputs readable.Outputs
 	walletAuxs := make(map[string][]string)
-	var nonWalletOutputs visor.ReadableOutputs
+	var nonWalletOutputs readable.Outputs
 	for _, o := range outputs.HeadOutputs {
 		if _, ok := addressMap[o.Address]; ok {
 			walletOutputs = append(walletOutputs, o)

@@ -11,8 +11,8 @@ import (
 	gcli "github.com/urfave/cli"
 
 	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -225,7 +225,7 @@ func makeAddrHisArray(c *api.Client, addr string, uxOuts []historydb.UxOutJSON) 
 
 func createBlkTimeFinder(c *api.Client, ss []uint64) (func(uint64) int64, error) {
 	// get spent blocks
-	blocks := make([]*visor.ReadableBlock, 0, len(ss))
+	blocks := make([]*readable.Block, 0, len(ss))
 	for _, s := range ss {
 		block, err := c.BlockBySeq(s)
 		if err != nil {

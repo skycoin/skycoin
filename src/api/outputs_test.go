@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 func TestGetOutputsHandler(t *testing.T) {
@@ -30,9 +30,9 @@ func TestGetOutputsHandler(t *testing.T) {
 		status                    int
 		err                       string
 		httpBody                  *httpBody
-		getUnspentOutputsResponse *visor.ReadableOutputSet
+		getUnspentOutputsResponse *readable.OutputSet
 		getUnspentOutputsError    error
-		httpResponse              *visor.ReadableOutputSet
+		httpResponse              *readable.OutputSet
 	}{
 		{
 			name:   "405",
@@ -71,8 +71,8 @@ func TestGetOutputsHandler(t *testing.T) {
 			name:                      "200 - OK",
 			method:                    http.MethodGet,
 			status:                    http.StatusOK,
-			getUnspentOutputsResponse: &visor.ReadableOutputSet{},
-			httpResponse:              &visor.ReadableOutputSet{},
+			getUnspentOutputsResponse: &readable.OutputSet{},
+			httpResponse:              &readable.OutputSet{},
 		},
 	}
 
@@ -111,7 +111,7 @@ func TestGetOutputsHandler(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *visor.ReadableOutputSet
+				var msg *readable.OutputSet
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)

@@ -10,10 +10,9 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
-func filterOut(headTime uint64, outs []coin.UxOut, f func(out coin.UxOut) bool) visor.ReadableOutputSet {
+func filterOut(headTime uint64, outs []coin.UxOut, f func(out coin.UxOut) bool) readable.OutputSet {
 	os := []coin.UxOut{}
 	for _, o := range outs {
 		if f(o) {
@@ -21,11 +20,11 @@ func filterOut(headTime uint64, outs []coin.UxOut, f func(out coin.UxOut) bool) 
 		}
 	}
 
-	headOuts, err := visor.NewReadableOutputs(headTime, os)
+	headOuts, err := readable.NewOutputs(headTime, os)
 	if err != nil {
 		panic(err)
 	}
-	return visor.ReadableOutputSet{
+	return readable.OutputSet{
 		HeadOutputs: headOuts,
 	}
 }

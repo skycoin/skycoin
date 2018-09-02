@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -71,7 +72,7 @@ func TestHealthCheckHandler(t *testing.T) {
 			unconfirmed := uint64(20)
 
 			metadata := &visor.BlockchainMetadata{
-				Head: visor.ReadableBlockHeader{
+				Head: readable.BlockHeader{
 					BkSeq:             21175,
 					BlockHash:         "8a3e0aac619551ae009cfb28c2b36bb1300925f74da770d1512072314f6a4c80",
 					PreviousBlockHash: "001eb7911b6a6ab7c75feb88726dd2bc8b87133aebc82201c4404537eb74f7ac",

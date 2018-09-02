@@ -16,7 +16,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 func TestClientGetUnspentOutputs(t *testing.T) {
@@ -28,12 +27,12 @@ func TestClientGetUnspentOutputs(t *testing.T) {
 	headTime := uint64(time.Now().UTC().Unix())
 	uxouts := make([]coin.UxOut, 5)
 	addrs := make([]cipher.Address, 5)
-	rbOutputs := make(visor.ReadableOutputs, 5)
+	rbOutputs := make(readable.Outputs, 5)
 	for i := 0; i < 5; i++ {
 		addrs[i] = testutil.MakeAddress()
 		uxouts[i] = coin.UxOut{}
 		uxouts[i].Body.Address = addrs[i]
-		rbOut, err := visor.NewReadableOutput(headTime, uxouts[i])
+		rbOut, err := readable.NewOutput(headTime, uxouts[i])
 		require.NoError(t, err)
 		rbOutputs[i] = rbOut
 	}
@@ -255,7 +254,7 @@ func TestClientGetTransactionByID(t *testing.T) {
 			require.NoError(t, err)
 
 			expectedTxn := decodeRawTransaction(rawTxStr)
-			rbTx, err := visor.NewReadableTransaction(expectedTxn)
+			rbTx, err := readable.NewTransaction(expectedTxn, false)
 			require.NoError(t, err)
 			require.Equal(t, &daemon.TransactionResult{
 				Status:      expectedTxn.Status,
@@ -356,7 +355,7 @@ func TestClientGetBlocks(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &resp)
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.Unmarshal(resp.Result, &blocks)
 	require.NoError(t, err)
 
@@ -395,7 +394,7 @@ func TestClientGetBlocksBySeq(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &resp)
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.Unmarshal(resp.Result, &blocks)
 	require.NoError(t, err)
 
@@ -429,7 +428,7 @@ func TestClientGetLastBlocks(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &resp)
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.Unmarshal(resp.Result, &blocks)
 	require.NoError(t, err)
 

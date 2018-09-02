@@ -12,10 +12,10 @@ import (
 
 // Gatewayer provides interfaces for getting skycoin related info.
 type Gatewayer interface {
-	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
-	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
-	GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error)
-	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
+	GetLastBlocks(num uint64) (*readable.Blocks, error)
+	GetBlocks(start, end uint64) (*readable.Blocks, error)
+	GetBlocksInDepth(vs []uint64) (*readable.Blocks, error)
+	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*readable.OutputSet, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	InjectBroadcastTransaction(tx coin.Transaction) error
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)

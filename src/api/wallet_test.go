@@ -17,6 +17,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -392,10 +393,10 @@ func TestWalletSpendHandler(t *testing.T) {
 			gatewayBalanceErr:  errors.New("GetWalletBalance error"),
 			spendResult: &SpendResult{
 				Error: "Get wallet balance failed: GetWalletBalance error",
-				Transaction: &visor.ReadableTransaction{
+				Transaction: &readable.Transaction{
 					Sigs:      []string{},
 					In:        []string{},
-					Out:       []visor.ReadableTransactionOutput{},
+					Out:       []readable.TransactionOutput{},
 					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
 					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
 				},
@@ -434,7 +435,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			gatewaySpendResult: &coin.Transaction{},
 			spendResult: &SpendResult{
 				Balance: &wallet.BalancePair{},
-				Transaction: &visor.ReadableTransaction{
+				Transaction: &readable.Transaction{
 					Length:    0,
 					Type:      0,
 					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
@@ -442,7 +443,7 @@ func TestWalletSpendHandler(t *testing.T) {
 					Timestamp: 0,
 					Sigs:      []string{},
 					In:        []string{},
-					Out:       []visor.ReadableTransactionOutput{},
+					Out:       []readable.TransactionOutput{},
 				},
 			},
 		},
@@ -461,7 +462,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			gatewaySpendResult: &coin.Transaction{},
 			spendResult: &SpendResult{
 				Balance: &wallet.BalancePair{},
-				Transaction: &visor.ReadableTransaction{
+				Transaction: &readable.Transaction{
 					Length:    0,
 					Type:      0,
 					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
@@ -469,7 +470,7 @@ func TestWalletSpendHandler(t *testing.T) {
 					Timestamp: 0,
 					Sigs:      []string{},
 					In:        []string{},
-					Out:       []visor.ReadableTransactionOutput{},
+					Out:       []readable.TransactionOutput{},
 				},
 			},
 			csrfDisabled: true,
@@ -1028,10 +1029,10 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		verbose  string
 	}
 
-	unconfirmedTxn, err := visor.NewReadableUnconfirmedTxn(&visor.UnconfirmedTxn{})
+	unconfirmedTxn, err := readable.NewUnconfirmedTxn(&visor.UnconfirmedTxn{})
 	require.NoError(t, err)
 
-	unconfirmedTxnVerbose, err := visor.NewReadableUnconfirmedTxnVerbose(&visor.UnconfirmedTxn{}, nil)
+	unconfirmedTxnVerbose, err := readable.NewUnconfirmedTxnVerbose(&visor.UnconfirmedTxn{}, nil)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -1044,7 +1045,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		verbose                                      bool
 		gatewayGetWalletUnconfirmedTxnsResult        []visor.UnconfirmedTxn
 		gatewayGetWalletUnconfirmedTxnsErr           error
-		gatewayGetWalletUnconfirmedTxnsVerboseResult []visor.ReadableUnconfirmedTxnVerbose
+		gatewayGetWalletUnconfirmedTxnsVerboseResult []readable.UnconfirmedTxnVerbose
 		gatewayGetWalletUnconfirmedTxnsVerboseErr    error
 		responseBody                                 interface{}
 	}{
@@ -1160,7 +1161,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			walletID:                              "foo",
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
 			responseBody: UnconfirmedTxnsResponse{
-				Transactions: []visor.ReadableUnconfirmedTxn{
+				Transactions: []readable.UnconfirmedTxns{
 					*unconfirmedTxn,
 				},
 			},
@@ -1176,9 +1177,9 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			verbose:  true,
 			status:   http.StatusOK,
 			walletID: "foo",
-			gatewayGetWalletUnconfirmedTxnsVerboseResult: make([]visor.ReadableUnconfirmedTxnVerbose, 1),
+			gatewayGetWalletUnconfirmedTxnsVerboseResult: make([]readable.UnconfirmedTxnVerbose, 1),
 			responseBody: UnconfirmedTxnsVerboseResponse{
-				Transactions: []visor.ReadableUnconfirmedTxnVerbose{
+				Transactions: []readable.UnconfirmedTxnVerbose{
 					*unconfirmedTxnVerbose,
 				},
 			},

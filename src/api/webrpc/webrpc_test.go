@@ -31,8 +31,8 @@ type fakeGateway struct {
 	uxouts               []coin.UxOut
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) { // nolint: unparam
-	var blocks visor.ReadableBlocks
+func (fg fakeGateway) GetLastBlocks(num uint64) (*readable.Blocks, error) { // nolint: unparam
+	var blocks readable.Blocks
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
 		return nil, err
 	}
@@ -40,8 +40,8 @@ func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	return &blocks, nil
 }
 
-func (fg fakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
-	var blocks visor.ReadableBlocks
+func (fg fakeGateway) GetBlocks(start, end uint64) (*readable.Blocks, error) {
+	var blocks readable.Blocks
 	if start > end {
 		return nil, nil
 	}
@@ -53,11 +53,11 @@ func (fg fakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error
 	return &blocks, nil
 }
 
-func (fg fakeGateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
+func (fg fakeGateway) GetBlocksInDepth(vs []uint64) (*readable.Blocks, error) {
 	return nil, nil
 }
 
-func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error) {
+func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*readable.OutputSet, error) {
 	outs := []coin.UxOut{}
 	for _, f := range filters {
 		outs = f(fg.uxouts)
@@ -65,12 +65,12 @@ func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor
 
 	headTime := uint64(time.Now().UTC().Unix())
 
-	rbOuts, err := visor.NewReadableOutputs(headTime, outs)
+	rbOuts, err := readable.NewOutputs(headTime, outs)
 	if err != nil {
 		return nil, err
 	}
 
-	return &visor.ReadableOutputSet{
+	return &readable.OutputSet{
 		HeadOutputs: rbOuts,
 	}, nil
 }

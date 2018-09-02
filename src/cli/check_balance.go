@@ -7,8 +7,8 @@ import (
 	gcli "github.com/urfave/cli"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -139,7 +139,7 @@ func GetBalanceOfAddresses(c GetOutputser, addrs []string) (*BalanceResult, erro
 	return getBalanceOfAddresses(outs, addrs)
 }
 
-func getBalanceOfAddresses(outs *visor.ReadableOutputSet, addrs []string) (*BalanceResult, error) {
+func getBalanceOfAddresses(outs *readable.OutputSet, addrs []string) (*BalanceResult, error) {
 	addrsMap := make(map[string]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrsMap[a] = struct{}{}

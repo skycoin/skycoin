@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"errors"
 	"sort"
 	"strings"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -291,8 +291,8 @@ func (gw *Gateway) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, 
 }
 
 // GetBlockByHashVerbose returns the block by hash
-func (gw *Gateway) GetBlockByHashVerbose(hash cipher.SHA256) (*visor.ReadableBlockVerbose, error) {
-	var b *visor.ReadableBlockVerbose
+func (gw *Gateway) GetBlockByHashVerbose(hash cipher.SHA256) (*readable.BlockVerbose, error) {
+	var b *readable.BlockVerbose
 	var err error
 	gw.strand("GetBlockByHashVerbose", func() {
 		b, err = gw.v.GetBlockByHashVerbose(hash)
@@ -311,8 +311,8 @@ func (gw *Gateway) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 }
 
 // GetBlockBySeqVerbose returns the block by hash
-func (gw *Gateway) GetBlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error) {
-	var b *visor.ReadableBlockVerbose
+func (gw *Gateway) GetBlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error) {
+	var b *readable.BlockVerbose
 	var err error
 	gw.strand("GetBlockBySeqVerbose", func() {
 		b, err = gw.v.GetBlockBySeqVerbose(seq)
@@ -320,8 +320,8 @@ func (gw *Gateway) GetBlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose
 	return b, err
 }
 
-// GetBlocks returns a *visor.ReadableBlocks
-func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
+// GetBlocks returns a *readable.Blocks
+func (gw *Gateway) GetBlocks(start, end uint64) (*readable.Blocks, error) {
 	var blocks []coin.SignedBlock
 	var err error
 
@@ -332,12 +332,12 @@ func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 		return nil, err
 	}
 
-	return visor.NewReadableBlocks(blocks)
+	return readable.NewBlocks(blocks)
 }
 
-// GetBlocksVerbose returns a *visor.ReadableBlocksVerbose
-func (gw *Gateway) GetBlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose, error) {
-	var blocks []visor.ReadableBlockVerbose
+// GetBlocksVerbose returns a *readable.BlocksVerbose
+func (gw *Gateway) GetBlocksVerbose(start, end uint64) (*readable.BlocksVerbose, error) {
+	var blocks []readable.BlockVerbose
 	var err error
 
 	gw.strand("GetBlocksVerbose", func() {
@@ -347,11 +347,11 @@ func (gw *Gateway) GetBlocksVerbose(start, end uint64) (*visor.ReadableBlocksVer
 		return nil, err
 	}
 
-	return visor.NewReadableBlocksVerbose(blocks), nil
+	return readable.NewBlocksVerbose(blocks), nil
 }
 
 // GetBlocksInDepth returns blocks in different depth
-func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
+func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*readable.Blocks, error) {
 	blocks := []coin.SignedBlock{}
 	var err error
 
@@ -376,11 +376,11 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 		return nil, err
 	}
 
-	return visor.NewReadableBlocks(blocks)
+	return readable.NewBlocks(blocks)
 }
 
 // GetLastBlocks get last N blocks
-func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
+func (gw *Gateway) GetLastBlocks(num uint64) (*readable.Blocks, error) {
 	var blocks []coin.SignedBlock
 	var err error
 
@@ -391,12 +391,12 @@ func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 		return nil, err
 	}
 
-	return visor.NewReadableBlocks(blocks)
+	return readable.NewBlocks(blocks)
 }
 
 // GetLastBlocksVerbose get last N blocks with verbose transaction input data
-func (gw *Gateway) GetLastBlocksVerbose(num uint64) (*visor.ReadableBlocksVerbose, error) {
-	var blocks []visor.ReadableBlockVerbose
+func (gw *Gateway) GetLastBlocksVerbose(num uint64) (*readable.BlocksVerbose, error) {
+	var blocks []readable.BlockVerbose
 	var err error
 
 	gw.strand("GetLastBlocksVerbose", func() {
@@ -406,7 +406,7 @@ func (gw *Gateway) GetLastBlocksVerbose(num uint64) (*visor.ReadableBlocksVerbos
 		return nil, err
 	}
 
-	return visor.NewReadableBlocksVerbose(blocks), nil
+	return readable.NewBlocksVerbose(blocks), nil
 }
 
 // OutputsFilter used as optional arguments in GetUnspentOutputs method
@@ -414,7 +414,7 @@ type OutputsFilter func(outputs coin.UxArray) coin.UxArray
 
 // GetUnspentOutputs gets unspent outputs and returns the filtered results,
 // Note: all filters will be executed as the pending sequence in 'AND' mode.
-func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableOutputSet, error) {
+func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*readable.OutputSet, error) {
 	// unspent outputs
 	var unspentOutputs []coin.UxOut
 	// unconfirmed spending outputs
@@ -459,18 +459,18 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableO
 		uncfmIncomingOutputs = flt(uncfmIncomingOutputs)
 	}
 
-	outputSet := visor.ReadableOutputSet{}
-	outputSet.HeadOutputs, err = visor.NewReadableOutputs(head.Time(), unspentOutputs)
+	outputSet := readable.OutputSet{}
+	outputSet.HeadOutputs, err = readable.NewOutputs(head.Time(), unspentOutputs)
 	if err != nil {
 		return nil, err
 	}
 
-	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(head.Time(), uncfmSpendingOutputs)
+	outputSet.OutgoingOutputs, err = readable.NewOutputs(head.Time(), uncfmSpendingOutputs)
 	if err != nil {
 		return nil, err
 	}
 
-	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(head.Time(), uncfmIncomingOutputs)
+	outputSet.IncomingOutputs, err = readable.NewOutputs(head.Time(), uncfmIncomingOutputs)
 	if err != nil {
 		return nil, err
 	}
@@ -545,143 +545,12 @@ func (gw *Gateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error
 	return txn, err
 }
 
-// TransactionResult represents transaction result
-type TransactionResult struct {
-	Status      visor.TransactionStatus   `json:"status"`
-	Time        uint64                    `json:"time"`
-	Transaction visor.ReadableTransaction `json:"txn"`
-}
-
-// NewTransactionResult converts visor.Transaction to TransactionResult
-func NewTransactionResult(txn *visor.Transaction) (*TransactionResult, error) {
-	if txn == nil {
-		return nil, nil
-	}
-
-	rbTxn, err := visor.NewReadableTransaction(txn)
-	if err != nil {
-		return nil, err
-	}
-
-	return &TransactionResult{
-		Transaction: *rbTxn,
-		Status:      txn.Status,
-		Time:        txn.Time,
-	}, nil
-}
-
-// TransactionResults array of transaction results
-type TransactionResults struct {
-	Txns []TransactionResult `json:"txns"`
-}
-
-// Sort sorts transactions chronologically, using txid for tiebreaking
-func (r TransactionResults) Sort() {
-	sort.Slice(r.Txns, func(i, j int) bool {
-		a := r.Txns[i]
-		b := r.Txns[j]
-
-		if a.Time == b.Time {
-			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
-		}
-
-		return a.Time < b.Time
-	})
-}
-
-// NewTransactionResults converts []Transaction to []TransactionResults
-func NewTransactionResults(txns []visor.Transaction) (*TransactionResults, error) {
-	txnRlts := make([]TransactionResult, 0, len(txns))
-	for _, txn := range txns {
-		rTxn, err := NewTransactionResult(&txn)
-		if err != nil {
-			return nil, err
-		}
-		txnRlts = append(txnRlts, *rTxn)
-	}
-
-	return &TransactionResults{
-		Txns: txnRlts,
-	}, nil
-}
-
-// TransactionResultVerbose represents verbose transaction result
-type TransactionResultVerbose struct {
-	Status      visor.TransactionStatus          `json:"status"`
-	Time        uint64                           `json:"time"`
-	Transaction visor.ReadableTransactionVerbose `json:"txn"`
-}
-
-// NewTransactionResultVerbose converts visor.Transaction to TransactionResultVerbose
-func NewTransactionResultVerbose(txn *visor.Transaction, inputs []visor.ReadableTransactionInput) (*TransactionResultVerbose, error) {
-	if txn == nil {
-		return nil, nil
-	}
-
-	if len(txn.Txn.In) != len(inputs) {
-		return nil, fmt.Errorf("NewTransactionResultVerbose: len(txn.In) != len(inputs) [%d != %d]", len(txn.Txn.In), len(inputs))
-	}
-
-	rbTxn, err := visor.NewReadableTransactionVerbose(*txn, inputs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Force the Status field to be hidden on the inner transaction, to maintain API compatibility
-	rbTxn.Status = nil
-
-	return &TransactionResultVerbose{
-		Transaction: rbTxn,
-		Status:      txn.Status,
-		Time:        txn.Time,
-	}, nil
-}
-
-// TransactionResultsVerbose array of transaction results
-type TransactionResultsVerbose struct {
-	Txns []TransactionResultVerbose `json:"txns"`
-}
-
-// Sort sorts transactions chronologically, using txid for tiebreaking
-func (r TransactionResultsVerbose) Sort() {
-	sort.Slice(r.Txns, func(i, j int) bool {
-		a := r.Txns[i]
-		b := r.Txns[j]
-
-		if a.Time == b.Time {
-			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
-		}
-
-		return a.Time < b.Time
-	})
-}
-
-// NewTransactionResultsVerbose converts []Transaction to []TransactionResultsVerbose
-func NewTransactionResultsVerbose(txns []visor.Transaction, inputs [][]visor.ReadableTransactionInput) (*TransactionResultsVerbose, error) {
-	if len(txns) != len(inputs) {
-		return nil, errors.New("NewTransactionResultsVerbose: len(txns) != len(inputs)")
-	}
-
-	txnRlts := make([]TransactionResultVerbose, len(txns))
-	for i, txn := range txns {
-		rTxn, err := NewTransactionResultVerbose(&txn, inputs[i])
-		if err != nil {
-			return nil, err
-		}
-		txnRlts[i] = *rTxn
-	}
-
-	return &TransactionResultsVerbose{
-		Txns: txnRlts,
-	}, nil
-}
-
-// GetTransactionResult gets transaction result by txid.
-func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*TransactionResult, error) {
+// GetTransactionWithStatus gets transaction result by txid.
+func (gw *Gateway) GetTransactionWithStatus(txid cipher.SHA256) (*readable.TransactionWithStatus, error) {
 	var txn *visor.Transaction
 	var err error
 
-	gw.strand("GetTransactionResult", func() {
+	gw.strand("GetTransactionWithStatus", func() {
 		txn, err = gw.v.GetTransaction(txid)
 	})
 
@@ -693,16 +562,16 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*TransactionResult,
 		return nil, nil
 	}
 
-	return NewTransactionResult(txn)
+	return readable.TransactionWithStatus(txn)
 }
 
-// GetTransactionResultVerbose gets verbose transaction result by txid.
-func (gw *Gateway) GetTransactionResultVerbose(txid cipher.SHA256) (*TransactionResultVerbose, error) {
+// GetTransactionWithStatusVerbose gets verbose transaction result by txid.
+func (gw *Gateway) GetTransactionWithStatusVerbose(txid cipher.SHA256) (*readable.TransactionWithStatusVerbose, error) {
 	var txn *visor.Transaction
-	var inputs []visor.ReadableTransactionInput
+	var inputs []readable.TransactionInput
 	var err error
 
-	gw.strand("GetTransactionResultVerbose", func() {
+	gw.strand("GetTransactionWithStatusVerbose", func() {
 		txn, inputs, err = gw.v.GetTransactionWithInputs(txid)
 	})
 
@@ -714,7 +583,7 @@ func (gw *Gateway) GetTransactionResultVerbose(txid cipher.SHA256) (*Transaction
 		return nil, nil
 	}
 
-	return NewTransactionResultVerbose(txn, inputs)
+	return readable.NewTransactionWithStatusVerbose(txn, inputs)
 }
 
 // InjectBroadcastTransaction injects and broadcasts a transaction
@@ -726,11 +595,11 @@ func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return err
 }
 
-// GetVerboseTransactionsForAddress returns []visor.ReadableTransactionVerbose for a given address.
+// GetVerboseTransactionsForAddress returns []readable.TransactionVerbose for a given address.
 // These transactions include confirmed and unconfirmed transactions
-func (gw *Gateway) GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.ReadableTransactionVerbose, error) {
+func (gw *Gateway) GetVerboseTransactionsForAddress(a cipher.Address) ([]readable.TransactionVerbose, error) {
 	var err error
-	var resTxns []visor.ReadableTransactionVerbose
+	var resTxns []readable.TransactionVerbose
 
 	gw.strand("GetVerboseTransactionsForAddress", func() {
 		resTxns, err = gw.v.GetVerboseTransactionsForAddress(a)
@@ -753,33 +622,33 @@ func (gw *Gateway) GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, 
 	return txns, err
 }
 
-// GetTransactionResults returns transactions filtered by zero or more visor.TxFilter
-func (gw *Gateway) GetTransactionResults(flts []visor.TxFilter) (*TransactionResults, error) {
+// GetTransactionsWithStatus returns transactions filtered by zero or more visor.TxFilter
+func (gw *Gateway) GetTransactionsWithStatus(flts []visor.TxFilter) (*readable.TransactionsWithStatus, error) {
 	var txns []visor.Transaction
 	var err error
-	gw.strand("GetTransactionResults", func() {
+	gw.strand("GetTransactionsWithStatus", func() {
 		txns, err = gw.v.GetTransactions(flts)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return NewTransactionResults(txns)
+	return readable.NewTransactionsWithStatus(txns)
 }
 
-// GetTransactionResultsVerbose returns transactions filtered by zero or more visor.TxFilter
-func (gw *Gateway) GetTransactionResultsVerbose(flts []visor.TxFilter) (*TransactionResultsVerbose, error) {
+// GetTransactionsWithStatusVerbose returns transactions filtered by zero or more visor.TxFilter
+func (gw *Gateway) GetTransactionsWithStatusVerbose(flts []visor.TxFilter) (*readable.TransactionsWithStatusVerbose, error) {
 	var txns []visor.Transaction
-	var inputs [][]visor.ReadableTransactionInput
+	var inputs [][]readable.TransactionInput
 	var err error
-	gw.strand("GetTransactionResultsVerbose", func() {
+	gw.strand("GetTransactionsWithStatusVerbose", func() {
 		txns, inputs, err = gw.v.GetTransactionsWithInputs(flts)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return NewTransactionResultsVerbose(txns, inputs)
+	return readable.NewTransactionsWithStatusVerbose(txns, inputs)
 }
 
 // GetUxOutByID gets UxOut by hash id.
@@ -832,8 +701,8 @@ func (gw *Gateway) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error) {
 }
 
 // GetAllUnconfirmedTxnsVerbose returns all unconfirmed transactions with verbose transaction inputs
-func (gw *Gateway) GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error) {
-	var txns []visor.ReadableUnconfirmedTxnVerbose
+func (gw *Gateway) GetAllUnconfirmedTxnsVerbose() ([]readable.UnconfirmedTxnVerbose, error) {
+	var txns []readable.UnconfirmedTxnVerbose
 	var err error
 	gw.strand("GetAllUnconfirmedTxnsVerbose", func() {
 		txns, err = gw.v.GetAllUnconfirmedTxnsVerbose()
@@ -1101,12 +970,12 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 }
 
 // GetWalletUnconfirmedTxnsVerbose returns all unconfirmed transactions in given wallet
-func (gw *Gateway) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+func (gw *Gateway) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]readable.UnconfirmedTxnVerbose, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
-	var txns []visor.ReadableUnconfirmedTxnVerbose
+	var txns []readable.UnconfirmedTxnVerbose
 	var err error
 	gw.strand("GetWalletUnconfirmedTxnsVerbose", func() {
 		var addrs []cipher.Address

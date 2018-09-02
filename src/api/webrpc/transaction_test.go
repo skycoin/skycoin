@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -42,7 +43,7 @@ func Test_getTransactionHandler(t *testing.T) {
 	}
 
 	tx := decodeRawTransaction(rawTxStr)
-	rbTx, err := visor.NewReadableTransaction(tx)
+	rbTx, err := readable.NewTransaction(tx, false)
 	require.NoError(t, err)
 	txRlt := daemon.TransactionResult{
 		Status: visor.TransactionStatus{

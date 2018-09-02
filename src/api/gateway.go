@@ -4,6 +4,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -21,7 +22,7 @@ type Gatewayer interface {
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
-	GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error)
+	GetWalletUnconfirmedTxnsVerbose(wltID string) ([]readable.UnconfirmedTxnVerbose, error)
 	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
@@ -30,15 +31,15 @@ type Gatewayer interface {
 	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, error)
 	GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
-	GetBlockByHashVerbose(hash cipher.SHA256) (*visor.ReadableBlockVerbose, error)
+	GetBlockByHashVerbose(hash cipher.SHA256) (*readable.BlockVerbose, error)
 	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)
-	GetBlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error)
-	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
-	GetBlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose, error)
-	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
-	GetLastBlocksVerbose(num uint64) (*visor.ReadableBlocksVerbose, error)
+	GetBlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error)
+	GetBlocks(start, end uint64) (*readable.Blocks, error)
+	GetBlocksVerbose(start, end uint64) (*readable.BlocksVerbose, error)
+	GetLastBlocks(num uint64) (*readable.Blocks, error)
+	GetLastBlocksVerbose(num uint64) (*readable.BlocksVerbose, error)
 	GetBuildInfo() visor.BuildInfo
-	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
+	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*readable.OutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() (*daemon.BlockchainProgress, error)
@@ -48,17 +49,17 @@ type Gatewayer interface {
 	GetTrustConnections() []string
 	GetExchgConnection() []string
 	GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error)
-	GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error)
+	GetAllUnconfirmedTxnsVerbose() ([]readable.UnconfirmedTxnVerbose, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
-	GetTransactionResult(txid cipher.SHA256) (*daemon.TransactionResult, error)
-	GetTransactionResultVerbose(txid cipher.SHA256) (*daemon.TransactionResultVerbose, error)
-	GetTransactionResults(flts []visor.TxFilter) (*daemon.TransactionResults, error)
-	GetTransactionResultsVerbose(flts []visor.TxFilter) (*daemon.TransactionResultsVerbose, error)
+	GetTransactionWithStatus(txid cipher.SHA256) (*daemon.TransactionResult, error)
+	GetTransactionWithStatusVerbose(txid cipher.SHA256) (*daemon.TransactionResultVerbose, error)
+	GetTransactionsWithStatus(flts []visor.TxFilter) (*daemon.TransactionResults, error)
+	GetTransactionsWithStatusVerbose(flts []visor.TxFilter) (*daemon.TransactionResultsVerbose, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
-	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.ReadableTransactionVerbose, error)
+	GetVerboseTransactionsForAddress(a cipher.Address) ([]readable.TransactionVerbose, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)

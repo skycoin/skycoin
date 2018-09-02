@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 var blockString = `{
@@ -66,8 +66,8 @@ var emptyBlockString = `{
 							"blocks":[]
 						}`
 
-func decodeBlock(str string) *visor.ReadableBlocks {
-	var blocks visor.ReadableBlocks
+func decodeBlock(str string) *readable.Blocks {
+	var blocks readable.Blocks
 	if err := json.Unmarshal([]byte(str), &blocks); err != nil {
 		panic(err)
 	}

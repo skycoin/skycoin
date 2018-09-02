@@ -17,8 +17,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 func makeBadBlock(t *testing.T) *coin.Block {
@@ -69,9 +69,9 @@ func TestGetBlock(t *testing.T) {
 		gatewayGetBlockByHashErr           error
 		gatewayGetBlockBySeqResult         *coin.SignedBlock
 		gatewayGetBlockBySeqErr            error
-		gatewayGetBlockByHashVerboseResult *visor.ReadableBlockVerbose
+		gatewayGetBlockByHashVerboseResult *readable.BlockVerbose
 		gatewayGetBlockByHashVerboseErr    error
-		gatewayGetBlockBySeqVerboseResult  *visor.ReadableBlockVerbose
+		gatewayGetBlockBySeqVerboseResult  *readable.BlockVerbose
 		gatewayGetBlockBySeqVerboseErr     error
 		response                           interface{}
 	}{
@@ -140,7 +140,7 @@ func TestGetBlock(t *testing.T) {
 			seq:    1,
 		},
 		{
-			name:   "500 - NewReadableBlock error",
+			name:   "500 - readable.NewBlock error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error - Droplet string conversion failed: Value is too large",
@@ -175,8 +175,8 @@ func TestGetBlock(t *testing.T) {
 			seqStr:                     "1",
 			seq:                        1,
 			gatewayGetBlockBySeqResult: &coin.SignedBlock{},
-			response: &visor.ReadableBlock{
-				Head: visor.ReadableBlockHeader{
+			response: &readable.Block{
+				Head: readable.BlockHeader{
 					BkSeq:             0x0,
 					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -185,8 +185,8 @@ func TestGetBlock(t *testing.T) {
 					Version:           0x0,
 					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
 				},
-				Body: visor.ReadableBlockBody{
-					Transactions: []visor.ReadableTransaction{},
+				Body: readable.BlockBody{
+					Transactions: []readable.Transaction{},
 				},
 			},
 		},
@@ -197,8 +197,8 @@ func TestGetBlock(t *testing.T) {
 			hash:                        validHashString,
 			sha256:                      validSHA256,
 			gatewayGetBlockByHashResult: &coin.SignedBlock{},
-			response: &visor.ReadableBlock{
-				Head: visor.ReadableBlockHeader{
+			response: &readable.Block{
+				Head: readable.BlockHeader{
 					BkSeq:             0x0,
 					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -207,8 +207,8 @@ func TestGetBlock(t *testing.T) {
 					Version:           0x0,
 					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
 				},
-				Body: visor.ReadableBlockBody{
-					Transactions: []visor.ReadableTransaction{},
+				Body: readable.BlockBody{
+					Transactions: []readable.Transaction{},
 				},
 			},
 		},
@@ -221,13 +221,13 @@ func TestGetBlock(t *testing.T) {
 			sha256:     validSHA256,
 			verbose:    true,
 			verboseStr: "1",
-			gatewayGetBlockByHashVerboseResult: func() *visor.ReadableBlockVerbose {
-				b, err := visor.NewReadableBlockVerbose(&coin.Block{}, nil)
+			gatewayGetBlockByHashVerboseResult: func() *readable.BlockVerbose {
+				b, err := readable.NewBlockVerbose(&coin.Block{}, nil)
 				require.NoError(t, err)
 				return b
 			}(),
-			response: &visor.ReadableBlockVerbose{
-				Head: visor.ReadableBlockHeader{
+			response: &readable.BlockVerbose{
+				Head: readable.BlockHeader{
 					BkSeq:             0x0,
 					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -236,8 +236,8 @@ func TestGetBlock(t *testing.T) {
 					Version:           0x0,
 					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
 				},
-				Body: visor.ReadableBlockBodyVerbose{
-					Transactions: []visor.ReadableBlockTransactionVerbose{},
+				Body: readable.BlockBodyVerbose{
+					Transactions: []readable.BlockTransactionVerbose{},
 				},
 			},
 		},
@@ -250,13 +250,13 @@ func TestGetBlock(t *testing.T) {
 			seqStr:     "1",
 			verbose:    true,
 			verboseStr: "1",
-			gatewayGetBlockBySeqVerboseResult: func() *visor.ReadableBlockVerbose {
-				b, err := visor.NewReadableBlockVerbose(&coin.Block{}, nil)
+			gatewayGetBlockBySeqVerboseResult: func() *readable.BlockVerbose {
+				b, err := readable.NewBlockVerbose(&coin.Block{}, nil)
 				require.NoError(t, err)
 				return b
 			}(),
-			response: &visor.ReadableBlockVerbose{
-				Head: visor.ReadableBlockHeader{
+			response: &readable.BlockVerbose{
+				Head: readable.BlockHeader{
 					BkSeq:             0x0,
 					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -265,8 +265,8 @@ func TestGetBlock(t *testing.T) {
 					Version:           0x0,
 					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
 				},
-				Body: visor.ReadableBlockBodyVerbose{
-					Transactions: []visor.ReadableBlockTransactionVerbose{},
+				Body: readable.BlockBodyVerbose{
+					Transactions: []readable.BlockTransactionVerbose{},
 				},
 			},
 		},
@@ -375,15 +375,15 @@ func TestGetBlock(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
 			} else {
 				if tc.verbose {
-					var msg *visor.ReadableBlockVerbose
+					var msg *readable.BlockVerbose
 					err := json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
-					require.Equal(t, tc.response.(*visor.ReadableBlockVerbose), msg)
+					require.Equal(t, tc.response.(*readable.BlockVerbose), msg)
 				} else {
-					var msg *visor.ReadableBlock
+					var msg *readable.Block
 					err := json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
-					require.Equal(t, tc.response.(*visor.ReadableBlock), msg)
+					require.Equal(t, tc.response.(*readable.Block), msg)
 				}
 			}
 		})
@@ -406,9 +406,9 @@ func TestGetBlocks(t *testing.T) {
 		start                         uint64
 		end                           uint64
 		verbose                       bool
-		gatewayGetBlocksResult        *visor.ReadableBlocks
+		gatewayGetBlocksResult        *readable.Blocks
 		gatewayGetBlocksError         error
-		gatewayGetBlocksVerboseResult *visor.ReadableBlocksVerbose
+		gatewayGetBlocksVerboseResult *readable.BlocksVerbose
 		gatewayGetBlocksVerboseError  error
 		response                      interface{}
 	}{
@@ -494,8 +494,8 @@ func TestGetBlocks(t *testing.T) {
 			},
 			start:                  1,
 			end:                    3,
-			gatewayGetBlocksResult: &visor.ReadableBlocks{Blocks: []visor.ReadableBlock{visor.ReadableBlock{}}},
-			response:               &visor.ReadableBlocks{Blocks: []visor.ReadableBlock{visor.ReadableBlock{}}},
+			gatewayGetBlocksResult: &readable.Blocks{Blocks: []readable.Block{readable.Block{}}},
+			response:               &readable.Blocks{Blocks: []readable.Block{readable.Block{}}},
 		},
 		{
 			name:   "200 verbose",
@@ -509,14 +509,14 @@ func TestGetBlocks(t *testing.T) {
 			start:   1,
 			end:     3,
 			verbose: true,
-			gatewayGetBlocksVerboseResult: &visor.ReadableBlocksVerbose{
-				Blocks: []visor.ReadableBlockVerbose{
-					visor.ReadableBlockVerbose{},
+			gatewayGetBlocksVerboseResult: &readable.BlocksVerbose{
+				Blocks: []readable.BlockVerbose{
+					readable.BlockVerbose{},
 				},
 			},
-			response: &visor.ReadableBlocksVerbose{
-				Blocks: []visor.ReadableBlockVerbose{
-					visor.ReadableBlockVerbose{},
+			response: &readable.BlocksVerbose{
+				Blocks: []readable.BlockVerbose{
+					readable.BlockVerbose{},
 				},
 			},
 		},
@@ -567,12 +567,12 @@ func TestGetBlocks(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				if tc.verbose {
-					var msg *visor.ReadableBlocksVerbose
+					var msg *readable.BlocksVerbose
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.response, msg)
 				} else {
-					var msg *visor.ReadableBlocks
+					var msg *readable.Blocks
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.response, msg)
@@ -595,9 +595,9 @@ func TestGetLastBlocks(t *testing.T) {
 		body                              httpBody
 		num                               uint64
 		verbose                           bool
-		gatewayGetLastBlocksResult        *visor.ReadableBlocks
+		gatewayGetLastBlocksResult        *readable.Blocks
 		gatewayGetLastBlocksError         error
-		gatewayGetLastBlocksVerboseResult *visor.ReadableBlocksVerbose
+		gatewayGetLastBlocksVerboseResult *readable.BlocksVerbose
 		gatewayGetLastBlocksVerboseError  error
 		response                          interface{}
 	}{
@@ -667,14 +667,14 @@ func TestGetLastBlocks(t *testing.T) {
 				Num: "1",
 			},
 			num: 1,
-			gatewayGetLastBlocksResult: &visor.ReadableBlocks{
-				Blocks: []visor.ReadableBlock{
-					visor.ReadableBlock{},
+			gatewayGetLastBlocksResult: &readable.Blocks{
+				Blocks: []readable.Block{
+					readable.Block{},
 				},
 			},
-			response: &visor.ReadableBlocks{
-				Blocks: []visor.ReadableBlock{
-					visor.ReadableBlock{},
+			response: &readable.Blocks{
+				Blocks: []readable.Block{
+					readable.Block{},
 				},
 			},
 		},
@@ -688,14 +688,14 @@ func TestGetLastBlocks(t *testing.T) {
 			},
 			num:     1,
 			verbose: true,
-			gatewayGetLastBlocksVerboseResult: &visor.ReadableBlocksVerbose{
-				Blocks: []visor.ReadableBlockVerbose{
-					visor.ReadableBlockVerbose{},
+			gatewayGetLastBlocksVerboseResult: &readable.BlocksVerbose{
+				Blocks: []readable.BlockVerbose{
+					readable.BlockVerbose{},
 				},
 			},
-			response: &visor.ReadableBlocksVerbose{
-				Blocks: []visor.ReadableBlockVerbose{
-					visor.ReadableBlockVerbose{},
+			response: &readable.BlocksVerbose{
+				Blocks: []readable.BlockVerbose{
+					readable.BlockVerbose{},
 				},
 			},
 		},
@@ -742,12 +742,12 @@ func TestGetLastBlocks(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				if tc.verbose {
-					var msg *visor.ReadableBlocksVerbose
+					var msg *readable.BlocksVerbose
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.response, msg)
 				} else {
-					var msg *visor.ReadableBlocks
+					var msg *readable.Blocks
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.response, msg)

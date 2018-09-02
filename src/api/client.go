@@ -16,6 +16,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -300,8 +301,8 @@ func (c *Client) Version() (*visor.BuildInfo, error) {
 }
 
 // Outputs makes a request to GET /api/v1/outputs
-func (c *Client) Outputs() (*visor.ReadableOutputSet, error) {
-	var o visor.ReadableOutputSet
+func (c *Client) Outputs() (*readable.OutputSet, error) {
+	var o readable.OutputSet
 	if err := c.Get("/api/v1/outputs", &o); err != nil {
 		return nil, err
 	}
@@ -309,12 +310,12 @@ func (c *Client) Outputs() (*visor.ReadableOutputSet, error) {
 }
 
 // OutputsForAddresses makes a request to GET /api/v1/outputs?addrs=xxx
-func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
+func (c *Client) OutputsForAddresses(addrs []string) (*readable.OutputSet, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/outputs?" + v.Encode()
 
-	var o visor.ReadableOutputSet
+	var o readable.OutputSet
 	if err := c.Get(endpoint, &o); err != nil {
 		return nil, err
 	}
@@ -322,12 +323,12 @@ func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, 
 }
 
 // OutputsForHashes makes a request to GET /api/v1/outputs?hashes=zzz
-func (c *Client) OutputsForHashes(hashes []string) (*visor.ReadableOutputSet, error) {
+func (c *Client) OutputsForHashes(hashes []string) (*readable.OutputSet, error) {
 	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
 	endpoint := "/api/v1/outputs?" + v.Encode()
 
-	var o visor.ReadableOutputSet
+	var o readable.OutputSet
 	if err := c.Get(endpoint, &o); err != nil {
 		return nil, err
 	}
@@ -344,12 +345,12 @@ func (c *Client) CoinSupply() (*CoinSupply, error) {
 }
 
 // BlockByHash makes a request to GET /api/v1/block?hash=xxx
-func (c *Client) BlockByHash(hash string) (*visor.ReadableBlock, error) {
+func (c *Client) BlockByHash(hash string) (*readable.Block, error) {
 	v := url.Values{}
 	v.Add("hash", hash)
 	endpoint := "/api/v1/block?" + v.Encode()
 
-	var b visor.ReadableBlock
+	var b readable.Block
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -357,13 +358,13 @@ func (c *Client) BlockByHash(hash string) (*visor.ReadableBlock, error) {
 }
 
 // BlockByHashVerbose makes a request to GET /api/v1/block?hash=xxx&verbose=1
-func (c *Client) BlockByHashVerbose(hash string) (*visor.ReadableBlockVerbose, error) {
+func (c *Client) BlockByHashVerbose(hash string) (*readable.BlockVerbose, error) {
 	v := url.Values{}
 	v.Add("hash", hash)
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/block?" + v.Encode()
 
-	var b visor.ReadableBlockVerbose
+	var b readable.BlockVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -371,12 +372,12 @@ func (c *Client) BlockByHashVerbose(hash string) (*visor.ReadableBlockVerbose, e
 }
 
 // BlockBySeq makes a request to GET /api/v1/block?seq=xxx
-func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
+func (c *Client) BlockBySeq(seq uint64) (*readable.Block, error) {
 	v := url.Values{}
 	v.Add("seq", fmt.Sprint(seq))
 	endpoint := "/api/v1/block?" + v.Encode()
 
-	var b visor.ReadableBlock
+	var b readable.Block
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -384,13 +385,13 @@ func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
 }
 
 // BlockBySeqVerbose makes a request to GET /api/v1/block?seq=xxx&verbose=1
-func (c *Client) BlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error) {
+func (c *Client) BlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error) {
 	v := url.Values{}
 	v.Add("seq", fmt.Sprint(seq))
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/block?" + v.Encode()
 
-	var b visor.ReadableBlockVerbose
+	var b readable.BlockVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -398,13 +399,13 @@ func (c *Client) BlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, err
 }
 
 // Blocks makes a request to GET /api/v1/blocks
-func (c *Client) Blocks(start, end uint64) (*visor.ReadableBlocks, error) {
+func (c *Client) Blocks(start, end uint64) (*readable.Blocks, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
 	endpoint := "/api/v1/blocks?" + v.Encode()
 
-	var b visor.ReadableBlocks
+	var b readable.Blocks
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -412,14 +413,14 @@ func (c *Client) Blocks(start, end uint64) (*visor.ReadableBlocks, error) {
 }
 
 // BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1
-func (c *Client) BlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose, error) {
+func (c *Client) BlocksVerbose(start, end uint64) (*readable.BlocksVerbose, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/blocks?" + v.Encode()
 
-	var b visor.ReadableBlocksVerbose
+	var b readable.BlocksVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -427,12 +428,12 @@ func (c *Client) BlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose,
 }
 
 // LastBlocks makes a request to GET /api/v1/last_blocks
-func (c *Client) LastBlocks(n uint64) (*visor.ReadableBlocks, error) {
+func (c *Client) LastBlocks(n uint64) (*readable.Blocks, error) {
 	v := url.Values{}
 	v.Add("num", fmt.Sprint(n))
 	endpoint := "/api/v1/last_blocks?" + v.Encode()
 
-	var b visor.ReadableBlocks
+	var b readable.Blocks
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -440,13 +441,13 @@ func (c *Client) LastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 }
 
 // LastBlocksVerbose makes a request to GET /api/v1/last_blocks?verbose=1
-func (c *Client) LastBlocksVerbose(n uint64) (*visor.ReadableBlocksVerbose, error) {
+func (c *Client) LastBlocksVerbose(n uint64) (*readable.BlocksVerbose, error) {
 	v := url.Values{}
 	v.Add("num", fmt.Sprint(n))
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/last_blocks?" + v.Encode()
 
-	var b visor.ReadableBlocksVerbose
+	var b readable.BlocksVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -794,8 +795,8 @@ func (c *Client) NetworkExchangeableConnections() ([]string, error) {
 }
 
 // PendingTransactions makes a request to GET /api/v1/pendingTxs
-func (c *Client) PendingTransactions() ([]visor.ReadableUnconfirmedTxn, error) {
-	var v []visor.ReadableUnconfirmedTxn
+func (c *Client) PendingTransactions() ([]readable.UnconfirmedTxns, error) {
+	var v []readable.UnconfirmedTxns
 	if err := c.Get("/api/v1/pendingTxs", &v); err != nil {
 		return nil, err
 	}
@@ -803,8 +804,8 @@ func (c *Client) PendingTransactions() ([]visor.ReadableUnconfirmedTxn, error) {
 }
 
 // PendingTransactionsVerbose makes a request to GET /api/v1/pendingTxs?verbose=1
-func (c *Client) PendingTransactionsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error) {
-	var v []visor.ReadableUnconfirmedTxnVerbose
+func (c *Client) PendingTransactionsVerbose() ([]readable.UnconfirmedTxnVerbose, error) {
+	var v []readable.UnconfirmedTxnVerbose
 	if err := c.Get("/api/v1/pendingTxs?verbose=1", &v); err != nil {
 		return nil, err
 	}
@@ -1015,12 +1016,12 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 }
 
 // AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]visor.ReadableTransactionVerbose, error) {
+func (c *Client) AddressTransactions(addr string) ([]readable.TransactionVerbose, error) {
 	v := url.Values{}
 	v.Add("address", addr)
 	endpoint := "/api/v1/explorer/address?" + v.Encode()
 
-	var b []visor.ReadableTransactionVerbose
+	var b []readable.TransactionVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

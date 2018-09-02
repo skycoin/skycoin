@@ -24,6 +24,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
@@ -93,7 +94,7 @@ func TestGetPendingTxs(t *testing.T) {
 		verboseStr                           string
 		getAllUnconfirmedTxnsResponse        []visor.UnconfirmedTxn
 		getAllUnconfirmedTxnsErr             error
-		getAllUnconfirmedTxnsVerboseResponse []visor.ReadableUnconfirmedTxnVerbose
+		getAllUnconfirmedTxnsVerboseResponse []readable.UnconfirmedTxnVerbose
 		getAllUnconfirmedTxnsVerboseErr      error
 		httpResponse                         interface{}
 	}{
@@ -141,7 +142,7 @@ func TestGetPendingTxs(t *testing.T) {
 			method:                        http.MethodGet,
 			status:                        http.StatusOK,
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
-			httpResponse:                  []visor.ReadableUnconfirmedTxn{},
+			httpResponse:                  []readable.UnconfirmedTxns{},
 		},
 		{
 			name:                                 "200 verbose",
@@ -149,8 +150,8 @@ func TestGetPendingTxs(t *testing.T) {
 			status:                               http.StatusOK,
 			verboseStr:                           "1",
 			verbose:                              true,
-			getAllUnconfirmedTxnsVerboseResponse: []visor.ReadableUnconfirmedTxnVerbose{},
-			httpResponse:                         []visor.ReadableUnconfirmedTxnVerbose{},
+			getAllUnconfirmedTxnsVerboseResponse: []readable.UnconfirmedTxnVerbose{},
+			httpResponse:                         []readable.UnconfirmedTxnVerbose{},
 		},
 	}
 
@@ -190,12 +191,12 @@ func TestGetPendingTxs(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				if tc.verbose {
-					var msg []visor.ReadableUnconfirmedTxnVerbose
+					var msg []readable.UnconfirmedTxnVerbose
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, msg, tc.name)
 				} else {
-					var msg []visor.ReadableUnconfirmedTxn
+					var msg []readable.UnconfirmedTxns
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, msg, tc.name)
@@ -419,8 +420,8 @@ func TestGetTransactionByID(t *testing.T) {
 			endpoint := "/api/v1/transaction"
 			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.txid).Return(tc.getTransactionReponse, tc.getTransactionError)
-			gateway.On("GetTransactionResult", tc.txid).Return(tc.getTransactionResultReponse, tc.getTransactionResultError)
-			gateway.On("GetTransactionResultVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse, tc.getTransactionResultVerboseError)
+			gateway.On("GetTransactionWithStatus", tc.txid).Return(tc.getTransactionResultReponse, tc.getTransactionResultError)
+			gateway.On("GetTransactionWithStatusVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse, tc.getTransactionResultVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -1006,8 +1007,8 @@ func TestGetTransactions(t *testing.T) {
 				return true
 			})
 
-			gateway.On("GetTransactionResults", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
-			gateway.On("GetTransactionResultsVerbose", matchFunc).Return(tc.getTransactionsVerboseResponse, tc.getTransactionsVerboseError)
+			gateway.On("GetTransactionsWithStatus", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
+			gateway.On("GetTransactionsWithStatusVerbose", matchFunc).Return(tc.getTransactionsVerboseResponse, tc.getTransactionsVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

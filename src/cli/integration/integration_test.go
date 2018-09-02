@@ -1237,7 +1237,6 @@ func TestStableTransaction(t *testing.T) {
 
 			require.NoError(t, err)
 
-			// Decode the output into visor.TransactionJSON
 			var tx webrpc.TxnResult
 			err = json.NewDecoder(bytes.NewReader(o)).Decode(&tx)
 			require.NoError(t, err)
@@ -1371,7 +1370,7 @@ func getTxidsInBlocks(t *testing.T, start, end int) []string {
 	e := strconv.Itoa(end)
 	o, err := exec.Command(binaryPath, "blocks", s, e).CombinedOutput()
 	require.NoError(t, err)
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.NewDecoder(bytes.NewReader(o)).Decode(&blocks)
 	require.NoError(t, err)
 	require.Len(t, blocks.Blocks, end-start+1)
@@ -1396,11 +1395,11 @@ func TestStableBlocks(t *testing.T) {
 	output, err := exec.Command(binaryPath, "blocks", "180", "181").CombinedOutput()
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 	require.NoError(t, err)
 
-	var expect visor.ReadableBlocks
+	var expect readable.Blocks
 	checkGoldenFile(t, "blocks180.golden", TestData{blocks, &expect})
 }
 
@@ -1417,7 +1416,7 @@ func TestLiveBlocks(t *testing.T) {
 	for _, seq := range blockSeqs {
 		output, err := exec.Command(binaryPath, "blocks", strconv.Itoa(seq)).CombinedOutput()
 		require.NoError(t, err)
-		var blocks visor.ReadableBlocks
+		var blocks readable.Blocks
 		err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 		require.NoError(t, err)
 	}
@@ -1446,11 +1445,11 @@ func testKnownBlocks(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
 			require.NoError(t, err)
 
-			var blocks visor.ReadableBlocks
+			var blocks readable.Blocks
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 			require.NoError(t, err)
 
-			var expect visor.ReadableBlocks
+			var expect readable.Blocks
 			checkGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
 		})
 	}
@@ -1462,11 +1461,11 @@ func scanBlocks(t *testing.T, start, end string) { // nolint: unparam
 	outputs, err := exec.Command(binaryPath, "blocks", start, end).CombinedOutput()
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.NewDecoder(bytes.NewReader(outputs)).Decode(&blocks)
 	require.NoError(t, err)
 
-	var preBlocks visor.ReadableBlock
+	var preBlocks readable.Block
 	preBlocks.Head.BlockHash = "0000000000000000000000000000000000000000000000000000000000000000"
 	for _, b := range blocks.Blocks {
 		require.Equal(t, b.Head.PreviousBlockHash, preBlocks.Head.BlockHash)
@@ -1514,11 +1513,11 @@ func TestStableLastBlocks(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var blocks visor.ReadableBlocks
+			var blocks readable.Blocks
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 			require.NoError(t, err)
 
-			var expect visor.ReadableBlocks
+			var expect readable.Blocks
 			checkGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
 		})
 	}
@@ -1552,7 +1551,7 @@ func TestLiveLastBlocks(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
 			require.NoError(t, err)
 
-			var blocks visor.ReadableBlocks
+			var blocks readable.Blocks
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 			require.NoError(t, err)
 		})
@@ -1974,7 +1973,7 @@ func isTxConfirmed(t *testing.T, txid string) bool {
 
 // checkCoinhours checks if the address coinhours in transaction are correct
 func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr string, coins, coinhours uint64) { // nolint: unparam
-	addrCoinhoursMap := make(map[string][]visor.ReadableTransactionOutput)
+	addrCoinhoursMap := make(map[string][]readable.TransactionOutput)
 	for _, o := range tx.Transaction.Transaction.Out {
 		addrCoinhoursMap[o.Address] = append(addrCoinhoursMap[o.Address], o)
 	}
@@ -2071,7 +2070,7 @@ func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
 	return coins, hours
 }
 
-func getWalletOutputs(t *testing.T, walletPath string) visor.ReadableOutputs {
+func getWalletOutputs(t *testing.T, walletPath string) readable.Outputs {
 	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
 	require.NoError(t, err, string(output))
 

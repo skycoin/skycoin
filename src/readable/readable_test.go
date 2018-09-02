@@ -1,4 +1,4 @@
-package visor
+package readable
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -25,7 +26,7 @@ func prepareWltDir(t *testing.T) string {
 // Returns an appropriate VisorConfig and a master visor
 func setupVisorConfig(t *testing.T) Config {
 	wltDir := prepareWltDir(t)
-	c := NewVisorConfig()
+	c := visor.NewVisorConfig()
 	c.WalletDirectory = wltDir
 	c.BlockchainSeckey = genSecret
 	c.BlockchainPubkey = genPublic
@@ -130,7 +131,7 @@ func TestNewTransactionStatus(t *testing.T) {
 }
 
 func assertReadableTransactionOutput(t *testing.T,
-	rto ReadableTransactionOutput, to coin.TransactionOutput) {
+	rto TransactionOutput, to coin.TransactionOutput) {
 	require.NotPanics(t, func() {
 		require.Equal(t, cipher.MustDecodeBase58Address(rto.Address), to.Address)
 	})
@@ -150,7 +151,7 @@ func TestReadableTransactionOutput(t *testing.T) {
 	require.NoError(t, err)
 	to := b.Body.Transactions[0].Out[0]
 
-	rto, err := NewReadableTransactionOutput(&to, testutil.RandSHA256(t))
+	rto, err := NewTransactionOutput(&to, testutil.RandSHA256(t))
 	require.NoError(t, err)
 	assertReadableTransactionOutput(t, *rto, to)
 }
@@ -174,7 +175,7 @@ func TestReadableTransactionInput(t *testing.T) {
 	assertReadableTransactionInput(t, rti, ti)
 }
 
-func assertReadableTransaction(t *testing.T, rtx ReadableTransaction, tx coin.Transaction) {
+func assertReadableTransaction(t *testing.T, rtx Transaction, tx coin.Transaction) {
 	require.Equal(t, len(tx.In), len(rtx.In))
 	require.Equal(t, len(tx.Out), len(rtx.Out))
 	for i, ti := range rtx.In {
@@ -195,14 +196,14 @@ func TestReadableTransaction(t *testing.T) {
 	require.NoError(t, err)
 	tx := b.Body.Transactions[0]
 
-	rtx, err := NewReadableTransaction(&Transaction{
+	rtx, err := NewTransaction(&Transaction{
 		Txn: tx,
 	}, false)
 	require.NoError(t, err)
 	assertReadableTransaction(t, *rtx, tx)
 }
 
-func assertReadableBlockHeader(t *testing.T, rb ReadableBlockHeader, bh coin.BlockHeader) {
+func assertReadableBlockHeader(t *testing.T, rb BlockHeader, bh coin.BlockHeader) {
 	require.Equal(t, rb.Version, bh.Version)
 	require.Equal(t, rb.Time, bh.Time)
 	require.Equal(t, rb.BkSeq, bh.BkSeq)
@@ -214,7 +215,7 @@ func assertReadableBlockHeader(t *testing.T, rb ReadableBlockHeader, bh coin.Blo
 	assertJSONSerializability(t, &rb)
 }
 
-func TestNewReadableBlockHeader(t *testing.T) {
+func TestNewBlockHeader(t *testing.T) {
 	v, shutdown := setupVisor(t)
 	defer shutdown()
 
@@ -223,11 +224,11 @@ func TestNewReadableBlockHeader(t *testing.T) {
 	bh, err := v.GetHeadBlock()
 	require.NoError(t, err)
 	require.Equal(t, bh.Head.BkSeq, uint64(1))
-	rb := NewReadableBlockHeader(&bh.Head)
+	rb := NewBlockHeader(&bh.Head)
 	assertReadableBlockHeader(t, rb, bh.Head)
 }
 
-func assertReadableBlockBody(t *testing.T, rbb ReadableBlockBody, bb coin.BlockBody) {
+func assertReadableBlockBody(t *testing.T, rbb BlockBody, bb coin.BlockBody) {
 	require.Equal(t, len(rbb.Transactions), len(bb.Transactions))
 	for i, rt := range rbb.Transactions {
 		assertReadableTransaction(t, rt, bb.Transactions[i])
@@ -235,7 +236,7 @@ func assertReadableBlockBody(t *testing.T, rbb ReadableBlockBody, bb coin.BlockB
 	assertJSONSerializability(t, &rbb)
 }
 
-func assertReadableBlock(t *testing.T, rb ReadableBlock, b coin.Block) {
+func assertReadableBlock(t *testing.T, rb Block, b coin.Block) {
 	assertReadableBlockHeader(t, rb.Head, b.Head)
 	assertReadableBlockBody(t, rb.Body, b.Body)
 	assertJSONSerializability(t, &rb)
@@ -249,7 +250,7 @@ func TestNewReadableBlock(t *testing.T) {
 	sb, err := v.GetHeadBlock()
 	require.NoError(t, err)
 	require.Equal(t, sb.Head.BkSeq, uint64(1))
-	rb, err := NewReadableBlock(&sb.Block)
+	rb, err := NewBlock(&sb.Block)
 	require.NoError(t, err)
 	assertReadableBlock(t, *rb, sb.Block)
 }

@@ -9,8 +9,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor" //http,json helpers
+	"github.com/skycoin/skycoin/src/readable"
+	wh "github.com/skycoin/skycoin/src/util/http" // http,json helpers
 )
 
 // blockchainProgressHandler returns the blockchain metadata
@@ -106,7 +106,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			var b *visor.ReadableBlockVerbose
+			var b *readable.BlockVerbose
 
 			switch {
 			case hash != "":
@@ -147,7 +147,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := visor.NewReadableBlock(&b.Block)
+		rb, err := readable.NewBlock(&b.Block)
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return

@@ -7,6 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
@@ -179,7 +180,7 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if txns == nil {
-			txns = []visor.ReadableTransactionVerbose{}
+			txns = []readable.TransactionVerbose{}
 		}
 
 		wh.SendJSONOr500(logger, w, txns)

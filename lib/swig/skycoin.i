@@ -24,6 +24,7 @@
 #if defined(SWIGCSHARP)
 %include "csharp_java_basic.i"
 %include "csharp_java_typemap.i"
+%include "csharp_java_skyerror.i"
 #endif
 
 %include "swig.h"

@@ -21,3 +21,26 @@
 	CreatedTransactionOutput__Handle, CreatedTransactionInput__Handle, CreateTransactionResponse__Handle,
 	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, ReadableOutputSet__Handle
 	}
+
+/*GoString* parameter as reference */
+%typemap(in, numinputs=0) GoString* (GoString temp) {
+	temp.p = NULL;
+	temp.n = 0;
+	$1 = ($1_type)&temp;
+}
+
+/**
+* Import library
+**/
+%include "typemaps.i"
+%include cpointer.i
+
+%typemap(in) (cipher_PubKey*) (cipher_PubKey temp) {
+	//Typemap in *Config Handle
+	$1 = &temp; 
+}
+
+%typemap(freearg) (cipher_PubKey*) {
+	//Typemap freearg *ConfigHandle
+}
+

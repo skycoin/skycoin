@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"reflect"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -15,13 +14,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/utc"
-)
-
-var (
-	// Every rejection message prefix must start with "RJCT" prefix
-	rejectPrefix = [...]byte{82, 74, 67, 84}
-	// ErrAckReject disconnect since peer sent RJCT message
-	ErrAckReject gnet.DisconnectReason = errors.New("Disconnect: Message rejected by peer")
 )
 
 // Message represent a packet to be serialized over the network by
@@ -63,7 +55,6 @@ func getMessageConfigs() []MessageConfig {
 		NewMessageConfig("GETT", GetTxnsMessage{}),
 		NewMessageConfig("GIVT", GiveTxnsMessage{}),
 		NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
-		NewMessageConfig("RJCT", RejectMessage{}),
 	}
 }
 
@@ -366,8 +357,6 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 			peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
 			givpMsg := NewGivePeersMessage(peers)
 			d.SendMessage(intro.c.Addr, givpMsg)
-			rjctMsg := NewRejectMessage(intro, pex.ErrPeerlistFull, "")
-			d.SendMessage(intro.c.Addr, rjctMsg)
 		}
 		return
 	}
@@ -433,54 +422,6 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 		logger.Debugf("Received pong from %s", mc.Addr)
 	}
 	return nil
-}
-
-// RejectMessage sent to inform peers of a protocol failure.
-// Whenever possible the node should send back prior to this
-// other message including data useful for peer recovery, especially
-// before disconnecting it
-//
-// Must never Reject a Reject message (infinite loop)
-type RejectMessage struct {
-	// Prefix of the (previous) message that's been rejected
-	TargetPrefix gnet.MessagePrefix
-	// Error code
-	ErrorCode uint32
-	// Reason message. Included only in very particular cases
-	Reason string
-	// Reserved for future use
-	Reserved []byte
-	c        *gnet.MessageContext `enc:"-"`
-}
-
-// NewRejectMessage creates message sent to reject previously received message
-func NewRejectMessage(msg gnet.Message, err error, reason string) *RejectMessage {
-	t := reflect.Indirect(reflect.ValueOf(msg)).Type()
-	prefix, exists := gnet.MessageIDMap[t]
-	if !exists {
-		logger.Panicf("Rejecting unknown message type %s", t)
-	}
-	if reflect.DeepEqual(prefix[:], rejectPrefix[:]) {
-		logger.Panicf("Message type %s (prefix = %s) may not be rejected", t, prefix)
-	}
-
-	return &RejectMessage{
-		TargetPrefix: prefix,
-		ErrorCode:    GetErrorCode(err),
-		Reason:       reason,
-		Reserved:     nil,
-	}
-}
-
-// Handle an event queued by Handle()
-func (rpm *RejectMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
-	rpm.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(rpm, mc)
-}
-
-// Process Recover from message rejection state
-func (rpm *RejectMessage) Process(d Daemoner) {
-	d.Disconnect(rpm.c.Addr, ErrAckReject)
 }
 
 // GetBlocksMessage sent to request blocks since LastBlock

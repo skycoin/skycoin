@@ -5,7 +5,11 @@
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
 .PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
 .PHONY: integration-test-disable-gui integration-test-disable-gui
-.PHONY: install-linters format release clean-release install-deps-ui build-ui help
+.PHONY: integration-test-db-no-unconfirmed
+.PHONY: install-linters format release clean-release
+.PHONY: install-deps-ui build-ui help newcoin generate-mocks
+
+COIN ?= skycoin
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
@@ -118,23 +122,49 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests --skip-dirs=lib/cgo \
-		-E goimports \
+	golangci-lint run --no-config --deadline=3m --disable-all --tests --skip-dirs=lib/cgo \
 		-E golint \
+		-E goimports \
 		-E varcheck \
 		-E unparam \
 		-E deadcode \
 		-E structcheck \
+		-E errcheck \
+		-E gosimple \
+		-E staticcheck \
+		-E unused \
+		-E ineffassign \
+		-E typecheck \
+		-E gas \
+		-E megacheck \
+		-E misspell \
+		-E nakedret \
 		./...
-	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests \
+	# lib/cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
+	# deadcode also doesn't make sense for lib/cgo
+	golangci-lint run --no-config --deadline=3m --disable-all --tests \
 		-E goimports \
 		-E varcheck \
 		-E unparam \
 		-E structcheck \
+		-E errcheck \
+		-E gosimple \
+		-E staticcheck \
+		-E unused \
+		-E ineffassign \
+		-E typecheck \
+		-E gas \
+		-E megacheck \
+		-E misspell \
+		-E nakedret \
 		./lib/cgo/...
+	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
+	go vet -all ./...
 
-check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters
+check: lint test integration-test-stable integration-test-stable-disable-csrf \
+	integration-test-disable-wallet-api integration-test-disable-seed-api \
+	integration-test-enable-seed-api integration-test-disable-gui \
+	integration-test-db-no-unconfirmed ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
 	./ci-scripts/integration-test-stable.sh -c
@@ -157,8 +187,11 @@ integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 integration-test-enable-seed-api: ## Run enable seed api integration test
 	./ci-scripts/integration-test-enable-seed-api.sh
 
-integration-test-disable-gui:
+integration-test-disable-gui: ## Run tests with the GUI disabled
 	./ci-scripts/integration-test-disable-gui.sh
+
+integration-test-db-no-unconfirmed: ## Run stable tests against the stable database that has no unconfirmed transactions
+	./ci-scripts/integration-test-stable.sh -d
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
@@ -166,6 +199,8 @@ cover: ## Runs tests on ./src/ with HTML code coverage
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
+	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
+	# However, they suggest `curl ... | bash` which we should not do
 	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
@@ -210,9 +245,17 @@ release-gui: ## Build electron apps. Use osarch=${osarch} to specify the platfor
 	cd $(ELECTRON_DIR) && ./build-electron-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-
 clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
+
+newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
+	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
+
+generate-mocks: ## Regenerate test interface mocks
+	go generate ./src/...
+	# mockery can't generate the UnspentPooler mock in package visor, patch it
+	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
+	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

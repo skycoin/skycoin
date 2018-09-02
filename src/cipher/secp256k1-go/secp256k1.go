@@ -101,8 +101,8 @@ func UncompressPubkey(pubkey []byte) []byte {
 	}
 
 	var pubXY secp.XY
-	err := pubXY.ParsePubkey(pubkey)
-	if err == false {
+	ok := pubXY.ParsePubkey(pubkey)
+	if !ok {
 		log.Panic("ERROR: impossible, pubkey parse fail")
 	}
 
@@ -161,7 +161,7 @@ new_seckey:
 	seed = SumSHA256(seed[0:32])
 	copy(seckey[0:32], seed[0:32])
 
-	if bytes.Equal(seckey, seed) == false {
+	if !bytes.Equal(seckey, seed) {
 		log.Panic()
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
@@ -258,9 +258,9 @@ func Sign(msg []byte, seckey []byte) []byte {
 	if len(sigBytes) != 64 {
 		log.Fatalf("Invalid signature byte count: %d", len(sigBytes))
 	}
-	sig[64] = byte(int(recid))
+	sig[64] = byte(int(recid)) // nolint: unconvert
 
-	if int(recid) > 4 {
+	if int(recid) > 4 { // nolint: unconvert
 		log.Panic()
 	}
 
@@ -300,7 +300,7 @@ func SignDeterministic(msg []byte, seckey []byte, nonceSeed []byte) []byte {
 		log.Fatalf("Invalid signature byte count: %d", len(sigBytes))
 	}
 
-	if int(recid) > 4 {
+	if int(recid) > 4 { // nolint: unconvert
 		log.Panic()
 	}
 
@@ -347,12 +347,12 @@ func VerifyPubkey(pubkey []byte) int {
 	var pubkey1 secp.XY
 	ret := pubkey1.ParsePubkey(pubkey)
 
-	if ret == false {
+	if !ret {
 		return -2 //invalid, parse fail
 	}
 	//fails for unknown reason
 	//TODO: uncomment
-	if pubkey1.IsValid() == false {
+	if !pubkey1.IsValid() {
 		return -4 //invalid, validation fail
 	}
 	return 1 //valid
@@ -415,7 +415,7 @@ func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 		log.Panic("recovered pubkey length invalid")
 	}
 
-	if bytes.Equal(pubkey1, pubkey2) != true {
+	if !bytes.Equal(pubkey1, pubkey2) {
 		return 0 //pubkeys do not match
 	}
 
@@ -442,7 +442,7 @@ func SignatureErrorString(msg []byte, sig []byte, pubkey1 []byte) string {
 		return "pubkey from signature failed"
 	}
 
-	if bytes.Equal(pubkey1, pubkey2) == false {
+	if !bytes.Equal(pubkey1, pubkey2) {
 		return "input pubkey and recovered pubkey do not match"
 	}
 

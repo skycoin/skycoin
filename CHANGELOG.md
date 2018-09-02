@@ -9,9 +9,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
-- RJCT network message
+- Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
+- Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
+- Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
+- Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
+- Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
 
 ### Fixed
+
+- Fix hanging process caused when the p2p listener port is already in use
+- Fix exit status of CLI tool when wallet file cannot be loaded
+- Fix `calculated_hours` and `fee` in `/api/v1/explorer/address` responses
+- Fix `calculated_hours` and `fee` in `/api/v2/transaction/verify` responses for confirmed transactions
+- `/api/v1/blocks` and `/api/v1/last_blocks` return `500` instead of `400` on database errors
+- `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
 
 ### Changed
 
@@ -19,6 +30,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
+- `/api/v1/network/` endpoints will return an empty array for array values instead of `null`
+- `/api/v1/blocks` will return an empty array for `"blocks"` instead of `null`
+- `/api/v1/blockchain/progress` will return an empty array for `"peers"` instead of `null`
+- `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
+- The deprecated JSON 2.0 RPC interface is disabled by default for all run modes, since it is no longer needed for the CLI tool
+- Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`
 
 ### Removed
 
@@ -187,6 +204,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
 - #800, Add entropy parameter to `/wallet/newSeed` endpoint. Entropy can be 128 (default) or 256, corresponding to 12- and 24-word seeds respectively
 - #866, Include coins and hours in `/explorer/address` inputs
+- Rename cached `peers.txt` file to `peers.json`
 
 ### Removed
 

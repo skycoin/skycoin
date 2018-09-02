@@ -1,7 +1,13 @@
 package main
 
+/*
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
+*/
+
 import (
 	_ "net/http/pprof"
+	"os"
 
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -83,5 +89,7 @@ func main() {
 	coin.ParseConfig()
 
 	// run fiber coin node
-	coin.Run()
+	if err := coin.Run(); err != nil {
+		os.Exit(1)
+	}
 }

@@ -125,7 +125,7 @@ func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
 
 	ip := binary.BigEndian.Uint32(ipb)
 	ipaddr.IP = ip
-	ipaddr.Port = uint16(port)
+	ipaddr.Port = port
 	return
 }
 
@@ -266,7 +266,9 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		// Disconnect if this is a self connection (we have the same mirror value)
 		if intro.Mirror == d.Mirror() {
 			logger.Infof("Remote mirror value %v matches ours", intro.Mirror)
-			d.Disconnect(mc.Addr, ErrDisconnectSelf)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectSelf); err != nil {
+				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+			}
 			return ErrDisconnectSelf
 		}
 
@@ -274,7 +276,9 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		if intro.Version != d.DaemonConfig().Version {
 			logger.Infof("%s has different version %d. Disconnecting.",
 				mc.Addr, intro.Version)
-			d.Disconnect(mc.Addr, ErrDisconnectInvalidVersion)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidVersion); err != nil {
+				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+			}
 			return ErrDisconnectInvalidVersion
 		}
 
@@ -285,14 +289,18 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			var bcPubKey cipher.PubKey
 			if len(intro.Extra) < len(bcPubKey) {
 				logger.Infof("Extra data length does not meet the minimum requirement")
-				d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData)
+				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
+					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+				}
 				return ErrDisconnectInvalidExtraData
 			}
 			copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
 			if d.BlockchainPubkey() != bcPubKey {
 				logger.Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())
-				d.Disconnect(mc.Addr, ErrDisconnectBlockchainPubkeyNotMatched)
+				if err := d.Disconnect(mc.Addr, ErrDisconnectBlockchainPubkeyNotMatched); err != nil {
+					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+				}
 				return ErrDisconnectBlockchainPubkeyNotMatched
 			}
 		}
@@ -304,7 +312,9 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			// This should never happen, but the program should still work if it
 			// does.
 			logger.Errorf("Invalid Addr() for connection: %s", mc.Addr)
-			d.Disconnect(mc.Addr, ErrDisconnectOtherError)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectOtherError); err != nil {
+				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+			}
 			return ErrDisconnectOtherError
 		}
 
@@ -326,7 +336,9 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		knownPort, exists := d.GetMirrorPort(mc.Addr, intro.Mirror)
 		if exists {
 			logger.Infof("%s is already connected on port %d", mc.Addr, knownPort)
-			d.Disconnect(mc.Addr, ErrDisconnectConnectedTwice)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectConnectedTwice); err != nil {
+				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+			}
 			return ErrDisconnectConnectedTwice
 		}
 		return nil
@@ -368,7 +380,9 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
 		logger.Errorf("Invalid port for connection %s", a)
-		d.Disconnect(intro.c.Addr, ErrDisconnectOtherError)
+		if err := d.Disconnect(intro.c.Addr, ErrDisconnectOtherError); err != nil {
+			logger.WithError(err).WithField("addr", intro.c.Addr).Warning("Disconnect")
+		}
 		return
 	}
 
@@ -380,8 +394,10 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		logger.Warning(err)
 	}
 
-	// Anounce unconfirmed know txns
-	d.AnnounceAllTxns()
+	// Announce unconfirmed txns
+	if err := d.AnnounceAllTxns(); err != nil {
+		logger.WithError(err).Warning("AnnounceAllTxns failed")
+	}
 }
 
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.
@@ -601,10 +617,15 @@ func (gbm *GiveBlocksMessage) Process(d Daemoner) {
 
 	// Announce our new blocks to peers
 	m1 := NewAnnounceBlocksMessage(headBkSeq)
-	d.BroadcastMessage(m1)
-	//request more blocks.
+	if err := d.BroadcastMessage(m1); err != nil {
+		logger.WithError(err).Warning("Broadcast AnnounceBlocksMessage failed")
+	}
+
+	// Request more blocks
 	m2 := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().BlocksResponseCount)
-	d.BroadcastMessage(m2)
+	if err := d.BroadcastMessage(m2); err != nil {
+		logger.WithError(err).Warning("Broadcast GetBlocksMessage failed")
+	}
 }
 
 // AnnounceBlocksMessage tells a peer our highest known BkSeq. The receiving peer can choose
@@ -801,6 +822,8 @@ func (gtm *GiveTxnsMessage) Process(d Daemoner) {
 	if len(hashes) != 0 {
 		logger.Debugf("Announce %d transactions", len(hashes))
 		m := NewAnnounceTxnsMessage(hashes)
-		d.BroadcastMessage(m)
+		if err := d.BroadcastMessage(m); err != nil {
+			logger.WithError(err).Warning("Broadcast AnnounceTxnsMessage failed")
+		}
 	}
 }

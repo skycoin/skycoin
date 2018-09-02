@@ -56,25 +56,22 @@ func decodeRawTxCmd() gcli.Command {
 		Action: func(c *gcli.Context) error {
 			rawTxStr := c.Args().First()
 			if rawTxStr == "" {
-				errorWithHelp(c, errors.New("missing raw transaction value"))
-				return nil
+				printHelp(c)
+				return errors.New("missing raw transaction value")
 			}
 
 			b, err := hex.DecodeString(rawTxStr)
 			if err != nil {
-				fmt.Printf("invalid raw transaction: %v\n", err)
-				return err
+				return fmt.Errorf("invalid raw transaction: %v", err)
 			}
 
 			tx, err := coin.TransactionDeserialize(b)
 			if err != nil {
-				fmt.Printf("Unable to deserialize transaction bytes: %v\n", err)
-				return err
+				return fmt.Errorf("Unable to deserialize transaction bytes: %v", err)
 			}
 
 			txStr, err := visor.TransactionToJSON(tx)
 			if err != nil {
-				fmt.Println(err)
 				return err
 			}
 

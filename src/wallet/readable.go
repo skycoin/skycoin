@@ -181,10 +181,6 @@ func (rw *ReadableWallet) Load(filename string) error {
 	return file.LoadJSON(filename, rw)
 }
 
-func (rw *ReadableWallet) version() string {
-	return rw.Meta[metaVersion]
-}
-
 func (rw *ReadableWallet) time() string {
 	return rw.Meta[metaTm]
 }

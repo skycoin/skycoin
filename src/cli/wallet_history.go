@@ -66,8 +66,7 @@ func walletHistoryAction(c *gcli.Context) error {
 
 	if c.NArg() > 0 {
 		fmt.Printf("Error: invalid argument\n\n")
-		gcli.ShowSubcommandHelp(c)
-		return nil
+		return gcli.ShowSubcommandHelp(c)
 	}
 
 	w, err := resolveWalletPath(cfg, c.String("f"))
@@ -106,7 +105,7 @@ func walletHistoryAction(c *gcli.Context) error {
 	return printJSON(totalAddrHis)
 }
 
-func makeAddrHisArray(c *api.Client, addr string, uxOuts []*historydb.UxOutJSON) ([]AddrHistory, error) {
+func makeAddrHisArray(c *api.Client, addr string, uxOuts []historydb.UxOutJSON) ([]AddrHistory, error) {
 	if len(uxOuts) == 0 {
 		return nil, nil
 	}

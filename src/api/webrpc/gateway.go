@@ -8,7 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-//go:generate goautomock -template=testify Gatewayer
+//go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
 
 // Gatewayer provides interfaces for getting skycoin related info.
 type Gatewayer interface {

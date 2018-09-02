@@ -38,24 +38,23 @@ func newPeerlist() peerlist {
 // Filter peers filter
 type Filter func(peer Peer) bool
 
-// loadFromFile loads if the peer.txt file does exist
-// return nil if the file doesn't exist
-func loadPeersFromFile(path string) (map[string]*Peer, error) {
-	// check if the file does exist
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, nil
-	}
-
+// loadCachedPeersFile loads peers from the cached peers.json file
+func loadCachedPeersFile(path string) (map[string]*Peer, error) {
 	peersJSON := make(map[string]PeerJSON)
 	err := file.LoadJSON(path, &peersJSON)
 
-	if err == io.EOF {
-		logger.WithField("path", path).Error("corrupt or empty file, rewriting file")
+	if os.IsNotExist(err) {
+		logger.WithField("path", path).Info("File does not exist")
 		return nil, nil
-	} else if err != nil {
+	} else if err == io.EOF {
+		logger.WithField("path", path).Error("Corrupt or empty file")
+		return nil, nil
+	}
+
+	if err != nil {
 		return nil, err
 	}
+
 	peers := make(map[string]*Peer, len(peersJSON))
 	for addr, peerJSON := range peersJSON {
 		a, err := validateAddress(addr, true)
@@ -72,7 +71,7 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 		}
 
 		if a != peer.Addr {
-			logger.Errorf("address key %s does not match Peer.Addr %s", a, peer.Addr)
+			logger.Errorf("Address key %s does not match Peer.Addr %s", a, peer.Addr)
 			continue
 		}
 
@@ -89,6 +88,11 @@ func (pl *peerlist) setPeers(peers []Peer) {
 	}
 }
 
+func (pl *peerlist) hasPeer(addr string) bool {
+	p, ok := pl.peers[addr]
+	return ok && p != nil
+}
+
 func (pl *peerlist) addPeer(addr string) {
 	if p, ok := pl.peers[addr]; ok && p != nil {
 		p.Seen()
@@ -97,7 +101,6 @@ func (pl *peerlist) addPeer(addr string) {
 
 	peer := NewPeer(addr)
 	pl.peers[addr] = peer
-	return
 }
 
 func (pl *peerlist) addPeers(addrs []string) {
@@ -109,7 +112,7 @@ func (pl *peerlist) addPeers(addrs []string) {
 // getCanTryPeers returns all peers that are triable(retried times blew exponential backoff times)
 // and are able to pass the filters.
 func (pl *peerlist) getCanTryPeers(flts ...Filter) Peers {
-	var ps Peers
+	ps := make(Peers, 0)
 	flts = append([]Filter{canTry}, flts...)
 loop:
 	for _, p := range pl.peers {
@@ -127,7 +130,7 @@ loop:
 
 // getPeers returns all peers that can pass the filters.
 func (pl *peerlist) getPeers(flts ...Filter) Peers {
-	var ps Peers
+	ps := make(Peers, 0)
 loop:
 	for _, p := range pl.peers {
 		for i := range flts {
@@ -195,6 +198,13 @@ func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
 }
 
+// setAllUntrusted unsets the trusted field on all peers
+func (pl *peerlist) setAllUntrusted() {
+	for _, p := range pl.peers {
+		p.Trusted = false
+	}
+}
+
 // setHasIncomingPort updates whether the peer is valid and has public incoming port
 func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error {
 	if p, ok := pl.peers[addr]; ok {
@@ -242,7 +252,8 @@ func (pl *peerlist) random(count int, flts ...Filter) Peers {
 	if count == 0 || count > len(keys) {
 		max = len(keys)
 	}
-	var ps Peers
+
+	ps := make(Peers, 0)
 	perm := rand.Perm(len(keys))
 	for _, i := range perm[:max] {
 		ps = append(ps, *pl.peers[keys[i]])
@@ -251,7 +262,7 @@ func (pl *peerlist) random(count int, flts ...Filter) Peers {
 }
 
 // save saves known peers to disk as a newline delimited list of addresses to
-// <dir><PeerDatabaseFilename>
+// <dir><PeerCacheFilename>
 func (pl *peerlist) save(fn string) error {
 	// filter the peers that has retrytime > MaxPeerRetryTimes
 	peers := make(map[string]PeerJSON)

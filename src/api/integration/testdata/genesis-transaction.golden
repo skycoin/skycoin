@@ -3,16 +3,15 @@
 		"confirmed": true,
 		"unconfirmed": false,
 		"height": 181,
-		"block_seq": 0,
-		"unknown": false
+		"block_seq": 0
 	},
 	"time": 1426562704,
 	"txn": {
+		"timestamp": 1426562704,
 		"length": 0,
 		"type": 0,
 		"txid": "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
 		"inner_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-		"timestamp": 1426562704,
 		"sigs": [],
 		"inputs": [],
 		"outputs": [

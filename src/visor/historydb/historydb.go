@@ -183,8 +183,8 @@ func (hd HistoryDB) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*UxO
 	return hd.outputs.GetArray(tx, hashes)
 }
 
-// GetAddressTxns returns all the address related transactions
-func (hd HistoryDB) GetAddressTxns(tx *dbutil.Tx, address cipher.Address) ([]Transaction, error) {
+// GetTransactionsForAddress returns all the address related transactions
+func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address) ([]Transaction, error) {
 	hashes, err := hd.addrTxns.Get(tx, address)
 	if err != nil {
 		return nil, err
@@ -326,11 +326,9 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 
 			addr := ux.Body.Address
 			txnHashesMap := map[cipher.SHA256]struct{}{}
-			uxHashesMap := map[cipher.SHA256]struct{}{}
 			indexes, ok := indexesMap.Load(addr)
 			if ok {
 				txnHashesMap = indexes.TxnHashes
-				uxHashesMap = indexes.UxHashes
 			} else {
 				txnHashes, err := hd.addrTxns.Get(tx, addr)
 				if err != nil {
@@ -345,6 +343,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 					return err
 				}
 
+				uxHashesMap := make(map[cipher.SHA256]struct{}, len(uxHashes))
 				for _, hash := range uxHashes {
 					uxHashesMap[hash] = struct{}{}
 				}

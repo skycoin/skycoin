@@ -17,43 +17,99 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-// Returns pending transactions
-func getPendingTxns(gateway Gatewayer) http.HandlerFunc {
+// pendingTxnsHandler returns pending transactions
+// Method: GET
+// URI: /api/v1/pendingTxs
+// Args:
+//	verbose: [bool] include verbose transaction input data
+func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		txns, err := gateway.GetAllUnconfirmedTxns()
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
-			wh.Error500(w, err.Error())
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
-		for _, unconfirmedTxn := range txns {
-			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+		if verbose {
+			txns, err := gateway.GetAllUnconfirmedTxnsVerbose()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
-			ret = append(ret, readable)
-		}
 
-		wh.SendJSONOr500(logger, w, &ret)
+			if len(txns) == 0 {
+				txns = []visor.ReadableUnconfirmedTxnVerbose{}
+			}
+
+			wh.SendJSONOr500(logger, w, txns)
+		} else {
+			txns, err := gateway.GetAllUnconfirmedTxns()
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			ret := make([]*visor.ReadableUnconfirmedTxn, len(txns))
+			for i, unconfirmedTxn := range txns {
+				readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+				if err != nil {
+					wh.Error500(w, err.Error())
+					return
+				}
+				ret[i] = readable
+			}
+
+			wh.SendJSONOr500(logger, w, ret)
+		}
 	}
 }
 
-func getTransactionByID(gate Gatewayer) http.HandlerFunc {
+// TransactionEncodedResponse represents the data struct of the response to /api/v1/transaction?encoded=1
+type TransactionEncodedResponse struct {
+	Status             visor.TransactionStatus `json:"status"`
+	Time               uint64                  `json:"time"`
+	EncodedTransaction string                  `json:"encoded_transaction"`
+}
+
+// transactionHandler returns a transaction identified by its txid hash
+// Method: GET
+// URI: /api/v1/transaction
+// Args:
+//	txid: transaction hash
+//	verbose: [bool] include verbose transaction input data
+//  encoded: [bool] return as a raw encoded transaction
+func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
+
 		txid := r.FormValue("txid")
 		if txid == "" {
 			wh.Error400(w, "txid is empty")
+			return
+		}
+
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
+			return
+		}
+
+		encoded, err := parseBoolFlag(r.FormValue("encoded"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for encoded")
+			return
+		}
+
+		if verbose && encoded {
+			wh.Error400(w, "verbose and encoded cannot be combined")
 			return
 		}
 
@@ -63,28 +119,49 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := gate.GetTransaction(h)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-		if txn == nil {
-			wh.Error404(w, "")
-			return
-		}
+		if verbose {
+			txn, err := gateway.GetTransactionResultVerbose(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
 
-		rbTxn, err := visor.NewReadableTransaction(txn)
-		if err != nil {
-			wh.Error500(w, err.Error())
-			return
-		}
+			wh.SendJSONOr500(logger, w, &txn)
+		} else if encoded {
+			txn, err := gateway.GetTransaction(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
 
-		resTxn := daemon.TransactionResult{
-			Transaction: *rbTxn,
-			Status:      txn.Status,
-			Time:        txn.Time,
+			txnStr := hex.EncodeToString(txn.Txn.Serialize())
+
+			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
+				EncodedTransaction: txnStr,
+				Status:             txn.Status,
+				Time:               txn.Time,
+			})
+		} else {
+			txn, err := gateway.GetTransactionResult(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, &txn)
 		}
-		wh.SendJSONOr500(logger, w, &resTxn)
 	}
 }
 
@@ -92,12 +169,19 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 // Method: GET
 // URI: /api/v1/transactions
 // Args:
-//     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
+//     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+//	   verbose: [bool] include verbose transaction input data
 func getTransactions(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
+			return
+		}
+
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
@@ -109,7 +193,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Initialize transaction filters
-		flts := []visor.TxFilter{visor.AddrsFilter(addrs)}
+		flts := []visor.TxFilter{visor.NewAddrsFilter(addrs)}
 
 		// Gets the 'confirmed' parameter value
 		confirmedStr := r.FormValue("confirmed")
@@ -120,30 +204,43 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			flts = append(flts, visor.ConfirmedTxFilter(confirmed))
+			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 		}
 
-		// Gets transactions
-		txns, err := gateway.GetTransactions(flts...)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetTransactions failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
+		if verbose {
+			txnRlts, err := gateway.GetTransactionResultsVerbose(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 
-		// Converts visor.Transaction to daemon.TransactionResult
-		txnRlts, err := daemon.NewTransactionResults(txns)
-		if err != nil {
-			err = fmt.Errorf("daemon.NewTransactionResults failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
+			txns := []daemon.TransactionResultVerbose{}
+			if txnRlts != nil && txnRlts.Txns != nil {
+				txnRlts.Sort()
+				txns = txnRlts.Txns
+			}
 
-		wh.SendJSONOr500(logger, w, txnRlts.Txns)
+			wh.SendJSONOr500(logger, w, txns)
+		} else {
+			// Gets transactions
+			txnRlts, err := gateway.GetTransactionResults(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			txns := []daemon.TransactionResult{}
+			if txnRlts != nil && txnRlts.Txns != nil {
+				txnRlts.Sort()
+				txns = txnRlts.Txns
+			}
+
+			wh.SendJSONOr500(logger, w, txns)
+		}
 	}
 }
 
-// parseAddressesFromStr parses comma seperated addresses string into []cipher.Address
+// parseAddressesFromStr parses comma separated addresses string into []cipher.Address
 func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 	addrsStr := splitCommaString(s)
 
@@ -220,7 +317,6 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, rlt)
-		return
 	}
 }
 
@@ -256,7 +352,6 @@ func getRawTxn(gateway Gatewayer) http.HandlerFunc {
 
 		d := txn.Txn.Serialize()
 		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
-		return
 	}
 }
 
@@ -389,7 +484,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 	return &txn, nil
 }
 
-// newCreatedTransactionFuzzy creates a CreatedTransaction but accomodates possibly invalid txn input
+// newCreatedTransactionFuzzy creates a CreatedTransaction but accommodates possibly invalid txn input
 func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) && len(inputs) != 0 {
 		return nil, errors.New("len(txn.In) != len(inputs)")

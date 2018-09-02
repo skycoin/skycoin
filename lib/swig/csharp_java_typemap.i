@@ -19,8 +19,5 @@
 	GoStringMap, PasswordReader__Handle_,
 	Transaction__Handle, Transactions__Handle, CreatedTransaction__Handle,
 	CreatedTransactionOutput__Handle, CreatedTransactionInput__Handle, CreateTransactionResponse__Handle,
-	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle
+	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, ReadableOutputSet__Handle
 	}
-
-%typemap(cstype) (cipher_SecKey*) "ref cipher_SecKey"
-%typemap(cstype) (cipher_PubKey*) "ref cipher_PubKey"

@@ -319,7 +319,6 @@ typedef Handle SortableTransactionResult_Handle;
  * Memory handle to access to wallet.Notes
  */
 
-typedef Handle WalletNotes_Handle;
 
 /**
  * Memory handle to access to wallet.ReadableNotes

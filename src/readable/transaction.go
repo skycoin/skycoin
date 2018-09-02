@@ -10,39 +10,30 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/timeutil"
+	"github.com/skycoin/skycoin/src/visor"
 )
+
+var logger = logging.MustGetLogger("readable")
 
 // TransactionStatus represents the transaction status
 type TransactionStatus struct {
-	Confirmed bool `json:"confirmed"`
-	// This txn is in the unconfirmed pool
+	Confirmed   bool `json:"confirmed"`
 	Unconfirmed bool `json:"unconfirmed"`
-	// If confirmed, how many blocks deep in the chain it is. Will be at least
-	// 1 if confirmed.
+	// If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed
 	Height uint64 `json:"height"`
-	// Execute block seq
+	// If confirmed, the sequence of the block in which the transaction was executed
 	BlockSeq uint64 `json:"block_seq"`
 }
 
-// NewUnconfirmedTransactionStatus creates unconfirmed transaction status
-func NewUnconfirmedTransactionStatus() TransactionStatus {
+// NewTransactionStatus creates TransactionStatus from visor.TransactionStatus
+func NewTransactionStatus(status visor.TransactionStatus) TransactionStatus {
 	return TransactionStatus{
-		Unconfirmed: true,
-		Confirmed:   false,
-		Height:      0,
-	}
-}
-
-// NewConfirmedTransactionStatus creates confirmed transaction status
-func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionStatus {
-	if height == 0 {
-		logger.Panic("Invalid confirmed transaction height")
-	}
-	return TransactionStatus{
-		Unconfirmed: false,
-		Confirmed:   true,
-		Height:      height,
-		BlockSeq:    blockSeq,
+		Unconfirmed: !status.Confirmed,
+		Confirmed:   status.Confirmed,
+		Height:      status.Height,
+		BlockSeq:    status.BlockSeq,
 	}
 }
 
@@ -78,27 +69,20 @@ func NewTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) (*Trans
 	}, nil
 }
 
-// NewTransactionInput creates a TransactionInput
-func NewTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (*TransactionInput, error) {
-	coinVal, err := droplet.ToString(ux.Body.Coins)
+// NewTransactionInput creates a TransactionInput from a visor.TransactionInput
+func NewTransactionInput(input visor.TransactionInput) (TransactionInput, error) {
+	coinStr, err := droplet.ToString(input.UxOut.Body.Coins)
 	if err != nil {
 		logger.Errorf("Failed to convert coins to string: %v", err)
-		return nil, err
+		return TransactionInput{}, err
 	}
 
-	// The overflow bug causes this to fail for some transactions, allow it to pass
-	calculatedHours, err := ux.CoinHours(calculateHoursTime)
-	if err != nil {
-		logger.Critical().Warningf("Ignoring NewTransactionInput ux.CoinHours failed: %v", err)
-		calculatedHours = 0
-	}
-
-	return &TransactionInput{
-		Hash:            ux.Hash().Hex(),
-		Address:         ux.Body.Address.String(),
-		Coins:           coinVal,
-		Hours:           ux.Body.Hours,
-		CalculatedHours: calculatedHours,
+	return TransactionInput{
+		Hash:            input.UxOut.Hash().Hex(),
+		Address:         input.UxOut.Body.Address.String(),
+		Coins:           coinStr,
+		Hours:           input.UxOut.Body.Hours,
+		CalculatedHours: input.CalculatedHours,
 	}, nil
 }
 
@@ -116,33 +100,33 @@ type Transaction struct {
 }
 
 // NewTransaction creates a readable transaction
-func NewTransaction(txn *visor.Transaction, isGenesis bool) (*Transaction, error) {
-	if isGenesis && len(txn.Txn.In) != 0 {
-		return nil, errors.New("NewTransaction: isGenesis=true but Txn.In is not empty")
+func NewTransaction(txn coin.Transaction, isGenesis bool) (*Transaction, error) {
+	if isGenesis && len(txn.In) != 0 {
+		return nil, errors.New("NewTransaction: isGenesis=true but Transaction.In is not empty")
 	}
-	if !isGenesis && len(txn.Txn.In) == 0 {
-		return nil, errors.New("NewTransaction: isGenesis=false but Txn.In is empty")
+	if !isGenesis && len(txn.In) == 0 {
+		return nil, errors.New("NewTransaction: isGenesis=false but Transaction.In is empty")
 	}
 
 	// Genesis transaction uses empty SHA256 as txid [FIXME: requires hard fork]
 	txid := cipher.SHA256{}
 	if !isGenesis {
-		txid = txn.Txn.Hash()
+		txid = txn.Hash()
 	}
 
-	sigs := make([]string, len(txn.Txn.Sigs))
-	for i := range txn.Txn.Sigs {
-		sigs[i] = txn.Txn.Sigs[i].Hex()
+	sigs := make([]string, len(txn.Sigs))
+	for i := range txn.Sigs {
+		sigs[i] = txn.Sigs[i].Hex()
 	}
 
-	in := make([]string, len(txn.Txn.In))
-	for i := range txn.Txn.In {
-		in[i] = txn.Txn.In[i].Hex()
+	in := make([]string, len(txn.In))
+	for i := range txn.In {
+		in[i] = txn.In[i].Hex()
 	}
 
-	out := make([]TransactionOutput, len(txn.Txn.Out))
-	for i := range txn.Txn.Out {
-		o, err := NewTransactionOutput(&txn.Txn.Out[i], txid)
+	out := make([]TransactionOutput, len(txn.Out))
+	for i := range txn.Out {
+		o, err := NewTransactionOutput(&txn.Out[i], txid)
 		if err != nil {
 			return nil, err
 		}
@@ -151,11 +135,10 @@ func NewTransaction(txn *visor.Transaction, isGenesis bool) (*Transaction, error
 	}
 
 	return &Transaction{
-		Length:    txn.Txn.Length,
-		Type:      txn.Txn.Type,
-		Hash:      txn.Txn.TxIDHex(),
-		InnerHash: txn.Txn.InnerHash.Hex(),
-		Timestamp: txn.Time,
+		Length:    txn.Length,
+		Type:      txn.Type,
+		Hash:      txn.TxIDHex(),
+		InnerHash: txn.InnerHash.Hex(),
 
 		Sigs: sigs,
 		In:   in,
@@ -163,51 +146,59 @@ func NewTransaction(txn *visor.Transaction, isGenesis bool) (*Transaction, error
 	}, nil
 }
 
-// UnconfirmedTxns represents a readable unconfirmed transaction
-type UnconfirmedTxns struct {
-	Txn       Transaction `json:"transaction"`
-	Received  time.Time   `json:"received"`
-	Checked   time.Time   `json:"checked"`
-	Announced time.Time   `json:"announced"`
-	IsValid   bool        `json:"is_valid"`
+// NewTransactionWithTimestamp creates a readable transaction with its timestamp set
+func NewTransactionWithTimestamp(txn coin.Transaction, isGenesis bool, timestamp uint64) (*Transaction, error) {
+	newTxn, err := NewTransaction(txn, isGenesis)
+	if err != nil {
+		return nil, err
+	}
+	newTxn.Timestamp = timestamp
+	return newTxn, nil
 }
 
-// NewUnconfirmedTxn creates a readable unconfirmed transaction
-func NewUnconfirmedTxn(unconfirmed *visor.UnconfirmedTxn) (*UnconfirmedTxns, error) {
+// UnconfirmedTxns represents a readable unconfirmed transaction
+type UnconfirmedTxns struct {
+	Transaction Transaction `json:"transaction"`
+	Received    time.Time   `json:"received"`
+	Checked     time.Time   `json:"checked"`
+	Announced   time.Time   `json:"announced"`
+	IsValid     bool        `json:"is_valid"`
+}
+
+// NewUnconfirmedTransaction creates a readable unconfirmed transaction
+func NewUnconfirmedTransaction(unconfirmed *visor.UnconfirmedTransaction) (*UnconfirmedTxns, error) {
 	isGenesis := false // unconfirmed transactions are never the genesis transaction
-	tx, err := NewTransaction(&Transaction{
-		Txn: unconfirmed.Txn,
-	}, isGenesis)
+	txn, err := NewTransaction(unconfirmed.Transaction, isGenesis)
 	if err != nil {
 		return nil, err
 	}
 	return &UnconfirmedTxns{
-		Txn:       *tx,
-		Received:  nanoToTime(unconfirmed.Received),
-		Checked:   nanoToTime(unconfirmed.Checked),
-		Announced: nanoToTime(unconfirmed.Announced),
-		IsValid:   unconfirmed.IsValid == 1,
+		Transaction: *txn,
+		Received:    timeutil.NanoToTime(unconfirmed.Received),
+		Checked:     timeutil.NanoToTime(unconfirmed.Checked),
+		Announced:   timeutil.NanoToTime(unconfirmed.Announced),
+		IsValid:     unconfirmed.IsValid == 1,
 	}, nil
 }
 
-// NewUnconfirmedTxns converts []UnconfirmedTxn to []UnconfirmedTxns
-func NewUnconfirmedTxns(txs []visor.UnconfirmedTxn) ([]UnconfirmedTxns, error) {
-	rut := make([]UnconfirmedTxns, len(txs))
-	for i := range txs {
-		tx, err := NewUnconfirmedTxn(&txs[i])
+// NewUnconfirmedTransactions converts []UnconfirmedTransaction to []UnconfirmedTxns
+func NewUnconfirmedTransactions(txns []visor.UnconfirmedTransaction) ([]UnconfirmedTxns, error) {
+	rut := make([]UnconfirmedTxns, len(txns))
+	for i := range txns {
+		txn, err := NewUnconfirmedTransaction(&txns[i])
 		if err != nil {
 			return []UnconfirmedTxns{}, err
 		}
-		rut[i] = *tx
+		rut[i] = *txn
 	}
 	return rut, nil
 }
 
 // TransactionWithStatus represents transaction result
 type TransactionWithStatus struct {
-	Status      visor.TransactionStatus `json:"status"`
-	Time        uint64                  `json:"time"`
-	Transaction visor.Transaction       `json:"txn"`
+	Status      TransactionStatus `json:"status"`
+	Time        uint64            `json:"time"`
+	Transaction Transaction       `json:"txn"`
 }
 
 // NewTransactionWithStatus converts visor.Transaction to TransactionWithStatus
@@ -217,28 +208,28 @@ func NewTransactionWithStatus(txn *visor.Transaction) (*TransactionWithStatus, e
 	}
 
 	isGenesis := txn.Status.BlockSeq != 0 || !txn.Status.Confirmed
-	rbTxn, err := visor.NewTransaction(txn, isGenesis)
+	rbTxn, err := NewTransactionWithTimestamp(txn.Transaction, isGenesis, txn.Time)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TransactionWithStatus{
 		Transaction: *rbTxn,
-		Status:      txn.Status,
+		Status:      NewTransactionStatus(txn.Status),
 		Time:        txn.Time,
 	}, nil
 }
 
 // TransactionsWithStatus array of transaction results
 type TransactionsWithStatus struct {
-	Txns []TransactionWithStatus `json:"txns"`
+	Transactions []TransactionWithStatus `json:"txns"`
 }
 
 // Sort sorts transactions chronologically, using txid for tiebreaking
-func (rs TransactionWithStatus) Sort() {
-	sort.Slice(r.Txns, func(i, j int) bool {
-		a := r.Txns[i]
-		b := r.Txns[j]
+func (r TransactionsWithStatus) Sort() {
+	sort.Slice(r.Transactions, func(i, j int) bool {
+		a := r.Transactions[i]
+		b := r.Transactions[j]
 
 		if a.Time == b.Time {
 			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
@@ -248,8 +239,8 @@ func (rs TransactionWithStatus) Sort() {
 	})
 }
 
-// NewTransactionsWithStatus converts []Transaction to []TransactionWithStatus
-func NewTransactionsWithStatus(txns []visor.Transaction) (*TransactionWithStatus, error) {
+// NewTransactionsWithStatus converts []Transaction to TransactionsWithStatus
+func NewTransactionsWithStatus(txns []visor.Transaction) (*TransactionsWithStatus, error) {
 	txnRlts := make([]TransactionWithStatus, 0, len(txns))
 	for _, txn := range txns {
 		rTxn, err := NewTransactionWithStatus(&txn)
@@ -260,15 +251,15 @@ func NewTransactionsWithStatus(txns []visor.Transaction) (*TransactionWithStatus
 	}
 
 	return &TransactionsWithStatus{
-		Txns: txnRlts,
+		Transactions: txnRlts,
 	}, nil
 }
 
 // TransactionWithStatusVerbose represents verbose transaction result
 type TransactionWithStatusVerbose struct {
-	Status      visor.TransactionStatus  `json:"status"`
-	Time        uint64                   `json:"time"`
-	Transaction visor.TransactionVerbose `json:"txn"`
+	Status      TransactionStatus  `json:"status"`
+	Time        uint64             `json:"time"`
+	Transaction TransactionVerbose `json:"txn"`
 }
 
 // NewTransactionWithStatusVerbose converts visor.Transaction to TransactionWithStatusVerbose
@@ -277,11 +268,11 @@ func NewTransactionWithStatusVerbose(txn *visor.Transaction, inputs []visor.Tran
 		return nil, nil
 	}
 
-	if len(txn.Txn.In) != len(inputs) {
-		return nil, fmt.Errorf("NewTransactionWithStatusVerbose: len(txn.In) != len(inputs) [%d != %d]", len(txn.Txn.In), len(inputs))
+	if len(txn.Transaction.In) != len(inputs) {
+		return nil, fmt.Errorf("NewTransactionWithStatusVerbose: len(txn.In) != len(inputs) [%d != %d]", len(txn.Transaction.In), len(inputs))
 	}
 
-	rbTxn, err := visor.NewTransactionVerbose(*txn, inputs)
+	rbTxn, err := NewTransactionVerbose(*txn, inputs)
 	if err != nil {
 		return nil, err
 	}
@@ -291,21 +282,21 @@ func NewTransactionWithStatusVerbose(txn *visor.Transaction, inputs []visor.Tran
 
 	return &TransactionWithStatusVerbose{
 		Transaction: rbTxn,
-		Status:      txn.Status,
+		Status:      NewTransactionStatus(txn.Status),
 		Time:        txn.Time,
 	}, nil
 }
 
 // TransactionsWithStatusVerbose array of transaction results
 type TransactionsWithStatusVerbose struct {
-	Txns []TransactionWithStatusVerbose `json:"txns"`
+	Transactions []TransactionWithStatusVerbose `json:"txns"`
 }
 
 // Sort sorts transactions chronologically, using txid for tiebreaking
 func (r TransactionsWithStatusVerbose) Sort() {
-	sort.Slice(r.Txns, func(i, j int) bool {
-		a := r.Txns[i]
-		b := r.Txns[j]
+	sort.Slice(r.Transactions, func(i, j int) bool {
+		a := r.Transactions[i]
+		b := r.Transactions[j]
 
 		if a.Time == b.Time {
 			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
@@ -331,6 +322,6 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 	}
 
 	return &TransactionsWithStatusVerbose{
-		Txns: txnRlts,
+		Transactions: txnRlts,
 	}, nil
 }

@@ -1029,10 +1029,10 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		verbose  string
 	}
 
-	unconfirmedTxn, err := readable.NewUnconfirmedTxn(&visor.UnconfirmedTxn{})
+	unconfirmedTxn, err := readable.NewUnconfirmedTransaction(&visor.UnconfirmedTransaction{})
 	require.NoError(t, err)
 
-	unconfirmedTxnVerbose, err := readable.NewUnconfirmedTxnVerbose(&visor.UnconfirmedTxn{}, nil)
+	unconfirmedTxnVerbose, err := readable.NewUnconfirmedTransactionVerbose(&visor.UnconfirmedTransaction{}, nil)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -1043,9 +1043,9 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		err                                          string
 		walletID                                     string
 		verbose                                      bool
-		gatewayGetWalletUnconfirmedTxnsResult        []visor.UnconfirmedTxn
+		gatewayGetWalletUnconfirmedTxnsResult        []visor.UnconfirmedTransaction
 		gatewayGetWalletUnconfirmedTxnsErr           error
-		gatewayGetWalletUnconfirmedTxnsVerboseResult []readable.UnconfirmedTxnVerbose
+		gatewayGetWalletUnconfirmedTxnsVerboseResult []readable.UnconfirmedTransactionVerbose
 		gatewayGetWalletUnconfirmedTxnsVerboseErr    error
 		responseBody                                 interface{}
 	}{
@@ -1159,7 +1159,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			},
 			status:                                http.StatusOK,
 			walletID:                              "foo",
-			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
+			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTransaction, 1),
 			responseBody: UnconfirmedTxnsResponse{
 				Transactions: []readable.UnconfirmedTxns{
 					*unconfirmedTxn,
@@ -1177,9 +1177,9 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			verbose:  true,
 			status:   http.StatusOK,
 			walletID: "foo",
-			gatewayGetWalletUnconfirmedTxnsVerboseResult: make([]readable.UnconfirmedTxnVerbose, 1),
+			gatewayGetWalletUnconfirmedTxnsVerboseResult: make([]readable.UnconfirmedTransactionVerbose, 1),
 			responseBody: UnconfirmedTxnsVerboseResponse{
-				Transactions: []readable.UnconfirmedTxnVerbose{
+				Transactions: []readable.UnconfirmedTransactionVerbose{
 					*unconfirmedTxnVerbose,
 				},
 			},
@@ -1232,7 +1232,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response
 			require.IsType(t, msg, tc.responseBody)
 			require.Len(t, msg.Transactions, 1)
-			require.Equal(t, msg.Transactions[0].Txn, tc.responseBody.(UnconfirmedTxnsVerboseResponse).Transactions[0].Txn)
+			require.Equal(t, msg.Transactions[0].Transaction, tc.responseBody.(UnconfirmedTxnsVerboseResponse).Transactions[0].Transaction)
 		} else {
 			var msg UnconfirmedTxnsResponse
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -1240,7 +1240,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response
 			require.IsType(t, msg, tc.responseBody)
 			require.Len(t, msg.Transactions, 1)
-			require.Equal(t, msg.Transactions[0].Txn, tc.responseBody.(UnconfirmedTxnsResponse).Transactions[0].Txn)
+			require.Equal(t, msg.Transactions[0].Transaction, tc.responseBody.(UnconfirmedTxnsResponse).Transactions[0].Transaction)
 		}
 	}
 }

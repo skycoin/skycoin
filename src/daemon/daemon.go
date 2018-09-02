@@ -1259,8 +1259,8 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	var txids []cipher.SHA256
 	for i := range txns {
 		logger.Debugf("Rebroadcast tx %s", txns[i].Hash().Hex())
-		if err := dm.broadcastTransaction(txns[i].Txn); err == nil {
-			txids = append(txids, txns[i].Txn.Hash())
+		if err := dm.broadcastTransaction(txns[i].Transaction); err == nil {
+			txids = append(txids, txns[i].Transaction.Hash())
 		}
 	}
 

@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -212,10 +213,10 @@ type UnconfirmedTxnPooler interface {
 	GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error)
 	RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
 	GetIncomingOutputs(tx *dbutil.Tx, bh coin.BlockHeader) (coin.UxArray, error)
-	Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error)
-	GetTxns(tx *dbutil.Tx, filter func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error)
-	GetTxHashes(tx *dbutil.Tx, filter func(tx UnconfirmedTxn) bool) ([]cipher.SHA256, error)
-	ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTxn) error) error
+	Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTransaction, error)
+	GetTxns(tx *dbutil.Tx, filter func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error)
+	GetTxHashes(tx *dbutil.Tx, filter func(tx UnconfirmedTransaction) bool) ([]cipher.SHA256, error)
+	ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTransaction) error) error
 	GetUnspentsOfAddr(tx *dbutil.Tx, addr cipher.Address) (coin.UxArray, error)
 	Len(tx *dbutil.Tx) (uint64, error)
 }
@@ -291,7 +292,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		}
 	}
 
-	utp, err := NewUnconfirmedTxnPool(db)
+	utp, err := NewUnconfirmedTransactionPool(db)
 	if err != nil {
 		return nil, err
 	}
@@ -973,7 +974,7 @@ func (vs *Visor) GetTransactionWithInputs(txnHash cipher.SHA256) (*Transaction, 
 			return nil
 		}
 
-		inputs, err = vs.getTransactionInputs(tx, *feeCalcTime, txn.Txn.In)
+		inputs, err = vs.getTransactionInputs(tx, *feeCalcTime, txn.Transaction.In)
 		return err
 	}); err != nil {
 		return nil, nil, err
@@ -991,9 +992,9 @@ func (vs *Visor) getTransaction(tx *dbutil.Tx, txnHash cipher.SHA256) (*Transact
 
 	if utxn != nil {
 		return &Transaction{
-			Txn:    utxn.Txn,
-			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(nanoToTime(utxn.Received).Unix()),
+			Transaction: utxn.Transaction,
+			Status:      NewUnconfirmedTransactionStatus(),
+			Time:        uint64(timeutil.NanoToTime(utxn.Received).Unix()),
 		}, nil
 	}
 
@@ -1028,9 +1029,9 @@ func (vs *Visor) getTransaction(tx *dbutil.Tx, txnHash cipher.SHA256) (*Transact
 
 	confirms := headSeq - htxn.BlockSeq + 1
 	return &Transaction{
-		Txn:    htxn.Tx,
-		Status: NewConfirmedTransactionStatus(confirms, htxn.BlockSeq),
-		Time:   b.Time(),
+		Transaction: htxn.Tx,
+		Status:      NewConfirmedTransactionStatus(confirms, htxn.BlockSeq),
+		Time:        b.Time(),
 	}, nil
 }
 
@@ -1108,7 +1109,7 @@ func (vs *Visor) GetTransactionsWithInputs(flts []TxFilter) ([]Transaction, [][]
 				continue
 			}
 
-			txnInputs, err := vs.getTransactionInputs(tx, *feeCalcTime, txn.Txn.In)
+			txnInputs, err := vs.getTransactionInputs(tx, *feeCalcTime, txn.Transaction.In)
 			if err != nil {
 				return err
 			}
@@ -1157,10 +1158,10 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	var txns []Transaction
 	for _, txs := range addrTxns {
 		for _, tx := range txs {
-			if _, exist := txnMap[tx.Txn.Hash()]; exist {
+			if _, exist := txnMap[tx.Transaction.Hash()]; exist {
 				continue
 			}
-			txnMap[tx.Txn.Hash()] = struct{}{}
+			txnMap[tx.Transaction.Hash()] = struct{}{}
 			txns = append(txns, tx)
 		}
 	}
@@ -1244,9 +1245,9 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 			}
 
 			txns[i] = Transaction{
-				Txn:    txn.Tx,
-				Status: NewConfirmedTransactionStatus(h, txn.BlockSeq),
-				Time:   bk.Time(),
+				Transaction: txn.Tx,
+				Status:      NewConfirmedTransactionStatus(h, txn.BlockSeq),
+				Time:        bk.Time(),
 			}
 		}
 
@@ -1268,9 +1269,9 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 			}
 
 			txns = append(txns, Transaction{
-				Txn:    txn.Txn,
-				Status: NewUnconfirmedTransactionStatus(),
-				Time:   uint64(nanoToTime(txn.Received).Unix()),
+				Transaction: txn.Transaction,
+				Status:      NewUnconfirmedTransactionStatus(),
+				Time:        uint64(timeutil.NanoToTime(txn.Received).Unix()),
 			})
 		}
 
@@ -1316,9 +1317,9 @@ func (vs *Visor) traverseTxns(tx *dbutil.Tx, flts []TxFilter) ([]Transaction, er
 		}
 
 		txn := Transaction{
-			Txn:    hTxn.Tx,
-			Status: NewConfirmedTransactionStatus(h, hTxn.BlockSeq),
-			Time:   bk.Time(),
+			Transaction: hTxn.Tx,
+			Status:      NewConfirmedTransactionStatus(h, hTxn.BlockSeq),
+			Time:        bk.Time(),
 		}
 
 		// Checks filters
@@ -1337,7 +1338,7 @@ func (vs *Visor) traverseTxns(tx *dbutil.Tx, flts []TxFilter) ([]Transaction, er
 	txns = sortTxns(txns)
 
 	// Gets all unconfirmed transactions
-	unconfirmedTxns, err := vs.Unconfirmed.GetTxns(tx, func(txn UnconfirmedTxn) bool {
+	unconfirmedTxns, err := vs.Unconfirmed.GetTxns(tx, func(txn UnconfirmedTransaction) bool {
 		return true
 	})
 	if err != nil {
@@ -1346,9 +1347,9 @@ func (vs *Visor) traverseTxns(tx *dbutil.Tx, flts []TxFilter) ([]Transaction, er
 
 	for _, ux := range unconfirmedTxns {
 		txn := Transaction{
-			Txn:    ux.Txn,
-			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(nanoToTime(ux.Received).Unix()),
+			Transaction: ux.Transaction,
+			Status:      NewUnconfirmedTransactionStatus(),
+			Time:        uint64(timeutil.NanoToTime(ux.Received).Unix()),
 		}
 
 		// Checks filters
@@ -1374,7 +1375,7 @@ func sortTxns(txns []Transaction) []Transaction {
 		}
 
 		// If transactions in the same block, compare the hash string
-		return txns[i].Txn.Hash().Hex() < txns[j].Txn.Hash().Hex()
+		return txns[i].Transaction.Hash().Hex() < txns[j].Transaction.Hash().Hex()
 	})
 	return txns
 }
@@ -1406,8 +1407,8 @@ func (vs *Visor) AddressBalance(head *coin.SignedBlock, auxs coin.AddressUxOuts)
 }
 
 // GetUnconfirmedTxns gets all confirmed transactions of specific addresses
-func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
-	var txns []UnconfirmedTxn
+func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+	var txns []UnconfirmedTransaction
 
 	if err := vs.DB.View("GetUnconfirmedTxns", func(tx *dbutil.Tx) error {
 		var err error
@@ -1421,8 +1422,8 @@ func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTxn) bool) ([]Unconfi
 }
 
 // GetUnconfirmedTxnsVerbose gets all confirmed transactions of specific addresses
-func (vs *Visor) GetUnconfirmedTxnsVerbose(filter func(UnconfirmedTxn) bool) ([]UnconfirmedTxn, [][]TransactionInput, error) {
-	var txns []UnconfirmedTxn
+func (vs *Visor) GetUnconfirmedTxnsVerbose(filter func(UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, [][]TransactionInput, error) {
+	var txns []UnconfirmedTransaction
 	var inputs [][]TransactionInput
 
 	if err := vs.DB.View("GetUnconfirmedTxnsVerbose", func(tx *dbutil.Tx) error {
@@ -1447,9 +1448,9 @@ func (vs *Visor) GetUnconfirmedTxnsVerbose(filter func(UnconfirmedTxn) bool) ([]
 }
 
 // SendsToAddresses represents a filter that check if tx has output to the given addresses
-func SendsToAddresses(addresses []cipher.Address) func(UnconfirmedTxn) bool {
-	return func(tx UnconfirmedTxn) (isRelated bool) {
-		for _, out := range tx.Txn.Out {
+func SendsToAddresses(addresses []cipher.Address) func(UnconfirmedTransaction) bool {
+	return func(tx UnconfirmedTransaction) (isRelated bool) {
+		for _, out := range tx.Transaction.Out {
 			for _, address := range addresses {
 				if out.Address == address {
 					isRelated = true
@@ -1462,8 +1463,8 @@ func SendsToAddresses(addresses []cipher.Address) func(UnconfirmedTxn) bool {
 }
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions
-func (vs *Visor) GetAllUnconfirmedTxns() ([]UnconfirmedTxn, error) {
-	var txns []UnconfirmedTxn
+func (vs *Visor) GetAllUnconfirmedTxns() ([]UnconfirmedTransaction, error) {
+	var txns []UnconfirmedTransaction
 
 	if err := vs.DB.View("GetAllUnconfirmedTxns", func(tx *dbutil.Tx) error {
 		var err error
@@ -1477,8 +1478,8 @@ func (vs *Visor) GetAllUnconfirmedTxns() ([]UnconfirmedTxn, error) {
 }
 
 // GetAllUnconfirmedTxnsVerbose returns all unconfirmed transactions with verbose transaction input data
-func (vs *Visor) GetAllUnconfirmedTxnsVerbose() ([]UnconfirmedTxn, [][]TransactionInput, error) {
-	var txns []UnconfirmedTxn
+func (vs *Visor) GetAllUnconfirmedTxnsVerbose() ([]UnconfirmedTransaction, [][]TransactionInput, error) {
+	var txns []UnconfirmedTransaction
 	var inputs [][]TransactionInput
 
 	if err := vs.DB.View("GetAllUnconfirmedTxnsVerbose", func(tx *dbutil.Tx) error {
@@ -1503,7 +1504,7 @@ func (vs *Visor) GetAllUnconfirmedTxnsVerbose() ([]UnconfirmedTxn, [][]Transacti
 }
 
 // getTransactionInputsForUnconfirmedTxns returns ReadableTransactionInputs for a set of UnconfirmedTxns
-func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []UnconfirmedTxn) ([][]TransactionInput, error) {
+func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []UnconfirmedTransaction) ([][]TransactionInput, error) {
 	if len(txns) == 0 {
 		return nil, nil
 	}
@@ -1516,12 +1517,12 @@ func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []Un
 
 	inputs := make([][]TransactionInput, len(txns))
 	for i, txn := range txns {
-		if len(txn.Txn.In) == 0 {
+		if len(txn.Transaction.In) == 0 {
 			logger.Critical().WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
 			continue
 		}
 
-		txnInputs, err := vs.getTransactionInputs(tx, headTime, txn.Txn.In)
+		txnInputs, err := vs.getTransactionInputs(tx, headTime, txn.Transaction.In)
 		if err != nil {
 			return nil, err
 		}
@@ -1737,7 +1738,7 @@ func (vs *Visor) getTransactionInputs(tx *dbutil.Tx, feeCalcTime uint64, inputs 
 			logger.WithError(err).Error("getTransactionInputs NewTransactionInput failed")
 			return nil, err
 		}
-		ret[i] = *r
+		ret[i] = r
 	}
 
 	return ret, nil
@@ -1846,8 +1847,8 @@ func (vs *Visor) GetIncomingOutputs() (coin.UxArray, error) {
 }
 
 // GetUnconfirmedTxn gets an unconfirmed transaction from the DB
-func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTxn, error) {
-	var txn *UnconfirmedTxn
+func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTransaction, error) {
+	var txn *UnconfirmedTransaction
 
 	if err := vs.DB.View("GetUnconfirmedTxn", func(tx *dbutil.Tx) error {
 		var err error
@@ -2487,8 +2488,8 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]Transacti
 				t = prevBlock.Block.Head.Time
 			}
 
-			inputs := make([]TransactionInput, len(txn.Txn.In))
-			for j, inputID := range txn.Txn.In {
+			txnInputs := make([]TransactionInput, len(txn.Transaction.In))
+			for j, inputID := range txn.Transaction.In {
 				uxOuts, err := vs.history.GetUxOuts(tx, []cipher.SHA256{inputID})
 				if err != nil {
 					logger.Errorf("GetVerboseTransactionsForAddress: vs.history.GetUxOuts failed: %v", err)
@@ -2506,8 +2507,10 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]Transacti
 					return err
 				}
 
-				inputs[j] = input
+				txnInputs[j] = input
 			}
+
+			inputs[i] = txnInputs
 		}
 
 		return nil

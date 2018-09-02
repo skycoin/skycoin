@@ -7,6 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -23,7 +24,7 @@ type BlockVerbose struct {
 }
 
 // NewBlockBodyVerbose creates a verbose readable block body
-func NewBlockBodyVerbose(b *coin.Block, inputs [][]TransactionInput) (*BlockBodyVerbose, error) {
+func NewBlockBodyVerbose(b *coin.Block, inputs [][]visor.TransactionInput) (*BlockBodyVerbose, error) {
 	if len(inputs) != len(b.Body.Transactions) {
 		return nil, fmt.Errorf("NewBlockBodyVerbose: len(inputs) != len(b.Body.Transactions) (seq=%d)", b.Head.BkSeq)
 	}
@@ -32,11 +33,11 @@ func NewBlockBodyVerbose(b *coin.Block, inputs [][]TransactionInput) (*BlockBody
 	for i := range b.Body.Transactions {
 		t := b.Body.Transactions[i]
 
-		tx, err := NewBlockTransactionVerbose(t, inputs[i], b.Head.BkSeq == 0)
+		txn, err := NewBlockTransactionVerbose(t, inputs[i], b.Head.BkSeq == 0)
 		if err != nil {
 			return nil, err
 		}
-		txns[i] = tx
+		txns[i] = txn
 	}
 
 	return &BlockBodyVerbose{
@@ -45,7 +46,7 @@ func NewBlockBodyVerbose(b *coin.Block, inputs [][]TransactionInput) (*BlockBody
 }
 
 // NewBlockVerbose creates a verbose readable block
-func NewBlockVerbose(b *coin.Block, inputs [][]TransactionInput) (*BlockVerbose, error) {
+func NewBlockVerbose(b *coin.Block, inputs [][]visor.TransactionInput) (*BlockVerbose, error) {
 	body, err := NewBlockBodyVerbose(b, inputs)
 	if err != nil {
 		return nil, err
@@ -64,13 +65,20 @@ type BlocksVerbose struct {
 }
 
 // NewBlocksVerbose creates BlocksVerbose from []BlockVerbose
-func NewBlocksVerbose(blocks []BlockVerbose) *BlocksVerbose {
-	if blocks == nil {
-		blocks = []BlockVerbose{}
+func NewBlocksVerbose(blocks []coin.SignedBlock, inputs [][][]visor.TransactionInput) (*BlocksVerbose, error) {
+	bs := make([]BlockVerbose, len(blocks))
+	for i := range blocks {
+		b, err := NewBlockVerbose(&blocks[i].Block, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+
+		bs[i] = *b
 	}
+
 	return &BlocksVerbose{
-		Blocks: blocks,
-	}
+		Blocks: bs,
+	}, nil
 }
 
 // BlockTransactionVerbose has readable transaction data for transactions inside a block. It differs from Transaction
@@ -88,7 +96,7 @@ type BlockTransactionVerbose struct {
 }
 
 // NewBlockTransactionVerbose creates BlockTransactionVerbose
-func NewBlockTransactionVerbose(txn coin.Transaction, inputs []TransactionInput, isGenesis bool) (BlockTransactionVerbose, error) {
+func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.TransactionInput, isGenesis bool) (BlockTransactionVerbose, error) {
 	if len(inputs) != len(txn.In) {
 		return BlockTransactionVerbose{}, errors.New("NewBlockTransactionVerbose: len(inputs) != len(txn.In)")
 	}
@@ -149,8 +157,13 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []TransactionInput,
 		fee = hoursIn - hoursOut
 	}
 
-	if inputs == nil {
-		inputs = make([]TransactionInput, 0)
+	txnInputs := make([]TransactionInput, len(inputs))
+	for i, input := range inputs {
+		var err error
+		txnInputs[i], err = NewTransactionInput(input)
+		if err != nil {
+			return BlockTransactionVerbose{}, err
+		}
 	}
 
 	return BlockTransactionVerbose{
@@ -161,7 +174,7 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []TransactionInput,
 		Fee:       fee,
 
 		Sigs: sigs,
-		In:   inputs,
+		In:   txnInputs,
 		Out:  out,
 	}, nil
 }
@@ -174,54 +187,56 @@ type TransactionVerbose struct {
 }
 
 // NewTransactionVerbose creates TransactionVerbose
-func NewTransactionVerbose(txn visor.Transaction, inputs []TransactionInput) (TransactionVerbose, error) {
-	rb, err := NewBlockTransactionVerbose(txn.Txn, inputs, txn.Status.BlockSeq == 0 && txn.Status.Confirmed)
+func NewTransactionVerbose(txn visor.Transaction, inputs []visor.TransactionInput) (TransactionVerbose, error) {
+	rb, err := NewBlockTransactionVerbose(txn.Transaction, inputs, txn.Status.BlockSeq == 0 && txn.Status.Confirmed)
 	if err != nil {
 		return TransactionVerbose{}, err
 	}
 
+	status := NewTransactionStatus(txn.Status)
+
 	return TransactionVerbose{
-		Status:                  &txn.Status,
+		Status:                  &status,
 		Timestamp:               txn.Time,
 		BlockTransactionVerbose: rb,
 	}, nil
 }
 
-// UnconfirmedTxnVerbose represents a verbose readable unconfirmed transaction
-type UnconfirmedTxnVerbose struct {
-	Txn       BlockTransactionVerbose `json:"transaction"`
-	Received  time.Time               `json:"received"`
-	Checked   time.Time               `json:"checked"`
-	Announced time.Time               `json:"announced"`
-	IsValid   bool                    `json:"is_valid"`
+// UnconfirmedTransactionVerbose represents a verbose readable unconfirmed transaction
+type UnconfirmedTransactionVerbose struct {
+	Transaction BlockTransactionVerbose `json:"transaction"`
+	Received    time.Time               `json:"received"`
+	Checked     time.Time               `json:"checked"`
+	Announced   time.Time               `json:"announced"`
+	IsValid     bool                    `json:"is_valid"`
 }
 
-// NewUnconfirmedTxnVerbose creates a verbose readable unconfirmed transaction
-func NewUnconfirmedTxnVerbose(unconfirmed *visor.UnconfirmedTxn, inputs []TransactionInput) (*UnconfirmedTxnVerbose, error) {
+// NewUnconfirmedTransactionVerbose creates a verbose readable unconfirmed transaction
+func NewUnconfirmedTransactionVerbose(unconfirmed *visor.UnconfirmedTransaction, inputs []visor.TransactionInput) (*UnconfirmedTransactionVerbose, error) {
 	isGenesis := false // The genesis transaction is never unconfirmed
-	txn, err := NewBlockTransactionVerbose(unconfirmed.Txn, inputs, isGenesis)
+	txn, err := NewBlockTransactionVerbose(unconfirmed.Transaction, inputs, isGenesis)
 	if err != nil {
 		return nil, err
 	}
 
-	return &UnconfirmedTxnVerbose{
-		Txn:       txn,
-		Received:  nanoToTime(unconfirmed.Received),
-		Checked:   nanoToTime(unconfirmed.Checked),
-		Announced: nanoToTime(unconfirmed.Announced),
-		IsValid:   unconfirmed.IsValid == 1,
+	return &UnconfirmedTransactionVerbose{
+		Transaction: txn,
+		Received:    timeutil.NanoToTime(unconfirmed.Received),
+		Checked:     timeutil.NanoToTime(unconfirmed.Checked),
+		Announced:   timeutil.NanoToTime(unconfirmed.Announced),
+		IsValid:     unconfirmed.IsValid == 1,
 	}, nil
 }
 
-// NewUnconfirmedTxnsVerbose creates []UnconfirmedTxns from []UnconfirmedTxn and their readable transaction inputs
-func NewUnconfirmedTxnsVerbose(txns []visor.UnconfirmedTxn, inputs [][]TransactionInput) ([]UnconfirmedTxnVerbose, error) {
+// NewUnconfirmedTransactionsVerbose creates []UnconfirmedTxns from []UnconfirmedTransaction and their readable transaction inputs
+func NewUnconfirmedTransactionsVerbose(txns []visor.UnconfirmedTransaction, inputs [][]visor.TransactionInput) ([]UnconfirmedTransactionVerbose, error) {
 	if len(inputs) != len(txns) {
-		return nil, fmt.Errorf("NewUnconfirmedTxnsVerbose: len(inputs) != len(txns)")
+		return nil, fmt.Errorf("NewUnconfirmedTransactionsVerbose: len(inputs) != len(txns)")
 	}
 
-	rTxns := make([]UnconfirmedTxnVerbose, len(txns))
+	rTxns := make([]UnconfirmedTransactionVerbose, len(txns))
 	for i, txn := range txns {
-		rTxn, err := NewUnconfirmedTxnVerbose(&txn, inputs[i])
+		rTxn, err := NewUnconfirmedTransactionVerbose(&txn, inputs[i])
 		if err != nil {
 			return nil, err
 		}

@@ -37,9 +37,9 @@ func (tus TxnUnspents) AllForAddress(a cipher.Address) coin.UxArray {
 	return uxo
 }
 
-// UnconfirmedTxn unconfirmed transaction
-type UnconfirmedTxn struct {
-	Txn coin.Transaction
+// UnconfirmedTransaction unconfirmed transaction
+type UnconfirmedTransaction struct {
+	Transaction coin.Transaction
 	// Time the txn was last received
 	Received int64
 	// Time the txn was last checked against the blockchain
@@ -51,15 +51,15 @@ type UnconfirmedTxn struct {
 }
 
 // Hash returns the coin.Transaction's hash
-func (ut *UnconfirmedTxn) Hash() cipher.SHA256 {
-	return ut.Txn.Hash()
+func (ut *UnconfirmedTransaction) Hash() cipher.SHA256 {
+	return ut.Transaction.Hash()
 }
 
 // unconfirmed transactions bucket
 type unconfirmedTxns struct{}
 
-func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
-	var txn UnconfirmedTxn
+func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTransaction, error) {
+	var txn UnconfirmedTransaction
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
 		return nil, err
@@ -70,11 +70,11 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 	return &txn, nil
 }
 
-func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTxn) error {
+func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTransaction) error {
 	return dbutil.PutBucketValue(tx, UnconfirmedTxnsBkt, []byte(v.Hash().Hex()), encoder.Serialize(v))
 }
 
-func (utb *unconfirmedTxns) update(tx *dbutil.Tx, hash cipher.SHA256, f func(v *UnconfirmedTxn) error) error {
+func (utb *unconfirmedTxns) update(tx *dbutil.Tx, hash cipher.SHA256, f func(v *UnconfirmedTransaction) error) error {
 	txn, err := utb.get(tx, hash)
 	if err != nil {
 		return err
@@ -95,11 +95,11 @@ func (utb *unconfirmedTxns) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 	return dbutil.Delete(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()))
 }
 
-func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTxn, error) {
-	var txns []UnconfirmedTxn
+func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTransaction, error) {
+	var txns []UnconfirmedTransaction
 
 	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
-		var txn UnconfirmedTxn
+		var txn UnconfirmedTransaction
 		if err := encoder.DeserializeRaw(v, &txn); err != nil {
 			return err
 		}
@@ -117,14 +117,14 @@ func (utb *unconfirmedTxns) hasKey(tx *dbutil.Tx, hash cipher.SHA256) (bool, err
 	return dbutil.BucketHasKey(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()))
 }
 
-func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx UnconfirmedTxn) error) error {
+func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx UnconfirmedTransaction) error) error {
 	return dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(k, v []byte) error {
 		hash, err := cipher.SHA256FromHex(string(k))
 		if err != nil {
 			return err
 		}
 
-		var txn UnconfirmedTxn
+		var txn UnconfirmedTransaction
 		if err := encoder.DeserializeRaw(v, &txn); err != nil {
 			return err
 		}
@@ -212,8 +212,8 @@ type UnconfirmedTxnPool struct {
 	unspent *txUnspents
 }
 
-// NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
-func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
+// NewUnconfirmedTransactionPool creates an UnconfirmedTxnPool instance
+func NewUnconfirmedTransactionPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 	if err := db.View("Check unconfirmed txn pool size", func(tx *dbutil.Tx) error {
 		n, err := dbutil.Len(tx, UnconfirmedTxnsBkt)
 		if err != nil {
@@ -235,7 +235,7 @@ func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 
 // SetTxnsAnnounced updates announced time of specific tx
 func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error {
-	var txns []*UnconfirmedTxn
+	var txns []*UnconfirmedTransaction
 	for h, t := range hashes {
 		txn, err := utp.txns.get(tx, h)
 		if err != nil {
@@ -243,7 +243,7 @@ func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *dbutil.Tx, hashes map[cipher
 		}
 
 		if txn == nil {
-			logger.Warningf("UnconfirmedTxnPool.SetTxnsAnnounced: UnconfirmedTxn %s not found in DB", h.Hex())
+			logger.Warningf("UnconfirmedTxnPool.SetTxnsAnnounced: UnconfirmedTransaction %s not found in DB", h.Hex())
 			continue
 		}
 
@@ -262,13 +262,13 @@ func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *dbutil.Tx, hashes map[cipher
 	return nil
 }
 
-func createUnconfirmedTxn(txn coin.Transaction) UnconfirmedTxn {
+func createUnconfirmedTxn(txn coin.Transaction) UnconfirmedTransaction {
 	now := utc.Now()
-	return UnconfirmedTxn{
-		Txn:       txn,
-		Received:  now.UnixNano(),
-		Checked:   now.UnixNano(),
-		Announced: time.Time{}.UnixNano(),
+	return UnconfirmedTransaction{
+		Transaction: txn,
+		Received:    now.UnixNano(),
+		Checked:     now.UnixNano(),
+		Announced:   time.Time{}.UnixNano(),
 	}
 }
 
@@ -304,7 +304,7 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer,
 
 	// Update if we already have this txn
 	if known {
-		if err := utp.txns.update(tx, hash, func(utxn *UnconfirmedTxn) error {
+		if err := utp.txns.update(tx, hash, func(utxn *UnconfirmedTransaction) error {
 			now := utc.Now().UnixNano()
 			utxn.Received = now
 			utxn.Checked = now
@@ -351,7 +351,7 @@ func (utp *UnconfirmedTxnPool) RawTxns(tx *dbutil.Tx) (coin.Transactions, error)
 
 	txns := make(coin.Transactions, len(utxns))
 	for i := range utxns {
-		txns[i] = utxns[i].Txn
+		txns[i] = utxns[i].Transaction
 	}
 	return txns, nil
 }
@@ -391,7 +391,7 @@ func (utp *UnconfirmedTxnPool) Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockS
 	for _, utxn := range utxns {
 		utxn.Checked = now.UnixNano()
 
-		err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Txn, maxBlockSize)
+		err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, maxBlockSize)
 
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint, ErrTxnViolatesHardConstraint:
@@ -425,7 +425,7 @@ func (utp *UnconfirmedTxnPool) RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]
 	}
 
 	for _, utxn := range utxns {
-		err := bc.VerifySingleTxnHardConstraints(tx, utxn.Txn)
+		err := bc.VerifySingleTxnHardConstraints(tx, utxn.Transaction)
 		if err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint:
@@ -466,7 +466,7 @@ func (utp *UnconfirmedTxnPool) GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (co
 		if tx, err := utp.txns.get(tx, h); err != nil {
 			return nil, err
 		} else if tx != nil {
-			known = append(known, tx.Txn)
+			known = append(known, tx.Transaction)
 		}
 	}
 
@@ -481,10 +481,10 @@ func (utp *UnconfirmedTxnPool) RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeade
 	}
 
 	auxs := make(coin.AddressUxOuts, len(addrs))
-	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
-		for i, o := range txn.Txn.Out {
+	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTransaction) error {
+		for i, o := range txn.Transaction.Out {
 			if _, ok := addrm[o.Address]; ok {
-				uxout, err := coin.CreateUnspent(bh, txn.Txn, i)
+				uxout, err := coin.CreateUnspent(bh, txn.Transaction, i)
 				if err != nil {
 					return err
 				}
@@ -533,8 +533,8 @@ func txnOutputsForAddrs(bh coin.BlockHeader, addrs []cipher.Address, txns []coin
 func (utp *UnconfirmedTxnPool) GetIncomingOutputs(tx *dbutil.Tx, bh coin.BlockHeader) (coin.UxArray, error) {
 	var outs coin.UxArray
 
-	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
-		uxOuts := coin.CreateUnspents(bh, txn.Txn)
+	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTransaction) error {
+		uxOuts := coin.CreateUnspents(bh, txn.Transaction)
 		outs = append(outs, uxOuts...)
 		return nil
 	}); err != nil {
@@ -545,15 +545,15 @@ func (utp *UnconfirmedTxnPool) GetIncomingOutputs(tx *dbutil.Tx, bh coin.BlockHe
 }
 
 // Get returns the unconfirmed transaction of given tx hash.
-func (utp *UnconfirmedTxnPool) Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
+func (utp *UnconfirmedTxnPool) Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTransaction, error) {
 	return utp.txns.get(tx, hash)
 }
 
 // GetTxns returns all transactions that can pass the filter
-func (utp *UnconfirmedTxnPool) GetTxns(tx *dbutil.Tx, filter func(UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
-	var txns []UnconfirmedTxn
+func (utp *UnconfirmedTxnPool) GetTxns(tx *dbutil.Tx, filter func(UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+	var txns []UnconfirmedTransaction
 
-	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
+	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTransaction) error {
 		if filter(txn) {
 			txns = append(txns, txn)
 		}
@@ -567,10 +567,10 @@ func (utp *UnconfirmedTxnPool) GetTxns(tx *dbutil.Tx, filter func(UnconfirmedTxn
 }
 
 // GetTxHashes returns transaction hashes that can pass the filter
-func (utp *UnconfirmedTxnPool) GetTxHashes(tx *dbutil.Tx, filter func(UnconfirmedTxn) bool) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTxnPool) GetTxHashes(tx *dbutil.Tx, filter func(UnconfirmedTransaction) bool) ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 
-	if err := utp.txns.forEach(tx, func(hash cipher.SHA256, txn UnconfirmedTxn) error {
+	if err := utp.txns.forEach(tx, func(hash cipher.SHA256, txn UnconfirmedTransaction) error {
 		if filter(txn) {
 			hashes = append(hashes, hash)
 		}
@@ -584,7 +584,7 @@ func (utp *UnconfirmedTxnPool) GetTxHashes(tx *dbutil.Tx, filter func(Unconfirme
 }
 
 // ForEach iterate the pool with given callback function
-func (utp *UnconfirmedTxnPool) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTxn) error) error {
+func (utp *UnconfirmedTxnPool) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTransaction) error) error {
 	return utp.txns.forEach(tx, f)
 }
 
@@ -594,25 +594,16 @@ func (utp *UnconfirmedTxnPool) GetUnspentsOfAddr(tx *dbutil.Tx, addr cipher.Addr
 }
 
 // IsValid can be used as filter function
-func IsValid(tx UnconfirmedTxn) bool {
+func IsValid(tx UnconfirmedTransaction) bool {
 	return tx.IsValid == 1
 }
 
 // All use as return all filter
-func All(tx UnconfirmedTxn) bool {
+func All(tx UnconfirmedTransaction) bool {
 	return true
 }
 
 // Len returns the number of unconfirmed transactions
 func (utp *UnconfirmedTxnPool) Len(tx *dbutil.Tx) (uint64, error) {
 	return utp.txns.length(tx)
-}
-
-func nanoToTime(n int64) time.Time {
-	zeroTime := time.Time{}
-	if n == zeroTime.UnixNano() {
-		// maximum time
-		return zeroTime
-	}
-	return time.Unix(n/int64(time.Second), n%int64(time.Second))
 }

@@ -14,7 +14,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
@@ -256,7 +256,7 @@ func TestClientGetTransactionByID(t *testing.T) {
 			expectedTxn := decodeRawTransaction(rawTxStr)
 			rbTx, err := readable.NewTransaction(expectedTxn, false)
 			require.NoError(t, err)
-			require.Equal(t, &daemon.TransactionResult{
+			require.Equal(t, &readable.TransactionWithStatus{
 				Status:      expectedTxn.Status,
 				Time:        0,
 				Transaction: *rbTx,

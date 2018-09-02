@@ -22,6 +22,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -270,7 +271,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		Pubkey: genPublic,
 	})
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
@@ -428,7 +429,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.Equal(t, when+100, sb.Block.Head.Time)
 
 	blockTxns := sb.Block.Body.Transactions
-	require.NotEqual(t, len(txns), len(blockTxns), "Txns should be truncated")
+	require.NotEqual(t, len(txns), len(blockTxns), "Transactions should be truncated")
 	require.Equal(t, 18, len(blockTxns))
 
 	// Check fee ordering
@@ -472,7 +473,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
@@ -681,10 +682,10 @@ func TestVisorCalculatePrecision(t *testing.T) {
 	})
 }
 
-func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTxn, uint64) { // nolint: unparam
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { // nolint: unparam
 	var txs []historydb.Transaction
 	var blocks []coin.SignedBlock
-	var uncfmTxs []UnconfirmedTxn
+	var uncfmTxs []UnconfirmedTransaction
 	for i := uint64(0); i < uint64(n); i++ {
 		tm := utc.UnixNow() + int64(i)*int64(time.Second)
 		txs = append(txs, historydb.Transaction{
@@ -703,8 +704,8 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 			},
 		})
 
-		uncfmTxs = append(uncfmTxs, UnconfirmedTxn{
-			Txn: coin.Transaction{
+		uncfmTxs = append(uncfmTxs, UnconfirmedTransaction{
+			Transaction: coin.Transaction{
 				InnerHash: testutil.RandSHA256(t),
 			},
 			Received: utc.UnixNow() + int64(n)*int64(time.Second),
@@ -714,7 +715,7 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 	return txs, blocks, uncfmTxs, uint64(n)
 }
 
-func makeUncfmUxs(txs []UnconfirmedTxn) coin.UxArray {
+func makeUncfmUxs(txs []UnconfirmedTransaction) coin.UxArray {
 	var uxs coin.UxArray
 	for i := range txs {
 		uxs = append(uxs, coin.UxOut{
@@ -731,7 +732,7 @@ func makeUncfmUxs(txs []UnconfirmedTxn) coin.UxArray {
 
 type txsAndUncfmTxs struct {
 	Txs      []historydb.Transaction
-	UncfmTxs []UnconfirmedTxn
+	UncfmTxs []UnconfirmedTransaction
 }
 type expectTxResult struct {
 	txs      []Transaction
@@ -747,9 +748,9 @@ func TestGetTransactions(t *testing.T) {
 	for i := range txs {
 		height := headSeq - txs[i].BlockSeq + 1
 		ltxs = append(ltxs, Transaction{
-			Txn:    txs[i].Tx,
-			Status: NewConfirmedTransactionStatus(height, txs[i].BlockSeq),
-			Time:   blocks[i].Time(),
+			Transaction: txs[i].Tx,
+			Status:      NewConfirmedTransactionStatus(height, txs[i].BlockSeq),
+			Time:        blocks[i].Time(),
 		})
 	}
 
@@ -757,9 +758,9 @@ func TestGetTransactions(t *testing.T) {
 	var luncfmTxs []Transaction
 	for i, tx := range uncfmTxs {
 		luncfmTxs = append(luncfmTxs, Transaction{
-			Txn:    uncfmTxs[i].Txn,
-			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(nanoToTime(tx.Received).Unix()),
+			Transaction: uncfmTxs[i].Transaction,
+			Status:      NewUnconfirmedTransactionStatus(),
+			Time:        uint64(timeutil.NanoToTime(tx.Received).Unix()),
 		})
 	}
 
@@ -1848,7 +1849,7 @@ func TestGetTransactions(t *testing.T) {
 			})
 
 			his := newHistoryerMock2()
-			uncfmTxPool := NewUnconfirmedTxnPoolerMock2()
+			uncfmTxPool := NewUnconfirmedTransactionPoolerMock2()
 			for addr, txs := range tc.addrTxns {
 				his.On("GetTransactionsForAddress", matchTx, addr).Return(txs.Txs, nil)
 				his.txs = append(his.txs, txs.Txs...)
@@ -1890,22 +1891,22 @@ func TestGetTransactions(t *testing.T) {
 			txMap := make(map[cipher.SHA256]Transaction)
 			for i, tx := range retTxs {
 				if retTxs[i].Status.Confirmed {
-					txMap[tx.Txn.Hash()] = retTxs[i]
+					txMap[tx.Transaction.Hash()] = retTxs[i]
 				} else {
-					uncfmTxMap[tx.Txn.Hash()] = retTxs[i]
+					uncfmTxMap[tx.Transaction.Hash()] = retTxs[i]
 				}
 			}
 
 			// Confirms that all expected confirmed transactions must be in the txMap
 			for _, tx := range tc.expect.txs {
-				retTx, ok := txMap[tx.Txn.Hash()]
+				retTx, ok := txMap[tx.Transaction.Hash()]
 				require.True(t, ok)
 				require.Equal(t, tx, retTx)
 			}
 
 			// Confirms that all expected unconfirmed transactions must be in the uncfmTxMap
 			for _, tx := range tc.expect.uncfmTxs {
-				retTx, ok := uncfmTxMap[tx.Txn.Hash()]
+				retTx, ok := uncfmTxMap[tx.Transaction.Hash()]
 				require.True(t, ok)
 				require.Equal(t, tx, retTx)
 			}
@@ -1922,7 +1923,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
@@ -2052,7 +2053,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
@@ -3084,15 +3085,15 @@ func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *histor
 // UnconfirmedTxnPoolerMock2 embeds UnconfirmedTxnPoolerMock, and rewrite the GetTxns method
 type UnconfirmedTxnPoolerMock2 struct {
 	MockUnconfirmedTxnPooler
-	txs []UnconfirmedTxn
+	txs []UnconfirmedTransaction
 }
 
-func NewUnconfirmedTxnPoolerMock2() *UnconfirmedTxnPoolerMock2 {
+func NewUnconfirmedTransactionPoolerMock2() *UnconfirmedTxnPoolerMock2 {
 	return &UnconfirmedTxnPoolerMock2{}
 }
 
-func (m *UnconfirmedTxnPoolerMock2) GetTxns(tx *dbutil.Tx, f func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
-	var txs []UnconfirmedTxn
+func (m *UnconfirmedTxnPoolerMock2) GetTxns(tx *dbutil.Tx, f func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+	var txs []UnconfirmedTransaction
 	for i := range m.txs {
 		if f(m.txs[i]) {
 			txs = append(txs, m.txs[i])

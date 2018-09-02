@@ -1,6 +1,6 @@
 package readable
 
-import "github.com/skycoin/skycoin/src/coin"
+import "github.com/skycoin/skycoin/src/visor"
 
 // BlockchainMetadata encapsulates useful information from the coin.Blockchain
 type BlockchainMetadata struct {
@@ -13,10 +13,10 @@ type BlockchainMetadata struct {
 }
 
 // NewBlockchainMetadata creates blockchain meta data
-func NewBlockchainMetadata(head *coin.SignedBlock, unconfirmedLen, unspentsLen uint64) (*BlockchainMetadata, error) {
-	return &BlockchainMetadata{
-		Head:        NewBlockHeader(&head.Head),
-		Unspents:    unspentsLen,
-		Unconfirmed: unconfirmedLen,
-	}, nil
+func NewBlockchainMetadata(bm visor.BlockchainMetadata) BlockchainMetadata {
+	return BlockchainMetadata{
+		Head:        NewBlockHeader(&bm.HeadBlock.Head),
+		Unspents:    bm.Unspents,
+		Unconfirmed: bm.Unconfirmed,
+	}
 }

@@ -46,7 +46,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			return
 		}
 
-		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.Head.Time)
+		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.HeadBlock.Head.Time)
 		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
 
 		wh.SendJSONOr500(logger, w, HealthResponse{

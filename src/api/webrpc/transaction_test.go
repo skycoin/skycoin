@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -28,7 +27,7 @@ func decodeRawTransaction(rawTxStr string) *visor.Transaction {
 
 	tx := coin.MustTransactionDeserialize(rawTx)
 	return &visor.Transaction{
-		Txn: tx,
+		Transaction: tx,
 		Status: visor.TransactionStatus{
 			Confirmed: txConfirmed,
 			Height:    txHeight,
@@ -45,7 +44,7 @@ func Test_getTransactionHandler(t *testing.T) {
 	tx := decodeRawTransaction(rawTxStr)
 	rbTx, err := readable.NewTransaction(tx, false)
 	require.NoError(t, err)
-	txRlt := daemon.TransactionResult{
+	txRlt := readable.TransactionWithStatus{
 		Status: visor.TransactionStatus{
 			Confirmed: true,
 			Height:    103,

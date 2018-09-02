@@ -35,19 +35,11 @@ type BlockBody struct {
 func NewBlockBody(b *coin.Block) (*BlockBody, error) {
 	txns := make([]Transaction, len(b.Body.Transactions))
 	for i := range b.Body.Transactions {
-		t := Transaction{
-			Txn: b.Body.Transactions[i],
-			Status: TransactionStatus{
-				BlockSeq:  b.Seq(),
-				Confirmed: true,
-			},
-		}
-
-		tx, err := NewTransaction(&t, true)
+		txn, err := NewTransaction(b.Body.Transactions[i], true)
 		if err != nil {
 			return nil, err
 		}
-		txns[i] = *tx
+		txns[i] = *txn
 	}
 
 	return &BlockBody{

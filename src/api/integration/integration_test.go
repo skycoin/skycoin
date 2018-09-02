@@ -1674,10 +1674,10 @@ func TestLiveTransaction(t *testing.T) {
 			// make sure it is past some checkpoint height
 			require.True(t, tx.Status.Height >= 50836)
 
-			// daemon.TransactionResult.Status.Height is not stable
+			// readable.TransactionWithStatus.Status.Height is not stable
 			tx.Status.Height = 0
 
-			var expected daemon.TransactionResult
+			var expected readable.TransactionWithStatus
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -1749,7 +1749,7 @@ func TestStableTransaction(t *testing.T) {
 				return
 			}
 
-			var expected daemon.TransactionResult
+			var expected readable.TransactionWithStatus
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -1800,10 +1800,10 @@ func TestLiveTransactionVerbose(t *testing.T) {
 			// make sure it is past some checkpoint height
 			require.True(t, tx.Status.Height >= 50836)
 
-			// daemon.TransactionResult.Status.Height is not stable
+			// readable.TransactionWithStatus.Status.Height is not stable
 			tx.Status.Height = 0
 
-			var expected daemon.TransactionResultVerbose
+			var expected readable.TransactionWithStatusVerbose
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -1875,7 +1875,7 @@ func TestStableTransactionVerbose(t *testing.T) {
 				return
 			}
 
-			var expected daemon.TransactionResultVerbose
+			var expected readable.TransactionWithStatusVerbose
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -2002,9 +2002,9 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase)
 	decodedTxn, err := coin.TransactionDeserialize(encodedTxnBytes)
 	require.NoError(t, err)
 	txnResult, err := daemon.NewTransactionResult(&visor.Transaction{
-		Txn:    decodedTxn,
-		Status: encodedTxn.Status,
-		Time:   encodedTxn.Time,
+		Transaction: decodedTxn,
+		Status:      encodedTxn.Status,
+		Time:        encodedTxn.Time,
 	})
 	require.NoError(t, err)
 
@@ -2130,7 +2130,7 @@ func TestStableTransactions(t *testing.T) {
 
 			assertNoTransactionsDupes(t, txResult)
 
-			var expected []daemon.TransactionResult
+			var expected []readable.TransactionWithStatus
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
@@ -2226,7 +2226,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 
 			assertNoTransactionsDupes(t, txResult)
 
-			var expected []daemon.TransactionResult
+			var expected []readable.TransactionWithStatus
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
@@ -2292,7 +2292,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 
 			assertNoTransactionsDupes(t, txResult)
 
-			var expected []daemon.TransactionResult
+			var expected []readable.TransactionWithStatus
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
@@ -2317,7 +2317,7 @@ func TestLiveUnconfirmedTransactions(t *testing.T) {
 	assertNoTransactionsDupes(t, cTxsAll)
 }
 
-func assertNoTransactionsDupes(t *testing.T, r []daemon.TransactionResult) {
+func assertNoTransactionsDupes(t *testing.T, r []readable.TransactionWithStatus) {
 	txids := make(map[string]struct{})
 
 	for _, x := range r {
@@ -2416,7 +2416,7 @@ func TestStableTransactionsVerbose(t *testing.T) {
 
 			assertNoTransactionsDupesVerbose(t, txResult)
 
-			var expected []daemon.TransactionResultVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
@@ -2512,7 +2512,7 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 
 			assertNoTransactionsDupesVerbose(t, txResult)
 
-			var expected []daemon.TransactionResultVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
@@ -2578,13 +2578,13 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 
 			assertNoTransactionsDupesVerbose(t, txResult)
 
-			var expected []daemon.TransactionResultVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
 }
 
-func assertNoTransactionsDupesVerbose(t *testing.T, r []daemon.TransactionResultVerbose) {
+func assertNoTransactionsDupesVerbose(t *testing.T, r []readable.TransactionWithStatusVerbose) {
 	txids := make(map[string]struct{})
 
 	for _, x := range r {
@@ -3101,7 +3101,7 @@ func TestStablePendingTransactionsVerbose(t *testing.T) {
 		txns[i].Checked = txn.Checked.UTC()
 	}
 
-	var expect []readable.UnconfirmedTxnVerbose
+	var expect []readable.UnconfirmedTransactionVerbose
 	checkGoldenFile(t, "verbose-pending-transactions.golden", TestData{txns, &expect})
 }
 
@@ -3130,13 +3130,13 @@ func TestLiveWalletSpend(t *testing.T) {
 		name    string
 		to      string
 		coins   uint64
-		checkTx func(t *testing.T, tx *daemon.TransactionResult)
+		checkTx func(t *testing.T, tx *readable.TransactionWithStatus)
 	}{
 		{
 			name:  "send all coins to the first address",
 			to:    w.Entries[0].Address.String(),
 			coins: totalCoins,
-			checkTx: func(t *testing.T, tx *daemon.TransactionResult) {
+			checkTx: func(t *testing.T, tx *readable.TransactionWithStatus) {
 				// Confirms the total output coins are equal to the totalCoins
 				var coins uint64
 				for _, o := range tx.Transaction.Out {
@@ -3157,12 +3157,12 @@ func TestLiveWalletSpend(t *testing.T) {
 			name:  "send 0.003 coin to second address",
 			to:    w.Entries[1].Address.String(),
 			coins: 3e3,
-			checkTx: func(t *testing.T, tx *daemon.TransactionResult) {
+			checkTx: func(t *testing.T, tx *readable.TransactionWithStatus) {
 				// Confirms there're two outputs, one to the second address, one as change output to the first address.
 				require.Len(t, tx.Transaction.Out, 2)
 
 				// Gets the output of the second address in the transaction
-				getAddrOutputInTx := func(t *testing.T, tx *daemon.TransactionResult, addr string) *readable.TransactionOutput {
+				getAddrOutputInTx := func(t *testing.T, tx *readable.TransactionWithStatus, addr string) *readable.TransactionOutput {
 					for _, output := range tx.Transaction.Out {
 						if output.Address == addr {
 							return &output
@@ -3202,7 +3202,7 @@ func TestLiveWalletSpend(t *testing.T) {
 			}
 
 			tk := time.NewTicker(time.Second)
-			var tx *daemon.TransactionResult
+			var tx *readable.TransactionWithStatus
 		loop:
 			for {
 				select {
@@ -4852,7 +4852,7 @@ func getWalletBalance(t *testing.T, c *api.Client, walletName string) (uint64, u
 	return wp.Confirmed.Coins, wp.Confirmed.Hours
 }
 
-func getTransaction(t *testing.T, c *api.Client, txid string) *daemon.TransactionResult {
+func getTransaction(t *testing.T, c *api.Client, txid string) *readable.TransactionWithStatus {
 	tx, err := c.Transaction(txid)
 	if err != nil {
 		t.Fatalf("%v", err)

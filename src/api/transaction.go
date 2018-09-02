@@ -10,7 +10,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -44,7 +43,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			if len(txns) == 0 {
-				txns = []readable.UnconfirmedTxnVerbose{}
+				txns = []readable.UnconfirmedTransactionVerbose{}
 			}
 
 			wh.SendJSONOr500(logger, w, txns)
@@ -57,7 +56,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 
 			ret := make([]*readable.UnconfirmedTxns, len(txns))
 			for i, unconfirmedTxn := range txns {
-				readable, err := readable.NewUnconfirmedTxn(&unconfirmedTxn)
+				readable, err := readable.NewUnconfirmedTransaction(&unconfirmedTxn)
 				if err != nil {
 					wh.Error500(w, err.Error())
 					return
@@ -143,7 +142,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			txnStr := hex.EncodeToString(txn.Txn.Serialize())
+			txnStr := hex.EncodeToString(txn.Transaction.Serialize())
 
 			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
 				EncodedTransaction: txnStr,
@@ -215,10 +214,10 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			txns := []daemon.TransactionResultVerbose{}
-			if txnRlts != nil && txnRlts.Txns != nil {
+			txns := []readable.TransactionWithStatusVerbose{}
+			if txnRlts != nil && txnRlts.Transactions != nil {
 				txnRlts.Sort()
-				txns = txnRlts.Txns
+				txns = txnRlts.Transactions
 			}
 
 			wh.SendJSONOr500(logger, w, txns)
@@ -230,10 +229,10 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			txns := []daemon.TransactionResult{}
-			if txnRlts != nil && txnRlts.Txns != nil {
+			txns := []readable.TransactionWithStatus{}
+			if txnRlts != nil && txnRlts.Transactions != nil {
 				txnRlts.Sort()
-				txns = txnRlts.Txns
+				txns = txnRlts.Transactions
 			}
 
 			wh.SendJSONOr500(logger, w, txns)
@@ -351,7 +350,7 @@ func getRawTxn(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		d := txn.Txn.Serialize()
+		d := txn.Transaction.Serialize()
 		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
 	}
 }

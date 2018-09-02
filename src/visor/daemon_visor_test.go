@@ -28,7 +28,7 @@ func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *Blockchain) *Visor {
 	cfg := NewVisorConfig()
 	cfg.DBPath = db.Path()
 
-	pool, err := NewUnconfirmedTxnPool(db)
+	pool, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	return &Visor{
@@ -128,7 +128,7 @@ func TestInjectValidTransaction(t *testing.T) {
 	txns, err = v.GetAllUnconfirmedTxns()
 	require.NoError(t, err)
 	require.Len(t, txns, 1)
-	require.Equal(t, txns[0].Txn, txn)
+	require.Equal(t, txns[0].Transaction, txn)
 }
 
 func TestInjectTransactionSoftViolationNoFee(t *testing.T) {

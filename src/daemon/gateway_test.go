@@ -254,7 +254,7 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 		name            string
 		enableWalletAPI bool
 		walletID        string
-		result          []visor.UnconfirmedTxn
+		result          []visor.UnconfirmedTransaction
 		err             error
 	}{
 		{

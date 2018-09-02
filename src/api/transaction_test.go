@@ -31,10 +31,10 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTxn {
-	ut := visor.UnconfirmedTxn{}
-	ut.Txn = coin.Transaction{}
-	ut.Txn.InnerHash = testutil.RandSHA256(t)
+func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTransaction {
+	ut := visor.UnconfirmedTransaction{}
+	ut.Transaction = coin.Transaction{}
+	ut.Transaction.InnerHash = testutil.RandSHA256(t)
 	ut.Received = utc.Now().UnixNano()
 	ut.Checked = ut.Received
 	ut.Announced = time.Time{}.UnixNano()
@@ -81,7 +81,7 @@ func makeTransaction(t *testing.T) coin.Transaction {
 
 func TestGetPendingTxs(t *testing.T) {
 	invalidTxn := createUnconfirmedTxn(t)
-	invalidTxn.Txn.Out = append(invalidTxn.Txn.Out, coin.TransactionOutput{
+	invalidTxn.Transaction.Out = append(invalidTxn.Transaction.Out, coin.TransactionOutput{
 		Coins: math.MaxInt64 + 1,
 	})
 
@@ -92,9 +92,9 @@ func TestGetPendingTxs(t *testing.T) {
 		err                                  string
 		verbose                              bool
 		verboseStr                           string
-		getAllUnconfirmedTxnsResponse        []visor.UnconfirmedTxn
+		getAllUnconfirmedTxnsResponse        []visor.UnconfirmedTransaction
 		getAllUnconfirmedTxnsErr             error
-		getAllUnconfirmedTxnsVerboseResponse []readable.UnconfirmedTxnVerbose
+		getAllUnconfirmedTxnsVerboseResponse []readable.UnconfirmedTransactionVerbose
 		getAllUnconfirmedTxnsVerboseErr      error
 		httpResponse                         interface{}
 	}{
@@ -103,7 +103,7 @@ func TestGetPendingTxs(t *testing.T) {
 			method:                        http.MethodPost,
 			status:                        http.StatusMethodNotAllowed,
 			err:                           "405 Method Not Allowed",
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
 		},
 		{
 			name:       "400 - bad verbose",
@@ -117,7 +117,7 @@ func TestGetPendingTxs(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error - Droplet string conversion failed: Value is too large",
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{
 				invalidTxn,
 			},
 		},
@@ -141,7 +141,7 @@ func TestGetPendingTxs(t *testing.T) {
 			name:                          "200",
 			method:                        http.MethodGet,
 			status:                        http.StatusOK,
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
 			httpResponse:                  []readable.UnconfirmedTxns{},
 		},
 		{
@@ -150,8 +150,8 @@ func TestGetPendingTxs(t *testing.T) {
 			status:                               http.StatusOK,
 			verboseStr:                           "1",
 			verbose:                              true,
-			getAllUnconfirmedTxnsVerboseResponse: []readable.UnconfirmedTxnVerbose{},
-			httpResponse:                         []readable.UnconfirmedTxnVerbose{},
+			getAllUnconfirmedTxnsVerboseResponse: []readable.UnconfirmedTransactionVerbose{},
+			httpResponse:                         []readable.UnconfirmedTransactionVerbose{},
 		},
 	}
 
@@ -191,7 +191,7 @@ func TestGetPendingTxs(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				if tc.verbose {
-					var msg []readable.UnconfirmedTxnVerbose
+					var msg []readable.UnconfirmedTransactionVerbose
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, msg, tc.name)
@@ -227,9 +227,9 @@ func TestGetTransactionByID(t *testing.T) {
 		txid                               cipher.SHA256
 		getTransactionReponse              *visor.Transaction
 		getTransactionError                error
-		getTransactionResultReponse        *daemon.TransactionResult
+		getTransactionResultReponse        *readable.TransactionWithStatus
 		getTransactionResultError          error
-		getTransactionResultVerboseReponse *daemon.TransactionResultVerbose
+		getTransactionResultVerboseReponse *readable.TransactionWithStatusVerbose
 		getTransactionResultVerboseError   error
 		httpResponse                       interface{}
 	}{
@@ -380,8 +380,8 @@ func TestGetTransactionByID(t *testing.T) {
 				txid: validHash,
 			},
 			txid:                        testutil.SHA256FromHex(t, validHash),
-			getTransactionResultReponse: &daemon.TransactionResult{},
-			httpResponse:                &daemon.TransactionResult{},
+			getTransactionResultReponse: &readable.TransactionWithStatus{},
+			httpResponse:                &readable.TransactionWithStatus{},
 		},
 
 		{
@@ -394,8 +394,8 @@ func TestGetTransactionByID(t *testing.T) {
 			},
 			verbose:                            true,
 			txid:                               testutil.SHA256FromHex(t, validHash),
-			getTransactionResultVerboseReponse: &daemon.TransactionResultVerbose{},
-			httpResponse:                       &daemon.TransactionResultVerbose{},
+			getTransactionResultVerboseReponse: &readable.TransactionWithStatusVerbose{},
+			httpResponse:                       &readable.TransactionWithStatusVerbose{},
 		},
 
 		{
@@ -458,7 +458,7 @@ func TestGetTransactionByID(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				if tc.verbose {
-					var msg daemon.TransactionResultVerbose
+					var msg readable.TransactionWithStatusVerbose
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, &msg, tc.name)
@@ -468,7 +468,7 @@ func TestGetTransactionByID(t *testing.T) {
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, &msg, tc.name)
 				} else {
-					var msg daemon.TransactionResult
+					var msg readable.TransactionWithStatus
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, &msg, tc.name)
@@ -828,9 +828,9 @@ func TestGetTransactions(t *testing.T) {
 		httpBody                       *httpBody
 		verbose                        bool
 		getTransactionsArg             []visor.TxFilter
-		getTransactionsResponse        *daemon.TransactionResults
+		getTransactionsResponse        *readable.TransactionsWithStatus
 		getTransactionsError           error
-		getTransactionsVerboseResponse *daemon.TransactionResultsVerbose
+		getTransactionsVerboseResponse *readable.TransactionsWithStatusVerbose
 		getTransactionsVerboseError    error
 		httpResponse                   interface{}
 	}{
@@ -928,8 +928,8 @@ func TestGetTransactions(t *testing.T) {
 				visor.NewAddrsFilter(addrs),
 				visor.NewConfirmedTxFilter(true),
 			},
-			getTransactionsResponse: &daemon.TransactionResults{},
-			httpResponse:            []daemon.TransactionResult{},
+			getTransactionsResponse: &readable.TransactionsWithStatus{},
+			httpResponse:            []readable.TransactionWithStatus{},
 		},
 
 		{
@@ -946,8 +946,8 @@ func TestGetTransactions(t *testing.T) {
 				visor.NewAddrsFilter(addrs),
 				visor.NewConfirmedTxFilter(true),
 			},
-			getTransactionsVerboseResponse: &daemon.TransactionResultsVerbose{},
-			httpResponse:                   []daemon.TransactionResultVerbose{},
+			getTransactionsVerboseResponse: &readable.TransactionsWithStatusVerbose{},
+			httpResponse:                   []readable.TransactionWithStatusVerbose{},
 		},
 	}
 
@@ -1047,12 +1047,12 @@ func TestGetTransactions(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				if tc.verbose {
-					var msg []daemon.TransactionResultVerbose
+					var msg []readable.TransactionWithStatusVerbose
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, msg, tc.name)
 				} else {
-					var msg []daemon.TransactionResult
+					var msg []readable.TransactionWithStatus
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, msg, tc.name)

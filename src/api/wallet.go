@@ -3,7 +3,6 @@ package api
 // APIs for wallet-related information
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -14,7 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -35,7 +33,7 @@ type UnconfirmedTxnsResponse struct {
 
 // UnconfirmedTxnsVerboseResponse contains verbose unconfirmed transaction data
 type UnconfirmedTxnsVerboseResponse struct {
-	Transactions []readable.UnconfirmedTxnVerbose `json:"transactions"`
+	Transactions []readable.UnconfirmedTransactionVerbose `json:"transactions"`
 }
 
 // WalletEntry the wallet entry struct
@@ -288,30 +286,9 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		// Format the transaction for logging
-		rTxn, err := visor.TransactionToJSON(*tx)
-		if err != nil {
-			logger.Error(err)
-			wh.SendJSONOr500(logger, w, SpendResult{
-				Error: err.Error(),
-			})
-			return
-		}
-
-		rTxnBytes, err := json.MarshalIndent(rTxn, "", "  ")
-		if err != nil {
-			logger.WithError(err).Error("json.MarshalIndent(readableTransaction) failed")
-			wh.SendJSONOr500(logger, w, SpendResult{
-				Error: err.Error(),
-			})
-			return
-		}
-
-		logger.Infof("Spend: \ntx= \n %s \n", string(rTxnBytes))
-
 		var ret SpendResult
 
-		ret.Transaction, err = readable.NewTransaction(&visor.Transaction{Txn: *tx}, false)
+		ret.Transaction, err = readable.NewTransaction(*tx, false)
 		if err != nil {
 			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
 			logger.Error(err)
@@ -628,7 +605,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			if txns == nil {
-				txns = []readable.UnconfirmedTxnVerbose{}
+				txns = []readable.UnconfirmedTransactionVerbose{}
 			}
 
 			wh.SendJSONOr500(logger, w, UnconfirmedTxnsVerboseResponse{
@@ -642,7 +619,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			unconfirmedTxns, err := readable.NewUnconfirmedTxns(txns)
+			unconfirmedTxns, err := readable.NewUnconfirmedTransactions(txns)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return

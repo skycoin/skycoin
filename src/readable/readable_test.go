@@ -197,7 +197,7 @@ func TestReadableTransaction(t *testing.T) {
 	tx := b.Body.Transactions[0]
 
 	rtx, err := NewTransaction(&Transaction{
-		Txn: tx,
+		Transaction: tx,
 	}, false)
 	require.NoError(t, err)
 	assertReadableTransaction(t, *rtx, tx)

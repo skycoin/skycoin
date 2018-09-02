@@ -169,15 +169,15 @@ func (_m *MockGatewayer) GetAddressCount() (uint64, error) {
 }
 
 // GetAllUnconfirmedTxns provides a mock function with given fields:
-func (_m *MockGatewayer) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error) {
+func (_m *MockGatewayer) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTransaction, error) {
 	ret := _m.Called()
 
-	var r0 []visor.UnconfirmedTxn
-	if rf, ok := ret.Get(0).(func() []visor.UnconfirmedTxn); ok {
+	var r0 []visor.UnconfirmedTransaction
+	if rf, ok := ret.Get(0).(func() []visor.UnconfirmedTransaction); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]visor.UnconfirmedTxn)
+			r0 = ret.Get(0).([]visor.UnconfirmedTransaction)
 		}
 	}
 
@@ -192,15 +192,15 @@ func (_m *MockGatewayer) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error)
 }
 
 // GetAllUnconfirmedTxnsVerbose provides a mock function with given fields:
-func (_m *MockGatewayer) GetAllUnconfirmedTxnsVerbose() ([]readable.UnconfirmedTxnVerbose, error) {
+func (_m *MockGatewayer) GetAllUnconfirmedTxnsVerbose() ([]readable.UnconfirmedTransactionVerbose, error) {
 	ret := _m.Called()
 
-	var r0 []readable.UnconfirmedTxnVerbose
-	if rf, ok := ret.Get(0).(func() []readable.UnconfirmedTxnVerbose); ok {
+	var r0 []readable.UnconfirmedTransactionVerbose
+	if rf, ok := ret.Get(0).(func() []readable.UnconfirmedTransactionVerbose); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]readable.UnconfirmedTxnVerbose)
+			r0 = ret.Get(0).([]readable.UnconfirmedTransactionVerbose)
 		}
 	}
 
@@ -615,15 +615,15 @@ func (_m *MockGatewayer) GetTransaction(txid cipher.SHA256) (*visor.Transaction,
 }
 
 // GetTransactionWithStatus provides a mock function with given fields: txid
-func (_m *MockGatewayer) GetTransactionWithStatus(txid cipher.SHA256) (*daemon.TransactionResult, error) {
+func (_m *MockGatewayer) GetTransactionWithStatus(txid cipher.SHA256) (*readable.TransactionWithStatus, error) {
 	ret := _m.Called(txid)
 
-	var r0 *daemon.TransactionResult
-	if rf, ok := ret.Get(0).(func(cipher.SHA256) *daemon.TransactionResult); ok {
+	var r0 *readable.TransactionWithStatus
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) *readable.TransactionWithStatus); ok {
 		r0 = rf(txid)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*daemon.TransactionResult)
+			r0 = ret.Get(0).(*readable.TransactionWithStatus)
 		}
 	}
 
@@ -638,15 +638,15 @@ func (_m *MockGatewayer) GetTransactionWithStatus(txid cipher.SHA256) (*daemon.T
 }
 
 // GetTransactionWithStatusVerbose provides a mock function with given fields: txid
-func (_m *MockGatewayer) GetTransactionWithStatusVerbose(txid cipher.SHA256) (*daemon.TransactionResultVerbose, error) {
+func (_m *MockGatewayer) GetTransactionWithStatusVerbose(txid cipher.SHA256) (*readable.TransactionWithStatusVerbose, error) {
 	ret := _m.Called(txid)
 
-	var r0 *daemon.TransactionResultVerbose
-	if rf, ok := ret.Get(0).(func(cipher.SHA256) *daemon.TransactionResultVerbose); ok {
+	var r0 *readable.TransactionWithStatusVerbose
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) *readable.TransactionWithStatusVerbose); ok {
 		r0 = rf(txid)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*daemon.TransactionResultVerbose)
+			r0 = ret.Get(0).(*readable.TransactionWithStatusVerbose)
 		}
 	}
 
@@ -661,15 +661,15 @@ func (_m *MockGatewayer) GetTransactionWithStatusVerbose(txid cipher.SHA256) (*d
 }
 
 // GetTransactionsWithStatus provides a mock function with given fields: flts
-func (_m *MockGatewayer) GetTransactionsWithStatus(flts []visor.TxFilter) (*daemon.TransactionResults, error) {
+func (_m *MockGatewayer) GetTransactionsWithStatus(flts []visor.TxFilter) (*readable.TransactionsWithStatus, error) {
 	ret := _m.Called(flts)
 
-	var r0 *daemon.TransactionResults
-	if rf, ok := ret.Get(0).(func([]visor.TxFilter) *daemon.TransactionResults); ok {
+	var r0 *readable.TransactionsWithStatus
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter) *readable.TransactionsWithStatus); ok {
 		r0 = rf(flts)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*daemon.TransactionResults)
+			r0 = ret.Get(0).(*readable.TransactionsWithStatus)
 		}
 	}
 
@@ -684,15 +684,15 @@ func (_m *MockGatewayer) GetTransactionsWithStatus(flts []visor.TxFilter) (*daem
 }
 
 // GetTransactionsWithStatusVerbose provides a mock function with given fields: flts
-func (_m *MockGatewayer) GetTransactionsWithStatusVerbose(flts []visor.TxFilter) (*daemon.TransactionResultsVerbose, error) {
+func (_m *MockGatewayer) GetTransactionsWithStatusVerbose(flts []visor.TxFilter) (*readable.TransactionsWithStatusVerbose, error) {
 	ret := _m.Called(flts)
 
-	var r0 *daemon.TransactionResultsVerbose
-	if rf, ok := ret.Get(0).(func([]visor.TxFilter) *daemon.TransactionResultsVerbose); ok {
+	var r0 *readable.TransactionsWithStatusVerbose
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter) *readable.TransactionsWithStatusVerbose); ok {
 		r0 = rf(flts)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*daemon.TransactionResultsVerbose)
+			r0 = ret.Get(0).(*readable.TransactionsWithStatusVerbose)
 		}
 	}
 
@@ -893,15 +893,15 @@ func (_m *MockGatewayer) GetWalletSeed(wltID string, password []byte) (string, e
 }
 
 // GetWalletUnconfirmedTxns provides a mock function with given fields: wltID
-func (_m *MockGatewayer) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
+func (_m *MockGatewayer) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTransaction, error) {
 	ret := _m.Called(wltID)
 
-	var r0 []visor.UnconfirmedTxn
-	if rf, ok := ret.Get(0).(func(string) []visor.UnconfirmedTxn); ok {
+	var r0 []visor.UnconfirmedTransaction
+	if rf, ok := ret.Get(0).(func(string) []visor.UnconfirmedTransaction); ok {
 		r0 = rf(wltID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]visor.UnconfirmedTxn)
+			r0 = ret.Get(0).([]visor.UnconfirmedTransaction)
 		}
 	}
 
@@ -916,15 +916,15 @@ func (_m *MockGatewayer) GetWalletUnconfirmedTxns(wltID string) ([]visor.Unconfi
 }
 
 // GetWalletUnconfirmedTxnsVerbose provides a mock function with given fields: wltID
-func (_m *MockGatewayer) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]readable.UnconfirmedTxnVerbose, error) {
+func (_m *MockGatewayer) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]readable.UnconfirmedTransactionVerbose, error) {
 	ret := _m.Called(wltID)
 
-	var r0 []readable.UnconfirmedTxnVerbose
-	if rf, ok := ret.Get(0).(func(string) []readable.UnconfirmedTxnVerbose); ok {
+	var r0 []readable.UnconfirmedTransactionVerbose
+	if rf, ok := ret.Get(0).(func(string) []readable.UnconfirmedTransactionVerbose); ok {
 		r0 = rf(wltID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]readable.UnconfirmedTxnVerbose)
+			r0 = ret.Get(0).([]readable.UnconfirmedTransactionVerbose)
 		}
 	}
 

@@ -64,7 +64,7 @@ type TransactionOutput struct {
 func (txn *Transaction) Verify() error {
 	h := txn.HashInner()
 	if h != txn.InnerHash {
-		return errors.New("Invalid header hash")
+		return errors.New("InnerHash does not match computed hash")
 	}
 
 	if len(txn.In) == 0 {

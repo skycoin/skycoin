@@ -55,17 +55,17 @@ type TransactionInput struct {
 }
 
 // NewTransactionOutput creates a TransactionOutput
-func NewTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) (*TransactionOutput, error) {
-	coinStr, err := droplet.ToString(t.Coins)
+func NewTransactionOutput(txn *coin.TransactionOutput, txid cipher.SHA256) (*TransactionOutput, error) {
+	coinStr, err := droplet.ToString(txn.Coins)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TransactionOutput{
-		Hash:    t.UxID(txid).Hex(),
-		Address: t.Address.String(),
+		Hash:    txn.UxID(txid).Hex(),
+		Address: txn.Address.String(),
 		Coins:   coinStr,
-		Hours:   t.Hours,
+		Hours:   txn.Hours,
 	}, nil
 }
 

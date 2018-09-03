@@ -149,7 +149,7 @@ func (c *Client) CSRF() (string, error) {
 }
 
 // OutputsForAddresses returns current unspent outputs for a set of addresses
-func (c *Client) OutputsForAddresses(addrs []string) (*readable.OutputSet, error) {
+func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
 	outputs := OutputsResult{}
 	if err := c.Do(&outputs, "get_outputs", addrs); err != nil {
 		return nil, err
@@ -207,8 +207,8 @@ func (c *Client) GetAddressUxOuts(addrs []string) ([]AddrUxoutResult, error) {
 	return uxouts, nil
 }
 
-// GetBlocks returns a range of blocks
-func (c *Client) GetBlocks(start, end uint64) (*readable.Blocks, error) {
+// GetBlocksInRange returns a range of blocks
+func (c *Client) GetBlocksInRange(start, end uint64) (*readable.Blocks, error) {
 	param := []uint64{start, end}
 	blocks := readable.Blocks{}
 

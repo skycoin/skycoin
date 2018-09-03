@@ -7,8 +7,6 @@ import (
 	coin "github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 
-	daemon "github.com/skycoin/skycoin/src/daemon"
-
 	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 
 	mock "github.com/stretchr/testify/mock"
@@ -44,8 +42,8 @@ func (_m *MockGatewayer) GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOu
 	return r0, r1
 }
 
-// GetBlocks provides a mock function with given fields: start, end
-func (_m *MockGatewayer) GetBlocks(start uint64, end uint64) (*readable.Blocks, error) {
+// GetBlocksInRange provides a mock function with given fields: start, end
+func (_m *MockGatewayer) GetBlocksInRange(start uint64, end uint64) (*readable.Blocks, error) {
 	ret := _m.Called(start, end)
 
 	var r0 *readable.Blocks
@@ -67,8 +65,8 @@ func (_m *MockGatewayer) GetBlocks(start uint64, end uint64) (*readable.Blocks, 
 	return r0, r1
 }
 
-// GetBlocksInDepth provides a mock function with given fields: vs
-func (_m *MockGatewayer) GetBlocksInDepth(vs []uint64) (*readable.Blocks, error) {
+// GetBlocks provides a mock function with given fields: vs
+func (_m *MockGatewayer) GetBlocks(vs []uint64) (*readable.Blocks, error) {
 	ret := _m.Called(vs)
 
 	var r0 *readable.Blocks
@@ -151,7 +149,7 @@ func (_m *MockGatewayer) GetTransaction(txid cipher.SHA256) (*visor.Transaction,
 }
 
 // GetUnspentOutputs provides a mock function with given fields: filters
-func (_m *MockGatewayer) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*readable.OutputSet, error) {
+func (_m *MockGatewayer) GetUnspentOutputs(filters ...visor.OutputsFilter) (*readable.OutputSet, error) {
 	_va := make([]interface{}, len(filters))
 	for _i := range filters {
 		_va[_i] = filters[_i]
@@ -161,7 +159,7 @@ func (_m *MockGatewayer) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*re
 	ret := _m.Called(_ca...)
 
 	var r0 *readable.OutputSet
-	if rf, ok := ret.Get(0).(func(...daemon.OutputsFilter) *readable.OutputSet); ok {
+	if rf, ok := ret.Get(0).(func(...visor.OutputsFilter) *readable.OutputSet); ok {
 		r0 = rf(filters...)
 	} else {
 		if ret.Get(0) != nil {
@@ -170,7 +168,7 @@ func (_m *MockGatewayer) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*re
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(...daemon.OutputsFilter) error); ok {
+	if rf, ok := ret.Get(1).(func(...visor.OutputsFilter) error); ok {
 		r1 = rf(filters...)
 	} else {
 		r1 = ret.Error(1)

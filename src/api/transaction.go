@@ -35,19 +35,26 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txns, err := gateway.GetAllUnconfirmedTxnsVerbose()
+			txns, inputs, err := gateway.GetAllUnconfirmedTransactionsVerbose()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
 
-			if len(txns) == 0 {
-				txns = []readable.UnconfirmedTransactionVerbose{}
+			vb := make([]readable.UnconfirmedTransactionVerbose, len(txns))
+			for i, txn := range txns {
+				v, err := readable.NewUnconfirmedTransactionVerbose(&txn, inputs[i])
+				if err != nil {
+					wh.Error500(w, err.Error())
+					return
+				}
+
+				vb[i] = *v
 			}
 
-			wh.SendJSONOr500(logger, w, txns)
+			wh.SendJSONOr500(logger, w, vb)
 		} else {
-			txns, err := gateway.GetAllUnconfirmedTxns()
+			txns, err := gateway.GetAllUnconfirmedTransactions()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -118,9 +125,8 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		switch {
-		case verbose:
-			txn, err := gateway.GetTransactionWithStatusVerbose(h)
+		if verbose {
+			txn, inputs, err := gateway.GetTransactionVerbose(h)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -130,18 +136,27 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			wh.SendJSONOr500(logger, w, &txn)
-		case encoded:
-			txn, err := gateway.GetTransaction(h)
+			rTxn, err := readable.NewTransactionWithStatusVerbose(txn, inputs)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
-			if txn == nil {
-				wh.Error404(w, "")
-				return
-			}
 
+			wh.SendJSONOr500(logger, w, rTxn)
+			return
+		}
+
+		txn, err := gateway.GetTransaction(h)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+		if txn == nil {
+			wh.Error404(w, "")
+			return
+		}
+
+		if encoded {
 			txnStr := hex.EncodeToString(txn.Transaction.Serialize())
 
 			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
@@ -149,19 +164,16 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 				Status:             readable.NewTransactionStatus(txn.Status),
 				Time:               txn.Time,
 			})
-		default:
-			txn, err := gateway.GetTransactionWithStatus(h)
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-			if txn == nil {
-				wh.Error404(w, "")
-				return
-			}
-
-			wh.SendJSONOr500(logger, w, &txn)
+			return
 		}
+
+		rTxn, err := readable.NewTransactionWithStatus(txn)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, rTxn)
 	}
 }
 
@@ -208,34 +220,37 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txnRlts, err := gateway.GetTransactionsWithStatusVerbose(flts)
+			txns, inputs, err := gateway.GetTransactionsVerbose(flts)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
 
-			txns := []readable.TransactionWithStatusVerbose{}
-			if txnRlts != nil && txnRlts.Transactions != nil {
-				txnRlts.Sort()
-				txns = txnRlts.Transactions
+			rTxns, err := readable.NewTransactionsWithStatusVerbose(txns, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
 			}
 
-			wh.SendJSONOr500(logger, w, txns)
+			rTxns.Sort()
+
+			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		} else {
-			// Gets transactions
-			txnRlts, err := gateway.GetTransactionsWithStatus(flts)
+			txns, err := gateway.GetTransactions(flts)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
 
-			txns := []readable.TransactionWithStatus{}
-			if txnRlts != nil && txnRlts.Transactions != nil {
-				txnRlts.Sort()
-				txns = txnRlts.Transactions
+			rTxns, err := readable.NewTransactionsWithStatus(txns)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
 			}
 
-			wh.SendJSONOr500(logger, w, txns)
+			rTxns.Sort()
+
+			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		}
 	}
 }

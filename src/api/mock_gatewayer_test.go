@@ -168,8 +168,8 @@ func (_m *MockGatewayer) GetAddressCount() (uint64, error) {
 	return r0, r1
 }
 
-// GetAllUnconfirmedTxns provides a mock function with given fields:
-func (_m *MockGatewayer) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTransaction, error) {
+// GetAllUnconfirmedTransactions provides a mock function with given fields:
+func (_m *MockGatewayer) GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error) {
 	ret := _m.Called()
 
 	var r0 []visor.UnconfirmedTransaction
@@ -191,8 +191,8 @@ func (_m *MockGatewayer) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTransaction
 	return r0, r1
 }
 
-// GetAllUnconfirmedTxnsVerbose provides a mock function with given fields:
-func (_m *MockGatewayer) GetAllUnconfirmedTxnsVerbose() ([]readable.UnconfirmedTransactionVerbose, error) {
+// GetAllUnconfirmedTransactionsVerbose provides a mock function with given fields:
+func (_m *MockGatewayer) GetAllUnconfirmedTransactionsVerbose() ([]readable.UnconfirmedTransactionVerbose, error) {
 	ret := _m.Called()
 
 	var r0 []readable.UnconfirmedTransactionVerbose
@@ -329,8 +329,8 @@ func (_m *MockGatewayer) GetBlockchainProgress() (*daemon.BlockchainProgress, er
 	return r0, r1
 }
 
-// GetBlocks provides a mock function with given fields: start, end
-func (_m *MockGatewayer) GetBlocks(start uint64, end uint64) (*readable.Blocks, error) {
+// GetBlocksInRange provides a mock function with given fields: start, end
+func (_m *MockGatewayer) GetBlocksInRange(start uint64, end uint64) (*readable.Blocks, error) {
 	ret := _m.Called(start, end)
 
 	var r0 *readable.Blocks
@@ -352,8 +352,8 @@ func (_m *MockGatewayer) GetBlocks(start uint64, end uint64) (*readable.Blocks, 
 	return r0, r1
 }
 
-// GetBlocksVerbose provides a mock function with given fields: start, end
-func (_m *MockGatewayer) GetBlocksVerbose(start uint64, end uint64) (*readable.BlocksVerbose, error) {
+// GetBlocksInRangeVerbose provides a mock function with given fields: start, end
+func (_m *MockGatewayer) GetBlocksInRangeVerbose(start uint64, end uint64) (*readable.BlocksVerbose, error) {
 	ret := _m.Called(start, end)
 
 	var r0 *readable.BlocksVerbose
@@ -637,8 +637,8 @@ func (_m *MockGatewayer) GetTransactionWithStatus(txid cipher.SHA256) (*readable
 	return r0, r1
 }
 
-// GetTransactionWithStatusVerbose provides a mock function with given fields: txid
-func (_m *MockGatewayer) GetTransactionWithStatusVerbose(txid cipher.SHA256) (*readable.TransactionWithStatusVerbose, error) {
+// GetTransactionVerbose provides a mock function with given fields: txid
+func (_m *MockGatewayer) GetTransactionVerbose(txid cipher.SHA256) (*readable.TransactionWithStatusVerbose, error) {
 	ret := _m.Called(txid)
 
 	var r0 *readable.TransactionWithStatusVerbose
@@ -723,7 +723,7 @@ func (_m *MockGatewayer) GetTrustConnections() []string {
 }
 
 // GetUnspentOutputs provides a mock function with given fields: filters
-func (_m *MockGatewayer) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*readable.OutputSet, error) {
+func (_m *MockGatewayer) GetUnspentOutputs(filters ...visor.OutputsFilter) (*readable.OutputSet, error) {
 	_va := make([]interface{}, len(filters))
 	for _i := range filters {
 		_va[_i] = filters[_i]
@@ -733,7 +733,7 @@ func (_m *MockGatewayer) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*re
 	ret := _m.Called(_ca...)
 
 	var r0 *readable.OutputSet
-	if rf, ok := ret.Get(0).(func(...daemon.OutputsFilter) *readable.OutputSet); ok {
+	if rf, ok := ret.Get(0).(func(...visor.OutputsFilter) *readable.OutputSet); ok {
 		r0 = rf(filters...)
 	} else {
 		if ret.Get(0) != nil {
@@ -742,7 +742,7 @@ func (_m *MockGatewayer) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*re
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(...daemon.OutputsFilter) error); ok {
+	if rf, ok := ret.Get(1).(func(...visor.OutputsFilter) error); ok {
 		r1 = rf(filters...)
 	} else {
 		r1 = ret.Error(1)
@@ -915,8 +915,8 @@ func (_m *MockGatewayer) GetWalletUnconfirmedTxns(wltID string) ([]visor.Unconfi
 	return r0, r1
 }
 
-// GetWalletUnconfirmedTxnsVerbose provides a mock function with given fields: wltID
-func (_m *MockGatewayer) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]readable.UnconfirmedTransactionVerbose, error) {
+// GetWalletUnconfirmedTransactionsVerbose provides a mock function with given fields: wltID
+func (_m *MockGatewayer) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]readable.UnconfirmedTransactionVerbose, error) {
 	ret := _m.Called(wltID)
 
 	var r0 []readable.UnconfirmedTransactionVerbose

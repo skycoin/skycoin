@@ -9,11 +9,12 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-// Output represents a readable output
-type Output struct {
+// UnspentOutput represents a readable output
+type UnspentOutput struct {
 	Hash              string `json:"hash"`
 	Time              uint64 `json:"time"`
 	BkSeq             uint64 `json:"block_seq"`
@@ -24,22 +25,53 @@ type Output struct {
 	CalculatedHours   uint64 `json:"calculated_hours"`
 }
 
-// OutputSet records unspent outputs in different status.
-type OutputSet struct {
-	// HeadOutputs are unspent outputs confirmed in the blockchain
-	HeadOutputs Outputs `json:"head_outputs"`
-	// IncomingOutputs are unspent outputs being spent in unconfirmed transactions
-	OutgoingOutputs Outputs `json:"outgoing_outputs"`
-	// IncomingOutputs are unspent outputs being created by unconfirmed transactions
-	IncomingOutputs Outputs `json:"incoming_outputs"`
+// NewUnspentOutput creates a readable output
+func NewUnspentOutput(uxOut visor.UnspentOutput) (UnspentOutput, error) {
+	coinStr, err := droplet.ToString(uxOut.Body.Coins)
+	if err != nil {
+		return UnspentOutput{}, err
+	}
+
+	return UnspentOutput{
+		Hash:              uxOut.Hash().Hex(),
+		Time:              uxOut.Head.Time,
+		BkSeq:             uxOut.Head.BkSeq,
+		SourceTransaction: uxOut.Body.SrcTransaction.Hex(),
+		Address:           uxOut.Body.Address.String(),
+		Coins:             coinStr,
+		Hours:             uxOut.Body.Hours,
+		CalculatedHours:   uxOut.CalculatedHours,
+	}, nil
 }
 
-// Outputs slice of Output
-// provids method to calculate balance
-type Outputs []Output
+// UnspentOutputs slice of UnspentOutput
+type UnspentOutputs []UnspentOutput
+
+// NewUnspentOutputs converts unspent outputs to a readable output
+func NewUnspentOutputs(uxs []visor.UnspentOutput) (UnspentOutputs, error) {
+	rxReadables := make(UnspentOutputs, len(uxs))
+	for i, ux := range uxs {
+		out, err := NewUnspentOutput(ux)
+		if err != nil {
+			return UnspentOutputs{}, err
+		}
+
+		rxReadables[i] = out
+	}
+
+	// Sort UnspentOutputs newest to oldest, using hash to break ties
+	sort.Slice(rxReadables, func(i, j int) bool {
+		if rxReadables[i].Time == rxReadables[j].Time {
+			return strings.Compare(rxReadables[i].Hash, rxReadables[j].Hash) < 0
+		}
+		return rxReadables[i].Time > rxReadables[j].Time
+	})
+
+	return rxReadables, nil
+}
 
 // Balance returns the balance in droplets
-func (ros Outputs) Balance() (wallet.Balance, error) {
+func (ros UnspentOutputs) Balance() (wallet.Balance, error) {
 	var bal wallet.Balance
 	for _, out := range ros {
 		coins, err := droplet.FromString(out.Coins)
@@ -61,8 +93,8 @@ func (ros Outputs) Balance() (wallet.Balance, error) {
 	return bal, nil
 }
 
-// ToUxArray converts Outputs to coin.UxArray
-func (ros Outputs) ToUxArray() (coin.UxArray, error) {
+// ToUxArray converts UnspentOutputs to coin.UxArray
+func (ros UnspentOutputs) ToUxArray() (coin.UxArray, error) {
 	var uxs coin.UxArray
 	for _, o := range ros {
 		coins, err := droplet.FromString(o.Coins)
@@ -97,132 +129,32 @@ func (ros Outputs) ToUxArray() (coin.UxArray, error) {
 	return uxs, nil
 }
 
-// SpendableOutputs subtracts OutgoingOutputs from HeadOutputs
-func (os OutputSet) SpendableOutputs() Outputs {
-	if len(os.OutgoingOutputs) == 0 {
-		return os.HeadOutputs
-	}
-
-	spending := make(map[string]struct{}, len(os.OutgoingOutputs))
-	for _, u := range os.OutgoingOutputs {
-		spending[u.Hash] = struct{}{}
-	}
-
-	var outs Outputs
-	for i := range os.HeadOutputs {
-		if _, ok := spending[os.HeadOutputs[i].Hash]; !ok {
-			outs = append(outs, os.HeadOutputs[i])
-		}
-	}
-	return outs
-}
-
-// ExpectedOutputs adds IncomingOutputs to SpendableOutputs
-func (os OutputSet) ExpectedOutputs() Outputs {
-	return append(os.SpendableOutputs(), os.IncomingOutputs...)
-}
-
-// AggregateUnspentOutputs builds a map from address to coins
-func (os OutputSet) AggregateUnspentOutputs() (map[string]uint64, error) {
-	allAccounts := map[string]uint64{}
-	for _, out := range os.HeadOutputs {
-		amt, err := droplet.FromString(out.Coins)
-		if err != nil {
-			return nil, err
-		}
-		if _, ok := allAccounts[out.Address]; ok {
-			allAccounts[out.Address], err = coin.AddUint64(allAccounts[out.Address], amt)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			allAccounts[out.Address] = amt
-		}
-	}
-
-	return allAccounts, nil
-}
-
-// NewOutput creates a readable output
-func NewOutput(headTime uint64, t coin.UxOut) (Output, error) {
-	coinStr, err := droplet.ToString(t.Body.Coins)
-	if err != nil {
-		return Output{}, err
-	}
-
-	calculatedHours, err := t.CoinHours(headTime)
-
-	// Treat overflowing coin hours calculations as a non-error and force hours to 0
-	// This affects one bad spent output which had overflowed hours, spent in block 13277.
-	switch err {
-	case nil:
-	case coin.ErrAddEarnedCoinHoursAdditionOverflow:
-		calculatedHours = 0
-	default:
-		return Output{}, err
-	}
-
-	return Output{
-		Hash:              t.Hash().Hex(),
-		Time:              t.Head.Time,
-		BkSeq:             t.Head.BkSeq,
-		SourceTransaction: t.Body.SrcTransaction.Hex(),
-		Address:           t.Body.Address.String(),
-		Coins:             coinStr,
-		Hours:             t.Body.Hours,
-		CalculatedHours:   calculatedHours,
-	}, nil
-}
-
-// NewOutputs converts unspent outputs to a readable output
-func NewOutputs(headTime uint64, uxs coin.UxArray) (Outputs, error) {
-	rxReadables := make(Outputs, len(uxs))
-	for i, ux := range uxs {
-		out, err := NewOutput(headTime, ux)
-		if err != nil {
-			return Outputs{}, err
-		}
-
-		rxReadables[i] = out
-	}
-
-	// Sort Outputs newest to oldest, using hash to break ties
-	sort.Slice(rxReadables, func(i, j int) bool {
-		if rxReadables[i].Time == rxReadables[j].Time {
-			return strings.Compare(rxReadables[i].Hash, rxReadables[j].Hash) < 0
-		}
-		return rxReadables[i].Time > rxReadables[j].Time
-	})
-
-	return rxReadables, nil
-}
-
-// OutputsToUxBalances converts Outputs to []wallet.UxBalance
-func OutputsToUxBalances(ros Outputs) ([]wallet.UxBalance, error) {
+// OutputsToUxBalances converts UnspentOutputs to []wallet.UxBalance
+func OutputsToUxBalances(ros UnspentOutputs) ([]wallet.UxBalance, error) {
 	uxb := make([]wallet.UxBalance, len(ros))
 	for i, ro := range ros {
 		if ro.Hash == "" {
-			return nil, errors.New("Output missing hash")
+			return nil, errors.New("UnspentOutput missing hash")
 		}
 
 		hash, err := cipher.SHA256FromHex(ro.Hash)
 		if err != nil {
-			return nil, fmt.Errorf("Output hash is invalid: %v", err)
+			return nil, fmt.Errorf("UnspentOutput hash is invalid: %v", err)
 		}
 
 		coins, err := droplet.FromString(ro.Coins)
 		if err != nil {
-			return nil, fmt.Errorf("Output coins is invalid: %v", err)
+			return nil, fmt.Errorf("UnspentOutput coins is invalid: %v", err)
 		}
 
 		addr, err := cipher.DecodeBase58Address(ro.Address)
 		if err != nil {
-			return nil, fmt.Errorf("Output address is invalid: %v", err)
+			return nil, fmt.Errorf("UnspentOutput address is invalid: %v", err)
 		}
 
 		srcTx, err := cipher.SHA256FromHex(ro.SourceTransaction)
 		if err != nil {
-			return nil, fmt.Errorf("Output src_tx is invalid: %v", err)
+			return nil, fmt.Errorf("UnspentOutput src_tx is invalid: %v", err)
 		}
 
 		b := wallet.UxBalance{
@@ -240,4 +172,63 @@ func OutputsToUxBalances(ros Outputs) ([]wallet.UxBalance, error) {
 	}
 
 	return uxb, nil
+}
+
+// UnspentOutputsSummary records unspent outputs in different status.
+type UnspentOutputsSummary struct {
+	// HeadOutputs are unspent outputs confirmed in the blockchain
+	HeadOutputs UnspentOutputs `json:"head_outputs"`
+	// IncomingOutputs are unspent outputs being spent in unconfirmed transactions
+	OutgoingOutputs UnspentOutputs `json:"outgoing_outputs"`
+	// IncomingOutputs are unspent outputs being created by unconfirmed transactions
+	IncomingOutputs UnspentOutputs `json:"incoming_outputs"`
+}
+
+// NewUnspentOutputsSummary creates an UnspentOutputsSummary from visor.UnspentOutputsSummary
+func NewUnspentOutputsSummary(summary *visor.UnspentOutputsSummary) (*UnspentOutputsSummary, error) {
+	headOutputs, err := NewUnspentOutputs(summary.Confirmed)
+	if err != nil {
+		return nil, err
+	}
+
+	outgoingOutputs, err := NewUnspentOutputs(summary.Outgoing)
+	if err != nil {
+		return nil, err
+	}
+
+	incomingOutputs, err := NewUnspentOutputs(summary.Incoming)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UnspentOutputsSummary{
+		HeadOutputs:     headOutputs,
+		OutgoingOutputs: outgoingOutputs,
+		IncomingOutputs: incomingOutputs,
+	}, nil
+}
+
+// SpendableOutputs subtracts OutgoingOutputs from HeadOutputs
+func (os UnspentOutputsSummary) SpendableOutputs() UnspentOutputs {
+	if len(os.OutgoingOutputs) == 0 {
+		return os.HeadOutputs
+	}
+
+	spending := make(map[string]struct{}, len(os.OutgoingOutputs))
+	for _, u := range os.OutgoingOutputs {
+		spending[u.Hash] = struct{}{}
+	}
+
+	var outs UnspentOutputs
+	for i := range os.HeadOutputs {
+		if _, ok := spending[os.HeadOutputs[i].Hash]; !ok {
+			outs = append(outs, os.HeadOutputs[i])
+		}
+	}
+	return outs
+}
+
+// ExpectedOutputs adds IncomingOutputs to SpendableOutputs
+func (os UnspentOutputsSummary) ExpectedOutputs() UnspentOutputs {
+	return append(os.SpendableOutputs(), os.IncomingOutputs...)
 }

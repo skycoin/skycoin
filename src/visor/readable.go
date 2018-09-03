@@ -115,3 +115,50 @@ func NewUnconfirmedTransaction(txn coin.Transaction) UnconfirmedTransaction {
 		IsValid:     0,
 	}
 }
+
+// UnspentOutput includes coin.UxOut and adds CalculatedHours
+type UnspentOutput struct {
+	coin.UxOut
+	CalculatedHours uint64
+}
+
+// NewUnspentOutput creates an UnspentOutput
+func NewUnspentOutput(uxOut coin.UxOut, calculateHoursTime uint64) (UnspentOutput, error) {
+	calculatedHours, err := uxOut.CoinHours(calculateHoursTime)
+
+	// Treat overflowing coin hours calculations as a non-error and force hours to 0
+	// This affects one bad spent output which had overflowed hours, spent in block 13277.
+	switch err {
+	case nil:
+	case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+		calculatedHours = 0
+	default:
+		return UnspentOutput{}, err
+	}
+
+	return UnspentOutput{
+		UxOut:           uxOut,
+		CalculatedHours: calculatedHours,
+	}, nil
+}
+
+// NewUnspentOutputs creates []UnspentOutput
+func NewUnspentOutputs(uxOuts []coin.UxOut, calculateHoursTime uint64) ([]UnspentOutput, error) {
+	outs := make([]UnspentOutput, len(uxOuts))
+	for i, ux := range uxOuts {
+		u, err := NewUnspentOutput(ux, calculateHoursTime)
+		if err != nil {
+			return nil, err
+		}
+		outs[i] = u
+	}
+
+	return outs, nil
+}
+
+// UnspentOutputsSummary includes current unspent outputs and incoming and outgoing unspent outputs
+type UnspentOutputsSummary struct {
+	Confirmed []UnspentOutput
+	Outgoing  []UnspentOutput
+	Incoming  []UnspentOutput
+}

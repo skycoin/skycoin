@@ -4,7 +4,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -22,7 +21,7 @@ type Gatewayer interface {
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTransaction, error)
-	GetWalletUnconfirmedTxnsVerbose(wltID string) ([]readable.UnconfirmedTransactionVerbose, error)
+	GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
@@ -31,15 +30,15 @@ type Gatewayer interface {
 	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, error)
 	GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
-	GetBlockByHashVerbose(hash cipher.SHA256) (*readable.BlockVerbose, error)
+	GetBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]visor.TransactionInput, error)
 	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)
-	GetBlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error)
-	GetBlocks(start, end uint64) (*readable.Blocks, error)
-	GetBlocksVerbose(start, end uint64) (*readable.BlocksVerbose, error)
-	GetLastBlocks(num uint64) (*readable.Blocks, error)
-	GetLastBlocksVerbose(num uint64) (*readable.BlocksVerbose, error)
+	GetBlockBySeqVerbose(seq uint64) (*coin.SignedBlock, [][]visor.TransactionInput, error)
+	GetBlocksInRange(start, end uint64) ([]coin.SignedBlock, error)
+	GetBlocksInRangeVerbose(start, end uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
+	GetLastBlocks(num uint64) ([]coin.SignedBlock, error)
+	GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
 	GetBuildInfo() visor.BuildInfo
-	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*readable.OutputSet, error)
+	GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() (*daemon.BlockchainProgress, error)
@@ -48,18 +47,17 @@ type Gatewayer interface {
 	GetDefaultConnections() []string
 	GetTrustConnections() []string
 	GetExchgConnection() []string
-	GetAllUnconfirmedTxns() ([]visor.UnconfirmedTransaction, error)
-	GetAllUnconfirmedTxnsVerbose() ([]readable.UnconfirmedTransactionVerbose, error)
+	GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error)
+	GetAllUnconfirmedTransactionsVerbose() ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
-	GetTransactionWithStatus(txid cipher.SHA256) (*readable.TransactionWithStatus, error)
-	GetTransactionWithStatusVerbose(txid cipher.SHA256) (*readable.TransactionWithStatusVerbose, error)
-	GetTransactionsWithStatus(flts []visor.TxFilter) (*readable.TransactionsWithStatus, error)
-	GetTransactionsWithStatusVerbose(flts []visor.TxFilter) (*readable.TransactionsWithStatusVerbose, error)
+	GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
+	GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error)
+	GetTransactionsVerbose(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
-	GetVerboseTransactionsForAddress(a cipher.Address) ([]readable.TransactionVerbose, error)
+	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)

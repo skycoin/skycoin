@@ -427,8 +427,8 @@ func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 	return nil
 }
 
-// GetBlocks return blocks whose seq are in the range of start and end.
-func (bc Blockchain) GetBlocks(tx *dbutil.Tx, start, end uint64) ([]coin.SignedBlock, error) {
+// GetBlocksInRange return blocks whose seq are in the range of start and end.
+func (bc Blockchain) GetBlocksInRange(tx *dbutil.Tx, start, end uint64) ([]coin.SignedBlock, error) {
 	if start > end {
 		return nil, nil
 	}
@@ -470,7 +470,7 @@ func (bc Blockchain) GetLastBlocks(tx *dbutil.Tx, num uint64) ([]coin.SignedBloc
 		start = 0
 	}
 
-	return bc.GetBlocks(tx, uint64(start), end)
+	return bc.GetBlocksInRange(tx, uint64(start), end)
 }
 
 /* Private */

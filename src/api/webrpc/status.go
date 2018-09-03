@@ -22,15 +22,15 @@ func getStatusHandler(req Request, gw Gatewayer) Response {
 		logger.Error(err)
 		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
-	if len(blocks.Blocks) == 0 {
+	if len(blocks) == 0 {
 		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 
-	b := blocks.Blocks[0]
+	b := blocks[0]
 	return makeSuccessResponse(req.ID, StatusResult{
 		Running:            true,
 		BlockNum:           b.Head.BkSeq + 1,
-		LastBlockHash:      b.Head.BlockHash,
+		LastBlockHash:      b.Head.Hash().Hex(),
 		TimeSinceLastBlock: fmt.Sprintf("%vs", gw.GetTimeNow()-b.Head.Time),
 	})
 }

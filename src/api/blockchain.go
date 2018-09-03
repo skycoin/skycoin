@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http" // http,json helpers
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 // blockchainMetadataHandler returns the blockchain metadata
@@ -115,13 +116,14 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			var b *readable.BlockVerbose
+			var b *coin.SignedBlock
+			var inputs [][]visor.TransactionInput
 
 			switch {
 			case hash != "":
-				b, err = gateway.GetBlockByHashVerbose(h)
+				b, inputs, err = gateway.GetBlockByHashVerbose(h)
 			case seq != "":
-				b, err = gateway.GetBlockBySeqVerbose(uSeq)
+				b, inputs, err = gateway.GetBlockBySeqVerbose(uSeq)
 			}
 
 			if err != nil {
@@ -134,7 +136,13 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			wh.SendJSONOr500(logger, w, b)
+			rb, err := readable.NewBlockVerbose(&b.Block, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, rb)
 			return
 		}
 
@@ -202,7 +210,13 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			rb, err := gateway.GetBlocksVerbose(start, end)
+			blocks, inputs, err := gateway.GetBlocksInRangeVerbose(start, end)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			rb, err := readable.NewBlocksVerbose(blocks, inputs)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -210,7 +224,13 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 
 			wh.SendJSONOr500(logger, w, rb)
 		} else {
-			rb, err := gateway.GetBlocks(start, end)
+			blocks, err := gateway.GetBlocksInRange(start, end)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			rb, err := readable.NewBlocks(blocks)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -248,19 +268,34 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			rb, err := gateway.GetLastBlocksVerbose(n)
+			blocks, inputs, err := gateway.GetLastBlocksVerbose(n)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
-			wh.SendJSONOr500(logger, w, rb)
-		} else {
-			rb, err := gateway.GetLastBlocks(n)
+
+			rb, err := readable.NewBlocksVerbose(blocks, inputs)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
+
 			wh.SendJSONOr500(logger, w, rb)
+			return
 		}
+
+		blocks, err := gateway.GetLastBlocks(n)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		rb, err := readable.NewBlocks(blocks)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, rb)
 	}
 }

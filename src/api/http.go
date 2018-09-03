@@ -451,7 +451,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get set of pending transactions
 	webHandlerV1("/explorer/address", getTransactionsForAddress(gateway))
 
-	webHandlerV1("/coinSupply", getCoinSupply(gateway))
+	webHandlerV1("/coinSupply", coinSupply(gateway))
 
 	webHandlerV1("/richlist", getRichlist(gateway))
 

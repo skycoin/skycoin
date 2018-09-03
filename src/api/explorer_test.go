@@ -1,22 +1,18 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
-	"testing"
-
-	"encoding/json"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
-
-	"github.com/stretchr/testify/require"
+	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
-	"strconv"
-
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -29,10 +25,10 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.OutputSet) *
 	// check confirmed unspents only
 	// Search map of unlocked addresses
 	// used to filter unspents
-	unlockedAddrMap := daemon.MakeSearchMap(unlockedAddrs)
+	unlockedAddrSet := newStringSet(unlockedAddrs)
 	for _, u := range allUnspents.HeadOutputs {
 		// check if address is an unlocked distribution address
-		if _, ok := unlockedAddrMap[u.Address]; ok {
+		if _, ok := unlockedAddrSet[u.Address]; ok {
 			coins, err := droplet.FromString(u.Coins)
 			require.NoError(t, err)
 			unlockedSupply += coins
@@ -57,12 +53,12 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.OutputSet) *
 
 	// locked distribution addresses
 	lockedAddrs := visor.GetLockedDistributionAddresses()
-	lockedAddrMap := daemon.MakeSearchMap(lockedAddrs)
+	lockedAddrSet := newStringSet(lockedAddrs)
 
 	// get total coins hours which excludes locked distribution addresses
 	var totalCoinHours uint64
 	for _, out := range allUnspents.HeadOutputs {
-		if _, ok := lockedAddrMap[out.Address]; !ok {
+		if _, ok := lockedAddrSet[out.Address]; !ok {
 			totalCoinHours += out.Hours
 		}
 	}
@@ -71,9 +67,9 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.OutputSet) *
 	var currentCoinHours uint64
 	for _, out := range allUnspents.HeadOutputs {
 		// check if address not in locked distribution addresses
-		if _, ok := lockedAddrMap[out.Address]; !ok {
+		if _, ok := lockedAddrSet[out.Address]; !ok {
 			// check if address not in unlocked distribution addresses
-			if _, ok := unlockedAddrMap[out.Address]; !ok {
+			if _, ok := unlockedAddrSet[out.Address]; !ok {
 				currentCoinHours += out.Hours
 			}
 		}
@@ -213,14 +209,14 @@ func TestCoinSupply(t *testing.T) {
 			},
 		},
 	}
-	var filterInUnlocked []daemon.OutputsFilter
-	filterInUnlocked = append(filterInUnlocked, daemon.FbyAddresses(unlockedAddrs))
+	var filterInUnlocked []visor.OutputsFilter
+	filterInUnlocked = append(filterInUnlocked, visor.FbyAddresses(unlockedAddrs))
 	tt := []struct {
 		name                           string
 		method                         string
 		status                         int
 		err                            string
-		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
+		gatewayGetUnspentOutputsArg    []visor.OutputsFilter
 		gatewayGetUnspentOutputsResult *readable.OutputSet
 		gatewayGetUnspentOutputsErr    error
 		result                         *CoinSupply
@@ -236,7 +232,7 @@ func TestCoinSupply(t *testing.T) {
 			name:                        "500 - gatewayGetUnspentOutputsErr",
 			method:                      http.MethodGet,
 			status:                      http.StatusInternalServerError,
-			err:                         "500 Internal Server Error - gateway.GetUnspentOutputs failed: gatewayGetUnspentOutputsErr",
+			err:                         "500 Internal Server Error - gateway.GetUnspentOutputsSummary failed: gatewayGetUnspentOutputsErr",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
 		},
@@ -244,7 +240,7 @@ func TestCoinSupply(t *testing.T) {
 			name:                        "500 - gatewayGetUnspentOutputsErr",
 			method:                      http.MethodGet,
 			status:                      http.StatusInternalServerError,
-			err:                         "500 Internal Server Error - gateway.GetUnspentOutputs failed: gatewayGetUnspentOutputsErr",
+			err:                         "500 Internal Server Error - gateway.GetUnspentOutputsSummary failed: gatewayGetUnspentOutputsErr",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
 		},

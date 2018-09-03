@@ -525,8 +525,8 @@ func TestGetBlocks(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
-			gateway.On("GetBlocksVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksVerboseResult, tc.gatewayGetBlocksVerboseError)
+			gateway.On("GetBlocksInRange", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
+			gateway.On("GetBlocksInRangeVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksVerboseResult, tc.gatewayGetBlocksVerboseError)
 
 			endpoint := "/api/v1/blocks"
 

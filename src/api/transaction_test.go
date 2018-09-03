@@ -120,8 +120,8 @@ func TestGetPendingTxs(t *testing.T) {
 			name:                     "500 - get unconfirmedTxn error",
 			method:                   http.MethodGet,
 			status:                   http.StatusInternalServerError,
-			err:                      "500 Internal Server Error - GetAllUnconfirmedTxns failed",
-			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTxns failed"),
+			err:                      "500 Internal Server Error - GetAllUnconfirmedTransactions failed",
+			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTransactions failed"),
 		},
 		{
 			name:                            "500 - get unconfirmedTxnVerbose error",
@@ -129,8 +129,8 @@ func TestGetPendingTxs(t *testing.T) {
 			status:                          http.StatusInternalServerError,
 			verboseStr:                      "1",
 			verbose:                         true,
-			err:                             "500 Internal Server Error - GetAllUnconfirmedTxnsVerbose failed",
-			getAllUnconfirmedTxnsVerboseErr: errors.New("GetAllUnconfirmedTxnsVerbose failed"),
+			err:                             "500 Internal Server Error - GetAllUnconfirmedTransactionsVerbose failed",
+			getAllUnconfirmedTxnsVerboseErr: errors.New("GetAllUnconfirmedTransactionsVerbose failed"),
 		},
 		{
 			name:                          "200",
@@ -154,8 +154,8 @@ func TestGetPendingTxs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/pendingTxs"
 			gateway := &MockGatewayer{}
-			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
-			gateway.On("GetAllUnconfirmedTxnsVerbose").Return(tc.getAllUnconfirmedTxnsVerboseResponse, tc.getAllUnconfirmedTxnsVerboseErr)
+			gateway.On("GetAllUnconfirmedTransactions").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
+			gateway.On("GetAllUnconfirmedTransactionsVerbose").Return(tc.getAllUnconfirmedTxnsVerboseResponse, tc.getAllUnconfirmedTxnsVerboseErr)
 
 			v := url.Values{}
 			if tc.verboseStr != "" {
@@ -416,7 +416,7 @@ func TestGetTransactionByID(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.txid).Return(tc.getTransactionReponse, tc.getTransactionError)
 			gateway.On("GetTransactionWithStatus", tc.txid).Return(tc.getTransactionResultReponse, tc.getTransactionResultError)
-			gateway.On("GetTransactionWithStatusVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse, tc.getTransactionResultVerboseError)
+			gateway.On("GetTransactionVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse, tc.getTransactionResultVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

@@ -597,19 +597,25 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txns, err := gateway.GetWalletUnconfirmedTxnsVerbose(wltID)
+			txns, inputs, err := gateway.GetWalletUnconfirmedTransactionsVerbose(wltID)
 			if err != nil {
 				logger.Errorf("get wallet unconfirmed transactions verbose failed: %v", err)
 				handleWalletError(err)
 				return
 			}
 
-			if txns == nil {
-				txns = []readable.UnconfirmedTransactionVerbose{}
+			vb := make([]readable.UnconfirmedTransactionVerbose, len(txns))
+			for i, txn := range txns {
+				v, err := readable.NewUnconfirmedTransactionVerbose(&txn, inputs[i])
+				if err != nil {
+					wh.Error500(w, err.Error())
+					return
+				}
+				vb[i] = *v
 			}
 
 			wh.SendJSONOr500(logger, w, UnconfirmedTxnsVerboseResponse{
-				Transactions: txns,
+				Transactions: vb,
 			})
 		} else {
 			txns, err := gateway.GetWalletUnconfirmedTxns(wltID)

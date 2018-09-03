@@ -9,7 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
-	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -288,24 +287,15 @@ func (gw *Gateway) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, 
 	return b, err
 }
 
-// GetBlockByHashVerbose returns the block by hash
-func (gw *Gateway) GetBlockByHashVerbose(hash cipher.SHA256) (*readable.BlockVerbose, error) {
+// GetBlockByHashVerbose returns the block by hash with verbose transaction inputs
+func (gw *Gateway) GetBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]visor.TransactionInput, error) {
 	var b *coin.SignedBlock
 	var inputs [][]visor.TransactionInput
 	var err error
 	gw.strand("GetBlockByHashVerbose", func() {
 		b, inputs, err = gw.v.GetBlockByHashVerbose(hash)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if b == nil {
-		return nil, err
-	}
-
-	return readable.NewBlockVerbose(&b.Block, inputs)
+	return b, inputs, err
 }
 
 // GetSignedBlockBySeq returns block by seq
@@ -318,239 +308,79 @@ func (gw *Gateway) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	return b, err
 }
 
-// GetBlockBySeqVerbose returns the block by seq
-func (gw *Gateway) GetBlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error) {
+// GetBlockBySeqVerbose returns the block by seq with verbose transaction inputs
+func (gw *Gateway) GetBlockBySeqVerbose(seq uint64) (*coin.SignedBlock, [][]visor.TransactionInput, error) {
 	var b *coin.SignedBlock
 	var inputs [][]visor.TransactionInput
 	var err error
 	gw.strand("GetBlockBySeqVerbose", func() {
 		b, inputs, err = gw.v.GetBlockBySeqVerbose(seq)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if b == nil {
-		return nil, err
-	}
-
-	return readable.NewBlockVerbose(&b.Block, inputs)
+	return b, inputs, err
 }
 
-// GetBlocks returns a *readable.Blocks
-func (gw *Gateway) GetBlocks(start, end uint64) (*readable.Blocks, error) {
+// GetBlocksInRange returns blocks between start and end, including start and end
+func (gw *Gateway) GetBlocksInRange(start, end uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 	var err error
-
-	gw.strand("GetBlocks", func() {
-		blocks, err = gw.v.GetBlocks(start, end)
+	gw.strand("GetBlocksInRange", func() {
+		blocks, err = gw.v.GetBlocksInRange(start, end)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return readable.NewBlocks(blocks)
+	return blocks, err
 }
 
-// GetBlocksVerbose returns a *readable.BlocksVerbose
-func (gw *Gateway) GetBlocksVerbose(start, end uint64) (*readable.BlocksVerbose, error) {
+// GetBlocksInRangeVerbose returns blocks between start and end, including start and end,
+// and returns the blocks' verbose transaction input data
+func (gw *Gateway) GetBlocksInRangeVerbose(start, end uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error) {
 	var blocks []coin.SignedBlock
 	var inputs [][][]visor.TransactionInput
 	var err error
-
-	gw.strand("GetBlocksVerbose", func() {
-		blocks, inputs, err = gw.v.GetBlocksVerbose(start, end)
+	gw.strand("GetBlocksInRangeVerbose", func() {
+		blocks, inputs, err = gw.v.GetBlocksInRangeVerbose(start, end)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return readable.NewBlocksVerbose(blocks, inputs)
+	return blocks, inputs, err
 }
 
-// GetBlocksInDepth returns blocks in different depth
-func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*readable.Blocks, error) {
-	blocks := []coin.SignedBlock{}
+// GetBlocks returns blocks in different depth
+func (gw *Gateway) GetBlocks(seqs []uint64) ([]coin.SignedBlock, error) {
+	var blocks []coin.SignedBlock
 	var err error
-
-	gw.strand("GetBlocksInDepth", func() {
-		for _, n := range vs {
-			var b *coin.SignedBlock
-			b, err = gw.v.GetSignedBlockBySeq(n)
-			if err != nil {
-				err = fmt.Errorf("get block %v failed: %v", n, err)
-				return
-			}
-
-			if b == nil {
-				return
-			}
-
-			blocks = append(blocks, *b)
-		}
+	gw.strand("GetBlocks", func() {
+		blocks, err = gw.v.GetBlocks(seqs)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return readable.NewBlocks(blocks)
+	return blocks, err
 }
 
 // GetLastBlocks get last N blocks
-func (gw *Gateway) GetLastBlocks(num uint64) (*readable.Blocks, error) {
+func (gw *Gateway) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 	var err error
-
 	gw.strand("GetLastBlocks", func() {
 		blocks, err = gw.v.GetLastBlocks(num)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return readable.NewBlocks(blocks)
+	return blocks, err
 }
 
 // GetLastBlocksVerbose get last N blocks with verbose transaction input data
-func (gw *Gateway) GetLastBlocksVerbose(num uint64) (*readable.BlocksVerbose, error) {
+func (gw *Gateway) GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error) {
 	var blocks []coin.SignedBlock
 	var inputs [][][]visor.TransactionInput
 	var err error
-
 	gw.strand("GetLastBlocksVerbose", func() {
 		blocks, inputs, err = gw.v.GetLastBlocksVerbose(num)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return readable.NewBlocksVerbose(blocks, inputs)
+	return blocks, inputs, err
 }
 
-// OutputsFilter used as optional arguments in GetUnspentOutputs method
-type OutputsFilter func(outputs coin.UxArray) coin.UxArray
-
-// GetUnspentOutputs gets unspent outputs and returns the filtered results,
+// GetUnspentOutputsSummary gets unspent outputs and returns the filtered results,
 // Note: all filters will be executed as the pending sequence in 'AND' mode.
-func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*readable.OutputSet, error) {
-	// unspent outputs
-	var unspentOutputs []coin.UxOut
-	// unconfirmed spending outputs
-	var uncfmSpendingOutputs coin.UxArray
-	// unconfirmed incoming outputs
-	var uncfmIncomingOutputs coin.UxArray
-	var head *coin.SignedBlock
+func (gw *Gateway) GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error) {
+	var summary *visor.UnspentOutputsSummary
 	var err error
-	gw.strand("GetUnspentOutputs", func() {
-		head, err = gw.v.GetHeadBlock()
-		if err != nil {
-			err = fmt.Errorf("v.GetHeadBlock failed: %v", err)
-			return
-		}
-
-		unspentOutputs, err = gw.v.GetAllUnspentOutputs()
-		if err != nil {
-			err = fmt.Errorf("v.GetAllUnspentOutputs failed: %v", err)
-			return
-		}
-
-		uncfmSpendingOutputs, err = gw.v.UnconfirmedSpendingOutputs()
-		if err != nil {
-			err = fmt.Errorf("v.UnconfirmedSpendingOutputs failed: %v", err)
-			return
-		}
-
-		uncfmIncomingOutputs, err = gw.v.UnconfirmedIncomingOutputs()
-		if err != nil {
-			err = fmt.Errorf("v.UnconfirmedIncomingOutputs failed: %v", err)
-			return
-		}
+	gw.strand("GetUnspentOutputsSummary", func() {
+		summary, err = gw.v.GetUnspentOutputsSummary(filters)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	for _, flt := range filters {
-		unspentOutputs = flt(unspentOutputs)
-		uncfmSpendingOutputs = flt(uncfmSpendingOutputs)
-		uncfmIncomingOutputs = flt(uncfmIncomingOutputs)
-	}
-
-	outputSet := readable.OutputSet{}
-	outputSet.HeadOutputs, err = readable.NewOutputs(head.Time(), unspentOutputs)
-	if err != nil {
-		return nil, err
-	}
-
-	outputSet.OutgoingOutputs, err = readable.NewOutputs(head.Time(), uncfmSpendingOutputs)
-	if err != nil {
-		return nil, err
-	}
-
-	outputSet.IncomingOutputs, err = readable.NewOutputs(head.Time(), uncfmIncomingOutputs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &outputSet, nil
-}
-
-// FbyAddressesNotIncluded filters the unspent outputs that are not owned by the addresses
-func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
-	return func(outputs coin.UxArray) coin.UxArray {
-		addrMatch := coin.UxArray{}
-		addrMap := MakeSearchMap(addrs)
-
-		for _, u := range outputs {
-			if _, ok := addrMap[u.Body.Address.String()]; !ok {
-				addrMatch = append(addrMatch, u)
-			}
-		}
-		return addrMatch
-	}
-}
-
-// FbyAddresses filters the unspent outputs that owned by the addresses
-func FbyAddresses(addrs []string) OutputsFilter {
-	return func(outputs coin.UxArray) coin.UxArray {
-		addrMatch := coin.UxArray{}
-		addrMap := MakeSearchMap(addrs)
-
-		for _, u := range outputs {
-			if _, ok := addrMap[u.Body.Address.String()]; ok {
-				addrMatch = append(addrMatch, u)
-			}
-		}
-		return addrMatch
-	}
-}
-
-// FbyHashes filters the unspent outputs that have hashes matched.
-func FbyHashes(hashes []string) OutputsFilter {
-	return func(outputs coin.UxArray) coin.UxArray {
-		hsMatch := coin.UxArray{}
-		hsMap := MakeSearchMap(hashes)
-
-		for _, u := range outputs {
-			if _, ok := hsMap[u.Hash().Hex()]; ok {
-				hsMatch = append(hsMatch, u)
-			}
-		}
-		return hsMatch
-	}
-}
-
-// MakeSearchMap returns a search indexed map for use in filters
-func MakeSearchMap(addrs []string) map[string]struct{} {
-	addrMap := make(map[string]struct{})
-	for _, addr := range addrs {
-		addrMap[addr] = struct{}{}
-	}
-
-	return addrMap
+	return summary, err
 }
 
 // GetTransaction returns transaction by txid
@@ -565,45 +395,15 @@ func (gw *Gateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error
 	return txn, err
 }
 
-// GetTransactionWithStatus gets transaction result by txid.
-func (gw *Gateway) GetTransactionWithStatus(txid cipher.SHA256) (*readable.TransactionWithStatus, error) {
-	var txn *visor.Transaction
-	var err error
-
-	gw.strand("GetTransactionWithStatus", func() {
-		txn, err = gw.v.GetTransaction(txid)
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if txn == nil {
-		return nil, nil
-	}
-
-	return readable.NewTransactionWithStatus(txn)
-}
-
-// GetTransactionWithStatusVerbose gets verbose transaction result by txid.
-func (gw *Gateway) GetTransactionWithStatusVerbose(txid cipher.SHA256) (*readable.TransactionWithStatusVerbose, error) {
+// GetTransactionVerbose gets verbose transaction result by txid.
+func (gw *Gateway) GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error) {
 	var txn *visor.Transaction
 	var inputs []visor.TransactionInput
 	var err error
-
-	gw.strand("GetTransactionWithStatusVerbose", func() {
+	gw.strand("GetTransactionVerbose", func() {
 		txn, inputs, err = gw.v.GetTransactionWithInputs(txid)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if txn == nil {
-		return nil, nil
-	}
-
-	return readable.NewTransactionWithStatusVerbose(txn, inputs)
+	return txn, inputs, err
 }
 
 // InjectBroadcastTransaction injects and broadcasts a transaction
@@ -615,32 +415,16 @@ func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return err
 }
 
-// GetVerboseTransactionsForAddress returns []readable.TransactionVerbose for a given address.
+// GetVerboseTransactionsForAddress returns transactions and their verbose input data for a given address.
 // These transactions include confirmed and unconfirmed transactions
-func (gw *Gateway) GetVerboseTransactionsForAddress(a cipher.Address) ([]readable.TransactionVerbose, error) {
+func (gw *Gateway) GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error) {
 	var err error
 	var txns []visor.Transaction
 	var inputs [][]visor.TransactionInput
-
 	gw.strand("GetVerboseTransactionsForAddress", func() {
 		txns, inputs, err = gw.v.GetVerboseTransactionsForAddress(a)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	vb := make([]readable.TransactionVerbose, len(txns))
-	for i, txn := range txns {
-		v, err := readable.NewTransactionVerbose(txn, inputs[i])
-		if err != nil {
-			return nil, err
-		}
-
-		vb[i] = v
-	}
-
-	return vb, nil
+	return txns, inputs, err
 }
 
 // GetTransactions returns transactions filtered by zero or more visor.TxFilter
@@ -653,33 +437,15 @@ func (gw *Gateway) GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, 
 	return txns, err
 }
 
-// GetTransactionsWithStatus returns transactions filtered by zero or more visor.TxFilter
-func (gw *Gateway) GetTransactionsWithStatus(flts []visor.TxFilter) (*readable.TransactionsWithStatus, error) {
-	var txns []visor.Transaction
-	var err error
-	gw.strand("GetTransactionsWithStatus", func() {
-		txns, err = gw.v.GetTransactions(flts)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return readable.NewTransactionsWithStatus(txns)
-}
-
-// GetTransactionsWithStatusVerbose returns transactions filtered by zero or more visor.TxFilter
-func (gw *Gateway) GetTransactionsWithStatusVerbose(flts []visor.TxFilter) (*readable.TransactionsWithStatusVerbose, error) {
+// GetTransactionsVerbose returns transactions filtered by zero or more visor.TxFilter
+func (gw *Gateway) GetTransactionsVerbose(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error) {
 	var txns []visor.Transaction
 	var inputs [][]visor.TransactionInput
 	var err error
-	gw.strand("GetTransactionsWithStatusVerbose", func() {
+	gw.strand("GetTransactionsVerbose", func() {
 		txns, inputs, err = gw.v.GetTransactionsWithInputs(flts)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return readable.NewTransactionsWithStatusVerbose(txns, inputs)
+	return txns, inputs, err
 }
 
 // GetUxOutByID gets UxOut by hash id.
@@ -721,47 +487,33 @@ func (gw *Gateway) GetTimeNow() uint64 {
 	return uint64(time.Now().UTC().Unix())
 }
 
-// GetAllUnconfirmedTxns returns all unconfirmed transactions
-func (gw *Gateway) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTransaction, error) {
+// GetAllUnconfirmedTransactions returns all unconfirmed transactions
+func (gw *Gateway) GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error) {
 	var txns []visor.UnconfirmedTransaction
 	var err error
-	gw.strand("GetAllUnconfirmedTxns", func() {
-		txns, err = gw.v.GetAllUnconfirmedTxns()
+	gw.strand("GetAllUnconfirmedTransactions", func() {
+		txns, err = gw.v.GetAllUnconfirmedTransactions()
 	})
 	return txns, err
 }
 
-// GetAllUnconfirmedTxnsVerbose returns all unconfirmed transactions with verbose transaction inputs
-func (gw *Gateway) GetAllUnconfirmedTxnsVerbose() ([]readable.UnconfirmedTransactionVerbose, error) {
+// GetAllUnconfirmedTransactionsVerbose returns all unconfirmed transactions with verbose transaction inputs
+func (gw *Gateway) GetAllUnconfirmedTransactionsVerbose() ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error) {
 	var txns []visor.UnconfirmedTransaction
 	var inputs [][]visor.TransactionInput
 	var err error
-	gw.strand("GetAllUnconfirmedTxnsVerbose", func() {
-		txns, inputs, err = gw.v.GetAllUnconfirmedTxnsVerbose()
+	gw.strand("GetAllUnconfirmedTransactionsVerbose", func() {
+		txns, inputs, err = gw.v.GetAllUnconfirmedTransactionsVerbose()
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	vb := make([]readable.UnconfirmedTransactionVerbose, len(txns))
-	for i, txn := range txns {
-		v, err := readable.NewUnconfirmedTransactionVerbose(&txn, inputs[i])
-		if err != nil {
-			return nil, err
-		}
-
-		vb[i] = *v
-	}
-
-	return vb, nil
+	return txns, inputs, err
 }
 
-// GetUnconfirmedTxns returns addresses related unconfirmed transactions
-func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) ([]visor.UnconfirmedTransaction, error) {
+// GetUnconfirmedTransactions returns addresses related unconfirmed transactions
+func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.UnconfirmedTransaction, error) {
 	var txns []visor.UnconfirmedTransaction
 	var err error
-	gw.strand("GetUnconfirmedTxns", func() {
-		txns, err = gw.v.GetUnconfirmedTxns(visor.SendsToAddresses(addrs))
+	gw.strand("GetUnconfirmedTransactions", func() {
+		txns, err = gw.v.GetUnconfirmedTransactions(visor.SendsToAddresses(addrs))
 	})
 	return txns, err
 }
@@ -1009,22 +761,22 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTr
 			return
 		}
 
-		txns, err = gw.v.GetUnconfirmedTxns(visor.SendsToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTransactions(visor.SendsToAddresses(addrs))
 	})
 
 	return txns, err
 }
 
-// GetWalletUnconfirmedTxnsVerbose returns all unconfirmed transactions in given wallet
-func (gw *Gateway) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]readable.UnconfirmedTransactionVerbose, error) {
+// GetWalletUnconfirmedTransactionsVerbose returns all unconfirmed transactions in given wallet
+func (gw *Gateway) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error) {
 	if !gw.Config.EnableWalletAPI {
-		return nil, wallet.ErrWalletAPIDisabled
+		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var txns []visor.UnconfirmedTransaction
 	var inputs [][]visor.TransactionInput
 	var err error
-	gw.strand("GetWalletUnconfirmedTxnsVerbose", func() {
+	gw.strand("GetWalletUnconfirmedTransactionsVerbose", func() {
 		var addrs []cipher.Address
 		addrs, err = gw.v.Wallets.GetAddresses(wltID)
 		if err != nil {
@@ -1033,21 +785,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]readable.Unc
 
 		txns, inputs, err = gw.v.GetUnconfirmedTxnsVerbose(visor.SendsToAddresses(addrs))
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	vb := make([]readable.UnconfirmedTransactionVerbose, len(txns))
-	for i, txn := range txns {
-		v, err := readable.NewUnconfirmedTransactionVerbose(&txn, inputs[i])
-		if err != nil {
-			return nil, err
-		}
-		vb[i] = *v
-	}
-
-	return vb, nil
+	return txns, inputs, err
 }
 
 // ReloadWallets reloads all wallets
@@ -1070,11 +808,9 @@ func (gw *Gateway) UnloadWallet(id string) error {
 	}
 
 	var err error
-
 	gw.strand("UnloadWallet", func() {
 		err = gw.v.Wallets.Remove(id)
 	})
-
 	return err
 }
 
@@ -1109,14 +845,24 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 
 // GetRichlist returns rich list as desc order.
 func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
-	rbOuts, err := gw.GetUnspentOutputs()
+	rbOuts, err := gw.GetUnspentOutputsSummary(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	allAccounts, err := rbOuts.AggregateUnspentOutputs()
-	if err != nil {
-		return nil, err
+	// Build a map from addresses to total coins held
+	allAccounts := map[string]uint64{}
+	for _, out := range rbOuts.Confirmed {
+		addr := out.Body.Address.String()
+		if _, ok := allAccounts[addr]; ok {
+			var err error
+			allAccounts[addr], err = coin.AddUint64(allAccounts[addr], out.Body.Coins)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			allAccounts[addr] = out.Body.Coins
+		}
 	}
 
 	lockedAddrs := visor.GetLockedDistributionAddresses()

@@ -368,7 +368,7 @@ func TestClientGetBlocksBySeq(t *testing.T) {
 
 	gatewayerMock := &MockGatewayer{}
 	s.Gateway = gatewayerMock
-	gatewayerMock.On("GetBlocksInDepth", []uint64{454}).Return(decodeBlock(blockString), nil)
+	gatewayerMock.On("GetBlocks", []uint64{454}).Return(decodeBlock(blockString), nil)
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))

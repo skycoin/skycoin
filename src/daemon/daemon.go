@@ -1249,7 +1249,7 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 		return nil, nil
 	}
 
-	txns, err := dm.visor.GetAllUnconfirmedTxns()
+	txns, err := dm.visor.GetAllUnconfirmedTransactions()
 	if err != nil {
 		return nil, err
 	}

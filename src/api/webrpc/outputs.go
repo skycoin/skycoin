@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 // OutputsResult the output json format
 type OutputsResult struct {
-	Outputs readable.OutputSet `json:"outputs"`
+	Outputs readable.UnspentOutputsSummary `json:"outputs"`
 }
 
 func getOutputsHandler(req Request, gateway Gatewayer) Response {
@@ -35,11 +35,17 @@ func getOutputsHandler(req Request, gateway Gatewayer) Response {
 		}
 	}
 
-	outs, err := gateway.GetUnspentOutputs(daemon.FbyAddresses(addrs))
+	summary, err := gateway.GetUnspentOutputsSummary([]visor.OutputsFilter{visor.FbyAddresses(addrs)})
 	if err != nil {
 		logger.Errorf("get unspent outputs failed: %v", err)
-		return MakeErrorResponse(ErrCodeInternalError, fmt.Sprintf("gateway.GetUnspentOutputs failed: %v", err))
+		return MakeErrorResponse(ErrCodeInternalError, fmt.Sprintf("gateway.GetUnspentOutputsSummary failed: %v", err))
 	}
 
-	return makeSuccessResponse(req.ID, OutputsResult{*outs})
+	rSummary, err := readable.NewUnspentOutputsSummary(summary)
+	if err != nil {
+		logger.Error(err.Error())
+		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
+	}
+
+	return makeSuccessResponse(req.ID, OutputsResult{*rSummary})
 }

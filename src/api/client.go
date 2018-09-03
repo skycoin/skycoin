@@ -301,8 +301,8 @@ func (c *Client) Version() (*visor.BuildInfo, error) {
 }
 
 // Outputs makes a request to GET /api/v1/outputs
-func (c *Client) Outputs() (*readable.OutputSet, error) {
-	var o readable.OutputSet
+func (c *Client) Outputs() (*readable.UnspentOutputsSummary, error) {
+	var o readable.UnspentOutputsSummary
 	if err := c.Get("/api/v1/outputs", &o); err != nil {
 		return nil, err
 	}
@@ -310,12 +310,12 @@ func (c *Client) Outputs() (*readable.OutputSet, error) {
 }
 
 // OutputsForAddresses makes a request to GET /api/v1/outputs?addrs=xxx
-func (c *Client) OutputsForAddresses(addrs []string) (*readable.OutputSet, error) {
+func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/outputs?" + v.Encode()
 
-	var o readable.OutputSet
+	var o readable.UnspentOutputsSummary
 	if err := c.Get(endpoint, &o); err != nil {
 		return nil, err
 	}
@@ -323,12 +323,12 @@ func (c *Client) OutputsForAddresses(addrs []string) (*readable.OutputSet, error
 }
 
 // OutputsForHashes makes a request to GET /api/v1/outputs?hashes=zzz
-func (c *Client) OutputsForHashes(hashes []string) (*readable.OutputSet, error) {
+func (c *Client) OutputsForHashes(hashes []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
 	endpoint := "/api/v1/outputs?" + v.Encode()
 
-	var o readable.OutputSet
+	var o readable.UnspentOutputsSummary
 	if err := c.Get(endpoint, &o); err != nil {
 		return nil, err
 	}

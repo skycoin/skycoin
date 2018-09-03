@@ -70,7 +70,9 @@ func decodeRawTxCmd() gcli.Command {
 				return fmt.Errorf("Unable to deserialize transaction bytes: %v", err)
 			}
 
-			isGenesis := txn.Head.BkSeq == 0
+			// Assume the transaction is not malformed and if it has no inputs
+			// that it is the genesis block's transaction
+			isGenesis := len(txn.In) == 0
 			rTxn, err := readable.NewTransaction(txn, isGenesis)
 			if err != nil {
 				return err

@@ -29,6 +29,7 @@ import (
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -525,11 +526,11 @@ func TestDecodeRawTransaction(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var txn visor.TransactionJSON
+			var txn readable.Transaction
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
 			require.NoError(t, err)
 
-			var expect visor.TransactionJSON
+			var expect readable.Transaction
 			checkGoldenFile(t, tc.goldenFile, TestData{txn, &expect})
 		})
 	}

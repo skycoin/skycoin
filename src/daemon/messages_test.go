@@ -15,7 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/hexdump"
 )
 
 func setupMsgEncoding() {
@@ -55,18 +55,18 @@ func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIte
 }
 
 // Next : Yields next element of MessagesAnnotationsIterator
-func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
+func (mai *MessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 	if !mai.LengthCalled {
 		mai.LengthCalled = true
-		return util.Annotation{Size: 4, Name: "Length"}, true
+		return hexdump.Annotation{Size: 4, Name: "Length"}, true
 	}
 	if !mai.PrefixCalled {
 		mai.PrefixCalled = true
-		return util.Annotation{Size: 4, Name: "Prefix"}, true
+		return hexdump.Annotation{Size: 4, Name: "Prefix"}, true
 
 	}
 	if mai.CurrentField >= mai.MaxField {
-		return util.Annotation{}, false
+		return hexdump.Annotation{}, false
 	}
 
 	var i = mai.CurrentField
@@ -89,7 +89,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 						vF = v.Field(i)
 						if vF.Len() == 0 {
 							// Last field is empty slice. Nothing further tokens
-							return util.Annotation{}, false
+							return hexdump.Annotation{}, false
 						}
 					} else {
 						panic(encoder.ErrInvalidOmitEmpty)
@@ -97,7 +97,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 				}
 			}
 		} else {
-			return util.Annotation{}, false
+			return hexdump.Annotation{}, false
 		}
 	}
 	if f.Tag.Get("enc") != "-" {
@@ -105,32 +105,32 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {
 					mai.CurrentIndex = 0
-					return util.Annotation{Size: 4, Name: f.Name + " length"}, true
+					return hexdump.Annotation{Size: 4, Name: f.Name + " length"}, true
 				}
 				sliceLen := v.Field(i).Len()
 				mai.CurrentIndex++
 				if mai.CurrentIndex < sliceLen {
 					// Emit annotation for slice item
-					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
+					return hexdump.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
 				}
 				// No more annotation tokens for current slice field
 				mai.CurrentIndex = -1
 				mai.CurrentField++
 				if sliceLen > 0 {
 					// Emit annotation for last item
-					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
+					return hexdump.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
 				}
 				// Zero length slice. Start over
 				return mai.Next()
 			}
 
 			mai.CurrentField++
-			return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
+			return hexdump.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
 
 		}
 	}
 
-	return util.Annotation{}, false
+	return hexdump.Annotation{}, false
 }
 
 /**************************************
@@ -198,7 +198,7 @@ func ExampleEmptySliceStruct() {
 	}
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -237,7 +237,7 @@ func ExampleOmitEmptySliceTestStruct() {
 	}
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -256,7 +256,7 @@ func ExampleIntroductionMessage() {
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -277,7 +277,7 @@ func ExampleGetPeersMessage() {
 	fmt.Println("GetPeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -300,7 +300,7 @@ func ExampleGivePeersMessage() {
 	fmt.Println("GivePeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -322,7 +322,7 @@ func ExampleGetBlocksMessage() {
 	fmt.Println("GetBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -362,7 +362,7 @@ func ExampleGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -407,7 +407,7 @@ func ExampleAnnounceBlocksMessage() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -429,7 +429,7 @@ func ExampleGetTxnsMessage() {
 	fmt.Println("GetTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -500,7 +500,7 @@ func ExampleGiveTxnsMessage() {
 	fmt.Println("GiveTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -559,7 +559,7 @@ func ExampleAnnounceTxnsMessage() {
 	fmt.Println("AnnounceTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}

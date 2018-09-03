@@ -254,10 +254,10 @@ func TestClientGetTransactionByID(t *testing.T) {
 			require.NoError(t, err)
 
 			expectedTxn := decodeRawTransaction(rawTxStr)
-			rbTx, err := readable.NewTransaction(expectedTxn, false)
+			rbTx, err := readable.NewTransaction(expectedTxn.Transaction, false)
 			require.NoError(t, err)
 			require.Equal(t, &readable.TransactionWithStatus{
-				Status:      expectedTxn.Status,
+				Status:      readable.NewTransactionStatus(expectedTxn.Status),
 				Time:        0,
 				Transaction: *rbTx,
 			}, txn.Transaction)

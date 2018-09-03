@@ -42,10 +42,10 @@ func Test_getTransactionHandler(t *testing.T) {
 	}
 
 	tx := decodeRawTransaction(rawTxStr)
-	rbTx, err := readable.NewTransaction(tx, false)
+	rbTx, err := readable.NewTransaction(tx.Transaction, false)
 	require.NoError(t, err)
 	txRlt := readable.TransactionWithStatus{
-		Status: visor.TransactionStatus{
+		Status: readable.TransactionStatus{
 			Confirmed: true,
 			Height:    103,
 		},

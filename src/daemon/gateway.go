@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -9,11 +10,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	"fmt"
 
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -720,7 +718,7 @@ func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]*historydb.UxOut
 
 // GetTimeNow returns the current Unix time
 func (gw *Gateway) GetTimeNow() uint64 {
-	return uint64(utc.UnixNow())
+	return uint64(time.Now().UTC().Unix())
 }
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions
@@ -1157,7 +1155,7 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 
 // Health is returned by the /health endpoint
 type Health struct {
-	BlockchainMetadata *visor.BlockchainMetadata
+	BlockchainMetadata visor.BlockchainMetadata
 	Version            visor.BuildInfo
 	OpenConnections    int
 	Uptime             time.Duration
@@ -1177,7 +1175,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 		conns := gw.getConnections()
 
 		health = &Health{
-			BlockchainMetadata: metadata,
+			BlockchainMetadata: *metadata,
 			Version:            gw.v.Config.BuildInfo,
 			OpenConnections:    len(conns.Connections),
 			Uptime:             time.Since(gw.v.StartedAt),

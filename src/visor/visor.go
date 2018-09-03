@@ -12,14 +12,12 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/timeutil"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
@@ -541,7 +539,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 
 	err := vs.DB.Update("CreateAndExecuteBlock", func(tx *dbutil.Tx) error {
 		var err error
-		sb, err = vs.createBlock(tx, uint64(utc.UnixNow()))
+		sb, err = vs.createBlock(tx, uint64(time.Now().UTC().Unix()))
 		if err != nil {
 			return err
 		}

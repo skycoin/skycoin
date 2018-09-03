@@ -11,13 +11,12 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
+	wh "github.com/skycoin/skycoin/src/util/http" // http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-// pendingTxnsHandler returns pending transactions
+// pendingTxnsHandler returns pending (unconfirmed) transactions
 // Method: GET
 // URI: /api/v1/pendingTxs
 // Args:

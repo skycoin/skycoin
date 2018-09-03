@@ -30,13 +30,13 @@ func makeBadBlock(t *testing.T) *coin.Block {
 	preBlock, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
 	uxHash := testutil.RandSHA256(t)
-	tx := coin.Transaction{
+	txn := coin.Transaction{
 		In: []cipher.SHA256{
 			testutil.RandSHA256(t),
 		},
 	}
-	tx.PushOutput(genAddress, math.MaxInt64+1, 255)
-	b, err := coin.NewBlock(*preBlock, now, uxHash, coin.Transactions{tx}, func(t *coin.Transaction) (uint64, error) {
+	txn.PushOutput(genAddress, math.MaxInt64+1, 255)
+	b, err := coin.NewBlock(*preBlock, now, uxHash, coin.Transactions{txn}, func(t *coin.Transaction) (uint64, error) {
 		return 0, nil
 	})
 	require.NoError(t, err)

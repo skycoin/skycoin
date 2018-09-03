@@ -2,9 +2,9 @@ package daemon
 
 import (
 	"sync"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 type announcedTxnsCache struct {
@@ -22,7 +22,7 @@ func (c *announcedTxnsCache) add(txns []cipher.SHA256) {
 	c.Lock()
 	defer c.Unlock()
 
-	t := utc.Now().UnixNano()
+	t := time.Now().UTC().UnixNano()
 	for _, txn := range txns {
 		c.cache[txn] = t
 	}

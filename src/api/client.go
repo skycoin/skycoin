@@ -455,8 +455,8 @@ func (c *Client) LastBlocksVerbose(n uint64) (*readable.BlocksVerbose, error) {
 }
 
 // BlockchainMetadata makes a request to GET /api/v1/blockchain/metadata
-func (c *Client) BlockchainMetadata() (*visor.BlockchainMetadata, error) {
-	var b visor.BlockchainMetadata
+func (c *Client) BlockchainMetadata() (*readable.BlockchainMetadata, error) {
+	var b readable.BlockchainMetadata
 	if err := c.Get("/api/v1/blockchain/metadata", &b); err != nil {
 		return nil, err
 	}

@@ -7,7 +7,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -35,24 +34,6 @@ func (tus TxnUnspents) AllForAddress(a cipher.Address) coin.UxArray {
 		}
 	}
 	return uxo
-}
-
-// UnconfirmedTransaction unconfirmed transaction
-type UnconfirmedTransaction struct {
-	Transaction coin.Transaction
-	// Time the txn was last received
-	Received int64
-	// Time the txn was last checked against the blockchain
-	Checked int64
-	// Last time we announced this txn
-	Announced int64
-	// If this txn is valid
-	IsValid int8
-}
-
-// Hash returns the coin.Transaction's hash
-func (ut *UnconfirmedTransaction) Hash() cipher.SHA256 {
-	return ut.Transaction.Hash()
 }
 
 // unconfirmed transactions bucket
@@ -262,16 +243,6 @@ func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *dbutil.Tx, hashes map[cipher
 	return nil
 }
 
-func createUnconfirmedTxn(txn coin.Transaction) UnconfirmedTransaction {
-	now := utc.Now()
-	return UnconfirmedTransaction{
-		Transaction: txn,
-		Received:    now.UnixNano(),
-		Checked:     now.UnixNano(),
-		Announced:   time.Time{}.UnixNano(),
-	}
-}
-
 // InjectTransaction adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
@@ -305,7 +276,7 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer,
 	// Update if we already have this txn
 	if known {
 		if err := utp.txns.update(tx, hash, func(utxn *UnconfirmedTransaction) error {
-			now := utc.Now().UnixNano()
+			now := time.Now().UTC().UnixNano()
 			utxn.Received = now
 			utxn.Checked = now
 			utxn.IsValid = isValid
@@ -318,7 +289,7 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer,
 		return true, softErr, nil
 	}
 
-	utx := createUnconfirmedTxn(txn)
+	utx := NewUnconfirmedTransaction(txn)
 	utx.IsValid = isValid
 
 	// add txn to index
@@ -385,7 +356,7 @@ func (utp *UnconfirmedTxnPool) Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockS
 		return nil, err
 	}
 
-	now := utc.Now()
+	now := time.Now().UTC()
 	var nowValid []cipher.SHA256
 
 	for _, utxn := range utxns {

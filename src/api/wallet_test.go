@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -385,19 +386,21 @@ func TestWalletSpendHandler(t *testing.T) {
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			status:             http.StatusOK,
-			walletID:           "1234",
-			coins:              12,
-			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			gatewaySpendResult: &coin.Transaction{},
-			gatewayBalanceErr:  errors.New("GetWalletBalance error"),
+			status:   http.StatusOK,
+			walletID: "1234",
+			coins:    12,
+			dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{
+				In: []cipher.SHA256{cipher.MustSHA256FromHex("78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e")},
+			},
+			gatewayBalanceErr: errors.New("GetWalletBalance error"),
 			spendResult: &SpendResult{
-				Error: "Get wallet balance failed: GetWalletBalance error",
+				Error: "gateway.GetWalletBalance failed: GetWalletBalance error",
 				Transaction: &readable.Transaction{
 					Sigs:      []string{},
-					In:        []string{},
+					In:        []string{"78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e"},
 					Out:       []readable.TransactionOutput{},
-					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					Hash:      "110d27c6a0917ec3e3741a7fc5732996542d68a4c61b593335e1f0f1c071ba95",
 					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 			},
@@ -428,21 +431,23 @@ func TestWalletSpendHandler(t *testing.T) {
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			status:             http.StatusOK,
-			walletID:           "1234",
-			coins:              12,
-			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			gatewaySpendResult: &coin.Transaction{},
+			status:   http.StatusOK,
+			walletID: "1234",
+			coins:    12,
+			dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{
+				In: []cipher.SHA256{cipher.MustSHA256FromHex("78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e")},
+			},
 			spendResult: &SpendResult{
 				Balance: &wallet.BalancePair{},
 				Transaction: &readable.Transaction{
 					Length:    0,
 					Type:      0,
-					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					Hash:      "110d27c6a0917ec3e3741a7fc5732996542d68a4c61b593335e1f0f1c071ba95",
 					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
 					Timestamp: 0,
 					Sigs:      []string{},
-					In:        []string{},
+					In:        []string{"78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e"},
 					Out:       []readable.TransactionOutput{},
 				},
 			},
@@ -455,21 +460,23 @@ func TestWalletSpendHandler(t *testing.T) {
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			status:             http.StatusOK,
-			walletID:           "1234",
-			coins:              12,
-			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			gatewaySpendResult: &coin.Transaction{},
+			status:   http.StatusOK,
+			walletID: "1234",
+			coins:    12,
+			dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{
+				In: []cipher.SHA256{cipher.MustSHA256FromHex("78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e")},
+			},
 			spendResult: &SpendResult{
 				Balance: &wallet.BalancePair{},
 				Transaction: &readable.Transaction{
 					Length:    0,
 					Type:      0,
-					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					Hash:      "110d27c6a0917ec3e3741a7fc5732996542d68a4c61b593335e1f0f1c071ba95",
 					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
 					Timestamp: 0,
 					Sigs:      []string{},
-					In:        []string{},
+					In:        []string{"78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e"},
 					Out:       []readable.TransactionOutput{},
 				},
 			},
@@ -1029,10 +1036,18 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		verbose  string
 	}
 
-	unconfirmedTxn, err := readable.NewUnconfirmedTransaction(&visor.UnconfirmedTransaction{})
+	uTxn := &visor.UnconfirmedTransaction{
+		Transaction: coin.Transaction{
+			In: []cipher.SHA256{testutil.RandSHA256(t)},
+		},
+	}
+
+	unconfirmedTxn, err := readable.NewUnconfirmedTransaction(uTxn)
 	require.NoError(t, err)
 
-	unconfirmedTxnVerbose, err := readable.NewUnconfirmedTransactionVerbose(&visor.UnconfirmedTransaction{}, nil)
+	unconfirmedTxnVerbose, err := readable.NewUnconfirmedTransactionVerbose(uTxn, []visor.TransactionInput{
+		visor.TransactionInput{},
+	})
 	require.NoError(t, err)
 
 	tt := []struct {

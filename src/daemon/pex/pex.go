@@ -20,7 +20,6 @@ import (
 	"github.com/cenkalti/backoff"
 
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 //TODO:
@@ -118,7 +117,7 @@ func NewPeer(address string) *Peer {
 
 // Seen marks the peer as seen
 func (peer *Peer) Seen() {
-	peer.LastSeen = utc.UnixNow()
+	peer.LastSeen = time.Now().UTC().Unix()
 }
 
 // IncreaseRetryTimes adds the retry times
@@ -142,7 +141,7 @@ func (peer *Peer) CanTry() bool {
 	}
 
 	// Random time elapsed
-	now := utc.UnixNow()
+	now := time.Now().UTC().Unix()
 	t := rnum.Int63n(int64(mod))
 	return now-peer.LastSeen > t
 }

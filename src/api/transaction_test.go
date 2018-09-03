@@ -1,32 +1,26 @@
 package api
 
 import (
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"math"
-
-	"time"
-
-	"net/url"
-
-	"errors"
-
-	"bytes"
-	"encoding/hex"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -35,7 +29,8 @@ func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTransaction {
 	ut := visor.UnconfirmedTransaction{}
 	ut.Transaction = coin.Transaction{}
 	ut.Transaction.InnerHash = testutil.RandSHA256(t)
-	ut.Received = utc.Now().UnixNano()
+	ut.Transaction.In = []cipher.SHA256{testutil.RandSHA256(t)}
+	ut.Received = time.Now().UTC().UnixNano()
 	ut.Checked = ut.Received
 	ut.Announced = time.Time{}.UnixNano()
 	return ut
@@ -1086,7 +1081,7 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	txn.PushOutput(makeAddress(), 5e6, 50)
 	txn.UpdateHeader()
 
-	input, err := wallet.NewUxBalance(uint64(utc.UnixNow()), ux)
+	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
 	require.NoError(t, err)
 
 	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
@@ -1102,7 +1097,7 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	txn.PushOutput(cipher.Address{}, 5e6, 50)
 	txn.UpdateHeader()
 
-	input, err := wallet.NewUxBalance(uint64(utc.UnixNow()), ux)
+	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
 	require.NoError(t, err)
 
 	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}

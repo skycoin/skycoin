@@ -1,6 +1,9 @@
 package visor
 
 import (
+	"time"
+
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 )
 
@@ -81,4 +84,34 @@ func NewBlockchainMetadata(head *coin.SignedBlock, unconfirmedLen, unspentsLen u
 		Unspents:    unspentsLen,
 		Unconfirmed: unconfirmedLen,
 	}, nil
+}
+
+// UnconfirmedTransaction unconfirmed transaction
+type UnconfirmedTransaction struct {
+	Transaction coin.Transaction
+	// Time the txn was last received
+	Received int64
+	// Time the txn was last checked against the blockchain
+	Checked int64
+	// Last time we announced this txn
+	Announced int64
+	// If this txn is valid
+	IsValid int8
+}
+
+// Hash returns the coin.Transaction's hash
+func (ut *UnconfirmedTransaction) Hash() cipher.SHA256 {
+	return ut.Transaction.Hash()
+}
+
+// NewUnconfirmedTransaction creates an UnconfirmedTransaction
+func NewUnconfirmedTransaction(txn coin.Transaction) UnconfirmedTransaction {
+	now := time.Now().UTC()
+	return UnconfirmedTransaction{
+		Transaction: txn,
+		Received:    now.UnixNano(),
+		Checked:     now.UnixNano(),
+		Announced:   time.Time{}.UnixNano(),
+		IsValid:     0,
+	}
 }

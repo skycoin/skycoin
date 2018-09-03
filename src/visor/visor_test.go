@@ -23,7 +23,6 @@ import (
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/timeutil"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -687,7 +686,7 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 	var blocks []coin.SignedBlock
 	var uncfmTxs []UnconfirmedTransaction
 	for i := uint64(0); i < uint64(n); i++ {
-		tm := utc.UnixNow() + int64(i)*int64(time.Second)
+		tm := time.Now().UTC().Unix() + int64(i)*int64(time.Second)
 		txs = append(txs, historydb.Transaction{
 			BlockSeq: i,
 			Tx: coin.Transaction{
@@ -708,7 +707,7 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 			Transaction: coin.Transaction{
 				InnerHash: testutil.RandSHA256(t),
 			},
-			Received: utc.UnixNow() + int64(n)*int64(time.Second),
+			Received: time.Now().UTC().Unix() + int64(n)*int64(time.Second),
 		})
 	}
 
@@ -2759,7 +2758,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	head := coin.SignedBlock{
 		Block: coin.Block{
 			Head: coin.BlockHeader{
-				Time: uint64(utc.UnixNow()),
+				Time: uint64(time.Now().UTC().Unix()),
 			},
 		},
 	}

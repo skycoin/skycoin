@@ -290,7 +290,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
 		ret.Transaction, err = readable.NewTransaction(*tx, false)
 		if err != nil {
-			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
+			err = fmt.Errorf("readable.NewTransaction failed: %v", err)
 			logger.Error(err)
 			ret.Error = err.Error()
 			wh.SendJSONOr500(logger, w, ret)
@@ -300,7 +300,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		// Get the new wallet balance
 		walletBalance, _, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
-			err = fmt.Errorf("Get wallet balance failed: %v", err)
+			err = fmt.Errorf("gateway.GetWalletBalance failed: %v", err)
 			logger.Error(err)
 			ret.Error = err.Error()
 			wh.SendJSONOr500(logger, w, ret)

@@ -2001,7 +2001,7 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase)
 	require.NoError(t, err)
 	decodedTxn, err := coin.TransactionDeserialize(encodedTxnBytes)
 	require.NoError(t, err)
-	txnResult, err := daemon.NewTransactionResult(&visor.Transaction{
+	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{
 		Transaction: decodedTxn,
 		Status:      encodedTxn.Status,
 		Time:        encodedTxn.Time,

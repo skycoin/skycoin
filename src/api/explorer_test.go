@@ -141,7 +141,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			addressParam: address.String(),
 			result: []readable.TransactionVerbose{
 				{
-					readable.BlockTransactionVerbose: readable.BlockTransactionVerbose{
+					BlockTransactionVerbose: readable.BlockTransactionVerbose{
 						In: []readable.TransactionInput{
 							{
 								Hash:    validHash,

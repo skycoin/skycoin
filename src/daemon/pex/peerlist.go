@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // Peers peer list
@@ -232,7 +231,7 @@ func (pl *peerlist) getPeerByAddr(addr string) (Peer, bool) {
 
 // ClearOld removes public peers that haven't been seen in timeAgo seconds
 func (pl *peerlist) clearOld(timeAgo time.Duration) {
-	t := utc.Now()
+	t := time.Now().UTC()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
 		if !peer.Private && t.Sub(lastSeen) > timeAgo {

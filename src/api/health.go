@@ -5,13 +5,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
 // BlockchainMetadata extends visor.BlockchainMetadata to include the time since the last block
 type BlockchainMetadata struct {
-	*visor.BlockchainMetadata
+	readable.BlockchainMetadata
 	TimeSinceLastBlock wh.Duration `json:"time_since_last_block"`
 }
 
@@ -51,7 +52,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
-				BlockchainMetadata: health.BlockchainMetadata,
+				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
 			Version:               health.Version,

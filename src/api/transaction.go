@@ -70,9 +70,9 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 
 // TransactionEncodedResponse represents the data struct of the response to /api/v1/transaction?encoded=1
 type TransactionEncodedResponse struct {
-	Status             visor.TransactionStatus `json:"status"`
-	Time               uint64                  `json:"time"`
-	EncodedTransaction string                  `json:"encoded_transaction"`
+	Status             readable.TransactionStatus `json:"status"`
+	Time               uint64                     `json:"time"`
+	EncodedTransaction string                     `json:"encoded_transaction"`
 }
 
 // transactionHandler returns a transaction identified by its txid hash
@@ -118,7 +118,8 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if verbose {
+		switch {
+		case verbose:
 			txn, err := gateway.GetTransactionWithStatusVerbose(h)
 			if err != nil {
 				wh.Error500(w, err.Error())
@@ -130,7 +131,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			wh.SendJSONOr500(logger, w, &txn)
-		} else if encoded {
+		case encoded:
 			txn, err := gateway.GetTransaction(h)
 			if err != nil {
 				wh.Error500(w, err.Error())
@@ -145,10 +146,10 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 
 			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
 				EncodedTransaction: txnStr,
-				Status:             txn.Status,
+				Status:             readable.NewTransactionStatus(txn.Status),
 				Time:               txn.Time,
 			})
-		} else {
+		default:
 			txn, err := gateway.GetTransactionWithStatus(h)
 			if err != nil {
 				wh.Error500(w, err.Error())

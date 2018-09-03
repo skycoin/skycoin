@@ -3,6 +3,7 @@ package api
 // APIs for blockchain related information
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,17 +14,25 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" // http,json helpers
 )
 
-// blockchainProgressHandler returns the blockchain metadata
+// blockchainMetadataHandler returns the blockchain metadata
 // Method: GET
 // URI: /api/v1/blockchain/metadata
-func blockchainHandler(gateway Gatewayer) http.HandlerFunc {
+func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		metadata, err := gateway.GetBlockchainMetadata()
+		visorMetadata, err := gateway.GetBlockchainMetadata()
 		if err != nil {
 			err = fmt.Errorf("gateway.GetBlockchainMetadata failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}
+
+		if visorMetadata == nil {
+			err = errors.New("gateway.GetBlockchainMetadata metadata is nil")
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		metadata := readable.NewBlockchainMetadata(*visorMetadata)
 
 		wh.SendJSONOr500(logger, w, metadata)
 	}

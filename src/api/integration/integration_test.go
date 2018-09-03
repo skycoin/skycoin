@@ -886,7 +886,7 @@ func TestStableBlockchainMetadata(t *testing.T) {
 	metadata, err := c.BlockchainMetadata()
 	require.NoError(t, err)
 
-	var expected visor.BlockchainMetadata
+	var expected readable.BlockchainMetadata
 
 	goldenFile := "blockchain-metadata.golden"
 	if dbNoUnconfirmed(t) {
@@ -2003,8 +2003,12 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase)
 	require.NoError(t, err)
 	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{
 		Transaction: decodedTxn,
-		Status:      encodedTxn.Status,
-		Time:        encodedTxn.Time,
+		Status: visor.TransactionStatus{
+			Confirmed: encodedTxn.Status.Confirmed,
+			Height:    encodedTxn.Status.Height,
+			BlockSeq:  encodedTxn.Status.BlockSeq,
+		},
+		Time: encodedTxn.Time,
 	})
 	require.NoError(t, err)
 

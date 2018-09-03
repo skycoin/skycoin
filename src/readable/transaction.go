@@ -207,7 +207,7 @@ func NewTransactionWithStatus(txn *visor.Transaction) (*TransactionWithStatus, e
 		return nil, nil
 	}
 
-	isGenesis := txn.Status.BlockSeq != 0 || !txn.Status.Confirmed
+	isGenesis := txn.Status.BlockSeq == 0 && txn.Status.Confirmed
 	rbTxn, err := NewTransactionWithTimestamp(txn.Transaction, isGenesis, txn.Time)
 	if err != nil {
 		return nil, err

@@ -2468,6 +2468,8 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]Transacti
 			return err
 		}
 
+		inputs = make([][]TransactionInput, len(txns))
+
 		for i, txn := range txns {
 			// If the txn is confirmed, use the time of the block previous
 			// to the block in which the transaction was executed,

@@ -395,7 +395,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	// Blockchain interface
 
-	webHandlerV1("/blockchain/metadata", blockchainHandler(gateway))
+	webHandlerV1("/blockchain/metadata", blockchainMetadataHandler(gateway))
 	webHandlerV1("/blockchain/progress", blockchainProgressHandler(gateway))
 
 	// get block by hash or seq

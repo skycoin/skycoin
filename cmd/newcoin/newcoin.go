@@ -137,7 +137,7 @@ func createCoinCommand() cli.Command {
 			coinDir := fmt.Sprintf("./cmd/%s", coinName)
 			// create new coin directory
 			// MkdirAll does not error out if the directory already exists
-			err = os.MkdirAll(coinDir, 0755)
+			err = os.MkdirAll(coinDir, 0750)
 			if err != nil {
 				log.Errorf("failed to create new coin directory %s", coinDir)
 				return err

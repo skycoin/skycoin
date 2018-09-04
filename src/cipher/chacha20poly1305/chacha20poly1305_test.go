@@ -14,10 +14,29 @@ import (
 
 func TestVectors(t *testing.T) {
 	for i, test := range chacha20Poly1305Tests {
-		key, _ := hex.DecodeString(test.key)
-		nonce, _ := hex.DecodeString(test.nonce)
-		ad, _ := hex.DecodeString(test.aad)
-		plaintext, _ := hex.DecodeString(test.plaintext)
+		key, err := hex.DecodeString(test.key)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		nonce, err := hex.DecodeString(test.nonce)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		ad, err := hex.DecodeString(test.aad)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		plaintext, err := hex.DecodeString(test.plaintext)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
 
 		aead, err := New(key)
 		if err != nil {
@@ -144,7 +163,11 @@ func benchamarkChaCha20Poly1305Seal(b *testing.B, buf []byte) {
 	var ad [13]byte
 	var out []byte
 
-	aead, _ := New(key[:])
+	aead, err := New(key[:])
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		out = aead.Seal(out[:0], nonce[:], buf[:], ad[:])
@@ -160,12 +183,16 @@ func benchamarkChaCha20Poly1305Open(b *testing.B, buf []byte) {
 	var ct []byte
 	var out []byte
 
-	aead, _ := New(key[:])
+	aead, err := New(key[:])
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	ct = aead.Seal(ct[:0], nonce[:], buf[:], ad[:])
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		out, _ = aead.Open(out[:0], nonce[:], ct[:], ad[:])
+		out, _ = aead.Open(out[:0], nonce[:], ct[:], ad[:]) // nolint: errcheck
 	}
 }
 

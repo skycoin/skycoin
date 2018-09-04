@@ -289,7 +289,7 @@ func TestClientGetAddressUxOuts(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gatewayerMock, mockData := newUxOutMock()
+			gatewayerMock, mockData := newUxOutMock(t)
 			s.Gateway = gatewayerMock
 
 			rpcReq, err := NewRequest("get_address_uxouts", []string{tc.addr}, "1")

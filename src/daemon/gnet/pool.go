@@ -313,7 +313,9 @@ func (pool *ConnectionPool) Shutdown() {
 
 	// Close to listener to prevent new connections
 	if pool.listener != nil {
-		pool.listener.Close()
+		if err := pool.listener.Close(); err != nil {
+			logger.WithError(err).Warning("pool.listener.Close error")
+		}
 	}
 
 	pool.listener = nil

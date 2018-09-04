@@ -54,7 +54,7 @@ func TestTransactionGet(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
 
-			txsBkt := newTransactions()
+			txsBkt := &transactions{}
 
 			// init the bkt
 			err := db.Update("", func(tx *dbutil.Tx) error {
@@ -130,7 +130,7 @@ func TestTransactionGetSlice(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
-			txsBkt := newTransactions()
+			txsBkt := &transactions{}
 
 			// init the bkt
 			err := db.Update("", func(tx *dbutil.Tx) error {

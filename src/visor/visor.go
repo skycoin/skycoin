@@ -943,7 +943,12 @@ func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 			return err
 		}
 
-		known, _, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
+		var softErr *ErrTxnViolatesSoftConstraint
+		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
+		if softErr != nil {
+			logger.WithError(softErr).Warningf("InjectTransactionStrict vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly: %v", softErr)
+		}
+
 		return err
 	}); err != nil {
 		return false, err
@@ -1200,9 +1205,8 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	}
 
 	// Checks other filters
-	var retTxns []Transaction
-	f := func(tx *Transaction, flts ...TxFilter) bool {
-		for _, flt := range otherFlts {
+	f := func(tx *Transaction, flts []TxFilter) bool {
+		for _, flt := range flts {
 			if !flt.Match(tx) {
 				return false
 			}
@@ -1211,8 +1215,9 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 		return true
 	}
 
+	var retTxns []Transaction
 	for _, tx := range txns {
-		if f(&tx, otherFlts...) {
+		if f(&tx, otherFlts) {
 			retTxns = append(retTxns, tx)
 		}
 	}

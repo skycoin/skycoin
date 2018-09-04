@@ -140,15 +140,27 @@ func createTempWallet(t *testing.T, encrypt bool) (string, func()) {
 	originalWalletDirEnv := os.Getenv("WALLET_DIR")
 	originalWalletNameEnv := os.Getenv("WALLET_NAME")
 
-	os.Setenv("WALLET_DIR", dir)
-	os.Setenv("WALLET_NAME", wltName)
+	err = os.Setenv("WALLET_DIR", dir)
+	require.NoError(t, err)
+	err = os.Setenv("WALLET_NAME", wltName)
+	require.NoError(t, err)
 
 	fun := func() {
-		os.Setenv("WALLET_DIR", originalWalletDirEnv)
-		os.Setenv("WALLET_NAME", originalWalletNameEnv)
+		err := os.Setenv("WALLET_DIR", originalWalletDirEnv)
+		if err != nil {
+			t.Logf("Failed to reset WALLET_DIR env var: %v", err)
+		}
+
+		err = os.Setenv("WALLET_NAME", originalWalletNameEnv)
+		if err != nil {
+			t.Logf("Failed to reset WALLET_NAME env var: %v", err)
+		}
 
 		// Delete the temporary dir
-		os.RemoveAll(dir)
+		err = os.RemoveAll(dir)
+		if err != nil {
+			t.Logf("Failed to cleanup temp wallet dir %s: %v", dir, err)
+		}
 	}
 
 	return walletPath, fun

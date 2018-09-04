@@ -567,8 +567,13 @@ func TestWalletSpendHandler(t *testing.T) {
 			}
 
 			gateway := &MockGatewayer{}
-			addr, _ := cipher.DecodeBase58Address(tc.dst)
-			gateway.On("Spend", tc.walletID, []byte(tc.password), tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
+
+			if tc.dst != "" {
+				addr, err := cipher.DecodeBase58Address(tc.dst)
+				require.NoError(t, err)
+				gateway.On("Spend", tc.walletID, []byte(tc.password), tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
+			}
+
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
 				tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
 

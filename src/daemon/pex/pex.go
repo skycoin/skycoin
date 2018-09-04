@@ -104,7 +104,7 @@ type Peer struct {
 	RetryTimes      int    `json:"-"` // records the retry times
 }
 
-// NewPeer returns a *Peer initialised by an address string of the form ip:port
+// NewPeer returns a *Peer initialized by an address string of the form ip:port
 func NewPeer(address string) *Peer {
 	p := &Peer{
 		Addr:    address,

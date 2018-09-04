@@ -339,20 +339,6 @@ func (_m *MockGatewayer) GetBlocksInRangeVerbose(start uint64, end uint64) ([]co
 	return r0, r1, r2
 }
 
-// GetBuildInfo provides a mock function with given fields:
-func (_m *MockGatewayer) GetBuildInfo() visor.BuildInfo {
-	ret := _m.Called()
-
-	var r0 visor.BuildInfo
-	if rf, ok := ret.Get(0).(func() visor.BuildInfo); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(visor.BuildInfo)
-	}
-
-	return r0
-}
-
 // GetConnection provides a mock function with given fields: addr
 func (_m *MockGatewayer) GetConnection(addr string) (*daemon.Connection, error) {
 	ret := _m.Called(addr)

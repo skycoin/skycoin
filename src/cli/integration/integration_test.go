@@ -33,7 +33,6 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -1143,7 +1142,7 @@ func TestStableStatus(t *testing.T) {
 	// TimeSinceLastBlock is not stable
 	ret.Status.BlockchainMetadata.TimeSinceLastBlock = wh.FromDuration(time.Duration(0))
 	// Version is not stable
-	ret.Status.Version = visor.BuildInfo{}
+	ret.Status.Version = readable.BuildInfo{}
 	// Uptime is not stable
 	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
 

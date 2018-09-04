@@ -78,13 +78,6 @@ func DropletPrecisionCheck(amount uint64) error {
 	return nil
 }
 
-// BuildInfo represents the build info
-type BuildInfo struct {
-	Version string `json:"version"` // version number
-	Commit  string `json:"commit"`  // git commit id
-	Branch  string `json:"branch"`  // git branch name
-}
-
 // Config configuration parameters for the Visor
 type Config struct {
 	// Is this the master blockchain
@@ -118,8 +111,6 @@ type Config struct {
 	Arbitrating bool
 	// wallet directory
 	WalletDirectory string
-	// build info, including version, build time etc.
-	BuildInfo BuildInfo
 	// enables wallet API
 	EnableWalletAPI bool
 	// enables seed API

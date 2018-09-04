@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -99,16 +100,16 @@ func TestHealthCheckHandler(t *testing.T) {
 				Unconfirmed: unconfirmed,
 			}
 
-			buildInfo := visor.BuildInfo{
+			buildInfo := readable.BuildInfo{
 				Version: "1.0.0",
 				Commit:  "abcdef",
 				Branch:  "develop",
 			}
+			tc.cfg.buildInfo = buildInfo
 
 			health := &daemon.Health{
 				BlockchainMetadata: metadata,
 				OpenConnections:    3,
-				Version:            buildInfo,
 				Uptime:             time.Second * 4,
 			}
 

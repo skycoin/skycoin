@@ -7,7 +7,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 // BlockchainMetadata extends visor.BlockchainMetadata to include the time since the last block
@@ -19,7 +18,7 @@ type BlockchainMetadata struct {
 // HealthResponse is returned by the /health endpoint
 type HealthResponse struct {
 	BlockchainMetadata    BlockchainMetadata `json:"blockchain"`
-	Version               visor.BuildInfo    `json:"version"`
+	Version               readable.BuildInfo `json:"version"`
 	OpenConnections       int                `json:"open_connections"`
 	Uptime                wh.Duration        `json:"uptime"`
 	CSRFEnabled           bool               `json:"csrf_enabled"`
@@ -55,7 +54,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
-			Version:               health.Version,
+			Version:               c.buildInfo,
 			OpenConnections:       health.OpenConnections,
 			Uptime:                wh.FromDuration(health.Uptime),
 			CSRFEnabled:           csrfStore.Enabled,

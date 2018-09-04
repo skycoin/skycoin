@@ -831,15 +831,6 @@ func (gw *Gateway) IsWalletAPIEnabled() bool {
 	return gw.Config.EnableWalletAPI
 }
 
-// GetBuildInfo returns node build info.
-func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
-	var bi visor.BuildInfo
-	gw.strand("GetBuildInfo", func() {
-		bi = gw.v.Config.BuildInfo
-	})
-	return bi
-}
-
 // GetRichlist returns rich list as desc order.
 func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
 	rbOuts, err := gw.GetUnspentOutputsSummary(nil)
@@ -899,7 +890,6 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 // Health is returned by the /health endpoint
 type Health struct {
 	BlockchainMetadata visor.BlockchainMetadata
-	Version            visor.BuildInfo
 	OpenConnections    int
 	Uptime             time.Duration
 }
@@ -922,7 +912,6 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 
 		health = &Health{
 			BlockchainMetadata: *metadata,
-			Version:            gw.v.Config.BuildInfo,
 			OpenConnections:    len(conns),
 			Uptime:             time.Since(gw.v.StartedAt),
 		}

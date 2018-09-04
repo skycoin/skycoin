@@ -16,7 +16,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -290,8 +289,8 @@ func (c *Client) CSRF() (string, error) {
 }
 
 // Version makes a request to GET /api/v1/version
-func (c *Client) Version() (*visor.BuildInfo, error) {
-	var bi visor.BuildInfo
+func (c *Client) Version() (*readable.BuildInfo, error) {
+	var bi readable.BuildInfo
 	if err := c.Get("/api/v1/version", &bi); err != nil {
 		return nil, err
 	}

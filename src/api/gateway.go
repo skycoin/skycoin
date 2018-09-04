@@ -37,7 +37,6 @@ type Gatewayer interface {
 	GetBlocksInRangeVerbose(start, end uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
 	GetLastBlocks(num uint64) ([]coin.SignedBlock, error)
 	GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
-	GetBuildInfo() visor.BuildInfo
 	GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)

@@ -15,6 +15,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -52,6 +53,7 @@ type Config struct {
 	ReadTimeout          time.Duration
 	WriteTimeout         time.Duration
 	IdleTimeout          time.Duration
+	BuildInfo            readable.BuildInfo
 }
 
 type muxConfig struct {
@@ -61,6 +63,7 @@ type muxConfig struct {
 	enableJSON20RPC      bool
 	enableUnversionedAPI bool
 	disableCSP           bool
+	buildInfo            readable.BuildInfo
 }
 
 // HTTPResponse represents the http response struct
@@ -135,6 +138,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		enableJSON20RPC:      c.EnableJSON20RPC,
 		enableUnversionedAPI: c.EnableUnversionedAPI,
 		disableCSP:           c.DisableCSP,
+		buildInfo:            c.BuildInfo,
 	}
 
 	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
@@ -309,7 +313,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	mux.Handle("/csrf", csrfHandler)
 	mux.Handle("/api/v1/csrf", csrfHandler)
 
-	webHandlerV1("/version", versionHandler(gateway))
+	webHandlerV1("/version", versionHandler(gateway, c.buildInfo))
 
 	// get set of unspent outputs
 	webHandlerV1("/outputs", getOutputsHandler(gateway))

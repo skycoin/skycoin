@@ -74,7 +74,10 @@ func (fd *Field) SetBytes(a []byte) {
 
 // SetHex sets field in hex string
 func (fd *Field) SetHex(s string) {
-	d, _ := hex.DecodeString(s)
+	d, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
 	fd.SetBytes(d)
 }
 

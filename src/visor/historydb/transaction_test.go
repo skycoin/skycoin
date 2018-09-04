@@ -21,11 +21,6 @@ var _ = func() int64 {
 	return t
 }()
 
-// New create a transaction db instance.
-func newTransactions() *transactions {
-	return &transactions{}
-}
-
 func TestTransactionGet(t *testing.T) {
 	txns := make([]Transaction, 0, 3)
 	for i := 0; i < 3; i++ {
@@ -59,7 +54,7 @@ func TestTransactionGet(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
 
-			txsBkt := newTransactions()
+			txsBkt := &transactions{}
 
 			// init the bkt
 			err := db.Update("", func(tx *dbutil.Tx) error {
@@ -135,7 +130,7 @@ func TestTransactionGetSlice(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
-			txsBkt := newTransactions()
+			txsBkt := &transactions{}
 
 			// init the bkt
 			err := db.Update("", func(tx *dbutil.Tx) error {

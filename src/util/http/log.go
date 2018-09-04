@@ -13,7 +13,6 @@ import (
 func ElapsedHandler(logger logrus.FieldLogger, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		lrw := newWrappedResponseWriter(w)
-		lrw.logger = logger
 		start := time.Now()
 		handler.ServeHTTP(lrw, r)
 		logMethod := logger.Infof
@@ -30,7 +29,6 @@ type wrappedResponseWriter struct {
 	http.ResponseWriter
 	statusCode int
 	response   bytes.Buffer
-	logger     logrus.FieldLogger
 }
 
 func newWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
@@ -49,9 +47,7 @@ func (lrw *wrappedResponseWriter) WriteHeader(code int) {
 func (lrw *wrappedResponseWriter) Write(buff []byte) (int, error) {
 	retVal, err := lrw.ResponseWriter.Write(buff)
 	if lrw.statusCode >= 400 {
-		if _, err := lrw.response.Write(buff); err != nil && lrw.logger != nil {
-			lrw.logger.WithError(err).Warning("lrw.response.Write(buff) error")
-		}
+		lrw.response.Write(buff)
 	}
 	return retVal, err
 }

@@ -610,8 +610,8 @@ func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet,
 }
 
 // GetWalletBalance returns balance pairs of specific wallet
-func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalance, error) {
-	var addressBalances wallet.AddressBalance
+func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error) {
+	var addressBalances wallet.AddressBalances
 	var walletBalance wallet.BalancePair
 	if !gw.Config.EnableWalletAPI {
 		return walletBalance, addressBalances, wallet.ErrWalletAPIDisabled
@@ -632,7 +632,7 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Ad
 		}
 
 		// create map of address to balance
-		addressBalances = make(wallet.AddressBalance, len(addrs))
+		addressBalances = make(wallet.AddressBalances, len(addrs))
 		for idx, addr := range addrs {
 			addressBalances[addr.String()] = addrsBalanceList[idx]
 		}

@@ -1409,8 +1409,8 @@ func sortTxns(txns []Transaction) []Transaction {
 	return txns
 }
 
-// AddressBalance computes the total balance for cipher.Addresses and their coin.UxOuts
-func (vs *Visor) AddressBalance(head *coin.SignedBlock, auxs coin.AddressUxOuts) (uint64, uint64, error) {
+// AddressBalances computes the total balance for cipher.Addresses and their coin.UxOuts
+func (vs *Visor) AddressBalances(head *coin.SignedBlock, auxs coin.AddressUxOuts) (uint64, uint64, error) {
 	prevTime := head.Time()
 	var coins uint64
 	var hours uint64

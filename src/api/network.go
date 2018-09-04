@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
@@ -38,6 +39,23 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Connections wraps []Connection
+type Connections struct {
+	Connections []readable.Connection `json:"connections"`
+}
+
+// NewConnections copies []daemon.Connection to a struct with json tags
+func NewConnections(dconns []daemon.Connection) Connections {
+	conns := make([]readable.Connection, len(dconns))
+	for i, dc := range dconns {
+		conns[i] = readable.NewConnection(&dc)
+	}
+
+	return Connections{
+		Connections: conns,
+	}
+}
+
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -51,7 +69,7 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, readable.NewConnections(dcnxs))
+		wh.SendJSONOr500(logger, w, NewConnections(dcnxs))
 	}
 }
 

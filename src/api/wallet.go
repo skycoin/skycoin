@@ -21,7 +21,7 @@ const HTTP401AuthHeader = "SkycoinWallet"
 
 // SpendResult represents the result of spending
 type SpendResult struct {
-	Balance     *wallet.BalancePair   `json:"balance,omitempty"`
+	Balance     *readable.BalancePair `json:"balance,omitempty"`
 	Transaction *readable.Transaction `json:"txn,omitempty"`
 	Error       string                `json:"error,omitempty"`
 }
@@ -36,34 +36,16 @@ type UnconfirmedTxnsVerboseResponse struct {
 	Transactions []readable.UnconfirmedTransactionVerbose `json:"transactions"`
 }
 
-// WalletEntry the wallet entry struct
-type WalletEntry struct {
-	Address string `json:"address"`
-	Public  string `json:"public_key"`
-}
-
-// WalletMeta the wallet meta struct
-type WalletMeta struct {
-	Coin       string `json:"coin"`
-	Filename   string `json:"filename"`
-	Label      string `json:"label"`
-	Type       string `json:"type"`
-	Version    string `json:"version"`
-	CryptoType string `json:"crypto_type"`
-	Timestamp  int64  `json:"timestamp"`
-	Encrypted  bool   `json:"encrypted"`
+// BalanceResponse address balance summary struct
+type BalanceResponse struct {
+	readable.BalancePair
+	Addresses readable.AddressBalances `json:"addresses"`
 }
 
 // WalletResponse wallet response struct for http apis
 type WalletResponse struct {
-	Meta    WalletMeta    `json:"meta"`
-	Entries []WalletEntry `json:"entries"`
-}
-
-// BalanceResponse address balance summary struct
-type BalanceResponse struct {
-	wallet.BalancePair
-	Addresses wallet.AddressBalance `json:"addresses"`
+	Meta    readable.WalletMeta    `json:"meta"`
+	Entries []readable.WalletEntry `json:"entries"`
 }
 
 // NewWalletResponse creates WalletResponse struct from *wallet.Wallet
@@ -96,7 +78,7 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 	}
 
 	for _, e := range w.Entries {
-		wr.Entries = append(wr.Entries, WalletEntry{
+		wr.Entries = append(wr.Entries, readable.WalletEntry{
 			Address: e.Address.String(),
 			Public:  e.Public.Hex(),
 		})
@@ -138,8 +120,8 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, BalanceResponse{
-			BalancePair: walletBalance,
-			Addresses:   addressBalances,
+			BalancePair: readable.NewBalancePair(walletBalance),
+			Addresses:   readable.NewAddressBalances(addressBalances),
 		})
 	}
 }
@@ -183,9 +165,9 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// create map of address to balance
-		addressBalances := make(wallet.AddressBalance, len(addrs))
+		addressBalances := make(readable.AddressBalances, len(addrs))
 		for idx, addr := range addrs {
-			addressBalances[addr.String()] = bals[idx]
+			addressBalances[addr.String()] = readable.NewBalancePair(bals[idx])
 		}
 
 		var balance wallet.BalancePair
@@ -205,7 +187,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, BalanceResponse{
-			BalancePair: balance,
+			BalancePair: readable.NewBalancePair(balance),
 			Addresses:   addressBalances,
 		})
 	}
@@ -306,7 +288,8 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.SendJSONOr500(logger, w, ret)
 			return
 		}
-		ret.Balance = &walletBalance
+		b := readable.NewBalancePair(walletBalance)
+		ret.Balance = &b
 
 		wh.SendJSONOr500(logger, w, ret)
 	}

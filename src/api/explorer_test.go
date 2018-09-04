@@ -406,7 +406,7 @@ func TestGetRichlist(t *testing.T) {
 		includeDistribution      bool
 		gatewayGetRichlistResult visor.Richlist
 		gatewayGetRichlistErr    error
-		result                   readable.Richlist
+		result                   Richlist
 		csrfDisabled             bool
 	}{
 		{
@@ -480,7 +480,7 @@ func TestGetRichlist(t *testing.T) {
 					Locked:  false,
 				},
 			},
-			result: readable.Richlist{
+			result: Richlist{
 				Richlist: []readable.RichlistBalance{
 					{
 						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
@@ -535,7 +535,7 @@ func TestGetRichlist(t *testing.T) {
 					Locked:  false,
 				},
 			},
-			result: readable.Richlist{
+			result: Richlist{
 				Richlist: []readable.RichlistBalance{
 					{
 						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
@@ -608,7 +608,7 @@ func TestGetRichlist(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg readable.Richlist
+				var msg Richlist
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)

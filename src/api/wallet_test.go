@@ -41,7 +41,7 @@ func TestGetBalanceHandler(t *testing.T) {
 		getBalanceOfAddrsArg      []cipher.Address
 		getBalanceOfAddrsResponse []wallet.BalancePair
 		getBalanceOfAddrsError    error
-		httpResponse              wallet.BalancePair
+		httpResponse              readable.BalancePair
 	}{
 		{
 			name:   "405",
@@ -135,7 +135,7 @@ func TestGetBalanceHandler(t *testing.T) {
 					Predicted: wallet.Balance{Coins: 0, Hours: 0},
 				},
 			},
-			httpResponse: wallet.BalancePair{},
+			httpResponse: readable.BalancePair{},
 		},
 	}
 
@@ -171,7 +171,7 @@ func TestGetBalanceHandler(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg wallet.BalancePair
+				var msg readable.BalancePair
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
@@ -188,6 +188,11 @@ func TestWalletSpendHandler(t *testing.T) {
 		Password string
 	}
 
+	type balanceResult struct {
+		BalancePair wallet.BalancePair
+		Addresses   wallet.AddressBalances
+	}
+
 	tt := []struct {
 		name                          string
 		method                        string
@@ -200,7 +205,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		password                      string
 		gatewaySpendResult            *coin.Transaction
 		gatewaySpendErr               error
-		gatewayGetWalletBalanceResult BalanceResponse
+		gatewayGetWalletBalanceResult balanceResult
 		gatewayBalanceErr             error
 		spendResult                   *SpendResult
 		csrfDisabled                  bool
@@ -439,7 +444,7 @@ func TestWalletSpendHandler(t *testing.T) {
 				In: []cipher.SHA256{cipher.MustSHA256FromHex("78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e")},
 			},
 			spendResult: &SpendResult{
-				Balance: &wallet.BalancePair{},
+				Balance: &readable.BalancePair{},
 				Transaction: &readable.Transaction{
 					Length:    0,
 					Type:      0,
@@ -468,7 +473,7 @@ func TestWalletSpendHandler(t *testing.T) {
 				In: []cipher.SHA256{cipher.MustSHA256FromHex("78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e")},
 			},
 			spendResult: &SpendResult{
-				Balance: &wallet.BalancePair{},
+				Balance: &readable.BalancePair{},
 				Transaction: &readable.Transaction{
 					Length:    0,
 					Type:      0,
@@ -762,6 +767,11 @@ func TestWalletBalanceHandler(t *testing.T) {
 		Coins    string
 	}
 
+	type balanceResult struct {
+		BalancePair wallet.BalancePair
+		Addresses   wallet.AddressBalances
+	}
+
 	tt := []struct {
 		name                          string
 		method                        string
@@ -769,9 +779,9 @@ func TestWalletBalanceHandler(t *testing.T) {
 		status                        int
 		err                           string
 		walletID                      string
-		gatewayGetWalletBalanceResult BalanceResponse
+		gatewayGetWalletBalanceResult balanceResult
 		gatewayBalanceErr             error
-		result                        *wallet.BalancePair
+		result                        *readable.BalancePair
 	}{
 		{
 			name:     "405",
@@ -796,11 +806,11 @@ func TestWalletBalanceHandler(t *testing.T) {
 			status:                        http.StatusNotFound,
 			err:                           "404 Not Found",
 			walletID:                      "notFoundId",
-			gatewayGetWalletBalanceResult: BalanceResponse{},
+			gatewayGetWalletBalanceResult: balanceResult{},
 			gatewayBalanceErr:             wallet.ErrWalletNotExist,
-			result: &wallet.BalancePair{
-				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			result: &readable.BalancePair{
+				Confirmed: readable.Balance{Coins: 0, Hours: 0},
+				Predicted: readable.Balance{Coins: 0, Hours: 0},
 			},
 		},
 		{
@@ -812,11 +822,11 @@ func TestWalletBalanceHandler(t *testing.T) {
 			status:                        http.StatusInternalServerError,
 			err:                           "500 Internal Server Error - gatewayBalanceError",
 			walletID:                      "someId",
-			gatewayGetWalletBalanceResult: BalanceResponse{},
+			gatewayGetWalletBalanceResult: balanceResult{},
 			gatewayBalanceErr:             errors.New("gatewayBalanceError"),
-			result: &wallet.BalancePair{
-				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			result: &readable.BalancePair{
+				Confirmed: readable.Balance{Coins: 0, Hours: 0},
+				Predicted: readable.Balance{Coins: 0, Hours: 0},
 			},
 		},
 		{
@@ -828,7 +838,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			status:                        http.StatusForbidden,
 			err:                           "403 Forbidden",
 			walletID:                      "foo",
-			gatewayGetWalletBalanceResult: BalanceResponse{},
+			gatewayGetWalletBalanceResult: balanceResult{},
 			gatewayBalanceErr:             wallet.ErrWalletAPIDisabled,
 		},
 		{
@@ -840,7 +850,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			status:   http.StatusOK,
 			err:      "",
 			walletID: "foo",
-			result:   &wallet.BalancePair{},
+			result:   &readable.BalancePair{},
 		},
 	}
 
@@ -885,7 +895,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg wallet.BalancePair
+				var msg readable.BalancePair
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, &msg, tc.name)
@@ -1413,7 +1423,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Entries: cloneEntries(entries),
 			},
 			responseBody: WalletResponse{
-				Meta: WalletMeta{
+				Meta: readable.WalletMeta{
 					Filename: "filename",
 				},
 				Entries: responseEntries[:],
@@ -1443,7 +1453,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				},
 			},
 			responseBody: WalletResponse{
-				Meta: WalletMeta{
+				Meta: readable.WalletMeta{
 					Filename: "filename",
 				},
 			},
@@ -1478,7 +1488,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				},
 			},
 			responseBody: WalletResponse{
-				Meta: WalletMeta{
+				Meta: readable.WalletMeta{
 					Filename:  "filename",
 					Label:     "bar",
 					Encrypted: true,
@@ -2256,7 +2266,7 @@ func TestGetWallets(t *testing.T) {
 			},
 			httpResponse: []*WalletResponse{
 				{
-					Meta: WalletMeta{
+					Meta: readable.WalletMeta{
 						Coin:       "foocoin",
 						Filename:   "foofilename2",
 						Label:      "foolabel2",
@@ -2266,7 +2276,7 @@ func TestGetWallets(t *testing.T) {
 						Timestamp:  123456,
 						Encrypted:  false,
 					},
-					Entries: []WalletEntry{
+					Entries: []readable.WalletEntry{
 						{
 							Address: addrs[1].String(),
 							Public:  pubkeys[1].Hex(),
@@ -2274,7 +2284,7 @@ func TestGetWallets(t *testing.T) {
 					},
 				},
 				{
-					Meta: WalletMeta{
+					Meta: readable.WalletMeta{
 						Coin:       "foocoin",
 						Filename:   "foofilename3",
 						Label:      "foolabel3",
@@ -2284,7 +2294,7 @@ func TestGetWallets(t *testing.T) {
 						Timestamp:  234567,
 						Encrypted:  true,
 					},
-					Entries: []WalletEntry{
+					Entries: []readable.WalletEntry{
 						{
 							Address: addrs[2].String(),
 							Public:  pubkeys[2].Hex(),
@@ -2296,7 +2306,7 @@ func TestGetWallets(t *testing.T) {
 					},
 				},
 				{
-					Meta: WalletMeta{
+					Meta: readable.WalletMeta{
 						Coin:       "foocoin",
 						Filename:   "foofilename",
 						Label:      "foolabel",
@@ -2306,7 +2316,7 @@ func TestGetWallets(t *testing.T) {
 						Timestamp:  345678,
 						Encrypted:  true,
 					},
-					Entries: []WalletEntry{
+					Entries: []readable.WalletEntry{
 						{
 							Address: addrs[0].String(),
 							Public:  pubkeys[0].Hex(),
@@ -2472,7 +2482,7 @@ func TestEncryptWallet(t *testing.T) {
 			},
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
-				Meta: WalletMeta{
+				Meta: readable.WalletMeta{
 					Filename:  "wallet.wlt",
 					Encrypted: true,
 				},
@@ -2631,7 +2641,7 @@ func TestDecryptWallet(t *testing.T) {
 			},
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
-				Meta: WalletMeta{
+				Meta: readable.WalletMeta{
 					Filename:  "wallet",
 					Encrypted: false,
 				},
@@ -2657,7 +2667,7 @@ func TestDecryptWallet(t *testing.T) {
 			},
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
-				Meta: WalletMeta{
+				Meta: readable.WalletMeta{
 					Filename:  "wallet",
 					Encrypted: false,
 				},
@@ -2783,10 +2793,10 @@ func TestDecryptWallet(t *testing.T) {
 // makeEntries derives N wallet address entries from given seed
 // Returns set of wallet.Entry and wallet.ReadableEntry, the readable
 // entries' secrets are removed.
-func makeEntries(seed []byte, n int) ([]wallet.Entry, []WalletEntry) { // nolint: unparam
+func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { // nolint: unparam
 	seckeys := cipher.GenerateDeterministicKeyPairs(seed, n)
 	var entries []wallet.Entry
-	var responseEntries []WalletEntry
+	var responseEntries []readable.WalletEntry
 	for i, seckey := range seckeys {
 		pubkey := cipher.PubKeyFromSecKey(seckey)
 		entries = append(entries, wallet.Entry{
@@ -2794,7 +2804,7 @@ func makeEntries(seed []byte, n int) ([]wallet.Entry, []WalletEntry) { // nolint
 			Public:  pubkey,
 			Secret:  seckey,
 		})
-		responseEntries = append(responseEntries, WalletEntry{
+		responseEntries = append(responseEntries, readable.WalletEntry{
 			Address: entries[i].Address.String(),
 			Public:  entries[i].Public.Hex(),
 		})

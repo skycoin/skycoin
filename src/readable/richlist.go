@@ -9,13 +9,8 @@ type RichlistBalance struct {
 	Locked  bool   `json:"locked"`
 }
 
-// Richlist contains top address balances
-type Richlist struct {
-	Richlist []RichlistBalance `json:"richlist"`
-}
-
-// NewRichlist copies from visor.Richlist
-func NewRichlist(visorRichlist visor.Richlist) Richlist {
+// NewRichlistBalances copies from visor.Richlist
+func NewRichlistBalances(visorRichlist visor.Richlist) []RichlistBalance {
 	richlist := make([]RichlistBalance, len(visorRichlist))
 	for i, v := range visorRichlist {
 		richlist[i] = RichlistBalance{
@@ -24,7 +19,5 @@ func NewRichlist(visorRichlist visor.Richlist) Richlist {
 			Locked:  v.Locked,
 		}
 	}
-	return Richlist{
-		Richlist: richlist,
-	}
+	return richlist
 }

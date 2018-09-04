@@ -124,7 +124,7 @@ func TestConnections(t *testing.T) {
 		err                         string
 		gatewayGetConnectionsResult []daemon.Connection
 		gatewayGetConnectionsError  error
-		result                      readable.Connections
+		result                      Connections
 	}{
 		{
 			name:   "405",
@@ -150,7 +150,7 @@ func TestConnections(t *testing.T) {
 					Height:       1234,
 				},
 			},
-			result: readable.Connections{
+			result: Connections{
 				Connections: []readable.Connection{
 					{
 						ID:           1,
@@ -195,7 +195,7 @@ func TestConnections(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg readable.Connections
+				var msg Connections
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)

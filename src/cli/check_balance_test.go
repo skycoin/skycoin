@@ -67,7 +67,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 					Coins: "123.111111",
 					Hours: "123123",
 				},
-				Addresses: []AddressBalance{
+				Addresses: []AddressBalances{
 					{
 						Confirmed: Balance{
 							Coins: "100.000000",
@@ -201,7 +201,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 					Coins: "137.111111",
 					Hours: "100789",
 				},
-				Addresses: []AddressBalance{
+				Addresses: []AddressBalances{
 					{
 						Confirmed: Balance{
 							Coins: "100.000000",

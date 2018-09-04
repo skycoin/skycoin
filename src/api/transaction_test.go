@@ -756,7 +756,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		httpBody                      string
 		resendUnconfirmedTxnsResponse []cipher.SHA256
 		resendUnconfirmedTxnsErr      error
-		httpResponse                  readable.ResendResult
+		httpResponse                  ResendResult
 	}{
 		{
 			name:   "405",
@@ -776,7 +776,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			method:                        http.MethodGet,
 			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: nil,
-			httpResponse: readable.ResendResult{
+			httpResponse: ResendResult{
 				Txids: []string{},
 			},
 		},
@@ -785,7 +785,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			method:                        http.MethodGet,
 			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: []cipher.SHA256{validHash1, validHash2},
-			httpResponse: readable.ResendResult{
+			httpResponse: ResendResult{
 				Txids: []string{validHash1.Hex(), validHash2.Hex()},
 			},
 		},
@@ -817,7 +817,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg readable.ResendResult
+				var msg ResendResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)

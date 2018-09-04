@@ -16,7 +16,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 const (
@@ -470,12 +469,12 @@ func (c *Client) BlockchainProgress() (*readable.BlockchainProgress, error) {
 }
 
 // Balance makes a request to GET /api/v1/balance?addrs=xxx
-func (c *Client) Balance(addrs []string) (*wallet.BalancePair, error) {
+func (c *Client) Balance(addrs []string) (*readable.BalancePair, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/balance?" + v.Encode()
 
-	var b wallet.BalancePair
+	var b readable.BalancePair
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -756,8 +755,8 @@ func (c *Client) NetworkConnection(addr string) (*readable.Connection, error) {
 }
 
 // NetworkConnections makes a request to GET /api/v1/network/connections
-func (c *Client) NetworkConnections() (*readable.Connections, error) {
-	var dc readable.Connections
+func (c *Client) NetworkConnections() (*Connections, error) {
+	var dc Connections
 	if err := c.Get("/api/v1/network/connections", &dc); err != nil {
 		return nil, err
 	}
@@ -959,8 +958,8 @@ func (c *Client) InjectEncodedTransaction(rawTx string) (string, error) {
 }
 
 // ResendUnconfirmedTransactions makes a request to GET /api/v1/resendUnconfirmedTxns
-func (c *Client) ResendUnconfirmedTransactions() (*readable.ResendResult, error) {
-	var r readable.ResendResult
+func (c *Client) ResendUnconfirmedTransactions() (*ResendResult, error) {
+	var r ResendResult
 	if err := c.Get("/api/v1/resendUnconfirmedTxns", &r); err != nil {
 		return nil, err
 	}
@@ -1032,7 +1031,7 @@ type RichlistParams struct {
 }
 
 // Richlist makes a request to GET /api/v1/richlist
-func (c *Client) Richlist(params *RichlistParams) (*readable.Richlist, error) {
+func (c *Client) Richlist(params *RichlistParams) (*Richlist, error) {
 	endpoint := "/api/v1/richlist"
 
 	if params != nil {
@@ -1042,7 +1041,7 @@ func (c *Client) Richlist(params *RichlistParams) (*readable.Richlist, error) {
 		endpoint = "/api/v1/richlist?" + v.Encode()
 	}
 
-	var r readable.Richlist
+	var r Richlist
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}

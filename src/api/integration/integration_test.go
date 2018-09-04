@@ -975,7 +975,7 @@ func TestStableBalance(t *testing.T) {
 			balance, err := c.Balance(tc.addrs)
 			require.NoError(t, err)
 
-			var expected wallet.BalancePair
+			var expected readable.BalancePair
 			checkGoldenFile(t, tc.golden, TestData{*balance, &expected})
 		})
 	}
@@ -991,7 +991,7 @@ func TestLiveBalance(t *testing.T) {
 	// Genesis address check, should not have a balance
 	b, err := c.Balance([]string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"})
 	require.NoError(t, err)
-	require.Equal(t, wallet.BalancePair{}, *b)
+	require.Equal(t, readable.BalancePair{}, *b)
 
 	// Balance of final distribution address. Should have the same coins balance
 	// for the next 15-20 years.
@@ -2937,7 +2937,7 @@ func TestStableRichlist(t *testing.T) {
 	richlist, err := c.Richlist(nil)
 	require.NoError(t, err)
 
-	var expected readable.Richlist
+	var expected api.Richlist
 	checkGoldenFile(t, "richlist-default.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
@@ -2946,7 +2946,7 @@ func TestStableRichlist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected = readable.Richlist{}
+	expected = api.Richlist{}
 	checkGoldenFile(t, "richlist-all.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
@@ -2955,7 +2955,7 @@ func TestStableRichlist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected = readable.Richlist{}
+	expected = api.Richlist{}
 	checkGoldenFile(t, "richlist-all-include-distribution.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
@@ -2964,7 +2964,7 @@ func TestStableRichlist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected = readable.Richlist{}
+	expected = api.Richlist{}
 	checkGoldenFile(t, "richlist-8.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
@@ -2973,7 +2973,7 @@ func TestStableRichlist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected = readable.Richlist{}
+	expected = api.Richlist{}
 	checkGoldenFile(t, "richlist-150-include-distribution.golden", TestData{*richlist, &expected})
 }
 

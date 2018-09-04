@@ -3,8 +3,6 @@ package readable
 import (
 	"errors"
 	"fmt"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -220,41 +218,6 @@ func NewTransactionWithStatus(txn *visor.Transaction) (*TransactionWithStatus, e
 	}, nil
 }
 
-// TransactionsWithStatus array of transaction results
-type TransactionsWithStatus struct {
-	Transactions []TransactionWithStatus `json:"txns"`
-}
-
-// Sort sorts transactions chronologically, using txid for tiebreaking
-func (r TransactionsWithStatus) Sort() {
-	sort.Slice(r.Transactions, func(i, j int) bool {
-		a := r.Transactions[i]
-		b := r.Transactions[j]
-
-		if a.Time == b.Time {
-			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
-		}
-
-		return a.Time < b.Time
-	})
-}
-
-// NewTransactionsWithStatus converts []Transaction to TransactionsWithStatus
-func NewTransactionsWithStatus(txns []visor.Transaction) (*TransactionsWithStatus, error) {
-	txnRlts := make([]TransactionWithStatus, 0, len(txns))
-	for _, txn := range txns {
-		rTxn, err := NewTransactionWithStatus(&txn)
-		if err != nil {
-			return nil, err
-		}
-		txnRlts = append(txnRlts, *rTxn)
-	}
-
-	return &TransactionsWithStatus{
-		Transactions: txnRlts,
-	}, nil
-}
-
 // TransactionWithStatusVerbose represents verbose transaction result
 type TransactionWithStatusVerbose struct {
 	Status      TransactionStatus  `json:"status"`
@@ -284,44 +247,5 @@ func NewTransactionWithStatusVerbose(txn *visor.Transaction, inputs []visor.Tran
 		Transaction: rbTxn,
 		Status:      NewTransactionStatus(txn.Status),
 		Time:        txn.Time,
-	}, nil
-}
-
-// TransactionsWithStatusVerbose array of transaction results
-type TransactionsWithStatusVerbose struct {
-	Transactions []TransactionWithStatusVerbose `json:"txns"`
-}
-
-// Sort sorts transactions chronologically, using txid for tiebreaking
-func (r TransactionsWithStatusVerbose) Sort() {
-	sort.Slice(r.Transactions, func(i, j int) bool {
-		a := r.Transactions[i]
-		b := r.Transactions[j]
-
-		if a.Time == b.Time {
-			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
-		}
-
-		return a.Time < b.Time
-	})
-}
-
-// NewTransactionsWithStatusVerbose converts []Transaction to []TransactionsWithStatusVerbose
-func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor.TransactionInput) (*TransactionsWithStatusVerbose, error) {
-	if len(txns) != len(inputs) {
-		return nil, errors.New("NewTransactionsWithStatusVerbose: len(txns) != len(inputs)")
-	}
-
-	txnRlts := make([]TransactionWithStatusVerbose, len(txns))
-	for i, txn := range txns {
-		rTxn, err := NewTransactionWithStatusVerbose(&txn, inputs[i])
-		if err != nil {
-			return nil, err
-		}
-		txnRlts[i] = *rTxn
-	}
-
-	return &TransactionsWithStatusVerbose{
-		Transactions: txnRlts,
 	}, nil
 }

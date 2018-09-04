@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -168,6 +170,80 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// TransactionsWithStatus array of transaction results
+type TransactionsWithStatus struct {
+	Transactions []readable.TransactionWithStatus `json:"txns"`
+}
+
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionsWithStatus) Sort() {
+	sort.Slice(r.Transactions, func(i, j int) bool {
+		a := r.Transactions[i]
+		b := r.Transactions[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
+// NewTransactionsWithStatus converts []Transaction to TransactionsWithStatus
+func NewTransactionsWithStatus(txns []visor.Transaction) (*TransactionsWithStatus, error) {
+	txnRlts := make([]readable.TransactionWithStatus, 0, len(txns))
+	for _, txn := range txns {
+		rTxn, err := readable.NewTransactionWithStatus(&txn)
+		if err != nil {
+			return nil, err
+		}
+		txnRlts = append(txnRlts, *rTxn)
+	}
+
+	return &TransactionsWithStatus{
+		Transactions: txnRlts,
+	}, nil
+}
+
+// TransactionsWithStatusVerbose array of transaction results
+type TransactionsWithStatusVerbose struct {
+	Transactions []readable.TransactionWithStatusVerbose `json:"txns"`
+}
+
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionsWithStatusVerbose) Sort() {
+	sort.Slice(r.Transactions, func(i, j int) bool {
+		a := r.Transactions[i]
+		b := r.Transactions[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
+// NewTransactionsWithStatusVerbose converts []Transaction to []TransactionsWithStatusVerbose
+func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor.TransactionInput) (*TransactionsWithStatusVerbose, error) {
+	if len(txns) != len(inputs) {
+		return nil, errors.New("NewTransactionsWithStatusVerbose: len(txns) != len(inputs)")
+	}
+
+	txnRlts := make([]readable.TransactionWithStatusVerbose, len(txns))
+	for i, txn := range txns {
+		rTxn, err := readable.NewTransactionWithStatusVerbose(&txn, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+		txnRlts[i] = *rTxn
+	}
+
+	return &TransactionsWithStatusVerbose{
+		Transactions: txnRlts,
+	}, nil
+}
+
 // Returns transactions that match the filters.
 // Method: GET
 // URI: /api/v1/transactions
@@ -217,7 +293,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			rTxns, err := readable.NewTransactionsWithStatusVerbose(txns, inputs)
+			rTxns, err := NewTransactionsWithStatusVerbose(txns, inputs)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -233,7 +309,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			rTxns, err := readable.NewTransactionsWithStatus(txns)
+			rTxns, err := NewTransactionsWithStatus(txns)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -309,6 +385,22 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// ResendResult the result of rebroadcasting transaction
+type ResendResult struct {
+	Txids []string `json:"txids"`
+}
+
+// NewResendResult creates a ResendResult from a list of transaction ID hashes
+func NewResendResult(hashes []cipher.SHA256) ResendResult {
+	txids := make([]string, len(hashes))
+	for i, h := range hashes {
+		txids[i] = h.Hex()
+	}
+	return ResendResult{
+		Txids: txids,
+	}
+}
+
 func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -322,7 +414,7 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, readable.NewResendResult(hashes))
+		wh.SendJSONOr500(logger, w, NewResendResult(hashes))
 	}
 }
 

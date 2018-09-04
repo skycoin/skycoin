@@ -856,7 +856,7 @@ func (_m *MockGatewayer) GetWallet(wltID string) (*wallet.Wallet, error) {
 }
 
 // GetWalletBalance provides a mock function with given fields: wltID
-func (_m *MockGatewayer) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalance, error) {
+func (_m *MockGatewayer) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error) {
 	ret := _m.Called(wltID)
 
 	var r0 wallet.BalancePair
@@ -866,12 +866,12 @@ func (_m *MockGatewayer) GetWalletBalance(wltID string) (wallet.BalancePair, wal
 		r0 = ret.Get(0).(wallet.BalancePair)
 	}
 
-	var r1 wallet.AddressBalance
-	if rf, ok := ret.Get(1).(func(string) wallet.AddressBalance); ok {
+	var r1 wallet.AddressBalances
+	if rf, ok := ret.Get(1).(func(string) wallet.AddressBalances); ok {
 		r1 = rf(wltID)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(wallet.AddressBalance)
+			r1 = ret.Get(1).(wallet.AddressBalances)
 		}
 	}
 

@@ -18,8 +18,8 @@ type Balance struct {
 	Hours string `json:"hours"`
 }
 
-// AddressBalance represents an address's balance
-type AddressBalance struct {
+// AddressBalances represents an address's balance
+type AddressBalances struct {
 	Confirmed Balance `json:"confirmed"`
 	Spendable Balance `json:"spendable"`
 	Expected  Balance `json:"expected"`
@@ -28,10 +28,10 @@ type AddressBalance struct {
 
 // BalanceResult represents an set of addresses' balances
 type BalanceResult struct {
-	Confirmed Balance          `json:"confirmed"`
-	Spendable Balance          `json:"spendable"`
-	Expected  Balance          `json:"expected"`
-	Addresses []AddressBalance `json:"addresses"`
+	Confirmed Balance           `json:"confirmed"`
+	Spendable Balance           `json:"spendable"`
+	Expected  Balance           `json:"expected"`
+	Addresses []AddressBalances `json:"addresses"`
 }
 
 func walletBalanceCmd(cfg Config) gcli.Command {
@@ -217,7 +217,7 @@ func getBalanceOfAddresses(outs *readable.UnspentOutputsSummary, addrs []string)
 
 	var totalConfirmed, totalSpendable, totalExpected wallet.Balance
 	balRlt := &BalanceResult{
-		Addresses: make([]AddressBalance, len(addrs)),
+		Addresses: make([]AddressBalances, len(addrs)),
 	}
 
 	for i, a := range addrs {

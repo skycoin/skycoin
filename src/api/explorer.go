@@ -202,11 +202,6 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// Richlist is the API response for /richlist, contains top address balances
-type Richlist struct {
-	Richlist visor.Richlist `json:"richlist"`
-}
-
 // getRichlist returns the top skycoin holders
 // Method: GET
 // URI: /richlist?n=${number}&include-distribution=${bool}
@@ -256,9 +251,7 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 			richlist = richlist[:topn]
 		}
 
-		wh.SendJSONOr500(logger, w, Richlist{
-			Richlist: richlist,
-		})
+		wh.SendJSONOr500(logger, w, readable.NewRichlist(richlist))
 	}
 }
 

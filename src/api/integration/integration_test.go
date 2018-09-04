@@ -2937,7 +2937,7 @@ func TestStableRichlist(t *testing.T) {
 	richlist, err := c.Richlist(nil)
 	require.NoError(t, err)
 
-	var expected api.Richlist
+	var expected readable.Richlist
 	checkGoldenFile(t, "richlist-default.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
@@ -2946,7 +2946,7 @@ func TestStableRichlist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected = api.Richlist{}
+	expected = readable.Richlist{}
 	checkGoldenFile(t, "richlist-all.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
@@ -2955,7 +2955,7 @@ func TestStableRichlist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected = api.Richlist{}
+	expected = readable.Richlist{}
 	checkGoldenFile(t, "richlist-all-include-distribution.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
@@ -2964,7 +2964,7 @@ func TestStableRichlist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected = api.Richlist{}
+	expected = readable.Richlist{}
 	checkGoldenFile(t, "richlist-8.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
@@ -2973,7 +2973,7 @@ func TestStableRichlist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected = api.Richlist{}
+	expected = readable.Richlist{}
 	checkGoldenFile(t, "richlist-150-include-distribution.golden", TestData{*richlist, &expected})
 }
 

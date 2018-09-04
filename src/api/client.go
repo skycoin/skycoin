@@ -1032,7 +1032,7 @@ type RichlistParams struct {
 }
 
 // Richlist makes a request to GET /api/v1/richlist
-func (c *Client) Richlist(params *RichlistParams) (*Richlist, error) {
+func (c *Client) Richlist(params *RichlistParams) (*readable.Richlist, error) {
 	endpoint := "/api/v1/richlist"
 
 	if params != nil {
@@ -1042,7 +1042,7 @@ func (c *Client) Richlist(params *RichlistParams) (*Richlist, error) {
 		endpoint = "/api/v1/richlist?" + v.Encode()
 	}
 
-	var r Richlist
+	var r readable.Richlist
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}

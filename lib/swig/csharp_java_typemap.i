@@ -1,3 +1,155 @@
+%inline %{
+/**
+ * Memory handle for internal object retrieving password to read
+ * encrypted wallets.
+ */
+typedef Handle PasswordReader__Handle;
+
+/**
+ * Memory handle to perform Skycoin RPC API calls
+ * encrypted wallets.
+ */
+typedef Handle WebRpcClient__Handle;
+
+/**
+ * Memory handle providing access to wallet data
+ */
+typedef Handle Wallet__Handle;
+
+/**
+ * Memory handle Options Handle
+*/
+typedef Handle Options__Handle;
+
+/**
+ * Memory handle to access to Skycoin CLI configuration
+ */
+typedef Handle Config__Handle;
+/**
+ * Memory handle to access to coin.Transaction
+ */
+typedef Handle Transaction__Handle;
+
+/**
+ * Memory handle to access to coin.Transactions
+ */
+typedef Handle Transactions__Handle;
+
+/**
+ * Memory handle to access to api.CreatedTransaction
+ */
+typedef Handle CreatedTransaction__Handle;
+
+/**
+ * Memory handle to access to api.CreatedTransactionOutput
+ */
+typedef Handle CreatedTransactionOutput__Handle;
+
+/**
+ * Memory handle to access to api.CreatedTransactionInput
+ */
+typedef Handle CreatedTransactionInput__Handle;
+
+/**
+ * Memory handle to access to api.CreateTransactionResponse
+ */
+typedef Handle CreateTransactionResponse__Handle;
+
+/**
+ * Memory handle to access to coin.Block
+ */
+typedef Handle Block__Handle;
+
+/**
+ * Memory handle to access to coin.SignedBlock
+ */
+typedef Handle SignedBlock__Handle;
+
+/**
+ * Memory handle to access to coin.BlockBody
+ */
+typedef Handle BlockBody__Handle;
+
+/**
+ * Memory handle to access to cli.BalanceResult
+ */
+
+typedef Handle BalanceResult_Handle;
+
+
+/**
+ * Memory handle to access to api.SpendResult
+ */
+
+typedef Handle SpendResult_Handle;
+
+/**
+ * Memory handle to access to coin.Transactions
+ */
+
+typedef Handle TransactionResult_Handle;
+
+/**
+ * Memory handle to access to coin.SortableTransactions
+ */
+
+typedef Handle SortableTransactionResult_Handle;
+
+/**
+ * Memory handle to access to wallet.Notes
+ */
+
+
+/**
+ * Memory handle to access to wallet.ReadableNotes
+ */
+
+typedef Handle WalletReadableNotes_Handle;
+
+/**
+ * Memory handle to access to webrpc.OutputsResult
+ */
+
+typedef Handle OutputsResult_Handle;
+
+/**
+ * Memory handle to access to webrpc.StatusResult
+ */
+
+typedef Handle StatusResult_Handle;
+
+/**
+ * Memory handle to access to coin.AddressUxOuts
+ */
+
+typedef Handle AddressUxOuts_Handle;
+
+/**
+ * Memory handle to access to visor.BuildInfo (BuildInfo)
+ */
+
+typedef Handle BuildInfo_Handle;
+
+/**
+ * Memory handle for hash (ripemd160.digest)
+ */
+
+typedef Handle Hash_Handle;
+
+/**
+* Handle for Number type
+*/
+
+typedef Handle Number_Handle;
+
+/**
+* Handle for Signature type
+*/
+
+typedef Handle Signature_Handle;
+
+%}
+
 /**
 *
 * typemaps for Handles
@@ -36,11 +188,33 @@
 %include cpointer.i
 
 %typemap(in) (cipher_PubKey*) (cipher_PubKey temp) {
-	//Typemap in *Config Handle
+	//Typemap in *cipher_PubKey
 	$1 = &temp; 
 }
 
-%typemap(freearg) (cipher_PubKey*) {
-	//Typemap freearg *ConfigHandle
+%typemap(in) (GoUint8_ (*)[33]) (cipher_PubKey temp) {
+	//Typemap in *GoUint8_ (*)[33] is cipher_PubKey
+	$1 = (cipher_PubKey*)&temp; 
 }
 
+%typemap(freearg) (GoUint8_ (*)[33]) {
+	//Typemap freearg *GoUint8_ (*)[33] is cipher_PubKey
+	free($1);
+}
+
+
+%typemap(freearg) (cipher_PubKey*) {
+	//Typemap freearg *cipher_PubKey
+	free($1);
+}
+
+%typemap(freearg) (GoUint8_ * [33]) {
+	//Typemap freearg *cipher_PubKey
+}
+
+%typemap(in,in="(GoUint8_ (*) [33])") (GoUint8_ (*) [33]) "$1 = (cipher_PubKey*)$arg;"
+%typemap(in,args="(GoUint8_ (*) [33])$1") (GoUint8_ (*) [33]) "$1 = (cipher_PubKey*)$arg;"
+%typemap(cstype, in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "SWIGTYPE_p_cipher_PubKey"
+%typemap(ctype, in="(GoUint8_ (*) [33])") (GoUint8_ (*) [33]) "cipher_PubKey*"
+%typemap(csvarin  , in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "SWIGTYPE_p_cipher_PubKey"
+%typemap(imtype, in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "SWIGTYPE_p_cipher_PubKey"

@@ -1,10 +1,6 @@
 %module skycoin
 %include "typemaps.i"
-%{
-	#define SWIG_FILE_WITH_INIT
-	#include "libskycoin.h"
-	#include "swig.h"
-%}
+
 
 //Apply strictly to python
 //Not for other languages
@@ -27,7 +23,7 @@
 %include "csharp_java_skyerror.i"
 #endif
 
-%include "swig.h"
+
 /* Find the modified copy of libskycoin */
 %include "libskycoin.h"
 %include "structs.i"

@@ -356,7 +356,7 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		if intro.validationError == pex.ErrPeerlistFull {
 			peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
 			givpMsg := NewGivePeersMessage(peers)
-			d.SendMessage(intro.c.Addr, givpMsg)
+			_ = d.SendMessage(intro.c.Addr, givpMsg)
 		}
 		return
 	}

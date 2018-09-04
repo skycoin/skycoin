@@ -232,7 +232,7 @@ func NewUnconfirmedTransactionVerbose(unconfirmed *visor.UnconfirmedTransaction,
 	}, nil
 }
 
-// NewUnconfirmedTransactionsVerbose creates []UnconfirmedTxns from []UnconfirmedTransaction and their readable transaction inputs
+// NewUnconfirmedTransactionsVerbose creates []UnconfirmedTransactions from []UnconfirmedTransaction and their readable transaction inputs
 func NewUnconfirmedTransactionsVerbose(txns []visor.UnconfirmedTransaction, inputs [][]visor.TransactionInput) ([]UnconfirmedTransactionVerbose, error) {
 	if len(inputs) != len(txns) {
 		return nil, fmt.Errorf("NewUnconfirmedTransactionsVerbose: len(inputs) != len(txns)")

@@ -51,7 +51,7 @@ func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, progress)
+		wh.SendJSONOr500(logger, w, readable.NewBlockchainProgress(progress))
 	}
 }
 

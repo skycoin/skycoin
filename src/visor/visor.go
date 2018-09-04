@@ -1541,7 +1541,7 @@ func (vs *Visor) GetAllUnconfirmedTransactionsVerbose() ([]UnconfirmedTransactio
 	return txns, inputs, nil
 }
 
-// getTransactionInputsForUnconfirmedTxns returns ReadableTransactionInputs for a set of UnconfirmedTxns
+// getTransactionInputsForUnconfirmedTxns returns ReadableTransactionInputs for a set of UnconfirmedTransactions
 func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []UnconfirmedTransaction) ([][]TransactionInput, error) {
 	if len(txns) == 0 {
 		return nil, nil

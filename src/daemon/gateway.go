@@ -72,57 +72,56 @@ func (gw *Gateway) strand(name string, f func()) {
 
 // Connection a connection's state within the daemon
 type Connection struct {
-	ID           int    `json:"id"`
-	Addr         string `json:"address"`
-	LastSent     int64  `json:"last_sent"`
-	LastReceived int64  `json:"last_received"`
+	ID           int
+	Addr         string
+	LastSent     int64
+	LastReceived int64
 	// Whether the connection is from us to them (true, outgoing),
 	// or from them to us (false, incoming)
-	Outgoing bool `json:"outgoing"`
+	Outgoing bool
 	// Whether the client has identified their version, mirror etc
-	Introduced bool   `json:"introduced"`
-	Mirror     uint32 `json:"mirror"`
-	ListenPort uint16 `json:"listen_port"`
-}
-
-// Connections an array of connections
-// Arrays must be wrapped in structs to avoid certain javascript exploits
-type Connections struct {
-	Connections []*Connection `json:"connections"`
+	Introduced bool
+	Mirror     uint32
+	ListenPort uint16
+	Height     uint64
 }
 
 // GetConnections returns a *Connections
-func (gw *Gateway) GetConnections() *Connections {
-	var conns *Connections
+func (gw *Gateway) GetConnections() ([]Connection, error) {
+	var conns []Connection
+	var err error
 	gw.strand("GetConnections", func() {
-		conns = gw.getConnections()
+		conns, err = gw.getConnections()
 	})
-	return conns
+	return conns, err
 }
 
-func (gw *Gateway) getConnections() *Connections {
+func (gw *Gateway) getConnections() ([]Connection, error) {
 	if gw.d.pool.Pool == nil {
-		return nil
+		return nil, nil
 	}
 
 	n, err := gw.d.pool.Pool.Size()
 	if err != nil {
 		logger.Error(err)
-		return nil
+		return nil, err
 	}
 
-	conns := make([]*Connection, 0, n)
+	conns := make([]Connection, 0, n)
 	cs, err := gw.d.pool.Pool.GetConnections()
 	if err != nil {
 		logger.Error(err)
-		return nil
+		return nil, err
 	}
 
 	for _, c := range cs {
 		if c.Solicited {
-			conn := gw.getConnection(c.Addr())
+			conn, err := gw.getConnection(c.Addr())
+			if err != nil {
+				return nil, err
+			}
 			if conn != nil {
-				conns = append(conns, conn)
+				conns = append(conns, *conn)
 			}
 		}
 	}
@@ -132,8 +131,7 @@ func (gw *Gateway) getConnections() *Connections {
 		return strings.Compare(conns[i].Addr, conns[j].Addr) < 0
 	})
 
-	return &Connections{Connections: conns}
-
+	return conns, nil
 }
 
 // GetDefaultConnections returns default connections
@@ -147,32 +145,42 @@ func (gw *Gateway) GetDefaultConnections() []string {
 }
 
 // GetConnection returns a *Connection of specific address
-func (gw *Gateway) GetConnection(addr string) *Connection {
+func (gw *Gateway) GetConnection(addr string) (*Connection, error) {
 	var conn *Connection
+	var err error
 	gw.strand("GetConnection", func() {
-		conn = gw.getConnection(addr)
+		conn, err = gw.getConnection(addr)
 	})
-	return conn
+	return conn, err
 }
 
-func (gw *Gateway) getConnection(addr string) *Connection {
+func (gw *Gateway) getConnection(addr string) (*Connection, error) {
 	if gw.d.pool.Pool == nil {
-		return nil
+		return nil, nil
 	}
 
 	c, err := gw.d.pool.Pool.GetConnection(addr)
 	if err != nil {
 		logger.Error(err)
-		return nil
+		return nil, err
 	}
 
 	if c == nil {
-		return nil
+		return nil, nil
 	}
 
 	mirror, exist := gw.d.connectionMirrors.Get(addr)
 	if !exist {
-		return nil
+		return nil, nil
+	}
+
+	heights := gw.d.Heights.All()
+	var height uint64
+	for _, h := range heights {
+		if h.Address == addr {
+			height = h.Height
+			break
+		}
 	}
 
 	return &Connection{
@@ -184,7 +192,8 @@ func (gw *Gateway) getConnection(addr string) *Connection {
 		Introduced:   !gw.d.needsIntro(addr),
 		Mirror:       mirror,
 		ListenPort:   gw.d.GetListenPort(addr),
-	}
+		Height:       height,
+	}, nil
 }
 
 // GetTrustConnections returns all trusted connections,
@@ -209,13 +218,14 @@ func (gw *Gateway) GetExchgConnection() []string {
 
 /* Blockchain & Transaction status */
 
-// BlockchainProgress current sync blockchain status
+// BlockchainProgress is the current blockchain syncing status
 type BlockchainProgress struct {
 	// Our current blockchain length
-	Current uint64 `json:"current"`
+	Current uint64
 	// Our best guess at true blockchain length
-	Highest uint64                 `json:"highest"`
-	Peers   []PeerBlockchainHeight `json:"peers"`
+	Highest uint64
+	// Individual blockchain length reports from peers
+	Peers []PeerBlockchainHeight
 }
 
 // GetBlockchainProgress returns a *BlockchainProgress
@@ -224,7 +234,7 @@ func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
 	var err error
 	gw.strand("GetBlockchainProgress", func() {
 		var headSeq uint64
-		headSeq, _, err = gw.d.visor.HeadBkSeq()
+		headSeq, _, err = gw.v.HeadBkSeq()
 		if err != nil {
 			return
 		}
@@ -918,12 +928,15 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			return
 		}
 
-		conns := gw.getConnections()
+		conns, err := gw.getConnections()
+		if err != nil {
+			return
+		}
 
 		health = &Health{
 			BlockchainMetadata: *metadata,
 			Version:            gw.v.Config.BuildInfo,
-			OpenConnections:    len(conns.Connections),
+			OpenConnections:    len(conns),
 			Uptime:             time.Since(gw.v.StartedAt),
 		}
 	})

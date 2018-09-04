@@ -28,7 +28,7 @@ type SpendResult struct {
 
 // UnconfirmedTxnsResponse contains unconfirmed transaction data
 type UnconfirmedTxnsResponse struct {
-	Transactions []readable.UnconfirmedTxns `json:"transactions"`
+	Transactions []readable.UnconfirmedTransactions `json:"transactions"`
 }
 
 // UnconfirmedTxnsVerboseResponse contains verbose unconfirmed transaction data

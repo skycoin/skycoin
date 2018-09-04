@@ -1181,7 +1181,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			walletID:                              "foo",
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTransaction, 1),
 			responseBody: UnconfirmedTxnsResponse{
-				Transactions: []readable.UnconfirmedTxns{
+				Transactions: []readable.UnconfirmedTransactions{
 					*unconfirmedTxn,
 				},
 			},

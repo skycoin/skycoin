@@ -42,8 +42,8 @@ type Gatewayer interface {
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() (*daemon.BlockchainProgress, error)
-	GetConnection(addr string) *daemon.Connection
-	GetConnections() *daemon.Connections
+	GetConnection(addr string) (*daemon.Connection, error)
+	GetConnections() ([]daemon.Connection, error)
 	GetDefaultConnections() []string
 	GetTrustConnections() []string
 	GetExchgConnection() []string

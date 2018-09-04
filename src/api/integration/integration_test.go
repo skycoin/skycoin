@@ -27,7 +27,6 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
@@ -919,7 +918,7 @@ func TestStableBlockchainProgress(t *testing.T) {
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
 
-	var expected daemon.BlockchainProgress
+	var expected readable.BlockchainProgress
 	checkGoldenFile(t, "blockchain-progress.golden", TestData{*progress, &expected})
 }
 
@@ -3059,7 +3058,7 @@ func TestStablePendingTransactions(t *testing.T) {
 		txns[i].Checked = txn.Checked.UTC()
 	}
 
-	var expect []readable.UnconfirmedTxns
+	var expect []readable.UnconfirmedTransactions
 	checkGoldenFile(t, "pending-transactions.golden", TestData{txns, &expect})
 }
 

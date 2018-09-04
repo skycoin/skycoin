@@ -41,15 +41,10 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			vb := make([]readable.UnconfirmedTransactionVerbose, len(txns))
-			for i, txn := range txns {
-				v, err := readable.NewUnconfirmedTransactionVerbose(&txn, inputs[i])
-				if err != nil {
-					wh.Error500(w, err.Error())
-					return
-				}
-
-				vb[i] = *v
+			vb, err := readable.NewUnconfirmedTransactionsVerbose(txns, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
 			}
 
 			wh.SendJSONOr500(logger, w, vb)
@@ -60,14 +55,10 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			ret := make([]*readable.UnconfirmedTxns, len(txns))
-			for i, unconfirmedTxn := range txns {
-				readable, err := readable.NewUnconfirmedTransaction(&unconfirmedTxn)
-				if err != nil {
-					wh.Error500(w, err.Error())
-					return
-				}
-				ret[i] = readable
+			ret, err := readable.NewUnconfirmedTransactions(txns)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
 			}
 
 			wh.SendJSONOr500(logger, w, ret)

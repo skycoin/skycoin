@@ -8,8 +8,8 @@ import (
 
 // PeerBlockchainHeight is a peer's IP address with their reported blockchain height
 type PeerBlockchainHeight struct {
-	Address string `json:"address"`
-	Height  uint64 `json:"height"`
+	Address string
+	Height  uint64
 }
 
 // peerBlockchainHeights tracks reported blockchain heights of peers

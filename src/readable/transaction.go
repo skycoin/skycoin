@@ -156,8 +156,8 @@ func NewTransactionWithTimestamp(txn coin.Transaction, isGenesis bool, timestamp
 	return newTxn, nil
 }
 
-// UnconfirmedTxns represents a readable unconfirmed transaction
-type UnconfirmedTxns struct {
+// UnconfirmedTransactions represents a readable unconfirmed transaction
+type UnconfirmedTransactions struct {
 	Transaction Transaction `json:"transaction"`
 	Received    time.Time   `json:"received"`
 	Checked     time.Time   `json:"checked"`
@@ -166,13 +166,13 @@ type UnconfirmedTxns struct {
 }
 
 // NewUnconfirmedTransaction creates a readable unconfirmed transaction
-func NewUnconfirmedTransaction(unconfirmed *visor.UnconfirmedTransaction) (*UnconfirmedTxns, error) {
+func NewUnconfirmedTransaction(unconfirmed *visor.UnconfirmedTransaction) (*UnconfirmedTransactions, error) {
 	isGenesis := false // unconfirmed transactions are never the genesis transaction
 	txn, err := NewTransaction(unconfirmed.Transaction, isGenesis)
 	if err != nil {
 		return nil, err
 	}
-	return &UnconfirmedTxns{
+	return &UnconfirmedTransactions{
 		Transaction: *txn,
 		Received:    timeutil.NanoToTime(unconfirmed.Received),
 		Checked:     timeutil.NanoToTime(unconfirmed.Checked),
@@ -181,13 +181,13 @@ func NewUnconfirmedTransaction(unconfirmed *visor.UnconfirmedTransaction) (*Unco
 	}, nil
 }
 
-// NewUnconfirmedTransactions converts []UnconfirmedTransaction to []UnconfirmedTxns
-func NewUnconfirmedTransactions(txns []visor.UnconfirmedTransaction) ([]UnconfirmedTxns, error) {
-	rut := make([]UnconfirmedTxns, len(txns))
+// NewUnconfirmedTransactions converts []visor.UnconfirmedTransaction to []UnconfirmedTransactions
+func NewUnconfirmedTransactions(txns []visor.UnconfirmedTransaction) ([]UnconfirmedTransactions, error) {
+	rut := make([]UnconfirmedTransactions, len(txns))
 	for i := range txns {
 		txn, err := NewUnconfirmedTransaction(&txns[i])
 		if err != nil {
-			return []UnconfirmedTxns{}, err
+			return []UnconfirmedTransactions{}, err
 		}
 		rut[i] = *txn
 	}

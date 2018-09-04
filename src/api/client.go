@@ -464,8 +464,8 @@ func (c *Client) BlockchainMetadata() (*readable.BlockchainMetadata, error) {
 }
 
 // BlockchainProgress makes a request to GET /api/v1/blockchain/progress
-func (c *Client) BlockchainProgress() (*daemon.BlockchainProgress, error) {
-	var b daemon.BlockchainProgress
+func (c *Client) BlockchainProgress() (*readable.BlockchainProgress, error) {
+	var b readable.BlockchainProgress
 	if err := c.Get("/api/v1/blockchain/progress", &b); err != nil {
 		return nil, err
 	}
@@ -746,12 +746,12 @@ func (c *Client) GetWalletSeed(id string, password string) (string, error) {
 }
 
 // NetworkConnection makes a request to GET /api/v1/network/connection
-func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
+func (c *Client) NetworkConnection(addr string) (*readable.Connection, error) {
 	v := url.Values{}
 	v.Add("addr", addr)
 	endpoint := "/api/v1/network/connection?" + v.Encode()
 
-	var dc daemon.Connection
+	var dc readable.Connection
 	if err := c.Get(endpoint, &dc); err != nil {
 		return nil, err
 	}
@@ -759,8 +759,8 @@ func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
 }
 
 // NetworkConnections makes a request to GET /api/v1/network/connections
-func (c *Client) NetworkConnections() (*Connections, error) {
-	var dc Connections
+func (c *Client) NetworkConnections() (*readable.Connections, error) {
+	var dc readable.Connections
 	if err := c.Get("/api/v1/network/connections", &dc); err != nil {
 		return nil, err
 	}
@@ -795,8 +795,8 @@ func (c *Client) NetworkExchangeableConnections() ([]string, error) {
 }
 
 // PendingTransactions makes a request to GET /api/v1/pendingTxs
-func (c *Client) PendingTransactions() ([]readable.UnconfirmedTxns, error) {
-	var v []readable.UnconfirmedTxns
+func (c *Client) PendingTransactions() ([]readable.UnconfirmedTransactions, error) {
+	var v []readable.UnconfirmedTransactions
 	if err := c.Get("/api/v1/pendingTxs", &v); err != nil {
 		return nil, err
 	}

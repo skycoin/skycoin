@@ -142,7 +142,7 @@ func TestGetPendingTxs(t *testing.T) {
 			method:                        http.MethodGet,
 			status:                        http.StatusOK,
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
-			httpResponse:                  []readable.UnconfirmedTxns{},
+			httpResponse:                  []readable.UnconfirmedTransactions{},
 		},
 		{
 			name:       "200 verbose",
@@ -200,7 +200,7 @@ func TestGetPendingTxs(t *testing.T) {
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, msg, tc.name)
 				} else {
-					var msg []readable.UnconfirmedTxns
+					var msg []readable.UnconfirmedTransactions
 					err = json.Unmarshal(rr.Body.Bytes(), &msg)
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, msg, tc.name)

@@ -113,8 +113,8 @@ func printFinalHex(i int, writer io.Writer) error {
 	return err
 }
 
-// HexDump : Returns hexdump of buffer according to annotations, via writer
-func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) error {
+// New : Returns hexdump of buffer according to annotations, via writer
+func New(buffer []byte, annotations []Annotation, writer io.Writer) error {
 	var currentOffset = 0
 
 	for _, element := range annotations {
@@ -127,8 +127,8 @@ func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) error {
 	return printFinalHex(currentOffset, writer)
 }
 
-// HexDumpFromIterator : Returns hexdump of buffer according to annotationsIterator, via writer
-func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) error {
+// NewFromIterator : Returns hexdump of buffer according to annotationsIterator, via writer
+func NewFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) error {
 	var currentOffset = 0
 
 	var current, valid = annotationsIterator.Next()

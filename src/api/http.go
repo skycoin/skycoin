@@ -313,7 +313,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	mux.Handle("/csrf", csrfHandler)
 	mux.Handle("/api/v1/csrf", csrfHandler)
 
-	webHandlerV1("/version", versionHandler(gateway, c.buildInfo))
+	webHandlerV1("/version", versionHandler(c.buildInfo))
 
 	// get set of unspent outputs
 	webHandlerV1("/outputs", getOutputsHandler(gateway))

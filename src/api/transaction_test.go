@@ -80,6 +80,11 @@ func TestGetPendingTxs(t *testing.T) {
 		Coins: math.MaxInt64 + 1,
 	})
 
+	type verboseResult struct {
+		Transactions []visor.UnconfirmedTransaction
+		Inputs       [][]visor.TransactionInput
+	}
+
 	tt := []struct {
 		name                                 string
 		method                               string
@@ -89,7 +94,7 @@ func TestGetPendingTxs(t *testing.T) {
 		verboseStr                           string
 		getAllUnconfirmedTxnsResponse        []visor.UnconfirmedTransaction
 		getAllUnconfirmedTxnsErr             error
-		getAllUnconfirmedTxnsVerboseResponse []readable.UnconfirmedTransactionVerbose
+		getAllUnconfirmedTxnsVerboseResponse verboseResult
 		getAllUnconfirmedTxnsVerboseErr      error
 		httpResponse                         interface{}
 	}{
@@ -140,13 +145,16 @@ func TestGetPendingTxs(t *testing.T) {
 			httpResponse:                  []readable.UnconfirmedTxns{},
 		},
 		{
-			name:                                 "200 verbose",
-			method:                               http.MethodGet,
-			status:                               http.StatusOK,
-			verboseStr:                           "1",
-			verbose:                              true,
-			getAllUnconfirmedTxnsVerboseResponse: []readable.UnconfirmedTransactionVerbose{},
-			httpResponse:                         []readable.UnconfirmedTransactionVerbose{},
+			name:       "200 verbose",
+			method:     http.MethodGet,
+			status:     http.StatusOK,
+			verboseStr: "1",
+			verbose:    true,
+			getAllUnconfirmedTxnsVerboseResponse: verboseResult{
+				Transactions: []visor.UnconfirmedTransaction{},
+				Inputs:       [][]visor.TransactionInput{},
+			},
+			httpResponse: []readable.UnconfirmedTransactionVerbose{},
 		},
 	}
 
@@ -155,7 +163,8 @@ func TestGetPendingTxs(t *testing.T) {
 			endpoint := "/api/v1/pendingTxs"
 			gateway := &MockGatewayer{}
 			gateway.On("GetAllUnconfirmedTransactions").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
-			gateway.On("GetAllUnconfirmedTransactionsVerbose").Return(tc.getAllUnconfirmedTxnsVerboseResponse, tc.getAllUnconfirmedTxnsVerboseErr)
+			gateway.On("GetAllUnconfirmedTransactionsVerbose").Return(tc.getAllUnconfirmedTxnsVerboseResponse.Transactions,
+				tc.getAllUnconfirmedTxnsVerboseResponse.Inputs, tc.getAllUnconfirmedTxnsVerboseErr)
 
 			v := url.Values{}
 			if tc.verboseStr != "" {
@@ -205,10 +214,26 @@ func TestGetTransactionByID(t *testing.T) {
 	oddHash := "cafcb"
 	invalidHash := "cabrca"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
+	validHashRaw, err := cipher.SHA256FromHex(validHash)
+	require.NoError(t, err)
+
+	validAddr := "28ATuZGXJm6dJDGyJbdknFWgv8kbBX9hAdN"
+	validAddrRaw, err := cipher.DecodeBase58Address(validAddr)
+	require.NoError(t, err)
+
+	validSig := "cca1595fb27375789da47bb1cf78e14febc2be6f3c3034247fea6f700b853cddbab5d16f4ffc1912fca8373f10e468b745d6a1d686cb73ade1e3c3b3653b2f9d7f"
+	validSigRaw, err := cipher.SigFromHex(validSig)
+	require.NoError(t, err)
+
 	type httpBody struct {
 		txid    string
 		verbose string
 		encoded string
+	}
+
+	type verboseResult struct {
+		Transaction *visor.Transaction
+		Inputs      []visor.TransactionInput
 	}
 
 	tt := []struct {
@@ -222,9 +247,7 @@ func TestGetTransactionByID(t *testing.T) {
 		txid                               cipher.SHA256
 		getTransactionReponse              *visor.Transaction
 		getTransactionError                error
-		getTransactionResultReponse        *readable.TransactionWithStatus
-		getTransactionResultError          error
-		getTransactionResultVerboseReponse *readable.TransactionWithStatusVerbose
+		getTransactionResultVerboseReponse verboseResult
 		getTransactionResultVerboseError   error
 		httpResponse                       interface{}
 	}{
@@ -304,7 +327,7 @@ func TestGetTransactionByID(t *testing.T) {
 		},
 
 		{
-			name:   "500 - getTransactionError",
+			name:   "500 - getTransactionError encoded",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error - getTransactionError",
@@ -318,15 +341,15 @@ func TestGetTransactionByID(t *testing.T) {
 		},
 
 		{
-			name:   "500 - getTransactionResultError",
+			name:   "500 - getTransactionError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - getTransactionResultError",
+			err:    "500 Internal Server Error - getTransactionError",
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			txid:                      testutil.SHA256FromHex(t, validHash),
-			getTransactionResultError: errors.New("getTransactionResultError"),
+			txid:                testutil.SHA256FromHex(t, validHash),
+			getTransactionError: errors.New("getTransactionError"),
 		},
 
 		{
@@ -374,9 +397,46 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			txid:                        testutil.SHA256FromHex(t, validHash),
-			getTransactionResultReponse: &readable.TransactionWithStatus{},
-			httpResponse:                &readable.TransactionWithStatus{},
+			txid: testutil.SHA256FromHex(t, validHash),
+			getTransactionReponse: &visor.Transaction{
+				Transaction: coin.Transaction{
+					Sigs: []cipher.Sig{validSigRaw},
+					In:   []cipher.SHA256{validHashRaw},
+					Out: []coin.TransactionOutput{
+						{
+							Coins:   9999,
+							Hours:   1111,
+							Address: validAddrRaw,
+						},
+					},
+				},
+				Status: visor.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+			},
+			httpResponse: &readable.TransactionWithStatus{
+				Status: readable.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+				Transaction: readable.Transaction{
+					Hash:      "b64525bc14edb3c838ff3ef4f01bd74712432b32c18463dbda59b431959b2e52",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Sigs:      []string{validSig},
+					In:        []string{validHash},
+					Out: []readable.TransactionOutput{
+						{
+							Hash:    "87ec4d440fd64bb4c26839d58684e567e499265ca396649c03304b928378720b",
+							Coins:   "0.009999",
+							Hours:   1111,
+							Address: validAddr,
+						},
+					},
+				},
+			},
 		},
 
 		{
@@ -387,10 +447,72 @@ func TestGetTransactionByID(t *testing.T) {
 				txid:    validHash,
 				verbose: "1",
 			},
-			verbose:                            true,
-			txid:                               testutil.SHA256FromHex(t, validHash),
-			getTransactionResultVerboseReponse: &readable.TransactionWithStatusVerbose{},
-			httpResponse:                       &readable.TransactionWithStatusVerbose{},
+			verbose: true,
+			txid:    testutil.SHA256FromHex(t, validHash),
+			getTransactionResultVerboseReponse: verboseResult{
+				Transaction: &visor.Transaction{
+					Transaction: coin.Transaction{
+						Sigs: []cipher.Sig{validSigRaw},
+						In:   []cipher.SHA256{validHashRaw},
+						Out: []coin.TransactionOutput{
+							{
+								Coins:   9999,
+								Hours:   1111,
+								Address: validAddrRaw,
+							},
+						},
+					},
+					Status: visor.TransactionStatus{
+						Confirmed: true,
+						BlockSeq:  100,
+						Height:    9,
+					},
+				},
+				Inputs: []visor.TransactionInput{
+					{
+						UxOut: coin.UxOut{
+							Body: coin.UxBody{
+								Coins:   9999,
+								Hours:   1111,
+								Address: validAddrRaw,
+							},
+						},
+						CalculatedHours: 3333,
+					},
+				},
+			},
+			httpResponse: &readable.TransactionWithStatusVerbose{
+				Status: readable.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+				Transaction: readable.TransactionVerbose{
+					BlockTransactionVerbose: readable.BlockTransactionVerbose{
+						Fee:       2222,
+						Hash:      "b64525bc14edb3c838ff3ef4f01bd74712432b32c18463dbda59b431959b2e52",
+						InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+						Sigs:      []string{validSig},
+						In: []readable.TransactionInput{
+							{
+								Hash:            "50e8ad459e29a051d969f221f1fb9775e26248e8b443982fef0cfaa117ee6c0c",
+								Coins:           "0.009999",
+								Hours:           1111,
+								CalculatedHours: 3333,
+								Address:         validAddr,
+							},
+						},
+						Out: []readable.TransactionOutput{
+							{
+								Hash:    "87ec4d440fd64bb4c26839d58684e567e499265ca396649c03304b928378720b",
+								Coins:   "0.009999",
+								Hours:   1111,
+								Address: validAddr,
+							},
+						},
+					},
+				},
+			},
 		},
 
 		{
@@ -401,11 +523,33 @@ func TestGetTransactionByID(t *testing.T) {
 				txid:    validHash,
 				encoded: "1",
 			},
-			encoded:               true,
-			txid:                  testutil.SHA256FromHex(t, validHash),
-			getTransactionReponse: &visor.Transaction{},
+			encoded: true,
+			txid:    testutil.SHA256FromHex(t, validHash),
+			getTransactionReponse: &visor.Transaction{
+				Transaction: coin.Transaction{
+					Sigs: []cipher.Sig{validSigRaw},
+					In:   []cipher.SHA256{validHashRaw},
+					Out: []coin.TransactionOutput{
+						{
+							Coins:   9999,
+							Hours:   1111,
+							Address: validAddrRaw,
+						},
+					},
+				},
+				Status: visor.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+			},
 			httpResponse: &TransactionEncodedResponse{
-				EncodedTransaction: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+				Status: readable.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+				EncodedTransaction: "0000000000000000000000000000000000000000000000000000000000000000000000000001000000cca1595fb27375789da47bb1cf78e14febc2be6f3c3034247fea6f700b853cddbab5d16f4ffc1912fca8373f10e468b745d6a1d686cb73ade1e3c3b3653b2f9d7f0100000079216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b0100000000a1f1da0612c870cbb2d88fb3d7f95ba7118d6efb0f270000000000005704000000000000",
 			},
 		},
 	}
@@ -415,8 +559,8 @@ func TestGetTransactionByID(t *testing.T) {
 			endpoint := "/api/v1/transaction"
 			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.txid).Return(tc.getTransactionReponse, tc.getTransactionError)
-			gateway.On("GetTransactionWithStatus", tc.txid).Return(tc.getTransactionResultReponse, tc.getTransactionResultError)
-			gateway.On("GetTransactionVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse, tc.getTransactionResultVerboseError)
+			gateway.On("GetTransactionVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse.Transaction,
+				tc.getTransactionResultVerboseReponse.Inputs, tc.getTransactionResultVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -815,6 +959,11 @@ func TestGetTransactions(t *testing.T) {
 		verbose   string
 	}
 
+	type verboseResult struct {
+		Transactions []visor.Transaction
+		Inputs       [][]visor.TransactionInput
+	}
+
 	tt := []struct {
 		name                           string
 		method                         string
@@ -823,9 +972,9 @@ func TestGetTransactions(t *testing.T) {
 		httpBody                       *httpBody
 		verbose                        bool
 		getTransactionsArg             []visor.TxFilter
-		getTransactionsResponse        *readable.TransactionsWithStatus
+		getTransactionsResponse        []visor.Transaction
 		getTransactionsError           error
-		getTransactionsVerboseResponse *readable.TransactionsWithStatusVerbose
+		getTransactionsVerboseResponse verboseResult
 		getTransactionsVerboseError    error
 		httpResponse                   interface{}
 	}{
@@ -923,7 +1072,7 @@ func TestGetTransactions(t *testing.T) {
 				visor.NewAddrsFilter(addrs),
 				visor.NewConfirmedTxFilter(true),
 			},
-			getTransactionsResponse: &readable.TransactionsWithStatus{},
+			getTransactionsResponse: []visor.Transaction{},
 			httpResponse:            []readable.TransactionWithStatus{},
 		},
 
@@ -941,8 +1090,11 @@ func TestGetTransactions(t *testing.T) {
 				visor.NewAddrsFilter(addrs),
 				visor.NewConfirmedTxFilter(true),
 			},
-			getTransactionsVerboseResponse: &readable.TransactionsWithStatusVerbose{},
-			httpResponse:                   []readable.TransactionWithStatusVerbose{},
+			getTransactionsVerboseResponse: verboseResult{
+				Transactions: []visor.Transaction{},
+				Inputs:       [][]visor.TransactionInput{},
+			},
+			httpResponse: []readable.TransactionWithStatusVerbose{},
 		},
 	}
 
@@ -1002,8 +1154,9 @@ func TestGetTransactions(t *testing.T) {
 				return true
 			})
 
-			gateway.On("GetTransactionsWithStatus", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
-			gateway.On("GetTransactionsWithStatusVerbose", matchFunc).Return(tc.getTransactionsVerboseResponse, tc.getTransactionsVerboseError)
+			gateway.On("GetTransactions", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
+			gateway.On("GetTransactionsVerbose", matchFunc).Return(tc.getTransactionsVerboseResponse.Transactions,
+				tc.getTransactionsVerboseResponse.Inputs, tc.getTransactionsVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

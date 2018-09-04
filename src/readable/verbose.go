@@ -68,6 +68,10 @@ type BlocksVerbose struct {
 func NewBlocksVerbose(blocks []coin.SignedBlock, inputs [][][]visor.TransactionInput) (*BlocksVerbose, error) {
 	bs := make([]BlockVerbose, len(blocks))
 	for i := range blocks {
+		if i >= len(inputs) {
+			return nil, errors.New("NewBlocksVerbose: not enough inputs for blocks")
+		}
+
 		b, err := NewBlockVerbose(&blocks[i].Block, inputs[i])
 		if err != nil {
 			return nil, err

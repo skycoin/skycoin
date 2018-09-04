@@ -289,7 +289,7 @@ func TestMakeChangeOutInsufficientCoinHours(t *testing.T) {
 }
 
 func TestChooseSpends(t *testing.T) {
-	// Start with readable.OutputSet
+	// Start with readable.UnspentOutputsSummary
 	// Spends should be minimized
 
 	// Insufficient HeadOutputs
@@ -313,14 +313,14 @@ func TestChooseSpends(t *testing.T) {
 		name     string
 		err      error
 		spendLen int
-		ros      readable.OutputSet
+		ros      readable.UnspentOutputsSummary
 	}{
 		{
 			"Insufficient HeadOutputs",
 			wallet.ErrInsufficientBalance,
 			0,
-			readable.OutputSet{
-				HeadOutputs: readable.Outputs{
+			readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashA,
 						Address:           addrA,
@@ -345,8 +345,8 @@ func TestChooseSpends(t *testing.T) {
 			"Sufficient HeadOutputs, but insufficient after subtracting OutgoingOutputs",
 			wallet.ErrInsufficientBalance,
 			0,
-			readable.OutputSet{
-				HeadOutputs: readable.Outputs{
+			readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashA,
 						Address:           addrA,
@@ -364,7 +364,7 @@ func TestChooseSpends(t *testing.T) {
 						SourceTransaction: testutil.RandSHA256(t).Hex(),
 					},
 				},
-				OutgoingOutputs: readable.Outputs{
+				OutgoingOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashB,
 						Address:           addrB,
@@ -381,8 +381,8 @@ func TestChooseSpends(t *testing.T) {
 			"Insufficient HeadOutputs, but sufficient after adding IncomingOutputs",
 			ErrTemporaryInsufficientBalance,
 			0,
-			readable.OutputSet{
-				HeadOutputs: readable.Outputs{
+			readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashA,
 						Address:           addrA,
@@ -400,7 +400,7 @@ func TestChooseSpends(t *testing.T) {
 						SourceTransaction: testutil.RandSHA256(t).Hex(),
 					},
 				},
-				IncomingOutputs: readable.Outputs{
+				IncomingOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashC,
 						Address:           addrC,
@@ -425,8 +425,8 @@ func TestChooseSpends(t *testing.T) {
 			"Sufficient HeadOutputs and still sufficient after subtracting OutgoingOutputs",
 			nil,
 			2,
-			readable.OutputSet{
-				HeadOutputs: readable.Outputs{
+			readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashA,
 						Address:           addrA,
@@ -452,7 +452,7 @@ func TestChooseSpends(t *testing.T) {
 						SourceTransaction: testutil.RandSHA256(t).Hex(),
 					},
 				},
-				OutgoingOutputs: readable.Outputs{
+				OutgoingOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashA,
 						Address:           addrA,
@@ -469,8 +469,8 @@ func TestChooseSpends(t *testing.T) {
 			"Sufficient HeadOutputs and still sufficient after subtracting OutgoingOutputs but will have no coinhours",
 			fee.ErrTxnNoFee,
 			0,
-			readable.OutputSet{
-				HeadOutputs: readable.Outputs{
+			readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashA,
 						Address:           addrA,
@@ -496,7 +496,7 @@ func TestChooseSpends(t *testing.T) {
 						SourceTransaction: testutil.RandSHA256(t).Hex(),
 					},
 				},
-				OutgoingOutputs: readable.Outputs{
+				OutgoingOutputs: readable.UnspentOutputs{
 					{
 						Hash:              hashA,
 						Address:           addrA,

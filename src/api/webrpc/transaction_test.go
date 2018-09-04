@@ -13,24 +13,33 @@ import (
 )
 
 const (
-	rawTxStr    = "dc00000000a8558b814926ed0062cd720a572bd67367aa0d01c0769ea4800adcc89cdee524010000008756e4bde4ee1c725510a6a9a308c6a90d949de7785978599a87faba601d119f27e1be695cbb32a1e346e5dd88653a97006bf1a93c9673ac59cf7b5db7e07901000100000079216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b020000000060dfa95881cdc827b45a6d49b11dbc152ecd4de640420f00000000000000000000000000006409744bcacb181bf98b1f02a11e112d7e4fa9f940f1f23a000000000000000000000000"
-	rawTxID     = "bdc4a85a3e9d17a8fe00aa7430d0347c7f1dd6480a16da7147b6e43905057d43"
-	txHeight    = uint64(103)
-	txConfirmed = true
+	rawTxnStr    = "dc00000000a8558b814926ed0062cd720a572bd67367aa0d01c0769ea4800adcc89cdee524010000008756e4bde4ee1c725510a6a9a308c6a90d949de7785978599a87faba601d119f27e1be695cbb32a1e346e5dd88653a97006bf1a93c9673ac59cf7b5db7e07901000100000079216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b020000000060dfa95881cdc827b45a6d49b11dbc152ecd4de640420f00000000000000000000000000006409744bcacb181bf98b1f02a11e112d7e4fa9f940f1f23a000000000000000000000000"
+	rawTxnID     = "bdc4a85a3e9d17a8fe00aa7430d0347c7f1dd6480a16da7147b6e43905057d43"
+	txnHeight    = uint64(103)
+	txnBlockSeq  = uint64(101)
+	txnConfirmed = true
 )
 
-func decodeRawTransaction(rawTxStr string) *visor.Transaction {
-	rawTx, err := hex.DecodeString(rawTxStr)
+// func init() {
+// 	// patch the encoded transaction
+// 	txn := decodeRawTransaction(rawTxnStr)
+// 	txn.Status.BlockSeq = txnBlockSeq
+// 	rawTxnStr = hex.EncodeToString(txn.Serialize())
+// }
+
+func decodeRawTransaction(rawTxnStr string) *visor.Transaction {
+	rawTx, err := hex.DecodeString(rawTxnStr)
 	if err != nil {
 		panic(fmt.Sprintf("invalid raw transaction:%v", err))
 	}
 
-	tx := coin.MustTransactionDeserialize(rawTx)
+	txn := coin.MustTransactionDeserialize(rawTx)
 	return &visor.Transaction{
-		Transaction: tx,
+		Transaction: txn,
 		Status: visor.TransactionStatus{
-			Confirmed: txConfirmed,
-			Height:    txHeight,
+			Confirmed: txnConfirmed,
+			Height:    txnHeight,
+			BlockSeq:  txnBlockSeq,
 		},
 	}
 }
@@ -41,13 +50,17 @@ func Test_getTransactionHandler(t *testing.T) {
 		gateway Gatewayer
 	}
 
-	tx := decodeRawTransaction(rawTxStr)
-	rbTx, err := readable.NewTransaction(tx.Transaction, false)
+	txn := decodeRawTransaction(rawTxnStr)
+
+	fmt.Printf("%+v\n", txn)
+
+	rbTx, err := readable.NewTransaction(txn.Transaction, false)
 	require.NoError(t, err)
 	txRlt := readable.TransactionWithStatus{
 		Status: readable.TransactionStatus{
 			Confirmed: true,
 			Height:    103,
+			BlockSeq:  101,
 		},
 		Transaction: *rbTx,
 	}
@@ -57,7 +70,6 @@ func Test_getTransactionHandler(t *testing.T) {
 		args args
 		want Response
 	}{
-		// TODO: Add test cases.
 		{
 			"normal",
 			args{
@@ -65,10 +77,10 @@ func Test_getTransactionHandler(t *testing.T) {
 					ID:      "1",
 					Jsonrpc: jsonRPC,
 					Method:  "get_transaction",
-					Params:  []byte(fmt.Sprintf(`["%s"]`, rawTxID)),
+					Params:  []byte(fmt.Sprintf(`["%s"]`, rawTxnID)),
 				},
 				gateway: &fakeGateway{transactions: map[string]string{
-					rawTxID: rawTxStr,
+					rawTxnID: rawTxnStr,
 				}},
 			},
 			makeSuccessResponse("1", TxnResult{&txRlt}),

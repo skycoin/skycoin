@@ -24,15 +24,15 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 
 	cases := []struct {
 		name   string
-		outs   readable.OutputSet
+		outs   readable.UnspentOutputsSummary
 		addrs  []string
 		result *BalanceResult
 		err    error
 	}{
 		{
 			name: "confirmed == spendable == expected",
-			outs: readable.OutputSet{
-				HeadOutputs: readable.Outputs{
+			outs: readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:            hashes[0],
 						Address:         addrs[0],
@@ -119,8 +119,8 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 
 		{
 			name: "confirmed != spendable != expected",
-			outs: readable.OutputSet{
-				HeadOutputs: readable.Outputs{
+			outs: readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:            hashes[0],
 						Address:         addrs[0],
@@ -152,7 +152,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 						CalculatedHours: 100,
 					},
 				},
-				OutgoingOutputs: readable.Outputs{
+				OutgoingOutputs: readable.UnspentOutputs{
 					{
 						Hash:            hashes[5],
 						Address:         addrs[0],
@@ -166,7 +166,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 						CalculatedHours: 100,
 					},
 				},
-				IncomingOutputs: readable.Outputs{
+				IncomingOutputs: readable.UnspentOutputs{
 					{
 						Hash:            hashes[3],
 						Address:         addrs[1],

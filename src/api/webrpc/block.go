@@ -43,13 +43,13 @@ func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 
 	blocks, err := gateway.GetLastBlocks(num[0])
 	if err != nil {
-		logger.Error(err)
+		logger.Errorf("gateway.GetLastBlocks failed: %v", err)
 		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 
 	rBlocks, err := readable.NewBlocks(blocks)
 	if err != nil {
-		logger.Error(err)
+		logger.Errorf("readable.NewBlocks failed: %v", err)
 		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 

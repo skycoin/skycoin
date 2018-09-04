@@ -287,13 +287,13 @@ func (gw *Gateway) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, 
 	return b, err
 }
 
-// GetBlockByHashVerbose returns the block by hash with verbose transaction inputs
-func (gw *Gateway) GetBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]visor.TransactionInput, error) {
+// GetSignedBlockByHashVerbose returns the block by hash with verbose transaction inputs
+func (gw *Gateway) GetSignedBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]visor.TransactionInput, error) {
 	var b *coin.SignedBlock
 	var inputs [][]visor.TransactionInput
 	var err error
-	gw.strand("GetBlockByHashVerbose", func() {
-		b, inputs, err = gw.v.GetBlockByHashVerbose(hash)
+	gw.strand("GetSignedBlockByHashVerbose", func() {
+		b, inputs, err = gw.v.GetSignedBlockByHashVerbose(hash)
 	})
 	return b, inputs, err
 }
@@ -308,13 +308,13 @@ func (gw *Gateway) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	return b, err
 }
 
-// GetBlockBySeqVerbose returns the block by seq with verbose transaction inputs
-func (gw *Gateway) GetBlockBySeqVerbose(seq uint64) (*coin.SignedBlock, [][]visor.TransactionInput, error) {
+// GetSignedBlockBySeqVerbose returns the block by seq with verbose transaction inputs
+func (gw *Gateway) GetSignedBlockBySeqVerbose(seq uint64) (*coin.SignedBlock, [][]visor.TransactionInput, error) {
 	var b *coin.SignedBlock
 	var inputs [][]visor.TransactionInput
 	var err error
-	gw.strand("GetBlockBySeqVerbose", func() {
-		b, inputs, err = gw.v.GetBlockBySeqVerbose(seq)
+	gw.strand("GetSignedBlockBySeqVerbose", func() {
+		b, inputs, err = gw.v.GetSignedBlockBySeqVerbose(seq)
 	})
 	return b, inputs, err
 }

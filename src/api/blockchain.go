@@ -121,9 +121,9 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 
 			switch {
 			case hash != "":
-				b, inputs, err = gateway.GetBlockByHashVerbose(h)
+				b, inputs, err = gateway.GetSignedBlockByHashVerbose(h)
 			case seq != "":
-				b, inputs, err = gateway.GetBlockBySeqVerbose(uSeq)
+				b, inputs, err = gateway.GetSignedBlockBySeqVerbose(uSeq)
 			}
 
 			if err != nil {

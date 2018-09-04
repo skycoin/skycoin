@@ -2,7 +2,6 @@ package webrpc
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -12,7 +11,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -31,33 +29,23 @@ type fakeGateway struct {
 	uxouts               []coin.UxOut
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) (*readable.Blocks, error) { // nolint: unparam
-	var blocks readable.Blocks
-	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		return nil, err
-	}
-
-	return &blocks, nil
+func (fg fakeGateway) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) { // nolint: unparam
+	return makeTestBlocksWithErr()
 }
 
-func (fg fakeGateway) GetBlocksInRange(start, end uint64) (*readable.Blocks, error) {
-	var blocks readable.Blocks
+func (fg fakeGateway) GetBlocksInRange(start, end uint64) ([]coin.SignedBlock, error) {
 	if start > end {
 		return nil, nil
 	}
 
-	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		return nil, err
-	}
-
-	return &blocks, nil
+	return makeTestBlocksWithErr()
 }
 
-func (fg fakeGateway) GetBlocks(vs []uint64) (*readable.Blocks, error) {
+func (fg fakeGateway) GetBlocks(vs []uint64) ([]coin.SignedBlock, error) {
 	return nil, nil
 }
 
-func (fg fakeGateway) GetUnspentOutputs(filters ...visor.OutputsFilter) (*readable.OutputSet, error) {
+func (fg fakeGateway) GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error) {
 	outs := []coin.UxOut{}
 	for _, f := range filters {
 		outs = f(fg.uxouts)
@@ -65,13 +53,13 @@ func (fg fakeGateway) GetUnspentOutputs(filters ...visor.OutputsFilter) (*readab
 
 	headTime := uint64(time.Now().UTC().Unix())
 
-	rbOuts, err := readable.NewOutputs(headTime, outs)
+	rbOuts, err := visor.NewUnspentOutputs(outs, headTime)
 	if err != nil {
 		return nil, err
 	}
 
-	return &readable.OutputSet{
-		HeadOutputs: rbOuts,
+	return &visor.UnspentOutputsSummary{
+		Confirmed: rbOuts,
 	}, nil
 }
 

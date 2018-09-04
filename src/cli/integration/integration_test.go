@@ -2083,7 +2083,7 @@ func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
 	return coins, hours
 }
 
-func getWalletOutputs(t *testing.T, walletPath string) readable.Outputs {
+func getWalletOutputs(t *testing.T, walletPath string) readable.UnspentOutputs {
 	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
 	require.NoError(t, err, string(output))
 

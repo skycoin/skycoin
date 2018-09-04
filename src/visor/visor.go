@@ -1653,12 +1653,12 @@ func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	return b, nil
 }
 
-// GetBlockByHashVerbose returns a coin.SignedBlock and its transactions' input data for a given block hash
-func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]TransactionInput, error) {
+// GetSignedBlockByHashVerbose returns a coin.SignedBlock and its transactions' input data for a given block hash
+func (vs *Visor) GetSignedBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]TransactionInput, error) {
 	var b *coin.SignedBlock
 	var inputs [][]TransactionInput
 
-	if err := vs.DB.View("GetBlockByHashVerbose", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("GetSignedBlockByHashVerbose", func(tx *dbutil.Tx) error {
 		var err error
 		b, inputs, err = vs.getBlockVerbose(tx, func(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 			return vs.Blockchain.GetSignedBlockByHash(tx, hash)
@@ -1671,12 +1671,12 @@ func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [
 	return b, inputs, nil
 }
 
-// GetBlockBySeqVerbose returns a coin.SignedBlock and its transactions' input data for a given block hash
-func (vs *Visor) GetBlockBySeqVerbose(seq uint64) (*coin.SignedBlock, [][]TransactionInput, error) {
+// GetSignedBlockBySeqVerbose returns a coin.SignedBlock and its transactions' input data for a given block hash
+func (vs *Visor) GetSignedBlockBySeqVerbose(seq uint64) (*coin.SignedBlock, [][]TransactionInput, error) {
 	var b *coin.SignedBlock
 	var inputs [][]TransactionInput
 
-	if err := vs.DB.View("GetBlockBySeqVerbose", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("GetSignedBlockBySeqVerbose", func(tx *dbutil.Tx) error {
 		var err error
 		b, inputs, err = vs.getBlockVerbose(tx, func(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 			return vs.Blockchain.GetSignedBlockBySeq(tx, seq)

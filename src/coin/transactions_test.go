@@ -63,7 +63,7 @@ func TestTransactionVerify(t *testing.T) {
 	// Mismatch header hash
 	tx := makeTransaction(t)
 	tx.InnerHash = cipher.SHA256{}
-	testutil.RequireError(t, tx.Verify(), "Invalid header hash")
+	testutil.RequireError(t, tx.Verify(), "InnerHash does not match computed hash")
 
 	// No inputs
 	tx = makeTransaction(t)

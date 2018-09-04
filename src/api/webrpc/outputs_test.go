@@ -11,9 +11,10 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
-func filterOut(headTime uint64, outs []coin.UxOut, f func(out coin.UxOut) bool) readable.OutputSet {
+func filterOut(t *testing.T, headTime uint64, outs []coin.UxOut, f func(out coin.UxOut) bool) readable.UnspentOutputsSummary {
 	os := []coin.UxOut{}
 	for _, o := range outs {
 		if f(o) {
@@ -21,12 +22,16 @@ func filterOut(headTime uint64, outs []coin.UxOut, f func(out coin.UxOut) bool) 
 		}
 	}
 
-	headOuts, err := readable.NewOutputs(headTime, os)
-	if err != nil {
-		panic(err)
-	}
-	return readable.OutputSet{
-		HeadOutputs: headOuts,
+	vOuts, err := visor.NewUnspentOutputs(os, headTime)
+	require.NoError(t, err)
+
+	headOuts, err := readable.NewUnspentOutputs(vOuts)
+	require.NoError(t, err)
+
+	return readable.UnspentOutputsSummary{
+		HeadOutputs:     headOuts,
+		IncomingOutputs: readable.UnspentOutputs{},
+		OutgoingOutputs: readable.UnspentOutputs{},
 	}
 }
 
@@ -50,36 +55,35 @@ func Test_getOutputsHandler(t *testing.T) {
 		args args
 		want Response
 	}{
-		// TODO: Add test cases.
 		{
-			"invalid address",
-			args{
+			name: "invalid address",
+			args: args{
 				addrs: []string{"fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"},
 			},
-			MakeErrorResponse(ErrCodeInvalidParams, "invalid address: fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"),
+			want: MakeErrorResponse(ErrCodeInvalidParams, "invalid address: fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"),
 		},
 		{
-			"invalid params: empty addresses",
-			args{},
-			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
+			name: "invalid params: empty addresses",
+			args: args{},
+			want: MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
-			"single address",
-			args{
+			name: "single address",
+			args: args{
 				addrs:   []string{addrs[0].String()},
 				gateway: &fakeGateway{uxouts: uxouts},
 			},
-			makeSuccessResponse("1", OutputsResult{filterOut(headTime, uxouts[:], func(out coin.UxOut) bool {
+			want: makeSuccessResponse("1", OutputsResult{filterOut(t, headTime, uxouts[:], func(out coin.UxOut) bool {
 				return out.Body.Address == addrs[0]
 			})}),
 		},
 		{
-			"multiple addresses",
-			args{
+			name: "multiple addresses",
+			args: args{
 				addrs:   []string{addrs[0].String(), addrs[1].String()},
 				gateway: &fakeGateway{uxouts: uxouts},
 			},
-			makeSuccessResponse("1", OutputsResult{filterOut(headTime, uxouts, func(out coin.UxOut) bool {
+			want: makeSuccessResponse("1", OutputsResult{filterOut(t, headTime, uxouts, func(out coin.UxOut) bool {
 				return out.Body.Address == addrs[0] || out.Body.Address == addrs[1]
 			})}),
 		},

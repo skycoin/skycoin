@@ -19,6 +19,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 func makeBadBlock(t *testing.T) *coin.Block {
@@ -54,6 +55,11 @@ func TestGetBlock(t *testing.T) {
 	validSHA256, err := cipher.SHA256FromHex(validHashString)
 	require.NoError(t, err)
 
+	type verboseResult struct {
+		Block  *coin.SignedBlock
+		Inputs [][]visor.TransactionInput
+	}
+
 	tt := []struct {
 		name                               string
 		method                             string
@@ -69,9 +75,9 @@ func TestGetBlock(t *testing.T) {
 		gatewayGetBlockByHashErr           error
 		gatewayGetBlockBySeqResult         *coin.SignedBlock
 		gatewayGetBlockBySeqErr            error
-		gatewayGetBlockByHashVerboseResult *readable.BlockVerbose
+		gatewayGetBlockByHashVerboseResult verboseResult
 		gatewayGetBlockByHashVerboseErr    error
-		gatewayGetBlockBySeqVerboseResult  *readable.BlockVerbose
+		gatewayGetBlockBySeqVerboseResult  verboseResult
 		gatewayGetBlockBySeqVerboseErr     error
 		response                           interface{}
 	}{
@@ -221,11 +227,10 @@ func TestGetBlock(t *testing.T) {
 			sha256:     validSHA256,
 			verbose:    true,
 			verboseStr: "1",
-			gatewayGetBlockByHashVerboseResult: func() *readable.BlockVerbose {
-				b, err := readable.NewBlockVerbose(&coin.Block{}, nil)
-				require.NoError(t, err)
-				return b
-			}(),
+			gatewayGetBlockByHashVerboseResult: verboseResult{
+				Block:  &coin.SignedBlock{},
+				Inputs: nil,
+			},
 			response: &readable.BlockVerbose{
 				Head: readable.BlockHeader{
 					BkSeq:             0x0,
@@ -250,11 +255,10 @@ func TestGetBlock(t *testing.T) {
 			seqStr:     "1",
 			verbose:    true,
 			verboseStr: "1",
-			gatewayGetBlockBySeqVerboseResult: func() *readable.BlockVerbose {
-				b, err := readable.NewBlockVerbose(&coin.Block{}, nil)
-				require.NoError(t, err)
-				return b
-			}(),
+			gatewayGetBlockBySeqVerboseResult: verboseResult{
+				Block:  &coin.SignedBlock{},
+				Inputs: nil,
+			},
 			response: &readable.BlockVerbose{
 				Head: readable.BlockHeader{
 					BkSeq:             0x0,
@@ -279,8 +283,8 @@ func TestGetBlock(t *testing.T) {
 			sha256:                          validSHA256,
 			verbose:                         true,
 			verboseStr:                      "1",
-			gatewayGetBlockByHashVerboseErr: errors.New("GetBlockByHashVerbose failed"),
-			err:                             "500 Internal Server Error - GetBlockByHashVerbose failed",
+			gatewayGetBlockByHashVerboseErr: errors.New("GetSignedBlockByHashVerbose failed"),
+			err:                             "500 Internal Server Error - GetSignedBlockByHashVerbose failed",
 		},
 
 		{
@@ -291,8 +295,8 @@ func TestGetBlock(t *testing.T) {
 			seqStr:                         "1",
 			verbose:                        true,
 			verboseStr:                     "1",
-			gatewayGetBlockBySeqVerboseErr: errors.New("GetBlockBySeqVerbose failed"),
-			err:                            "500 Internal Server Error - GetBlockBySeqVerbose failed",
+			gatewayGetBlockBySeqVerboseErr: errors.New("GetSignedBlockBySeqVerbose failed"),
+			err:                            "500 Internal Server Error - GetSignedBlockBySeqVerbose failed",
 		},
 
 		{
@@ -335,8 +339,10 @@ func TestGetBlock(t *testing.T) {
 
 			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
-			gateway.On("GetBlockByHashVerbose", tc.sha256).Return(tc.gatewayGetBlockByHashVerboseResult, tc.gatewayGetBlockByHashVerboseErr)
-			gateway.On("GetBlockBySeqVerbose", tc.seq).Return(tc.gatewayGetBlockBySeqVerboseResult, tc.gatewayGetBlockBySeqVerboseErr)
+			gateway.On("GetSignedBlockByHashVerbose", tc.sha256).Return(tc.gatewayGetBlockByHashVerboseResult.Block,
+				tc.gatewayGetBlockByHashVerboseResult.Inputs, tc.gatewayGetBlockByHashVerboseErr)
+			gateway.On("GetSignedBlockBySeqVerbose", tc.seq).Return(tc.gatewayGetBlockBySeqVerboseResult.Block,
+				tc.gatewayGetBlockBySeqVerboseResult.Inputs, tc.gatewayGetBlockBySeqVerboseErr)
 
 			endpoint := "/api/v1/block"
 
@@ -397,6 +403,11 @@ func TestGetBlocks(t *testing.T) {
 		Verbose string
 	}
 
+	type verboseResult struct {
+		Blocks []coin.SignedBlock
+		Inputs [][][]visor.TransactionInput
+	}
+
 	tt := []struct {
 		name                          string
 		method                        string
@@ -406,9 +417,9 @@ func TestGetBlocks(t *testing.T) {
 		start                         uint64
 		end                           uint64
 		verbose                       bool
-		gatewayGetBlocksResult        *readable.Blocks
+		gatewayGetBlocksResult        []coin.SignedBlock
 		gatewayGetBlocksError         error
-		gatewayGetBlocksVerboseResult *readable.BlocksVerbose
+		gatewayGetBlocksVerboseResult verboseResult
 		gatewayGetBlocksVerboseError  error
 		response                      interface{}
 	}{
@@ -494,8 +505,21 @@ func TestGetBlocks(t *testing.T) {
 			},
 			start:                  1,
 			end:                    3,
-			gatewayGetBlocksResult: &readable.Blocks{Blocks: []readable.Block{readable.Block{}}},
-			response:               &readable.Blocks{Blocks: []readable.Block{readable.Block{}}},
+			gatewayGetBlocksResult: []coin.SignedBlock{{}},
+			response: &readable.Blocks{
+				Blocks: []readable.Block{
+					readable.Block{
+						Head: readable.BlockHeader{
+							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+						},
+						Body: readable.BlockBody{
+							Transactions: []readable.Transaction{},
+						},
+					},
+				},
+			},
 		},
 		{
 			name:   "200 verbose",
@@ -509,14 +533,22 @@ func TestGetBlocks(t *testing.T) {
 			start:   1,
 			end:     3,
 			verbose: true,
-			gatewayGetBlocksVerboseResult: &readable.BlocksVerbose{
-				Blocks: []readable.BlockVerbose{
-					readable.BlockVerbose{},
-				},
+			gatewayGetBlocksVerboseResult: verboseResult{
+				Blocks: []coin.SignedBlock{{}},
+				Inputs: [][][]visor.TransactionInput{{}},
 			},
 			response: &readable.BlocksVerbose{
 				Blocks: []readable.BlockVerbose{
-					readable.BlockVerbose{},
+					readable.BlockVerbose{
+						Head: readable.BlockHeader{
+							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+						},
+						Body: readable.BlockBodyVerbose{
+							Transactions: []readable.BlockTransactionVerbose{},
+						},
+					},
 				},
 			},
 		},
@@ -526,7 +558,8 @@ func TestGetBlocks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetBlocksInRange", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
-			gateway.On("GetBlocksInRangeVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksVerboseResult, tc.gatewayGetBlocksVerboseError)
+			gateway.On("GetBlocksInRangeVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksVerboseResult.Blocks,
+				tc.gatewayGetBlocksVerboseResult.Inputs, tc.gatewayGetBlocksVerboseError)
 
 			endpoint := "/api/v1/blocks"
 
@@ -563,8 +596,8 @@ func TestGetBlocks(t *testing.T) {
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				if tc.verbose {
 					var msg *readable.BlocksVerbose
@@ -587,6 +620,12 @@ func TestGetLastBlocks(t *testing.T) {
 		Num     string
 		Verbose string
 	}
+
+	type verboseResult struct {
+		Blocks []coin.SignedBlock
+		Inputs [][][]visor.TransactionInput
+	}
+
 	tt := []struct {
 		name                              string
 		method                            string
@@ -595,9 +634,9 @@ func TestGetLastBlocks(t *testing.T) {
 		body                              httpBody
 		num                               uint64
 		verbose                           bool
-		gatewayGetLastBlocksResult        *readable.Blocks
+		gatewayGetLastBlocksResult        []coin.SignedBlock
 		gatewayGetLastBlocksError         error
-		gatewayGetLastBlocksVerboseResult *readable.BlocksVerbose
+		gatewayGetLastBlocksVerboseResult verboseResult
 		gatewayGetLastBlocksVerboseError  error
 		response                          interface{}
 	}{
@@ -666,15 +705,20 @@ func TestGetLastBlocks(t *testing.T) {
 			body: httpBody{
 				Num: "1",
 			},
-			num: 1,
-			gatewayGetLastBlocksResult: &readable.Blocks{
-				Blocks: []readable.Block{
-					readable.Block{},
-				},
-			},
+			num:                        1,
+			gatewayGetLastBlocksResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
-					readable.Block{},
+					readable.Block{
+						Head: readable.BlockHeader{
+							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+						},
+						Body: readable.BlockBody{
+							Transactions: []readable.Transaction{},
+						},
+					},
 				},
 			},
 		},
@@ -688,14 +732,22 @@ func TestGetLastBlocks(t *testing.T) {
 			},
 			num:     1,
 			verbose: true,
-			gatewayGetLastBlocksVerboseResult: &readable.BlocksVerbose{
-				Blocks: []readable.BlockVerbose{
-					readable.BlockVerbose{},
-				},
+			gatewayGetLastBlocksVerboseResult: verboseResult{
+				Blocks: []coin.SignedBlock{{}},
+				Inputs: [][][]visor.TransactionInput{{}},
 			},
 			response: &readable.BlocksVerbose{
 				Blocks: []readable.BlockVerbose{
-					readable.BlockVerbose{},
+					readable.BlockVerbose{
+						Head: readable.BlockHeader{
+							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+						},
+						Body: readable.BlockBodyVerbose{
+							Transactions: []readable.BlockTransactionVerbose{},
+						},
+					},
 				},
 			},
 		},
@@ -707,7 +759,8 @@ func TestGetLastBlocks(t *testing.T) {
 			gateway := &MockGatewayer{}
 
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
-			gateway.On("GetLastBlocksVerbose", tc.num).Return(tc.gatewayGetLastBlocksVerboseResult, tc.gatewayGetLastBlocksVerboseError)
+			gateway.On("GetLastBlocksVerbose", tc.num).Return(tc.gatewayGetLastBlocksVerboseResult.Blocks,
+				tc.gatewayGetLastBlocksVerboseResult.Inputs, tc.gatewayGetLastBlocksVerboseError)
 
 			v := url.Values{}
 			if tc.body.Num != "" {

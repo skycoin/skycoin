@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 func TestGetOutputsHandler(t *testing.T) {
@@ -30,9 +31,9 @@ func TestGetOutputsHandler(t *testing.T) {
 		status                    int
 		err                       string
 		httpBody                  *httpBody
-		getUnspentOutputsResponse *readable.OutputSet
+		getUnspentOutputsResponse *visor.UnspentOutputsSummary
 		getUnspentOutputsError    error
-		httpResponse              *readable.OutputSet
+		httpResponse              *readable.UnspentOutputsSummary
 	}{
 		{
 			name:   "405",
@@ -63,7 +64,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			name:                      "500 - getUnspentOutputsError",
 			method:                    http.MethodGet,
 			status:                    http.StatusInternalServerError,
-			err:                       "500 Internal Server Error - get unspent outputs failed: getUnspentOutputsError",
+			err:                       "500 Internal Server Error - gateway.GetUnspentOutputsSummary failed: getUnspentOutputsError",
 			getUnspentOutputsResponse: nil,
 			getUnspentOutputsError:    errors.New("getUnspentOutputsError"),
 		},
@@ -71,8 +72,12 @@ func TestGetOutputsHandler(t *testing.T) {
 			name:                      "200 - OK",
 			method:                    http.MethodGet,
 			status:                    http.StatusOK,
-			getUnspentOutputsResponse: &readable.OutputSet{},
-			httpResponse:              &readable.OutputSet{},
+			getUnspentOutputsResponse: &visor.UnspentOutputsSummary{},
+			httpResponse: &readable.UnspentOutputsSummary{
+				HeadOutputs:     readable.UnspentOutputs{},
+				OutgoingOutputs: readable.UnspentOutputs{},
+				IncomingOutputs: readable.UnspentOutputs{},
+			},
 		},
 	}
 
@@ -80,7 +85,7 @@ func TestGetOutputsHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/outputs"
-			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
+			gateway.On("GetUnspentOutputsSummary", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -111,7 +116,7 @@ func TestGetOutputsHandler(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *readable.OutputSet
+				var msg *readable.UnspentOutputsSummary
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)

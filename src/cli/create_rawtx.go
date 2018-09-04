@@ -499,7 +499,7 @@ func CreateRawTxFromAddress(c GetOutputser, addr, walletFile, chgAddr string, to
 
 // GetOutputser implements unspent output querying
 type GetOutputser interface {
-	OutputsForAddresses([]string) (*readable.OutputSet, error)
+	OutputsForAddresses([]string) (*readable.UnspentOutputsSummary, error)
 }
 
 // CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
@@ -609,7 +609,7 @@ func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxS
 	// return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
 }
 
-func createRawTx(uxouts *readable.OutputSet, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
@@ -661,7 +661,7 @@ func createRawTx(uxouts *readable.OutputSet, wlt *wallet.Wallet, chgAddr string,
 	return makeTx()
 }
 
-func chooseSpends(uxouts *readable.OutputSet, coins uint64) ([]wallet.UxBalance, error) {
+func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]wallet.UxBalance, error) {
 	// Convert spendable unspent outputs to []wallet.UxBalance
 	spendableOutputs, err := readable.OutputsToUxBalances(uxouts.SpendableOutputs())
 	if err != nil {

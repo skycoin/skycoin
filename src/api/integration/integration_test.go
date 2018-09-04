@@ -480,7 +480,7 @@ func TestStableNoUnconfirmedOutputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			require.False(t, tc.addrs != nil && tc.hashes != nil)
 
-			var outputs *readable.OutputSet
+			var outputs *readable.UnspentOutputsSummary
 			var err error
 			switch {
 			case tc.addrs == nil && tc.hashes == nil:
@@ -498,7 +498,7 @@ func TestStableNoUnconfirmedOutputs(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected readable.OutputSet
+			var expected readable.UnspentOutputsSummary
 			checkGoldenFile(t, tc.golden, TestData{*outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
@@ -559,7 +559,7 @@ func TestStableOutputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			require.False(t, tc.addrs != nil && tc.hashes != nil)
 
-			var outputs *readable.OutputSet
+			var outputs *readable.UnspentOutputsSummary
 			var err error
 			switch {
 			case tc.addrs == nil && tc.hashes == nil:
@@ -577,7 +577,7 @@ func TestStableOutputs(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected readable.OutputSet
+			var expected readable.UnspentOutputsSummary
 			checkGoldenFile(t, tc.golden, TestData{*outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
@@ -3273,9 +3273,9 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 
 	// Split outputs into those held by the wallet and those not
 	var walletOutputHashes []string
-	var walletOutputs readable.Outputs
+	var walletOutputs readable.UnspentOutputs
 	walletAuxs := make(map[string][]string)
-	var nonWalletOutputs readable.Outputs
+	var nonWalletOutputs readable.UnspentOutputs
 	for _, o := range outputs.HeadOutputs {
 		if _, ok := addressMap[o.Address]; ok {
 			walletOutputs = append(walletOutputs, o)

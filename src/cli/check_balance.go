@@ -139,7 +139,7 @@ func GetBalanceOfAddresses(c GetOutputser, addrs []string) (*BalanceResult, erro
 	return getBalanceOfAddresses(outs, addrs)
 }
 
-func getBalanceOfAddresses(outs *readable.OutputSet, addrs []string) (*BalanceResult, error) {
+func getBalanceOfAddresses(outs *readable.UnspentOutputsSummary, addrs []string) (*BalanceResult, error) {
 	addrsMap := make(map[string]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrsMap[a] = struct{}{}

@@ -374,7 +374,7 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	originInnerHash := txn.InnerHash
 	txn.InnerHash = cipher.SHA256{}
 	err = verifySingleTxnSoftHardConstraints(txn, DefaultMaxBlockSize)
-	requireHardViolation(t, "Invalid header hash", err)
+	requireHardViolation(t, "InnerHash does not match computed hash", err)
 
 	// Set back the originInnerHash
 	txn.InnerHash = originInnerHash

@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -962,8 +961,8 @@ func (c *Client) InjectEncodedTransaction(rawTx string) (string, error) {
 }
 
 // ResendUnconfirmedTransactions makes a request to GET /api/v1/resendUnconfirmedTxns
-func (c *Client) ResendUnconfirmedTransactions() (*daemon.ResendResult, error) {
-	var r daemon.ResendResult
+func (c *Client) ResendUnconfirmedTransactions() (*readable.ResendResult, error) {
+	var r readable.ResendResult
 	if err := c.Get("/api/v1/resendUnconfirmedTxns", &r); err != nil {
 		return nil, err
 	}

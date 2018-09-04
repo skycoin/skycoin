@@ -1,6 +1,9 @@
 package readable
 
-import "github.com/skycoin/skycoin/src/daemon"
+import (
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/daemon"
+)
 
 // Connection a connection's state within the daemon
 type Connection struct {
@@ -47,5 +50,21 @@ func NewConnections(dconns []daemon.Connection) Connections {
 
 	return Connections{
 		Connections: conns,
+	}
+}
+
+// ResendResult the result of rebroadcasting transaction
+type ResendResult struct {
+	Txids []string `json:"txids"`
+}
+
+// NewResendResult creates a ResendResult from a list of transaction ID hashes
+func NewResendResult(hashes []cipher.SHA256) ResendResult {
+	txids := make([]string, len(hashes))
+	for i, h := range hashes {
+		txids[i] = h.Hex()
+	}
+	return ResendResult{
+		Txids: txids,
 	}
 }

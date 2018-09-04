@@ -1071,15 +1071,15 @@ func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) (
 }
 
 // ResendUnconfirmedTxns provides a mock function with given fields:
-func (_m *MockGatewayer) ResendUnconfirmedTxns() (*daemon.ResendResult, error) {
+func (_m *MockGatewayer) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	ret := _m.Called()
 
-	var r0 *daemon.ResendResult
-	if rf, ok := ret.Get(0).(func() *daemon.ResendResult); ok {
+	var r0 []cipher.SHA256
+	if rf, ok := ret.Get(0).(func() []cipher.SHA256); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*daemon.ResendResult)
+			r0 = ret.Get(0).([]cipher.SHA256)
 		}
 	}
 

@@ -54,7 +54,7 @@ type Gatewayer interface {
 	GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error)
 	GetTransactionsVerbose(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
-	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
+	ResendUnconfirmedTxns() ([]cipher.SHA256, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
 	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error)

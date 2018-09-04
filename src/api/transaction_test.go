@@ -18,7 +18,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
@@ -746,15 +745,18 @@ func TestInjectTransaction(t *testing.T) {
 }
 
 func TestResendUnconfirmedTxns(t *testing.T) {
+	validHash1 := testutil.RandSHA256(t)
+	validHash2 := testutil.RandSHA256(t)
+
 	tt := []struct {
 		name                          string
 		method                        string
 		status                        int
 		err                           string
 		httpBody                      string
-		resendUnconfirmedTxnsResponse *daemon.ResendResult
+		resendUnconfirmedTxnsResponse []cipher.SHA256
 		resendUnconfirmedTxnsErr      error
-		httpResponse                  *daemon.ResendResult
+		httpResponse                  readable.ResendResult
 	}{
 		{
 			name:   "405",
@@ -773,8 +775,19 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			name:                          "200",
 			method:                        http.MethodGet,
 			status:                        http.StatusOK,
-			resendUnconfirmedTxnsResponse: &daemon.ResendResult{},
-			httpResponse:                  &daemon.ResendResult{},
+			resendUnconfirmedTxnsResponse: nil,
+			httpResponse: readable.ResendResult{
+				Txids: []string{},
+			},
+		},
+		{
+			name:                          "200 with hashes",
+			method:                        http.MethodGet,
+			status:                        http.StatusOK,
+			resendUnconfirmedTxnsResponse: []cipher.SHA256{validHash1, validHash2},
+			httpResponse: readable.ResendResult{
+				Txids: []string{validHash1.Hex(), validHash2.Hex()},
+			},
 		},
 	}
 
@@ -804,7 +817,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *daemon.ResendResult
+				var msg readable.ResendResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)

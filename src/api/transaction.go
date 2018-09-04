@@ -316,13 +316,13 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rlt, err := gateway.ResendUnconfirmedTxns()
+		hashes, err := gateway.ResendUnconfirmedTxns()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, rlt)
+		wh.SendJSONOr500(logger, w, readable.NewResendResult(hashes))
 	}
 }
 

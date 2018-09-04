@@ -253,28 +253,15 @@ func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
 	return bcp, nil
 }
 
-// ResendResult rebroadcast tx result
-type ResendResult struct {
-	Txids []string `json:"txids"` // transaction id
-}
-
-// ResendUnconfirmedTxns resents all unconfirmed transactions
-func (gw *Gateway) ResendUnconfirmedTxns() (*ResendResult, error) {
+// ResendUnconfirmedTxns resents all unconfirmed transactions, returning the txids
+// of the transactions that were resent
+func (gw *Gateway) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 	var err error
 	gw.strand("ResendUnconfirmedTxns", func() {
 		hashes, err = gw.d.ResendUnconfirmedTxns()
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	var rlt ResendResult
-	for _, txid := range hashes {
-		rlt.Txids = append(rlt.Txids, txid.Hex())
-	}
-	return &rlt, nil
+	return hashes, err
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata

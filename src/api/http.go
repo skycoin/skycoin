@@ -166,7 +166,9 @@ func Create(host string, c Config, gateway Gatewayer) (*Server, error) {
 
 	s, err := create(host, c, gateway)
 	if err != nil {
-		s.listener.Close()
+		if closeErr := s.listener.Close(); closeErr != nil {
+			logger.WithError(err).Warning("s.listener.Close() error")
+		}
 		return nil, err
 	}
 
@@ -198,7 +200,9 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 
 	s, err := create(host, c, gateway)
 	if err != nil {
-		s.listener.Close()
+		if closeErr := s.listener.Close(); closeErr != nil {
+			logger.WithError(err).Warning("s.listener.Close() error")
+		}
 		return nil, err
 	}
 
@@ -234,7 +238,9 @@ func (s *Server) Shutdown() {
 
 	logger.Info("Shutting down web interface")
 	defer logger.Info("Web interface shut down")
-	s.listener.Close()
+	if err := s.listener.Close(); err != nil {
+		logger.WithError(err).Warning("s.listener.Close() error")
+	}
 	<-s.done
 }
 
@@ -274,7 +280,10 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandler("/", indexHandler)
 
 	if c.enableGUI {
-		fileInfos, _ := ioutil.ReadDir(c.appLoc)
+		fileInfos, err := ioutil.ReadDir(c.appLoc)
+		if err != nil {
+			logger.WithError(err).Panicf("ioutil.ReadDir(%s) failed", c.appLoc)
+		}
 
 		fs := http.FileServer(http.Dir(c.appLoc))
 		if !c.disableCSP {

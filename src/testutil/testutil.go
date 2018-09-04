@@ -22,9 +22,20 @@ func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 	require.NoError(t, err)
 
 	return dbutil.WrapDB(db), func() {
-		db.Close()
-		f.Close()
-		os.Remove(f.Name())
+		err := db.Close()
+		if err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+
+		err = f.Close()
+		if err != nil {
+			t.Logf("Failed to close file: %v", err)
+		}
+
+		err = os.Remove(f.Name())
+		if err != nil {
+			t.Logf("Failed to remove temp file %s: %v", f.Name(), err)
+		}
 	}
 }
 
@@ -32,6 +43,7 @@ func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 func RequireError(t *testing.T, err error, msg string) {
 	t.Helper()
 	require.Error(t, err)
+	require.NotNil(t, err)
 	require.Equal(t, msg, err.Error())
 }
 

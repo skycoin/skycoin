@@ -21,6 +21,11 @@ var _ = func() int64 {
 	return t
 }()
 
+// New create a transaction db instance.
+func newTransactions() *transactions {
+	return &transactions{}
+}
+
 func TestTransactionGet(t *testing.T) {
 	txns := make([]Transaction, 0, 3)
 	for i := 0; i < 3; i++ {

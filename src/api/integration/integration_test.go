@@ -198,7 +198,7 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 		updateGoldenFile(t, goldenFile, testData.actual)
 	}
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) // nolint: gosec
 	require.NoError(t, err)
 	defer f.Close()
 
@@ -228,7 +228,7 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 
 	goldenFile = filepath.Join(testFixturesDir, goldenFile)
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) // nolint: gosec
 	require.NoError(t, err)
 	defer f.Close()
 

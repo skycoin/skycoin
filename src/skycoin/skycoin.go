@@ -433,5 +433,5 @@ func createDirIfNotExist(dir string) error {
 		return nil
 	}
 
-	return os.Mkdir(dir, 0777)
+	return os.Mkdir(dir, 0750)
 }

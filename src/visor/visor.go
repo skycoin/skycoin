@@ -167,10 +167,10 @@ func (c Config) Verify() error {
 
 // Historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
 type Historyer interface {
-	GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]*historydb.UxOut, error)
+	GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]historydb.UxOut, error)
 	ParseBlock(tx *dbutil.Tx, b coin.Block) error
 	GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
-	GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*historydb.UxOut, error)
+	GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]historydb.UxOut, error)
 	GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address) ([]historydb.Transaction, error)
 	NeedsReset(tx *dbutil.Tx) (bool, error)
 	Erase(tx *dbutil.Tx) error
@@ -1814,7 +1814,7 @@ func (vs Visor) GetHeadBlockTime() (uint64, error) {
 
 // GetUxOutByID gets UxOut by hash id.
 func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
-	var outs []*historydb.UxOut
+	var outs []historydb.UxOut
 
 	if err := vs.DB.View("GetUxOutByID", func(tx *dbutil.Tx) error {
 		var err error
@@ -1828,12 +1828,12 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 		return nil, nil
 	}
 
-	return outs[0], nil
+	return &outs[0], nil
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
-func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
-	var out []*historydb.UxOut
+func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]historydb.UxOut, error) {
+	var out []historydb.UxOut
 
 	if err := vs.DB.View("GetAddrUxOuts", func(tx *dbutil.Tx) error {
 		var err error

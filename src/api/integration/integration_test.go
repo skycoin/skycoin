@@ -32,7 +32,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -1042,7 +1041,7 @@ func TestStableUxOut(t *testing.T) {
 			ux, err := c.UxOut(tc.uxID)
 			require.NoError(t, err)
 
-			var expected historydb.UxOutJSON
+			var expected readable.SpentOutput
 			checkGoldenFile(t, tc.golden, TestData{*ux, &expected})
 		})
 	}
@@ -1062,7 +1061,7 @@ func TestLiveUxOut(t *testing.T) {
 	ux, err := c.UxOut("fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20")
 	require.NoError(t, err)
 
-	var expected historydb.UxOutJSON
+	var expected readable.SpentOutput
 	checkGoldenFile(t, "uxout-spent.golden", TestData{*ux, &expected})
 	require.NotEqual(t, uint64(0), ux.SpentBlockSeq)
 
@@ -1138,7 +1137,7 @@ func TestStableAddressUxOuts(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			var expected []historydb.UxOutJSON
+			var expected []readable.SpentOutput
 			checkGoldenFile(t, tc.golden, TestData{ux, &expected})
 		})
 	}

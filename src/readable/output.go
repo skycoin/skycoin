@@ -10,6 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -231,4 +232,41 @@ func (os UnspentOutputsSummary) SpendableOutputs() UnspentOutputs {
 // ExpectedOutputs adds IncomingOutputs to SpendableOutputs
 func (os UnspentOutputsSummary) ExpectedOutputs() UnspentOutputs {
 	return append(os.SpendableOutputs(), os.IncomingOutputs...)
+}
+
+// SpentOutput is an unspent output that was spent
+type SpentOutput struct {
+	Uxid          string `json:"uxid"`
+	Time          uint64 `json:"time"`
+	SrcBkSeq      uint64 `json:"src_block_seq"`
+	SrcTx         string `json:"src_tx"`
+	OwnerAddress  string `json:"owner_address"`
+	Coins         uint64 `json:"coins"`
+	Hours         uint64 `json:"hours"`
+	SpentBlockSeq uint64 `json:"spent_block_seq"` // block seq that spent the output.
+	SpentTxID     string `json:"spent_tx"`        // id of tx which spent this output.
+}
+
+// NewSpentOutput creates a SpentOutput from historydb.UxOut
+func NewSpentOutput(out *historydb.UxOut) SpentOutput {
+	return SpentOutput{
+		Uxid:          out.Hash().Hex(),
+		Time:          out.Out.Head.Time,
+		SrcBkSeq:      out.Out.Head.BkSeq,
+		SrcTx:         out.Out.Body.SrcTransaction.Hex(),
+		OwnerAddress:  out.Out.Body.Address.String(),
+		Coins:         out.Out.Body.Coins,
+		Hours:         out.Out.Body.Hours,
+		SpentBlockSeq: out.SpentBlockSeq,
+		SpentTxID:     out.SpentTxID.Hex(),
+	}
+}
+
+// NewSpentOutputs creates []SpentOutput from []historydb.UxOut
+func NewSpentOutputs(outs []historydb.UxOut) []SpentOutput {
+	spents := make([]SpentOutput, len(outs))
+	for i, o := range outs {
+		spents[i] = NewSpentOutput(&o)
+	}
+	return spents
 }

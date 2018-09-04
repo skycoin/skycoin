@@ -2799,8 +2799,8 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 	srcTxnHashes := make([]cipher.SHA256, 5)
 	inputs := make([]coin.UxOut, 5)
-	historyOutputs := make([]*historydb.UxOut, 5)
-	// intputHashes := make([]cipher.SHA256, 5)
+	historyOutputs := make([]historydb.UxOut, 5)
+
 	for i := 0; i < 5; i++ {
 		srcTxnHashes[i] = testutil.RandSHA256(t)
 		inputs[i] = coin.UxOut{
@@ -2815,7 +2815,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			},
 		}
 
-		historyOutputs[i] = &historydb.UxOut{
+		historyOutputs[i] = historydb.UxOut{
 			Out: inputs[i],
 		}
 	}
@@ -2898,7 +2898,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		getHistoryTxnRet *historydb.Transaction
 		getHistoryTxnErr error
 
-		getHistoryUxOutsRet []*historydb.UxOut
+		getHistoryUxOutsRet []historydb.UxOut
 		getHistoryUxOutsErr error
 
 		getSignedBlocksBySeqRet *coin.SignedBlock

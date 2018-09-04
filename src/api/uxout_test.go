@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -36,7 +37,7 @@ func TestGetUxOutByID(t *testing.T) {
 		getGetUxOutByIDArg      cipher.SHA256
 		getGetUxOutByIDResponse *historydb.UxOut
 		getGetUxOutByIDError    error
-		httpResponse            *historydb.UxOutJSON
+		httpResponse            readable.SpentOutput
 		csrfDisabled            bool
 	}{
 		{
@@ -108,7 +109,7 @@ func TestGetUxOutByID(t *testing.T) {
 			uxid:                    validHash,
 			getGetUxOutByIDArg:      testutil.SHA256FromHex(t, validHash),
 			getGetUxOutByIDResponse: &historydb.UxOut{},
-			httpResponse:            historydb.NewUxOutJSON(&historydb.UxOut{}),
+			httpResponse:            readable.NewSpentOutput(&historydb.UxOut{}),
 		},
 	}
 
@@ -153,7 +154,7 @@ func TestGetUxOutByID(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *historydb.UxOutJSON
+				var msg readable.SpentOutput
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
@@ -176,9 +177,9 @@ func TestGetAddrUxOuts(t *testing.T) {
 		err                   string
 		httpBody              *httpBody
 		getAddrUxOutsArg      []cipher.Address
-		getAddrUxOutsResponse []*historydb.UxOut
+		getAddrUxOutsResponse []historydb.UxOut
 		getAddrUxOutsError    error
-		httpResponse          []*historydb.UxOutJSON
+		httpResponse          []readable.SpentOutput
 		csrfDisabled          bool
 	}{
 		{
@@ -224,8 +225,8 @@ func TestGetAddrUxOuts(t *testing.T) {
 				address: addressForGwResponse.String(),
 			},
 			getAddrUxOutsArg:      []cipher.Address{addressForGwResponse},
-			getAddrUxOutsResponse: []*historydb.UxOut{},
-			httpResponse:          []*historydb.UxOutJSON{},
+			getAddrUxOutsResponse: []historydb.UxOut{},
+			httpResponse:          []readable.SpentOutput{},
 		},
 	}
 
@@ -268,7 +269,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []*historydb.UxOutJSON
+				var msg []readable.SpentOutput
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)

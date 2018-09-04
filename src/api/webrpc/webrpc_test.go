@@ -83,7 +83,7 @@ func (fg *fakeGateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return errors.New("fake gateway inject transaction failed")
 }
 
-func (fg fakeGateway) GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error) {
+func (fg fakeGateway) GetAddrUxOuts(addr []cipher.Address) ([]historydb.UxOut, error) {
 	return nil, nil
 }
 

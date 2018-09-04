@@ -13,7 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -105,7 +104,7 @@ func walletHistoryAction(c *gcli.Context) error {
 	return printJSON(totalAddrHis)
 }
 
-func makeAddrHisArray(c *api.Client, addr string, uxOuts []historydb.UxOutJSON) ([]AddrHistory, error) {
+func makeAddrHisArray(c *api.Client, addr string, uxOuts []readable.SpentOutput) ([]AddrHistory, error) {
 	if len(uxOuts) == 0 {
 		return nil, nil
 	}

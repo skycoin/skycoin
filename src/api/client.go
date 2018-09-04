@@ -17,7 +17,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -485,12 +484,12 @@ func (c *Client) Balance(addrs []string) (*wallet.BalancePair, error) {
 }
 
 // UxOut makes a request to GET /api/v1/uxout?uxid=xxx
-func (c *Client) UxOut(uxID string) (*historydb.UxOutJSON, error) {
+func (c *Client) UxOut(uxID string) (*readable.SpentOutput, error) {
 	v := url.Values{}
 	v.Add("uxid", uxID)
 	endpoint := "/api/v1/uxout?" + v.Encode()
 
-	var b historydb.UxOutJSON
+	var b readable.SpentOutput
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -498,12 +497,12 @@ func (c *Client) UxOut(uxID string) (*historydb.UxOutJSON, error) {
 }
 
 // AddressUxOuts makes a request to GET /api/v1/address_uxouts
-func (c *Client) AddressUxOuts(addr string) ([]historydb.UxOutJSON, error) {
+func (c *Client) AddressUxOuts(addr string) ([]readable.SpentOutput, error) {
 	v := url.Values{}
 	v.Add("address", addr)
 	endpoint := "/api/v1/address_uxouts?" + v.Encode()
 
-	var b []historydb.UxOutJSON
+	var b []readable.SpentOutput
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

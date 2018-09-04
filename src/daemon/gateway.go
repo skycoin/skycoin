@@ -456,13 +456,13 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]*historydb.UxOut, error) {
-	var uxOuts []*historydb.UxOut
+func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]historydb.UxOut, error) {
+	var uxOuts []historydb.UxOut
 	var err error
 
 	gw.strand("GetAddrUxOuts", func() {
 		for _, addr := range addresses {
-			var result []*historydb.UxOut
+			var result []historydb.UxOut
 			result, err = gw.v.GetAddrUxOuts(addr)
 			if err != nil {
 				return

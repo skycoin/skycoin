@@ -133,6 +133,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 		enableCSP       bool
 		appLoc          string
 		expectCSPHeader string
+		enableGUI       bool
 	}{
 		{
 			name:            "enable CSP GET /",
@@ -140,6 +141,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 			enableCSP:       true,
 			appLoc:          "../gui/static/dist",
 			expectCSPHeader: "script-src 'self' 127.0.0.1",
+			enableGUI:       true,
 		},
 		{
 			name:            "disable CSP GET /",
@@ -147,6 +149,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 			enableCSP:       false,
 			appLoc:          "../gui/static/dist",
 			expectCSPHeader: "",
+			enableGUI:       true,
 		},
 		{
 			// Confirms that the /csrf api won't be affected by the csp setting
@@ -155,6 +158,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 			enableCSP:       true,
 			appLoc:          "",
 			expectCSPHeader: "",
+			enableGUI:       false,
 		},
 		{
 			// Confirms that the /version api won't be affected by the csp setting
@@ -163,6 +167,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 			enableCSP:       true,
 			appLoc:          "",
 			expectCSPHeader: "",
+			enableGUI:       false,
 		},
 	}
 
@@ -178,7 +183,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 			handler := newServerMux(muxConfig{
 				host:       configuredHost,
 				appLoc:     tc.appLoc,
-				enableGUI:  true,
+				enableGUI:  tc.enableGUI,
 				disableCSP: !tc.enableCSP,
 			}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)

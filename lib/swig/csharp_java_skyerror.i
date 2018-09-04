@@ -1,4 +1,3 @@
-%constant long long int SKY_ErrVerifySignatureInvalidPubkeysLength  = 0x0b000036;
 %constant long long int SKY_OK = 0;
 %constant long long int SKY_ERROR = 0x7FFFFFFF;
 %constant long long int SKY_PKG_API = 0x01000000;
@@ -154,3 +153,4 @@
 %constant long long int SKY_ErrUnknownWalletID = 0x0B000029;
 %constant long long int SKY_ErrSHA256orMissingPassword = 0x0B00002A;
 %constant long long int SKY_ErrSHA256LenghtDataOverflowMaxUint32 = 0x0B00002B;
+%constant long long int SKY_ErrVerifySignatureInvalidPubkeysLength  = 0x0b000036;

@@ -46,46 +46,48 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-    - [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
-    - [Go get skycoin](#go-get-skycoin)
-    - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
-    - [Show Skycoin node options](#show-skycoin-node-options)
-    - [Run Skycoin with options](#run-skycoin-with-options)
-    - [Docker image](#docker-image)
-    - [Building your own images](#building-your-own-images)
-    - [Development image](#development-image)
+	- [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
+	- [Go get skycoin](#go-get-skycoin)
+	- [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
+	- [Show Skycoin node options](#show-skycoin-node-options)
+	- [Run Skycoin with options](#run-skycoin-with-options)
+	- [Docker image](#docker-image)
+	- [Building your own images](#building-your-own-images)
+	- [Development image](#development-image)
 - [API Documentation](#api-documentation)
-    - [REST API](#rest-api)
-    - [JSON-RPC 2.0 API](#json-rpc-20-api)
-    - [Skycoin command line interface](#skycoin-command-line-interface)
+	- [REST API](#rest-api)
+	- [JSON-RPC 2.0 API](#json-rpc-20-api)
+	- [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
 - [URI Specification](#uri-specification)
 - [Development](#development)
-    - [Modules](#modules)
-    - [Client libraries](#client-libraries)
-    - [Running Tests](#running-tests)
-    - [Running Integration Tests](#running-integration-tests)
-        - [Stable Integration Tests](#stable-integration-tests)
-        - [Live Integration Tests](#live-integration-tests)
-        - [Debugging Integration Tests](#debugging-integration-tests)
-        - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
-    - [Formatting](#formatting)
-    - [Code Linting](#code-linting)
-    - [Dependencies](#dependencies)
-        - [Rules](#rules)
-        - [Management](#management)
-    - [Configuration Modes](#configuration-modes)
-        - [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
-        - [Server Daemon Mode](#server-daemon-mode)
-        - [Electron Desktop Client Mode](#electron-desktop-client-mode)
-        - [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
-    - [Wallet GUI Development](#wallet-gui-development)
-    - [Releases](#releases)
-        - [Pre-release testing](#pre-release-testing)
-        - [Creating release builds](#creating-release-builds)
-        - [Release signing](#release-signing)
+	- [Modules](#modules)
+	- [Client libraries](#client-libraries)
+	- [Running Tests](#running-tests)
+	- [Running Integration Tests](#running-integration-tests)
+		- [Stable Integration Tests](#stable-integration-tests)
+		- [Live Integration Tests](#live-integration-tests)
+		- [Debugging Integration Tests](#debugging-integration-tests)
+		- [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
+	- [Test coverage](#test-coverage)
+		- [Test coverage for the live node](#test-coverage-for-the-live-node)
+	- [Formatting](#formatting)
+	- [Code Linting](#code-linting)
+	- [Dependencies](#dependencies)
+		- [Rules](#rules)
+		- [Management](#management)
+	- [Configuration Modes](#configuration-modes)
+		- [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
+		- [Server Daemon Mode](#server-daemon-mode)
+		- [Electron Desktop Client Mode](#electron-desktop-client-mode)
+		- [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
+	- [Wallet GUI Development](#wallet-gui-development)
+	- [Releases](#releases)
+		- [Pre-release testing](#pre-release-testing)
+		- [Creating release builds](#creating-release-builds)
+		- [Release signing](#release-signing)
 - [Responsible Disclosure](#responsible-disclosure)
 
 <!-- /MarkdownTOC -->
@@ -357,6 +359,43 @@ To update golden files, use the `-u` option:
 ```
 
 We can also update a specific test case's golden file with the `-r` option.
+
+### Test coverage
+
+Coverage is automatically generated for `make test` and integration tests run against a stable node.
+This includes integration test coverage. The coverage output files are placed in `coverage/`.
+
+To merge coverage from all tests into a single HTML file for viewing:
+
+```sh
+make check
+make merge-coverage
+```
+
+Then open `coverage/all-coverage.html` in the browser.
+
+#### Test coverage for the live node
+
+Some tests can only be run with a live node, for example wallet spending tests.
+To generate coverage for this, build and run the skycoin node in test mode before running the live integration tests.
+
+In one shell:
+
+```sh
+make run-integration-test-live-cover
+```
+
+In another shell:
+
+```sh
+make integration-test-live
+```
+
+After the tests have run, CTRL-C to exit the process from the first shell.
+A coverage file will be generated at `coverage/skycoin-live.coverage.out`.
+
+Merge the coverage with `make merge-coverage` then open the `coverage/all-coverage.html` file to view it,
+or generate the HTML coverage in isolation with `go tool cover -html`
 
 ### Formatting
 

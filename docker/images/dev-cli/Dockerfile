@@ -200,6 +200,9 @@ RUN cd /tmp/; \
 ENV GOLANGCI_LINT 1.10.2
 RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v$GOLANGCI_LINT
 
+# Install gocovmerge
+RUN go get -u github.com/wadey/gocovmerge
+
 WORKDIR $GOPATH/src/github.com/skycoin
 VOLUME $GOPATH/src/
 

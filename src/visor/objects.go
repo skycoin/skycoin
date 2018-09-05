@@ -70,7 +70,7 @@ func NewTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (TransactionI
 // BlockchainMetadata encapsulates useful information from the coin.Blockchain
 type BlockchainMetadata struct {
 	// Most recent block
-	HeadBlock *coin.SignedBlock
+	HeadBlock coin.SignedBlock
 	// Number of unspent outputs in the coin.Blockchain
 	Unspents uint64
 	// Number of known unconfirmed txns
@@ -78,7 +78,7 @@ type BlockchainMetadata struct {
 }
 
 // NewBlockchainMetadata creates blockchain meta data
-func NewBlockchainMetadata(head *coin.SignedBlock, unconfirmedLen, unspentsLen uint64) (*BlockchainMetadata, error) {
+func NewBlockchainMetadata(head coin.SignedBlock, unconfirmedLen, unspentsLen uint64) (*BlockchainMetadata, error) {
 	return &BlockchainMetadata{
 		HeadBlock:   head,
 		Unspents:    unspentsLen,

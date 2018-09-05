@@ -17,10 +17,196 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 )
+
+func TestGetBlockchainMetadata(t *testing.T) {
+	cases := []struct {
+		name                        string
+		method                      string
+		status                      int
+		err                         string
+		getBlockchainMetadataResult *visor.BlockchainMetadata
+		getBlockchainMetadataErr    error
+		result                      readable.BlockchainMetadata
+	}{
+		{
+			name:   "405 method not allowed",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+		{
+			name:                     "500 - GetBlockchainMetadata error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - gateway.GetBlockchainMetadata failed: GetBlockchainMetadata error",
+			getBlockchainMetadataErr: errors.New("GetBlockchainMetadata error"),
+		},
+		{
+			name:   "500 - nil visor.BlockchainMetadata",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gateway.GetBlockchainMetadata metadata is nil",
+		},
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			getBlockchainMetadataResult: &visor.BlockchainMetadata{
+				HeadBlock:   coin.SignedBlock{},
+				Unspents:    12,
+				Unconfirmed: 13,
+			},
+			result: readable.BlockchainMetadata{
+				Head: readable.BlockHeader{
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Unspents:    12,
+				Unconfirmed: 13,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			gateway.On("GetBlockchainMetadata").Return(tc.getBlockchainMetadataResult, tc.getBlockchainMetadataErr)
+
+			endpoint := "/api/v1/blockchain/metadata"
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
+			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v` %s", status, tc.status, strings.TrimSpace(rr.Body.String()))
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg readable.BlockchainMetadata
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.result, msg)
+			}
+		})
+	}
+}
+
+func TestGetBlockchainProgress(t *testing.T) {
+	addr1 := testutil.MakeAddress()
+	addr2 := testutil.MakeAddress()
+
+	cases := []struct {
+		name                        string
+		method                      string
+		status                      int
+		err                         string
+		getBlockchainProgressResult *daemon.BlockchainProgress
+		getBlockchainProgressErr    error
+		result                      readable.BlockchainProgress
+	}{
+		{
+			name:   "405 method not allowed",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+		{
+			name:                     "500 - GetBlockchainProgress error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - gateway.GetBlockchainProgress failed: GetBlockchainProgress error",
+			getBlockchainProgressErr: errors.New("GetBlockchainProgress error"),
+		},
+		{
+			name:   "500 - nil daemon.BlockchainProgress",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gateway.GetBlockchainProgress progress is nil",
+		},
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			getBlockchainProgressResult: &daemon.BlockchainProgress{
+				Peers: []daemon.PeerBlockchainHeight{
+					{
+						Address: addr1.String(),
+						Height:  101,
+					},
+					{
+						Address: addr2.String(),
+						Height:  102,
+					},
+				},
+				Current: 99,
+				Highest: 102,
+			},
+			result: readable.BlockchainProgress{
+				Peers: []readable.PeerBlockchainHeight{
+					{
+						Address: addr1.String(),
+						Height:  101,
+					},
+					{
+						Address: addr2.String(),
+						Height:  102,
+					},
+				},
+				Current: 99,
+				Highest: 102,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			gateway.On("GetBlockchainProgress").Return(tc.getBlockchainProgressResult, tc.getBlockchainProgressErr)
+
+			endpoint := "/api/v1/blockchain/progress"
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
+			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v` %s", status, tc.status, strings.TrimSpace(rr.Body.String()))
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg readable.BlockchainProgress
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.result, msg)
+			}
+		})
+	}
+}
 
 func makeBadBlock(t *testing.T) *coin.Block {
 	genPublic, _ := cipher.GenerateKeyPair()
@@ -375,7 +561,7 @@ func TestGetBlock(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
@@ -788,11 +974,11 @@ func TestGetLastBlocks(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				if tc.verbose {
 					var msg *readable.BlocksVerbose

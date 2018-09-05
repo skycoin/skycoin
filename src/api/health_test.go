@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,28 +19,22 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-func TestHealthCheckHandler(t *testing.T) {
-
+func TestHealthHandler(t *testing.T) {
 	cases := []struct {
 		name             string
 		method           string
 		code             int
+		err              string
 		getHealthErr     error
 		cfg              muxConfig
 		csrfEnabled      bool
 		walletAPIEnabled bool
 	}{
 		{
-			name:   "valid response",
-			method: http.MethodGet,
-			code:   http.StatusOK,
-			cfg:    defaultMuxConfig(),
-		},
-
-		{
-			name:   "403 method not allowed",
+			name:   "405 method not allowed",
 			method: http.MethodPost,
 			code:   http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
 			cfg:    defaultMuxConfig(),
 		},
 
@@ -47,8 +42,16 @@ func TestHealthCheckHandler(t *testing.T) {
 			name:         "gateway.GetHealth error",
 			method:       http.MethodGet,
 			code:         http.StatusInternalServerError,
+			err:          "500 Internal Server Error - gateway.GetHealth failed: GetHealth failed",
 			getHealthErr: errors.New("GetHealth failed"),
 			cfg:          defaultMuxConfig(),
+		},
+
+		{
+			name:   "valid response",
+			method: http.MethodGet,
+			code:   http.StatusOK,
+			cfg:    defaultMuxConfig(),
 		},
 
 		{
@@ -83,7 +86,7 @@ func TestHealthCheckHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			metadata := visor.BlockchainMetadata{
-				HeadBlock: &coin.SignedBlock{
+				HeadBlock: coin.SignedBlock{
 					Block: coin.Block{
 						Head: coin.BlockHeader{
 							BkSeq:    21175,
@@ -135,6 +138,7 @@ func TestHealthCheckHandler(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
 				return
 			}
 

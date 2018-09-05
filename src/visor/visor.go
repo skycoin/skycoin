@@ -755,7 +755,7 @@ func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 		return nil, err
 	}
 
-	return NewBlockchainMetadata(head, unconfirmedLen, unspentsLen)
+	return NewBlockchainMetadata(*head, unconfirmedLen, unspentsLen)
 }
 
 // GetBlock returns a copy of the block at seq. Returns error if seq out of range

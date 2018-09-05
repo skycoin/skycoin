@@ -83,14 +83,12 @@ func main() {
 	}
 
 	// create a new fiber coin instance
-	coin := skycoin.NewCoin(
-		skycoin.Config{
-			Node: nodeConfig,
-			Build: readable.BuildInfo{
-				Version: Version,
-				Commit:  Commit,
-				Branch:  Branch,
-			},
+	coin := skycoin.NewCoin(skycoin.Config{
+		Node: nodeConfig,
+		Build: readable.BuildInfo{
+			Version: Version,
+			Commit:  Commit,
+			Branch:  Branch,
 		},
 	}, logger)
 

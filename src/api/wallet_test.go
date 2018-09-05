@@ -164,12 +164,11 @@ func TestGetBalanceHandler(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg readable.BalancePair
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -743,13 +742,12 @@ func TestWalletGet(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
-					"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+					"got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var rlt WalletResponse
 				err = json.Unmarshal(rr.Body.Bytes(), &rlt)
@@ -886,14 +884,13 @@ func TestWalletBalanceHandler(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 			if status != tc.status {
-				t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`",
-					tc.name, status, tc.status)
+				t.Errorf("got `%v` want `%v`", status, tc.status)
 			}
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg readable.BalancePair
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -1032,12 +1029,11 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
 			}
@@ -1246,12 +1242,12 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+		require.Equal(t, tc.status, status, "got `%v` want `%v`",
 			tc.name, status, tc.status)
 
 		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+				strings.TrimSpace(rr.Body.String()), status, tc.err)
 			return
 		}
 
@@ -1558,11 +1554,11 @@ func TestWalletCreateHandler(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "handler returned wrong status code: got `%v` want `%v`", status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
 				body := strings.TrimSpace(rr.Body.String())
-				require.Equal(t, tc.err, body, "wrong error message: got `%v`| %s, want `%v`", body, status, tc.err)
+				require.Equal(t, tc.err, body, "got `%v`| %d, want `%v`", body, status, tc.err)
 				return
 			}
 
@@ -1677,13 +1673,13 @@ func TestWalletNewSeed(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` expected `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` expected `%v`", tc.name, status, tc.status)
 			if status != tc.status {
-				t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+				t.Errorf("got `%v` want `%v`", status, tc.status)
 			}
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, expected `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, expected `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg struct {
 					Seed string `json:"seed"`
@@ -2055,8 +2051,8 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 				if status == http.StatusUnauthorized {
 					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
 				}
@@ -2123,12 +2119,12 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+		require.Equal(t, tc.status, status, "got `%v` want `%v`",
 			tc.name, status, tc.status)
 
 		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+				strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg WalletFolder
 			err := json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -2347,12 +2343,12 @@ func TestGetWallets(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+		require.Equal(t, tc.status, status, "got `%v` want `%v`",
 			tc.name, status, tc.status)
 
 		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+				strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg []*WalletResponse
 			err := json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -2440,8 +2436,8 @@ func TestWalletUnloadHandler(t *testing.T) {
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			}
 		})
 	}

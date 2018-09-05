@@ -15,7 +15,7 @@ type BlockchainMetadata struct {
 	Unconfirmed uint64 `json:"unconfirmed"`
 }
 
-// NewBlockchainMetadata creates blockchain meta data
+// NewBlockchainMetadata creates blockchain metadata
 func NewBlockchainMetadata(bm visor.BlockchainMetadata) BlockchainMetadata {
 	return BlockchainMetadata{
 		Head:        NewBlockHeader(&bm.HeadBlock.Head),
@@ -43,7 +43,7 @@ type PeerBlockchainHeight struct {
 // NewBlockchainProgress copies daemon.BlockchainProgress to a struct with json tags
 func NewBlockchainProgress(bp *daemon.BlockchainProgress) BlockchainProgress {
 	peers := make([]PeerBlockchainHeight, len(bp.Peers))
-	for i, p := range peers {
+	for i, p := range bp.Peers {
 		peers[i] = PeerBlockchainHeight{
 			Address: p.Address,
 			Height:  p.Height,

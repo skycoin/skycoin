@@ -20,6 +20,11 @@ import (
 // URI: /api/v1/blockchain/metadata
 func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		visorMetadata, err := gateway.GetBlockchainMetadata()
 		if err != nil {
 			err = fmt.Errorf("gateway.GetBlockchainMetadata failed: %v", err)
@@ -27,6 +32,7 @@ func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		// This can happen if the node is shut down at the right moment, guard against a panic
 		if visorMetadata == nil {
 			err = errors.New("gateway.GetBlockchainMetadata metadata is nil")
 			wh.Error500(w, err.Error())
@@ -44,9 +50,21 @@ func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/blockchain/progress
 func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		progress, err := gateway.GetBlockchainProgress()
 		if err != nil {
 			err = fmt.Errorf("gateway.GetBlockchainProgress failed: %v", err)
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		// This can happen if the node is shut down at the right moment, guard against a panic
+		if progress == nil {
+			err = errors.New("gateway.GetBlockchainProgress progress is nil")
 			wh.Error500(w, err.Error())
 			return
 		}

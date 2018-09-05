@@ -231,7 +231,7 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		}
 	}
 
-	b.WriteByte('\n')
+	b.WriteByte('\n') // nolint: gosec
 	return b.Bytes(), nil
 }
 
@@ -411,12 +411,12 @@ func (f *TextFormatter) formatValue(value interface{}) string {
 }
 
 func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}, appendSpace bool) {
-	b.WriteString(key)
-	b.WriteByte('=')
-	f.appendValue(b, value)
+	b.WriteString(key)      // nolint: gosec
+	b.WriteByte('=')        // nolint: gosec
+	f.appendValue(b, value) // nolint: gosec
 
 	if appendSpace {
-		b.WriteByte(' ')
+		b.WriteByte(' ') // nolint: gosec
 	}
 }
 
@@ -426,14 +426,14 @@ func (f *TextFormatter) appendValue(b *bytes.Buffer, value interface{}) {
 		if f.needsQuoting(value) {
 			fmt.Fprintf(b, "%s%+v%s", f.QuoteCharacter, value, f.QuoteCharacter)
 		} else {
-			b.WriteString(value)
+			b.WriteString(value) // nolint: gosec
 		}
 	case error:
 		errmsg := value.Error()
 		if f.needsQuoting(errmsg) {
 			fmt.Fprintf(b, "%s%+v%s", f.QuoteCharacter, errmsg, f.QuoteCharacter)
 		} else {
-			b.WriteString(errmsg)
+			b.WriteString(errmsg) // nolint: gosec
 		}
 	default:
 		fmt.Fprint(b, value)

@@ -18,20 +18,20 @@ func TestAddUint64(t *testing.T) {
 }
 
 func TestAddUint32(t *testing.T) {
-	n, err := addUint32(10, 11)
+	n, err := AddUint32(10, 11)
 	require.NoError(t, err)
 	require.Equal(t, uint32(21), n)
 
-	_, err = addUint32(math.MaxUint32, 1)
+	_, err = AddUint32(math.MaxUint32, 1)
 	require.Error(t, err)
 }
 
 func TestMultUint64(t *testing.T) {
-	n, err := multUint64(10, 11)
+	n, err := MultUint64(10, 11)
 	require.NoError(t, err)
 	require.Equal(t, uint64(110), n)
 
-	_, err = multUint64(math.MaxUint64/2, 3)
+	_, err = MultUint64(math.MaxUint64/2, 3)
 	require.Error(t, err)
 }
 

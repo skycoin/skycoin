@@ -12,7 +12,7 @@ import (
 )
 
 func Test_getAddrUxOutsHandler(t *testing.T) {
-	m, mockData := newUxOutMock()
+	m, mockData := newUxOutMock(t)
 	type args struct {
 		req     Request
 		gateway Gatewayer
@@ -113,12 +113,15 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 	}
 }
 
-func newUxOutMock() (*MockGatewayer, func(addr string) []*historydb.UxOutJSON) {
+func newUxOutMock(t *testing.T) (*MockGatewayer, func(addr string) []*historydb.UxOutJSON) {
 	m := &MockGatewayer{}
 
-	hash, _ := cipher.SHA256FromHex("31a21a4dd8331ce68756ddbb21f2c66279d5f5526e936f550e49e29b840ac1ff")
-	address, _ := cipher.DecodeBase58Address("2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT")
-	srcTxHash, _ := cipher.SHA256FromHex("ec9e876d4bb33beec203de769b0d3b23de21052de0e4df06b1444bcfec773c46")
+	hash, err := cipher.SHA256FromHex("31a21a4dd8331ce68756ddbb21f2c66279d5f5526e936f550e49e29b840ac1ff")
+	require.NoError(t, err)
+	address, err := cipher.DecodeBase58Address("2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT")
+	require.NoError(t, err)
+	srcTxHash, err := cipher.SHA256FromHex("ec9e876d4bb33beec203de769b0d3b23de21052de0e4df06b1444bcfec773c46")
+	require.NoError(t, err)
 
 	mockData := map[string]struct {
 		ret []*historydb.UxOut

@@ -533,16 +533,18 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	return nil
 }
 
-//do not allow program to start if crypto tests fail
 func init() {
-	// init the reuse hash pool.
-	sha256HashChan = make(chan hash.Hash, poolsize)
-	ripemd160HashChan = make(chan hash.Hash, poolsize)
-	for i := 0; i < poolsize; i++ {
-		sha256HashChan <- sha256.New()
-		ripemd160HashChan <- ripemd160.New()
+	ripemd160HashPool = make(chan hash.Hash, ripemd160HashPoolSize)
+	for i := 0; i < ripemd160HashPoolSize; i++ {
+		ripemd160HashPool <- ripemd160.New()
 	}
 
+	sha256HashPool = make(chan hash.Hash, sha256HashPoolSize)
+	for i := 0; i < sha256HashPoolSize; i++ {
+		sha256HashPool <- sha256.New()
+	}
+
+	// Do not allow program to start if crypto tests fail
 	_, seckey := GenerateKeyPair()
 	if err := TestSecKey(seckey); err != nil {
 		log.Fatalf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)

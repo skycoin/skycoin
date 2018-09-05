@@ -43,7 +43,7 @@ done
 
 COVERAGEFILE="coverage/${BINARY}.coverage.out"
 if [ -f "${COVERAGEFILE}" ]; then
-	rm "${COVERAGEFILE}"
+    rm "${COVERAGEFILE}"
 fi
 
 set -euxo pipefail

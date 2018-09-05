@@ -49,7 +49,7 @@ done
 
 COVERAGEFILE="coverage/${BINARY}.coverage.out"
 if [ -f "${COVERAGEFILE}" ]; then
-	rm "${COVERAGEFILE}"
+    rm "${COVERAGEFILE}"
 fi
 
 set -euxo pipefail
@@ -90,7 +90,7 @@ echo "starting $COIN node in background with http listener on $HOST"
             -enable-wallet-api=false \
             -test.run "^TestRunMain$" \
             -test.coverprofile="${COVERAGEFILE}" \
-			&
+            &
 
 SKYCOIN_PID=$!
 

@@ -18,7 +18,7 @@ COVERPKG=$(dirname $(dirname ${CMDPKG}))
 
 COVERAGEFILE="coverage/${BINARY}.coverage.out"
 if [ -f "${COVERAGEFILE}" ]; then
-	rm "${COVERAGEFILE}"
+    rm "${COVERAGEFILE}"
 fi
 
 go test -c -ldflags "-X ${CMDPKG}.Commit=$COMMIT -X ${CMDPKG}.Branch=${BRANCH}" -tags testrunmain -o "${BINARY}" -coverpkg="${COVERPKG}/..." ./cmd/${COIN}/

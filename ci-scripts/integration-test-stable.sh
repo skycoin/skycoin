@@ -49,10 +49,10 @@ while getopts "h?t:r:n:uvcd" args; do
         exit;;
     t ) TEST=${OPTARG};;
     r ) RUN_TESTS="-run ${OPTARG}";;
-	n ) NAME="-${OPTARG}";;
+    n ) NAME="-${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
-	d ) DB_NO_UNCONFIRMED="1"; DB_FILE="blockchain-180-no-unconfirmed.db";;
+    d ) DB_NO_UNCONFIRMED="1"; DB_FILE="blockchain-180-no-unconfirmed.db";;
     c ) DISABLE_CSRF=""; USE_CSRF="1";
   esac
 done
@@ -61,7 +61,7 @@ BINARY="${COIN}-integration${NAME}.test"
 
 COVERAGEFILE="coverage/${BINARY}.coverage.out"
 if [ -f "${COVERAGEFILE}" ]; then
-	rm "${COVERAGEFILE}"
+    rm "${COVERAGEFILE}"
 fi
 
 set -euxo pipefail
@@ -91,18 +91,18 @@ mkdir -p coverage/
 echo "starting $COIN node in background with http listener on $HOST"
 
 ./"$BINARY" -disable-networking=true \
-    		-web-interface-port=$PORT \
-    		-download-peerlist=false \
-    		-db-path=./src/api/integration/testdata/$DB_FILE \
-    		-db-read-only=true \
-    		-launch-browser=false \
-    		-data-dir="$DATA_DIR" \
-    		-enable-wallet-api=true \
-    		-wallet-dir="$WALLET_DIR" \
-    		$DISABLE_CSRF \
-    		-test.run "^TestRunMain$" \
-    		-test.coverprofile="${COVERAGEFILE}" \
-  			&
+            -web-interface-port=$PORT \
+            -download-peerlist=false \
+            -db-path=./src/api/integration/testdata/$DB_FILE \
+            -db-read-only=true \
+            -launch-browser=false \
+            -data-dir="$DATA_DIR" \
+            -enable-wallet-api=true \
+            -wallet-dir="$WALLET_DIR" \
+            $DISABLE_CSRF \
+            -test.run "^TestRunMain$" \
+            -test.coverprofile="${COVERAGEFILE}" \
+            &
 
 SKYCOIN_PID=$!
 

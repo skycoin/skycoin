@@ -230,7 +230,9 @@ generate-mocks: ## Regenerate test interface mocks
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 
-merge-coverage: ## Merge coverage files and create HTML coverage output
+merge-coverage: ## Merge coverage files and create HTML coverage output. gocovmerge is required, install with `go get github.com/wadey/gocovmerge`
+	@echo "To install gocovmerge do:"
+	@echo "go get github.com/wadey/gocovmerge"
 	gocovmerge coverage/*.coverage.out > coverage/all-coverage.merged.out
 	go tool cover -html coverage/all-coverage.merged.out -o coverage/all-coverage.html
 	@echo "Total coverage HTML file generated at coverage/all-coverage.html"

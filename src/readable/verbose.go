@@ -24,7 +24,7 @@ type BlockVerbose struct {
 }
 
 // NewBlockBodyVerbose creates a verbose readable block body
-func NewBlockBodyVerbose(b *coin.Block, inputs [][]visor.TransactionInput) (*BlockBodyVerbose, error) {
+func NewBlockBodyVerbose(b coin.Block, inputs [][]visor.TransactionInput) (*BlockBodyVerbose, error) {
 	if len(inputs) != len(b.Body.Transactions) {
 		return nil, fmt.Errorf("NewBlockBodyVerbose: len(inputs) != len(b.Body.Transactions) (seq=%d)", b.Head.BkSeq)
 	}
@@ -46,14 +46,14 @@ func NewBlockBodyVerbose(b *coin.Block, inputs [][]visor.TransactionInput) (*Blo
 }
 
 // NewBlockVerbose creates a verbose readable block
-func NewBlockVerbose(b *coin.Block, inputs [][]visor.TransactionInput) (*BlockVerbose, error) {
+func NewBlockVerbose(b coin.Block, inputs [][]visor.TransactionInput) (*BlockVerbose, error) {
 	body, err := NewBlockBodyVerbose(b, inputs)
 	if err != nil {
 		return nil, err
 	}
 
 	return &BlockVerbose{
-		Head: NewBlockHeader(&b.Head),
+		Head: NewBlockHeader(b.Head),
 		Body: *body,
 		Size: b.Size(),
 	}, nil
@@ -72,7 +72,7 @@ func NewBlocksVerbose(blocks []coin.SignedBlock, inputs [][][]visor.TransactionI
 			return nil, errors.New("NewBlocksVerbose: not enough inputs for blocks")
 		}
 
-		b, err := NewBlockVerbose(&blocks[i].Block, inputs[i])
+		b, err := NewBlockVerbose(blocks[i].Block, inputs[i])
 		if err != nil {
 			return nil, err
 		}

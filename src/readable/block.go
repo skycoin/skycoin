@@ -14,7 +14,7 @@ type BlockHeader struct {
 }
 
 // NewBlockHeader creates a readable block header
-func NewBlockHeader(b *coin.BlockHeader) BlockHeader {
+func NewBlockHeader(b coin.BlockHeader) BlockHeader {
 	return BlockHeader{
 		BkSeq:             b.BkSeq,
 		BlockHash:         b.Hash().Hex(),
@@ -32,7 +32,7 @@ type BlockBody struct {
 }
 
 // NewBlockBody creates a readable block body
-func NewBlockBody(b *coin.Block) (*BlockBody, error) {
+func NewBlockBody(b coin.Block) (*BlockBody, error) {
 	txns := make([]Transaction, len(b.Body.Transactions))
 	isGenesis := b.Head.BkSeq == 0
 	for i := range b.Body.Transactions {
@@ -56,13 +56,13 @@ type Block struct {
 }
 
 // NewBlock creates a readable block
-func NewBlock(b *coin.Block) (*Block, error) {
+func NewBlock(b coin.Block) (*Block, error) {
 	body, err := NewBlockBody(b)
 	if err != nil {
 		return nil, err
 	}
 	return &Block{
-		Head: NewBlockHeader(&b.Head),
+		Head: NewBlockHeader(b.Head),
 		Body: *body,
 		Size: b.Size(),
 	}, nil
@@ -77,7 +77,7 @@ type Blocks struct {
 func NewBlocks(blocks []coin.SignedBlock) (*Blocks, error) {
 	rbs := make([]Block, 0, len(blocks))
 	for _, b := range blocks {
-		rb, err := NewBlock(&b.Block)
+		rb, err := NewBlock(b.Block)
 		if err != nil {
 			return nil, err
 		}

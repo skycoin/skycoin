@@ -154,7 +154,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			rb, err := readable.NewBlockVerbose(&b.Block, inputs)
+			rb, err := readable.NewBlockVerbose(b.Block, inputs)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -182,7 +182,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := readable.NewBlock(&b.Block)
+		rb, err := readable.NewBlock(b.Block)
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return

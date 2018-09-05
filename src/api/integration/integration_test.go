@@ -627,7 +627,7 @@ func TestLiveBlock(t *testing.T) {
 	testKnownBlocks(t)
 
 	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
-	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
+	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11705, 11706, 11699, 13277}
 
 	c := api.NewClient(nodeAddress())
 	for _, seq := range blockSeqs {
@@ -725,7 +725,7 @@ func testKnownBlocks(t *testing.T) {
 			require.Equal(t, i, b.Head.BkSeq)
 
 			if prevBlock != nil {
-				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash, "%s != %s", prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
 			}
 
 			bHash, err := c.BlockByHash(b.Head.BlockHash)
@@ -754,7 +754,7 @@ func TestLiveBlockVerbose(t *testing.T) {
 	testKnownBlocksVerbose(t)
 
 	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
-	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
+	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699, 13277}
 
 	c := api.NewClient(nodeAddress())
 	for _, seq := range blockSeqs {
@@ -871,7 +871,39 @@ func assertVerboseBlockFee(t *testing.T, b *readable.BlockVerbose) {
 		require.NoError(t, err)
 	}
 
-	require.Equal(t, b.Head.Fee, fee)
+	// The estimated transaction fees should equal the block fee, but in a few cases
+	// it doesn't due to older bugs in fee calculation
+	if b.Head.Fee != fee {
+		switch b.Head.BkSeq {
+		case 297:
+			require.Equal(t, b.Head.Fee, uint64(3477395194))
+			require.Equal(t, fee, uint64(8601490771))
+		case 741:
+			require.Equal(t, b.Head.Fee, uint64(2093567995))
+			require.Equal(t, fee, uint64(17465854723))
+		case 743:
+			require.Equal(t, b.Head.Fee, uint64(2093809661))
+			require.Equal(t, fee, uint64(17466096389))
+		case 749:
+			require.Equal(t, b.Head.Fee, uint64(1572050737))
+			require.Equal(t, fee, uint64(16944337465))
+		case 796:
+			require.Equal(t, b.Head.Fee, uint64(3197771253))
+			require.Equal(t, fee, uint64(13445962405))
+		case 4956:
+			require.Equal(t, b.Head.Fee, uint64(2309386399))
+			require.Equal(t, fee, uint64(22805768703))
+		case 10125:
+			require.Equal(t, b.Head.Fee, uint64(1938082460))
+			require.Equal(t, fee, uint64(22434464764))
+		case 13277:
+			// In this case, the hours overflow, so the API reports calculated_hours and fee as 0
+			require.Equal(t, b.Head.Fee, uint64(3))
+			require.Equal(t, fee, uint64(0))
+		default:
+			require.Equal(t, b.Head.Fee, fee, "Block seq=%d fee does not match sum of transaction fees %d != %d", b.Head.BkSeq, b.Head.Fee, fee)
+		}
+	}
 }
 
 func TestStableBlockchainMetadata(t *testing.T) {

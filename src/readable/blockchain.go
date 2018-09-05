@@ -18,7 +18,7 @@ type BlockchainMetadata struct {
 // NewBlockchainMetadata creates blockchain metadata
 func NewBlockchainMetadata(bm visor.BlockchainMetadata) BlockchainMetadata {
 	return BlockchainMetadata{
-		Head:        NewBlockHeader(&bm.HeadBlock.Head),
+		Head:        NewBlockHeader(bm.HeadBlock.Head),
 		Unspents:    bm.Unspents,
 		Unconfirmed: bm.Unconfirmed,
 	}

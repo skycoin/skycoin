@@ -455,21 +455,13 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return uxout, err
 }
 
-// GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]historydb.UxOut, error) {
-	var uxOuts []historydb.UxOut
+// GetSpentOutputsForAddresses gets all the spent outputs of a set of addresses
+func (gw *Gateway) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]historydb.UxOut, error) {
+	var uxOuts [][]historydb.UxOut
 	var err error
 
-	gw.strand("GetAddrUxOuts", func() {
-		for _, addr := range addresses {
-			var result []historydb.UxOut
-			result, err = gw.v.GetAddrUxOuts(addr)
-			if err != nil {
-				return
-			}
-
-			uxOuts = append(uxOuts, result...)
-		}
+	gw.strand("GetSpentOutputsForAddresses", func() {
+		uxOuts, err = gw.v.GetSpentOutputsForAddresses(addresses)
 	})
 
 	if err != nil {

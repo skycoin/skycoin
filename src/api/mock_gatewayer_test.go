@@ -116,29 +116,6 @@ func (_m *MockGatewayer) EncryptWallet(wltID string, password []byte) (*wallet.W
 	return r0, r1
 }
 
-// GetAddrUxOuts provides a mock function with given fields: addr
-func (_m *MockGatewayer) GetAddrUxOuts(addr []cipher.Address) ([]historydb.UxOut, error) {
-	ret := _m.Called(addr)
-
-	var r0 []historydb.UxOut
-	if rf, ok := ret.Get(0).(func([]cipher.Address) []historydb.UxOut); ok {
-		r0 = rf(addr)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]historydb.UxOut)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
-		r1 = rf(addr)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetAddressCount provides a mock function with given fields:
 func (_m *MockGatewayer) GetAddressCount() (uint64, error) {
 	ret := _m.Called()
@@ -626,6 +603,29 @@ func (_m *MockGatewayer) GetSignedBlockBySeqVerbose(seq uint64) (*coin.SignedBlo
 	}
 
 	return r0, r1, r2
+}
+
+// GetSpentOutputsForAddresses provides a mock function with given fields: addr
+func (_m *MockGatewayer) GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, error) {
+	ret := _m.Called(addr)
+
+	var r0 [][]historydb.UxOut
+	if rf, ok := ret.Get(0).(func([]cipher.Address) [][]historydb.UxOut); ok {
+		r0 = rf(addr)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([][]historydb.UxOut)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
+		r1 = rf(addr)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetTransaction provides a mock function with given fields: txid

@@ -61,12 +61,17 @@ func getAddrUxOuts(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.GetAddrUxOuts([]cipher.Address{cipherAddr})
+		uxs, err := gateway.GetSpentOutputsForAddresses([]cipher.Address{cipherAddr})
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, readable.NewSpentOutputs(uxs))
+		ret := make([]readable.SpentOutput, 0)
+		for _, u := range uxs {
+			ret = append(ret, readable.NewSpentOutputs(u)...)
+		}
+
+		wh.SendJSONOr500(logger, w, ret)
 	}
 }

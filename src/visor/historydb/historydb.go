@@ -173,8 +173,8 @@ func (hd HistoryDB) GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*Transact
 	return hd.txns.Get(tx, hash)
 }
 
-// GetAddrUxOuts get all uxout that the address affected.
-func (hd HistoryDB) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]UxOut, error) {
+// GetOutputsForAddress get all uxout that the address affected.
+func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]UxOut, error) {
 	hashes, err := hd.addrUx.Get(tx, address)
 	if err != nil {
 		return nil, err

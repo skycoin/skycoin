@@ -83,8 +83,8 @@ func (fg *fakeGateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return errors.New("fake gateway inject transaction failed")
 }
 
-func (fg fakeGateway) GetAddrUxOuts(addr []cipher.Address) ([]historydb.UxOut, error) {
-	return nil, nil
+func (fg fakeGateway) GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, error) {
+	return make([][]historydb.UxOut, len(addr)), nil
 }
 
 func Test_rpcHandler_HandlerFunc(t *testing.T) {

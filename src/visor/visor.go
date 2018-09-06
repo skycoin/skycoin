@@ -161,7 +161,7 @@ type Historyer interface {
 	GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]historydb.UxOut, error)
 	ParseBlock(tx *dbutil.Tx, b coin.Block) error
 	GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
-	GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]historydb.UxOut, error)
+	GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]historydb.UxOut, error)
 	GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address) ([]historydb.Transaction, error)
 	NeedsReset(tx *dbutil.Tx) (bool, error)
 	Erase(tx *dbutil.Tx) error
@@ -1822,14 +1822,21 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return &outs[0], nil
 }
 
-// GetAddrUxOuts gets all the address affected UxOuts.
-func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]historydb.UxOut, error) {
-	var out []historydb.UxOut
+// GetSpentOutputsForAddresses gets all the spent outputs of a set of addresses
+func (vs Visor) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]historydb.UxOut, error) {
+	out := make([][]historydb.UxOut, len(addresses))
 
-	if err := vs.DB.View("GetAddrUxOuts", func(tx *dbutil.Tx) error {
-		var err error
-		out, err = vs.history.GetAddrUxOuts(tx, address)
-		return err
+	if err := vs.DB.View("GetSpentOutputsForAddresses", func(tx *dbutil.Tx) error {
+		for i, addr := range addresses {
+			addrUxOuts, err := vs.history.GetOutputsForAddress(tx, addr)
+			if err != nil {
+				return err
+			}
+
+			out[i] = addrUxOuts
+		}
+
+		return nil
 	}); err != nil {
 		return nil, err
 	}

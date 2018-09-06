@@ -172,6 +172,7 @@ RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     go get -u golang.org/x/tools/cmd/gorename && \
     go get -u github.com/klauspost/asmfmt/cmd/asmfmt && \
     go get -u github.com/vektra/mockery/.../ && \
+    go get -u github.com/wadey/gocovmerge && \
     curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
 
@@ -195,6 +196,10 @@ RUN cd /tmp/; \
     cd swig-3.0.12 ;\
     ./configure --prefix=/usr && make && make install && \
     rm -rf /tmp/swig-*
+
+# Install golangci-lint
+ENV GOLANGCI_LINT 1.10.2
+RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v$GOLANGCI_LINT
 
 WORKDIR $GOPATH/src/github.com/skycoin
 VOLUME $GOPATH/src/

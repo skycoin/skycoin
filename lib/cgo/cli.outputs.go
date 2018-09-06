@@ -14,7 +14,7 @@ import (
 import "C"
 
 //export SKY_cli_GetWalletOutputsFromFile
-func SKY_cli_GetWalletOutputsFromFile(_c C.WebRpcClient__Handle, _walletFile string, _arg2 *C.ReadableOutputSet__Handle) (____error_code uint32) {
+func SKY_cli_GetWalletOutputsFromFile(_c C.WebRpcClient__Handle, _walletFile string, _arg2 *C.ReadableOutputSet_Handle) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -35,7 +35,7 @@ func SKY_cli_GetWalletOutputsFromFile(_c C.WebRpcClient__Handle, _walletFile str
 }
 
 //export SKY_cli_GetWalletOutputs
-func SKY_cli_GetWalletOutputs(_c C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _arg2 *C.ReadableOutputSet__Handle) (____error_code uint32) {
+func SKY_cli_GetWalletOutputs(_c C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _arg2 *C.ReadableOutputSet_Handle) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

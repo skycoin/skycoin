@@ -1,15 +1,5 @@
 
 /**
- * Internal representation of a Skycoin wallet.
- */
-typedef struct {
-	GoMap_ Meta;        ///< Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
-	GoSlice_ Entries;   ///< Entries field stores the address entries that are deterministically generated from seed.
-} wallet__Wallet;
-
-typedef GoInterface_ wallet__Validator;
-
-/**
  * Intermediate representation of a UxOut for sorting and spend choosing.
  */
 typedef struct {

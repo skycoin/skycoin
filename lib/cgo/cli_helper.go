@@ -107,6 +107,9 @@ func SKY_cli_Setenv(varname string, value string) (____error_code uint32) {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	checkAPIReady()
-	os.Setenv(varname, value)
+	____return_err := os.Setenv(varname, value)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+	}
 	return
 }

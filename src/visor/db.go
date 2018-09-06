@@ -1,7 +1,7 @@
 package visor
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -285,7 +285,7 @@ func shaFileID(dbPath string) (string, error) {
 	}
 	defer fi.Close()
 
-	h := sha1.New()
+	h := sha256.New()
 	if _, err := io.Copy(h, fi); err != nil {
 		return "", err
 	}

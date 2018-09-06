@@ -31,11 +31,6 @@ func (tx *Transaction) Hash() cipher.SHA256 {
 	return tx.Tx.Hash()
 }
 
-// New create a transaction db instance.
-func newTransactions() *transactions {
-	return &transactions{}
-}
-
 // Add transaction to the db.
 func (txs *transactions) Add(tx *dbutil.Tx, txn *Transaction) error {
 	hash := txn.Hash()

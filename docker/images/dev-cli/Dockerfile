@@ -196,6 +196,10 @@ RUN cd /tmp/; \
     ./configure --prefix=/usr && make && make install && \
     rm -rf /tmp/swig-*
 
+# Install golangci-lint
+ENV GOLANGCI_LINT 1.10.2
+RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v$GOLANGCI_LINT
+
 WORKDIR $GOPATH/src/github.com/skycoin
 VOLUME $GOPATH/src/
 

@@ -11,11 +11,12 @@ while $(lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null) ; do
     PORT=$((PORT+1))
 done
 
+COIN="${COIN:-skycoin}"
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 MODE="disable-gui"
-BINARY="skycoin-integration"
+BINARY="${COIN}-integration-disable-gui.test"
 TEST=""
 RUN_TESTS=""
 # run go test with -v flag
@@ -40,9 +41,17 @@ while getopts "h?t:r:v" args; do
   esac
 done
 
+COVERAGEFILE="coverage/${BINARY}.coverage.out"
+if [ -f "${COVERAGEFILE}" ]; then
+    rm "${COVERAGEFILE}"
+fi
+
 set -euxo pipefail
 
-DATA_DIR=$(mktemp -d -t skycoin-data-dir.XXXXXX)
+CMDPKG=$(go list ./cmd/${COIN})
+COVERPKG=$(dirname $(dirname ${CMDPKG}))
+
+DATA_DIR=$(mktemp -d -t ${COIN}-data-dir.XXXXXX)
 WALLET_DIR="${DATA_DIR}/wallets"
 
 if [[ ! "$DATA_DIR" ]]; then
@@ -51,27 +60,33 @@ if [[ ! "$DATA_DIR" ]]; then
 fi
 
 # Compile the skycoin node
-# We can't use "go run" because this creates two processes which doesn't allow us to kill it at the end
-echo "compiling skycoin"
-go build -o "$BINARY" cmd/skycoin/skycoin.go
+# We can't use "go run" because that creates two processes which doesn't allow us to kill it at the end
+echo "compiling $COIN with coverage"
+go test -c -tags testrunmain -o "$BINARY" -coverpkg="${COVERPKG}/..." ./cmd/${COIN}/
+
+mkdir -p coverage/
 
 # Run skycoin node with pinned blockchain database
-echo "starting skycoin node in background with http listener on $HOST"
+echo "starting $COIN node in background with http listener on $HOST"
 
-./skycoin-integration -disable-networking=true \
-                      -web-interface-port=$PORT \
-                      -download-peerlist=false \
-                      -db-path=./src/api/integration/testdata/blockchain-180.db \
-                      -db-read-only=true \
-                      -launch-browser=false \
-                      -data-dir="$DATA_DIR" \
-                      -wallet-dir="$WALLET_DIR" \
-                      -enable-wallet-api=true \
-                      -enable-seed-api=true \
-                      -enable-gui=false&
+./"$BINARY" -disable-networking=true \
+            -web-interface-port=$PORT \
+            -download-peerlist=false \
+            -db-path=./src/api/integration/testdata/blockchain-180.db \
+            -db-read-only=true \
+            -launch-browser=false \
+            -data-dir="$DATA_DIR" \
+            -wallet-dir="$WALLET_DIR" \
+            -enable-wallet-api=true \
+            -enable-seed-api=true \
+            -enable-gui=false \
+            -test.run "^TestRunMain$" \
+            -test.coverprofile="${COVERAGEFILE}" \
+            &
+
 SKYCOIN_PID=$!
 
-echo "skycoin node pid=$SKYCOIN_PID"
+echo "$COIN node pid=$SKYCOIN_PID"
 
 echo "sleeping for startup"
 sleep 3
@@ -88,7 +103,7 @@ API_FAIL=$?
 
 fi
 
-echo "shutting down skycoin node"
+echo "shutting down $COIN node"
 
 # Shutdown skycoin node
 kill -s SIGINT $SKYCOIN_PID

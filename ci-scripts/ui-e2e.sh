@@ -57,7 +57,7 @@ cat >"${WALLET_DIR}/test_wallet.wlt" <<EOL
 EOL
 
 # Compile the skycoin node
-# We can't use "go run" because this creates two processes which doesn't allow us to kill it at the end
+# We can't use "go run" because that creates two processes which doesn't allow us to kill it at the end
 echo "compiling skycoin"
 go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
 

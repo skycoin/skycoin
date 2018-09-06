@@ -625,7 +625,7 @@ func NewTransactionResultVerbose(txn *visor.Transaction, inputs []visor.Readable
 	}
 
 	if len(txn.Txn.In) != len(inputs) {
-		return nil, errors.New("NewTransactionResultVerbose: len(txn.In) != len(inputs)")
+		return nil, fmt.Errorf("NewTransactionResultVerbose: len(txn.In) != len(inputs) [%d != %d]", len(txn.Txn.In), len(inputs))
 	}
 
 	rbTxn, err := visor.NewReadableTransactionVerbose(*txn, inputs)

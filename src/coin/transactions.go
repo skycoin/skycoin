@@ -403,7 +403,7 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableT
 		size, hash := txns[i].SizeHash()
 
 		// Calculate fee priority based on fee per kb
-		feeKB, err := multUint64(fee, 1024)
+		feeKB, err := MultUint64(fee, 1024)
 
 		// If the fee * 1024 would exceed math.MaxUint64, set it to math.MaxUint64 so that
 		// this transaction can still be processed

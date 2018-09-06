@@ -6,6 +6,7 @@ AVOID EDITING THIS MANUALLY
 */
 
 import (
+	"flag"
 	_ "net/http/pprof"
 	"os"
 
@@ -53,11 +54,8 @@ var (
 		"172.104.85.6:6000",
 		"139.162.7.132:6000",
 	}
-)
 
-func main() {
-	// get node config
-	nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
 		GenesisSignatureStr: GenesisSignatureStr,
 		GenesisAddressStr:   GenesisAddressStr,
 		GenesisCoinVolume:   GenesisCoinVolume,
@@ -72,18 +70,27 @@ func main() {
 		ProfileCPUFile:      "skycoin.prof",
 	})
 
+	parseFlags = true
+)
+
+func init() {
+	nodeConfig.RegisterFlags()
+}
+
+func main() {
+	if parseFlags {
+		flag.Parse()
+	}
+
 	// create a new fiber coin instance
-	coin := skycoin.NewCoin(
-		skycoin.Config{
-			Node: *nodeConfig,
-			Build: visor.BuildInfo{
-				Version: Version,
-				Commit:  Commit,
-				Branch:  Branch,
-			},
+	coin := skycoin.NewCoin(skycoin.Config{
+		Node: nodeConfig,
+		Build: visor.BuildInfo{
+			Version: Version,
+			Commit:  Commit,
+			Branch:  Branch,
 		},
-		logger,
-	)
+	}, logger)
 
 	// parse config values
 	coin.ParseConfig()

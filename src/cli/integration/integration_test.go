@@ -139,15 +139,27 @@ func createTempWallet(t *testing.T, encrypt bool) (string, func()) {
 	originalWalletDirEnv := os.Getenv("WALLET_DIR")
 	originalWalletNameEnv := os.Getenv("WALLET_NAME")
 
-	os.Setenv("WALLET_DIR", dir)
-	os.Setenv("WALLET_NAME", wltName)
+	err = os.Setenv("WALLET_DIR", dir)
+	require.NoError(t, err)
+	err = os.Setenv("WALLET_NAME", wltName)
+	require.NoError(t, err)
 
 	fun := func() {
-		os.Setenv("WALLET_DIR", originalWalletDirEnv)
-		os.Setenv("WALLET_NAME", originalWalletNameEnv)
+		err := os.Setenv("WALLET_DIR", originalWalletDirEnv)
+		if err != nil {
+			t.Logf("Failed to reset WALLET_DIR env var: %v", err)
+		}
+
+		err = os.Setenv("WALLET_NAME", originalWalletNameEnv)
+		if err != nil {
+			t.Logf("Failed to reset WALLET_NAME env var: %v", err)
+		}
 
 		// Delete the temporary dir
-		os.RemoveAll(dir)
+		err = os.RemoveAll(dir)
+		if err != nil {
+			t.Logf("Failed to cleanup temp wallet dir %s: %v", dir, err)
+		}
 	}
 
 	return walletPath, fun
@@ -269,6 +281,17 @@ func doLiveWallet(t *testing.T) bool {
 
 	t.Skip("Tests requiring wallet envvars are disabled")
 	return false
+}
+
+func dbNoUnconfirmed(t *testing.T) bool {
+	x := os.Getenv("DB_NO_UNCONFIRMED")
+	if x == "" {
+		return false
+	}
+
+	v, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return v
 }
 
 // requireWalletDir checks if the WALLET_DIR environment value is set
@@ -1123,10 +1146,14 @@ func TestStableStatus(t *testing.T) {
 	// Uptime is not stable
 	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
 
-	goldenFile := "status.golden"
+	goldenFile := "status"
 	if useCSRF(t) {
-		goldenFile = "status-csrf-enabled.golden"
+		goldenFile += "-csrf-enabled"
 	}
+	if dbNoUnconfirmed(t) {
+		goldenFile += "-no-unconfirmed"
+	}
+	goldenFile += ".golden"
 
 	var expect cli.StatusResult
 	td := TestData{ret, &expect}
@@ -1163,13 +1190,15 @@ func TestStableTransaction(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
+	type testCase struct {
 		name       string
 		args       []string
 		err        error
 		errMsg     string
 		goldenFile string
-	}{
+	}
+
+	tt := []testCase{
 		{
 			name:       "invalid txid",
 			args:       []string{"abcd"},
@@ -1179,7 +1208,7 @@ func TestStableTransaction(t *testing.T) {
 		},
 		{
 			name:       "not exist",
-			args:       []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			args:       []string{"540582ee4128b733f810f149e908d984a5f403ad2865108e6c1c5423aeefc759"},
 			err:        errors.New("exit status 1"),
 			errMsg:     "404 Not Found\n",
 			goldenFile: "",
@@ -1198,6 +1227,14 @@ func TestStableTransaction(t *testing.T) {
 			errMsg:     "",
 			goldenFile: "genesis-transaction-cli.golden",
 		},
+	}
+
+	if !dbNoUnconfirmed(t) {
+		tt = append(tt, testCase{
+			name:       "unconfirmed",
+			args:       []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			goldenFile: "unconfirmed-transaction-cli.golden",
+		})
 	}
 
 	for _, tc := range tt {

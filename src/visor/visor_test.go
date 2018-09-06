@@ -408,16 +408,35 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.True(t, foundInvalidCoins)
 
 	// Inject transactions into the unconfirmed pool
-	for _, txn := range txns {
+	for i, txn := range txns {
 		var known bool
+		var softErr *ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
-			known, _, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
+			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
 			return err
 		})
 		require.False(t, known)
 		require.NoError(t, err)
+
+		// The last 3 transactions will have a soft constraint violation for too many decimal places,
+		// but would still be injected into the pool
+		if i < len(txns)-3 {
+			require.Nil(t, softErr)
+		} else {
+			testutil.RequireError(t, softErr, "Transaction violates soft constraint: invalid amount, too many decimal places")
+		}
 	}
+
+	// Make sure all transactions were injected
+	var allInjectedTxns []coin.Transaction
+	err = db.View("", func(tx *dbutil.Tx) error {
+		var err error
+		allInjectedTxns, err = unconfirmed.RawTxns(tx)
+		return err
+	})
+	require.NoError(t, err)
+	require.Equal(t, len(txns), len(allInjectedTxns))
 
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
@@ -428,7 +447,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.Equal(t, when+100, sb.Block.Head.Time)
 
 	blockTxns := sb.Block.Body.Transactions
-	require.NotEqual(t, len(txns), len(blockTxns), "Txns should be truncated")
+	require.NotEqual(t, len(txns), len(blockTxns), "Transactions should be truncated")
 	require.Equal(t, 18, len(blockTxns))
 
 	// Check fee ordering

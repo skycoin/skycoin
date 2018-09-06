@@ -1,7 +1,6 @@
 package skycoin
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -379,12 +378,6 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 
 // ParseConfig prepare the config
 func (c *Coin) ParseConfig() {
-	c.config.register()
-	flag.Parse()
-	if help {
-		flag.Usage()
-		os.Exit(0)
-	}
 	c.config.postProcess()
 }
 
@@ -433,5 +426,5 @@ func createDirIfNotExist(dir string) error {
 		return nil
 	}
 
-	return os.Mkdir(dir, 0777)
+	return os.Mkdir(dir, 0750)
 }

@@ -1090,7 +1090,10 @@ func (e *encoder) value(v reflect.Value) {
 }
 
 func (d *decoder) skip(v reflect.Value) { // nolint: unused,megacheck
-	n, _ := datasizeWrite(v)
+	n, err := datasizeWrite(v)
+	if err != nil {
+		panic(err)
+	}
 	d.buf = d.buf[n:]
 }
 
@@ -1106,7 +1109,10 @@ func (d *decoder) skipn(v reflect.Value) int {
 }
 */
 func (e *encoder) skip(v reflect.Value) { // nolint: unused,megacheck
-	n, _ := datasizeWrite(v)
+	n, err := datasizeWrite(v)
+	if err != nil {
+		panic(err)
+	}
 	for i := range e.buf[0:n] {
 		e.buf[i] = 0
 	}

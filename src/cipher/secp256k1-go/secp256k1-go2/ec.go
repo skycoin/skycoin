@@ -9,6 +9,7 @@ import (
 	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 )
 
+// Error definition
 var (
 	ErrMustPass64bytePubKey = errors.New("must pass in 64 byte pubkey")
 )

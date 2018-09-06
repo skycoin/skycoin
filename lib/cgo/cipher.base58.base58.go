@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"reflect"
 	"unsafe"
 
@@ -24,8 +25,12 @@ func SKY_base58_String2Hex(_s string, _arg1 *C.GoSlice_) (____error_code uint32)
 	}()
 	checkAPIReady()
 	s := _s
-	__arg1 := base58.String2Hex(s)
-	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+	__arg1, ____return_err := hex.DecodeString(s)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+	}
+
 	return
 }
 

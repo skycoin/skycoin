@@ -396,7 +396,7 @@ func ExampleGiveBlocksMessage() {
 		Block: block1,
 	}
 	blocks[0] = signedBlock
-	sig, _ = cipher.SigFromHex(sig2hex)
+	sig, _ = cipher.SigFromHex(sig2hex) // nolint: errcheck
 	signedBlock = coin.SignedBlock{
 		Sig:   sig,
 		Block: block2,

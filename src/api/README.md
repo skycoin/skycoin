@@ -150,7 +150,7 @@ Result:
 
 ### Health check
 
-API sets : `STATUS`, `BLOCKCHAIN`, `PEX`, `TX`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/health
@@ -199,7 +199,7 @@ Response:
 
 ### Version info
 
-API sets : always available
+API sets: always available
 
 ```
 URI: /api/v1/version
@@ -227,7 +227,7 @@ Result:
 
 ### Get balance of addresses
 
-API sets : `BLOCKCHAIN`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/balance
@@ -281,7 +281,7 @@ Result:
 
 ### Get unspent output set of address or hash
 
-API sets : `UX`, `BLOCKCHAIN`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/outputs
@@ -328,7 +328,7 @@ Result:
 
 ### Verify an address
 
-API sets: `BLOCKCHAIN`, `TX`, `UX`, `EXPLORER`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v2/address/verify
@@ -1298,7 +1298,7 @@ Result:
 
 ### Get wallet seed
 
-API sets: `SEED`
+API sets: `WALLET_SEED`
 
 This endpoint is supported only when the wallet is encrypted and either `-enable-seed-api` option is enabled or equivalent `--enable-api=SEED` is specified.
 
@@ -1331,7 +1331,7 @@ Result:
 
 ### Get unconfirmed transactions
 
-API sets: `TX`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/pendingTxs
@@ -1441,7 +1441,7 @@ Result:
 
 ### Get transaction info by id
 
-API sets: `TX`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/transaction
@@ -1569,7 +1569,7 @@ Result:
 
 ### Get raw transaction by id
 
-API sets: `TX`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/rawtx
@@ -1590,7 +1590,7 @@ Result:
 
 ### Inject raw transaction
 
-API sets: `TX`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/injectTransaction
@@ -1624,7 +1624,7 @@ Result:
 
 ### Get transactions that are addresses related
 
-API sets: `BLOCKCHAIN`, `TX`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/transactions
@@ -1952,7 +1952,7 @@ Result:
 
 ### Resend unconfirmed transactions
 
-API sets: `TX`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/resendUnconfirmedTxns
@@ -1978,7 +1978,7 @@ Result:
 
 ### Verify encoded transaction
 
-API sets: `TX`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v2/transaction/verify
@@ -2115,7 +2115,7 @@ Result:
 
 ### Get blockchain metadata
 
-API sets: `BLOCKCHAIN`, `STATUS`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/blockchain/metadata
@@ -2148,7 +2148,7 @@ Result:
 
 ### Get blockchain progress
 
-API sets: `BLOCKCHAIN`, `STATUS`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/blockchain/progress
@@ -2182,7 +2182,7 @@ Result:
 
 ### Get block by hash or seq
 
-API sets: `BLOCKCHAIN`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/block
@@ -2321,7 +2321,7 @@ Result:
 
 ### Get blocks in specific range
 
-API sets: `BLOCKCHAIN`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/blocks
@@ -2525,7 +2525,7 @@ Result:
 
 ### Get last N blocks
 
-API sets: `BLOCKCHAIN`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/last_blocks
@@ -2737,7 +2737,7 @@ Result:
 
 ### Get address affected transactions
 
-API sets: `EXPLORER`, `BLOCKCHAIN`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/explorer/address
@@ -2797,7 +2797,7 @@ Result:
 
 ### Get uxout
 
-API sets: `UX`, `BLOCKCHAIN`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/uxout
@@ -2830,7 +2830,7 @@ Result:
 
 ### Get historical unspent outputs for an address
 
-API sets: `UX`, `BLOCKCHAIN`, `DEFAULT`
+API sets: `READ_ONLY`
 
 ```
 URI: /api/v1/address_uxouts
@@ -2867,7 +2867,7 @@ Result:
 
 ### Coin supply
 
-API sets: `STATUS`, `BLOCKCHAIN`, `EXPLORER`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/coinSupply
@@ -2998,7 +2998,7 @@ Result:
 
 ### Richlist show top N addresses by uxouts
 
-API sets: `STATUS`, `BLOCKCHAIN`, `EXPLORER`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/richlist
@@ -3045,7 +3045,7 @@ Result:
 
 ### Count unique addresses
 
-API sets: `STATUS`, `BLOCKCHAIN`, `EXPLORER`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/addresscount
@@ -3070,7 +3070,7 @@ Result:
 
 ### Get information for a specific connection
 
-API sets: `PEX`, `STATUS`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/network/connection
@@ -3103,7 +3103,7 @@ Result:
 
 ### Get a list of all connections
 
-API sets: `PEX`, `STATUS`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/network/connections
@@ -3161,7 +3161,7 @@ Result:
 
 ### Get a list of all default connections
 
-API sets: `PEX`, `STATUS`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/network/defaultConnections
@@ -3191,7 +3191,7 @@ Result:
 
 ### Get a list of all trusted connections
 
-API sets: `PEX`, `STATUS`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/network/connections/trust
@@ -3221,7 +3221,7 @@ Result:
 
 ### Get a list of all connections discovered through peer exchange
 
-API sets: `PEX`, `STATUS`, `DEFAULT`
+API sets: `STATUS`, `READ_ONLY`
 
 ```
 URI: /api/v1/network/connections/exchange

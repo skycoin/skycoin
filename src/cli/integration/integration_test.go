@@ -827,6 +827,7 @@ func TestLiveListWallets(t *testing.T) {
 		return
 	}
 
+	requireWalletEnv(t)
 	requireWalletDir(t)
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
@@ -1589,6 +1590,7 @@ func TestLiveWalletDir(t *testing.T) {
 		return
 	}
 
+	requireWalletEnv(t)
 	requireWalletDir(t)
 
 	walletDir := os.Getenv("WALLET_DIR")
@@ -1722,7 +1724,7 @@ func TestLiveSend(t *testing.T) {
 				return []string{"send", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
 			},
-			errMsg:  []byte("See 'skycoin-cli send --help'\nTransaction has zero coinhour fee."),
+			errMsg:  []byte("See 'skycoin-cli send --help'\nTransaction has zero coinhour fee"),
 			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
@@ -1730,16 +1732,16 @@ func TestLiveSend(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
-			if err != nil {
-				t.Fatalf("err: %v, output: %v", err, string(output))
-				return
-			}
-			require.NoError(t, err)
+
 			output = bytes.TrimRight(output, "\n")
-			if bytes.Contains(output, []byte("Error:")) {
+
+			if tc.errMsg != nil {
+				require.Equal(t, err.Error(), "exit status 1")
 				require.Equal(t, tc.errMsg, output)
 				return
 			}
+
+			require.NoError(t, err)
 
 			// output: "txid:$txid_string"
 			// split the output to get txid value
@@ -1767,21 +1769,39 @@ func TestLiveSend(t *testing.T) {
 			tc.checkTx(t, txid)
 		})
 	}
+}
+
+func TestLiveSendNotEnoughDecimals(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
+	w, _, _ := prepareAndCheckWallet(t, 2e6, 16)
+
+	if w.IsEncrypted() {
+		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
+		return
+	}
 
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
-	errMsg := []byte("See 'skycoin-cli send --help'\ninvalid amount, too many decimal places.")
+	errMsg := []byte("See 'skycoin-cli send --help'\ninvalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, "send", w.Entries[0].Address.String(), v).CombinedOutput()
-			require.NoError(t, err)
-			output = bytes.Trim(output, "\n")
+			require.Error(t, err)
+			require.Equal(t, err.Error(), "exit status 1")
+			output = bytes.TrimRight(output, "\n")
 			require.Equal(t, errMsg, output)
 		})
 	}
+
 }
 
 // TestLiveCreateAndBroadcastRawTransaction does almost the same procedure as TestLiveSend.

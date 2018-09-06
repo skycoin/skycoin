@@ -922,30 +922,34 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesS
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
 func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
-	if err := VerifySingleTxnUserConstraints(txn); err != nil {
-		return false, err
-	}
-
 	var known bool
 
 	if err := vs.DB.Update("InjectTransactionStrict", func(tx *dbutil.Tx) error {
-		err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize)
-		if err != nil {
-			return err
-		}
-
-		var softErr *ErrTxnViolatesSoftConstraint
-		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
-		if softErr != nil {
-			logger.WithError(softErr).Warningf("InjectTransactionStrict vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly: %v", softErr)
-		}
-
+		var err error
+		known, err = vs.injectTransactionStrict(tx, txn)
 		return err
 	}); err != nil {
 		return false, err
 	}
 
 	return known, nil
+}
+
+func (vs *Visor) injectTransactionStrict(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
+	if err := VerifySingleTxnUserConstraints(txn); err != nil {
+		return false, err
+	}
+
+	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize); err != nil {
+		return false, err
+	}
+
+	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
+	if softErr != nil {
+		logger.WithError(softErr).Warningf("InjectTransactionStrict vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly: %v", softErr)
+	}
+
+	return known, err
 }
 
 // GetTransactionsForAddress returns the Transactions whose unspents give coins to a cipher.Address.
@@ -2239,7 +2243,11 @@ func (vs *Visor) AddressCount() (uint64, error) {
 }
 
 // CreateTransactionDeprecated creates a transaction using an entire wallet,
-// specifying only coins and one destination
+// specifying only coins and one destination.
+// It also injects the transaction into the unconfirmed pool, since this is the behavior
+// of gateway.Spend and the call must be in the same transaction to avoid a race.
+// Injection requires an exclusive database update lock, so this will cause performance issues
+// if used, especially with an encrypted wallet.
 func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	w, err := vs.Wallets.GetWallet(wltID)
 	if err != nil {
@@ -2250,18 +2258,17 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 	// Get all addresses from the wallet for checking params against
 	addrs := w.GetAddresses()
 
-	var auxs coin.AddressUxOuts
-	var head *coin.SignedBlock
+	var txn *coin.Transaction
 
-	if err := vs.DB.View("CreateTransactionDeprecated", func(tx *dbutil.Tx) error {
-		head, err = vs.Blockchain.Head(tx)
+	if err := vs.DB.Update("CreateTransactionDeprecated", func(tx *dbutil.Tx) error {
+		head, err := vs.Blockchain.Head(tx)
 		if err != nil {
 			logger.Errorf("Blockchain.Head failed: %v", err)
 			return err
 		}
 
 		// Get unspent outputs, while checking that there are no unconfirmed outputs
-		auxs, err = vs.getUnspentsForSpending(tx, addrs, false)
+		auxs, err := vs.getUnspentsForSpending(tx, addrs, false)
 		if err != nil {
 			if err != wallet.ErrSpendingUnconfirmed {
 				logger.WithError(err).Error("getUnspentsForSpending failed")
@@ -2269,35 +2276,34 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 			return err
 		}
 
-		return nil
-	}); err != nil {
-		return nil, err
-	}
+		// Create and sign transaction
+		if err := vs.Wallets.ViewWallet(w, password, func(w *wallet.Wallet) error {
+			var err error
+			txn, err = w.CreateAndSignTransaction(auxs, head.Time(), coins, dest)
+			return err
+		}); err != nil {
+			logger.WithError(err).Error("CreateAndSignTransaction failed")
+			return err
+		}
 
-	// Create and sign transaction
-	var txn *coin.Transaction
-	if err := vs.Wallets.ViewWallet(w, password, func(w *wallet.Wallet) error {
-		var err error
-		txn, err = w.CreateAndSignTransaction(auxs, head.Time(), coins, dest)
+		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+		// because the wallet is not aware of visor-level constraints.
+		// Check that the transaction is valid before returning it to the caller.
+		// NOTE: this isn't inside the database transaction, but it's safe,
+		// if a racing database write caused this transaction to be invalid, it would be caught here
+		if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+			logger.WithError(err).Error("Created transaction violates transaction constraints")
+			return err
+		}
+
+		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize); err != nil {
+			logger.WithError(err).Error("Created transaction violates transaction constraints")
+			return err
+		}
+
+		_, err = vs.injectTransactionStrict(tx, *txn)
 		return err
 	}); err != nil {
-		logger.WithError(err).Error("CreateAndSignTransaction failed")
-		return nil, err
-	}
-
-	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-	// because the wallet is not aware of visor-level constraints.
-	// Check that the transaction is valid before returning it to the caller.
-	// NOTE: this isn't inside the database transaction, but it's safe,
-	// if a racing database write caused this transaction to be invalid, it would be caught here
-	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
-		logger.WithError(err).Error("Created transaction violates transaction constraints")
-		return nil, err
-	}
-	if err := vs.DB.View("VerifySingleTxnSoftHardConstraints", func(tx *dbutil.Tx) error {
-		return vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize)
-	}); err != nil {
-		logger.WithError(err).Error("Created transaction violates transaction constraints")
 		return nil, err
 	}
 

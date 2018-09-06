@@ -403,11 +403,24 @@ func (gw *Gateway) GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction
 	return txn, inputs, err
 }
 
-// InjectBroadcastTransaction injects and broadcasts a transaction
+// InjectBroadcastTransaction injects transaction to the unconfirmed pool and broadcasts it.
+// If the transaction violates either hard or soft constraints, it is not broadcast.
+// This method is to be used by user-initiated transaction injections.
+// For transactions received over the network, use daemon.InjectTransaction and check the result to
+// decide on repropagation.
 func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
-		err = gw.d.InjectBroadcastTransaction(txn)
+		_, err = gw.v.InjectTransactionStrict(txn)
+		if err != nil {
+			logger.WithError(err).Error("InjectTransactionStrict failed")
+			return
+		}
+
+		err = gw.d.BroadcastTransaction(txn)
+		if err != nil {
+			logger.WithError(err).Error("BroadcastTransaction failed")
+		}
 	})
 	return err
 }
@@ -459,16 +472,10 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 func (gw *Gateway) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]historydb.UxOut, error) {
 	var uxOuts [][]historydb.UxOut
 	var err error
-
 	gw.strand("GetSpentOutputsForAddresses", func() {
 		uxOuts, err = gw.v.GetSpentOutputsForAddresses(addresses)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return uxOuts, nil
+	return uxOuts, err
 }
 
 // GetAllUnconfirmedTransactions returns all unconfirmed transactions
@@ -506,6 +513,7 @@ func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.U
 // set password as nil if wallet is not encrypted, otherwise the password must be provied.
 // return transaction or error.
 func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+	logger.Warning("Calling deprecated method Gateway.Spend")
 	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
@@ -513,15 +521,17 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	var txn *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
+		// Create and inject transaction
 		txn, err = gw.v.CreateTransactionDeprecated(wltID, password, coins, dest)
 		if err != nil {
+			logger.Errorf("CreateTransactionDeprecated failed: %v", err)
 			return
 		}
 
-		// Inject transaction
-		err = gw.d.InjectBroadcastTransaction(*txn)
+		// Broadcast transaction
+		err = gw.d.BroadcastTransaction(*txn)
 		if err != nil {
-			logger.Errorf("Inject transaction failed: %v", err)
+			logger.Errorf("BroadcastTransaction failed: %v", err)
 			return
 		}
 	})

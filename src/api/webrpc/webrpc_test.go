@@ -87,10 +87,6 @@ func (fg fakeGateway) GetAddrUxOuts(addr []cipher.Address) ([]historydb.UxOut, e
 	return nil, nil
 }
 
-func (fg fakeGateway) GetTimeNow() uint64 {
-	return 0
-}
-
 func Test_rpcHandler_HandlerFunc(t *testing.T) {
 	rpc := setupWebRPC(t)
 	err := rpc.HandleFunc("get_status", getStatusHandler)

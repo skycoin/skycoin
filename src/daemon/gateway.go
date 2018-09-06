@@ -479,11 +479,6 @@ func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]historydb.UxOut,
 	return uxOuts, nil
 }
 
-// GetTimeNow returns the current Unix time
-func (gw *Gateway) GetTimeNow() uint64 {
-	return uint64(time.Now().UTC().Unix())
-}
-
 // GetAllUnconfirmedTransactions returns all unconfirmed transactions
 func (gw *Gateway) GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error) {
 	var txns []visor.UnconfirmedTransaction

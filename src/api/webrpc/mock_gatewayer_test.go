@@ -105,20 +105,6 @@ func (_m *MockGatewayer) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	return r0, r1
 }
 
-// GetTimeNow provides a mock function with given fields:
-func (_m *MockGatewayer) GetTimeNow() uint64 {
-	ret := _m.Called()
-
-	var r0 uint64
-	if rf, ok := ret.Get(0).(func() uint64); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(uint64)
-	}
-
-	return r0
-}
-
 // GetTransaction provides a mock function with given fields: txid
 func (_m *MockGatewayer) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {
 	ret := _m.Called(txid)

@@ -4,8 +4,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 181,
-			"block_seq": 0,
-			"unknown": false
+			"block_seq": 0
 		},
 		"time": 1426562704,
 		"txn": {

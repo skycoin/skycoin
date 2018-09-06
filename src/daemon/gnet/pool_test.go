@@ -178,6 +178,7 @@ func TestStartListenFailed(t *testing.T) {
 	pp := NewConnectionPool(cfg, nil)
 	err := pp.Run()
 	require.Error(t, err)
+	require.True(t, strings.HasSuffix(err.Error(), "bind: address already in use"))
 
 	p.Shutdown()
 	<-q
@@ -283,7 +284,6 @@ func TestHandleConnection(t *testing.T) {
 
 func TestConnect(t *testing.T) {
 	cfg := newTestConfig()
-	// cfg.Port
 	p := NewConnectionPool(cfg, nil)
 
 	q := make(chan struct{})
@@ -624,7 +624,6 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 
 	p.Shutdown()
 	<-q
-
 }
 
 func TestConnectionReadLoopTerminates(t *testing.T) {
@@ -1053,7 +1052,9 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	err = p.BroadcastMessage(m)
 	require.NoError(t, err)
 
-	attempts := 100
+	// Spam the connections with so much data that their write queue overflows,
+	// which will cause ErrNoReachableConnections
+	attempts := 1000
 	gotErr := false
 	var once sync.Once
 	var wg sync.WaitGroup

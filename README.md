@@ -71,6 +71,8 @@ scratch, to remedy the rough edges in the Bitcoin design.
         - [Live Integration Tests](#live-integration-tests)
         - [Debugging Integration Tests](#debugging-integration-tests)
         - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
+    - [Test coverage](#test-coverage)
+        - [Test coverage for the live node](#test-coverage-for-the-live-node)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
     - [Dependencies](#dependencies)
@@ -358,6 +360,43 @@ To update golden files, use the `-u` option:
 ```
 
 We can also update a specific test case's golden file with the `-r` option.
+
+### Test coverage
+
+Coverage is automatically generated for `make test` and integration tests run against a stable node.
+This includes integration test coverage. The coverage output files are placed in `coverage/`.
+
+To merge coverage from all tests into a single HTML file for viewing:
+
+```sh
+make check
+make merge-coverage
+```
+
+Then open `coverage/all-coverage.html` in the browser.
+
+#### Test coverage for the live node
+
+Some tests can only be run with a live node, for example wallet spending tests.
+To generate coverage for this, build and run the skycoin node in test mode before running the live integration tests.
+
+In one shell:
+
+```sh
+make run-integration-test-live-cover
+```
+
+In another shell:
+
+```sh
+make integration-test-live
+```
+
+After the tests have run, CTRL-C to exit the process from the first shell.
+A coverage file will be generated at `coverage/skycoin-live.coverage.out`.
+
+Merge the coverage with `make merge-coverage` then open the `coverage/all-coverage.html` file to view it,
+or generate the HTML coverage in isolation with `go tool cover -html`
 
 ### Formatting
 

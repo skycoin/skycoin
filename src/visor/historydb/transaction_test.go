@@ -1,6 +1,7 @@
 package historydb
 
 import (
+	"errors"
 	"math/rand"
 	"testing"
 	"time"
@@ -53,7 +54,7 @@ func TestTransactionGet(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
 
-			txsBkt := newTransactions()
+			txsBkt := &transactions{}
 
 			// init the bkt
 			err := db.Update("", func(tx *dbutil.Tx) error {
@@ -87,37 +88,41 @@ func TestTransactionGetSlice(t *testing.T) {
 		name   string
 		hashes []cipher.SHA256
 		expect []Transaction
+		err    error
 	}{
 		{
-			"get one",
-			[]cipher.SHA256{
+			name: "get one",
+			hashes: []cipher.SHA256{
 				txns[0].Hash(),
 			},
-			txns[:1],
+			expect: txns[:1],
 		},
+
 		{
-			"get two",
-			[]cipher.SHA256{
+			name: "get two",
+			hashes: []cipher.SHA256{
 				txns[0].Hash(),
 				txns[1].Hash(),
 			},
-			txns[:2],
+			expect: txns[:2],
 		},
+
 		{
-			"get all",
-			[]cipher.SHA256{
+			name: "get all",
+			hashes: []cipher.SHA256{
 				txns[0].Hash(),
 				txns[1].Hash(),
 				txns[2].Hash(),
 			},
-			txns[:3],
+			expect: txns[:3],
 		},
+
 		{
-			"not exist",
-			[]cipher.SHA256{
+			name: "not exist",
+			hashes: []cipher.SHA256{
 				txns[3].Hash(),
 			},
-			nil,
+			err: errors.New("Transaction not found"),
 		},
 	}
 
@@ -125,7 +130,7 @@ func TestTransactionGetSlice(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
-			txsBkt := newTransactions()
+			txsBkt := &transactions{}
 
 			// init the bkt
 			err := db.Update("", func(tx *dbutil.Tx) error {
@@ -140,6 +145,10 @@ func TestTransactionGetSlice(t *testing.T) {
 			// get slice
 			err = db.View("", func(tx *dbutil.Tx) error {
 				ts, err := txsBkt.GetSlice(tx, tc.hashes)
+				if tc.err != nil {
+					require.Equal(t, tc.err, err)
+					return nil
+				}
 				require.NoError(t, err)
 				require.Equal(t, tc.expect, ts)
 				return nil

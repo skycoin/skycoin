@@ -67,8 +67,16 @@ func Test_Secp256_01(t *testing.T) {
 // test compressed pubkey from private key
 func Test_PubkeyFromSeckey(t *testing.T) {
 	// http://www.righto.com/2014/02/bitcoins-hard-way-using-raw-bitcoin.html
-	privkey, _ := hex.DecodeString(`f19c523315891e6e15ae0608a35eec2e00ebd6d1984cf167f46336dabd9b2de4`)
-	desiredPubKey, _ := hex.DecodeString(`03fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef1`)
+	privkey, err := hex.DecodeString(`f19c523315891e6e15ae0608a35eec2e00ebd6d1984cf167f46336dabd9b2de4`)
+	if err != nil {
+		t.Fatal()
+	}
+
+	desiredPubKey, err := hex.DecodeString(`03fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef1`)
+	if err != nil {
+		t.Fatal()
+	}
+
 	if pubkey := PubkeyFromSeckey(privkey); pubkey == nil {
 		t.Fatal()
 	} else if !bytes.Equal(pubkey, desiredPubKey) {
@@ -79,8 +87,16 @@ func Test_PubkeyFromSeckey(t *testing.T) {
 // test uncompressed pubkey from private key
 func Test_UncompressedPubkeyFromSeckey(t *testing.T) {
 	// http://www.righto.com/2014/02/bitcoins-hard-way-using-raw-bitcoin.html
-	privkey, _ := hex.DecodeString(`f19c523315891e6e15ae0608a35eec2e00ebd6d1984cf167f46336dabd9b2de4`)
-	desiredPubKey, _ := hex.DecodeString(`04fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef10fe85eb3ce193405c2dd8453b7aeb6c1752361efdbf4f52ea8bf8f304aab37ab`)
+	privkey, err := hex.DecodeString(`f19c523315891e6e15ae0608a35eec2e00ebd6d1984cf167f46336dabd9b2de4`)
+	if err != nil {
+		t.Fatal()
+	}
+
+	desiredPubKey, err := hex.DecodeString(`04fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef10fe85eb3ce193405c2dd8453b7aeb6c1752361efdbf4f52ea8bf8f304aab37ab`)
+	if err != nil {
+		t.Fatal()
+	}
+
 	if pubkey := UncompressedPubkeyFromSeckey(privkey); pubkey == nil {
 		t.Fatal()
 	} else if !bytes.Equal(pubkey, desiredPubKey) {
@@ -604,7 +620,11 @@ func Test_Abnormal_Keys2(t *testing.T) {
 
 	for i := 0; i < len(_testSeckey); i++ {
 
-		seckey1, _ := hex.DecodeString(_testSeckey[i])
+		seckey1, err := hex.DecodeString(_testSeckey[i])
+		if err != nil {
+			t.Fail()
+		}
+
 		pubkey1 := PubkeyFromSeckey(seckey1)
 		if pubkey1 == nil {
 			t.Fail()
@@ -629,14 +649,21 @@ func Test_Abnormal_Keys3(t *testing.T) {
 
 	for i := 0; i < len(_testSeckey); i++ {
 
-		seckey1, _ := hex.DecodeString(_testSeckey[i])
+		seckey1, err := hex.DecodeString(_testSeckey[i])
+		if err != nil {
+			t.Fail()
+		}
+
 		pubkey1 := PubkeyFromSeckey(seckey1)
 
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(_testSeckey))))
 		if err != nil {
 			t.Error(err)
 		}
-		seckey2, _ := hex.DecodeString(_testSeckey[n.Int64()])
+		seckey2, err := hex.DecodeString(_testSeckey[n.Int64()])
+		if err != nil {
+			t.Fail()
+		}
 		pubkey2 := PubkeyFromSeckey(seckey2)
 
 		if pubkey1 == nil {

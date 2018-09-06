@@ -98,7 +98,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 
 	// Calculate whole coin seconds
 	wholeCoins := uo.Body.Coins / 1e6
-	wholeCoinSeconds, err := multUint64(seconds, wholeCoins)
+	wholeCoinSeconds, err := MultUint64(seconds, wholeCoins)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
 		log.Printf("%v", err)
@@ -107,7 +107,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 
 	// Calculate remainder droplet seconds
 	remainderDroplets := uo.Body.Coins % 1e6
-	dropletSeconds, err := multUint64(seconds, remainderDroplets)
+	dropletSeconds, err := MultUint64(seconds, remainderDroplets)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
 		log.Printf("%v", err)

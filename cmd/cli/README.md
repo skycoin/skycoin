@@ -1572,8 +1572,7 @@ $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748
          "confirmed": true,
          "unconfirmed": false,
          "height": 1,
-         "block_seq": 864,
-         "unknown": false
+         "block_seq": 864
      },
      "txn": {
          "length": 220,

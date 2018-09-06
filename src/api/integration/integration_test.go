@@ -753,8 +753,29 @@ func TestLiveBlockVerbose(t *testing.T) {
 
 	testKnownBlocksVerbose(t)
 
-	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
-	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699, 13277}
+	// These blocks were affected by the coinhour overflow issue or by coinhour fee calculation bugs,
+	// make sure that they can be queried
+	blockSeqs := []uint64{
+		// coinhour fee calculation mistake, related to distribution addresses:
+		297,
+		741,
+		743,
+		749,
+		796,
+		4956,
+		10125,
+		// coinhour overflow related:
+		11685,
+		11707,
+		11710,
+		11709,
+		11705,
+		11708,
+		11711,
+		11706,
+		11699,
+		13277,
+	}
 
 	c := api.NewClient(nodeAddress())
 	for _, seq := range blockSeqs {
@@ -1687,7 +1708,7 @@ func TestLiveTransaction(t *testing.T) {
 		{
 			name:       "OK",
 			txID:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
-			goldenFile: "./transaction.golden",
+			goldenFile: "transaction-block-517.golden",
 		},
 	}
 
@@ -1813,7 +1834,7 @@ func TestLiveTransactionVerbose(t *testing.T) {
 		{
 			name:       "OK",
 			txID:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
-			goldenFile: "transaction-verbose.golden",
+			goldenFile: "transaction-verbose-block-517.golden",
 		},
 	}
 
@@ -1946,7 +1967,7 @@ func TestLiveTransactionEncoded(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			testTransactionEncoded(t, c, tc)
+			testTransactionEncoded(t, c, tc, false)
 		})
 	}
 }
@@ -2015,22 +2036,27 @@ func TestStableTransactionEncoded(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			testTransactionEncoded(t, c, tc)
+			testTransactionEncoded(t, c, tc, true)
 		})
 	}
 }
 
-func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase) {
+func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase, stable bool) {
 	encodedTxn, err := c.TransactionEncoded(tc.txID)
 	if err != nil {
 		require.Equal(t, tc.err, err)
 		return
 	}
 
+	if !stable {
+		encodedTxn.Status.Height = 0
+	}
+
 	encodedTxnBytes, err := hex.DecodeString(encodedTxn.EncodedTransaction)
 	require.NoError(t, err)
 	decodedTxn, err := coin.TransactionDeserialize(encodedTxnBytes)
 	require.NoError(t, err)
+
 	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{
 		Transaction: decodedTxn,
 		Status: visor.TransactionStatus{
@@ -2044,6 +2070,10 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase)
 
 	txn, err := c.Transaction(tc.txID)
 	require.NoError(t, err)
+
+	if !stable {
+		txn.Status.Height = 0
+	}
 
 	require.Equal(t, txn, txnResult)
 
@@ -2156,16 +2186,16 @@ func TestStableTransactions(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.Transactions(tc.addrs)
+			txnResult, err := c.Transactions(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupes(t, txResult)
+			assertNoTransactionsDupes(t, txnResult)
 
 			var expected []readable.TransactionWithStatus
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2252,16 +2282,16 @@ func TestStableConfirmedTransactions(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.ConfirmedTransactions(tc.addrs)
+			txnResult, err := c.ConfirmedTransactions(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupes(t, txResult)
+			assertNoTransactionsDupes(t, txnResult)
 
 			var expected []readable.TransactionWithStatus
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2318,16 +2348,16 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.UnconfirmedTransactions(tc.addrs)
+			txnResult, err := c.UnconfirmedTransactions(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupes(t, txResult)
+			assertNoTransactionsDupes(t, txnResult)
 
 			var expected []readable.TransactionWithStatus
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2442,16 +2472,16 @@ func TestStableTransactionsVerbose(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.TransactionsVerbose(tc.addrs)
+			txnResult, err := c.TransactionsVerbose(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupesVerbose(t, txResult)
+			assertNoTransactionsDupesVerbose(t, txnResult)
 
 			var expected []readable.TransactionWithStatusVerbose
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2538,16 +2568,16 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.ConfirmedTransactionsVerbose(tc.addrs)
+			txnResult, err := c.ConfirmedTransactionsVerbose(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupesVerbose(t, txResult)
+			assertNoTransactionsDupesVerbose(t, txnResult)
 
 			var expected []readable.TransactionWithStatusVerbose
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2604,16 +2634,16 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.UnconfirmedTransactionsVerbose(tc.addrs)
+			txnResult, err := c.UnconfirmedTransactionsVerbose(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupesVerbose(t, txResult)
+			assertNoTransactionsDupesVerbose(t, txnResult)
 
 			var expected []readable.TransactionWithStatusVerbose
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2664,10 +2694,10 @@ func TestLiveResendUnconfirmedTransactions(t *testing.T) {
 }
 
 type rawTransactionTestCase struct {
-	name  string
-	txID  string
-	err   api.ClientError
-	rawTx string
+	name   string
+	txID   string
+	err    api.ClientError
+	rawTxn string
 }
 
 func TestStableRawTransaction(t *testing.T) {
@@ -2704,29 +2734,29 @@ func TestStableRawTransaction(t *testing.T) {
 			},
 		},
 		{
-			name:  "OK",
-			txID:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
-			rawTx: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
+			name:   "OK",
+			txID:   "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			rawTxn: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
 		},
 	}
 
 	if !dbNoUnconfirmed(t) {
 		cases = append(cases, rawTransactionTestCase{
-			name:  "unconfirmed",
-			txID:  "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
-			rawTx: "dc00000000f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124010000003981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f320001000000fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f2002000000003be2537f8c0893fddcddc878518f38ea493d949e008988068d0000002739570000000000009037ff169fbec6db95e2537e4ff79396c050aeeb00e40b54020000002739570000000000",
+			name:   "unconfirmed",
+			txID:   "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			rawTxn: "dc00000000f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124010000003981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f320001000000fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f2002000000003be2537f8c0893fddcddc878518f38ea493d949e008988068d0000002739570000000000009037ff169fbec6db95e2537e4ff79396c050aeeb00e40b54020000002739570000000000",
 		})
 	}
 
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.RawTransaction(tc.txID)
+			txnResult, err := c.RawTransaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
-			require.Equal(t, tc.rawTx, txResult, "case: "+tc.name)
+			require.Equal(t, tc.rawTxn, txnResult, "case: "+tc.name)
 		})
 	}
 }
@@ -2756,26 +2786,27 @@ func TestLiveRawTransaction(t *testing.T) {
 			},
 		},
 		{
-			name:  "OK - genesis tx",
-			txID:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
-			rawTx: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
+			name:   "OK - genesis tx",
+			txID:   "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			rawTxn: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
 		},
 		{
-			name:  "OK",
-			txID:  "540582ee4128b733f810f149e908d984a5f403ad2865108e6c1c5423aeefc759",
-			rawTx: "dc00000000f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124010000003981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f320001000000fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f2002000000003be2537f8c0893fddcddc878518f38ea493d949e008988068d0000002739570000000000009037ff169fbec6db95e2537e4ff79396c050aeeb00e40b54020000002739570000000000",
+			name:   "OK",
+			txID:   "540582ee4128b733f810f149e908d984a5f403ad2865108e6c1c5423aeefc759",
+			rawTxn: "3d0100000088b4e967d77a8b7155c5378a85c199fabf94048aa84833ef5eab7818545bcda80200000071985c70041fe5a6408a2dfac2ea4963820bc603059521259debb114b2f6630b5658e7ff665b2db7878ce9b0d1d051ec66b5dea23274e52642bc7e451b273a90008afb06133958b03c4795d5a7acd001f3942cc6d3b19e93d357d2675fe9ba8bbf3db30b3cda779e441fced581aee88f48c8af017b30dc276b15be25d4bb44260c000200000050386f195b367f8261e66e3fdfbc942fbacfe25e117e554ca1c1caf8993454767afab03c823346ff8b00c29df6acc05841583d90dfd451ba09e66884a48e83f70200000000ef3b60779f014b3c7acf27c16c9acc3ff3bea61600a8b54b06000000c2ba2400000000000037274869aaa4c2e2e5c91595024c65f8f9458102404b4c0000000000c2ba240000000000",
 		},
 	}
 
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.RawTransaction(tc.txID)
+			txnResult, err := c.RawTransaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
-			require.Equal(t, tc.rawTx, txResult, "case: "+tc.name)
+
+			require.Equal(t, tc.rawTxn, txnResult, "case: "+tc.name)
 		})
 	}
 }
@@ -2876,12 +2907,12 @@ func TestStableAddressTransactions(t *testing.T) {
 			{
 				name:    "address with outgoing transaction",
 				address: "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-				golden:  "address-transactions-R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ.golden",
+				golden:  "address-transactions-outgoing-R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ.golden",
 			},
 			{
 				name:    "address with incoming transaction",
 				address: "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
-				golden:  "address-transactions-212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN.golden",
+				golden:  "address-transactions-incoming-212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN.golden",
 			},
 		}...)
 	}
@@ -2933,9 +2964,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 	}
 
 	c := api.NewClient(nodeAddress())
-	// Get current blockchain height
-	bp, err := c.BlockchainProgress()
-	require.NoError(t, err)
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txns, err := c.AddressTransactions(tc.address)
@@ -2946,15 +2975,13 @@ func TestLiveAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []readable.TransactionVerbose
-			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
-
-			// Recaculate the height if it's live test
-			for i := range expected {
-				expected[i].Status.Height = bp.Current - expected[i].Status.BlockSeq + 1
+			// Unset height since it is not stable
+			for i := range txns {
+				txns[i].Status.Height = 0
 			}
 
-			require.Equal(t, expected, txns)
+			var expected []readable.TransactionVerbose
+			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
 }

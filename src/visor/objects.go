@@ -35,6 +35,8 @@ func NewUnconfirmedTransactionStatus() TransactionStatus {
 
 // NewConfirmedTransactionStatus creates confirmed transaction status
 func NewConfirmedTransactionStatus(height, blockSeq uint64) TransactionStatus {
+	// Height starts at 1
+	// TODO -- height should start at 0?
 	if height == 0 {
 		logger.Panic("Invalid confirmed transaction height")
 	}

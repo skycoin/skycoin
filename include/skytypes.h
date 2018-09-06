@@ -176,6 +176,10 @@ typedef Handle Wallets__Handle;
 typedef Handle ReadableOutputSet__Handle;
 
 /**
+ *  ReadableOutputSet Handle
+ * */
+typedef Handle ReadableOutputSet_Handle;
+/**
  * Instances of Go interface types.
  */
 typedef struct {

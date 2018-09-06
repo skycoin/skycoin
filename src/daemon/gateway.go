@@ -552,15 +552,9 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 	var txn *coin.Transaction
 	var inputs []wallet.UxBalance
 	var err error
-
 	gw.strand("CreateTransaction", func() {
 		txn, inputs, err = gw.v.CreateTransaction(params)
 	})
-
-	if err != nil {
-		return nil, nil, err
-	}
-
 	return txn, inputs, err
 }
 
@@ -610,55 +604,59 @@ func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet,
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error) {
 	var addressBalances wallet.AddressBalances
 	var walletBalance wallet.BalancePair
+
 	if !gw.Config.EnableWalletAPI {
 		return walletBalance, addressBalances, wallet.ErrWalletAPIDisabled
 	}
 
+	var addrsBalanceList []wallet.BalancePair
+	var addrs []cipher.Address
 	var err error
+
 	gw.strand("GetWalletBalance", func() {
-		var addrs []cipher.Address
 		addrs, err = gw.v.Wallets.GetAddresses(wltID)
 		if err != nil {
 			return
 		}
 
 		// get list of address balances
-		addrsBalanceList, err := gw.v.GetBalanceOfAddrs(addrs)
-		if err != nil {
-			return
-		}
-
-		// create map of address to balance
-		addressBalances = make(wallet.AddressBalances, len(addrs))
-		for idx, addr := range addrs {
-			addressBalances[addr.String()] = addrsBalanceList[idx]
-		}
-
-		// compute the sum of all addresses
-		for _, addrBalance := range addressBalances {
-			// compute confirmed balance
-			walletBalance.Confirmed.Coins, err = coin.AddUint64(walletBalance.Confirmed.Coins, addrBalance.Confirmed.Coins)
-			if err != nil {
-				return
-			}
-			walletBalance.Confirmed.Hours, err = coin.AddUint64(walletBalance.Confirmed.Hours, addrBalance.Confirmed.Hours)
-			if err != nil {
-				return
-			}
-
-			// compute predicted balance
-			walletBalance.Predicted.Coins, err = coin.AddUint64(walletBalance.Predicted.Coins, addrBalance.Predicted.Coins)
-			if err != nil {
-				return
-			}
-			walletBalance.Predicted.Hours, err = coin.AddUint64(walletBalance.Predicted.Hours, addrBalance.Predicted.Hours)
-			if err != nil {
-				return
-			}
-		}
+		addrsBalanceList, err = gw.v.GetBalanceOfAddrs(addrs)
 	})
 
-	return walletBalance, addressBalances, err
+	if err != nil {
+		return walletBalance, addressBalances, err
+	}
+
+	// create map of address to balance
+	addressBalances = make(wallet.AddressBalances, len(addrs))
+	for i, addr := range addrs {
+		addressBalances[addr.String()] = addrsBalanceList[i]
+	}
+
+	// compute the sum of all addresses
+	for _, addrBalance := range addressBalances {
+		// compute confirmed balance
+		walletBalance.Confirmed.Coins, err = coin.AddUint64(walletBalance.Confirmed.Coins, addrBalance.Confirmed.Coins)
+		if err != nil {
+			return walletBalance, addressBalances, err
+		}
+		walletBalance.Confirmed.Hours, err = coin.AddUint64(walletBalance.Confirmed.Hours, addrBalance.Confirmed.Hours)
+		if err != nil {
+			return walletBalance, addressBalances, err
+		}
+
+		// compute predicted balance
+		walletBalance.Predicted.Coins, err = coin.AddUint64(walletBalance.Predicted.Coins, addrBalance.Predicted.Coins)
+		if err != nil {
+			return walletBalance, addressBalances, err
+		}
+		walletBalance.Predicted.Hours, err = coin.AddUint64(walletBalance.Predicted.Hours, addrBalance.Predicted.Hours)
+		if err != nil {
+			return walletBalance, addressBalances, err
+		}
+	}
+
+	return walletBalance, addressBalances, nil
 }
 
 // GetBalanceOfAddrs gets balance of given addresses

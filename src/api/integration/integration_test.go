@@ -619,6 +619,30 @@ func TestStableBlock(t *testing.T) {
 	testKnownBlocks(t)
 }
 
+// These blocks were affected by the coinhour overflow issue or by coinhour fee calculation bugs,
+// make sure that they can be queried
+var knownBadBlockSeqs = []uint64{
+	// coinhour fee calculation mistake, related to distribution addresses:
+	297,
+	741,
+	743,
+	749,
+	796,
+	4956,
+	10125,
+	// coinhour overflow related:
+	11685,
+	11707,
+	11710,
+	11709,
+	11705,
+	11708,
+	11711,
+	11706,
+	11699,
+	13277,
+}
+
 func TestLiveBlock(t *testing.T) {
 	if !doLive(t) {
 		return
@@ -626,11 +650,9 @@ func TestLiveBlock(t *testing.T) {
 
 	testKnownBlocks(t)
 
-	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
-	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11705, 11706, 11699, 13277}
-
+	// Check the knownBadBlockSeqs
 	c := api.NewClient(nodeAddress())
-	for _, seq := range blockSeqs {
+	for _, seq := range knownBadBlockSeqs {
 		b, err := c.BlockBySeq(seq)
 		require.NoError(t, err)
 		require.Equal(t, seq, b.Head.BkSeq)
@@ -753,32 +775,9 @@ func TestLiveBlockVerbose(t *testing.T) {
 
 	testKnownBlocksVerbose(t)
 
-	// These blocks were affected by the coinhour overflow issue or by coinhour fee calculation bugs,
-	// make sure that they can be queried
-	blockSeqs := []uint64{
-		// coinhour fee calculation mistake, related to distribution addresses:
-		297,
-		741,
-		743,
-		749,
-		796,
-		4956,
-		10125,
-		// coinhour overflow related:
-		11685,
-		11707,
-		11710,
-		11709,
-		11705,
-		11708,
-		11711,
-		11706,
-		11699,
-		13277,
-	}
-
+	// Check the knownBadBlockSeqs
 	c := api.NewClient(nodeAddress())
-	for _, seq := range blockSeqs {
+	for _, seq := range knownBadBlockSeqs {
 		b, err := c.BlockBySeqVerbose(seq)
 		require.NoError(t, err)
 		require.Equal(t, seq, b.Head.BkSeq)

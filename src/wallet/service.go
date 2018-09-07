@@ -220,17 +220,21 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 			return nil, err
 		}
 	} else {
+		if len(password) != 0 {
+			return nil, ErrWalletNotEncrypted
+		}
+
 		if err := f(w); err != nil {
 			return nil, err
 		}
 	}
 
-	// Set the updated wallet back
-	serv.wallets.set(w)
-
+	// Save the wallet first
 	if err := w.Save(serv.walletDirectory); err != nil {
 		return []cipher.Address{}, err
 	}
+
+	serv.wallets.set(w)
 
 	return addrs, nil
 }
@@ -407,16 +411,19 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 		return ErrWalletAPIDisabled
 	}
 
-	var wlt *Wallet
-	if err := serv.wallets.update(wltID, func(w *Wallet) error {
-		w.setLabel(label)
-		wlt = w
-		return nil
-	}); err != nil {
+	w, err := serv.getWallet(wltID)
+	if err != nil {
 		return err
 	}
 
-	return wlt.Save(serv.walletDirectory)
+	w.setLabel(label)
+
+	if err := w.Save(serv.walletDirectory); err != nil {
+		return err
+	}
+
+	serv.wallets.set(w)
+	return nil
 }
 
 // Remove removes wallet of given wallet id from the service
@@ -503,4 +510,12 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error
 	}
 
 	return seed, nil
+}
+
+// Update opens a wallet for modification and saves it safely
+func (serv *Service) Update(wltID string, password []byte, f func(*Wallet) error) error {
+	serv.Lock()
+	defer serv.Unlock()
+
+	return nil
 }

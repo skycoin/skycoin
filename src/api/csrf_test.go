@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/util/collections"
 )
 
 const (
@@ -161,6 +163,7 @@ func TestCSRFWrapper(t *testing.T) {
 						enableJSON20RPC:      true,
 						enableUnversionedAPI: true,
 						disableCSP:           true,
+						enabledAPISets:       collections.NewStringSet(AllAPISets),
 					}, gateway, csrfStore, nil)
 
 					handler.ServeHTTP(rr, req)
@@ -290,6 +293,7 @@ func TestCSRF(t *testing.T) {
 			appLoc:          ".",
 			enableJSON20RPC: true,
 			disableCSP:      true,
+			enabledAPISets:  collections.NewStringSet(APIWallet),
 		}, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)

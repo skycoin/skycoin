@@ -158,7 +158,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIDefault, APIWallet), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1646,7 +1646,7 @@ func TestWalletNewSeed(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 

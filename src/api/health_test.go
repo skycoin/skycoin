@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util/collections"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -30,14 +31,14 @@ func TestHealthCheckHandler(t *testing.T) {
 			name:   "valid response",
 			method: http.MethodGet,
 			code:   http.StatusOK,
-			cfg:    defaultMuxConfig(),
+			cfg:    defaultMuxConfig(APIStatus),
 		},
 
 		{
-			name:   "403 method not allowed",
+			name:   "405 method not allowed",
 			method: http.MethodPost,
 			code:   http.StatusMethodNotAllowed,
-			cfg:    defaultMuxConfig(),
+			cfg:    defaultMuxConfig(APIDefault),
 		},
 
 		{
@@ -45,7 +46,7 @@ func TestHealthCheckHandler(t *testing.T) {
 			method:       http.MethodGet,
 			code:         http.StatusInternalServerError,
 			getHealthErr: errors.New("GetHealth failed"),
-			cfg:          defaultMuxConfig(),
+			cfg:          defaultMuxConfig(APIStatus, APIDefault),
 		},
 
 		{
@@ -59,6 +60,7 @@ func TestHealthCheckHandler(t *testing.T) {
 				enableGUI:            true,
 				enableUnversionedAPI: true,
 				enableJSON20RPC:      true,
+				enabledAPISets:       collections.NewStringSet(APIDefault, APIWallet),
 			},
 			csrfEnabled:      true,
 			walletAPIEnabled: true,

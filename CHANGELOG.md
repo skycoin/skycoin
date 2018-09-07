@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Upcoming deprecated method removal notice
+
+In the v0.26.0 these features and functions will be removed.  If you have a need for any of these features, let us know.
+
+- JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does)
+- `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead)
+- The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`)
+
 ### Added
 
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
@@ -52,6 +60,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix portable browser version opening to blank page
 
 ### Changed
+
 - Increase visor db timeout to 5000 `ms`
 - Change `InitTransaction` to accept parameters for distributing genesis coin to distribution wallets
 
@@ -62,7 +71,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Minimum go version is go1.10
-- Add environment variable `DATA_DIR` in CLI's
+- Add environment variable `DATA_DIR` in CLI
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
 - Option to generate 12/24 word seed when creating new wallet

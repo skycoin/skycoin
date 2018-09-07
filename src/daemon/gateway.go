@@ -509,7 +509,7 @@ func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.U
 	return txns, err
 }
 
-// Spend spends coins from given wallet and broadcast it,
+// Spend spends coins from given wallet and broadcasts it,
 // set password as nil if wallet is not encrypted, otherwise the password must be provied.
 // return transaction or error.
 func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
@@ -521,17 +521,22 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	var txn *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
-		// Create and inject transaction
 		txn, err = gw.v.CreateTransactionDeprecated(wltID, password, coins, dest)
 		if err != nil {
-			logger.Errorf("CreateTransactionDeprecated failed: %v", err)
+			logger.WithError(err).Error("CreateTransactionDeprecated failed")
 			return
 		}
 
-		// Broadcast transaction
+		// WARNING: This is not safe from races once we remove strand
+		_, err = gw.v.InjectTransactionStrict(*txn)
+		if err != nil {
+			logger.WithError(err).Error("InjectTransactionStrict failed")
+			return
+		}
+
 		err = gw.d.BroadcastTransaction(*txn)
 		if err != nil {
-			logger.Errorf("BroadcastTransaction failed: %v", err)
+			logger.WithError(err).Error("BroadcastTransaction failed")
 			return
 		}
 	})
@@ -604,59 +609,11 @@ func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet,
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error) {
 	var addressBalances wallet.AddressBalances
 	var walletBalance wallet.BalancePair
-
-	if !gw.Config.EnableWalletAPI {
-		return walletBalance, addressBalances, wallet.ErrWalletAPIDisabled
-	}
-
-	var addrsBalanceList []wallet.BalancePair
-	var addrs []cipher.Address
 	var err error
-
 	gw.strand("GetWalletBalance", func() {
-		addrs, err = gw.v.Wallets.GetAddresses(wltID)
-		if err != nil {
-			return
-		}
-
-		// get list of address balances
-		addrsBalanceList, err = gw.v.GetBalanceOfAddrs(addrs)
+		walletBalance, addressBalances, err = vs.GetWalletBalance(wltID)
 	})
-
-	if err != nil {
-		return walletBalance, addressBalances, err
-	}
-
-	// create map of address to balance
-	addressBalances = make(wallet.AddressBalances, len(addrs))
-	for i, addr := range addrs {
-		addressBalances[addr.String()] = addrsBalanceList[i]
-	}
-
-	// compute the sum of all addresses
-	for _, addrBalance := range addressBalances {
-		// compute confirmed balance
-		walletBalance.Confirmed.Coins, err = coin.AddUint64(walletBalance.Confirmed.Coins, addrBalance.Confirmed.Coins)
-		if err != nil {
-			return walletBalance, addressBalances, err
-		}
-		walletBalance.Confirmed.Hours, err = coin.AddUint64(walletBalance.Confirmed.Hours, addrBalance.Confirmed.Hours)
-		if err != nil {
-			return walletBalance, addressBalances, err
-		}
-
-		// compute predicted balance
-		walletBalance.Predicted.Coins, err = coin.AddUint64(walletBalance.Predicted.Coins, addrBalance.Predicted.Coins)
-		if err != nil {
-			return walletBalance, addressBalances, err
-		}
-		walletBalance.Predicted.Hours, err = coin.AddUint64(walletBalance.Predicted.Hours, addrBalance.Predicted.Hours)
-		if err != nil {
-			return walletBalance, addressBalances, err
-		}
-	}
-
-	return walletBalance, addressBalances, nil
+	return walletBalance, addressBalances, err
 }
 
 // GetBalanceOfAddrs gets balance of given addresses
@@ -738,24 +695,17 @@ func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
 	return w, err
 }
 
-// GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet
-func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTransaction, error) {
+// GetWalletUnconfirmedTransactions returns all unconfirmed transactions in given wallet
+func (gw *Gateway) GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var txns []visor.UnconfirmedTransaction
 	var err error
-	gw.strand("GetWalletUnconfirmedTxns", func() {
-		var addrs []cipher.Address
-		addrs, err = gw.v.Wallets.GetAddresses(wltID)
-		if err != nil {
-			return
-		}
-
-		txns, err = gw.v.GetUnconfirmedTransactions(visor.SendsToAddresses(addrs))
+	gw.strand("GetWalletUnconfirmedTransactions", func() {
+		txns, err = gw.v.GetWalletUnconfirmedTransactions(wltID)
 	})
-
 	return txns, err
 }
 
@@ -769,13 +719,7 @@ func (gw *Gateway) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]viso
 	var inputs [][]visor.TransactionInput
 	var err error
 	gw.strand("GetWalletUnconfirmedTransactionsVerbose", func() {
-		var addrs []cipher.Address
-		addrs, err = gw.v.Wallets.GetAddresses(wltID)
-		if err != nil {
-			return
-		}
-
-		txns, inputs, err = gw.v.GetUnconfirmedTxnsVerbose(visor.SendsToAddresses(addrs))
+		txns, inputs, err = gw.v.GetWalletUnconfirmedTransactionsVerbose(wltID)
 	})
 	return txns, inputs, err
 }

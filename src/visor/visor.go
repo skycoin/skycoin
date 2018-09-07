@@ -1454,12 +1454,12 @@ func (vs *Visor) GetUnconfirmedTransactions(filter func(UnconfirmedTransaction) 
 	return txns, nil
 }
 
-// GetUnconfirmedTxnsVerbose gets all confirmed transactions of specific addresses
-func (vs *Visor) GetUnconfirmedTxnsVerbose(filter func(UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, [][]TransactionInput, error) {
+// GetUnconfirmedTransactionsVerbose gets all confirmed transactions of specific addresses
+func (vs *Visor) GetUnconfirmedTransactionsVerbose(filter func(UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, [][]TransactionInput, error) {
 	var txns []UnconfirmedTransaction
 	var inputs [][]TransactionInput
 
-	if err := vs.DB.View("GetUnconfirmedTxnsVerbose", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("GetUnconfirmedTransactionsVerbose", func(tx *dbutil.Tx) error {
 		var err error
 		txns, err = vs.Unconfirmed.GetTxns(tx, filter)
 		if err != nil {
@@ -2242,137 +2242,6 @@ func (vs *Visor) AddressCount() (uint64, error) {
 	return count, nil
 }
 
-// CreateTransactionDeprecated creates a transaction using an entire wallet,
-// specifying only coins and one destination.
-// It also injects the transaction into the unconfirmed pool, since this is the behavior
-// of gateway.Spend and the call must be in the same transaction to avoid a race.
-// Injection requires an exclusive database update lock, so this will cause performance issues
-// if used, especially with an encrypted wallet.
-func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	w, err := vs.Wallets.GetWallet(wltID)
-	if err != nil {
-		logger.WithError(err).Error("Wallets.GetWallet failed")
-		return nil, err
-	}
-
-	// Get all addresses from the wallet for checking params against
-	addrs := w.GetAddresses()
-
-	var txn *coin.Transaction
-
-	if err := vs.DB.Update("CreateTransactionDeprecated", func(tx *dbutil.Tx) error {
-		head, err := vs.Blockchain.Head(tx)
-		if err != nil {
-			logger.Errorf("Blockchain.Head failed: %v", err)
-			return err
-		}
-
-		// Get unspent outputs, while checking that there are no unconfirmed outputs
-		auxs, err := vs.getUnspentsForSpending(tx, addrs, false)
-		if err != nil {
-			if err != wallet.ErrSpendingUnconfirmed {
-				logger.WithError(err).Error("getUnspentsForSpending failed")
-			}
-			return err
-		}
-
-		// Create and sign transaction
-		if err := vs.Wallets.ViewWallet(w, password, func(w *wallet.Wallet) error {
-			var err error
-			txn, err = w.CreateAndSignTransaction(auxs, head.Time(), coins, dest)
-			return err
-		}); err != nil {
-			logger.WithError(err).Error("CreateAndSignTransaction failed")
-			return err
-		}
-
-		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-		// because the wallet is not aware of visor-level constraints.
-		// Check that the transaction is valid before returning it to the caller.
-		// NOTE: this isn't inside the database transaction, but it's safe,
-		// if a racing database write caused this transaction to be invalid, it would be caught here
-		if err := VerifySingleTxnUserConstraints(*txn); err != nil {
-			logger.WithError(err).Error("Created transaction violates transaction constraints")
-			return err
-		}
-
-		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize); err != nil {
-			logger.WithError(err).Error("Created transaction violates transaction constraints")
-			return err
-		}
-
-		_, err = vs.injectTransactionStrict(tx, *txn)
-		return err
-	}); err != nil {
-		return nil, err
-	}
-
-	return txn, nil
-}
-
-// CreateTransaction creates a transaction based upon the parameters in wallet.CreateTransactionParams
-func (vs *Visor) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
-	if err := params.Validate(); err != nil {
-		return nil, nil, err
-	}
-
-	w, err := vs.Wallets.GetWallet(params.Wallet.ID)
-	if err != nil {
-		logger.WithError(err).Error("Wallets.GetWallet failed")
-		return nil, nil, err
-	}
-
-	// Get all addresses from the wallet for checking params against
-	allAddrs := w.GetAddresses()
-
-	var auxs coin.AddressUxOuts
-	var head *coin.SignedBlock
-
-	if err := vs.DB.View("CreateTransaction", func(tx *dbutil.Tx) error {
-		var err error
-		head, err = vs.Blockchain.Head(tx)
-		if err != nil {
-			logger.WithError(err).Error("Blockchain.Head failed")
-			return err
-		}
-
-		auxs, err = vs.getCreateTransactionAuxs(tx, params, allAddrs)
-		return err
-	}); err != nil {
-		return nil, nil, err
-	}
-
-	// Create and sign transaction
-	var txn *coin.Transaction
-	var inputs []wallet.UxBalance
-	if err := vs.Wallets.ViewWallet(w, params.Wallet.Password, func(w *wallet.Wallet) error {
-		var err error
-		txn, inputs, err = w.CreateAndSignTransactionAdvanced(params, auxs, head.Time())
-		return err
-	}); err != nil {
-		logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
-		return nil, nil, err
-	}
-
-	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-	// because the wallet is not aware of visor-level constraints.
-	// Check that the transaction is valid before returning it to the caller.
-	// NOTE: this isn't inside the database transaction, but it's safe,
-	// if a racing database write caused this transaction to be invalid, it would be caught here
-	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
-		logger.WithError(err).Error("Created transaction violates transaction constraints")
-		return nil, nil, err
-	}
-	if err := vs.DB.View("VerifySingleTxnSoftHardConstraints", func(tx *dbutil.Tx) error {
-		return vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize)
-	}); err != nil {
-		logger.WithError(err).Error("Created transaction violates transaction constraints")
-		return nil, nil, err
-	}
-
-	return txn, inputs, nil
-}
-
 func (vs *Visor) getCreateTransactionAuxs(tx *dbutil.Tx, params wallet.CreateTransactionParams, allAddrs []cipher.Address) (coin.AddressUxOuts, error) {
 	allAddrsMap := make(map[cipher.Address]struct{}, len(allAddrs))
 	for _, a := range allAddrs {
@@ -2497,7 +2366,7 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]Transacti
 	if err := vs.DB.View("GetVerboseTransactionsForAddress", func(tx *dbutil.Tx) error {
 		addrTxns, err := vs.getTransactionsForAddresses(tx, []cipher.Address{a})
 		if err != nil {
-			logger.Errorf("GetVerboseTransactionsForAddress: gw.v.GetTransactionsForAddress failed: %v", err)
+			logger.Errorf("GetVerboseTransactionsForAddress: vs.GetTransactionsForAddress failed: %v", err)
 			return err
 		}
 

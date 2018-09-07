@@ -959,8 +959,8 @@ func (_m *MockGatewayer) GetWalletUnconfirmedTransactionsVerbose(wltID string) (
 	return r0, r1, r2
 }
 
-// GetWalletUnconfirmedTxns provides a mock function with given fields: wltID
-func (_m *MockGatewayer) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTransaction, error) {
+// GetWalletUnconfirmedTransactions provides a mock function with given fields: wltID
+func (_m *MockGatewayer) GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error) {
 	ret := _m.Called(wltID)
 
 	var r0 []visor.UnconfirmedTransaction

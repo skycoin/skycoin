@@ -601,7 +601,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 				Transactions: vb,
 			})
 		} else {
-			txns, err := gateway.GetWalletUnconfirmedTxns(wltID)
+			txns, err := gateway.GetWalletUnconfirmedTransactions(wltID)
 			if err != nil {
 				logger.Errorf("get wallet unconfirmed transactions failed: %v", err)
 				handleWalletError(err)

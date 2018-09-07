@@ -193,7 +193,7 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
-			res, err := gw.GetWalletUnconfirmedTxns(tc.walletID)
+			res, err := gw.GetWalletUnconfirmedTransactions(tc.walletID)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return

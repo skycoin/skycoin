@@ -231,7 +231,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 
 	// Save the wallet first
 	if err := w.Save(serv.walletDirectory); err != nil {
-		return []cipher.Address{}, err
+		return nil, err
 	}
 
 	serv.wallets.set(w)
@@ -305,21 +305,6 @@ func (serv *Service) ReloadWallets() error {
 	serv.firstAddrIDMap = make(map[string]string)
 	serv.wallets = serv.removeDup(wallets)
 	return nil
-}
-
-// ViewWallet will unlock a wallet for viewing if necessary, and call f
-func (serv *Service) ViewWallet(w *Wallet, password []byte, f func(w *Wallet) error) error {
-	// NOTE: Does not need to use the mutex, because we are not accessing the wallets storage
-
-	if w.IsEncrypted() {
-		return w.GuardView(password, f)
-	}
-
-	if len(password) != 0 {
-		return ErrWalletNotEncrypted
-	}
-
-	return f(w)
 }
 
 // CreateAndSignTransaction creates and signs a transaction from wallet.
@@ -512,10 +497,102 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error
 	return seed, nil
 }
 
-// Update opens a wallet for modification and saves it safely
-func (serv *Service) Update(wltID string, password []byte, f func(*Wallet) error) error {
+// UpdateSecrets opens a wallet for modification of secret data and saves it safely
+func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(*Wallet) error) error {
 	serv.Lock()
 	defer serv.Unlock()
+	if !serv.enableWalletAPI {
+		return ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return err
+	}
+
+	if w.IsEncrypted() {
+		if err := w.GuardUpdate(password, f); err != nil {
+			return err
+		}
+	} else if len(password) == 0 {
+		return ErrWalletNotEncrypted
+	} else {
+		if err := f(w); err != nil {
+			return err
+		}
+	}
+
+	// Save the wallet first
+	if err := w.Save(serv.walletDirectory); err != nil {
+		return err
+	}
+
+	serv.wallets.set(w)
 
 	return nil
+}
+
+// Update opens a wallet for modification of non-secret data and saves it safely
+func (serv *Service) Update(wltID string, f func(*Wallet) error) error {
+	serv.Lock()
+	defer serv.Unlock()
+	if !serv.enableWalletAPI {
+		return ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return err
+	}
+
+	if err := f(w); err != nil {
+		return err
+	}
+
+	// Save the wallet first
+	if err := w.Save(serv.walletDirectory); err != nil {
+		return err
+	}
+
+	serv.wallets.set(w)
+
+	return nil
+}
+
+// ViewSecrets opens a wallet for reading secret data
+func (serv *Service) ViewSecrets(wltID string, password []byte, f func(*Wallet) error) error {
+	serv.RLock()
+	defer serv.RUnlock()
+	if !serv.enableWalletAPI {
+		return ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return err
+	}
+
+	if w.IsEncrypted() {
+		return w.GuardView(password, f)
+	} else if len(password) == 0 {
+		return ErrWalletNotEncrypted
+	} else {
+		return f(w)
+	}
+}
+
+// View opens a wallet for reading non-secret data
+func (serv *Service) View(wltID string, f func(*Wallet) error) error {
+	serv.RLock()
+	defer serv.RUnlock()
+	if !serv.enableWalletAPI {
+		return ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return err
+	}
+
+	return f(w)
 }

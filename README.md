@@ -435,10 +435,10 @@ different version of the `cipher` dependencies than were developed, which could 
 
 Dependencies are managed with [dep](https://github.com/golang/dep).
 
-To install `dep`:
+To [install `dep` for development](https://github.com/golang/dep/blob/master/docs/installation.md#development):
 
 ```sh
-go get -u github.com/golang/dep
+go get -u github.com/golang/dep/cmd/dep
 ```
 
 `dep` vendors all dependencies into the repo.

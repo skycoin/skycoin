@@ -279,6 +279,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	forAPISet := func(hf http.HandlerFunc, APINames ...string) http.HandlerFunc {
+		if len(APINames) == 0 {
+			return hf
+		}
 		return func(w http.ResponseWriter, r *http.Request) {
 			if !c.isAPISetEnabled(APINames...) {
 				funcName := runtime.FuncForPC(reflect.ValueOf(hf).Pointer()).Name()

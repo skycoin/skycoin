@@ -60,17 +60,17 @@ func TestGetOutputsHandler(t *testing.T) {
 			},
 		},
 		{
-			name:   "500 - getUnspentOutputsError",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - get unspent outputs failed: getUnspentOutputsError",
+			name:                      "500 - getUnspentOutputsError",
+			method:                    http.MethodGet,
+			status:                    http.StatusInternalServerError,
+			err:                       "500 Internal Server Error - get unspent outputs failed: getUnspentOutputsError",
 			getUnspentOutputsResponse: nil,
 			getUnspentOutputsError:    errors.New("getUnspentOutputsError"),
 		},
 		{
-			name:   "200 - OK",
-			method: http.MethodGet,
-			status: http.StatusOK,
+			name:                      "200 - OK",
+			method:                    http.MethodGet,
+			status:                    http.StatusOK,
 			getUnspentOutputsResponse: &visor.ReadableOutputSet{},
 			httpResponse:              &visor.ReadableOutputSet{},
 		},
@@ -81,7 +81,6 @@ func TestGetOutputsHandler(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
-			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

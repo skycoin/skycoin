@@ -117,7 +117,6 @@ func TestGetUxOutByID(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/uxout"
 			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
-			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -235,7 +234,6 @@ func TestGetAddrUxOuts(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
 			gateway := &MockGatewayer{}
 			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
-			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

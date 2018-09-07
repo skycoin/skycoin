@@ -269,7 +269,6 @@ func TestCSRF(t *testing.T) {
 	updateWalletLabel := func(csrfToken string) *httptest.ResponseRecorder {
 		gateway := &MockGatewayer{}
 		gateway.On("UpdateWalletLabel", "fooid", "foolabel").Return(nil)
-		gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 		endpoint := "/api/v1/wallet/update"
 
@@ -305,7 +304,7 @@ func TestCSRF(t *testing.T) {
 
 	// Make a request to /csrf to get a token
 	gateway := &MockGatewayer{}
-	handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+	handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 	// non-GET request to /csrf is invalid
 	req, err := http.NewRequest(http.MethodPost, "/api/v1/csrf", nil)

@@ -160,7 +160,6 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			endpoint := "/api/v1/explorer/address"
 			gateway := &MockGatewayer{}
 			gateway.On("GetVerboseTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
-			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.addressParam != "" {
@@ -291,8 +290,6 @@ func TestCoinSupply(t *testing.T) {
 			endpoint := "/api/v1/coinSupply"
 			gateway := &MockGatewayer{}
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
-			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
-			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -306,7 +303,7 @@ func TestCoinSupply(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIStatus, APIDefault), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -505,7 +502,6 @@ func TestGetRichlist(t *testing.T) {
 			endpoint := "/api/v1/richlist"
 			gateway := &MockGatewayer{}
 			gateway.On("GetRichlist", tc.includeDistribution).Return(tc.gatewayGetRichlistResult, tc.gatewayGetRichlistErr)
-			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpParams != nil {
@@ -532,7 +528,7 @@ func TestGetRichlist(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIStatus, APIDefault), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -594,7 +590,6 @@ func TestGetAddressCount(t *testing.T) {
 			endpoint := "/api/v1/addresscount"
 			gateway := &MockGatewayer{}
 			gateway.On("GetAddressCount").Return(tc.gatewayGetAddressCountResult, tc.gatewayGetAddressCountErr)
-			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -608,7 +603,7 @@ func TestGetAddressCount(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIStatus, APIDefault), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

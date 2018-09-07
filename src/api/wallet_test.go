@@ -142,7 +142,6 @@ func TestGetBalanceHandler(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
-			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -159,7 +158,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -569,7 +568,6 @@ func TestWalletSpendHandler(t *testing.T) {
 
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
 				tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/spend"
 
@@ -603,7 +601,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -704,7 +702,6 @@ func TestWalletGet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			v := url.Values{}
 
@@ -729,7 +726,7 @@ func TestWalletGet(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -845,7 +842,6 @@ func TestWalletBalanceHandler(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
 				tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/balance"
 
@@ -868,7 +864,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -991,7 +987,6 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("UpdateWalletLabel", tc.walletID, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/update"
 
@@ -1015,7 +1010,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1200,7 +1195,6 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		gateway := &MockGatewayer{}
 		gateway.On("GetWalletUnconfirmedTxns", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
 		gateway.On("GetWalletUnconfirmedTxnsVerbose", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsVerboseResult, tc.gatewayGetWalletUnconfirmedTxnsVerboseErr)
-		gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 		endpoint := "/api/v1/wallet/transactions"
 
@@ -1222,7 +1216,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+		handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
 
@@ -1496,7 +1490,6 @@ func TestWalletCreateHandler(t *testing.T) {
 				tc.options.ScanN = 1
 			}
 			gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/create"
 
@@ -1535,7 +1528,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1788,7 +1781,6 @@ func TestGetWalletSeed(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetWalletSeed", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturnArgs...)
-			gateway.On("IsAPISetEnabled", "WALLET_SEED", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/seed"
 
@@ -1808,7 +1800,7 @@ func TestGetWalletSeed(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APISeed), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -2002,7 +1994,6 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("NewAddresses", tc.walletID, []byte(tc.password), tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/newAddress"
 
@@ -2030,7 +2021,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -2090,7 +2081,6 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	for _, tc := range tt {
 		gateway := &MockGatewayer{}
 		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
-		gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 		endpoint := "/api/v1/wallets/folderName"
 
@@ -2103,7 +2093,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+		handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
 
@@ -2315,7 +2305,6 @@ func TestGetWallets(t *testing.T) {
 	for _, tc := range cases {
 		gateway := &MockGatewayer{}
 		gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
-		gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 		endpoint := "/api/v1/wallets"
 
@@ -2328,7 +2317,7 @@ func TestGetWallets(t *testing.T) {
 		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+		handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
 
@@ -2399,7 +2388,6 @@ func TestWalletUnloadHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("UnloadWallet", tc.walletID).Return(tc.unloadWalletErr)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/unload"
 			v := url.Values{}
@@ -2419,7 +2407,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -2552,7 +2540,6 @@ func TestEncryptWallet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("EncryptWallet", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/encrypt"
 			v := url.Values{}
@@ -2569,7 +2556,7 @@ func TestEncryptWallet(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -2739,7 +2726,6 @@ func TestDecryptWallet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("DecryptWallet", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
-			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/decrypt"
 			v := url.Values{}
@@ -2756,7 +2742,7 @@ func TestDecryptWallet(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 

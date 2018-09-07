@@ -36,6 +36,8 @@ const (
 	defaultWriteTimeout = time.Second * 60
 	defaultIdleTimeout  = time.Second * 120
 
+	// AllAPISets wildcard value to match all API methods
+	AllAPISets = "ALL"
 	// APIDefault endpoints available when nodes executed with no CLI args
 	APIDefault = "READ_ONLY"
 	// APIStatus endpoints offer (meta,runtime)data to dashboard and monitoring clients
@@ -74,6 +76,14 @@ type muxConfig struct {
 	enableJSON20RPC      bool
 	enableUnversionedAPI bool
 	disableCSP           bool
+	enabledAPISets       collections.StringSet
+}
+
+func (c muxConfig) isAPISetEnabled(APINames ...string) bool {
+	if len(APINames) == 0 {
+		return true
+	}
+	return c.enabledAPISets.ContainsAny(AllAPISets, APINames...)
 }
 
 // HTTPResponse represents the http response struct
@@ -148,6 +158,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		enableJSON20RPC:      c.EnableJSON20RPC,
 		enableUnversionedAPI: c.EnableUnversionedAPI,
 		disableCSP:           c.DisableCSP,
+		enabledAPISets:       c.EnabledAPISets,
 	}
 
 	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
@@ -267,11 +278,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		return handler
 	}
 
-	forAPISet := func(hf http.HandlerFunc, mainAPIName string, otherAPINames ...string) http.HandlerFunc {
+	forAPISet := func(hf http.HandlerFunc, APINames ...string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			if !gateway.IsAPISetEnabled(mainAPIName, otherAPINames...) {
+			if !c.isAPISetEnabled(APINames...) {
 				funcName := runtime.FuncForPC(reflect.ValueOf(hf).Pointer()).Name()
-				logger.Infof("Handler %s not executed because API set %v not enabled", funcName, otherAPINames)
+				logger.Infof("Handler %s not executed because API set %v not enabled", funcName, APINames)
 				wh.Error403(w, "")
 			} else {
 				hf(w, r)

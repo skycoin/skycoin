@@ -729,11 +729,6 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if !gateway.IsWalletAPIEnabled() {
-			wh.Error403(w, "")
-			return
-		}
-
 		entropyValue := r.FormValue("entropy")
 		if entropyValue == "" {
 			entropyValue = "128"

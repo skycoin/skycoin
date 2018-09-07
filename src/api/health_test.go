@@ -98,9 +98,6 @@ func TestHealthCheckHandler(t *testing.T) {
 			}
 
 			gateway := &MockGatewayer{}
-			gateway.On("IsWalletAPIEnabled").Return(tc.walletAPIEnabled)
-			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
-			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			if tc.getHealthErr != nil {
 				gateway.On("GetHealth").Return(nil, tc.getHealthErr)

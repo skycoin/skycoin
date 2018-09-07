@@ -11,7 +11,7 @@ func NewStringSet(strings ...string) StringSet {
 		strMap: make(map[string]struct{}, len(strings)),
 	}
 	for _, s := range strings {
-		_ = set.Set(s)
+		_ = set.Set(s) // nolint errcheck
 	}
 	return set
 }

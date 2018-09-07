@@ -306,14 +306,14 @@ func (c *Config) postProcess() {
 
 	// Enable defaults if --enable-api not specified
 	if c.Node.WebInterfaceAPISets.IsEmpty() {
-		_ = c.Node.WebInterfaceAPISets.Set("READ_ONLY")
+		_ = c.Node.WebInterfaceAPISets.Set("READ_ONLY") // nolint errcheck
 	}
 	// FIXME: Use API set constants
 	if c.Node.EnableWalletAPI {
-		_ = c.Node.WebInterfaceAPISets.Set("WALLET")
+		_ = c.Node.WebInterfaceAPISets.Set("WALLET") // nolint errcheck
 	}
 	if c.Node.EnableSeedAPI {
-		_ = c.Node.WebInterfaceAPISets.Set("WALLET_SEED")
+		_ = c.Node.WebInterfaceAPISets.Set("WALLET_SEED") // nolint errcheck
 	}
 	// Ensure bool condition is consistent with enabled API sets
 	c.Node.EnableWalletAPI = c.Node.EnableWalletAPI || c.Node.WebInterfaceAPISets.Contains("WALLET")

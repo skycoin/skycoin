@@ -172,6 +172,7 @@ RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     go get -u golang.org/x/tools/cmd/gorename && \
     go get -u github.com/klauspost/asmfmt/cmd/asmfmt && \
     go get -u github.com/vektra/mockery/.../ && \
+    go get -u github.com/wadey/gocovmerge && \
     curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
 

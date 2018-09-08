@@ -1,4 +1,9 @@
+/* Handle not as pointer is input. */
+%typemap(in) Handle {
+	SWIG_AsVal_long($input, (long*)&$1);
+} 
 %inline %{
+	typedef GoInt64_ Handle;
 /**
  * Memory handle for internal object retrieving password to read
  * encrypted wallets.
@@ -161,10 +166,7 @@ typedef Handle Signature_Handle;
 	$1 = &temp;
 }
 
-/* Handle not as pointer is input. */
-%typemap(in) Handle {
-	SWIG_AsVal_long($input, (long*)&$1);
-} 
+
 
 %apply Handle { Wallet__Handle, Options__Handle, ReadableEntry__Handle, ReadableWallet__Handle, WebRpcClient__Handle,
 	WalletResponse__Handle, Client__Handle, Strings__Handle, Wallets__Handle, Config__Handle, App__Handle, Context__Handle,

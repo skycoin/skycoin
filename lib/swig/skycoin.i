@@ -20,10 +20,10 @@
 #if defined(SWIGCSHARP)
 %include "csharp_java_basic.i"
 %include "csharp_java_typemap.i"
-%include "csharp_java_skyerror.i"
 #endif
 
 
 /* Find the modified copy of libskycoin */
 %include "libskycoin.h"
 %include "structs.i"
+%include "skyerrors.h"

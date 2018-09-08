@@ -330,7 +330,7 @@ func TestGateway_ReloadWallets(t *testing.T) {
 			// Assume all API sets enabled by default
 			enabledAPISets := collections.NewStringSet("READ_ONLY")
 			if tc.enableWalletAPI {
-				_ = enabledAPISets.Set("WALLET")
+				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
 			gw := &Gateway{
 				Config: GatewayConfig{
@@ -368,7 +368,7 @@ func TestGateway_Spend(t *testing.T) {
 			// Assume all API sets enabled by default
 			enabledAPISets := collections.NewStringSet("READ_ONLY")
 			if tc.enableWalletAPI {
-				_ = enabledAPISets.Set("WALLET")
+				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
 			gw := &Gateway{
 				Config: GatewayConfig{
@@ -406,7 +406,7 @@ func TestGateway_CreateWallet(t *testing.T) {
 			// Assume all API sets enabled by default
 			enabledAPISets := collections.NewStringSet("READ_ONLY")
 			if tc.enableWalletAPI {
-				_ = enabledAPISets.Set("WALLET")
+				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
 			gw := &Gateway{
 				Config: GatewayConfig{
@@ -444,7 +444,7 @@ func TestGateway_GetWalletBalance(t *testing.T) {
 			// Assume all API sets enabled by default
 			enabledAPISets := collections.NewStringSet("READ_ONLY")
 			if tc.enableWalletAPI {
-				_ = enabledAPISets.Set("WALLET")
+				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
 			gw := &Gateway{
 				Config: GatewayConfig{
@@ -483,7 +483,7 @@ func TestGateway_CreateTransaction(t *testing.T) {
 			// Assume all API sets enabled by default
 			enabledAPISets := collections.NewStringSet("READ_ONLY")
 			if tc.enableWalletAPI {
-				_ = enabledAPISets.Set("WALLET")
+				_ = enabledAPISets.Set("WALLET") // nolint errchec // nolint errcheckk
 			}
 			gw := &Gateway{
 				Config: GatewayConfig{

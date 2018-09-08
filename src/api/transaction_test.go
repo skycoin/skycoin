@@ -766,6 +766,7 @@ func TestGetRawTx(t *testing.T) {
 			endpoint := "/api/v1/rawtx"
 			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
+
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {

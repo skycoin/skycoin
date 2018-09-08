@@ -62,7 +62,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			UnversionedAPIEnabled: c.enableUnversionedAPI,
 			GUIEnabled:            c.enableGUI,
 			JSON20RPCEnabled:      c.enableJSON20RPC,
-			WalletAPIEnabled:      gateway.IsWalletAPIEnabled(),
+			WalletAPIEnabled:      c.isAPISetEnabled(APIWallet),
 		})
 	}
 }

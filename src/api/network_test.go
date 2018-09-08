@@ -137,7 +137,7 @@ func TestConnection(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(APIDefault, APIStatus), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -272,7 +272,7 @@ func TestConnections(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(APIDefault, APIStatus), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -320,11 +320,12 @@ func TestDefaultConnections(t *testing.T) {
 			endpoint := "/api/v1/network/defaultConnections"
 			gateway := &MockGatewayer{}
 			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
+
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(APIDefault, APIStatus), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -372,11 +373,12 @@ func TestGetTrustConnections(t *testing.T) {
 			endpoint := "/api/v1/network/connections/trust"
 			gateway := &MockGatewayer{}
 			gateway.On("GetTrustConnections").Return(tc.gatewayGetTrustConnectionsResult)
+
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(APIDefault, APIStatus), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -424,11 +426,12 @@ func TestGetExchgConnection(t *testing.T) {
 			endpoint := "/api/v1/network/connections/exchange"
 			gateway := &MockGatewayer{}
 			gateway.On("GetExchgConnection").Return(tc.gatewayGetExchgConnectionResult)
+
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(APIDefault, APIStatus), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

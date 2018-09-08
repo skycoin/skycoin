@@ -339,8 +339,8 @@ func (_m *MockGatewayer) GetConnection(addr string) (*daemon.Connection, error) 
 	return r0, r1
 }
 
-// GetConnections provides a mock function with given fields:
-func (_m *MockGatewayer) GetConnections() ([]daemon.Connection, error) {
+// GetOutgoingConnections provides a mock function with given fields:
+func (_m *MockGatewayer) GetOutgoingConnections() ([]daemon.Connection, error) {
 	ret := _m.Called()
 
 	var r0 []daemon.Connection

@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -8,24 +9,31 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
-
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/skycoin/skycoin/src/wallet"
+)
+
+var (
+	// ErrSpendMethodDisabled is returned by Spend() if called while GatewayConfig.EnableSpendMethod is false
+	ErrSpendMethodDisabled = errors.New("Spend is disabled")
 )
 
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
-	BufferSize      int
-	EnableWalletAPI bool
+	BufferSize        int
+	EnableWalletAPI   bool
+	EnableSpendMethod bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
 func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
-		BufferSize:      32,
-		EnableWalletAPI: false,
+		BufferSize:        32,
+		EnableWalletAPI:   false,
+		EnableSpendMethod: false,
 	}
 }
 
@@ -61,6 +69,12 @@ func (gw *Gateway) Shutdown() {
 }
 
 func (gw *Gateway) strand(name string, f func()) {
+	// The Spend() method requires strand to be safe
+	if !gw.Config.EnableSpendMethod {
+		f()
+		return
+	}
+
 	name = fmt.Sprintf("daemon.Gateway.%s", name)
 	if err := strand.Strand(logger, gw.requests, name, func() error {
 		f()
@@ -86,40 +100,32 @@ type Connection struct {
 	Height     uint64
 }
 
-// GetConnections returns a *Connections
-func (gw *Gateway) GetConnections() ([]Connection, error) {
+// GetOutgoingConnections returns solicited (outgoing) connections
+func (gw *Gateway) GetOutgoingConnections() ([]Connection, error) {
 	var conns []Connection
 	var err error
-	gw.strand("GetConnections", func() {
-		conns, err = gw.getConnections()
+	gw.strand("GetOutgoingConnections", func() {
+		conns, err = gw.getOutgoingConnections()
 	})
 	return conns, err
 }
 
-func (gw *Gateway) getConnections() ([]Connection, error) {
+func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 	if gw.d.pool.Pool == nil {
 		return nil, nil
 	}
 
-	n, err := gw.d.pool.Pool.Size()
-	if err != nil {
-		logger.Error(err)
-		return nil, err
-	}
-
-	conns := make([]Connection, 0, n)
 	cs, err := gw.d.pool.Pool.GetConnections()
 	if err != nil {
 		logger.Error(err)
 		return nil, err
 	}
 
+	conns := make([]Connection, 0, len(cs))
+
 	for _, c := range cs {
 		if c.Solicited {
-			conn, err := gw.getConnection(c.Addr())
-			if err != nil {
-				return nil, err
-			}
+			conn := gw.newConnection(&c)
 			if conn != nil {
 				conns = append(conns, *conn)
 			}
@@ -134,7 +140,7 @@ func (gw *Gateway) getConnections() ([]Connection, error) {
 	return conns, nil
 }
 
-// GetDefaultConnections returns default connections
+// GetDefaultConnections returns the default hardcoded connection addresses
 func (gw *Gateway) GetDefaultConnections() []string {
 	var conns []string
 	gw.strand("GetDefaultConnections", func() {
@@ -149,39 +155,35 @@ func (gw *Gateway) GetConnection(addr string) (*Connection, error) {
 	var conn *Connection
 	var err error
 	gw.strand("GetConnection", func() {
-		conn, err = gw.getConnection(addr)
+		if gw.d.pool.Pool == nil {
+			return
+		}
+
+		var c *gnet.Connection
+		c, err = gw.d.pool.Pool.GetConnection(addr)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+
+		conn = gw.newConnection(c)
 	})
 	return conn, err
 }
 
-func (gw *Gateway) getConnection(addr string) (*Connection, error) {
-	if gw.d.pool.Pool == nil {
-		return nil, nil
-	}
-
-	c, err := gw.d.pool.Pool.GetConnection(addr)
-	if err != nil {
-		logger.Error(err)
-		return nil, err
-	}
-
+func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
 	if c == nil {
-		return nil, nil
+		return nil
 	}
+
+	addr := c.Addr()
 
 	mirror, exist := gw.d.connectionMirrors.Get(addr)
 	if !exist {
-		return nil, nil
+		return nil
 	}
 
-	heights := gw.d.Heights.All()
-	var height uint64
-	for _, h := range heights {
-		if h.Address == addr {
-			height = h.Height
-			break
-		}
-	}
+	height, _ := gw.d.Heights.Get(addr)
 
 	return &Connection{
 		ID:           c.ID,
@@ -193,11 +195,10 @@ func (gw *Gateway) getConnection(addr string) (*Connection, error) {
 		Mirror:       mirror,
 		ListenPort:   gw.d.GetListenPort(addr),
 		Height:       height,
-	}, nil
+	}
 }
 
-// GetTrustConnections returns all trusted connections,
-// including private and public
+// GetTrustConnections returns all trusted connections
 func (gw *Gateway) GetTrustConnections() []string {
 	var conn []string
 	gw.strand("GetTrustConnections", func() {
@@ -206,8 +207,7 @@ func (gw *Gateway) GetTrustConnections() []string {
 	return conn
 }
 
-// GetExchgConnection returns all exchangeable connections,
-// including private and public
+// GetExchgConnection returns all connections to peers found through peer exchange
 func (gw *Gateway) GetExchgConnection() []string {
 	var conn []string
 	gw.strand("GetExchgConnection", func() {
@@ -514,6 +514,11 @@ func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.U
 // return transaction or error.
 func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	logger.Warning("Calling deprecated method Gateway.Spend")
+
+	if !gw.Config.EnableSpendMethod {
+		return nil, ErrSpendMethodDisabled
+	}
+
 	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
@@ -607,11 +612,16 @@ func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet,
 
 // GetWalletBalance returns balance pairs of specific wallet
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error) {
-	var addressBalances wallet.AddressBalances
 	var walletBalance wallet.BalancePair
+	var addressBalances wallet.AddressBalances
+
+	if !gw.Config.EnableWalletAPI {
+		return walletBalance, addressBalances, wallet.ErrWalletAPIDisabled
+	}
+
 	var err error
 	gw.strand("GetWalletBalance", func() {
-		walletBalance, addressBalances, err = vs.GetWalletBalance(wltID)
+		walletBalance, addressBalances, err = gw.v.GetWalletBalance(wltID)
 	})
 	return walletBalance, addressBalances, err
 }
@@ -844,7 +854,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			return
 		}
 
-		conns, err := gw.getConnections()
+		conns, err := gw.getOutgoingConnections()
 		if err != nil {
 			return
 		}

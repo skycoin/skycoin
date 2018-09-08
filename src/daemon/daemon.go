@@ -1095,7 +1095,7 @@ func (dm *Daemon) RequestBlocks() error {
 		return nil
 	}
 
-	headSeq, ok, err := dm.visor.HeadBkSeq()
+	headSeq, ok, err := dm.HeadBkSeq()
 	if err != nil {
 		return err
 	}
@@ -1119,7 +1119,7 @@ func (dm *Daemon) AnnounceBlocks() error {
 		return nil
 	}
 
-	headSeq, ok, err := dm.visor.HeadBkSeq()
+	headSeq, ok, err := dm.HeadBkSeq()
 	if err != nil {
 		return err
 	}

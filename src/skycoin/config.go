@@ -42,6 +42,8 @@ type NodeConfig struct {
 	DisableNetworking bool
 	// Enable wallet API
 	EnableWalletAPI bool
+	// Enable the deprecated /api/v1/wallet/spend endpoint
+	EnableSpendEndpoint bool
 	// Enable GUI
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
@@ -177,6 +179,8 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnableUnversionedAPI: false,
 		// Enable seed API
 		EnableSeedAPI: false,
+		// Enable the deprecated /api/v1/wallet/spend endpoint
+		EnableSpendEndpoint: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
 		// DisableCSP disable content-security-policy in http response
@@ -344,6 +348,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
+	flag.BoolVar(&c.EnableSpendEndpoint, "enable-spend-endpoint", c.EnableSpendEndpoint, "enable the deprecated /api/v1/wallet/spend endpoint")
 
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")

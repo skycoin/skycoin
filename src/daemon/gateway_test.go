@@ -234,18 +234,27 @@ func TestGateway_ReloadWallets(t *testing.T) {
 
 func TestGateway_Spend(t *testing.T) {
 	tests := []struct {
-		name            string
-		enableWalletAPI bool
-		walletID        string
-		coins           uint64
-		dest            cipher.Address
-		result          *coin.Transaction
-		err             error
+		name              string
+		enableWalletAPI   bool
+		enableSpendMethod bool
+		walletID          string
+		coins             uint64
+		dest              cipher.Address
+		result            *coin.Transaction
+		err               error
 	}{
 		{
-			name:            "wallet api disabled",
-			enableWalletAPI: false,
-			err:             wallet.ErrWalletAPIDisabled,
+			name:              "wallet api disabled",
+			enableWalletAPI:   false,
+			enableSpendMethod: true,
+			err:               wallet.ErrWalletAPIDisabled,
+		},
+
+		{
+			name:              "spend method disabled",
+			enableWalletAPI:   true,
+			enableSpendMethod: false,
+			err:               ErrSpendMethodDisabled,
 		},
 	}
 
@@ -253,7 +262,8 @@ func TestGateway_Spend(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnableWalletAPI:   tc.enableWalletAPI,
+					EnableSpendMethod: tc.enableSpendMethod,
 				},
 			}
 			res, err := gw.Spend(tc.walletID, nil, tc.coins, tc.dest)

@@ -739,6 +739,8 @@ func (gtm *GiveTxnsMessage) Process(d Daemoner) {
 	// Update unconfirmed pool with these transactions
 	for _, txn := range gtm.Transactions {
 		// Only announce transactions that are new to us, so that peers can't spam relays
+		// It is not necessary to inject all of the transactions inside a database transaction,
+		// since each is independent
 		known, softErr, err := d.InjectTransaction(txn)
 		if err != nil {
 			logger.Warningf("Failed to record transaction %s: %v", txn.Hash().Hex(), err)

@@ -10,9 +10,10 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/fee"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -257,7 +258,8 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		case wallet.ErrInvalidPassword:
 			wh.Error401(w, HTTP401AuthHeader, err.Error())
 			return
-		case wallet.ErrWalletAPIDisabled:
+		case wallet.ErrWalletAPIDisabled,
+			daemon.ErrSpendMethodDisabled:
 			wh.Error403(w, "")
 			return
 		case wallet.ErrWalletNotExist:

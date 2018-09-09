@@ -355,6 +355,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		ReadTimeout:          c.config.Node.ReadTimeout,
 		WriteTimeout:         c.config.Node.WriteTimeout,
 		IdleTimeout:          c.config.Node.IdleTimeout,
+		EnabledAPISets:       c.config.Node.WebInterfaceAPISets,
 	}
 
 	if c.config.Node.WebInterfaceHTTPS {

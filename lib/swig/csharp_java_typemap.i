@@ -213,10 +213,12 @@ typedef Handle Signature_Handle;
 %typemap(freearg) (GoUint8_ * [33]) {
 	//Typemap freearg *cipher_PubKey
 }
-
-%typemap(in,in="(GoUint8_ (*) [33])") (GoUint8_ (*) [33]) "$1 = (cipher_PubKey*)$arg;"
-%typemap(in,args="(GoUint8_ (*) [33])$1") (GoUint8_ (*) [33]) "$1 = (cipher_PubKey*)$arg;"
-%typemap(cstype, in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "SWIGTYPE_p_cipher_PubKey"
-%typemap(ctype, in="(GoUint8_ (*) [33])") (GoUint8_ (*) [33]) "cipher_PubKey*"
-%typemap(csvarin  , in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "SWIGTYPE_p_cipher_PubKey"
-%typemap(imtype, in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "SWIGTYPE_p_cipher_PubKey"
+/**
+*%typemap(ctype, in="(GoUint8_ (*) [33])") (GoUint8_ (*) [33]) "cipher_PubKey*"
+*%typemap(in,in="(GoUint8_ (*) [33])") (GoUint8_ (*) [33]) "$1 = (cipher_PubKey*)$arg;"
+*%typemap(in,args="(GoUint8_ (*) [33])$1") (GoUint8_ (*) [33]) "$1 = (cipher_PubKey*)$arg;"
+*%typemap(cstype, in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "cipher_PubKey"
+*
+*%typemap(csvarin  , in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "cipher_PubKey"
+*%typemap(imtype, in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "cipher_PubKey"
+**/

@@ -514,7 +514,7 @@ func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(*Wallet
 		if err := w.GuardUpdate(password, f); err != nil {
 			return err
 		}
-	} else if len(password) == 0 {
+	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
 	} else {
 		if err := f(w); err != nil {
@@ -574,7 +574,7 @@ func (serv *Service) ViewSecrets(wltID string, password []byte, f func(*Wallet) 
 
 	if w.IsEncrypted() {
 		return w.GuardView(password, f)
-	} else if len(password) == 0 {
+	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
 	} else {
 		return f(w)

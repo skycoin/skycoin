@@ -193,7 +193,8 @@ type ConnectionPool struct {
 	// Connection ID counter
 	connID int
 	// Listening connection
-	listener net.Listener
+	listener     net.Listener
+	listenerLock sync.Mutex
 	// operations channel
 	reqC chan strand.Request
 	// quit channel
@@ -249,7 +250,9 @@ func (pool *ConnectionPool) Run() error {
 		return err
 	}
 
+	pool.listenerLock.Lock()
 	pool.listener = ln
+	pool.listenerLock.Unlock()
 
 loop:
 	for {
@@ -314,13 +317,14 @@ func (pool *ConnectionPool) Shutdown() {
 	logger.Info("ConnectionPool.Shutdown closing the listener")
 
 	// Close to listener to prevent new connections
+	pool.listenerLock.Lock()
 	if pool.listener != nil {
 		if err := pool.listener.Close(); err != nil {
 			logger.WithError(err).Warning("pool.listener.Close error")
 		}
 	}
-
 	pool.listener = nil
+	pool.listenerLock.Unlock()
 
 	logger.Info("ConnectionPool.Shutdown disconnecting all connections")
 

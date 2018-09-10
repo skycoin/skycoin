@@ -20,10 +20,10 @@
             <span>{{ 'tx.status' | translate }}:</span> <span>{{ (transaction.confirmed ? 'tx.confirmed' : 'tx.pending') | translate }}</span>
           </div>
         </ng-container>
-        <div class="-data" *ngIf="isPreview">
+        <div class="-data">
           <span>{{ 'tx.hours' | translate }}:</span>
           <span>
-            {{ transaction.hoursSent | number:'1.0-6' }} {{ 'tx.hours-sent' | translate }}
+            {{ transaction.hoursSent | number:'1.0-6' }} {{ !isPreview && transaction.balance > 0 ? ('tx.hours-received' | translate) : ('tx.hours-sent' | translate) }}
             |
             {{ transaction.hoursBurned | number:'1.0-6' }} {{ 'tx.hours-burned' | translate }}
           </span>
@@ -60,7 +60,7 @@
           <div class="-data">
             <span>{{ 'tx.coins' | translate }}:</span> {{ input.coins | number:'1.0-6' }}
           </div>
-          <div class="-data" *ngIf="isPreview">
+          <div class="-data">
             <span>{{ 'tx.hours' | translate }}:</span> {{ input.calculated_hours | number:'1.0-6' }}
           </div>
         </div>
@@ -76,7 +76,7 @@
           <div class="-data">
             <span>{{ 'tx.coins' | translate }}:</span> {{ output.coins | number:'1.0-6' }}
           </div>
-          <div class="-data" *ngIf="isPreview">
+          <div class="-data">
             <span>{{ 'tx.hours' | translate }}:</span> {{ output.hours | number:'1.0-6' }}
           </div>
         </div>

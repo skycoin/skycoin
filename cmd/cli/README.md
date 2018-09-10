@@ -703,30 +703,30 @@ skycoin-cli decodeRawTransaction dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28f
 
 ```json
 {
-  "hash": "ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5",
-  "inner_hash": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-  "sigs": [
-    "cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f00"
-  ],
-  "in": [
-    "05e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634"
-  ],
-  "out": [
-    {
-      "hash": "2cb770d7c045954e9195b312e5409d0070c15361da7148879fb8658b766fae90",
-      "src_tx": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-      "address": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
-      "coins": "1.000000",
-      "hours": 1
-    },
-    {
-      "hash": "0de690eeec960274539c2ad35b57d7c0492a268a5f17ab54e5e24f3d6e14bc72",
-      "src_tx": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-      "address": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
-      "coins": "16.000000",
-      "hours": 1432
-    }
-  ]
+    "length": 220,
+    "type": 0,
+    "txid": "ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5",
+    "inner_hash": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
+    "sigs": [
+        "cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f00"
+    ],
+    "inputs": [
+        "05e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634"
+    ],
+    "outputs": [
+        {
+            "uxid": "2f146924431e8c9b84a53d4d823acefb92515a264956d873ac86066c608af418",
+            "dst": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+            "coins": "1.000000",
+            "hours": 1
+        },
+        {
+            "uxid": "5d69d22aff5957a18194c443557d97ec18707e4db8ee7e9a4bb8a7eef642fdff",
+            "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+            "coins": "16.000000",
+            "hours": 1432
+        }
+    ]
 }
 ```
 </details>

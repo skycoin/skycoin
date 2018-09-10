@@ -183,7 +183,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 		return nil, err
 	}
 	if t.Hash() != hash {
-		return nil, errors.New("ReadableTransaction.Hash does not match parsed transaction hash")
+		return nil, errors.New("readable.Transaction.Hash does not match parsed transaction hash")
 	}
 
 	return &t, nil

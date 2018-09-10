@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 var testPeers = []string{
@@ -341,36 +340,36 @@ func TestPeerlistClearOld(t *testing.T) {
 		{
 			"no old peers",
 			[]Peer{
-				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
 			},
 			110 * time.Second,
 			map[string]Peer{
-				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
 			},
 		},
 		{
 			"clear one old peer",
 			[]Peer{
-				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
-				{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
+				{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
+				{Addr: testPeers[1], LastSeen: time.Now().UTC().Unix() - 110},
+				{Addr: testPeers[2], LastSeen: time.Now().UTC().Unix() - 120},
 			},
 			111 * time.Second,
 			map[string]Peer{
-				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				testPeers[1]: {Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
+				testPeers[1]: {Addr: testPeers[1], LastSeen: time.Now().UTC().Unix() - 110},
 			},
 		},
 		{
 			"clear two old peers",
 			[]Peer{
-				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
-				{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
+				{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
+				{Addr: testPeers[1], LastSeen: time.Now().UTC().Unix() - 110},
+				{Addr: testPeers[2], LastSeen: time.Now().UTC().Unix() - 120},
 			},
 			101 * time.Second,
 			map[string]Peer{
-				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
 			},
 		},
 	}
@@ -447,7 +446,7 @@ func TestPeerCanTry(t *testing.T) {
 		CanTry     bool
 	}{
 		{
-			utc.Now().Add(time.Duration(100) * time.Second * -1).Unix(),
+			time.Now().UTC().Add(time.Duration(100) * time.Second * -1).Unix(),
 			1,
 			true,
 		},

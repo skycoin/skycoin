@@ -9,9 +9,9 @@ import (
 
 // RichlistBalance holds info an address balance holder
 type RichlistBalance struct {
-	Address string `json:"address"`
-	Coins   string `json:"coins"`
-	Locked  bool   `json:"locked"`
+	Address string
+	Coins   string
+	Locked  bool
 	coins   uint64
 }
 

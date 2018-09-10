@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 func TestGetBalanceOfAddresses(t *testing.T) {
@@ -24,15 +24,15 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 
 	cases := []struct {
 		name   string
-		outs   visor.ReadableOutputSet
+		outs   readable.UnspentOutputsSummary
 		addrs  []string
 		result *BalanceResult
 		err    error
 	}{
 		{
 			name: "confirmed == spendable == expected",
-			outs: visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
+			outs: readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:            hashes[0],
 						Address:         addrs[0],
@@ -67,7 +67,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 					Coins: "123.111111",
 					Hours: "123123",
 				},
-				Addresses: []AddressBalance{
+				Addresses: []AddressBalances{
 					{
 						Confirmed: Balance{
 							Coins: "100.000000",
@@ -119,8 +119,8 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 
 		{
 			name: "confirmed != spendable != expected",
-			outs: visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
+			outs: readable.UnspentOutputsSummary{
+				HeadOutputs: readable.UnspentOutputs{
 					{
 						Hash:            hashes[0],
 						Address:         addrs[0],
@@ -152,7 +152,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 						CalculatedHours: 100,
 					},
 				},
-				OutgoingOutputs: visor.ReadableOutputs{
+				OutgoingOutputs: readable.UnspentOutputs{
 					{
 						Hash:            hashes[5],
 						Address:         addrs[0],
@@ -166,7 +166,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 						CalculatedHours: 100,
 					},
 				},
-				IncomingOutputs: visor.ReadableOutputs{
+				IncomingOutputs: readable.UnspentOutputs{
 					{
 						Hash:            hashes[3],
 						Address:         addrs[1],
@@ -201,7 +201,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 					Coins: "137.111111",
 					Hours: "100789",
 				},
-				Addresses: []AddressBalance{
+				Addresses: []AddressBalances{
 					{
 						Confirmed: Balance{
 							Coins: "100.000000",

@@ -127,8 +127,10 @@ type NodeConfig struct {
 	ProfileCPU bool
 	// Where the file is written to
 	ProfileCPUFile string
-	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
+	// Enable HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 	HTTPProf bool
+	// Expose HTTP profiling on this interface
+	HTTPProfHost string
 
 	DBPath      string
 	DBReadOnly  bool
@@ -240,9 +242,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Enable cpu profiling
 		ProfileCPU: false,
 		// Where the file is written to
-		ProfileCPUFile: node.ProfileCPUFile,
+		ProfileCPUFile: "cpu.prof",
 		// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
-		HTTPProf: false,
+		HTTPProf:     false,
+		HTTPProfHost: "localhost:6060",
 	}
 
 	nodeConfig.applyConfigMode(mode)
@@ -361,7 +364,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
-	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "Run the http profiling interface")
+	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "run the HTTP profiling interface")
+	flag.StringVar(&c.HTTPProfHost, "http-prof-host", c.HTTPProfHost, "hostname to bind the HTTP profiling interface to")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, warn, error, fatal, panic")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
 	flag.BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)

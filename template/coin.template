@@ -62,7 +62,6 @@ var (
 		Port:                {{.Port}},
 		WebInterfacePort:    {{.WebInterfacePort}},
 		DataDirectory:       "{{.DataDirectory}}",
-		ProfileCPUFile:      "{{.ProfileCPUFile}}",
 	})
 
 	parseFlags = true

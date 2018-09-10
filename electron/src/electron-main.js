@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, Menu, BrowserWindow, dialog, shell, session } = require('electron');
+const { app, Menu, BrowserWindow, shell, session } = require('electron');
 
 const path = require('path');
 
@@ -88,7 +88,6 @@ function startSkycoin() {
   createWindow();
 
   skycoin.on('error', (e) => {
-    dialog.showErrorBox('Failed to start skycoin', e.toString());
     showError();
     app.quit();
   });

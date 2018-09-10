@@ -102,7 +102,10 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 	if obj == nil {
 		return nil
 	}
-	return json.NewDecoder(resp.Body).Decode(obj)
+
+	d := json.NewDecoder(resp.Body)
+	d.DisallowUnknownFields()
+	return d.Decode(obj)
 }
 
 // get makes a GET request to an endpoint. Caller must close response body.
@@ -277,8 +280,11 @@ func (c *Client) CSRF() (string, error) {
 		return "", NewClientError(resp.Status, resp.StatusCode, string(body))
 	}
 
+	d := json.NewDecoder(resp.Body)
+	d.DisallowUnknownFields()
+
 	var m map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&m); err != nil {
+	if err := d.Decode(&m); err != nil {
 		return "", err
 	}
 

@@ -425,6 +425,12 @@ Args:
 
 Returns all unconfirmed transactions for all addresses in a given wallet
 
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
+
+
 Example:
 
 ```sh
@@ -1296,6 +1302,11 @@ Args:
 	verbose [bool] include verbose transaction input data
 ```
 
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are calculated based upon the current system time, and provide an approximate
+coin hour value of the output if it were to be confirmed at that instant.
+
 Example:
 
 ```sh
@@ -1405,6 +1416,12 @@ Args:
     verbose: [bool] include verbose transaction input data
     encoded: [bool] return the transaction as hex-encoded serialized bytes
 ```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed..
+If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
 
 Example:
 
@@ -1582,6 +1599,12 @@ Args:
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
     verbose: [bool] include verbose transaction input data
 ```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed.
+If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
 
 To get address related confirmed transactions:
 
@@ -2131,6 +2154,10 @@ Args:
     verbose: [bool] return verbose transaction input data
 ```
 
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
+
 Example:
 
 ```sh
@@ -2269,6 +2296,10 @@ Args:
 ```
 
 Returns blocks in the range [start, end].  Both start and end sequences are included in the returned array of blocks.
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
 
 Example:
 
@@ -2468,6 +2499,10 @@ Args:
     num: number of most recent blocks to return
     verbose: [bool] return verbose transaction input data
 ```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
 
 Example:
 

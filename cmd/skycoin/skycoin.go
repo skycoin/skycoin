@@ -67,7 +67,6 @@ var (
 		Port:                6000,
 		WebInterfacePort:    6420,
 		DataDirectory:       "$HOME/.skycoin",
-		ProfileCPUFile:      "skycoin.prof",
 	})
 
 	parseFlags = true

@@ -23,6 +23,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
 - Add `-enable-spend-endpoint` flag to enable the deprecated `/api/v1/wallet/spend` endpoint
+- Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
 
 ### Fixed
 

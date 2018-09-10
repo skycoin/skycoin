@@ -22,7 +22,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/util/utc"
+	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -270,7 +270,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		Pubkey: genPublic,
 	})
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
@@ -491,7 +491,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
@@ -700,12 +700,12 @@ func TestVisorCalculatePrecision(t *testing.T) {
 	})
 }
 
-func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTxn, uint64) { // nolint: unparam
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { // nolint: unparam
 	var txs []historydb.Transaction
 	var blocks []coin.SignedBlock
-	var uncfmTxs []UnconfirmedTxn
+	var uncfmTxs []UnconfirmedTransaction
 	for i := uint64(0); i < uint64(n); i++ {
-		tm := utc.UnixNow() + int64(i)*int64(time.Second)
+		tm := time.Now().UTC().Unix() + int64(i)*int64(time.Second)
 		txs = append(txs, historydb.Transaction{
 			BlockSeq: i,
 			Tx: coin.Transaction{
@@ -722,18 +722,18 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 			},
 		})
 
-		uncfmTxs = append(uncfmTxs, UnconfirmedTxn{
-			Txn: coin.Transaction{
+		uncfmTxs = append(uncfmTxs, UnconfirmedTransaction{
+			Transaction: coin.Transaction{
 				InnerHash: testutil.RandSHA256(t),
 			},
-			Received: utc.UnixNow() + int64(n)*int64(time.Second),
+			Received: time.Now().UTC().Unix() + int64(n)*int64(time.Second),
 		})
 	}
 
 	return txs, blocks, uncfmTxs, uint64(n)
 }
 
-func makeUncfmUxs(txs []UnconfirmedTxn) coin.UxArray {
+func makeUncfmUxs(txs []UnconfirmedTransaction) coin.UxArray {
 	var uxs coin.UxArray
 	for i := range txs {
 		uxs = append(uxs, coin.UxOut{
@@ -750,7 +750,7 @@ func makeUncfmUxs(txs []UnconfirmedTxn) coin.UxArray {
 
 type txsAndUncfmTxs struct {
 	Txs      []historydb.Transaction
-	UncfmTxs []UnconfirmedTxn
+	UncfmTxs []UnconfirmedTransaction
 }
 type expectTxResult struct {
 	txs      []Transaction
@@ -766,9 +766,9 @@ func TestGetTransactions(t *testing.T) {
 	for i := range txs {
 		height := headSeq - txs[i].BlockSeq + 1
 		ltxs = append(ltxs, Transaction{
-			Txn:    txs[i].Tx,
-			Status: NewConfirmedTransactionStatus(height, txs[i].BlockSeq),
-			Time:   blocks[i].Time(),
+			Transaction: txs[i].Tx,
+			Status:      NewConfirmedTransactionStatus(height, txs[i].BlockSeq),
+			Time:        blocks[i].Time(),
 		})
 	}
 
@@ -776,9 +776,9 @@ func TestGetTransactions(t *testing.T) {
 	var luncfmTxs []Transaction
 	for i, tx := range uncfmTxs {
 		luncfmTxs = append(luncfmTxs, Transaction{
-			Txn:    uncfmTxs[i].Txn,
-			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(nanoToTime(tx.Received).Unix()),
+			Transaction: uncfmTxs[i].Transaction,
+			Status:      NewUnconfirmedTransactionStatus(),
+			Time:        uint64(timeutil.NanoToTime(tx.Received).Unix()),
 		})
 	}
 
@@ -1867,7 +1867,7 @@ func TestGetTransactions(t *testing.T) {
 			})
 
 			his := newHistoryerMock2()
-			uncfmTxPool := NewUnconfirmedTxnPoolerMock2()
+			uncfmTxPool := NewUnconfirmedTransactionPoolerMock2()
 			for addr, txs := range tc.addrTxns {
 				his.On("GetTransactionsForAddress", matchTx, addr).Return(txs.Txs, nil)
 				his.txs = append(his.txs, txs.Txs...)
@@ -1909,22 +1909,22 @@ func TestGetTransactions(t *testing.T) {
 			txMap := make(map[cipher.SHA256]Transaction)
 			for i, tx := range retTxs {
 				if retTxs[i].Status.Confirmed {
-					txMap[tx.Txn.Hash()] = retTxs[i]
+					txMap[tx.Transaction.Hash()] = retTxs[i]
 				} else {
-					uncfmTxMap[tx.Txn.Hash()] = retTxs[i]
+					uncfmTxMap[tx.Transaction.Hash()] = retTxs[i]
 				}
 			}
 
 			// Confirms that all expected confirmed transactions must be in the txMap
 			for _, tx := range tc.expect.txs {
-				retTx, ok := txMap[tx.Txn.Hash()]
+				retTx, ok := txMap[tx.Transaction.Hash()]
 				require.True(t, ok)
 				require.Equal(t, tx, retTx)
 			}
 
 			// Confirms that all expected unconfirmed transactions must be in the uncfmTxMap
 			for _, tx := range tc.expect.uncfmTxs {
-				retTx, ok := uncfmTxMap[tx.Txn.Hash()]
+				retTx, ok := uncfmTxMap[tx.Transaction.Hash()]
 				require.True(t, ok)
 				require.Equal(t, tx, retTx)
 			}
@@ -1941,7 +1941,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
@@ -2071,7 +2071,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
@@ -2777,7 +2777,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	head := coin.SignedBlock{
 		Block: coin.Block{
 			Head: coin.BlockHeader{
-				Time: uint64(utc.UnixNow()),
+				Time: uint64(time.Now().UTC().Unix()),
 			},
 		},
 	}
@@ -2799,8 +2799,8 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 	srcTxnHashes := make([]cipher.SHA256, 5)
 	inputs := make([]coin.UxOut, 5)
-	historyOutputs := make([]*historydb.UxOut, 5)
-	// intputHashes := make([]cipher.SHA256, 5)
+	historyOutputs := make([]historydb.UxOut, 5)
+
 	for i := 0; i < 5; i++ {
 		srcTxnHashes[i] = testutil.RandSHA256(t)
 		inputs[i] = coin.UxOut{
@@ -2815,7 +2815,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			},
 		}
 
-		historyOutputs[i] = &historydb.UxOut{
+		historyOutputs[i] = historydb.UxOut{
 			Out: inputs[i],
 		}
 	}
@@ -2898,7 +2898,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		getHistoryTxnRet *historydb.Transaction
 		getHistoryTxnErr error
 
-		getHistoryUxOutsRet []*historydb.UxOut
+		getHistoryUxOutsRet []historydb.UxOut
 		getHistoryUxOutsErr error
 
 		getSignedBlocksBySeqRet *coin.SignedBlock
@@ -3103,19 +3103,96 @@ func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *histor
 // UnconfirmedTxnPoolerMock2 embeds UnconfirmedTxnPoolerMock, and rewrite the GetTxns method
 type UnconfirmedTxnPoolerMock2 struct {
 	MockUnconfirmedTxnPooler
-	txs []UnconfirmedTxn
+	txs []UnconfirmedTransaction
 }
 
-func NewUnconfirmedTxnPoolerMock2() *UnconfirmedTxnPoolerMock2 {
+func NewUnconfirmedTransactionPoolerMock2() *UnconfirmedTxnPoolerMock2 {
 	return &UnconfirmedTxnPoolerMock2{}
 }
 
-func (m *UnconfirmedTxnPoolerMock2) GetTxns(tx *dbutil.Tx, f func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
-	var txs []UnconfirmedTxn
+func (m *UnconfirmedTxnPoolerMock2) GetTxns(tx *dbutil.Tx, f func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+	var txs []UnconfirmedTransaction
 	for i := range m.txs {
 		if f(m.txs[i]) {
 			txs = append(txs, m.txs[i])
 		}
 	}
 	return txs, nil
+}
+
+func TestFbyAddresses(t *testing.T) {
+	uxs := make(coin.UxArray, 5)
+	addrs := make([]cipher.Address, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = testutil.MakeAddress()
+		uxs[i] = coin.UxOut{
+			Body: coin.UxBody{
+				Address: addrs[i],
+			},
+		}
+	}
+
+	tests := []struct {
+		name    string
+		addrs   []string
+		outputs []coin.UxOut
+		want    []coin.UxOut
+	}{
+		// TODO: Add test cases.
+		{
+			"filter with one address",
+			[]string{addrs[0].String()},
+			uxs[:2],
+			uxs[:1],
+		},
+		{
+			"filter with multiple addresses",
+			[]string{addrs[0].String(), addrs[1].String()},
+			uxs[:3],
+			uxs[:2],
+		},
+	}
+	for _, tt := range tests {
+		// fmt.Printf("want:%+v\n", tt.want)
+		outs := FbyAddresses(tt.addrs)(tt.outputs)
+		require.Equal(t, outs, coin.UxArray(tt.want))
+	}
+}
+
+func TestFbyHashes(t *testing.T) {
+	uxs := make(coin.UxArray, 5)
+	addrs := make([]cipher.Address, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = testutil.MakeAddress()
+		uxs[i] = coin.UxOut{
+			Body: coin.UxBody{
+				Address: addrs[i],
+			},
+		}
+	}
+
+	tests := []struct {
+		name    string
+		hashes  []string
+		outputs coin.UxArray
+		want    coin.UxArray
+	}{
+		// TODO: Add test cases.
+		{
+			"filter with one hash",
+			[]string{uxs[0].Hash().Hex()},
+			uxs[:2],
+			uxs[:1],
+		},
+		{
+			"filter with multiple hash",
+			[]string{uxs[0].Hash().Hex(), uxs[1].Hash().Hex()},
+			uxs[:3],
+			uxs[:2],
+		},
+	}
+	for _, tt := range tests {
+		outs := FbyHashes(tt.hashes)(tt.outputs)
+		require.Equal(t, outs, tt.want)
+	}
 }

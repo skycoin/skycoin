@@ -9,9 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
 	"github.com/skycoin/skycoin/src/util/collections"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 const configuredHost = "127.0.0.1:6420"
@@ -181,16 +179,13 @@ func TestContentSecurityPolicy(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
 			require.NoError(t, err)
 
-			gateway := &MockGatewayer{}
-			gateway.On("GetBuildInfo").Return(visor.BuildInfo{})
-
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{
 				host:       configuredHost,
 				appLoc:     tc.appLoc,
 				enableGUI:  tc.enableGUI,
 				disableCSP: !tc.enableCSP,
-			}, gateway, &CSRFStore{}, nil)
+			}, &MockGatewayer{}, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			csp := rr.Header().Get("Content-Security-Policy")

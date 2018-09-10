@@ -17,6 +17,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/collections"
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -66,6 +67,7 @@ type Config struct {
 	ReadTimeout          time.Duration
 	WriteTimeout         time.Duration
 	IdleTimeout          time.Duration
+	BuildInfo            readable.BuildInfo
 	EnabledAPISets       collections.StringSet
 }
 
@@ -76,6 +78,7 @@ type muxConfig struct {
 	enableJSON20RPC      bool
 	enableUnversionedAPI bool
 	disableCSP           bool
+	buildInfo            readable.BuildInfo
 	enabledAPISets       collections.StringSet
 }
 
@@ -158,6 +161,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		enableJSON20RPC:      c.EnableJSON20RPC,
 		enableUnversionedAPI: c.EnableUnversionedAPI,
 		disableCSP:           c.DisableCSP,
+		buildInfo:            c.BuildInfo,
 		enabledAPISets:       c.EnabledAPISets,
 	}
 
@@ -348,7 +352,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	mux.Handle("/csrf", csrfHandler)
 	mux.Handle("/api/v1/csrf", csrfHandler)
 
-	webHandlerV1("/version", versionHandler(gateway))
+	webHandlerV1("/version", versionHandler(c.buildInfo))
 
 	// get set of unspent outputs
 	webHandlerV1("/outputs", forAPISet(getOutputsHandler(gateway), APIDefault))
@@ -421,7 +425,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// GET Arguments:
 	//     id: wallet id
 	//     password: wallet password
-	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), APISeed)) // FIXME: APIWallet?
+	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), APISeed))
 
 	// unload wallet
 	// POST Argument:
@@ -443,7 +447,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	// Blockchain interface
 
-	webHandlerV1("/blockchain/metadata", forAPISet(blockchainHandler(gateway), APIStatus, APIDefault))
+	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), APIStatus, APIDefault))
 	webHandlerV1("/blockchain/progress", forAPISet(blockchainProgressHandler(gateway), APIStatus, APIDefault))
 
 	// get block by hash or seq
@@ -499,7 +503,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get set of pending transactions
 	webHandlerV1("/explorer/address", forAPISet(getTransactionsForAddress(gateway), APIDefault))
 
-	webHandlerV1("/coinSupply", forAPISet(getCoinSupply(gateway), APIStatus, APIDefault))
+	webHandlerV1("/coinSupply", forAPISet(coinSupply(gateway), APIStatus, APIDefault))
 
 	webHandlerV1("/richlist", forAPISet(getRichlist(gateway), APIStatus, APIDefault))
 

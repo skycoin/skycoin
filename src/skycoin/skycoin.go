@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
@@ -74,7 +75,27 @@ func (c *Coin) Run() error {
 	}
 	host := fmt.Sprintf("%s:%d", c.config.Node.WebInterfaceAddr, c.config.Node.WebInterfacePort)
 
-	c.initProfiling()
+	if c.config.Node.ProfileCPU {
+		f, err := os.Create(c.config.Node.ProfileCPUFile)
+		if err != nil {
+			c.logger.Error(err)
+			return err
+		}
+
+		if err := pprof.StartCPUProfile(f); err != nil {
+			c.logger.Error(err)
+			return err
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	if c.config.Node.HTTPProf {
+		go func() {
+			if err := http.ListenAndServe(c.config.Node.HTTPProfHost, nil); err != nil {
+				c.logger.WithError(err).Errorf("Listen on HTTP profiling interface %s failed", c.config.Node.HTTPProfHost)
+			}
+		}()
+	}
 
 	var wg sync.WaitGroup
 
@@ -257,27 +278,8 @@ func (c *Coin) initLogFile() (*os.File, error) {
 	return f, nil
 }
 
-func (c *Coin) initProfiling() {
-	if c.config.Node.ProfileCPU {
-		f, err := os.Create(c.config.Node.ProfileCPUFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal(err)
-		}
-		defer pprof.StopCPUProfile()
-	}
-	if c.config.Node.HTTPProf {
-		go func() {
-			log.Println(http.ListenAndServe("localhost:6060", nil))
-		}()
-	}
-}
-
 // ConfigureDaemon sets the daemon config values
 func (c *Coin) ConfigureDaemon() daemon.Config {
-	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 
 	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
@@ -321,11 +323,6 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.Arbitrating = c.config.Node.Arbitrating
 	dc.Visor.EnableWalletAPI = c.config.Node.EnableWalletAPI
 	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
-	dc.Visor.BuildInfo = visor.BuildInfo{
-		Version: c.config.Build.Version,
-		Commit:  c.config.Build.Commit,
-		Branch:  c.config.Build.Branch,
-	}
 	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
 	dc.Gateway.EnabledAPISets = c.config.Node.WebInterfaceAPISets
@@ -356,6 +353,11 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		WriteTimeout:         c.config.Node.WriteTimeout,
 		IdleTimeout:          c.config.Node.IdleTimeout,
 		EnabledAPISets:       c.config.Node.WebInterfaceAPISets,
+		BuildInfo: readable.BuildInfo{
+			Version: c.config.Build.Version,
+			Commit:  c.config.Build.Commit,
+			Branch:  c.config.Build.Branch,
+		},
 	}
 
 	if c.config.Node.WebInterfaceHTTPS {

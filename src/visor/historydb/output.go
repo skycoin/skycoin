@@ -19,38 +19,6 @@ type UxOut struct {
 	SpentBlockSeq uint64        // block seq that spent the output.
 }
 
-// UxOutJSON UxOut's json format
-type UxOutJSON struct {
-	Uxid          string `json:"uxid"`
-	Time          uint64 `json:"time"`
-	SrcBkSeq      uint64 `json:"src_block_seq"`
-	SrcTx         string `json:"src_tx"`
-	OwnerAddress  string `json:"owner_address"`
-	Coins         uint64 `json:"coins"`
-	Hours         uint64 `json:"hours"`
-	SpentBlockSeq uint64 `json:"spent_block_seq"` // block seq that spent the output.
-	SpentTxID     string `json:"spent_tx"`        // id of tx which spent this output.
-}
-
-// NewUxOutJSON generates UxOutJSON from UxOut
-func NewUxOutJSON(out *UxOut) *UxOutJSON {
-	if out == nil {
-		return nil
-	}
-
-	return &UxOutJSON{
-		Uxid:          out.Hash().Hex(),
-		Time:          out.Out.Head.Time,
-		SrcBkSeq:      out.Out.Head.BkSeq,
-		SrcTx:         out.Out.Body.SrcTransaction.Hex(),
-		OwnerAddress:  out.Out.Body.Address.String(),
-		Coins:         out.Out.Body.Coins,
-		Hours:         out.Out.Body.Hours,
-		SpentBlockSeq: out.SpentBlockSeq,
-		SpentTxID:     out.SpentTxID.Hex(),
-	}
-}
-
 // Hash returns outhash
 func (o UxOut) Hash() cipher.SHA256 {
 	return o.Out.Hash()
@@ -79,8 +47,8 @@ func (ux *UxOuts) Get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 }
 
 // GetArray returns UxOuts for a set of uxids, will return error if any of the uxids do not exist
-func (ux *UxOuts) GetArray(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]*UxOut, error) {
-	var outs []*UxOut
+func (ux *UxOuts) GetArray(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]UxOut, error) {
+	var outs []UxOut
 	for _, uxID := range uxIDs {
 		out, err := ux.Get(tx, uxID)
 		if err != nil {
@@ -89,7 +57,7 @@ func (ux *UxOuts) GetArray(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]*UxOut, erro
 			return nil, NewErrUxOutNotExist(uxID.Hex())
 		}
 
-		outs = append(outs, out)
+		outs = append(outs, *out)
 	}
 
 	return outs, nil

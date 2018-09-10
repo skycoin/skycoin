@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
-- Group API methods in API sets
+- Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
+- Group API methods in API sets `READ_ONLY`, `STATUS`, `WALLET`, `WALLET_SEED`
 - Command line node parameters to enable individual API sets
 
 ### Fixed
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix `calculated_hours` and `fee` in `/api/v2/transaction/verify` responses for confirmed transactions
 - `/api/v1/blocks` and `/api/v1/last_blocks` return `500` instead of `400` on database errors
 - `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
+- Fix unspent output hashes in the `cli decodeRawTransaction` result
 
 ### Changed
 
@@ -36,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
 - The deprecated JSON 2.0 RPC interface is disabled by default for all run modes, since it is no longer needed for the CLI tool
 - Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`
+- `cli decodeRawTransaction` output format changed, see the [CLI README](./src/cli/README.md)
 
 ### Removed
 

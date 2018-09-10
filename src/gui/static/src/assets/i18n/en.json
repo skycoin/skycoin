@@ -171,6 +171,7 @@
     "id": "Tx ID",
     "show-more": "Show more",
     "hours-sent": "sent",
+    "hours-received": "received",
     "hours-burned": "burned",
     "inputs": "Inputs",
     "outputs": "Outputs",

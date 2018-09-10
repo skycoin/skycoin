@@ -1,9 +1,6 @@
 package wallet
 
 import (
-
-	//"fmt"
-
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"

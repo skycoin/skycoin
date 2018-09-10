@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // Peers peer list
@@ -111,7 +110,7 @@ func (pl *peerlist) addPeers(addrs []string) {
 
 // getCanTryPeers returns all peers that are triable(retried times blew exponential backoff times)
 // and are able to pass the filters.
-func (pl *peerlist) getCanTryPeers(flts ...Filter) Peers {
+func (pl *peerlist) getCanTryPeers(flts []Filter) Peers {
 	ps := make(Peers, 0)
 	flts = append([]Filter{canTry}, flts...)
 loop:
@@ -129,7 +128,7 @@ loop:
 }
 
 // getPeers returns all peers that can pass the filters.
-func (pl *peerlist) getPeers(flts ...Filter) Peers {
+func (pl *peerlist) getPeers(flts []Filter) Peers {
 	ps := make(Peers, 0)
 loop:
 	for _, p := range pl.peers {
@@ -232,7 +231,7 @@ func (pl *peerlist) getPeerByAddr(addr string) (Peer, bool) {
 
 // ClearOld removes public peers that haven't been seen in timeAgo seconds
 func (pl *peerlist) clearOld(timeAgo time.Duration) {
-	t := utc.Now()
+	t := time.Now().UTC()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
 		if !peer.Private && t.Sub(lastSeen) > timeAgo {
@@ -243,8 +242,8 @@ func (pl *peerlist) clearOld(timeAgo time.Duration) {
 
 // Returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.
-func (pl *peerlist) random(count int, flts ...Filter) Peers {
-	keys := pl.getCanTryPeers(flts...).ToAddrs()
+func (pl *peerlist) random(count int, flts []Filter) Peers {
+	keys := pl.getCanTryPeers(flts).ToAddrs()
 	if len(keys) == 0 {
 		return Peers{}
 	}

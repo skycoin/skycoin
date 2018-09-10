@@ -6,5 +6,27 @@
 	"predicted": {
 		"coins": 1022100000000,
 		"hours": 1013748655
+	},
+	"addresses": {
+		"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf": {
+			"confirmed": {
+				"coins": 1000000000000,
+				"hours": 1013371112
+			},
+			"predicted": {
+				"coins": 1000000000000,
+				"hours": 1013371112
+			}
+		},
+		"qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5": {
+			"confirmed": {
+				"coins": 22100000000,
+				"hours": 377543
+			},
+			"predicted": {
+				"coins": 22100000000,
+				"hours": 377543
+			}
+		}
 	}
 }

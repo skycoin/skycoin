@@ -8,6 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -113,7 +114,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 	}
 }
 
-func newUxOutMock(t *testing.T) (*MockGatewayer, func(addr string) []*historydb.UxOutJSON) {
+func newUxOutMock(t *testing.T) (*MockGatewayer, func(addr string) []readable.SpentOutput) {
 	m := &MockGatewayer{}
 
 	hash, err := cipher.SHA256FromHex("31a21a4dd8331ce68756ddbb21f2c66279d5f5526e936f550e49e29b840ac1ff")
@@ -124,11 +125,11 @@ func newUxOutMock(t *testing.T) (*MockGatewayer, func(addr string) []*historydb.
 	require.NoError(t, err)
 
 	mockData := map[string]struct {
-		ret []*historydb.UxOut
+		ret []historydb.UxOut
 		err error
 	}{
 		"2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT": {
-			[]*historydb.UxOut{
+			[]historydb.UxOut{
 				{
 					Out: coin.UxOut{
 						Head: coin.UxHead{
@@ -159,16 +160,10 @@ func newUxOutMock(t *testing.T) (*MockGatewayer, func(addr string) []*historydb.
 		m.On("GetAddrUxOuts", []cipher.Address{a}).Return(d.ret, d.err)
 	}
 
-	f := func(addr string) []*historydb.UxOutJSON {
+	f := func(addr string) []readable.SpentOutput {
 		// Convert UxOut to UxOutJson for handler test
 		uxouts := mockData[addr].ret
-		uxs := make([]*historydb.UxOutJSON, len(uxouts))
-
-		for i, ux := range uxouts {
-			uxs[i] = historydb.NewUxOutJSON(ux)
-		}
-
-		return uxs
+		return readable.NewSpentOutputs(uxouts)
 	}
 	return m, f
 }

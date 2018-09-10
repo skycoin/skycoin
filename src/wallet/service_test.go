@@ -2954,6 +2954,7 @@ func TestServiceUpdate(t *testing.T) {
 
 			// Check that the wallet was modified as expected
 			w, err := s.GetWallet(tc.wltName)
+			require.NoError(t, err)
 			tc.checkWallet(t, w)
 
 			// Even if secrets were modified, wallet should still be encrypted
@@ -3135,6 +3136,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 
 			// Check that the wallet was modified as expected
 			w, err := s.GetWallet(tc.wltName)
+			require.NoError(t, err)
 			tc.checkWallet(t, w)
 
 			// Even if secrets were modified, wallet should still be encrypted

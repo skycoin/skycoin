@@ -192,9 +192,9 @@ type Blockchainer interface {
 // UnconfirmedTxnPooler is the interface that provides methods for
 // accessing the unconfirmed transaction pool
 type UnconfirmedTxnPooler interface {
-	SetTxnsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error
+	SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error
 	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
-	RawTxns(tx *dbutil.Tx) (coin.Transactions, error)
+	AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error)
 	RemoveTransactions(tx *dbutil.Tx, txns []cipher.SHA256) error
 	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error)
 	RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error)
@@ -203,8 +203,8 @@ type UnconfirmedTxnPooler interface {
 	RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
 	GetIncomingOutputs(tx *dbutil.Tx, bh coin.BlockHeader) (coin.UxArray, error)
 	Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTransaction, error)
-	GetTxns(tx *dbutil.Tx, filter func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error)
-	GetTxHashes(tx *dbutil.Tx, filter func(tx UnconfirmedTransaction) bool) ([]cipher.SHA256, error)
+	GetFiltered(tx *dbutil.Tx, filter func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error)
+	GetHashes(tx *dbutil.Tx, filter func(tx UnconfirmedTransaction) bool) ([]cipher.SHA256, error)
 	ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTransaction) error) error
 	GetUnspentsOfAddr(tx *dbutil.Tx, addr cipher.Address) (coin.UxArray, error)
 	Len(tx *dbutil.Tx) (uint64, error)
@@ -460,7 +460,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	}
 
 	// Gather all unconfirmed transactions
-	txns, err := vs.Unconfirmed.RawTxns(tx)
+	txns, err := vs.Unconfirmed.AllRawTransactions(tx)
 	if err != nil {
 		return coin.SignedBlock{}, err
 	}
@@ -637,7 +637,7 @@ func (vs *Visor) UnconfirmedOutgoingOutputs() (coin.UxArray, error) {
 }
 
 func (vs *Visor) unconfirmedOutgoingOutputs(tx *dbutil.Tx) (coin.UxArray, error) {
-	txns, err := vs.Unconfirmed.RawTxns(tx)
+	txns, err := vs.Unconfirmed.AllRawTransactions(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -897,7 +897,7 @@ func (vs *Visor) getBlocksVerbose(tx *dbutil.Tx, getBlocks func(*dbutil.Tx) ([]c
 	return blocks, inputs, nil
 }
 
-// InjectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
+// InjectTransaction records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard constraints, it is rejected, and error will not be nil.
@@ -917,7 +917,7 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesS
 	return known, softErr, nil
 }
 
-// InjectTransactionStrict records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
+// InjectTransactionStrict records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
@@ -1062,7 +1062,7 @@ func (vs *Visor) getTransaction(tx *dbutil.Tx, txnHash cipher.SHA256) (*Transact
 
 	confirms := headSeq - htxn.BlockSeq + 1
 	return &Transaction{
-		Transaction: htxn.Tx,
+		Transaction: htxn.Txn,
 		Status:      NewConfirmedTransactionStatus(confirms, htxn.BlockSeq),
 		Time:        b.Time(),
 	}, nil
@@ -1278,7 +1278,7 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 			}
 
 			txns[i] = Transaction{
-				Transaction: txn.Tx,
+				Transaction: txn.Txn,
 				Status:      NewConfirmedTransactionStatus(h, txn.BlockSeq),
 				Time:        bk.Time(),
 			}
@@ -1350,7 +1350,7 @@ func (vs *Visor) traverseTxns(tx *dbutil.Tx, flts []TxFilter) ([]Transaction, er
 		}
 
 		txn := Transaction{
-			Transaction: hTxn.Tx,
+			Transaction: hTxn.Txn,
 			Status:      NewConfirmedTransactionStatus(h, hTxn.BlockSeq),
 			Time:        bk.Time(),
 		}
@@ -1371,7 +1371,7 @@ func (vs *Visor) traverseTxns(tx *dbutil.Tx, flts []TxFilter) ([]Transaction, er
 	txns = sortTxns(txns)
 
 	// Gets all unconfirmed transactions
-	unconfirmedTxns, err := vs.Unconfirmed.GetTxns(tx, func(txn UnconfirmedTransaction) bool {
+	unconfirmedTxns, err := vs.Unconfirmed.GetFiltered(tx, func(txn UnconfirmedTransaction) bool {
 		return true
 	})
 	if err != nil {
@@ -1445,7 +1445,7 @@ func (vs *Visor) GetUnconfirmedTransactions(filter func(UnconfirmedTransaction) 
 
 	if err := vs.DB.View("GetUnconfirmedTransactions", func(tx *dbutil.Tx) error {
 		var err error
-		txns, err = vs.Unconfirmed.GetTxns(tx, filter)
+		txns, err = vs.Unconfirmed.GetFiltered(tx, filter)
 		return err
 	}); err != nil {
 		return nil, err
@@ -1461,7 +1461,7 @@ func (vs *Visor) GetUnconfirmedTransactionsVerbose(filter func(UnconfirmedTransa
 
 	if err := vs.DB.View("GetUnconfirmedTransactionsVerbose", func(tx *dbutil.Tx) error {
 		var err error
-		txns, err = vs.Unconfirmed.GetTxns(tx, filter)
+		txns, err = vs.Unconfirmed.GetFiltered(tx, filter)
 		if err != nil {
 			return err
 		}
@@ -1501,7 +1501,7 @@ func (vs *Visor) GetAllUnconfirmedTransactions() ([]UnconfirmedTransaction, erro
 
 	if err := vs.DB.View("GetAllUnconfirmedTransactions", func(tx *dbutil.Tx) error {
 		var err error
-		txns, err = vs.Unconfirmed.GetTxns(tx, All)
+		txns, err = vs.Unconfirmed.GetFiltered(tx, All)
 		return err
 	}); err != nil {
 		return nil, err
@@ -1517,7 +1517,7 @@ func (vs *Visor) GetAllUnconfirmedTransactionsVerbose() ([]UnconfirmedTransactio
 
 	if err := vs.DB.View("GetAllUnconfirmedTransactionsVerbose", func(tx *dbutil.Tx) error {
 		var err error
-		txns, err = vs.Unconfirmed.GetTxns(tx, All)
+		txns, err = vs.Unconfirmed.GetFiltered(tx, All)
 		if err != nil {
 			return err
 		}
@@ -1609,7 +1609,7 @@ func (vs *Visor) GetAllValidUnconfirmedTxHashes() ([]cipher.SHA256, error) {
 
 	if err := vs.DB.View("GetAllValidUnconfirmedTxHashes", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.GetTxHashes(tx, IsValid)
+		hashes, err = vs.Unconfirmed.GetHashes(tx, IsValid)
 		return err
 	}); err != nil {
 		return nil, err
@@ -1948,7 +1948,7 @@ func (vs *Visor) UnconfirmedSpendsOfAddresses(addrs []cipher.Address) (coin.Addr
 
 // unconfirmedSpendsOfAddresses returns all unconfirmed coin.UxOut spends of addresses
 func (vs *Visor) unconfirmedSpendsOfAddresses(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	txns, err := vs.Unconfirmed.RawTxns(tx)
+	txns, err := vs.Unconfirmed.AllRawTransactions(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -1979,14 +1979,14 @@ func (vs *Visor) unconfirmedSpendsOfAddresses(tx *dbutil.Tx, addrs []cipher.Addr
 	return outs, nil
 }
 
-// SetTxnsAnnounced updates announced time of specific tx
-func (vs *Visor) SetTxnsAnnounced(hashes map[cipher.SHA256]int64) error {
+// SetTransactionsAnnounced updates announced time of specific tx
+func (vs *Visor) SetTransactionsAnnounced(hashes map[cipher.SHA256]int64) error {
 	if len(hashes) == 0 {
 		return nil
 	}
 
-	return vs.DB.Update("SetTxnsAnnounced", func(tx *dbutil.Tx) error {
-		return vs.Unconfirmed.SetTxnsAnnounced(tx, hashes)
+	return vs.DB.Update("SetTransactionsAnnounced", func(tx *dbutil.Tx) error {
+		return vs.Unconfirmed.SetTransactionsAnnounced(tx, hashes)
 	})
 }
 
@@ -2009,7 +2009,7 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 		}
 
 		// Get all transactions from the unconfirmed pool
-		txns, err := vs.Unconfirmed.RawTxns(tx)
+		txns, err := vs.Unconfirmed.AllRawTransactions(tx)
 		if err != nil {
 			return err
 		}
@@ -2257,7 +2257,7 @@ func (vs *Visor) getCreateTransactionAuxs(tx *dbutil.Tx, params wallet.CreateTra
 		}
 
 		// Get all unconfirmed spending uxouts
-		unconfirmedTxns, err := vs.Unconfirmed.RawTxns(tx)
+		unconfirmedTxns, err := vs.Unconfirmed.AllRawTransactions(tx)
 		if err != nil {
 			return nil, err
 		}

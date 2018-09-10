@@ -59,7 +59,7 @@ func TestTransactionGet(t *testing.T) {
 			// init the bkt
 			err := db.Update("", func(tx *dbutil.Tx) error {
 				for _, txn := range txns[:2] {
-					err := txsBkt.Add(tx, &txn)
+					err := txsBkt.put(tx, &txn)
 					require.NoError(t, err)
 				}
 				return nil
@@ -68,7 +68,7 @@ func TestTransactionGet(t *testing.T) {
 
 			// get slice
 			err = db.View("", func(tx *dbutil.Tx) error {
-				ts, err := txsBkt.Get(tx, tc.hash)
+				ts, err := txsBkt.get(tx, tc.hash)
 				require.NoError(t, err)
 				require.Equal(t, tc.expect, ts)
 				return nil
@@ -78,7 +78,7 @@ func TestTransactionGet(t *testing.T) {
 	}
 }
 
-func TestTransactionGetSlice(t *testing.T) {
+func TestTransactionGetArray(t *testing.T) {
 	txns := make([]Transaction, 0, 4)
 	for i := 0; i < 4; i++ {
 		txns = append(txns, makeTransaction(t))
@@ -135,7 +135,7 @@ func TestTransactionGetSlice(t *testing.T) {
 			// init the bkt
 			err := db.Update("", func(tx *dbutil.Tx) error {
 				for _, txn := range txns[:3] {
-					err := txsBkt.Add(tx, &txn)
+					err := txsBkt.put(tx, &txn)
 					require.NoError(t, err)
 				}
 				return nil
@@ -144,7 +144,7 @@ func TestTransactionGetSlice(t *testing.T) {
 
 			// get slice
 			err = db.View("", func(tx *dbutil.Tx) error {
-				ts, err := txsBkt.GetSlice(tx, tc.hashes)
+				ts, err := txsBkt.getArray(tx, tc.hashes)
 				if tc.err != nil {
 					require.Equal(t, tc.err, err)
 					return nil
@@ -159,14 +159,14 @@ func TestTransactionGetSlice(t *testing.T) {
 }
 
 func makeTransaction(t *testing.T) Transaction {
-	tx := Transaction{}
+	txn := Transaction{}
 	ux, s := makeUxOutWithSecret(t)
-	tx.Tx.PushInput(ux.Hash())
-	tx.Tx.SignInputs([]cipher.SecKey{s})
-	tx.Tx.PushOutput(makeAddress(), 1e6, 50)
-	tx.Tx.PushOutput(makeAddress(), 5e6, 50)
-	tx.Tx.UpdateHeader()
-	return tx
+	txn.Txn.PushInput(ux.Hash())
+	txn.Txn.SignInputs([]cipher.SecKey{s})
+	txn.Txn.PushOutput(makeAddress(), 1e6, 50)
+	txn.Txn.PushOutput(makeAddress(), 5e6, 50)
+	txn.Txn.UpdateHeader()
+	return txn
 }
 
 func makeAddress() cipher.Address {

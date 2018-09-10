@@ -34,6 +34,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `/api/v1/blocks` and `/api/v1/last_blocks` return `500` instead of `400` on database errors
 - `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
 - Fix unspent output hashes in the `cli decodeRawTransaction` result
+- `POST /api/v1/wallet/newAddress` and `POST /api/v1/wallet/spend` will correctly fail if the wallet is not encrypted but a password is provided
 
 ### Changed
 

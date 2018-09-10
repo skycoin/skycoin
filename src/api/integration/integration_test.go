@@ -942,13 +942,15 @@ func TestStableBalance(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
-
-	cases := []struct {
+	type balanceTestCase struct {
 		name   string
 		golden string
 		addrs  []string
-	}{
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	cases := []balanceTestCase{
 		{
 			name:   "unknown address",
 			addrs:  []string{"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9"},
@@ -971,12 +973,20 @@ func TestStableBalance(t *testing.T) {
 		},
 	}
 
+	if !dbNoUnconfirmed(t) {
+		cases = append(cases, balanceTestCase{
+			name:   "balance affected by unconfirmed transaction",
+			addrs:  []string{"R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ", "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN"},
+			golden: "balance-affected-by-unconfirmed-txns.golden",
+		})
+	}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			balance, err := c.Balance(tc.addrs)
 			require.NoError(t, err)
 
-			var expected wallet.BalancePair
+			var expected api.BalanceResponse
 			checkGoldenFile(t, tc.golden, TestData{*balance, &expected})
 		})
 	}
@@ -992,7 +1002,7 @@ func TestLiveBalance(t *testing.T) {
 	// Genesis address check, should not have a balance
 	b, err := c.Balance([]string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"})
 	require.NoError(t, err)
-	require.Equal(t, wallet.BalancePair{}, *b)
+	require.Equal(t, api.BalanceResponse{}, *b)
 
 	// Balance of final distribution address. Should have the same coins balance
 	// for the next 15-20 years.

@@ -18,7 +18,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 const (
@@ -478,12 +477,12 @@ func (c *Client) BlockchainProgress() (*daemon.BlockchainProgress, error) {
 }
 
 // Balance makes a request to GET /api/v1/balance?addrs=xxx
-func (c *Client) Balance(addrs []string) (*wallet.BalancePair, error) {
+func (c *Client) Balance(addrs []string) (*BalanceResponse, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/balance?" + v.Encode()
 
-	var b wallet.BalancePair
+	var b BalanceResponse
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

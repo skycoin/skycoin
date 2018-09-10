@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -47,6 +48,8 @@ const (
 	APIWallet = "WALLET"
 	// APISeed endpoints implement wallet interface
 	APISeed = "WALLET_SEED"
+	// APIPrometheus endpoints for Go application metrics
+	APIPrometheus = "PROMETHEUS"
 )
 
 // Server exposes an HTTP API
@@ -476,6 +479,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	// Health check handler
 	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), APIStatus, APIDefault))
+
+	// golang process internal metrics for Prometheus
+	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), APIPrometheus))
 
 	// Returns transactions that match the filters.
 	// Method: GET

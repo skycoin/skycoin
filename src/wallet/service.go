@@ -333,6 +333,10 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, aux
 			return nil, err
 		}
 	} else {
+		if len(password) != 0 {
+			return nil, ErrWalletNotEncrypted
+		}
+
 		if err := f(w); err != nil {
 			return nil, err
 		}

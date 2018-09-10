@@ -426,7 +426,7 @@ func TestGetBlocks(t *testing.T) {
 			}
 
 			err := db.View("", func(tx *dbutil.Tx) error {
-				bs, err := bc.GetBlocks(tx, tc.req.st, tc.req.ed)
+				bs, err := bc.GetBlocksInRange(tx, tc.req.st, tc.req.ed)
 				require.NoError(t, err)
 				require.Equal(t, len(tc.expect), len(bs))
 				require.Equal(t, tc.expect, bs)

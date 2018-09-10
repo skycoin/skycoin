@@ -107,7 +107,7 @@ func (hd *HistoryDB) Erase(tx *dbutil.Tx) error {
 }
 
 // GetUxOuts get UxOut of specific uxIDs.
-func (hd *HistoryDB) GetUxOuts(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]*UxOut, error) {
+func (hd *HistoryDB) GetUxOuts(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]UxOut, error) {
 	return hd.outputs.GetArray(tx, uxIDs)
 }
 
@@ -174,7 +174,7 @@ func (hd HistoryDB) GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*Transact
 }
 
 // GetAddrUxOuts get all uxout that the address affected.
-func (hd HistoryDB) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*UxOut, error) {
+func (hd HistoryDB) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]UxOut, error) {
 	hashes, err := hd.addrUx.Get(tx, address)
 	if err != nil {
 		return nil, err

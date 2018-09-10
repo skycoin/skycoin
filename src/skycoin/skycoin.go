@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
@@ -322,11 +323,6 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.Arbitrating = c.config.Node.Arbitrating
 	dc.Visor.EnableWalletAPI = c.config.Node.EnableWalletAPI
 	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
-	dc.Visor.BuildInfo = visor.BuildInfo{
-		Version: c.config.Build.Version,
-		Commit:  c.config.Build.Commit,
-		Branch:  c.config.Build.Branch,
-	}
 	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
 	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
@@ -356,6 +352,11 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		ReadTimeout:          c.config.Node.ReadTimeout,
 		WriteTimeout:         c.config.Node.WriteTimeout,
 		IdleTimeout:          c.config.Node.IdleTimeout,
+		BuildInfo: readable.BuildInfo{
+			Version: c.config.Build.Version,
+			Commit:  c.config.Build.Commit,
+			Branch:  c.config.Build.Branch,
+		},
 	}
 
 	if c.config.Node.WebInterfaceHTTPS {

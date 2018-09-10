@@ -10,9 +10,9 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 var (
@@ -84,7 +84,7 @@ func main() {
 	// create a new fiber coin instance
 	coin := skycoin.NewCoin(skycoin.Config{
 		Node: nodeConfig,
-		Build: visor.BuildInfo{
+		Build: readable.BuildInfo{
 			Version: Version,
 			Commit:  Commit,
 			Branch:  Branch,

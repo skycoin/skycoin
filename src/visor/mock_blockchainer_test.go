@@ -27,8 +27,8 @@ func (_m *MockBlockchainer) ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) er
 	return r0
 }
 
-// GetBlocks provides a mock function with given fields: tx, start, end
-func (_m *MockBlockchainer) GetBlocks(tx *dbutil.Tx, start uint64, end uint64) ([]coin.SignedBlock, error) {
+// GetBlocksInRange provides a mock function with given fields: tx, start, end
+func (_m *MockBlockchainer) GetBlocksInRange(tx *dbutil.Tx, start uint64, end uint64) ([]coin.SignedBlock, error) {
 	ret := _m.Called(tx, start, end)
 
 	var r0 []coin.SignedBlock

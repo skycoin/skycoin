@@ -3,9 +3,9 @@ package coin
 import (
 	"encoding/hex"
 	"testing"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 )
 
 func tNow() uint64 {
-	return uint64(utc.UnixNow())
+	return uint64(time.Now().UTC().Unix())
 }
 
 func _feeCalc(t *Transaction) (uint64, error) {

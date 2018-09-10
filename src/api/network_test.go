@@ -12,45 +12,19 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 func TestConnection(t *testing.T) {
-	bp := daemon.BlockchainProgress{
-		Current: 35,
-		Highest: 39,
-		Peers:   nil}
-	bp.Peers = append(bp.Peers, struct {
-		Address string `json:"address"`
-		Height  uint64 `json:"height"`
-	}{
-		Address: "127.3.5.1",
-		Height:  39,
-	})
-	bp.Peers = append(bp.Peers, struct {
-		Address string `json:"address"`
-		Height  uint64 `json:"height"`
-	}{
-		Address: "127.0.0.1",
-		Height:  12,
-	})
-	bp.Peers = append(bp.Peers, struct {
-		Address string `json:"address"`
-		Height  uint64 `json:"height"`
-	}{
-		Address: "127.0.5.1",
-		Height:  13,
-	})
-
 	tt := []struct {
-		name                               string
-		method                             string
-		status                             int
-		err                                string
-		addr                               string
-		gatewayGetConnectionResult         *daemon.Connection
-		gatewayGetBlockchainProgressResult *daemon.BlockchainProgress
-		gatewayGetBlockchainProgressError  error
-		result                             *daemon.Connection
+		name                       string
+		method                     string
+		status                     int
+		err                        string
+		addr                       string
+		gatewayGetConnectionResult *daemon.Connection
+		gatewayGetConnectionError  error
+		result                     *readable.Connection
 	}{
 		{
 			name:   "405",
@@ -68,13 +42,11 @@ func TestConnection(t *testing.T) {
 			result:                     nil,
 		},
 		{
-			name:                               "200",
-			method:                             http.MethodGet,
-			status:                             http.StatusOK,
-			err:                                "",
-			addr:                               "addr",
-			gatewayGetBlockchainProgressResult: &bp,
-			gatewayGetBlockchainProgressError:  nil,
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			err:    "",
+			addr:   "addr",
 			gatewayGetConnectionResult: &daemon.Connection{
 				ID:           1,
 				Addr:         "127.0.0.1",
@@ -84,8 +56,9 @@ func TestConnection(t *testing.T) {
 				Introduced:   true,
 				Mirror:       9876,
 				ListenPort:   9877,
+				Height:       1234,
 			},
-			result: &daemon.Connection{
+			result: &readable.Connection{
 				ID:           1,
 				Addr:         "127.0.0.1",
 				LastSent:     99999,
@@ -94,37 +67,24 @@ func TestConnection(t *testing.T) {
 				Introduced:   true,
 				Mirror:       9876,
 				ListenPort:   9877,
+				Height:       1234,
 			},
 		},
+
 		{
-			name:                               "500 - blockchain progress failed",
-			method:                             http.MethodGet,
-			status:                             http.StatusInternalServerError,
-			err:                                "500 Internal Server Error - some error",
-			addr:                               "addr",
-			gatewayGetBlockchainProgressResult: nil,
-			gatewayGetBlockchainProgressError:  errors.New("some error"),
-			gatewayGetConnectionResult: &daemon.Connection{
-				ID:           1,
-				Addr:         "127.0.0.1",
-				LastSent:     99999,
-				LastReceived: 1111111,
-				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
-				ListenPort:   9877,
-			},
+			name:                      "500 - GetConnection failed",
+			method:                    http.MethodGet,
+			status:                    http.StatusInternalServerError,
+			err:                       "500 Internal Server Error - GetConnection failed",
+			addr:                      "addr",
+			gatewayGetConnectionError: errors.New("GetConnection failed"),
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connection"
 			gateway := &MockGatewayer{}
-			gateway.On("GetConnection", tc.addr).Return(tc.gatewayGetConnectionResult)
-			gateway.On("GetBlockchainProgress").Return(
-				tc.gatewayGetBlockchainProgressResult,
-				tc.gatewayGetBlockchainProgressError,
-			)
+			gateway.On("GetConnection", tc.addr).Return(tc.gatewayGetConnectionResult, tc.gatewayGetConnectionError)
 
 			v := url.Values{}
 			if tc.addr != "" {
@@ -141,13 +101,13 @@ func TestConnection(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *daemon.Connection
+				var msg *readable.Connection
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
@@ -157,41 +117,14 @@ func TestConnection(t *testing.T) {
 }
 
 func TestConnections(t *testing.T) {
-	bp := daemon.BlockchainProgress{
-		Current: 35,
-		Highest: 39,
-		Peers:   nil}
-	bp.Peers = append(bp.Peers, struct {
-		Address string `json:"address"`
-		Height  uint64 `json:"height"`
-	}{
-		Address: "127.3.5.1",
-		Height:  39,
-	})
-	bp.Peers = append(bp.Peers, struct {
-		Address string `json:"address"`
-		Height  uint64 `json:"height"`
-	}{
-		Address: "127.0.0.1",
-		Height:  12,
-	})
-	bp.Peers = append(bp.Peers, struct {
-		Address string `json:"address"`
-		Height  uint64 `json:"height"`
-	}{
-		Address: "127.0.5.1",
-		Height:  13,
-	})
-
 	tt := []struct {
-		name                               string
-		method                             string
-		status                             int
-		err                                string
-		gatewayGetConnectionsResult        *daemon.Connections
-		gatewayGetBlockchainProgressResult *daemon.BlockchainProgress
-		gatewayGetBlockchainProgressError  error
-		result                             *daemon.Connections
+		name                        string
+		method                      string
+		status                      int
+		err                         string
+		gatewayGetConnectionsResult []daemon.Connection
+		gatewayGetConnectionsError  error
+		result                      Connections
 	}{
 		{
 			name:   "405",
@@ -200,29 +133,26 @@ func TestConnections(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:                               "200",
-			method:                             http.MethodGet,
-			status:                             http.StatusOK,
-			err:                                "",
-			gatewayGetBlockchainProgressResult: &bp,
-			gatewayGetBlockchainProgressError:  nil,
-			gatewayGetConnectionsResult: &daemon.Connections{
-				Connections: []*daemon.Connection{
-					&daemon.Connection{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-					},
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			err:    "",
+			gatewayGetConnectionsResult: []daemon.Connection{
+				{
+					ID:           1,
+					Addr:         "127.0.0.1",
+					LastSent:     99999,
+					LastReceived: 1111111,
+					Outgoing:     true,
+					Introduced:   true,
+					Mirror:       9876,
+					ListenPort:   9877,
+					Height:       1234,
 				},
 			},
-			result: &daemon.Connections{
-				Connections: []*daemon.Connection{
-					&daemon.Connection{
+			result: Connections{
+				Connections: []readable.Connection{
+					{
 						ID:           1,
 						Addr:         "127.0.0.1",
 						LastSent:     99999,
@@ -231,42 +161,25 @@ func TestConnections(t *testing.T) {
 						Introduced:   true,
 						Mirror:       9876,
 						ListenPort:   9877,
+						Height:       1234,
 					},
 				},
 			},
 		},
+
 		{
-			name:                               "500 - blockchain progress failed",
-			method:                             http.MethodGet,
-			status:                             http.StatusInternalServerError,
-			err:                                "500 Internal Server Error - some error",
-			gatewayGetBlockchainProgressResult: nil,
-			gatewayGetBlockchainProgressError:  errors.New("some error"),
-			gatewayGetConnectionsResult: &daemon.Connections{
-				Connections: []*daemon.Connection{
-					&daemon.Connection{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-					},
-				},
-			},
+			name:                       "500 - GetConnections failed",
+			method:                     http.MethodGet,
+			status:                     http.StatusInternalServerError,
+			err:                        "500 Internal Server Error - GetConnections failed",
+			gatewayGetConnectionsError: errors.New("GetConnections failed"),
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections"
 			gateway := &MockGatewayer{}
-			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult)
-			gateway.On("GetBlockchainProgress").Return(
-				tc.gatewayGetBlockchainProgressResult,
-				tc.gatewayGetBlockchainProgressError,
-			)
+			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult, tc.gatewayGetConnectionsError)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -276,13 +189,13 @@ func TestConnections(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *daemon.Connections
+				var msg Connections
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
@@ -328,11 +241,11 @@ func TestDefaultConnections(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg []string
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -380,11 +293,11 @@ func TestGetTrustConnections(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg []string
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -432,11 +345,11 @@ func TestGetExchgConnection(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg []string
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)

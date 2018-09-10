@@ -11,8 +11,8 @@ import (
 	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -23,7 +23,7 @@ var (
 // Config records skycoin node and build config
 type Config struct {
 	Node  NodeConfig
-	Build visor.BuildInfo
+	Build readable.BuildInfo
 }
 
 // NodeConfig records the node's configuration

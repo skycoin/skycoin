@@ -15,7 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/util/hexdump"
 )
 
 const (
@@ -70,18 +70,18 @@ func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIte
 }
 
 // Next : Yields next element of MessagesAnnotationsIterator
-func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
+func (mai *MessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 	if !mai.LengthCalled {
 		mai.LengthCalled = true
-		return util.Annotation{Size: 4, Name: "Length"}, true
+		return hexdump.Annotation{Size: 4, Name: "Length"}, true
 	}
 	if !mai.PrefixCalled {
 		mai.PrefixCalled = true
-		return util.Annotation{Size: 4, Name: "Prefix"}, true
+		return hexdump.Annotation{Size: 4, Name: "Prefix"}, true
 
 	}
 	if mai.CurrentField >= mai.MaxField {
-		return util.Annotation{}, false
+		return hexdump.Annotation{}, false
 	}
 
 	var i = mai.CurrentField
@@ -104,7 +104,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 						vF = v.Field(i)
 						if vF.Len() == 0 {
 							// Last field is empty slice. Nothing further tokens
-							return util.Annotation{}, false
+							return hexdump.Annotation{}, false
 						}
 					} else {
 						panic(encoder.ErrInvalidOmitEmpty)
@@ -112,7 +112,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 				}
 			}
 		} else {
-			return util.Annotation{}, false
+			return hexdump.Annotation{}, false
 		}
 	}
 	if f.Tag.Get("enc") != "-" {
@@ -120,32 +120,32 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {
 					mai.CurrentIndex = 0
-					return util.Annotation{Size: 4, Name: f.Name + " length"}, true
+					return hexdump.Annotation{Size: 4, Name: f.Name + " length"}, true
 				}
 				sliceLen := v.Field(i).Len()
 				mai.CurrentIndex++
 				if mai.CurrentIndex < sliceLen {
 					// Emit annotation for slice item
-					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
+					return hexdump.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
 				}
 				// No more annotation tokens for current slice field
 				mai.CurrentIndex = -1
 				mai.CurrentField++
 				if sliceLen > 0 {
 					// Emit annotation for last item
-					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
+					return hexdump.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
 				}
 				// Zero length slice. Start over
 				return mai.Next()
 			}
 
 			mai.CurrentField++
-			return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
+			return hexdump.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
 
 		}
 	}
 
-	return util.Annotation{}, false
+	return hexdump.Annotation{}, false
 }
 
 /**************************************
@@ -223,7 +223,7 @@ func ExampleEmptySliceStruct() {
 	}
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(&message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -262,7 +262,7 @@ func ExampleOmitEmptySliceTestStruct() {
 	}
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(&message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -281,7 +281,7 @@ func ExampleIntroductionMessage() {
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -302,7 +302,7 @@ func ExampleGetPeersMessage() {
 	fmt.Println("GetPeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -325,7 +325,7 @@ func ExampleGivePeersMessage() {
 	fmt.Println("GivePeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -347,7 +347,7 @@ func ExampleGetBlocksMessage() {
 	fmt.Println("GetBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -406,7 +406,7 @@ func ExampleGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -451,7 +451,7 @@ func ExampleAnnounceBlocksMessage() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -473,7 +473,7 @@ func ExampleGetTxnsMessage() {
 	fmt.Println("GetTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -481,11 +481,11 @@ func ExampleGetTxnsMessage() {
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
+	// 0x0008 | 02 00 00 00 ....................................... Transactions length
 	// 0x000c | 7b b4 62 c3 bd 37 1d d8 1c 06 ad 1d 2b 63 59 71
-	// 0x001c | cb 56 eb 22 23 3d fc 9f eb e8 3e 44 c8 40 b8 d7 ... Txns[0]
+	// 0x001c | cb 56 eb 22 23 3d fc 9f eb e8 3e 44 c8 40 b8 d7 ... Transactions[0]
 	// 0x002c | e7 5a c8 01 c1 3f 3d a9 c7 a1 24 ca 31 3b e2 a3
-	// 0x003c | 73 f6 4a d9 7c 58 a1 b6 fe bc 0e 0c a5 c5 c8 73 ... Txns[1]
+	// 0x003c | 73 f6 4a d9 7c 58 a1 b6 fe bc 0e 0c a5 c5 c8 73 ... Transactions[1]
 	// 0x004c |
 }
 
@@ -544,7 +544,7 @@ func ExampleGiveTxnsMessage() {
 	fmt.Println("GiveTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -552,7 +552,7 @@ func ExampleGiveTxnsMessage() {
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
+	// 0x0008 | 02 00 00 00 ....................................... Transactions length
 	// 0x000c | 88 13 00 00 7b 38 62 f1 93 a1 56 4e 5e 26 0f 82
 	// 0x001c | 7d a8 e1 69 ca d8 11 d8 1d 6a 7c 4f fd 66 1c 00
 	// 0x002c | b1 99 94 17 81 02 00 00 00 03 21 3f dd 6d df 86
@@ -572,7 +572,7 @@ func ExampleGiveTxnsMessage() {
 	// 0x010c | a9 ee fe 91 f2 0b a0 74 0c 00 00 00 00 00 00 00
 	// 0x011c | 22 00 00 00 00 00 00 00 00 e9 cb 47 35 e3 95 cf
 	// 0x012c | 36 b0 d1 a6 f2 21 bb 23 b3 f7 bf b1 f9 38 00 00
-	// 0x013c | 00 00 00 00 00 4e 00 00 00 00 00 00 00 ............ Txns[0]
+	// 0x013c | 00 00 00 00 00 4e 00 00 00 00 00 00 00 ............ Transactions[0]
 	// 0x0149 | 88 13 00 00 7b 05 64 0e 44 80 73 9e 87 97 57 b0
 	// 0x0159 | a2 d1 bd 59 de a7 df cc fe f3 df 75 a1 83 0a 50
 	// 0x0169 | 20 01 10 67 21 02 00 00 00 67 65 27 8a fc 9f 3e
@@ -592,7 +592,7 @@ func ExampleGiveTxnsMessage() {
 	// 0x0249 | e9 f4 f0 88 7b 08 4b 43 09 00 00 00 00 00 00 00
 	// 0x0259 | 0c 00 00 00 00 00 00 00 00 83 f1 96 59 16 14 99
 	// 0x0269 | 2f a6 03 13 38 6f 72 88 ac 40 14 c8 bc 22 00 00
-	// 0x0279 | 00 00 00 00 00 38 00 00 00 00 00 00 00 ............ Txns[1]
+	// 0x0279 | 00 00 00 00 00 38 00 00 00 00 00 00 00 ............ Transactions[1]
 	// 0x0286 |
 }
 
@@ -603,7 +603,7 @@ func ExampleAnnounceTxnsMessage() {
 	fmt.Println("AnnounceTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
+	err := hexdump.NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -611,11 +611,11 @@ func ExampleAnnounceTxnsMessage() {
 	// AnnounceTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
 	// 0x0004 | 41 4e 4e 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
+	// 0x0008 | 02 00 00 00 ....................................... Transactions length
 	// 0x000c | 8a 5d bf bb 7e 64 66 49 5e 30 78 1c 15 40 b5 e3
-	// 0x001c | 98 e0 84 4f 60 c9 1e c6 78 9d 4b bb 36 7e 33 a6 ... Txns[0]
+	// 0x001c | 98 e0 84 4f 60 c9 1e c6 78 9d 4b bb 36 7e 33 a6 ... Transactions[0]
 	// 0x002c | 1c 1d 7d bf d7 ba 2b b1 aa 9b 56 ed ae 26 ea 56
-	// 0x003c | 5c bf 72 f9 8c c6 a6 2c 72 97 23 cb c0 75 0d 3b ... Txns[1]
+	// 0x003c | 5c bf 72 f9 8c c6 a6 2c 72 97 23 cb c0 75 0d 3b ... Transactions[1]
 	// 0x004c |
 }
 

@@ -425,7 +425,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// GET Arguments:
 	//     id: wallet id
 	//     password: wallet password
-	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), APISeed)) // FIXME: APIWallet?
+	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), APISeed))
 
 	// unload wallet
 	// POST Argument:

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
 - Group API methods in API sets `READ_ONLY`, `STATUS`, `WALLET`, `WALLET_SEED`
 - Command line node parameters to enable individual API sets
+- Go application metrics exported at /v2/metrics (API set `PROMETHEUS`) in Prometheus format
 
 ### Fixed
 

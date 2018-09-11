@@ -21,7 +21,7 @@ If your application is written in Go, you can use these client libraries to inte
 The wallet APIs in the REST API operate on wallets loaded from and saved to `~/.skycoin/wallets`.
 Use the CLI tool to perform seed generation and transaction signing outside of the Skycoin node.
 
-The Skycoin node's wallet APIs can be enabled with `-enable-wallet-api`.
+The Skycoin node's wallet APIs can be enabled with `-enable-api-set=READ,STATUS,WALLET`.
 
 For a node used to support another application,
 it is recommended to use the REST API for blockchain queries and disable the wallet APIs,
@@ -30,37 +30,37 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5,6" -->
 
 - [API Documentation](#api-documentation)
-    - [Wallet REST API](#wallet-rest-api)
-    - [Skycoin command line interface](#skycoin-command-line-interface)
-    - [Skycoin REST API Client Documentation](#skycoin-rest-api-client-documentation)
-    - [Skycoin Go Library Documentation](#skycoin-go-library-documentation)
-    - [libskycoin Documentation](#libskycoin-documentation)
+	- [Wallet REST API](#wallet-rest-api)
+	- [Skycoin command line interface](#skycoin-command-line-interface)
+	- [Skycoin REST API Client Documentation](#skycoin-rest-api-client-documentation)
+	- [Skycoin Go Library Documentation](#skycoin-go-library-documentation)
+	- [libskycoin Documentation](#libskycoin-documentation)
 - [Implementation guidelines](#implementation-guidelines)
-    - [Scanning deposits](#scanning-deposits)
-        - [Using the CLI](#using-the-cli)
-        - [Using the REST API](#using-the-rest-api)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application)
-    - [Sending coins](#sending-coins)
-        - [General principles](#general-principles)
-        - [Using the CLI](#using-the-cli-1)
-        - [Using the REST API](#using-the-rest-api-1)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-1)
-        - [Coinhours](#coinhours)
-            - [REST API](#rest-api)
-            - [CLI](#cli)
-    - [Verifying addresses](#verifying-addresses)
-        - [Using the CLI](#using-the-cli-2)
-        - [Using the REST API](#using-the-rest-api-2)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-2)
-        - [Using skycoin as a library in other applications](#using-skycoin-as-a-library-in-other-applications)
-    - [Checking Skycoin node connections](#checking-skycoin-node-connections)
-        - [Using the CLI](#using-the-cli-3)
-        - [Using the REST API](#using-the-rest-api-3)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-3)
-    - [Checking Skycoin node status](#checking-skycoin-node-status)
-        - [Using the CLI](#using-the-cli-4)
-        - [Using the REST API](#using-the-rest-api-4)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-4)
+	- [Scanning deposits](#scanning-deposits)
+		- [Using the CLI](#using-the-cli)
+		- [Using the REST API](#using-the-rest-api)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application)
+	- [Sending coins](#sending-coins)
+		- [General principles](#general-principles)
+		- [Using the CLI](#using-the-cli-1)
+		- [Using the REST API](#using-the-rest-api-1)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-1)
+		- [Coinhours](#coinhours)
+			- [REST API](#rest-api)
+			- [CLI](#cli)
+	- [Verifying addresses](#verifying-addresses)
+		- [Using the CLI](#using-the-cli-2)
+		- [Using the REST API](#using-the-rest-api-2)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-2)
+		- [Using skycoin as a library in other applications](#using-skycoin-as-a-library-in-other-applications)
+	- [Checking Skycoin node connections](#checking-skycoin-node-connections)
+		- [Using the CLI](#using-the-cli-3)
+		- [Using the REST API](#using-the-rest-api-3)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-3)
+	- [Checking Skycoin node status](#checking-skycoin-node-status)
+		- [Using the CLI](#using-the-cli-4)
+		- [Using the REST API](#using-the-rest-api-4)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-4)
 
 <!-- /MarkdownTOC -->
 

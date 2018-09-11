@@ -13,8 +13,7 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 go run -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go \
     -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=true \
-    -enable-wallet-api=true \
-    -enable-gui=true \
+    -enable-api-set=READ,WALLET,STATUS \
     -rpc-interface=false \
     -log-level=debug \
     $@

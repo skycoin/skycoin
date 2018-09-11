@@ -3,7 +3,7 @@
 # Runs "live"-mode tests against a skycoin node that is already running
 # "live" mode tests assume the blockchain data is active and may change at any time
 # Data is checked for the appearance of correctness but the values themselves are not verified
-# The skycoin node must be run with -enable-wallet-api=true
+# The skycoin node must be run with the wallet API enabled.
 
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`

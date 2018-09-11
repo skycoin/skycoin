@@ -15,8 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
-- Group API methods in API sets `READ_ONLY`, `STATUS`, `WALLET`, `WALLET_SEED`
-- Command line node parameters to enable individual API sets
+- Add `-enable-api-set` option to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `WALLET`, `WALLET_SEED`. Multiple values must be comma separated. Deprecates `-enable-wallet-api` and `-enable-seed-api`.
 
 ### Fixed
 

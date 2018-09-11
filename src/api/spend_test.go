@@ -878,7 +878,7 @@ func TestCreateTransaction(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 

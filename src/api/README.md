@@ -150,7 +150,7 @@ Result:
 
 ### Health check
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/health
@@ -227,7 +227,7 @@ Result:
 
 ### Get balance of addresses
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/balance
@@ -281,7 +281,7 @@ Result:
 
 ### Get unspent output set of address or hash
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/outputs
@@ -328,7 +328,7 @@ Result:
 
 ### Verify an address
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v2/address/verify
@@ -1337,7 +1337,7 @@ Result:
 
 ### Get unconfirmed transactions
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/pendingTxs
@@ -1452,7 +1452,7 @@ Result:
 
 ### Get transaction info by id
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/transaction
@@ -1586,7 +1586,7 @@ Result:
 
 ### Get raw transaction by id
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/rawtx
@@ -1607,7 +1607,7 @@ Result:
 
 ### Inject raw transaction
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/injectTransaction
@@ -1641,7 +1641,7 @@ Result:
 
 ### Get transactions that are addresses related
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/transactions
@@ -1975,7 +1975,7 @@ Result:
 
 ### Resend unconfirmed transactions
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/resendUnconfirmedTxns
@@ -2001,7 +2001,7 @@ Result:
 
 ### Verify encoded transaction
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v2/transaction/verify
@@ -2138,7 +2138,7 @@ Result:
 
 ### Get blockchain metadata
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/blockchain/metadata
@@ -2171,7 +2171,7 @@ Result:
 
 ### Get blockchain progress
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/blockchain/progress
@@ -2205,7 +2205,7 @@ Result:
 
 ### Get block by hash or seq
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/block
@@ -2348,7 +2348,7 @@ Result:
 
 ### Get blocks in specific range
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/blocks
@@ -2556,7 +2556,7 @@ Result:
 
 ### Get last N blocks
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/last_blocks
@@ -2772,7 +2772,7 @@ Result:
 
 ### Get address affected transactions
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/explorer/address
@@ -2832,7 +2832,7 @@ Result:
 
 ### Get uxout
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/uxout
@@ -2865,7 +2865,7 @@ Result:
 
 ### Get historical unspent outputs for an address
 
-API sets: `READ_ONLY`
+API sets: `READ`
 
 ```
 URI: /api/v1/address_uxouts
@@ -2902,7 +2902,7 @@ Result:
 
 ### Coin supply
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/coinSupply
@@ -3033,7 +3033,7 @@ Result:
 
 ### Richlist show top N addresses by uxouts
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/richlist
@@ -3080,7 +3080,7 @@ Result:
 
 ### Count unique addresses
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/addresscount
@@ -3105,7 +3105,7 @@ Result:
 
 ### Get information for a specific connection
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connection
@@ -3138,7 +3138,7 @@ Result:
 
 ### Get a list of all connections
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connections
@@ -3196,7 +3196,7 @@ Result:
 
 ### Get a list of all default connections
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/defaultConnections
@@ -3226,7 +3226,7 @@ Result:
 
 ### Get a list of all trusted connections
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connections/trust
@@ -3256,7 +3256,7 @@ Result:
 
 ### Get a list of all connections discovered through peer exchange
 
-API sets: `STATUS`, `READ_ONLY`
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connections/exchange

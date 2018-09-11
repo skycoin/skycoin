@@ -31,7 +31,7 @@ func TestGateway_GetWalletDir(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -69,7 +69,7 @@ func TestGateway_NewAddresses(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -106,7 +106,7 @@ func TestGateway_UpdateWalletLabel(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -142,7 +142,7 @@ func TestGateway_GetWallet(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -178,7 +178,7 @@ func TestGateway_GetWallets(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -215,7 +215,7 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -250,7 +250,7 @@ func TestGateway_ReloadWallets(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -288,7 +288,7 @@ func TestGateway_Spend(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -326,7 +326,7 @@ func TestGateway_CreateWallet(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -364,7 +364,7 @@ func TestGateway_GetWalletBalance(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errcheck
 			}
@@ -403,7 +403,7 @@ func TestGateway_CreateTransaction(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ_ONLY")
+			enabledAPISets := collections.NewStringSet("READ")
 			if tc.enableWalletAPI {
 				_ = enabledAPISets.Set("WALLET") // nolint errchec // nolint errcheckk
 			}

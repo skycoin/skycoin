@@ -12,7 +12,8 @@
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
     "no-wallet": "Wallet does not exist",
-    "no-outputs": "No unspent outputs"
+    "no-outputs": "No unspent outputs",
+    "window-size": "The window is too narrow for the content"
   },
 
   "title": {
@@ -170,6 +171,7 @@
     "id": "Tx ID",
     "show-more": "Show more",
     "hours-sent": "sent",
+    "hours-received": "received",
     "hours-burned": "burned",
     "inputs": "Inputs",
     "outputs": "Outputs",
@@ -204,6 +206,7 @@
     "peer": "Peer",
     "source": "Source",
     "block-height": "Block height",
+    "block-height-short": "Block",
     "last-seen": "Last seen",
     "last-received": "Last received",
     "last-sent": "Last sent",
@@ -240,5 +243,11 @@
     "waiting-deposit": "Waiting for Bitcoin deposit",
     "waiting-send": "Waiting to send Skycoin",
     "unknown": "Unknown"
+  },
+
+  "service": {
+    "api" : {
+      "server-error": "Server error"
+    }
   }
 }

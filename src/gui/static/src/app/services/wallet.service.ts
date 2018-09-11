@@ -36,10 +36,10 @@ export class WalletService {
     return this.allAddresses().map(addrs => addrs.map(addr => addr.address)).map(addrs => addrs.join(','));
   }
 
-  addAddress(wallet: Wallet, password?: string) {
-    return this.apiService.postWalletNewAddress(wallet, password)
-      .do(address => {
-        wallet.addresses.push(address);
+  addAddress(wallet: Wallet, num: number, password?: string) {
+    return this.apiService.postWalletNewAddress(wallet, num, password)
+      .do(addresses => {
+        addresses.forEach(value => wallet.addresses.push(value));
         this.refreshBalances();
       });
   }

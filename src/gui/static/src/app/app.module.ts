@@ -71,6 +71,7 @@ import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';
 import { NavBarService } from './services/nav-bar.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
+import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
 
 
 const ROUTES = [
@@ -170,6 +171,7 @@ const ROUTES = [
     TransactionInfoComponent,
     SendFormAdvancedComponent,
     LoadingContentComponent,
+    NumberOfAddressesComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -181,6 +183,7 @@ const ROUTES = [
     OnboardingSafeguardComponent,
     PasswordDialogComponent,
     SeedModalComponent,
+    NumberOfAddressesComponent,
   ],
   imports: [
     BrowserModule,

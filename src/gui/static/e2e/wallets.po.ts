@@ -78,8 +78,12 @@ export class WalletsPage {
     return element.all(by.css('.-record')).count().then(originalCount => {
       return element(by.css('.-new-address')).click().then(() => {
         return browser.sleep(2000).then(() => {
-          return element.all(by.css('.-record')).count().then(newCount => {
-            return newCount > originalCount;
+          return element(by.buttonText('Create')).click().then(() => {
+            return browser.sleep(2000).then(() => {
+              return element.all(by.css('.-record')).count().then(newCount => {
+                return newCount > originalCount;
+              });
+            });
           });
         });
       });

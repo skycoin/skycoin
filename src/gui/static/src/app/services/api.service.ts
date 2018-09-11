@@ -92,15 +92,23 @@ export class ApiService {
         }));
   }
 
-  postWalletNewAddress(wallet: Wallet, password?: string): Observable<Address> {
+  postWalletNewAddress(wallet: Wallet, num: number, password?: string): Observable<Address[]> {
     const params = new Object();
     params['id'] = wallet.filename;
+    params['num'] = num;
     if (password) {
       params['password'] = password;
     }
 
     return this.post('wallet/newAddress', params)
-      .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));
+      .map((response: PostWalletNewAddressResponse) => {
+        const result: Address[] = [];
+        response.addresses.forEach(value => {
+          result.push({ address: value, coins: null, hours: null });
+        });
+
+        return result;
+      });
   }
 
   postWalletToggleEncryption(wallet: Wallet, password: string) {

@@ -374,7 +374,7 @@ func TestCoinSupply(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIStatus, APIDefault), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -598,7 +598,7 @@ func TestGetRichlist(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIStatus, APIDefault), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -673,7 +673,7 @@ func TestGetAddressCount(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(APIStatus, APIDefault), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

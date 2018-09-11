@@ -9,15 +9,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/skycoin/skycoin/src/util/collections"
 )
 
 const configuredHost = "127.0.0.1:6420"
 
-func defaultMuxConfig() muxConfig {
+func defaultMuxConfig(enabledAPINames ...string) muxConfig {
+	if len(enabledAPINames) == 0 {
+		enabledAPINames = append(enabledAPINames, APIDefault)
+	}
 	return muxConfig{
-		host:       configuredHost,
-		appLoc:     ".",
-		disableCSP: true,
+		host:           configuredHost,
+		appLoc:         ".",
+		disableCSP:     true,
+		enabledAPISets: collections.NewStringSet(enabledAPINames...),
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
+	collections "github.com/skycoin/skycoin/src/util/collections"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -71,12 +72,19 @@ type NodeConfig struct {
 	// Wallet Address Version
 	//AddressVersion string
 	// Remote web interface
-	WebInterface      bool
-	WebInterfacePort  int
-	WebInterfaceAddr  string
-	WebInterfaceCert  string
-	WebInterfaceKey   string
+	WebInterface bool
+	// Remote web interface port
+	WebInterfacePort int
+	// Remote web interface address
+	WebInterfaceAddr string
+	// Remote web interface certificate
+	WebInterfaceCert string
+	// Remote web interface key
+	WebInterfaceKey string
+	// Remote web interface HTTPS support
 	WebInterfaceHTTPS bool
+	// Comma separated list of API sets exported via remote web interface
+	WebInterfaceAPISets collections.StringSet
 
 	// Enable the deprecated JSON 2.0 RPC interface
 	RPCInterface bool
@@ -202,12 +210,13 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Wallet Address Version
 		//AddressVersion: "test",
 		// Remote web interface
-		WebInterface:      true,
-		WebInterfacePort:  node.WebInterfacePort,
-		WebInterfaceAddr:  "127.0.0.1",
-		WebInterfaceCert:  "",
-		WebInterfaceKey:   "",
-		WebInterfaceHTTPS: false,
+		WebInterface:        true,
+		WebInterfacePort:    node.WebInterfacePort,
+		WebInterfaceAddr:    "127.0.0.1",
+		WebInterfaceCert:    "",
+		WebInterfaceKey:     "",
+		WebInterfaceHTTPS:   false,
+		WebInterfaceAPISets: collections.NewStringSet(),
 
 		RPCInterface: false,
 
@@ -298,6 +307,21 @@ func (c *Config) postProcess() {
 		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
 	}
 
+	// Enable defaults if --enable-api not specified
+	if c.Node.WebInterfaceAPISets.IsEmpty() {
+		_ = c.Node.WebInterfaceAPISets.Set("READ_ONLY") // nolint errcheck
+	}
+	// FIXME: Use API set constants
+	if c.Node.EnableWalletAPI {
+		_ = c.Node.WebInterfaceAPISets.Set("WALLET") // nolint errcheck
+	}
+	if c.Node.EnableSeedAPI {
+		_ = c.Node.WebInterfaceAPISets.Set("WALLET_SEED") // nolint errcheck
+	}
+	// Ensure bool condition is consistent with enabled API sets
+	c.Node.EnableWalletAPI = c.Node.EnableWalletAPI || c.Node.WebInterfaceAPISets.Contains("WALLET")
+	c.Node.EnableSeedAPI = c.Node.EnableSeedAPI || c.Node.WebInterfaceAPISets.Contains("WALLET_SEED")
+
 	if c.Node.WalletDirectory == "" {
 		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")
 	} else {
@@ -354,6 +378,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	flag.Var(&c.WebInterfaceAPISets, "enable-api", "enable API set (DEFAULT, WALLET, SEED, STATUS)")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 

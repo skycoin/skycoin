@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/collections"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -31,11 +32,18 @@ func TestHealthHandler(t *testing.T) {
 		walletAPIEnabled bool
 	}{
 		{
+			name:   "valid response",
+			method: http.MethodGet,
+			code:   http.StatusOK,
+			cfg:    defaultMuxConfig(APIStatus),
+		},
+
+		{
 			name:   "405 method not allowed",
 			method: http.MethodPost,
 			code:   http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
-			cfg:    defaultMuxConfig(),
+			cfg:    defaultMuxConfig(APIDefault),
 		},
 
 		{
@@ -44,7 +52,7 @@ func TestHealthHandler(t *testing.T) {
 			code:         http.StatusInternalServerError,
 			err:          "500 Internal Server Error - gateway.GetHealth failed: GetHealth failed",
 			getHealthErr: errors.New("GetHealth failed"),
-			cfg:          defaultMuxConfig(),
+			cfg:          defaultMuxConfig(APIStatus, APIDefault),
 		},
 
 		{
@@ -65,6 +73,7 @@ func TestHealthHandler(t *testing.T) {
 				enableGUI:            true,
 				enableUnversionedAPI: true,
 				enableJSON20RPC:      true,
+				enabledAPISets:       collections.NewStringSet(APIDefault, APIWallet),
 			},
 			csrfEnabled:      true,
 			walletAPIEnabled: true,
@@ -117,7 +126,6 @@ func TestHealthHandler(t *testing.T) {
 			}
 
 			gateway := &MockGatewayer{}
-			gateway.On("IsWalletAPIEnabled").Return(tc.walletAPIEnabled)
 
 			if tc.getHealthErr != nil {
 				gateway.On("GetHealth").Return(nil, tc.getHealthErr)

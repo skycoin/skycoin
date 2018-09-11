@@ -4793,7 +4793,7 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	w, _, clean := createWallet(t, c, true, "pwd", "")
 	defer clean()
 
-	_, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
+	_, err := c.WalletSeed(w.Meta.Filename, "pwd")
 	assertResponseError(t, err, http.StatusForbidden, "403 Forbidden")
 }
 
@@ -4810,28 +4810,28 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 
 	require.NotEmpty(t, seed)
 
-	sd, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
+	sd, err := c.WalletSeed(w.Meta.Filename, "pwd")
 	require.NoError(t, err)
 
 	// Confirms the seed are matched
 	require.Equal(t, seed, sd)
 
 	// Get seed of wrong wallet id
-	_, err = c.GetWalletSeed("w.wlt", "pwd")
+	_, err = c.WalletSeed("w.wlt", "pwd")
 	assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
 
 	// Check with invalid password
-	_, err = c.GetWalletSeed(w.Meta.Filename, "wrong password")
+	_, err = c.WalletSeed(w.Meta.Filename, "wrong password")
 	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password")
 
 	// Check with missing password
-	_, err = c.GetWalletSeed(w.Meta.Filename, "")
+	_, err = c.WalletSeed(w.Meta.Filename, "")
 	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password")
 
 	// Create unencrypted wallet to check against
 	nw, _, nclean := createWallet(t, c, false, "", "")
 	defer nclean()
-	_, err = c.GetWalletSeed(nw.Meta.Filename, "pwd")
+	_, err = c.WalletSeed(nw.Meta.Filename, "pwd")
 	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is not encrypted")
 }
 
@@ -5086,6 +5086,18 @@ func TestDisableWalletApi(t *testing.T) {
 			name:      "new seed",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/newSeed",
+			expectErr: "403 Forbidden",
+			code:      http.StatusForbidden,
+		},
+		{
+			name:     "new seed",
+			method:   http.MethodPost,
+			endpoint: "/api/v1/wallet/seed",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
 			expectErr: "403 Forbidden",
 			code:      http.StatusForbidden,
 		},

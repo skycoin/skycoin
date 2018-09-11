@@ -2902,7 +2902,7 @@ Result:
 
 ### Coin supply
 
-API sets: `STATUS`, `READ`
+API sets: `READ`
 
 ```
 URI: /api/v1/coinSupply
@@ -3033,7 +3033,7 @@ Result:
 
 ### Richlist show top N addresses by uxouts
 
-API sets: `STATUS`, `READ`
+API sets: `READ`
 
 ```
 URI: /api/v1/richlist
@@ -3080,7 +3080,7 @@ Result:
 
 ### Count unique addresses
 
-API sets: `STATUS`, `READ`
+API sets: `READ`
 
 ```
 URI: /api/v1/addresscount

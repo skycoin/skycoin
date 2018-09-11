@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/skycoin/skycoin/src/util/collections"
+	"github.com/stretchr/testify/require"
 )
 
 const configuredHost = "127.0.0.1:6420"

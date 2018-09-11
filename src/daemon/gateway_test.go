@@ -11,7 +11,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/collections"
 )
 
 func TestGateway_GetWalletDir(t *testing.T) {
@@ -352,14 +351,9 @@ func TestGateway_CreateTransaction(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Assume all API sets enabled by default
-			enabledAPISets := collections.NewStringSet("READ")
-			if tc.enableWalletAPI {
-				_ = enabledAPISets.Set("WALLET") // nolint errchec // nolint errcheckk
-			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnabledAPISets: enabledAPISets,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 

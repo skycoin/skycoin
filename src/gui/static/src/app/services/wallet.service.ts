@@ -222,6 +222,11 @@ export class WalletService {
           );
 
           transaction.balance += calculatedOutputs.reduce((a, b) => a + parseFloat(b.coins), 0) * (outgoing ? -1 : 1);
+          transaction.hoursSent = calculatedOutputs.reduce((a, b) => a + b.hours, 0);
+
+          const inputsHours = transaction.inputs.reduce((a, b) => a + b.calculated_hours, 0);
+          const outputsHours = transaction.outputs.reduce((a, b) => a + b.hours, 0);
+          transaction.hoursBurned = inputsHours - outputsHours;
 
           return transaction;
         });

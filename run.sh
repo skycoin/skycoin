@@ -14,6 +14,7 @@ go run -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go \
     -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=true \
     -enable-api-set=READ,WALLET,STATUS \
+    -enable-gui=true \
     -rpc-interface=false \
     -log-level=debug \
     $@

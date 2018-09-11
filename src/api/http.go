@@ -346,9 +346,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get the current CSRF token
 	csrfHandler := headerCheck(c.host, getCSRFToken(csrfStore))
 	mux.Handle("/csrf", csrfHandler)
-	mux.Handle("/api/v1/csrf", csrfHandler)
+	mux.Handle("/api/v1/csrf", csrfHandler) // csrf is always available, regardless of the API set
 
-	webHandlerV1("/version", versionHandler(c.buildInfo))
+	webHandlerV1("/version", versionHandler(c.buildInfo)) // version is always available, regardless of the API set
 
 	// get set of unspent outputs
 	webHandlerV1("/outputs", forAPISet(getOutputsHandler(gateway), []string{EndpointsRead}))

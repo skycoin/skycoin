@@ -57,59 +57,59 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)
-	- [Get current csrf token](#get-current-csrf-token)
+    - [Get current csrf token](#get-current-csrf-token)
 - [General system checks](#general-system-checks)
-	- [Health check](#health-check)
-	- [Version info](#version-info)
+    - [Health check](#health-check)
+    - [Version info](#version-info)
 - [Simple query APIs](#simple-query-apis)
-	- [Get balance of addresses](#get-balance-of-addresses)
-	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-	- [Verify an address](#verify-an-address)
+    - [Get balance of addresses](#get-balance-of-addresses)
+    - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+    - [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
-	- [Get wallet](#get-wallet)
-	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
-	- [Get wallets](#get-wallets)
-	- [Get wallet folder name](#get-wallet-folder-name)
-	- [Generate wallet seed](#generate-wallet-seed)
-	- [Create a wallet from seed](#create-a-wallet-from-seed)
-	- [Generate new address in wallet](#generate-new-address-in-wallet)
-	- [Updates wallet label](#updates-wallet-label)
-	- [Get wallet balance](#get-wallet-balance)
-	- [Spend coins from wallet](#spend-coins-from-wallet)
-	- [Create transaction](#create-transaction)
-	- [Unload wallet](#unload-wallet)
-	- [Encrypt wallet](#encrypt-wallet)
-	- [Decrypt wallet](#decrypt-wallet)
-	- [Get wallet seed](#get-wallet-seed)
+    - [Get wallet](#get-wallet)
+    - [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
+    - [Get wallets](#get-wallets)
+    - [Get wallet folder name](#get-wallet-folder-name)
+    - [Generate wallet seed](#generate-wallet-seed)
+    - [Create a wallet from seed](#create-a-wallet-from-seed)
+    - [Generate new address in wallet](#generate-new-address-in-wallet)
+    - [Updates wallet label](#updates-wallet-label)
+    - [Get wallet balance](#get-wallet-balance)
+    - [Spend coins from wallet](#spend-coins-from-wallet)
+    - [Create transaction](#create-transaction)
+    - [Unload wallet](#unload-wallet)
+    - [Encrypt wallet](#encrypt-wallet)
+    - [Decrypt wallet](#decrypt-wallet)
+    - [Get wallet seed](#get-wallet-seed)
 - [Transaction APIs](#transaction-apis)
-	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
-	- [Get transaction info by id](#get-transaction-info-by-id)
-	- [Get raw transaction by id](#get-raw-transaction-by-id)
-	- [Inject raw transaction](#inject-raw-transaction)
-	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
-	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-	- [Verify encoded transaction](#verify-encoded-transaction)
+    - [Get unconfirmed transactions](#get-unconfirmed-transactions)
+    - [Get transaction info by id](#get-transaction-info-by-id)
+    - [Get raw transaction by id](#get-raw-transaction-by-id)
+    - [Inject raw transaction](#inject-raw-transaction)
+    - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+    - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+    - [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
-	- [Get blockchain metadata](#get-blockchain-metadata)
-	- [Get blockchain progress](#get-blockchain-progress)
-	- [Get block by hash or seq](#get-block-by-hash-or-seq)
-	- [Get blocks in specific range](#get-blocks-in-specific-range)
-	- [Get last N blocks](#get-last-n-blocks)
+    - [Get blockchain metadata](#get-blockchain-metadata)
+    - [Get blockchain progress](#get-blockchain-progress)
+    - [Get block by hash or seq](#get-block-by-hash-or-seq)
+    - [Get blocks in specific range](#get-blocks-in-specific-range)
+    - [Get last N blocks](#get-last-n-blocks)
 - [Explorer APIs](#explorer-apis)
-	- [Get address affected transactions](#get-address-affected-transactions)
+    - [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
-	- [Get uxout](#get-uxout)
-	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+    - [Get uxout](#get-uxout)
+    - [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
 - [Coin supply related information](#coin-supply-related-information)
-	- [Coin supply](#coin-supply)
-	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-	- [Count unique addresses](#count-unique-addresses)
+    - [Coin supply](#coin-supply)
+    - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+    - [Count unique addresses](#count-unique-addresses)
 - [Network status](#network-status)
-	- [Get information for a specific connection](#get-information-for-a-specific-connection)
-	- [Get a list of all connections](#get-a-list-of-all-connections)
-	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
-	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+    - [Get information for a specific connection](#get-information-for-a-specific-connection)
+    - [Get a list of all connections](#get-a-list-of-all-connections)
+    - [Get a list of all default connections](#get-a-list-of-all-default-connections)
+    - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+    - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -125,7 +125,7 @@ as the response body.
 
 ### Get current csrf token
 
-API sets: always available
+API sets: any
 
 ```
 URI: /api/v1/csrf
@@ -199,7 +199,7 @@ Response:
 
 ### Version info
 
-API sets: always available
+API sets: any
 
 ```
 URI: /api/v1/version
@@ -435,8 +435,8 @@ API sets: `WALLET`
 URI: /api/v1/wallet/transactions
 Method: GET
 Args:
-	id: Wallet ID
-	verbose: [bool] include verbose transaction input data
+    id: Wallet ID
+    verbose: [bool] include verbose transaction input data
 ```
 
 Returns all unconfirmed transactions for all addresses in a given wallet
@@ -520,18 +520,18 @@ Result:
                 "fee": 495076,
                 "inputs": [
                     {
-                    	"uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
-                    	"owner": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
-                    	"coins": "997.000000",
-                    	"hours": 880000,
-                    	"calculated_hours": 990000
+                        "uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
+                        "owner": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+                        "coins": "997.000000",
+                        "hours": 880000,
+                        "calculated_hours": 990000
                     },
                     {
-                    	"uxid": "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91",
-                    	"owner": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
-                    	"coins": "2.000000",
-                    	"hours": 10,
-                    	"calculated_hours": 152
+                        "uxid": "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91",
+                        "owner": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
+                        "coins": "2.000000",
+                        "hours": 10,
+                        "calculated_hours": 152
                     }
                 ],
                 "outputs": [
@@ -1343,7 +1343,7 @@ API sets: `READ`
 URI: /api/v1/pendingTxs
 Method: GET
 Args:
-	verbose [bool] include verbose transaction input data
+    verbose [bool] include verbose transaction input data
 ```
 
 If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
@@ -1647,7 +1647,7 @@ API sets: `READ`
 URI: /api/v1/transactions
 Method: GET
 Args:
-	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+    addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
     verbose: [bool] include verbose transaction input data
 ```
@@ -2191,14 +2191,14 @@ Result:
     "current": 2760,
     "highest": 2760,
     "peers": [
-	    {
-	        "address": "35.157.164.126:6000",
-	        "height": 2760
-	    },
-	    {
-	        "address": "63.142.253.76:6000",
-	        "height": 2760
-	    },
+        {
+            "address": "35.157.164.126:6000",
+            "height": 2760
+        },
+        {
+            "address": "63.142.253.76:6000",
+            "height": 2760
+        },
     ]
 }
 ```

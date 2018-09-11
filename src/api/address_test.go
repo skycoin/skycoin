@@ -100,7 +100,6 @@ func TestVerifyAddress(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
 			gateway := &MockGatewayer{}
-			gateway.On("IsAPISetEnabled", "READ", []string(nil)).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)

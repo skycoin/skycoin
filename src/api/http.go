@@ -415,7 +415,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// Generate wallet seed
 	// GET Arguments:
 	//     entropy: entropy bitsize.
-	webHandlerV1("/wallet/newSeed", forAPISet(newWalletSeed(gateway), []string{EndpointsWallet}))
+	webHandlerV1("/wallet/newSeed", forAPISet(newSeedHandler(), []string{EndpointsWallet}))
 
 	// Gets seed of wallet of given id
 	// GET Arguments:

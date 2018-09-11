@@ -314,6 +314,7 @@ func (c *Config) postProcess() {
 		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
 	}
 
+	c.Node.enabledAPISets = make(map[string]struct{})
 	apiSets := strings.Split(c.Node.EnabledAPISets, ",")
 	for _, k := range apiSets {
 		k = strings.ToUpper(strings.TrimSpace(k))
@@ -329,7 +330,7 @@ func (c *Config) postProcess() {
 		}
 
 		if k == EndpointsAll {
-			for s := range []string{
+			for _, s := range []string{
 				api.EndpointsRead,
 				api.EndpointsWallet,
 				api.EndpointsWalletSeed,
@@ -410,7 +411,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.StringVar(&c.EnabledAPISets, "enable-api-set", c.EnabledAPISets, "enable API set. Options are ALL, READ, WALLET, WALLET_SEED, STATUS. Multiple values should be separated by comma")
+	flag.StringVar(&c.EnabledAPISets, "enable-api-set", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED. Multiple values should be separated by comma")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 

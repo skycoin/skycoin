@@ -1,6 +1,6 @@
 /* Handle not as pointer is input. */
 %typemap(in) Handle {
-	SWIG_AsVal_long($input, (long*)&$1);
+	$input =  (long*)&$1;
 } 
 %inline %{
 	typedef GoInt64_ Handle;
@@ -188,12 +188,12 @@ typedef Handle Signature_Handle;
 **/
 %include "typemaps.i"
 // Try in cs
-%typemap(imtype,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "cipher_PubKey"
+// %typemap(imtype,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "cipher_PubKey"
 %typemap(ctype,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "cipher_PubKey*"
-%typemap(cstype,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "cipher_PubKey"
-%typemap(csin,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "tmp$csinput"
+%typemap(cstype,pre="var tmp$csinput = cipher_PubKey.getCPtr ($csinput);") (GoUint8_ (*) [33])  "cipher_PubKey"
+%typemap(csin,pre="var tmp$csinput = cipher_PubKey.getCPtr ($csinput);") (GoUint8_ (*) [33])  "tmp$csinput"
 
-%typemap(imtype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();",post="delete_cipher_SecKeyp(tmp$csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
+// %typemap(imtype,pre="cipher_SecKey tmp$csinput  = cipher_SecKeyp_value($csinput);",post="delete_cipher_SecKeyp(tmp$csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
 %typemap(ctype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();") (GoUint8_ (*) [32])  "cipher_SecKey*"
-%typemap(cstype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();",post="delete_cipher_SecKeyp(tmp$csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
-%typemap(csin,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();",post="delete_cipher_SecKeyp(tmp$csinput);") (GoUint8_ (*) [32])  "tmp$csinput"
+%typemap(cstype,pre=" var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
+%typemap(csin,pre="var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "tmp$csinput"

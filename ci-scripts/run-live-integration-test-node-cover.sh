@@ -26,8 +26,7 @@ go test -c -ldflags "-X ${CMDPKG}.Commit=$COMMIT -X ${CMDPKG}.Branch=${BRANCH}" 
 ./${BINARY} \
     -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=false \
-    -enable-wallet-api=true \
-    -enable-seed-api=true \
+    -enable-api-set=ALL \
     -test.run "^TestRunMain$" \
     -test.coverprofile="${COVERAGEFILE}" \
     $@

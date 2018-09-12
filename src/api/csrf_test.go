@@ -161,6 +161,7 @@ func TestCSRFWrapper(t *testing.T) {
 						enableJSON20RPC:      true,
 						enableUnversionedAPI: true,
 						disableCSP:           true,
+						enabledAPISets:       allAPISetsEnabled,
 					}, gateway, csrfStore, nil)
 
 					handler.ServeHTTP(rr, req)
@@ -290,6 +291,7 @@ func TestCSRF(t *testing.T) {
 			appLoc:          ".",
 			enableJSON20RPC: true,
 			disableCSP:      true,
+			enabledAPISets:  allAPISetsEnabled,
 		}, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)

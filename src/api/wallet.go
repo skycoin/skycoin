@@ -700,15 +700,10 @@ func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // Args:
 //     entropy: entropy bitsize [optional, default value of 128 will be used if not set]
-func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
+func newSeedHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
-			return
-		}
-
-		if !gateway.IsWalletAPIEnabled() {
-			wh.Error403(w, "")
 			return
 		}
 

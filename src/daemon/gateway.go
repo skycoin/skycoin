@@ -775,11 +775,6 @@ func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
 	return seed, err
 }
 
-// IsWalletAPIEnabled returns if all wallet related apis are disabled
-func (gw *Gateway) IsWalletAPIEnabled() bool {
-	return gw.Config.EnableWalletAPI
-}
-
 // GetRichlist returns rich list as desc order.
 func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
 	rbOuts, err := gw.GetUnspentOutputsSummary(nil)

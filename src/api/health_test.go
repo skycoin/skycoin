@@ -48,10 +48,11 @@ func TestHealthHandler(t *testing.T) {
 		},
 
 		{
-			name:   "valid response",
-			method: http.MethodGet,
-			code:   http.StatusOK,
-			cfg:    defaultMuxConfig(),
+			name:             "valid response",
+			method:           http.MethodGet,
+			code:             http.StatusOK,
+			cfg:              defaultMuxConfig(),
+			walletAPIEnabled: true,
 		},
 
 		{
@@ -65,9 +66,13 @@ func TestHealthHandler(t *testing.T) {
 				enableGUI:            true,
 				enableUnversionedAPI: true,
 				enableJSON20RPC:      true,
+				enabledAPISets: map[string]struct{}{
+					EndpointsStatus: struct{}{},
+					EndpointsRead:   struct{}{},
+				},
 			},
 			csrfEnabled:      true,
-			walletAPIEnabled: true,
+			walletAPIEnabled: false,
 		},
 	}
 
@@ -117,7 +122,6 @@ func TestHealthHandler(t *testing.T) {
 			}
 
 			gateway := &MockGatewayer{}
-			gateway.On("IsWalletAPIEnabled").Return(tc.walletAPIEnabled)
 
 			if tc.getHealthErr != nil {
 				gateway.On("GetHealth").Return(nil, tc.getHealthErr)

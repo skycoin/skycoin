@@ -714,6 +714,7 @@ func TestWalletGet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+
 			v := url.Values{}
 
 			endpoint := "/api/v1/wallet"
@@ -1643,7 +1644,6 @@ func TestWalletNewSeed(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("IsWalletAPIEnabled").Return(true)
 
 			endpoint := "/api/v1/wallet/newSeed"
 
@@ -2103,6 +2103,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	for _, tc := range tt {
 		gateway := &MockGatewayer{}
 		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
+
 		endpoint := "/api/v1/wallets/folderName"
 
 		req, err := http.NewRequest(tc.method, endpoint, nil)

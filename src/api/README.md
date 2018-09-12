@@ -125,6 +125,8 @@ as the response body.
 
 ### Get current csrf token
 
+API sets: any
+
 ```
 URI: /api/v1/csrf
 Method: GET
@@ -147,6 +149,8 @@ Result:
 ## General system checks
 
 ### Health check
+
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/health
@@ -195,6 +199,8 @@ Response:
 
 ### Version info
 
+API sets: any
+
 ```
 URI: /api/v1/version
 Method: GET
@@ -220,6 +226,8 @@ Result:
 ## Simple query APIs
 
 ### Get balance of addresses
+
+API sets: `READ`
 
 ```
 URI: /api/v1/balance
@@ -273,6 +281,8 @@ Result:
 
 ### Get unspent output set of address or hash
 
+API sets: `READ`
+
 ```
 URI: /api/v1/outputs
 Method: GET
@@ -317,6 +327,8 @@ Result:
 ```
 
 ### Verify an address
+
+API sets: `READ`
 
 ```
 URI: /api/v2/address/verify
@@ -373,6 +385,8 @@ Result:
 
 ### Get wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet
 Method: GET
@@ -415,12 +429,14 @@ Result:
 
 ### Get unconfirmed transactions of a wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/transactions
 Method: GET
 Args:
-	id: Wallet ID
-	verbose: [bool] include verbose transaction input data
+    id: Wallet ID
+    verbose: [bool] include verbose transaction input data
 ```
 
 Returns all unconfirmed transactions for all addresses in a given wallet
@@ -504,18 +520,18 @@ Result:
                 "fee": 495076,
                 "inputs": [
                     {
-                    	"uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
-                    	"owner": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
-                    	"coins": "997.000000",
-                    	"hours": 880000,
-                    	"calculated_hours": 990000
+                        "uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
+                        "owner": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+                        "coins": "997.000000",
+                        "hours": 880000,
+                        "calculated_hours": 990000
                     },
                     {
-                    	"uxid": "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91",
-                    	"owner": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
-                    	"coins": "2.000000",
-                    	"hours": 10,
-                    	"calculated_hours": 152
+                        "uxid": "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91",
+                        "owner": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
+                        "coins": "2.000000",
+                        "hours": 10,
+                        "calculated_hours": 152
                     }
                 ],
                 "outputs": [
@@ -543,6 +559,8 @@ Result:
 ```
 
 ### Get wallets
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallets
@@ -586,6 +604,8 @@ Result:
 
 ### Get wallet folder name
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallets/folderName
 Method: GET
@@ -606,6 +626,8 @@ Result:
 ```
 
 ### Generate wallet seed
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/newSeed
@@ -631,6 +653,8 @@ Result:
 ```
 
 ### Create a wallet from seed
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/create
@@ -679,6 +703,8 @@ Result:
 
 ### Generate new address in wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/newAddress
 Method: POST
@@ -710,6 +736,8 @@ Result:
 
 ### Updates wallet label
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/update
 Method: POST
@@ -734,6 +762,8 @@ Result:
 ```
 
 ### Get wallet balance
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/balance
@@ -816,6 +846,8 @@ Result:
 ```
 
 ### Spend coins from wallet
+
+API sets: `DEPRECATED_WALLET_SPEND`
 
 ```
 URI: /api/v1/wallet/spend
@@ -900,6 +932,8 @@ Result:
 ```
 
 ### Create transaction
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/transaction
@@ -1163,6 +1197,8 @@ Result:
 
 ### Unload wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/unload
 Method: POST
@@ -1179,6 +1215,8 @@ curl -X POST http://127.0.0.1:6420/api/v1/wallet/unload \
 ```
 
 ### Encrypt wallet
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/encrypt
@@ -1222,6 +1260,8 @@ Result:
 
 ### Decrypt wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/decrypt
 Method: POST
@@ -1264,7 +1304,7 @@ Result:
 
 ### Get wallet seed
 
-This endpoint is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
+API sets: `WALLET_SEED`
 
 ```
 URI: /api/v1/wallet/seed
@@ -1273,6 +1313,8 @@ Args:
     id: wallet id
     password: wallet password
 ```
+
+This endpoint only works for encrypted wallets.  If the wallet is unencrypted, the seed will not be returned.
 
 Example:
 
@@ -1295,11 +1337,13 @@ Result:
 
 ### Get unconfirmed transactions
 
+API sets: `READ`
+
 ```
 URI: /api/v1/pendingTxs
 Method: GET
 Args:
-	verbose [bool] include verbose transaction input data
+    verbose [bool] include verbose transaction input data
 ```
 
 If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
@@ -1407,6 +1451,8 @@ Result:
 ```
 
 ### Get transaction info by id
+
+API sets: `READ`
 
 ```
 URI: /api/v1/transaction
@@ -1540,6 +1586,8 @@ Result:
 
 ### Get raw transaction by id
 
+API sets: `READ`
+
 ```
 URI: /api/v1/rawtx
 Method: GET
@@ -1558,6 +1606,8 @@ Result:
 ```
 
 ### Inject raw transaction
+
+API sets: `READ`
 
 ```
 URI: /api/v1/injectTransaction
@@ -1591,11 +1641,13 @@ Result:
 
 ### Get transactions that are addresses related
 
+API sets: `READ`
+
 ```
 URI: /api/v1/transactions
 Method: GET
 Args:
-	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+    addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
     verbose: [bool] include verbose transaction input data
 ```
@@ -1923,6 +1975,8 @@ Result:
 
 ### Resend unconfirmed transactions
 
+API sets: `READ`
+
 ```
 URI: /api/v1/resendUnconfirmedTxns
 Method: GET
@@ -1946,6 +2000,8 @@ Result:
 ```
 
 ### Verify encoded transaction
+
+API sets: `READ`
 
 ```
 URI: /api/v2/transaction/verify
@@ -2082,6 +2138,8 @@ Result:
 
 ### Get blockchain metadata
 
+API sets: `STATUS`, `READ`
+
 ```
 URI: /api/v1/blockchain/metadata
 Method: GET
@@ -2113,6 +2171,8 @@ Result:
 
 ### Get blockchain progress
 
+API sets: `STATUS`, `READ`
+
 ```
 URI: /api/v1/blockchain/progress
 Method: GET
@@ -2131,19 +2191,21 @@ Result:
     "current": 2760,
     "highest": 2760,
     "peers": [
-	    {
-	        "address": "35.157.164.126:6000",
-	        "height": 2760
-	    },
-	    {
-	        "address": "63.142.253.76:6000",
-	        "height": 2760
-	    },
+        {
+            "address": "35.157.164.126:6000",
+            "height": 2760
+        },
+        {
+            "address": "63.142.253.76:6000",
+            "height": 2760
+        },
     ]
 }
 ```
 
 ### Get block by hash or seq
+
+API sets: `READ`
 
 ```
 URI: /api/v1/block
@@ -2285,6 +2347,8 @@ Result:
 
 
 ### Get blocks in specific range
+
+API sets: `READ`
 
 ```
 URI: /api/v1/blocks
@@ -2491,6 +2555,8 @@ Result:
 
 
 ### Get last N blocks
+
+API sets: `READ`
 
 ```
 URI: /api/v1/last_blocks
@@ -2706,6 +2772,8 @@ Result:
 
 ### Get address affected transactions
 
+API sets: `READ`
+
 ```
 URI: /api/v1/explorer/address
 Method: GET
@@ -2764,6 +2832,8 @@ Result:
 
 ### Get uxout
 
+API sets: `READ`
+
 ```
 URI: /api/v1/uxout
 Method: GET
@@ -2794,6 +2864,8 @@ Result:
 ```
 
 ### Get historical unspent outputs for an address
+
+API sets: `READ`
 
 ```
 URI: /api/v1/address_uxouts
@@ -2829,6 +2901,8 @@ Result:
 ## Coin supply related information
 
 ### Coin supply
+
+API sets: `READ`
 
 ```
 URI: /api/v1/coinSupply
@@ -2959,6 +3033,8 @@ Result:
 
 ### Richlist show top N addresses by uxouts
 
+API sets: `READ`
+
 ```
 URI: /api/v1/richlist
 Method: GET
@@ -3004,6 +3080,8 @@ Result:
 
 ### Count unique addresses
 
+API sets: `READ`
+
 ```
 URI: /api/v1/addresscount
 Method: GET
@@ -3026,6 +3104,8 @@ Result:
 ## Network status
 
 ### Get information for a specific connection
+
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connection
@@ -3057,6 +3137,8 @@ Result:
 ```
 
 ### Get a list of all connections
+
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connections
@@ -3114,6 +3196,8 @@ Result:
 
 ### Get a list of all default connections
 
+API sets: `STATUS`, `READ`
+
 ```
 URI: /api/v1/network/defaultConnections
 Method: GET
@@ -3142,6 +3226,8 @@ Result:
 
 ### Get a list of all trusted connections
 
+API sets: `STATUS`, `READ`
+
 ```
 URI: /api/v1/network/connections/trust
 Method: GET
@@ -3169,6 +3255,8 @@ Result:
 ```
 
 ### Get a list of all connections discovered through peer exchange
+
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connections/exchange

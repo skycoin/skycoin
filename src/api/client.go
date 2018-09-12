@@ -731,8 +731,8 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 	return r.Seed, nil
 }
 
-// GetWalletSeed makes a request to POST /api/v1/wallet/seed
-func (c *Client) GetWalletSeed(id string, password string) (string, error) {
+// WalletSeed makes a request to POST /api/v1/wallet/seed
+func (c *Client) WalletSeed(id string, password string) (string, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)

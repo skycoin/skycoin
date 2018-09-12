@@ -4793,8 +4793,8 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	w, _, clean := createWallet(t, c, true, "pwd", "")
 	defer clean()
 
-	_, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
-	assertResponseError(t, err, http.StatusForbidden, "403 Forbidden")
+	_, err := c.WalletSeed(w.Meta.Filename, "pwd")
+	assertResponseError(t, err, http.StatusForbidden, "403 Forbidden - Endpoint is disabled")
 }
 
 func TestGetWalletSeedEnabledAPI(t *testing.T) {
@@ -4810,28 +4810,28 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 
 	require.NotEmpty(t, seed)
 
-	sd, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
+	sd, err := c.WalletSeed(w.Meta.Filename, "pwd")
 	require.NoError(t, err)
 
 	// Confirms the seed are matched
 	require.Equal(t, seed, sd)
 
 	// Get seed of wrong wallet id
-	_, err = c.GetWalletSeed("w.wlt", "pwd")
+	_, err = c.WalletSeed("w.wlt", "pwd")
 	assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
 
 	// Check with invalid password
-	_, err = c.GetWalletSeed(w.Meta.Filename, "wrong password")
+	_, err = c.WalletSeed(w.Meta.Filename, "wrong password")
 	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password")
 
 	// Check with missing password
-	_, err = c.GetWalletSeed(w.Meta.Filename, "")
+	_, err = c.WalletSeed(w.Meta.Filename, "")
 	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password")
 
 	// Create unencrypted wallet to check against
 	nw, _, nclean := createWallet(t, c, false, "", "")
 	defer nclean()
-	_, err = c.GetWalletSeed(nw.Meta.Filename, "pwd")
+	_, err = c.WalletSeed(nw.Meta.Filename, "pwd")
 	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is not encrypted")
 }
 
@@ -4989,7 +4989,7 @@ func getWalletDir(t *testing.T, c *api.Client) string {
 	return wf.Address
 }
 
-func TestDisableWalletApi(t *testing.T) {
+func TestDisableWalletAPI(t *testing.T) {
 	if !doDisableWalletAPI(t) {
 		return
 	}
@@ -5012,7 +5012,7 @@ func TestDisableWalletApi(t *testing.T) {
 			name:      "get wallet",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet?id=test.wlt",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5026,7 +5026,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("scan", "1")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5038,14 +5038,14 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("id", "test.wlt")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallet balance",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/balance?id=test.wlt",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5059,14 +5059,14 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("dst", "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallet unconfirmed transactions",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/transactions?id=test.wlt",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5079,28 +5079,40 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("label", "label")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "new seed",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/newSeed",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
+			code:      http.StatusForbidden,
+		},
+		{
+			name:     "new seed",
+			method:   http.MethodPost,
+			endpoint: "/api/v1/wallet/seed",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallets",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets folder name",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallets/folderName",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5120,7 +5132,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("password", "pwd")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5133,7 +5145,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("password", "pwd")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5146,7 +5158,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("password", "pwd")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5172,7 +5184,7 @@ func TestDisableWalletApi(t *testing.T) {
 					},
 				}
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 	}

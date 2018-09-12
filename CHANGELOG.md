@@ -23,6 +23,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
 - Add `-enable-spend-endpoint` flag to enable the deprecated `/api/v1/wallet/spend` endpoint
+- Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
 
 ### Fixed
 
@@ -33,6 +34,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `/api/v1/blocks` and `/api/v1/last_blocks` return `500` instead of `400` on database errors
 - `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
 - Fix unspent output hashes in the `cli decodeRawTransaction` result
+- `POST /api/v1/wallet/newAddress` and `POST /api/v1/wallet/spend` will correctly fail if the wallet is not encrypted but a password is provided
 
 ### Changed
 

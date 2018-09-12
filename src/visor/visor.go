@@ -946,7 +946,7 @@ func (vs *Visor) injectTransactionStrict(tx *dbutil.Tx, txn coin.Transaction) (b
 
 	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
 	if softErr != nil {
-		logger.WithError(softErr).Warningf("InjectTransactionStrict vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly: %v", softErr)
+		logger.WithError(softErr).Warning("InjectTransactionStrict vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
 
 	return known, err

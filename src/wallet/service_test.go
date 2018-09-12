@@ -387,6 +387,16 @@ func TestServiceNewAddress(t *testing.T) {
 			walletAPIDisabled: true,
 			expectErr:         ErrWalletAPIDisabled,
 		},
+		{
+			name: "encrypted=false password provided",
+			opts: Options{
+				Label: "label",
+				Seed:  string(seed),
+			},
+			n:         1,
+			pwd:       []byte("foo"),
+			expectErr: ErrWalletNotEncrypted,
+		},
 	}
 
 	for _, tc := range tt {
@@ -708,6 +718,7 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 			coins:    2e6,
 			dest:     addrs[0],
 		},
+
 		{
 			name: "encrypted=true has change=no",
 			opts: Options{
@@ -775,6 +786,15 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 			},
 			disableWalletAPI: true,
 			err:              ErrWalletAPIDisabled,
+		},
+
+		{
+			name: "encrypted=false password provided",
+			opts: Options{
+				Seed: string(seed),
+			},
+			pwd: []byte("foo"),
+			err: ErrWalletNotEncrypted,
 		},
 	}
 

@@ -1035,6 +1035,16 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options
+// Outputs to spend are chosen from the pool of outputs provided.
+// The outputs are chosen by the following procedure:
+//   - All outputs are merged into one list and are sorted coins highest, hours lowest, with the hash as a tiebreaker
+//   - Outputs are chosen from the beginning of this list, until the requested amount of coins is met.
+//     If hours are also specified, selection continues until the requested amount of hours are met.
+//   - If the total amount of coins in the chosen outputs is exactly equal to the requested amount of coins,
+//     such that there would be no change output but hours remain as change, another output will be chosen to create change,
+//     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
+// If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
+// If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
 func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	if err := params.Validate(); err != nil {
 		return nil, nil, err

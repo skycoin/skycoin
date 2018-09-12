@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Upcoming deprecated method removal notice
+
+In the v0.26.0 these features and functions will be removed.  If you have a need for any of these features, let us know.
+
+- JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does)
+- `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead)
+- The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`)
+
 ### Added
 
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
@@ -14,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
+- Add `-enable-spend-endpoint` flag to enable the deprecated `/api/v1/wallet/spend` endpoint
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
 
 ### Fixed
@@ -25,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/api/v1/blocks` and `/api/v1/last_blocks` return `500` instead of `400` on database errors
 - `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
 - Fix unspent output hashes in the `cli decodeRawTransaction` result
+- `POST /api/v1/wallet/newAddress` and `POST /api/v1/wallet/spend` will correctly fail if the wallet is not encrypted but a password is provided
 
 ### Changed
 
@@ -53,6 +63,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix portable browser version opening to blank page
 
 ### Changed
+
 - Increase visor db timeout to 5000 `ms`
 - Change `InitTransaction` to accept parameters for distributing genesis coin to distribution wallets
 
@@ -63,7 +74,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Minimum go version is go1.10
-- Add environment variable `DATA_DIR` in CLI's
+- Add environment variable `DATA_DIR` in CLI
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
 - Option to generate 12/24 word seed when creating new wallet

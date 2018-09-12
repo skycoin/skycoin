@@ -183,11 +183,16 @@ func TestClientGetStatus(t *testing.T) {
 	err = json.Unmarshal(resp.Result, &result)
 	require.NoError(t, err)
 
+	// Patch TimeSinceLastBlock since it is not stable
+	require.NotEmpty(t, result.TimeSinceLastBlock)
+	require.NotEqual(t, "s", result.TimeSinceLastBlock)
+	result.TimeSinceLastBlock = ""
+
 	require.Equal(t, StatusResult{
 		Running:            true,
 		BlockNum:           455,
 		LastBlockHash:      "b46651a61ca4d90bc2442e2041480ad3960c6ef10b902c70d4fa823b02974f63",
-		TimeSinceLastBlock: "18446744072232256374s",
+		TimeSinceLastBlock: "",
 	}, result)
 }
 

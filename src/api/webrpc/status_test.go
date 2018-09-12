@@ -1,19 +1,16 @@
 package webrpc
 
 import (
-	"fmt"
+	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
 func Test_getStatusHandler(t *testing.T) {
 	b := makeTestReadableBlocks(t)
-	now := time.Now().Unix()
 	m := &MockGatewayer{}
 	m.On("GetLastBlocks", uint64(1)).Return(makeTestBlocks(t), nil)
-	m.On("GetTimeNow").Return(uint64(now))
 
 	type args struct {
 		req Request
@@ -40,7 +37,7 @@ func Test_getStatusHandler(t *testing.T) {
 				Running:            true,
 				BlockNum:           b.Blocks[0].Head.BkSeq + 1,
 				LastBlockHash:      b.Blocks[0].Head.BlockHash,
-				TimeSinceLastBlock: fmt.Sprintf("%vs", uint64(now)-b.Blocks[0].Head.Time),
+				TimeSinceLastBlock: "", // can't check this
 			}),
 		},
 		{
@@ -61,6 +58,20 @@ func Test_getStatusHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getStatusHandler(tt.args.req, tt.args.in1)
+
+			if got.Error == nil {
+				// Patch out TimeSinceLastBlock since it can increment during the test
+				var gotStatus StatusResult
+				err := json.Unmarshal(got.Result, &gotStatus)
+				require.NoError(t, err)
+				require.NotEmpty(t, gotStatus.TimeSinceLastBlock)
+				require.NotEqual(t, "s", gotStatus.TimeSinceLastBlock)
+				gotStatus.TimeSinceLastBlock = ""
+				d, err := json.Marshal(gotStatus)
+				require.NoError(t, err)
+				got.Result = d
+			}
+
 			require.Equal(t, tt.want, got)
 		})
 	}

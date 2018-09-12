@@ -1100,15 +1100,15 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		},
 
 		{
-			name:   "500 - gateway.GetWalletUnconfirmedTxns error",
+			name:   "500 - gateway.GetWalletUnconfirmedTransactions error",
 			method: http.MethodGet,
 			body: &httpBody{
 				walletID: "foo",
 			},
 			status:                             http.StatusInternalServerError,
-			err:                                "500 Internal Server Error - gateway.GetWalletUnconfirmedTxns error",
+			err:                                "500 Internal Server Error - gateway.GetWalletUnconfirmedTransactions error",
 			walletID:                           "foo",
-			gatewayGetWalletUnconfirmedTxnsErr: errors.New("gateway.GetWalletUnconfirmedTxns error"),
+			gatewayGetWalletUnconfirmedTxnsErr: errors.New("gateway.GetWalletUnconfirmedTransactions error"),
 		},
 
 		{
@@ -1214,7 +1214,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		gateway := &MockGatewayer{}
-		gateway.On("GetWalletUnconfirmedTxns", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
+		gateway.On("GetWalletUnconfirmedTransactions", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
 		gateway.On("GetWalletUnconfirmedTransactionsVerbose", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsVerboseResult, tc.gatewayGetWalletUnconfirmedTxnsVerboseErr)
 
 		endpoint := "/api/v1/wallet/transactions"

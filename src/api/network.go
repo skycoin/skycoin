@@ -8,9 +8,14 @@ import (
 
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
+// connectionHandler returns a specific connection
+// URI: /api/v1/network/connections
+// Method: GET
+// Args:
+//	addr - An IP:Port string
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -56,6 +61,9 @@ func NewConnections(dconns []daemon.Connection) Connections {
 	}
 }
 
+// connectionsHandler returns all outgoing connections
+// URI: /api/v1/network/connections
+// Method: GET
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -63,7 +71,7 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		dcnxs, err := gateway.GetConnections()
+		dcnxs, err := gateway.GetOutgoingConnections()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
@@ -73,6 +81,10 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// defaultConnectionsHandler returns the list of default hardcoded bootstrap addresses.
+// They are not necessarily connected to.
+// URI: /api/v1/network/defaultConnections
+// Method: GET
 func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -87,6 +99,10 @@ func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// trustConnectionsHandler returns all trusted connections
+// In the default configuration, these will be a subset of the default hardcoded bootstrap addresses
+// URI: /api/v1/network/trust
+// Method: GET
 func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -101,6 +117,9 @@ func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// exchgConnectionsHandler returns all connections found through peer exchange
+// URI: /api/v1/network/exchange
+// Method: GET
 func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

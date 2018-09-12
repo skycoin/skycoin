@@ -27,24 +27,27 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 
 	results := make([]AddrUxoutResult, len(addrs))
 
-	// TODO FIXME -- use single gateway method for multi addrs
+	parsedAddrs := make([]cipher.Address, len(addrs))
 	for i, addr := range addrs {
-		// decode address
 		a, err := cipher.DecodeBase58Address(addr)
 		if err != nil {
 			logger.Error(err)
 			return MakeErrorResponse(ErrCodeInvalidParams, fmt.Sprintf("%v", err))
 		}
-		results[i].Address = addr
-		uxouts, err := gateway.GetAddrUxOuts([]cipher.Address{a})
-		if err != nil {
-			logger.Error(err)
-			return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
-		}
 
-		uxs := readable.NewSpentOutputs(uxouts)
+		parsedAddrs[i] = a
+	}
 
-		results[i].UxOuts = append(results[i].UxOuts, uxs...)
+	uxOuts, err := gateway.GetSpentOutputsForAddresses(parsedAddrs)
+	if err != nil {
+		logger.Error(err)
+		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
+	}
+
+	for i, uxs := range uxOuts {
+		rUxs := readable.NewSpentOutputs(uxs)
+		results[i].Address = addrs[i]
+		results[i].UxOuts = rUxs
 	}
 
 	return makeSuccessResponse(req.ID, &results)

@@ -326,6 +326,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
 	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
+	dc.Gateway.EnableSpendMethod = c.config.Node.EnableSpendEndpoint
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)

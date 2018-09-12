@@ -211,7 +211,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     const coins = this.form.get('addresses').value.reduce((a, b) => a + b.coins, 0);
     const hours = this.form.get('addresses').value.reduce((a, b) => a + b.hours, 0);
-    const destinationsCoins = this.destControls.reduce((a, b) => a + parseFloat(b.value.coins), 0);
+    const destinationsCoins = this.destControls.reduce((a, b) => (Math.round((a + parseFloat(b.value.coins)) * 1000000) / 1000000), 0);
     const destinationsHours = this.destControls.reduce((a, b) => a + parseInt(b.value.hours, 10), 0);
 
     if (destinationsCoins > coins || destinationsHours > hours) {

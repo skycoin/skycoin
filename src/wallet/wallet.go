@@ -555,7 +555,7 @@ func (w *Wallet) erase() {
 	}
 }
 
-// GuardUpdate executes a function within the context of a read-wirte managed decrypted wallet.
+// GuardUpdate executes a function within the context of a read-write managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
 func (w *Wallet) GuardUpdate(password []byte, fn func(w *Wallet) error) error {
 	if !w.IsEncrypted() {

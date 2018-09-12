@@ -125,26 +125,28 @@ func newUxOutMock(t *testing.T) (*MockGatewayer, func(addr string) []readable.Sp
 	require.NoError(t, err)
 
 	mockData := map[string]struct {
-		ret []historydb.UxOut
+		ret [][]historydb.UxOut
 		err error
 	}{
 		"2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT": {
-			[]historydb.UxOut{
+			[][]historydb.UxOut{
 				{
-					Out: coin.UxOut{
-						Head: coin.UxHead{
-							Time:  1482042899,
-							BkSeq: 562,
+					{
+						Out: coin.UxOut{
+							Head: coin.UxHead{
+								Time:  1482042899,
+								BkSeq: 562,
+							},
+							Body: coin.UxBody{
+								SrcTransaction: srcTxHash,
+								Address:        address,
+								Coins:          1000000,
+								Hours:          0,
+							},
 						},
-						Body: coin.UxBody{
-							SrcTransaction: srcTxHash,
-							Address:        address,
-							Coins:          1000000,
-							Hours:          0,
-						},
+						SpentTxID:     hash,
+						SpentBlockSeq: 563,
 					},
-					SpentTxID:     hash,
-					SpentBlockSeq: 563,
 				},
 			},
 			nil,
@@ -157,13 +159,19 @@ func newUxOutMock(t *testing.T) (*MockGatewayer, func(addr string) []readable.Sp
 
 	for addr, d := range mockData {
 		a := cipher.MustDecodeBase58Address(addr)
-		m.On("GetAddrUxOuts", []cipher.Address{a}).Return(d.ret, d.err)
+		m.On("GetSpentOutputsForAddresses", []cipher.Address{a}).Return(d.ret, d.err)
 	}
 
 	f := func(addr string) []readable.SpentOutput {
-		// Convert UxOut to UxOutJson for handler test
+		// Convert UxOut to readable.NewSpentOutput for handler test
 		uxouts := mockData[addr].ret
-		return readable.NewSpentOutputs(uxouts)
+
+		rUxOuts := make([]readable.SpentOutput, 0)
+		for _, uxs := range uxouts {
+			rUxOuts = append(rUxOuts, readable.NewSpentOutputs(uxs)...)
+		}
+		return rUxOuts
 	}
+
 	return m, f
 }

@@ -79,6 +79,14 @@ func TestConnection(t *testing.T) {
 			addr:                      "addr",
 			gatewayGetConnectionError: errors.New("GetConnection failed"),
 		},
+
+		{
+			name:   "404",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			addr:   "addr",
+			err:    "404 Not Found",
+		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
@@ -118,13 +126,13 @@ func TestConnection(t *testing.T) {
 
 func TestConnections(t *testing.T) {
 	tt := []struct {
-		name                        string
-		method                      string
-		status                      int
-		err                         string
-		gatewayGetConnectionsResult []daemon.Connection
-		gatewayGetConnectionsError  error
-		result                      Connections
+		name                                 string
+		method                               string
+		status                               int
+		err                                  string
+		gatewayGetSolicitedConnectionsResult []daemon.Connection
+		gatewayGetSolicitedConnectionsError  error
+		result                               Connections
 	}{
 		{
 			name:   "405",
@@ -137,7 +145,7 @@ func TestConnections(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
-			gatewayGetConnectionsResult: []daemon.Connection{
+			gatewayGetSolicitedConnectionsResult: []daemon.Connection{
 				{
 					ID:           1,
 					Addr:         "127.0.0.1",
@@ -168,18 +176,18 @@ func TestConnections(t *testing.T) {
 		},
 
 		{
-			name:                       "500 - GetConnections failed",
-			method:                     http.MethodGet,
-			status:                     http.StatusInternalServerError,
-			err:                        "500 Internal Server Error - GetConnections failed",
-			gatewayGetConnectionsError: errors.New("GetConnections failed"),
+			name:                                "500 - GetOutgoingConnections failed",
+			method:                              http.MethodGet,
+			status:                              http.StatusInternalServerError,
+			err:                                 "500 Internal Server Error - GetOutgoingConnections failed",
+			gatewayGetSolicitedConnectionsError: errors.New("GetOutgoingConnections failed"),
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections"
 			gateway := &MockGatewayer{}
-			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult, tc.gatewayGetConnectionsError)
+			gateway.On("GetOutgoingConnections").Return(tc.gatewayGetSolicitedConnectionsResult, tc.gatewayGetSolicitedConnectionsError)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

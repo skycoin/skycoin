@@ -170,16 +170,16 @@ func TestGetAddrUxOuts(t *testing.T) {
 	}
 
 	tt := []struct {
-		name                  string
-		method                string
-		status                int
-		err                   string
-		httpBody              *httpBody
-		getAddrUxOutsArg      []cipher.Address
-		getAddrUxOutsResponse []historydb.UxOut
-		getAddrUxOutsError    error
-		httpResponse          []readable.SpentOutput
-		csrfDisabled          bool
+		name                                string
+		method                              string
+		status                              int
+		err                                 string
+		httpBody                            *httpBody
+		getSpentOutputsForAddressesArg      []cipher.Address
+		getSpentOutputsForAddressesResponse [][]historydb.UxOut
+		getSpentOutputsForAddressesError    error
+		httpResponse                        []readable.SpentOutput
+		csrfDisabled                        bool
 	}{
 		{
 			name:   "405",
@@ -206,15 +206,15 @@ func TestGetAddrUxOuts(t *testing.T) {
 			},
 		},
 		{
-			name:   "400 - gateway.GetAddrUxOuts error",
+			name:   "400 - gateway.GetSpentOutputsForAddresses error",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - getAddrUxOutsError",
+			err:    "400 Bad Request - getSpentOutputsForAddressesError",
 			httpBody: &httpBody{
 				address: addressForGwError.String(),
 			},
-			getAddrUxOutsArg:   []cipher.Address{addressForGwError},
-			getAddrUxOutsError: errors.New("getAddrUxOutsError"),
+			getSpentOutputsForAddressesArg:   []cipher.Address{addressForGwError},
+			getSpentOutputsForAddressesError: errors.New("getSpentOutputsForAddressesError"),
 		},
 		{
 			name:   "200",
@@ -223,9 +223,9 @@ func TestGetAddrUxOuts(t *testing.T) {
 			httpBody: &httpBody{
 				address: addressForGwResponse.String(),
 			},
-			getAddrUxOutsArg:      []cipher.Address{addressForGwResponse},
-			getAddrUxOutsResponse: []historydb.UxOut{},
-			httpResponse:          []readable.SpentOutput{},
+			getSpentOutputsForAddressesArg:      []cipher.Address{addressForGwResponse},
+			getSpentOutputsForAddressesResponse: [][]historydb.UxOut{{}},
+			httpResponse:                        []readable.SpentOutput{},
 		},
 	}
 
@@ -233,7 +233,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
 			gateway := &MockGatewayer{}
-			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
+			gateway.On("GetSpentOutputsForAddresses", tc.getSpentOutputsForAddressesArg).Return(tc.getSpentOutputsForAddressesResponse, tc.getSpentOutputsForAddressesError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

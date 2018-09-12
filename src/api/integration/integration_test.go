@@ -29,7 +29,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"

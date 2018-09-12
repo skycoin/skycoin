@@ -72,7 +72,7 @@ function startSkycoin() {
     '-color-log=false', // must be disabled for web interface detection
     '-logtofile=true',
     '-download-peerlist=true',
-    '-enable-api-set=ALL',
+    '-enable-api-set=READ,STATUS,WALLET,WALLET_SEED',
     '-rpc-interface=false',
     '-disable-csrf=false',
     '-reset-corrupt-db=true',

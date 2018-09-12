@@ -22,9 +22,9 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
-- Add `-enable-spend-endpoint` flag to enable the deprecated `/api/v1/wallet/spend` endpoint
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
-- Add `-enable-api-set` option to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `WALLET`, `WALLET_SEED`. Multiple values must be comma separated. Deprecates `-enable-wallet-api` and `-enable-seed-api`.
+- Add `-enable-api-set` option to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `WALLET`, `WALLET_SEED`, `DEPRECATED_WALLET_SPEND`. Multiple values must be comma separated. Deprecates `-enable-wallet-api` and `-enable-seed-api`.
+- `/api/v1/wallet/spend` is deprecated and requires `-enable-api-set=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 
 ### Fixed
 

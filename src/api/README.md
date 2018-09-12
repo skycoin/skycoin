@@ -847,7 +847,7 @@ Result:
 
 ### Spend coins from wallet
 
-API sets: `WALLET`
+API sets: `DEPRECATED_WALLET_SPEND`
 
 ```
 URI: /api/v1/wallet/spend

@@ -15,10 +15,11 @@ import (
 const configuredHost = "127.0.0.1:6420"
 
 var allAPISetsEnabled = map[string]struct{}{
-	EndpointsRead:       struct{}{},
-	EndpointsStatus:     struct{}{},
-	EndpointsWallet:     struct{}{},
-	EndpointsWalletSeed: struct{}{},
+	EndpointsRead:                  struct{}{},
+	EndpointsStatus:                struct{}{},
+	EndpointsWallet:                struct{}{},
+	EndpointsWalletSeed:            struct{}{},
+	EndpointsDeprecatedWalletSpend: struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {

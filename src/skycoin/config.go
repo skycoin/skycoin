@@ -49,8 +49,6 @@ type NodeConfig struct {
 	DisableNetworking bool
 	// DEPRECATED Enable wallet API
 	EnableWalletAPI bool
-	// Enable the deprecated /api/v1/wallet/spend endpoint
-	EnableSpendEndpoint bool
 	// Enable GUI
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
@@ -196,8 +194,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnableUnversionedAPI: false,
 		// Enable seed API
 		EnableSeedAPI: false,
-		// Enable the deprecated /api/v1/wallet/spend endpoint
-		EnableSpendEndpoint: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
 		// DisableCSP disable content-security-policy in http response
@@ -325,9 +321,10 @@ func (c *Config) postProcess() {
 		switch k {
 		case EndpointsAll,
 			api.EndpointsRead,
+			api.EndpointsStatus,
 			api.EndpointsWallet,
 			api.EndpointsWalletSeed,
-			api.EndpointsStatus:
+			api.EndpointsDeprecatedWalletSpend:
 		default:
 			fmt.Println("Invalid value in -enable-api-set:", k)
 			os.Exit(1)
@@ -336,9 +333,10 @@ func (c *Config) postProcess() {
 		if k == EndpointsAll {
 			for _, s := range []string{
 				api.EndpointsRead,
+				api.EndpointsStatus,
 				api.EndpointsWallet,
 				api.EndpointsWalletSeed,
-				api.EndpointsStatus,
+				api.EndpointsDeprecatedWalletSpend,
 			} {
 				c.Node.enabledAPISets[s] = struct{}{}
 			}
@@ -408,7 +406,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
-	flag.BoolVar(&c.EnableSpendEndpoint, "enable-spend-endpoint", c.EnableSpendEndpoint, "enable the deprecated /api/v1/wallet/spend endpoint")
 
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
@@ -416,7 +413,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.StringVar(&c.EnabledAPISets, "enable-api-set", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED. Multiple values should be separated by comma")
+	flag.StringVar(&c.EnabledAPISets, "enable-api-set", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 

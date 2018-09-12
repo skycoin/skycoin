@@ -42,6 +42,8 @@ const (
 	EndpointsWallet = "WALLET"
 	// EndpointsWalletSeed endpoints implement wallet interface
 	EndpointsWalletSeed = "WALLET_SEED"
+	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
+	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 )
 
 // Server exposes an HTTP API
@@ -389,7 +391,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	//  dst: Destination address
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
-	webHandlerV1("/wallet/spend", forAPISet(walletSpendHandler(gateway), []string{EndpointsWallet}))
+	webHandlerV1("/wallet/spend", forAPISet(walletSpendHandler(gateway), []string{EndpointsDeprecatedWalletSpend}))
 
 	// Creates a transaction from a wallet
 	webHandlerV1("/wallet/transaction", forAPISet(createTransactionHandler(gateway), []string{EndpointsWallet}))

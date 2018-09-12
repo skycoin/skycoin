@@ -176,7 +176,7 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 		}
 	}
 
-	return hd.meta.setParsedBlockSeq(tx, b.Seq())
+	return hd.SetParsedBlockSeq(tx, b.Seq())
 }
 
 // GetTransaction get transaction by hash.

@@ -78,8 +78,8 @@ type UnspentPooler interface {
 	AddressCount(*dbutil.Tx) (uint64, error)
 }
 
-// ChainMetae blockchain metadata
-type ChainMetae interface {
+// ChainMeta blockchain metadata
+type ChainMeta interface {
 	GetHeadSeq(*dbutil.Tx) (uint64, bool, error)
 	SetHeadSeq(*dbutil.Tx, uint64) error
 }
@@ -87,7 +87,7 @@ type ChainMetae interface {
 // Blockchain maintain the buckets for blockchain
 type Blockchain struct {
 	db      *dbutil.DB
-	meta    ChainMetae
+	meta    ChainMeta
 	unspent UnspentPooler
 	tree    BlockTree
 	sigs    BlockSigs

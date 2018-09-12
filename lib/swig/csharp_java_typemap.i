@@ -176,7 +176,7 @@ typedef Handle Signature_Handle;
 	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, ReadableOutputSet__Handle
 	}
 
-/*GoString* parameter as reference */
+	/*GoString* parameter as reference */
 %typemap(in, numinputs=0) GoString* (GoString temp) {
 	temp.p = NULL;
 	temp.n = 0;
@@ -187,38 +187,13 @@ typedef Handle Signature_Handle;
 * Import library
 **/
 %include "typemaps.i"
-%include cpointer.i
+// Try in cs
+%typemap(imtype,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "cipher_PubKey"
+%typemap(ctype,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "cipher_PubKey*"
+%typemap(cstype,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "cipher_PubKey"
+%typemap(csin,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "tmp$csinput"
 
-%typemap(in) (cipher_PubKey*) (cipher_PubKey temp) {
-	//Typemap in *cipher_PubKey
-	$1 = &temp; 
-}
-
-%typemap(in) (GoUint8_ (*)[33]) (cipher_PubKey temp) {
-	//Typemap in *GoUint8_ (*)[33] is cipher_PubKey
-	$1 = (cipher_PubKey*)&temp; 
-}
-
-%typemap(freearg) (GoUint8_ (*)[33]) {
-	//Typemap freearg *GoUint8_ (*)[33] is cipher_PubKey
-	free($1);
-}
-
-
-%typemap(freearg) (cipher_PubKey*) {
-	//Typemap freearg *cipher_PubKey
-	free($1);
-}
-
-%typemap(freearg) (GoUint8_ * [33]) {
-	//Typemap freearg *cipher_PubKey
-}
-/**
-*%typemap(ctype, in="(GoUint8_ (*) [33])") (GoUint8_ (*) [33]) "cipher_PubKey*"
-*%typemap(in,in="(GoUint8_ (*) [33])") (GoUint8_ (*) [33]) "$1 = (cipher_PubKey*)$arg;"
-*%typemap(in,args="(GoUint8_ (*) [33])$1") (GoUint8_ (*) [33]) "$1 = (cipher_PubKey*)$arg;"
-*%typemap(cstype, in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "cipher_PubKey"
-*
-*%typemap(csvarin  , in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "cipher_PubKey"
-*%typemap(imtype, in="SWIGTYPE_p_a_33__GoUint8_") (GoUint8_ (*) [33]) "cipher_PubKey"
-**/
+%typemap(imtype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();",post="delete_cipher_SecKeyp(tmp$csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
+%typemap(ctype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();") (GoUint8_ (*) [32])  "cipher_SecKey*"
+%typemap(cstype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();",post="delete_cipher_SecKeyp(tmp$csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
+%typemap(csin,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();",post="delete_cipher_SecKeyp(tmp$csinput);") (GoUint8_ (*) [32])  "tmp$csinput"

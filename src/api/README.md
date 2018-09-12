@@ -57,59 +57,59 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)
-    - [Get current csrf token](#get-current-csrf-token)
+	- [Get current csrf token](#get-current-csrf-token)
 - [General system checks](#general-system-checks)
-    - [Health check](#health-check)
-    - [Version info](#version-info)
+	- [Health check](#health-check)
+	- [Version info](#version-info)
 - [Simple query APIs](#simple-query-apis)
-    - [Get balance of addresses](#get-balance-of-addresses)
-    - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-    - [Verify an address](#verify-an-address)
+	- [Get balance of addresses](#get-balance-of-addresses)
+	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+	- [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
-    - [Get wallet](#get-wallet)
-    - [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
-    - [Get wallets](#get-wallets)
-    - [Get wallet folder name](#get-wallet-folder-name)
-    - [Generate wallet seed](#generate-wallet-seed)
-    - [Create a wallet from seed](#create-a-wallet-from-seed)
-    - [Generate new address in wallet](#generate-new-address-in-wallet)
-    - [Updates wallet label](#updates-wallet-label)
-    - [Get wallet balance](#get-wallet-balance)
-    - [Spend coins from wallet](#spend-coins-from-wallet)
-    - [Create transaction](#create-transaction)
-    - [Unload wallet](#unload-wallet)
-    - [Encrypt wallet](#encrypt-wallet)
-    - [Decrypt wallet](#decrypt-wallet)
-    - [Get wallet seed](#get-wallet-seed)
+	- [Get wallet](#get-wallet)
+	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
+	- [Get wallets](#get-wallets)
+	- [Get wallet folder name](#get-wallet-folder-name)
+	- [Generate wallet seed](#generate-wallet-seed)
+	- [Create a wallet from seed](#create-a-wallet-from-seed)
+	- [Generate new address in wallet](#generate-new-address-in-wallet)
+	- [Updates wallet label](#updates-wallet-label)
+	- [Get wallet balance](#get-wallet-balance)
+	- [Spend coins from wallet](#spend-coins-from-wallet)
+	- [Create transaction](#create-transaction)
+	- [Unload wallet](#unload-wallet)
+	- [Encrypt wallet](#encrypt-wallet)
+	- [Decrypt wallet](#decrypt-wallet)
+	- [Get wallet seed](#get-wallet-seed)
 - [Transaction APIs](#transaction-apis)
-    - [Get unconfirmed transactions](#get-unconfirmed-transactions)
-    - [Get transaction info by id](#get-transaction-info-by-id)
-    - [Get raw transaction by id](#get-raw-transaction-by-id)
-    - [Inject raw transaction](#inject-raw-transaction)
-    - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
-    - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-    - [Verify encoded transaction](#verify-encoded-transaction)
+	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
+	- [Get transaction info by id](#get-transaction-info-by-id)
+	- [Get raw transaction by id](#get-raw-transaction-by-id)
+	- [Inject raw transaction](#inject-raw-transaction)
+	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+	- [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
-    - [Get blockchain metadata](#get-blockchain-metadata)
-    - [Get blockchain progress](#get-blockchain-progress)
-    - [Get block by hash or seq](#get-block-by-hash-or-seq)
-    - [Get blocks in specific range](#get-blocks-in-specific-range)
-    - [Get last N blocks](#get-last-n-blocks)
+	- [Get blockchain metadata](#get-blockchain-metadata)
+	- [Get blockchain progress](#get-blockchain-progress)
+	- [Get block by hash or seq](#get-block-by-hash-or-seq)
+	- [Get blocks in specific range](#get-blocks-in-specific-range)
+	- [Get last N blocks](#get-last-n-blocks)
 - [Explorer APIs](#explorer-apis)
-    - [Get address affected transactions](#get-address-affected-transactions)
+	- [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
-    - [Get uxout](#get-uxout)
-    - [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+	- [Get uxout](#get-uxout)
+	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
 - [Coin supply related information](#coin-supply-related-information)
-    - [Coin supply](#coin-supply)
-    - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-    - [Count unique addresses](#count-unique-addresses)
+	- [Coin supply](#coin-supply)
+	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+	- [Count unique addresses](#count-unique-addresses)
 - [Network status](#network-status)
-    - [Get information for a specific connection](#get-information-for-a-specific-connection)
-    - [Get a list of all connections](#get-a-list-of-all-connections)
-    - [Get a list of all default connections](#get-a-list-of-all-default-connections)
-    - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-    - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+	- [Get information for a specific connection](#get-information-for-a-specific-connection)
+	- [Get a list of all connections](#get-a-list-of-all-connections)
+	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
+	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -1306,8 +1306,6 @@ Result:
 
 API sets: `WALLET_SEED`
 
-This endpoint is supported only when the wallet is encrypted and either `-enable-seed-api` option is enabled or equivalent `--enable-api=SEED` is specified.
-
 ```
 URI: /api/v1/wallet/seed
 Method: POST
@@ -1315,6 +1313,8 @@ Args:
     id: wallet id
     password: wallet password
 ```
+
+This endpoint only works for encrypted wallets.  If the wallet is unencrypted, the seed will not be returned.
 
 Example:
 

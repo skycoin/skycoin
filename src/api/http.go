@@ -288,7 +288,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 			if isEnabled {
 				f(w, r)
 			} else {
-				wh.Error403(w, "")
+				wh.Error403(w, "Endpoint is disabled")
 			}
 		}
 	}

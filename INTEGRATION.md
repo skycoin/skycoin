@@ -30,37 +30,37 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5,6" -->
 
 - [API Documentation](#api-documentation)
-    - [Wallet REST API](#wallet-rest-api)
-    - [Skycoin command line interface](#skycoin-command-line-interface)
-    - [Skycoin REST API Client Documentation](#skycoin-rest-api-client-documentation)
-    - [Skycoin Go Library Documentation](#skycoin-go-library-documentation)
-    - [libskycoin Documentation](#libskycoin-documentation)
+	- [Wallet REST API](#wallet-rest-api)
+	- [Skycoin command line interface](#skycoin-command-line-interface)
+	- [Skycoin REST API Client Documentation](#skycoin-rest-api-client-documentation)
+	- [Skycoin Go Library Documentation](#skycoin-go-library-documentation)
+	- [libskycoin Documentation](#libskycoin-documentation)
 - [Implementation guidelines](#implementation-guidelines)
-    - [Scanning deposits](#scanning-deposits)
-        - [Using the CLI](#using-the-cli)
-        - [Using the REST API](#using-the-rest-api)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application)
-    - [Sending coins](#sending-coins)
-        - [General principles](#general-principles)
-        - [Using the CLI](#using-the-cli-1)
-        - [Using the REST API](#using-the-rest-api-1)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-1)
-        - [Coinhours](#coinhours)
-            - [REST API](#rest-api)
-            - [CLI](#cli)
-    - [Verifying addresses](#verifying-addresses)
-        - [Using the CLI](#using-the-cli-2)
-        - [Using the REST API](#using-the-rest-api-2)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-2)
-        - [Using skycoin as a library in other applications](#using-skycoin-as-a-library-in-other-applications)
-    - [Checking Skycoin node connections](#checking-skycoin-node-connections)
-        - [Using the CLI](#using-the-cli-3)
-        - [Using the REST API](#using-the-rest-api-3)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-3)
-    - [Checking Skycoin node status](#checking-skycoin-node-status)
-        - [Using the CLI](#using-the-cli-4)
-        - [Using the REST API](#using-the-rest-api-4)
-        - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-4)
+	- [Scanning deposits](#scanning-deposits)
+		- [Using the CLI](#using-the-cli)
+		- [Using the REST API](#using-the-rest-api)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application)
+	- [Sending coins](#sending-coins)
+		- [General principles](#general-principles)
+		- [Using the CLI](#using-the-cli-1)
+		- [Using the REST API](#using-the-rest-api-1)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-1)
+		- [Coinhours](#coinhours)
+			- [REST API](#rest-api)
+			- [CLI](#cli)
+	- [Verifying addresses](#verifying-addresses)
+		- [Using the CLI](#using-the-cli-2)
+		- [Using the REST API](#using-the-rest-api-2)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-2)
+		- [Using skycoin as a library in other applications](#using-skycoin-as-a-library-in-other-applications)
+	- [Checking Skycoin node connections](#checking-skycoin-node-connections)
+		- [Using the CLI](#using-the-cli-3)
+		- [Using the REST API](#using-the-rest-api-3)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-3)
+	- [Checking Skycoin node status](#checking-skycoin-node-status)
+		- [Using the CLI](#using-the-cli-4)
+		- [Using the REST API](#using-the-rest-api-4)
+		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-4)
 
 <!-- /MarkdownTOC -->
 
@@ -160,6 +160,8 @@ To perform a send, the preferred method follows these steps in a loop:
 That is, create a raw transaction, broadcast it, and wait for it to confirm.
 
 #### Using the REST API
+
+The wallet APIs must be enabled with `-enable-api-set=WALLET,READ,STATUS`.
 
 Create a transaction with [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction),
 then inject it to the network with [POST /injectTransaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#inject-raw-transaction).

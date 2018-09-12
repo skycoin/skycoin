@@ -144,7 +144,7 @@ func newUxOutMock(t *testing.T) (*MockGatewayer, func(addr string) []readable.Sp
 								Hours:          0,
 							},
 						},
-						SpentTxID:     hash,
+						SpentTxnID:    hash,
 						SpentBlockSeq: 563,
 					},
 				},

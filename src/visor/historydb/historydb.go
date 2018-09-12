@@ -28,20 +28,21 @@ func CreateBuckets(tx *dbutil.Tx) error {
 
 // HistoryDB provides APIs for blockchain explorer
 type HistoryDB struct {
-	txns         *transactions // transactions bucket
-	outputs      *UxOuts       // outputs bucket
-	addrUx       *addressUx    // bucket which stores all UxOuts that address received
-	addrTxns     *addressTxns  // address related transaction bucket
-	*historyMeta               // stores history meta info
+	outputs  *uxOuts       // outputs bucket
+	txns     *transactions // transactions bucket
+	addrUx   *addressUx    // bucket which stores all UxOuts that address received
+	addrTxns *addressTxns  // address related transaction bucket
+	meta     *historyMeta  // stores history meta info
 }
 
 // New create HistoryDB instance
 func New() *HistoryDB {
 	return &HistoryDB{
-		outputs:  &UxOuts{},
+		outputs:  &uxOuts{},
 		txns:     &transactions{},
 		addrUx:   &addressUx{},
 		addrTxns: &addressTxns{},
+		meta:     &historyMeta{},
 	}
 }
 
@@ -49,7 +50,7 @@ func New() *HistoryDB {
 // If we have a new added bucket, we need to reset to parse
 // blockchain again to get the new bucket filled.
 func (hd *HistoryDB) NeedsReset(tx *dbutil.Tx) (bool, error) {
-	_, ok, err := hd.historyMeta.ParsedBlockSeq(tx)
+	_, ok, err := hd.meta.parsedBlockSeq(tx)
 	if err != nil {
 		return false, err
 	} else if !ok {
@@ -57,22 +58,22 @@ func (hd *HistoryDB) NeedsReset(tx *dbutil.Tx) (bool, error) {
 	}
 
 	// if any of the following buckets are empty, need to reset
-	addrTxnsEmpty, err := hd.addrTxns.IsEmpty(tx)
+	addrTxnsEmpty, err := hd.addrTxns.isEmpty(tx)
 	if err != nil {
 		return false, err
 	}
 
-	addrUxEmpty, err := hd.addrUx.IsEmpty(tx)
+	addrUxEmpty, err := hd.addrUx.isEmpty(tx)
 	if err != nil {
 		return false, err
 	}
 
-	txnsEmpty, err := hd.txns.IsEmpty(tx)
+	txnsEmpty, err := hd.txns.isEmpty(tx)
 	if err != nil {
 		return false, err
 	}
 
-	outputsEmpty, err := hd.outputs.IsEmpty(tx)
+	outputsEmpty, err := hd.outputs.isEmpty(tx)
 	if err != nil {
 		return false, err
 	}
@@ -87,44 +88,54 @@ func (hd *HistoryDB) NeedsReset(tx *dbutil.Tx) (bool, error) {
 // Erase erases the entire HistoryDB
 func (hd *HistoryDB) Erase(tx *dbutil.Tx) error {
 	logger.Debug("HistoryDB.reset")
-	if err := hd.addrTxns.Reset(tx); err != nil {
+	if err := hd.addrTxns.reset(tx); err != nil {
 		return err
 	}
 
-	if err := hd.addrUx.Reset(tx); err != nil {
+	if err := hd.addrUx.reset(tx); err != nil {
 		return err
 	}
 
-	if err := hd.outputs.Reset(tx); err != nil {
+	if err := hd.outputs.reset(tx); err != nil {
 		return err
 	}
 
-	if err := hd.historyMeta.Reset(tx); err != nil {
+	if err := hd.meta.reset(tx); err != nil {
 		return err
 	}
 
-	return hd.txns.Reset(tx)
+	return hd.txns.reset(tx)
+}
+
+// ParsedBlockSeq returns the block seq up to which the HistoryDB is parsed
+func (hd *HistoryDB) ParsedBlockSeq(tx *dbutil.Tx) (uint64, bool, error) {
+	return hd.meta.parsedBlockSeq(tx)
+}
+
+// SetParsedBlockSeq sets the block seq up to which the HistoryDB is parsed
+func (hd *HistoryDB) SetParsedBlockSeq(tx *dbutil.Tx, seq uint64) error {
+	return hd.meta.setParsedBlockSeq(tx, seq)
 }
 
 // GetUxOuts get UxOut of specific uxIDs.
 func (hd *HistoryDB) GetUxOuts(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]UxOut, error) {
-	return hd.outputs.GetArray(tx, uxIDs)
+	return hd.outputs.getArray(tx, uxIDs)
 }
 
 // ParseBlock builds indexes out of the block data
 func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 	for _, t := range b.Body.Transactions {
 		txn := Transaction{
-			Tx:       t,
+			Txn:      t,
 			BlockSeq: b.Seq(),
 		}
 
-		if err := hd.txns.Add(tx, &txn); err != nil {
+		if err := hd.txns.put(tx, &txn); err != nil {
 			return err
 		}
 
 		for _, in := range t.In {
-			o, err := hd.outputs.Get(tx, in)
+			o, err := hd.outputs.get(tx, in)
 			if err != nil {
 				return err
 			}
@@ -135,13 +146,13 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 
 			// update the output's spent block seq and txid
 			o.SpentBlockSeq = b.Seq()
-			o.SpentTxID = t.Hash()
-			if err := hd.outputs.Set(tx, *o); err != nil {
+			o.SpentTxnID = t.Hash()
+			if err := hd.outputs.put(tx, *o); err != nil {
 				return err
 			}
 
 			// store the IN address with txid
-			if err := hd.addrTxns.Add(tx, o.Out.Body.Address, t.Hash()); err != nil {
+			if err := hd.addrTxns.add(tx, o.Out.Body.Address, t.Hash()); err != nil {
 				return err
 			}
 		}
@@ -149,17 +160,17 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 		// handle the tx out
 		uxArray := coin.CreateUnspents(b.Head, t)
 		for _, ux := range uxArray {
-			if err := hd.outputs.Set(tx, UxOut{
+			if err := hd.outputs.put(tx, UxOut{
 				Out: ux,
 			}); err != nil {
 				return err
 			}
 
-			if err := hd.addrUx.Add(tx, ux.Body.Address, ux.Hash()); err != nil {
+			if err := hd.addrUx.add(tx, ux.Body.Address, ux.Hash()); err != nil {
 				return err
 			}
 
-			if err := hd.addrTxns.Add(tx, ux.Body.Address, t.Hash()); err != nil {
+			if err := hd.addrTxns.add(tx, ux.Body.Address, t.Hash()); err != nil {
 				return err
 			}
 		}
@@ -170,32 +181,32 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 
 // GetTransaction get transaction by hash.
 func (hd HistoryDB) GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, error) {
-	return hd.txns.Get(tx, hash)
+	return hd.txns.get(tx, hash)
 }
 
 // GetOutputsForAddress get all uxout that the address affected.
 func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]UxOut, error) {
-	hashes, err := hd.addrUx.Get(tx, address)
+	hashes, err := hd.addrUx.get(tx, address)
 	if err != nil {
 		return nil, err
 	}
 
-	return hd.outputs.GetArray(tx, hashes)
+	return hd.outputs.getArray(tx, hashes)
 }
 
 // GetTransactionsForAddress returns all the address related transactions
 func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address) ([]Transaction, error) {
-	hashes, err := hd.addrTxns.Get(tx, address)
+	hashes, err := hd.addrTxns.get(tx, address)
 	if err != nil {
 		return nil, err
 	}
 
-	return hd.txns.GetSlice(tx, hashes)
+	return hd.txns.getArray(tx, hashes)
 }
 
 // ForEachTxn traverses the transactions bucket
 func (hd HistoryDB) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *Transaction) error) error {
-	return hd.txns.ForEach(tx, f)
+	return hd.txns.forEach(tx, f)
 }
 
 // IndexesMap is a goroutine safe address indexes map
@@ -214,16 +225,16 @@ func NewIndexesMap() *IndexesMap {
 // Load returns value of given key
 func (im *IndexesMap) Load(address cipher.Address) (AddressIndexes, bool) {
 	im.lock.RLock()
+	defer im.lock.RUnlock()
 	v, ok := im.value[address]
-	im.lock.RUnlock()
 	return v, ok
 }
 
 // Store saves address with indexes
 func (im *IndexesMap) Store(address cipher.Address, indexes AddressIndexes) {
 	im.lock.Lock()
+	defer im.lock.Unlock()
 	im.value[address] = indexes
-	im.lock.Unlock()
 }
 
 // AddressIndexes represents the address indexes struct
@@ -236,7 +247,7 @@ type AddressIndexes struct {
 func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *IndexesMap) error {
 	for _, t := range b.Body.Transactions {
 		txnHash := t.Hash()
-		txn, err := hd.txns.Get(tx, txnHash)
+		txn, err := hd.txns.get(tx, txnHash)
 		if err != nil {
 			return err
 		}
@@ -248,7 +259,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 
 		for _, in := range t.In {
 			// Checks the existence of transaction input
-			o, err := hd.outputs.Get(tx, in)
+			o, err := hd.outputs.get(tx, in)
 			if err != nil {
 				return err
 			}
@@ -275,7 +286,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 				txnHashesMap = indexes.TxnHashes
 				uxHashesMap = indexes.UxHashes
 			} else {
-				txnHashes, err := hd.addrTxns.Get(tx, addr)
+				txnHashes, err := hd.addrTxns.get(tx, addr)
 				if err != nil {
 					return err
 				}
@@ -283,7 +294,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 					txnHashesMap[hash] = struct{}{}
 				}
 
-				uxHashes, err := hd.addrUx.Get(tx, addr)
+				uxHashes, err := hd.addrUx.get(tx, addr)
 				if err != nil {
 					return err
 				}
@@ -314,7 +325,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 		uxArray := coin.CreateUnspents(b.Head, t)
 		for _, ux := range uxArray {
 			uxHash := ux.Hash()
-			out, err := hd.outputs.Get(tx, uxHash)
+			out, err := hd.outputs.get(tx, uxHash)
 			if err != nil {
 				return err
 			}
@@ -330,7 +341,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 			if ok {
 				txnHashesMap = indexes.TxnHashes
 			} else {
-				txnHashes, err := hd.addrTxns.Get(tx, addr)
+				txnHashes, err := hd.addrTxns.get(tx, addr)
 				if err != nil {
 					return err
 				}
@@ -338,7 +349,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 					txnHashesMap[hash] = struct{}{}
 				}
 
-				uxHashes, err := hd.addrUx.Get(tx, addr)
+				uxHashes, err := hd.addrUx.get(tx, addr)
 				if err != nil {
 					return err
 				}

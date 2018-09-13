@@ -22,11 +22,6 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 #port = 6000
 #web_interface_port = 6420
 
-[build]
-version = "0.24.1"
-#build = ""
-#commit = ""
-
 [visor]
 #max_coin_supply = 1e8
 #distribution_addresses_total = 100

@@ -17,7 +17,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "{{.Version}}"
+	Version = "0.24.1"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -77,14 +77,12 @@ func main() {
 	}
 
 	// create a new fiber coin instance
-	coin := skycoin.NewCoin(
-		skycoin.Config{
-			Node: nodeConfig,
-			Build: readable.BuildInfo{
-				Version: Version,
-				Commit:  Commit,
-				Branch:  Branch,
-			},
+	coin := skycoin.NewCoin(skycoin.Config{
+		Node: nodeConfig,
+		Build: readable.BuildInfo{
+			Version: Version,
+			Commit:  Commit,
+			Branch:  Branch,
 		},
 	}, logger)
 

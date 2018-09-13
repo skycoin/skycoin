@@ -197,3 +197,16 @@ typedef Handle Signature_Handle;
 %typemap(ctype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();") (GoUint8_ (*) [32])  "cipher_SecKey*"
 %typemap(cstype,pre=" var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
 %typemap(csin,pre="var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "tmp$csinput"
+
+%typemap(cstype,pre=" var tmp$csinput = $csinput;") GoString "string"
+%typemap(csin,pre="var tmp$csinput = $csinput;") GoString  "tmp$csinput"
+%typemap(imtype,pre="var tmp$csinput  = $csinput;") GoString  "string"
+%typemap(ctype) GoString  "char*"
+%typemap(in) GoString  "$1.p=$input;$1.n=strlen($input);"
+
+%typemap(ctype,pre="GoString_ tmp$csinput = new_GoStringp_();") GoString_*  "GoString*"
+%typemap(cstype,pre=" var tmp$csinput = _GoString_.getCPtr ($csinput);") GoString_*  "_GoString_"
+%typemap(csin,pre="var tmp$csinput = _GoString_.getCPtr ($csinput);") GoString_*  "tmp$csinput"
+
+
+

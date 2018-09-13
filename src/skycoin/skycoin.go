@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
+
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -107,9 +109,17 @@ func (c *Coin) Run() error {
 	// Catch SIGUSR1 (prints runtime stack to stdout)
 	go apputil.CatchDebug()
 
-	// creates blockchain instance
-	dconf := c.ConfigureDaemon()
+	// Parse the current app version
+	appVersion, err := c.config.Build.Semver()
+	if err != nil {
+		c.logger.WithError(err).Errorf("Version %s is not a valid semver", c.config.Build.Version)
+		return err
+	}
 
+	c.logger.Infof("App version: %s", appVersion)
+
+	// Open the database
+	dconf := c.ConfigureDaemon()
 	c.logger.Infof("Opening database %s", dconf.Visor.DBPath)
 	db, err = visor.OpenDB(dconf.Visor.DBPath, c.config.Node.DBReadOnly)
 	if err != nil {
@@ -117,27 +127,60 @@ func (c *Coin) Run() error {
 		return err
 	}
 
-	if c.config.Node.ResetCorruptDB {
-		// Check the database integrity and recreate it if necessary
-		c.logger.Info("Checking database and resetting if corrupted")
-		if newDB, err := visor.RepairCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
-			if err != visor.ErrVerifyStopped {
-				c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
-				retErr = err
+	// Look for saved app version
+	dbVersion, err := visor.GetDBVersion(db)
+	if err != nil {
+		c.logger.WithError(err).Error("visor.GetDBVersion failed")
+		retErr = err
+		goto earlyShutdown
+	}
+
+	if dbVersion == nil {
+		c.logger.Info("DB version not found in DB")
+	} else {
+		c.logger.Infof("DB version: %s", dbVersion)
+	}
+
+	// If the saved DB version is higher than the app version, abort.
+	// Otherwise DB corruption could occur.
+	if dbVersion != nil && dbVersion.GT(*appVersion) {
+		err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, appVersion)
+		c.logger.WithError(err).Error()
+		retErr = err
+		goto earlyShutdown
+	}
+
+	// Verify the DB if the version detection says to, or if it was requested on the command line
+	if shouldVerifyDB(appVersion, dbVersion) || c.config.Node.VerifyDB {
+		if c.config.Node.ResetCorruptDB {
+			// Check the database integrity and recreate it if necessary
+			c.logger.Info("Checking database and resetting if corrupted")
+			if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
+				if err != visor.ErrVerifyStopped {
+					c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+					retErr = err
+				}
+				goto earlyShutdown
+			} else {
+				db = newDB
 			}
-			goto earlyShutdown
 		} else {
-			db = newDB
-		}
-	} else if c.config.Node.VerifyDB {
-		c.logger.Info("Checking database")
-		if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
-			if err != visor.ErrVerifyStopped {
-				c.logger.Errorf("visor.CheckDatabase failed: %v", err)
-				retErr = err
+			c.logger.Info("Checking database")
+			if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
+				if err != visor.ErrVerifyStopped {
+					c.logger.Errorf("visor.CheckDatabase failed: %v", err)
+					retErr = err
+				}
+				goto earlyShutdown
 			}
-			goto earlyShutdown
 		}
+	}
+
+	// Update the DB version
+	if err := visor.SetDBVersion(db, *appVersion); err != nil {
+		c.logger.WithError(err).Error("visor.SetDBVersion failed")
+		retErr = err
+		goto earlyShutdown
 	}
 
 	d, err = daemon.NewDaemon(dconf, db)
@@ -154,12 +197,12 @@ func (c *Coin) Run() error {
 			retErr = err
 			goto earlyShutdown
 		}
-	}
 
-	fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
-	c.logger.Critical().Infof("Full address: %s", fullAddress)
-	if c.config.Node.PrintWebInterfaceAddress {
-		fmt.Println(fullAddress)
+		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
+		c.logger.Critical().Infof("Full address: %s", fullAddress)
+		if c.config.Node.PrintWebInterfaceAddress {
+			fmt.Println(fullAddress)
+		}
 	}
 
 	if err := d.Init(); err != nil {
@@ -431,4 +474,24 @@ func createDirIfNotExist(dir string) error {
 	}
 
 	return os.Mkdir(dir, 0750)
+}
+
+func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
+	// Update this version to a newer version if the newer version requires a new verification scan
+	checkpointVersion := semver.MustParse("0.25.0")
+
+	// If the dbVersion is not set, verify
+	if dbVersion == nil {
+		return true
+	}
+
+	// If the appVersion and dbVersion are different
+	// and the dbVersion is less than the verification checkpoint version, verify
+	if appVersion.NE(*dbVersion) {
+		if dbVersion.LT(checkpointVersion) {
+			return true
+		}
+	}
+
+	return false
 }

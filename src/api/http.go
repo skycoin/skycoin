@@ -231,6 +231,9 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 
 // Addr returns the listening address of the Server
 func (s *Server) Addr() string {
+	if s == nil || s.listener == nil {
+		return ""
+	}
 	return s.listener.Addr().String()
 }
 

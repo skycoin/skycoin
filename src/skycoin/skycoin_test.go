@@ -121,7 +121,7 @@ func TestDBVerifyLogic(t *testing.T) {
 			shouldVerify: false,
 		},
 		{
-			name:         "db version 0.25.0, app version 0.26.0x",
+			name:         "db version 0.25.0, app version 0.26.0",
 			dbFile:       "version-0.25.0.db",
 			dbVersion:    "0.25.0",
 			appVersion:   "0.26.0",
@@ -133,6 +133,13 @@ func TestDBVerifyLogic(t *testing.T) {
 			dbVersion:    "0.25.0",
 			appVersion:   "0.26.0",
 			args:         []string{"-verify-db=true"},
+			shouldVerify: true,
+		},
+		{
+			name:         "db version 0.24.1, app version 0.26.0",
+			dbFile:       "version-0.24.1.db",
+			dbVersion:    "0.24.1",
+			appVersion:   "0.26.0",
 			shouldVerify: true,
 		},
 		{

@@ -1,5 +1,5 @@
-// package integration_test implements skycoin main integration tests
-package integration_test
+// package skycoin implements skycoin main integration tests
+package skycoin
 
 import (
 	"bufio"
@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,16 +22,54 @@ import (
 )
 
 const (
-	binaryName      = "skycoin-integration-test"
 	testFixturesDir = "testdata"
 )
 
+var (
+	ldflagsName string
+)
+
+func TestMain(m *testing.M) {
+	coin := getCoinName()
+	output, err := exec.Command("go", "list", fmt.Sprintf("../../cmd/%s", coin)).CombinedOutput()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "go list failed: %s", output)
+		os.Exit(1)
+	}
+
+	ldflagsName = strings.TrimSpace(string(output))
+
+	ret := m.Run()
+	os.Exit(ret)
+}
+
+func getCoinName() string {
+	coin := os.Getenv("COIN")
+	if coin == "" {
+		coin = "skycoin"
+	}
+	return coin
+}
+
 func buildBinary(t *testing.T, version string) (string, func()) {
+	coin := getCoinName()
+
+	binaryName := fmt.Sprintf("%s-skycoin-pkg.test", coin)
 	binaryPath, err := filepath.Abs(binaryName)
 	require.NoError(t, err)
 
+	coverpkgName := filepath.Dir(filepath.Dir(ldflagsName))
+
 	// Build binary file with specific version
-	args := []string{"build", "-ldflags", fmt.Sprintf("-X main.Version=%s", version), "-o", binaryPath, "../../../cmd/skycoin/skycoin.go"}
+	args := []string{
+		"test", "-c",
+		"-ldflags", fmt.Sprintf("-X %s.Version=%s", ldflagsName, version),
+		"-tags", "testrunmain",
+		"-o", binaryPath,
+		fmt.Sprintf("-coverpkg=%s/...", coverpkgName),
+		fmt.Sprintf("../../cmd/%s/", coin),
+	}
+	fmt.Println(args)
 	cmd := exec.Command("go", args...)
 
 	stdout, err := cmd.StdoutPipe()
@@ -121,7 +160,12 @@ func TestDBVerifyLogic(t *testing.T) {
 		return f.Name()
 	}
 
-	for _, tc := range cases {
+	err := os.MkdirAll("../../coverage", 0755)
+	require.NoError(t, err)
+
+	for i, tc := range cases {
+		coverageFile := fmt.Sprintf("../../coverage/db-verify-logic-%d.coverage.out", i)
+
 		t.Run(tc.name, func(t *testing.T) {
 			// Build the binary with a specific version
 			binaryPath, cleanup := buildBinary(t, tc.appVersion)
@@ -136,8 +180,11 @@ func TestDBVerifyLogic(t *testing.T) {
 				"-web-interface=false",
 				"-download-peerlist=false",
 				fmt.Sprintf("-db-path=%s", tmpFile),
+				"-test.run", "^TestRunMain$",
+				fmt.Sprintf("-test.coverprofile=%s", coverageFile),
 			}, tc.args...)
 
+			fmt.Println(args)
 			cmd := exec.Command(binaryPath, args...)
 
 			stdout, err := cmd.StdoutPipe()

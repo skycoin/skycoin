@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 In the v0.26.0 these features and functions will be removed.  If you have a need for any of these features, let us know.
 
-- JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does)
+- JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md##migrating-from-the-jsonrpc-api
 - `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead)
 - The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`)
 
@@ -25,6 +25,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
 - Add `-enable-api-set` option to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `WALLET`, `WALLET_SEED`, `DEPRECATED_WALLET_SPEND`. Multiple values must be comma separated. Deprecates `-enable-wallet-api` and `-enable-seed-api`.
 - `/api/v1/wallet/spend` is deprecated and requires `-enable-api-set=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
+- Add `seqs` parameter to `/api/v1/blocks` to query multiple blocks by sequences
 
 ### Fixed
 

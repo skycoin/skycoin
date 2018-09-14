@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -31,7 +32,7 @@ var (
 
 func TestMain(m *testing.M) {
 	coin := getCoinName()
-	output, err := exec.Command("go", "list", fmt.Sprintf("../../cmd/%s", coin)).CombinedOutput()
+	output, err := exec.Command("go", "list", fmt.Sprintf("../../cmd/%s", coin)).CombinedOutput() // nolint: gosec
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "go list failed: %s", output)
 		os.Exit(1)
@@ -167,16 +168,37 @@ func TestDBVerifyLogic(t *testing.T) {
 		return f.Name()
 	}
 
-	err := os.MkdirAll("../../coverage", 0755)
+	err := os.MkdirAll("../../coverage", 0750)
 	require.NoError(t, err)
+
+	// Cache for prebuilt binaries (reduces test time by not recompiling needlessly)
+	appCache := make(map[string]string)
+	var appCacheLock sync.Mutex
+	var cleanups []func()
+	defer func() {
+		for _, f := range cleanups {
+			f()
+		}
+	}()
 
 	for i, tc := range cases {
 		coverageFile := fmt.Sprintf("../../coverage/db-verify-logic-%d.coverage.out", i)
 
 		t.Run(tc.name, func(t *testing.T) {
 			// Build the binary with a specific version
-			binaryPath, cleanup := buildBinary(t, tc.appVersion)
-			defer cleanup()
+
+			binaryPath := func() string {
+				appCacheLock.Lock()
+				defer appCacheLock.Unlock()
+				binaryPath := appCache[tc.appVersion]
+				if binaryPath == "" {
+					var cleanup func()
+					binaryPath, cleanup = buildBinary(t, tc.appVersion)
+					appCache[tc.appVersion] = binaryPath
+					cleanups = append(cleanups, cleanup)
+				}
+				return binaryPath
+			}()
 
 			tmpFile := copyDBFile(t, tc.dbFile)
 			defer os.Remove(tmpFile)
@@ -206,9 +228,9 @@ func TestDBVerifyLogic(t *testing.T) {
 			// so that the tests that the database is not checked can complete
 			go time.AfterFunc(time.Second*3, func() {
 				if tc.shouldVerify {
-					_ = cmd.Process.Kill()
+					cmd.Process.Kill() // nolint: errcheck
 				} else {
-					_ = cmd.Process.Signal(os.Interrupt)
+					cmd.Process.Signal(os.Interrupt) // nolint: errcheck
 				}
 			})
 
@@ -227,7 +249,7 @@ func TestDBVerifyLogic(t *testing.T) {
 				verifyMsg := "Checking database"
 				if bytes.Contains(x, []byte(verifyMsg)) {
 					didVerify = true
-					_ = cmd.Process.Signal(os.Interrupt)
+					cmd.Process.Signal(os.Interrupt) // nolint: errcheck
 					break
 				}
 			}

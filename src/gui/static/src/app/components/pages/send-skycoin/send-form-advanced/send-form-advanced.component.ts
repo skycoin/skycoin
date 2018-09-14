@@ -1,12 +1,13 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialog, MatSnackBar } from '@angular/material';
+import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { showSnackbarError } from '../../../../utils/errors';
 import { Subscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
+import { SelectAddressComponent } from './select-address/select-address';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -111,6 +112,17 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   setShareValue(event) {
     this.autoShareValue = parseFloat(event.value).toFixed(2);
+  }
+
+  selectChangeAddress(event) {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    config.autoFocus = false;
+    this.dialog.open(SelectAddressComponent, config).afterClosed().subscribe(response => {
+      if (response) {
+        this.form.get('changeAddress').setValue(response);
+      }
+    });
   }
 
   toggleOptions(event) {

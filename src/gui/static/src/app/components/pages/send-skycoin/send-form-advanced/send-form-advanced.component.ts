@@ -8,6 +8,7 @@ import { showSnackbarError } from '../../../../utils/errors';
 import { Subscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
+import { BigNumber } from 'bignumber.js';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -223,10 +224,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     const coins = this.form.get('addresses').value.reduce((a, b) => a + b.coins, 0);
     const hours = this.form.get('addresses').value.reduce((a, b) => a + b.hours, 0);
-    const destinationsCoins = this.destControls.reduce((a, b) => (Math.round((a + parseFloat(b.value.coins)) * 1000000) / 1000000), 0);
     const destinationsHours = this.destControls.reduce((a, b) => a + parseInt(b.value.hours, 10), 0);
 
-    if (destinationsCoins > coins || destinationsHours > hours) {
+    let destinationsCoins = new BigNumber(0);
+    this.destControls.map(control => destinationsCoins = destinationsCoins.plus(control.value.coins));
+
+    if (destinationsCoins.isGreaterThan(coins) || destinationsHours > hours) {
       return { Invalid: true };
     }
 
@@ -268,6 +271,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           return this.walletService.injectTransaction(transaction.encoded).toPromise();
         }
 
+        let amount = new BigNumber('0');
+        this.destinations.map(destination => amount = amount.plus(destination.coins));
+
         this.onFormSubmitted.emit({
           form: {
             wallet: this.form.get('wallet').value,
@@ -277,7 +283,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             hoursSelection: this.hoursSelection,
             autoOptions: this.autoOptions,
           },
-          amount: this.destinations.reduce((a, b) => a + parseFloat(b.coins), 0),
+          amount: amount,
           to: this.destinations.map(d => d.address),
           transaction,
         });

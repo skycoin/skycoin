@@ -37,7 +37,7 @@
         <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance > 0 }">
           <img src="/assets/img/send-blue.png">
         </div>
-        <h4>{{ transaction.balance | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>
+        <h4>{{ transaction.balance.decimalPlaces(6, 4).toString() }} {{ 'common.coin-id' | translate }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate' | translate) : ''">
           {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
         </p>

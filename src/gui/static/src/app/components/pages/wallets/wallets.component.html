@@ -21,7 +21,7 @@
                  [matTooltip]="'wallet.encryption-disabled' | translate"
                  *ngIf="!wallet.encrypted">
           </div>
-          <div class="-width-130 -coins">{{ (wallet.coins ? wallet.coins : 0) | number:'1.0-6' }}</div>
+          <div class="-width-130 -coins">{{ (wallet.coins ? wallet.coins.decimalPlaces(6, 4).toString() : 0) }}</div>
           <div class="-width-130 -hours">{{ (wallet.hours ? wallet.hours : 0) | number:'1.0-6' }}</div>
           <div class="-expand">
             <img src="../../../../assets/img/chevron-right-grey.png"

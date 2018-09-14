@@ -11,6 +11,7 @@ import 'rxjs/add/operator/skip';
 import 'rxjs/add/operator/take';
 import { shouldUpgradeVersion } from '../../../utils/semver';
 import { TranslateService } from '@ngx-translate/core';
+import { BigNumber } from 'bignumber.js';
 
 @Component({
   selector: 'app-header',
@@ -39,7 +40,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   get coins() {
-    return this.addresses.map(addr => addr.coins >= 0 ? addr.coins : 0).reduce((a, b) => a + b, 0);
+    let coins = new BigNumber('0');
+    this.addresses.map(addr => coins = coins.plus(addr.coins));
+
+    return coins.decimalPlaces(6, BigNumber.ROUND_HALF_UP).toString();
   }
 
   get hours() {

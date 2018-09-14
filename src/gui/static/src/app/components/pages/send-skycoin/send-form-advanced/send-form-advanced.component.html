@@ -67,6 +67,9 @@
     <label for="change-address">
       {{ 'send.change-address-label' | translate }}
       <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+      <span class="-options" (click)="selectChangeAddress($event)">
+        {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+      </span>
     </label>
     <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()">
   </div>

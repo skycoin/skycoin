@@ -197,7 +197,6 @@ func createCoinCommand() cli.Command {
 			}
 
 			err = t.ExecuteTemplate(coinFile, coinTemplateFile, CoinTemplateParameters{
-				Version:             config.Build.Version,
 				PeerListURL:         config.Node.PeerListURL,
 				Port:                config.Node.Port,
 				WebInterfacePort:    config.Node.WebInterfacePort,

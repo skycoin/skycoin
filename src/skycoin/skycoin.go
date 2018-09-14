@@ -177,10 +177,12 @@ func (c *Coin) Run() error {
 	}
 
 	// Update the DB version
-	if err := visor.SetDBVersion(db, *appVersion); err != nil {
-		c.logger.WithError(err).Error("visor.SetDBVersion failed")
-		retErr = err
-		goto earlyShutdown
+	if !db.IsReadOnly() {
+		if err := visor.SetDBVersion(db, *appVersion); err != nil {
+			c.logger.WithError(err).Error("visor.SetDBVersion failed")
+			retErr = err
+			goto earlyShutdown
+		}
 	}
 
 	d, err = daemon.NewDaemon(dconf, db)

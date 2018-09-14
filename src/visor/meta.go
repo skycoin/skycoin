@@ -18,7 +18,7 @@ var (
 // GetDBVersion returns the saved DB version
 func GetDBVersion(db *dbutil.DB) (*semver.Version, error) {
 	var v *semver.Version
-	if err := db.Update("GetDBVersion", func(tx *dbutil.Tx) error {
+	if err := db.View("GetDBVersion", func(tx *dbutil.Tx) error {
 		var err error
 		v, err = getDBVersion(tx)
 		return err
@@ -30,13 +30,14 @@ func GetDBVersion(db *dbutil.DB) (*semver.Version, error) {
 }
 
 func getDBVersion(tx *dbutil.Tx) (*semver.Version, error) {
-	if _, err := tx.CreateBucketIfNotExists(MetaBkt); err != nil {
-		return nil, err
-	}
-
 	v, err := dbutil.GetBucketValue(tx, MetaBkt, versionKey)
 	if err != nil {
-		return nil, err
+		switch err.(type) {
+		case dbutil.ErrBucketNotExist:
+			return nil, nil
+		default:
+			return nil, err
+		}
 	} else if v == nil {
 		return nil, nil
 	}
@@ -52,6 +53,10 @@ func getDBVersion(tx *dbutil.Tx) (*semver.Version, error) {
 // SetDBVersion sets the DB version
 func SetDBVersion(db *dbutil.DB, version semver.Version) error {
 	return db.Update("SetDBVersion", func(tx *dbutil.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists(MetaBkt); err != nil {
+			return err
+		}
+
 		oldVersion, err := getDBVersion(tx)
 		if err != nil {
 			return err

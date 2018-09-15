@@ -24,20 +24,25 @@ import (
 )
 
 const (
-	// SKY_ERROR generic error condition
-	SKY_ERROR = 0x7FFFFFFF
-	// SKY_BAD_HANDLE invalid handle argument
-	SKY_BAD_HANDLE = 0x7F000001
-	// SKY_API_LOCKED API locked for security reasons
-	SKY_API_LOCKED = 0x7F000002
+	// SKY_PKG_LIBCGO package prefix for internal API errors
+	SKY_PKG_LIBCGO = 0x7F000000 // nolint megacheck
 	// SKY_OK error code is used to report success
 	SKY_OK = 0
+	// SKY_ERROR generic error condition
+	SKY_ERROR = 0x7FFFFFFF
+)
+
+const (
+	// SKY_BAD_HANDLE invalid handle argument
+	SKY_BAD_HANDLE = SKY_PKG_LIBCGO + iota + 1
+	// SKY_API_LOCKED API locked for security reasons
+	SKY_API_LOCKED
 )
 
 // Package prefixes for error codes
 const (
 	// Error code prefix for api package
-	SKY_PKG_API = (1 + iota) << 24
+	SKY_PKG_API = (1 + iota) << 24 // nolint megacheck
 	// Error code prefix for cipher package and subpackages
 	SKY_PKG_CIPHER
 	// Error code prefix for cli package
@@ -45,24 +50,19 @@ const (
 	// Error code prefix for coin package
 	SKY_PKG_COIN
 	// Error code prefix for consensus package
-	SKY_PKG_CONSENSUS
+	SKY_PKG_CONSENSUS // nolint megacheck
 	// Error code prefix for daemon package
 	SKY_PKG_DAEMON
 	// Error code prefix for gui package
-	SKY_PKG_GUI
+	SKY_PKG_GUI // nolint megacheck
 	// Error code prefix for skycoin package
-	SKY_PKG_SKYCOIN
+	SKY_PKG_SKYCOIN // nolint megacheck
 	// Error code prefix for util package
 	SKY_PKG_UTIL
 	// Error code prefix for visor package
 	SKY_PKG_VISOR
 	// Error code prefix for wallet package
 	SKY_PKG_WALLET
-)
-
-const (
-	// SKY_PKG_LIBCGO package prefix for internal API errors
-	SKY_PKG_LIBCGO = 0x7F000000
 )
 
 // Error codes defined in cipher package
@@ -215,7 +215,7 @@ const (
 	// SKY_ErrNoReachableConnections when broadcasting a message, no connections were available to send a message to
 	SKY_ErrNoReachableConnections
 	// SKY_ErrMaxDefaultConnectionsReached returns when maximum number of default connections is reached
-	SKY_ErrMaxDefaultConnectionsReached
+	SKY_ErrMaxDefaultConnectionsReached // nolint megacheck
 	// SKY_ErrDisconnectReasons invalid version
 	SKY_ErrDisconnectInvalidVersion
 	// SKY_ErrDisconnectIntroductionTimeout timeout
@@ -237,11 +237,11 @@ const (
 	// SKY_ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
 	SKY_ErrDisconnectOtherError
 	// SKY_ErrDisconnectMaxDefaultConnectionReached Maximum number of default connections was reached
-	SKY_ErrDisconnectMaxDefaultConnectionReached
+	SKY_ErrDisconnectMaxDefaultConnectionReached // nolint megacheck
 	// SKY_ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	SKY_ErrDisconnectMaxOutgoingConnectionsReached
 	// SKY_ConnectionError represent a failure to connect/dial a connection, with context
-	SKY_ConnectionError
+	SKY_ConnectionError // nolint megacheck
 )
 
 // Error codes defined in util package
@@ -624,11 +624,12 @@ const (
 	// Supported values:
 	// 0        - do not halt on panic, lock API instead
 	// non-zero - exit the process on unrecoverable panic
-	SKY_OPT_HALTONPANIC = 1 + iota
+	SKY_OPT_HALTONPANIC = 1 + iota // nolint megacheck
 )
 
 // SKY_libcgo_ConfigApiOptions set values for configurable API settings
-func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) {
+//export SKY_libcgo_ConfigApiOption
+func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) { // nolint megacheck
 	if optionID == SKY_OPT_HALTONPANIC {
 		haltOnPanic = optionValue != 0
 	}

@@ -2,6 +2,10 @@
 #ifndef SKYTYPES_H
 #define SKYTYPES_H
 
+#ifndef __SIZE_TYPE__
+#define __SIZE_TYPE__ unsigned int
+#endif
+
 /**
  * Go 8-bit signed integer values.
  */
@@ -194,11 +198,6 @@ typedef struct {
 	GoSlice_ 	nat;
 } Number;
 
-/**
- * RIPEMD-160 hash.
- */
-typedef unsigned char Ripemd160[20];
-
 typedef struct {
 	//TODO: stdevEclipse Define Signature
 	Number R;
@@ -303,10 +302,16 @@ typedef Handle BalanceResult_Handle;
 typedef Handle SpendResult_Handle;
 
 /**
- * Memory handle to access to webrpc.TxnResult
+ * Memory handle to access to coin.Transactions
  */
 
 typedef Handle TransactionResult_Handle;
+
+/**
+ * Memory handle to access to coin.SortableTransactions
+ */
+
+typedef Handle SortableTransactionResult_Handle;
 
 /**
  * Memory handle to access to wallet.Notes
@@ -332,14 +337,41 @@ typedef Handle OutputsResult_Handle;
 
 typedef Handle StatusResult_Handle;
 
-/*
-#include "cipher.hash.go.h"
-#include "cipher.crypto.go.h"
-#include "cipher.address.go.h"
-#include "cli.create_rawtx.go.h"
-#include "coin.outputs.go.h"
-#include "coin.transactions.go.h"
-#include "wallet.entry.go.h"
-#include "wallet.wallet.go.h"
+/**
+ * Memory handle to access to coin.AddressUxOuts
+ */
+
+typedef Handle AddressUxOuts_Handle;
+
+/**
+ * Memory handle to access to visor.BuildInfo (BuildInfo)
+ */
+
+typedef Handle BuildInfo_Handle;
+
+/**
+ * Memory handle for hash (ripemd160.digest)
+ */
+
+typedef Handle Hash_Handle;
+
+/**
+* Handle for Number type
 */
+
+typedef Handle Number_Handle;
+
+/**
+* Handle for Signature type
+*/
+
+typedef Handle Signature_Handle;
+
+typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
+
+typedef struct {
+  FeeCalcFunc callback;
+  void* context;
+} FeeCalculator ;
+
 #endif

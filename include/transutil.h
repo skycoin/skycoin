@@ -11,6 +11,8 @@
 #include "skytest.h"
 #include "skytypes.h"
 
+GoUint32_ zeroFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context);
+
 int makeKeysAndAddress(cipher__PubKey* ppubkey, cipher__SecKey* pseckey, cipher__Address* paddress);
 
 int makeUxBodyWithSecret(coin__UxBody* puxBody, cipher__SecKey* pseckey);
@@ -36,3 +38,5 @@ coin__Transaction* copyTransaction(Transaction__Handle handle, Transaction__Hand
 void makeRandHash(cipher__SHA256* phash);
 
 int makeUxArray(coin__UxArray* parray, int n);
+
+int sortTransactions(Transactions__Handle txns_handle, Transactions__Handle* sorted_txns_handle);

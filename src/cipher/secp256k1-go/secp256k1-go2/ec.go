@@ -3,7 +3,14 @@ package secp256k1go
 import (
 	//"encoding/hex"
 	"bytes"
+	"errors"
 	"log"
+
+	skyerrors "github.com/skycoin/skycoin/src/util/errors"
+)
+
+var (
+	ErrMustPass64bytePubKey = errors.New("must pass in 64 byte pubkey")
 )
 
 // func ecdsaVerify(pubkey, sig, msg []byte) int {
@@ -113,7 +120,9 @@ func RecoverPublicKey(sigByte []byte, h []byte, recid int) ([]byte, int) {
 	var pubkey XY
 
 	if len(sigByte) != 64 {
-		log.Panic("must pass in 64 byte pubkey")
+		err := skyerrors.NewValueError(ErrMustPass64bytePubKey, "sigByte ", sigByte)
+		log.Print(err)
+		panic(err)
 	}
 
 	var sig Signature

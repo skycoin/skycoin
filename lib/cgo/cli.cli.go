@@ -39,7 +39,7 @@ func SKY_cli_Config_FullWalletPath(_c C.Config__Handle, _arg0 *C.GoString_) (___
 	}()
 	__c, okc := lookupConfigHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	c := *__c
@@ -56,7 +56,7 @@ func SKY_cli_Config_FullDBPath(_c C.Config__Handle, _arg0 *C.GoString_) (____err
 	}()
 	__c, okc := lookupConfigHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	c := *__c
@@ -73,7 +73,7 @@ func SKY_cli_NewApp(_cfg C.Config__Handle, _arg1 *C.App__Handle) (____error_code
 	}()
 	__cfg, okcfg := lookupConfigHandle(_cfg)
 	if !okcfg {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	cfg := *__cfg
@@ -93,7 +93,7 @@ func SKY_cli_RPCClientFromContext(_c C.Context__Handle, _arg1 *C.WebRpcClient__H
 	}()
 	c, okc := lookupContextHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	webrpcClient := c.App.Metadata["rpc"].(*webrpc.Client)
@@ -109,7 +109,7 @@ func SKY_cli_ConfigFromContext(_c C.Context__Handle, _arg1 *C.Config__Handle) (_
 	}()
 	c, okc := lookupContextHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	config := c.App.Metadata["config"].(cli.Config)
@@ -139,12 +139,12 @@ func SKY_cli_PasswordFromBytes_Password(_p *C.cli__PasswordFromBytes, _arg0 *C.G
 }
 
 //export SKY_cli_PasswordFromTerm_Password
-func SKY_cli_PasswordFromTerm_Password(_p *C.cli__PasswordFromTerm, _arg0 *C.GoSlice_) (____error_code uint32) {
+func SKY_cli_PasswordFromTerm_Password(_arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	p := *(*cli.PasswordFromTerm)(unsafe.Pointer(_p))
+	p := cli.PasswordFromTerm{}
 	__arg0, ____return_err := p.Password()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {

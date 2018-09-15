@@ -20,9 +20,9 @@ extern char *cr_user_GoString__tostr(GoString_ *string) ;
 extern int cr_user_cipher__SecKey_eq(cipher__SecKey *seckey1, cipher__SecKey *seckey2);
 extern char *cr_user_cipher__SecKey_tostr(cipher__SecKey *seckey1);
 
-extern int cr_user_cipher__Ripemd160_noteq(Ripemd160 *rp1, Ripemd160 *rp2);
-extern int cr_user_cipher__Ripemd160_eq(Ripemd160 *rp1, Ripemd160 *rp2);
-extern char *cr_user_cipher__Ripemd160_tostr(Ripemd160 *rp1);
+extern int cr_user_cipher__Ripemd160_noteq(cipher__Ripemd160 *rp1, cipher__Ripemd160 *rp2);
+extern int cr_user_cipher__Ripemd160_eq(cipher__Ripemd160 *rp1, cipher__Ripemd160 *rp2);
+extern char *cr_user_cipher__Ripemd160_tostr(cipher__Ripemd160 *rp1);
 
 extern int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2);
 extern char *cr_user_GoSlice_tostr(GoSlice *slice1);
@@ -47,12 +47,24 @@ extern int cr_user_coin__UxOut_eq(coin__UxOut *x1, coin__UxOut *x2);
 extern int cr_user_coin__UxOut_noteq(coin__UxOut *x1, coin__UxOut *x2);
 extern char* cr_user_coin__UxOut_tostr(coin__UxOut *x1);
 
+extern int cr_user_coin__UxArray_eq(coin__UxArray *x1, coin__UxArray *x2);
+extern int cr_user_coin__UxArray_noteq(coin__UxArray *x1, coin__UxArray *x2);
+extern char* cr_user_coin__UxArray_tostr(coin__UxArray *x1);
+
 extern int cr_user_coin__Transaction_eq(coin__Transaction *x1, coin__Transaction *x2);
 extern int cr_user_coin__Transaction_noteq(coin__Transaction *x1, coin__Transaction *x2);
 extern char* cr_user_coin__Transaction_tostr(coin__Transaction *x1);
 
+extern int cr_user_coin__Transactions_eq(coin__Transactions *x1, coin__Transactions *x2);
+extern int cr_user_coin__Transactions_noteq(coin__Transactions *x1, coin__Transactions *x2);
+extern char* cr_user_coin__Transactions_tostr(coin__Transactions *x1);
+
 extern int cr_user_coin__TransactionOutput_eq(coin__TransactionOutput *x1, coin__TransactionOutput *x2);
 extern int cr_user_coin__TransactionOutput_noteq(coin__TransactionOutput *x1, coin__TransactionOutput *x2);
 extern char* cr_user_coin__TransactionOutput_tostr(coin__TransactionOutput *x1);
+
+extern int cr_user_Number_eq(Number *n1, Number  *n2);
+extern int cr_user_Number_noteq(Number *n1, Number  *n2);
+extern char* cr_user_Number_tostr(Number *n1);
 
 #endif //LIBCRITERION_H

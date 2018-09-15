@@ -35,7 +35,7 @@ func SKY_api_Client_CSRF(_c C.Client__Handle, _arg0 *C.GoString_) (____error_cod
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.CSRF()
@@ -54,13 +54,13 @@ func SKY_api_Client_Version(_c C.Client__Handle, _arg0 *C.Handle) (____error_cod
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.Version()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
+		*_arg0 = registerBuildInfoHandle(__arg0)
 	}
 	return
 }
@@ -73,7 +73,7 @@ func SKY_api_Client_Outputs(_c C.Client__Handle, _arg0 *C.Handle) (____error_cod
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.Outputs()
@@ -92,7 +92,7 @@ func SKY_api_Client_OutputsForAddresses(_c C.Client__Handle, _addrs []string, _a
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addrs := *(*[]string)(unsafe.Pointer(&_addrs))
@@ -112,7 +112,7 @@ func SKY_api_Client_OutputsForHashes(_c C.Client__Handle, _hashes []string, _arg
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	hashes := *(*[]string)(unsafe.Pointer(&_hashes))
@@ -132,7 +132,7 @@ func SKY_api_Client_CoinSupply(_c C.Client__Handle, _arg0 *C.Handle) (____error_
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.CoinSupply()
@@ -151,7 +151,7 @@ func SKY_api_Client_BlockByHash(_c C.Client__Handle, _hash string, _arg1 *C.Hand
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	hash := _hash
@@ -171,7 +171,7 @@ func SKY_api_Client_BlockBySeq(_c C.Client__Handle, _seq uint64, _arg1 *C.Handle
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	seq := _seq
@@ -191,7 +191,7 @@ func SKY_api_Client_Blocks(_c C.Client__Handle, _start, _end int, _arg1 *C.Handl
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	start := _start
@@ -212,7 +212,7 @@ func SKY_api_Client_LastBlocks(_c C.Client__Handle, _n int, _arg1 *C.Handle) (__
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	n := _n
@@ -232,7 +232,7 @@ func SKY_api_Client_BlockchainMetadata(_c C.Client__Handle, _arg0 *C.Handle) (__
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.BlockchainMetadata()
@@ -251,7 +251,7 @@ func SKY_api_Client_BlockchainProgress(_c C.Client__Handle, _arg0 *C.Handle) (__
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.BlockchainProgress()
@@ -270,7 +270,7 @@ func SKY_api_Client_Balance(_c C.Client__Handle, _addrs []string, _arg1 *C.walle
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addrs := *(*[]string)(unsafe.Pointer(&_addrs))
@@ -290,7 +290,7 @@ func SKY_api_Client_UxOut(_c C.Client__Handle, _uxID string, _arg1 *C.Handle) (_
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	uxID := _uxID
@@ -310,7 +310,7 @@ func SKY_api_Client_AddressUxOuts(_c C.Client__Handle, _addr string, _arg1 *C.Ha
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addr := _addr
@@ -330,7 +330,7 @@ func SKY_api_Client_Wallet(_c C.Client__Handle, _id string, _arg1 *C.WalletRespo
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -350,7 +350,7 @@ func SKY_api_Client_Wallets(_c C.Client__Handle, _arg0 *C.Wallets__Handle) (____
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.Wallets()
@@ -369,7 +369,7 @@ func SKY_api_Client_CreateUnencryptedWallet(_c C.Client__Handle, _seed, _label s
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	seed := _seed
@@ -391,7 +391,7 @@ func SKY_api_Client_CreateEncryptedWallet(_c C.Client__Handle, _seed, _label, _p
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	seed := _seed
@@ -414,7 +414,7 @@ func SKY_api_Client_NewWalletAddress(_c C.Client__Handle, _id string, _n int, _p
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -436,7 +436,7 @@ func SKY_api_Client_WalletBalance(_c C.Client__Handle, _id string, _arg1 *C.wall
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -456,7 +456,7 @@ func SKY_api_Client_Spend(_c C.Client__Handle, _id, _dst string, _coins uint64, 
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -479,12 +479,12 @@ func SKY_api_Client_CreateTransaction(_c C.Client__Handle, _req *C.Handle, _arg1
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	req, okreq := lookupCreateTransactionRequestHandle(C.CreateTransactionRequest__Handle(*_req))
 	if !okreq {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg1, ____return_err := c.CreateTransaction(*req)
@@ -503,7 +503,7 @@ func SKY_api_Client_WalletTransactions(_c C.Client__Handle, _id string, _arg1 *C
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -523,7 +523,7 @@ func SKY_api_Client_UpdateWallet(_c C.Client__Handle, _id, _label string) (____e
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -543,7 +543,7 @@ func SKY_api_Client_WalletFolderName(_c C.Client__Handle, _arg0 *C.Handle) (____
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.WalletFolderName()
@@ -562,7 +562,7 @@ func SKY_api_Client_NewSeed(_c C.Client__Handle, _entropy int, _arg1 *C.GoString
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	entropy := _entropy
@@ -582,7 +582,7 @@ func SKY_api_Client_GetWalletSeed(_c C.Client__Handle, _id string, _password str
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -603,7 +603,7 @@ func SKY_api_Client_NetworkConnection(_c C.Client__Handle, _addr string, _arg1 *
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addr := _addr
@@ -623,7 +623,7 @@ func SKY_api_Client_NetworkConnections(_c C.Client__Handle, _arg0 *C.Handle) (__
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.NetworkConnections()
@@ -642,7 +642,7 @@ func SKY_api_Client_NetworkDefaultConnections(_c C.Client__Handle, _arg0 *C.Hand
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.NetworkDefaultConnections()
@@ -661,7 +661,7 @@ func SKY_api_Client_NetworkTrustedConnections(_c C.Client__Handle, _arg0 *C.Hand
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.NetworkTrustedConnections()
@@ -680,7 +680,7 @@ func SKY_api_Client_NetworkExchangeableConnections(_c C.Client__Handle, _arg0 *C
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.NetworkExchangeableConnections()
@@ -699,7 +699,7 @@ func SKY_api_Client_PendingTransactions(_c C.Client__Handle, _arg0 *C.Handle) (_
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.PendingTransactions()
@@ -718,7 +718,7 @@ func SKY_api_Client_Transaction(_c C.Client__Handle, _txid string, _arg1 *C.Hand
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	txid := _txid
@@ -738,7 +738,7 @@ func SKY_api_Client_Transactions(_c C.Client__Handle, _addrs []string, _arg1 *C.
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addrs := *(*[]string)(unsafe.Pointer(&_addrs))
@@ -758,7 +758,7 @@ func SKY_api_Client_ConfirmedTransactions(_c C.Client__Handle, _addrs []string, 
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addrs := *(*[]string)(unsafe.Pointer(&_addrs))
@@ -778,7 +778,7 @@ func SKY_api_Client_UnconfirmedTransactions(_c C.Client__Handle, _addrs []string
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addrs := *(*[]string)(unsafe.Pointer(&_addrs))
@@ -798,7 +798,7 @@ func SKY_api_Client_InjectTransaction(_c C.Client__Handle, _rawTx string, _arg1 
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	rawTx := _rawTx
@@ -818,7 +818,7 @@ func SKY_api_Client_ResendUnconfirmedTransactions(_c C.Client__Handle, _arg0 *C.
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.ResendUnconfirmedTransactions()
@@ -837,7 +837,7 @@ func SKY_api_Client_RawTransaction(_c C.Client__Handle, _txid string, _arg1 *C.G
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	txid := _txid
@@ -857,7 +857,7 @@ func SKY_api_Client_AddressTransactions(_c C.Client__Handle, _addr string, _arg1
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addr := _addr
@@ -877,7 +877,7 @@ func SKY_api_Client_Richlist(_c C.Client__Handle, _params *C.api__RichlistParams
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	params := (*api.RichlistParams)(unsafe.Pointer(_params))
@@ -897,7 +897,7 @@ func SKY_api_Client_AddressCount(_c C.Client__Handle, _arg0 *uint64) (____error_
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.AddressCount()
@@ -916,7 +916,7 @@ func SKY_api_Client_UnloadWallet(_c C.Client__Handle, _id string) (____error_cod
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -935,7 +935,7 @@ func SKY_api_Client_Health(_c C.Client__Handle, _arg0 *C.Handle) (____error_code
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.Health()
@@ -954,7 +954,7 @@ func SKY_api_Client_EncryptWallet(_c C.Client__Handle, _id string, _password str
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id
@@ -975,7 +975,7 @@ func SKY_api_Client_DecryptWallet(_c C.Client__Handle, _id string, _password str
 	}()
 	c, okc := lookupClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	id := _id

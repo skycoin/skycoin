@@ -21,7 +21,7 @@ func SKY_cli_GetWalletOutputsFromFile(_c C.WebRpcClient__Handle, _walletFile str
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	walletFile := _walletFile
@@ -41,12 +41,12 @@ func SKY_cli_GetWalletOutputs(_c C.WebRpcClient__Handle, _wlt *C.Wallet__Handle,
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	wlt, okwlt := lookupWalletHandle(*_wlt)
 	if !okwlt {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg2, ____return_err := cli.GetWalletOutputs(c, wlt)

@@ -11,10 +11,6 @@ void * registerMemCleanup(void *p);
 
 void fprintbuff(FILE *f, void *buff, size_t n);
 
-void redirectStdOut();
-
-int getStdOut(char* str, unsigned int max_size);
-
 json_value* json_get_string(json_value* value, const char* key);
 
 int json_set_string(json_value* value, const char* new_string_value);
@@ -60,5 +56,6 @@ void setup(void);
 void teardown(void);
 
 extern void toGoString(GoString_ *s, GoString *r);
+extern int copyUxArraytoSlice(coin__UxArray* pdest, GoSlice* psource);
 
 #endif

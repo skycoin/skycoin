@@ -11,10 +11,14 @@ package main
 import "C"
 
 import (
+	"hash"
+
 	api "github.com/skycoin/skycoin/src/api"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
+	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 	cli "github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -398,6 +402,20 @@ func lookupTransactionResultHandle(handle C.TransactionResult_Handle) (*webrpc.T
 	return nil, false
 }
 
+func registerSortableTransactiontHandle(obj *coin.SortableTransactions) C.SortableTransactionResult_Handle {
+	return (C.SortableTransactionResult_Handle)(registerHandle(obj))
+}
+
+func lookupSortableTransactionHandle(handle C.SortableTransactionResult_Handle) (*coin.SortableTransactions, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.SortableTransactions); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func registerWalletNotesHandle(obj *wallet.Notes) C.WalletNotes_Handle {
 	return (C.WalletNotes_Handle)(registerHandle(obj))
 }
@@ -454,6 +472,76 @@ func lookupStatusResultHandle(handle C.StatusResult_Handle) (*webrpc.StatusResul
 	return nil, false
 }
 
+func registerAddressUxOutHandle(obj *coin.AddressUxOuts) C.AddressUxOuts_Handle {
+	return (C.AddressUxOuts_Handle)(registerHandle(obj))
+}
+
+func lookupAddressUxOutHandle(handle C.AddressUxOuts_Handle) (*coin.AddressUxOuts, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.AddressUxOuts); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerBuildInfoHandle(obj *visor.BuildInfo) C.BuildInfo_Handle {
+	return (C.BuildInfo_Handle)(registerHandle(obj))
+}
+
+func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*visor.BuildInfo, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.BuildInfo); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerHashHandle(obj *hash.Hash) C.Hash_Handle {
+	return (C.Hash_Handle)(registerHandle(obj))
+}
+
+func lookupHashHandle(handle C.Hash_Handle) (*hash.Hash, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*hash.Hash); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerNumberHandle(obj *secp256k1go2.Number) C.Number_Handle {
+	return (C.Number_Handle)(registerHandle(obj))
+}
+
+func lookupNumberHandle(handle C.Number_Handle) (*secp256k1go2.Number, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*secp256k1go2.Number); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerSignatureHandle(obj *secp256k1go2.Signature) C.Signature_Handle {
+	return (C.Signature_Handle)(registerHandle(obj))
+}
+
+func lookupSignatureHandle(handle C.Signature_Handle) (*secp256k1go2.Signature, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*secp256k1go2.Signature); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }
@@ -461,4 +549,15 @@ func closeHandle(handle Handle) {
 //export SKY_handle_close
 func SKY_handle_close(handle C.Handle) {
 	closeHandle(Handle(handle))
+}
+
+//export SKY_handle_copy
+func SKY_handle_copy(handle C.Handle, copy *C.Handle) uint32 {
+	obj, ok := lookupHandle(handle)
+	if ok {
+		*copy = registerHandle(obj)
+		return 0
+	} else {
+		return SKY_BAD_HANDLE
+	}
 }

@@ -37,15 +37,13 @@
 %typemap(cstype,pre="var tmp$csinput = cipher_PubKey.getCPtr ($csinput);") (GoUint8_ (*) [33])  "cipher_PubKey"
 %typemap(csin,pre="var tmp$csinput = cipher_PubKey.getCPtr ($csinput);") (GoUint8_ (*) [33])  "tmp$csinput"
 
-// cipher__SHA256
-%typemap(ctype,pre="cipher__SHA256 tmp$csinput = new cipher__SHA256();") (cipher_SHA256*)  "cipher__SHA256*"
-%typemap(cstype) (cipher_SHA256*)  "cipher_SHA256"
-%typemap(csin) (cipher_SHA256*)  "cipher_SHA256.getCPtr ($csinput)"
 
 // Seckey
 %typemap(ctype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();") (GoUint8_ (*) [32])  "cipher_SecKey*"
 %typemap(cstype,pre=" var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
 %typemap(csin,pre="var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "tmp$csinput"
+
+%apply cipher_SecKey* {cipher_SHA256}
 
 // Sig
 %typemap(ctype,pre="cipher_Sig tmp$csinput = new cipher_Sig();") (GoUint8_ (*) [65])  "cipher_Sig*"

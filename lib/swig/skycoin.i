@@ -32,6 +32,7 @@
 %include "csharp_java_basic.i"
 %include "csharp_java_typemap.i"
 %include "csharp_structs_typemaps.i"
+%include "csharp_skycoin.mem.i"
 #endif
 
 %include "swig.h"

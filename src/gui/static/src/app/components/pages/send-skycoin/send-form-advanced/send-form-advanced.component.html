@@ -40,7 +40,7 @@
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
-        <div class="col-md-5">
+        <div class="col-lg-5 col-md-4">
           <input formControlName="address" [id]="i === 0 ? 'destination' : ''">
         </div>
         <div class="col-md-3">
@@ -49,7 +49,7 @@
             <span>{{ 'common.coin-id' | translate }}</span>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-4">
           <div [ngClass]="{ '-input-addon': true, '-hidden': autoHours }">
             <input formControlName="hours">
             <span>{{ 'common.coin-hours' | translate }}</span>
@@ -67,13 +67,16 @@
     <label for="change-address">
       {{ 'send.change-address-label' | translate }}
       <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+      <span class="-options" (click)="selectChangeAddress($event)">
+        {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+      </span>
     </label>
     <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()">
   </div>
 
   <div class="-autohours">
     <div class="row">
-      <div class="col-md-5">
+      <div class="col-xl-4 col-lg-5 col-md-7">
         <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
           <div class="-space-between">
             <span>{{ 'send.hours-allocation-label' | translate }}</span>

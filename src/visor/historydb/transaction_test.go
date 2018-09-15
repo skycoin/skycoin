@@ -1,6 +1,7 @@
 package historydb
 
 import (
+	"errors"
 	"math/rand"
 	"testing"
 	"time"
@@ -53,13 +54,12 @@ func TestTransactionGet(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
 
-			txsBkt, err := newTransactions(db)
-			require.NoError(t, err)
+			txsBkt := &transactions{}
 
 			// init the bkt
-			err = db.Update("", func(tx *dbutil.Tx) error {
+			err := db.Update("", func(tx *dbutil.Tx) error {
 				for _, txn := range txns[:2] {
-					err := txsBkt.Add(tx, &txn)
+					err := txsBkt.put(tx, &txn)
 					require.NoError(t, err)
 				}
 				return nil
@@ -68,7 +68,7 @@ func TestTransactionGet(t *testing.T) {
 
 			// get slice
 			err = db.View("", func(tx *dbutil.Tx) error {
-				ts, err := txsBkt.Get(tx, tc.hash)
+				ts, err := txsBkt.get(tx, tc.hash)
 				require.NoError(t, err)
 				require.Equal(t, tc.expect, ts)
 				return nil
@@ -78,7 +78,7 @@ func TestTransactionGet(t *testing.T) {
 	}
 }
 
-func TestTransactionGetSlice(t *testing.T) {
+func TestTransactionGetArray(t *testing.T) {
 	txns := make([]Transaction, 0, 4)
 	for i := 0; i < 4; i++ {
 		txns = append(txns, makeTransaction(t))
@@ -88,37 +88,41 @@ func TestTransactionGetSlice(t *testing.T) {
 		name   string
 		hashes []cipher.SHA256
 		expect []Transaction
+		err    error
 	}{
 		{
-			"get one",
-			[]cipher.SHA256{
+			name: "get one",
+			hashes: []cipher.SHA256{
 				txns[0].Hash(),
 			},
-			txns[:1],
+			expect: txns[:1],
 		},
+
 		{
-			"get two",
-			[]cipher.SHA256{
+			name: "get two",
+			hashes: []cipher.SHA256{
 				txns[0].Hash(),
 				txns[1].Hash(),
 			},
-			txns[:2],
+			expect: txns[:2],
 		},
+
 		{
-			"get all",
-			[]cipher.SHA256{
+			name: "get all",
+			hashes: []cipher.SHA256{
 				txns[0].Hash(),
 				txns[1].Hash(),
 				txns[2].Hash(),
 			},
-			txns[:3],
+			expect: txns[:3],
 		},
+
 		{
-			"not exist",
-			[]cipher.SHA256{
+			name: "not exist",
+			hashes: []cipher.SHA256{
 				txns[3].Hash(),
 			},
-			nil,
+			err: errors.New("Transaction not found"),
 		},
 	}
 
@@ -126,13 +130,12 @@ func TestTransactionGetSlice(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
-			txsBkt, err := newTransactions(db)
-			require.NoError(t, err)
+			txsBkt := &transactions{}
 
 			// init the bkt
-			err = db.Update("", func(tx *dbutil.Tx) error {
+			err := db.Update("", func(tx *dbutil.Tx) error {
 				for _, txn := range txns[:3] {
-					err := txsBkt.Add(tx, &txn)
+					err := txsBkt.put(tx, &txn)
 					require.NoError(t, err)
 				}
 				return nil
@@ -141,7 +144,11 @@ func TestTransactionGetSlice(t *testing.T) {
 
 			// get slice
 			err = db.View("", func(tx *dbutil.Tx) error {
-				ts, err := txsBkt.GetSlice(tx, tc.hashes)
+				ts, err := txsBkt.getArray(tx, tc.hashes)
+				if tc.err != nil {
+					require.Equal(t, tc.err, err)
+					return nil
+				}
 				require.NoError(t, err)
 				require.Equal(t, tc.expect, ts)
 				return nil
@@ -152,14 +159,14 @@ func TestTransactionGetSlice(t *testing.T) {
 }
 
 func makeTransaction(t *testing.T) Transaction {
-	tx := Transaction{}
+	txn := Transaction{}
 	ux, s := makeUxOutWithSecret(t)
-	tx.Tx.PushInput(ux.Hash())
-	tx.Tx.SignInputs([]cipher.SecKey{s})
-	tx.Tx.PushOutput(makeAddress(), 1e6, 50)
-	tx.Tx.PushOutput(makeAddress(), 5e6, 50)
-	tx.Tx.UpdateHeader()
-	return tx
+	txn.Txn.PushInput(ux.Hash())
+	txn.Txn.SignInputs([]cipher.SecKey{s})
+	txn.Txn.PushOutput(makeAddress(), 1e6, 50)
+	txn.Txn.PushOutput(makeAddress(), 5e6, 50)
+	txn.Txn.UpdateHeader()
+	return txn
 }
 
 func makeAddress() cipher.Address {

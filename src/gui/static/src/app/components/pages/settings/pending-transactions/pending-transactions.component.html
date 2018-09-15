@@ -1,7 +1,13 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.pending-txs' | translate"></app-header>
 
-  <div class="container">
+  <app-loading-content
+    [isLoading]="!transactions"
+    noDataText="pending-txs.none"
+    *ngIf="!transactions || transactions.length === 0"
+  ></app-loading-content>
+
+  <div class="container" *ngIf="transactions && transactions.length > 0">
     <div class="-table">
       <div class="-headers">
         <div class="-flex-fill">{{ 'pending-txs.txid' | translate }}</div>
@@ -9,15 +15,10 @@
         <div class="-width-150">{{ 'pending-txs.timestamp' | translate }}</div>
       </div>
       <div class="-body">
-        <ng-container *ngIf="transactions.length">
-          <div class="-row" *ngFor="let tx of transactions">
-            <div class="-flex-fill">{{ tx.txid }}</div>
-            <div class="-width-150">{{ tx.amount | number:'1.0-6' }}</div>
-            <div class="-width-150 -timestamp">{{ tx.timestamp | dateTime }}</div>
-          </div>
-        </ng-container>
-        <div class="-row" *ngIf="!transactions.length">
-          <div class="-flex-fill">{{ 'pending-txs.none' | translate }}</div>
+        <div class="-row" *ngFor="let tx of transactions">
+          <div class="-flex-fill -txid">{{ tx.txid }}</div>
+          <div class="-width-150">{{ tx.amount | number:'1.0-6' }}</div>
+          <div class="-width-150 -timestamp">{{ tx.timestamp | dateTime }}</div>
         </div>
       </div>
     </div>

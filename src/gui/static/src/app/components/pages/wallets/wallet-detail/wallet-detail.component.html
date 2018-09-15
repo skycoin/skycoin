@@ -18,31 +18,32 @@
   </div>
 </div>
 
-<ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
-  <div class="-row -detail" *ngIf="!wallet.hideEmpty || address.coins">
-    <div class="-width-70 -grey">{{ i + 1 }}</div>
-    <div class="-flex-fill -address -grey">
-      <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
-      <span class="click-to-copy" [ngClass]="{ copying: address.copying }"
-            (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
-        {{ address.address }}
-        <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
-          {{ 'wallet.address.copy' | translate }}
-        </span>
-      </span>
+<div class="-records">
+  <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
+    <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
+      <div class="id-column">{{ i + 1 }}</div>
+      <div class="address-column">
+        <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
+        <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
+          {{ address.address }}
+          <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+            {{ 'wallet.address.copy' | translate }}
+          </span>
+        </p>
+      </div>
+      <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
+      <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
+      <div class="options-column">
+        <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
+        <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
+          <button mat-menu-item (click)="copyAddress($event, address, 1000)">
+            {{ 'wallet.address.' + (address.copying ? 'copied': 'copy-address') | translate }}
+          </button>
+          <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+            {{ 'wallet.address.outputs' | translate }}
+          </button>
+        </mat-menu>
+      </div>
     </div>
-    <div class="-width-150 -text-right">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
-    <div class="-width-150 -text-right -grey">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
-    <div class="-width-70 -options">
-      <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
-      <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
-        <button mat-menu-item (click)="copyAddress($event, address, 1000)">
-          {{ 'wallet.address.' + (address.copying ? 'copied': 'copy-address') | translate }}
-        </button>
-        <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
-          {{ 'wallet.address.outputs' | translate }}
-        </button>
-      </mat-menu>
-    </div>
-  </div>
-</ng-container>
+  </ng-container>
+</div>

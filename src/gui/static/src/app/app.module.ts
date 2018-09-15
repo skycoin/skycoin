@@ -70,6 +70,9 @@ import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';
 import { NavBarService } from './services/nav-bar.service';
+import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
+import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
+import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
 
 
 const ROUTES = [
@@ -168,6 +171,9 @@ const ROUTES = [
     SendVerifyComponent,
     TransactionInfoComponent,
     SendFormAdvancedComponent,
+    LoadingContentComponent,
+    NumberOfAddressesComponent,
+    SelectAddressComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -179,6 +185,8 @@ const ROUTES = [
     OnboardingSafeguardComponent,
     PasswordDialogComponent,
     SeedModalComponent,
+    NumberOfAddressesComponent,
+    SelectAddressComponent,
   ],
   imports: [
     BrowserModule,

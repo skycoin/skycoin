@@ -122,23 +122,6 @@ To build app in 32 bit from a machine with 64 bit:
 sudo apt-get install --no-install-recommends -y gcc-multilib g++-multilib
 ```
 
-## Setup
-
-Once requirements are installed, node dependencies must be downloaded.
-
-Install yarn:
-
-```sh
-npm install -g yarn
-```
-
-Install dependencies with yarn:
-
-```sh
-yarn install
-```
-
-A folder `node_modules/` should now exist.
 
 ## Building
 

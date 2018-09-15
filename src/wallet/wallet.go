@@ -536,9 +536,7 @@ func (w *Wallet) copyFrom(src *Wallet) {
 	}
 
 	// Copies the address entries
-	for _, e := range src.Entries {
-		w.Entries = append(w.Entries, e)
-	}
+	w.Entries = append(w.Entries, src.Entries...)
 }
 
 // erase wipes secret fields in wallet
@@ -557,7 +555,7 @@ func (w *Wallet) erase() {
 	}
 }
 
-// GuardUpdate executes a function within the context of a read-wirte managed decrypted wallet.
+// GuardUpdate executes a function within the context of a read-write managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
 func (w *Wallet) GuardUpdate(password []byte, fn func(w *Wallet) error) error {
 	if !w.IsEncrypted() {
@@ -614,7 +612,7 @@ func (w *Wallet) GuardView(password []byte, f func(w *Wallet) error) error {
 // Load loads wallet from a given file
 func Load(wltFile string) (*Wallet, error) {
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)
+		return nil, fmt.Errorf("wallet %s doesn't exist", wltFile)
 	}
 
 	r := &ReadableWallet{}
@@ -900,7 +898,9 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
 	// This is necessary to keep the lastSeed updated.
 	if keepNum != uint64(len(bals)) {
 		w.reset()
-		w.GenerateAddresses(nExistingAddrs + keepNum)
+		if _, err := w.GenerateAddresses(nExistingAddrs + keepNum); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -945,9 +945,7 @@ func (w *Wallet) clone() *Wallet {
 		wlt.Meta[k] = v
 	}
 
-	for _, e := range w.Entries {
-		wlt.Entries = append(wlt.Entries, e)
-	}
+	wlt.Entries = append(wlt.Entries, w.Entries...)
 
 	return &wlt
 }
@@ -1037,6 +1035,16 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options
+// Outputs to spend are chosen from the pool of outputs provided.
+// The outputs are chosen by the following procedure:
+//   - All outputs are merged into one list and are sorted coins highest, hours lowest, with the hash as a tiebreaker
+//   - Outputs are chosen from the beginning of this list, until the requested amount of coins is met.
+//     If hours are also specified, selection continues until the requested amount of hours are met.
+//   - If the total amount of coins in the chosen outputs is exactly equal to the requested amount of coins,
+//     such that there would be no change output but hours remain as change, another output will be chosen to create change,
+//     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
+// If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
+// If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
 func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	if err := params.Validate(); err != nil {
 		return nil, nil, err
@@ -1134,9 +1142,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	switch params.HoursSelection.Type {
 	case HoursSelectionTypeManual:
-		for _, out := range params.To {
-			txn.Out = append(txn.Out, out)
-		}
+		txn.Out = append(txn.Out, params.To...)
 
 	case HoursSelectionTypeAuto:
 		var addrHours []uint64

@@ -155,6 +155,9 @@ func TestKey(t *testing.T) {
 
 func BenchmarkKey(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Key([]byte("password"), []byte("salt"), 16384, 8, 1, 64)
+		_, err := Key([]byte("password"), []byte("salt"), 16384, 8, 1, 64)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }

@@ -1,5 +1,5 @@
 # Creates an image for skycoin development
-FROM golang:1.10.2-stretch
+FROM golang:1.11-stretch
 
 # Installs nodejs and npm. Needed for moxygen.
 
@@ -45,6 +45,7 @@ RUN set -ex; \
     patch \
     xz-utils \
     zlib1g-dev \
+    build-essential \
     \
 # No need for MySQL client
 #
@@ -130,11 +131,14 @@ RUN set -ex ; \
     gdbserver \
     gdb \
     vim \
+    less \
     ctags \
     vim-scripts \
     screen \
     sudo \
     doxygen \
+    valgrind \
+    bsdmainutils \
     texlive-latex-base \
     ; \
     apt-get clean ; \
@@ -167,14 +171,23 @@ RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     go get -u github.com/dominikh/go-tools/cmd/keyify && \
     go get -u golang.org/x/tools/cmd/gorename && \
     go get -u github.com/klauspost/asmfmt/cmd/asmfmt && \
-    go get -u github.com/ernesto-jimenez/goautomock
+    go get -u github.com/vektra/mockery/.../ && \
+    go get -u github.com/wadey/gocovmerge && \
+    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
 
 # Install vim-go development tools
 RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/start/vim-go && \
     git clone https://github.com/tpope/vim-fugitive /usr/share/vim/vim80/pack/dev/start/vim-fugitive && \
     git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
     git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
-    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make 
+    git clone https://github.com/w0rp/ale.git /usr/share/vim/vim80/pack/dev/start/ale && \
+    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make ;\
+    git clone https://github.com/iberianpig/tig-explorer.vim.git /tmp/tig-explorer;\
+    cp /tmp/tig-explorer/autoload/tig_explorer.vim /usr/share/vim/vim80/autoload;\
+    cp /tmp/tig-explorer/plugin/tig_explorer.vim /usr/share/vim/vim80/plugin;\
+    rm -rf /tmp/tig-explorer
+
 
 # Install SWIG-3.0.12
 RUN cd /tmp/; \
@@ -183,7 +196,11 @@ RUN cd /tmp/; \
     cd swig-3.0.12 ;\
     ./configure --prefix=/usr && make && make install && \
     rm -rf /tmp/swig-*
-    
+
+# Install golangci-lint
+ENV GOLANGCI_LINT 1.10.2
+RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v$GOLANGCI_LINT
+
 WORKDIR $GOPATH/src/github.com/skycoin
 VOLUME $GOPATH/src/
 

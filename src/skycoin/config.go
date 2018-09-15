@@ -2,15 +2,19 @@ package skycoin
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	"log"
 
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -18,10 +22,15 @@ var (
 	help = false
 )
 
+const (
+	// EndpointsAll wildcard value to match all API methods
+	EndpointsAll = "ALL"
+)
+
 // Config records skycoin node and build config
 type Config struct {
 	Node  NodeConfig
-	Build visor.BuildInfo
+	Build readable.BuildInfo
 }
 
 // NodeConfig records the node's configuration
@@ -38,16 +47,21 @@ type NodeConfig struct {
 	DisableIncomingConnections bool
 	// Disables networking altogether
 	DisableNetworking bool
-	// Enable wallet API
+	// DEPRECATED Enable wallet API
 	EnableWalletAPI bool
 	// Enable GUI
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable /api/v1/wallet/seed API endpoint
+	// DEPRECATED Enable /api/v1/wallet/seed API endpoint
 	EnableSeedAPI bool
 	// Enable unversioned API endpoints (without the /api/v1 prefix)
 	EnableUnversionedAPI bool
+	// Disable CSP disable content-security-policy in http response
+	DisableCSP bool
+	// Comma separated list of API sets exported via remote web interface
+	EnabledAPISets string
+	enabledAPISets map[string]struct{}
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -67,13 +81,19 @@ type NodeConfig struct {
 	// Wallet Address Version
 	//AddressVersion string
 	// Remote web interface
-	WebInterface      bool
-	WebInterfacePort  int
-	WebInterfaceAddr  string
-	WebInterfaceCert  string
-	WebInterfaceKey   string
+	WebInterface bool
+	// Remote web interface port
+	WebInterfacePort int
+	// Remote web interface address
+	WebInterfaceAddr string
+	// Remote web interface certificate
+	WebInterfaceCert string
+	// Remote web interface key
+	WebInterfaceKey string
+	// Remote web interface HTTPS support
 	WebInterfaceHTTPS bool
 
+	// Enable the deprecated JSON 2.0 RPC interface
 	RPCInterface bool
 
 	// Launch System Default Browser after client startup
@@ -109,6 +129,11 @@ type NodeConfig struct {
 	// Wallet crypto type
 	WalletCryptoType string
 
+	// Disable the hardcoded default peers
+	DisableDefaultPeers bool
+	// Load custom peers from disk
+	CustomPeersFile string
+
 	RunMaster bool
 
 	/* Developer options */
@@ -117,8 +142,10 @@ type NodeConfig struct {
 	ProfileCPU bool
 	// Where the file is written to
 	ProfileCPUFile string
-	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
+	// Enable HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 	HTTPProf bool
+	// Expose HTTP profiling on this interface
+	HTTPProfHost string
 
 	DBPath      string
 	DBReadOnly  bool
@@ -135,7 +162,6 @@ type NodeConfig struct {
 	DefaultConnections  []string
 
 	genesisSignature cipher.Sig
-	genesisTimestamp uint64
 	genesisAddress   cipher.Address
 
 	blockchainPubkey cipher.PubKey
@@ -143,8 +169,8 @@ type NodeConfig struct {
 }
 
 // NewNodeConfig returns a new node config instance
-func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
-	nodeConfig := &NodeConfig{
+func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
+	nodeConfig := NodeConfig{
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
@@ -170,6 +196,8 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		EnableSeedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
+		// DisableCSP disable content-security-policy in http response
+		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
 		LocalhostOnly: false,
 		// Which address to serve on. Leave blank to automatically assign to a
@@ -195,8 +223,9 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
+		EnabledAPISets:    api.EndpointsRead,
 
-		RPCInterface: true,
+		RPCInterface: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -229,9 +258,10 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		// Enable cpu profiling
 		ProfileCPU: false,
 		// Where the file is written to
-		ProfileCPUFile: node.ProfileCPUFile,
+		ProfileCPUFile: "cpu.prof",
 		// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
-		HTTPProf: false,
+		HTTPProf:     false,
+		HTTPProfHost: "localhost:6060",
 	}
 
 	nodeConfig.applyConfigMode(mode)
@@ -240,6 +270,11 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 }
 
 func (c *Config) postProcess() {
+	if help {
+		flag.Usage()
+		os.Exit(0)
+	}
+
 	var err error
 	if c.Node.GenesisSignatureStr != "" {
 		c.Node.genesisSignature, err = cipher.SigFromHex(c.Node.GenesisSignatureStr)
@@ -279,6 +314,49 @@ func (c *Config) postProcess() {
 		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
 	}
 
+	c.Node.enabledAPISets = make(map[string]struct{})
+	apiSets := strings.Split(c.Node.EnabledAPISets, ",")
+	for _, k := range apiSets {
+		k = strings.ToUpper(strings.TrimSpace(k))
+		switch k {
+		case EndpointsAll,
+			api.EndpointsRead,
+			api.EndpointsStatus,
+			api.EndpointsWallet,
+			api.EndpointsWalletSeed,
+			api.EndpointsDeprecatedWalletSpend:
+		default:
+			fmt.Println("Invalid value in -enable-api-set:", k)
+			os.Exit(1)
+		}
+
+		if k == EndpointsAll {
+			for _, s := range []string{
+				api.EndpointsRead,
+				api.EndpointsStatus,
+				api.EndpointsWallet,
+				api.EndpointsWalletSeed,
+				api.EndpointsDeprecatedWalletSpend,
+			} {
+				c.Node.enabledAPISets[s] = struct{}{}
+			}
+		} else {
+			c.Node.enabledAPISets[k] = struct{}{}
+		}
+	}
+
+	// Accept the deprecated -enable options
+	if c.Node.EnableWalletAPI {
+		c.Node.enabledAPISets[api.EndpointsWallet] = struct{}{}
+	}
+	if c.Node.EnableSeedAPI {
+		c.Node.enabledAPISets[api.EndpointsWalletSeed] = struct{}{}
+	}
+	_, enableWalletAPI := c.Node.enabledAPISets[api.EndpointsWallet]
+	_, enableWalletSeedAPI := c.Node.enabledAPISets[api.EndpointsWalletSeed]
+	c.Node.EnableWalletAPI = c.Node.EnableWalletAPI || enableWalletAPI
+	c.Node.EnableSeedAPI = c.Node.EnableSeedAPI || enableWalletSeedAPI
+
 	if c.Node.WalletDirectory == "" {
 		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")
 	} else {
@@ -297,7 +375,7 @@ func (c *Config) postProcess() {
 	}
 
 	// Don't open browser to load wallets if wallet apis are disabled.
-	if !c.Node.EnableWalletAPI {
+	if _, ok := c.Node.enabledAPISets[api.EndpointsWallet]; !ok {
 		c.Node.EnableGUI = false
 		c.Node.LaunchBrowser = false
 	}
@@ -305,93 +383,106 @@ func (c *Config) postProcess() {
 	if c.Node.EnableGUI {
 		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
 	}
+
+	if c.Node.DisableDefaultPeers {
+		c.Node.DefaultConnections = nil
+	}
 }
 
-func (c *Config) register() {
+// RegisterFlags binds CLI flags to config values
+func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&help, "help", false, "Show help")
-	flag.BoolVar(&c.Node.DisablePEX, "disable-pex", c.Node.DisablePEX, "disable PEX peer discovery")
-	flag.BoolVar(&c.Node.DownloadPeerList, "download-peerlist", c.Node.DownloadPeerList, "download a peers.txt from -peerlist-url")
-	flag.StringVar(&c.Node.PeerListURL, "peerlist-url", c.Node.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
-	flag.BoolVar(&c.Node.DisableOutgoingConnections, "disable-outgoing", c.Node.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&c.Node.DisableIncomingConnections, "disable-incoming", c.Node.DisableIncomingConnections, "Don't make incoming connections")
-	flag.BoolVar(&c.Node.DisableNetworking, "disable-networking", c.Node.DisableNetworking, "Disable all network activity")
-	flag.BoolVar(&c.Node.EnableWalletAPI, "enable-wallet-api", c.Node.EnableWalletAPI, "Enable the wallet API")
-	flag.BoolVar(&c.Node.EnableGUI, "enable-gui", c.Node.EnableGUI, "Enable GUI")
-	flag.BoolVar(&c.Node.EnableUnversionedAPI, "enable-unversioned-api", c.Node.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
-	flag.BoolVar(&c.Node.DisableCSRF, "disable-csrf", c.Node.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.Node.EnableSeedAPI, "enable-seed-api", c.Node.EnableSeedAPI, "enable /api/v1/wallet/seed api")
-	flag.StringVar(&c.Node.Address, "address", c.Node.Address, "IP Address to run application on. Leave empty to default to a public interface")
-	flag.IntVar(&c.Node.Port, "port", c.Node.Port, "Port to run application on")
+	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX, "disable PEX peer discovery")
+	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
+	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
+	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
+	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
+	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
+	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "[DEPRECATED, use -enable-api-set] Enable the wallet API")
+	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
+	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
+	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
+	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "[DEPRECATED, use -enable-api-set] enable /api/v1/wallet/seed api")
+	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
+	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
+	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
-	flag.BoolVar(&c.Node.WebInterface, "web-interface", c.Node.WebInterface, "enable the web interface")
-	flag.IntVar(&c.Node.WebInterfacePort, "web-interface-port", c.Node.WebInterfacePort, "port to serve web interface on")
-	flag.StringVar(&c.Node.WebInterfaceAddr, "web-interface-addr", c.Node.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.Node.WebInterfaceCert, "web-interface-cert", c.Node.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
-	flag.StringVar(&c.Node.WebInterfaceKey, "web-interface-key", c.Node.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
-	flag.BoolVar(&c.Node.WebInterfaceHTTPS, "web-interface-https", c.Node.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
+	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
+	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
+	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	flag.StringVar(&c.EnabledAPISets, "enable-api-set", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
 
-	flag.BoolVar(&c.Node.RPCInterface, "rpc-interface", c.Node.RPCInterface, "enable the rpc interface")
+	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 
-	flag.BoolVar(&c.Node.LaunchBrowser, "launch-browser", c.Node.LaunchBrowser, "launch system default webbrowser at client startup")
-	flag.BoolVar(&c.Node.PrintWebInterfaceAddress, "print-web-interface-address", c.Node.PrintWebInterfaceAddress, "print configured web interface address and exit")
-	flag.StringVar(&c.Node.DataDirectory, "data-dir", c.Node.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
-	flag.StringVar(&c.Node.DBPath, "db-path", c.Node.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
-	flag.BoolVar(&c.Node.DBReadOnly, "db-read-only", c.Node.DBReadOnly, "open bolt db read-only")
-	flag.BoolVar(&c.Node.ProfileCPU, "profile-cpu", c.Node.ProfileCPU, "enable cpu profiling")
-	flag.StringVar(&c.Node.ProfileCPUFile, "profile-cpu-file", c.Node.ProfileCPUFile, "where to write the cpu profile file")
-	flag.BoolVar(&c.Node.HTTPProf, "http-prof", c.Node.HTTPProf, "Run the http profiling interface")
-	flag.StringVar(&c.Node.LogLevel, "log-level", c.Node.LogLevel, "Choices are: debug, info, warn, error, fatal, panic")
-	flag.BoolVar(&c.Node.ColorLog, "color-log", c.Node.ColorLog, "Add terminal colors to log output")
-	flag.BoolVar(&c.Node.DisablePingPong, "no-ping-log", c.Node.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
-	flag.BoolVar(&c.Node.LogToFile, "logtofile", c.Node.LogToFile, "log to file")
-	flag.StringVar(&c.Node.GUIDirectory, "gui-dir", c.Node.GUIDirectory, "static content directory for the HTML interface")
+	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
+	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
+	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
+	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
+	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
+	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
+	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
+	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "run the HTTP profiling interface")
+	flag.StringVar(&c.HTTPProfHost, "http-prof-host", c.HTTPProfHost, "hostname to bind the HTTP profiling interface to")
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, warn, error, fatal, panic")
+	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
+	flag.BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
+	flag.BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
+	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the HTML interface")
 
-	flag.BoolVar(&c.Node.VerifyDB, "verify-db", c.Node.VerifyDB, "check the database for corruption")
-	flag.BoolVar(&c.Node.ResetCorruptDB, "reset-corrupt-db", c.Node.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
+	flag.BoolVar(&c.VerifyDB, "verify-db", c.VerifyDB, "check the database for corruption")
+	flag.BoolVar(&c.ResetCorruptDB, "reset-corrupt-db", c.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
+
+	flag.BoolVar(&c.DisableDefaultPeers, "disable-default-peers", c.DisableDefaultPeers, "disable the hardcoded default peers")
+	flag.StringVar(&c.CustomPeersFile, "custom-peers-file", c.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
 
 	// Key Configuration Data
-	flag.BoolVar(&c.Node.RunMaster, "master", c.Node.RunMaster, "run the daemon as blockchain master server")
+	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
 
-	flag.StringVar(&c.Node.BlockchainPubkeyStr, "master-public-key", c.Node.BlockchainPubkeyStr, "public key of the master chain")
-	flag.StringVar(&c.Node.BlockchainSeckeyStr, "master-secret-key", c.Node.BlockchainSeckeyStr, "secret key, set for master")
+	flag.StringVar(&c.BlockchainPubkeyStr, "master-public-key", c.BlockchainPubkeyStr, "public key of the master chain")
+	flag.StringVar(&c.BlockchainSeckeyStr, "master-secret-key", c.BlockchainSeckeyStr, "secret key, set for master")
 
-	flag.StringVar(&c.Node.GenesisAddressStr, "genesis-address", c.Node.GenesisAddressStr, "genesis address")
-	flag.StringVar(&c.Node.GenesisSignatureStr, "genesis-signature", c.Node.GenesisSignatureStr, "genesis block signature")
-	flag.Uint64Var(&c.Node.GenesisTimestamp, "genesis-timestamp", c.Node.GenesisTimestamp, "genesis block timestamp")
+	flag.StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
+	flag.StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
+	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
-	flag.StringVar(&c.Node.WalletDirectory, "wallet-dir", c.Node.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.IntVar(&c.Node.MaxOutgoingConnections, "max-outgoing-connections", c.Node.MaxOutgoingConnections, "The maximum outgoing connections allowed")
-	flag.IntVar(&c.Node.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.Node.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
-	flag.IntVar(&c.Node.PeerlistSize, "peerlist-size", c.Node.PeerlistSize, "The peer list size")
-	flag.DurationVar(&c.Node.OutgoingConnectionsRate, "connection-rate", c.Node.OutgoingConnectionsRate, "How often to make an outgoing connection")
-	flag.BoolVar(&c.Node.LocalhostOnly, "localhost-only", c.Node.LocalhostOnly, "Run on localhost and only connect to localhost peers")
-	flag.BoolVar(&c.Node.Arbitrating, "arbitrating", c.Node.Arbitrating, "Run node in arbitrating mode")
-	flag.StringVar(&c.Node.WalletCryptoType, "wallet-crypto-type", c.Node.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
-	flag.BoolVar(&c.Node.Version, "version", false, "show node version")
+	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
+	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
+	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
+	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
+	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
+	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
+	flag.BoolVar(&c.Version, "version", false, "show node version")
 }
 
-func (n *NodeConfig) applyConfigMode(configMode string) {
+func (c *NodeConfig) applyConfigMode(configMode string) {
+	if runtime.GOOS == "windows" {
+		c.ColorLog = false
+	}
 	switch configMode {
 	case "":
 	case "STANDALONE_CLIENT":
-		n.EnableWalletAPI = true
-		n.EnableGUI = true
-		n.EnableSeedAPI = true
-		n.LaunchBrowser = true
-		n.DisableCSRF = false
-		n.DownloadPeerList = true
-		n.RPCInterface = false
-		n.WebInterface = true
-		n.LogToFile = false
-		n.ColorLog = true
-		n.ResetCorruptDB = true
-		n.WebInterfacePort = 0 // randomize web interface port
+		c.EnabledAPISets = EndpointsAll
+		c.EnableGUI = true
+		c.LaunchBrowser = true
+		c.DisableCSRF = false
+		c.DisableCSP = false
+		c.DownloadPeerList = true
+		c.RPCInterface = false
+		c.WebInterface = true
+		c.LogToFile = false
+		c.ResetCorruptDB = true
+		c.WebInterfacePort = 0 // randomize web interface port
 	default:
 		panic("Invalid ConfigMode")
 	}
 }
 
-func panicIfError(err error, msg string, args ...interface{}) {
+func panicIfError(err error, msg string, args ...interface{}) { // nolint: unparam
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)
 	}

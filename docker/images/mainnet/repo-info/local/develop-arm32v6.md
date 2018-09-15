@@ -1,4 +1,4 @@
-# `skycoin/skycoin:develop-arm32v6
+# skycoin/skycoin:develop-arm32v6
 
 ## Docker Metadata
 - Image ID: `sha256:198326928c5588ecd9e541ea107a1c80932332e57f98ec0935286abc75a085c7`
@@ -13,5 +13,4 @@
   - `RPC_ADDR=http://0.0.0.0:6420`
   - `DATA_DIR=/data/.skycoin`
   - `WALLET_DIR=/wallet`
-  - `USE_CSRF=1`
   - `WALLET_NAME=.wlt`

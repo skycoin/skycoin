@@ -1,9 +1,6 @@
 package wallet
 
 import (
-
-	//"fmt"
-
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -179,10 +176,6 @@ func (rw *ReadableWallet) Save(filename string) error {
 // Load loads from filename
 func (rw *ReadableWallet) Load(filename string) error {
 	return file.LoadJSON(filename, rw)
-}
-
-func (rw *ReadableWallet) version() string {
-	return rw.Meta[metaVersion]
 }
 
 func (rw *ReadableWallet) time() string {

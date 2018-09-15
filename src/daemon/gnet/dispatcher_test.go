@@ -88,7 +88,7 @@ func TestConvertToMessageNotMessage(t *testing.T) {
 	// don't verify messages
 	c := &Connection{}
 	assert.Panics(t, func() {
-		convertToMessage(c.ID, NothingPrefix[:], testing.Verbose())
+		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) // nolint: errcheck
 	})
 }
 

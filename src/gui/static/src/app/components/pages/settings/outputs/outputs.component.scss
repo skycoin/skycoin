@@ -8,13 +8,9 @@
   color: $grey;
 }
 
-.-row.-small {
-  height: $row-height / 1.5;
-  line-height: $row-height / 1.5;
-}
-
 .-hash {
   margin-left: 27px;
+  word-break: break-all;
 }
 
 .-address {

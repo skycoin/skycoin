@@ -25,10 +25,6 @@ func main() {
 	pkeysStats := flag.Bool("pkeys", false, "create histogram for public keys")
 	hashesStats := flag.Bool("hashes", false, "create histogram for hashes")
 	flag.Parse()
-	var PubKeys []cipher.PubKey
-	var Addresses []string
-	var RawAddresses []cipher.Ripemd160
-	var OutPut []string
 
 	OneByteMap := make(map[byte]int)
 	TwoByteMap := make(map[string]int)
@@ -39,29 +35,33 @@ func main() {
 	OneByteRawMap := make(map[byte]int)
 	TwoByteRawMap := make(map[string]int)
 
-	if *addrsStats == false && *pkeysStats == false && *hashesStats == false {
-		fmt.Println("you need to choose object for analize(use one of flags: addrs, pkeys, hashes)")
+	if !*addrsStats && !*pkeysStats && !*hashesStats {
+		fmt.Println("you need to choose object for analyze(use one of flags: addrs, pkeys, hashes)")
 		return
 	}
 
 	start := time.Now()
 
+	pubKeys := make([]cipher.PubKey, *examples)
+	rawAddresses := make([]cipher.Ripemd160, *examples)
+	addresses := make([]string, *examples)
+
 	//generate pubkeys
 	for i := 0; i < *examples; i++ {
 		p, _ := cipher.GenerateKeyPair()
-		PubKeys = append(PubKeys, p)
+		pubKeys[i] = p
 	}
 
 	//generate addresses
-	for _, p := range PubKeys {
-		Addresses = append(Addresses, cipher.AddressFromPubKey(p).String())
-		RawAddresses = append(RawAddresses, cipher.AddressFromPubKey(p).Key)
+	for i, p := range pubKeys {
+		addresses[i] = cipher.AddressFromPubKey(p).String()
+		rawAddresses[i] = cipher.AddressFromPubKey(p).Key
 	}
 
-	//analize addresses
-
+	//analyze addresses
+	var output []string
 	if *addrsStats {
-		for _, a := range Addresses {
+		for _, a := range addresses {
 			if _, ok := OneLetterMap[string([]rune(a)[0])]; ok {
 				OneLetterMap[string([]rune(a)[0])]++
 			} else {
@@ -74,30 +74,30 @@ func main() {
 			}
 		}
 
-		OutPut = append(OutPut, "\nAddress 1st letter stat:\n")
+		output = append(output, "\nAddress 1st letter stat:\n")
 		for k, v := range OneLetterMap {
 			formatV := fmt.Sprintf("%d", v)
 			formatV = zeroPadding(len(strconv.Itoa(*examples)), formatV)
 			percent := 100 * float64(v) / float64(*examples)
 			per := fmt.Sprintf("%.2f", percent)
 			s := formatV + " of " + strconv.Itoa(*examples) + ", " + per + "%, [ " + k + " ]\n"
-			OutPut = append(OutPut, s)
+			output = append(output, s)
 		}
 
-		OutPut = append(OutPut, "\nAddress 1-2nd letter stat:\n")
+		output = append(output, "\nAddress 1-2nd letter stat:\n")
 		for k, v := range TwoLetterMap {
 			formatV := fmt.Sprintf("%d", v)
 			formatV = zeroPadding(len(strconv.Itoa(*examples)), formatV)
 			percent := 100 * float64(v) / float64(*examples)
 			per := fmt.Sprintf("%.2f", percent)
 			s := formatV + " of " + strconv.Itoa(*examples) + ", " + per + "%, [ " + k + " ]\n"
-			OutPut = append(OutPut, s)
+			output = append(output, s)
 		}
 
 	}
 
 	if *pkeysStats {
-		for _, p := range PubKeys {
+		for _, p := range pubKeys {
 			//first byte gist
 			if _, ok := OneByteMap[p[0]]; ok {
 				OneByteMap[p[0]]++
@@ -114,7 +114,7 @@ func main() {
 
 		}
 
-		OutPut = append(OutPut, "\nPublic key 1st byte stat:\n")
+		output = append(output, "\nPublic key 1st byte stat:\n")
 		for k, v := range OneByteMap {
 			formatV := fmt.Sprintf("%d", v)
 			formatV = zeroPadding(len(strconv.Itoa(*examples)), formatV)
@@ -124,10 +124,10 @@ func main() {
 			percent := 100 * float64(v) / float64(*examples)
 			per := fmt.Sprintf("%.2f", percent)
 			s := formatV + " of " + strconv.Itoa(*examples) + ", " + per + "%, [ " + bytes + " ]\n"
-			OutPut = append(OutPut, s)
+			output = append(output, s)
 		}
 
-		OutPut = append(OutPut, "\nPublic key 1-2nd byte stat:\n")
+		output = append(output, "\nPublic key 1-2nd byte stat:\n")
 
 		for k, v := range TwoByteMap {
 			formatV := fmt.Sprintf("%d", v)
@@ -136,12 +136,12 @@ func main() {
 			percent := 100 * float64(v) / float64(*examples)
 			per := fmt.Sprintf("%.2f", percent)
 			s := formatV + " of " + strconv.Itoa(*examples) + ", " + per + "%, [ " + bytes + " ]\n"
-			OutPut = append(OutPut, s)
+			output = append(output, s)
 		}
 	}
 
 	if *hashesStats {
-		for _, ra := range RawAddresses {
+		for _, ra := range rawAddresses {
 			if _, ok := OneByteRawMap[ra[0]]; ok {
 				OneByteRawMap[ra[0]]++
 			} else {
@@ -157,7 +157,7 @@ func main() {
 
 		}
 
-		OutPut = append(OutPut, "\nRaw address 1st byte stat:\n")
+		output = append(output, "\nRaw address 1st byte stat:\n")
 		for k, v := range OneByteRawMap {
 			formatV := fmt.Sprintf("%d", v)
 			formatV = zeroPadding(len(strconv.Itoa(*examples)), formatV)
@@ -167,10 +167,10 @@ func main() {
 			percent := 100 * float64(v) / float64(*examples)
 			per := fmt.Sprintf("%.2f", percent)
 			s := formatV + " of " + strconv.Itoa(*examples) + ", " + per + "%, [ " + bytes + " ]\n"
-			OutPut = append(OutPut, s)
+			output = append(output, s)
 		}
 
-		OutPut = append(OutPut, "\nRaw address 1-2nd byte stat:\n")
+		output = append(output, "\nRaw address 1-2nd byte stat:\n")
 		for k, v := range TwoByteRawMap {
 			formatV := fmt.Sprintf("%d", v)
 			formatV = zeroPadding(len(strconv.Itoa(*examples)), formatV)
@@ -178,7 +178,7 @@ func main() {
 			percent := 100 * float64(v) / float64(*examples)
 			per := fmt.Sprintf("%.2f", percent)
 			s := formatV + " of " + strconv.Itoa(*examples) + ", " + per + "%, [ " + bytes + " ]\n"
-			OutPut = append(OutPut, s)
+			output = append(output, s)
 		}
 	}
 	t := time.Now()
@@ -189,7 +189,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	for _, value := range OutPut {
+	for _, value := range output {
 		fmt.Fprint(f, value)
 	}
 

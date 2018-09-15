@@ -1,11 +1,15 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-libc test-lint build-libc check cover
+.PHONY: run run-help test test-core test-libc test-lint build-libc check
 .PHONY: integration-test-stable integration-test-stable-disable-csrf
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
 .PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
 .PHONY: integration-test-disable-gui integration-test-disable-gui
-.PHONY: install-linters format release clean-release install-deps-ui build-ui help
+.PHONY: integration-test-db-no-unconfirmed
+.PHONY: install-linters format release clean-release clean-coverage
+.PHONY: install-deps-ui build-ui help newcoin generate-mocks merge-coverage
+
+COIN ?= skycoin
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
@@ -13,7 +17,7 @@ GUI_STATIC_DIR = src/gui/static
 # Electron files directory
 ELECTRON_DIR = electron
 
-# Compilation output
+# Compilation output for libskycoin
 BUILD_DIR = build
 BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
@@ -25,7 +29,7 @@ INCLUDE_DIR = include
 LIBSRC_DIR = lib/cgo
 LIBDOC_DIR = $(DOC_DIR)/libc
 
-# Compilation flags
+# Compilation flags for libskycoin
 CC_VERSION = $(shell $(CC) -dumpversion)
 STDC_FLAG = $(python -c "if tuple(map(int, '$(CC_VERSION)'.split('.'))) < (6,): print('-std=C99'")
 LIBC_LIBS = -lcriterion
@@ -61,11 +65,18 @@ run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	./run.sh ${ARGS}
 
 run-help: ## Show skycoin node help
-	@go run cmd/skycoin/skycoin.go --help
+	@go run cmd/$(COIN)/$(COIN).go --help
+
+run-integration-test-live: ## Run the skycoin node configured for live integration tests
+	./ci-scripts/run-live-integration-test-node.sh
+
+run-integration-test-live-cover: ## Run the skycoin node configured for live integration tests with coverage
+	./ci-scripts/run-live-integration-test-node-cover.sh
 
 test: ## Run tests for Skycoin
-	go test ./cmd/... -timeout=5m
-	go test ./src/... -timeout=5m
+	@mkdir -p coverage/
+	go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-cmd.coverage.out -timeout=5m ./cmd/...
+	go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-src.coverage.out -timeout=5m ./src/...
 
 test-386: ## Run tests for Skycoin with GOARCH=386
 	GOARCH=386 go test ./cmd/... -timeout=5m
@@ -118,54 +129,48 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests --skip-dirs=lib/cgo \
-		-E goimports \
-		-E golint \
-		-E varcheck \
-		-E unparam \
-		-E deadcode \
-		-E structcheck \
-		./...
-	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests \
-		-E goimports \
-		-E varcheck \
-		-E unparam \
-		-E structcheck \
-		./lib/cgo/...
+	golangci-lint run -c .golangci.yml ./...
+	# lib/cgo needs separate linting rules
+	golangci-lint run -c .golangci.libcgo.yml ./lib/cgo/...
+	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
+	go vet -all ./...
 
-check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters
+check: lint test integration-test-stable integration-test-stable-disable-csrf \
+	integration-test-disable-wallet-api integration-test-disable-seed-api \
+	integration-test-enable-seed-api integration-test-disable-gui \
+	integration-test-db-no-unconfirmed ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
-	./ci-scripts/integration-test-stable.sh -c
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -n enable-csrf
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
-	./ci-scripts/integration-test-stable.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
 
 integration-test-live: ## Run live integration tests
-	./ci-scripts/integration-test-live.sh -c
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c
 
 integration-test-live-wallet: ## Run live integration tests with wallet
-	./ci-scripts/integration-test-live.sh -w
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -w
 
 integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
-	./ci-scripts/integration-test-live.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
-	./ci-scripts/integration-test-disable-wallet-api.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
 
 integration-test-enable-seed-api: ## Run enable seed api integration test
-	./ci-scripts/integration-test-enable-seed-api.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-enable-seed-api.sh
 
-integration-test-disable-gui:
-	./ci-scripts/integration-test-disable-gui.sh	
+integration-test-disable-gui: ## Run tests with the GUI disabled
+	COIN=$(COIN) ./ci-scripts/integration-test-disable-gui.sh
 
-cover: ## Runs tests on ./src/ with HTML code coverage
-	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
-	go tool cover -html=cover.out
+integration-test-db-no-unconfirmed: ## Run stable tests against the stable database that has no unconfirmed transactions
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -d -n no-unconfirmed
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
+	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
+	# However, they suggest `curl ... | bash` which we should not do
 	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
@@ -210,9 +215,28 @@ release-gui: ## Build electron apps. Use osarch=${osarch} to specify the platfor
 	cd $(ELECTRON_DIR) && ./build-electron-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-
 clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
+
+clean-coverage: ## Remove coverage output files
+	rm -r ./coverage/
+
+newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
+	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
+
+generate-mocks: ## Regenerate test interface mocks
+	go generate ./src/...
+	# mockery can't generate the UnspentPooler mock in package visor, patch it
+	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
+	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
+
+merge-coverage: ## Merge coverage files and create HTML coverage output. gocovmerge is required, install with `go get github.com/wadey/gocovmerge`
+	@echo "To install gocovmerge do:"
+	@echo "go get github.com/wadey/gocovmerge"
+	gocovmerge coverage/*.coverage.out > coverage/all-coverage.merged.out
+	go tool cover -html coverage/all-coverage.merged.out -o coverage/all-coverage.html
+	@echo "Total coverage HTML file generated at coverage/all-coverage.html"
+	@echo "Open coverage/all-coverage.html in your browser to view"
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

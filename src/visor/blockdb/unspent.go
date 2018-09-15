@@ -103,7 +103,7 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 	return uxa, nil
 }
 
-func (pl pool) set(tx *dbutil.Tx, hash cipher.SHA256, ux coin.UxOut) error {
+func (pl pool) put(tx *dbutil.Tx, hash cipher.SHA256, ux coin.UxOut) error {
 	return dbutil.PutBucketValue(tx, UnspentPoolBkt, hash[:], encoder.Serialize(ux))
 }
 
@@ -125,15 +125,15 @@ func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256,
 	return hashes, nil
 }
 
-func (p poolAddrIndex) set(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.SHA256) error {
+func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.SHA256) error {
 	if len(hashes) == 0 {
-		return errors.New("poolAddrIndex.set cannot set to empty hash array")
+		return errors.New("poolAddrIndex.put cannot put empty hash array")
 	}
 
 	hashesMap := make(map[cipher.SHA256]struct{}, len(hashes))
 	for _, h := range hashes {
 		if _, ok := hashesMap[h]; ok {
-			return errors.New("poolAddrIndex.set: hashes array contains duplicate")
+			return errors.New("poolAddrIndex.put: hashes array contains duplicate")
 		}
 
 		hashesMap[h] = struct{}{}
@@ -206,7 +206,7 @@ func (p poolAddrIndex) adjust(tx *dbutil.Tx, addr cipher.Address, addHashes, rmH
 		return dbutil.Delete(tx, UnspentPoolAddrIndexBkt, addr.Bytes())
 	}
 
-	return p.set(tx, addr, newHashes)
+	return p.put(tx, addr, newHashes)
 }
 
 // Unspents unspent outputs pool
@@ -271,7 +271,7 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 
 		h := ux.Hash()
 
-		if bytes.Compare(k[:], h[:]) != 0 {
+		if !bytes.Equal(k[:], h[:]) {
 			return errors.New("Unspent pool uxout.Hash() does not match its key")
 		}
 
@@ -288,7 +288,7 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 	}
 
 	for addr, hashes := range addrHashes {
-		if err := up.poolAddrIndex.set(tx, addr, hashes); err != nil {
+		if err := up.poolAddrIndex.put(tx, addr, hashes); err != nil {
 			return err
 		}
 	}
@@ -356,7 +356,7 @@ func (up *Unspents) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 
 	for i, ux := range txnUxs {
 		// Add new outputs
-		if err := up.pool.set(tx, txnUxHashes[i], ux); err != nil {
+		if err := up.pool.put(tx, txnUxHashes[i], ux); err != nil {
 			return err
 		}
 

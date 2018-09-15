@@ -9,6 +9,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-shrink: 0;
 
   img {
     width: 32px;
@@ -47,4 +48,24 @@
 
 .-pl-0 {
   padding-left: 0 !important;
+}
+
+.-block-row {
+  width: 150px;
+  flex-shrink: 0;
+}
+
+.-invisible {
+  display: none;
+}
+
+@media (max-width: $max-sm-width) {
+  .-pl-0 {
+    width: 160px !important;
+  }
+
+  .-block-row {
+    width: 90px;
+    flex-shrink: 0;
+  }
 }

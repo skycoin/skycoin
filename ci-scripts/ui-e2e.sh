@@ -57,7 +57,7 @@ cat >"${WALLET_DIR}/test_wallet.wlt" <<EOL
 EOL
 
 # Compile the skycoin node
-# We can't use "go run" because this creates two processes which doesn't allow us to kill it at the end
+# We can't use "go run" because that creates two processes which doesn't allow us to kill it at the end
 echo "compiling skycoin"
 go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
 
@@ -71,9 +71,9 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -db-read-only=true \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
-                      -enable-wallet-api=true \
+                      -enable-api-set=READ,STATUS,WALLET,WALLET_SEED \
                       -wallet-dir="$WALLET_DIR" \
-                      -enable-seed-api=true &
+                      &
 SKYCOIN_PID=$!
 
 echo "skycoin node pid=$SKYCOIN_PID"

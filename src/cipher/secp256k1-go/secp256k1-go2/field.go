@@ -74,7 +74,10 @@ func (fd *Field) SetBytes(a []byte) {
 
 // SetHex sets field in hex string
 func (fd *Field) SetHex(s string) {
-	d, _ := hex.DecodeString(s)
+	d, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
 	fd.SetBytes(d)
 }
 
@@ -404,8 +407,7 @@ func (fd *Field) Sqrt(r *Field) {
 // InvVar ...
 func (fd *Field) InvVar(r *Field) {
 	var b [32]byte
-	var c Field
-	c = *fd
+	c := *fd
 	c.Normalize()
 	c.GetB32(b[:])
 	var n Number

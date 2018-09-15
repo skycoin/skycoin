@@ -7,37 +7,36 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3" -->
 
 - [Install](#install)
-    - [Enable command autocomplete](#enable-command-autocomplete)
+	- [Enable command autocomplete](#enable-command-autocomplete)
 - [Environment Setting](#environment-setting)
-    - [RPC_ADDR](#rpc_addr)
-    - [WALLET_DIR](#wallet_dir)
-    - [WALLET_NAME](#wallet_name)
-    - [USE_CSRF](#use_csrf)
+	- [RPC_ADDR](#rpc_addr)
+	- [WALLET_DIR](#wallet_dir)
+	- [WALLET_NAME](#wallet_name)
 - [Usage](#usage)
-    - [Add Private Key](#add-private-key)
-    - [Check address balance](#check-address-balance)
-    - [Generate new addresses](#generate-new-addresses)
-    - [Check address outputs](#check-address-outputs)
-    - [Check block data](#check-block-data)
-    - [Check database integrity](#check-database-integrity)
-    - [Create a raw transaction](#create-a-raw-transaction)
-    - [Decode a raw transaction](#decode-a-raw-transaction)
-    - [Broadcast a raw transaction](#broadcast-a-raw-transaction)
-    - [Generate a wallet](#generate-a-wallet)
-    - [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
-    - [Last blocks](#last-blocks)
-    - [List wallet addresses](#list-wallet-addresses)
-    - [List wallets](#list-wallets)
-    - [Send](#send)
-    - [Show Config](#show-config)
-    - [Status](#status)
-    - [Get transaction](#get-transaction)
-    - [Verify address](#verify-address)
-    - [Check wallet balance](#check-wallet-balance)
-    - [See wallet directory](#see-wallet-directory)
-    - [List wallet transaction history](#list-wallet-transaction-history)
-    - [List wallet outputs](#list-wallet-outputs)
-    - [CLI version](#cli-version)
+	- [Add Private Key](#add-private-key)
+	- [Check address balance](#check-address-balance)
+	- [Generate new addresses](#generate-new-addresses)
+	- [Check address outputs](#check-address-outputs)
+	- [Check block data](#check-block-data)
+	- [Check database integrity](#check-database-integrity)
+	- [Create a raw transaction](#create-a-raw-transaction)
+	- [Decode a raw transaction](#decode-a-raw-transaction)
+	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
+	- [Generate a wallet](#generate-a-wallet)
+	- [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
+	- [Last blocks](#last-blocks)
+	- [List wallet addresses](#list-wallet-addresses)
+	- [List wallets](#list-wallets)
+	- [Send](#send)
+	- [Show Config](#show-config)
+	- [Status](#status)
+	- [Get transaction](#get-transaction)
+	- [Verify address](#verify-address)
+	- [Check wallet balance](#check-wallet-balance)
+	- [See wallet directory](#see-wallet-directory)
+	- [List wallet transaction history](#list-wallet-transaction-history)
+	- [List wallet outputs](#list-wallet-outputs)
+	- [CLI version](#cli-version)
 - [Note](#note)
 
 <!-- /MarkdownTOC -->
@@ -97,15 +96,6 @@ The wallet file name must have `.wlt` extension.
 $ export WALLET_NAME=YOUR_WALLET_NAME
 ```
 
-### USE_CSRF
-
-If the remote node to communicate with is not run with `-csrf-disabled`, set this variable.
-CSRF is enabled by default on nodes.
-
-```bash
-$ export USE_CSRF=1
-```
-
 ## Usage
 
 After the installation, you can run `skycoin-cli` to see the usage:
@@ -155,7 +145,6 @@ GLOBAL OPTIONS:
 ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
     COIN: Name of the coin. Default "skycoin"
-    USE_CSRF: Set to 1 or true if the remote node has CSRF enabled. Default false (unset)
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "$HOME/.$COIN/wallets"
     WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "$COIN_cli.wlt"
 ```
@@ -631,6 +620,7 @@ OPTIONS:
         -m value    [send to many] use JSON string to set multiple receive addresses and coins,
                           example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
         --json, -j  Returns the results in JSON format.
+        --csv value  [filepath] CSV file containing addresses and amounts to send
 ```
 
 #### Examples
@@ -658,6 +648,16 @@ dc00000000c7425e5a49fce496d78ea9b04fc47e4126b91f675b00c16b3a7515c1555c2520010000
 $ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr":"$ADDR1", "coins": "$AMT1"}, {"addr":"$ADDR2", "coins": "$AMT2"}]'
 ```
 
+##### Sending to addresses in a CSV file
+```bash
+$ cat <<EOF > $CSV_FILE
+2Niqzo12tZ9ioZq5vwPHMVR4g7UVpp9TCmP,123.1
+2UDzBKnxZf4d9pdrBJAqbtoeH641RFLYKxd,456.045
+yExu4fryscnahAEMKa7XV4Wc1mY188KvGw,0.3
+EOF
+$ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS -csv $CSV_FILE
+```
+
 <details>
  <summary>View Output</summary>
 
@@ -666,7 +666,7 @@ $ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr"
 ```
 </details>
 
-> NOTE: When sending to multiple addresses all the receiving addresses need to be different
+> NOTE: When sending to multiple addresses each combination of address and coins need to be unique
         Otherwise you get, `ERROR: Duplicate output in transaction`
 
 
@@ -703,30 +703,30 @@ skycoin-cli decodeRawTransaction dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28f
 
 ```json
 {
-  "hash": "ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5",
-  "inner_hash": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-  "sigs": [
-    "cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f00"
-  ],
-  "in": [
-    "05e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634"
-  ],
-  "out": [
-    {
-      "hash": "2cb770d7c045954e9195b312e5409d0070c15361da7148879fb8658b766fae90",
-      "src_tx": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-      "address": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
-      "coins": "1.000000",
-      "hours": 1
-    },
-    {
-      "hash": "0de690eeec960274539c2ad35b57d7c0492a268a5f17ab54e5e24f3d6e14bc72",
-      "src_tx": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-      "address": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
-      "coins": "16.000000",
-      "hours": 1432
-    }
-  ]
+    "length": 220,
+    "type": 0,
+    "txid": "ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5",
+    "inner_hash": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
+    "sigs": [
+        "cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f00"
+    ],
+    "inputs": [
+        "05e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634"
+    ],
+    "outputs": [
+        {
+            "uxid": "2f146924431e8c9b84a53d4d823acefb92515a264956d873ac86066c608af418",
+            "dst": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+            "coins": "1.000000",
+            "hours": 1
+        },
+        {
+            "uxid": "5d69d22aff5957a18194c443557d97ec18707e4db8ee7e9a4bb8a7eef642fdff",
+            "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+            "coins": "16.000000",
+            "hours": 1432
+        }
+    ]
 }
 ```
 </details>
@@ -1415,6 +1415,7 @@ OPTIONS:
         -m value    [send to many] use JSON string to set multiple recive addresses and coins,
                           example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
         --json, -j  Returns the results in JSON format.
+        --csv value  [filepath] CSV file containing addresses and amounts to send
 ```
 
 #### Examples
@@ -1445,6 +1446,16 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -c $CHANGE_ADDRESS $RECIPIEN
 $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr":"$ADDR1", "coins": "$AMT1"}, {"addr":"$ADDR2", "coins": "$AMT2"}]'
 ```
 
+##### Sending to addresses in a CSV file
+```bash
+$ cat <<EOF > $CSV_FILE
+2Niqzo12tZ9ioZq5vwPHMVR4g7UVpp9TCmP,123.1
+2UDzBKnxZf4d9pdrBJAqbtoeH641RFLYKxd,456.045
+yExu4fryscnahAEMKa7XV4Wc1mY188KvGw,0.3
+EOF
+$ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -csv $CSV_FILE
+```
+
 <details>
  <summary>View Output</summary>
 
@@ -1452,6 +1463,9 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr":"$ADDR1", "coin
 txid:$TRANSACTION_ID
 ```
 </details>
+
+> NOTE: When sending to multiple addresses each combination of address and coins need to be unique
+        Otherwise you get, `ERROR: Duplicate output in transaction`
 
 ##### Generate a JSON output
 ```bash
@@ -1485,8 +1499,7 @@ $ skycoin-cli showConfig
     "wallet_name": "skycoin_cli.wlt",
     "data_directory": "/home/user/.skycoin",
     "coin": "skycoin",
-    "rpc_address": "http://127.0.0.1:6420",
-    "use_csrf": false
+    "rpc_address": "http://127.0.0.1:6420"
 }
 ```
 
@@ -1501,11 +1514,38 @@ $ skycoin-cli status
 
 ```json
 {
- "running": true,
- "num_of_blocks": 21210,
- "hash_of_last_block": "d5797705bfc0ac7956f3eeaa083aec4e89a6b27ada7499c5a53dad2fda84c5f9",
- "time_since_last_block": "18446744073709551591s",
- "webrpc_address": "127.0.0.1:6420"
+    "status": {
+        "blockchain": {
+            "head": {
+                "seq": 51173,
+                "block_hash": "62c69f0dce4b05df7ca6b44eb0cf90d71bb09fa416ecaeb3d57b3c1bd210be85",
+                "previous_block_hash": "f300b933c13a6d7c9896bd26deba38b8fe95773fa42e4fd9c7a0ab86e226ca80",
+                "timestamp": 1534430855,
+                "fee": 7450,
+                "version": 0,
+                "tx_body_hash": "7081ec7f8c549c75500d4b74ae3a02db4bd7f6a294510e7b25cf8a3ff0a19798"
+            },
+            "unspents": 31940,
+            "unconfirmed": 1,
+            "time_since_last_block": "8m40s"
+        },
+        "version": {
+            "version": "0.24.1",
+            "commit": "620405485d3276c16c0379bc3b88b588e34c45e1",
+            "branch": "develop"
+        },
+        "open_connections": 8,
+        "uptime": "4h1m23.697072461s",
+        "csrf_enabled": true,
+        "csp_enabled": true,
+        "wallet_api_enabled": true,
+        "gui_enabled": true,
+        "unversioned_api_enabled": false,
+        "json_rpc_enabled": false
+    },
+    "cli_config": {
+        "webrpc_address": "http://127.0.0.1:6420"
+    }
 }
 ```
 </details>
@@ -1532,8 +1572,7 @@ $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748
          "confirmed": true,
          "unconfirmed": false,
          "height": 1,
-         "block_seq": 864,
-         "unknown": false
+         "block_seq": 864
      },
      "txn": {
          "length": 220,
@@ -1931,10 +1970,10 @@ $ skycoin-cli version --json
 
 ```json
 {
- "skycoin": "0.23.0",
- "cli": "0.23.0",
- "rpc": "0.23.0",
- "wallet": "0.23.0"
+    "skycoin": "0.23.0",
+    "cli": "0.23.0",
+    "rpc": "0.23.0",
+    "wallet": "0.23.0"
 }
 ```
 </details>

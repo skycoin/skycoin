@@ -2,6 +2,7 @@ package coin
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"math"
 	"sort"
@@ -62,7 +63,7 @@ func TestTransactionVerify(t *testing.T) {
 	// Mismatch header hash
 	tx := makeTransaction(t)
 	tx.InnerHash = cipher.SHA256{}
-	testutil.RequireError(t, tx.Verify(), "Invalid header hash")
+	testutil.RequireError(t, tx.Verify(), "InnerHash does not match computed hash")
 
 	// No inputs
 	tx = makeTransaction(t)
@@ -151,13 +152,13 @@ func TestTransactionVerifyInput(t *testing.T) {
 	// Invalid uxIn args
 	tx := makeTransaction(t)
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(nil)
+		_ = tx.VerifyInput(nil) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(UxArray{})
+		_ = tx.VerifyInput(UxArray{}) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(make(UxArray, 3))
+		_ = tx.VerifyInput(make(UxArray, 3)) // nolint: errcheck
 	})
 
 	// tx.In != tx.Sigs
@@ -165,14 +166,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.Sigs = []cipher.Sig{}
 	_require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.Sigs = append(tx.Sigs, cipher.Sig{})
 	_require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	// tx.InnerHash != tx.HashInner()
@@ -180,14 +181,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.InnerHash = cipher.SHA256{}
 	_require.PanicsWithLogMessage(t, "Invalid Tx Inner Hash", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	// tx.In does not match uxIn hashes
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(ux, s)
 	_require.PanicsWithLogMessage(t, "Ux hash mismatch", func() {
-		tx.VerifyInput(UxArray{UxOut{}})
+		_ = tx.VerifyInput(UxArray{UxOut{}}) // nolint: errcheck
 	})
 
 	// Invalid signature
@@ -317,6 +318,21 @@ func TestTransactionSerialization(t *testing.T) {
 	tx2, err := TransactionDeserialize(b)
 	require.NoError(t, err)
 	require.Equal(t, tx, tx2)
+
+	// Check reserializing deserialized txn
+	b2 := tx2.Serialize()
+	tx3, err := TransactionDeserialize(b2)
+	require.NoError(t, err)
+	require.Equal(t, tx2, tx3)
+
+	// Check hex encode/decode followed by deserialize
+	s := hex.EncodeToString(b)
+	sb, err := hex.DecodeString(s)
+	require.NoError(t, err)
+	tx4, err := TransactionDeserialize(sb)
+	require.NoError(t, err)
+	require.Equal(t, tx2, tx4)
+
 	// Invalid deserialization
 	require.Panics(t, func() { MustTransactionDeserialize([]byte{0x04}) })
 }
@@ -822,10 +838,7 @@ func TestSortTransactions(t *testing.T) {
 		txns = append(txns, txn)
 	}
 
-	var hashSortedTxns Transactions
-	for _, txn := range txns {
-		hashSortedTxns = append(hashSortedTxns, txn)
-	}
+	hashSortedTxns := append(Transactions{}, txns...)
 
 	sort.Slice(hashSortedTxns, func(i, j int) bool {
 		ihash := hashSortedTxns[i].Hash()

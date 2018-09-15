@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 var logger = logging.MustGetLogger("util")
@@ -81,16 +80,16 @@ func GenerateCert(certFile, keyFile, host, organization string, rsaBits int,
 		return fmt.Errorf("Failed to open %s for writing: %v", certFile, err)
 	}
 	defer certOut.Close()
-	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
+		return err
+	}
 
 	keyOut, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("Failed to open %s for writing:%v", keyFile, err)
 	}
 	defer keyOut.Close()
-	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
-
-	return nil
+	return pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 }
 
 func certKeyXor(certFile, keyFile string) (bool, error) {
@@ -137,7 +136,7 @@ func CreateCertIfNotExists(host, certFile, keyFile string, appName string) error
 	logger.Infof("Creating certificate %s", certFile)
 	logger.Infof("Creating key %s", keyFile)
 	lifetime := time.Hour * 365 * 24 // 1 year
-	if err := GenerateCert(certFile, keyFile, host, appName, 2048, false, utc.Now(), lifetime); err != nil {
+	if err := GenerateCert(certFile, keyFile, host, appName, 2048, false, time.Now().UTC(), lifetime); err != nil {
 		return err
 	}
 

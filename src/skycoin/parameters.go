@@ -10,7 +10,6 @@ import (
 // Parameters records fiber coin parameters
 type Parameters struct {
 	Node  NodeParameters  `mapstructure:"node"`
-	Build BuildParameters `mapstructure:"build"`
 	Visor VisorParameters `mapstructure:"visor"`
 }
 
@@ -60,13 +59,6 @@ type VisorParameters struct {
 	DefaultMaxBlockSize int `mapstructure:"default_max_block_size"`
 
 	DistributionAddresses []string `mapstructure:"distribution_addresses"`
-}
-
-// BuildParameters records build info
-type BuildParameters struct {
-	Version string `mapstructure:"version"` // node version
-	Commit  string `mapstructure:"commit"`  // git commit id
-	Branch  string `mapstructure:"branch"`  // git branch name
 }
 
 // NewParameters loads blockchain config parameters from a config file

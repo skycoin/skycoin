@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
@@ -52,7 +51,7 @@ func LoadWallets(dir string) (Wallets, error) {
 	return wallets, nil
 }
 
-func backupWltFile(src, dst string) error { //nolint: deadcode
+func backupWltFile(src, dst string) error { // nolint: deadcode,unused,megacheck
 	if _, err := os.Stat(dst); err == nil {
 		return fmt.Errorf("%v file already exist", dst)
 	}
@@ -102,14 +101,6 @@ func (wlts Wallets) set(w *Wallet) {
 	wlts[w.Filename()] = w.clone()
 }
 
-// NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) newAddresses(id string, num uint64) ([]cipher.Address, error) {
-	if w, ok := (*wlts)[id]; ok {
-		return w.GenerateAddresses(num)
-	}
-	return nil, fmt.Errorf("wallet: %v does not exist", id)
-}
-
 // ToReadable converts Wallets to *ReadableWallet array
 func (wlts Wallets) ToReadable() []*ReadableWallet {
 	var rw []*ReadableWallet
@@ -121,25 +112,4 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 		return rw[i].time() < rw[j].time()
 	})
 	return rw
-}
-
-// Update updates the given wallet, return error if not exist
-func (wlts Wallets) update(id string, updateFunc func(*Wallet) error) error {
-	w, ok := wlts[id]
-	if !ok {
-		return ErrWalletNotExist
-	}
-
-	// Clone the wallet
-	cw := w.clone()
-
-	// update the clone wallet, to avoid updateFunc interrupting the original wallet.
-	if err := updateFunc(cw); err != nil {
-		return err
-	}
-
-	// Wipes secrets in old wallet
-	w.erase()
-	wlts[id] = cw
-	return nil
 }

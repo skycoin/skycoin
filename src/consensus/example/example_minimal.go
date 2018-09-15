@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	mathrand "math/rand"
+
 	//
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"

@@ -581,12 +581,12 @@ const (
 	// Supported values:
 	// 0        - do not halt on panic, lock API instead
 	// non-zero - exit the process on unrecoverable panic
-	SKY_OPT_HALTONPANIC = 1 + iota
+	SKY_OPT_HALTONPANIC = 1 + iota // nolint megacheck
 )
 
 // SKY_libcgo_ConfigApiOptions set values for configurable API settings
 //export SKY_libcgo_ConfigApiOption
-func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) {
+func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) { // nolint megacheck
 	if optionID == SKY_OPT_HALTONPANIC {
 		haltOnPanic = optionValue != 0
 	}

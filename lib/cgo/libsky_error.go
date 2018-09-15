@@ -14,7 +14,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/droplet"
-	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/visor"
@@ -470,33 +469,36 @@ var (
 		coin.ErrUint64OverflowsInt64:               SKY_ErrUint64OverflowsInt64,
 		coin.ErrInt64UnderflowsUint64:              SKY_ErrInt64UnderflowsUint64,
 		// daemon
-		pex.ErrPeerlistFull:                               SKY_ErrPeerlistFull,
-		pex.ErrInvalidAddress:                             SKY_ErrInvalidAddress,
-		pex.ErrNoLocalhost:                                SKY_ErrNoLocalhost,
-		pex.ErrNotExternalIP:                              SKY_ErrNotExternalIP,
-		pex.ErrPortTooLow:                                 SKY_ErrPortTooLow,
-		pex.ErrBlacklistedAddress:                         SKY_ErrBlacklistedAddress,
-		gnet.ErrDisconnectReadFailed:                      SKY_ErrDisconnectReadFailed,
-		gnet.ErrDisconnectWriteFailed:                     SKY_ErrDisconnectWriteFailed,
-		gnet.ErrDisconnectSetReadDeadlineFailed:           SKY_ErrDisconnectSetReadDeadlineFailed,
-		gnet.ErrDisconnectInvalidMessageLength:            SKY_ErrDisconnectInvalidMessageLength,
-		gnet.ErrDisconnectMalformedMessage:                SKY_ErrDisconnectMalformedMessage,
-		gnet.ErrDisconnectUnknownMessage:                  SKY_ErrDisconnectUnknownMessage,
-		gnet.ErrDisconnectUnexpectedError:                 SKY_ErrDisconnectUnexpectedError,
-		gnet.ErrConnectionPoolClosed:                      SKY_ErrConnectionPoolClosed,
-		gnet.ErrWriteQueueFull:                            SKY_ErrWriteQueueFull,
-		gnet.ErrNoReachableConnections:                    SKY_ErrNoReachableConnections,
-		daemon.ErrDisconnectInvalidVersion:                SKY_ErrDisconnectInvalidVersion,
-		daemon.ErrDisconnectIntroductionTimeout:           SKY_ErrDisconnectIntroductionTimeout,
-		daemon.ErrDisconnectVersionSendFailed:             SKY_ErrDisconnectVersionSendFailed,
-		daemon.ErrDisconnectIsBlacklisted:                 SKY_ErrDisconnectIsBlacklisted,
-		daemon.ErrDisconnectSelf:                          SKY_ErrDisconnectSelf,
-		daemon.ErrDisconnectConnectedTwice:                SKY_ErrDisconnectConnectedTwice,
-		daemon.ErrDisconnectIdle:                          SKY_ErrDisconnectIdle,
-		daemon.ErrDisconnectNoIntroduction:                SKY_ErrDisconnectNoIntroduction,
-		daemon.ErrDisconnectIPLimitReached:                SKY_ErrDisconnectIPLimitReached,
-		daemon.ErrDisconnectOtherError:                    SKY_ErrDisconnectOtherError,
-		daemon.ErrDisconnectMaxDefaultConnectionReached:   SKY_ErrDisconnectMaxDefaultConnectionReached,
+		// Removed in 34ad39ddb350
+		// gnet.ErrMaxDefaultConnectionsReached:           SKY_ErrMaxDefaultConnectionsReached,
+		pex.ErrPeerlistFull:                     SKY_ErrPeerlistFull,
+		pex.ErrInvalidAddress:                   SKY_ErrInvalidAddress,
+		pex.ErrNoLocalhost:                      SKY_ErrNoLocalhost,
+		pex.ErrNotExternalIP:                    SKY_ErrNotExternalIP,
+		pex.ErrPortTooLow:                       SKY_ErrPortTooLow,
+		pex.ErrBlacklistedAddress:               SKY_ErrBlacklistedAddress,
+		gnet.ErrDisconnectReadFailed:            SKY_ErrDisconnectReadFailed,
+		gnet.ErrDisconnectWriteFailed:           SKY_ErrDisconnectWriteFailed,
+		gnet.ErrDisconnectSetReadDeadlineFailed: SKY_ErrDisconnectSetReadDeadlineFailed,
+		gnet.ErrDisconnectInvalidMessageLength:  SKY_ErrDisconnectInvalidMessageLength,
+		gnet.ErrDisconnectMalformedMessage:      SKY_ErrDisconnectMalformedMessage,
+		gnet.ErrDisconnectUnknownMessage:        SKY_ErrDisconnectUnknownMessage,
+		gnet.ErrDisconnectUnexpectedError:       SKY_ErrDisconnectUnexpectedError,
+		gnet.ErrConnectionPoolClosed:            SKY_ErrConnectionPoolClosed,
+		gnet.ErrWriteQueueFull:                  SKY_ErrWriteQueueFull,
+		gnet.ErrNoReachableConnections:          SKY_ErrNoReachableConnections,
+		daemon.ErrDisconnectInvalidVersion:      SKY_ErrDisconnectInvalidVersion,
+		daemon.ErrDisconnectIntroductionTimeout: SKY_ErrDisconnectIntroductionTimeout,
+		daemon.ErrDisconnectVersionSendFailed:   SKY_ErrDisconnectVersionSendFailed,
+		daemon.ErrDisconnectIsBlacklisted:       SKY_ErrDisconnectIsBlacklisted,
+		daemon.ErrDisconnectSelf:                SKY_ErrDisconnectSelf,
+		daemon.ErrDisconnectConnectedTwice:      SKY_ErrDisconnectConnectedTwice,
+		daemon.ErrDisconnectIdle:                SKY_ErrDisconnectIdle,
+		daemon.ErrDisconnectNoIntroduction:      SKY_ErrDisconnectNoIntroduction,
+		daemon.ErrDisconnectIPLimitReached:      SKY_ErrDisconnectIPLimitReached,
+		daemon.ErrDisconnectOtherError:          SKY_ErrDisconnectOtherError,
+		// Removed
+		//		daemon.ErrDisconnectMaxDefaultConnectionReached:   SKY_ErrDisconnectMaxDefaultConnectionReached,
 		daemon.ErrDisconnectMaxOutgoingConnectionsReached: SKY_ErrDisconnectMaxOutgoingConnectionsReached,
 		// util
 		fee.ErrTxnNoFee:                 SKY_ErrTxnNoFee,
@@ -658,7 +660,7 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		return SKY_API_LOCKED
 	}
 	if err != nil {
-		if valueErr, isValueError := err.(skyerrors.ValueError); isValueError {
+		if valueErr, isValueError := err.(cipher.ValueError); isValueError {
 			return libErrorCode(valueErr.ErrorData)
 		} else {
 			// Setting flag every time (i.e. even when haltOnPanic is active

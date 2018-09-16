@@ -348,10 +348,16 @@ typedef Handle StatusResult_Handle;
 typedef Handle AddressUxOuts_Handle;
 
 /**
- * Memory handle to access to visor.BuildInfo (BuildInfo)
+ * Memory handle to access to readable.BuildInfo (BuildInfo)
  */
 
 typedef Handle BuildInfo_Handle;
+
+/**
+ * Memory handle to access to readable.UnspentOutputsSummary (UnspentOutputsSummary)
+ */
+
+typedef Handle ReadableUnspentOutputsSummary_Handle;
 
 /**
  * Memory handle for hash (ripemd160.digest)

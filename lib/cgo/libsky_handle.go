@@ -18,7 +18,7 @@ import (
 	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 	cli "github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -520,14 +520,28 @@ func SKY_handle_copy(handle C.Handle, copy *C.Handle) uint32 {
 	}
 }
 
-func registerReadableOutputSetHandle(obj *visor.ReadableOutputSet) C.ReadableOutputSet_Handle {
-	return (C.ReadableOutputSet_Handle)(registerHandle(obj))
+func registerReadableUnspentOutputsSummaryHandle(obj *readable.UnspentOutputsSummary) C.ReadableUnspentOutputsSummary_Handle {
+	return (C.ReadableUnspentOutputsSummary_Handle)(registerHandle(obj))
 }
 
-func lookupReadableOutputSetHandle(handle C.ReadableOutputSet_Handle) (*visor.ReadableOutputSet, bool) {
+func lookupReadableUnspentOutputsSummaryHandle(handle C.ReadableUnspentOutputsSummary_Handle) (*readable.UnspentOutputsSummary, bool) {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableOutputSet); isOK {
+		if obj, isOK := (obj).(*readable.UnspentOutputsSummary); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerBuildInfoHandle(obj *readable.BuildInfo) C.BuildInfo_Handle {
+	return (C.BuildInfo_Handle)(registerHandle(obj))
+}
+
+func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*readable.BuildInfo, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*readable.BuildInfo); isOK {
 			return obj, true
 		}
 	}

@@ -579,8 +579,8 @@ func SKY_api_Client_NewSeed(_c C.Client__Handle, _entropy int, _arg1 *C.GoString
 	return
 }
 
-//export SKY_api_Client_GetWalletSeed
-func SKY_api_Client_GetWalletSeed(_c C.Client__Handle, _id string, _password string, _arg2 *C.GoString_) (____error_code uint32) {
+//export SKY_api_Client_WalletSeed
+func SKY_api_Client_WalletSeed(_c C.Client__Handle, _id string, _password string, _arg2 *C.GoString_) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -593,7 +593,7 @@ func SKY_api_Client_GetWalletSeed(_c C.Client__Handle, _id string, _password str
 	}
 	id := _id
 	password := _password
-	__arg2, ____return_err := c.GetWalletSeed(id, password)
+	__arg2, ____return_err := c.WalletSeed(id, password)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyString(__arg2, _arg2)

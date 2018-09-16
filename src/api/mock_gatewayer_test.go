@@ -480,13 +480,13 @@ func (_m *MockGatewayer) GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [
 	return r0, r1, r2
 }
 
-// GetNoteByTransId provides a mock function with given fields: txId
-func (_m *MockGatewayer) GetNoteByTransId(txId string) notes.Note {
-	ret := _m.Called(txId)
+// GetNoteByTxID provides a mock function with given fields: txID
+func (_m *MockGatewayer) GetNoteByTxID(txID string) notes.Note {
+	ret := _m.Called(txID)
 
 	var r0 notes.Note
 	if rf, ok := ret.Get(0).(func(string) notes.Note); ok {
-		r0 = rf(txId)
+		r0 = rf(txID)
 	} else {
 		r0 = ret.Get(0).(notes.Note)
 	}
@@ -1087,13 +1087,13 @@ func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) (
 	return r0, r1
 }
 
-// RemoveNote provides a mock function with given fields: txId
-func (_m *MockGatewayer) RemoveNote(txId string) error {
-	ret := _m.Called(txId)
+// RemoveNote provides a mock function with given fields: txID
+func (_m *MockGatewayer) RemoveNote(txID string) error {
+	ret := _m.Called(txID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(txId)
+		r0 = rf(txID)
 	} else {
 		r0 = ret.Error(0)
 	}

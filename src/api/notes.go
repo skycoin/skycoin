@@ -1,14 +1,14 @@
 package api
 
+
 import (
 	"net/http"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/notes"
+	"github.com/skycoin/skycoin/src/cipher"
 	"encoding/json"
 	"fmt"
-	"github.com/skycoin/skycoin/src/cipher"
 )
-
 
 // URI: /api/v1/notes/notes
 // Method: POST
@@ -37,7 +37,7 @@ func getAllNotesHandler(gateway Gatewayer) http.HandlerFunc {
 //      422 - wrong parameters
 //      400 - internal server error
 //      200 - ok, returns note by TxId
-func getNoteByIdHandler(gateway Gatewayer) http.HandlerFunc {
+func getNoteByIDHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -50,8 +50,8 @@ func getNoteByIdHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if _, err := cipher.SHA256FromHex(note.TxIdHex); err == nil {
-			savedNotes := gateway.GetNoteByTransId(note.TxIdHex)
+		if _, err := cipher.SHA256FromHex(note.TxIDHex); err == nil {
+			savedNotes := gateway.GetNoteByTxID(note.TxIDHex)
 			wh.SendJSONOr500(logger, w, savedNotes)
 		} else {
 			wh.Error422(w, fmt.Errorf("Wrong txid").Error())
@@ -81,7 +81,7 @@ func addNoteHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if _, err := cipher.SHA256FromHex(note.TxIdHex); err == nil && len(note.Notes) > 0 {
+		if _, err := cipher.SHA256FromHex(note.TxIDHex); err == nil && len(note.Notes) > 0 {
 			if err := gateway.AddNote(note); err != nil {
 				wh.Error400(w, err.Error())
 				return
@@ -91,7 +91,7 @@ func addNoteHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, gateway.GetNoteByTransId(note.TxIdHex))
+		wh.SendJSONOr500(logger, w, gateway.GetNoteByTxID(note.TxIDHex))
 	}
 }
 
@@ -116,8 +116,8 @@ func removeNoteHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if _, err := cipher.SHA256FromHex(note.TxIdHex); err == nil {
-			if err := gateway.RemoveNote(note.TxIdHex); err != nil {
+		if _, err := cipher.SHA256FromHex(note.TxIDHex); err == nil {
+			if err := gateway.RemoveNote(note.TxIDHex); err != nil {
 				wh.Error400(w, err.Error())
 				return
 			}
@@ -126,6 +126,6 @@ func removeNoteHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, gateway.GetNoteByTransId(note.TxIdHex))
+		wh.SendJSONOr500(logger, w, gateway.GetNoteByTxID(note.TxIDHex))
 	}
 }

@@ -63,7 +63,7 @@ type Gatewayer interface {
 	UnloadWallet(id string) error
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
 	GetAllNotes() []notes.Note
-	GetNoteByTransId(txId string) notes.Note
+	GetNoteByTxID(txID string) notes.Note
 	AddNote(notes notes.Note) error
-	RemoveNote(txId string) error
+	RemoveNote(txID string) error
 }

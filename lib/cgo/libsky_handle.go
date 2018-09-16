@@ -416,34 +416,6 @@ func lookupSortableTransactionHandle(handle C.SortableTransactionResult_Handle) 
 	return nil, false
 }
 
-func registerWalletNotesHandle(obj *wallet.Notes) C.WalletNotes_Handle {
-	return (C.WalletNotes_Handle)(registerHandle(obj))
-}
-
-func lookupWalletNotesHandle(handle C.WalletNotes_Handle) (*wallet.Notes, bool) {
-	obj, ok := lookupHandle(C.Handle(handle))
-	if ok {
-		if obj, isOK := (obj).(*wallet.Notes); isOK {
-			return obj, true
-		}
-	}
-	return nil, false
-}
-
-func registerWalletReadableNotesHandle(obj *wallet.ReadableNotes) C.WalletReadableNotes_Handle {
-	return (C.WalletReadableNotes_Handle)(registerHandle(obj))
-}
-
-func lookupWalletReadableNotesHandle(handle C.WalletReadableNotes_Handle) (*wallet.ReadableNotes, bool) {
-	obj, ok := lookupHandle(C.Handle(handle))
-	if ok {
-		if obj, isOK := (obj).(*wallet.ReadableNotes); isOK {
-			return obj, true
-		}
-	}
-	return nil, false
-}
-
 func registerOutputsResultHandle(obj *webrpc.OutputsResult) C.OutputsResult_Handle {
 	return (C.OutputsResult_Handle)(registerHandle(obj))
 }
@@ -480,20 +452,6 @@ func lookupAddressUxOutHandle(handle C.AddressUxOuts_Handle) (*coin.AddressUxOut
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*coin.AddressUxOuts); isOK {
-			return obj, true
-		}
-	}
-	return nil, false
-}
-
-func registerBuildInfoHandle(obj *visor.BuildInfo) C.BuildInfo_Handle {
-	return (C.BuildInfo_Handle)(registerHandle(obj))
-}
-
-func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*visor.BuildInfo, bool) {
-	obj, ok := lookupHandle(C.Handle(handle))
-	if ok {
-		if obj, isOK := (obj).(*visor.BuildInfo); isOK {
 			return obj, true
 		}
 	}

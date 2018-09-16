@@ -6,7 +6,7 @@ import (
 	"errors"
 	"log"
 
-	skyerrors "github.com/skycoin/skycoin/src/util/errors"
+	skyerrors "github.com/skycoin/skycoin/src/cipher/errors"
 )
 
 var (

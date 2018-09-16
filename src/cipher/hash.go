@@ -5,6 +5,8 @@ import (
 	"errors"
 	"hash"
 	"log"
+
+	skyerrors "github.com/skycoin/skycoin/src/cipher/errors"
 )
 
 var (
@@ -32,7 +34,7 @@ type Ripemd160 [20]byte
 // Set sets value
 func (rd *Ripemd160) Set(b []byte) {
 	if len(b) != 20 {
-		err := NewValueError(
+		err := skyerrors.NewValueError(
 			ErrInvalidLengthRipemd160, "b", b,
 		)
 		log.Print(err)
@@ -62,7 +64,7 @@ type SHA256 [32]byte
 // Set sets value
 func (g *SHA256) Set(b []byte) {
 	if len(b) != 32 {
-		err := NewValueError(
+		err := skyerrors.NewValueError(
 			ErrInvalidLengthSHA256, "b", b,
 		)
 		log.Print(err)

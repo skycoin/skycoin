@@ -6,7 +6,7 @@ import { BigNumber } from 'bignumber.js';
 export class Address {
   address: string;
   coins: BigNumber = new BigNumber('0');
-  hours: number;
+  hours: BigNumber = new BigNumber('0');
   copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
   outputs?: any;
 }
@@ -29,8 +29,8 @@ export class Transaction {
   inputs: any[];
   outputs: any[];
   txid: string;
-  hoursSent?: number;
-  hoursBurned?: number;
+  hoursSent?: BigNumber;
+  hoursBurned?: BigNumber;
 }
 
 export class PreviewTransaction extends Transaction {
@@ -54,7 +54,7 @@ export class Wallet {
   label: string;
   filename: string;
   coins: BigNumber = new BigNumber('0');
-  hours: number;
+  hours: BigNumber = new BigNumber('0');
   addresses: Address[];
   encrypted: boolean;
   hideEmpty?: boolean;

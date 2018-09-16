@@ -23,9 +23,9 @@
         <div class="-data">
           <span>{{ 'tx.hours' | translate }}:</span>
           <span>
-            {{ transaction.hoursSent | number:'1.0-6' }} {{ !isPreview && transaction.balance > 0 ? ('tx.hours-received' | translate) : ('tx.hours-sent' | translate) }}
+            {{ transaction.hoursSent.decimalPlaces(0, 4).toString() }} {{ !isPreview && transaction.balance.isGreaterThan(0) ? ('tx.hours-received' | translate) : ('tx.hours-sent' | translate) }}
             |
-            {{ transaction.hoursBurned | number:'1.0-6' }} {{ 'tx.hours-burned' | translate }}
+            {{ transaction.hoursBurned.decimalPlaces(0, 4).toString() }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
         <div class="-data">
@@ -34,7 +34,7 @@
       </div>
 
       <div class="col-md-3 -tx-price">
-        <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance > 0 }">
+        <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance.isGreaterThan(0) }">
           <img src="/assets/img/send-blue.png">
         </div>
         <h4>{{ transaction.balance.decimalPlaces(6, 4).toString() }} {{ 'common.coin-id' | translate }}</h4>

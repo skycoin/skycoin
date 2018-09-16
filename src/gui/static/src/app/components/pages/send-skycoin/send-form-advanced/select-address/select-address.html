@@ -5,7 +5,7 @@
       <div class="address">{{ address.address }}</div>
       <div class="balance">{{ address.coins.decimalPlaces(6, 4).toString() }}
         <span class="grey">{{ 'common.coin-id' | translate }} | </span>
-        {{ address.hours | number:'1.0-6' }}
+        {{ address.hours.decimalPlaces(0, 4).toString() }}
         <span class="grey">{{ 'common.coin-hours' | translate }}</span>
       </div>
     </button>

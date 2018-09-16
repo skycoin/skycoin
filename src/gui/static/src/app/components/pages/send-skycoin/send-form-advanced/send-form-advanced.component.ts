@@ -222,14 +222,17 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       return { Invalid: true };
     }
 
-    const coins = this.form.get('addresses').value.reduce((a, b) => a + b.coins, 0);
-    const hours = this.form.get('addresses').value.reduce((a, b) => a + b.hours, 0);
-    const destinationsHours = this.destControls.reduce((a, b) => a + parseInt(b.value.hours, 10), 0);
-
+    let coins = new BigNumber(0);
+    this.form.get('addresses').value.map(control => coins = coins.plus(control.coins));
     let destinationsCoins = new BigNumber(0);
     this.destControls.map(control => destinationsCoins = destinationsCoins.plus(control.value.coins));
 
-    if (destinationsCoins.isGreaterThan(coins) || destinationsHours > hours) {
+    let hours = new BigNumber(0);
+    this.form.get('addresses').value.map(control => hours = hours.plus(control.hours));
+    let destinationsHours = new BigNumber(0);
+    this.destControls.map(control => destinationsHours = destinationsHours.plus(control.value.hours));
+
+    if (destinationsCoins.isGreaterThan(coins) || destinationsHours.isGreaterThan(hours)) {
       return { Invalid: true };
     }
 

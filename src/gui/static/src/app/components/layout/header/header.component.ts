@@ -47,7 +47,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   get hours() {
-    return this.addresses.map(addr => addr.hours >= 0 ? addr.hours : 0).reduce((a, b) => a + b, 0);
+    let hours = new BigNumber('0');
+    this.addresses.map(addr => hours = hours.plus(addr.hours));
+
+    return hours.decimalPlaces(0, BigNumber.ROUND_HALF_UP).toString();
   }
 
   constructor(

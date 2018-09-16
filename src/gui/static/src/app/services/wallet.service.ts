@@ -154,7 +154,7 @@ export class WalletService {
     ).map(response => {
       return {
         ...response.transaction,
-        hoursBurned: response.transaction.fee,
+        hoursBurned: new BigNumber(response.transaction.fee),
         encoded: response.encoded_transaction,
       };
     });
@@ -225,11 +225,14 @@ export class WalletService {
           calculatedOutputs.map (output => transaction.balance = transaction.balance.plus(output.coins));
           transaction.balance = (outgoing ? transaction.balance.negated() : transaction.balance);
 
-          transaction.hoursSent = calculatedOutputs.reduce((a, b) => a + b.hours, 0);
+          transaction.hoursSent = new BigNumber('0');
+          calculatedOutputs.map(output => transaction.hoursSent = transaction.hoursSent.plus(new BigNumber(output.hours)));
 
-          const inputsHours = transaction.inputs.reduce((a, b) => a + b.calculated_hours, 0);
-          const outputsHours = transaction.outputs.reduce((a, b) => a + b.hours, 0);
-          transaction.hoursBurned = inputsHours - outputsHours;
+          let inputsHours = new BigNumber('0');
+          transaction.inputs.map(input => inputsHours = inputsHours.plus(new BigNumber(input.calculated_hours)));
+          let outputsHours = new BigNumber('0');
+          transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
+          transaction.hoursBurned = inputsHours.minus(outputsHours);
 
           return transaction;
         });
@@ -265,11 +268,11 @@ export class WalletService {
     return this.apiService.get('wallet/balance', { id: wallet.filename }).map(balance => {
       return {
         coins: new BigNumber(balance.confirmed.coins).dividedBy(1000000),
-        hours: balance.confirmed.hours,
+        hours: new BigNumber(balance.confirmed.hours),
         addresses: Object.keys(balance.addresses).map(address => ({
           address,
           coins: new BigNumber(balance.addresses[address].confirmed.coins).dividedBy(1000000),
-          hours: balance.addresses[address].confirmed.hours,
+          hours: new BigNumber(balance.addresses[address].confirmed.hours),
         })),
       };
     });

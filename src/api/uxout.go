@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/skycoin/skycoin/src/readable"
+	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
 func getUxOutByID(gateway Gatewayer) http.HandlerFunc {
@@ -38,7 +38,7 @@ func getUxOutByID(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, historydb.NewUxOutJSON(uxout))
+		wh.SendJSONOr500(logger, w, readable.NewSpentOutput(uxout))
 	}
 }
 
@@ -48,6 +48,7 @@ func getAddrUxOuts(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
+
 		addr := r.FormValue("address")
 		if addr == "" {
 			wh.Error400(w, "address is empty")
@@ -60,18 +61,17 @@ func getAddrUxOuts(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.GetAddrUxOuts([]cipher.Address{cipherAddr})
+		uxs, err := gateway.GetSpentOutputsForAddresses([]cipher.Address{cipherAddr})
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		//Convert slice UxOut to slice of UxOutJson
-		uxsJSON := make([]*historydb.UxOutJSON, len(uxs))
-		for i, ux := range uxs {
-			uxsJSON[i] = historydb.NewUxOutJSON(ux)
+		ret := make([]readable.SpentOutput, 0)
+		for _, u := range uxs {
+			ret = append(ret, readable.NewSpentOutputs(u)...)
 		}
 
-		wh.SendJSONOr500(logger, w, uxsJSON)
+		wh.SendJSONOr500(logger, w, ret)
 	}
 }

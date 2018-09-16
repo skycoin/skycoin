@@ -38,9 +38,7 @@ func GetUnlockedDistributionAddresses() []string {
 	// is distributed, then compute the unlocked addresses easily here.
 
 	addrs := make([]string, InitialUnlockedCount)
-	for i := range distributionAddresses[:InitialUnlockedCount] {
-		addrs[i] = distributionAddresses[i]
-	}
+	copy(addrs[:], distributionAddresses[:InitialUnlockedCount])
 	return addrs
 }
 

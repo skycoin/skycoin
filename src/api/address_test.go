@@ -99,8 +99,7 @@ func TestVerifyAddress(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
-			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway := &MockGatewayer{}
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -122,13 +121,11 @@ func TestVerifyAddress(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			cfg := muxConfig{host: configuredHost, appLoc: "."}
-			handler := newServerMux(cfg, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			var rsp ReceivedHTTPResponse
 			err = json.NewDecoder(rr.Body).Decode(&rsp)

@@ -12,9 +12,7 @@ set -e -o pipefail
 # By default builds all architectures.
 # A single arch can be built by specifying it using gox's arch names
 
-if [ -n "$1" ]; then
-    GOX_OSARCH="$1"
-fi
+GOX_OSARCH="$@"
 
 . build-conf.sh "$GOX_OSARCH"
 
@@ -80,7 +78,13 @@ fi
 
 EXE="${PDT_NAME} Setup ${APP_VERSION}.exe"
 if [ -e "$EXE" ]; then
-    mv "$EXE" "${PKG_NAME}-${APP_VERSION}-gui-win-setup.exe"
+    if [ ! -z $WIN32_ELN ] && [ ! -z $WIN64_ELN ]; then
+        mv "$EXE" "${PKG_NAME}-${APP_VERSION}-gui-win-setup.exe"
+    elif [ ! -z $WIN32_ELN ]; then
+        mv "$EXE" "${WIN32_ELN}.exe"
+    elif [ ! -z $WIN64_ELN ]; then
+        mv "$EXE" "${WIN64_ELN}.exe"
+    fi
 fi
 
 # rename dmg file name

@@ -1,11 +1,6 @@
-<div class="-header">
-  {{ 'history.tx-detail' | translate }} <img src="../../../../../assets/img/close-grey.png" (click)="closePopup()">
-</div>
-<div class="-container">
-  <mat-dialog-content>
-    <app-transaction-info
-      [transaction]="transaction"
-      [isPreview]="false"
-    ></app-transaction-info>
-  </mat-dialog-content>
-</div>
+<app-modal [headline]="'history.tx-detail' | translate" [dialog]="dialogRef">
+  <app-transaction-info
+    [transaction]="transaction"
+    [isPreview]="false">
+  </app-transaction-info>
+</app-modal>

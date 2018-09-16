@@ -88,7 +88,7 @@ func TestConvertToMessageNotMessage(t *testing.T) {
 	// don't verify messages
 	c := &Connection{}
 	assert.Panics(t, func() {
-		convertToMessage(c.ID, NothingPrefix[:], testing.Verbose())
+		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) // nolint: errcheck
 	})
 }
 
@@ -170,10 +170,6 @@ func TestSendMessage(t *testing.T) {
 }
 
 /* Helpers */
-
-func noopSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
-	return nil
-}
 
 func failingSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
 	return errors.New("send byte message failed")

@@ -74,6 +74,6 @@ go get -u github.com/fatih/gomodifytags && \
 go get -u github.com/dominikh/go-tools/cmd/keyify && \
 go get -u golang.org/x/tools/cmd/gorename && \
 go get -u github.com/klauspost/asmfmt/cmd/asmfmt && \
-go get -u github.com/ernesto-jimenez/goautomock && \
+go get -u github.com/vektra/mockery/.../ && \
 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 ```

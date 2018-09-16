@@ -26,10 +26,10 @@
 
     .-row {
       font-size: $font-size-standard;
-      line-height: $row-height;
-      height: $row-height;
+      padding: 15px 0;
       background: $white;
       display: flex;
+      align-items: center;
 
       &:not(:last-child) {
         border-bottom: 1px solid #eff0f0;
@@ -53,17 +53,21 @@
 
   .-width-70 {
     width: 70px;
+    flex-shrink: 0;
   }
 
   .-width-150 {
     width: 150px;
+    flex-shrink: 0;
   }
 
   .-width-200 {
     width: 200px;
+    flex-shrink: 0;
   }
 
   .-width-250 {
     width: 250px;
+    flex-shrink: 0;
   }
 }

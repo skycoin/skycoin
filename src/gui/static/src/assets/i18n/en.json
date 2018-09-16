@@ -12,7 +12,8 @@
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
     "no-wallet": "Wallet does not exist",
-    "no-outputs": "No unspent outputs"
+    "no-outputs": "No unspent outputs",
+    "window-size": "The window is too narrow for the content"
   },
 
   "title": {
@@ -88,7 +89,7 @@
   },
 
   "wallet": {
-    "new-address": "New Address",
+    "new-address": "New Addresses",
     "show-empty": "Show Empty",
     "hide-empty": "Hide Empty",
     "encrypt": "Encrypt Wallet",
@@ -126,6 +127,13 @@
       "rename-button": "Rename"
     },
 
+    "add-addresses": {
+      "title": "Select quantity",
+      "name-quantity": "How many addresses to create",
+      "cancel-button": "Cancel",
+      "create-button": "Create"
+    },
+
     "address": {
       "copy": "Copy",
       "copy-address": "Copy address",
@@ -143,7 +151,8 @@
     "addresses-label": "Addresses",
     "addresses-help": "Wallet addresses to send from",
     "change-address-label": "Custom change address",
-    "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically",
+    "change-address-select": "Select",
+    "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets",
     "destinations-label": "Destinations",
     "destinations-help1": "Destination addresses and their coins",
     "destinations-help2": "Destination addresses, their coins and coin hours",
@@ -170,6 +179,7 @@
     "id": "Tx ID",
     "show-more": "Show more",
     "hours-sent": "sent",
+    "hours-received": "received",
     "hours-burned": "burned",
     "inputs": "Inputs",
     "outputs": "Outputs",
@@ -204,6 +214,7 @@
     "peer": "Peer",
     "source": "Source",
     "block-height": "Block height",
+    "block-height-short": "Block",
     "last-seen": "Last seen",
     "last-received": "Last received",
     "last-sent": "Last sent",
@@ -240,5 +251,11 @@
     "waiting-deposit": "Waiting for Bitcoin deposit",
     "waiting-send": "Waiting to send Skycoin",
     "unknown": "Unknown"
+  },
+
+  "service": {
+    "api" : {
+      "server-error": "Server error"
+    }
   }
 }

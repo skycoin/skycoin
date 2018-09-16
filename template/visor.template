@@ -1,8 +1,8 @@
 package visor
 
 /*
-* CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
-* AVOID EDITING THIS MANUALLY
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
 */
 
 const (
@@ -28,6 +28,6 @@ const (
 
 var distributionAddresses = [DistributionAddressesTotal]string{
 {{- range $index, $address := .DistributionAddresses}}
-   "{{$address -}}",
+	"{{$address -}}",
 {{- end}}
 }

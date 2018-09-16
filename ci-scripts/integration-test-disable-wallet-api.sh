@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs "disable-wallet-api"-mode tests against a skycoin node configured with -enable-wallet-api=false
+# Runs "disable-wallet-api"-mode tests against a skycoin node configured with the wallet API disabled.
 # "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page
 # does not load, and that a new wallet file is not created.
 
@@ -12,21 +12,18 @@ while $(lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null) ; do
     PORT=$((PORT+1))
 done
 
+COIN="${COIN:-skycoin}"
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 MODE="disable-wallet-api"
-BINARY="skycoin-integration"
+BINARY="${COIN}-integration-disable-wallet-api.test"
 UPDATE=""
 # run go test with -v flag
 VERBOSE=""
 # run go test with -run flag
 RUN_TESTS=""
 FAILFAST=""
-
-COMMIT=$(git rev-parse HEAD)
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 
 usage () {
   echo "Usage: $SCRIPT"
@@ -50,9 +47,20 @@ while getopts "h?t:r:uvf" args; do
   esac
 done
 
+COVERAGEFILE="coverage/${BINARY}.coverage.out"
+if [ -f "${COVERAGEFILE}" ]; then
+    rm "${COVERAGEFILE}"
+fi
+
 set -euxo pipefail
 
-DATA_DIR=$(mktemp -d -t skycoin-data-dir.XXXXXX)
+CMDPKG=$(go list ./cmd/${COIN})
+COVERPKG=$(dirname $(dirname ${CMDPKG}))
+COMMIT=$(git rev-parse HEAD)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+GOLDFLAGS="-X ${CMDPKG}.Commit=${COMMIT} -X ${CMDPKG}.Branch=${BRANCH}"
+
+DATA_DIR=$(mktemp -d -t ${COIN}-data-dir.XXXXXX)
 WALLET_DIR="${DATA_DIR}/wallets"
 
 if [[ ! "$DATA_DIR" ]]; then
@@ -61,27 +69,32 @@ if [[ ! "$DATA_DIR" ]]; then
 fi
 
 # Compile the skycoin node
-# We can't use "go run" because this creates two processes which doesn't allow us to kill it at the end
-echo "compiling skycoin"
-go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
+# We can't use "go run" because that creates two processes which doesn't allow us to kill it at the end
+echo "compiling $COIN with coverage"
+go test -c -ldflags "${GOLDFLAGS}" -tags testrunmain -o "$BINARY" -coverpkg="${COVERPKG}/..." ./cmd/${COIN}/
+
+mkdir -p coverage/
 
 # Run skycoin node with pinned blockchain database
-echo "starting skycoin node in background with http listener on $HOST"
+echo "starting $COIN node in background with http listener on $HOST"
 
-./skycoin-integration -disable-networking=true \
-                      -web-interface-port=$PORT \
-                      -download-peerlist=false \
-                      -db-path=./src/api/integration/testdata/blockchain-180.db \
-                      -db-read-only=true \
-                      -rpc-interface=true \
-                      -launch-browser=false \
-                      -data-dir="$DATA_DIR" \
-                      -wallet-dir="$WALLET_DIR" \
-                      -enable-unversioned-api=true \
-                      -enable-wallet-api=false &
+./"$BINARY" -disable-networking=true \
+            -web-interface-port=$PORT \
+            -download-peerlist=false \
+            -db-path=./src/api/integration/testdata/blockchain-180.db \
+            -db-read-only=true \
+            -launch-browser=false \
+            -data-dir="$DATA_DIR" \
+            -wallet-dir="$WALLET_DIR" \
+            -enable-unversioned-api=true \
+            -enable-api-set=READ,STATUS \
+            -test.run "^TestRunMain$" \
+            -test.coverprofile="${COVERAGEFILE}" \
+            &
+
 SKYCOIN_PID=$!
 
-echo "skycoin node pid=$SKYCOIN_PID"
+echo "$COIN node pid=$SKYCOIN_PID"
 
 echo "sleeping for startup"
 sleep 3
@@ -94,7 +107,7 @@ SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOS
 
 FAIL=$?
 
-echo "shutting down skycoin node"
+echo "shutting down $COIN node"
 
 # Shutdown skycoin node
 kill -s SIGINT $SKYCOIN_PID

@@ -13,6 +13,7 @@ import 'rxjs/add/observable/zip';
 import { Address, NormalTransaction, PreviewTransaction, Wallet } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 @Injectable()
 export class WalletService {
@@ -20,6 +21,8 @@ export class WalletService {
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
   pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
   dataRefreshSubscription: Subscription;
+
+  initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(
     private apiService: ApiService,
@@ -33,10 +36,10 @@ export class WalletService {
     return this.allAddresses().map(addrs => addrs.map(addr => addr.address)).map(addrs => addrs.join(','));
   }
 
-  addAddress(wallet: Wallet, password?: string) {
-    return this.apiService.postWalletNewAddress(wallet, password)
-      .do(address => {
-        wallet.addresses.push(address);
+  addAddress(wallet: Wallet, num: number, password?: string) {
+    return this.apiService.postWalletNewAddress(wallet, num, password)
+      .do(addresses => {
+        addresses.forEach(value => wallet.addresses.push(value));
         this.refreshBalances();
       });
   }
@@ -219,6 +222,11 @@ export class WalletService {
           );
 
           transaction.balance += calculatedOutputs.reduce((a, b) => a + parseFloat(b.coins), 0) * (outgoing ? -1 : 1);
+          transaction.hoursSent = calculatedOutputs.reduce((a, b) => a + b.hours, 0);
+
+          const inputsHours = transaction.inputs.reduce((a, b) => a + b.calculated_hours, 0);
+          const outputsHours = transaction.outputs.reduce((a, b) => a + b.hours, 0);
+          transaction.hoursBurned = inputsHours - outputsHours;
 
           return transaction;
         });
@@ -240,7 +248,10 @@ export class WalletService {
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(wallets => this.wallets.next(wallets));
+    this.apiService.getWallets().first().subscribe(
+      wallets => this.wallets.next(wallets),
+      () => this.initialLoadFailed.next(true),
+    );
   }
 
   private retrieveInputAddress(input: string) {

@@ -82,7 +82,6 @@ func getFieldValue(in []byte, d *decoder, fieldType reflect.Kind, s int) string 
 
 // DeserializeField deserialize field
 func DeserializeField(in []byte, fields []StructField, fieldName string, field interface{}) error {
-
 	d := &decoder{buf: make([]byte, len(in))}
 	copy(d.buf, in)
 	fv := reflect.ValueOf(field).Elem()
@@ -91,8 +90,7 @@ func DeserializeField(in []byte, fields []StructField, fieldName string, field i
 		if f.Name == fieldName {
 			fd := &decoder{buf: make([]byte, len(in)-s)}
 			copy(fd.buf, d.buf[s:])
-			fd.value(fv)
-			return nil
+			return fd.value(fv)
 		}
 		res := getFieldSize(d, reflect.Kind(f.Kind), s)
 		s = res

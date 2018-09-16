@@ -178,7 +178,7 @@ func lookupClientHandle(handle C.Client__Handle) (*api.Client, bool) {
 	return nil, false
 }
 
-func registerWalletsHandle(obj []*api.WalletResponse) C.Wallets__Handle {
+func registerWalletsHandle(obj *[]api.WalletResponse) C.Wallets__Handle {
 	return (C.Wallets__Handle)(registerHandle(obj))
 }
 
@@ -514,8 +514,22 @@ func SKY_handle_copy(handle C.Handle, copy *C.Handle) uint32 {
 	obj, ok := lookupHandle(handle)
 	if ok {
 		*copy = registerHandle(obj)
-		return 0
+		return SKY_OK
 	} else {
 		return SKY_BAD_HANDLE
 	}
+}
+
+func registerReadableOutputSetHandle(obj *visor.ReadableOutputSet) C.ReadableOutputSet_Handle {
+	return (C.ReadableOutputSet_Handle)(registerHandle(obj))
+}
+
+func lookupReadableOutputSetHandle(handle C.ReadableOutputSet_Handle) (*visor.ReadableOutputSet, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.ReadableOutputSet); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
 }

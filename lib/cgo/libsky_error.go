@@ -41,6 +41,7 @@ const (
 )
 
 // Package prefixes for error codes
+//nolint megacheck
 const (
 	// Error code prefix for api package
 	SKY_PKG_API = (1 + iota) << 24 // nolint megacheck
@@ -66,7 +67,9 @@ const (
 	SKY_PKG_WALLET
 )
 
+//nolint megacheck
 // Error codes defined in cipher package
+//nolint megacheck
 const (
 	// SKY_ErrAddressInvalidLength Unexpected size of address bytes buffer
 	SKY_ErrAddressInvalidLength = SKY_PKG_CIPHER + iota
@@ -145,6 +148,7 @@ const (
 )
 
 // Error codes defined in cli package
+// nolint megacheck
 const (
 	// SKY_ErrTemporaryInsufficientBalance is returned if a wallet does not have
 	// enough balance for a spend, but will have enough after unconfirmed transactions confirm
@@ -162,6 +166,7 @@ const (
 )
 
 // Error codes defined in coin package
+// nolint megacheck
 const (
 	// ErrAddEarnedCoinHoursAdditionOverflow is returned by UxOut.CoinHours()
 	// if during the addition of base coin
@@ -182,6 +187,7 @@ const (
 )
 
 // Error codes defined in daemon package
+// nolint megacheck
 const (
 	// SKY_ErrPeerlistFull is returned when the Pex is at a maximum
 	SKY_ErrPeerlistFull = SKY_PKG_DAEMON + iota
@@ -246,6 +252,7 @@ const (
 )
 
 // Error codes defined in util package
+// nolint megacheck
 const (
 	// ErrTxnNoFee is returned if a transaction has no coinhour fee
 	SKY_ErrTxnNoFee = SKY_PKG_UTIL + iota
@@ -266,6 +273,7 @@ const (
 )
 
 // Error codes defined in visor package
+// nolint megacheck
 const (
 	// SKY_ErrHistoryDBCorrupted Internal format error in HistoryDB database
 	SKY_ErrHistoryDBCorrupted = SKY_PKG_VISOR + iota
@@ -292,6 +300,7 @@ const (
 )
 
 // Error codes defined in wallet package
+// nolint megacheck
 const (
 	// SKY_ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
 	SKY_ErrInsufficientBalance = SKY_PKG_WALLET + iota
@@ -620,6 +629,7 @@ var (
 	haltOnPanic = true
 )
 
+// nolint megacheck
 const (
 	// SKY_OPT_HALTONPANIC controls API behavior on panic
 	// Supported values:

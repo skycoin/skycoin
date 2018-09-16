@@ -18,10 +18,11 @@ import "C"
 
 //export SKY_wallet_CreateAddresses
 func SKY_wallet_CreateAddresses(_coinType string, _seed string, _genCount int, _hideSecretKey bool, _arg4 *C.ReadableWallet__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	coinType := _coinType
 	seed := _seed
 	genCount := _genCount
@@ -36,10 +37,11 @@ func SKY_wallet_CreateAddresses(_coinType string, _seed string, _genCount int, _
 
 //export SKY_wallet_GetSkycoinWalletEntry
 func SKY_wallet_GetSkycoinWalletEntry(_pub *C.cipher__PubKey, _sec *C.cipher__SecKey, _arg2 *C.ReadableEntry__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	pub := *(*cipher.PubKey)(unsafe.Pointer(_pub))
 	sec := *(*cipher.SecKey)(unsafe.Pointer(_sec))
 	__arg2 := wallet.GetSkycoinWalletEntry(pub, sec)
@@ -49,10 +51,11 @@ func SKY_wallet_GetSkycoinWalletEntry(_pub *C.cipher__PubKey, _sec *C.cipher__Se
 
 //export SKY_wallet_GetBitcoinWalletEntry
 func SKY_wallet_GetBitcoinWalletEntry(_pub *C.cipher__PubKey, _sec *C.cipher__SecKey, _arg2 *C.ReadableEntry__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	pub := *(*cipher.PubKey)(unsafe.Pointer(_pub))
 	sec := *(*cipher.SecKey)(unsafe.Pointer(_sec))
 	__arg2 := wallet.GetBitcoinWalletEntry(pub, sec)

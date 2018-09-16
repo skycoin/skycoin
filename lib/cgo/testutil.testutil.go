@@ -17,10 +17,11 @@ import "C"
 
 //export SKY_testutil_MakeAddress
 func SKY_testutil_MakeAddress(_arg0 *C.cipher__Address) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	__arg0 := testutil.MakeAddress()
 	*_arg0 = *(*C.cipher__Address)(unsafe.Pointer(&__arg0))
 	return

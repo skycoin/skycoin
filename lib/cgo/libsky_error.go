@@ -137,8 +137,8 @@ const (
 	SKY_ErrInvalidDerivedPubKeyFromSecKey
 	// SKY_ErrInvalidPubKeyFromHash Recovered pubkey does not match signed hash
 	SKY_ErrInvalidPubKeyFromHash
-	// SKY_ErrPubKeyFromSecKeyMissmatch impossible error TestSecKey, pubkey does not match recovered pubkey
-	SKY_ErrPubKeyFromSecKeyMissmatch
+	// SKY_ErrPubKeyFromSecKeyMismatch impossible error TestSecKey, pubkey does not match recovered pubkey
+	SKY_ErrPubKeyFromSecKeyMismatch
 )
 
 // Error codes defined in cli package
@@ -427,7 +427,7 @@ var (
 		cipher.ErrNullPubKeyFromSecKey:           SKY_ErrNullPubKeyFromSecKey,
 		cipher.ErrInvalidDerivedPubKeyFromSecKey: SKY_ErrInvalidDerivedPubKeyFromSecKey,
 		cipher.ErrInvalidPubKeyFromHash:          SKY_ErrInvalidPubKeyFromHash,
-		cipher.ErrPubKeyFromSecKeyMissmatch:      SKY_ErrPubKeyFromSecKeyMissmatch,
+		cipher.ErrPubKeyFromSecKeyMismatch:      SKY_ErrPubKeyFromSecKeyMismatch,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,

@@ -11,6 +11,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/notes"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/timeutil"
@@ -117,6 +118,8 @@ type Config struct {
 	EnableSeedAPI bool
 	// wallet crypto type
 	WalletCryptoType wallet.CryptoType
+	// data directory
+	DataDirectory string
 }
 
 // NewVisorConfig put cap on block size, not on transactions/block
@@ -218,6 +221,7 @@ type Visor struct {
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
+	Notes       *notes.Service
 	StartedAt   time.Time
 
 	history Historyer
@@ -243,6 +247,16 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	}
 
 	wltServ, err := wallet.NewService(wltServConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// Loads Notes
+	notesServConfig := notes.Config{
+		NotesPath: c.DataDirectory + "/transactionnotes.json",
+	}
+
+	noteServ, err := notes.NewService(notesServConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -293,6 +307,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		Unconfirmed: utp,
 		history:     history,
 		Wallets:     wltServ,
+		Notes:       noteServ,
 		StartedAt:   time.Now(),
 	}
 

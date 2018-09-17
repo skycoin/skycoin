@@ -4,6 +4,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/notes"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -61,4 +62,8 @@ type Gatewayer interface {
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
+	GetAllNotes() []notes.Note
+	GetNoteByTxID(txID string) notes.Note
+	AddNote(notes notes.Note) error
+	RemoveNote(txID string) error
 }

@@ -368,8 +368,8 @@ const (
 	SKY_ErrInvalidShareFactor
 	// SKY_ErrShareFactorOutOfRange HoursSelection.ShareFactor must be >= 0 and <= 1
 	SKY_ErrShareFactorOutOfRange
-	// SKY_ErrWalletConstraint Wallet.UxOuts and Wallet.Addresses cannot be combined
-	SKY_ErrWalletConstraint
+	// SKY_ErrWalletParamsConflict Wallet.UxOuts and Wallet.Addresses cannot be combined
+	SKY_ErrWalletParamsConflict
 	// SKY_ErrDuplicateUxOuts Wallet.UxOuts contains duplicate values
 	SKY_ErrDuplicateUxOuts
 	// SKY_ErrUnknownWalletID params.Wallet.ID does not match wallet
@@ -524,7 +524,7 @@ var (
 		wallet.ErrMissingShareFactor:        SKY_ErrMissingShareFactor,
 		wallet.ErrInvalidShareFactor:        SKY_ErrInvalidShareFactor,
 		wallet.ErrShareFactorOutOfRange:     SKY_ErrShareFactorOutOfRange,
-		wallet.ErrWalletConstraint:          SKY_ErrWalletConstraint,
+		wallet.ErrWalletParamsConflict:          SKY_ErrWalletParamsConflict,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
 	}

@@ -121,8 +121,8 @@ var (
 	ErrInvalidShareFactor = NewError(errors.New("HoursSelection.ShareFactor can only be used for share mode"))
 	// ErrShareFactorOutOfRange HoursSelection.ShareFactor must be >= 0 and <= 1
 	ErrShareFactorOutOfRange = NewError(errors.New("HoursSelection.ShareFactor must be >= 0 and <= 1"))
-	// ErrWalletConstraint Wallet.UxOuts and Wallet.Addresses cannot be combined
-	ErrWalletConstraint = NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
+	// ErrWalletParamsConflict Wallet.UxOuts and Wallet.Addresses cannot be combined
+	ErrWalletParamsConflict = NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
 	// ErrDuplicateUxOuts Wallet.UxOuts contains duplicate values
 	ErrDuplicateUxOuts = NewError(errors.New("Wallet.UxOuts contains duplicate values"))
 	// ErrUnknownWalletID params.Wallet.ID does not match wallet
@@ -298,7 +298,7 @@ func (c CreateTransactionParams) Validate() error {
 	}
 
 	if len(c.Wallet.UxOuts) != 0 && len(c.Wallet.Addresses) != 0 {
-		return ErrWalletConstraint
+		return ErrWalletParamsConflict
 	}
 
 	// Check for duplicate spending uxouts

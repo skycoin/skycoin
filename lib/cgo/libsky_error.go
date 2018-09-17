@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/base58"
@@ -570,6 +571,10 @@ var (
 	// isApiLocked flag set when previous unrecoverable panic is detected
 	// subsequent use of the API leads to SKY_API_LOCKED returned
 	isAPILocked = false
+	// apiWriteLock locks write access to isAPILocked
+	apiWriteLock = &sync.RWMutex{}
+	// apiReadLock locks read access to isAPILocked
+	apiReadLock = apiWriteLock.RLocker()
 	// haltOnPanic is enabled by default to halt process on unhandled panic
 	// if disabled then locking is activated instead.
 	// Subsequent use of the API leads to SKY_API_LOCKED error code returned
@@ -584,6 +589,18 @@ const (
 	SKY_OPT_HALTONPANIC = 1 + iota // nolint megacheck
 )
 
+func getIsAPILocked() bool {
+	defer apiReadLock.Unlock()
+	apiReadLock.Lock()
+	return isAPILocked
+}
+
+func lockAPI() {
+	defer apiWriteLock.Unlock()
+	apiWriteLock.Lock()
+	isAPILocked = true
+}
+
 // SKY_libcgo_ConfigApiOptions set values for configurable API settings
 //export SKY_libcgo_ConfigApiOption
 func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) { // nolint megacheck
@@ -595,7 +612,7 @@ func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) { // nolint
 // checkAPIReady ensure preconditions are met for API functions to be invoked
 // and lock API otherwise
 func checkAPIReady() {
-	if isAPILocked {
+	if getIsAPILocked() {
 		panic(ErrorLockApi)
 	}
 }
@@ -613,8 +630,8 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		// Return right away
 		return errcode
 	}
-	if isAPILocked || err == ErrorLockApi {
-		isAPILocked = true
+	if getIsAPILocked() || err == ErrorLockApi {
+		lockAPI()
 		return SKY_API_LOCKED
 	}
 	if err != nil {
@@ -624,7 +641,7 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 			// Setting flag every time (i.e. even when haltOnPanic is active
 			// protects against hypothetical situations in which panic()
 			// does not abort the current process.
-			isAPILocked = true
+			lockAPI()
 			if haltOnPanic {
 				// FIXME: Set process exit code on panic
 				/*

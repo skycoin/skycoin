@@ -55,9 +55,7 @@ type job struct {
 
 func init() {
 	flag.Usage = func() {
-		// TODO go1.10 - use flag.CommandLine.Output() (not support in go1.9)
 		fmt.Fprintf(flag.CommandLine.Output(), "%s\n\nUsage of %s:\n", help, os.Args[0])
-		fmt.Fprintf(os.Stderr, "%s\n\nUsage of %s:\n", help, os.Args[0])
 		flag.PrintDefaults()
 	}
 }

@@ -64,6 +64,10 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
         .map(output => output.coins >= 0 ? output.coins : 0)
         .reduce((a , b) => a + parseFloat(b), 0);
 
+      transaction.hours = transaction.outputs
+        .map(output => output.hours >= 0 ? output.hours : 0)
+        .reduce((a , b) => a + b, 0);
+
       return transaction;
     });
   }

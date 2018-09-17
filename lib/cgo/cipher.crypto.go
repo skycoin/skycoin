@@ -16,24 +16,6 @@ import (
 */
 import "C"
 
-//export SKY_cipher_PubKeySlice_Len
-func SKY_cipher_PubKeySlice_Len(_slice *C.cipher__PubKeySlice) int {
-	slice := inplacePubKeySlice(_slice)
-	return slice.Len()
-}
-
-//export SKY_cipher_PubKeySlice_Less
-func SKY_cipher_PubKeySlice_Less(_slice *C.cipher__PubKeySlice, _i, _j int) bool {
-	slice := inplacePubKeySlice(_slice)
-	return slice.Less(_i, _j)
-}
-
-//export SKY_cipher_PubKeySlice_Swap
-func SKY_cipher_PubKeySlice_Swap(_slice *C.cipher__PubKeySlice, _i, _j int) {
-	slice := inplacePubKeySlice(_slice)
-	slice.Swap(_i, _j)
-}
-
 //export SKY_cipher_RandByte
 func SKY_cipher_RandByte(_n int, _arg1 *C.GoSlice_) {
 	b := cipher.RandByte(_n)
@@ -41,24 +23,21 @@ func SKY_cipher_RandByte(_n int, _arg1 *C.GoSlice_) {
 }
 
 //export SKY_cipher_NewPubKey
-func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (errcode uint32) {
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
+func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) uint32 {
+	pubkey, err := cipher.NewPubKey(_b)
+	errcode := libErrorCode(err)
 
-	pubkey := cipher.NewPubKey(_b)
-	copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
-	return libErrorCode(nil)
+	if err == nil {
+		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
+	}
+
+	return errcode
 }
 
 //export SKY_cipher_PubKeyFromHex
-func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (errcode uint32) {
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
-
+func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) uint32 {
 	pubkey, err := cipher.PubKeyFromHex(_s)
-	errcode = libErrorCode(err)
+	errcode := libErrorCode(err)
 	if err == nil {
 		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
 	}
@@ -66,17 +45,17 @@ func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (errcode uint3
 }
 
 //export SKY_cipher_PubKeyFromSecKey
-func SKY_cipher_PubKeyFromSecKey(_seckey *C.cipher__SecKey, _arg1 *C.cipher__PubKey) (errcode uint32) {
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
-
+func SKY_cipher_PubKeyFromSecKey(_seckey *C.cipher__SecKey, _arg1 *C.cipher__PubKey) uint32 {
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
 
-	pubkey := cipher.PubKeyFromSecKey(*seckey)
+	pubkey, err := cipher.PubKeyFromSecKey(*seckey)
+	errcode := libErrorCode(err)
 
-	copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
-	return libErrorCode(nil)
+	if err == nil {
+		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
+	}
+
+	return errcode
 }
 
 //export SKY_cipher_PubKeyFromSig
@@ -109,22 +88,16 @@ func SKY_cipher_PubKey_Hex(_pk *C.cipher__PubKey, _arg1 *C.GoString_) {
 	copyString(s, _arg1)
 }
 
-//export SKY_cipher_PubKey_ToAddressHash
-func SKY_cipher_PubKey_ToAddressHash(_pk *C.cipher__PubKey, _arg0 *C.cipher__Ripemd160) {
-	pk := (*cipher.PubKey)(unsafe.Pointer(_pk))
-	h := pk.ToAddressHash()
-	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg0), uint(SizeofRipemd160))
-}
-
 //export SKY_cipher_NewSecKey
-func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.cipher__SecKey) (errcode uint32) {
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
+func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.cipher__SecKey) uint32 {
+	sk, err := cipher.NewSecKey(_b)
+	errcode := libErrorCode(err)
 
-	sk := cipher.NewSecKey(_b)
-	copyToBuffer(reflect.ValueOf(sk[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
-	return SKY_OK
+	if err == nil {
+		copyToBuffer(reflect.ValueOf(sk[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
+	}
+
+	return errcode
 }
 
 //export SKY_cipher_SecKeyFromHex
@@ -160,15 +133,15 @@ func SKY_cipher_ECDH(_pub *C.cipher__PubKey, _sec *C.cipher__SecKey, _arg2 *C.Go
 }
 
 //export SKY_cipher_NewSig
-func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) (errcode uint32) {
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
+func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) uint32 {
+	s, err := cipher.NewSig(_b)
+	errcode := libErrorCode(err)
 
-	s := cipher.NewSig(_b)
-	copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSig))
+	if err == nil {
+		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSig))
+	}
 
-	return SKY_OK
+	return errcode
 }
 
 //export SKY_cipher_SigFromHex
@@ -187,11 +160,11 @@ func SKY_cipher_Sig_Hex(_s *C.cipher__Sig, _arg1 *C.GoString_) {
 	copyString(s.Hex(), _arg1)
 }
 
-//export SKY_cipher_SignHash
-func SKY_cipher_SignHash(_hash *C.cipher__SHA256, _sec *C.cipher__SecKey, _arg2 *C.cipher__Sig) {
+//export SKY_cipher_MustSignHash
+func SKY_cipher_MustSignHash(_hash *C.cipher__SHA256, _sec *C.cipher__SecKey, _arg2 *C.cipher__Sig) {
 	hash := (*cipher.SHA256)(unsafe.Pointer(_hash))
 	sec := (*cipher.SecKey)(unsafe.Pointer(_sec))
-	s := cipher.SignHash(*hash, *sec)
+	s := cipher.MustSignHash(*hash, *sec)
 	copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg2), uint(SizeofSig))
 }
 
@@ -232,32 +205,55 @@ func SKY_cipher_GenerateKeyPair(_arg0 *C.cipher__PubKey, _arg1 *C.cipher__SecKey
 }
 
 //export SKY_cipher_GenerateDeterministicKeyPair
-func SKY_cipher_GenerateDeterministicKeyPair(_seed []byte, _arg1 *C.cipher__PubKey, _arg2 *C.cipher__SecKey) {
-	p, s := cipher.GenerateDeterministicKeyPair(_seed)
-	copyToBuffer(reflect.ValueOf(p[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
-	copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg2), uint(SizeofSecKey))
+func SKY_cipher_GenerateDeterministicKeyPair(_seed []byte, _arg1 *C.cipher__PubKey, _arg2 *C.cipher__SecKey) uint32 {
+	p, s, err := cipher.GenerateDeterministicKeyPair(_seed)
+	errcode := libErrorCode(err)
+
+	if err == nil {
+		copyToBuffer(reflect.ValueOf(p[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
+		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg2), uint(SizeofSecKey))
+	}
+
+	return errcode
 }
 
 //export SKY_cipher_DeterministicKeyPairIterator
-func SKY_cipher_DeterministicKeyPairIterator(_seed []byte, _arg1 *C.GoSlice_, _arg2 *C.cipher__PubKey, _arg3 *C.cipher__SecKey) {
-	h, p, s := cipher.DeterministicKeyPairIterator(_seed)
+func SKY_cipher_DeterministicKeyPairIterator(_seed []byte, _arg1 *C.GoSlice_, _arg2 *C.cipher__PubKey, _arg3 *C.cipher__SecKey) uint32 {
+	h, p, s, err := cipher.DeterministicKeyPairIterator(_seed)
+	errcode := libErrorCode(err)
 
-	copyToGoSlice(reflect.ValueOf(h), _arg1)
-	copyToBuffer(reflect.ValueOf(p[:]), unsafe.Pointer(_arg2), uint(SizeofPubKey))
-	copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg3), uint(SizeofSecKey))
+	if err == nil {
+		copyToGoSlice(reflect.ValueOf(h), _arg1)
+		copyToBuffer(reflect.ValueOf(p[:]), unsafe.Pointer(_arg2), uint(SizeofPubKey))
+		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg3), uint(SizeofSecKey))
+	}
+
+	return errcode
 }
 
 //export SKY_cipher_GenerateDeterministicKeyPairs
-func SKY_cipher_GenerateDeterministicKeyPairs(_seed []byte, _n int, _arg2 *C.GoSlice_) {
-	sks := cipher.GenerateDeterministicKeyPairs(_seed, _n)
-	copyToGoSlice(reflect.ValueOf(sks), _arg2)
+func SKY_cipher_GenerateDeterministicKeyPairs(_seed []byte, _n int, _arg2 *C.GoSlice_) uint32 {
+	sks, err := cipher.GenerateDeterministicKeyPairs(_seed, _n)
+	errcode := libErrorCode(err)
+
+	if err == nil {
+		copyToGoSlice(reflect.ValueOf(sks), _arg2)
+	}
+
+	return errcode
 }
 
 //export SKY_cipher_GenerateDeterministicKeyPairsSeed
-func SKY_cipher_GenerateDeterministicKeyPairsSeed(_seed []byte, _n int, _arg2 *C.GoSlice_, _arg3 *C.GoSlice_) {
-	h, sks := cipher.GenerateDeterministicKeyPairsSeed(_seed, _n)
-	copyToGoSlice(reflect.ValueOf(h), _arg2)
-	copyToGoSlice(reflect.ValueOf(sks), _arg3)
+func SKY_cipher_GenerateDeterministicKeyPairsSeed(_seed []byte, _n int, _arg2 *C.GoSlice_, _arg3 *C.GoSlice_) uint32 {
+	h, sks, err := cipher.GenerateDeterministicKeyPairsSeed(_seed, _n)
+	errcode := libErrorCode(err)
+
+	if err == nil {
+		copyToGoSlice(reflect.ValueOf(h), _arg2)
+		copyToGoSlice(reflect.ValueOf(sks), _arg3)
+	}
+
+	return errcode
 }
 
 //export SKY_cipher_TestSecKey

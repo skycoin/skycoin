@@ -6,14 +6,29 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/testutil"
-
-	"github.com/stretchr/testify/assert"
 )
+
+var (
+	genPublic, genSecret        = cipher.GenerateKeyPair()
+	genAddress                  = cipher.AddressFromPubKey(genPublic)
+	_genTime             uint64 = 1000
+	_genCoins            uint64 = 1000e6
+	_genCoinHours        uint64 = 1000 * 1000
+)
+
+func tNow() uint64 {
+	return uint64(time.Now().UTC().Unix())
+}
+
+func feeCalc(t *Transaction) (uint64, error) {
+	return 0, nil
+}
 
 func badFeeCalc(t *Transaction) (uint64, error) {
 	return 0, errors.New("Bad")
@@ -34,7 +49,7 @@ func makeNewBlock(uxHash cipher.SHA256) (*Block, error) {
 			PrevHash: cipher.SHA256{},
 			BodyHash: body.Hash(),
 		}}
-	return NewBlock(prev, 100+20, uxHash, Transactions{Transaction{}}, _feeCalc)
+	return NewBlock(prev, 100+20, uxHash, Transactions{Transaction{}}, feeCalc)
 }
 
 func addTransactionToBlock(t *testing.T, b *Block) Transaction {
@@ -53,10 +68,10 @@ func TestNewBlock(t *testing.T) {
 	require.EqualError(t, err, fmt.Sprintf("Invalid transaction fees: Bad"))
 
 	// no txns panics
-	_, err = NewBlock(prev, 133, uxHash, nil, _feeCalc)
+	_, err = NewBlock(prev, 133, uxHash, nil, feeCalc)
 	require.EqualError(t, err, "Refusing to create block with no transactions")
 
-	_, err = NewBlock(prev, 133, uxHash, Transactions{}, _feeCalc)
+	_, err = NewBlock(prev, 133, uxHash, Transactions{}, feeCalc)
 	require.EqualError(t, err, "Refusing to create block with no transactions")
 
 	// valid block is fine
@@ -66,35 +81,35 @@ func TestNewBlock(t *testing.T) {
 		return fee, nil
 	})
 	require.NoError(t, err)
-	assert.Equal(t, b.Body.Transactions, txns)
-	assert.Equal(t, b.Head.Fee, fee*uint64(len(txns)))
-	assert.Equal(t, b.Body, BlockBody{Transactions: txns})
-	assert.Equal(t, b.Head.PrevHash, prev.HashHeader())
-	assert.Equal(t, b.Head.Time, currentTime)
-	assert.Equal(t, b.Head.BkSeq, prev.Head.BkSeq+1)
-	assert.Equal(t, b.Head.UxHash, uxHash)
+	require.Equal(t, b.Body.Transactions, txns)
+	require.Equal(t, b.Head.Fee, fee*uint64(len(txns)))
+	require.Equal(t, b.Body, BlockBody{Transactions: txns})
+	require.Equal(t, b.Head.PrevHash, prev.HashHeader())
+	require.Equal(t, b.Head.Time, currentTime)
+	require.Equal(t, b.Head.BkSeq, prev.Head.BkSeq+1)
+	require.Equal(t, b.Head.UxHash, uxHash)
 }
 
 func TestBlockHashHeader(t *testing.T) {
 	uxHash := testutil.RandSHA256(t)
 	b, err := makeNewBlock(uxHash)
 	require.NoError(t, err)
-	assert.Equal(t, b.HashHeader(), b.Head.Hash())
-	assert.NotEqual(t, b.HashHeader(), cipher.SHA256{})
+	require.Equal(t, b.HashHeader(), b.Head.Hash())
+	require.NotEqual(t, b.HashHeader(), cipher.SHA256{})
 }
 
 func TestBlockHashBody(t *testing.T) {
 	uxHash := testutil.RandSHA256(t)
 	b, err := makeNewBlock(uxHash)
 	require.NoError(t, err)
-	assert.Equal(t, b.HashBody(), b.Body.Hash())
+	require.Equal(t, b.HashBody(), b.Body.Hash())
 	hb := b.HashBody()
 	hashes := b.Body.Transactions.Hashes()
 	tx := addTransactionToBlock(t, b)
-	assert.NotEqual(t, b.HashBody(), hb)
+	require.NotEqual(t, b.HashBody(), hb)
 	hashes = append(hashes, tx.Hash())
-	assert.Equal(t, b.HashBody(), cipher.Merkle(hashes))
-	assert.Equal(t, b.HashBody(), b.Body.Hash())
+	require.Equal(t, b.HashBody(), cipher.Merkle(hashes))
+	require.Equal(t, b.HashBody(), b.Body.Hash())
 }
 
 func TestNewGenesisBlock(t *testing.T) {
@@ -151,7 +166,7 @@ func TestCreateUnspent(t *testing.T) {
 			if err != nil {
 				return
 			}
-			assertUnspent(t, bh, tx, tc.txIndex, uxout)
+			requireUnspent(t, bh, tx, tc.txIndex, uxout)
 		})
 	}
 }
@@ -164,28 +179,28 @@ func TestCreateUnspents(t *testing.T) {
 		BkSeq: uint64(1),
 	}
 	uxouts := CreateUnspents(bh, tx)
-	assert.Equal(t, len(uxouts), 1)
-	assertValidUnspents(t, bh, tx, uxouts)
+	require.Equal(t, len(uxouts), 1)
+	requireValidUnspents(t, bh, tx, uxouts)
 }
 
-func assertUnspent(t *testing.T, bh BlockHeader, tx Transaction, txIndex int, ux UxOut) {
-	assert.Equal(t, bh.Time, ux.Head.Time)
-	assert.Equal(t, bh.BkSeq, ux.Head.BkSeq)
-	assert.Equal(t, tx.Hash(), ux.Body.SrcTransaction)
-	assert.Equal(t, tx.Out[txIndex].Address, ux.Body.Address)
-	assert.Equal(t, tx.Out[txIndex].Coins, ux.Body.Coins)
-	assert.Equal(t, tx.Out[txIndex].Hours, ux.Body.Hours)
+func requireUnspent(t *testing.T, bh BlockHeader, tx Transaction, txIndex int, ux UxOut) {
+	require.Equal(t, bh.Time, ux.Head.Time)
+	require.Equal(t, bh.BkSeq, ux.Head.BkSeq)
+	require.Equal(t, tx.Hash(), ux.Body.SrcTransaction)
+	require.Equal(t, tx.Out[txIndex].Address, ux.Body.Address)
+	require.Equal(t, tx.Out[txIndex].Coins, ux.Body.Coins)
+	require.Equal(t, tx.Out[txIndex].Hours, ux.Body.Hours)
 }
 
-func assertValidUnspents(t *testing.T, bh BlockHeader, tx Transaction,
+func requireValidUnspents(t *testing.T, bh BlockHeader, tx Transaction,
 	uxo UxArray) {
-	assert.Equal(t, len(tx.Out), len(uxo))
+	require.Equal(t, len(tx.Out), len(uxo))
 	for i, ux := range uxo {
-		assert.Equal(t, bh.Time, ux.Head.Time)
-		assert.Equal(t, bh.BkSeq, ux.Head.BkSeq)
-		assert.Equal(t, tx.Hash(), ux.Body.SrcTransaction)
-		assert.Equal(t, tx.Out[i].Address, ux.Body.Address)
-		assert.Equal(t, tx.Out[i].Coins, ux.Body.Coins)
-		assert.Equal(t, tx.Out[i].Hours, ux.Body.Hours)
+		require.Equal(t, bh.Time, ux.Head.Time)
+		require.Equal(t, bh.BkSeq, ux.Head.BkSeq)
+		require.Equal(t, tx.Hash(), ux.Body.SrcTransaction)
+		require.Equal(t, tx.Out[i].Address, ux.Body.Address)
+		require.Equal(t, tx.Out[i].Coins, ux.Body.Coins)
+		require.Equal(t, tx.Out[i].Hours, ux.Body.Hours)
 	}
 }

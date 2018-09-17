@@ -836,20 +836,20 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	var seckeys []cipher.SecKey
 	var seed []byte
 	if len(w.Entries) == 0 {
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.seed()), int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.seed()), int(num))
 	} else {
 		sd, err := hex.DecodeString(w.lastSeed())
 		if err != nil {
 			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num))
 	}
 
 	w.setLastSeed(hex.EncodeToString(seed))
 
 	addrs := make([]cipher.Address, len(seckeys))
 	for i, s := range seckeys {
-		p := cipher.PubKeyFromSecKey(s)
+		p := cipher.MustPubKeyFromSecKey(s)
 		a := cipher.AddressFromPubKey(p)
 		addrs[i] = a
 		w.Entries = append(w.Entries, Entry{
@@ -910,7 +910,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
 func (w *Wallet) GetAddresses() []cipher.Address {
 	addrs := make([]cipher.Address, len(w.Entries))
 	for i, e := range w.Entries {
-		addrs[i] = e.Address
+		addrs[i] = e.SkycoinAddress()
 	}
 	return addrs
 }
@@ -918,7 +918,7 @@ func (w *Wallet) GetAddresses() []cipher.Address {
 // GetEntry returns entry of given address
 func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 	for _, e := range w.Entries {
-		if e.Address == a {
+		if e.SkycoinAddress() == a {
 			return e, true
 		}
 	}
@@ -929,7 +929,7 @@ func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 func (w *Wallet) AddEntry(entry Entry) error {
 	// dup check
 	for _, e := range w.Entries {
-		if e.Address == entry.Address {
+		if e.SkycoinAddress() == entry.SkycoinAddress() {
 			return errors.New("duplicate address entry")
 		}
 	}
@@ -970,7 +970,7 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 		if !ok {
 			return nil, ErrUnknownAddress
 		}
-		entriesMap[e.Address] = e
+		entriesMap[e.SkycoinAddress()] = e
 	}
 
 	// Determine which unspents to spend.
@@ -1065,7 +1065,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		if !ok {
 			return nil, nil, ErrUnknownAddress
 		}
-		entriesMap[e.Address] = e
+		entriesMap[e.SkycoinAddress()] = e
 	}
 
 	txn := &coin.Transaction{}

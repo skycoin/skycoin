@@ -166,7 +166,7 @@ func SeedTestDataFromJSON(d *SeedTestDataJSON) (*SeedTestData, error) {
 // ValidateSeedData validates the provided SeedTestData against the current cipher library.
 // inputData is required if SeedTestData contains signatures
 func ValidateSeedData(seedData *SeedTestData, inputData *InputTestData) error {
-	keys := cipher.GenerateDeterministicKeyPairs(seedData.Seed, len(seedData.Keys))
+	keys := cipher.MustGenerateDeterministicKeyPairs(seedData.Seed, len(seedData.Keys))
 	if len(seedData.Keys) != len(keys) {
 		return errors.New("cipher.GenerateDeterministicKeyPairs generated an unexpected number of keys")
 	}
@@ -179,7 +179,7 @@ func ValidateSeedData(seedData *SeedTestData, inputData *InputTestData) error {
 			return errors.New("generated secret key does not match provided secret key")
 		}
 
-		p := cipher.PubKeyFromSecKey(s)
+		p := cipher.MustPubKeyFromSecKey(s)
 		if p == (cipher.PubKey{}) {
 			return errors.New("public key is null")
 		}
@@ -195,7 +195,7 @@ func ValidateSeedData(seedData *SeedTestData, inputData *InputTestData) error {
 			return errors.New("derived address does not match provided address")
 		}
 
-		addr2 := cipher.AddressFromSecKey(s)
+		addr2 := cipher.MustAddressFromSecKey(s)
 		if addr1 != addr2 {
 			return errors.New("cipher.AddressFromPubKey and cipher.AddressFromSecKey generated different addresses")
 		}
@@ -249,7 +249,7 @@ func ValidateSeedData(seedData *SeedTestData, inputData *InputTestData) error {
 					return errors.New("public key derived from signature does not match public key derived from secret")
 				}
 
-				sig2 := cipher.SignHash(h, s)
+				sig2 := cipher.MustSignHash(h, s)
 				if sig2 == (cipher.Sig{}) {
 					return errors.New("created signature is null")
 				}

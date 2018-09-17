@@ -450,14 +450,14 @@ func TestWalletUnlock(t *testing.T) {
 				require.Equal(t, tc.opts.Seed, wlt.seed())
 
 				// Checks the generated addresses
-				sd, sks := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), 1)
+				sd, sks := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), 1)
 				require.Equal(t, uint64(1), uint64(len(wlt.Entries)))
 
 				// Checks the last seed
 				require.Equal(t, hex.EncodeToString(sd), wlt.lastSeed())
 
 				for i := range wlt.Entries {
-					addr := cipher.AddressFromSecKey(sks[i])
+					addr := cipher.MustAddressFromSecKey(sks[i])
 					require.Equal(t, addr, wlt.Entries[i].Address)
 				}
 
@@ -752,9 +752,9 @@ func TestWalletGenerateAddress(t *testing.T) {
 
 				addrs := w.GetAddresses()
 
-				_, keys := cipher.GenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
 				for i, k := range keys {
-					a := cipher.AddressFromSecKey(k)
+					a := cipher.MustAddressFromSecKey(k)
 					require.Equal(t, a.String(), addrs[i].String())
 				}
 			})
@@ -838,8 +838,8 @@ func TestWalletAddEntry(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			w, err := Load(tc.wltFile)
 			require.NoError(t, err)
-			a := cipher.AddressFromSecKey(tc.secKey)
-			p := cipher.PubKeyFromSecKey(tc.secKey)
+			a := cipher.MustAddressFromSecKey(tc.secKey)
+			p := cipher.MustPubKeyFromSecKey(tc.secKey)
 			require.Equal(t, tc.err, w.AddEntry(Entry{
 				Address: a,
 				Public:  p,

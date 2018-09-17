@@ -8,9 +8,8 @@ import (
 )
 
 var (
-	emptyAddress = cipher.Address{}
-	emptyPubkey  = cipher.PubKey{}
-	emptySeckey  = cipher.SecKey{}
+	emptyPubkey = cipher.PubKey{}
+	emptySeckey = cipher.SecKey{}
 )
 
 // ReadableEntry wallet entry with json tags
@@ -23,7 +22,7 @@ type ReadableEntry struct {
 // NewReadableEntry creates readable wallet entry
 func NewReadableEntry(w Entry) ReadableEntry {
 	re := ReadableEntry{}
-	if w.Address != emptyAddress {
+	if !w.Address.Null() {
 		re.Address = w.Address.String()
 	}
 

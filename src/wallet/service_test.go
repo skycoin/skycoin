@@ -176,10 +176,10 @@ func TestServiceCreateWallet(t *testing.T) {
 func TestServiceLoadWallet(t *testing.T) {
 	// Prepare addresss
 	seed := "seed"
-	_, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 10)
+	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
 	var addrs []cipher.Address
 	for _, s := range seckeys {
-		addrs = append(addrs, cipher.AddressFromSecKey(s))
+		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
 	}
 
 	tt := []struct {
@@ -295,9 +295,9 @@ func TestServiceNewAddress(t *testing.T) {
 	seed := []byte("seed")
 	// Generate adddresses from the seed
 	var addrs []cipher.Address
-	_, seckeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 10)
+	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed(seed, 10)
 	for _, s := range seckeys {
-		addrs = append(addrs, cipher.AddressFromSecKey(s))
+		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
 	}
 
 	tt := []struct {
@@ -670,9 +670,9 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 	seed := []byte("seed")
 
 	// Generate first keys
-	_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 1)
+	_, secKeys := cipher.MustGenerateDeterministicKeyPairsSeed(seed, 1)
 	secKey := secKeys[0]
-	addr := cipher.AddressFromSecKey(secKey)
+	addr := cipher.MustAddressFromSecKey(secKey)
 
 	// Create unspent outptus
 	var uxouts []coin.UxOut
@@ -861,13 +861,13 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 	seed := []byte("seed")
 
 	// Generate first keys
-	_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 11)
+	_, secKeys := cipher.MustGenerateDeterministicKeyPairsSeed(seed, 11)
 	secKey := secKeys[0]
-	addr := cipher.AddressFromSecKey(secKey)
+	addr := cipher.MustAddressFromSecKey(secKey)
 
 	var extraWalletAddrs []cipher.Address
 	for _, s := range secKeys[1:] {
-		extraWalletAddrs = append(extraWalletAddrs, cipher.AddressFromSecKey(s))
+		extraWalletAddrs = append(extraWalletAddrs, cipher.MustAddressFromSecKey(s))
 	}
 
 	// Create unspent outputs
@@ -2136,13 +2136,13 @@ func TestServiceDecryptWallet(t *testing.T) {
 					require.Equal(t, tc.opts.Seed, wlt.seed())
 					// Checks the last seed
 					entryNum := len(wlt.Entries)
-					lsd, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), entryNum)
+					lsd, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), entryNum)
 					require.NoError(t, err)
 					require.Equal(t, hex.EncodeToString(lsd), wlt.lastSeed())
 
 					// Checks the entries
 					for i := range seckeys {
-						a := cipher.AddressFromSecKey(seckeys[i])
+						a := cipher.MustAddressFromSecKey(seckeys[i])
 						require.Equal(t, a, wlt.Entries[i].Address)
 						require.Equal(t, seckeys[i], wlt.Entries[i].Secret)
 					}
@@ -3182,7 +3182,7 @@ func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { 
 }
 
 func makeUxBody(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxBody {
-	p := cipher.PubKeyFromSecKey(s)
+	p := cipher.MustPubKeyFromSecKey(s)
 	return coin.UxBody{
 		SrcTransaction: cipher.SumSHA256(testutil.RandBytes(t, 128)),
 		Address:        cipher.AddressFromPubKey(p),

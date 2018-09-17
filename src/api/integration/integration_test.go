@@ -355,7 +355,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 	badSigStr := "71f2c01516fe696328e79bcf464eb0db374b63d494f7a307d1e77114f18581d7a81eed5275a9e04a336292dd2fd16977d9bef2a54ea3161d0876603d00c53bc9dd"
 	badSigBytes, err := hex.DecodeString(badSigStr)
 	require.NoError(t, err)
-	badSig := cipher.NewSig(badSigBytes)
+	badSig := cipher.MustNewSig(badSigBytes)
 
 	inputHash := "75692aeff988ce0da734c474dbef3a1ce19a5a6823bbcd36acb856c83262261e"
 	input := testutil.SHA256FromHex(t, inputHash)
@@ -3506,12 +3506,12 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].Address,
+					Address: w.Entries[0].SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -3544,7 +3544,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
@@ -3577,7 +3577,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputsSubset: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   1,
 				},
@@ -3608,7 +3608,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   1,
 				},
@@ -3640,7 +3640,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   1,
 				},
@@ -3669,7 +3669,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   remainingHours,
 				},
@@ -3702,15 +3702,15 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   1e3,
 				},
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 2e3,
 				},
 				{
-					Address: w.Entries[0].Address,
+					Address: w.Entries[0].SkycoinAddress(),
 					Coins:   1e3,
 				},
 			},
@@ -3841,12 +3841,12 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].Address,
+					Address: w.Entries[0].SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -3907,12 +3907,12 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].Address,
+					Address: w.Entries[0].SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -4544,10 +4544,10 @@ func TestWalletNewAddress(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), i+1)
+			seckeys := cipher.MustGenerateDeterministicKeyPairs([]byte(seed), i+1)
 			var as []string
 			for _, k := range seckeys {
-				as = append(as, cipher.AddressFromSecKey(k).String())
+				as = append(as, cipher.MustAddressFromSecKey(k).String())
 			}
 
 			// Confirms thoses new generated addresses are the same.
@@ -4773,11 +4773,11 @@ func TestDecryptWallet(t *testing.T) {
 	require.Len(t, lw.Entries, 1)
 
 	// Confirms the last seed is matched
-	lseed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 1)
+	lseed, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 1)
 	require.Equal(t, hex.EncodeToString(lseed), lw.Meta["lastSeed"])
 
 	// Confirms that the first address is derivied from the private key
-	pubkey := cipher.PubKeyFromSecKey(seckeys[0])
+	pubkey := cipher.MustPubKeyFromSecKey(seckeys[0])
 	require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey).String())
 	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
 }

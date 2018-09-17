@@ -18,38 +18,55 @@ var (
 // Ripemd160 ripemd160
 type Ripemd160 [20]byte
 
-// Set sets value
-func (rd *Ripemd160) Set(b []byte) {
+// MustSet sets value, panics on error
+func (rd *Ripemd160) MustSet(b []byte) {
 	if len(b) != 20 {
 		log.Panic("Invalid ripemd160 length")
 	}
 	copy(rd[:], b[:])
 }
 
+// Set sets value
+func (rd *Ripemd160) Set(b []byte) error {
+	if len(b) != 20 {
+		return errors.New("Invalid ripemd160 length")
+	}
+	copy(rd[:], b[:])
+	return nil
+}
+
 // HashRipemd160 hash data to Ripemd160
 func HashRipemd160(data []byte) Ripemd160 {
 	ripemd160Hash := <-ripemd160HashPool
 	ripemd160Hash.Reset()
-	if _, err := ripemd160Hash.Write(data); err != nil {
-		panic(err)
-	}
+	// ripemd160.Write never returns an error
+	ripemd160Hash.Write(data) // nolint: errcheck
 	sum := ripemd160Hash.Sum(nil)
 	ripemd160HashPool <- ripemd160Hash
 
 	h := Ripemd160{}
-	h.Set(sum)
+	h.MustSet(sum)
 	return h
 }
 
 // SHA256 32 bytes
 type SHA256 [32]byte
 
-// Set sets value
-func (g *SHA256) Set(b []byte) {
+// MustSet sets value, panics on error
+func (g *SHA256) MustSet(b []byte) {
 	if len(b) != 32 {
 		log.Panic("Invalid sha256 length")
 	}
 	copy(g[:], b[:])
+}
+
+// Set sets value
+func (g *SHA256) Set(b []byte) error {
+	if len(b) != 32 {
+		return errors.New("Invalid sha256 length")
+	}
+	copy(g[:], b[:])
+	return nil
 }
 
 // Hex encode sha256 to hex string
@@ -75,14 +92,13 @@ func (g *SHA256) Xor(b SHA256) SHA256 {
 func SumSHA256(b []byte) SHA256 {
 	sha256Hash := <-sha256HashPool
 	sha256Hash.Reset()
-	if _, err := sha256Hash.Write(b); err != nil {
-		panic(err)
-	}
+	// sha256.Write never returns an error
+	sha256Hash.Write(b) // nolint: errcheck
 	sum := sha256Hash.Sum(nil)
 	sha256HashPool <- sha256Hash
 
 	h := SHA256{}
-	h.Set(sum)
+	h.MustSet(sum)
 	return h
 }
 
@@ -97,7 +113,7 @@ func SHA256FromHex(hs string) (SHA256, error) {
 	if len(b) != len(h) {
 		return h, errors.New("Invalid hex length")
 	}
-	h.Set(b)
+	h.MustSet(b)
 	return h, nil
 }
 
@@ -113,13 +129,8 @@ func MustSHA256FromHex(hs string) SHA256 {
 // SHA256FromBytes converts []byte to SHA256
 func SHA256FromBytes(b []byte) (SHA256, error) {
 	h := SHA256{}
-
-	if len(b) != len(h) {
-		return h, errors.New("Invalid bytes length")
-	}
-
-	h.Set(b)
-	return h, nil
+	err := h.Set(b)
+	return h, err
 }
 
 // MustSHA256FromBytes is the same as SHA256FromBytes, except it will panic when it detects an error
@@ -134,16 +145,13 @@ func MustSHA256FromBytes(b []byte) SHA256 {
 // MustSumSHA256 like SumSHA256, but len(b) must equal n, or panic
 func MustSumSHA256(b []byte, n int) SHA256 {
 	if len(b) != n {
-		log.Panicf("Invalid sumsha256 byte length. Expected %d, have %d",
-			n, len(b))
+		log.Panicf("Invalid sumsha256 byte length. Expected %d, have %d", n, len(b))
 	}
 	return SumSHA256(b)
 }
 
 // DoubleSHA256 double SHA256
 func DoubleSHA256(b []byte) SHA256 {
-	//h := SumSHA256(b)
-	//return AddSHA256(h, h)
 	h1 := SumSHA256(b)
 	h2 := SumSHA256(h1[:])
 	return h2

@@ -54,7 +54,7 @@ func getFieldValue(in []byte, d *decoder, fieldType reflect.Kind, s int) string 
 		return string(fd.buf[4 : 4+length])
 	case reflect.Struct, reflect.Array:
 		s := cipher.SHA256{}
-		s.Set(fd.buf[0:32])
+		s.MustSet(fd.buf[0:32])
 		return s.Hex()
 	case reflect.Bool:
 		return strconv.FormatBool(fd.bool())

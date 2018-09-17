@@ -43,8 +43,6 @@
 %typemap(cstype,pre=" var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
 %typemap(csin,pre="var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "tmp$csinput"
 
-%apply cipher_SecKey* {cipher_SHA256}
-
 // Sig
 %typemap(ctype,pre="cipher_Sig tmp$csinput = new cipher_Sig();") (GoUint8_ (*) [65])  "cipher_Sig*"
 %typemap(cstype,pre=" var tmp$csinput = cipher_Sig.getCPtr ($csinput);") (GoUint8_ (*) [65])  "cipher_Sig"
@@ -68,11 +66,13 @@
 %typemap(cstype,pre=" var tmp$csinput = _GoString_.getCPtr ($csinput);") GoString_*  "_GoString_"
 %typemap(csin,pre="var tmp$csinput = _GoString_.getCPtr ($csinput);") GoString_*  "tmp$csinput"
 
-// GoSlice
-%typemap(ctype,pre="GoSlice tmp$csinput = new_GoSlicep_();") GoSlice_*  "GoSlice_ *"
+// // GoSlice
+%typemap(ctype) GoSlice_*  "GoSlice_ *"
 %typemap(cstype,pre=" var tmp$csinput = GoSlice.getCPtr ($csinput);") GoSlice_*  "GoSlice"
-%typemap(csin,pre="var tmp$csinput = GoSlice.getCPtr ($csinput);") GoSlice_*  "tmp$csinput"
+%typemap(csin) GoSlice_*  "GoSlice.getCPtr ($csinput)"
 
+%apply int {GoInt_};
+%apply char {byte,GoUint8_};
 
 
 

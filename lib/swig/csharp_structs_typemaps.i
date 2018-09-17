@@ -22,16 +22,20 @@ return slice;
 		return (($self->len == slice->len)) && (memcmp($self->data,slice->data, sizeof(GoSlice_))==0 );
 	}
 
-	void convertString(char * data){
-		$self->data = data;
-		$self->len = strlen(data);
-		$self->cap = strlen(data);
+	void convertString(_GoString_ data){
+		$self->data = data.p;
+		$self->len = strlen(data.p);
+		$self->cap = $self->len;
+	}
+
+	char* toString(){
+		return (char *)self->data;
 	}
 }
 
 %extend _GoString_ {
 	int SetString(char * str){
 		$self->p = str;
-		$self->p = strlen(str);
+		$self->n = strlen(str);
 	}
 }

@@ -64,8 +64,8 @@ var (
 	ErrInvalidDerivedPubKeyFromSecKey = errors.New("impossible error, TestSecKey, Derived Pubkey verification failed")
 	// ErrInvalidPubKeyFromHash Recovered pubkey does not match signed hash
 	ErrInvalidPubKeyFromHash = errors.New("Recovered pubkey does not match signed hash")
-	// ErrPubKeyFromSecKeyMissmatch impossible error TestSecKey, pubkey does not match recovered pubkey
-	ErrPubKeyFromSecKeyMissmatch = errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
+	// ErrPubKeyFromSecKeyMismatch impossible error TestSecKey, pubkey does not match recovered pubkey
+	ErrPubKeyFromSecKeyMismatch = errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
 )
 
 // PubKey public key
@@ -508,7 +508,7 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 		return fmt.Errorf("impossible error, TestSecKey, pubkey recovery from signature failed: %v", err)
 	}
 	if pubkey != recoveredPubkey {
-		return ErrPubKeyFromSecKeyMissmatch
+		return ErrPubKeyFromSecKeyMismatch
 	}
 
 	//verify produced signature

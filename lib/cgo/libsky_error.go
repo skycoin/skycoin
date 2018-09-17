@@ -143,8 +143,8 @@ const (
 	SKY_ErrInvalidDerivedPubKeyFromSecKey
 	// SKY_ErrInvalidPubKeyFromHash Recovered pubkey does not match signed hash
 	SKY_ErrInvalidPubKeyFromHash
-	// SKY_ErrPubKeyFromSecKeyMissmatch impossible error TestSecKey, pubkey does not match recovered pubkey
-	SKY_ErrPubKeyFromSecKeyMissmatch
+	// SKY_ErrPubKeyFromSecKeyMismatch impossible error TestSecKey, pubkey does not match recovered pubkey
+	SKY_ErrPubKeyFromSecKeyMismatch
 )
 
 // Error codes defined in cli package
@@ -380,8 +380,8 @@ const (
 	SKY_ErrInvalidShareFactor
 	// SKY_ErrShareFactorOutOfRange HoursSelection.ShareFactor must be >= 0 and <= 1
 	SKY_ErrShareFactorOutOfRange
-	// SKY_ErrWalletConstraint Wallet.UxOuts and Wallet.Addresses cannot be combined
-	SKY_ErrWalletConstraint
+	// SKY_ErrWalletParamsConflict Wallet.UxOuts and Wallet.Addresses cannot be combined
+	SKY_ErrWalletParamsConflict
 	// SKY_ErrDuplicateUxOuts Wallet.UxOuts contains duplicate values
 	SKY_ErrDuplicateUxOuts
 	// SKY_ErrUnknownWalletID params.Wallet.ID does not match wallet
@@ -465,7 +465,7 @@ var (
 		cipher.ErrNullPubKeyFromSecKey:           SKY_ErrNullPubKeyFromSecKey,
 		cipher.ErrInvalidDerivedPubKeyFromSecKey: SKY_ErrInvalidDerivedPubKeyFromSecKey,
 		cipher.ErrInvalidPubKeyFromHash:          SKY_ErrInvalidPubKeyFromHash,
-		cipher.ErrPubKeyFromSecKeyMissmatch:      SKY_ErrPubKeyFromSecKeyMissmatch,
+		cipher.ErrPubKeyFromSecKeyMismatch:       SKY_ErrPubKeyFromSecKeyMismatch,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,
@@ -562,7 +562,7 @@ var (
 		wallet.ErrMissingShareFactor:        SKY_ErrMissingShareFactor,
 		wallet.ErrInvalidShareFactor:        SKY_ErrInvalidShareFactor,
 		wallet.ErrShareFactorOutOfRange:     SKY_ErrShareFactorOutOfRange,
-		wallet.ErrWalletConstraint:          SKY_ErrWalletConstraint,
+		wallet.ErrWalletParamsConflict:      SKY_ErrWalletParamsConflict,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
 

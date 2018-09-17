@@ -198,6 +198,9 @@ func generateSeedTestData(j job) *testsuite.SeedTestData {
 
 		addr := cipher.AddressFromPubKey(p)
 		data.Keys[i].Address = addr
+
+		bitcoinAddr := cipher.BitcoinAddressFromPubkey(p)
+		data.Keys[i].BitcoinAddress = bitcoinAddr
 	}
 
 	return data

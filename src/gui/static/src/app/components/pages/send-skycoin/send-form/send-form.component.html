@@ -4,7 +4,7 @@
     <div class="-select">
       <select formControlName="wallet" id="wallet">
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
-          {{ wallet.label }} - {{ wallet.coins ? wallet.coins.decimalPlaces(6, 4).toString() : 0 }} {{ 'common.coin-id' | translate }}
+          {{ wallet.label }} - {{ wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0 }} {{ 'common.coin-id' | translate }}
         </option>
       </select>
     </div>

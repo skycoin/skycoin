@@ -427,7 +427,7 @@ var (
 		cipher.ErrNullPubKeyFromSecKey:           SKY_ErrNullPubKeyFromSecKey,
 		cipher.ErrInvalidDerivedPubKeyFromSecKey: SKY_ErrInvalidDerivedPubKeyFromSecKey,
 		cipher.ErrInvalidPubKeyFromHash:          SKY_ErrInvalidPubKeyFromHash,
-		cipher.ErrPubKeyFromSecKeyMismatch:      SKY_ErrPubKeyFromSecKeyMismatch,
+		cipher.ErrPubKeyFromSecKeyMismatch:       SKY_ErrPubKeyFromSecKeyMismatch,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,
@@ -524,7 +524,7 @@ var (
 		wallet.ErrMissingShareFactor:        SKY_ErrMissingShareFactor,
 		wallet.ErrInvalidShareFactor:        SKY_ErrInvalidShareFactor,
 		wallet.ErrShareFactorOutOfRange:     SKY_ErrShareFactorOutOfRange,
-		wallet.ErrWalletParamsConflict:          SKY_ErrWalletParamsConflict,
+		wallet.ErrWalletParamsConflict:      SKY_ErrWalletParamsConflict,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
 	}

@@ -59,35 +59,6 @@ Test(cipher_address, TestDecodeBase58Address) {
 
 }
 
-Test(cipher_address, TestAddressFromBytes){
-  GoString strAddr = {
-    SKYCOIN_ADDRESS_VALID,
-    35
-  };
-  cipher__Address addr, addr2;
-  GoSlice bytes;
-
-  bytes.data = buff;
-  bytes.len = 0;
-  bytes.cap = sizeof(buff);
-
-  SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  SKY_cipher_Address_BitcoinBytes(&addr, (GoSlice_ *)&bytes);
-  cr_assert(bytes.len > 0, "address bytes written");
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_OK, "convert bytes to SKY address");
-
-  cr_assert(eq(type(cipher__Address), addr, addr2));
-
-  int bytes_len = bytes.len;
-
-  bytes.len = bytes.len - 2;
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ERROR, "no SKY address due to short bytes length");
-
-  bytes.len = bytes_len;
-  ((char *) bytes.data)[bytes.len - 1] = '2';
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ERROR, "no SKY address due to corrupted bytes");
-}
-
 Test(cipher_address, TestAddressVerify){
 
   cipher__PubKey pubkey;
@@ -138,7 +109,7 @@ Test (cipher, TestBitcoinAddress1){
   cr_assert(eq(type(GoString), pubkeyStr, s1));
 
   GoString bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *) &s2);
+  SKY_cipher_BitcoinAddressFromPubKey(&pubkey, (GoString_ *) &s2);
   registerMemCleanup((void *) s2.p);
   cr_assert(eq(type(GoString), bitcoinStr, s2));
 }
@@ -168,7 +139,7 @@ Test (cipher, TestBitcoinAddress2){
   cr_assert(eq(type(GoString), pubkeyStr, s1));
 
   GoString bitcoinStr = {"1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *) &s2);
+  SKY_cipher_BitcoinAddressFromPubKey(&pubkey, (GoString_ *) &s2);
   registerMemCleanup((void *) s2.p);
   cr_assert(eq(type(GoString), bitcoinStr, s2));
 
@@ -200,13 +171,13 @@ Test (cipher, TestBitcoinAddress3){
   cr_assert(eq(type(GoString), pubkeyStr, s1));
 
   GoString bitcoinStr = {"19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *)&s2);
+  SKY_cipher_BitcoinAddressFromPubKey(&pubkey, (GoString_ *)&s2);
   registerMemCleanup((void *) s2.p);
   cr_assert(eq(type(GoString), bitcoinStr, s2));
 
 }
 
-Test(cipher_address, TestBitcoinWIPRoundTrio){
+Test(cipher_address, TestBitcoinWIFRoundTrip){
 
   cipher__SecKey seckey;
   cipher__PubKey pubkey;
@@ -225,7 +196,7 @@ Test(cipher_address, TestBitcoinWIPRoundTrio){
 
   unsigned int err;
 
-  err = SKY_cipher_SecKeyFromWalletImportFormat( (*((GoString *) &wip1)) ,&seckey2);
+  err = SKY_cipher_SecKeyFromBitcoinWalletImportFormat( (*((GoString *) &wip1)) ,&seckey2);
 
   GoString_ wip2;
 
@@ -246,7 +217,7 @@ Test(cipher_address, TestBitcoinWIPRoundTrio){
 }
 
 
-Test(cipher_address, TestBitcoinWIP ){
+Test(cipher_address, TestBitcoinWIF ){
 
   //wallet input format string
   GoString wip[3];
@@ -288,7 +259,7 @@ Test(cipher_address, TestBitcoinWIP ){
     cipher__SecKey seckey;
     unsigned int err;
 
-    err = SKY_cipher_SecKeyFromWalletImportFormat(wip[i],&seckey);
+    err = SKY_cipher_SecKeyFromBitcoinWalletImportFormat(wip[i],&seckey);
     cr_assert(err==SKY_OK);
 
     cipher__PubKey pubkey;
@@ -301,7 +272,7 @@ Test(cipher_address, TestBitcoinWIP ){
     SKY_cipher_PubKey_Hex(&pubkey,&string);
     cr_assert(eq(type(GoString), (*(GoString*)&string),(*(GoString*)&pub[i]) ));
     GoString bitcoinAddr;
-    SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *)&bitcoinAddr);
+    SKY_cipher_BitcoinAddressFromPubKey(&pubkey, (GoString_ *)&bitcoinAddr);
     cr_assert(eq(type(GoString),addr[i],bitcoinAddr));
 
   }

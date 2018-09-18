@@ -56,6 +56,9 @@ var (
 	// e.g. ExtraData length in IntroductionMessage is not the same as cipher.PubKey
 	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data")
 
+	// ErrOutgoingConnectionsDisabled is returned if outgoing connections are disabled
+	ErrOutgoingConnectionsDisabled = errors.New("Outgoing connections are disabled")
+
 	logger = logging.MustGetLogger("daemon")
 )
 
@@ -1253,25 +1256,24 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 // BroadcastTransaction broadcasts a single transaction to all peers.
 func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
-	// TODO -- should return error if disabled or if broadcast fails, so that the caller can detect it
 	if dm.Config.DisableOutgoingConnections {
-		return nil
+		return ErrOutgoingConnectionsDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{t})
 	l, err := dm.pool.Pool.Size()
 	if err != nil {
 		return err
 	}
 
-	logger.Debugf("Broadcasting GiveTxnsMessage to %d conns", l)
+	logger.Debugf("BroadcastTransaction to %d conns", l)
 
-	err = dm.pool.Pool.BroadcastMessage(m)
-	if err != nil {
-		logger.Errorf("Broadcast GivenTxnsMessage failed: %v", err)
+	m := NewGiveTxnsMessage(coin.Transactions{t})
+	if err := dm.pool.Pool.BroadcastMessage(m); err != nil {
+		logger.WithError(err).Error("BroadcastTransaction Pool.BroadcastMessage failed")
+		return err
 	}
 
-	return err
+	return nil
 }
 
 // CreateAndPublishBlock creates a block from unconfirmed transactions and sends it to the network.

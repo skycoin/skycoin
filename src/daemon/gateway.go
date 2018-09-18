@@ -420,6 +420,7 @@ func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 		err = gw.d.BroadcastTransaction(txn)
 		if err != nil {
 			logger.WithError(err).Error("BroadcastTransaction failed")
+			return
 		}
 	})
 	return err

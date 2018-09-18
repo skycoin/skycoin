@@ -1,0 +1,64 @@
+<div [formGroup]="form">
+  <div class="form-field">
+    <label for="label">{{ 'wallet.new.name-label' | translate}}</label>
+    <input formControlName="label" id="label">
+  </div>
+  <div class="form-field">
+    <label for="seed">
+      <span>{{ 'wallet.new.seed-label' | translate }}</span>
+      <span class="generators" [ngClass]="{'-white-text': whiteText}" *ngIf="create">
+        <span (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">
+          {{ 'wallet.new.12-words' | translate }}
+        </span>
+        <span class="divider">|</span>
+        <span (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">
+          {{ 'wallet.new.24-words' | translate }}
+        </span>
+      </span>
+    </label>
+    <textarea formControlName="seed" id="seed" row="2"></textarea>
+    <p [ngClass]="{'red-disclaimer-box': !whiteText, 'white-disclaimer-box': whiteText}" *ngIf="create">
+      {{ 'wallet.new.seed-warning' | translate}}
+    </p>
+  </div>
+  <div class="form-field" *ngIf="create">
+    <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate}}</label>
+    <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
+  </div>
+  <div *ngIf="!onboarding">
+    <div>
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true">
+        <img src="../../../../../assets/img/lock-gold.png"> {{ 'wallet.new.encrypt' | translate }}
+      </mat-checkbox>
+    </div>
+    <div class="row -passwords">
+      <div class="col-md-12">
+        <p class="-info">{{ 'wallet.new.encrypt-warning' | translate }}</p>
+      </div>
+      <div class="col-md-6" *ngIf="encrypt">
+        <div class="form-field">
+          <label for="password">{{ 'password.label' | translate }}</label>
+          <input formControlName="password" id="password" type="password" appDontSavePassword>
+        </div>
+      </div>
+      <div class="col-md-6" *ngIf="encrypt">
+        <div class="form-field">
+          <label for="confirm_password">{{ 'password.confirm-label' | translate }}</label>
+          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword (keydown.enter)="createWallet()">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="red-disclaimer-box -alert-box" *ngIf="form.valid && !normalSeed">
+  <mat-icon>error</mat-icon>
+  <div>
+    <div class="title">{{ 'wallet.new.unconventional-seed-title' | translate}}</div>
+    <div>{{ 'wallet.new.unconventional-seed-text' | translate}}</div>
+    <mat-checkbox #seedCheck
+      type="checkbox" class="-check"
+      [checked]="customSeedAccepted" (change)="onCustomSeedAcceptance($event)">
+      {{ 'wallet.new.unconventional-seed-check' | translate}}
+    </mat-checkbox>
+  </div>
+</div>

@@ -88,6 +88,13 @@ func SKY_cipher_PubKey_Hex(_pk *C.cipher__PubKey, _arg1 *C.GoString_) {
 	copyString(s, _arg1)
 }
 
+//export SKY_cipher_PubKeyRipemd160
+func SKY_cipher_PubKeyRipemd160(_pk *C.cipher__PubKey, _arg0 *C.cipher__Ripemd160) {
+	pk := (*cipher.PubKey)(unsafe.Pointer(_pk))
+	h := cipher.PubKeyRipemd160(*pk)
+	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg0), uint(SizeofRipemd160))
+}
+
 //export SKY_cipher_NewSecKey
 func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.cipher__SecKey) uint32 {
 	sk, err := cipher.NewSecKey(_b)

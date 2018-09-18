@@ -102,6 +102,8 @@ const (
 	CoinTypeSkycoin CoinType = "skycoin"
 	// CoinTypeBitcoin bitcoin type
 	CoinTypeBitcoin CoinType = "bitcoin"
+
+	WalletTypeDeterministic = "deterministic"
 )
 
 // wallet meta fields
@@ -314,7 +316,7 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			metaSeed:       opts.Seed,
 			metaLastSeed:   opts.Seed,
 			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
-			metaType:       "deterministic",
+			metaType:       WalletTypeDeterministic,
 			metaCoin:       string(coin),
 			metaEncrypted:  "false",
 			metaCryptoType: "",
@@ -693,41 +695,53 @@ func (w *Wallet) reset() {
 
 // Validate validates the wallet
 func (w *Wallet) Validate() error {
-	if _, ok := w.Meta[metaFilename]; !ok {
+	if fn := w.Meta[metaFilename]; fn == "" {
 		return errors.New("filename not set")
-	}
-	if _, ok := w.Meta[metaSeed]; !ok {
-		return errors.New("seed field not set")
 	}
 
 	walletType, ok := w.Meta[metaType]
 	if !ok {
 		return errors.New("type field not set")
 	}
-	if walletType != "deterministic" {
+	if walletType != WalletTypeDeterministic {
 		return errors.New("wallet type invalid")
 	}
 
-	if _, ok := w.Meta[metaCoin]; !ok {
+	if coinType := w.Meta[metaCoin]; coinType == "" {
 		return errors.New("coin field not set")
 	}
 
+	var isEncrypted bool
 	if encStr, ok := w.Meta[metaEncrypted]; ok {
 		// validate the encrypted value
-		isEncrypted, err := strconv.ParseBool(encStr)
+		var err error
+		isEncrypted, err = strconv.ParseBool(encStr)
 		if err != nil {
-			return fmt.Errorf("invalid encrypted value: %v", err)
+			return errors.New("encrypted field is not a valid bool")
+		}
+	}
+
+	// checks if the secrets field is empty
+	if isEncrypted {
+		cryptoType, ok := w.Meta[metaCryptoType]
+		if !ok {
+			return errors.New("crypto type field not set")
 		}
 
-		// checks if the secrets field is empty
-		if isEncrypted {
-			if _, ok := w.Meta[metaCryptoType]; !ok {
-				return errors.New("crypto type field not set")
-			}
+		if _, err := getCrypto(CryptoType(cryptoType)); err != nil {
+			return errors.New("unknown crypto type")
+		}
 
-			if _, ok := w.Meta[metaSecrets]; !ok {
-				return errors.New("wallet is encrypted, but secrets field not set")
-			}
+		if s := w.Meta[metaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+	} else {
+		if s := w.Meta[metaSeed]; s == "" {
+			return errors.New("seed missing in unencrypted wallet")
+		}
+
+		if s := w.Meta[metaLastSeed]; s == "" {
+			return errors.New("lastSeed missing in unencrypted wallet")
 		}
 	}
 
@@ -783,6 +797,10 @@ func (w *Wallet) seed() string {
 
 func (w *Wallet) setSeed(seed string) {
 	w.Meta[metaSeed] = seed
+}
+
+func (w *Wallet) coin() CoinType {
+	return CoinType(w.Meta[metaCoin])
 }
 
 func (w *Wallet) setEncrypted(encrypt bool) {

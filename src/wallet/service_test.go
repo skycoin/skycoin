@@ -602,69 +602,6 @@ func TestServiceGetWallets(t *testing.T) {
 	}
 }
 
-func TestServiceReloadWalletsDisabledWalletAPI(t *testing.T) {
-	for ct := range cryptoTable {
-		name := fmt.Sprintf("crypto=%v", ct)
-		t.Run(name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:       dir,
-				CryptoType:      ct,
-				EnableWalletAPI: false,
-			})
-			require.NoError(t, err)
-			dirIsEmpty(t, dir)
-
-			err = s.ReloadWallets()
-			require.Equal(t, ErrWalletAPIDisabled, err)
-		})
-	}
-}
-
-func TestServiceReloadWallets(t *testing.T) {
-	for ct := range cryptoTable {
-		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			dir := prepareWltDir()
-
-			s, err := NewService(Config{
-				WalletDir:       dir,
-				CryptoType:      ct,
-				EnableWalletAPI: true,
-			})
-			require.NoError(t, err)
-
-			// Creates a wallet
-			w, err := s.CreateWallet("t.wlt", Options{
-				Label: "label",
-				Seed:  "seed",
-			}, nil)
-			require.NoError(t, err)
-
-			wltName := "t1.wlt"
-			w1, err := s.CreateWallet(wltName, Options{Seed: "seed1"}, nil)
-			require.NoError(t, err)
-
-			err = s.ReloadWallets()
-			require.NoError(t, err)
-
-			// check if create dup wallet will return error
-			_, ok := s.wallets[w.Filename()]
-			require.True(t, ok)
-
-			_, ok = s.wallets["t1.wlt"]
-			require.True(t, ok)
-
-			// check if the first address of each wallet is reloaded
-			_, ok = s.firstAddrIDMap[w.Entries[0].Address.String()]
-			require.True(t, ok)
-
-			_, ok = s.firstAddrIDMap[w1.Entries[0].Address.String()]
-			require.True(t, ok)
-
-		})
-	}
-}
-
 func TestServiceCreateAndSignTransaction(t *testing.T) {
 	headTime := time.Now().UTC().Unix()
 	seed := []byte("seed")

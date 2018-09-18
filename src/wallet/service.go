@@ -290,23 +290,6 @@ func (serv *Service) GetWallets() (Wallets, error) {
 	return wlts, nil
 }
 
-// ReloadWallets reload wallets
-func (serv *Service) ReloadWallets() error {
-	serv.Lock()
-	defer serv.Unlock()
-	if !serv.enableWalletAPI {
-		return ErrWalletAPIDisabled
-	}
-	wallets, err := LoadWallets(serv.walletDirectory)
-	if err != nil {
-		return err
-	}
-
-	serv.firstAddrIDMap = make(map[string]string)
-	serv.wallets = serv.removeDup(wallets)
-	return nil
-}
-
 // CreateAndSignTransaction creates and signs a transaction from wallet.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {

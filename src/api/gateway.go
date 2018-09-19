@@ -8,7 +8,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/skycoin/skycoin/src/notes"
 )
 
 //go:generate go install
@@ -63,8 +62,11 @@ type Gatewayer interface {
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
+<<<<<<< HEAD
 	GetAllNotes() []notes.Note
 	GetNoteByTxID(txID string) notes.Note
 	AddNote(notes notes.Note) error
 	RemoveNote(txID string) error
+=======
+>>>>>>> parent of 0af748b7... Added Notes API
 }

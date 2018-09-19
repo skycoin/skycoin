@@ -14,7 +14,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/skycoin/skycoin/src/notes"
 )
 
 var (
@@ -876,6 +875,7 @@ func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, 
 	})
 	return uxs, isTxnConfirmed, err
 }
+<<<<<<< HEAD
 
 // GetAllNotes returns all notes that have been saved locally
 func (gw *Gateway) GetAllNotes() []notes.Note {
@@ -897,3 +897,5 @@ func (gw *Gateway) AddNote(notes notes.Note) error {
 func (gw *Gateway) RemoveNote(txID string) error {
 	return gw.v.RemoveNote(txID)
 }
+=======
+>>>>>>> parent of 0af748b7... Added Notes API

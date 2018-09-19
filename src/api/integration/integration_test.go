@@ -3312,6 +3312,52 @@ func TestLiveWalletSpend(t *testing.T) {
 	}
 }
 
+func TestStableInjectTransaction(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	cases := []struct {
+		name string
+		txn  coin.Transaction
+		code int
+		err  string
+	}{
+		{
+			name: "database is read only",
+			txn:  coin.Transaction{},
+			code: http.StatusInternalServerError,
+			err:  "500 Internal Server Error - database is in read-only mode",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := c.InjectTransaction(&tc.txn)
+			if tc.err != "" {
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			// Result should be a valid txid
+			require.NotEmpty(t, result)
+			_, err = cipher.SHA256FromHex(result)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestLiveInjectTransaction(t *testing.T) {
+	// TODO -
+	// Need to run it with outgoing connections disabled, or have the stable test run with a tmp db not in read only mode
+	// Can't really test what happens with no connections, without disabling the network interface from the test
+	// Can test the valid case, requires modifying spend test to be a create transaction + inject
+}
+
 func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 	if !doLive(t) {
 		return

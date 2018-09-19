@@ -1614,16 +1614,23 @@ URI: /api/v1/injectTransaction
 Method: POST
 Content-Type: application/json
 Body: {"rawtx": "hex-encoded serialized transaction string"}
+Errors:
+	400 - Bad input
+	500 - Other
+	503 - Network unavailable (transaction failed to broadcast)
 ```
 
 Broadcasts a hex-encoded, serialized transaction to the network.
 Transactions are serialized with the `encoder` package.
 See [`coin.Transaction.Serialize`](https://godoc.org/github.com/skycoin/skycoin/src/coin#Transaction.Serialize).
 
-If there are no available connections, the API responds with a 503 Service Unavailable error.
+If there are no available connections, the API responds with a `503 Service Unavailable` error.
+However, the transaction will be saved locally in the database and will be rebroadcast automatically on the next startup.
 
 Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
 This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
+
+It is safe to retry the injection after a `503` failure.
 
 Example:
 

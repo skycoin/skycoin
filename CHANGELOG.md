@@ -36,6 +36,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
 - Fix unspent output hashes in the `cli decodeRawTransaction` result
 - `POST /api/v1/wallet/newAddress` and `POST /api/v1/wallet/spend` will correctly fail if the wallet is not encrypted but a password is provided
+- Return `503` error for `/api/v1/injectTransaction` for all message broadcast failures (note that it is still possible for broadcast to fail but no error to be returned, in certain conditions)
 
 ### Changed
 

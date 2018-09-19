@@ -949,11 +949,11 @@ func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
 
 // InjectEncodedTransaction makes a request to POST /api/v1/injectTransaction.
 // rawTx is a hex-encoded, serialized transaction
-func (c *Client) InjectEncodedTransaction(rawTx string) (string, error) {
+func (c *Client) InjectEncodedTransaction(rawTxn string) (string, error) {
 	v := struct {
-		Rawtx string `json:"rawtx"`
+		Rawtxn string `json:"rawtx"`
 	}{
-		Rawtx: rawTx,
+		Rawtxn: rawTxn,
 	}
 
 	var txid string

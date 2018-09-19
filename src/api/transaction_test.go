@@ -18,6 +18,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
@@ -677,10 +679,37 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody: string(invalidTxnBodyJSON),
 		},
 		{
-			name:                   "503 - injectTransactionError",
+			name:                   "503 - daemon.ErrOutgoingConnectionsDisabled",
 			method:                 http.MethodPost,
 			status:                 http.StatusServiceUnavailable,
-			err:                    "503 Service Unavailable - inject tx failed: injectTransactionError",
+			err:                    "503 Service Unavailable - Outgoing connections are disabled",
+			httpBody:               string(validTxnBodyJSON),
+			injectTransactionArg:   validTransaction,
+			injectTransactionError: daemon.ErrOutgoingConnectionsDisabled,
+		},
+		{
+			name:                   "503 - gnet.ErrNoReachableConnections",
+			method:                 http.MethodPost,
+			status:                 http.StatusServiceUnavailable,
+			err:                    "503 Service Unavailable - All pool connections are unreachable at this time",
+			httpBody:               string(validTxnBodyJSON),
+			injectTransactionArg:   validTransaction,
+			injectTransactionError: gnet.ErrNoReachableConnections,
+		},
+		{
+			name:                   "503 - gnet.ErrPoolEmpty",
+			method:                 http.MethodPost,
+			status:                 http.StatusServiceUnavailable,
+			err:                    "503 Service Unavailable - Connection pool is empty",
+			httpBody:               string(validTxnBodyJSON),
+			injectTransactionArg:   validTransaction,
+			injectTransactionError: gnet.ErrPoolEmpty,
+		},
+		{
+			name:                   "500 - other injectTransactionError",
+			method:                 http.MethodPost,
+			status:                 http.StatusInternalServerError,
+			err:                    "500 Internal Server Error - injectTransactionError",
 			httpBody:               string(validTxnBodyJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),

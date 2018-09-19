@@ -50,6 +50,8 @@ var (
 	ErrWriteQueueFull = errors.New("Write queue full")
 	// ErrNoReachableConnections when broadcasting a message, no connections were available to send a message to
 	ErrNoReachableConnections = errors.New("All pool connections are unreachable at this time")
+	// ErrPoolEmpty when broadcasting a message, the connection pool was empty
+	ErrPoolEmpty = errors.New("Connection pool is empty")
 	// Logger
 	logger = logging.MustGetLogger("gnet")
 )
@@ -888,7 +890,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 	fullWriteQueue := []string{}
 	if err := pool.strand("BroadcastMessage", func() error {
 		if len(pool.pool) == 0 {
-			return errors.New("Connection pool is empty")
+			return ErrPoolEmpty
 		}
 
 		for _, conn := range pool.pool {

@@ -5,22 +5,22 @@ import (
 )
 
 
-// GetAllNotes returns all saved Notes
+// GetAllNotes
 func (v Visor) GetAllNotes() []notes.Note {
 	return v.Notes.GetAll()
 }
 
-// GetNoteByTxID If note wasn't found by Id -> return empty Note
-func (v Visor) GetNoteByTxID(txID string) (notes.Note) {
-	return v.Notes.GetByTxID(txID)
+// If note wasn't found by Id -> return empty Note
+func (v Visor) GetNoteByTransId(txId string) (notes.Note) {
+	return v.Notes.GetByTransId(txId)
 }
 
-// AddNote adds a Note
+// Add Note
 func (v Visor) AddNote(note notes.Note) error {
 	return v.Notes.Add(note)
 }
 
 // Remove Note by TransactionId
 func (v Visor) RemoveNote(txId string) error {
-	return v.Notes.RemoveByTxID(txId)
+	return v.Notes.RemoveByTxId(txId)
 }

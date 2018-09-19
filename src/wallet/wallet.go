@@ -103,6 +103,7 @@ const (
 	// CoinTypeBitcoin bitcoin type
 	CoinTypeBitcoin CoinType = "bitcoin"
 
+	// WalletTypeDeterministic new addresses in wallet generated from deterministic sequence
 	WalletTypeDeterministic = "deterministic"
 )
 

@@ -19,6 +19,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/notes"
 )
 
 var (

@@ -564,7 +564,7 @@ Test(cipher_crypto, TestSignHash) {
   cipher__SecKey sk;
   cipher__Address addr;
   unsigned char buff[257];
-  GoSlice b = { buff, 0, 101 };
+  GoSlice b = { buff, 0, 257 };
   cipher__SHA256 h;
   cipher__Sig sig, sig2;
   int errcode;

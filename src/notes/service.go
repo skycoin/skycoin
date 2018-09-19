@@ -1,32 +1,35 @@
 package notes
 
+
+// Service for Notes
 type Service struct {
 	DataDirectory string
 }
 
+// Config for Notes
 type Config struct {
 	NotesPath string
 }
 
-
+// NewService returns a Service for Notes
 func NewService(c Config) (*Service, error) {
 	service := &Service{
 		DataDirectory: c.NotesPath,
 	}
 
-	loadJson(c.NotesPath)
+	loadJSON(c.NotesPath)
 
 	return service, nil
 }
 
-// Get all notes
+// GetAll notes
 func (Service) GetAll() []Note {
 	return GetAll()
 }
 
-// If note wasn't found by Id -> return empty Note
-func (Service) GetByTransId(txId string) Note {
-	return GetByTransId(txId)
+// GetByTxID If note wasn't found by Id -> return empty Note
+func (Service) GetByTxID(txID string) Note {
+	return GetByTxID(txID)
 }
 
 // Add Note
@@ -34,7 +37,7 @@ func (s Service) Add(note Note) error {
 	return Add(note)
 }
 
-// Remove Note by TransactionId
-func (s Service) RemoveByTxId(txId string) error {
-	return Remove(txId)
+// RemoveByTxID removes Note by txID
+func (s Service) RemoveByTxID(txID string) error {
+	return Remove(txID)
 }

@@ -2,15 +2,14 @@ package notes
 
 import (
 	"testing"
-	"math/rand"
-	"time"
+	"crypto/rand"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"github.com/skycoin/skycoin/src/cipher"
+	"encoding/base64"
 )
 
 var (
-	specialChars = []string{"É", "G", "É", "ì", "É", "R", "Å", "[", "É", "f", "É", "B", "É", "ì", "É", "O", "Ç", "Õ", "ì", "Ô", "Ç", "µ", "Ç", "≠", "Ç", "»", "Ç", "¢", "*", "'", "Ü", "Ä", "Ö", "!", "§", "$", "%", "&", "/", ">", "<", "(", ")", "=", "?", "}", "{"}
 	noteServ     *Service
 	noteCFG      = Config{
 		NotesPath: "transactionnotes_temp.json",
@@ -18,13 +17,13 @@ var (
 )
 
 const (
-	totalNotes = 60
-	noteLength = 20
-	txIdByteLength = 32
+	totalNotes     = 60
+	txIDByteLength = 32
 )
 
 func TestMain(m *testing.M) {
-	defer teardown(1)
+	defer teardown()
+	defer os.Exit(1)
 
 	m.Run()
 }
@@ -41,9 +40,7 @@ func TestNewService(t *testing.T) {
 	assert.NotNil(t, noteServ)
 }
 
-func teardown(i int) {
-	defer os.Exit(i)
-
+func teardown() {
 	err := os.Remove(noteCFG.NotesPath)
 
 	if err != nil {
@@ -54,44 +51,60 @@ func teardown(i int) {
 
 func TestAddNotes(t *testing.T) {
 	for i := 0; i < totalNotes; i++ {
-		key := make([]byte, txIdByteLength)
-
-		_, err := rand.Read(key)
-		if err != nil {
-			t.Error(err)
-		}
-
-		sha, err := cipher.SHA256FromBytes(key)
-
+		key, err := generateRandomBytes(txIDByteLength)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 
-		rndmTxIdHex := sha.Hex()
-		rndmNotes := getRndmId()
+		sha, err := cipher.SHA256FromBytes(key)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		rndmTxIDHex := sha.Hex()
+		rndmNotes, err := getRndmID(txIDByteLength)
+
+		assert.NoError(t, err)
 
 		note := Note{}
-		note.TxIdHex = rndmTxIdHex
+		note.TxIDHex = rndmTxIDHex
 		note.Notes = rndmNotes
 
-		noteServ.Add(note)
+		err = noteServ.Add(note)
+
+		if err != nil {
+			t.Error(err)
+		}
 	}
 
-	assert.True(t, len(noteServ.GetAll()) == totalNotes)
+	allNotesCount := len(noteServ.GetAll())
+
+	assert.True(t, allNotesCount == totalNotes)
 }
 
-func getRndmId() string {
-	var rndTxId = ""
-	for i := 0; i < noteLength; i++ {
-		rand.Seed(time.Now().UTC().UnixNano())
-		rndTxId += specialChars[rand.Intn(len(specialChars))]
+func getRndmID(s int) (string, error) {
+	b, err := generateRandomBytes(s)
+	return base64.URLEncoding.EncodeToString(b), err
+}
+
+// GenerateRandomBytes returns securely generated random bytes.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func generateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return nil, err
 	}
 
-	return rndTxId
+	return b, nil
 }
 
-func TestGetNoteById(t *testing.T) {
+func TestGetNoteByID(t *testing.T) {
 	var testNotes []Note
 	allNotes := noteServ.GetAll()
 
@@ -102,23 +115,23 @@ func TestGetNoteById(t *testing.T) {
 
 	// check
 	for i := 0; i < len(testNotes); i++ {
-		txId := testNotes[i].TxIdHex
-		note := noteServ.GetByTransId(txId)
+		txID := testNotes[i].TxIDHex
+		note := noteServ.GetByTxID(txID)
 
 		assert.NotNil(t, note)
 
 		assert.NotEmpty(t, note.Notes)
 		assert.True(t, len(note.Notes) > 0)
 
-		assert.NotEmpty(t, note.TxIdHex)
-		assert.True(t, len(note.TxIdHex) > 0)
+		assert.NotEmpty(t, note.TxIDHex)
+		assert.True(t, len(note.TxIDHex) > 0)
 	}
 
 	// Test not existent note
-	noteByTransId := noteServ.GetByTransId("TRANSAKTIONSID")
+	noteByTransID := noteServ.GetByTxID("TRANSAKTIONSID")
 
-	assert.Empty(t, noteByTransId.TxIdHex)
-	assert.Empty(t, noteByTransId.Notes)
+	assert.Empty(t, noteByTransID.TxIDHex)
+	assert.Empty(t, noteByTransID.Notes)
 }
 
 func TestRemoveNote(t *testing.T) {
@@ -133,15 +146,15 @@ func TestRemoveNote(t *testing.T) {
 
 	// Remove Notes
 	for i := 0; i < len(notesToRem); i++ {
-		txId := notesToRem[i].TxIdHex
+		txID := notesToRem[i].TxIDHex
 
-		err := noteServ.RemoveByTxId(txId)
+		err := noteServ.RemoveByTxID(txID)
 
 		assert.Nil(t, err)
 	}
 
 	// Test remove non existent Note
-	err := noteServ.RemoveByTxId("NotExistentTxid")
+	err := noteServ.RemoveByTxID("NotExistentTxID")
 
 	assert.Error(t, err)
 }
@@ -167,7 +180,7 @@ func TestOverwriteNotes(t *testing.T) {
 		assert.Nil(t, err)
 
 		// Check if Note with TransId has changed
-		checkNote := noteServ.GetByTransId(noteToOverwrite.TxIdHex)
+		checkNote := noteServ.GetByTxID(noteToOverwrite.TxIDHex)
 
 		assert.NotNil(t, checkNote)
 		assert.True(t, checkNote.Notes == noteToOverwrite.Notes)

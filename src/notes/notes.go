@@ -8,27 +8,29 @@ import (
 	"fmt"
 )
 
+
+// Note struct
 type Note struct {
-	TxIdHex string `json:"txid"`
+	TxIDHex string `json:"txid"`
 	Notes   string `json:"notes"`
 }
 
 var (
-	gNotes []Note
-	log    = logging.MustGetLogger("notes")
+	gNotes     []Note
+	log        = logging.MustGetLogger("notes")
 	gNotesPath string
 )
 
-// Get all notes
+// GetAll returns all saved Notes
 func GetAll() []Note {
 	return gNotes
 }
 
-// If note wasn't found by Id -> return empty Note
-func GetByTransId(txId string) Note {
+// GetByTxID If note wasn't found by Id -> return empty Note
+func GetByTxID(txID string) Note {
 	for i := 0; i < len(gNotes); i++ {
 
-		if note := gNotes[i]; note.TxIdHex == txId {
+		if note := gNotes[i]; note.TxIDHex == txID {
 			return note
 		}
 	}
@@ -38,38 +40,38 @@ func GetByTransId(txId string) Note {
 
 // Add Note, if Note already exists, the old one will be overwritten
 func Add(note Note) error {
-	if !isNoteExist(note.TxIdHex) {
-		log.Info("Adding Note with txid=" + note.TxIdHex)
+	if !isNoteExist(note.TxIDHex) {
+		log.Info("Adding Note with txid=" + note.TxIDHex)
 
 		gNotes = append(gNotes, note)
 	} else {
-		log.Info("Overwriting Note with txid=" + note.TxIdHex)
+		log.Info("Overwriting Note with txid=" + note.TxIDHex)
 
 		for i := 0; i < len(gNotes); i++ {
-			if gNotes[i].TxIdHex == note.TxIdHex {
+			if gNotes[i].TxIDHex == note.TxIDHex {
 				gNotes[i] = note
 			}
 		}
 	}
 
-	return writeJson()
+	return writeJSON()
 }
 
 // Remove Note by txId
-func Remove(txId string) error {
+func Remove(txID string) error {
 	for i := 0; i < len(gNotes); i++ {
-		if gNotes[i].TxIdHex == txId {
+		if gNotes[i].TxIDHex == txID {
 			gNotes = append(gNotes[:i], gNotes[i+1:]...)
 			return nil
 		}
 	}
-	return fmt.Errorf("Note with txid='" + txId + "' has not been removed")
+	return fmt.Errorf("Note with txid='" + txID + "' has not been removed")
 }
 
 // Check if Note with txId exists
-func isNoteExist(txId string) bool {
+func isNoteExist(txID string) bool {
 	for i := 0; i < len(gNotes); i++ {
-		if gNotes[i].TxIdHex == txId {
+		if gNotes[i].TxIDHex == txID {
 			return true
 		}
 	}
@@ -77,14 +79,19 @@ func isNoteExist(txId string) bool {
 }
 
 // Write Notes to configured gNotesPath
-func writeJson() error {
-	notesJson, _ := json.Marshal(gNotes)
+func writeJSON() error {
+	notesJSON, err := json.Marshal(gNotes)
 
-	return ioutil.WriteFile(gNotesPath, notesJson, 0644)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return ioutil.WriteFile(gNotesPath, notesJSON, 0644)
 }
 
 // Read Notes from configured gNotesPath
-func loadJson(notesPath string) {
+func loadJSON(notesPath string) {
 	var notes []Note
 
 	// Set Path for transactionnotes file
@@ -97,18 +104,22 @@ func loadJson(notesPath string) {
 		if os.IsExist(err) {
 			log.Error(err)
 			return
-		} else {
-			fmt.Print("File does not Exist: " + notesPath + "; Creating empty File...")
-			err = ioutil.WriteFile(notesPath, nil, 0644)
+		}
 
-			if err != nil {
-				log.Error(err)
-				return
-			}
+		fmt.Print("File does not Exist: " + notesPath + "; Creating empty File...")
+		err = ioutil.WriteFile(notesPath, nil, 0644)
+
+		if err != nil {
+			log.Error(err)
+			return
 		}
 	}
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, err := ioutil.ReadAll(jsonFile)
+
+	if err != nil {
+		log.Error(err)
+	}
 
 	if len(byteValue) > 0 {
 		err = json.Unmarshal(byteValue, &notes)

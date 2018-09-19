@@ -882,10 +882,10 @@ func (gw *Gateway) GetAllNotes() []notes.Note {
 	return gw.v.GetAllNotes()
 }
 
-// GetNoteByTransId returns a note depending on the transactionId.
+// GetNoteByTxID returns a note depending on the transactionId.
 // If no Note could be found via TransId -> returns empty notes.Note
-func (gw *Gateway) GetNoteByTransId(txId string) notes.Note {
-	return gw.v.GetNoteByTransId(txId)
+func (gw *Gateway) GetNoteByTxID(txID string) notes.Note {
+	return gw.v.GetNoteByTxID(txID)
 }
 
 // AddNote adds a Note
@@ -893,16 +893,9 @@ func (gw *Gateway) AddNote(notes notes.Note) error {
 	return gw.v.AddNote(notes)
 }
 
-<<<<<<< HEAD
 // RemoveNote removes a Note
 func (gw *Gateway) RemoveNote(txID string) error {
 	return gw.v.RemoveNote(txID)
 }
 =======
 >>>>>>> parent of 0af748b7... Added Notes API
-=======
-// AddNote removes a Note
-func (gw *Gateway) RemoveNote(txId string) error {
-	return gw.v.RemoveNote(txId)
-}
->>>>>>> parent of 409d9b54... fixed lint errors

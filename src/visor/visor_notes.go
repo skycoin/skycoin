@@ -20,6 +20,6 @@ func (v Visor) AddNote(note notes.Note) error {
 }
 
 // RemoveNote by TransactionId
-func (v Visor) RemoveNote(txId string) error {
-	return v.Notes.RemoveByTxID(txId)
+func (v Visor) RemoveNote(txID string) error {
+	return v.Notes.RemoveByTxID(txID)
 }

@@ -256,19 +256,19 @@ func SKY_cipher_GenerateDeterministicKeyPairsSeed(_seed []byte, _n int, _arg2 *C
 	return errcode
 }
 
-//export SKY_cipher_TestSecKey
-func SKY_cipher_TestSecKey(_seckey *C.cipher__SecKey) uint32 {
+//export SKY_cipher_CheckSecKey
+func SKY_cipher_CheckSecKey(_seckey *C.cipher__SecKey) uint32 {
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
 
-	err := cipher.TestSecKey(*seckey)
+	err := cipher.CheckSecKey(*seckey)
 	return libErrorCode(err)
 }
 
-//export SKY_cipher_TestSecKeyHash
-func SKY_cipher_TestSecKeyHash(_seckey *C.cipher__SecKey, _hash *C.cipher__SHA256) uint32 {
+//export SKY_cipher_CheckSecKeyHash
+func SKY_cipher_CheckSecKeyHash(_seckey *C.cipher__SecKey, _hash *C.cipher__SHA256) uint32 {
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
 	hash := (*cipher.SHA256)(unsafe.Pointer(_hash))
 
-	err := cipher.TestSecKeyHash(*seckey, *hash)
+	err := cipher.CheckSecKeyHash(*seckey, *hash)
 	return libErrorCode(err)
 }

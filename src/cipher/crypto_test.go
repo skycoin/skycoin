@@ -24,10 +24,13 @@ func TestNewPubKey(t *testing.T) {
 	_, err = NewPubKey(randBytes(t, 100))
 	require.Equal(t, errors.New("Invalid public key length"), err)
 
-	b := randBytes(t, 33)
-	p, err := NewPubKey(b)
+	_, err = NewPubKey(make([]byte, len(PubKey{})))
+	require.Equal(t, errors.New("Invalid public key"), err)
+
+	p, _ := GenerateKeyPair()
+	p2, err := NewPubKey(p[:])
 	require.NoError(t, err)
-	require.True(t, bytes.Equal(p[:], b))
+	require.Equal(t, p, p2)
 }
 
 func TestMustNewPubKey(t *testing.T) {
@@ -36,24 +39,31 @@ func TestMustNewPubKey(t *testing.T) {
 	require.Panics(t, func() { MustNewPubKey(randBytes(t, 34)) })
 	require.Panics(t, func() { MustNewPubKey(randBytes(t, 0)) })
 	require.Panics(t, func() { MustNewPubKey(randBytes(t, 100)) })
-	require.NotPanics(t, func() { MustNewPubKey(randBytes(t, 33)) })
-	b := randBytes(t, 33)
-	p := MustNewPubKey(b)
-	require.True(t, bytes.Equal(p[:], b))
+	require.Panics(t, func() { MustNewPubKey(make([]byte, len(PubKey{}))) })
+
+	p, _ := GenerateKeyPair()
+	p2 := MustNewPubKey(p[:])
+	require.Equal(t, p, p2)
 }
 
 func TestPubKeyFromHex(t *testing.T) {
 	// Invalid hex
-	p, err := PubKeyFromHex("")
+	_, err := PubKeyFromHex("")
 	require.Equal(t, errors.New("Invalid public key length"), err)
 
-	p, err = PubKeyFromHex("cascs")
+	_, err = PubKeyFromHex("cascs")
+	require.Equal(t, errors.New("Invalid public key"), err)
+
+	// Empty key
+	empty := PubKey{}
+	h := hex.EncodeToString(empty[:])
+	_, err = PubKeyFromHex(h)
 	require.Equal(t, errors.New("Invalid public key"), err)
 
 	// Invalid hex length
-	p = MustNewPubKey(randBytes(t, 33))
+	p, _ := GenerateKeyPair()
 	s := hex.EncodeToString(p[:len(p)/2])
-	p, err = PubKeyFromHex(s)
+	_, err = PubKeyFromHex(s)
 	require.Equal(t, errors.New("Invalid public key length"), err)
 
 	// Valid
@@ -67,10 +77,17 @@ func TestMustPubKeyFromHex(t *testing.T) {
 	// Invalid hex
 	require.Panics(t, func() { MustPubKeyFromHex("") })
 	require.Panics(t, func() { MustPubKeyFromHex("cascs") })
+
+	// Empty key
+	empty := PubKey{}
+	h := hex.EncodeToString(empty[:])
+	require.Panics(t, func() { MustPubKeyFromHex(h) })
+
 	// Invalid hex length
-	p := MustNewPubKey(randBytes(t, 33))
+	p, _ := GenerateKeyPair()
 	s := hex.EncodeToString(p[:len(p)/2])
 	require.Panics(t, func() { MustPubKeyFromHex(s) })
+
 	// Valid
 	s = hex.EncodeToString(p[:])
 	require.NotPanics(t, func() { MustPubKeyFromHex(s) })
@@ -78,8 +95,7 @@ func TestMustPubKeyFromHex(t *testing.T) {
 }
 
 func TestPubKeyHex(t *testing.T) {
-	b := randBytes(t, 33)
-	p := MustNewPubKey(b)
+	p, _ := GenerateKeyPair()
 	h := p.Hex()
 	p2, err := PubKeyFromHex(h)
 	require.NoError(t, err)
@@ -87,12 +103,27 @@ func TestPubKeyHex(t *testing.T) {
 	require.Equal(t, p2.Hex(), h)
 }
 
+func TestNewPubKeyRandom(t *testing.T) {
+	// Random bytes should not be valid, most of the time
+	failed := false
+	for i := 0; i < 10; i++ {
+		b := randBytes(t, 33)
+		if _, err := NewPubKey(b); err != nil {
+			failed = true
+			break
+		}
+	}
+	require.True(t, failed)
+}
+
 func TestPubKeyVerify(t *testing.T) {
 	// Random bytes should not be valid, most of the time
 	failed := false
 	for i := 0; i < 10; i++ {
 		b := randBytes(t, 33)
-		if MustNewPubKey(b).Verify() != nil {
+		p := PubKey{}
+		copy(p[:], b[:])
+		if p.Verify() != nil {
 			failed = true
 			break
 		}
@@ -492,7 +523,7 @@ func TestGenerateKeyPair(t *testing.T) {
 		p, s := GenerateKeyPair()
 		require.NoError(t, p.Verify())
 		require.NoError(t, s.Verify())
-		err := TestSecKey(s)
+		err := CheckSecKey(s)
 		require.NoError(t, err)
 	}
 }
@@ -581,17 +612,17 @@ func TestDeterministicKeyPairIterator(t *testing.T) {
 	})
 }
 
-func TestSecKeyTest(t *testing.T) {
+func TestCheckSecKey(t *testing.T) {
 	_, s := GenerateKeyPair()
-	require.NoError(t, TestSecKey(s))
-	require.Error(t, TestSecKey(SecKey{}))
+	require.NoError(t, CheckSecKey(s))
+	require.Error(t, CheckSecKey(SecKey{}))
 }
 
-func TestSecKeyHashTest(t *testing.T) {
+func TestCheckSecKeyHash(t *testing.T) {
 	_, s := GenerateKeyPair()
 	h := SumSHA256(randBytes(t, 256))
-	require.NoError(t, TestSecKeyHash(s, h))
-	require.Error(t, TestSecKeyHash(SecKey{}, h))
+	require.NoError(t, CheckSecKeyHash(s, h))
+	require.Error(t, CheckSecKeyHash(SecKey{}, h))
 }
 
 func TestGenerateDeterministicKeyPairsUsesAllBytes(t *testing.T) {
@@ -636,6 +667,6 @@ func TestSecKey1(t *testing.T) {
 
 	test := []byte("test message")
 	hash := SumSHA256(test)
-	err = TestSecKeyHash(seckey, hash)
+	err = CheckSecKeyHash(seckey, hash)
 	require.NoError(t, err)
 }

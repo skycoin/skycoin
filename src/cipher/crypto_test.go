@@ -244,24 +244,56 @@ func TestSecKeyVerify(t *testing.T) {
 	// Random bytes are usually valid
 }
 
-func TestECDHonce(t *testing.T) {
+func TestECDH(t *testing.T) {
 	pub1, sec1 := GenerateKeyPair()
 	pub2, sec2 := GenerateKeyPair()
 
-	buf1 := ECDH(pub2, sec1)
-	buf2 := ECDH(pub1, sec2)
+	buf1, err := ECDH(pub2, sec1)
+	require.NoError(t, err)
+	buf2, err := ECDH(pub1, sec2)
+	require.NoError(t, err)
 
 	require.True(t, bytes.Equal(buf1, buf2))
-}
 
-func TestECDHloop(t *testing.T) {
+	goodPub, goodSec := GenerateKeyPair()
+	var badPub PubKey
+	var badSec SecKey
+
+	_, err = ECDH(badPub, goodSec)
+	require.Equal(t, errors.New("ECDH invalid pubkey input"), err)
+	_, err = ECDH(goodPub, badSec)
+	require.Equal(t, errors.New("ECDH invalid seckey input"), err)
+
 	for i := 0; i < 128; i++ {
 		pub1, sec1 := GenerateKeyPair()
 		pub2, sec2 := GenerateKeyPair()
-		buf1 := ECDH(pub2, sec1)
-		buf2 := ECDH(pub1, sec2)
+		buf1, err := ECDH(pub2, sec1)
+		require.NoError(t, err)
+		buf2, err := ECDH(pub1, sec2)
+		require.NoError(t, err)
 		require.True(t, bytes.Equal(buf1, buf2))
 	}
+}
+
+func TestMustECDH(t *testing.T) {
+	goodPub, goodSec := GenerateKeyPair()
+	var badPub PubKey
+	var badSec SecKey
+
+	require.Panics(t, func() {
+		MustECDH(badPub, goodSec)
+	})
+	require.Panics(t, func() {
+		MustECDH(goodPub, badSec)
+	})
+
+	pub1, sec1 := GenerateKeyPair()
+	pub2, sec2 := GenerateKeyPair()
+
+	buf1 := MustECDH(pub2, sec1)
+	buf2 := MustECDH(pub1, sec2)
+
+	require.True(t, bytes.Equal(buf1, buf2))
 }
 
 func TestNewSig(t *testing.T) {

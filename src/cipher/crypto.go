@@ -186,20 +186,29 @@ func (sk SecKey) Hex() string {
 // person B computes cipher.ECDH(pub1, sec2)
 // cipher.ECDH(pub2, sec1) equals cipher.ECDH(pub1, sec2)
 // This is their shared secret
-func ECDH(pub PubKey, sec SecKey) []byte {
+func ECDH(pub PubKey, sec SecKey) ([]byte, error) {
 	if err := pub.Verify(); err != nil {
-		log.Panic("ECDH invalid pubkey input")
+		return nil, errors.New("ECDH invalid pubkey input")
 	}
 
 	// WARNING: This calls TestSecKey if DebugLevel2 is set to true.
 	// TestSecKey is extremely slow and will kill performance if ECDH is called frequently
 	if err := sec.Verify(); err != nil {
-		log.Panic("ECDH invalid seckey input")
+		return nil, errors.New("ECDH invalid seckey input")
 	}
 
 	buff := secp256k1.ECDH(pub[:], sec[:])
-	ret := SumSHA256(buff) //hash this so they cant screw up
-	return ret[:]
+	ret := SumSHA256(buff) // hash this so they cant screw up
+	return ret[:], nil
+}
+
+// MustECDH calls ECDH and panics on error
+func MustECDH(pub PubKey, sec SecKey) []byte {
+	r, err := ECDH(pub, sec)
+	if err != nil {
+		log.Panic(err)
+	}
+	return r
 }
 
 // Sig signature

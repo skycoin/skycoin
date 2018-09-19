@@ -64,13 +64,9 @@ type Gatewayer interface {
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
 <<<<<<< HEAD
 	GetAllNotes() []notes.Note
-	GetNoteByTransId(txId string) notes.Note
+	GetNoteByTxID(txID string) notes.Note
 	AddNote(notes notes.Note) error
-<<<<<<< HEAD
 	RemoveNote(txID string) error
 =======
 >>>>>>> parent of 0af748b7... Added Notes API
-=======
-	RemoveNote(txId string) error
->>>>>>> parent of 409d9b54... fixed lint errors
 }

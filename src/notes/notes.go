@@ -2,12 +2,12 @@ package notes
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
-
 	"github.com/skycoin/skycoin/src/util/logging"
+	"fmt"
 )
+
 
 // Note struct
 type Note struct {
@@ -106,55 +106,41 @@ func loadJSON(notesPath string) {
 			return
 		}
 
-		log.Info("File does not Exist: " + notesPath + "; Creating empty File...")
+		fmt.Print("File does not Exist: " + notesPath + "; Creating empty File...")
+		err = ioutil.WriteFile(notesPath, nil, 0644)
 
-		err = ioutil.WriteFile(notesPath, []byte{}, 0644)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		jsonFile, err = os.Open(notesPath)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 	}
 
-	if jsonFile != nil {
-		var fi os.FileInfo
-		var byteValue []byte
+	byteValue, err := ioutil.ReadAll(jsonFile)
 
-		fi, err = jsonFile.Stat()
+	if err != nil {
+		log.Error(err)
+	}
+
+	if len(byteValue) > 0 {
+		err = json.Unmarshal(byteValue, &notes)
+
 		if err != nil {
 			log.Error(err)
 			return
 		}
 
-		if fi.Size() > 0 {
+		gNotes = notes
 
-			byteValue, err = ioutil.ReadAll(jsonFile)
-			if err != nil {
-				log.Error(err)
-				return
-			}
+		var fi os.FileInfo
+		fi, err = jsonFile.Stat()
 
-		} else {
-			log.Info("Failed to load Notes: File is empty")
+		if err != nil {
+			log.Error(err)
 			return
 		}
 
-		if len(byteValue) > 0 {
-
-			err = json.Unmarshal(byteValue, &notes)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-
-			gNotes = notes
-
-			log.Info("Loaded Notes from " + fi.Name())
-		}
+		log.Info("Loaded Notes from " + fi.Name())
+	} else {
+		log.Info("Failed to load Notes: File is empty")
 	}
 }

@@ -92,10 +92,10 @@ var (
 )
 
 const (
-	// WalletExt  wallet file extension
+	// WalletExt wallet file extension
 	WalletExt = "wlt"
 
-	// WalletTimestampFormat  wallet timestamp layout
+	// WalletTimestampFormat wallet timestamp layout
 	WalletTimestampFormat = "2006_01_02"
 
 	// CoinTypeSkycoin skycoin type
@@ -103,6 +103,7 @@ const (
 	// CoinTypeBitcoin bitcoin type
 	CoinTypeBitcoin CoinType = "bitcoin"
 
+	// WalletTypeDeterministic deterministic wallet type
 	WalletTypeDeterministic = "deterministic"
 )
 

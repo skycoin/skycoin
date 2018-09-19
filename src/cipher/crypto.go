@@ -616,7 +616,7 @@ func init() {
 	if err := CheckSecKey(seckey); err != nil {
 		log.Fatalf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)
 	}
-	if MustPubKeyFromSecKey(secKey) != pubKey {
+	if MustPubKeyFromSecKey(seckey) != pubkey {
 		log.Fatal("DebugLevel1, GenerateKeyPair, public key does not match private key")
 	}
 }

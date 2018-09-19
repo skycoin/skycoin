@@ -125,11 +125,15 @@ func SKY_cipher_SecKey_Hex(_sk *C.cipher__SecKey, _arg1 *C.GoString_) {
 }
 
 //export SKY_cipher_ECDH
-func SKY_cipher_ECDH(_pub *C.cipher__PubKey, _sec *C.cipher__SecKey, _arg2 *C.GoSlice_) {
+func SKY_cipher_ECDH(_pub *C.cipher__PubKey, _sec *C.cipher__SecKey, _arg2 *C.GoSlice_) uint32 {
 	pub := (*cipher.PubKey)(unsafe.Pointer(_pub))
 	sec := (*cipher.SecKey)(unsafe.Pointer(_sec))
-	b := cipher.ECDH(*pub, *sec)
-	copyToGoSlice(reflect.ValueOf(b), _arg2)
+	b, err := cipher.ECDH(*pub, *sec)
+	errcode := libErrorCode(err)
+	if err == nil {
+		copyToGoSlice(reflect.ValueOf(b), _arg2)
+	}
+	return errcode
 }
 
 //export SKY_cipher_NewSig

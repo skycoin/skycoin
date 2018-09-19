@@ -100,22 +100,22 @@ func TestPubKeyVerify(t *testing.T) {
 	require.True(t, failed)
 }
 
-func TestPubKeyVerifyNil(t *testing.T) {
+func TestPubKeyNullVerifyFails(t *testing.T) {
 	// Empty public key should not be valid
 	p := PubKey{}
-	require.NotNil(t, p.Verify())
+	require.Error(t, p.Verify())
 }
 
 func TestPubKeyVerifyDefault1(t *testing.T) {
 	// Generated pub key should be valid
 	p, _ := GenerateKeyPair()
-	require.Nil(t, p.Verify())
+	require.NoError(t, p.Verify())
 }
 
 func TestPubKeyVerifyDefault2(t *testing.T) {
 	for i := 0; i < 1024; i++ {
 		p, _ := GenerateKeyPair()
-		require.Nil(t, p.Verify())
+		require.NoError(t, p.Verify())
 	}
 }
 
@@ -342,26 +342,26 @@ func TestSigHex(t *testing.T) {
 
 func TestChkSig(t *testing.T) {
 	p, s := GenerateKeyPair()
-	require.Nil(t, p.Verify())
-	require.Nil(t, s.Verify())
+	require.NoError(t, p.Verify())
+	require.NoError(t, s.Verify())
 	a := AddressFromPubKey(p)
-	require.Nil(t, a.Verify(p))
+	require.NoError(t, a.Verify(p))
 	b := randBytes(t, 256)
 	h := SumSHA256(b)
 	sig := MustSignHash(h, s)
-	require.Nil(t, ChkSig(a, h, sig))
+	require.NoError(t, ChkSig(a, h, sig))
 	// Empty sig should be invalid
-	require.NotNil(t, ChkSig(a, h, Sig{}))
+	require.Error(t, ChkSig(a, h, Sig{}))
 	// Random sigs should not pass
 	for i := 0; i < 100; i++ {
-		require.NotNil(t, ChkSig(a, h, MustNewSig(randBytes(t, 65))))
+		require.Error(t, ChkSig(a, h, MustNewSig(randBytes(t, 65))))
 	}
 	// Sig for one hash does not work for another hash
 	h2 := SumSHA256(randBytes(t, 256))
 	sig2 := MustSignHash(h2, s)
-	require.Nil(t, ChkSig(a, h2, sig2))
-	require.NotNil(t, ChkSig(a, h, sig2))
-	require.NotNil(t, ChkSig(a, h2, sig))
+	require.NoError(t, ChkSig(a, h2, sig2))
+	require.Error(t, ChkSig(a, h, sig2))
+	require.Error(t, ChkSig(a, h2, sig))
 
 	// Different secret keys should not create same sig
 	p2, s2 := GenerateKeyPair()
@@ -369,19 +369,19 @@ func TestChkSig(t *testing.T) {
 	h = SHA256{}
 	sig = MustSignHash(h, s)
 	sig2 = MustSignHash(h, s2)
-	require.Nil(t, ChkSig(a, h, sig))
-	require.Nil(t, ChkSig(a2, h, sig2))
+	require.NoError(t, ChkSig(a, h, sig))
+	require.NoError(t, ChkSig(a2, h, sig2))
 	require.NotEqual(t, sig, sig2)
 	h = SumSHA256(randBytes(t, 256))
 	sig = MustSignHash(h, s)
 	sig2 = MustSignHash(h, s2)
-	require.Nil(t, ChkSig(a, h, sig))
-	require.Nil(t, ChkSig(a2, h, sig2))
+	require.NoError(t, ChkSig(a, h, sig))
+	require.NoError(t, ChkSig(a2, h, sig2))
 	require.NotEqual(t, sig, sig2)
 
 	// Bad address should be invalid
-	require.NotNil(t, ChkSig(a, h, sig2))
-	require.NotNil(t, ChkSig(a2, h, sig))
+	require.Error(t, ChkSig(a, h, sig2))
+	require.Error(t, ChkSig(a2, h, sig))
 }
 
 func TestSignHash(t *testing.T) {
@@ -390,7 +390,7 @@ func TestSignHash(t *testing.T) {
 	h := SumSHA256(randBytes(t, 256))
 	sig := MustSignHash(h, s)
 	require.NotEqual(t, sig, Sig{})
-	require.Nil(t, ChkSig(a, h, sig))
+	require.NoError(t, ChkSig(a, h, sig))
 }
 
 func TestPubKeyFromSecKey(t *testing.T) {

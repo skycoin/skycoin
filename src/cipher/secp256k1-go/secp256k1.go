@@ -228,7 +228,7 @@ func Sign(msg []byte, seckey []byte) []byte {
 	if secp.SeckeyIsValid(seckey) != 1 {
 		log.Panic("Attempting to sign with invalid seckey")
 	}
-	if msg == nil {
+	if len(msg) == 0 {
 		log.Panic("Sign, message nil")
 	}
 	var nonce = RandByte(32)

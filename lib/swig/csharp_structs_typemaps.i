@@ -28,8 +28,11 @@ return slice;
 		$self->cap = $self->len;
 	}
 
-	char* toString(){
-		return (char *)self->data;
+	_GoString_ toString(){
+		_GoString_ data;
+		data.p = (char *)$self->data; 
+		data.n = $self->len; 
+		return data;
 	}
 }
 

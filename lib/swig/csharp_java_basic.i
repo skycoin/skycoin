@@ -70,4 +70,21 @@
 		}
 	}
 }
+
+int cutSlice(GoSlice_* slice, int start, int end, int elem_size, GoSlice_* result){
+	int size = end - start;
+	if( size <= 0)
+		return 1;
+	void* data = malloc(size * elem_size);
+	if( data == NULL )
+		return 1;
+	registerMemCleanup( data );
+	result->data = data;
+	result->len = size;
+	result->cap = size;
+	char* p = slice->data;
+	p += (elem_size * start);
+	memcpy( data, p, elem_size * size );
+	return 0;
+}
     %}

@@ -71,7 +71,7 @@
 %typemap(cstype,pre=" var tmp$csinput = GoSlice.getCPtr ($csinput);") GoSlice_*  "GoSlice"
 %typemap(csin) GoSlice_*  "GoSlice.getCPtr ($csinput)"
 
-%apply int {GoInt_};
+%apply long long  {GoInt_, GoInt};
 %apply char {byte,GoUint8_};
 
 

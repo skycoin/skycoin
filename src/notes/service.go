@@ -1,6 +1,5 @@
 package notes
 
-
 // Service for Notes
 type Service struct {
 	DataDirectory string

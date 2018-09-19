@@ -8,7 +8,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/skycoin/skycoin/src/notes"
 )
 
 //go:generate go install

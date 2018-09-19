@@ -44,7 +44,6 @@ func teardown(i int) int {
 
 	if err != nil {
 		panic(err)
-		return 1
 	}
 
 	if fi.Size() > 0 {
@@ -53,7 +52,6 @@ func teardown(i int) int {
 
 			if err := os.Remove(noteCFG.NotesPath); err != nil {
 				panic(err)
-				return 1
 			}
 		}
 	}
@@ -95,7 +93,7 @@ func TestAddNotes(t *testing.T) {
 
 	allNotesCount := len(noteServ.GetAll())
 
-	assert.True(t, allNotesCount == (totalNotes + beforeAddCount))
+	assert.True(t, allNotesCount == (totalNotes+beforeAddCount))
 }
 
 func getRndmID(s int) (string, error) {

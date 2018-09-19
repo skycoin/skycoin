@@ -6,7 +6,6 @@ AVOID EDITING THIS MANUALLY
 */
 
 import (
-	"flag"
 	_ "net/http/pprof"
 	"os"
 
@@ -17,7 +16,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.24.1"
+	Version = "{{.Version}}"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -49,8 +48,11 @@ var (
 		"{{$address -}}",
 	{{- end}}
 	}
+)
 
-	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+func main() {
+	// get node config
+	nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
 		GenesisSignatureStr: GenesisSignatureStr,
 		GenesisAddressStr:   GenesisAddressStr,
 		GenesisCoinVolume:   GenesisCoinVolume,
@@ -64,27 +66,18 @@ var (
 		DataDirectory:       "{{.DataDirectory}}",
 	})
 
-	parseFlags = true
-)
-
-func init() {
-	nodeConfig.RegisterFlags()
-}
-
-func main() {
-	if parseFlags {
-		flag.Parse()
-	}
-
 	// create a new fiber coin instance
-	coin := skycoin.NewCoin(skycoin.Config{
-		Node: nodeConfig,
-		Build: readable.BuildInfo{
-			Version: Version,
-			Commit:  Commit,
-			Branch:  Branch,
+	coin := skycoin.NewCoin(
+		skycoin.Config{
+			Node: *nodeConfig,
+			Build: readable.BuildInfo{
+				Version: Version,
+				Commit:  Commit,
+				Branch:  Branch,
+			},
 		},
-	}, logger)
+		logger,
+	)
 
 	// parse config values
 	coin.ParseConfig()

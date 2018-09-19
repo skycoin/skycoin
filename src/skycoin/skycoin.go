@@ -319,14 +319,15 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.GenesisSignature = c.config.Node.genesisSignature
 	dc.Visor.GenesisTimestamp = c.config.Node.GenesisTimestamp
 	dc.Visor.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
+	dc.Visor.DataDirectory = c.config.Node.DataDirectory
 	dc.Visor.DBPath = c.config.Node.DBPath
 	dc.Visor.Arbitrating = c.config.Node.Arbitrating
+	dc.Visor.EnableWalletAPI = c.config.Node.EnableWalletAPI
 	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
-	_, dc.Visor.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsWalletSeed]
+	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
-	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
+	dc.Gateway.EnabledAPISets = c.config.Node.WebInterfaceAPISets
+	dc.Gateway.DisableCSP = c.config.Node.DisableCSP
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
@@ -346,14 +347,13 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 	config := api.Config{
 		StaticDir:            c.config.Node.GUIDirectory,
 		DisableCSRF:          c.config.Node.DisableCSRF,
-		DisableCSP:           c.config.Node.DisableCSP,
+		EnableWalletAPI:      c.config.Node.EnableWalletAPI,
 		EnableJSON20RPC:      c.config.Node.RPCInterface,
 		EnableGUI:            c.config.Node.EnableGUI,
 		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,
 		ReadTimeout:          c.config.Node.ReadTimeout,
 		WriteTimeout:         c.config.Node.WriteTimeout,
 		IdleTimeout:          c.config.Node.IdleTimeout,
-		EnabledAPISets:       c.config.Node.enabledAPISets,
 		BuildInfo: readable.BuildInfo{
 			Version: c.config.Build.Version,
 			Commit:  c.config.Build.Commit,

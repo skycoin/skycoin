@@ -129,9 +129,41 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	golangci-lint run -c .golangci.yml ./...
-	# lib/cgo needs separate linting rules
-	golangci-lint run -c .golangci.libcgo.yml ./lib/cgo/...
+	golangci-lint run --no-config --deadline=3m --disable-all --tests --skip-dirs=lib/cgo \
+		-E golint \
+		-E goimports \
+		-E varcheck \
+		-E unparam \
+		-E structcheck \
+		-E errcheck \
+		-E gosimple \
+		-E staticcheck \
+		-E unused \
+		-E ineffassign \
+		-E typecheck \
+		-E gas \
+		-E megacheck \
+		-E misspell \
+		-E nakedret \
+		./...
+	# lib/cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
+	# deadcode also doesn't make sense for lib/cgo
+	golangci-lint run --no-config --deadline=3m --disable-all --tests \
+		-E goimports \
+		-E varcheck \
+		-E unparam \
+		-E structcheck \
+		-E errcheck \
+		-E gosimple \
+		-E staticcheck \
+		-E unused \
+		-E ineffassign \
+		-E typecheck \
+		-E gas \
+		-E megacheck \
+		-E misspell \
+		-E nakedret \
+		./lib/cgo/...
 	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
 

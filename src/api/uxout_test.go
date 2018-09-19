@@ -118,6 +118,8 @@ func TestGetUxOutByID(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/uxout"
 			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
+			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "UX", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -143,7 +145,7 @@ func TestGetUxOutByID(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -170,16 +172,16 @@ func TestGetAddrUxOuts(t *testing.T) {
 	}
 
 	tt := []struct {
-		name                                string
-		method                              string
-		status                              int
-		err                                 string
-		httpBody                            *httpBody
-		getSpentOutputsForAddressesArg      []cipher.Address
-		getSpentOutputsForAddressesResponse [][]historydb.UxOut
-		getSpentOutputsForAddressesError    error
-		httpResponse                        []readable.SpentOutput
-		csrfDisabled                        bool
+		name                  string
+		method                string
+		status                int
+		err                   string
+		httpBody              *httpBody
+		getAddrUxOutsArg      []cipher.Address
+		getAddrUxOutsResponse []historydb.UxOut
+		getAddrUxOutsError    error
+		httpResponse          []readable.SpentOutput
+		csrfDisabled          bool
 	}{
 		{
 			name:   "405",
@@ -206,15 +208,15 @@ func TestGetAddrUxOuts(t *testing.T) {
 			},
 		},
 		{
-			name:   "400 - gateway.GetSpentOutputsForAddresses error",
+			name:   "400 - gateway.GetAddrUxOuts error",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - getSpentOutputsForAddressesError",
+			err:    "400 Bad Request - getAddrUxOutsError",
 			httpBody: &httpBody{
 				address: addressForGwError.String(),
 			},
-			getSpentOutputsForAddressesArg:   []cipher.Address{addressForGwError},
-			getSpentOutputsForAddressesError: errors.New("getSpentOutputsForAddressesError"),
+			getAddrUxOutsArg:   []cipher.Address{addressForGwError},
+			getAddrUxOutsError: errors.New("getAddrUxOutsError"),
 		},
 		{
 			name:   "200",
@@ -223,9 +225,9 @@ func TestGetAddrUxOuts(t *testing.T) {
 			httpBody: &httpBody{
 				address: addressForGwResponse.String(),
 			},
-			getSpentOutputsForAddressesArg:      []cipher.Address{addressForGwResponse},
-			getSpentOutputsForAddressesResponse: [][]historydb.UxOut{{}},
-			httpResponse:                        []readable.SpentOutput{},
+			getAddrUxOutsArg:      []cipher.Address{addressForGwResponse},
+			getAddrUxOutsResponse: []historydb.UxOut{},
+			httpResponse:          []readable.SpentOutput{},
 		},
 	}
 
@@ -233,7 +235,9 @@ func TestGetAddrUxOuts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
 			gateway := &MockGatewayer{}
-			gateway.On("GetSpentOutputsForAddresses", tc.getSpentOutputsForAddressesArg).Return(tc.getSpentOutputsForAddressesResponse, tc.getSpentOutputsForAddressesError)
+			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
+			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "UX", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -257,7 +261,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

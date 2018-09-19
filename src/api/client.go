@@ -475,12 +475,12 @@ func (c *Client) BlockchainProgress() (*readable.BlockchainProgress, error) {
 }
 
 // Balance makes a request to GET /api/v1/balance?addrs=xxx
-func (c *Client) Balance(addrs []string) (*BalanceResponse, error) {
+func (c *Client) Balance(addrs []string) (*readable.BalancePair, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/balance?" + v.Encode()
 
-	var b BalanceResponse
+	var b readable.BalancePair
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

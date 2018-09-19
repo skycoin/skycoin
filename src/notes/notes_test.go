@@ -1,19 +1,17 @@
 package notes
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"os"
 	"testing"
-
+	"crypto/rand"
 	"github.com/stretchr/testify/assert"
-
+	"os"
 	"github.com/skycoin/skycoin/src/cipher"
+	"encoding/base64"
 )
 
 var (
-	noteServ *Service
-	noteCFG  = Config{
+	noteServ     *Service
+	noteCFG      = Config{
 		NotesPath: "transactionnotes_temp.json",
 	}
 )
@@ -24,7 +22,10 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	os.Exit(teardown(m.Run()))
+	defer teardown()
+	defer os.Exit(1)
+
+	m.Run()
 }
 
 func TestNewService(t *testing.T) {
@@ -39,31 +40,16 @@ func TestNewService(t *testing.T) {
 	assert.NotNil(t, noteServ)
 }
 
-func teardown(i int) int {
-	fi, err := os.Stat(noteCFG.NotesPath)
+func teardown() {
+	err := os.Remove(noteCFG.NotesPath)
 
 	if err != nil {
 		panic(err)
-		return 1
+		return
 	}
-
-	if fi.Size() > 0 {
-
-		if fi != nil {
-
-			if err := os.Remove(noteCFG.NotesPath); err != nil {
-				panic(err)
-				return 1
-			}
-		}
-	}
-
-	return i
 }
 
 func TestAddNotes(t *testing.T) {
-	beforeAddCount := len(noteServ.GetAll())
-
 	for i := 0; i < totalNotes; i++ {
 		key, err := generateRandomBytes(txIDByteLength)
 		if err != nil {
@@ -95,7 +81,7 @@ func TestAddNotes(t *testing.T) {
 
 	allNotesCount := len(noteServ.GetAll())
 
-	assert.True(t, allNotesCount == (totalNotes+beforeAddCount))
+	assert.True(t, allNotesCount == totalNotes)
 }
 
 func getRndmID(s int) (string, error) {
@@ -110,6 +96,7 @@ func getRndmID(s int) (string, error) {
 func generateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
 	if err != nil {
 		return nil, err
 	}

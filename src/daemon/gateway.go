@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/notes"
 )
 
 var (
@@ -874,4 +875,25 @@ func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, 
 		uxs, isTxnConfirmed, err = gw.v.VerifyTxnVerbose(txn)
 	})
 	return uxs, isTxnConfirmed, err
+}
+
+// GetAllNotes returns all notes that have been saved locally
+func (gw *Gateway) GetAllNotes() []notes.Note {
+	return gw.v.GetAllNotes()
+}
+
+// GetNoteByTxID returns a note depending on the transactionId.
+// If no Note could be found via TransId -> returns empty notes.Note
+func (gw *Gateway) GetNoteByTxID(txID string) notes.Note {
+	return gw.v.GetNoteByTxID(txID)
+}
+
+// AddNote adds a Note
+func (gw *Gateway) AddNote(notes notes.Note) error {
+	return gw.v.AddNote(notes)
+}
+
+// RemoveNote removes a Note
+func (gw *Gateway) RemoveNote(txID string) error {
+	return gw.v.RemoveNote(txID)
 }

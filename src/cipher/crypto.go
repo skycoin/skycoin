@@ -35,26 +35,21 @@ func NewPubKey(b []byte) (PubKey, error) {
 		return PubKey{}, errors.New("Invalid public key length")
 	}
 	copy(p[:], b[:])
+
+	if err := p.Verify(); err != nil {
+		return PubKey{}, err
+	}
+
 	return p, nil
 }
 
-// MustNewPubKey converts []byte to a PubKey. Panics is []byte is not the exact size
+// MustNewPubKey converts []byte to a PubKey, panics on error
 func MustNewPubKey(b []byte) PubKey {
-	p := PubKey{}
-	if len(b) != len(p) {
-		log.Panic("Invalid public key length")
-	}
-	copy(p[:], b[:])
-	return p
-}
-
-// MustPubKeyFromHex decodes a hex encoded PubKey, or panics
-func MustPubKeyFromHex(s string) PubKey {
-	b, err := hex.DecodeString(s)
+	p, err := NewPubKey(b)
 	if err != nil {
 		log.Panic(err)
 	}
-	return MustNewPubKey(b)
+	return p
 }
 
 // PubKeyFromHex generates PubKey from hex string
@@ -64,6 +59,15 @@ func PubKeyFromHex(s string) (PubKey, error) {
 		return PubKey{}, errors.New("Invalid public key")
 	}
 	return NewPubKey(b)
+}
+
+// MustPubKeyFromHex decodes a hex encoded PubKey, panics on error
+func MustPubKeyFromHex(s string) PubKey {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		log.Panic(err)
+	}
+	return MustNewPubKey(b)
 }
 
 // PubKeyFromSecKey recovers the public key for a secret key
@@ -126,16 +130,22 @@ func NewSecKey(b []byte) (SecKey, error) {
 		return SecKey{}, errors.New("Invalid secret key length")
 	}
 	copy(p[:], b[:])
+
+	// Disable the DebugLevel2 check here because it is too slow.
+	// If desired, perform the full Verify() check after using this method
+	if err := p.verify(false); err != nil {
+		return SecKey{}, err
+	}
+
 	return p, nil
 }
 
 // MustNewSecKey converts []byte to a SecKey. Panics is []byte is not the exact size
 func MustNewSecKey(b []byte) SecKey {
-	p := SecKey{}
-	if len(b) != len(p) {
-		log.Panic("Invalid secret key length")
+	p, err := NewSecKey(b)
+	if err != nil {
+		log.Panic(err)
 	}
-	copy(p[:], b[:])
 	return p
 }
 
@@ -160,15 +170,20 @@ func SecKeyFromHex(s string) (SecKey, error) {
 // Verify attempts to determine if SecKey is valid. Returns nil on success.
 // If DebugLevel2, will do additional sanity checking
 func (sk SecKey) Verify() error {
+	return sk.verify(DebugLevel2)
+}
+
+func (sk SecKey) verify(debugLevel2Check bool) error {
 	if secp256k1.VerifySeckey(sk[:]) != 1 {
 		return errors.New("Invalid secret key")
 	}
-	if DebugLevel2 {
-		err := TestSecKey(sk)
-		if err != nil {
+
+	if debugLevel2Check {
+		if err := CheckSecKey(sk); err != nil {
 			log.Panicf("DebugLevel2, WARNING CRYPTO ARMAGEDDON: %v", err)
 		}
 	}
+
 	return nil
 }
 
@@ -186,20 +201,29 @@ func (sk SecKey) Hex() string {
 // person B computes cipher.ECDH(pub1, sec2)
 // cipher.ECDH(pub2, sec1) equals cipher.ECDH(pub1, sec2)
 // This is their shared secret
-func ECDH(pub PubKey, sec SecKey) []byte {
+func ECDH(pub PubKey, sec SecKey) ([]byte, error) {
 	if err := pub.Verify(); err != nil {
-		log.Panic("ECDH invalid pubkey input")
+		return nil, errors.New("ECDH invalid pubkey input")
 	}
 
-	// WARNING: This calls TestSecKey if DebugLevel2 is set to true.
-	// TestSecKey is extremely slow and will kill performance if ECDH is called frequently
-	if err := sec.Verify(); err != nil {
-		log.Panic("ECDH invalid seckey input")
+	// Don't perform the DebugLevel2 verification check for the secret key,
+	// it is too slow to use in an ECDH context and is not important for that use case
+	if err := sec.verify(false); err != nil {
+		return nil, errors.New("ECDH invalid seckey input")
 	}
 
 	buff := secp256k1.ECDH(pub[:], sec[:])
-	ret := SumSHA256(buff) //hash this so they cant screw up
-	return ret[:]
+	ret := SumSHA256(buff) // hash this so they cant screw up
+	return ret[:], nil
+}
+
+// MustECDH calls ECDH and panics on error
+func MustECDH(pub PubKey, sec SecKey) []byte {
+	r, err := ECDH(pub, sec)
+	if err != nil {
+		log.Panic(err)
+	}
+	return r
 }
 
 // Sig signature
@@ -248,11 +272,24 @@ func (s Sig) Hex() string {
 	return hex.EncodeToString(s[:])
 }
 
-// MustSignHash sign hash, panics on error
-func MustSignHash(hash SHA256, sec SecKey) Sig {
-	sig := MustNewSig(secp256k1.Sign(hash[:], sec[:]))
+// SignHash sign hash
+func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+	if secp256k1.VerifySeckey(sec[:]) != 1 {
+		// can't use sec.Verify() because that calls SignHash again, with DebugLevel2 set
+		return Sig{}, errors.New("Invalid secret key")
+	}
 
-	if DebugLevel2 || DebugLevel1 { // !!! Guard against coin loss
+	s := secp256k1.Sign(hash[:], sec[:])
+
+	sig, err := NewSig(s)
+	if err != nil {
+		return Sig{}, err
+	}
+
+	if DebugLevel2 || DebugLevel1 {
+		// Guard against coin loss;
+		// if the generated signature is somehow invalid, coins would be lost,
+		// make sure that the signature is valid
 		pubkey, err := PubKeyFromSig(sig, hash)
 		if err != nil {
 			log.Panic("MustSignHash error: pubkey from sig recovery failure")
@@ -263,6 +300,16 @@ func MustSignHash(hash SHA256, sec SecKey) Sig {
 		if ChkSig(AddressFromPubKey(pubkey), hash, sig) != nil {
 			log.Panic("MustSignHash error: ChkSig failed for signature")
 		}
+	}
+
+	return sig, nil
+}
+
+// MustSignHash sign hash, panics on error
+func MustSignHash(hash SHA256, sec SecKey) Sig {
+	sig, err := SignHash(hash, sec)
+	if err != nil {
+		log.Panic(err)
 	}
 	return sig
 }
@@ -352,8 +399,12 @@ func GenerateKeyPair() (PubKey, SecKey) {
 	}
 
 	if DebugLevel1 {
-		if err := TestSecKey(secKey); err != nil {
-			log.Panicf("DebugLevel1, GenerateKeyPair, generated private key failed TestSecKey: %v", err)
+		if err := CheckSecKey(secKey); err != nil {
+			log.Panicf("DebugLevel1, GenerateKeyPair, generated private key failed CheckSecKey: %v", err)
+		}
+
+		if MustPubKeyFromSecKey(secKey) != pubKey {
+			log.Panic("DebugLevel1, GenerateKeyPair, public key does not match private key")
 		}
 	}
 
@@ -379,8 +430,8 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey, error) {
 	}
 
 	if DebugLevel1 {
-		if err := TestSecKey(secKey); err != nil {
-			log.Panicf("DebugLevel1, GenerateDeterministicKeyPair, TestSecKey failed: %v", err)
+		if err := CheckSecKey(secKey); err != nil {
+			log.Panicf("DebugLevel1, GenerateDeterministicKeyPair, CheckSecKey failed: %v", err)
 		}
 
 		if MustPubKeyFromSecKey(secKey) != pubKey {
@@ -414,8 +465,8 @@ func DeterministicKeyPairIterator(seed []byte) ([]byte, PubKey, SecKey, error) {
 	pubKey := MustNewPubKey(public)
 
 	if DebugLevel1 {
-		if err := TestSecKey(secKey); err != nil {
-			log.Panicf("DebugLevel1, DeterministicKeyPairIterator, TestSecKey failed: %v", err)
+		if err := CheckSecKey(secKey); err != nil {
+			log.Panicf("DebugLevel1, DeterministicKeyPairIterator, CheckSecKey failed: %v", err)
 		}
 
 		if MustPubKeyFromSecKey(secKey) != pubKey {
@@ -476,16 +527,16 @@ func MustGenerateDeterministicKeyPairsSeed(seed []byte, n int) ([]byte, []SecKey
 	return newSeed, keys
 }
 
-// TestSecKey test seckey hash
-func TestSecKey(seckey SecKey) error {
+// CheckSecKey test seckey hash
+func CheckSecKey(seckey SecKey) error {
 	hash := SumSHA256([]byte(time.Now().String()))
-	return TestSecKeyHash(seckey, hash)
+	return CheckSecKeyHash(seckey, hash)
 }
 
-// TestSecKeyHash performs a series of tests to determine if a seckey is valid.
-// All generated keys and keys loaded from disc must pass the TestSecKey suite.
+// CheckSecKeyHash performs a series of tests to determine if a seckey is valid.
+// All generated keys and keys loaded from disc must pass the CheckSecKey suite.
 // TestPrivKey returns error if a key fails any test in the test suite.
-func TestSecKeyHash(seckey SecKey, hash SHA256) error {
+func CheckSecKeyHash(seckey SecKey, hash SHA256) error {
 	// check seckey with verify
 	if secp256k1.VerifySeckey(seckey[:]) != 1 {
 		return errors.New("Seckey verification failed")
@@ -497,15 +548,19 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 		return err
 	}
 	if pubkey == (PubKey{}) {
-		return errors.New("impossible error, TestSecKey, nil pubkey recovered")
+		return errors.New("impossible error, CheckSecKey, nil pubkey recovered")
 	}
 	// verify recovered pubkey
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
-		return errors.New("impossible error, TestSecKey, Derived Pubkey verification failed")
+		return errors.New("impossible error, CheckSecKey, Derived Pubkey verification failed")
 	}
 
 	// check signature production
-	sig := MustSignHash(hash, seckey)
+	sig, err := SignHash(hash, seckey)
+	if err != nil {
+		return fmt.Errorf("SignHash failed: %v", err)
+	}
+
 	pubkey2, err := PubKeyFromSig(sig, hash)
 	if err != nil {
 		return fmt.Errorf("PubKeyFromSig failed: %v", err)
@@ -517,23 +572,23 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	// check pubkey recovered from sig
 	recoveredPubkey, err := PubKeyFromSig(sig, hash)
 	if err != nil {
-		return fmt.Errorf("impossible error, TestSecKey, pubkey recovery from signature failed: %v", err)
+		return fmt.Errorf("impossible error, CheckSecKey, pubkey recovery from signature failed: %v", err)
 	}
 	if pubkey != recoveredPubkey {
-		return errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
+		return errors.New("impossible error CheckSecKey, pubkey does not match recovered pubkey")
 	}
 
 	// verify produced signature
 	err = VerifySignature(pubkey, sig, hash)
 	if err != nil {
-		return fmt.Errorf("impossible error, TestSecKey, verify signature failed for sig: %v", err)
+		return fmt.Errorf("impossible error, CheckSecKey, verify signature failed for sig: %v", err)
 	}
 
 	// verify ChkSig
 	addr := AddressFromPubKey(pubkey)
 	err = ChkSig(addr, hash, sig)
 	if err != nil {
-		return fmt.Errorf("impossible error TestSecKey, ChkSig Failed, should not get this far: %v", err)
+		return fmt.Errorf("impossible error CheckSecKey, ChkSig Failed, should not get this far: %v", err)
 	}
 
 	// verify VerifySignedHash
@@ -557,8 +612,11 @@ func init() {
 	}
 
 	// Do not allow program to start if crypto tests fail
-	_, seckey := GenerateKeyPair()
-	if err := TestSecKey(seckey); err != nil {
+	pubkey, seckey := GenerateKeyPair()
+	if err := CheckSecKey(seckey); err != nil {
 		log.Fatalf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)
+	}
+	if MustPubKeyFromSecKey(seckey) != pubkey {
+		log.Fatal("DebugLevel1, GenerateKeyPair, public key does not match private key")
 	}
 }

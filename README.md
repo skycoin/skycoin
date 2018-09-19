@@ -302,7 +302,7 @@ need to start a skycoin node:
 After the skycoin node is up, run the following command to start the live tests:
 
 ```sh
-./ci-scripts/integration-test-live.sh -v
+./ci-scripts/integration-test.live.sh -v
 ```
 
 The above command will run all tests except the wallet related tests. To run wallet tests, we

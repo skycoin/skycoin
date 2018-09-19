@@ -44,6 +44,7 @@ func teardown(i int) int {
 
 	if err != nil {
 		panic(err)
+		return 1
 	}
 
 	if fi.Size() > 0 {
@@ -52,6 +53,7 @@ func teardown(i int) int {
 
 			if err := os.Remove(noteCFG.NotesPath); err != nil {
 				panic(err)
+				return 1
 			}
 		}
 	}

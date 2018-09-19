@@ -420,9 +420,31 @@ func TestSignHash(t *testing.T) {
 	p, s := GenerateKeyPair()
 	a := AddressFromPubKey(p)
 	h := SumSHA256(randBytes(t, 256))
+	sig, err := SignHash(h, s)
+	require.NoError(t, err)
+	require.NotEqual(t, sig, Sig{})
+	require.NoError(t, ChkSig(a, h, sig))
+	require.NoError(t, VerifySignature(p, sig, h))
+
+	p2, err := PubKeyFromSig(sig, h)
+	require.NoError(t, err)
+	require.Equal(t, p, p2)
+
+	_, err = SignHash(h, SecKey{})
+	require.Equal(t, errors.New("Invalid secret key"), err)
+}
+
+func TestMustSignHash(t *testing.T) {
+	p, s := GenerateKeyPair()
+	a := AddressFromPubKey(p)
+	h := SumSHA256(randBytes(t, 256))
 	sig := MustSignHash(h, s)
 	require.NotEqual(t, sig, Sig{})
 	require.NoError(t, ChkSig(a, h, sig))
+
+	require.Panics(t, func() {
+		MustSignHash(h, SecKey{})
+	})
 }
 
 func TestPubKeyFromSecKey(t *testing.T) {

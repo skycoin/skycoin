@@ -257,11 +257,24 @@ func (s Sig) Hex() string {
 	return hex.EncodeToString(s[:])
 }
 
-// MustSignHash sign hash, panics on error
-func MustSignHash(hash SHA256, sec SecKey) Sig {
-	sig := MustNewSig(secp256k1.Sign(hash[:], sec[:]))
+// SignHash sign hash
+func SignHash(hash SHA256, sec SecKey) (Sig, error) {
+	if secp256k1.VerifySeckey(sec[:]) != 1 {
+		// can't use sec.Verify() because that calls SignHash again, with DebugLevel2 set
+		return Sig{}, errors.New("Invalid secret key")
+	}
 
-	if DebugLevel2 || DebugLevel1 { // !!! Guard against coin loss
+	s := secp256k1.Sign(hash[:], sec[:])
+
+	sig, err := NewSig(s)
+	if err != nil {
+		return Sig{}, err
+	}
+
+	if DebugLevel2 || DebugLevel1 {
+		// Guard against coin loss;
+		// if the generated signature is somehow invalid, coins would be lost,
+		// make sure that the signature is valid
 		pubkey, err := PubKeyFromSig(sig, hash)
 		if err != nil {
 			log.Panic("MustSignHash error: pubkey from sig recovery failure")
@@ -272,6 +285,16 @@ func MustSignHash(hash SHA256, sec SecKey) Sig {
 		if ChkSig(AddressFromPubKey(pubkey), hash, sig) != nil {
 			log.Panic("MustSignHash error: ChkSig failed for signature")
 		}
+	}
+
+	return sig, nil
+}
+
+// MustSignHash sign hash, panics on error
+func MustSignHash(hash SHA256, sec SecKey) Sig {
+	sig, err := SignHash(hash, sec)
+	if err != nil {
+		log.Panic(err)
 	}
 	return sig
 }
@@ -514,7 +537,11 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	}
 
 	// check signature production
-	sig := MustSignHash(hash, seckey)
+	sig, err := SignHash(hash, seckey)
+	if err != nil {
+		return fmt.Errorf("SignHash failed: %v", err)
+	}
+
 	pubkey2, err := PubKeyFromSig(sig, hash)
 	if err != nil {
 		return fmt.Errorf("PubKeyFromSig failed: %v", err)

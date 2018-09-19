@@ -1,13 +1,13 @@
 package api
 
+
 import (
+	"net/http"
+	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/notes"
+	"github.com/skycoin/skycoin/src/cipher"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/notes"
-	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
 // URI: /api/v1/notes/notes

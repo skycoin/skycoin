@@ -45,3 +45,27 @@
 		return result;
 	}
 }
+
+%rename(SKY_cipher_SHA256_Set) CSharp_skycoin_SKY_cipher_SHA256_Set;
+%inline {
+	GoUint32 CSharp_skycoin_SKY_cipher_SHA256_Set(cipher_SHA256 *h,GoSlice s){
+		GoUint32 result = SKY_cipher_SHA256_Set(h,s);
+		return result;
+	}
+}
+
+%rename(SKY_cipher_SHA256_Hex) CSharp_skycoin_SKY_cipher_SHA256_Hex;
+%inline {
+	GoUint32 CSharp_skycoin_SKY_cipher_SHA256_Hex(cipher_SHA256 *h,GoString_* s){
+		GoUint32 result = SKY_cipher_SHA256_Hex(h,s);
+		return result;
+	}
+}
+
+%rename(SKY_cipher_SHA256FromHex) CSharp_skycoin_SKY_cipher_SHA256FromHex;
+%inline {
+	GoUint32 CSharp_skycoin_SKY_cipher_SHA256FromHex(GoString s,cipher_SHA256 *h){
+		GoUint32 result = SKY_cipher_SHA256FromHex(s,h);
+		return result;
+	}
+}

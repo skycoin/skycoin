@@ -72,7 +72,6 @@
 %typemap(csin) GoSlice_*  "GoSlice.getCPtr ($csinput)"
 
 %apply long long  {GoInt_, GoInt};
-%apply char {byte,GoUint8_};
 
 
 

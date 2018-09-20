@@ -26,6 +26,12 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+const (
+	// Any client upgrading from less than this version to equal or higher than this version will be forced to verify.
+	// Update this version checkpoint if a newer version requires a new verification run.
+	dbVerifyCheckpointVersion = "0.25.0"
+)
+
 // Coin represents a fiber coin instance
 type Coin struct {
 	config Config
@@ -480,7 +486,7 @@ func createDirIfNotExist(dir string) error {
 
 func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
 	// Update this version to a newer version if the newer version requires a new verification scan
-	checkpointVersion := semver.MustParse("0.25.0")
+	checkpointVersion := semver.MustParse(dbVerifyCheckpointVersion)
 
 	// If the dbVersion is not set, verify
 	if dbVersion == nil {

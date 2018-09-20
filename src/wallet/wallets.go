@@ -49,9 +49,8 @@ func LoadWallets(dir string) (Wallets, error) {
 			if isLoaded, fileName := isWalletLoaded(wallets, w); isLoaded {
 				err = fmt.Errorf("Duplicate Walletfiles: '" + fileName + "' && '" + name + "'")
 				return nil, err
-			} else {
-				wallets[name] = w
 			}
+			wallets[name] = w
 		}
 	}
 	return wallets, nil
@@ -61,14 +60,8 @@ func isWalletLoaded(wlts Wallets, wlt *Wallet) (bool, string) {
 	logger.Info("Checking if Wallet is already loaded...")
 	for _, wltItem := range wlts {
 
-		if wltItem.IsEncrypted() && wlt.IsEncrypted() {
-			if wltItem.secrets() == wlt.secrets() {
-				return true, wltItem.Filename()
-			}
-		} else if !wltItem.IsEncrypted() && !wlt.IsEncrypted() {
-			if wltItem.seed() == wlt.seed() {
-				return true, wltItem.Filename()
-			}
+		if len(wltItem.Entries) >= len(wlt.Entries) {
+			return true, wltItem.Filename()
 		}
 	}
 	return false, ""

@@ -14,6 +14,7 @@ import { Address, NormalTransaction, PreviewTransaction, Wallet } from '../app.d
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { BigNumber } from 'bignumber.js';
 
 @Injectable()
 export class WalletService {
@@ -153,7 +154,7 @@ export class WalletService {
     ).map(response => {
       return {
         ...response.transaction,
-        hoursBurned: response.transaction.fee,
+        hoursBurned: new BigNumber(response.transaction.fee),
         encoded: response.encoded_transaction,
       };
     });
@@ -221,12 +222,17 @@ export class WalletService {
               .filter((dst, i, self) => self.indexOf(dst) === i),
           );
 
-          transaction.balance += calculatedOutputs.reduce((a, b) => a + parseFloat(b.coins), 0) * (outgoing ? -1 : 1);
-          transaction.hoursSent = calculatedOutputs.reduce((a, b) => a + b.hours, 0);
+          calculatedOutputs.map (output => transaction.balance = transaction.balance.plus(output.coins));
+          transaction.balance = (outgoing ? transaction.balance.negated() : transaction.balance);
 
-          const inputsHours = transaction.inputs.reduce((a, b) => a + b.calculated_hours, 0);
-          const outputsHours = transaction.outputs.reduce((a, b) => a + b.hours, 0);
-          transaction.hoursBurned = inputsHours - outputsHours;
+          transaction.hoursSent = new BigNumber('0');
+          calculatedOutputs.map(output => transaction.hoursSent = transaction.hoursSent.plus(new BigNumber(output.hours)));
+
+          let inputsHours = new BigNumber('0');
+          transaction.inputs.map(input => inputsHours = inputsHours.plus(new BigNumber(input.calculated_hours)));
+          let outputsHours = new BigNumber('0');
+          transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
+          transaction.hoursBurned = inputsHours.minus(outputsHours);
 
           return transaction;
         });
@@ -261,12 +267,12 @@ export class WalletService {
   private retrieveWalletBalance(wallet: Wallet): Observable<any> {
     return this.apiService.get('wallet/balance', { id: wallet.filename }).map(balance => {
       return {
-        coins: balance.confirmed.coins / 1000000,
-        hours: balance.confirmed.hours,
+        coins: new BigNumber(balance.confirmed.coins).dividedBy(1000000),
+        hours: new BigNumber(balance.confirmed.hours),
         addresses: Object.keys(balance.addresses).map(address => ({
           address,
-          coins: balance.addresses[address].confirmed.coins / 1000000,
-          hours: balance.addresses[address].confirmed.hours,
+          coins: new BigNumber(balance.addresses[address].confirmed.coins).dividedBy(1000000),
+          hours: new BigNumber(balance.addresses[address].confirmed.hours),
         })),
       };
     });

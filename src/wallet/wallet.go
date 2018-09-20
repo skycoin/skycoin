@@ -804,6 +804,10 @@ func (w *Wallet) coin() CoinType {
 	return CoinType(w.Meta[metaCoin])
 }
 
+func (w *Wallet) setCoin(c CoinType) {
+	w.Meta[metaCoin] = string(c)
+}
+
 func (w *Wallet) setEncrypted(encrypt bool) {
 	w.Meta[metaEncrypted] = strconv.FormatBool(encrypt)
 }

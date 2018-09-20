@@ -73,6 +73,7 @@ import { NavBarService } from './services/nav-bar.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
+import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 
 
 const ROUTES = [
@@ -174,6 +175,7 @@ const ROUTES = [
     LoadingContentComponent,
     NumberOfAddressesComponent,
     SelectAddressComponent,
+    CreateWalletFormComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

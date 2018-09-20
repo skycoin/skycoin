@@ -2814,3 +2814,236 @@ func cloneEntries(es []wallet.Entry) []wallet.Entry {
 	entries = append(entries, es...)
 	return entries
 }
+
+func TestWalletRecover(t *testing.T) {
+	type gatewayReturnPair struct {
+		w   *wallet.Wallet
+		err error
+	}
+
+	okWalletUnencrypted, err := wallet.NewWallet("foo", wallet.Options{
+		Coin:      wallet.CoinTypeSkycoin,
+		Label:     "foolabel",
+		Seed:      "fooseed",
+		GenerateN: 10,
+	})
+	require.NoError(t, err)
+	okWalletUnencryptedResponse, err := NewWalletResponse(okWalletUnencrypted)
+	require.NoError(t, err)
+
+	okWalletEncrypted, err := wallet.NewWallet("foo", wallet.Options{
+		Coin:       wallet.CoinTypeSkycoin,
+		Label:      "foolabel",
+		Seed:       "fooseed",
+		Encrypt:    true,
+		Password:   []byte("foopassword"),
+		CryptoType: wallet.CryptoTypeScryptChacha20poly1305,
+		GenerateN:  10,
+	})
+	require.NoError(t, err)
+	okWalletEncryptedResponse, err := NewWalletResponse(okWalletEncrypted)
+	require.NoError(t, err)
+
+	cases := []struct {
+		name          string
+		method        string
+		status        int
+		contentType   string
+		req           *WalletRecoverRequest
+		httpBody      string
+		httpResponse  HTTPResponse
+		gatewayReturn gatewayReturnPair
+	}{
+		{
+			name:         "method not allowed",
+			method:       http.MethodGet,
+			status:       http.StatusMethodNotAllowed,
+			contentType:  "application/json",
+			httpBody:     toJSON(t, WalletRecoverRequest{}),
+			httpResponse: NewHTTPErrorResponse(http.StatusMethodNotAllowed, "Method Not Allowed"),
+		},
+		{
+			name:         "wrong content-type",
+			method:       http.MethodPost,
+			status:       http.StatusUnsupportedMediaType,
+			contentType:  "application/x-www-form-urlencoded",
+			httpBody:     toJSON(t, WalletRecoverRequest{}),
+			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "Unsupported Media Type"),
+		},
+		{
+			name:         "empty json body",
+			method:       http.MethodPost,
+			status:       http.StatusBadRequest,
+			contentType:  "application/json",
+			httpBody:     "",
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "EOF"),
+		},
+		{
+			name:        "id missing",
+			method:      http.MethodPost,
+			status:      http.StatusBadRequest,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				Seed: "fooseed",
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "id is required"),
+		},
+		{
+			name:        "seed missing",
+			method:      http.MethodPost,
+			status:      http.StatusBadRequest,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				ID: "foo",
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "seed is required"),
+		},
+		{
+			name:        "wallet not encrypted",
+			method:      http.MethodPost,
+			status:      http.StatusBadRequest,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				ID:   "foo",
+				Seed: "fooseed",
+			},
+			gatewayReturn: gatewayReturnPair{
+				err: wallet.ErrWalletNotEncrypted,
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, wallet.ErrWalletNotEncrypted.Error()),
+		},
+		{
+			name:        "wallet seed wrong",
+			method:      http.MethodPost,
+			status:      http.StatusBadRequest,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				ID:   "foo",
+				Seed: "fooseed",
+			},
+			gatewayReturn: gatewayReturnPair{
+				err: wallet.ErrWalletRecoverSeedWrong,
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, wallet.ErrWalletRecoverSeedWrong.Error()),
+		},
+		{
+			name:        "wallet does not exist",
+			method:      http.MethodPost,
+			status:      http.StatusNotFound,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				ID:   "foo",
+				Seed: "fooseed",
+			},
+			gatewayReturn: gatewayReturnPair{
+				err: wallet.ErrWalletNotExist,
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusNotFound, "Not Found"),
+		},
+		{
+			name:        "wallet other error",
+			method:      http.MethodPost,
+			status:      http.StatusInternalServerError,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				ID:   "foo",
+				Seed: "fooseed",
+			},
+			gatewayReturn: gatewayReturnPair{
+				err: errors.New("wallet error"),
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusInternalServerError, "wallet error"),
+		},
+		{
+			name:        "ok, no password",
+			method:      http.MethodPost,
+			status:      http.StatusOK,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				ID:   "foo",
+				Seed: "fooseed",
+			},
+			gatewayReturn: gatewayReturnPair{
+				w: okWalletUnencrypted,
+			},
+			httpResponse: HTTPResponse{
+				Data: *okWalletUnencryptedResponse,
+			},
+		},
+		{
+			name:        "ok, password",
+			method:      http.MethodPost,
+			status:      http.StatusOK,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				ID:       "foo",
+				Seed:     "fooseed",
+				Password: "foopassword",
+			},
+			gatewayReturn: gatewayReturnPair{
+				w: okWalletEncrypted,
+			},
+			httpResponse: HTTPResponse{
+				Data: *okWalletEncryptedResponse,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			if tc.req != nil {
+				var password []byte
+				if tc.req.Password != "" {
+					password = []byte(tc.req.Password)
+				}
+				gateway.On("RecoverWallet", tc.req.ID, tc.req.Seed, password).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
+			}
+
+			if tc.httpBody == "" && tc.req != nil {
+				tc.httpBody = toJSON(t, tc.req)
+			}
+
+			endpoint := "/api/v2/wallet/recover"
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			require.NoError(t, err)
+
+			contentType := tc.contentType
+			if contentType == "" {
+				contentType = "application/json"
+			}
+
+			req.Header.Set("Content-Type", contentType)
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
+			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+			var rsp ReceivedHTTPResponse
+			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.httpResponse.Error, rsp.Error)
+
+			if rsp.Data == nil {
+				require.Nil(t, tc.httpResponse.Data)
+			} else {
+				require.NotNil(t, tc.httpResponse.Data)
+
+				var wltRsp WalletResponse
+				err := json.Unmarshal(rsp.Data, &wltRsp)
+				require.NoError(t, err)
+
+				require.Equal(t, tc.httpResponse.Data.(WalletResponse), wltRsp)
+			}
+		})
+	}
+}

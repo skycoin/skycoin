@@ -3,6 +3,7 @@ package api
 // APIs for wallet-related information
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -133,7 +134,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // Args:
 //     addrs: command separated list of addresses [required]
-func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
+func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -299,6 +300,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
 // Loads wallet from seed, will scan ahead N address and
 // load addresses till the last one that have coins.
+// URI: /api/v1/wallet/create
 // Method: POST
 // Args:
 //     seed: wallet seed [required]
@@ -306,7 +308,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 //     encrypt: bool value, whether encrypt the wallet [optional]
 //     password: password for encrypting wallet [optional, must be provided if "encrypt" is set]
-func walletCreate(gateway Gatewayer) http.HandlerFunc {
+func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -408,7 +410,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 //     id: wallet id [required]
 //     num: number of address need to create [optional, if not set the default value is 1]
 //     password: wallet password [optional, must be provided if the wallet is encrypted]
-func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
+func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -512,7 +514,7 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // Args:
 //     id: wallet id [required]
-func walletGet(gateway Gatewayer) http.HandlerFunc {
+func walletHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -671,7 +673,7 @@ type WalletFolder struct {
 // Returns the wallet directory path
 // URI: /api/v1/wallets/folderName
 // Method: GET
-func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
+func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -925,5 +927,95 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 		wh.SendJSONOr500(logger, w, rlt)
+	}
+}
+
+// WalletRecoverRequest is the request data for POST /api/v2/wallet/recover
+type WalletRecoverRequest struct {
+	ID       string `json:"id"`
+	Seed     string `json:"seed"`
+	Password string `json:"password"`
+}
+
+// URI: /api/v2/wallet/recover
+// Method: POST
+// Args:
+//	id: wallet id
+//  seed: wallet seed
+//  password: [optional] new password
+// Recovers an encrypted wallet by providing the seed.
+// The first address will be generated from seed and compared to the first address
+// of the specified wallet. If they match, the wallet will be regenerated
+// with an optional password.
+// If the wallet is not encrypted, an error is returned.
+func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		var req WalletRecoverRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if req.ID == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "id is required")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if req.Seed == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "seed is required")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		var password []byte
+		if req.Password != "" {
+			password = []byte(req.Password)
+		}
+
+		defer func() {
+			req.Seed = ""
+			req.Password = ""
+			password = nil
+		}()
+
+		wlt, err := gateway.RecoverWallet(req.ID, req.Seed, password)
+		if err != nil {
+			var resp HTTPResponse
+			switch err {
+			case wallet.ErrWalletNotEncrypted, wallet.ErrWalletRecoverSeedWrong:
+				resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			case wallet.ErrWalletNotExist:
+				resp = NewHTTPErrorResponse(http.StatusNotFound, "")
+			default:
+				resp = NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+			}
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		rlt, err := NewWalletResponse(wlt)
+		if err != nil {
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		writeHTTPResponse(w, HTTPResponse{
+			Data: rlt,
+		})
 	}
 }

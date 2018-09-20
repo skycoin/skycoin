@@ -47,8 +47,7 @@ var (
 	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
 	// ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
-	ErrDisconnectOtherError                  gnet.DisconnectReason = errors.New("Incomprehensible error")
-	ErrDisconnectMaxDefaultConnectionReached                       = errors.New("Maximum default connections was reached")
+	ErrDisconnectOtherError gnet.DisconnectReason = errors.New("Incomprehensible error")
 	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
 	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
@@ -596,7 +595,7 @@ loop:
 			elapser.Register("flushAnnouncedTxnsTicker")
 			txns := dm.announcedTxns.flush()
 
-			if err := dm.visor.SetTxnsAnnounced(txns); err != nil {
+			if err := dm.visor.SetTransactionsAnnounced(txns); err != nil {
 				logger.WithError(err).Error("Failed to set unconfirmed txn announce time")
 				return err
 			}
@@ -1084,7 +1083,7 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 	switch r.Message.(type) {
 	case SendingTxnsMessage:
-		dm.announcedTxns.add(r.Message.(SendingTxnsMessage).GetTxns())
+		dm.announcedTxns.add(r.Message.(SendingTxnsMessage).GetFiltered())
 	default:
 	}
 }
@@ -1095,7 +1094,7 @@ func (dm *Daemon) RequestBlocks() error {
 		return nil
 	}
 
-	headSeq, ok, err := dm.visor.HeadBkSeq()
+	headSeq, ok, err := dm.HeadBkSeq()
 	if err != nil {
 		return err
 	}
@@ -1119,7 +1118,7 @@ func (dm *Daemon) AnnounceBlocks() error {
 		return nil
 	}
 
-	headSeq, ok, err := dm.visor.HeadBkSeq()
+	headSeq, ok, err := dm.HeadBkSeq()
 	if err != nil {
 		return err
 	}
@@ -1230,19 +1229,6 @@ func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
 	return dm.pool.Pool.SendMessage(addr, m)
 }
 
-// InjectBroadcastTransaction injects transaction to the unconfirmed pool and broadcasts it.
-// If the transaction violates either hard or soft constraints, it is not broadcast.
-// This method is to be used by user-initiated transaction injections.
-// For transactions received over the network, use InjectTransaction and check the result to
-// decide on repropagation.
-func (dm *Daemon) InjectBroadcastTransaction(txn coin.Transaction) error {
-	if _, err := dm.visor.InjectTransactionStrict(txn); err != nil {
-		return err
-	}
-
-	return dm.broadcastTransaction(txn)
-}
-
 // ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast
 func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	if dm.Config.DisableOutgoingConnections {
@@ -1256,8 +1242,8 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 	var txids []cipher.SHA256
 	for i := range txns {
-		logger.Debugf("Rebroadcast tx %s", txns[i].Hash().Hex())
-		if err := dm.broadcastTransaction(txns[i].Transaction); err == nil {
+		logger.Debugf("Rebroadcast txn %s", txns[i].Hash().Hex())
+		if err := dm.BroadcastTransaction(txns[i].Transaction); err == nil {
 			txids = append(txids, txns[i].Transaction.Hash())
 		}
 	}
@@ -1265,8 +1251,9 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	return txids, nil
 }
 
-// broadcastTransaction broadcasts a single transaction to all peers.
-func (dm *Daemon) broadcastTransaction(t coin.Transaction) error {
+// BroadcastTransaction broadcasts a single transaction to all peers.
+func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
+	// TODO -- should return error if disabled or if broadcast fails, so that the caller can detect it
 	if dm.Config.DisableOutgoingConnections {
 		return nil
 	}

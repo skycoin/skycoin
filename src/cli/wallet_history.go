@@ -134,7 +134,7 @@ func makeAddrHisArray(c *api.Client, addr string, uxOuts []readable.SpentOutput)
 			spentHis = append(spentHis, AddrHistory{
 				BlockSeq: u.SpentBlockSeq,
 				Address:  addr,
-				Txid:     u.SpentTxID,
+				Txid:     u.SpentTxnID,
 				Amount:   "-" + amount,
 				Status:   1,
 				coins:    u.Coins,

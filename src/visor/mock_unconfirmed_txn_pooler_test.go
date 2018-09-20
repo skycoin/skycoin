@@ -95,8 +95,8 @@ func (_m *MockUnconfirmedTxnPooler) GetKnown(tx *dbutil.Tx, txns []cipher.SHA256
 	return r0, r1
 }
 
-// GetTxHashes provides a mock function with given fields: tx, filter
-func (_m *MockUnconfirmedTxnPooler) GetTxHashes(tx *dbutil.Tx, filter func(UnconfirmedTransaction) bool) ([]cipher.SHA256, error) {
+// GetHashes provides a mock function with given fields: tx, filter
+func (_m *MockUnconfirmedTxnPooler) GetHashes(tx *dbutil.Tx, filter func(UnconfirmedTransaction) bool) ([]cipher.SHA256, error) {
 	ret := _m.Called(tx, filter)
 
 	var r0 []cipher.SHA256
@@ -118,8 +118,8 @@ func (_m *MockUnconfirmedTxnPooler) GetTxHashes(tx *dbutil.Tx, filter func(Uncon
 	return r0, r1
 }
 
-// GetTxns provides a mock function with given fields: tx, filter
-func (_m *MockUnconfirmedTxnPooler) GetTxns(tx *dbutil.Tx, filter func(UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+// GetFiltered provides a mock function with given fields: tx, filter
+func (_m *MockUnconfirmedTxnPooler) GetFiltered(tx *dbutil.Tx, filter func(UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
 	ret := _m.Called(tx, filter)
 
 	var r0 []UnconfirmedTransaction
@@ -238,8 +238,8 @@ func (_m *MockUnconfirmedTxnPooler) Len(tx *dbutil.Tx) (uint64, error) {
 	return r0, r1
 }
 
-// RawTxns provides a mock function with given fields: tx
-func (_m *MockUnconfirmedTxnPooler) RawTxns(tx *dbutil.Tx) (coin.Transactions, error) {
+// AllRawTransactions provides a mock function with given fields: tx
+func (_m *MockUnconfirmedTxnPooler) AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error) {
 	ret := _m.Called(tx)
 
 	var r0 coin.Transactions
@@ -344,8 +344,8 @@ func (_m *MockUnconfirmedTxnPooler) RemoveTransactions(tx *dbutil.Tx, txns []cip
 	return r0
 }
 
-// SetTxnsAnnounced provides a mock function with given fields: tx, hashes
-func (_m *MockUnconfirmedTxnPooler) SetTxnsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error {
+// SetTransactionsAnnounced provides a mock function with given fields: tx, hashes
+func (_m *MockUnconfirmedTxnPooler) SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error {
 	ret := _m.Called(tx, hashes)
 
 	var r0 error

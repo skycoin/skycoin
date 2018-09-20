@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	//http,json helpers
 )
 
 // VerifyAddressRequest is the request data for POST /api/v2/address/verify

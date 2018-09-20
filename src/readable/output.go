@@ -244,7 +244,7 @@ type SpentOutput struct {
 	Coins         uint64 `json:"coins"`
 	Hours         uint64 `json:"hours"`
 	SpentBlockSeq uint64 `json:"spent_block_seq"` // block seq that spent the output.
-	SpentTxID     string `json:"spent_tx"`        // id of tx which spent this output.
+	SpentTxnID    string `json:"spent_tx"`        // id of tx which spent this output.
 }
 
 // NewSpentOutput creates a SpentOutput from historydb.UxOut
@@ -258,7 +258,7 @@ func NewSpentOutput(out *historydb.UxOut) SpentOutput {
 		Coins:         out.Out.Body.Coins,
 		Hours:         out.Out.Body.Hours,
 		SpentBlockSeq: out.SpentBlockSeq,
-		SpentTxID:     out.SpentTxID.Hex(),
+		SpentTxnID:    out.SpentTxnID.Hex(),
 	}
 }
 

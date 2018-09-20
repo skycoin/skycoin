@@ -9,6 +9,7 @@ import { MatDialog, MatSnackBar } from '@angular/material';
 import { showSnackbarError } from '../../../../utils/errors';
 import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
+import { BigNumber } from 'bignumber.js';
 
 @Component({
   selector: 'app-send-form',
@@ -115,7 +116,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
             address: this.form.value.address,
             amount: this.form.value.amount,
           },
-          amount: this.form.value.amount,
+          amount: new BigNumber(this.form.value.amount),
           to: [this.form.value.address],
           transaction,
         });

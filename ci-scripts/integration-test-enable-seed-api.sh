@@ -77,8 +77,7 @@ echo "starting $COIN node in background with http listener on $HOST"
             -launch-browser=false \
             -data-dir="$DATA_DIR" \
             -wallet-dir="$WALLET_DIR" \
-            -enable-wallet-api=true \
-            -enable-seed-api=true \
+            -enable-api-set=ALL \
             -test.run "^TestRunMain$" \
             -test.coverprofile="${COVERAGEFILE}" \
             &

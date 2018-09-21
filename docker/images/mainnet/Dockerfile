@@ -31,11 +31,10 @@ RUN apt-get update && \
     apt-get install -y ca-certificates
 
 
-RUN /bin/bash -c 'mkdir -p /tmp/ficheros/{usr/bin,/usr/local/skycoin/src/gui/static,/usr/local/bin/,/etc/ssl}' \
-    && cp /go/bin/* /tmp/ficheros/usr/bin/ \
-    && cp -r  /go/src/github.com/skycoin/skycoin/src/gui/static /tmp/ficheros/usr/local/skycoin/src/gui/static \
-    && cp -r  /etc/ssl/certs /tmp/ficheros/etc/ssl/certs
-
+RUN /bin/bash -c 'mkdir -p /tmp/ficheros/{usr/bin,/usr/local/skycoin/src/gui/static,/usr/local/bin/,/etc/ssl}'
+RUN cp /go/bin/* /tmp/ficheros/usr/bin/
+RUN cp -r  /go/src/github.com/skycoin/skycoin/src/gui/static /tmp/ficheros/usr/local/skycoin/src/gui/static
+RUN cp -r  /etc/ssl/certs /tmp/ficheros/etc/ssl/certs
 COPY docker_launcher.sh /tmp/ficheros/usr/local/bin/docker_launcher.sh
 
 RUN tar pczf /basefiles.tar.gz -C /tmp/ficheros/ .

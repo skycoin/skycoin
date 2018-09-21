@@ -44,6 +44,8 @@ const (
 	EndpointsWalletSeed = "WALLET_SEED"
 	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
+	// AllAPISets lists all of the above
+	AllAPISets = "READ,STATUS,WALLET,WALLET_SEED,DEPRECATED_WALLET_SPEND"
 )
 
 // Server exposes an HTTP API

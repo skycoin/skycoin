@@ -32,7 +32,7 @@ RUN apt-get update && \
 
 
 RUN /bin/bash -c 'mkdir -p /tmp/ficheros/{usr/bin,/usr/local/skycoin/src/gui/static,/usr/local/bin/,/etc/ssl}'
-RUN cp /go/bin/* /tmp/ficheros/usr/bin/
+RUN cp -r /go/bin/* /tmp/ficheros/usr/bin/
 RUN cp -r  /go/src/github.com/skycoin/skycoin/src/gui/static /tmp/ficheros/usr/local/skycoin/src/gui/static
 RUN cp -r  /etc/ssl/certs /tmp/ficheros/etc/ssl/certs
 COPY docker_launcher.sh /tmp/ficheros/usr/local/bin/docker_launcher.sh
@@ -49,6 +49,7 @@ ENV RPC_ADDR="http://0.0.0.0:6420" \
     WALLET_NAME="$COIN_cli.wlt"
 
 # copy all the binaries
+VOLUME ["/tmp"]
 COPY --from=build /basefiles.tar.gz /tmp
 WORKDIR /
 RUN tar xf /tmp/basefiles.tar.gz && rm /tmp/basefiles.tar.gz

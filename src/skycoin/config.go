@@ -277,7 +277,7 @@ func exitWithMessage(errorCode int, message string) {
 	os.Exit(errorCode)
 }
 
-var allAPISets = strings.Split(api.AllAPISets, ",")
+var allAPISets = strings.Split(api.EndpointsAll, ",")
 
 func (c *Config) postProcess() {
 	if help {

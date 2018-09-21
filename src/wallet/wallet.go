@@ -95,6 +95,8 @@ var (
 	ErrNilBalanceGetter = NewError(errors.New("scan ahead requested but balance getter is nil"))
 	// ErrWalletNotDeterministic is returned if a wallet's type is not deterministic but it is necessary for the requested operation
 	ErrWalletNotDeterministic = NewError(errors.New("wallet type is not deterministic"))
+	// ErrInvalidCoinType is returned for invalid coin types
+	ErrInvalidCoinType = NewError(errors.New("invalid coin type"))
 )
 
 const (
@@ -109,6 +111,18 @@ const (
 	// CoinTypeBitcoin bitcoin type
 	CoinTypeBitcoin CoinType = "bitcoin"
 )
+
+// ResolveCoinType normalizes a coin type string to a CoinType constant
+func ResolveCoinType(s string) (CoinType, error) {
+	switch strings.ToLower(s) {
+	case "sky", "skycoin":
+		return CoinTypeSkycoin, nil
+	case "btc", "bitcoin":
+		return CoinTypeBitcoin, nil
+	default:
+		return CoinType(""), ErrInvalidCoinType
+	}
+}
 
 // wallet meta fields
 const (

@@ -481,7 +481,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsRead, EndpointsStatus}))
 
 	// golang process internal metrics for Prometheus
-	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), EndpointsPrometheus))
+	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), []string{EndpointsPrometheus}))
 
 	// Returns transactions that match the filters.
 	// Method: GET

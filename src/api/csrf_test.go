@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/skycoin/skycoin/src/util/collections"
 )
 
 const (
@@ -163,7 +161,7 @@ func TestCSRFWrapper(t *testing.T) {
 						enableJSON20RPC:      true,
 						enableUnversionedAPI: true,
 						disableCSP:           true,
-						enabledAPISets:       collections.NewStringSet(AllAPISets),
+						enabledAPISets:       allAPISetsEnabled,
 					}, gateway, csrfStore, nil)
 
 					handler.ServeHTTP(rr, req)
@@ -293,7 +291,7 @@ func TestCSRF(t *testing.T) {
 			appLoc:          ".",
 			enableJSON20RPC: true,
 			disableCSP:      true,
-			enabledAPISets:  collections.NewStringSet(APIWallet),
+			enabledAPISets:  allAPISetsEnabled,
 		}, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
@@ -308,7 +306,7 @@ func TestCSRF(t *testing.T) {
 
 	// Make a request to /csrf to get a token
 	gateway := &MockGatewayer{}
-	handler := newServerMux(defaultMuxConfig(APIWallet), gateway, csrfStore, nil)
+	handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 	// non-GET request to /csrf is invalid
 	req, err := http.NewRequest(http.MethodPost, "/api/v1/csrf", nil)

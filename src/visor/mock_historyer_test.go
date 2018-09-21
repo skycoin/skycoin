@@ -41,8 +41,8 @@ func (_m *MockHistoryer) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *histor
 	return r0
 }
 
-// GetAddrUxOuts provides a mock function with given fields: tx, address
-func (_m *MockHistoryer) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]historydb.UxOut, error) {
+// GetOutputsForAddress provides a mock function with given fields: tx, address
+func (_m *MockHistoryer) GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]historydb.UxOut, error) {
 	ret := _m.Called(tx, address)
 
 	var r0 []historydb.UxOut

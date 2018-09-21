@@ -614,7 +614,7 @@ func (abm *AnnounceBlocksMessage) Process(d Daemoner) {
 
 // SendingTxnsMessage send transaction message interface
 type SendingTxnsMessage interface {
-	GetTxns() []cipher.SHA256
+	GetFiltered() []cipher.SHA256
 }
 
 // AnnounceTxnsMessage tells a peer that we have these transactions
@@ -630,8 +630,8 @@ func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 	}
 }
 
-// GetTxns returns txns
-func (atm *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
+// GetFiltered returns txns
+func (atm *AnnounceTxnsMessage) GetFiltered() []cipher.SHA256 {
 	return atm.Transactions
 }
 
@@ -718,8 +718,8 @@ func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
 	}
 }
 
-// GetTxns returns transactions hashes
-func (gtm *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
+// GetFiltered returns transactions hashes
+func (gtm *GiveTxnsMessage) GetFiltered() []cipher.SHA256 {
 	return gtm.Transactions.Hashes()
 }
 
@@ -739,6 +739,8 @@ func (gtm *GiveTxnsMessage) Process(d Daemoner) {
 	// Update unconfirmed pool with these transactions
 	for _, txn := range gtm.Transactions {
 		// Only announce transactions that are new to us, so that peers can't spam relays
+		// It is not necessary to inject all of the transactions inside a database transaction,
+		// since each is independent
 		known, softErr, err := d.InjectTransaction(txn)
 		if err != nil {
 			logger.Warningf("Failed to record transaction %s: %v", txn.Hash().Hex(), err)

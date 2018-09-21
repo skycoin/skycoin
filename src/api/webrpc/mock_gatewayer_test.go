@@ -13,29 +13,6 @@ type MockGatewayer struct {
 	mock.Mock
 }
 
-// GetAddrUxOuts provides a mock function with given fields: addr
-func (_m *MockGatewayer) GetAddrUxOuts(addr []cipher.Address) ([]historydb.UxOut, error) {
-	ret := _m.Called(addr)
-
-	var r0 []historydb.UxOut
-	if rf, ok := ret.Get(0).(func([]cipher.Address) []historydb.UxOut); ok {
-		r0 = rf(addr)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]historydb.UxOut)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
-		r1 = rf(addr)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetBlocks provides a mock function with given fields: vs
 func (_m *MockGatewayer) GetBlocks(vs []uint64) ([]coin.SignedBlock, error) {
 	ret := _m.Called(vs)
@@ -105,18 +82,27 @@ func (_m *MockGatewayer) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	return r0, r1
 }
 
-// GetTimeNow provides a mock function with given fields:
-func (_m *MockGatewayer) GetTimeNow() uint64 {
-	ret := _m.Called()
+// GetSpentOutputsForAddresses provides a mock function with given fields: addr
+func (_m *MockGatewayer) GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, error) {
+	ret := _m.Called(addr)
 
-	var r0 uint64
-	if rf, ok := ret.Get(0).(func() uint64); ok {
-		r0 = rf()
+	var r0 [][]historydb.UxOut
+	if rf, ok := ret.Get(0).(func([]cipher.Address) [][]historydb.UxOut); ok {
+		r0 = rf(addr)
 	} else {
-		r0 = ret.Get(0).(uint64)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([][]historydb.UxOut)
+		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
+		r1 = rf(addr)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetTransaction provides a mock function with given fields: txid

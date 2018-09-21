@@ -20,7 +20,7 @@ type Gatewayer interface {
 	GetWallet(wltID string) (*wallet.Wallet, error)
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
-	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTransaction, error)
+	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)
 	GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
@@ -41,7 +41,7 @@ type Gatewayer interface {
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() (*daemon.BlockchainProgress, error)
 	GetConnection(addr string) (*daemon.Connection, error)
-	GetConnections() ([]daemon.Connection, error)
+	GetOutgoingConnections() ([]daemon.Connection, error)
 	GetDefaultConnections() []string
 	GetTrustConnections() []string
 	GetExchgConnection() []string
@@ -54,7 +54,7 @@ type Gatewayer interface {
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() ([]cipher.SHA256, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
-	GetAddrUxOuts(addr []cipher.Address) ([]historydb.UxOut, error)
+	GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, error)
 	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)

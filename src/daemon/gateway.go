@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -8,30 +9,31 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
-	"github.com/skycoin/skycoin/src/util/collections"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
-
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
-const (
-	// AllAPISets special API set containing all exported methods
-	AllAPISets = "ALL"
+var (
+	// ErrSpendMethodDisabled is returned by Spend() if called while GatewayConfig.EnableSpendMethod is false
+	ErrSpendMethodDisabled = errors.New("Spend is disabled")
 )
 
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
-	BufferSize     int
-	EnabledAPISets collections.StringSet
+	BufferSize        int
+	EnableWalletAPI   bool
+	EnableSpendMethod bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
 func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
-		BufferSize:     32,
-		EnabledAPISets: collections.NewStringSet(),
+		BufferSize:        32,
+		EnableWalletAPI:   false,
+		EnableSpendMethod: false,
 	}
 }
 
@@ -67,6 +69,12 @@ func (gw *Gateway) Shutdown() {
 }
 
 func (gw *Gateway) strand(name string, f func()) {
+	// The Spend() method requires strand to be safe
+	if !gw.Config.EnableSpendMethod {
+		f()
+		return
+	}
+
 	name = fmt.Sprintf("daemon.Gateway.%s", name)
 	if err := strand.Strand(logger, gw.requests, name, func() error {
 		f()
@@ -92,40 +100,32 @@ type Connection struct {
 	Height     uint64
 }
 
-// GetConnections returns a *Connections
-func (gw *Gateway) GetConnections() ([]Connection, error) {
+// GetOutgoingConnections returns solicited (outgoing) connections
+func (gw *Gateway) GetOutgoingConnections() ([]Connection, error) {
 	var conns []Connection
 	var err error
-	gw.strand("GetConnections", func() {
-		conns, err = gw.getConnections()
+	gw.strand("GetOutgoingConnections", func() {
+		conns, err = gw.getOutgoingConnections()
 	})
 	return conns, err
 }
 
-func (gw *Gateway) getConnections() ([]Connection, error) {
+func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 	if gw.d.pool.Pool == nil {
 		return nil, nil
 	}
 
-	n, err := gw.d.pool.Pool.Size()
-	if err != nil {
-		logger.Error(err)
-		return nil, err
-	}
-
-	conns := make([]Connection, 0, n)
 	cs, err := gw.d.pool.Pool.GetConnections()
 	if err != nil {
 		logger.Error(err)
 		return nil, err
 	}
 
+	conns := make([]Connection, 0, len(cs))
+
 	for _, c := range cs {
 		if c.Solicited {
-			conn, err := gw.getConnection(c.Addr())
-			if err != nil {
-				return nil, err
-			}
+			conn := gw.newConnection(&c)
 			if conn != nil {
 				conns = append(conns, *conn)
 			}
@@ -140,7 +140,7 @@ func (gw *Gateway) getConnections() ([]Connection, error) {
 	return conns, nil
 }
 
-// GetDefaultConnections returns default connections
+// GetDefaultConnections returns the default hardcoded connection addresses
 func (gw *Gateway) GetDefaultConnections() []string {
 	var conns []string
 	gw.strand("GetDefaultConnections", func() {
@@ -155,39 +155,35 @@ func (gw *Gateway) GetConnection(addr string) (*Connection, error) {
 	var conn *Connection
 	var err error
 	gw.strand("GetConnection", func() {
-		conn, err = gw.getConnection(addr)
+		if gw.d.pool.Pool == nil {
+			return
+		}
+
+		var c *gnet.Connection
+		c, err = gw.d.pool.Pool.GetConnection(addr)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+
+		conn = gw.newConnection(c)
 	})
 	return conn, err
 }
 
-func (gw *Gateway) getConnection(addr string) (*Connection, error) {
-	if gw.d.pool.Pool == nil {
-		return nil, nil
-	}
-
-	c, err := gw.d.pool.Pool.GetConnection(addr)
-	if err != nil {
-		logger.Error(err)
-		return nil, err
-	}
-
+func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
 	if c == nil {
-		return nil, nil
+		return nil
 	}
+
+	addr := c.Addr()
 
 	mirror, exist := gw.d.connectionMirrors.Get(addr)
 	if !exist {
-		return nil, nil
+		return nil
 	}
 
-	heights := gw.d.Heights.All()
-	var height uint64
-	for _, h := range heights {
-		if h.Address == addr {
-			height = h.Height
-			break
-		}
-	}
+	height, _ := gw.d.Heights.Get(addr)
 
 	return &Connection{
 		ID:           c.ID,
@@ -199,11 +195,10 @@ func (gw *Gateway) getConnection(addr string) (*Connection, error) {
 		Mirror:       mirror,
 		ListenPort:   gw.d.GetListenPort(addr),
 		Height:       height,
-	}, nil
+	}
 }
 
-// GetTrustConnections returns all trusted connections,
-// including private and public
+// GetTrustConnections returns all trusted connections
 func (gw *Gateway) GetTrustConnections() []string {
 	var conn []string
 	gw.strand("GetTrustConnections", func() {
@@ -212,8 +207,7 @@ func (gw *Gateway) GetTrustConnections() []string {
 	return conn
 }
 
-// GetExchgConnection returns all exchangeable connections,
-// including private and public
+// GetExchgConnection returns all connections to peers found through peer exchange
 func (gw *Gateway) GetExchgConnection() []string {
 	var conn []string
 	gw.strand("GetExchgConnection", func() {
@@ -409,11 +403,24 @@ func (gw *Gateway) GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction
 	return txn, inputs, err
 }
 
-// InjectBroadcastTransaction injects and broadcasts a transaction
+// InjectBroadcastTransaction injects transaction to the unconfirmed pool and broadcasts it.
+// If the transaction violates either hard or soft constraints, it is not broadcast.
+// This method is to be used by user-initiated transaction injections.
+// For transactions received over the network, use daemon.InjectTransaction and check the result to
+// decide on repropagation.
 func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
-		err = gw.d.InjectBroadcastTransaction(txn)
+		_, err = gw.v.InjectTransactionStrict(txn)
+		if err != nil {
+			logger.WithError(err).Error("InjectTransactionStrict failed")
+			return
+		}
+
+		err = gw.d.BroadcastTransaction(txn)
+		if err != nil {
+			logger.WithError(err).Error("BroadcastTransaction failed")
+		}
 	})
 	return err
 }
@@ -461,33 +468,14 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return uxout, err
 }
 
-// GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]historydb.UxOut, error) {
-	var uxOuts []historydb.UxOut
+// GetSpentOutputsForAddresses gets all the spent outputs of a set of addresses
+func (gw *Gateway) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]historydb.UxOut, error) {
+	var uxOuts [][]historydb.UxOut
 	var err error
-
-	gw.strand("GetAddrUxOuts", func() {
-		for _, addr := range addresses {
-			var result []historydb.UxOut
-			result, err = gw.v.GetAddrUxOuts(addr)
-			if err != nil {
-				return
-			}
-
-			uxOuts = append(uxOuts, result...)
-		}
+	gw.strand("GetSpentOutputsForAddresses", func() {
+		uxOuts, err = gw.v.GetSpentOutputsForAddresses(addresses)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return uxOuts, nil
-}
-
-// GetTimeNow returns the current Unix time
-func (gw *Gateway) GetTimeNow() uint64 {
-	return uint64(time.Now().UTC().Unix())
+	return uxOuts, err
 }
 
 // GetAllUnconfirmedTransactions returns all unconfirmed transactions
@@ -521,11 +509,17 @@ func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.U
 	return txns, err
 }
 
-// Spend spends coins from given wallet and broadcast it,
+// Spend spends coins from given wallet and broadcasts it,
 // set password as nil if wallet is not encrypted, otherwise the password must be provied.
 // return transaction or error.
 func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	logger.Warning("Calling deprecated method Gateway.Spend")
+
+	if !gw.Config.EnableSpendMethod {
+		return nil, ErrSpendMethodDisabled
+	}
+
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -534,13 +528,20 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	gw.strand("Spend", func() {
 		txn, err = gw.v.CreateTransactionDeprecated(wltID, password, coins, dest)
 		if err != nil {
+			logger.WithError(err).Error("CreateTransactionDeprecated failed")
 			return
 		}
 
-		// Inject transaction
-		err = gw.d.InjectBroadcastTransaction(*txn)
+		// WARNING: This is not safe from races once we remove strand
+		_, err = gw.v.InjectTransactionStrict(*txn)
 		if err != nil {
-			logger.Errorf("Inject transaction failed: %v", err)
+			logger.WithError(err).Error("InjectTransactionStrict failed")
+			return
+		}
+
+		err = gw.d.BroadcastTransaction(*txn)
+		if err != nil {
+			logger.WithError(err).Error("BroadcastTransaction failed")
 			return
 		}
 	})
@@ -554,28 +555,22 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 
 // CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
 func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var txn *coin.Transaction
 	var inputs []wallet.UxBalance
 	var err error
-
 	gw.strand("CreateTransaction", func() {
 		txn, inputs, err = gw.v.CreateTransaction(params)
 	})
-
-	if err != nil {
-		return nil, nil, err
-	}
-
 	return txn, inputs, err
 }
 
 // CreateWallet creates wallet
 func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -589,7 +584,7 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet
 
 // EncryptWallet encrypts the wallet
 func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -603,7 +598,7 @@ func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Walle
 
 // DecryptWallet decrypts wallet
 func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -617,56 +612,17 @@ func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet,
 
 // GetWalletBalance returns balance pairs of specific wallet
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error) {
-	var addressBalances wallet.AddressBalances
 	var walletBalance wallet.BalancePair
-	if !gw.isAPISetEnabled("WALLET") {
+	var addressBalances wallet.AddressBalances
+
+	if !gw.Config.EnableWalletAPI {
 		return walletBalance, addressBalances, wallet.ErrWalletAPIDisabled
 	}
 
 	var err error
 	gw.strand("GetWalletBalance", func() {
-		var addrs []cipher.Address
-		addrs, err = gw.v.Wallets.GetAddresses(wltID)
-		if err != nil {
-			return
-		}
-
-		// get list of address balances
-		addrsBalanceList, err := gw.v.GetBalanceOfAddrs(addrs)
-		if err != nil {
-			return
-		}
-
-		// create map of address to balance
-		addressBalances = make(wallet.AddressBalances, len(addrs))
-		for idx, addr := range addrs {
-			addressBalances[addr.String()] = addrsBalanceList[idx]
-		}
-
-		// compute the sum of all addresses
-		for _, addrBalance := range addressBalances {
-			// compute confirmed balance
-			walletBalance.Confirmed.Coins, err = coin.AddUint64(walletBalance.Confirmed.Coins, addrBalance.Confirmed.Coins)
-			if err != nil {
-				return
-			}
-			walletBalance.Confirmed.Hours, err = coin.AddUint64(walletBalance.Confirmed.Hours, addrBalance.Confirmed.Hours)
-			if err != nil {
-				return
-			}
-
-			// compute predicted balance
-			walletBalance.Predicted.Coins, err = coin.AddUint64(walletBalance.Predicted.Coins, addrBalance.Predicted.Coins)
-			if err != nil {
-				return
-			}
-			walletBalance.Predicted.Hours, err = coin.AddUint64(walletBalance.Predicted.Hours, addrBalance.Predicted.Hours)
-			if err != nil {
-				return
-			}
-		}
+		walletBalance, addressBalances, err = gw.v.GetWalletBalance(wltID)
 	})
-
 	return walletBalance, addressBalances, err
 }
 
@@ -688,7 +644,7 @@ func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePa
 
 // GetWalletDir returns path for storing wallet files
 func (gw *Gateway) GetWalletDir() (string, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return "", wallet.ErrWalletAPIDisabled
 	}
 	return gw.v.Config.WalletDirectory, nil
@@ -696,7 +652,7 @@ func (gw *Gateway) GetWalletDir() (string, error) {
 
 // NewAddresses generate addresses in given wallet
 func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -710,7 +666,7 @@ func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]ciph
 
 // UpdateWalletLabel updates the label of wallet
 func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -723,7 +679,7 @@ func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 
 // GetWallet returns wallet by id
 func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -737,7 +693,7 @@ func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
 
 // GetWallets returns wallets
 func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -749,30 +705,23 @@ func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
 	return w, err
 }
 
-// GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet
-func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTransaction, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+// GetWalletUnconfirmedTransactions returns all unconfirmed transactions in given wallet
+func (gw *Gateway) GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error) {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var txns []visor.UnconfirmedTransaction
 	var err error
-	gw.strand("GetWalletUnconfirmedTxns", func() {
-		var addrs []cipher.Address
-		addrs, err = gw.v.Wallets.GetAddresses(wltID)
-		if err != nil {
-			return
-		}
-
-		txns, err = gw.v.GetUnconfirmedTransactions(visor.SendsToAddresses(addrs))
+	gw.strand("GetWalletUnconfirmedTransactions", func() {
+		txns, err = gw.v.GetWalletUnconfirmedTransactions(wltID)
 	})
-
 	return txns, err
 }
 
 // GetWalletUnconfirmedTransactionsVerbose returns all unconfirmed transactions in given wallet
 func (gw *Gateway) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -780,20 +729,14 @@ func (gw *Gateway) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]viso
 	var inputs [][]visor.TransactionInput
 	var err error
 	gw.strand("GetWalletUnconfirmedTransactionsVerbose", func() {
-		var addrs []cipher.Address
-		addrs, err = gw.v.Wallets.GetAddresses(wltID)
-		if err != nil {
-			return
-		}
-
-		txns, inputs, err = gw.v.GetUnconfirmedTxnsVerbose(visor.SendsToAddresses(addrs))
+		txns, inputs, err = gw.v.GetWalletUnconfirmedTransactionsVerbose(wltID)
 	})
 	return txns, inputs, err
 }
 
 // ReloadWallets reloads all wallets
 func (gw *Gateway) ReloadWallets() error {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -806,7 +749,7 @@ func (gw *Gateway) ReloadWallets() error {
 
 // UnloadWallet removes wallet of given id from memory.
 func (gw *Gateway) UnloadWallet(id string) error {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -820,7 +763,7 @@ func (gw *Gateway) UnloadWallet(id string) error {
 // GetWalletSeed returns seed of wallet of given id,
 // returns wallet.ErrWalletNotEncrypted if the wallet is not encrypted.
 func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
-	if !gw.isAPISetEnabled("WALLET") {
+	if !gw.Config.EnableWalletAPI {
 		return "", wallet.ErrWalletAPIDisabled
 	}
 
@@ -830,14 +773,6 @@ func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
 		seed, err = gw.v.Wallets.GetWalletSeed(id, password)
 	})
 	return seed, err
-}
-
-// isAPISetEnabled returns if any of the API set names is enabled
-func (gw *Gateway) isAPISetEnabled(APINames ...string) bool {
-	if len(APINames) == 0 {
-		return true
-	}
-	return gw.Config.EnabledAPISets.ContainsAny(AllAPISets, APINames...)
 }
 
 // GetRichlist returns rich list as desc order.
@@ -914,7 +849,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			return
 		}
 
-		conns, err := gw.getConnections()
+		conns, err := gw.getOutgoingConnections()
 		if err != nil {
 			return
 		}

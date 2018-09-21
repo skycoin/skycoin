@@ -49,6 +49,8 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.HeadBlock.Head.Time)
 		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
 
+		_, walletAPIEnabled := c.enabledAPISets[EndpointsWallet]
+
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
 				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
@@ -62,7 +64,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			UnversionedAPIEnabled: c.enableUnversionedAPI,
 			GUIEnabled:            c.enableGUI,
 			JSON20RPCEnabled:      c.enableJSON20RPC,
-			WalletAPIEnabled:      c.isAPISetEnabled(APIWallet),
+			WalletAPIEnabled:      walletAPIEnabled,
 		})
 	}
 }

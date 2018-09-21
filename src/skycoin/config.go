@@ -274,7 +274,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 
 func exitWithMessage(errorCode int, message string) {
 	fmt.Println(message)
-	os.Exit(1)
+	os.Exit(errorCode)
 }
 
 var allAPISets = strings.Split(api.AllAPISets, ",")
@@ -353,10 +353,10 @@ func (c *Config) postProcess() {
 			// FIXME: ... which is different for each run mode
 			c.Node.EnabledAPISets = collections.NewStringSet(api.EndpointsRead)
 			if c.Node.EnableWalletAPI {
-				c.Node.EnabledAPISets.Set(api.EndpointsWallet)
+				c.Node.EnabledAPISets[api.EndpointsWallet] = struct{}{}
 			}
 			if c.Node.EnableSeedAPI {
-				c.Node.EnabledAPISets.Set(api.EndpointsWalletSeed)
+				c.Node.EnabledAPISets[api.EndpointsWalletSeed] = struct{}{}
 			}
 		}
 	}
@@ -366,7 +366,7 @@ func (c *Config) postProcess() {
 	}
 	// step 5 - For each API set in -enable-apiset, enable that set.
 	for apiSetName := range originalEnabledAPISets {
-		c.Node.EnabledAPISets.Set(apiSetName)
+		c.Node.EnabledAPISets[apiSetName] = struct{}{}
 	}
 
 	// Accept the deprecated -enable options

@@ -1,7 +1,6 @@
 package flag
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"strings"
@@ -26,7 +25,7 @@ type stringSetReader struct {
 func (r *stringSetReader) Set(value string) error {
 	values := strings.Split(value, r.Separator)
 	if len(r.ValidValues) == 0 || (!r.ValidValues.Contains(values...) && !r.IgnoreInvalid) {
-		return errors.New(fmt.Sprintf("Expected one of %s in -%s but got %s", r.ValidValues.String(), r.FlagName, value))
+		return fmt.Errorf("Expected one of %s in -%s but got %s", r.ValidValues.String(), r.FlagName, value)
 	}
 	for _, value := range values {
 		(*r.Values)[value] = struct{}{}

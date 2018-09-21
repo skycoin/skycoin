@@ -19,9 +19,8 @@ func (set *StringSet) Set(value string) error {
 }
 
 // Remove string
-func (set *StringSet) Remove(value string) error {
+func (set *StringSet) Remove(value string) {
 	delete(*set, value)
-	return nil
 }
 
 // Contains checks for membership of all string(s)

@@ -30,10 +30,11 @@ func addressGenCmd() gcli.Command {
 				Value: "sky",
 				Usage: "Coin type. Must be sky or btc",
 			},
-			// gcli.BoolFlag{
-			// 	Name:  "hide-secret,s",
-			// 	Usage: "Hide the secret key from the output",
-			// },
+			gcli.StringFlag{
+				Name:  "label,l",
+				Value: "",
+				Usage: "Wallet label to use when printing or writing a wallet file",
+			},
 			gcli.BoolFlag{
 				Name:  "hex,x",
 				Usage: "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided",
@@ -114,12 +115,37 @@ var addressGenPrint = gcli.Command{
 	},
 	OnUsageError: onCommandUsageError("addressGen print"),
 	Action: func(c *gcli.Context) error {
+		num := c.GlobalString("num")
+		if num <= 0 {
+			return errors.New("num must be > 0")
+		}
+
+		label := c.GlobalString("label")
+
 		coinType, err := wallet.ResolveCoinType(c.GlobalString("coin"))
 		if err != nil {
 			return err
 		}
 
 		seed, err := resolveSeed(c)
+		if err != nil {
+			return err
+		}
+
+		// cryptoType = CryptoType("")
+		// if len(password) != 0 {
+		// 	cryptoType = wallet.CryptoTypeScryptChacha20poly1305
+		// }
+
+		w, err := wallet.NewWallet(wallet.NewWalletFilename(), wallet.Options{
+			Coin:  coinType,
+			Label: label,
+			Seed:  seed,
+			// Encrypt:    len(password) != 0,
+			// Password:   password,
+			// CryptoType: cryptoType,
+			GenerateN: num,
+		})
 		if err != nil {
 			return err
 		}

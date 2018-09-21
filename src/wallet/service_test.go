@@ -263,7 +263,7 @@ func TestServiceLoadWallet(t *testing.T) {
 					EnableWalletAPI: true,
 				})
 				require.NoError(t, err)
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 
 				w, err := s.loadWallet(wltName, tc.opts, tc.bg)
 				require.Equal(t, tc.err, err)
@@ -411,7 +411,7 @@ func TestServiceNewAddress(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 
 				w, err := s.CreateWallet(wltName, tc.opts, nil)
 				if err != nil {
@@ -582,7 +582,7 @@ func TestServiceGetWallets(t *testing.T) {
 				wallets = append(wallets, w)
 
 				// Create a new wallet
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 				w1, err := s.CreateWallet(wltName, Options{
 					Label: "label1",
 					Seed:  "seed1",
@@ -828,7 +828,7 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 					return
 				}
 
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 
 				w, err := s.CreateWallet(wltName, tc.opts, nil)
 				require.NoError(t, err)
@@ -1717,7 +1717,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				if tc.walletNotExist {
 					tc.params.Wallet.ID = "foo.wlt"
 				} else {
-					wltName := newWalletFilename()
+					wltName := NewWalletFilename()
 					opts := tc.opts
 					if opts.Encrypt && len(opts.Password) == 0 {
 						opts.Password = []byte("password")
@@ -2441,7 +2441,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 				w, err := s.CreateWallet(wltName, tc.opts, tc.balGetter)
 				require.Equal(t, tc.expect.err, err)
 				if err != nil {

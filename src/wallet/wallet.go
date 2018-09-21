@@ -285,8 +285,8 @@ func (c CreateTransactionParams) Validate() error {
 	return nil
 }
 
-// newWalletFilename check for collisions and retry if failure
-func newWalletFilename() string {
+// NewWalletFilename generates a filename from the current time and random bytes
+func NewWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
 	// should read in wallet files and make sure does not exist
 	padding := hex.EncodeToString((cipher.RandByte(2)))

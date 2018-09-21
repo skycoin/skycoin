@@ -116,12 +116,12 @@ func (serv *Service) loadWallet(wltName string, options Options, bg BalanceGette
 }
 
 func (serv *Service) generateUniqueWalletFilename() string {
-	wltName := newWalletFilename()
+	wltName := NewWalletFilename()
 	for {
 		if _, ok := serv.wallets.get(wltName); !ok {
 			break
 		}
-		wltName = newWalletFilename()
+		wltName = NewWalletFilename()
 	}
 
 	return wltName

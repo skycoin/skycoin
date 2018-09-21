@@ -358,7 +358,7 @@ func TestWalletLock(t *testing.T) {
 				tc.opts.CryptoType = ct
 			}
 			t.Run(name, func(t *testing.T) {
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 				w, err := NewWallet(wltName, tc.opts)
 				require.NoError(t, err)
 

@@ -437,8 +437,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.BoolVar(&c.DisableAllAPISets, "disable-all-apisets", c.DisableAllAPISets, "enable the web interface")
-	flag.BoolVar(&c.EnableAllAPISets, "enable-all-apisets", c.EnableAllAPISets, "enable the web interface")
+	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "Export all endpoints via web interface. Option -disable-api-set can override this.")
+	flag.BoolVar(&c.DisableAllAPISets, "disable-all-api-sets", c.DisableAllAPISets, "Forbid access to all web interface endpoints. Option -enable-api-set can override this.")
 
 	validAPISetsDesc := strings.Join(allAPISets, ", ")
 	flagutil.StringSetVar(&c.EnabledAPISets, allAPISets, false, "enable-api-set", "enable API set. Options are "+validAPISetsDesc+". Multiple comma-separated values may be specified")

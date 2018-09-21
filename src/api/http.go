@@ -65,6 +65,7 @@ type Config struct {
 	WriteTimeout         time.Duration
 	IdleTimeout          time.Duration
 	BuildInfo            readable.BuildInfo
+	HostWhitelist        []string
 	EnabledAPISets       map[string]struct{}
 }
 
@@ -77,6 +78,7 @@ type muxConfig struct {
 	disableCSP           bool
 	buildInfo            readable.BuildInfo
 	enabledAPISets       map[string]struct{}
+	hostWhitelist        []string
 }
 
 // HTTPResponse represents the http response struct
@@ -153,6 +155,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		disableCSP:           c.DisableCSP,
 		buildInfo:            c.BuildInfo,
 		enabledAPISets:       c.EnabledAPISets,
+		hostWhitelist:        c.HostWhitelist,
 	}
 
 	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
@@ -266,9 +269,9 @@ func (s *Server) Shutdown() {
 func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *webrpc.WebRPC) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	headerCheck := func(host string, handler http.Handler) http.Handler {
-		handler = OriginRefererCheck(host, handler)
-		handler = wh.HostCheck(logger, host, handler)
+	headerCheck := func(host string, hostWhitelist []string, handler http.Handler) http.Handler {
+		handler = OriginRefererCheck(host, hostWhitelist, handler)
+		handler = HostCheck(host, hostWhitelist, handler)
 		return handler
 	}
 
@@ -298,7 +301,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandler := func(endpoint string, handler http.Handler) {
 		handler = wh.ElapsedHandler(logger, handler)
 		handler = CSRFCheck(csrfStore, handler)
-		handler = headerCheck(c.host, handler)
+		handler = headerCheck(c.host, c.hostWhitelist, handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
@@ -316,7 +319,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
 	if !c.disableCSP {
-		indexHandler = wh.CSPHandler(indexHandler)
+		indexHandler = CSPHandler(indexHandler)
 	}
 	webHandler("/", indexHandler)
 
@@ -328,7 +331,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 		fs := http.FileServer(http.Dir(c.appLoc))
 		if !c.disableCSP {
-			fs = wh.CSPHandler(fs)
+			fs = CSPHandler(fs)
 		}
 
 		for _, fileInfo := range fileInfos {
@@ -346,7 +349,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	// get the current CSRF token
-	csrfHandler := headerCheck(c.host, getCSRFToken(csrfStore))
+	csrfHandler := headerCheck(c.host, c.hostWhitelist, getCSRFToken(csrfStore))
 	mux.Handle("/csrf", csrfHandler)
 	mux.Handle("/api/v1/csrf", csrfHandler) // csrf is always available, regardless of the API set
 

@@ -31,6 +31,93 @@ func defaultMuxConfig() muxConfig {
 	}
 }
 
+var endpoints = []string{
+	"/address_uxouts",
+	"/addresscount",
+	"/balance",
+	"/block",
+	"/blockchain/metadata",
+	"/blockchain/progress",
+	"/blocks",
+	"/coinSupply",
+	"/explorer/address",
+	"/health",
+	"/injectTransaction",
+	"/last_blocks",
+	"/version",
+	"/network/connection",
+	"/network/connections",
+	"/network/connections/exchange",
+	"/network/connections/trust",
+	"/network/defaultConnections",
+	"/outputs",
+	"/pendingTxs",
+	"/rawtx",
+	"/richlist",
+	"/resendUnconfirmedTxns",
+	"/transaction",
+	"/transactions",
+	"/uxout",
+	"/wallet",
+	"/wallet/balance",
+	"/wallet/create",
+	"/wallet/newAddress",
+	"/wallet/newSeed",
+	"/wallet/seed",
+	"/wallet/spend",
+	"/wallet/transaction",
+	"/wallet/transactions",
+	"/wallet/unload",
+	"/wallet/update",
+	"/wallets",
+	"/wallets/folderName",
+	"/webrpc",
+
+	"/api/v1/address_uxouts",
+	"/api/v1/addresscount",
+	"/api/v1/balance",
+	"/api/v1/block",
+	"/api/v1/blockchain/metadata",
+	"/api/v1/blockchain/progress",
+	"/api/v1/blocks",
+	"/api/v1/coinSupply",
+	"/api/v1/explorer/address",
+	"/api/v1/health",
+	"/api/v1/injectTransaction",
+	"/api/v1/last_blocks",
+	"/api/v1/version",
+	"/api/v1/network/connection",
+	"/api/v1/network/connections",
+	"/api/v1/network/connections/exchange",
+	"/api/v1/network/connections/trust",
+	"/api/v1/network/defaultConnections",
+	"/api/v1/outputs",
+	"/api/v1/pendingTxs",
+	"/api/v1/rawtx",
+	"/api/v1/richlist",
+	"/api/v1/resendUnconfirmedTxns",
+	"/api/v1/transaction",
+	"/api/v1/transactions",
+	"/api/v1/uxout",
+	"/api/v1/wallet",
+	"/api/v1/wallet/balance",
+	"/api/v1/wallet/create",
+	"/api/v1/wallet/newAddress",
+	"/api/v1/wallet/newSeed",
+	"/api/v1/wallet/seed",
+	"/api/v1/wallet/spend",
+	"/api/v1/wallet/transaction",
+	"/api/v1/wallet/transactions",
+	"/api/v1/wallet/unload",
+	"/api/v1/wallet/update",
+	"/api/v1/wallets",
+	"/api/v1/wallets/folderName",
+	"/api/v1/webrpc",
+
+	"/api/v2/transaction/verify",
+	"/api/v2/address/verify",
+}
+
 // TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,
 // we can't control the output by mocking the Gateway like other tests. Instead,
 // we create a full webserver for each test case.
@@ -130,71 +217,6 @@ func TestEnableGUI(t *testing.T) {
 			if rsp.StatusCode != http.StatusOK {
 				require.Equal(t, tc.expectBody, string(body))
 			}
-		})
-	}
-}
-
-func TestContentSecurityPolicy(t *testing.T) {
-	tt := []struct {
-		name            string
-		endpoint        string
-		enableCSP       bool
-		appLoc          string
-		expectCSPHeader string
-		enableGUI       bool
-	}{
-		{
-			name:            "enable CSP GET /",
-			endpoint:        "/",
-			enableCSP:       true,
-			appLoc:          "../gui/static/dist",
-			expectCSPHeader: "script-src 'self' 127.0.0.1",
-			enableGUI:       true,
-		},
-		{
-			name:            "disable CSP GET /",
-			endpoint:        "/",
-			enableCSP:       false,
-			appLoc:          "../gui/static/dist",
-			expectCSPHeader: "",
-			enableGUI:       true,
-		},
-		{
-			// Confirms that the /csrf api won't be affected by the csp setting
-			name:            "enable CSP GET /csrf",
-			endpoint:        "/api/v1/csrf",
-			enableCSP:       true,
-			appLoc:          "",
-			expectCSPHeader: "",
-			enableGUI:       false,
-		},
-		{
-			// Confirms that the /version api won't be affected by the csp setting
-			name:            "enable CSP GET /version",
-			endpoint:        "/api/v1/version",
-			enableCSP:       true,
-			appLoc:          "",
-			expectCSPHeader: "",
-			enableGUI:       false,
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
-			require.NoError(t, err)
-
-			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{
-				host:       configuredHost,
-				appLoc:     tc.appLoc,
-				enableGUI:  tc.enableGUI,
-				disableCSP: !tc.enableCSP,
-			}, &MockGatewayer{}, &CSRFStore{}, nil)
-			handler.ServeHTTP(rr, req)
-
-			csp := rr.Header().Get("Content-Security-Policy")
-			require.Equal(t, tc.expectCSPHeader, csp)
 		})
 	}
 }

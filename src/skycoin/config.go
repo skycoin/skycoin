@@ -62,6 +62,9 @@ type NodeConfig struct {
 	// Comma separated list of API sets exported via remote web interface
 	EnabledAPISets string
 	enabledAPISets map[string]struct{}
+	// Comma separate list of hostnames to accept in the Host header, used to bypass the Host header check which only applies to localhost addresses
+	HostWhitelist string
+	hostWhitelist []string
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -387,6 +390,10 @@ func (c *Config) postProcess() {
 	if c.Node.DisableDefaultPeers {
 		c.Node.DefaultConnections = nil
 	}
+
+	if c.Node.HostWhitelist != "" {
+		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
+	}
 }
 
 // RegisterFlags binds CLI flags to config values
@@ -414,6 +421,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 	flag.StringVar(&c.EnabledAPISets, "enable-api-set", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 

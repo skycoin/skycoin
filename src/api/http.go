@@ -45,10 +45,10 @@ const (
 	EndpointsWalletSeed = "WALLET_SEED"
 	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
-	// APIPrometheus endpoints for Go application metrics
-	APIPrometheus = "PROMETHEUS"
+	// EndpointsPrometheus endpoints for Go application metrics
+	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsAll lists all of the above
-	EndpointsAll = "READ,STATUS,WALLET,WALLET_SEED,DEPRECATED_WALLET_SPEND"
+	EndpointsAll = "READ,STATUS,WALLET,WALLET_SEED,DEPRECATED_WALLET_SPEND,PROMETHEUS"
 )
 
 // Server exposes an HTTP API
@@ -481,7 +481,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsRead, EndpointsStatus}))
 
 	// golang process internal metrics for Prometheus
-	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), APIPrometheus))
+	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), EndpointsPrometheus))
 
 	// Returns transactions that match the filters.
 	// Method: GET

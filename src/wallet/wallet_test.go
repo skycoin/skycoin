@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"bytes"
+	cr "crypto/rand"
 	"encoding/hex"
 	"errors"
 	"flag"
@@ -14,6 +15,10 @@ import (
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
+
+	"strconv"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
@@ -668,6 +673,92 @@ func TestLoadWallet(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadDupWallets(t *testing.T) {
+	wlts := Wallets{}
+	dupWlts := Wallets{}
+
+	for i := 0; i < 3; i++ {
+		var entries []Entry
+		var dupEntries []Entry
+
+		if i%2 != 0 {
+			log.Info("Times " + strconv.Itoa(i) + ": " + strconv.Itoa(i%2))
+			ripeBytes := []byte{123, 187, 20, 57, 72, 12, 0, 255, 4, 32, 142, 69, 17, 123, 166, 99, 42, 7, 1, 212}
+			ripemd160 := cipher.Ripemd160{}
+			ripemd160.Set(ripeBytes)
+
+			entry := Entry{
+				Address: cipher.Address{
+					Version: byte(11),
+					Key:     ripemd160,
+				},
+				Secret: cipher.NewSecKey(make([]byte, 32)),
+				Public: cipher.NewPubKey(make([]byte, 33)),
+			}
+
+			dupEntries = append(dupEntries, entry)
+			entries = append(entries, entry)
+
+			dupWltItem := &Wallet{
+				Meta:    nil,
+				Entries: dupEntries,
+			}
+
+			log.Info("Adding Duplicate: " + dupWltItem.Entries[0].Address.String())
+			dupWlts[strconv.Itoa(i)] = dupWltItem
+		}
+
+		ripeBytes := make([]byte, 20)
+		ripemd160 := cipher.Ripemd160{}
+
+		// Set random bytes
+		if _, err := cr.Read(ripeBytes); err != nil {
+			t.Error(err)
+		}
+		ripemd160.Set(ripeBytes)
+
+		entries = append(entries,
+			Entry{
+				Address: cipher.Address{
+					Version: byte(i * 10),
+					Key:     ripemd160,
+				},
+				Secret: cipher.NewSecKey(make([]byte, 32)),
+				Public: cipher.NewPubKey(make([]byte, 33)),
+			})
+
+		// Meta not needed for testcase
+		wltItem := &Wallet{
+			Meta:    nil,
+			Entries: entries,
+		}
+
+		isLoaded, _ := wlts.isWalletLoaded(wltItem)
+		assert.False(t, isLoaded)
+
+		wlts[strconv.Itoa(i)] = wltItem
+	}
+
+	for _, wlt := range dupWlts {
+		isLoaded, _ := wlts.isWalletLoaded(wlt)
+		assert.True(t, isLoaded)
+	}
+}
+
+// GenerateRandomBytes returns securely generated random bytes.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func generateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 func TestWalletGenerateAddress(t *testing.T) {

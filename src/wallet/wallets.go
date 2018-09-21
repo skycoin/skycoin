@@ -20,7 +20,6 @@ type Wallets map[string]*Wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered.
 func LoadWallets(dir string) (Wallets, error) {
-	// TODO -- don't load duplicate wallets.
 	// TODO -- save a last_modified value in wallets to decide which to load
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -46,7 +45,7 @@ func LoadWallets(dir string) (Wallets, error) {
 			logger.Infof("Loaded wallet from %s", fullpath)
 			w.setFilename(name)
 
-			if isLoaded, fileName := isWalletLoaded(wallets, w); isLoaded {
+			if isLoaded, fileName := wallets.isWalletLoaded(w); isLoaded {
 				err = fmt.Errorf("Duplicate Walletfiles: '" + fileName + "' && '" + name + "'")
 				return nil, err
 			}
@@ -56,11 +55,16 @@ func LoadWallets(dir string) (Wallets, error) {
 	return wallets, nil
 }
 
-func isWalletLoaded(wlts Wallets, wlt *Wallet) (bool, string) {
+func (wlts Wallets) isWalletLoaded(wlt *Wallet) (bool, string) {
 	logger.Info("Checking if Wallet is already loaded...")
+	firstAddrLoaded := wlt.Entries[0].Address.String()
+	logger.Info("Wallet2Check: " + firstAddrLoaded)
 	for _, wltItem := range wlts {
+		firstAddrLoading := wltItem.Entries[0].Address.String()
 
-		if len(wltItem.Entries) >= len(wlt.Entries) {
+		logger.Info("Comparing: " + firstAddrLoading)
+
+		if firstAddrLoaded == firstAddrLoading {
 			return true, wltItem.Filename()
 		}
 	}

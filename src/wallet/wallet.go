@@ -115,7 +115,7 @@ const (
 	metaVersion    = "version"    // wallet version
 	metaFilename   = "filename"   // wallet file name
 	metaLabel      = "label"      // wallet label
-	metaTm         = "tm"         // the timestamp when creating the wallet
+	metaTimestamp  = "tm"         // the timestamp when creating the wallet
 	metaType       = "type"       // wallet type
 	metaCoin       = "coin"       // coin type
 	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
@@ -324,7 +324,7 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			metaLabel:      opts.Label,
 			metaSeed:       opts.Seed,
 			metaLastSeed:   opts.Seed,
-			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
+			metaTimestamp:  strconv.FormatInt(time.Now().Unix(), 10),
 			metaType:       "deterministic",
 			metaCoin:       string(coin),
 			metaEncrypted:  "false",
@@ -709,6 +709,13 @@ func (w *Wallet) Validate() error {
 		return errors.New("seed field not set")
 	}
 
+	if tm := w.Meta[metaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
+	}
+
 	walletType, ok := w.Meta[metaType]
 	if !ok {
 		return errors.New("type field not set")
@@ -834,6 +841,15 @@ func (w *Wallet) setSecrets(s string) {
 
 func (w *Wallet) coin() CoinType {
 	return CoinType(w.Meta[metaCoin])
+}
+
+func (w *Wallet) timestamp() int64 {
+	x, _ := strconv.ParseInt(w.Meta[metaTimestamp], 10, 64)
+	return x
+}
+
+func (w *Wallet) setTimestamp(t int64) {
+	w.Meta[metaTimestamp] = strconv.FormatInt(t, 10)
 }
 
 // GenerateAddresses generates addresses

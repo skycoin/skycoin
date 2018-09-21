@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -178,8 +179,13 @@ func (rw *ReadableWallet) Load(filename string) error {
 	return file.LoadJSON(filename, rw)
 }
 
-func (rw *ReadableWallet) time() string {
-	return rw.Meta[metaTm]
+func (rw *ReadableWallet) timestamp() int64 {
+	x, _ := strconv.ParseInt(rw.Meta[metaTimestamp], 10, 64)
+	return x
+}
+
+func (rw *ReadableWallet) filename() string {
+	return rw.Meta[metaFilename]
 }
 
 // Erase remove sensitive data

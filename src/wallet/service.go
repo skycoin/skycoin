@@ -646,6 +646,14 @@ func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wall
 		return nil, err
 	}
 
+	// Preserve the timestamp of the old wallet
+	w2.setTimestamp(w.timestamp())
+
+	// Save to disk
+	if err := w2.Save(serv.walletDirectory); err != nil {
+		return nil, err
+	}
+
 	serv.wallets.set(w2)
 
 	return w2.clone(), nil

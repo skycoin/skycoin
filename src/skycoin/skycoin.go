@@ -322,11 +322,10 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.DBPath = c.config.Node.DBPath
 	dc.Visor.Arbitrating = c.config.Node.Arbitrating
 	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
-	_, dc.Visor.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsWalletSeed]
-
-	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
+	_, dc.Visor.EnableWalletAPI = c.config.Node.EnabledAPISets[api.EndpointsWallet]
+	_, dc.Visor.EnableSeedAPI = c.config.Node.EnabledAPISets[api.EndpointsWalletSeed]
+	_, dc.Gateway.EnableWalletAPI = c.config.Node.EnabledAPISets[api.EndpointsWallet]
+	_, dc.Gateway.EnableSpendMethod = c.config.Node.EnabledAPISets[api.EndpointsDeprecatedWalletSpend]
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
@@ -353,7 +352,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		ReadTimeout:          c.config.Node.ReadTimeout,
 		WriteTimeout:         c.config.Node.WriteTimeout,
 		IdleTimeout:          c.config.Node.IdleTimeout,
-		EnabledAPISets:       c.config.Node.enabledAPISets,
+		EnabledAPISets:       c.config.Node.EnabledAPISets,
 		BuildInfo: readable.BuildInfo{
 			Version: c.config.Build.Version,
 			Commit:  c.config.Build.Commit,

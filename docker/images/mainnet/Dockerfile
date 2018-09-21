@@ -37,7 +37,7 @@ RUN cp -r  /go/src/github.com/skycoin/skycoin/src/gui/static /tmp/ficheros/usr/l
 RUN cp -r  /etc/ssl/certs /tmp/ficheros/etc/ssl/certs
 COPY docker_launcher.sh /tmp/ficheros/usr/local/bin/docker_launcher.sh
 
-RUN tar pczf /basefiles.tar.gz -C /tmp/ficheros/ .
+RUN tar pcf /basefiles.tar.gz -C /tmp/ficheros/ .
 
 # skycoin image
 FROM $IMAGE_FROM

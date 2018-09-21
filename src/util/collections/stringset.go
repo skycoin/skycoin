@@ -64,7 +64,7 @@ func (set *StringSet) String() string {
 	return str
 }
 
-// StringSetIntersection new string set with common elements to both sets
+// StringSetIntersection new string set with elements in common to both sets
 func StringSetIntersection(set1, set2 StringSet) StringSet {
 	s := NewStringSet()
 	for value := range set1 {

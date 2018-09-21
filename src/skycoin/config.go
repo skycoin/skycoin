@@ -330,7 +330,7 @@ func (c *Config) postProcess() {
 	}
 	conflicts := collections.StringSetIntersection(c.Node.EnabledAPISets, c.Node.DisabledAPISets)
 	if len(conflicts) > 0 {
-		exitWithMessage(1, "Impossible to enable "+conflicts.String()+" at the same time")
+		exitWithMessage(1, "Impossible to enable and disable "+conflicts.String()+" endpoints at the same time")
 	}
 	originalEnabledAPISets := c.Node.EnabledAPISets
 	// step 3 - If -disable-all-apisets, turn off all API sets.
@@ -440,9 +440,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "Export all endpoints via web interface. Option -disable-api-set can override this.")
 	flag.BoolVar(&c.DisableAllAPISets, "disable-all-api-sets", c.DisableAllAPISets, "Forbid access to all web interface endpoints. Option -enable-api-set can override this.")
 
-	validAPISetsDesc := strings.Join(allAPISets, ", ")
-	flagutil.StringSetVar(&c.EnabledAPISets, allAPISets, false, "enable-api-set", "enable API set. Options are "+validAPISetsDesc+". Multiple comma-separated values may be specified")
-	flagutil.StringSetVar(&c.DisabledAPISets, allAPISets, false, "disable-api-set", "disable API set. Options are "+validAPISetsDesc+". Multiple comma separated values may be specified")
+	flagutil.StringSetVar(&c.EnabledAPISets, allAPISets, false, "enable-api-set", "enable API set. Options are "+api.EndpointsAll+". Multiple comma-separated values may be specified")
+	flagutil.StringSetVar(&c.DisabledAPISets, allAPISets, false, "disable-api-set", "disable API set. Options are "+api.EndpointsAll+". Multiple comma separated values may be specified")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 

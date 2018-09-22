@@ -63,9 +63,10 @@ func TestGetBlockchainMetadata(t *testing.T) {
 			},
 			result: readable.BlockchainMetadata{
 				Head: readable.BlockHeader{
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Unspents:    12,
 				Unconfirmed: 13,
@@ -369,13 +370,14 @@ func TestGetBlock(t *testing.T) {
 			gatewayGetBlockBySeqResult: &coin.SignedBlock{},
 			response: &readable.Block{
 				Head: readable.BlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					BkSeq:        0x0,
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:         0x0,
+					Fee:          0x0,
+					Version:      0x0,
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Body: readable.BlockBody{
 					Transactions: []readable.Transaction{},
@@ -391,13 +393,14 @@ func TestGetBlock(t *testing.T) {
 			gatewayGetBlockByHashResult: &coin.SignedBlock{},
 			response: &readable.Block{
 				Head: readable.BlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					BkSeq:        0x0,
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:         0x0,
+					Fee:          0x0,
+					Version:      0x0,
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Body: readable.BlockBody{
 					Transactions: []readable.Transaction{},
@@ -419,13 +422,14 @@ func TestGetBlock(t *testing.T) {
 			},
 			response: &readable.BlockVerbose{
 				Head: readable.BlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					BkSeq:        0x0,
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:         0x0,
+					Fee:          0x0,
+					Version:      0x0,
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Body: readable.BlockBodyVerbose{
 					Transactions: []readable.BlockTransactionVerbose{},
@@ -447,13 +451,14 @@ func TestGetBlock(t *testing.T) {
 			},
 			response: &readable.BlockVerbose{
 				Head: readable.BlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					BkSeq:        0x0,
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:         0x0,
+					Fee:          0x0,
+					Version:      0x0,
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Body: readable.BlockBodyVerbose{
 					Transactions: []readable.BlockTransactionVerbose{},
@@ -696,9 +701,10 @@ func TestGetBlocks(t *testing.T) {
 				Blocks: []readable.Block{
 					readable.Block{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBody{
 							Transactions: []readable.Transaction{},
@@ -727,9 +733,10 @@ func TestGetBlocks(t *testing.T) {
 				Blocks: []readable.BlockVerbose{
 					readable.BlockVerbose{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBodyVerbose{
 							Transactions: []readable.BlockTransactionVerbose{},
@@ -897,9 +904,10 @@ func TestGetLastBlocks(t *testing.T) {
 				Blocks: []readable.Block{
 					readable.Block{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBody{
 							Transactions: []readable.Transaction{},
@@ -926,9 +934,10 @@ func TestGetLastBlocks(t *testing.T) {
 				Blocks: []readable.BlockVerbose{
 					readable.BlockVerbose{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBodyVerbose{
 							Transactions: []readable.BlockTransactionVerbose{},

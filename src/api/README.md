@@ -240,7 +240,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq
+curl http://127.0.0.1:6420/api/v1/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq,2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6
 ```
 
 Result:
@@ -256,6 +256,16 @@ Result:
         "hours": 142744
     },
     "addresses": {
+        "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6": {
+            "confirmed": {
+                "coins": 0,
+                "hours": 0
+            },
+            "predicted": {
+                "coins": 0,
+                "hours": 0
+            }
+        },
         "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD": {
             "confirmed": {
                 "coins": 9000000,

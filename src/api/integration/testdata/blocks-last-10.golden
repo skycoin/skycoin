@@ -8,7 +8,8 @@
 				"timestamp": 1430836422,
 				"fee": 62,
 				"version": 0,
-				"tx_body_hash": "95d847102c01d071982e67b8e7dfae50715b0fc0179d33f4b050974e634905e1"
+				"tx_body_hash": "95d847102c01d071982e67b8e7dfae50715b0fc0179d33f4b050974e634905e1",
+				"ux_hash": "d954806eed41026d3c60bc88e8fb569b3aa9007a9679e03ac61724ee3e723b01"
 			},
 			"body": {
 				"txns": [
@@ -44,7 +45,8 @@
 				"timestamp": 1430870562,
 				"fee": 6084778,
 				"version": 0,
-				"tx_body_hash": "fb495093f2f4e5c6555c50150ea60c0a6f430e53aa971ebb3e2b5412866a1f06"
+				"tx_body_hash": "fb495093f2f4e5c6555c50150ea60c0a6f430e53aa971ebb3e2b5412866a1f06",
+				"ux_hash": "e06be06b42f1aa65940658c601cf7132041f7a1eeaffdeede72cef54d9465e66"
 			},
 			"body": {
 				"txns": [
@@ -86,7 +88,8 @@
 				"timestamp": 1430870592,
 				"fee": 849078,
 				"version": 0,
-				"tx_body_hash": "7abef7e4080bf2cbe9f147d7c9cbe4c950b38f8477d304466c938b937cd379ba"
+				"tx_body_hash": "7abef7e4080bf2cbe9f147d7c9cbe4c950b38f8477d304466c938b937cd379ba",
+				"ux_hash": "41c039e8b2ade1a2cd9f7a58873d57729c30d3639a33755b0317ceff66e6f7a9"
 			},
 			"body": {
 				"txns": [
@@ -128,7 +131,8 @@
 				"timestamp": 1430871512,
 				"fee": 764646,
 				"version": 0,
-				"tx_body_hash": "a7665cec98224150968ec1ef9ef2d6b3175c9de8f9f8c7bc786b30cc74997c57"
+				"tx_body_hash": "a7665cec98224150968ec1ef9ef2d6b3175c9de8f9f8c7bc786b30cc74997c57",
+				"ux_hash": "abc08f5bf1ed183dd5dfa6dda09d9de6adfa23e310454861ae1fb938e0384321"
 			},
 			"body": {
 				"txns": [
@@ -170,7 +174,8 @@
 				"timestamp": 1430871622,
 				"fee": 111521,
 				"version": 0,
-				"tx_body_hash": "ad44a8027a825e82a20cdd910d9bd41d74025601b7668c80655e9b45afb8bb93"
+				"tx_body_hash": "ad44a8027a825e82a20cdd910d9bd41d74025601b7668c80655e9b45afb8bb93",
+				"ux_hash": "4f36b853bdb042046c522f2f5e397ccb24b59a5ef6931dd1cb1d48cc87a1ffc9"
 			},
 			"body": {
 				"txns": [
@@ -212,7 +217,8 @@
 				"timestamp": 1430908702,
 				"fee": 110149,
 				"version": 0,
-				"tx_body_hash": "9364ed6cfcc289df74dc6bac1993f7ab3441b898cb3f06918198d2476c83dbac"
+				"tx_body_hash": "9364ed6cfcc289df74dc6bac1993f7ab3441b898cb3f06918198d2476c83dbac",
+				"ux_hash": "4013a4dd63875f19f124c440685a727e9654d8c2de3298f416bd98c2bbcf2ac9"
 			},
 			"body": {
 				"txns": [
@@ -254,7 +260,8 @@
 				"timestamp": 1431162639,
 				"fee": 2711954,
 				"version": 0,
-				"tx_body_hash": "a17cf54c20ac7ec6e1362acf24c5e5589ed8b49bdba791a87430de160a473913"
+				"tx_body_hash": "a17cf54c20ac7ec6e1362acf24c5e5589ed8b49bdba791a87430de160a473913",
+				"ux_hash": "5ad39ab834a65739085413db13fb8c152a641ba28b2b45322d1da9c6d9aa05ef"
 			},
 			"body": {
 				"txns": [
@@ -322,7 +329,8 @@
 				"timestamp": 1431162689,
 				"fee": 338994,
 				"version": 0,
-				"tx_body_hash": "e4850021fb706f2b7a94fec9ade3c166823dcd980dc3954437471d98fb9d2280"
+				"tx_body_hash": "e4850021fb706f2b7a94fec9ade3c166823dcd980dc3954437471d98fb9d2280",
+				"ux_hash": "c9b05516880ca6665a0f4fa52e7feb6fe83c1ffd6f4d2874877dfa67265524e2"
 			},
 			"body": {
 				"txns": [
@@ -364,7 +372,8 @@
 				"timestamp": 1431162729,
 				"fee": 395493,
 				"version": 0,
-				"tx_body_hash": "ecd101a6af263973ab75f87a3116231e6fe84a2281d0001c9aa2d7195545e78e"
+				"tx_body_hash": "ecd101a6af263973ab75f87a3116231e6fe84a2281d0001c9aa2d7195545e78e",
+				"ux_hash": "428b5ba5d4928fa538d9a031bf9fa3eb215b47d780e43e69bcd71d87758ada2f"
 			},
 			"body": {
 				"txns": [
@@ -400,7 +409,8 @@
 				"timestamp": 1431339429,
 				"fee": 33129894,
 				"version": 0,
-				"tx_body_hash": "f58f664eea258100126636a4111838e489ef5aec848ca8498319c290fa2a0805"
+				"tx_body_hash": "f58f664eea258100126636a4111838e489ef5aec848ca8498319c290fa2a0805",
+				"ux_hash": "c99075adc48450a9bf04b8b06defba39fc9cb029fbac413d57ee9fea241d84b4"
 			},
 			"body": {
 				"txns": [
@@ -442,7 +452,8 @@
 				"timestamp": 1431574528,
 				"fee": 2265261,
 				"version": 0,
-				"tx_body_hash": "0a610a34a8408effe8f2f70e4a85a3a8f4aca923f43e10a8a6e08cf410d7a35d"
+				"tx_body_hash": "0a610a34a8408effe8f2f70e4a85a3a8f4aca923f43e10a8a6e08cf410d7a35d",
+				"ux_hash": "058d1d0a22be7b9f5567a236866836a87d922760581832cfb8bfbd8b337d64b1"
 			},
 			"body": {
 				"txns": [

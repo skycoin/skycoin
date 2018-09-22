@@ -747,10 +747,10 @@ func testKnownBlocks(t *testing.T) {
 			require.Equal(t, i, b.Head.BkSeq)
 
 			if prevBlock != nil {
-				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash, "%s != %s", prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+				require.Equal(t, prevBlock.Head.Hash, b.Head.PreviousHash, "%s != %s", prevBlock.Head.Hash, b.Head.PreviousHash)
 			}
 
-			bHash, err := c.BlockByHash(b.Head.BlockHash)
+			bHash, err := c.BlockByHash(b.Head.Hash)
 			require.NoError(t, err)
 			require.NotNil(t, bHash)
 			require.Equal(t, b, bHash)
@@ -869,10 +869,10 @@ func testKnownBlocksVerbose(t *testing.T) {
 			assertVerboseBlockFee(t, b)
 
 			if prevBlock != nil {
-				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+				require.Equal(t, prevBlock.Head.Hash, b.Head.PreviousHash)
 			}
 
-			bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
+			bHash, err := c.BlockByHashVerbose(b.Head.Hash)
 			require.NoError(t, err)
 			require.NotNil(t, bHash)
 			require.Equal(t, b, bHash)
@@ -1053,7 +1053,11 @@ func TestLiveBalance(t *testing.T) {
 	// Genesis address check, should not have a balance
 	b, err := c.Balance([]string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"})
 	require.NoError(t, err)
-	require.Equal(t, api.BalanceResponse{}, *b)
+	require.Equal(t, api.BalanceResponse{
+		Addresses: readable.AddressBalances{
+			"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6": readable.BalancePair{},
+		},
+	}, *b)
 
 	// Balance of final distribution address. Should have the same coins balance
 	// for the next 15-20 years.
@@ -1345,10 +1349,10 @@ func testBlocks(t *testing.T, start, end uint64) *readable.Blocks {
 	var prevBlock *readable.Block
 	for idx, b := range blocks.Blocks {
 		if prevBlock != nil {
-			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+			require.Equal(t, prevBlock.Head.Hash, b.Head.PreviousHash)
 		}
 
-		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		bHash, err := c.BlockByHash(b.Head.Hash)
 		require.Equal(t, uint64(idx)+start, b.Head.BkSeq)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
@@ -1460,10 +1464,10 @@ func testBlocksVerbose(t *testing.T, start, end uint64) *readable.BlocksVerbose 
 		assertVerboseBlockFee(t, &b)
 
 		if prevBlock != nil {
-			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+			require.Equal(t, prevBlock.Head.Hash, b.Head.PreviousHash)
 		}
 
-		bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
+		bHash, err := c.BlockByHashVerbose(b.Head.Hash)
 		require.Equal(t, uint64(idx)+start, b.Head.BkSeq)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
@@ -1494,10 +1498,10 @@ func TestStableLastBlocks(t *testing.T) {
 	require.Equal(t, 10, len(blocks.Blocks))
 	for idx, b := range blocks.Blocks {
 		if prevBlock != nil {
-			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+			require.Equal(t, prevBlock.Head.Hash, b.Head.PreviousHash)
 		}
 
-		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		bHash, err := c.BlockByHash(b.Head.Hash)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
@@ -1517,10 +1521,10 @@ func TestLiveLastBlocks(t *testing.T) {
 	require.Equal(t, 10, len(blocks.Blocks))
 	for idx, b := range blocks.Blocks {
 		if prevBlock != nil {
-			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+			require.Equal(t, prevBlock.Head.Hash, b.Head.PreviousHash)
 		}
 
-		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		bHash, err := c.BlockByHash(b.Head.Hash)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
@@ -1551,10 +1555,10 @@ func TestStableLastBlocksVerbose(t *testing.T) {
 		assertVerboseBlockFee(t, &b)
 
 		if prevBlock != nil {
-			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+			require.Equal(t, prevBlock.Head.Hash, b.Head.PreviousHash)
 		}
 
-		bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
+		bHash, err := c.BlockByHashVerbose(b.Head.Hash)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
@@ -1578,10 +1582,10 @@ func TestLiveLastBlocksVerbose(t *testing.T) {
 		assertVerboseBlockFee(t, &b)
 
 		if prevBlock != nil {
-			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+			require.Equal(t, prevBlock.Head.Hash, b.Head.PreviousHash)
 		}
 
-		bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
+		bHash, err := c.BlockByHashVerbose(b.Head.Hash)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)

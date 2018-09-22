@@ -60,7 +60,7 @@ func NewService(c Config) (*Service, error) {
 	// Loads wallets
 	w, err := LoadWallets(serv.walletDirectory)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load all wallets: %v", err)
+		return nil, err
 	}
 
 	serv.wallets = serv.removeDup(w)

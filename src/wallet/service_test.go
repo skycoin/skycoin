@@ -81,6 +81,21 @@ func TestNewService(t *testing.T) {
 	}
 }
 
+func TestNewServiceDupWlts(t *testing.T) {
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			// test load wallets
+			_, err := NewService(Config{
+				WalletDir:       "./testdata/duplicate_wallets",
+				CryptoType:      ct,
+				EnableWalletAPI: true,
+			})
+			require.Error(t, err)
+			require.Equal(t, "Duplicate Walletfiles: 'test3.1.wlt' && 'test3.wlt'", err.Error())
+		})
+	}
+}
+
 func TestServiceCreateWallet(t *testing.T) {
 	tt := []struct {
 		name            string

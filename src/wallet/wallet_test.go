@@ -644,9 +644,9 @@ func TestLoadWallet(t *testing.T) {
 					"encrypted":  "false",
 					"filename":   "v2_no_encrypt.wlt",
 					"label":      "v2_no_encrypt",
-					"lastSeed":   "c79454cf362b3f55e5effce09f664311650a44b9c189b3c8eed1ae9bd696cd9e",
+					"lastSeed":   "bc48d4499664133b5f78af1c4513a50afff59ede8b61c2154d5e298472be550a",
 					"secrets":    "",
-					"seed":       "seed",
+					"seed":       "raven trip aerobic soul latin stand scene opinion device rocket winner rain",
 					"type":       "deterministic",
 					"version":    "0.2",
 				},
@@ -677,7 +677,7 @@ func TestLoadWallet(t *testing.T) {
 
 func TestLoadDupWallets(t *testing.T) {
 	wlts := Wallets{}
-	dupWlts := Wallets{}
+	dupWlt := &Wallet{}
 
 	for i := 0; i < 3; i++ {
 		var entries []Entry
@@ -702,12 +702,14 @@ func TestLoadDupWallets(t *testing.T) {
 			entries = append(entries, entry)
 
 			dupWltItem := &Wallet{
-				Meta:    nil,
+				Meta:    map[string]string{},
 				Entries: dupEntries,
 			}
 
+			dupWltItem.setFilename("dup_wlt_" + strconv.Itoa(i) + ".wlt")
+
 			log.Info("Adding Duplicate: " + dupWltItem.Entries[0].Address.String())
-			dupWlts[strconv.Itoa(i)] = dupWltItem
+			dupWlt = dupWltItem
 		}
 
 		ripeBytes := make([]byte, 20)
@@ -729,22 +731,26 @@ func TestLoadDupWallets(t *testing.T) {
 				Public: cipher.NewPubKey(make([]byte, 33)),
 			})
 
-		// Meta not needed for testcase
 		wltItem := &Wallet{
-			Meta:    nil,
+			Meta:    map[string]string{},
 			Entries: entries,
 		}
 
+		wltItem.setFilename("wlt_" + strconv.Itoa(i) + ".wlt")
+
 		isLoaded, _ := wlts.isWalletLoaded(wltItem)
-		assert.False(t, isLoaded)
+		require.False(t, isLoaded)
 
 		wlts[strconv.Itoa(i)] = wltItem
 	}
 
-	for _, wlt := range dupWlts {
-		isLoaded, _ := wlts.isWalletLoaded(wlt)
-		assert.True(t, isLoaded)
+	for count, entry := range dupWlt.Entries {
+		log.Info("DupWallet Entry " + strconv.Itoa(count) + ": " + entry.Address.String())
 	}
+
+	isLoaded, fileName := wlts.isWalletLoaded(dupWlt)
+	log.Info("Wallet " + fileName + " has been loaded: " + strconv.FormatBool(isLoaded))
+	assert.True(t, isLoaded)
 }
 
 func TestWalletGenerateAddress(t *testing.T) {

@@ -30,15 +30,6 @@ RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
 RUN apt-get update && \
     apt-get install -y ca-certificates
 
-
-RUN /bin/bash -c 'mkdir -p /tmp/ficheros/{usr/bin,/usr/local/skycoin/src/gui/static,/usr/local/bin/,/etc/ssl}'
-RUN cp -r /go/bin/* /tmp/ficheros/usr/bin/
-RUN cp -r  /go/src/github.com/skycoin/skycoin/src/gui/static /tmp/ficheros/usr/local/skycoin/src/gui/static
-RUN cp -r  /etc/ssl/certs /tmp/ficheros/etc/ssl/certs
-COPY docker_launcher.sh /tmp/ficheros/usr/local/bin/docker_launcher.sh
-
-RUN tar pcf /basefiles.tar -C /tmp/ficheros/ .
-
 # skycoin image
 FROM $IMAGE_FROM
 
@@ -49,10 +40,16 @@ ENV RPC_ADDR="http://0.0.0.0:6420" \
     WALLET_NAME="$COIN_cli.wlt"
 
 # copy all the binaries
-VOLUME ["/tmp"]
-COPY --from=build /basefiles.tar /tmp
-WORKDIR /
-RUN ["tar", "xf", "/tmp/basefiles.tar"]
+COPY --from=build /go/bin/* /usr/bin/
+
+# copy assets
+COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/src/gui/static
+
+# copy launcher
+COPY docker_launcher.sh /usr/local/bin/docker_launcher.sh
+
+#Copy certificates
+COPY --from=build /etc/ssl/certs /etc/ssl/certs
 
 # volumes
 VOLUME $WALLET_DIR

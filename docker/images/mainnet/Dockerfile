@@ -52,7 +52,7 @@ ENV RPC_ADDR="http://0.0.0.0:6420" \
 VOLUME ["/tmp"]
 COPY --from=build /basefiles.tar /tmp
 WORKDIR /
-RUN ["tar", "xf /tmp/basefiles.tar"]
+RUN ["tar", "xf", "/tmp/basefiles.tar"]
 
 # volumes
 VOLUME $WALLET_DIR

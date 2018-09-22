@@ -1479,9 +1479,9 @@ func scanBlocks(t *testing.T, start, end string) { // nolint: unparam
 	require.NoError(t, err)
 
 	var preBlocks readable.Block
-	preBlocks.Head.BlockHash = "0000000000000000000000000000000000000000000000000000000000000000"
+	preBlocks.Head.Hash = "0000000000000000000000000000000000000000000000000000000000000000"
 	for _, b := range blocks.Blocks {
-		require.Equal(t, b.Head.PreviousBlockHash, preBlocks.Head.BlockHash)
+		require.Equal(t, b.Head.PreviousHash, preBlocks.Head.Hash)
 		preBlocks = b
 	}
 }

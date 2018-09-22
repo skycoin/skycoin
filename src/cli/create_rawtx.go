@@ -534,79 +534,22 @@ func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr s
 		}
 	}
 
-	// TODO -- remove me -- reimplementation of visor.VerifySingleTxnSoftConstraints minus
-	// the parts that require block head data, which is not available from the RPC API (see below)
-	if err := verifyTransactionConstraints(txn, inUxsFiltered, visor.DefaultMaxBlockSize); err != nil {
+	head, err := outputs.Head.ToCoinBlockHeader()
+	if err != nil {
 		return nil, err
 	}
 
-	// TODO -- verify against soft and hard constraints
-	// Need to get the head block to do verification.
-	// The head block is not exposed over the JSON RPC, which webrpc.Client uses.
-	// Need to remove the JSON RPC API and have the client make requests to the HTTP API.
-	// Once the HTTP API is used,
-	// Need to request /blockchain/metadata to get the head block time
-	// This could lead to race conditions; /blockchain/metadata should return the full head, or have an API endpoint
-	// just for the head, and/or include the head block in the get_outputs response
-	// The head block is used for calculating inUxs's coin hours.
-	// if err := visor.VerifySingleTxnSoftConstraints(txn, inUxs, visor.DefaultMaxBlockSize); err != nil {
-	//     return nil, err
-	// }
-	// if err := visor.VerifySingleTxnHardConstraints(txn, head, inUxs); err != nil {
-	// 	return nil, err
-	// }
+	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, visor.DefaultMaxBlockSize); err != nil {
+		return nil, err
+	}
+	if err := visor.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered); err != nil {
+		return nil, err
+	}
+	if err := visor.VerifySingleTxnUserConstraints(*txn); err != nil {
+		return nil, err
+	}
 
 	return txn, nil
-}
-
-// TODO -- remove me -- reimplementation of visor.VerifySingleTxnSoftConstraints and HardConstraints
-// minus the parts that require block head data, which is not available from the RPC API (see below)
-func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxSize int) error { // nolint: unparam
-	// SOFT constraints:
-
-	if txn.Size() > maxSize {
-		return errors.New("Transaction size bigger than max block size")
-	}
-
-	if visor.TransactionIsLocked(uxIn) {
-		return errors.New("Transaction has locked address inputs")
-	}
-
-	// Ignore transactions that do not conform to decimal restrictions
-	for _, o := range txn.Out {
-		if err := visor.DropletPrecisionCheck(o.Coins); err != nil {
-			return err
-		}
-	}
-
-	// HARD constraints:
-
-	if err := txn.Verify(); err != nil {
-		return err
-	}
-
-	// Checks whether ux inputs exist,
-	// Check that signatures are allowed to spend inputs
-	if err := txn.VerifyInput(uxIn); err != nil {
-		return err
-	}
-
-	// Verify CoinHours do not overflow
-	if _, err := txn.OutputHours(); err != nil {
-		return err
-	}
-
-	// Check that no coins are created or destroyed
-	// TODO -- use the correct block head, once we have it from the API
-	// For now it doesn't matter, the block head is used to calculate the uxOut hours,
-	// but we're not validating the hours
-	uxOut := coin.CreateUnspents(coin.BlockHeader{
-		BkSeq: 1,
-	}, *txn)
-	return coin.VerifyTransactionCoinsSpending(uxIn, uxOut)
-
-	// TODO -- use coin.VerifyTransactionHoursSpending, once we have the head block
-	// return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
 }
 
 func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {

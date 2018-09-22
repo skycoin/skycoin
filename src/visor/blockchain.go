@@ -329,7 +329,7 @@ func (bc Blockchain) VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transacti
 }
 
 func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
-	if err := VerifyBlockTxnConstraints(txn, head, uxIn); err != nil {
+	if err := VerifyBlockTxnConstraints(txn, head.Head, uxIn); err != nil {
 		return err
 	}
 
@@ -402,7 +402,7 @@ func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.
 }
 
 func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
-	if err := VerifySingleTxnHardConstraints(txn, head, uxIn); err != nil {
+	if err := VerifySingleTxnHardConstraints(txn, head.Head, uxIn); err != nil {
 		return err
 	}
 

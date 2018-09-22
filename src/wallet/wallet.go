@@ -844,7 +844,10 @@ func (w *Wallet) coin() CoinType {
 }
 
 func (w *Wallet) timestamp() int64 {
-	x, _ := strconv.ParseInt(w.Meta[metaTimestamp], 10, 64)
+	// Intentionally ignore the error when parsing the timestamp,
+	// if it isn't valid or is missing it will be set to 0.
+	// Also, this value is validated by wallet.Validate()
+	x, _ := strconv.ParseInt(w.Meta[metaTimestamp], 10, 64) // nolint: errcheck
 	return x
 }
 

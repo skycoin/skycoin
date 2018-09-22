@@ -54,6 +54,19 @@ All responses will set an appropriate HTTP status code indicating an error, and 
 Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
 However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
 
+## API Sets
+
+API endpoints are grouped into "sets" which can be toggled with the command line parameters
+`-enable-api-sets`, `-disable-api-sets` and `-enable-all-api-sets`.
+
+These API sets are:
+
+* `READ` - All query-related endpoints, they do not modify the state of the program
+* `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
+* `WALLET` - These endpoints operate on local wallet files
+* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
+* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
+
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)
@@ -1304,7 +1317,7 @@ Result:
 
 ### Get wallet seed
 
-API sets: `WALLET_SEED`
+API sets: `INSECURE_WALLET_SEED`
 
 ```
 URI: /api/v1/wallet/seed

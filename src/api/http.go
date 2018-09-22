@@ -40,8 +40,8 @@ const (
 	EndpointsStatus = "STATUS"
 	// EndpointsWallet endpoints implement wallet interface
 	EndpointsWallet = "WALLET"
-	// EndpointsWalletSeed endpoints implement wallet interface
-	EndpointsWalletSeed = "WALLET_SEED"
+	// EndpointsInsecureWalletSeed endpoints implement wallet interface
+	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
 	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 )
@@ -423,7 +423,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// GET Arguments:
 	//     id: wallet id
 	//     password: wallet password
-	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), []string{EndpointsWalletSeed}))
+	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), []string{EndpointsInsecureWalletSeed}))
 
 	// unload wallet
 	// POST Argument:

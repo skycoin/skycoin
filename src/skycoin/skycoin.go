@@ -323,7 +323,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.Arbitrating = c.config.Node.Arbitrating
 	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
 	_, dc.Visor.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsWalletSeed]
+	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
 
 	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
 	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
@@ -381,8 +381,8 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 }
 
 // ParseConfig prepare the config
-func (c *Coin) ParseConfig() {
-	c.config.postProcess()
+func (c *Coin) ParseConfig() error {
+	return c.config.postProcess()
 }
 
 // InitTransaction creates the initialize transaction

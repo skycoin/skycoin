@@ -5,7 +5,7 @@
 // %pointer_functions(cipher__Ripemd160, cipher__Ripemd160p);
 // %pointer_functions(cipher_Sig, cipher_Sigp);
 %pointer_functions(GoSlice, GoSlicep);
-// %pointer_functions(GoString_, GoStringp_);
+%pointer_functions(_GoString_, GoStringp);
 %pointer_functions(int, intp);
 // %pointer_functions(byte, bytep);
 

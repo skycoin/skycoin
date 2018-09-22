@@ -28,12 +28,7 @@ return slice;
 		$self->cap = $self->len;
 	}
 
-	_GoString_ toString(){
-		_GoString_ data;
-		data.p = (char *)$self->data; 
-		data.n = $self->len; 
-		return data;
-	}
+	
 }
 
 %extend _GoString_ {
@@ -41,4 +36,13 @@ return slice;
 		$self->p = str;
 		$self->n = strlen(str);
 	}
+}
+
+%extend cipher_SHA256 {
+    	_GoString_ getStr(){
+		_GoString_ str;
+		str.p = (const char*)$self->data;
+		str.n = strlen(str.p);
+		return str;
+    }
 }

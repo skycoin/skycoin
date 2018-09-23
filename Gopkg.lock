@@ -97,6 +97,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/rs/cors"
+  packages = ["."]
+  revision = "3fb1b69b103a84de38a19c3c6ec073dd6caa4d3f"
+  version = "v1.5.0"
+
+[[projects]]
   name = "github.com/sergi/go-diff"
   packages = ["diffmatchpatch"]
   revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
@@ -217,6 +223,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "329a11cf62a9defc83325e45c1ab0f25ca67be42a29d17ca8947d95dab5e292a"
+  inputs-digest = "8b27c53d019a18c4e778c0f37bd3ad4546cf4b9539c8317b8dc0cf30d48c68cd"
   solver-name = "gps-cdcl"
   solver-version = 1

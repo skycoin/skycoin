@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/rs/cors"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -269,6 +270,20 @@ func (s *Server) Shutdown() {
 func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *webrpc.WebRPC) *http.ServeMux {
 	mux := http.NewServeMux()
 
+	allowedOrigins := []string{fmt.Sprintf("http://%s", c.host)}
+	for _, s := range c.hostWhitelist {
+		allowedOrigins = append(allowedOrigins, fmt.Sprintf("http://%s", s))
+	}
+
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:     allowedOrigins,
+		Debug:              false,
+		AllowedMethods:     []string{http.MethodGet, http.MethodPost},
+		AllowedHeaders:     []string{"Origin", "Accept", "Content-Type", "X-Requested-With", CSRFHeaderName},
+		AllowCredentials:   false, // credentials are not used, but it would be safe to enable if necessary
+		OptionsPassthrough: false,
+	})
+
 	headerCheck := func(host string, hostWhitelist []string, handler http.Handler) http.Handler {
 		handler = OriginRefererCheck(host, hostWhitelist, handler)
 		handler = HostCheck(host, hostWhitelist, handler)
@@ -300,8 +315,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	webHandler := func(endpoint string, handler http.Handler) {
 		handler = wh.ElapsedHandler(logger, handler)
-		handler = CSRFCheck(csrfStore, handler)
+		handler = corsHandler.Handler(handler)
 		handler = headerCheck(c.host, c.hostWhitelist, handler)
+		handler = CSRFCheck(csrfStore, handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
@@ -349,7 +365,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	// get the current CSRF token
-	csrfHandler := headerCheck(c.host, c.hostWhitelist, getCSRFToken(csrfStore))
+	csrfHandler := corsHandler.Handler(headerCheck(c.host, c.hostWhitelist, getCSRFToken(csrfStore)))
 	mux.Handle("/csrf", csrfHandler)
 	mux.Handle("/api/v1/csrf", csrfHandler) // csrf is always available, regardless of the API set
 

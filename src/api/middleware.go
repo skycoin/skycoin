@@ -74,7 +74,6 @@ func HostCheck(host string, hostWhitelist []string, handler http.Handler) http.H
 // at least one of these values. If neither are set, assume it is a request
 // from curl/wget.
 func OriginRefererCheck(host string, hostWhitelist []string, handler http.Handler) http.Handler {
-
 	hostWhitelistMap := make(map[string]struct{}, len(hostWhitelist)+1)
 	for _, k := range hostWhitelist {
 		hostWhitelistMap[k] = struct{}{}

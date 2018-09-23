@@ -254,3 +254,185 @@ func TestAPISetDisabled(t *testing.T) {
 		})
 	}
 }
+
+func TestCORS(t *testing.T) {
+	// Make sure cross origin requests are blocked by default
+	// Make sure cross origin requests are blocked when using a whitelist
+	// Make sure regular requests work
+	//		-- GET request
+	//		-- POST request with CSRF token
+	// Make sure cross origin requests work if whitelisted
+	//		-- GET request
+	//		-- POST request with CSRF token
+	// Make sure OPTIONS responds for all endpoints
+
+	// getCSRFTokenFromOrigin := func(t *testing.T, origin string, cfg muxConfig, csrfStore *CSRFStore) string {
+	// 	rr := makeCSRFTokenRequestFromOrigin(t, origin, cfg, csrfStore)
+
+	// 	require.Equal(t, http.StatusOK, rr.Code)
+
+	// 	var msg map[string]string
+	// 	err := json.Unmarshal(rr.Body.Bytes(), &msg)
+	// 	require.NoError(t, err)
+
+	// 	token := msg["csrf_token"]
+	// 	require.NotEmpty(t, token)
+
+	// 	return token
+	// }
+
+	// makePOSTRequestFromOrigin := func(t *testing.T, origin string, cfg muxConfig, csrfStore *CSRFStore, token string) {
+	// 	// Make a POST request with the CSRF token
+	// 	// The POST request is sent to /api/v2/address/verify since this has no side effects to handle
+	// 	body := `{"address":"7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD"}`
+	// 	req, err := http.NewRequest(http.MethodPost, "/api/v2/address/verify", bytes.NewBufferString(body))
+	// 	require.NoError(t, err)
+
+	// 	req.Header.Set("Origin", fmt.Sprintf("http://%s", origin))
+	// 	req.Header.Set(CSRFHeaderName, token)
+	// 	req.Header.Set("Content-Type", "application/json")
+
+	// 	handler := newServerMux(cfg, &MockGatewayer{}, csrfStore, nil)
+
+	// 	rr := httptest.NewRecorder()
+	// 	handler.ServeHTTP(rr, req)
+
+	// 	require.Equal(t, http.StatusOK, rr.Code)
+	// }
+
+	// testSameOriginRequestOK := func(t *testing.T) {
+	// 	// Tests that same origin requests are fine,
+	// 	// GET /csrf, then use CSRF to POST something
+	// 	cfg := defaultMuxConfig()
+	// 	csrfStore := &CSRFStore{
+	// 		Enabled: true,
+	// 	}
+	// 	token := getCSRFTokenFromOrigin(t, cfg.host, cfg, csrfStore)
+	// 	makePOSTRequestFromOrigin(t, cfg.host, cfg, csrfStore, token)
+	// }
+
+	// testCrossOriginWhitelistedRequestOK := func(t *testing.T) {
+	// 	// Tests that whitelist cross origin requests are fine,
+	// 	// GET /csrf, then use CSRF to POST something
+	// 	cfg := defaultMuxConfig()
+	// 	cfg.hostWhitelist = []string{"example.com"}
+	// 	csrfStore := &CSRFStore{
+	// 		Enabled: true,
+	// 	}
+	// 	token := getCSRFTokenFromOrigin(t, "example.com", cfg, csrfStore)
+	// 	makePOSTRequestFromOrigin(t, "example.com", cfg, csrfStore, token)
+	// }
+
+	// testCrossOriginNotAllowed := func(t *testing.T) {
+	// 	// Tests that cross origin requests are not allowed by default
+	// 	cfg := defaultMuxConfig()
+	// 	csrfStore := &CSRFStore{
+	// 		Enabled: true,
+	// 	}
+	// 	rr := makeCSRFTokenRequestFromOrigin(t, "example.com", cfg, csrfStore)
+	// 	require.Equal(t, http.StatusForbidden, rr.Code)
+	// 	require.Equal(t, "foo", rr.Body.String())
+
+	// 	// makePOSTRequestFromOrigin(t, "example.com", cfg, csrfStore, token)
+	// }
+
+	// makeRequestFromOrigin := func(t *testing.T, method, endpoint, origin string, cfg muxConfig) *httptest.ResponseRecorder {
+	// 	req, err := http.NewRequest(method, endpoint, nil)
+	// 	require.NoError(t, err)
+
+	// 	csrfStore := &CSRFStore{
+	// 		Enabled: true,
+	// 	}
+	// 	setCSRFParameters(csrfStore, tokenValid, req)
+
+	// 	req.Header.Set("Origin", fmt.Sprintf("http://%s", origin))
+
+	// 	handler := newServerMux(cfg, &MockGatewayer{}, csrfStore, nil)
+
+	// 	rr := httptest.NewRecorder()
+	// 	handler.ServeHTTP(rr, req)
+
+	// 	return rr
+	// }
+
+	cases := []struct {
+		name          string
+		origin        string
+		hostWhitelist []string
+		valid         bool
+	}{
+		{
+			name:   "options no whitelist",
+			origin: configuredHost,
+			valid:  true,
+		},
+		{
+			name:          "options whitelist",
+			origin:        "example.com",
+			hostWhitelist: []string{"example.com"},
+			valid:         true,
+		},
+		{
+			name:   "options no whitelist not whitelisted",
+			origin: "example.com",
+			valid:  false,
+		},
+	}
+
+	for _, e := range append(endpoints, "/api/v1/csrf") {
+		if !strings.HasPrefix(e, "/api/v") {
+			continue
+		}
+
+		for _, tc := range cases {
+			for _, m := range []string{http.MethodPost, http.MethodGet} {
+				name := fmt.Sprintf("%s %s %s", tc.name, m, e)
+				t.Run(name, func(t *testing.T) {
+					cfg := defaultMuxConfig()
+					cfg.hostWhitelist = tc.hostWhitelist
+
+					req, err := http.NewRequest(http.MethodOptions, e, nil)
+					require.NoError(t, err)
+
+					csrfStore := &CSRFStore{
+						Enabled: true,
+					}
+					setCSRFParameters(csrfStore, tokenValid, req)
+
+					req.Header.Set("Origin", fmt.Sprintf("http://%s", tc.origin))
+					req.Header.Set("Access-Control-Request-Method", m)
+
+					requestHeaders := strings.ToLower(fmt.Sprintf("%s, Content-Type", CSRFHeaderName))
+					req.Header.Set("Access-Control-Request-Headers", requestHeaders)
+
+					handler := newServerMux(cfg, &MockGatewayer{}, csrfStore, nil)
+
+					rr := httptest.NewRecorder()
+					handler.ServeHTTP(rr, req)
+
+					resp := rr.Result()
+
+					fmt.Println(resp.Header)
+					fmt.Println(rr.Body.String())
+
+					allowOrigins := resp.Header.Get("Access-Control-Allow-Origin")
+					allowHeaders := resp.Header.Get("Access-Control-Allow-Headers")
+					allowMethods := resp.Header.Get("Access-Control-Allow-Methods")
+
+					if tc.valid {
+						require.Equal(t, fmt.Sprintf("http://%s", tc.origin), allowOrigins)
+						require.Equal(t, requestHeaders, strings.ToLower(allowHeaders))
+						require.Equal(t, m, allowMethods)
+					} else {
+						require.Empty(t, allowOrigins)
+						require.Empty(t, allowHeaders)
+						require.Empty(t, allowMethods)
+					}
+
+					allowCreds := resp.Header.Get("Access-Control-Allow-Credentials")
+					require.Empty(t, allowCreds)
+				})
+			}
+		}
+	}
+}

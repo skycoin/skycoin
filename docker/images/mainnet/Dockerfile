@@ -32,7 +32,7 @@ RUN apt-get update && \
 
 
 RUN /bin/bash -c 'mkdir -p /tmp/files/{usr/bin,/usr/local/skycoin/src/gui/static,/usr/local/bin/,/etc/ssl}'
-RUN cp -r /go/bin/* /tmp/ficheros/usr/bin/
+RUN cp -r /go/bin/* /tmp/files/usr/bin/
 RUN cp -r  /go/src/github.com/skycoin/skycoin/src/gui/static /tmp/files/usr/local/skycoin/src/gui/static
 RUN cp -r  /etc/ssl/certs /tmp/files/etc/ssl/certs
 COPY docker_launcher.sh /tmp/files/usr/local/bin/docker_launcher.sh

@@ -40,7 +40,7 @@ look like this:
 {
     "error": {
         "code": 400,
-        "message": "bad arguments",
+        "message": "bad arguments"
     }
 }
 ```
@@ -89,6 +89,11 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
 	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
 	- [Verify encoded transaction](#verify-encoded-transaction)
+- [Notes APIs](#notes-apis)
+	- [Get all notes](#get-all-notes)
+	- [Get notes by transaction id](#get-note-by-id)
+	- [Add note](#add-note)
+	- [Remove Note](#removes-note-by-id)
 - [Block APIs](#block-apis)
 	- [Get blockchain metadata](#get-blockchain-metadata)
 	- [Get blockchain progress](#get-blockchain-progress)
@@ -100,7 +105,7 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 - [Uxout APIs](#uxout-apis)
 	- [Get uxout](#get-uxout)
 	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
-- [Coin supply related information](#coin-supply-related-information)
+- [Coin supply related information](#coin-supply-related-information)x
 	- [Coin supply](#coin-supply)
 	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
 	- [Count unique addresses](#count-unique-addresses)
@@ -319,7 +324,7 @@ Result:
             "coins": "2.000000",
             "hours": 633,
             "calculated_hours": 10023
-        },
+        }
     ],
     "outgoing_outputs": [],
     "incoming_outputs": []
@@ -357,7 +362,7 @@ Result:
 ```json
 {
     "data": {
-        "version": 0,
+        "version": 0
     }
 }
 ```
@@ -989,7 +994,7 @@ Example request body with auto hours selection type, encrypted wallet, specified
     "wallet": {
         "id": "foo.wlt",
         "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
-        "password": "foobar",
+        "password": "foobar"
     },
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
@@ -2134,6 +2139,120 @@ Result:
 ```
 
 
+## Notes APIs
+
+### Get all Notes
+
+API sets: `READ`
+
+```
+URI: /api/v2/notes/notes
+Method: POST
+```
+
+Example:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes/notes
+```
+
+Result:
+
+```json
+[
+    {
+        "txid": "62b1e205aa2895b7094f708d853a64709e14d467ef3e3eee54ef79bcefdbd4c8",
+        "notes": "Paycheck for Mr. Mueller"
+    },
+    {
+        "txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114",
+        "notes": "A Note \n"
+    }
+]
+```
+
+### Get Note by ID
+
+API sets: `READ`
+
+```
+URI: /api/v2/notes/noteByTxid
+Method: POST
+```
+
+Example:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes/noteByTxid \
+-d '{"txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114"}'
+```
+
+Result:
+ 
+ ```json
+ [
+     {
+         "txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114",
+         "notes": "A Note... \n"
+     }
+ ]
+ ```
+
+### Add Note
+
+API sets: `READ`
+
+```
+URI: /api/v2/notes/addNote
+Method: POST
+```
+
+Example:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes/addNote \
+-d '{"txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114","notes": "A Note... \n"}'
+```
+
+Result:
+ 
+ ```json
+ [
+     {
+         "txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114",
+         "notes": "A Note... \n"
+     }
+ ]
+ ```
+
+### Removes Note by ID
+
+API sets: `READ`
+
+```
+URI: /api/v2/notes/removeNote
+Method: POST
+```
+
+Example:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes/removeNote \
+-d '{"txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114"}'
+```
+
+Result:
+ 
+ ```json
+ [
+     {
+         "txid": "",
+         "notes": ""
+     }
+ ]
+ ```
+
+
 ## Block APIs
 
 ### Get blockchain metadata
@@ -2198,7 +2317,7 @@ Result:
         {
             "address": "63.142.253.76:6000",
             "height": 2760
-        },
+        }
     ]
 }
 ```

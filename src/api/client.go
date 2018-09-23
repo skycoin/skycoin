@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/notes"
 	"github.com/skycoin/skycoin/src/readable"
 )
 
@@ -745,6 +746,61 @@ func (c *Client) WalletSeed(id string, password string) (string, error) {
 	}
 
 	return r.Seed, nil
+}
+
+// GetAllNotes makes a request to POST /api/v2/notes/notes
+func (c *Client) GetAllNotes() ([]notes.Note, error) {
+	var allNotes []notes.Note
+
+	if err := c.PostForm("/api/v2/notes/notes", nil, allNotes); err != nil {
+		return nil, err
+	}
+
+	return allNotes, nil
+}
+
+// GetNoteByTxID makes a request to POST /api/v2/notes/noteByTxid
+func (c *Client) GetNoteByTxID(txID string) (notes.Note, error) {
+	var note notes.Note
+	v := url.Values{}
+	v.Add("txid", txID)
+
+	if err := c.PostForm("/api/v2/notes/noteByTxid", strings.NewReader(v.Encode()), note); err != nil {
+		return notes.Note{}, err
+	}
+
+	return note, nil
+}
+
+// AddNote makes a request to POST /api/v2/notes/addNote
+func (c *Client) AddNote(note notes.Note) (notes.Note, error) {
+	v := url.Values{}
+	v.Add("txid", note.TxIDHex)
+	v.Add("notes", note.Notes)
+
+	if err := c.PostForm("/api/v2/notes/addNote", strings.NewReader(v.Encode()), note); err != nil {
+		return notes.Note{}, err
+	}
+
+	return note, nil
+}
+
+// RemoveNote makes a request to POST /api/v2/notes/removeNote
+func (c *Client) RemoveNote(txID string) (notes.Note, error) {
+	var note notes.Note
+	v := url.Values{}
+	v.Add("txid", txID)
+
+	if err := c.PostForm("/api/v2/notes/removeNote", strings.NewReader(v.Encode()), note); err != nil {
+		return notes.Note{}, err
+	}
+
+	if note.TxIDHex != "" && note.Notes != "" {
+		err := fmt.Errorf("the Note hasn't been deleted")
+		return notes.Note{}, err
+	}
+
+	return note, nil
 }
 
 // NetworkConnection makes a request to GET /api/v1/network/connection

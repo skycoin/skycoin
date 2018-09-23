@@ -20,7 +20,7 @@
 
 <div class="-records">
   <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
-    <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
+    <div class="-record" *ngIf="!wallet.hideEmpty || address.coins.isGreaterThan(0)">
       <div class="id-column">{{ i + 1 }}</div>
       <div class="address-column">
         <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
@@ -31,8 +31,8 @@
           </span>
         </p>
       </div>
-      <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
-      <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
+      <div class="coins-column">{{ (address.coins ? address.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
+      <div class="hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
       <div class="options-column">
         <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
         <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">

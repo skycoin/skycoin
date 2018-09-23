@@ -1000,6 +1000,8 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 				resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 			case wallet.ErrWalletNotExist:
 				resp = NewHTTPErrorResponse(http.StatusNotFound, "")
+			case wallet.ErrWalletAPIDisabled:
+				resp = NewHTTPErrorResponse(http.StatusForbidden, "")
 			default:
 				resp = NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
 			}

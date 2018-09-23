@@ -2941,6 +2941,20 @@ func TestWalletRecover(t *testing.T) {
 			httpResponse: NewHTTPErrorResponse(http.StatusNotFound, "Not Found"),
 		},
 		{
+			name:        "wallet api disabled",
+			method:      http.MethodPost,
+			status:      http.StatusForbidden,
+			contentType: "application/json",
+			req: &WalletRecoverRequest{
+				ID:   "foo",
+				Seed: "fooseed",
+			},
+			gatewayReturn: gatewayReturnPair{
+				err: wallet.ErrWalletAPIDisabled,
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusForbidden, ""),
+		},
+		{
 			name:        "wallet other error",
 			method:      http.MethodPost,
 			status:      http.StatusInternalServerError,

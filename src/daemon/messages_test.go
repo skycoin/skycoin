@@ -208,6 +208,108 @@ func generateElementHexdumpWithDepth(obj interface{}, depth int, prefix string) 
 	return annotation
 }
 
+
+
+//***Lazy iterator for DeepMessages
+
+type DeepMessagesAnnotationsIterator struct {
+	Message      	gnet.Message
+	LengthCalled 	bool
+	PrefixCalled 	bool
+	CurrentField 	int
+	//MaxField     	int
+	CurrentIndex 	int
+	CurrentDepth 	int
+	MaxDepth	 	int
+	CurrentTypology []reflect.Kind
+	CurrentPosition []int
+	CurrentMax		[]int
+}
+
+func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMessagesAnnotationsIterator {
+	var dmai = DeepMessagesAnnotationsIterator{}
+	dmai.Message = message
+	dmai.LengthCalled = false
+	dmai.PrefixCalled = false
+	dmai.CurrentField = 0
+	dmai.CurrentIndex = -1
+	dmai.CurrentDepth = 0
+	dmai.MaxDepth = depth
+	//dmai.MaxField = reflect.Indirect(reflect.ValueOf(dmai.Message)).NumField()
+	dmai.CurrentTypology = make([]reflect.Kind,1)
+	dmai.CurrentTypology[0] = reflect.Struct
+	dmai.CurrentPosition = make([]int,1)
+	dmai.CurrentPosition[0] = 0
+	dmai.CurrentMax = make([]int,1)
+	dmai.CurrentMax[0] = reflect.Indirect(reflect.ValueOf(dmai.Message)).NumField()
+
+	return dmai
+}
+
+func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
+	if !dmai.LengthCalled {
+		dmai.LengthCalled = true
+		return util.Annotation{Size: 4, Name: "Length"}, true
+	}
+	if !dmai.PrefixCalled {
+		dmai.PrefixCalled = true
+		return util.Annotation{Size: 4, Name: "Prefix"}, true
+
+	}
+	if dmai.CurrentPosition[0] > dmai.CurrentMax[0] {
+		return util.Annotation{}, false
+	}
+
+	obj := reflect.ValueOf(dmai.Message)
+
+	for (len(dmai.CurrentTypology) < dmai.MaxDepth ) && ( obj.Kind() == reflect.Struct || obj.Kind() == reflect.Slice) {
+		if obj.Kind() == reflect.Struct {
+			dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Struct)
+			dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
+			dmai.CurrentMax = append(dmai.CurrentMax, obj.Type().NumField())
+			obj = obj.Field(0)
+		}
+
+		if obj.Kind() == reflect.Slice {
+			dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Slice)
+			dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
+			dmai.CurrentMax = append(dmai.CurrentMax, obj.Type().Len())
+			obj = obj.Index(0)
+		}
+	}
+	obj, objName := getCurrentObj(dmai.Message,dmai.CurrentDepth,dmai.CurrentTypology,dmai.CurrentPosition)
+
+	var annotation = util.Annotation{Name:objName,Size:len(encoder.Serialize(obj.Interface()))}
+
+
+	for (dmai.CurrentPosition[len(dmai.CurrentPosition)-1] == dmai.CurrentMax[len(dmai.CurrentPosition) - 1]) || len(dmai.CurrentPosition) == 1 {
+		dmai.CurrentPosition = dmai.CurrentPosition[0:len(dmai.CurrentPosition)-1]
+		dmai.CurrentTypology = dmai.CurrentTypology[0:len(dmai.CurrentTypology)-1]
+		dmai.CurrentMax = dmai.CurrentMax[0:len(dmai.CurrentMax)-1]
+	}
+	dmai.CurrentPosition[len(dmai.CurrentPosition) - 1]++
+
+	return annotation,true
+}
+
+func getCurrentObj(message gnet.Message, currentDepth int, currentTypology []reflect.Kind, currentPosition []int) (reflect.Value, string) {
+	 var obj reflect.Value = reflect.ValueOf(message)
+	 var name string = ""
+	for i := 0; i <  currentDepth ; i++ {
+		if currentTypology[i] == reflect.Slice {
+			obj = obj.Index(currentPosition[i])
+			name = name + "[" + strconv.Itoa(currentPosition[i]) + "]"
+		}
+		if currentTypology[i] == reflect.Struct {
+			name = name + "." + obj.Type().Field(currentPosition[i]).Name
+			obj = obj.Field(currentPosition[i])
+		}
+	}
+	return obj, name
+}
+
+
+
 /**************************************
  *
  * Test cases

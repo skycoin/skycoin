@@ -10,8 +10,8 @@ import (
 // BlockHeader represents the readable block header
 type BlockHeader struct {
 	BkSeq        uint64 `json:"seq"`
-	Hash         string `json:"block_hash"`          // TODO -- rename "hash"
-	PreviousHash string `json:"previous_block_hash"` // TODO -- rename "previous_hash"
+	Hash         string `json:"block_hash"`
+	PreviousHash string `json:"previous_block_hash"`
 	Time         uint64 `json:"timestamp"`
 	Fee          uint64 `json:"fee"`
 	Version      uint32 `json:"version"`

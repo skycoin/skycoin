@@ -349,7 +349,7 @@ typedef Handle StatusResult_Handle;
 typedef Handle AddressUxOuts_Handle;
 
 /**
- * Memory handle to access to visor.BuildInfo (BuildInfo)
+ * Memory handle to access to readable.BuildInfo (BuildInfo)
  */
 
 typedef Handle BuildInfo_Handle;
@@ -371,6 +371,10 @@ typedef Handle Number_Handle;
 */
 
 typedef Handle Signature_Handle;
+/**
+ * Handle for readable.UnspentOutputsSummary
+ * */
+typedef Handle UnspentOutputsSummary_Handle;
 
 typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
 

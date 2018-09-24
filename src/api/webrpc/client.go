@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 const (
@@ -149,7 +149,7 @@ func (c *Client) CSRF() (string, error) {
 }
 
 // OutputsForAddresses returns current unspent outputs for a set of addresses
-func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
+func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
 	outputs := OutputsResult{}
 	if err := c.Do(&outputs, "get_outputs", addrs); err != nil {
 		return nil, err
@@ -207,10 +207,10 @@ func (c *Client) GetAddressUxOuts(addrs []string) ([]AddrUxoutResult, error) {
 	return uxouts, nil
 }
 
-// GetBlocks returns a range of blocks
-func (c *Client) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
+// GetBlocksInRange returns a range of blocks
+func (c *Client) GetBlocksInRange(start, end uint64) (*readable.Blocks, error) {
 	param := []uint64{start, end}
-	blocks := visor.ReadableBlocks{}
+	blocks := readable.Blocks{}
 
 	if err := c.Do(&blocks, "get_blocks", param); err != nil {
 		return nil, err
@@ -220,8 +220,8 @@ func (c *Client) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 }
 
 // GetBlocksBySeq returns blocks for a set of block sequences (heights)
-func (c *Client) GetBlocksBySeq(ss []uint64) (*visor.ReadableBlocks, error) {
-	blocks := visor.ReadableBlocks{}
+func (c *Client) GetBlocksBySeq(ss []uint64) (*readable.Blocks, error) {
+	blocks := readable.Blocks{}
 
 	if err := c.Do(&blocks, "get_blocks_by_seq", ss); err != nil {
 		return nil, err
@@ -231,9 +231,9 @@ func (c *Client) GetBlocksBySeq(ss []uint64) (*visor.ReadableBlocks, error) {
 }
 
 // GetLastBlocks returns the last n blocks
-func (c *Client) GetLastBlocks(n uint64) (*visor.ReadableBlocks, error) {
+func (c *Client) GetLastBlocks(n uint64) (*readable.Blocks, error) {
 	param := []uint64{n}
-	blocks := visor.ReadableBlocks{}
+	blocks := readable.Blocks{}
 	if err := c.Do(&blocks, "get_lastblocks", param); err != nil {
 		return nil, err
 	}

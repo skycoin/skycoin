@@ -2,6 +2,7 @@ package webrpc
 
 import (
 	"fmt"
+	"time"
 )
 
 // StatusResult result struct of get_status
@@ -22,15 +23,15 @@ func getStatusHandler(req Request, gw Gatewayer) Response {
 		logger.Error(err)
 		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
-	if len(blocks.Blocks) == 0 {
+	if len(blocks) == 0 {
 		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 
-	b := blocks.Blocks[0]
+	b := blocks[0]
 	return makeSuccessResponse(req.ID, StatusResult{
 		Running:            true,
 		BlockNum:           b.Head.BkSeq + 1,
-		LastBlockHash:      b.Head.BlockHash,
-		TimeSinceLastBlock: fmt.Sprintf("%vs", gw.GetTimeNow()-b.Head.Time),
+		LastBlockHash:      b.Head.Hash().Hex(),
+		TimeSinceLastBlock: fmt.Sprintf("%vs", uint64(time.Now().UTC().Unix())-b.Head.Time),
 	})
 }

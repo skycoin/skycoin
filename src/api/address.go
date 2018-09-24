@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	//http,json helpers
 )
 
 // VerifyAddressRequest is the request data for POST /api/v2/address/verify
@@ -18,10 +17,10 @@ type VerifyAddressResponse struct {
 	Version byte `json:"version"`
 }
 
-// addressVerify verifies a Skycoin address
+// addressVerifyHandler verifies a Skycoin address
 // Method: POST
 // URI: /api/v2/address/verify
-func addressVerify(w http.ResponseWriter, r *http.Request) {
+func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
 		writeHTTPResponse(w, resp)

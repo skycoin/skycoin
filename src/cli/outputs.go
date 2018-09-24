@@ -7,7 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -91,7 +91,7 @@ func getAddressOutputsCmd(c *gcli.Context) error {
 // PUBLIC
 
 // GetWalletOutputsFromFile returns unspent outputs associated with all addresses in a wallet file
-func GetWalletOutputsFromFile(c GetOutputser, walletFile string) (*visor.ReadableOutputSet, error) {
+func GetWalletOutputsFromFile(c GetOutputser, walletFile string) (*readable.UnspentOutputsSummary, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func GetWalletOutputsFromFile(c GetOutputser, walletFile string) (*visor.Readabl
 }
 
 // GetWalletOutputs returns unspent outputs associated with all addresses in a wallet.Wallet
-func GetWalletOutputs(c GetOutputser, wlt *wallet.Wallet) (*visor.ReadableOutputSet, error) {
+func GetWalletOutputs(c GetOutputser, wlt *wallet.Wallet) (*readable.UnspentOutputsSummary, error) {
 	cipherAddrs := wlt.GetAddresses()
 	addrs := make([]string, len(cipherAddrs))
 	for i := range cipherAddrs {

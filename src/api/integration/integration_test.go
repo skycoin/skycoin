@@ -27,12 +27,11 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -479,7 +478,7 @@ func TestStableNoUnconfirmedOutputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			require.False(t, tc.addrs != nil && tc.hashes != nil)
 
-			var outputs *visor.ReadableOutputSet
+			var outputs *readable.UnspentOutputsSummary
 			var err error
 			switch {
 			case tc.addrs == nil && tc.hashes == nil:
@@ -497,7 +496,7 @@ func TestStableNoUnconfirmedOutputs(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected visor.ReadableOutputSet
+			var expected readable.UnspentOutputsSummary
 			checkGoldenFile(t, tc.golden, TestData{*outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
@@ -558,7 +557,7 @@ func TestStableOutputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			require.False(t, tc.addrs != nil && tc.hashes != nil)
 
-			var outputs *visor.ReadableOutputSet
+			var outputs *readable.UnspentOutputsSummary
 			var err error
 			switch {
 			case tc.addrs == nil && tc.hashes == nil:
@@ -576,7 +575,7 @@ func TestStableOutputs(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected visor.ReadableOutputSet
+			var expected readable.UnspentOutputsSummary
 			checkGoldenFile(t, tc.golden, TestData{*outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
@@ -620,6 +619,30 @@ func TestStableBlock(t *testing.T) {
 	testKnownBlocks(t)
 }
 
+// These blocks were affected by the coinhour overflow issue or by coinhour fee calculation bugs,
+// make sure that they can be queried
+var knownBadBlockSeqs = []uint64{
+	// coinhour fee calculation mistake, related to distribution addresses:
+	297,
+	741,
+	743,
+	749,
+	796,
+	4956,
+	10125,
+	// coinhour overflow related:
+	11685,
+	11707,
+	11710,
+	11709,
+	11705,
+	11708,
+	11711,
+	11706,
+	11699,
+	13277,
+}
+
 func TestLiveBlock(t *testing.T) {
 	if !doLive(t) {
 		return
@@ -627,11 +650,9 @@ func TestLiveBlock(t *testing.T) {
 
 	testKnownBlocks(t)
 
-	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
-	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
-
+	// Check the knownBadBlockSeqs
 	c := api.NewClient(nodeAddress())
-	for _, seq := range blockSeqs {
+	for _, seq := range knownBadBlockSeqs {
 		b, err := c.BlockBySeq(seq)
 		require.NoError(t, err)
 		require.Equal(t, seq, b.Head.BkSeq)
@@ -690,7 +711,7 @@ func testKnownBlocks(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var b *visor.ReadableBlock
+			var b *readable.Block
 			var err error
 
 			if tc.hash != "" {
@@ -706,7 +727,7 @@ func testKnownBlocks(t *testing.T) {
 
 			require.NotNil(t, b)
 
-			var expected visor.ReadableBlock
+			var expected readable.Block
 			checkGoldenFile(t, tc.golden, TestData{*b, &expected})
 		})
 	}
@@ -717,7 +738,7 @@ func testKnownBlocks(t *testing.T) {
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
 
-	var prevBlock *visor.ReadableBlock
+	var prevBlock *readable.Block
 	for i := uint64(0); i < progress.Current; i++ {
 		t.Run(fmt.Sprintf("block-seq-%d", i), func(t *testing.T) {
 			b, err := c.BlockBySeq(i)
@@ -726,7 +747,7 @@ func testKnownBlocks(t *testing.T) {
 			require.Equal(t, i, b.Head.BkSeq)
 
 			if prevBlock != nil {
-				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash, "%s != %s", prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
 			}
 
 			bHash, err := c.BlockByHash(b.Head.BlockHash)
@@ -754,11 +775,9 @@ func TestLiveBlockVerbose(t *testing.T) {
 
 	testKnownBlocksVerbose(t)
 
-	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
-	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
-
+	// Check the knownBadBlockSeqs
 	c := api.NewClient(nodeAddress())
-	for _, seq := range blockSeqs {
+	for _, seq := range knownBadBlockSeqs {
 		b, err := c.BlockBySeqVerbose(seq)
 		require.NoError(t, err)
 		require.Equal(t, seq, b.Head.BkSeq)
@@ -812,7 +831,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var b *visor.ReadableBlockVerbose
+			var b *readable.BlockVerbose
 			var err error
 
 			if tc.hash != "" {
@@ -829,7 +848,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 			require.NotNil(t, b)
 			assertVerboseBlockFee(t, b)
 
-			var expected visor.ReadableBlockVerbose
+			var expected readable.BlockVerbose
 			checkGoldenFile(t, tc.golden, TestData{*b, &expected})
 		})
 	}
@@ -840,7 +859,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
 
-	var prevBlock *visor.ReadableBlockVerbose
+	var prevBlock *readable.BlockVerbose
 	for i := uint64(0); i < progress.Current; i++ {
 		t.Run(fmt.Sprintf("block-seq-verbose-%d", i), func(t *testing.T) {
 			b, err := c.BlockBySeqVerbose(i)
@@ -864,7 +883,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 }
 
 // assertVerboseBlockFee checks that the block's fee matches the calculated fee of the block's transactions
-func assertVerboseBlockFee(t *testing.T, b *visor.ReadableBlockVerbose) {
+func assertVerboseBlockFee(t *testing.T, b *readable.BlockVerbose) {
 	fee := uint64(0)
 	for _, txn := range b.Body.Transactions {
 		var err error
@@ -872,7 +891,39 @@ func assertVerboseBlockFee(t *testing.T, b *visor.ReadableBlockVerbose) {
 		require.NoError(t, err)
 	}
 
-	require.Equal(t, b.Head.Fee, fee)
+	// The estimated transaction fees should equal the block fee, but in a few cases
+	// it doesn't due to older bugs in fee calculation
+	if b.Head.Fee != fee {
+		switch b.Head.BkSeq {
+		case 297:
+			require.Equal(t, b.Head.Fee, uint64(3477395194))
+			require.Equal(t, fee, uint64(8601490771))
+		case 741:
+			require.Equal(t, b.Head.Fee, uint64(2093567995))
+			require.Equal(t, fee, uint64(17465854723))
+		case 743:
+			require.Equal(t, b.Head.Fee, uint64(2093809661))
+			require.Equal(t, fee, uint64(17466096389))
+		case 749:
+			require.Equal(t, b.Head.Fee, uint64(1572050737))
+			require.Equal(t, fee, uint64(16944337465))
+		case 796:
+			require.Equal(t, b.Head.Fee, uint64(3197771253))
+			require.Equal(t, fee, uint64(13445962405))
+		case 4956:
+			require.Equal(t, b.Head.Fee, uint64(2309386399))
+			require.Equal(t, fee, uint64(22805768703))
+		case 10125:
+			require.Equal(t, b.Head.Fee, uint64(1938082460))
+			require.Equal(t, fee, uint64(22434464764))
+		case 13277:
+			// In this case, the hours overflow, so the API reports calculated_hours and fee as 0
+			require.Equal(t, b.Head.Fee, uint64(3))
+			require.Equal(t, fee, uint64(0))
+		default:
+			require.Equal(t, b.Head.Fee, fee, "Block seq=%d fee does not match sum of transaction fees %d != %d", b.Head.BkSeq, b.Head.Fee, fee)
+		}
+	}
 }
 
 func TestStableBlockchainMetadata(t *testing.T) {
@@ -885,7 +936,7 @@ func TestStableBlockchainMetadata(t *testing.T) {
 	metadata, err := c.BlockchainMetadata()
 	require.NoError(t, err)
 
-	var expected visor.BlockchainMetadata
+	var expected readable.BlockchainMetadata
 
 	goldenFile := "blockchain-metadata.golden"
 	if dbNoUnconfirmed(t) {
@@ -918,7 +969,7 @@ func TestStableBlockchainProgress(t *testing.T) {
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
 
-	var expected daemon.BlockchainProgress
+	var expected readable.BlockchainProgress
 	checkGoldenFile(t, "blockchain-progress.golden", TestData{*progress, &expected})
 }
 
@@ -942,13 +993,15 @@ func TestStableBalance(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
-
-	cases := []struct {
+	type balanceTestCase struct {
 		name   string
 		golden string
 		addrs  []string
-	}{
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	cases := []balanceTestCase{
 		{
 			name:   "unknown address",
 			addrs:  []string{"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9"},
@@ -971,12 +1024,20 @@ func TestStableBalance(t *testing.T) {
 		},
 	}
 
+	if !dbNoUnconfirmed(t) {
+		cases = append(cases, balanceTestCase{
+			name:   "balance affected by unconfirmed transaction",
+			addrs:  []string{"R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ", "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN"},
+			golden: "balance-affected-by-unconfirmed-txns.golden",
+		})
+	}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			balance, err := c.Balance(tc.addrs)
 			require.NoError(t, err)
 
-			var expected wallet.BalancePair
+			var expected api.BalanceResponse
 			checkGoldenFile(t, tc.golden, TestData{*balance, &expected})
 		})
 	}
@@ -992,7 +1053,7 @@ func TestLiveBalance(t *testing.T) {
 	// Genesis address check, should not have a balance
 	b, err := c.Balance([]string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"})
 	require.NoError(t, err)
-	require.Equal(t, wallet.BalancePair{}, *b)
+	require.Equal(t, api.BalanceResponse{}, *b)
 
 	// Balance of final distribution address. Should have the same coins balance
 	// for the next 15-20 years.
@@ -1042,7 +1103,7 @@ func TestStableUxOut(t *testing.T) {
 			ux, err := c.UxOut(tc.uxID)
 			require.NoError(t, err)
 
-			var expected historydb.UxOutJSON
+			var expected readable.SpentOutput
 			checkGoldenFile(t, tc.golden, TestData{*ux, &expected})
 		})
 	}
@@ -1062,7 +1123,7 @@ func TestLiveUxOut(t *testing.T) {
 	ux, err := c.UxOut("fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20")
 	require.NoError(t, err)
 
-	var expected historydb.UxOutJSON
+	var expected readable.SpentOutput
 	checkGoldenFile(t, "uxout-spent.golden", TestData{*ux, &expected})
 	require.NotEqual(t, uint64(0), ux.SpentBlockSeq)
 
@@ -1092,9 +1153,9 @@ func scanUxOuts(t *testing.T) {
 			require.Equal(t, ux.Coins, coinsStr)
 
 			if foundUx.SpentBlockSeq == 0 {
-				require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxID)
+				require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxnID)
 			} else {
-				require.NotEqual(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxID)
+				require.NotEqual(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxnID)
 			}
 		})
 	}
@@ -1138,7 +1199,7 @@ func TestStableAddressUxOuts(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			var expected []historydb.UxOutJSON
+			var expected []readable.SpentOutput
 			checkGoldenFile(t, tc.golden, TestData{ux, &expected})
 		})
 	}
@@ -1251,7 +1312,7 @@ func TestStableBlocks(t *testing.T) {
 			if tc.errMsg == "" {
 				resp := testBlocks(t, tc.start, tc.end)
 
-				var expected visor.ReadableBlocks
+				var expected readable.Blocks
 				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
 				_, err := c.Blocks(tc.start, tc.end)
@@ -1269,7 +1330,7 @@ func TestLiveBlocks(t *testing.T) {
 	testBlocks(t, 1, 10)
 }
 
-func testBlocks(t *testing.T, start, end uint64) *visor.ReadableBlocks {
+func testBlocks(t *testing.T, start, end uint64) *readable.Blocks {
 	c := api.NewClient(nodeAddress())
 
 	blocks, err := c.Blocks(start, end)
@@ -1281,7 +1342,7 @@ func testBlocks(t *testing.T, start, end uint64) *visor.ReadableBlocks {
 		require.Len(t, blocks.Blocks, int(end-start+1))
 	}
 
-	var prevBlock *visor.ReadableBlock
+	var prevBlock *readable.Block
 	for idx, b := range blocks.Blocks {
 		if prevBlock != nil {
 			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
@@ -1363,7 +1424,7 @@ func TestStableBlocksVerbose(t *testing.T) {
 			if tc.errMsg == "" {
 				resp := testBlocksVerbose(t, tc.start, tc.end)
 
-				var expected visor.ReadableBlocksVerbose
+				var expected readable.BlocksVerbose
 				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
 				blocks, err := c.BlocksVerbose(tc.start, tc.end)
@@ -1382,7 +1443,7 @@ func TestLiveBlocksVerbose(t *testing.T) {
 	testBlocksVerbose(t, 1, 10)
 }
 
-func testBlocksVerbose(t *testing.T, start, end uint64) *visor.ReadableBlocksVerbose {
+func testBlocksVerbose(t *testing.T, start, end uint64) *readable.BlocksVerbose {
 	c := api.NewClient(nodeAddress())
 
 	blocks, err := c.BlocksVerbose(start, end)
@@ -1394,7 +1455,7 @@ func testBlocksVerbose(t *testing.T, start, end uint64) *visor.ReadableBlocksVer
 		require.Len(t, blocks.Blocks, int(end-start+1))
 	}
 
-	var prevBlock *visor.ReadableBlockVerbose
+	var prevBlock *readable.BlockVerbose
 	for idx, b := range blocks.Blocks {
 		assertVerboseBlockFee(t, &b)
 
@@ -1424,10 +1485,10 @@ func TestStableLastBlocks(t *testing.T) {
 	blocks, err := c.LastBlocks(1)
 	require.NoError(t, err)
 
-	var expected *visor.ReadableBlocks
+	var expected *readable.Blocks
 	checkGoldenFile(t, "block-last.golden", TestData{blocks, &expected})
 
-	var prevBlock *visor.ReadableBlock
+	var prevBlock *readable.Block
 	blocks, err = c.LastBlocks(10)
 	require.NoError(t, err)
 	require.Equal(t, 10, len(blocks.Blocks))
@@ -1450,7 +1511,7 @@ func TestLiveLastBlocks(t *testing.T) {
 		return
 	}
 	c := api.NewClient(nodeAddress())
-	var prevBlock *visor.ReadableBlock
+	var prevBlock *readable.Block
 	blocks, err := c.LastBlocks(10)
 	require.NoError(t, err)
 	require.Equal(t, 10, len(blocks.Blocks))
@@ -1478,14 +1539,14 @@ func TestStableLastBlocksVerbose(t *testing.T) {
 	blocks, err := c.LastBlocksVerbose(1)
 	require.NoError(t, err)
 
-	var expected *visor.ReadableBlocksVerbose
+	var expected *readable.BlocksVerbose
 	checkGoldenFile(t, "block-last-verbose.golden", TestData{blocks, &expected})
 
 	blocks, err = c.LastBlocksVerbose(10)
 	require.NoError(t, err)
 	require.Equal(t, 10, len(blocks.Blocks))
 
-	var prevBlock *visor.ReadableBlockVerbose
+	var prevBlock *readable.BlockVerbose
 	for idx, b := range blocks.Blocks {
 		assertVerboseBlockFee(t, &b)
 
@@ -1512,7 +1573,7 @@ func TestLiveLastBlocksVerbose(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 10, len(blocks.Blocks))
 
-	var prevBlock *visor.ReadableBlockVerbose
+	var prevBlock *readable.BlockVerbose
 	for idx, b := range blocks.Blocks {
 		assertVerboseBlockFee(t, &b)
 
@@ -1656,7 +1717,7 @@ func TestLiveTransaction(t *testing.T) {
 		{
 			name:       "OK",
 			txID:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
-			goldenFile: "./transaction.golden",
+			goldenFile: "transaction-block-517.golden",
 		},
 	}
 
@@ -1673,10 +1734,10 @@ func TestLiveTransaction(t *testing.T) {
 			// make sure it is past some checkpoint height
 			require.True(t, tx.Status.Height >= 50836)
 
-			// daemon.TransactionResult.Status.Height is not stable
+			// readable.TransactionWithStatus.Status.Height is not stable
 			tx.Status.Height = 0
 
-			var expected daemon.TransactionResult
+			var expected readable.TransactionWithStatus
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -1748,7 +1809,7 @@ func TestStableTransaction(t *testing.T) {
 				return
 			}
 
-			var expected daemon.TransactionResult
+			var expected readable.TransactionWithStatus
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -1782,7 +1843,7 @@ func TestLiveTransactionVerbose(t *testing.T) {
 		{
 			name:       "OK",
 			txID:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
-			goldenFile: "transaction-verbose.golden",
+			goldenFile: "transaction-verbose-block-517.golden",
 		},
 	}
 
@@ -1799,10 +1860,10 @@ func TestLiveTransactionVerbose(t *testing.T) {
 			// make sure it is past some checkpoint height
 			require.True(t, tx.Status.Height >= 50836)
 
-			// daemon.TransactionResult.Status.Height is not stable
+			// readable.TransactionWithStatus.Status.Height is not stable
 			tx.Status.Height = 0
 
-			var expected daemon.TransactionResultVerbose
+			var expected readable.TransactionWithStatusVerbose
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -1874,7 +1935,7 @@ func TestStableTransactionVerbose(t *testing.T) {
 				return
 			}
 
-			var expected daemon.TransactionResultVerbose
+			var expected readable.TransactionWithStatusVerbose
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -1915,7 +1976,7 @@ func TestLiveTransactionEncoded(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			testTransactionEncoded(t, c, tc)
+			testTransactionEncoded(t, c, tc, false)
 		})
 	}
 }
@@ -1984,31 +2045,44 @@ func TestStableTransactionEncoded(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			testTransactionEncoded(t, c, tc)
+			testTransactionEncoded(t, c, tc, true)
 		})
 	}
 }
 
-func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase) {
+func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase, stable bool) {
 	encodedTxn, err := c.TransactionEncoded(tc.txID)
 	if err != nil {
 		require.Equal(t, tc.err, err)
 		return
 	}
 
+	if !stable {
+		encodedTxn.Status.Height = 0
+	}
+
 	encodedTxnBytes, err := hex.DecodeString(encodedTxn.EncodedTransaction)
 	require.NoError(t, err)
 	decodedTxn, err := coin.TransactionDeserialize(encodedTxnBytes)
 	require.NoError(t, err)
-	txnResult, err := daemon.NewTransactionResult(&visor.Transaction{
-		Txn:    decodedTxn,
-		Status: encodedTxn.Status,
-		Time:   encodedTxn.Time,
+
+	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{
+		Transaction: decodedTxn,
+		Status: visor.TransactionStatus{
+			Confirmed: encodedTxn.Status.Confirmed,
+			Height:    encodedTxn.Status.Height,
+			BlockSeq:  encodedTxn.Status.BlockSeq,
+		},
+		Time: encodedTxn.Time,
 	})
 	require.NoError(t, err)
 
 	txn, err := c.Transaction(tc.txID)
 	require.NoError(t, err)
+
+	if !stable {
+		txn.Status.Height = 0
+	}
 
 	require.Equal(t, txn, txnResult)
 
@@ -2121,16 +2195,16 @@ func TestStableTransactions(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.Transactions(tc.addrs)
+			txnResult, err := c.Transactions(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupes(t, txResult)
+			assertNoTransactionsDupes(t, txnResult)
 
-			var expected []daemon.TransactionResult
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			var expected []readable.TransactionWithStatus
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2217,16 +2291,16 @@ func TestStableConfirmedTransactions(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.ConfirmedTransactions(tc.addrs)
+			txnResult, err := c.ConfirmedTransactions(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupes(t, txResult)
+			assertNoTransactionsDupes(t, txnResult)
 
-			var expected []daemon.TransactionResult
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			var expected []readable.TransactionWithStatus
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2283,16 +2357,16 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.UnconfirmedTransactions(tc.addrs)
+			txnResult, err := c.UnconfirmedTransactions(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupes(t, txResult)
+			assertNoTransactionsDupes(t, txnResult)
 
-			var expected []daemon.TransactionResult
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			var expected []readable.TransactionWithStatus
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2316,7 +2390,7 @@ func TestLiveUnconfirmedTransactions(t *testing.T) {
 	assertNoTransactionsDupes(t, cTxsAll)
 }
 
-func assertNoTransactionsDupes(t *testing.T, r []daemon.TransactionResult) {
+func assertNoTransactionsDupes(t *testing.T, r []readable.TransactionWithStatus) {
 	txids := make(map[string]struct{})
 
 	for _, x := range r {
@@ -2407,16 +2481,16 @@ func TestStableTransactionsVerbose(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.TransactionsVerbose(tc.addrs)
+			txnResult, err := c.TransactionsVerbose(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupesVerbose(t, txResult)
+			assertNoTransactionsDupesVerbose(t, txnResult)
 
-			var expected []daemon.TransactionResultVerbose
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			var expected []readable.TransactionWithStatusVerbose
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2503,16 +2577,16 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.ConfirmedTransactionsVerbose(tc.addrs)
+			txnResult, err := c.ConfirmedTransactionsVerbose(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupesVerbose(t, txResult)
+			assertNoTransactionsDupesVerbose(t, txnResult)
 
-			var expected []daemon.TransactionResultVerbose
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			var expected []readable.TransactionWithStatusVerbose
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
@@ -2569,21 +2643,21 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.UnconfirmedTransactionsVerbose(tc.addrs)
+			txnResult, err := c.UnconfirmedTransactionsVerbose(tc.addrs)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
 
-			assertNoTransactionsDupesVerbose(t, txResult)
+			assertNoTransactionsDupesVerbose(t, txnResult)
 
-			var expected []daemon.TransactionResultVerbose
-			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			var expected []readable.TransactionWithStatusVerbose
+			checkGoldenFile(t, tc.goldenFile, TestData{txnResult, &expected})
 		})
 	}
 }
 
-func assertNoTransactionsDupesVerbose(t *testing.T, r []daemon.TransactionResultVerbose) {
+func assertNoTransactionsDupesVerbose(t *testing.T, r []readable.TransactionWithStatusVerbose) {
 	txids := make(map[string]struct{})
 
 	for _, x := range r {
@@ -2629,10 +2703,10 @@ func TestLiveResendUnconfirmedTransactions(t *testing.T) {
 }
 
 type rawTransactionTestCase struct {
-	name  string
-	txID  string
-	err   api.ClientError
-	rawTx string
+	name   string
+	txID   string
+	err    api.ClientError
+	rawTxn string
 }
 
 func TestStableRawTransaction(t *testing.T) {
@@ -2669,29 +2743,29 @@ func TestStableRawTransaction(t *testing.T) {
 			},
 		},
 		{
-			name:  "OK",
-			txID:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
-			rawTx: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
+			name:   "OK",
+			txID:   "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			rawTxn: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
 		},
 	}
 
 	if !dbNoUnconfirmed(t) {
 		cases = append(cases, rawTransactionTestCase{
-			name:  "unconfirmed",
-			txID:  "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
-			rawTx: "dc00000000f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124010000003981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f320001000000fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f2002000000003be2537f8c0893fddcddc878518f38ea493d949e008988068d0000002739570000000000009037ff169fbec6db95e2537e4ff79396c050aeeb00e40b54020000002739570000000000",
+			name:   "unconfirmed",
+			txID:   "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			rawTxn: "dc00000000f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124010000003981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f320001000000fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f2002000000003be2537f8c0893fddcddc878518f38ea493d949e008988068d0000002739570000000000009037ff169fbec6db95e2537e4ff79396c050aeeb00e40b54020000002739570000000000",
 		})
 	}
 
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.RawTransaction(tc.txID)
+			txnResult, err := c.RawTransaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
-			require.Equal(t, tc.rawTx, txResult, "case: "+tc.name)
+			require.Equal(t, tc.rawTxn, txnResult, "case: "+tc.name)
 		})
 	}
 }
@@ -2721,26 +2795,27 @@ func TestLiveRawTransaction(t *testing.T) {
 			},
 		},
 		{
-			name:  "OK - genesis tx",
-			txID:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
-			rawTx: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
+			name:   "OK - genesis tx",
+			txID:   "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			rawTxn: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
 		},
 		{
-			name:  "OK",
-			txID:  "540582ee4128b733f810f149e908d984a5f403ad2865108e6c1c5423aeefc759",
-			rawTx: "dc00000000f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124010000003981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f320001000000fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f2002000000003be2537f8c0893fddcddc878518f38ea493d949e008988068d0000002739570000000000009037ff169fbec6db95e2537e4ff79396c050aeeb00e40b54020000002739570000000000",
+			name:   "OK",
+			txID:   "540582ee4128b733f810f149e908d984a5f403ad2865108e6c1c5423aeefc759",
+			rawTxn: "3d0100000088b4e967d77a8b7155c5378a85c199fabf94048aa84833ef5eab7818545bcda80200000071985c70041fe5a6408a2dfac2ea4963820bc603059521259debb114b2f6630b5658e7ff665b2db7878ce9b0d1d051ec66b5dea23274e52642bc7e451b273a90008afb06133958b03c4795d5a7acd001f3942cc6d3b19e93d357d2675fe9ba8bbf3db30b3cda779e441fced581aee88f48c8af017b30dc276b15be25d4bb44260c000200000050386f195b367f8261e66e3fdfbc942fbacfe25e117e554ca1c1caf8993454767afab03c823346ff8b00c29df6acc05841583d90dfd451ba09e66884a48e83f70200000000ef3b60779f014b3c7acf27c16c9acc3ff3bea61600a8b54b06000000c2ba2400000000000037274869aaa4c2e2e5c91595024c65f8f9458102404b4c0000000000c2ba240000000000",
 		},
 	}
 
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.RawTransaction(tc.txID)
+			txnResult, err := c.RawTransaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
-			require.Equal(t, tc.rawTx, txResult, "case: "+tc.name)
+
+			require.Equal(t, tc.rawTxn, txnResult, "case: "+tc.name)
 		})
 	}
 }
@@ -2841,12 +2916,12 @@ func TestStableAddressTransactions(t *testing.T) {
 			{
 				name:    "address with outgoing transaction",
 				address: "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-				golden:  "address-transactions-R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ.golden",
+				golden:  "address-transactions-outgoing-R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ.golden",
 			},
 			{
 				name:    "address with incoming transaction",
 				address: "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
-				golden:  "address-transactions-212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN.golden",
+				golden:  "address-transactions-incoming-212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN.golden",
 			},
 		}...)
 	}
@@ -2862,7 +2937,7 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []visor.ReadableTransactionVerbose
+			var expected []readable.TransactionVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
@@ -2898,9 +2973,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 	}
 
 	c := api.NewClient(nodeAddress())
-	// Get current blockchain height
-	bp, err := c.BlockchainProgress()
-	require.NoError(t, err)
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txns, err := c.AddressTransactions(tc.address)
@@ -2911,15 +2984,13 @@ func TestLiveAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []visor.ReadableTransactionVerbose
-			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
-
-			// Recaculate the height if it's live test
-			for i := range expected {
-				expected[i].Status.Height = bp.Current - expected[i].Status.BlockSeq + 1
+			// Unset height since it is not stable
+			for i := range txns {
+				txns[i].Status.Height = 0
 			}
 
-			require.Equal(t, expected, txns)
+			var expected []readable.TransactionVerbose
+			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
 }
@@ -3054,7 +3125,7 @@ func TestStablePendingTransactions(t *testing.T) {
 		txns[i].Checked = txn.Checked.UTC()
 	}
 
-	var expect []visor.ReadableUnconfirmedTxn
+	var expect []readable.UnconfirmedTransactions
 	checkGoldenFile(t, "pending-transactions.golden", TestData{txns, &expect})
 }
 
@@ -3100,7 +3171,7 @@ func TestStablePendingTransactionsVerbose(t *testing.T) {
 		txns[i].Checked = txn.Checked.UTC()
 	}
 
-	var expect []visor.ReadableUnconfirmedTxnVerbose
+	var expect []readable.UnconfirmedTransactionVerbose
 	checkGoldenFile(t, "verbose-pending-transactions.golden", TestData{txns, &expect})
 }
 
@@ -3129,13 +3200,13 @@ func TestLiveWalletSpend(t *testing.T) {
 		name    string
 		to      string
 		coins   uint64
-		checkTx func(t *testing.T, tx *daemon.TransactionResult)
+		checkTx func(t *testing.T, tx *readable.TransactionWithStatus)
 	}{
 		{
 			name:  "send all coins to the first address",
 			to:    w.Entries[0].Address.String(),
 			coins: totalCoins,
-			checkTx: func(t *testing.T, tx *daemon.TransactionResult) {
+			checkTx: func(t *testing.T, tx *readable.TransactionWithStatus) {
 				// Confirms the total output coins are equal to the totalCoins
 				var coins uint64
 				for _, o := range tx.Transaction.Out {
@@ -3156,12 +3227,12 @@ func TestLiveWalletSpend(t *testing.T) {
 			name:  "send 0.003 coin to second address",
 			to:    w.Entries[1].Address.String(),
 			coins: 3e3,
-			checkTx: func(t *testing.T, tx *daemon.TransactionResult) {
+			checkTx: func(t *testing.T, tx *readable.TransactionWithStatus) {
 				// Confirms there're two outputs, one to the second address, one as change output to the first address.
 				require.Len(t, tx.Transaction.Out, 2)
 
 				// Gets the output of the second address in the transaction
-				getAddrOutputInTx := func(t *testing.T, tx *daemon.TransactionResult, addr string) *visor.ReadableTransactionOutput {
+				getAddrOutputInTx := func(t *testing.T, tx *readable.TransactionWithStatus, addr string) *readable.TransactionOutput {
 					for _, output := range tx.Transaction.Out {
 						if output.Address == addr {
 							return &output
@@ -3201,7 +3272,7 @@ func TestLiveWalletSpend(t *testing.T) {
 			}
 
 			tk := time.NewTicker(time.Second)
-			var tx *daemon.TransactionResult
+			var tx *readable.TransactionWithStatus
 		loop:
 			for {
 				select {
@@ -3268,9 +3339,9 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 
 	// Split outputs into those held by the wallet and those not
 	var walletOutputHashes []string
-	var walletOutputs visor.ReadableOutputs
+	var walletOutputs readable.UnspentOutputs
 	walletAuxs := make(map[string][]string)
-	var nonWalletOutputs visor.ReadableOutputs
+	var nonWalletOutputs readable.UnspentOutputs
 	for _, o := range outputs.HeadOutputs {
 		if _, ok := addressMap[o.Address]; ok {
 			walletOutputs = append(walletOutputs, o)
@@ -4711,6 +4782,74 @@ func TestDecryptWallet(t *testing.T) {
 	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
 }
 
+func TestRecoverWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	// Create an encrypted wallet with some addresses pregenerated,
+	// to make sure recover recovers the same number of addresses
+	c := api.NewClient(nodeAddress())
+	wf, err := c.WalletFolderName()
+	require.NoError(t, err)
+
+	// Load the wallet from disk to check that it was saved
+	checkWalletOnDisk := func(w *api.WalletResponse) {
+		wltPath := filepath.Join(wf.Address, w.Meta.Filename)
+		lw, err := wallet.Load(wltPath)
+		require.NoError(t, err)
+		lwr, err := api.NewWalletResponse(lw)
+		require.NoError(t, err)
+		require.Equal(t, w, lwr)
+	}
+
+	w, seed, clean := createWallet(t, c, false, "", "fooseed")
+	require.Equal(t, "fooseed", seed)
+	defer clean()
+
+	_, err = c.NewWalletAddress(w.Meta.Filename, 10, "")
+	require.NoError(t, err)
+
+	w, err = c.Wallet(w.Meta.Filename)
+	require.NoError(t, err)
+
+	// Recover fails if the wallet is not encrypted
+	_, err = c.RecoverWallet(w.Meta.Filename, "fooseed", "")
+	assertResponseError(t, err, http.StatusBadRequest, "wallet is not encrypted")
+
+	_, err = c.EncryptWallet(w.Meta.Filename, "pwd")
+	require.NoError(t, err)
+
+	// Recovery fails if the seed doesn't match
+	_, err = c.RecoverWallet(w.Meta.Filename, "wrongseed", "")
+	assertResponseError(t, err, http.StatusBadRequest, "wallet recovery seed is wrong")
+
+	// Successful recovery with no new password
+	w2, err := c.RecoverWallet(w.Meta.Filename, "fooseed", "")
+	require.NoError(t, err)
+	require.False(t, w2.Meta.Encrypted)
+	checkWalletOnDisk(w2)
+	require.Equal(t, w, w2)
+
+	_, err = c.EncryptWallet(w.Meta.Filename, "pwd2")
+	require.NoError(t, err)
+
+	// Successful recovery with a new password
+	w3, err := c.RecoverWallet(w.Meta.Filename, "fooseed", "pwd3")
+	require.NoError(t, err)
+	require.True(t, w3.Meta.Encrypted)
+	require.Equal(t, w3.Meta.CryptoType, "scrypt-chacha20poly1305")
+	checkWalletOnDisk(w3)
+	w3.Meta.Encrypted = w.Meta.Encrypted
+	w3.Meta.CryptoType = w.Meta.CryptoType
+	require.Equal(t, w, w3)
+
+	w4, err := c.DecryptWallet(w.Meta.Filename, "pwd3")
+	require.NoError(t, err)
+	require.False(t, w.Meta.Encrypted)
+	require.Equal(t, w, w4)
+}
+
 func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return
@@ -4722,8 +4861,8 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	w, _, clean := createWallet(t, c, true, "pwd", "")
 	defer clean()
 
-	_, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
-	assertResponseError(t, err, http.StatusForbidden, "403 Forbidden")
+	_, err := c.WalletSeed(w.Meta.Filename, "pwd")
+	assertResponseError(t, err, http.StatusForbidden, "403 Forbidden - Endpoint is disabled")
 }
 
 func TestGetWalletSeedEnabledAPI(t *testing.T) {
@@ -4739,28 +4878,28 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 
 	require.NotEmpty(t, seed)
 
-	sd, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
+	sd, err := c.WalletSeed(w.Meta.Filename, "pwd")
 	require.NoError(t, err)
 
 	// Confirms the seed are matched
 	require.Equal(t, seed, sd)
 
 	// Get seed of wrong wallet id
-	_, err = c.GetWalletSeed("w.wlt", "pwd")
+	_, err = c.WalletSeed("w.wlt", "pwd")
 	assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
 
 	// Check with invalid password
-	_, err = c.GetWalletSeed(w.Meta.Filename, "wrong password")
+	_, err = c.WalletSeed(w.Meta.Filename, "wrong password")
 	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password")
 
 	// Check with missing password
-	_, err = c.GetWalletSeed(w.Meta.Filename, "")
+	_, err = c.WalletSeed(w.Meta.Filename, "")
 	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password")
 
 	// Create unencrypted wallet to check against
 	nw, _, nclean := createWallet(t, c, false, "", "")
 	defer nclean()
-	_, err = c.GetWalletSeed(nw.Meta.Filename, "pwd")
+	_, err = c.WalletSeed(nw.Meta.Filename, "pwd")
 	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is not encrypted")
 }
 
@@ -4851,7 +4990,7 @@ func getWalletBalance(t *testing.T, c *api.Client, walletName string) (uint64, u
 	return wp.Confirmed.Coins, wp.Confirmed.Hours
 }
 
-func getTransaction(t *testing.T, c *api.Client, txid string) *daemon.TransactionResult {
+func getTransaction(t *testing.T, c *api.Client, txid string) *readable.TransactionWithStatus {
 	tx, err := c.Transaction(txid)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -4918,7 +5057,7 @@ func getWalletDir(t *testing.T, c *api.Client) string {
 	return wf.Address
 }
 
-func TestDisableWalletApi(t *testing.T) {
+func TestDisableWalletAPI(t *testing.T) {
 	if !doDisableWalletAPI(t) {
 		return
 	}
@@ -4941,7 +5080,7 @@ func TestDisableWalletApi(t *testing.T) {
 			name:      "get wallet",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet?id=test.wlt",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -4955,7 +5094,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("scan", "1")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -4967,14 +5106,14 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("id", "test.wlt")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallet balance",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/balance?id=test.wlt",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -4988,14 +5127,14 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("dst", "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallet unconfirmed transactions",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/transactions?id=test.wlt",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5008,28 +5147,40 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("label", "label")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "new seed",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/newSeed",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
+			code:      http.StatusForbidden,
+		},
+		{
+			name:     "new seed",
+			method:   http.MethodPost,
+			endpoint: "/api/v1/wallet/seed",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallets",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets folder name",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallets/folderName",
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5049,7 +5200,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("password", "pwd")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5062,7 +5213,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("password", "pwd")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5075,7 +5226,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("password", "pwd")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 		{
@@ -5101,7 +5252,7 @@ func TestDisableWalletApi(t *testing.T) {
 					},
 				}
 			},
-			expectErr: "403 Forbidden",
+			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
 	}

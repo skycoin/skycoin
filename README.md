@@ -75,6 +75,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
         - [Test coverage for the live node](#test-coverage-for-the-live-node)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
+    - [Profiling](#profiling)
     - [Dependencies](#dependencies)
         - [Rules](#rules)
         - [Management](#management)
@@ -419,6 +420,30 @@ Run linters:
 ```sh
 make lint
 ```
+
+### Profiling
+
+A full CPU profile of the program from start to finish can be obtained by running the node with the `-profile-cpu` flag.
+Once the node terminates, a profile file is written to `-profile-cpu-file` (defaults to `cpu.prof`).
+This profile can be analyzed with
+
+```sh
+go tool pprof cpu.prof
+```
+
+The HTTP interface for obtaining more profiling data or obtaining data while running can be enabled with `-http-prof`.
+The HTTP profiling interface can be controlling with `-http-prof-host` and listens on `localhost:6060` by default.
+
+See https://golang.org/pkg/net/http/pprof/ for guidance on using the HTTP profiler.
+
+Some useful examples include:
+
+```sh
+go tool pprof http://localhost:6060/debug/pprof/profile?seconds=10
+go tool pprof http://localhost:6060/debug/pprof/heap
+```
+
+A web page interface is provided by http/pprof at http://localhost:6060/debug/pprof/.
 
 ### Dependencies
 

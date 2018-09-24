@@ -5,21 +5,29 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 const configuredHost = "127.0.0.1:6420"
 
+var allAPISetsEnabled = map[string]struct{}{
+	EndpointsRead:                  struct{}{},
+	EndpointsStatus:                struct{}{},
+	EndpointsWallet:                struct{}{},
+	EndpointsWalletSeed:            struct{}{},
+	EndpointsDeprecatedWalletSpend: struct{}{},
+}
+
 func defaultMuxConfig() muxConfig {
 	return muxConfig{
-		host:       configuredHost,
-		appLoc:     ".",
-		disableCSP: true,
+		host:           configuredHost,
+		appLoc:         ".",
+		disableCSP:     true,
+		enabledAPISets: allAPISetsEnabled,
 	}
 }
 
@@ -176,20 +184,51 @@ func TestContentSecurityPolicy(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
 			require.NoError(t, err)
 
-			gateway := &MockGatewayer{}
-			gateway.On("GetBuildInfo").Return(visor.BuildInfo{})
-
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{
 				host:       configuredHost,
 				appLoc:     tc.appLoc,
 				enableGUI:  tc.enableGUI,
 				disableCSP: !tc.enableCSP,
-			}, gateway, &CSRFStore{}, nil)
+			}, &MockGatewayer{}, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			csp := rr.Header().Get("Content-Security-Policy")
 			require.Equal(t, tc.expectCSPHeader, csp)
+		})
+	}
+}
+
+func TestAPISetDisabled(t *testing.T) {
+	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
+		switch e {
+		case "/webrpc", "/api/v1/webrpc":
+			continue
+		}
+
+		t.Run(e, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, e, nil)
+			require.NoError(t, err)
+
+			cfg := defaultMuxConfig()
+			cfg.enableUnversionedAPI = true
+			cfg.enableJSON20RPC = false
+			cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
+
+			handler := newServerMux(cfg, &MockGatewayer{}, &CSRFStore{
+				Enabled: true,
+			}, nil)
+
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+
+			switch e {
+			case "/csrf", "/api/v1/csrf", "/version", "/api/v1/version": // always enabled
+				require.Equal(t, http.StatusOK, rr.Code)
+			default:
+				require.Equal(t, http.StatusForbidden, rr.Code)
+				require.Equal(t, "403 Forbidden - Endpoint is disabled", strings.TrimSpace(rr.Body.String()))
+			}
 		})
 	}
 }

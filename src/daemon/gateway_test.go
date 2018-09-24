@@ -11,85 +11,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/testutil"
 )
-
-func TestFbyAddresses(t *testing.T) {
-	uxs := make(coin.UxArray, 5)
-	addrs := make([]cipher.Address, 5)
-	for i := 0; i < 5; i++ {
-		addrs[i] = testutil.MakeAddress()
-		uxs[i] = coin.UxOut{
-			Body: coin.UxBody{
-				Address: addrs[i],
-			},
-		}
-	}
-
-	tests := []struct {
-		name    string
-		addrs   []string
-		outputs []coin.UxOut
-		want    []coin.UxOut
-	}{
-		// TODO: Add test cases.
-		{
-			"filter with one address",
-			[]string{addrs[0].String()},
-			uxs[:2],
-			uxs[:1],
-		},
-		{
-			"filter with multiple addresses",
-			[]string{addrs[0].String(), addrs[1].String()},
-			uxs[:3],
-			uxs[:2],
-		},
-	}
-	for _, tt := range tests {
-		// fmt.Printf("want:%+v\n", tt.want)
-		outs := FbyAddresses(tt.addrs)(tt.outputs)
-		require.Equal(t, outs, coin.UxArray(tt.want))
-	}
-}
-
-func TestFbyHashes(t *testing.T) {
-	uxs := make(coin.UxArray, 5)
-	addrs := make([]cipher.Address, 5)
-	for i := 0; i < 5; i++ {
-		addrs[i] = testutil.MakeAddress()
-		uxs[i] = coin.UxOut{
-			Body: coin.UxBody{
-				Address: addrs[i],
-			},
-		}
-	}
-
-	tests := []struct {
-		name    string
-		hashes  []string
-		outputs coin.UxArray
-		want    coin.UxArray
-	}{
-		// TODO: Add test cases.
-		{
-			"filter with one hash",
-			[]string{uxs[0].Hash().Hex()},
-			uxs[:2],
-			uxs[:1],
-		},
-		{
-			"filter with multiple hash",
-			[]string{uxs[0].Hash().Hex(), uxs[1].Hash().Hex()},
-			uxs[:3],
-			uxs[:2],
-		},
-	}
-	for _, tt := range tests {
-		outs := FbyHashes(tt.hashes)(tt.outputs)
-		require.Equal(t, outs, tt.want)
-	}
-}
 
 func TestGateway_GetWalletDir(t *testing.T) {
 	tests := []struct {
@@ -254,7 +176,7 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 		name            string
 		enableWalletAPI bool
 		walletID        string
-		result          []visor.UnconfirmedTxn
+		result          []visor.UnconfirmedTransaction
 		err             error
 	}{
 		{
@@ -271,7 +193,7 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
-			res, err := gw.GetWalletUnconfirmedTxns(tc.walletID)
+			res, err := gw.GetWalletUnconfirmedTransactions(tc.walletID)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return
@@ -312,18 +234,27 @@ func TestGateway_ReloadWallets(t *testing.T) {
 
 func TestGateway_Spend(t *testing.T) {
 	tests := []struct {
-		name            string
-		enableWalletAPI bool
-		walletID        string
-		coins           uint64
-		dest            cipher.Address
-		result          *coin.Transaction
-		err             error
+		name              string
+		enableWalletAPI   bool
+		enableSpendMethod bool
+		walletID          string
+		coins             uint64
+		dest              cipher.Address
+		result            *coin.Transaction
+		err               error
 	}{
 		{
-			name:            "wallet api disabled",
-			enableWalletAPI: false,
-			err:             wallet.ErrWalletAPIDisabled,
+			name:              "wallet api disabled",
+			enableWalletAPI:   false,
+			enableSpendMethod: true,
+			err:               wallet.ErrWalletAPIDisabled,
+		},
+
+		{
+			name:              "spend method disabled",
+			enableWalletAPI:   true,
+			enableSpendMethod: false,
+			err:               ErrSpendMethodDisabled,
 		},
 	}
 
@@ -331,7 +262,8 @@ func TestGateway_Spend(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnableWalletAPI:   tc.enableWalletAPI,
+					EnableSpendMethod: tc.enableSpendMethod,
 				},
 			}
 			res, err := gw.Spend(tc.walletID, nil, tc.coins, tc.dest)

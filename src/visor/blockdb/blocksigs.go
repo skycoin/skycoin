@@ -24,7 +24,7 @@ var (
 type blockSigs struct{}
 
 // Get returns the signature of a specific block
-func (bs blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
+func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
 	var sig cipher.Sig
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, BlockSigsBkt, hash[:], &sig); err != nil {

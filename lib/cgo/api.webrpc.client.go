@@ -155,7 +155,7 @@ func SKY_webrpc_Client_GetBlocks(_c C.WebRpcClient__Handle, _start, _end uint64,
 	}
 	start := _start
 	end := _end
-	__arg1, ____return_err := c.GetBlocks(start, end)
+	__arg1, ____return_err := c.GetBlocksInRange(start, end)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg1.Blocks), _arg1)

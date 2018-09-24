@@ -25,7 +25,6 @@ type CoinTemplateParameters struct {
 	Port                int
 	WebInterfacePort    int
 	DataDirectory       string
-	ProfileCPUFile      string
 	GenesisSignatureStr string
 	GenesisAddressStr   string
 	BlockchainPubkeyStr string
@@ -198,12 +197,10 @@ func createCoinCommand() cli.Command {
 			}
 
 			err = t.ExecuteTemplate(coinFile, coinTemplateFile, CoinTemplateParameters{
-				Version:             config.Build.Version,
 				PeerListURL:         config.Node.PeerListURL,
 				Port:                config.Node.Port,
 				WebInterfacePort:    config.Node.WebInterfacePort,
 				DataDirectory:       "$HOME/." + coinName,
-				ProfileCPUFile:      coinName + ".prof",
 				GenesisSignatureStr: config.Node.GenesisSignatureStr,
 				GenesisAddressStr:   config.Node.GenesisAddressStr,
 				BlockchainPubkeyStr: config.Node.BlockchainPubkeyStr,

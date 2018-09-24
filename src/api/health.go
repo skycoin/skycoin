@@ -5,20 +5,20 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 // BlockchainMetadata extends visor.BlockchainMetadata to include the time since the last block
 type BlockchainMetadata struct {
-	*visor.BlockchainMetadata
+	readable.BlockchainMetadata
 	TimeSinceLastBlock wh.Duration `json:"time_since_last_block"`
 }
 
 // HealthResponse is returned by the /health endpoint
 type HealthResponse struct {
 	BlockchainMetadata    BlockchainMetadata `json:"blockchain"`
-	Version               visor.BuildInfo    `json:"version"`
+	Version               readable.BuildInfo `json:"version"`
 	OpenConnections       int                `json:"open_connections"`
 	Uptime                wh.Duration        `json:"uptime"`
 	CSRFEnabled           bool               `json:"csrf_enabled"`
@@ -46,15 +46,17 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			return
 		}
 
-		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.Head.Time)
+		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.HeadBlock.Head.Time)
 		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
+
+		_, walletAPIEnabled := c.enabledAPISets[EndpointsWallet]
 
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
-				BlockchainMetadata: health.BlockchainMetadata,
+				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
-			Version:               health.Version,
+			Version:               c.buildInfo,
 			OpenConnections:       health.OpenConnections,
 			Uptime:                wh.FromDuration(health.Uptime),
 			CSRFEnabled:           csrfStore.Enabled,
@@ -62,7 +64,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			UnversionedAPIEnabled: c.enableUnversionedAPI,
 			GUIEnabled:            c.enableGUI,
 			JSON20RPCEnabled:      c.enableJSON20RPC,
-			WalletAPIEnabled:      gateway.IsWalletAPIEnabled(),
+			WalletAPIEnabled:      walletAPIEnabled,
 		})
 	}
 }

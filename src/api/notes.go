@@ -47,18 +47,18 @@ func getNoteByIDHandler(gateway Gatewayer) http.HandlerFunc {
 			TxID string `json:"txid"`
 		}
 
-		var txId TxID
-		if err := json.NewDecoder(r.Body).Decode(&txId); err != nil {
+		var txID TxID
+		if err := json.NewDecoder(r.Body).Decode(&txID); err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		if _, err := cipher.SHA256FromHex(txId.TxID); err != nil {
+		if _, err := cipher.SHA256FromHex(txID.TxID); err != nil {
 			wh.Error400(w, fmt.Errorf("Wrong txid").Error())
 			return
 		}
 
-		savedNotes := gateway.GetNoteByTxID(txId.TxID)
+		savedNotes := gateway.GetNoteByTxID(txID.TxID)
 		wh.SendJSONOr500(logger, w, savedNotes)
 	}
 }

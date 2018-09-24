@@ -359,12 +359,12 @@ func (c *Config) postProcess() error {
 // * For each api set in DisabledAPISets, remove
 func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 	enabledAPISets := strings.Split(c.EnabledAPISets, ",")
-	if err := validateAPISets(enabledAPISets); err != nil {
+	if err := validateAPISets("-enable-api-sets", enabledAPISets); err != nil {
 		return nil, err
 	}
 
 	disabledAPISets := strings.Split(c.DisabledAPISets, ",")
-	if err := validateAPISets(disabledAPISets); err != nil {
+	if err := validateAPISets("-disable-api-sets", disabledAPISets); err != nil {
 		return nil, err
 	}
 
@@ -397,7 +397,7 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 	return apiSets, nil
 }
 
-func validateAPISets(apiSets []string) error {
+func validateAPISets(opt string, apiSets []string) error {
 	for _, k := range apiSets {
 		k = strings.ToUpper(strings.TrimSpace(k))
 		switch k {
@@ -406,8 +406,10 @@ func validateAPISets(apiSets []string) error {
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
 			api.EndpointsDeprecatedWalletSpend:
+		case "":
+			continue
 		default:
-			return fmt.Errorf("Invalid value in -enable-api-sets: %s", k)
+			return fmt.Errorf("Invalid value in %s: %q", opt, k)
 		}
 	}
 	return nil

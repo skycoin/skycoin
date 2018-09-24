@@ -39,7 +39,7 @@ func GetByTxID(txID string) Note {
 }
 
 // Add Note, if Note already exists, the old one will be overwritten
-func Add(note Note) error {
+func Add(note Note) (Note, error) {
 	if !isNoteExist(note.TxIDHex) {
 		log.Info("Adding Note with txid=" + note.TxIDHex)
 
@@ -54,7 +54,11 @@ func Add(note Note) error {
 		}
 	}
 
-	return writeJSON()
+	if err := writeJSON(); err != nil {
+		return Note{}, err
+	}
+
+	return note, writeJSON()
 }
 
 // Remove Note by txId

@@ -889,7 +889,7 @@ func (gw *Gateway) GetNoteByTxID(txID string) notes.Note {
 }
 
 // AddNote adds a Note
-func (gw *Gateway) AddNote(notes notes.Note) error {
+func (gw *Gateway) AddNote(notes notes.Note) (notes.Note, error) {
 	return gw.v.AddNote(notes)
 }
 

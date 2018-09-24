@@ -32,7 +32,7 @@ func (Service) GetByTxID(txID string) Note {
 }
 
 // Add Note
-func (s Service) Add(note Note) error {
+func (s Service) Add(note Note) (Note, error) {
 	return Add(note)
 }
 

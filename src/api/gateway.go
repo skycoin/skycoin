@@ -64,6 +64,6 @@ type Gatewayer interface {
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
 	GetAllNotes() []notes.Note
 	GetNoteByTxID(txID string) notes.Note
-	AddNote(notes notes.Note) error
+	AddNote(notes notes.Note) (notes.Note, error)
 	RemoveNote(txID string) error
 }

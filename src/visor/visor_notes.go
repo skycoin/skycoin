@@ -15,7 +15,7 @@ func (v Visor) GetNoteByTxID(txID string) notes.Note {
 }
 
 // AddNote adds a Note
-func (v Visor) AddNote(note notes.Note) error {
+func (v Visor) AddNote(note notes.Note) (notes.Note, error) {
 	return v.Notes.Add(note)
 }
 

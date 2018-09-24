@@ -31,7 +31,6 @@ func TestNewService(t *testing.T) {
 	var err error
 
 	noteServ, err = NewService(noteCFG)
-
 	if err != nil {
 		t.Error(err)
 	}
@@ -84,7 +83,7 @@ func TestAddNotes(t *testing.T) {
 		note.TxIDHex = rndmTxIDHex
 		note.Notes = rndmNotes
 
-		err = noteServ.Add(note)
+		note, err = noteServ.Add(note)
 
 		if err != nil {
 			t.Error(err)
@@ -186,7 +185,7 @@ func TestOverwriteNotes(t *testing.T) {
 
 		// Modify Note
 		noteToOverwrite.Notes = "New Note"
-		err := noteServ.Add(noteToOverwrite)
+		_, err := noteServ.Add(noteToOverwrite)
 
 		assert.Nil(t, err)
 

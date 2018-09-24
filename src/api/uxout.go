@@ -8,7 +8,12 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
-func getUxOutByID(gateway Gatewayer) http.HandlerFunc {
+// URI: /api/v1/uxout
+// Method: GET
+// Args:
+//	uxid: unspent output ID hash
+// Returns an unspent output by ID
+func uxOutHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -42,7 +47,12 @@ func getUxOutByID(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func getAddrUxOuts(gateway Gatewayer) http.HandlerFunc {
+// URI: /api/v1/address_uxouts
+// Method: GET
+// Args:
+//	address
+// Returns the historical, spent outputs associated with an address
+func addrUxOutsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
+import { BigNumber } from 'bignumber.js';
 
 @Component({
   selector: 'app-pending-transactions',
@@ -60,9 +61,13 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
       return transaction.transaction;
     })
     .map(transaction => {
-      transaction.amount = transaction.outputs
-        .map(output => output.coins >= 0 ? output.coins : 0)
-        .reduce((a , b) => a + parseFloat(b), 0);
+      let amount = new BigNumber('0');
+      transaction.outputs.map(output => amount = amount.plus(output.coins));
+      transaction.amount = amount.decimalPlaces(6).toString();
+
+      let hours = new BigNumber('0');
+      transaction.outputs.map(output => hours = hours.plus(output.hours));
+      transaction.hours = hours.decimalPlaces(0).toString();
 
       return transaction;
     });

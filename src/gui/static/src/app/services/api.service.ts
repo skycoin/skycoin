@@ -6,6 +6,7 @@ import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
 import { TranslateService } from '@ngx-translate/core';
+import { BigNumber } from 'bignumber.js';
 
 import {
   Address, GetWalletsResponseEntry, GetWalletsResponseWallet, NormalTransaction,
@@ -25,7 +26,7 @@ export class ApiService {
     return this.get('explorer/address', {address: address.address})
       .map(transactions => transactions.map(transaction => ({
         addresses: [],
-        balance: 0,
+        balance: new BigNumber(0),
         block: transaction.status.block_seq,
         confirmed: transaction.status.confirmed,
         timestamp: transaction.timestamp,

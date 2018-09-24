@@ -27,6 +27,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `/api/v1/wallet/spend` is deprecated and requires `-enable-api-set=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 - Add the head block header to the response of `GET /api/v1/outputs`
 - Add `"ux_hash"` to block headers in API responses
+- Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 
 ### Fixed
 

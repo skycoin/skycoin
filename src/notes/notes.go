@@ -58,7 +58,7 @@ func Add(note Note) (Note, error) {
 		return Note{}, err
 	}
 
-	return note, writeJSON()
+	return note, nil
 }
 
 // Remove Note by txId

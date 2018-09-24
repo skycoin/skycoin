@@ -32,10 +32,9 @@ func getAllNotesHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v2/notes/noteByTxid
 // Method: POST
 // Content-Type: application/json
-// Body: { "txid": "<Transaction ID>", "notes": "<Notes>" }
+// Body: { "txid": "<Transaction ID>" }
 // Response:
-//      422 - wrong parameters
-//      400 - internal server error
+//      400 - bad parameters
 //      200 - ok, returns note by TxId
 func getNoteByIDHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -44,19 +43,23 @@ func getNoteByIDHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var note notes.Note
-		if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
-			wh.Error422(w, err.Error())
+		type TxID struct {
+			TxID string `json:"txid"`
+		}
+
+		var txId TxID
+		if err := json.NewDecoder(r.Body).Decode(&txId); err != nil {
+			wh.Error400(w, err.Error())
 			return
 		}
 
-		if _, err := cipher.SHA256FromHex(note.TxIDHex); err == nil {
-			savedNotes := gateway.GetNoteByTxID(note.TxIDHex)
-			wh.SendJSONOr500(logger, w, savedNotes)
-		} else {
-			wh.Error422(w, fmt.Errorf("Wrong txid").Error())
+		if _, err := cipher.SHA256FromHex(txId.TxID); err != nil {
+			wh.Error400(w, fmt.Errorf("Wrong txid").Error())
 			return
 		}
+
+		savedNotes := gateway.GetNoteByTxID(txId.TxID)
+		wh.SendJSONOr500(logger, w, savedNotes)
 	}
 }
 
@@ -65,7 +68,7 @@ func getNoteByIDHandler(gateway Gatewayer) http.HandlerFunc {
 // Content-Type: application/json
 // Body: { "txid": "<Transaction ID>", "notes": "<Notes>" }
 // Response:
-//      400 - wrong parameters
+//      400 - bad parameters
 //      200 - ok, note added
 func addNoteHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -75,14 +78,13 @@ func addNoteHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		var note notes.Note
-		var retNote notes.Note
 		if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
 			wh.Error400(w, fmt.Errorf("bad parameters").Error())
 			return
 		}
 
 		if _, err := cipher.SHA256FromHex(note.TxIDHex); err == nil && len(note.Notes) > 0 {
-			retNote, err = gateway.AddNote(note)
+			note, err = gateway.AddNote(note)
 			if err != nil {
 				wh.Error400(w, err.Error())
 				return
@@ -92,17 +94,16 @@ func addNoteHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, retNote)
+		wh.SendJSONOr500(logger, w, note)
 	}
 }
 
-// URI: /api/v2/notes/notes
+// URI: /api/v2/notes/removeNote
 // Method: POST
 // Content-Type: application/json
-// Body: { "txid": "<Transaction ID>", "notes": "<Notes>" }
+// Body: { "txid": "<Transaction ID>" }
 // Response:
-//      422 - wrong parameters
-//      400 - internal server error
+//      400 - bad parameters
 //      200 - ok, note removed by TxId
 func removeNoteHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +114,7 @@ func removeNoteHandler(gateway Gatewayer) http.HandlerFunc {
 
 		var note notes.Note
 		if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
-			wh.Error422(w, err.Error())
+			wh.Error400(w, err.Error())
 			return
 		}
 
@@ -123,10 +124,10 @@ func removeNoteHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 		} else {
-			wh.Error422(w, fmt.Errorf("Wrong 'txid'").Error())
+			wh.Error400(w, fmt.Errorf("wrong 'txid'").Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, gateway.GetNoteByTxID(note.TxIDHex))
+		wh.SendJSONOr500(logger, w, notes.Note{})
 	}
 }

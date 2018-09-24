@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/skycoin/skycoin/src/notes"
+
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -107,6 +109,8 @@ type Config struct {
 	GenesisCoinVolume uint64
 	// bolt db file path
 	DBPath string
+	// data directory
+	DataDirectory string
 	// enable arbitrating mode
 	Arbitrating bool
 	// wallet directory
@@ -218,6 +222,7 @@ type Visor struct {
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
+	Notes       *notes.Service
 	StartedAt   time.Time
 
 	history Historyer
@@ -243,6 +248,16 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	}
 
 	wltServ, err := wallet.NewService(wltServConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// Loads notes
+	notesServConfig := notes.Config{
+		NotesPath: c.DataDirectory + "/transactionnotes.json",
+	}
+
+	noteServ, err := notes.NewService(notesServConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -293,6 +308,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		Unconfirmed: utp,
 		history:     history,
 		Wallets:     wltServ,
+		Notes:       noteServ,
 		StartedAt:   time.Now(),
 	}
 

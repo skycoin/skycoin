@@ -893,21 +893,21 @@ func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, 
 
 // GetAllNotes returns all notes that have been saved locally
 func (gw *Gateway) GetAllNotes() []notes.Note {
-	return gw.v.GetAllNotes()
+	return gw.v.Notes.GetAll()
 }
 
 // GetNoteByTxID returns a note depending on the transactionId.
 // If no Note could be found via TransId -> returns empty notes.Note
 func (gw *Gateway) GetNoteByTxID(txID string) notes.Note {
-	return gw.v.GetNoteByTxID(txID)
+	return gw.v.Notes.GetByTxID(txID)
 }
 
 // AddNote adds a Note
 func (gw *Gateway) AddNote(notes notes.Note) (notes.Note, error) {
-	return gw.v.AddNote(notes)
+	return gw.v.Notes.Add(notes)
 }
 
 // RemoveNote removes a Note
 func (gw *Gateway) RemoveNote(txID string) error {
-	return gw.v.RemoveNote(txID)
+	return gw.v.Notes.RemoveByTxID(txID)
 }

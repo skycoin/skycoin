@@ -72,7 +72,7 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -enable-all-api-sets=true \
-                      -enable-api-sets=DEPRECATED_WALLET_SEED \
+                      -enable-api-sets=INSECURE_WALLET_SEED \
                       -wallet-dir="$WALLET_DIR" \
                       &
 SKYCOIN_PID=$!

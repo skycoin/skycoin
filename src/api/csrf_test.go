@@ -137,6 +137,7 @@ var endpoints = []string{
 	"/api/v2/notes/noteByTxid",
 	"/api/v2/notes/addNote",
 	"/api/v2/notes/removeNote",
+	"/api/v2/wallet/recover",
 }
 
 func TestCSRFWrapper(t *testing.T) {

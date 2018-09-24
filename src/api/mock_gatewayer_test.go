@@ -1094,6 +1094,29 @@ func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) (
 	return r0, r1
 }
 
+// RecoverWallet provides a mock function with given fields: wltID, seed, password
+func (_m *MockGatewayer) RecoverWallet(wltID string, seed string, password []byte) (*wallet.Wallet, error) {
+	ret := _m.Called(wltID, seed, password)
+
+	var r0 *wallet.Wallet
+	if rf, ok := ret.Get(0).(func(string, string, []byte) *wallet.Wallet); ok {
+		r0 = rf(wltID, seed, password)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*wallet.Wallet)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, []byte) error); ok {
+		r1 = rf(wltID, seed, password)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // RemoveNote provides a mock function with given fields: txID
 func (_m *MockGatewayer) RemoveNote(txID string) error {
 	ret := _m.Called(txID)

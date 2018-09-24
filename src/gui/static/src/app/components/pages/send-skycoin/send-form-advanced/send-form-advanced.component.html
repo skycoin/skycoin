@@ -3,9 +3,9 @@
     <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
     <div class="-select">
       <select formControlName="wallet" id="wallets">
-        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.coins <= 0" [ngValue]="wallet">
-          {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-          ({{ wallet.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
+        <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
+          {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
         </option>
       </select>
     </div>
@@ -19,13 +19,13 @@
     <div class="-select">
       <mat-select #selectAddresses multiple formControlName="addresses" [compareWith]="addressCompare" id="addresses">
         <mat-option *ngFor="let addr of addresses" [value]="addr">
-          {{ addr.address }} - {{ addr.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-          ({{ addr.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
+          {{ addr.address }} - {{ (addr.coins ? addr.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ addr.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
         </mat-option>
         <mat-select-trigger>
           <div *ngFor="let address of form.get('addresses').value">
-            {{ address.address }} - {{ address.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-            ({{ address.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
+            {{ address.address }} - {{ (address.coins ? address.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+            ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
           </div>
         </mat-select-trigger>
       </mat-select>

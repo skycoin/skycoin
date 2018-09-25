@@ -1623,10 +1623,10 @@ func ExampleDeepLazyGiveTxnsMessage() {
 	transactionOutputs1 = append(transactionOutputs1, txOutput2, txOutput3)
 
 	var sig0, sig1, sig2, sig3 cipher.Sig
-	sig0, _ = cipher.SigFromHex("sig0")
-	sig1, _ = cipher.SigFromHex("sig1")
-	sig2, _ = cipher.SigFromHex("sig2")
-	sig3, _ = cipher.SigFromHex("sig3")
+	sig0, _ = cipher.SigFromHex("sig0") // nolint: errcheck
+	sig1, _ = cipher.SigFromHex("sig1") // nolint: errcheck
+	sig2, _ = cipher.SigFromHex("sig2") // nolint: errcheck
+	sig3, _ = cipher.SigFromHex("sig3") // nolint: errcheck
 	var transaction0 = coin.Transaction{
 		Type:      123,
 		In:        []cipher.SHA256{hashes[3], hashes[4]},

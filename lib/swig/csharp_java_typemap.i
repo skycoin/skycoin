@@ -5,22 +5,13 @@
 %typemap(in) Handle* {
 	$input =  (long*)&$1;
 } 
+%include cpointer.i
+%pointer_functions(Handle, Handlep);
+// %apply uint  {GoUint64_, GoUint64};
+%pointer_functions(unsigned long long, GoUint64p);
+%pointer_functions(cipher__Address, cipher__Addressp);
+%pointer_functions(Transactions__Handle, Transactions__Handlep);
 
-%apply Handle { Wallet__Handle, Options__Handle, ReadableEntry__Handle, ReadableWallet__Handle, WebRpcClient__Handle,
-	WalletResponse__Handle, Client__Handle, Strings__Handle, Wallets__Handle, Config__Handle, App__Handle, Context__Handle,
-	GoStringMap, PasswordReader__Handle_,
-	Transaction__Handle, Transactions__Handle, CreatedTransaction__Handle,
-	CreatedTransactionOutput__Handle, CreatedTransactionInput__Handle, CreateTransactionResponse__Handle,
-	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, ReadableOutputSet__Handle
-	}
-
-%apply Handle* { Wallet__Handle*, Options__Handle*, ReadableEntry__Handle*, ReadableWallet__Handle*, WebRpcClient__Handle*,
-	WalletResponse__Handle*, Client__Handle*, Strings__Handle*, Wallets__Handle*, Config__Handle*, App__Handle*, Context__Handle*,
-	GoStringMap*, PasswordReader__Handle_*,
-	Transaction__Handle*, Transactions__Handle*, CreatedTransaction__Handle*,
-	CreatedTransactionOutput__Handle*, CreatedTransactionInput__Handle*, CreateTransactionResponse__Handle*,
-	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*, ReadableOutputSet__Handle*
-	}
 	/*GoString* parameter as reference */
 %typemap(in, numinputs=0) GoString* (GoString temp) {
 	temp.p = NULL;

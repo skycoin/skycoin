@@ -41,8 +41,8 @@ const (
 	EndpointsStatus = "STATUS"
 	// EndpointsWallet endpoints implement wallet interface
 	EndpointsWallet = "WALLET"
-	// EndpointsWalletSeed endpoints implement wallet interface
-	EndpointsWalletSeed = "WALLET_SEED"
+	// EndpointsInsecureWalletSeed endpoints implement wallet interface
+	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
 	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 	// EndpointsPrometheus endpoints for Go application metrics
@@ -355,165 +355,69 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	mux.Handle("/csrf", csrfHandler)
 	mux.Handle("/api/v1/csrf", csrfHandler) // csrf is always available, regardless of the API set
 
+	// Status endpoints
 	webHandlerV1("/version", versionHandler(c.buildInfo)) // version is always available, regardless of the API set
+	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsRead, EndpointsStatus}))
 
-	// get set of unspent outputs
-	webHandlerV1("/outputs", forAPISet(getOutputsHandler(gateway), []string{EndpointsRead}))
-
-	// get balance of addresses
-	webHandlerV1("/balance", forAPISet(getBalanceHandler(gateway), []string{EndpointsRead}))
-
-	// Wallet interface
-
-	// Returns wallet info
-	// Method: GET
-	// Args:
-	//      id - Wallet ID [required]
-	webHandlerV1("/wallet", forAPISet(walletGet(gateway), []string{EndpointsWallet}))
-
-	// Loads wallet from seed, will scan ahead N address and
-	// load addresses till the last one that have coins.
-	// Method: POST
-	// Args:
-	//     seed: wallet seed [required]
-	//     label: wallet label [required]
-	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-	webHandlerV1("/wallet/create", forAPISet(walletCreate(gateway), []string{EndpointsWallet}))
-
-	webHandlerV1("/wallet/newAddress", forAPISet(walletNewAddresses(gateway), []string{EndpointsWallet}))
-
-	// Returns the confirmed and predicted balance for a specific wallet.
-	// The predicted balance is the confirmed balance minus any pending
-	// spent amount.
-	// GET arguments:
-	//      id: Wallet ID
+	// Wallet endpoints
+	webHandlerV1("/wallet", forAPISet(walletHandler(gateway), []string{EndpointsWallet}))
+	webHandlerV1("/wallet/create", forAPISet(walletCreateHandler(gateway), []string{EndpointsWallet}))
+	webHandlerV1("/wallet/newAddress", forAPISet(walletNewAddressesHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/balance", forAPISet(walletBalanceHandler(gateway), []string{EndpointsWallet}))
-
-	// Sends coins&hours to another address.
-	// POST arguments:
-	//  id: Wallet ID
-	//  coins: Number of coins to spend
-	//  dst: Destination address
-	//  Returns total amount spent if successful, otherwise error describing
-	//  failure status.
 	webHandlerV1("/wallet/spend", forAPISet(walletSpendHandler(gateway), []string{EndpointsDeprecatedWalletSpend}))
-
-	// Creates a transaction from a wallet
 	webHandlerV1("/wallet/transaction", forAPISet(createTransactionHandler(gateway), []string{EndpointsWallet}))
-
-	// GET Arguments:
-	//      id: Wallet ID
-	// Returns all pending transanction for all addresses by selected Wallet
 	webHandlerV1("/wallet/transactions", forAPISet(walletTransactionsHandler(gateway), []string{EndpointsWallet}))
-
-	// Update wallet label
-	// POST Arguments:
-	//     id: wallet id
-	//     label: wallet label
 	webHandlerV1("/wallet/update", forAPISet(walletUpdateHandler(gateway), []string{EndpointsWallet}))
-
-	// Returns all loaded wallets
-	// returns sensitive information
 	webHandlerV1("/wallets", forAPISet(walletsHandler(gateway), []string{EndpointsWallet}))
-
-	// Returns wallets directory path
-	webHandlerV1("/wallets/folderName", forAPISet(getWalletFolder(gateway), []string{EndpointsWallet}))
-
-	// Generate wallet seed
-	// GET Arguments:
-	//     entropy: entropy bitsize.
+	webHandlerV1("/wallets/folderName", forAPISet(walletFolderHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/newSeed", forAPISet(newSeedHandler(), []string{EndpointsWallet}))
+	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), []string{EndpointsInsecureWalletSeed}))
 
-	// Gets seed of wallet of given id
-	// GET Arguments:
-	//     id: wallet id
-	//     password: wallet password
-	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), []string{EndpointsWalletSeed}))
-
-	// unload wallet
-	// POST Argument:
-	//         id: wallet id
 	webHandlerV1("/wallet/unload", forAPISet(walletUnloadHandler(gateway), []string{EndpointsWallet}))
-
-	// Encrypts wallet
-	// POST arguments:
-	//     id: wallet id
-	//     password: wallet password
-	// Returns an encrypted wallet json without sensitive data
 	webHandlerV1("/wallet/encrypt", forAPISet(walletEncryptHandler(gateway), []string{EndpointsWallet}))
-
-	// Decrypts wallet
-	// POST arguments:
-	//     id: wallet id
-	//     password: wallet password
 	webHandlerV1("/wallet/decrypt", forAPISet(walletDecryptHandler(gateway), []string{EndpointsWallet}))
+	webHandlerV2("/wallet/recover", forAPISet(walletRecoverHandler(gateway), []string{EndpointsWallet}))
 
 	// Blockchain interface
-
 	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 	webHandlerV1("/blockchain/progress", forAPISet(blockchainProgressHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-
-	// get block by hash or seq
 	webHandlerV1("/block", forAPISet(blockHandler(gateway), []string{EndpointsRead}))
-	// get blocks in specific range
 	webHandlerV1("/blocks", forAPISet(blocksHandler(gateway), []string{EndpointsRead}))
-	// get last N blocks
 	webHandlerV1("/last_blocks", forAPISet(lastBlocksHandler(gateway), []string{EndpointsRead}))
 
-	// Network stats interface
+	// Network stats endpoints
 	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 	webHandlerV1("/network/connections", forAPISet(connectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 	webHandlerV1("/network/defaultConnections", forAPISet(defaultConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 
-	// Transaction handler
-
-	// get set of pending transactions
+	// Transaction related endpoints
 	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway), []string{EndpointsRead}))
-	// get txn by txid
 	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
-
-	// parse and verify transaction
 	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsRead}))
 
-	// Health check handler
-	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsRead, EndpointsStatus}))
+	// Unspent output related endpoints
+	webHandlerV1("/outputs", forAPISet(outputsHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/balance", forAPISet(balanceHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/uxout", forAPISet(uxOutHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/address_uxouts", forAPISet(addrUxOutsHandler(gateway), []string{EndpointsRead}))
 
 	// golang process internal metrics for Prometheus
 	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), []string{EndpointsPrometheus}))
 
-	// Returns transactions that match the filters.
-	// Method: GET
-	// Args:
-	//     addrs: Comma separated addresses [optional, returns all transactions if no address is provided]
-	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-	webHandlerV1("/transactions", forAPISet(getTransactions(gateway), []string{EndpointsRead}))
-	// inject a transaction into network
-	webHandlerV1("/injectTransaction", forAPISet(injectTransaction(gateway), []string{EndpointsRead}))
-	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxns(gateway), []string{EndpointsRead}))
-	// get raw tx by txid.
-	webHandlerV1("/rawtx", forAPISet(getRawTxn(gateway), []string{EndpointsRead}))
+	// Address related endpoints
+	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsRead}))
 
-	// UxOut api handler
-
-	// get uxout by id.
-	webHandlerV1("/uxout", forAPISet(getUxOutByID(gateway), []string{EndpointsRead}))
-	// get all the address affected uxouts.
-	webHandlerV1("/address_uxouts", forAPISet(getAddrUxOuts(gateway), []string{EndpointsRead}))
-
-	webHandlerV2("/address/verify", forAPISet(addressVerify, []string{EndpointsRead}))
-
-	// Explorer handler
-
-	// get set of pending transactions
-	webHandlerV1("/explorer/address", forAPISet(getTransactionsForAddress(gateway), []string{EndpointsRead}))
-
-	webHandlerV1("/coinSupply", forAPISet(coinSupply(gateway), []string{EndpointsRead}))
-
-	webHandlerV1("/richlist", forAPISet(getRichlist(gateway), []string{EndpointsRead}))
-
-	webHandlerV1("/addresscount", forAPISet(getAddressCount(gateway), []string{EndpointsRead}))
+	// Explorer endpoints
+	webHandlerV1("/explorer/address", forAPISet(transactionsForAddressHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/coinSupply", forAPISet(coinSupplyHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/richlist", forAPISet(richlistHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsRead}))
 
 	return mux
 }

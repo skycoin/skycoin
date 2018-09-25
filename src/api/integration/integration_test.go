@@ -4782,6 +4782,74 @@ func TestDecryptWallet(t *testing.T) {
 	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
 }
 
+func TestRecoverWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	// Create an encrypted wallet with some addresses pregenerated,
+	// to make sure recover recovers the same number of addresses
+	c := api.NewClient(nodeAddress())
+	wf, err := c.WalletFolderName()
+	require.NoError(t, err)
+
+	// Load the wallet from disk to check that it was saved
+	checkWalletOnDisk := func(w *api.WalletResponse) {
+		wltPath := filepath.Join(wf.Address, w.Meta.Filename)
+		lw, err := wallet.Load(wltPath)
+		require.NoError(t, err)
+		lwr, err := api.NewWalletResponse(lw)
+		require.NoError(t, err)
+		require.Equal(t, w, lwr)
+	}
+
+	w, seed, clean := createWallet(t, c, false, "", "fooseed")
+	require.Equal(t, "fooseed", seed)
+	defer clean()
+
+	_, err = c.NewWalletAddress(w.Meta.Filename, 10, "")
+	require.NoError(t, err)
+
+	w, err = c.Wallet(w.Meta.Filename)
+	require.NoError(t, err)
+
+	// Recover fails if the wallet is not encrypted
+	_, err = c.RecoverWallet(w.Meta.Filename, "fooseed", "")
+	assertResponseError(t, err, http.StatusBadRequest, "wallet is not encrypted")
+
+	_, err = c.EncryptWallet(w.Meta.Filename, "pwd")
+	require.NoError(t, err)
+
+	// Recovery fails if the seed doesn't match
+	_, err = c.RecoverWallet(w.Meta.Filename, "wrongseed", "")
+	assertResponseError(t, err, http.StatusBadRequest, "wallet recovery seed is wrong")
+
+	// Successful recovery with no new password
+	w2, err := c.RecoverWallet(w.Meta.Filename, "fooseed", "")
+	require.NoError(t, err)
+	require.False(t, w2.Meta.Encrypted)
+	checkWalletOnDisk(w2)
+	require.Equal(t, w, w2)
+
+	_, err = c.EncryptWallet(w.Meta.Filename, "pwd2")
+	require.NoError(t, err)
+
+	// Successful recovery with a new password
+	w3, err := c.RecoverWallet(w.Meta.Filename, "fooseed", "pwd3")
+	require.NoError(t, err)
+	require.True(t, w3.Meta.Encrypted)
+	require.Equal(t, w3.Meta.CryptoType, "scrypt-chacha20poly1305")
+	checkWalletOnDisk(w3)
+	w3.Meta.Encrypted = w.Meta.Encrypted
+	w3.Meta.CryptoType = w.Meta.CryptoType
+	require.Equal(t, w, w3)
+
+	w4, err := c.DecryptWallet(w.Meta.Filename, "pwd3")
+	require.NoError(t, err)
+	require.False(t, w.Meta.Encrypted)
+	require.Equal(t, w, w4)
+}
+
 func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return

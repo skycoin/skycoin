@@ -1,7 +1,7 @@
 package visor
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -34,10 +34,12 @@ type ErrCorruptDB struct {
 // CheckDatabase checks the database for corruption, rebuild history if corrupted
 func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
 	var blocksBktExist bool
-	db.View("CheckDatabase", func(tx *dbutil.Tx) error {
+	if err := db.View("CheckDatabase", func(tx *dbutil.Tx) error {
 		blocksBktExist = dbutil.Exists(tx, blockdb.BlocksBkt)
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
 
 	// Don't verify the db if the blocks bucket does not exist
 	if !blocksBktExist {
@@ -84,7 +86,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 }
 
 // backup the corrypted db first, then rebuild the history DB.
-func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) {
+func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) { // nolint: unused,megacheck
 	db, err := backupDB(db)
 	if err != nil {
 		return nil, err
@@ -131,7 +133,7 @@ func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchai
 }
 
 // backupDB makes a backup copy of the DB
-func backupDB(db *dbutil.DB) (*dbutil.DB, error) {
+func backupDB(db *dbutil.DB) (*dbutil.DB, error) { // nolint: unused,megacheck
 	// backup the corrupted database
 	dbReadOnly := db.IsReadOnly()
 
@@ -161,18 +163,16 @@ func RepairCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*
 	switch err.(type) {
 	case nil:
 		return db, nil
-	case blockdb.ErrMissingSignature:
+	case blockdb.ErrMissingSignature,
+		historydb.ErrHistoryDBCorrupted:
 		logger.Critical().Errorf("Database is corrupted, recreating db: %v", err)
 		return resetCorruptDB(db)
-	case historydb.ErrHistoryDBCorrupted:
-		logger.Critical().Errorf("Database is corrupted, rebuilding db: %v", err)
-		return rebuildCorruptDB(db, pubkey, quit)
 	default:
 		return nil, err
 	}
 }
 
-func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
+func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint: deadcode,unused,megacheck
 	history := historydb.New()
 	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
 	if err != nil {
@@ -204,7 +204,7 @@ func resetCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
 // OpenDB opens the blockdb
 func OpenDB(dbFile string, readOnly bool) (*dbutil.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
-		Timeout:  500 * time.Millisecond,
+		Timeout:  5000 * time.Millisecond,
 		ReadOnly: readOnly,
 	})
 	if err != nil {
@@ -230,7 +230,7 @@ func moveCorruptDB(dbPath string) (string, error) {
 }
 
 // copyCorruptDB copy a file to makeCorruptDBPath(dbPath)
-func copyCorruptDB(dbPath string) (string, error) {
+func copyCorruptDB(dbPath string) (string, error) { // nolint: unused,megacheck
 	newDBPath, err := makeCorruptDBPath(dbPath)
 	if err != nil {
 		return "", err
@@ -285,7 +285,7 @@ func shaFileID(dbPath string) (string, error) {
 	}
 	defer fi.Close()
 
-	h := sha1.New()
+	h := sha256.New()
 	if _, err := io.Copy(h, fi); err != nil {
 		return "", err
 	}

@@ -16,12 +16,11 @@ func broadcastTxCmd() gcli.Command {
 		Action: func(c *gcli.Context) error {
 			rawtx := c.Args().First()
 			if rawtx == "" {
-				gcli.ShowSubcommandHelp(c)
-				return nil
+				return gcli.ShowSubcommandHelp(c)
 			}
 
-			rpcClient := RPCClientFromContext(c)
-			txid, err := rpcClient.InjectTransactionString(rawtx)
+			client := APIClientFromContext(c)
+			txid, err := client.InjectEncodedTransaction(rawtx)
 			if err != nil {
 				return err
 			}
@@ -30,5 +29,4 @@ func broadcastTxCmd() gcli.Command {
 			return nil
 		},
 	}
-	// Commands = append(Commands, cmd)
 }

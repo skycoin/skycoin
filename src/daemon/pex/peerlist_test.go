@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 var testPeers = []string{
@@ -111,7 +110,7 @@ func TestLoadPeersFromFile(t *testing.T) {
 				defer removeFile()
 			}
 
-			peers, err := loadPeersFromFile(f)
+			peers, err := loadCachedPeersFile(f)
 			require.Equal(t, tc.err, err)
 			require.Equal(t, len(tc.expectPeers), len(peers))
 			for k, v := range tc.expectPeers {
@@ -341,36 +340,36 @@ func TestPeerlistClearOld(t *testing.T) {
 		{
 			"no old peers",
 			[]Peer{
-				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
 			},
 			110 * time.Second,
 			map[string]Peer{
-				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
 			},
 		},
 		{
 			"clear one old peer",
 			[]Peer{
-				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
-				{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
+				{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
+				{Addr: testPeers[1], LastSeen: time.Now().UTC().Unix() - 110},
+				{Addr: testPeers[2], LastSeen: time.Now().UTC().Unix() - 120},
 			},
 			111 * time.Second,
 			map[string]Peer{
-				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				testPeers[1]: {Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
+				testPeers[1]: {Addr: testPeers[1], LastSeen: time.Now().UTC().Unix() - 110},
 			},
 		},
 		{
 			"clear two old peers",
 			[]Peer{
-				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
-				{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
+				{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
+				{Addr: testPeers[1], LastSeen: time.Now().UTC().Unix() - 110},
+				{Addr: testPeers[2], LastSeen: time.Now().UTC().Unix() - 120},
 			},
 			101 * time.Second,
 			map[string]Peer{
-				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: time.Now().UTC().Unix() - 100},
 			},
 		},
 	}
@@ -429,7 +428,7 @@ func TestPeerlistSave(t *testing.T) {
 			defer removeFile()
 			require.NoError(t, pl.save(f))
 
-			psMap, err := loadPeersFromFile(f)
+			psMap, err := loadCachedPeersFile(f)
 			require.NoError(t, err)
 			for k, v := range tc.expect {
 				p, ok := psMap[k]
@@ -447,7 +446,7 @@ func TestPeerCanTry(t *testing.T) {
 		CanTry     bool
 	}{
 		{
-			utc.Now().Add(time.Duration(100) * time.Second * -1).Unix(),
+			time.Now().UTC().Add(time.Duration(100) * time.Second * -1).Unix(),
 			1,
 			true,
 		},
@@ -515,9 +514,9 @@ func peersEqualWithSeenAllowedDiff(t *testing.T, expected Peer, actual Peer) {
 	require.Equal(t, expected, actual)
 }
 
-// preparePeerlistFile makes peers.txt in temporary dir,
+// preparePeerlistFile makes peers.json in temporary dir,
 func preparePeerlistFile(t *testing.T) (string, func()) {
-	f, err := ioutil.TempFile("", "peers.txt")
+	f, err := ioutil.TempFile("", PeerCacheFilename)
 	require.NoError(t, err)
 
 	return f.Name(), func() {

@@ -47,6 +47,11 @@ export class WalletsPage {
       confirmEl.sendKeys(confirm);
     }
 
+    if (label !== '' && (seed === confirm || (!confirm && seed !== ''))) {
+      const seedValidationCheckBox = element(by.css('.red-disclaimer-box .mat-checkbox-inner-container'));
+      seedValidationCheckBox.click();
+    }
+
     return btn.isEnabled().then(status => {
       if (status) {
         btn.click();
@@ -75,11 +80,15 @@ export class WalletsPage {
   }
 
   addAddress() {
-    return element.all(by.css('.-detail')).count().then(originalCount => {
+    return element.all(by.css('.-record')).count().then(originalCount => {
       return element(by.css('.-new-address')).click().then(() => {
         return browser.sleep(2000).then(() => {
-          return element.all(by.css('.-detail')).count().then(newCount => {
-            return newCount > originalCount;
+          return element(by.buttonText('Create')).click().then(() => {
+            return browser.sleep(2000).then(() => {
+              return element.all(by.css('.-record')).count().then(newCount => {
+                return newCount > originalCount;
+              });
+            });
           });
         });
       });
@@ -88,7 +97,7 @@ export class WalletsPage {
 
   getCountOfEmptyAddresses(clickSelector: string) {
     return element(by.css(clickSelector)).click().then(() => {
-      return element.all(by.css('.-detail > div:nth-child(3)')).filter((address) => {
+      return element.all(by.css('.-record > div:nth-child(3)')).filter((address) => {
         return address.getText().then(value => {
           return value === '0';
         });
@@ -173,7 +182,7 @@ export class WalletsPage {
   }
 
   private getWalletWithName(name: string) {
-    return element.all(by.css('.-table.ng-star-inserted'))
+    return element.all(by.css('.-wallets.ng-star-inserted'))
       .filter(wallet => wallet.element(by.css('.-label')).getText().then(text => text === name))
       .first();
   }

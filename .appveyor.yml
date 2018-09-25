@@ -14,7 +14,6 @@ environment:
 
 cache:
   - 'electron\node_modules'
-  - '%LOCALAPPDATA%\Yarn'
   - '%USERPROFILE%\.electron'
 
 install:
@@ -28,8 +27,7 @@ install:
 
 build_script:
   - cd electron
-  - yarn
-  - ps: bash ./build.sh 'windows/amd64 windows/386'
+  - cmd: bash ./build.sh 'windows/amd64 windows/386'
   - ps: ls release\
   - ps: cd ..
 

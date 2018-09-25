@@ -53,12 +53,13 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockcha
 	}
 
 	sig := cipher.SignHash(gb.HashHeader(), seckey)
-	db.Update("", func(tx *dbutil.Tx) error {
+	err = db.Update("", func(tx *dbutil.Tx) error {
 		return b.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   sig,
 		})
 	})
+	require.NoError(t, err)
 	return b
 }
 
@@ -373,7 +374,7 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	originInnerHash := txn.InnerHash
 	txn.InnerHash = cipher.SHA256{}
 	err = verifySingleTxnSoftHardConstraints(txn, DefaultMaxBlockSize)
-	requireHardViolation(t, "Invalid header hash", err)
+	requireHardViolation(t, "InnerHash does not match computed hash", err)
 
 	// Set back the originInnerHash
 	txn.InnerHash = originInnerHash

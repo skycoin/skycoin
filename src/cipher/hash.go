@@ -7,15 +7,12 @@ import (
 	"log"
 )
 
-// var (
-// 	sha256Hash    hash.Hash = sha256.New()
-// 	ripemd160Hash hash.Hash = ripemd160.New()
-// )
-
 var (
-	poolsize          = 10
-	sha256HashChan    chan hash.Hash // reuse the hash thread safely.
-	ripemd160HashChan chan hash.Hash
+	// Memory pool for hashes
+	sha256HashPoolSize    = 30
+	sha256HashPool        chan hash.Hash
+	ripemd160HashPoolSize = 30
+	ripemd160HashPool     chan hash.Hash
 )
 
 // Ripemd160 ripemd160
@@ -31,11 +28,13 @@ func (rd *Ripemd160) Set(b []byte) {
 
 // HashRipemd160 hash data to Ripemd160
 func HashRipemd160(data []byte) Ripemd160 {
-	ripemd160Hash := <-ripemd160HashChan
+	ripemd160Hash := <-ripemd160HashPool
 	ripemd160Hash.Reset()
-	ripemd160Hash.Write(data)
+	if _, err := ripemd160Hash.Write(data); err != nil {
+		panic(err)
+	}
 	sum := ripemd160Hash.Sum(nil)
-	ripemd160HashChan <- ripemd160Hash
+	ripemd160HashPool <- ripemd160Hash
 
 	h := Ripemd160{}
 	h.Set(sum)
@@ -74,11 +73,13 @@ func (g *SHA256) Xor(b SHA256) SHA256 {
 
 // SumSHA256 sum sha256
 func SumSHA256(b []byte) SHA256 {
-	sha256Hash := <-sha256HashChan
+	sha256Hash := <-sha256HashPool
 	sha256Hash.Reset()
-	sha256Hash.Write(b)
+	if _, err := sha256Hash.Write(b); err != nil {
+		panic(err)
+	}
 	sum := sha256Hash.Sum(nil)
-	sha256HashChan <- sha256Hash
+	sha256HashPool <- sha256Hash
 
 	h := SHA256{}
 	h.Set(sum)

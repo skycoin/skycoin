@@ -412,7 +412,7 @@ var addresses = []cipher.Address{
 }
 
 func GetSHAFromHex(hex string) cipher.SHA256 {
-	var sha, _ = cipher.SHA256FromHex(hex)
+	var sha, _ = cipher.SHA256FromHex(hex) // nolint: errcheck
 	return sha
 }
 
@@ -445,10 +445,7 @@ func ExampleEmptySliceStruct() {
 	}
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
-	err := hexdump.NewFromIterator(gnet.EncodeMessage(&message), &mai, w)
-	if err != nil {
-		fmt.Println(err)
-	}
+	hexdump.NewFromIterator(gnet.EncodeMessage(&message), &mai, w) // nolint: errcheck
 	// Output:
 	// 0x0000 | 11 00 00 00 ....................................... Length
 	// 0x0004 | 54 45 53 54 ....................................... Prefix
@@ -942,7 +939,7 @@ func ExampleDeepGiveBlocksMessageShallow() {
 	fmt.Println("GiveBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -984,7 +981,7 @@ func ExampleDeepAnnounceBlocksMessageShallow() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -1003,7 +1000,7 @@ func ExampleDeepGetTxnsMessageShallow() {
 	fmt.Println("GetTxnsMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
@@ -1071,7 +1068,7 @@ func ExampleDeepGiveTxnsMessageShallow() {
 	fmt.Println("GiveTxnsMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
@@ -1127,7 +1124,7 @@ func ExampleDeepIntroductionMessage() {
 	fmt.Println("IntroductionMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 2)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length
@@ -1145,7 +1142,7 @@ func ExampleDeepGetPeersMessage() {
 	fmt.Println("GetPeersMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 2)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GetPeersMessage:
 	// 0x0000 | 04 00 00 00 ....................................... Length
@@ -1165,7 +1162,7 @@ func ExampleDeepGivePeersMessage() {
 	fmt.Println("GivePeersMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
@@ -1187,7 +1184,7 @@ func ExampleDeepGetBlocksMessage() {
 	fmt.Println("GetBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
@@ -1224,7 +1221,7 @@ func ExampleDeepGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -1266,7 +1263,7 @@ func ExampleDeepAnnounceBlocksMessage() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -1285,7 +1282,7 @@ func ExampleDeepGetTxnsMessage() {
 	fmt.Println("GetTxnsMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
@@ -1328,10 +1325,10 @@ func ExampleDeepGiveTxnsMessage() {
 	transactionOutputs1 = append(transactionOutputs1, txOutput2, txOutput3)
 
 	var sig0, sig1, sig2, sig3 cipher.Sig
-	sig0, _ = cipher.SigFromHex("sig0")
-	sig1, _ = cipher.SigFromHex("sig1")
-	sig2, _ = cipher.SigFromHex("sig2")
-	sig3, _ = cipher.SigFromHex("sig3")
+	sig0, _ = cipher.SigFromHex("sig0") // nolint: errcheck
+	sig1, _ = cipher.SigFromHex("sig1") // nolint: errcheck
+	sig2, _ = cipher.SigFromHex("sig2") // nolint: errcheck
+	sig3, _ = cipher.SigFromHex("sig3") // nolint: errcheck
 	var transaction0 = coin.Transaction{
 		Type:      123,
 		In:        []cipher.SHA256{hashes[3], hashes[4]},
@@ -1353,7 +1350,7 @@ func ExampleDeepGiveTxnsMessage() {
 	fmt.Println("GiveTxnsMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
@@ -1483,7 +1480,7 @@ func ExampleDeepLazyGetBlocksMessage() {
 	fmt.Println("GetBlocksMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w) // nolint: errcheck
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
@@ -1520,7 +1517,7 @@ func ExampleDeepLazyGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w) // nolint: errcheck
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -1564,7 +1561,7 @@ func ExampleDeepLazyAnnounceBlocksMessage() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w) // nolint: errcheck
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -1583,7 +1580,7 @@ func ExampleDeepLazyGetTxnsMessage() {
 	fmt.Println("GetTxnsMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w) // nolint: errcheck
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
@@ -1651,7 +1648,7 @@ func ExampleDeepLazyGiveTxnsMessage() {
 	fmt.Println("GiveTxnsMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w) // nolint: errcheck
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length

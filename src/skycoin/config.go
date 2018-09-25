@@ -493,6 +493,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	case "":
 	case "STANDALONE_CLIENT":
 		c.EnableAllAPISets = true
+		c.EnabledAPISets = "INSECURE_WALLET_SEED"
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false

@@ -2416,8 +2416,86 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:              nil,
 				seed:             seed,
-				lastSeed:         childSeeds[4],
-				entryNum:         4 + 1,
+				lastSeed:         childSeeds[6],
+				entryNum:         6 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			name: "scan 5 get 2 have 7, unencrypted",
+			opts: Options{
+				Seed:  seed,
+				ScanN: 5,
+			},
+			balGetter: mockBalanceGetter{
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[7]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			expect: exp{
+				err:              nil,
+				seed:             seed,
+				lastSeed:         childSeeds[7],
+				entryNum:         7 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			name: "scan 5 get 2 get 7 have 12, unencrypted",
+			opts: Options{
+				Seed:  seed,
+				ScanN: 5,
+			},
+			balGetter: mockBalanceGetter{
+				addrs[2]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[7]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[12]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			expect: exp{
+				err:              nil,
+				seed:             seed,
+				lastSeed:         childSeeds[12],
+				entryNum:         12 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			name: "scan 5 get 2 get 7 have 13, unencrypted",
+			opts: Options{
+				Seed:  seed,
+				ScanN: 5,
+			},
+			balGetter: mockBalanceGetter{
+				addrs[2]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[7]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[13]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			expect: exp{
+				err:              nil,
+				seed:             seed,
+				lastSeed:         childSeeds[7],
+				entryNum:         7 + 1,
+				confirmedBalance: 20,
+				predictedBalance: 0,
+			},
+		},
+		{
+			name: "scan 5 get 2 have 8, unencrypted",
+			opts: Options{
+				Seed:  seed,
+				ScanN: 5,
+			},
+			balGetter: mockBalanceGetter{
+				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[8]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			expect: exp{
+				err:              nil,
+				seed:             seed,
+				lastSeed:         childSeeds[2],
+				entryNum:         2 + 1,
 				confirmedBalance: 20,
 				predictedBalance: 0,
 			},

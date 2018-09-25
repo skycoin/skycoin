@@ -908,12 +908,16 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 		return 0, nil
 	}
 
-	nExistingAddrs := uint64(len(w.Entries))
+	w2 := w.clone()
+
+	nExistingAddrs := uint64(len(w2.Entries))
 	nAddAddrs := uint64(0)
+	n := scanN
+	extraScan := uint64(0)
 
 	for {
 		// Generate the addresses to scan
-		addrs, err := w.GenerateAddresses(scanN)
+		addrs, err := w2.GenerateAddresses(n)
 		if err != nil {
 			return 0, err
 		}
@@ -937,15 +941,24 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 			break
 		}
 
-		nAddAddrs += keepNum
+		nAddAddrs += keepNum + extraScan
+
+		// extraScan is the number of addresses with a zero balance beyond the
+		// last address with a nonzero balance
+		extraScan = n - keepNum
+
+		// n is the number of addresses to scan the next iteration
+		n = scanN - extraScan
 	}
 
 	// Regenerate addresses up to nExistingAddrs + nAddAddrss.
 	// This is necessary to keep the lastSeed updated.
-	w.reset()
-	if _, err := w.GenerateAddresses(nExistingAddrs + nAddAddrs); err != nil {
+	w2.reset()
+	if _, err := w2.GenerateAddresses(nExistingAddrs + nAddAddrs); err != nil {
 		return 0, err
 	}
+
+	*w = *w2
 
 	return nAddAddrs, nil
 }

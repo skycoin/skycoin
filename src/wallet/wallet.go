@@ -897,8 +897,8 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 }
 
 // ScanAddresses scans ahead N addresses, truncating up to the highest address with a non-zero balance.
-// If the highest address with a non-zero balance is the Nth address, it scans ahead another N addresses,
-// until the last address has no balance. Returns the number of addresses added.
+// If any address has a nonzero balance, it rescans N more addresses from that point, until a entire
+// sequence of N addresses has no balance.
 func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 	if w.IsEncrypted() {
 		return 0, ErrWalletEncrypted
@@ -933,11 +933,11 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 			}
 		}
 
-		nAddAddrs += keepNum
-
-		if keepNum != uint64(len(bals)) {
+		if keepNum == 0 {
 			break
 		}
+
+		nAddAddrs += keepNum
 	}
 
 	// Regenerate addresses up to nExistingAddrs + nAddAddrss.

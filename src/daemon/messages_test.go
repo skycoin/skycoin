@@ -848,7 +848,7 @@ func ExampleDeepIntroductionMessageShallow() {
 	fmt.Println("IntroductionMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	_ = hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w) // nolint: errcheck
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length

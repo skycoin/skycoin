@@ -1,3 +1,6 @@
+/*
+Package bip39 implements mnemonic seeds as defined in BIP 39 https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+*/
 package bip39
 
 import (

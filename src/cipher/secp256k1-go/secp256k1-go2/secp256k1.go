@@ -1,3 +1,6 @@
+/*
+Package secp256k1go implements the underlying secp256k1 primitives
+*/
 package secp256k1go
 
 const winA = 5

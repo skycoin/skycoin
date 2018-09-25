@@ -1,3 +1,6 @@
+/*
+Package apputil provides utility methods for cmd applications
+*/
 package apputil
 
 import (

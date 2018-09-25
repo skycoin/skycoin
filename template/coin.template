@@ -1,3 +1,6 @@
+/*
+skycoin daemon
+*/
 package main
 
 /*

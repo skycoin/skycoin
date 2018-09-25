@@ -1,3 +1,13 @@
+/*
+Package visor manages the blockchain database and wallets
+
+All conceptual database operations must use a database transaction.
+Callers of visor methods must ensure they do not make multiple calls without a transaction,
+unless it is determined safe to do so.
+
+Wallet access is also gatewayed by visor, since the wallet data relates to the blockchain database.
+Wallets are conceptually a second database.
+*/
 package visor
 
 import (

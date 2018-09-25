@@ -30,7 +30,7 @@ func main() {
 	seed := flag.String("seed", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided")
 	secKeysList := flag.Bool("sec-keys-list", false, "only print a list of secret keys")
 	addrsList := flag.Bool("addrs-list", false, "only print a list of addresses")
-	strict := flag.Bool("strict", true, "Checks if input is space separated list of words.")
+	strict := flag.Bool("strict", true, "Checks if seed is a valid bip39 mnemonic seed")
 	flag.Parse()
 
 	var coinType wallet.CoinType

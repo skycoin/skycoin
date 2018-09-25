@@ -224,24 +224,22 @@ func generateElementHexdumpWithDepth(obj interface{}, depth int, prefix string) 
 	return annotation
 }
 
-
-
 //***Lazy iterator for DeepMessages
 
 type DeepMessagesAnnotationsIterator struct {
-	Message      	gnet.Message
-	LengthCalled 	bool
-	PrefixCalled 	bool
-	CurrentField 	int
+	Message      gnet.Message
+	LengthCalled bool
+	PrefixCalled bool
+	CurrentField int
 	//MaxField     	int
-	CurrentIndex 	int
-	CurrentDepth 	int
-	MaxDepth	 	int
+	CurrentIndex    int
+	CurrentDepth    int
+	MaxDepth        int
 	CurrentTypology []reflect.Kind
 	CurrentPosition []int
-	CurrentMax		[]int
-	old_obj			reflect.Value
-	obj				reflect.Value
+	CurrentMax      []int
+	old_obj         reflect.Value
+	obj             reflect.Value
 }
 
 func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMessagesAnnotationsIterator {
@@ -254,11 +252,11 @@ func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMes
 	dmai.CurrentDepth = 1
 	dmai.MaxDepth = depth
 	//dmai.MaxField = reflect.Indirect(reflect.ValueOf(dmai.Message)).NumField()
-	dmai.CurrentTypology = make([]reflect.Kind,1)
+	dmai.CurrentTypology = make([]reflect.Kind, 1)
 	dmai.CurrentTypology[0] = reflect.Struct
-	dmai.CurrentPosition = make([]int,1)
+	dmai.CurrentPosition = make([]int, 1)
 	dmai.CurrentPosition[0] = 0
-	dmai.CurrentMax = make([]int,1)
+	dmai.CurrentMax = make([]int, 1)
 	dmai.CurrentMax[0] = reflect.Indirect(reflect.ValueOf(dmai.Message)).NumField()
 	dmai.old_obj = reflect.Indirect(reflect.ValueOf(dmai.Message))
 	dmai.obj = reflect.Indirect(reflect.ValueOf(dmai.Message)).Field(0)
@@ -281,10 +279,10 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 
 	dmai.obj = reflect.Indirect(reflect.ValueOf(dmai.Message))
 	depth := 1
-	for (len(dmai.CurrentTypology) <= dmai.MaxDepth ) && ( dmai.obj.Kind() == reflect.Struct || dmai.obj.Kind() == reflect.Slice) && ( len(dmai.CurrentPosition) != 1 || dmai.old_obj.Kind() == reflect.Struct && dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") != "-" && (dmai.old_obj.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet() || dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Name != "_") && !strings.Contains(dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty")) {
+	for (len(dmai.CurrentTypology) <= dmai.MaxDepth) && (dmai.obj.Kind() == reflect.Struct || dmai.obj.Kind() == reflect.Slice) && (len(dmai.CurrentPosition) != 1 || dmai.old_obj.Kind() == reflect.Struct && dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") != "-" && (dmai.old_obj.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet() || dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Name != "_") && !strings.Contains(dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty")) {
 
 		if dmai.obj.Kind() == reflect.Struct {
-			if (len(dmai.CurrentPosition) >= depth) {
+			if len(dmai.CurrentPosition) >= depth {
 				dmai.old_obj = dmai.obj
 				dmai.obj = dmai.obj.Field(dmai.CurrentPosition[depth-1])
 			} else {
@@ -296,7 +294,7 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 				dmai.CurrentDepth++
 			}
 		} else if dmai.obj.Kind() == reflect.Slice {
-			if (len(dmai.CurrentPosition) >= depth) {
+			if len(dmai.CurrentPosition) >= depth {
 				dmai.old_obj = dmai.obj
 				dmai.obj = dmai.obj.Index(dmai.CurrentPosition[depth-1])
 			} else {
@@ -304,34 +302,29 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 				dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
 				dmai.CurrentMax = append(dmai.CurrentMax, dmai.obj.Len())
 				//fieldName := dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-2]).Name
-				var _, fieldName = getCurrentObj(dmai.Message,dmai.CurrentDepth,dmai.CurrentTypology[0:len(dmai.CurrentTypology)-1],dmai.CurrentPosition[0:len(dmai.CurrentPosition)-1])
+				var _, fieldName = getCurrentObj(dmai.Message, dmai.CurrentDepth, dmai.CurrentTypology[0:len(dmai.CurrentTypology)-1], dmai.CurrentPosition[0:len(dmai.CurrentPosition)-1])
 				dmai.old_obj = dmai.obj
 				dmai.obj = dmai.obj.Index(0)
 				dmai.CurrentDepth++
-				return hexdump.Annotation{Size:4,Name: fieldName + " length"},true
+				return hexdump.Annotation{Size: 4, Name: fieldName + " length"}, true
 			}
 		}
 		depth++
 	}
 
-
 	var objName string
-	dmai.obj, objName = getCurrentObj(dmai.Message,dmai.CurrentDepth,dmai.CurrentTypology,dmai.CurrentPosition)
+	dmai.obj, objName = getCurrentObj(dmai.Message, dmai.CurrentDepth, dmai.CurrentTypology, dmai.CurrentPosition)
 
+	//var annotation = hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(obj.Interface()))}
 
-				//var annotation = hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(obj.Interface()))}
-
-
-	for len(dmai.CurrentPosition) != 1 && (dmai.CurrentPosition[len(dmai.CurrentPosition)-1] == dmai.CurrentMax[len(dmai.CurrentPosition) - 1] - 1) {
-		dmai.CurrentPosition = dmai.CurrentPosition[0:len(dmai.CurrentPosition)-1]
-		dmai.CurrentTypology = dmai.CurrentTypology[0:len(dmai.CurrentTypology)-1]
-		dmai.CurrentMax = dmai.CurrentMax[0:len(dmai.CurrentMax)-1]
+	for len(dmai.CurrentPosition) != 1 && (dmai.CurrentPosition[len(dmai.CurrentPosition)-1] == dmai.CurrentMax[len(dmai.CurrentPosition)-1]-1) {
+		dmai.CurrentPosition = dmai.CurrentPosition[0 : len(dmai.CurrentPosition)-1]
+		dmai.CurrentTypology = dmai.CurrentTypology[0 : len(dmai.CurrentTypology)-1]
+		dmai.CurrentMax = dmai.CurrentMax[0 : len(dmai.CurrentMax)-1]
 		dmai.CurrentDepth--
 		//dmai.obj = dmai.old_obj
 		//dmai.CurrentPosition[len(dmai.CurrentPosition)-1]++
 	}
-
-
 
 	var encTagIsDash bool
 	var fieldIsSettable bool
@@ -346,7 +339,7 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 		encTagContainsOmitempty = strings.Contains(msg.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty")
 	}
 
-	dmai.CurrentPosition[len(dmai.CurrentPosition) - 1]++
+	dmai.CurrentPosition[len(dmai.CurrentPosition)-1]++
 
 	if len(dmai.CurrentPosition) != 1 || (!encTagIsDash && (fieldIsSettable || fieldNameIsntUnderscore) && !encTagContainsOmitempty) {
 		//fmt.Println(encoder.Serialize(dmai.obj.Interface()))
@@ -355,16 +348,16 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 		//} else {
 		//	return hexdump.Annotation{Name: objName, Size: 2},true
 		//}
-	return hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(dmai.obj.Interface()))},true
+		return hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(dmai.obj.Interface()))}, true
 	} else {
 		return dmai.Next()
 	}
 }
 
 func getCurrentObj(message gnet.Message, currentDepth int, currentTypology []reflect.Kind, currentPosition []int) (reflect.Value, string) {
-	 var obj reflect.Value = reflect.Indirect(reflect.ValueOf(message))
-	 var name string = ""
-	for i := 0; i <  currentDepth ; i++ {
+	var obj reflect.Value = reflect.Indirect(reflect.ValueOf(message))
+	var name string = ""
+	for i := 0; i < currentDepth; i++ {
 		if currentTypology[i] == reflect.Slice {
 			obj = obj.Index(currentPosition[i])
 			name = name + "[" + strconv.Itoa(currentPosition[i]) + "]"
@@ -376,8 +369,6 @@ func getCurrentObj(message gnet.Message, currentDepth int, currentTypology []ref
 	}
 	return obj, name
 }
-
-
 
 /**************************************
  *
@@ -1722,7 +1713,6 @@ func ExampleDeepLazyGiveTxnsMessage() {
 	// 0x0281 | 00 00 00 00 00 .................................... .Transactions[1].Out[1]
 	// 0x0286 |
 }
-
 
 func TestIntroductionMessage(t *testing.T) {
 	defer gnet.EraseMessages()

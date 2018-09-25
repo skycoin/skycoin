@@ -34,10 +34,14 @@ const (
 	defaultWriteTimeout = time.Second * 60
 	defaultIdleTimeout  = time.Second * 120
 
-	// EndpointsRead endpoints available when nodes executed with no CLI args
+	// EndpointsDefault endpoints available when nodes executed with no CLI args
+	EndpointsDefault = "DEFAULT"
+	// EndpointsRead endpoints with no side-effects and no changes in node state
 	EndpointsRead = "READ"
 	// EndpointsStatus endpoints offer (meta,runtime)data to dashboard and monitoring clients
 	EndpointsStatus = "STATUS"
+	// EndpointsTransaction endpoints export operations on transactions that modify node state
+	EndpointsTransaction = "TXN"
 	// EndpointsWallet endpoints implement wallet interface
 	EndpointsWallet = "WALLET"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
@@ -352,7 +356,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	// Status endpoints
 	webHandlerV1("/version", versionHandler(c.buildInfo)) // version is always available, regardless of the API set
-	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsDefault, EndpointsRead, EndpointsStatus}))
 
 	// Wallet endpoints
 	webHandlerV1("/wallet", forAPISet(walletHandler(gateway), []string{EndpointsWallet}))
@@ -374,42 +378,42 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV2("/wallet/recover", forAPISet(walletRecoverHandler(gateway), []string{EndpointsWallet}))
 
 	// Blockchain interface
-	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/blockchain/progress", forAPISet(blockchainProgressHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/block", forAPISet(blockHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/blocks", forAPISet(blocksHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/last_blocks", forAPISet(lastBlocksHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsDefault, EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/blockchain/progress", forAPISet(blockchainProgressHandler(gateway), []string{EndpointsDefault, EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/block", forAPISet(blockHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/blocks", forAPISet(blocksHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/last_blocks", forAPISet(lastBlocksHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
 
 	// Network stats endpoints
-	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/network/connections", forAPISet(connectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/network/defaultConnections", forAPISet(defaultConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), []string{EndpointsDefault, EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/network/connections", forAPISet(connectionsHandler(gateway), []string{EndpointsDefault, EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/network/defaultConnections", forAPISet(defaultConnectionsHandler(gateway), []string{EndpointsDefault, EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), []string{EndpointsDefault, EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), []string{EndpointsDefault, EndpointsRead, EndpointsStatus}))
 
 	// Transaction related endpoints
-	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
-	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsDefault, EndpointsTransaction}))
+	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
 
 	// Unspent output related endpoints
-	webHandlerV1("/outputs", forAPISet(outputsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/balance", forAPISet(balanceHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/uxout", forAPISet(uxOutHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/address_uxouts", forAPISet(addrUxOutsHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/outputs", forAPISet(outputsHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/balance", forAPISet(balanceHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/uxout", forAPISet(uxOutHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/address_uxouts", forAPISet(addrUxOutsHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
 
 	// Address related endpoints
-	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsRead}))
+	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsDefault, EndpointsRead}))
 
 	// Explorer endpoints
-	webHandlerV1("/explorer/address", forAPISet(transactionsForAddressHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/coinSupply", forAPISet(coinSupplyHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/richlist", forAPISet(richlistHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/explorer/address", forAPISet(transactionsForAddressHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/coinSupply", forAPISet(coinSupplyHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/richlist", forAPISet(richlistHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
+	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsDefault, EndpointsRead}))
 
 	return mux
 }

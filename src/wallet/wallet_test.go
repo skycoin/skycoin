@@ -684,7 +684,6 @@ func TestLoadDupWallets(t *testing.T) {
 		var dupEntries []Entry
 
 		if i%2 != 0 {
-			log.Info("Times " + strconv.Itoa(i) + ": " + strconv.Itoa(i%2))
 			ripeBytes := []byte{123, 187, 20, 57, 72, 12, 0, 255, 4, 32, 142, 69, 17, 123, 166, 99, 42, 7, 1, 212}
 			ripemd160 := cipher.Ripemd160{}
 			ripemd160.Set(ripeBytes)
@@ -708,7 +707,7 @@ func TestLoadDupWallets(t *testing.T) {
 
 			dupWltItem.setFilename("dup_wlt_" + strconv.Itoa(i) + ".wlt")
 
-			log.Info("Adding Duplicate: " + dupWltItem.Entries[0].Address.String())
+			log.Info("Adding Duplicate wlt: ", dupWltItem.Entries[0].Address.String())
 			dupWlt = dupWltItem
 		}
 
@@ -744,13 +743,10 @@ func TestLoadDupWallets(t *testing.T) {
 		wlts[strconv.Itoa(i)] = wltItem
 	}
 
-	for count, entry := range dupWlt.Entries {
-		log.Info("DupWallet Entry " + strconv.Itoa(count) + ": " + entry.Address.String())
-	}
-
 	isLoaded, fileName := wlts.isWalletLoaded(dupWlt)
-	log.Info("Wallet " + fileName + " has been loaded: " + strconv.FormatBool(isLoaded))
+
 	assert.True(t, isLoaded)
+	log.Infof("Wallet %v, has been loaded.", fileName)
 }
 
 func TestWalletGenerateAddress(t *testing.T) {

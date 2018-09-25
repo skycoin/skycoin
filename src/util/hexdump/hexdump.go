@@ -1,3 +1,6 @@
+/*
+Package hexdump provides methods to write annotated hex dumps from bytes
+*/
 package hexdump
 
 import (

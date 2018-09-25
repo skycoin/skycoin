@@ -1,3 +1,9 @@
+/*
+Package strand is a utility for linearizing method calls, similar to locking.
+
+The strand method is functionally similar to a lock, but operates on a queue
+of method calls.
+*/
 package strand
 
 import (

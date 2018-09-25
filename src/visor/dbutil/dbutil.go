@@ -1,3 +1,6 @@
+/*
+Package dbutil provides boltdb utility methods
+*/
 package dbutil
 
 import (

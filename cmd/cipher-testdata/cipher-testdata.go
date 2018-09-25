@@ -1,3 +1,10 @@
+/*
+cipher-testdata generates testdata to be used by the cipher testsuite
+
+The cipher testsuite is in src/cipher/testsuite.
+The testdata should be reused by ports of the cipher library to verify
+behavior.
+*/
 package main
 
 import (

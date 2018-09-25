@@ -4,6 +4,9 @@
 
 // Modifications Copyright 2014 Skycoin authors.
 
+/*
+Package cert generates self-signed certificates
+*/
 package cert
 
 import (

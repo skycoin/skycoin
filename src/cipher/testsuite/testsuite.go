@@ -1,3 +1,6 @@
+/*
+Package testsuite is the cipher testdata testsuite
+*/
 package testsuite
 
 import (

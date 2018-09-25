@@ -1,3 +1,18 @@
+/*
+Package cipher implements cryptographic methods.
+
+These methods include:
+
+* Public and private key generation
+* Address generation
+* Signing
+
+Private keys are secp256k1 keys. Addresses are base58 encoded.
+
+All dependencies are either from the go stdlib, or are manually vendored
+below this package. This manual vendoring ensures that the exact same dependencies
+are used by any user of this package, regardless of their gopath.
+*/
 package cipher
 
 import (

@@ -23,6 +23,7 @@ type Gatewayer interface {
 	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)
 	GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
+	RecoverWallet(wltID, seed string, password []byte) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
 	EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error)

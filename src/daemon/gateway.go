@@ -582,6 +582,20 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet
 	return wlt, err
 }
 
+// RecoverWallet recovers an encrypted wallet from seed
+func (gw *Gateway) RecoverWallet(wltName, seed string, password []byte) (*wallet.Wallet, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var err error
+	var w *wallet.Wallet
+	gw.strand("RecoverWallet", func() {
+		w, err = gw.v.Wallets.RecoverWallet(wltName, seed, password)
+	})
+	return w, err
+}
+
 // EncryptWallet encrypts the wallet
 func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
 	if !gw.Config.EnableWalletAPI {

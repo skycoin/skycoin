@@ -127,7 +127,7 @@ func (wlts Wallets) set(w *Wallet) {
 	wlts[w.Filename()] = w.clone()
 }
 
-// ToReadable converts Wallets to *ReadableWallet array
+// ToReadable converts Wallets to *ReadableWallet array, sorting them by timestamp
 func (wlts Wallets) ToReadable() []*ReadableWallet {
 	var rw []*ReadableWallet
 	for _, w := range wlts {
@@ -135,7 +135,15 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 	}
 
 	sort.Slice(rw, func(i int, j int) bool {
-		return rw[i].time() < rw[j].time()
+		a := rw[i].timestamp()
+		b := rw[j].timestamp()
+
+		if a == b {
+			return rw[i].filename() < rw[j].filename()
+		}
+
+		return a < b
 	})
+
 	return rw
 }

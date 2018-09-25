@@ -30,6 +30,7 @@ func main() {
 	seed := flag.String("seed", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided")
 	secKeysList := flag.Bool("sec-keys-list", false, "only print a list of secret keys")
 	addrsList := flag.Bool("addrs-list", false, "only print a list of addresses")
+	strict := flag.Bool("strict", true, "Checks if input is space separated list of words.")
 	flag.Parse()
 
 	var coinType wallet.CoinType
@@ -51,6 +52,13 @@ func main() {
 			}
 
 			*seed = mnemonic
+		}
+	}
+
+	if !*hexSeed && *strict {
+		if !bip39.IsMnemonicValid(*seed) {
+			fmt.Println("your seed isn't valid")
+			os.Exit(1)
 		}
 	}
 

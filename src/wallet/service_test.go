@@ -91,7 +91,7 @@ func TestNewServiceDupWlts(t *testing.T) {
 				EnableWalletAPI: true,
 			})
 			require.Error(t, err)
-			require.Equal(t, "Duplicate Walletfiles: 'test3.1.wlt' && 'test3.wlt'", err.Error())
+			require.Equal(t, "duplicate Walletfiles: 'test3.1.wlt' && 'test3.wlt'", err.Error())
 		})
 	}
 }

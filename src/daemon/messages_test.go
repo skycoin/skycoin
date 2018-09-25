@@ -226,6 +226,7 @@ func generateElementHexdumpWithDepth(obj interface{}, depth int, prefix string) 
 
 //***Lazy iterator for DeepMessages
 
+// DeepMessagesAnnotationsIterator : Implementation of deep IAnnotationsIterator for type gnet.Message
 type DeepMessagesAnnotationsIterator struct {
 	Message      gnet.Message
 	LengthCalled bool
@@ -242,6 +243,7 @@ type DeepMessagesAnnotationsIterator struct {
 	obj             reflect.Value
 }
 
+// NewDeepMessagesAnnotationsIterator : Initializes struct DeepMessagesAnnotationsIterator
 func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMessagesAnnotationsIterator {
 	var dmai = DeepMessagesAnnotationsIterator{}
 	dmai.Message = message
@@ -263,6 +265,7 @@ func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMes
 	return dmai
 }
 
+// Next : Yields next element of DeepMessagesAnnotationsIterator
 func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 	if !dmai.LengthCalled {
 		dmai.LengthCalled = true

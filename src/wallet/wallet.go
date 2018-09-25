@@ -347,7 +347,7 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 
 	if opts.ScanN > generateN {
 		// Scan for addresses with balances
-		if err := w.ScanAddresses(opts.ScanN-generateN, bg); err != nil {
+		if _, err := w.ScanAddresses(opts.ScanN, bg); err != nil {
 			return nil, err
 		}
 	}
@@ -896,49 +896,58 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	return addrs, nil
 }
 
-// ScanAddresses scans ahead N addresses to find one with none-zero coins.
-func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
+// ScanAddresses scans ahead N addresses, truncating up to the highest address with a non-zero balance.
+// If the highest address with a non-zero balance is the Nth address, it scans ahead another N addresses,
+// until the last address has no balance. Returns the number of addresses added.
+func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 	if w.IsEncrypted() {
-		return ErrWalletEncrypted
+		return 0, ErrWalletEncrypted
 	}
 
 	if scanN <= 0 {
-		return nil
+		return 0, nil
 	}
 
 	nExistingAddrs := uint64(len(w.Entries))
+	nAddAddrs := uint64(0)
 
-	// Generate the addresses to scan
-	addrs, err := w.GenerateAddresses(scanN)
-	if err != nil {
-		return err
-	}
+	for {
+		// Generate the addresses to scan
+		addrs, err := w.GenerateAddresses(scanN)
+		if err != nil {
+			return 0, err
+		}
 
-	// Get these addresses' balances
-	bals, err := bg.GetBalanceOfAddrs(addrs)
-	if err != nil {
-		return err
-	}
+		// Get these addresses' balances
+		bals, err := bg.GetBalanceOfAddrs(addrs)
+		if err != nil {
+			return 0, err
+		}
 
-	// Check balance from the last one until we find the address that has coins
-	var keepNum uint64
-	for i := len(bals) - 1; i >= 0; i-- {
-		if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
-			keepNum = uint64(i + 1)
+		// Check balance from the last one until we find the address that has coins
+		var keepNum uint64
+		for i := len(bals) - 1; i >= 0; i-- {
+			if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
+				keepNum = uint64(i + 1)
+				break
+			}
+		}
+
+		nAddAddrs += keepNum
+
+		if keepNum != uint64(len(bals)) {
 			break
 		}
 	}
 
-	// Regenerate addresses up to keepNum.
+	// Regenerate addresses up to nExistingAddrs + nAddAddrss.
 	// This is necessary to keep the lastSeed updated.
-	if keepNum != uint64(len(bals)) {
-		w.reset()
-		if _, err := w.GenerateAddresses(nExistingAddrs + keepNum); err != nil {
-			return err
-		}
+	w.reset()
+	if _, err := w.GenerateAddresses(nExistingAddrs + nAddAddrs); err != nil {
+		return 0, err
 	}
 
-	return nil
+	return nAddAddrs, nil
 }
 
 // GetAddresses returns all addresses in wallet

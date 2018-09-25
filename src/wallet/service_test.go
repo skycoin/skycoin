@@ -2171,8 +2171,18 @@ func TestServiceDecryptWallet(t *testing.T) {
 }
 
 func TestServiceCreateWalletWithScan(t *testing.T) {
-	bg := make(mockBalanceGetter, len(addrsOfSeed1))
-	addrs := fromAddrString(t, addrsOfSeed1)
+	seed := "seed1"
+	addrs := make([]cipher.Address, 20)
+	childSeeds := make([]string, 20)
+	lastSeed := []byte(seed)
+	for i := range addrs {
+		s, pk, _ := cipher.DeterministicKeyPairIterator(lastSeed)
+		addrs[i] = cipher.AddressFromPubKey(pk)
+		childSeeds[i] = hex.EncodeToString(s)
+		lastSeed = s
+	}
+
+	bg := make(mockBalanceGetter, 20)
 	for _, a := range addrs {
 		bg[a] = BalancePair{}
 	}
@@ -2201,8 +2211,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[0],
+				seed:             seed,
+				lastSeed:         childSeeds[0],
 				entryNum:         1,
 				confirmedBalance: 0,
 				predictedBalance: 0,
@@ -2211,15 +2221,15 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 0, encrypted",
 			opts: Options{
-				Seed:     "seed1",
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[0],
+				seed:             seed,
+				lastSeed:         childSeeds[0],
 				entryNum:         1,
 				confirmedBalance: 0,
 				predictedBalance: 0,
@@ -2228,14 +2238,14 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 1, unencrypted",
 			opts: Options{
-				Seed:  "seed1",
+				Seed:  seed,
 				ScanN: 1,
 			},
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[0],
+				seed:             seed,
+				lastSeed:         childSeeds[0],
 				entryNum:         1,
 				confirmedBalance: 0,
 				predictedBalance: 0,
@@ -2244,7 +2254,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 1, encrypted",
 			opts: Options{
-				Seed:     "seed1",
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 				ScanN:    1,
@@ -2252,8 +2262,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[0],
+				seed:             seed,
+				lastSeed:         childSeeds[0],
 				entryNum:         1,
 				confirmedBalance: 0,
 				predictedBalance: 0,
@@ -2262,14 +2272,14 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 10, unencrypted",
 			opts: Options{
-				Seed:  "seed1",
+				Seed:  seed,
 				ScanN: 10,
 			},
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[0],
+				seed:             seed,
+				lastSeed:         childSeeds[0],
 				entryNum:         1,
 				confirmedBalance: 0,
 				predictedBalance: 0,
@@ -2278,37 +2288,76 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 5, unencrypted",
 			opts: Options{
-				Seed:  "seed1",
+				Seed:  seed,
 				ScanN: 5,
 			},
 			balGetter: mockBalanceGetter{
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[5],
-				entryNum:         5,
+				seed:             seed,
+				lastSeed:         childSeeds[5],
+				entryNum:         5 + 1,
 				confirmedBalance: 10,
 				predictedBalance: 0,
 			},
 		},
 		{
+			name: "scan 5 get 8, unencrypted",
+			opts: Options{
+				Seed:  seed,
+				ScanN: 5,
+			},
+			balGetter: mockBalanceGetter{
+				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[8]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			expect: exp{
+				err:              nil,
+				seed:             seed,
+				lastSeed:         childSeeds[7],
+				entryNum:         8 + 1,
+				confirmedBalance: 10,
+				predictedBalance: 0,
+			},
+		},
+		{
+			name: "scan 5 get 10, unencrypted",
+			opts: Options{
+				Seed:  seed,
+				ScanN: 5,
+			},
+			balGetter: mockBalanceGetter{
+				addrs[4+1]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[10]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			},
+			expect: exp{
+				err:              nil,
+				seed:             seed,
+				lastSeed:         childSeeds[9],
+				entryNum:         10 + 1,
+				confirmedBalance: 10,
+				predictedBalance: 0,
+			},
+		},
+
+		{
 			name: "scan 5 get 5, encrypted",
 			opts: Options{
-				Seed:     "seed1",
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
 			balGetter: mockBalanceGetter{
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[5],
-				entryNum:         5,
+				seed:             seed,
+				lastSeed:         childSeeds[5],
+				entryNum:         5 + 1,
 				confirmedBalance: 10,
 				predictedBalance: 0,
 			},
@@ -2316,18 +2365,18 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 4, unencrypted",
 			opts: Options{
-				Seed:  "seed1",
+				Seed:  seed,
 				ScanN: 5,
 			},
 			balGetter: mockBalanceGetter{
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[4],
-				entryNum:         4,
+				seed:             seed,
+				lastSeed:         childSeeds[4],
+				entryNum:         4 + 1,
 				confirmedBalance: 20,
 				predictedBalance: 0,
 			},
@@ -2335,20 +2384,20 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 4, encrypted",
 			opts: Options{
-				Seed:     "seed1",
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
 			balGetter: mockBalanceGetter{
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[4],
-				entryNum:         4,
+				seed:             seed,
+				lastSeed:         childSeeds[4],
+				entryNum:         4 + 1,
 				confirmedBalance: 20,
 				predictedBalance: 0,
 			},
@@ -2356,19 +2405,19 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 4 have 6, unencrypted",
 			opts: Options{
-				Seed:  "seed1",
+				Seed:  seed,
 				ScanN: 5,
 			},
 			balGetter: mockBalanceGetter{
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[6]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[4],
-				entryNum:         4,
+				seed:             seed,
+				lastSeed:         childSeeds[4],
+				entryNum:         4 + 1,
 				confirmedBalance: 20,
 				predictedBalance: 0,
 			},
@@ -2376,18 +2425,18 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "confirmed and predicted, unencrypted",
 			opts: Options{
-				Seed:  "seed1",
+				Seed:  seed,
 				ScanN: 5,
 			},
 			balGetter: mockBalanceGetter{
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
 			},
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[4],
-				entryNum:         4,
+				seed:             seed,
+				lastSeed:         childSeeds[4],
+				entryNum:         4 + 1,
 				confirmedBalance: 20,
 				predictedBalance: 0,
 			},
@@ -2395,20 +2444,20 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "confirmed and predicted, encrypted",
 			opts: Options{
-				Seed:     "seed1",
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
 			balGetter: mockBalanceGetter{
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+				addrs[4]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
 			},
 			expect: exp{
 				err:              nil,
-				seed:             "seed1",
-				lastSeed:         childSeedsOfSeed1[4],
-				entryNum:         4,
+				seed:             seed,
+				lastSeed:         childSeeds[4],
+				entryNum:         4 + 1,
 				confirmedBalance: 20,
 				predictedBalance: 0,
 			},
@@ -2416,7 +2465,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "wallet api disabled",
 			opts: Options{
-				Seed:     "seed",
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 				ScanN:    5,
@@ -2449,9 +2498,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				}
 
 				require.NoError(t, w.Validate())
-				require.Len(t, w.Entries, tc.expect.entryNum)
+				require.Equal(t, tc.expect.entryNum, len(w.Entries))
 				for i := range w.Entries {
-					require.Equal(t, addrsOfSeed1[i], w.Entries[i].Address.String())
+					require.Equal(t, addrs[i].String(), w.Entries[i].Address.String())
 				}
 			})
 		}

@@ -89,6 +89,12 @@ var (
 	ErrUnknownUxOut = NewError(errors.New("uxout is not owned by any address in the wallet"))
 	// ErrNoUnspents is returned if a wallet has no unspents to spend
 	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
+	// ErrWalletRecoverSeedWrong is returned if the seed does not match the specified wallet when recovering
+	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed is wrong"))
+	// ErrNilBalanceGetter is returned if Options.ScanN > 0 but a nil BalanceGetter was provided
+	ErrNilBalanceGetter = NewError(errors.New("scan ahead requested but balance getter is nil"))
+	// ErrWalletNotDeterministic is returned if a wallet's type is not deterministic but it is necessary for the requested operation
+	ErrWalletNotDeterministic = NewError(errors.New("wallet type is not deterministic"))
 )
 
 const (
@@ -112,7 +118,7 @@ const (
 	metaVersion    = "version"    // wallet version
 	metaFilename   = "filename"   // wallet file name
 	metaLabel      = "label"      // wallet label
-	metaTm         = "tm"         // the timestamp when creating the wallet
+	metaTimestamp  = "tm"         // the timestamp when creating the wallet
 	metaType       = "type"       // wallet type
 	metaCoin       = "coin"       // coin type
 	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
@@ -124,17 +130,6 @@ const (
 
 // CoinType represents the wallet coin type
 type CoinType string
-
-// Options options that could be used when creating a wallet
-type Options struct {
-	Coin       CoinType   // coin type, skycoin, bitcoin, etc.
-	Label      string     // wallet label.
-	Seed       string     // wallet seed.
-	Encrypt    bool       // whether the wallet need to be encrypted.
-	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN      uint64     // number of addresses that're going to be scanned
-}
 
 const (
 	// HoursSelectionTypeManual is used to specify manual hours selection in advanced spend
@@ -287,6 +282,18 @@ func newWalletFilename() string {
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
 }
 
+// Options options that could be used when creating a wallet
+type Options struct {
+	Coin       CoinType   // coin type, skycoin, bitcoin, etc.
+	Label      string     // wallet label.
+	Seed       string     // wallet seed.
+	Encrypt    bool       // whether the wallet need to be encrypted.
+	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN      uint64     // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN  uint64     // number of addresses to generate, regardless of balance
+}
+
 // Wallet is consisted of meta and entries.
 // Meta field records items that are not deterministic, like
 // filename, lable, wallet type, secrets, etc.
@@ -304,6 +311,10 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		return nil, ErrMissingSeed
 	}
 
+	if opts.ScanN > 0 && bg == nil {
+		return nil, ErrNilBalanceGetter
+	}
+
 	coin := opts.Coin
 	if coin == "" {
 		coin = CoinTypeSkycoin
@@ -316,7 +327,7 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			metaLabel:      opts.Label,
 			metaSeed:       opts.Seed,
 			metaLastSeed:   opts.Seed,
-			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
+			metaTimestamp:  strconv.FormatInt(time.Now().Unix(), 10),
 			metaType:       WalletTypeDeterministic,
 			metaCoin:       string(coin),
 			metaEncrypted:  "false",
@@ -326,17 +337,18 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 	}
 
 	// Create a default wallet
-	_, err := w.GenerateAddresses(1)
-	if err != nil {
+	generateN := opts.GenerateN
+	if generateN == 0 {
+		generateN = 1
+	}
+	if _, err := w.GenerateAddresses(generateN); err != nil {
 		return nil, err
 	}
 
-	if opts.ScanN > 0 {
+	if opts.ScanN > generateN {
 		// Scan for addresses with balances
-		if bg != nil {
-			if err := w.ScanAddresses(opts.ScanN-1, bg); err != nil {
-				return nil, err
-			}
+		if err := w.ScanAddresses(opts.ScanN-generateN, bg); err != nil {
+			return nil, err
 		}
 	}
 
@@ -373,9 +385,6 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 
 // NewWallet creates wallet without scanning addresses
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
-	if opts.ScanN != 0 {
-		return nil, errors.New("scan number must be 0")
-	}
 	return newWallet(wltName, opts, nil)
 }
 
@@ -700,6 +709,13 @@ func (w *Wallet) Validate() error {
 		return errors.New("filename not set")
 	}
 
+	if tm := w.Meta[metaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
+	}
+
 	walletType, ok := w.Meta[metaType]
 	if !ok {
 		return errors.New("type field not set")
@@ -844,6 +860,22 @@ func (w *Wallet) secrets() string {
 
 func (w *Wallet) setSecrets(s string) {
 	w.Meta[metaSecrets] = s
+}
+
+func (w *Wallet) coin() CoinType {
+	return CoinType(w.Meta[metaCoin])
+}
+
+func (w *Wallet) timestamp() int64 {
+	// Intentionally ignore the error when parsing the timestamp,
+	// if it isn't valid or is missing it will be set to 0.
+	// Also, this value is validated by wallet.Validate()
+	x, _ := strconv.ParseInt(w.Meta[metaTimestamp], 10, 64) // nolint: errcheck
+	return x
+}
+
+func (w *Wallet) setTimestamp(t int64) {
+	w.Meta[metaTimestamp] = strconv.FormatInt(t, 10)
 }
 
 // GenerateAddresses generates addresses

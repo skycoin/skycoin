@@ -25,6 +25,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
 - Add `-enable-api-set` option to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `WALLET`, `WALLET_SEED`, `DEPRECATED_WALLET_SPEND`. Multiple values must be comma separated. Deprecates `-enable-wallet-api` and `-enable-seed-api`.
 - `/api/v1/wallet/spend` is deprecated and requires `-enable-api-set=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
+- Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 
 ### Fixed
 

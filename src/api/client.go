@@ -1084,7 +1084,7 @@ func (c *Client) Health() (*HealthResponse, error) {
 }
 
 // EncryptWallet makes a request to POST /api/v1/wallet/encrypt to encrypt a specific wallet with the given password
-func (c *Client) EncryptWallet(id string, password string) (*WalletResponse, error) {
+func (c *Client) EncryptWallet(id, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -1097,7 +1097,7 @@ func (c *Client) EncryptWallet(id string, password string) (*WalletResponse, err
 }
 
 // DecryptWallet makes a request to POST /api/v1/wallet/decrypt to decrypt a wallet
-func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, error) {
+func (c *Client) DecryptWallet(id, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -1107,4 +1107,23 @@ func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, err
 	}
 
 	return &wlt, nil
+}
+
+// RecoverWallet makes a request to POST /api/v2/wallet/recover to recover an encrypted wallet by seed.
+// The password argument is optional, if provided, the recovered wallet will be encrypted with this password,
+// otherwise the recovered wallet will be unencrypted.
+func (c *Client) RecoverWallet(id, seed, password string) (*WalletResponse, error) {
+	req := WalletRecoverRequest{
+		ID:       id,
+		Seed:     seed,
+		Password: password,
+	}
+
+	var rsp WalletResponse
+	ok, err := c.PostJSONV2("/api/v2/wallet/recover", req, &rsp)
+	if ok {
+		return &rsp, err
+	}
+
+	return nil, err
 }

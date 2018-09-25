@@ -169,10 +169,10 @@ func NewDeepMessagesAnnotationsGenerator(message gnet.Message, depth int) DeepMe
 }
 
 // GenerateAnnotations: Generates annotations for a given DeepMessagesAnnotationsGenerator struct
-func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation {
-	var annotations = make([]util.Annotation, 0)
-	annotations = append(annotations, util.Annotation{Size: 4, Name: "Length"})
-	annotations = append(annotations, util.Annotation{Size: 4, Name: "Prefix"})
+func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []hexdump.Annotation {
+	var annotations = make([]hexdump.Annotation, 0)
+	annotations = append(annotations, hexdump.Annotation{Size: 4, Name: "Length"})
+	annotations = append(annotations, hexdump.Annotation{Size: 4, Name: "Prefix"})
 
 	var maxField = reflect.Indirect(reflect.ValueOf(dmag.Message)).NumField()
 	var v = reflect.Indirect(reflect.ValueOf(dmag.Message))
@@ -195,14 +195,14 @@ func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []util.Annot
 	return annotations
 }
 
-func generateElementHexdumpWithDepth(obj interface{}, depth int, prefix string) []util.Annotation {
-	var annotation = make([]util.Annotation, 0)
+func generateElementHexdumpWithDepth(obj interface{}, depth int, prefix string) []hexdump.Annotation {
+	var annotation = make([]hexdump.Annotation, 0)
 	var v = reflect.Indirect(reflect.ValueOf(obj))
 	if v.Kind() == reflect.Slice {
-		annotation = append(annotation, util.Annotation{Size: 4, Name: prefix + " length"})
+		annotation = append(annotation, hexdump.Annotation{Size: 4, Name: prefix + " length"})
 		if depth == 1 {
 			for i := 0; i < v.Len(); i++ {
-				annotation = append(annotation, util.Annotation{Size: len(encoder.Serialize(v.Slice(i, i+1).Interface())[4:]), Name: prefix + "[" + strconv.Itoa(i) + "]"})
+				annotation = append(annotation, hexdump.Annotation{Size: len(encoder.Serialize(v.Slice(i, i+1).Interface())[4:]), Name: prefix + "[" + strconv.Itoa(i) + "]"})
 			}
 		} else {
 			for i := 0; i < v.Len(); i++ {
@@ -211,14 +211,14 @@ func generateElementHexdumpWithDepth(obj interface{}, depth int, prefix string) 
 		}
 	} else if v.Kind() == reflect.Struct {
 		if depth == 1 {
-			annotation = append(annotation, util.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
+			annotation = append(annotation, hexdump.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
 		} else {
 			for i := 0; i < v.NumField(); i++ {
 				annotation = append(annotation, generateElementHexdumpWithDepth(v.Field(i).Interface(), depth-1, prefix+"."+v.Type().Field(i).Name)...)
 			}
 		}
 	} else {
-		annotation = append(annotation, util.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
+		annotation = append(annotation, hexdump.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
 	}
 
 	return annotation
@@ -265,18 +265,18 @@ func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMes
 	return dmai
 }
 
-func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
+func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 	if !dmai.LengthCalled {
 		dmai.LengthCalled = true
-		return util.Annotation{Size: 4, Name: "Length"}, true
+		return hexdump.Annotation{Size: 4, Name: "Length"}, true
 	}
 	if !dmai.PrefixCalled {
 		dmai.PrefixCalled = true
-		return util.Annotation{Size: 4, Name: "Prefix"}, true
+		return hexdump.Annotation{Size: 4, Name: "Prefix"}, true
 
 	}
 	if dmai.CurrentPosition[0] >= dmai.CurrentMax[0] {
-		return util.Annotation{}, false
+		return hexdump.Annotation{}, false
 	}
 
 	dmai.obj = reflect.Indirect(reflect.ValueOf(dmai.Message))
@@ -308,7 +308,7 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 				dmai.old_obj = dmai.obj
 				dmai.obj = dmai.obj.Index(0)
 				dmai.CurrentDepth++
-				return util.Annotation{Size:4,Name: fieldName + " length"},true
+				return hexdump.Annotation{Size:4,Name: fieldName + " length"},true
 			}
 		}
 		depth++
@@ -319,7 +319,7 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	dmai.obj, objName = getCurrentObj(dmai.Message,dmai.CurrentDepth,dmai.CurrentTypology,dmai.CurrentPosition)
 
 
-				//var annotation = util.Annotation{Name: objName, Size: len(encoder.Serialize(obj.Interface()))}
+				//var annotation = hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(obj.Interface()))}
 
 
 	for len(dmai.CurrentPosition) != 1 && (dmai.CurrentPosition[len(dmai.CurrentPosition)-1] == dmai.CurrentMax[len(dmai.CurrentPosition) - 1] - 1) {
@@ -351,11 +351,11 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if len(dmai.CurrentPosition) != 1 || (!encTagIsDash && (fieldIsSettable || fieldNameIsntUnderscore) && !encTagContainsOmitempty) {
 		//fmt.Println(encoder.Serialize(dmai.obj.Interface()))
 		//if strings.Contains(objName,"IP") {
-		//	return util.Annotation{Name: objName, Size: 4},true
+		//	return hexdump.Annotation{Name: objName, Size: 4},true
 		//} else {
-		//	return util.Annotation{Name: objName, Size: 2},true
+		//	return hexdump.Annotation{Name: objName, Size: 2},true
 		//}
-	return util.Annotation{Name: objName, Size: len(encoder.Serialize(dmai.obj.Interface()))},true
+	return hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(dmai.obj.Interface()))},true
 	} else {
 		return dmai.Next()
 	}
@@ -857,7 +857,7 @@ func ExampleDeepIntroductionMessageShallow() {
 	fmt.Println("IntroductionMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length
@@ -875,7 +875,7 @@ func ExampleDeepGetPeersMessageShallow() {
 	fmt.Println("GetPeersMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GetPeersMessage:
 	// 0x0000 | 04 00 00 00 ....................................... Length
@@ -895,7 +895,7 @@ func ExampleDeepGivePeersMessageShallow() {
 	fmt.Println("GivePeersMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
@@ -914,7 +914,7 @@ func ExampleDeepGetBlocksMessageShallow() {
 	fmt.Println("GetBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
@@ -951,7 +951,7 @@ func ExampleDeepGiveBlocksMessageShallow() {
 	fmt.Println("GiveBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -971,9 +971,9 @@ func ExampleDeepGiveBlocksMessageShallow() {
 	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00cc | 00 ................................................ Blocks[0]
 	// 0x00cd | 02 00 00 00 64 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00ed | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00fd | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 40 af f2 e9
+	// 0x00ed | d2 d8 92 2e 47 af d4 64 8e 69 67 49 71 58 78 5f
+	// 0x00fd | bd 1d a8 70 e7 11 02 66 bf 94 48 80 00 00 00 00
 	// 0x010d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x011d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x012d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -993,7 +993,7 @@ func ExampleDeepAnnounceBlocksMessageShallow() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -1012,16 +1012,16 @@ func ExampleDeepGetTxnsMessageShallow() {
 	fmt.Println("GetTxnsMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
-	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0]
-	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1]
+	// 0x0008 | 02 00 00 00 ....................................... Transactions length
+	// 0x000c | 7b b4 62 c3 bd 37 1d d8 1c 06 ad 1d 2b 63 59 71
+	// 0x001c | cb 56 eb 22 23 3d fc 9f eb e8 3e 44 c8 40 b8 d7 ... Transactions[0]
+	// 0x002c | e7 5a c8 01 c1 3f 3d a9 c7 a1 24 ca 31 3b e2 a3
+	// 0x003c | 73 f6 4a d9 7c 58 a1 b6 fe bc 0e 0c a5 c5 c8 73 ... Transactions[1]
 	// 0x004c |
 }
 
@@ -1080,15 +1080,15 @@ func ExampleDeepGiveTxnsMessageShallow() {
 	fmt.Println("GiveTxnsMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
-	// 0x000c | 88 13 00 00 7b 00 00 00 00 00 00 00 00 00 00 00
-	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x002c | 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 00
+	// 0x0008 | 02 00 00 00 ....................................... Transactions length
+	// 0x000c | 88 13 00 00 7b 38 62 f1 93 a1 56 4e 5e 26 0f 82
+	// 0x001c | 7d a8 e1 69 ca d8 11 d8 1d 6a 7c 4f fd 66 1c 00
+	// 0x002c | b1 99 94 17 81 02 00 00 00 00 00 00 00 00 00 00
 	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x004c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x005c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -1096,19 +1096,19 @@ func ExampleDeepGiveTxnsMessageShallow() {
 	// 0x007c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x008c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x009c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 00
-	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00cc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00dc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00ec | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02
+	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 f4
+	// 0x00bc | 45 7d e9 f5 a5 94 2e 07 6a 7f 2b 28 e1 84 2a b6
+	// 0x00cc | 1f 1b fc 39 e4 ca 55 75 36 60 0f d6 42 09 f6 c4
+	// 0x00dc | 22 09 82 f9 88 b6 25 d0 af c1 2c 7f fd 06 a7 fe
+	// 0x00ec | 89 bb e6 60 2c 1f 20 d9 08 91 3f e9 38 10 47 02
 	// 0x00fc | 00 00 00 00 07 6d ca 32 de 03 4e 48 67 fa 7a 2a
 	// 0x010c | a9 ee fe 91 f2 0b a0 74 0c 00 00 00 00 00 00 00
 	// 0x011c | 22 00 00 00 00 00 00 00 00 e9 cb 47 35 e3 95 cf
 	// 0x012c | 36 b0 d1 a6 f2 21 bb 23 b3 f7 bf b1 f9 38 00 00
-	// 0x013c | 00 00 00 00 00 4e 00 00 00 00 00 00 00 ............ Txns[0]
-	// 0x0149 | 88 13 00 00 7b 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0159 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0169 | 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 00
+	// 0x013c | 00 00 00 00 00 4e 00 00 00 00 00 00 00 ............ Transactions[0]
+	// 0x0149 | 88 13 00 00 7b 05 64 0e 44 80 73 9e 87 97 57 b0
+	// 0x0159 | a2 d1 bd 59 de a7 df cc fe f3 df 75 a1 83 0a 50
+	// 0x0169 | 20 01 10 67 21 02 00 00 00 00 00 00 00 00 00 00
 	// 0x0179 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0189 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0199 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -1116,16 +1116,16 @@ func ExampleDeepGiveTxnsMessageShallow() {
 	// 0x01b9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01c9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01d9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01e9 | 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 00
-	// 0x01f9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0209 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0219 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0229 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02
+	// 0x01e9 | 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 38
+	// 0x01f9 | 62 f1 93 a1 56 4e 5e 26 0f 82 7d a8 e1 69 ca d8
+	// 0x0209 | 11 d8 1d 6a 7c 4f fd 66 1c 00 b1 99 94 17 81 05
+	// 0x0219 | 64 0e 44 80 73 9e 87 97 57 b0 a2 d1 bd 59 de a7
+	// 0x0229 | df cc fe f3 df 75 a1 83 0a 50 20 01 10 67 21 02
 	// 0x0239 | 00 00 00 00 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0
 	// 0x0249 | e9 f4 f0 88 7b 08 4b 43 09 00 00 00 00 00 00 00
 	// 0x0259 | 0c 00 00 00 00 00 00 00 00 83 f1 96 59 16 14 99
 	// 0x0269 | 2f a6 03 13 38 6f 72 88 ac 40 14 c8 bc 22 00 00
-	// 0x0279 | 00 00 00 00 00 38 00 00 00 00 00 00 00 ............ Txns[1]
+	// 0x0279 | 00 00 00 00 00 38 00 00 00 00 00 00 00 ............ Transactions[1]
 	// 0x0286 |
 }
 
@@ -1136,7 +1136,7 @@ func ExampleDeepIntroductionMessage() {
 	fmt.Println("IntroductionMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 2)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length
@@ -1154,7 +1154,7 @@ func ExampleDeepGetPeersMessage() {
 	fmt.Println("GetPeersMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 2)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GetPeersMessage:
 	// 0x0000 | 04 00 00 00 ....................................... Length
@@ -1174,7 +1174,7 @@ func ExampleDeepGivePeersMessage() {
 	fmt.Println("GivePeersMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
@@ -1196,7 +1196,7 @@ func ExampleDeepGetBlocksMessage() {
 	fmt.Println("GetBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
@@ -1233,7 +1233,7 @@ func ExampleDeepGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -1253,9 +1253,9 @@ func ExampleDeepGiveBlocksMessage() {
 	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00cc | 00 ................................................ Blocks[0].Sig
 	// 0x00cd | 02 00 00 00 64 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00ed | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00fd | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 40 af f2 e9
+	// 0x00ed | d2 d8 92 2e 47 af d4 64 8e 69 67 49 71 58 78 5f
+	// 0x00fd | bd 1d a8 70 e7 11 02 66 bf 94 48 80 00 00 00 00
 	// 0x010d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x011d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x012d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -1275,7 +1275,7 @@ func ExampleDeepAnnounceBlocksMessage() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -1294,16 +1294,16 @@ func ExampleDeepGetTxnsMessage() {
 	fmt.Println("GetTxnsMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
-	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0]
-	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1]
+	// 0x0008 | 02 00 00 00 ....................................... Transactions length
+	// 0x000c | 7b b4 62 c3 bd 37 1d d8 1c 06 ad 1d 2b 63 59 71
+	// 0x001c | cb 56 eb 22 23 3d fc 9f eb e8 3e 44 c8 40 b8 d7 ... Transactions[0]
+	// 0x002c | e7 5a c8 01 c1 3f 3d a9 c7 a1 24 ca 31 3b e2 a3
+	// 0x003c | 73 f6 4a d9 7c 58 a1 b6 fe bc 0e 0c a5 c5 c8 73 ... Transactions[1]
 	// 0x004c |
 }
 
@@ -1362,66 +1362,66 @@ func ExampleDeepGiveTxnsMessage() {
 	fmt.Println("GiveTxnsMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
-	// 0x000c | 88 13 00 00 ....................................... Txns[0].Length
-	// 0x0010 | 7b ................................................ Txns[0].Type
-	// 0x0011 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0021 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0].InnerHash
-	// 0x0031 | 02 00 00 00 ....................................... Txns[0].Sigs length
+	// 0x0008 | 02 00 00 00 ....................................... Transactions length
+	// 0x000c | 88 13 00 00 ....................................... Transactions[0].Length
+	// 0x0010 | 7b ................................................ Transactions[0].Type
+	// 0x0011 | 38 62 f1 93 a1 56 4e 5e 26 0f 82 7d a8 e1 69 ca
+	// 0x0021 | d8 11 d8 1d 6a 7c 4f fd 66 1c 00 b1 99 94 17 81 ... Transactions[0].InnerHash
+	// 0x0031 | 02 00 00 00 ....................................... Transactions[0].Sigs length
 	// 0x0035 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0045 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0055 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0065 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0075 | 00 ................................................ Txns[0].Sigs[0]
+	// 0x0075 | 00 ................................................ Transactions[0].Sigs[0]
 	// 0x0076 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0086 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0096 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00a6 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00b6 | 00 ................................................ Txns[0].Sigs[1]
-	// 0x00b7 | 02 00 00 00 ....................................... Txns[0].In length
-	// 0x00bb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00cb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0].In[0]
-	// 0x00db | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00eb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0].In[1]
-	// 0x00fb | 02 00 00 00 ....................................... Txns[0].Out length
+	// 0x00b6 | 00 ................................................ Transactions[0].Sigs[1]
+	// 0x00b7 | 02 00 00 00 ....................................... Transactions[0].In length
+	// 0x00bb | f4 45 7d e9 f5 a5 94 2e 07 6a 7f 2b 28 e1 84 2a
+	// 0x00cb | b6 1f 1b fc 39 e4 ca 55 75 36 60 0f d6 42 09 f6 ... Transactions[0].In[0]
+	// 0x00db | c4 22 09 82 f9 88 b6 25 d0 af c1 2c 7f fd 06 a7
+	// 0x00eb | fe 89 bb e6 60 2c 1f 20 d9 08 91 3f e9 38 10 47 ... Transactions[0].In[1]
+	// 0x00fb | 02 00 00 00 ....................................... Transactions[0].Out length
 	// 0x00ff | 00 07 6d ca 32 de 03 4e 48 67 fa 7a 2a a9 ee fe
 	// 0x010f | 91 f2 0b a0 74 0c 00 00 00 00 00 00 00 22 00 00
-	// 0x011f | 00 00 00 00 00 .................................... Txns[0].Out[0]
+	// 0x011f | 00 00 00 00 00 .................................... Transactions[0].Out[0]
 	// 0x0124 | 00 e9 cb 47 35 e3 95 cf 36 b0 d1 a6 f2 21 bb 23
 	// 0x0134 | b3 f7 bf b1 f9 38 00 00 00 00 00 00 00 4e 00 00
-	// 0x0144 | 00 00 00 00 00 .................................... Txns[0].Out[1]
-	// 0x0149 | 88 13 00 00 ....................................... Txns[1].Length
-	// 0x014d | 7b ................................................ Txns[1].Type
-	// 0x014e | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x015e | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1].InnerHash
-	// 0x016e | 02 00 00 00 ....................................... Txns[1].Sigs length
+	// 0x0144 | 00 00 00 00 00 .................................... Transactions[0].Out[1]
+	// 0x0149 | 88 13 00 00 ....................................... Transactions[1].Length
+	// 0x014d | 7b ................................................ Transactions[1].Type
+	// 0x014e | 05 64 0e 44 80 73 9e 87 97 57 b0 a2 d1 bd 59 de
+	// 0x015e | a7 df cc fe f3 df 75 a1 83 0a 50 20 01 10 67 21 ... Transactions[1].InnerHash
+	// 0x016e | 02 00 00 00 ....................................... Transactions[1].Sigs length
 	// 0x0172 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0182 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0192 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01a2 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01b2 | 00 ................................................ Txns[1].Sigs[0]
+	// 0x01b2 | 00 ................................................ Transactions[1].Sigs[0]
 	// 0x01b3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01c3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01d3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01e3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01f3 | 00 ................................................ Txns[1].Sigs[1]
-	// 0x01f4 | 02 00 00 00 ....................................... Txns[1].In length
-	// 0x01f8 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0208 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1].In[0]
-	// 0x0218 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0228 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1].In[1]
-	// 0x0238 | 02 00 00 00 ....................................... Txns[1].Out length
+	// 0x01f3 | 00 ................................................ Transactions[1].Sigs[1]
+	// 0x01f4 | 02 00 00 00 ....................................... Transactions[1].In length
+	// 0x01f8 | 38 62 f1 93 a1 56 4e 5e 26 0f 82 7d a8 e1 69 ca
+	// 0x0208 | d8 11 d8 1d 6a 7c 4f fd 66 1c 00 b1 99 94 17 81 ... Transactions[1].In[0]
+	// 0x0218 | 05 64 0e 44 80 73 9e 87 97 57 b0 a2 d1 bd 59 de
+	// 0x0228 | a7 df cc fe f3 df 75 a1 83 0a 50 20 01 10 67 21 ... Transactions[1].In[1]
+	// 0x0238 | 02 00 00 00 ....................................... Transactions[1].Out length
 	// 0x023c | 00 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0 e9 f4 f0
 	// 0x024c | 88 7b 08 4b 43 09 00 00 00 00 00 00 00 0c 00 00
-	// 0x025c | 00 00 00 00 00 .................................... Txns[1].Out[0]
+	// 0x025c | 00 00 00 00 00 .................................... Transactions[1].Out[0]
 	// 0x0261 | 00 83 f1 96 59 16 14 99 2f a6 03 13 38 6f 72 88
 	// 0x0271 | ac 40 14 c8 bc 22 00 00 00 00 00 00 00 38 00 00
-	// 0x0281 | 00 00 00 00 00 .................................... Txns[1].Out[1]
+	// 0x0281 | 00 00 00 00 00 .................................... Transactions[1].Out[1]
 	// 0x0286 |
 }
 
@@ -1432,7 +1432,7 @@ func ExampleDeepLazyIntroductionMessage() {
 	fmt.Println("IntroductionMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length
@@ -1450,7 +1450,7 @@ func ExampleDeepLazyGetPeersMessage() {
 	fmt.Println("GetPeersMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GetPeersMessage:
 	// 0x0000 | 04 00 00 00 ....................................... Length
@@ -1470,7 +1470,7 @@ func ExampleDeepLazyGivePeersMessage() {
 	fmt.Println("GivePeersMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
@@ -1492,7 +1492,7 @@ func ExampleDeepLazyGetBlocksMessage() {
 	fmt.Println("GetBlocksMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
@@ -1529,7 +1529,7 @@ func ExampleDeepLazyGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -1550,9 +1550,9 @@ func ExampleDeepLazyGiveBlocksMessage() {
 	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00cc | 00 ................................................ .Blocks[0].Sig
 	// 0x00cd | 02 00 00 00 64 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00ed | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00fd | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 40 af f2 e9
+	// 0x00ed | d2 d8 92 2e 47 af d4 64 8e 69 67 49 71 58 78 5f
+	// 0x00fd | bd 1d a8 70 e7 11 02 66 bf 94 48 80 00 00 00 00
 	// 0x010d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x011d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x012d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -1573,7 +1573,7 @@ func ExampleDeepLazyAnnounceBlocksMessage() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -1592,16 +1592,16 @@ func ExampleDeepLazyGetTxnsMessage() {
 	fmt.Println("GetTxnsMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... .Txns length
-	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[0]
-	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[1]
+	// 0x0008 | 02 00 00 00 ....................................... .Transactions length
+	// 0x000c | 7b b4 62 c3 bd 37 1d d8 1c 06 ad 1d 2b 63 59 71
+	// 0x001c | cb 56 eb 22 23 3d fc 9f eb e8 3e 44 c8 40 b8 d7 ... .Transactions[0]
+	// 0x002c | e7 5a c8 01 c1 3f 3d a9 c7 a1 24 ca 31 3b e2 a3
+	// 0x003c | 73 f6 4a d9 7c 58 a1 b6 fe bc 0e 0c a5 c5 c8 73 ... .Transactions[1]
 	// 0x004c |
 }
 
@@ -1660,66 +1660,66 @@ func ExampleDeepLazyGiveTxnsMessage() {
 	fmt.Println("GiveTxnsMessage:")
 	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
+	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... .Txns length
-	// 0x000c | 88 13 00 00 ....................................... .Txns[0].Length
-	// 0x0010 | 7b ................................................ .Txns[0].Type
-	// 0x0011 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0021 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[0].InnerHash
-	// 0x0031 | 02 00 00 00 ....................................... .Txns[0].Sigs length
+	// 0x0008 | 02 00 00 00 ....................................... .Transactions length
+	// 0x000c | 88 13 00 00 ....................................... .Transactions[0].Length
+	// 0x0010 | 7b ................................................ .Transactions[0].Type
+	// 0x0011 | 38 62 f1 93 a1 56 4e 5e 26 0f 82 7d a8 e1 69 ca
+	// 0x0021 | d8 11 d8 1d 6a 7c 4f fd 66 1c 00 b1 99 94 17 81 ... .Transactions[0].InnerHash
+	// 0x0031 | 02 00 00 00 ....................................... .Transactions[0].Sigs length
 	// 0x0035 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0045 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0055 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0065 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0075 | 00 ................................................ .Txns[0].Sigs[0]
+	// 0x0075 | 00 ................................................ .Transactions[0].Sigs[0]
 	// 0x0076 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0086 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0096 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00a6 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00b6 | 00 ................................................ .Txns[0].Sigs[1]
-	// 0x00b7 | 02 00 00 00 ....................................... .Txns[0].In length
-	// 0x00bb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00cb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[0].In[0]
-	// 0x00db | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00eb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[0].In[1]
-	// 0x00fb | 02 00 00 00 ....................................... .Txns[0].Out length
+	// 0x00b6 | 00 ................................................ .Transactions[0].Sigs[1]
+	// 0x00b7 | 02 00 00 00 ....................................... .Transactions[0].In length
+	// 0x00bb | f4 45 7d e9 f5 a5 94 2e 07 6a 7f 2b 28 e1 84 2a
+	// 0x00cb | b6 1f 1b fc 39 e4 ca 55 75 36 60 0f d6 42 09 f6 ... .Transactions[0].In[0]
+	// 0x00db | c4 22 09 82 f9 88 b6 25 d0 af c1 2c 7f fd 06 a7
+	// 0x00eb | fe 89 bb e6 60 2c 1f 20 d9 08 91 3f e9 38 10 47 ... .Transactions[0].In[1]
+	// 0x00fb | 02 00 00 00 ....................................... .Transactions[0].Out length
 	// 0x00ff | 00 07 6d ca 32 de 03 4e 48 67 fa 7a 2a a9 ee fe
 	// 0x010f | 91 f2 0b a0 74 0c 00 00 00 00 00 00 00 22 00 00
-	// 0x011f | 00 00 00 00 00 .................................... .Txns[0].Out[0]
+	// 0x011f | 00 00 00 00 00 .................................... .Transactions[0].Out[0]
 	// 0x0124 | 00 e9 cb 47 35 e3 95 cf 36 b0 d1 a6 f2 21 bb 23
 	// 0x0134 | b3 f7 bf b1 f9 38 00 00 00 00 00 00 00 4e 00 00
-	// 0x0144 | 00 00 00 00 00 .................................... .Txns[0].Out[1]
-	// 0x0149 | 88 13 00 00 ....................................... .Txns[1].Length
-	// 0x014d | 7b ................................................ .Txns[1].Type
-	// 0x014e | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x015e | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[1].InnerHash
-	// 0x016e | 02 00 00 00 ....................................... .Txns[1].Sigs length
+	// 0x0144 | 00 00 00 00 00 .................................... .Transactions[0].Out[1]
+	// 0x0149 | 88 13 00 00 ....................................... .Transactions[1].Length
+	// 0x014d | 7b ................................................ .Transactions[1].Type
+	// 0x014e | 05 64 0e 44 80 73 9e 87 97 57 b0 a2 d1 bd 59 de
+	// 0x015e | a7 df cc fe f3 df 75 a1 83 0a 50 20 01 10 67 21 ... .Transactions[1].InnerHash
+	// 0x016e | 02 00 00 00 ....................................... .Transactions[1].Sigs length
 	// 0x0172 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0182 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0192 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01a2 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01b2 | 00 ................................................ .Txns[1].Sigs[0]
+	// 0x01b2 | 00 ................................................ .Transactions[1].Sigs[0]
 	// 0x01b3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01c3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01d3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01e3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01f3 | 00 ................................................ .Txns[1].Sigs[1]
-	// 0x01f4 | 02 00 00 00 ....................................... .Txns[1].In length
-	// 0x01f8 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0208 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[1].In[0]
-	// 0x0218 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0228 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[1].In[1]
-	// 0x0238 | 02 00 00 00 ....................................... .Txns[1].Out length
+	// 0x01f3 | 00 ................................................ .Transactions[1].Sigs[1]
+	// 0x01f4 | 02 00 00 00 ....................................... .Transactions[1].In length
+	// 0x01f8 | 38 62 f1 93 a1 56 4e 5e 26 0f 82 7d a8 e1 69 ca
+	// 0x0208 | d8 11 d8 1d 6a 7c 4f fd 66 1c 00 b1 99 94 17 81 ... .Transactions[1].In[0]
+	// 0x0218 | 05 64 0e 44 80 73 9e 87 97 57 b0 a2 d1 bd 59 de
+	// 0x0228 | a7 df cc fe f3 df 75 a1 83 0a 50 20 01 10 67 21 ... .Transactions[1].In[1]
+	// 0x0238 | 02 00 00 00 ....................................... .Transactions[1].Out length
 	// 0x023c | 00 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0 e9 f4 f0
 	// 0x024c | 88 7b 08 4b 43 09 00 00 00 00 00 00 00 0c 00 00
-	// 0x025c | 00 00 00 00 00 .................................... .Txns[1].Out[0]
+	// 0x025c | 00 00 00 00 00 .................................... .Transactions[1].Out[0]
 	// 0x0261 | 00 83 f1 96 59 16 14 99 2f a6 03 13 38 6f 72 88
 	// 0x0271 | ac 40 14 c8 bc 22 00 00 00 00 00 00 00 38 00 00
-	// 0x0281 | 00 00 00 00 00 .................................... .Txns[1].Out[1]
+	// 0x0281 | 00 00 00 00 00 .................................... .Transactions[1].Out[1]
 	// 0x0286 |
 }
 

@@ -11,7 +11,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/collections"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/timeutil"
@@ -2484,8 +2483,12 @@ func FbyHashes(hashes []string) OutputsFilter {
 }
 
 // newStringSet returns a map-based set for string lookup
-func newStringSet(keys []string) collections.StringSet {
-	return collections.NewStringSet(keys...)
+func newStringSet(keys []string) map[string]struct{} {
+	s := make(map[string]struct{}, len(keys))
+	for _, k := range keys {
+		s[k] = struct{}{}
+	}
+	return s
 }
 
 // GetUnspentOutputsSummary gets unspent outputs and returns the filtered results,

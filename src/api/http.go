@@ -47,8 +47,6 @@ const (
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 	// EndpointsPrometheus endpoints for Go application metrics
 	EndpointsPrometheus = "PROMETHEUS"
-	// EndpointsAll lists all of the above
-	EndpointsAll = "READ,STATUS,WALLET,WALLET_SEED,DEPRECATED_WALLET_SPEND,PROMETHEUS"
 )
 
 // Server exposes an HTTP API

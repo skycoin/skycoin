@@ -224,6 +224,8 @@ type DeepMessagesAnnotationsIterator struct {
 	CurrentTypology []reflect.Kind
 	CurrentPosition []int
 	CurrentMax		[]int
+	old_obj			reflect.Value
+	obj				reflect.Value
 }
 
 func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMessagesAnnotationsIterator {
@@ -233,7 +235,7 @@ func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMes
 	dmai.PrefixCalled = false
 	dmai.CurrentField = 0
 	dmai.CurrentIndex = -1
-	dmai.CurrentDepth = 0
+	dmai.CurrentDepth = 1
 	dmai.MaxDepth = depth
 	//dmai.MaxField = reflect.Indirect(reflect.ValueOf(dmai.Message)).NumField()
 	dmai.CurrentTypology = make([]reflect.Kind,1)
@@ -242,7 +244,8 @@ func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMes
 	dmai.CurrentPosition[0] = 0
 	dmai.CurrentMax = make([]int,1)
 	dmai.CurrentMax[0] = reflect.Indirect(reflect.ValueOf(dmai.Message)).NumField()
-
+	dmai.old_obj = reflect.Indirect(reflect.ValueOf(dmai.Message))
+	dmai.obj = reflect.Indirect(reflect.ValueOf(dmai.Message)).Field(0)
 	return dmai
 }
 
@@ -259,51 +262,83 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if dmai.CurrentPosition[0] >= dmai.CurrentMax[0] {
 		return util.Annotation{}, false
 	}
-	var old_obj = reflect.Indirect(reflect.ValueOf(dmai.Message))
-	obj := reflect.Indirect(reflect.ValueOf(dmai.Message))
 
-	for (len(dmai.CurrentTypology) < dmai.MaxDepth ) && ( obj.Kind() == reflect.Struct || obj.Kind() == reflect.Slice) && old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") != "-" && (old_obj.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet() || old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Name != "_") && !strings.Contains(old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty") {
-		if obj.Kind() == reflect.Struct {
-			dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Struct)
-			dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
-			dmai.CurrentMax = append(dmai.CurrentMax, obj.Type().NumField())
-			old_obj = obj
-			obj = obj.Field(0)
-			dmai.CurrentDepth++
-		}
+	dmai.obj = reflect.Indirect(reflect.ValueOf(dmai.Message))
+	depth := 1
+	for (len(dmai.CurrentTypology) <= dmai.MaxDepth ) && ( dmai.obj.Kind() == reflect.Struct || dmai.obj.Kind() == reflect.Slice) && ( len(dmai.CurrentPosition) != 1 || dmai.old_obj.Kind() == reflect.Struct && dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") != "-" && (dmai.old_obj.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet() || dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Name != "_") && !strings.Contains(dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty")) {
 
-		if obj.Kind() == reflect.Slice {
-			dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Slice)
-			dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
-			dmai.CurrentMax = append(dmai.CurrentMax, obj.Type().Len())
-			old_obj = obj
-			obj = obj.Index(0)
-			dmai.CurrentDepth++
+		if dmai.obj.Kind() == reflect.Struct {
+			if (len(dmai.CurrentPosition) >= depth) {
+				dmai.old_obj = dmai.obj
+				dmai.obj = dmai.obj.Field(dmai.CurrentPosition[depth-1])
+			} else {
+				dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Struct)
+				dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
+				dmai.CurrentMax = append(dmai.CurrentMax, dmai.obj.Type().NumField())
+				dmai.old_obj = dmai.obj
+				dmai.obj = dmai.obj.Field(0)
+				dmai.CurrentDepth++
+			}
+		} else if dmai.obj.Kind() == reflect.Slice {
+			if (len(dmai.CurrentPosition) >= depth) {
+				dmai.old_obj = dmai.obj
+				dmai.obj = dmai.obj.Index(dmai.CurrentPosition[depth-1])
+			} else {
+				dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Slice)
+				dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
+				dmai.CurrentMax = append(dmai.CurrentMax, dmai.obj.Len())
+				fieldName := dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-2]).Name
+				dmai.old_obj = dmai.obj
+				dmai.obj = dmai.obj.Index(0)
+				dmai.CurrentDepth++
+				return util.Annotation{Size:4,Name: "." + fieldName + " length"},true
+			}
 		}
+		depth++
 	}
-	obj, objName := getCurrentObj(dmai.Message,dmai.CurrentDepth,dmai.CurrentTypology,dmai.CurrentPosition)
+
+
+	var objName string
+	dmai.obj, objName = getCurrentObj(dmai.Message,dmai.CurrentDepth,dmai.CurrentTypology,dmai.CurrentPosition)
 
 
 				//var annotation = util.Annotation{Name: objName, Size: len(encoder.Serialize(obj.Interface()))}
 
 
-	for (dmai.CurrentPosition[len(dmai.CurrentPosition)-1] == dmai.CurrentMax[len(dmai.CurrentPosition) - 1]) || len(dmai.CurrentPosition) != 1 {
+	for len(dmai.CurrentPosition) != 1 && (dmai.CurrentPosition[len(dmai.CurrentPosition)-1] == dmai.CurrentMax[len(dmai.CurrentPosition) - 1] - 1) {
 		dmai.CurrentPosition = dmai.CurrentPosition[0:len(dmai.CurrentPosition)-1]
 		dmai.CurrentTypology = dmai.CurrentTypology[0:len(dmai.CurrentTypology)-1]
 		dmai.CurrentMax = dmai.CurrentMax[0:len(dmai.CurrentMax)-1]
+		dmai.CurrentDepth--
+		//dmai.obj = dmai.old_obj
+		//dmai.CurrentPosition[len(dmai.CurrentPosition)-1]++
 	}
 
 
-	var encTagIsDash bool = old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") == "-"
-	//var fieldIsSettable bool = old_obj.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet()
-	//var fieldNameIsntUnderscore = old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Name != "_"
-	var encTagContainsOmitempty = strings.Contains(old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty")
+
+	var encTagIsDash bool
+	var fieldIsSettable bool
+	var fieldNameIsntUnderscore bool
+	var encTagContainsOmitempty bool
+
+	if len(dmai.CurrentPosition) == 1 && dmai.old_obj.Kind() == reflect.Struct {
+		msg := reflect.Indirect(reflect.ValueOf(dmai.Message))
+		encTagIsDash = msg.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") == "-"
+		fieldIsSettable = msg.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet()
+		fieldNameIsntUnderscore = msg.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Name != "_"
+		encTagContainsOmitempty = strings.Contains(msg.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty")
+	}
 
 	dmai.CurrentPosition[len(dmai.CurrentPosition) - 1]++
 
-
-	if old_obj.Kind() != reflect.Struct || (!encTagIsDash && !encTagContainsOmitempty) {
-	return util.Annotation{Name: objName, Size: len(encoder.Serialize(obj.Interface()))},true
+	if len(dmai.CurrentPosition) != 1 || (dmai.old_obj.Kind() != reflect.Struct || (!encTagIsDash && (fieldIsSettable || fieldNameIsntUnderscore) && !encTagContainsOmitempty)) {
+		//fmt.Println(encoder.Serialize(dmai.obj.Interface()))
+		//if strings.Contains(objName,"IP") {
+		//	return util.Annotation{Name: objName, Size: 4},true
+		//} else {
+		//	return util.Annotation{Name: objName, Size: 2},true
+		//}
+	return util.Annotation{Name: objName, Size: len(encoder.Serialize(dmai.obj.Interface()))},true
 	} else {
 		return dmai.Next()
 	}
@@ -312,7 +347,7 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 func getCurrentObj(message gnet.Message, currentDepth int, currentTypology []reflect.Kind, currentPosition []int) (reflect.Value, string) {
 	 var obj reflect.Value = reflect.Indirect(reflect.ValueOf(message))
 	 var name string = ""
-	for i := 0; i <=  currentDepth ; i++ {
+	for i := 0; i <  currentDepth ; i++ {
 		if currentTypology[i] == reflect.Slice {
 			obj = obj.Index(currentPosition[i])
 			name = name + "[" + strconv.Itoa(currentPosition[i]) + "]"
@@ -1334,9 +1369,9 @@ func ExampleDeepLazyGetPeersMessage() {
 	setupMsgEncoding()
 	var message = NewGetPeersMessage()
 	fmt.Println("GetPeersMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message, 2)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GetPeersMessage:
 	// 0x0000 | 04 00 00 00 ....................................... Length
@@ -1354,20 +1389,20 @@ func ExampleDeepLazyGivePeersMessage() {
 	peers = append(peers, peer0, peer1, peer2)
 	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 50 ....................................... Prefix
-	// 0x0008 | 03 00 00 00 ....................................... Peers length
-	// 0x000c | 5d 87 b2 76 ....................................... Peers[0].IP
-	// 0x0010 | 70 17 ............................................. Peers[0].Port
-	// 0x0012 | 9c 21 58 2f ....................................... Peers[1].IP
-	// 0x0016 | 70 17 ............................................. Peers[1].Port
-	// 0x0018 | 94 67 29 79 ....................................... Peers[2].IP
-	// 0x001c | 70 17 ............................................. Peers[2].Port
+	// 0x0008 | 03 00 00 00 ....................................... .Peers length
+	// 0x000c | 5d 87 b2 76 ....................................... .Peers[0].IP
+	// 0x0010 | 70 17 ............................................. .Peers[0].Port
+	// 0x0012 | 9c 21 58 2f ....................................... .Peers[1].IP
+	// 0x0016 | 70 17 ............................................. .Peers[1].Port
+	// 0x0018 | 94 67 29 79 ....................................... .Peers[2].IP
+	// 0x001c | 70 17 ............................................. .Peers[2].Port
 	// 0x001e |
 }
 
@@ -1376,15 +1411,15 @@ func ExampleDeepLazyGetBlocksMessage() {
 	setupMsgEncoding()
 	var message = NewGetBlocksMessage(1234, 5678)
 	fmt.Println("GetBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 42 ....................................... Prefix
-	// 0x0008 | d2 04 00 00 00 00 00 00 ........................... LastBlock
-	// 0x0010 | 2e 16 00 00 00 00 00 00 ........................... RequestedBlocks
+	// 0x0008 | d2 04 00 00 00 00 00 00 ........................... .LastBlock
+	// 0x0010 | 2e 16 00 00 00 00 00 00 ........................... .RequestedBlocks
 	// 0x0018 |
 }
 
@@ -1413,14 +1448,14 @@ func ExampleDeepLazyGiveBlocksMessage() {
 	blocks = append(blocks, signedBlock)
 	var message = NewGiveBlocksMessage(blocks)
 	fmt.Println("GiveBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 42 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Blocks length
+	// 0x0008 | 02 00 00 00 ....................................... .Blocks length
 	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -1428,12 +1463,13 @@ func ExampleDeepLazyGiveBlocksMessage() {
 	// 0x004c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x005c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x006c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x007c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Blocks[0].Block
+	// 0x007c | 00 00 00 00 00 00 00 00 00 00 00 00 ............... .Blocks[0].Block.Head
+	// 0x0088 | 00 00 00 00 ....................................... .Blocks[0].Block.Body
 	// 0x008c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x009c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00cc | 00 ................................................ Blocks[0].Sig
+	// 0x00cc | 00 ................................................ .Blocks[0].Sig
 	// 0x00cd | 02 00 00 00 64 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00ed | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -1441,12 +1477,13 @@ func ExampleDeepLazyGiveBlocksMessage() {
 	// 0x010d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x011d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x012d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x013d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Blocks[1].Block
+	// 0x013d | 00 00 00 00 00 00 00 00 00 00 00 00 ............... .Blocks[1].Block.Head
+	// 0x0149 | 00 00 00 00 ....................................... .Blocks[1].Block.Body
 	// 0x014d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x015d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x016d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x017d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x018d | 00 ................................................ Blocks[1].Sig
+	// 0x018d | 00 ................................................ .Blocks[1].Sig
 	// 0x018e |
 }
 
@@ -1455,14 +1492,14 @@ func ExampleDeepLazyAnnounceBlocksMessage() {
 	setupMsgEncoding()
 	var message = NewAnnounceBlocksMessage(123456)
 	fmt.Println("AnnounceBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
 	// 0x0004 | 41 4e 4e 42 ....................................... Prefix
-	// 0x0008 | 40 e2 01 00 00 00 00 00 ........................... MaxBkSeq
+	// 0x0008 | 40 e2 01 00 00 00 00 00 ........................... .MaxBkSeq
 	// 0x0010 |
 }
 
@@ -1474,18 +1511,18 @@ func ExampleDeepLazyGetTxnsMessage() {
 	shas = append(shas, hashes[1], hashes[2])
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxnsMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
+	// 0x0008 | 02 00 00 00 ....................................... .Txns length
 	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0]
+	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[0]
 	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1]
+	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[1]
 	// 0x004c |
 }
 
@@ -1542,68 +1579,68 @@ func ExampleDeepLazyGiveTxnsMessage() {
 	transactions = append(transactions, transaction0, transaction1)
 	var message = NewGiveTxnsMessage(transactions)
 	fmt.Println("GiveTxnsMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &dmai, w)
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 54 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... Txns length
-	// 0x000c | 88 13 00 00 ....................................... Txns[0].Length
-	// 0x0010 | 7b ................................................ Txns[0].Type
+	// 0x0008 | 02 00 00 00 ....................................... .Txns length
+	// 0x000c | 88 13 00 00 ....................................... .Txns[0].Length
+	// 0x0010 | 7b ................................................ .Txns[0].Type
 	// 0x0011 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0021 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0].InnerHash
-	// 0x0031 | 02 00 00 00 ....................................... Txns[0].Sigs length
+	// 0x0021 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[0].InnerHash
+	// 0x0031 | 02 00 00 00 ....................................... .Txns[0].Sigs length
 	// 0x0035 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0045 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0055 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0065 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0075 | 00 ................................................ Txns[0].Sigs[0]
+	// 0x0075 | 00 ................................................ .Txns[0].Sigs[0]
 	// 0x0076 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0086 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0096 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00a6 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00b6 | 00 ................................................ Txns[0].Sigs[1]
-	// 0x00b7 | 02 00 00 00 ....................................... Txns[0].In length
+	// 0x00b6 | 00 ................................................ .Txns[0].Sigs[1]
+	// 0x00b7 | 02 00 00 00 ....................................... .Txns[0].In length
 	// 0x00bb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00cb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0].In[0]
+	// 0x00cb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[0].In[0]
 	// 0x00db | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00eb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0].In[1]
-	// 0x00fb | 02 00 00 00 ....................................... Txns[0].Out length
+	// 0x00eb | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[0].In[1]
+	// 0x00fb | 02 00 00 00 ....................................... .Txns[0].Out length
 	// 0x00ff | 00 07 6d ca 32 de 03 4e 48 67 fa 7a 2a a9 ee fe
 	// 0x010f | 91 f2 0b a0 74 0c 00 00 00 00 00 00 00 22 00 00
-	// 0x011f | 00 00 00 00 00 .................................... Txns[0].Out[0]
+	// 0x011f | 00 00 00 00 00 .................................... .Txns[0].Out[0]
 	// 0x0124 | 00 e9 cb 47 35 e3 95 cf 36 b0 d1 a6 f2 21 bb 23
 	// 0x0134 | b3 f7 bf b1 f9 38 00 00 00 00 00 00 00 4e 00 00
-	// 0x0144 | 00 00 00 00 00 .................................... Txns[0].Out[1]
-	// 0x0149 | 88 13 00 00 ....................................... Txns[1].Length
-	// 0x014d | 7b ................................................ Txns[1].Type
+	// 0x0144 | 00 00 00 00 00 .................................... .Txns[0].Out[1]
+	// 0x0149 | 88 13 00 00 ....................................... .Txns[1].Length
+	// 0x014d | 7b ................................................ .Txns[1].Type
 	// 0x014e | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x015e | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1].InnerHash
-	// 0x016e | 02 00 00 00 ....................................... Txns[1].Sigs length
+	// 0x015e | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[1].InnerHash
+	// 0x016e | 02 00 00 00 ....................................... .Txns[1].Sigs length
 	// 0x0172 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0182 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0192 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01a2 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01b2 | 00 ................................................ Txns[1].Sigs[0]
+	// 0x01b2 | 00 ................................................ .Txns[1].Sigs[0]
 	// 0x01b3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01c3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01d3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x01e3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01f3 | 00 ................................................ Txns[1].Sigs[1]
-	// 0x01f4 | 02 00 00 00 ....................................... Txns[1].In length
+	// 0x01f3 | 00 ................................................ .Txns[1].Sigs[1]
+	// 0x01f4 | 02 00 00 00 ....................................... .Txns[1].In length
 	// 0x01f8 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0208 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1].In[0]
+	// 0x0208 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[1].In[0]
 	// 0x0218 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0228 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1].In[1]
-	// 0x0238 | 02 00 00 00 ....................................... Txns[1].Out length
+	// 0x0228 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Txns[1].In[1]
+	// 0x0238 | 02 00 00 00 ....................................... .Txns[1].Out length
 	// 0x023c | 00 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0 e9 f4 f0
 	// 0x024c | 88 7b 08 4b 43 09 00 00 00 00 00 00 00 0c 00 00
-	// 0x025c | 00 00 00 00 00 .................................... Txns[1].Out[0]
+	// 0x025c | 00 00 00 00 00 .................................... .Txns[1].Out[0]
 	// 0x0261 | 00 83 f1 96 59 16 14 99 2f a6 03 13 38 6f 72 88
 	// 0x0271 | ac 40 14 c8 bc 22 00 00 00 00 00 00 00 38 00 00
-	// 0x0281 | 00 00 00 00 00 .................................... Txns[1].Out[1]
+	// 0x0281 | 00 00 00 00 00 .................................... .Txns[1].Out[1]
 	// 0x0286 |
 }
 

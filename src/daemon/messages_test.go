@@ -238,7 +238,7 @@ type DeepMessagesAnnotationsIterator struct {
 	CurrentTypology []reflect.Kind
 	CurrentPosition []int
 	CurrentMax      []int
-	old_obj         reflect.Value
+	oldObj          reflect.Value
 	obj             reflect.Value
 }
 
@@ -258,7 +258,7 @@ func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMes
 	dmai.CurrentPosition[0] = 0
 	dmai.CurrentMax = make([]int, 1)
 	dmai.CurrentMax[0] = reflect.Indirect(reflect.ValueOf(dmai.Message)).NumField()
-	dmai.old_obj = reflect.Indirect(reflect.ValueOf(dmai.Message))
+	dmai.oldObj = reflect.Indirect(reflect.ValueOf(dmai.Message))
 	dmai.obj = reflect.Indirect(reflect.ValueOf(dmai.Message)).Field(0)
 	return dmai
 }
@@ -279,23 +279,23 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 
 	dmai.obj = reflect.Indirect(reflect.ValueOf(dmai.Message))
 	depth := 1
-	for (len(dmai.CurrentTypology) <= dmai.MaxDepth) && (dmai.obj.Kind() == reflect.Struct || dmai.obj.Kind() == reflect.Slice) && (len(dmai.CurrentPosition) != 1 || dmai.old_obj.Kind() == reflect.Struct && dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") != "-" && (dmai.old_obj.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet() || dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Name != "_") && !strings.Contains(dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty")) {
+	for (len(dmai.CurrentTypology) <= dmai.MaxDepth) && (dmai.obj.Kind() == reflect.Struct || dmai.obj.Kind() == reflect.Slice) && (len(dmai.CurrentPosition) != 1 || dmai.oldObj.Kind() == reflect.Struct && dmai.oldObj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") != "-" && (dmai.oldObj.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet() || dmai.oldObj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Name != "_") && !strings.Contains(dmai.oldObj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc"), "omitempty")) {
 
 		if dmai.obj.Kind() == reflect.Struct {
 			if len(dmai.CurrentPosition) >= depth {
-				dmai.old_obj = dmai.obj
+				dmai.oldObj = dmai.obj
 				dmai.obj = dmai.obj.Field(dmai.CurrentPosition[depth-1])
 			} else {
 				dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Struct)
 				dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
 				dmai.CurrentMax = append(dmai.CurrentMax, dmai.obj.Type().NumField())
-				dmai.old_obj = dmai.obj
+				dmai.oldObj = dmai.obj
 				dmai.obj = dmai.obj.Field(0)
 				dmai.CurrentDepth++
 			}
 		} else if dmai.obj.Kind() == reflect.Slice {
 			if len(dmai.CurrentPosition) >= depth {
-				dmai.old_obj = dmai.obj
+				dmai.oldObj = dmai.obj
 				dmai.obj = dmai.obj.Index(dmai.CurrentPosition[depth-1])
 			} else {
 				dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Slice)
@@ -303,7 +303,7 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 				dmai.CurrentMax = append(dmai.CurrentMax, dmai.obj.Len())
 				//fieldName := dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-2]).Name
 				var _, fieldName = getCurrentObj(dmai.Message, dmai.CurrentDepth, dmai.CurrentTypology[0:len(dmai.CurrentTypology)-1], dmai.CurrentPosition[0:len(dmai.CurrentPosition)-1])
-				dmai.old_obj = dmai.obj
+				dmai.oldObj = dmai.obj
 				dmai.obj = dmai.obj.Index(0)
 				dmai.CurrentDepth++
 				return hexdump.Annotation{Size: 4, Name: fieldName + " length"}, true
@@ -349,14 +349,14 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 		//	return hexdump.Annotation{Name: objName, Size: 2},true
 		//}
 		return hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(dmai.obj.Interface()))}, true
-	} else {
-		return dmai.Next()
 	}
+	return dmai.Next()
+
 }
 
 func getCurrentObj(message gnet.Message, currentDepth int, currentTypology []reflect.Kind, currentPosition []int) (reflect.Value, string) {
-	var obj reflect.Value = reflect.Indirect(reflect.ValueOf(message))
-	var name string = ""
+	var obj = reflect.Indirect(reflect.ValueOf(message))
+	var name string
 	for i := 0; i < currentDepth; i++ {
 		if currentTypology[i] == reflect.Slice {
 			obj = obj.Index(currentPosition[i])
@@ -848,7 +848,7 @@ func ExampleDeepIntroductionMessageShallow() {
 	fmt.Println("IntroductionMessage:")
 	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
-	hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
+	_ = hexdump.New(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length

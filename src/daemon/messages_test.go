@@ -20,7 +20,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/hexdump"
 )
 
-
 func setupMsgEncoding() {
 	gnet.EraseMessages()
 	var messagesConfig = NewMessagesConfig()

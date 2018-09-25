@@ -287,11 +287,12 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 				dmai.CurrentTypology = append(dmai.CurrentTypology, reflect.Slice)
 				dmai.CurrentPosition = append(dmai.CurrentPosition, 0)
 				dmai.CurrentMax = append(dmai.CurrentMax, dmai.obj.Len())
-				fieldName := dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-2]).Name
+				//fieldName := dmai.old_obj.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-2]).Name
+				var _, fieldName = getCurrentObj(dmai.Message,dmai.CurrentDepth,dmai.CurrentTypology[0:len(dmai.CurrentTypology)-1],dmai.CurrentPosition[0:len(dmai.CurrentPosition)-1])
 				dmai.old_obj = dmai.obj
 				dmai.obj = dmai.obj.Index(0)
 				dmai.CurrentDepth++
-				return util.Annotation{Size:4,Name: "." + fieldName + " length"},true
+				return util.Annotation{Size:4,Name: fieldName + " length"},true
 			}
 		}
 		depth++
@@ -321,7 +322,7 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	var fieldNameIsntUnderscore bool
 	var encTagContainsOmitempty bool
 
-	if len(dmai.CurrentPosition) == 1 && dmai.old_obj.Kind() == reflect.Struct {
+	if len(dmai.CurrentPosition) == 1 {
 		msg := reflect.Indirect(reflect.ValueOf(dmai.Message))
 		encTagIsDash = msg.Type().Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).Tag.Get("enc") == "-"
 		fieldIsSettable = msg.Field(dmai.CurrentPosition[len(dmai.CurrentPosition)-1]).CanSet()
@@ -331,7 +332,7 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 
 	dmai.CurrentPosition[len(dmai.CurrentPosition) - 1]++
 
-	if len(dmai.CurrentPosition) != 1 || (dmai.old_obj.Kind() != reflect.Struct || (!encTagIsDash && (fieldIsSettable || fieldNameIsntUnderscore) && !encTagContainsOmitempty)) {
+	if len(dmai.CurrentPosition) != 1 || (!encTagIsDash && (fieldIsSettable || fieldNameIsntUnderscore) && !encTagContainsOmitempty) {
 		//fmt.Println(encoder.Serialize(dmai.obj.Interface()))
 		//if strings.Contains(objName,"IP") {
 		//	return util.Annotation{Name: objName, Size: 4},true

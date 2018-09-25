@@ -20,20 +20,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/hexdump"
 )
 
-const (
-	// seed = "x"
-	// skhex = "2a2b56833e4fd6e30f4a653e62f4eb7761d7d383baa52496df08c237a2dfff98"
-	// pkhex = "0268bc0885c2b9dc58199403bc5ac529e2962b326188cd09caabeb9d5e61f26c39"
-	//
-	// buffer => 0x00, 0x01, ... 0xff
-	sig1hex = "03213fdd6ddf860e4053e1a97e4276d63454f5195a8321357004d52cdbbfd3886fc7ad3f3f63b65d4a879ce3086daeb3e54a93d3c2f96a5061f9bc493683ca8e01"
-	// buffer => 0x01, 0x01, ... 0xff
-	sig2hex = "aeabca1decb2ab5ba8af93c6f033de6cbf1d50314df275f940778bc720433cbc2194aacfa243cc2a21f85f2fff71d3166d1875e1981a0da5a23d289681fc1fa300"
-	// buffer => 0x02, 0x01, ... 0xff
-	sig3hex = "6765278afc9f3e0ffb95cbb3f01872e92ed1d51e7a83d16d499e9597e24fa6f308d885c831c46b699ad67b2fdd2f762fd65f4fbcf66f981d76a9adfe420d161401"
-	// buffer => 0x03, 0x01, ... 0xff
-	sig4hex = "5edb9bbd4a7820f45391f08e7572c91fb61be7106ddb5346ac00596c8992cfa23aac06469aec55337102418ceb11529b3b30578402e58c2ff66dcd8bbf3521e901"
-)
 
 func setupMsgEncoding() {
 	gnet.EraseMessages()
@@ -150,78 +136,6 @@ func (mai *MessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 	}
 
 	return hexdump.Annotation{}, false
-}
-
-//*****Deep helpers*****
-
-// DeepMessagesAnnotationsGenerator : Implementation of depth-aware IAnnotationsGenerator for type gnet.Message
-type DeepMessagesAnnotationsGenerator struct {
-	Depth   int
-	Message gnet.Message
-}
-
-// NewDeepMessagesAnnotationsGenerator: Initializer for DeepMessagesAnnotationsGenerator struct
-func NewDeepMessagesAnnotationsGenerator(message gnet.Message, depth int) DeepMessagesAnnotationsGenerator {
-	var dmag = DeepMessagesAnnotationsGenerator{}
-	dmag.Message = message
-	dmag.Depth = depth
-	return dmag
-}
-
-// GenerateAnnotations: Generates annotations for a given DeepMessagesAnnotationsGenerator struct
-func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []hexdump.Annotation {
-	var annotations = make([]hexdump.Annotation, 0)
-	annotations = append(annotations, hexdump.Annotation{Size: 4, Name: "Length"})
-	annotations = append(annotations, hexdump.Annotation{Size: 4, Name: "Prefix"})
-
-	var maxField = reflect.Indirect(reflect.ValueOf(dmag.Message)).NumField()
-	var v = reflect.Indirect(reflect.ValueOf(dmag.Message))
-	t := v.Type()
-
-	for i := 0; i < maxField; i++ {
-		vF := v.Field(i)
-		f := t.Field(i)
-
-		if f.Tag.Get("enc") != "-" {
-			if vF.CanSet() || f.Name != "_" {
-				if !strings.Contains(f.Tag.Get("enc"), "omitempty") {
-					annotations = append(annotations, generateElementHexdumpWithDepth(v.Field(i).Interface(), dmag.Depth, f.Name)...)
-
-				}
-			}
-		}
-	}
-
-	return annotations
-}
-
-func generateElementHexdumpWithDepth(obj interface{}, depth int, prefix string) []hexdump.Annotation {
-	var annotation = make([]hexdump.Annotation, 0)
-	var v = reflect.Indirect(reflect.ValueOf(obj))
-	if v.Kind() == reflect.Slice {
-		annotation = append(annotation, hexdump.Annotation{Size: 4, Name: prefix + " length"})
-		if depth == 1 {
-			for i := 0; i < v.Len(); i++ {
-				annotation = append(annotation, hexdump.Annotation{Size: len(encoder.Serialize(v.Slice(i, i+1).Interface())[4:]), Name: prefix + "[" + strconv.Itoa(i) + "]"})
-			}
-		} else {
-			for i := 0; i < v.Len(); i++ {
-				annotation = append(annotation, generateElementHexdumpWithDepth(v.Index(i).Interface(), depth-1, prefix+"["+strconv.Itoa(i)+"]")...)
-			}
-		}
-	} else if v.Kind() == reflect.Struct {
-		if depth == 1 {
-			annotation = append(annotation, hexdump.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
-		} else {
-			for i := 0; i < v.NumField(); i++ {
-				annotation = append(annotation, generateElementHexdumpWithDepth(v.Field(i).Interface(), depth-1, prefix+"."+v.Type().Field(i).Name)...)
-			}
-		}
-	} else {
-		annotation = append(annotation, hexdump.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
-	}
-
-	return annotation
 }
 
 //***Lazy iterator for DeepMessages

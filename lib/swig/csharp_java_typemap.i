@@ -16,12 +16,12 @@
 %pointer_functions(unsigned long long, GoUint64p);
 %pointer_functions(cipher__Address, cipher__Addressp);
 %pointer_functions(Transactions__Handle, Transactions__Handlep);
-%apply GoSlice_* {coin__UxArray*}
+
 CSHARP_ARRAYS(int, int)
 CSHARP_ARRAYS_FIXED(int, int)
 %apply int INPUT[] { int *$imput }
 
-	/*GoString* parameter as reference */
+/*GoString* parameter as reference */
 %typemap(in, numinputs=0) GoString* (GoString temp) {
 	temp.p = NULL;
 	temp.n = 0;
@@ -72,6 +72,8 @@ CSHARP_ARRAYS_FIXED(int, int)
 %typemap(csin) GoSlice_*  "GoSlice.getCPtr ($csinput)"
 
 %apply long long  {GoInt_, GoInt};
+%apply unsigned long long  {GoUint64, GoUint64_};
+%apply GoSlice_* {coin__UxArray*}
 
 
 

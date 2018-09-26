@@ -346,5 +346,58 @@ coin__Transaction* makeEmptyTransaction(Transaction__Handle* handle){
   result = SKY_coin_GetTransactionObject( *handle, &ptransaction );
     return ptransaction;
 }
+int makeUxBodyWithSecret(coin__UxBody* puxBody, cipher__SecKey* pseckey){
+  cipher__PubKey pubkey;
+  cipher__Address address;
+  int result;
 
+  memset( puxBody, 0, sizeof(coin__UxBody) );
+  puxBody->Coins = 1000000;
+  puxBody->Hours = 100;
+
+  result = SKY_cipher_GenerateKeyPair(&pubkey, pseckey);
+  if(result != 0){ return 1;}
+
+  GoSlice slice;
+  memset(&slice, 0, sizeof(GoSlice));
+  cipher__SHA256 hash;
+
+  result = SKY_cipher_RandByte( 128, (coin__UxArray*)&slice );
+  registerMemCleanup( slice.data );
+  if(result != 0){ return 1;}
+  result = SKY_cipher_SumSHA256( slice, &puxBody->SrcTransaction );
+  if(result != 0){ return 1;}
+
+  result = SKY_cipher_AddressFromPubKey( &pubkey, &puxBody->Address );
+  if(result != 0){ return 1;}
+  return result;
+}
+int makeUxOutWithSecret(coin__UxOut* puxOut, cipher__SecKey* pseckey){
+  int result;
+  memset( puxOut, 0, sizeof(coin__UxOut) );
+  result = makeUxBodyWithSecret(&puxOut->Body, pseckey);
+  puxOut->Head.Time = 100;
+  puxOut->Head.BkSeq = 2;
+  return result;
+}
+int makeUxOut(coin__UxOut* puxOut){
+  cipher__SecKey seckey;
+  return makeUxOutWithSecret(puxOut, &seckey);
+}
+int makeUxArray(GoSlice* parray, int n){
+  parray->data = malloc( sizeof(coin__UxOut) * n );
+  if(!parray->data)
+    return 1;
+  registerMemCleanup( parray->data );
+  parray->cap = parray->len = n;
+  coin__UxOut* p = (coin__UxOut*)parray->data;
+  int result = 0;
+  for(int i = 0; i < n; i++){
+    result = makeUxOut(p);
+    if( result != 0 )
+      break;
+    p++;
+  }
+  return result;
+}
     %}

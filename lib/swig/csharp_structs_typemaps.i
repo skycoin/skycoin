@@ -28,6 +28,17 @@ return slice;
 		$self->cap = $self->len;
 	}
 
+	void setcoin_UxOut(coin__UxOut ux,int p){
+		coin__UxOut *tmpOut = (coin__UxOut *)$self->data;
+		for (int j = 0; j < $self->len; j++) {
+      if(p == j){
+      tmpOut->Head.Time = ux.Head.Time;
+      tmpOut->Body.Coins = ux.Body.Coins;
+      tmpOut->Body.Hours = ux.Body.Hours;
+    }}
+	      tmpOut++;
+	}
+
 	
 }
 

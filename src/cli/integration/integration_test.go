@@ -1,4 +1,4 @@
-// package integration_test implements CLI integration tests
+// Package integration_test implements CLI integration tests
 package integration_test
 
 import (

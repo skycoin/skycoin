@@ -602,7 +602,7 @@ func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wall
 		return nil, ErrWalletNotEncrypted
 	}
 
-	if w.Type() != "deterministic" {
+	if w.Type() != WalletTypeDeterministic {
 		return nil, ErrWalletNotDeterministic
 	}
 

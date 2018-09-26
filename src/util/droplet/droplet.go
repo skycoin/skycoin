@@ -1,3 +1,8 @@
+/*
+Package droplet provides methods for handling droplet integers and string.
+
+A droplet is the smallest possible coin amount in Skycoin, equal to 1/1000000 of a whole skycoin.
+*/
 package droplet
 
 import (

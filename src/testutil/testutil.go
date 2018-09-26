@@ -1,3 +1,6 @@
+/*
+Package testutil provides utility methods for testing
+*/
 package testutil
 
 import (

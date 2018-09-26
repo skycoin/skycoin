@@ -1,3 +1,6 @@
+/*
+Package wallet implements wallets and the wallet database service
+*/
 package wallet
 
 import (

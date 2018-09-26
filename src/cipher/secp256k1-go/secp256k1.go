@@ -1,3 +1,6 @@
+/*
+Package secp256k1 provides private and public key generation with the secp256k1 elliptic curve.
+*/
 // nolint: golint
 package secp256k1
 

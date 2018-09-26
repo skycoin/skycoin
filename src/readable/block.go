@@ -1,3 +1,7 @@
+/*
+Package readable defines JSON-tagged struct representations of internal binary data structures,
+for use by the API and CLI.
+*/
 package readable
 
 import "github.com/skycoin/skycoin/src/coin"

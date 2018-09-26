@@ -15,7 +15,8 @@ TestSuite(cipher_crypto, .init = setup, .fini = teardown);
 Test(cipher_crypto, TestNewPubKey) {
   unsigned char buff[101];
   GoSlice slice;
-  cipher__PubKey pk;
+  cipher__PubKey pk, pk2;
+  cipher__SecKey sk;
 
   slice.data = buff;
   slice.cap = 101;
@@ -43,9 +44,14 @@ Test(cipher_crypto, TestNewPubKey) {
 
   randBytes(&slice, 33);
   errcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode == SKY_OK, "33 random bytes");
+  cr_assert(errcode != SKY_OK, "33 random bytes");
 
-  cr_assert(eq(u8[33], pk, buff));
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  GoSlice buffer = {pk, sizeof(pk), sizeof(pk)};
+  errcode = SKY_cipher_NewPubKey(buffer, &pk2);
+  cr_assert(errcode == SKY_OK);
+
+  cr_assert(eq(u8[33], pk, pk2));
 }
 
 Test(cipher_crypto, TestPubKeyFromHex) {

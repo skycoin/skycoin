@@ -112,7 +112,7 @@ const (
 	// CoinTypeBitcoin bitcoin type
 	CoinTypeBitcoin CoinType = "bitcoin"
 
-s	// WalletTypeDeterministic deterministic wallet type
+	// WalletTypeDeterministic deterministic wallet type
 	WalletTypeDeterministic = "deterministic"
 )
 
@@ -863,10 +863,6 @@ func (w *Wallet) secrets() string {
 
 func (w *Wallet) setSecrets(s string) {
 	w.Meta[metaSecrets] = s
-}
-
-func (w *Wallet) coin() CoinType {
-	return CoinType(w.Meta[metaCoin])
 }
 
 func (w *Wallet) timestamp() int64 {

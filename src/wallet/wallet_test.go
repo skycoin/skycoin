@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"bytes"
-	cr "crypto/rand"
 	"encoding/hex"
 	"errors"
 	"flag"
@@ -17,8 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"strconv"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
@@ -684,17 +681,10 @@ func TestLoadDupWallets(t *testing.T) {
 		var dupEntries []Entry
 
 		if i%2 != 0 {
-			ripeBytes := []byte{123, 187, 20, 57, 72, 12, 0, 255, 4, 32, 142, 69, 17, 123, 166, 99, 42, 7, 1, 212}
-			ripemd160 := cipher.Ripemd160{}
-			ripemd160.Set(ripeBytes)
-
 			entry := Entry{
-				Address: cipher.Address{
-					Version: byte(11),
-					Key:     ripemd160,
-				},
-				Secret: cipher.NewSecKey(make([]byte, 32)),
-				Public: cipher.NewPubKey(make([]byte, 33)),
+				Address: cipher.MustDecodeBase58Address("2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8"),
+				Secret:  cipher.NewSecKey(make([]byte, 32)),
+				Public:  cipher.NewPubKey(make([]byte, 33)),
 			}
 
 			dupEntries = append(dupEntries, entry)
@@ -711,23 +701,11 @@ func TestLoadDupWallets(t *testing.T) {
 			dupWlt = dupWltItem
 		}
 
-		ripeBytes := make([]byte, 20)
-		ripemd160 := cipher.Ripemd160{}
-
-		// Set random bytes
-		if _, err := cr.Read(ripeBytes); err != nil {
-			t.Error(err)
-		}
-		ripemd160.Set(ripeBytes)
-
 		entries = append(entries,
 			Entry{
-				Address: cipher.Address{
-					Version: byte(i * 10),
-					Key:     ripemd160,
-				},
-				Secret: cipher.NewSecKey(make([]byte, 32)),
-				Public: cipher.NewPubKey(make([]byte, 33)),
+				Address: testutil.MakeAddress(),
+				Secret:  cipher.NewSecKey(make([]byte, 32)),
+				Public:  cipher.NewPubKey(make([]byte, 33)),
 			})
 
 		wltItem := &Wallet{
@@ -745,7 +723,7 @@ func TestLoadDupWallets(t *testing.T) {
 
 	isLoaded, fileName := wlts.isWalletLoaded(dupWlt)
 
-	assert.True(t, isLoaded)
+	require.True(t, isLoaded)
 	log.Infof("Wallet %v, has been loaded.", fileName)
 }
 

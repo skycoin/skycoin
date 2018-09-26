@@ -705,11 +705,11 @@ Test(cipher_crypto, TestSecKeTest) {
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
-  errcode = SKY_cipher_TestSecKey(&sk);
+  errcode = SKY_cipher_CheckSecKey(&sk);
   cr_assert(errcode == SKY_OK);
 
   memset(&sk, 0, sizeof(sk));
-  errcode = SKY_cipher_TestSecKey(&sk);
+  errcode = SKY_cipher_CheckSecKey(&sk);
   cr_assert(errcode == SKY_ERROR);
 }
 
@@ -724,12 +724,12 @@ Test(cipher_crypto, TestSecKeyHashTest) {
   SKY_cipher_GenerateKeyPair(&pk, &sk);
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h);
-  errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
+  errcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
   cr_assert(errcode == SKY_OK);
 
 
   memset(&sk, 0, sizeof(sk));
-  errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
+  errcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
   cr_assert(errcode == SKY_ERROR);
 }
 

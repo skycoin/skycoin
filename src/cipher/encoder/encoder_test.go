@@ -831,3 +831,48 @@ func TestOmitEmptyFinalFieldOnly(t *testing.T) {
 		Serialize(b)
 	})
 }
+
+func TestParseTag(t *testing.T) {
+	cases := []struct {
+		tag       string
+		name      string
+		omitempty bool
+	}{
+		{
+			tag:  "foo",
+			name: "foo",
+		},
+		{
+			tag:  "foo,",
+			name: "foo",
+		},
+		{
+			tag:  "foo,asdasd",
+			name: "foo",
+		},
+		{
+			tag:       "foo,omitempty",
+			name:      "foo",
+			omitempty: true,
+		},
+		{
+			tag:  "omitempty",
+			name: "omitempty",
+		},
+		{
+			tag:       ",omitempty",
+			omitempty: true,
+		},
+		{
+			tag: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.tag, func(t *testing.T) {
+			name, omitempty := ParseTag(tc.tag)
+			require.Equal(t, tc.name, name)
+			require.Equal(t, tc.omitempty, omitempty)
+		})
+	}
+}

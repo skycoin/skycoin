@@ -540,17 +540,18 @@ func datasizeWrite(v reflect.Value) (int, error) {
 	}
 }
 
-// ParseTag to extract encoder args from raw string
+// ParseTag to extract encoder args from raw string. Returns the tag name and if omitempty was specified
 func ParseTag(tag string) (string, bool) {
-	tagSplit := strings.Split(tag, ",")
-	name := tagSplit[0]
-
-	omitempty := false
-	if len(tagSplit) > 1 && tagSplit[1] == "omitempty" {
-		omitempty = true
+	commaIndex := strings.Index(tag, ",")
+	if commaIndex == -1 {
+		return tag, false
 	}
 
-	return name, omitempty
+	if tag[commaIndex+1:] == "omitempty" {
+		return tag[:commaIndex], true
+	}
+
+	return tag[:commaIndex], false
 }
 
 /*

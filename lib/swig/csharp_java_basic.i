@@ -1,14 +1,4 @@
-%include "arrays_csharp.i"
-%include cpointer.i
-// %pointer_functions(cipher_PubKey, cipher_PubKeyp);
-// %pointer_functions(cipher_SecKey, cipher_SecKeyp);
-// %pointer_functions(cipher__Ripemd160, cipher__Ripemd160p);
-// %pointer_functions(cipher_Sig, cipher_Sigp);
-%pointer_functions(GoSlice, GoSlicep);
-%pointer_functions(_GoString_, GoStringp);
-%pointer_functions(int, intp);
-%pointer_functions(Transaction__Handle, Transaction__Handlep);
-// %pointer_functions(byte, bytep);
+
 
 %inline %{
 #include "json.h"
@@ -357,21 +347,4 @@ coin__Transaction* makeEmptyTransaction(Transaction__Handle* handle){
     return ptransaction;
 }
 
-int makeAddress(cipher__Address* paddress){
-  cipher__PubKey pubkey;
-  cipher__SecKey seckey;
-  cipher__Address address;
-  int result;
-
-  result = SKY_cipher_GenerateKeyPair(&pubkey, &seckey);
-  if(result != 0){
-	  return 1;
-  }
-
-  result = SKY_cipher_AddressFromPubKey( &pubkey, paddress );
-    if(result != 0){
-	  return 1;
-  }
-  return result;
-}
     %}

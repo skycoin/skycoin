@@ -5,12 +5,21 @@
 %typemap(in) Handle* {
 	$input =  (long*)&$1;
 } 
+%include "arrays_csharp.i"
+%include "typemaps.i"
 %include cpointer.i
+%pointer_functions(GoSlice, GoSlicep);
+%pointer_functions(_GoString_, GoStringp);
+%pointer_functions(int, intp);
+%pointer_functions(Transaction__Handle, Transaction__Handlep);
 %pointer_functions(Handle, Handlep);
-// %apply uint  {GoUint64_, GoUint64};
 %pointer_functions(unsigned long long, GoUint64p);
 %pointer_functions(cipher__Address, cipher__Addressp);
 %pointer_functions(Transactions__Handle, Transactions__Handlep);
+%apply GoSlice_* {coin__UxArray*}
+CSHARP_ARRAYS(int, int)
+CSHARP_ARRAYS_FIXED(int, int)
+%apply int INPUT[] { int *$imput }
 
 	/*GoString* parameter as reference */
 %typemap(in, numinputs=0) GoString* (GoString temp) {

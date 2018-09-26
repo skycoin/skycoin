@@ -9,14 +9,14 @@ type benchmarkExample struct {
 	Colors []string
 }
 
-func BenchmarkDeserializeRaw(b *testing.B) {
-	obj := benchmarkExample{
-		ID:     1,
-		Name:   "Reds",
-		Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
-	}
+var benchmarkExampleObj = benchmarkExample{
+	ID:     1,
+	Name:   "Reds",
+	Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
+}
 
-	byt := Serialize(obj)
+func BenchmarkDeserializeRaw(b *testing.B) {
+	byt := Serialize(benchmarkExampleObj)
 	result := &benchmarkExample{}
 
 	b.ResetTimer()
@@ -26,14 +26,8 @@ func BenchmarkDeserializeRaw(b *testing.B) {
 }
 
 func BenchmarkSerialize(b *testing.B) {
-	obj := benchmarkExample{
-		ID:     1,
-		Name:   "Reds",
-		Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
-	}
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Serialize(&obj)
+		Serialize(&benchmarkExampleObj)
 	}
 }

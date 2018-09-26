@@ -158,6 +158,25 @@ Test(cipher_crypto, TestPubKeyVerifyDefault2) {
   }
 }
 
+Test(cipher_crypto, TestPubKeyRipemd160) {
+  cipher__PubKey p;
+  cipher__SecKey s;
+  cipher__Ripemd160 h;
+
+  SKY_cipher_GenerateKeyPair(&p, &s);
+  SKY_cipher_PubKeyRipemd160(&p, &h);
+  // TODO: Translate code snippet
+  //
+  // x := sha256.Sum256(p[:])
+  // x = sha256.Sum256(x[:])
+  // rh := ripemd160.New()
+  // rh.Write(x[:])
+  // y := rh.Sum(nil)
+  // assert.True(t, bytes.Equal(h[:], y))
+  //
+  //
+}
+
 Test(cipher_crypto, TestPubKeyToAddress) {
   cipher__PubKey p;
   cipher__SecKey s;
@@ -460,6 +479,7 @@ Test(cipher_crypto, TestSigHex) {
   cr_assert(eq(type(GoString), str, str2));
 }
 
+// FIXME: Split in multiple test cases so as to catch panic at the right place
 Test(cipher_crypto, TestChkSig) {
   cipher__PubKey pk, pk2;
   cipher__SecKey sk, sk2;
@@ -544,7 +564,7 @@ Test(cipher_crypto, TestSignHash) {
   cipher__SecKey sk;
   cipher__Address addr;
   unsigned char buff[257];
-  GoSlice b = { buff, 0, 101 };
+  GoSlice b = { buff, 0, 257 };
   cipher__SHA256 h;
   cipher__Sig sig, sig2;
   int errcode;

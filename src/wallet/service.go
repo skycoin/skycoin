@@ -607,7 +607,11 @@ func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wall
 	}
 
 	// Generate the first address from the seed
-	pk, _ := cipher.GenerateDeterministicKeyPair([]byte(seed))
+	var pk cipher.PubKey
+	pk, _, err = cipher.GenerateDeterministicKeyPair([]byte(seed))
+	if err != nil {
+		return nil, err
+	}
 	addr := cipher.AddressFromPubKey(pk)
 
 	// Compare to the wallet's first address

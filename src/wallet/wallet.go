@@ -865,10 +865,6 @@ func (w *Wallet) setSecrets(s string) {
 	w.Meta[metaSecrets] = s
 }
 
-func (w *Wallet) coin() CoinType {
-	return CoinType(w.Meta[metaCoin])
-}
-
 func (w *Wallet) timestamp() int64 {
 	// Intentionally ignore the error when parsing the timestamp,
 	// if it isn't valid or is missing it will be set to 0.

@@ -411,10 +411,8 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsRead}))
 
 	// Notes handler
-	webHandlerV2("/notes/notes", forAPISet(getAllNotesHandler(gateway), []string{EndpointsRead}))
-	webHandlerV2("/notes/noteByTxid", forAPISet(getNoteByIDHandler(gateway), []string{EndpointsRead}))
-	webHandlerV2("/notes/addNote", forAPISet(addNoteHandler(gateway), []string{EndpointsRead}))
-	webHandlerV2("/notes/removeNote", forAPISet(removeNoteHandler(gateway), []string{EndpointsRead}))
+	webHandlerV2("/notes", forAPISet(getAllNotesHandler(gateway), []string{EndpointsRead}))
+	webHandlerV2("/note", forAPISet(noteHandler(gateway), []string{EndpointsRead}))
 
 	return mux
 }

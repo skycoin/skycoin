@@ -2199,14 +2199,14 @@ Result:
 API sets: `READ`
 
 ```
-URI: /api/v2/notes/notes
-Method: POST
+URI: /api/v2/notes
+Method: GET
 ```
 
 Example:
 
 ```sh
-curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes/notes
+curl -X GET -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes
 ```
 
 Result:
@@ -2229,15 +2229,14 @@ Result:
 API sets: `READ`
 
 ```
-URI: /api/v2/notes/noteByTxid
-Method: POST
+URI: /api/v2/note
+Method: GET
 ```
 
 Example:
 
 ```sh
-curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes/noteByTxid \
--d '{"txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114"}'
+curl -X GET -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/note?txid="9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114"
 ```
 
 Result:
@@ -2256,14 +2255,14 @@ Result:
 API sets: `READ`
 
 ```
-URI: /api/v2/notes/addNote
+URI: /api/v2/note
 Method: POST
 ```
 
 Example:
 
 ```sh
-curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes/addNote \
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/note \
 -d '{"txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114","notes": "A Note... \n"}'
 ```
 
@@ -2283,15 +2282,14 @@ Result:
 API sets: `READ`
 
 ```
-URI: /api/v2/notes/removeNote
-Method: POST
+URI: /api/v2/note
+Method: DELETE
 ```
 
 Example:
 
 ```sh
-curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes/removeNote \
--d '{"txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114"}'
+curl -X DELETE -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/note?txid="9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114"
 ```
 
 Result:

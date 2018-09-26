@@ -2,23 +2,30 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/notes"
+
 	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
-// URI: /api/v2/notes/notes
-// Method: POST
+var (
+	// ErrorWrongTxID appears when TransactionID has wrong format
+	ErrorWrongTxID = "wrong 'txid'"
+	// ErrorBadParams appears when note obj isn't complete
+	ErrorBadParams = "bad parameters"
+)
+
+// URI: /api/v2/notes
+// Method: GET
 // Content-Type: application/json
 // Body: -
 // Response:
 //      200 - ok, returns all notes
 func getAllNotesHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
+		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
@@ -29,105 +36,68 @@ func getAllNotesHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// URI: /api/v2/notes/noteByTxid
-// Method: POST
+// URI: /api/v2/note
+// Method: POST, GET, DELETE
 // Content-Type: application/json
 // Body: { "txid": "<Transaction ID>" }
 // Response:
 //      400 - bad parameters
-//      200 - ok, returns note by TxId
-func getNoteByIDHandler(gateway Gatewayer) http.HandlerFunc {
+//      200 - POST: returns added Note
+//			- GET: return note by Transaction ID
+//			- DELETE: removes note by Transaction ID
+func noteHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
+		if r.Method == http.MethodPost {
+			var note notes.Note
+			if err := json.NewDecoder(r.Body).Decode(&note); err != nil || len(note.Notes) == 0 {
+				wh.Error400(w, ErrorBadParams)
+				return
+			}
+
+			if _, err := validateTxIDParameter(note.TxIDHex); err == nil {
+				note, err := gateway.AddNote(note)
+				if err != nil {
+					wh.Error400(w, err.Error())
+					return
+				}
+				wh.SendJSONOr500(logger, w, note)
+				return
+			}
+			wh.Error400(w, ErrorWrongTxID)
+			return
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			if txID, err := validateTxIDParameter(r.FormValue("txid")); err == nil {
+				noteByTxID := gateway.GetNoteByTxID(txID)
+				wh.SendJSONOr500(logger, w, noteByTxID)
+				return
+			}
+			wh.Error400(w, ErrorWrongTxID)
+			return
+		case http.MethodDelete:
+			if txID, err := validateTxIDParameter(r.FormValue("txid")); err == nil {
+				if err := gateway.RemoveNote(txID); err != nil {
+					wh.Error400(w, err.Error())
+					return
+				}
+				wh.SendJSONOr500(logger, w, notes.Note{})
+				return
+			}
+			wh.Error400(w, ErrorWrongTxID)
+			return
+		default:
+			// Bad Method
 			wh.Error405(w)
 			return
 		}
-
-		type TxID struct {
-			TxID string `json:"txid"`
-		}
-
-		var txID TxID
-		if err := json.NewDecoder(r.Body).Decode(&txID); err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		if _, err := cipher.SHA256FromHex(txID.TxID); err != nil {
-			wh.Error400(w, fmt.Errorf("Wrong txid").Error())
-			return
-		}
-
-		savedNotes := gateway.GetNoteByTxID(txID.TxID)
-		wh.SendJSONOr500(logger, w, savedNotes)
 	}
 }
 
-// URI: /api/v2/notes/addNote
-// Method: POST
-// Content-Type: application/json
-// Body: { "txid": "<Transaction ID>", "notes": "<Notes>" }
-// Response:
-//      400 - bad parameters
-//      200 - ok, note added
-func addNoteHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			wh.Error405(w)
-			return
-		}
-
-		var note notes.Note
-		if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
-			wh.Error400(w, fmt.Errorf("bad parameters").Error())
-			return
-		}
-
-		if _, err := cipher.SHA256FromHex(note.TxIDHex); err == nil && len(note.Notes) > 0 {
-			note, err = gateway.AddNote(note)
-			if err != nil {
-				wh.Error400(w, err.Error())
-				return
-			}
-		} else {
-			wh.Error400(w, fmt.Errorf("bad parameters").Error())
-			return
-		}
-
-		wh.SendJSONOr500(logger, w, note)
+func validateTxIDParameter(txID string) (string, error) {
+	if _, err := cipher.SHA256FromHex(txID); err != nil {
+		return "", err
 	}
-}
-
-// URI: /api/v2/notes/removeNote
-// Method: POST
-// Content-Type: application/json
-// Body: { "txid": "<Transaction ID>" }
-// Response:
-//      400 - bad parameters
-//      200 - ok, note removed by TxId
-func removeNoteHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			wh.Error405(w)
-			return
-		}
-
-		var note notes.Note
-		if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		if _, err := cipher.SHA256FromHex(note.TxIDHex); err == nil {
-			if err := gateway.RemoveNote(note.TxIDHex); err != nil {
-				wh.Error400(w, err.Error())
-				return
-			}
-		} else {
-			wh.Error400(w, fmt.Errorf("wrong 'txid'").Error())
-			return
-		}
-
-		wh.SendJSONOr500(logger, w, notes.Note{})
-	}
+	return txID, nil
 }

@@ -133,10 +133,8 @@ var endpoints = []string{
 
 	"/api/v2/transaction/verify",
 	"/api/v2/address/verify",
-	"/api/v2/notes/notes",
-	"/api/v2/notes/noteByTxid",
-	"/api/v2/notes/addNote",
-	"/api/v2/notes/removeNote",
+	"/api/v2/notes",
+	"/api/v2/note",
 	"/api/v2/wallet/recover",
 }
 

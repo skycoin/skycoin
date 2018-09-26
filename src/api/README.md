@@ -106,7 +106,7 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 - [Uxout APIs](#uxout-apis)
 	- [Get uxout](#get-uxout)
 	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
-- [Coin supply related information](#coin-supply-related-information)x
+- [Coin supply related information](#coin-supply-related-information)
 	- [Coin supply](#coin-supply)
 	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
 	- [Count unique addresses](#count-unique-addresses)

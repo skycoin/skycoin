@@ -866,6 +866,10 @@ func TestParseTag(t *testing.T) {
 		{
 			tag: "",
 		},
+		{
+			tag:  "-",
+			name: "-",
+		},
 	}
 
 	for _, tc := range cases {

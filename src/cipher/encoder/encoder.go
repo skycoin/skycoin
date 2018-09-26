@@ -856,7 +856,6 @@ func (d *decoder) adv(n int) int {
 func (d *decoder) dchk(v reflect.Value) int {
 	kind := v.Kind()
 	switch kind {
-
 	case reflect.Array:
 		// Arrays are a fixed size, so the length is not written
 		for i := 0; i < v.Len(); i++ {
@@ -892,6 +891,7 @@ func (d *decoder) dchk(v reflect.Value) int {
 			}
 		}
 		return 0
+
 	case reflect.Slice:
 		if len(d.buf) < 4 {
 			return -1
@@ -949,6 +949,7 @@ func (d *decoder) dchk(v reflect.Value) int {
 
 	case reflect.Bool:
 		return d.adv(1)
+
 	case reflect.String:
 		if len(d.buf) < 4 {
 			return -1
@@ -960,6 +961,7 @@ func (d *decoder) dchk(v reflect.Value) int {
 		}
 
 		return d.adv(length)
+
 	case reflect.Int8:
 		return d.adv(1)
 	case reflect.Int16:

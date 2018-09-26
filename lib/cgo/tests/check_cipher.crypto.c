@@ -56,6 +56,7 @@ Test(cipher_crypto, TestNewPubKey) {
 
 Test(cipher_crypto, TestPubKeyFromHex) {
   cipher__PubKey p, p1;
+  cipher__SecKey sk;
   GoString s;
   unsigned char buff[51];
   char sbuff[101];
@@ -73,10 +74,10 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   cr_assert(errcode == SKY_ERROR, "TestPubKeyFromHex: Invalid hex. Bad chars");
 
   // Invalid hex length
-  randBytes(&slice, 33);
-  errcode = SKY_cipher_NewPubKey(slice, &p);
-  cr_assert(errcode == SKY_OK);
-  strnhex(&p[0], sbuff, slice.len / 2);
+  SKY_cipher_GenerateKeyPair(&p, &sk);
+  memcpy(slice.data, (void *) p, sizeof(p));
+  slice.len = sizeof(p);
+  strnhex(&p[0], sbuff, slice.len << 1);
   s.p = sbuff;
   s.n = strlen(s.p);
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);

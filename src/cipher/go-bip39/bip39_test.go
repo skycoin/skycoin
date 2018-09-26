@@ -13,7 +13,7 @@ func TestIsMnemonicValid(t *testing.T) {
 	require.True(t, IsMnemonicValid(m))
 
 	// Truncated
-	m = m[:len(m)-2]
+	m = m[:len(m)-15]
 	require.False(t, IsMnemonicValid(m))
 
 	// Trailing whitespace

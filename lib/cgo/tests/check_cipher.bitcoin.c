@@ -125,8 +125,10 @@ Test(cipher_address, TestBitcoinWIF ){
     GoString_ string;
     SKY_cipher_PubKey_Hex(&pubkey,&string);
     cr_assert(eq(type(GoString), (*(GoString*)&string),(*(GoString*)&pub[i]) ));
-    GoString bitcoinAddr;
-    SKY_cipher_BitcoinAddressFromPubKey(&pubkey, (GoString_ *)&bitcoinAddr);
-    cr_assert(eq(type(GoString),addr[i],bitcoinAddr));
+    cipher__BitcoinAddress bitcoinAddr;
+    GoString bitcoinAddrStr;
+    SKY_cipher_BitcoinAddressFromPubKey(&pubkey, &bitcoinAddr);
+    SKY_cipher_BitcoinAddress_String(&bitcoinAddr, (GoString_ *)&bitcoinAddrStr);
+    cr_assert(eq(type(GoString),addr[i],bitcoinAddrStr));
   }
 }

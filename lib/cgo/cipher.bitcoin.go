@@ -38,6 +38,17 @@ func SKY_cipher_BitcoinAddressFromPubKey(_pubKey *C.cipher__PubKey, _arg1 *C.cip
 	*_arg1 = *(*C.cipher__BitcoinAddress)(unsafe.Pointer(&addr))
 }
 
+//export SKY_cipher_BitcoinAddressFromSecKey
+func SKY_cipher_BitcoinAddressFromSecKey(_secKey *C.cipher__SecKey, _arg1 *C.cipher__BitcoinAddress) uint32 {
+	secKey := (*cipher.SecKey)(unsafe.Pointer(_secKey))
+
+	addr, err := cipher.BitcoinAddressFromSecKey(*secKey)
+	if err == nil {
+		*_arg1 = *(*C.cipher__BitcoinAddress)(unsafe.Pointer(&addr))
+	}
+	return libErrorCode(err)
+}
+
 //export SKY_cipher_BitcoinWalletImportFormatFromSeckey
 func SKY_cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.cipher__SecKey, _arg1 *C.GoString_) {
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
@@ -63,6 +74,12 @@ func SKY_cipher_SecKeyFromBitcoinWalletImportFormat(_input string, _arg1 *C.ciph
 		*_arg1 = *(*C.cipher__SecKey)(unsafe.Pointer(&seckey))
 	}
 	return errcode
+}
+
+//export SKY_cipher_BitcoinAddress_Null
+func SKY_cipher_BitcoinAddress_Null(_addr *C.cipher__BitcoinAddress) bool {
+	addr := (*cipher.BitcoinAddress)(unsafe.Pointer(_addr))
+	return addr.Null()
 }
 
 //export SKY_cipher_BitcoinAddress_Bytes

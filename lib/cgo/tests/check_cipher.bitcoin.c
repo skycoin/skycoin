@@ -17,78 +17,50 @@ TestSuite(cipher_bitcoin, .init = setup, .fini = teardown);
 // buffer big enough to hold all kind of data needed by test cases
 unsigned char buff[1024];
 
-Test (cipher, TestBitcoinAddress1){
+Test (cipher, TestBitcoinAddress){
   cipher__SecKey seckey;
   cipher__PubKey pubkey;
-  GoString str = {
-    "1111111111111111111111111111111111111111111111111111111111111111",
-    64
-  }, s1, s2;
+  cipher__BitcoinAddress btcAddr;
+  GoString secKeys[3] = {
+    {"1111111111111111111111111111111111111111111111111111111111111111", 64},
+    {"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", 64},
+    {"47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012", 64}
+  };
+  GoString pubKeys[3] = {
+    {"034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa", 66},
+    {"02ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bd", 66},
+    {"032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3", 66}
+  };
+  GoString addrs[3] = {
+    {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9", 34},
+    {"1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a", 34},
+    {"19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV", 34}
+  };
   unsigned  int  error;
-  error = SKY_cipher_SecKeyFromHex(str, &seckey);
-  cr_assert(error == SKY_OK, "Create SecKey from Hex");
-  error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
-  cr_assert(error == SKY_OK, "Create PubKey from SecKey");
-  GoString pubkeyStr = { "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa", 66 };
-  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
-  registerMemCleanup((void *) s1.p);
-  cr_assert(eq(type(GoString), pubkeyStr, s1));
-  GoString bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};
-  SKY_cipher_BitcoinAddressFromPubKey(&pubkey, (GoString_ *) &s2);
-  registerMemCleanup((void *) s2.p);
-  cr_assert(eq(type(GoString), bitcoinStr, s2));
-}
 
-Test (cipher, TestBitcoinAddress2){
-  cipher__SecKey seckey;
-  cipher__PubKey pubkey  ;
-  GoString str = {
-    "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-    64
-  }, s1, s2;
-  unsigned  int error;
-  error = SKY_cipher_SecKeyFromHex(str, &seckey);
-  cr_assert(error == SKY_OK, "Create SecKey from Hex");
-  error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
-  cr_assert(error == SKY_OK, "Create PubKey from SecKey");
-  char strBuff[101];
-  GoString pubkeyStr = {
-    "02ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bd",
-    66
-  };
-  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
-  registerMemCleanup((void *) s1.p);
-  cr_assert(eq(type(GoString), pubkeyStr, s1));
-  GoString bitcoinStr = {"1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a",34};
-  SKY_cipher_BitcoinAddressFromPubKey(&pubkey, (GoString_ *) &s2);
-  registerMemCleanup((void *) s2.p);
-  cr_assert(eq(type(GoString), bitcoinStr, s2));
-}
+  GoString *secKeyStr = secKeys;
+  GoString *pubKeyStr = pubKeys;
+  GoString *addrStr = addrs;
 
-Test (cipher, TestBitcoinAddress3){
-  cipher__SecKey seckey;
-  cipher__PubKey pubkey;
-  GoString str = {
-    "47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012",
-    64
-  };
-  unsigned  int error;
-  error = SKY_cipher_SecKeyFromHex(str, &seckey);
-  cr_assert(error == SKY_OK, "Create SecKey from Hex");
-  error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
-  cr_assert(error == SKY_OK, "Create PubKey from SecKey");
-  char strBuff[101];
-  GoString pubkeyStr = {
-    "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3",
-    66
-  }, s1, s2;
-  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *)&s1);
-  registerMemCleanup((void *) s1.p);
-  cr_assert(eq(type(GoString), pubkeyStr, s1));
-  GoString bitcoinStr = {"19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV",34};
-  SKY_cipher_BitcoinAddressFromPubKey(&pubkey, (GoString_ *)&s2);
-  registerMemCleanup((void *) s2.p);
-  cr_assert(eq(type(GoString), bitcoinStr, s2));
+  for (int i = 0; i < 3; ++i, ++secKeyStr, ++pubKeyStr, ++addrStr) {
+    error = SKY_cipher_SecKeyFromHex(*secKeyStr, &seckey);
+    cr_assert(error == SKY_OK, "Create SecKey from Hex"); // (seckeyFailMsg));
+    error = SKY_cipher_PubKeyFromHex(*pubKeyStr, &pubkey);
+    cr_assert(error == SKY_OK, "Create PubKey from Hex");
+
+    GoString str = {NULL, 0};
+    SKY_cipher_BitcoinAddressFromPubKey(&pubkey, &btcAddr);
+    SKY_cipher_BitcoinAddress_String(&btcAddr, (GoString_ *) &str);
+    registerMemCleanup((void *) str.p);
+    cr_assert(eq(type(GoString), str, (*addrStr)));
+
+    str.p = NULL; str.n = 0;
+    error = SKY_cipher_BitcoinAddressFromSecKey(&seckey, &btcAddr);
+    cr_assert(error == SKY_OK);
+    SKY_cipher_BitcoinAddress_String(&btcAddr, (GoString_ *) &str);
+    registerMemCleanup((void *) str.p);
+    cr_assert(eq(type(GoString), str, *addrStr));
+  }
 }
 
 Test(cipher_address, TestBitcoinWIFRoundTrip){

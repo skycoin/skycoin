@@ -590,7 +590,7 @@ func TestLoadWallet(t *testing.T) {
 			"./testdata/invalid_wallets/no_seed.wlt",
 			expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet no_seed.wlt: seed field not set"),
+				err:  fmt.Errorf("invalid wallet no_seed.wlt: seed missing in unencrypted wallet"),
 			},
 		},
 		{
@@ -630,7 +630,7 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"version=0.2 encrypted=flase",
+			"version=0.2 encrypted=false",
 			"./testdata/v2_no_encrypt.wlt",
 			expect{
 				meta: map[string]string{

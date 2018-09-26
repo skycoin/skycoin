@@ -35,8 +35,8 @@ return slice;
       tmpOut->Head.Time = ux.Head.Time;
       tmpOut->Body.Coins = ux.Body.Coins;
       tmpOut->Body.Hours = ux.Body.Hours;
-    }}
-	      tmpOut++;
+    }
+	      tmpOut++;}
 	}
 
 	

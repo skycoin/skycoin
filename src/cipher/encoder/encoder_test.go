@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"log"
+	"math"
 	"reflect"
 	"testing"
 
@@ -877,6 +878,59 @@ func TestParseTag(t *testing.T) {
 			name, omitempty := ParseTag(tc.tag)
 			require.Equal(t, tc.name, name)
 			require.Equal(t, tc.omitempty, omitempty)
+		})
+	}
+}
+
+type primitiveInts struct {
+	A int8
+	B uint8
+	C int16
+	D uint16
+	E int32
+	F uint32
+	G int64
+	H uint64
+}
+
+func TestPrimitiveInts(t *testing.T) {
+	cases := []struct {
+		name string
+		c    primitiveInts
+	}{
+		{
+			name: "all maximums",
+			c: primitiveInts{
+				A: math.MaxInt8,
+				B: math.MaxUint8,
+				C: math.MaxInt16,
+				D: math.MaxUint16,
+				E: math.MaxInt32,
+				F: math.MaxUint32,
+				G: math.MaxInt64,
+				H: math.MaxUint64,
+			},
+		},
+		{
+			name: "negative integers",
+			c: primitiveInts{
+				A: -99,
+				C: -99,
+				E: -99,
+				G: -99,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			bytes := Serialize(tc.c)
+			require.NotEmpty(t, bytes)
+
+			var obj primitiveInts
+			err := DeserializeRaw(bytes, &obj)
+			require.NoError(t, err)
+			require.Equal(t, tc.c, obj)
 		})
 	}
 }

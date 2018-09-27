@@ -1003,3 +1003,20 @@ func TestEncodeStable(t *testing.T) {
 	b := Serialize(x)
 	require.Equal(t, d, b)
 }
+
+func TestEncodeEmptySlice(t *testing.T) {
+	// Decoding an empty slice should not allocate
+	type foo struct {
+		X []byte
+		Y []int64
+	}
+
+	f := &foo{}
+	b := Serialize(f)
+
+	var g foo
+	err := DeserializeRaw(b, &g)
+	require.NoError(t, err)
+	require.Nil(t, g.X)
+	require.Nil(t, g.Y)
+}

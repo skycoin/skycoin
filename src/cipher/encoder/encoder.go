@@ -749,6 +749,10 @@ func (d *decoder) value(v reflect.Value) error {
 			return ErrBufferUnderflow
 		}
 
+		if length == 0 {
+			return nil
+		}
+
 		t := v.Type()
 		elem := t.Elem()
 

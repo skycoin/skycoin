@@ -79,7 +79,7 @@ func TestConvertToMessageBadDeserialize(t *testing.T) {
 	b = append([]byte{}, BytePrefix[:]...)
 	m, err = convertToMessage(c.ID, b, testing.Verbose())
 	assert.NotNil(t, err)
-	assert.Equal(t, encoder.ErrBufferUnderflow, err.Error())
+	assert.Equal(t, encoder.ErrBufferUnderflow, err)
 	assert.Nil(t, m)
 }
 

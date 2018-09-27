@@ -970,7 +970,7 @@ func TestEncodeStable(t *testing.T) {
 			A: -127,
 			B: math.MaxUint16,
 		},
-		Q: map[string]byte{"foo": 100, "bar": 99},
+		Q: map[string]byte{"foo": 100},
 		R: float32(123.45),
 		S: float64(123.45),
 	}

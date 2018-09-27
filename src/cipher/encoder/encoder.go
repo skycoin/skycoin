@@ -2,17 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package encoder binary implements translation between numbers and byte sequences
-// and encoding and decoding of varints.
-//
-// Numbers are translated by reading and writing fixed-size values.
-// A fixed-size value is either a fixed-size arithmetic
-// type (int8, uint8, int16, float32, complex64, ...)
-// or an array or struct containing only fixed-size values.
-//
-// Varints are a method of encoding integers using one or more bytes;
-// numbers with smaller absolute value take a smaller number of bytes.
-// For a specification, see http://code.google.com/apis/protocolbuffers/docs/encoding.html.
+// Package encoder binary implements translation between struct data and byte sequences
 //
 // Fields can be ignored with the struct tag `enc:"-"` .
 // Unexported struct fields are ignored by default .
@@ -23,6 +13,9 @@
 // When omitempty is set, the no data will be written if the value is empty.
 // If the value is empty and omitempty is not set, then a length prefix with value 0 would be written.
 // omitempty can only be used for the last field in the struct
+//
+// Encoding of maps is supported, but note that the use of them results in non-deterministic output.
+// If determinism is required, do not use map.
 package encoder
 
 import (
@@ -359,28 +352,54 @@ func datasizeWrite(v reflect.Value) (int, error) {
 
 	case reflect.Array:
 		// Arrays are a fixed size, so the length is not written
-		size := 0
-		for i := 0; i < v.Len(); i++ {
-			elem := v.Index(i)
-			s, err := datasizeWrite(elem)
-			if err != nil {
-				return 0, err
+		t := v.Type()
+		elem := t.Elem()
+		switch elem.Kind() {
+		case reflect.Uint8, reflect.Int8:
+			return v.Len(), nil
+		case reflect.Uint16, reflect.Int16:
+			return v.Len() * 2, nil
+		case reflect.Uint32, reflect.Int32, reflect.Float32:
+			return v.Len() * 4, nil
+		case reflect.Uint64, reflect.Int64, reflect.Float64:
+			return v.Len() * 8, nil
+		default:
+			size := 0
+			for i := 0; i < v.Len(); i++ {
+				elem := v.Index(i)
+				s, err := datasizeWrite(elem)
+				if err != nil {
+					return 0, err
+				}
+				size += s
 			}
-			size += s
+			return size, nil
 		}
-		return size, nil
 
 	case reflect.Slice:
-		size := 0
-		for i := 0; i < v.Len(); i++ {
-			elem := v.Index(i)
-			s, err := datasizeWrite(elem)
-			if err != nil {
-				return 0, err
+		t := v.Type()
+		elem := t.Elem()
+		switch elem.Kind() {
+		case reflect.Uint8, reflect.Int8:
+			return 4 + v.Len(), nil
+		case reflect.Uint16, reflect.Int16:
+			return 4 + v.Len()*2, nil
+		case reflect.Uint32, reflect.Int32, reflect.Float32:
+			return 4 + v.Len()*4, nil
+		case reflect.Uint64, reflect.Int64, reflect.Float64:
+			return 4 + v.Len()*8, nil
+		default:
+			size := 0
+			for i := 0; i < v.Len(); i++ {
+				elem := v.Index(i)
+				s, err := datasizeWrite(elem)
+				if err != nil {
+					return 0, err
+				}
+				size += s
 			}
-			size += s
+			return 4 + size, nil
 		}
-		return 4 + size, nil
 
 	case reflect.Map:
 		// length prefix
@@ -433,7 +452,7 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		return 1, nil
 
 	case reflect.String:
-		return len(v.String()) + 4, nil
+		return v.Len() + 4, nil
 
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
@@ -441,7 +460,7 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		return int(t.Size()), nil
 
 	default:
-		return 0, errors.New("invalid type " + t.String())
+		return 0, fmt.Errorf("invalid type %s", t.String())
 	}
 }
 
@@ -1075,6 +1094,8 @@ func (e *encoder) value(v reflect.Value) {
 			if ff.PkgPath != "" {
 				continue
 			}
+
+			fmt.Println(ff.Name)
 
 			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 

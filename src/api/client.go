@@ -119,6 +119,26 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 	return c.HTTPClient.Do(req)
 }
 
+// get makes a DELETE request to an endpoint. Caller must close response body.
+func (c *Client) delete(endpoint string, obj interface{}) error {
+	endpoint = strings.TrimLeft(endpoint, "/")
+	endpoint = c.Addr + endpoint
+
+	req, err := http.NewRequest(http.MethodDelete, endpoint, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	d := json.NewDecoder(resp.Body)
+	d.DisallowUnknownFields()
+	return d.Decode(obj)
+}
+
 // PostForm makes a POST request to an endpoint with body of "application/x-www-form-urlencoded" formated data.
 func (c *Client) PostForm(endpoint string, body io.Reader, obj interface{}) error {
 	return c.post(endpoint, "application/x-www-form-urlencoded", body, obj)
@@ -748,50 +768,50 @@ func (c *Client) WalletSeed(id string, password string) (string, error) {
 	return r.Seed, nil
 }
 
-// GetAllNotes makes a request to POST /api/v2/notes/notes
+// GetAllNotes makes a request to GET /api/v2/notes
 func (c *Client) GetAllNotes() ([]notes.Note, error) {
 	var allNotes []notes.Note
 
-	if err := c.PostForm("/api/v2/notes/notes", nil, allNotes); err != nil {
+	if err := c.Get("/api/v2/notes", allNotes); err != nil {
 		return nil, err
 	}
 
 	return allNotes, nil
 }
 
-// GetNoteByTxID makes a request to POST /api/v2/notes/noteByTxid
+// GetNoteByTxID makes a request to GET /api/v2/note?txid=""
 func (c *Client) GetNoteByTxID(txID string) (notes.Note, error) {
 	var note notes.Note
 	v := url.Values{}
 	v.Add("txid", txID)
 
-	if err := c.PostForm("/api/v2/notes/noteByTxid", strings.NewReader(v.Encode()), note); err != nil {
+	if err := c.Get("/api/v2/note?"+v.Encode(), &note); err != nil {
 		return notes.Note{}, err
 	}
 
 	return note, nil
 }
 
-// AddNote makes a request to POST /api/v2/notes/addNote
+// AddNote makes a request to POST /api/v2/note
 func (c *Client) AddNote(note notes.Note) (notes.Note, error) {
 	v := url.Values{}
 	v.Add("txid", note.TxIDHex)
 	v.Add("notes", note.Notes)
 
-	if err := c.PostForm("/api/v2/notes/addNote", strings.NewReader(v.Encode()), note); err != nil {
+	if err := c.PostForm("/api/v2/note", strings.NewReader(v.Encode()), note); err != nil {
 		return notes.Note{}, err
 	}
 
 	return note, nil
 }
 
-// RemoveNote makes a request to POST /api/v2/notes/removeNote
+// RemoveNote makes a request to DELETE /api/v2/note?txid=
 func (c *Client) RemoveNote(txID string) (notes.Note, error) {
 	var note notes.Note
 	v := url.Values{}
 	v.Add("txid", txID)
 
-	if err := c.PostForm("/api/v2/notes/removeNote", strings.NewReader(v.Encode()), note); err != nil {
+	if err := c.delete("/api/v2/note?"+v.Encode(), &note); err != nil {
 		return notes.Note{}, err
 	}
 

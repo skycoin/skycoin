@@ -25,6 +25,12 @@ var (
 //      200 - ok, returns all notes
 func getAllNotesHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "application/json" {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
@@ -47,6 +53,12 @@ func getAllNotesHandler(gateway Gatewayer) http.HandlerFunc {
 //			- DELETE: removes note by Transaction ID
 func noteHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "application/json" {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
 		if r.Method == http.MethodPost {
 			var note notes.Note
 			if err := json.NewDecoder(r.Body).Decode(&note); err != nil || len(note.Notes) == 0 {

@@ -74,6 +74,7 @@ func TestGetAllNotes(t *testing.T) {
 			gateway.On("GetAllNotes").Return(tc.gatewayGetAllNotesResult, tc.gatewayGetAllNotesErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
+			req.Header.Add("Content-Type", "application/json")
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{
@@ -148,6 +149,7 @@ func TestGetNoteByTxID(t *testing.T) {
 			endpoint += "?" + v.Encode()
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req.Header.Add("Content-Type", "application/json")
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{
@@ -254,6 +256,7 @@ func TestAddNote(t *testing.T) {
 			}
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(jsonStr))
+			req.Header.Add("Content-Type", "application/json")
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{
@@ -330,6 +333,7 @@ func TestRemoveNote(t *testing.T) {
 			endpoint += "?" + v.Encode()
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req.Header.Add("Content-Type", "application/json")
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{

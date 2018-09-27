@@ -2206,7 +2206,7 @@ Method: GET
 Example:
 
 ```sh
-curl -X GET -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes
+curl -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes
 ```
 
 Result:

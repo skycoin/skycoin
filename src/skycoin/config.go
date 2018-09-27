@@ -402,8 +402,7 @@ func validateAPISets(opt string, apiSets []string) error {
 	for _, k := range apiSets {
 		k = strings.ToUpper(strings.TrimSpace(k))
 		switch k {
-		case api.EndpointsDefault,
-			api.EndpointsRead,
+		case api.EndpointsRead,
 			api.EndpointsStatus,
 			api.EndpointsTransaction,
 			api.EndpointsWallet,

@@ -676,10 +676,29 @@ func (d *decoder) value(v reflect.Value) error {
 	kind := v.Kind()
 	switch kind {
 	case reflect.Array:
+
+		t := v.Type()
+		elem := t.Elem()
+
 		// Arrays are a fixed size, so the length is not written
-		for i := 0; i < v.Len(); i++ {
-			if err := d.value(v.Index(i)); err != nil {
-				return err
+		length := v.Len()
+
+		switch elem.Kind() {
+		case reflect.Uint8:
+			if length > len(d.buf) {
+				return ErrBufferUnderflow
+			}
+
+			// v.Set(reflect.MakeSlice(t, length, length))
+			// reflect.Copy(v, reflect.ValueOf(d.buf[:length]))
+
+			reflect.Copy(v, reflect.ValueOf(d.buf[:length]))
+			d.buf = d.buf[length:]
+		default:
+			for i := 0; i < length; i++ {
+				if err := d.value(v.Index(i)); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -736,19 +755,18 @@ func (d *decoder) value(v reflect.Value) error {
 		t := v.Type()
 		elem := t.Elem()
 
-		if elem.Kind() == reflect.Uint8 {
+		switch elem.Kind() {
+		case reflect.Uint8:
 			v.SetBytes(d.buf[:length])
 			d.buf = d.buf[length:]
-		} else {
+		default:
 			elemvs := reflect.MakeSlice(t, length, length)
-
 			for i := 0; i < length; i++ {
 				elemv := reflect.Indirect(elemvs.Index(i))
 				if err := d.value(elemv); err != nil {
 					return err
 				}
 			}
-
 			v.Set(elemvs)
 		}
 

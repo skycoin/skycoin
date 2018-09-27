@@ -88,9 +88,7 @@ func Test_Encode_2a(t *testing.T) {
 	ts.Z = 255
 	ts.W = false
 	_tt := []byte("ASDSADFSDFASDFSD")
-	for i := 0; i < 8; i++ {
-		ts.K[i] = _tt[i]
-	}
+	copy(ts.K[:], _tt)
 
 	b := Serialize(ts)
 
@@ -110,9 +108,7 @@ func Test_Encode_2b(t *testing.T) {
 	ts.Y = 23432435443
 	ts.Z = 255
 	_tt := []byte("ASDSADFSDFASDFSD")
-	for i := 0; i < 8; i++ {
-		ts.K[i] = _tt[i]
-	}
+	copy(ts.K[:], _tt)
 
 	b := Serialize(ts)
 

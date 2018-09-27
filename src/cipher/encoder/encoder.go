@@ -695,7 +695,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 		length := int(ul)
 		if length < 0 || length > len(d.buf) {
-			return fmt.Errorf("Invalid length: %d", length)
+			return ErrBufferUnderflow
 		}
 
 		t := v.Type()
@@ -730,21 +730,26 @@ func (d *decoder) value(v reflect.Value) error {
 
 		length := int(ul)
 		if length < 0 || length > len(d.buf) {
-			return fmt.Errorf("Invalid length: %d", length)
+			return ErrBufferUnderflow
 		}
 
-		elem := v.Type().Elem()
+		t := v.Type()
+		elem := t.Elem()
+
 		if elem.Kind() == reflect.Uint8 {
 			v.SetBytes(d.buf[:length])
 			d.buf = d.buf[length:]
 		} else {
+			elemvs := reflect.MakeSlice(t, length, length)
+
 			for i := 0; i < length; i++ {
-				elemv := reflect.Indirect(reflect.New(elem))
+				elemv := reflect.Indirect(elemvs.Index(i))
 				if err := d.value(elemv); err != nil {
 					return err
 				}
-				v.Set(reflect.Append(v, elemv))
 			}
+
+			v.Set(elemvs)
 		}
 
 	case reflect.Struct:

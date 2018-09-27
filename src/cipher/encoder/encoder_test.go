@@ -183,8 +183,7 @@ func Test_Encode_4(t *testing.T) {
 	var t1 TestStruct5
 	t1.X = 345535
 
-	const NUM = 8
-	t1.A = make([]TestStruct4, NUM)
+	t1.A = make([]TestStruct4, 8)
 
 	b := Serialize(t1)
 
@@ -192,18 +191,17 @@ func Test_Encode_4(t *testing.T) {
 	err := DeserializeRaw(b, &t2)
 	require.NoError(t, err)
 
-	require.False(t, t1.X != t2.X, "TestStruct5.X not equal")
+	require.Equal(t, t1.X, t2.X, "TestStruct5.X not equal")
 
-	require.False(t, len(t1.A) != len(t2.A), "Slice lengths not equal")
+	require.Equal(t, len(t1.A), len(t2.A), "Slice lengths not equal: %d != %d", len(t1.A), len(t2.A))
 
 	for i, ts := range t1.A {
-		require.False(t, ts != t2.A[i], "Slice values not equal")
+		require.Equal(t, ts, t2.A[i], "Slice values not equal")
 	}
 
 	b2 := Serialize(t2)
 
-	c := bytes.Compare(b, b2)
-	require.Equal(t, c, 0)
+	require.True(t, bytes.Equal(b, b2))
 }
 
 // type TestStruct2 struct {

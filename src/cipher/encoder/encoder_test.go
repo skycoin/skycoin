@@ -937,7 +937,7 @@ type hasEveryType struct {
 		A int8
 		B uint16
 	} // struct
-	Q map[string]byte // map
+	Q map[string]string // map
 	R float32
 	S float64
 }
@@ -970,7 +970,7 @@ func TestEncodeStable(t *testing.T) {
 			A: -127,
 			B: math.MaxUint16,
 		},
-		Q: map[string]byte{"foo": 100},
+		Q: map[string]string{"foo": "bar"},
 		R: float32(123.45),
 		S: float64(123.45),
 	}
@@ -1058,4 +1058,32 @@ func TestEncodeEmptySlice(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, g.X)
 	require.Nil(t, g.Y)
+}
+
+func TestRandomGarbage(t *testing.T) {
+	// Basic fuzz test to check for panics, deserializes random data
+
+	// initialize the struct with data in the variable sized fields
+	x := hasEveryType{
+		K: "string",
+		L: []byte("bar"),
+		M: []int64{math.MaxInt64, math.MaxInt64 / 2, -10000},
+		Q: map[string]string{"foo": "bar", "cat": "dog"},
+	}
+
+	size, err := datasizeWrite(reflect.ValueOf(x))
+	require.NoError(t, err)
+
+	var y hasEveryType
+	for j := 0; j < 100; j++ {
+		for i := 0; i < size*2; i++ {
+			b := randBytes(t, i)
+			DeserializeRaw(b, &y)
+		}
+	}
+
+	for i := 0; i < 10000; i++ {
+		b := randBytes(t, size)
+		DeserializeRaw(b, &y)
+	}
 }

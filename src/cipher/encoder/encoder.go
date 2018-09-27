@@ -689,9 +689,6 @@ func (d *decoder) value(v reflect.Value) error {
 				return ErrBufferUnderflow
 			}
 
-			// v.Set(reflect.MakeSlice(t, length, length))
-			// reflect.Copy(v, reflect.ValueOf(d.buf[:length]))
-
 			reflect.Copy(v, reflect.ValueOf(d.buf[:length]))
 			d.buf = d.buf[length:]
 		default:

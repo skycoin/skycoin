@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 
@@ -91,28 +92,28 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			tx, err := createRawTxCmdHandler(c)
+			txn, err := createRawTxnCmdHandler(c)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
-				errorWithHelp(c, err)
-			case WalletSaveError:
-				return errors.New("save wallet failed")
+				printHelp(c)
+				return err
 			default:
 				return err
 			}
 
-			rawTx := hex.EncodeToString(tx.Serialize())
+			rawTxn := hex.EncodeToString(txn.Serialize())
 
 			if c.Bool("json") {
 				return printJSON(struct {
 					RawTx string `json:"rawtx"`
 				}{
-					RawTx: rawTx,
+					RawTx: rawTxn,
 				})
 			}
 
-			fmt.Println(rawTx)
+			fmt.Println(rawTxn)
+
 			return nil
 		},
 	}
@@ -348,7 +349,7 @@ func parseCreateRawTxArgs(c *gcli.Context) (*createRawTxArgs, error) {
 	}, nil
 }
 
-func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
+func createRawTxnCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	apiClient := APIClientFromContext(c)
 
 	args, err := parseCreateRawTxArgs(c)
@@ -498,7 +499,7 @@ func CreateRawTxFromAddress(c GetOutputser, addr, walletFile, chgAddr string, to
 
 // GetOutputser implements unspent output querying
 type GetOutputser interface {
-	OutputsForAddresses([]string) (*visor.ReadableOutputSet, error)
+	OutputsForAddresses([]string) (*readable.UnspentOutputsSummary, error)
 }
 
 // CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
@@ -608,7 +609,7 @@ func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxS
 	// return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
 }
 
-func createRawTx(uxouts *visor.ReadableOutputSet, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
@@ -660,9 +661,9 @@ func createRawTx(uxouts *visor.ReadableOutputSet, wlt *wallet.Wallet, chgAddr st
 	return makeTx()
 }
 
-func chooseSpends(uxouts *visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {
+func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]wallet.UxBalance, error) {
 	// Convert spendable unspent outputs to []wallet.UxBalance
-	spendableOutputs, err := visor.ReadableOutputsToUxBalances(uxouts.SpendableOutputs())
+	spendableOutputs, err := readable.OutputsToUxBalances(uxouts.SpendableOutputs())
 	if err != nil {
 		return nil, err
 	}
@@ -677,7 +678,7 @@ func chooseSpends(uxouts *visor.ReadableOutputSet, coins uint64) ([]wallet.UxBal
 		// If there is not enough balance in the spendable outputs,
 		// see if there is enough balance when including incoming outputs
 		if err == wallet.ErrInsufficientBalance {
-			expectedOutputs, otherErr := visor.ReadableOutputsToUxBalances(uxouts.ExpectedOutputs())
+			expectedOutputs, otherErr := readable.OutputsToUxBalances(uxouts.ExpectedOutputs())
 			if otherErr != nil {
 				return nil, otherErr
 			}

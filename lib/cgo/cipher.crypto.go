@@ -81,19 +81,6 @@ func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (____error_code ui
 	return
 }
 
-//export SKY_cipher_MustPubKeyFromHex
-func SKY_cipher_MustPubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (errcode uint32) {
-	errcode = SKY_OK
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
-	checkAPIReady()
-	s := _s
-	__arg1 := cipher.MustPubKeyFromHex(s)
-	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
-	return
-}
-
 //export SKY_cipher_PubKeyFromHex
 func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (____error_code uint32) {
 	____error_code = SKY_OK
@@ -205,20 +192,6 @@ func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.cipher__SecKey) (____error_code ui
 	return
 }
 
-//export SKY_cipher_MustSecKeyFromHex
-func SKY_cipher_MustSecKeyFromHex(_s string, _arg1 *C.cipher__SecKey) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
-	s := _s
-	__arg1 := cipher.MustSecKeyFromHex(s)
-	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
-	____error_code = SKY_OK
-	return
-}
-
 //export SKY_cipher_SecKeyFromHex
 func SKY_cipher_SecKeyFromHex(_s string, _arg1 *C.cipher__SecKey) (____error_code uint32) {
 	____error_code = SKY_OK
@@ -288,19 +261,6 @@ func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) (____error_code uint32) 
 	checkAPIReady()
 	b := *(*[]byte)(unsafe.Pointer(&_b))
 	__arg1 := cipher.NewSig(b)
-	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofSig))
-	return
-}
-
-//export SKY_cipher_MustSigFromHex
-func SKY_cipher_MustSigFromHex(_s string, _arg1 *C.cipher__Sig) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
-	s := _s
-	__arg1 := cipher.MustSigFromHex(s)
 	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofSig))
 	return
 }

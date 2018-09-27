@@ -176,6 +176,10 @@ typedef Handle Wallets__Handle;
 typedef Handle ReadableOutputSet__Handle;
 
 /**
+ *  ReadableOutputSet Handle
+ * */
+typedef Handle ReadableOutputSet_Handle;
+/**
  * Instances of Go interface types.
  */
 typedef struct {
@@ -319,7 +323,6 @@ typedef Handle SortableTransactionResult_Handle;
  * Memory handle to access to wallet.Notes
  */
 
-typedef Handle WalletNotes_Handle;
 
 /**
  * Memory handle to access to wallet.ReadableNotes
@@ -346,7 +349,7 @@ typedef Handle StatusResult_Handle;
 typedef Handle AddressUxOuts_Handle;
 
 /**
- * Memory handle to access to visor.BuildInfo (BuildInfo)
+ * Memory handle to access to readable.BuildInfo (BuildInfo)
  */
 
 typedef Handle BuildInfo_Handle;
@@ -368,6 +371,10 @@ typedef Handle Number_Handle;
 */
 
 typedef Handle Signature_Handle;
+/**
+ * Handle for readable.UnspentOutputsSummary
+ * */
+typedef Handle UnspentOutputsSummary_Handle;
 
 typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
 

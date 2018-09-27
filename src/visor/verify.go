@@ -129,7 +129,7 @@ func (e ErrTxnViolatesUserConstraint) Error() string {
 }
 
 // VerifySingleTxnSoftConstraints returns an error if any "soft" constraint are violated.
-// "soft" constaints are enforced at the network and block publication level,
+// "soft" constraints are enforced at the network and block publication level,
 // but are not enforced at the blockchain level.
 // Clients will not accept blocks that violate hard constraints, but will
 // accept blocks that violate soft constraints.

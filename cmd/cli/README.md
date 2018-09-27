@@ -7,36 +7,36 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3" -->
 
 - [Install](#install)
-    - [Enable command autocomplete](#enable-command-autocomplete)
+	- [Enable command autocomplete](#enable-command-autocomplete)
 - [Environment Setting](#environment-setting)
-    - [RPC_ADDR](#rpc_addr)
-    - [WALLET_DIR](#wallet_dir)
-    - [WALLET_NAME](#wallet_name)
+	- [RPC_ADDR](#rpc_addr)
+	- [WALLET_DIR](#wallet_dir)
+	- [WALLET_NAME](#wallet_name)
 - [Usage](#usage)
-    - [Add Private Key](#add-private-key)
-    - [Check address balance](#check-address-balance)
-    - [Generate new addresses](#generate-new-addresses)
-    - [Check address outputs](#check-address-outputs)
-    - [Check block data](#check-block-data)
-    - [Check database integrity](#check-database-integrity)
-    - [Create a raw transaction](#create-a-raw-transaction)
-    - [Decode a raw transaction](#decode-a-raw-transaction)
-    - [Broadcast a raw transaction](#broadcast-a-raw-transaction)
-    - [Generate a wallet](#generate-a-wallet)
-    - [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
-    - [Last blocks](#last-blocks)
-    - [List wallet addresses](#list-wallet-addresses)
-    - [List wallets](#list-wallets)
-    - [Send](#send)
-    - [Show Config](#show-config)
-    - [Status](#status)
-    - [Get transaction](#get-transaction)
-    - [Verify address](#verify-address)
-    - [Check wallet balance](#check-wallet-balance)
-    - [See wallet directory](#see-wallet-directory)
-    - [List wallet transaction history](#list-wallet-transaction-history)
-    - [List wallet outputs](#list-wallet-outputs)
-    - [CLI version](#cli-version)
+	- [Add Private Key](#add-private-key)
+	- [Check address balance](#check-address-balance)
+	- [Generate new addresses](#generate-new-addresses)
+	- [Check address outputs](#check-address-outputs)
+	- [Check block data](#check-block-data)
+	- [Check database integrity](#check-database-integrity)
+	- [Create a raw transaction](#create-a-raw-transaction)
+	- [Decode a raw transaction](#decode-a-raw-transaction)
+	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
+	- [Generate a wallet](#generate-a-wallet)
+	- [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
+	- [Last blocks](#last-blocks)
+	- [List wallet addresses](#list-wallet-addresses)
+	- [List wallets](#list-wallets)
+	- [Send](#send)
+	- [Show Config](#show-config)
+	- [Status](#status)
+	- [Get transaction](#get-transaction)
+	- [Verify address](#verify-address)
+	- [Check wallet balance](#check-wallet-balance)
+	- [See wallet directory](#see-wallet-directory)
+	- [List wallet transaction history](#list-wallet-transaction-history)
+	- [List wallet outputs](#list-wallet-outputs)
+	- [CLI version](#cli-version)
 - [Note](#note)
 
 <!-- /MarkdownTOC -->
@@ -703,30 +703,30 @@ skycoin-cli decodeRawTransaction dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28f
 
 ```json
 {
-  "hash": "ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5",
-  "inner_hash": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-  "sigs": [
-    "cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f00"
-  ],
-  "in": [
-    "05e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634"
-  ],
-  "out": [
-    {
-      "hash": "2cb770d7c045954e9195b312e5409d0070c15361da7148879fb8658b766fae90",
-      "src_tx": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-      "address": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
-      "coins": "1.000000",
-      "hours": 1
-    },
-    {
-      "hash": "0de690eeec960274539c2ad35b57d7c0492a268a5f17ab54e5e24f3d6e14bc72",
-      "src_tx": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
-      "address": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
-      "coins": "16.000000",
-      "hours": 1432
-    }
-  ]
+    "length": 220,
+    "type": 0,
+    "txid": "ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5",
+    "inner_hash": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
+    "sigs": [
+        "cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f00"
+    ],
+    "inputs": [
+        "05e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634"
+    ],
+    "outputs": [
+        {
+            "uxid": "2f146924431e8c9b84a53d4d823acefb92515a264956d873ac86066c608af418",
+            "dst": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+            "coins": "1.000000",
+            "hours": 1
+        },
+        {
+            "uxid": "5d69d22aff5957a18194c443557d97ec18707e4db8ee7e9a4bb8a7eef642fdff",
+            "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+            "coins": "16.000000",
+            "hours": 1432
+        }
+    ]
 }
 ```
 </details>
@@ -1532,10 +1532,16 @@ $ skycoin-cli status
         "version": {
             "version": "0.24.1",
             "commit": "620405485d3276c16c0379bc3b88b588e34c45e1",
-            "branch": "bulk-send"
+            "branch": "develop"
         },
         "open_connections": 8,
-        "uptime": "4h1m23.697072461s"
+        "uptime": "4h1m23.697072461s",
+        "csrf_enabled": true,
+        "csp_enabled": true,
+        "wallet_api_enabled": true,
+        "gui_enabled": true,
+        "unversioned_api_enabled": false,
+        "json_rpc_enabled": false
     },
     "cli_config": {
         "webrpc_address": "http://127.0.0.1:6420"
@@ -1566,8 +1572,7 @@ $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748
          "confirmed": true,
          "unconfirmed": false,
          "height": 1,
-         "block_seq": 864,
-         "unknown": false
+         "block_seq": 864
      },
      "txn": {
          "length": 220,

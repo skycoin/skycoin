@@ -1,7 +1,7 @@
 # skycoin build
 # reference https://github.com/skycoin/skycoin
 ARG IMAGE_FROM=busybox
-FROM golang:1.10.1-stretch AS build
+FROM golang:1.11-stretch AS build
 ARG ARCH=amd64
 ARG GOARM
 ARG SKYCOIN_VERSION
@@ -30,6 +30,13 @@ RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
 RUN apt-get update && \
     apt-get install -y ca-certificates
 
+
+RUN /bin/bash -c 'mkdir -p /tmp/files/{usr/bin,/usr/local/skycoin/src/gui/static,/usr/local/bin/,/etc/ssl}'
+RUN cp -r /go/bin/* /tmp/files/usr/bin/
+RUN cp -r  /go/src/github.com/skycoin/skycoin/src/gui/static /tmp/files/usr/local/skycoin/src/gui/static
+RUN cp -r  /etc/ssl/certs /tmp/files/etc/ssl/certs
+COPY docker_launcher.sh /tmp/files/usr/local/bin/docker_launcher.sh
+
 # skycoin image
 FROM $IMAGE_FROM
 
@@ -40,16 +47,7 @@ ENV RPC_ADDR="http://0.0.0.0:6420" \
     WALLET_NAME="$COIN_cli.wlt"
 
 # copy all the binaries
-COPY --from=build /go/bin/* /usr/bin/
-
-# copy assets
-COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/src/gui/static
-
-# copy launcher
-COPY docker_launcher.sh /usr/local/bin/docker_launcher.sh
-
-#Copy certificates
-COPY --from=build /etc/ssl/certs /etc/ssl/certs
+COPY --from=build /tmp/files/* /
 
 # volumes
 VOLUME $WALLET_DIR

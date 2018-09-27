@@ -17,10 +17,11 @@ import "C"
 
 //export SKY_poly1305_Verify
 func SKY_poly1305_Verify(_mac *C.GoSlice_, _m []byte, _key *C.GoSlice_, _arg3 *bool) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	mac := (*[16]byte)(unsafe.Pointer(_mac))
 	m := *(*[]byte)(unsafe.Pointer(&_m))
 	key := (*[32]byte)(unsafe.Pointer(_key))

@@ -15,10 +15,11 @@ import "C"
 
 //export SKY_cli_AddPrivateKey
 func SKY_cli_AddPrivateKey(_wlt C.Wallet__Handle, _key string) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	wlt, okwlt := lookupWalletHandle(_wlt)
 	if !okwlt {
 		____error_code = SKY_BAD_HANDLE
@@ -34,10 +35,11 @@ func SKY_cli_AddPrivateKey(_wlt C.Wallet__Handle, _key string) (____error_code u
 
 //export SKY_cli_AddPrivateKeyToFile
 func SKY_cli_AddPrivateKeyToFile(_walletFile, _key string, pwd C.PasswordReader__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	walletFile := _walletFile
 	key := _key
 	pr, okc := lookupPasswordReaderHandle(pwd)

@@ -21,10 +21,11 @@ import "C"
 
 //export SKY_coin_Create_Transaction
 func SKY_coin_Create_Transaction(handle *C.Transaction__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	tx := coin.Transaction{}
 	*handle = registerTransactionHandle(&tx)
 	return
@@ -32,10 +33,11 @@ func SKY_coin_Create_Transaction(handle *C.Transaction__Handle) (____error_code 
 
 //export SKY_coin_Transaction_Copy
 func SKY_coin_Transaction_Copy(handle C.Transaction__Handle, handle2 *C.Transaction__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	tx, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -57,10 +59,11 @@ func SKY_coin_Transaction_Copy(handle C.Transaction__Handle, handle2 *C.Transact
 
 //export SKY_coin_GetTransactionObject
 func SKY_coin_GetTransactionObject(handle C.Transaction__Handle, _pptx **C.coin__Transaction) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	ptx, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -72,10 +75,11 @@ func SKY_coin_GetTransactionObject(handle C.Transaction__Handle, _pptx **C.coin_
 
 //export SKY_coin_Transaction_ResetInputs
 func SKY_coin_Transaction_ResetInputs(handle C.Transaction__Handle, count int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -87,10 +91,11 @@ func SKY_coin_Transaction_ResetInputs(handle C.Transaction__Handle, count int) (
 
 //export SKY_coin_Transaction_GetInputsCount
 func SKY_coin_Transaction_GetInputsCount(handle C.Transaction__Handle, length *int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -102,10 +107,11 @@ func SKY_coin_Transaction_GetInputsCount(handle C.Transaction__Handle, length *i
 
 //export SKY_coin_Transaction_GetInputAt
 func SKY_coin_Transaction_GetInputAt(handle C.Transaction__Handle, i int, input *C.cipher__SHA256) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -121,10 +127,11 @@ func SKY_coin_Transaction_GetInputAt(handle C.Transaction__Handle, i int, input 
 
 //export SKY_coin_Transaction_SetInputAt
 func SKY_coin_Transaction_SetInputAt(handle C.Transaction__Handle, i int, input *C.cipher__SHA256) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -140,10 +147,11 @@ func SKY_coin_Transaction_SetInputAt(handle C.Transaction__Handle, i int, input 
 
 //export SKY_coin_Transaction_GetOutputsCount
 func SKY_coin_Transaction_GetOutputsCount(handle C.Transaction__Handle, length *int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -155,10 +163,11 @@ func SKY_coin_Transaction_GetOutputsCount(handle C.Transaction__Handle, length *
 
 //export SKY_coin_Transaction_GetOutputAt
 func SKY_coin_Transaction_GetOutputAt(handle C.Transaction__Handle, i int, output *C.coin__TransactionOutput) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -174,10 +183,11 @@ func SKY_coin_Transaction_GetOutputAt(handle C.Transaction__Handle, i int, outpu
 
 //export SKY_coin_Transaction_SetOutputAt
 func SKY_coin_Transaction_SetOutputAt(handle C.Transaction__Handle, i int, output *C.coin__TransactionOutput) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -193,10 +203,11 @@ func SKY_coin_Transaction_SetOutputAt(handle C.Transaction__Handle, i int, outpu
 
 //export SKY_coin_Transaction_GetSignaturesCount
 func SKY_coin_Transaction_GetSignaturesCount(handle C.Transaction__Handle, length *int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -208,10 +219,11 @@ func SKY_coin_Transaction_GetSignaturesCount(handle C.Transaction__Handle, lengt
 
 //export SKY_coin_Transaction_GetSignatureAt
 func SKY_coin_Transaction_GetSignatureAt(handle C.Transaction__Handle, i int, sig *C.cipher__Sig) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -227,10 +239,11 @@ func SKY_coin_Transaction_GetSignatureAt(handle C.Transaction__Handle, i int, si
 
 //export SKY_coin_Transaction_SetSignatureAt
 func SKY_coin_Transaction_SetSignatureAt(handle C.Transaction__Handle, i int, sig *C.cipher__Sig) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -246,10 +259,11 @@ func SKY_coin_Transaction_SetSignatureAt(handle C.Transaction__Handle, i int, si
 
 //export SKY_coin_Transaction_PushSignature
 func SKY_coin_Transaction_PushSignature(handle C.Transaction__Handle, _sig *C.cipher__Sig) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -262,10 +276,11 @@ func SKY_coin_Transaction_PushSignature(handle C.Transaction__Handle, _sig *C.ci
 
 //export SKY_coin_Transaction_ResetOutputs
 func SKY_coin_Transaction_ResetOutputs(handle C.Transaction__Handle, count int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -277,10 +292,11 @@ func SKY_coin_Transaction_ResetOutputs(handle C.Transaction__Handle, count int) 
 
 //export SKY_coin_Transaction_ResetSignatures
 func SKY_coin_Transaction_ResetSignatures(handle C.Transaction__Handle, count int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -292,10 +308,11 @@ func SKY_coin_Transaction_ResetSignatures(handle C.Transaction__Handle, count in
 
 //export SKY_coin_Transaction_Verify
 func SKY_coin_Transaction_Verify(handle C.Transaction__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -310,10 +327,11 @@ func SKY_coin_Transaction_Verify(handle C.Transaction__Handle) (____error_code u
 
 //export SKY_coin_Transaction_VerifyInput
 func SKY_coin_Transaction_VerifyInput(handle C.Transaction__Handle, _uxIn *C.coin__UxArray) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -329,10 +347,11 @@ func SKY_coin_Transaction_VerifyInput(handle C.Transaction__Handle, _uxIn *C.coi
 
 //export SKY_coin_Transaction_PushInput
 func SKY_coin_Transaction_PushInput(handle C.Transaction__Handle, _uxOut *C.cipher__SHA256, _arg1 *uint16) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -346,10 +365,11 @@ func SKY_coin_Transaction_PushInput(handle C.Transaction__Handle, _uxOut *C.ciph
 
 //export SKY_coin_TransactionOutput_UxID
 func SKY_coin_TransactionOutput_UxID(_txOut *C.coin__TransactionOutput, _txID *C.cipher__SHA256, _arg1 *C.cipher__SHA256) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txOut := *(*coin.TransactionOutput)(unsafe.Pointer(_txOut))
 	txID := *(*cipher.SHA256)(unsafe.Pointer(_txID))
 	__arg1 := txOut.UxID(txID)
@@ -359,10 +379,11 @@ func SKY_coin_TransactionOutput_UxID(_txOut *C.coin__TransactionOutput, _txID *C
 
 //export SKY_coin_Transaction_PushOutput
 func SKY_coin_Transaction_PushOutput(handle C.Transaction__Handle, _dst *C.cipher__Address, _coins, _hours uint64) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -377,10 +398,11 @@ func SKY_coin_Transaction_PushOutput(handle C.Transaction__Handle, _dst *C.ciphe
 
 //export SKY_coin_Transaction_SignInputs
 func SKY_coin_Transaction_SignInputs(handle C.Transaction__Handle, _keys []C.cipher__SecKey) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -393,10 +415,11 @@ func SKY_coin_Transaction_SignInputs(handle C.Transaction__Handle, _keys []C.cip
 
 //export SKY_coin_Transaction_Size
 func SKY_coin_Transaction_Size(handle C.Transaction__Handle, _arg0 *int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -409,10 +432,11 @@ func SKY_coin_Transaction_Size(handle C.Transaction__Handle, _arg0 *int) (____er
 
 //export SKY_coin_Transaction_Hash
 func SKY_coin_Transaction_Hash(handle C.Transaction__Handle, _arg0 *C.cipher__SHA256) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -425,10 +449,11 @@ func SKY_coin_Transaction_Hash(handle C.Transaction__Handle, _arg0 *C.cipher__SH
 
 //export SKY_coin_Transaction_SizeHash
 func SKY_coin_Transaction_SizeHash(handle C.Transaction__Handle, _arg0 *int, _arg1 *C.cipher__SHA256) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -442,10 +467,11 @@ func SKY_coin_Transaction_SizeHash(handle C.Transaction__Handle, _arg0 *int, _ar
 
 //export SKY_coin_Transaction_TxID
 func SKY_coin_Transaction_TxID(handle C.Transaction__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -458,10 +484,11 @@ func SKY_coin_Transaction_TxID(handle C.Transaction__Handle, _arg0 *C.GoSlice_) 
 
 //export SKY_coin_Transaction_TxIDHex
 func SKY_coin_Transaction_TxIDHex(handle C.Transaction__Handle, _arg0 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -474,10 +501,11 @@ func SKY_coin_Transaction_TxIDHex(handle C.Transaction__Handle, _arg0 *C.GoStrin
 
 //export SKY_coin_Transaction_UpdateHeader
 func SKY_coin_Transaction_UpdateHeader(handle C.Transaction__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -489,10 +517,11 @@ func SKY_coin_Transaction_UpdateHeader(handle C.Transaction__Handle) (____error_
 
 //export SKY_coin_Transaction_HashInner
 func SKY_coin_Transaction_HashInner(handle C.Transaction__Handle, _arg0 *C.cipher__SHA256) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -505,10 +534,11 @@ func SKY_coin_Transaction_HashInner(handle C.Transaction__Handle, _arg0 *C.ciphe
 
 //export SKY_coin_Transaction_Serialize
 func SKY_coin_Transaction_Serialize(handle C.Transaction__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -519,24 +549,13 @@ func SKY_coin_Transaction_Serialize(handle C.Transaction__Handle, _arg0 *C.GoSli
 	return
 }
 
-//export SKY_coin_MustTransactionDeserialize
-func SKY_coin_MustTransactionDeserialize(_b []byte, _arg1 *C.Transaction__Handle) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	b := *(*[]byte)(unsafe.Pointer(&_b))
-	__arg1 := coin.MustTransactionDeserialize(b)
-	*_arg1 = registerTransactionHandle(&__arg1)
-	return
-}
-
 //export SKY_coin_TransactionDeserialize
 func SKY_coin_TransactionDeserialize(_b []byte, _arg1 *C.Transaction__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	b := *(*[]byte)(unsafe.Pointer(&_b))
 	__arg1, ____return_err := coin.TransactionDeserialize(b)
 	____error_code = libErrorCode(____return_err)
@@ -548,10 +567,11 @@ func SKY_coin_TransactionDeserialize(_b []byte, _arg1 *C.Transaction__Handle) (_
 
 //export SKY_coin_Transaction_OutputHours
 func SKY_coin_Transaction_OutputHours(handle C.Transaction__Handle, _arg0 *uint64) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -574,10 +594,11 @@ func SKY_coin_Create_Transactions(handle *C.Transactions__Handle) (____error_cod
 
 //export SKY_coin_GetTransactionsObject
 func SKY_coin_GetTransactionsObject(handle C.Transactions__Handle, _pptx **C.coin__Transactions) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	ptx, ok := lookupTransactionsHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -589,10 +610,11 @@ func SKY_coin_GetTransactionsObject(handle C.Transactions__Handle, _pptx **C.coi
 
 //export SKY_coin_Transactions_Length
 func SKY_coin_Transactions_Length(handle C.Transactions__Handle, _length *int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -604,10 +626,11 @@ func SKY_coin_Transactions_Length(handle C.Transactions__Handle, _length *int) (
 
 //export SKY_coin_Transactions_Add
 func SKY_coin_Transactions_Add(tsh C.Transactions__Handle, th C.Transaction__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -639,10 +662,11 @@ func SKY_coin_Transactions_Fees(tsh C.Transactions__Handle, pFeeCalc *C.FeeCalcu
 			return 0, errors.New("Error calculating fee")
 		}
 	}
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -659,10 +683,11 @@ func SKY_coin_Transactions_Fees(tsh C.Transactions__Handle, pFeeCalc *C.FeeCalcu
 
 //export SKY_coin_Transactions_GetAt
 func SKY_coin_Transactions_GetAt(tsh C.Transactions__Handle, n int, th *C.Transaction__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -679,10 +704,11 @@ func SKY_coin_Transactions_GetAt(tsh C.Transactions__Handle, n int, th *C.Transa
 
 //export SKY_coin_Transactions_Hashes
 func SKY_coin_Transactions_Hashes(tsh C.Transactions__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -695,10 +721,11 @@ func SKY_coin_Transactions_Hashes(tsh C.Transactions__Handle, _arg0 *C.GoSlice_)
 
 //export SKY_coin_Transactions_Size
 func SKY_coin_Transactions_Size(tsh C.Transactions__Handle, _arg0 *int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -711,10 +738,11 @@ func SKY_coin_Transactions_Size(tsh C.Transactions__Handle, _arg0 *int) (____err
 
 //export SKY_coin_Transactions_TruncateBytesTo
 func SKY_coin_Transactions_TruncateBytesTo(tsh C.Transactions__Handle, _size int, _arg1 *C.Transactions__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -739,10 +767,11 @@ func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc *C.FeeCalcul
 			return 0, errors.New("Error calculating fee")
 		}
 	}
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -766,10 +795,11 @@ func SKY_coin_NewSortableTransactions(tsh C.Transactions__Handle, pFeeCalc *C.Fe
 			return 0, errors.New("Error calculating fee")
 		}
 	}
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -782,10 +812,11 @@ func SKY_coin_NewSortableTransactions(tsh C.Transactions__Handle, pFeeCalc *C.Fe
 
 //export SKY_coin_SortableTransactions_Sort
 func SKY_coin_SortableTransactions_Sort(_txns C.SortableTransactionResult_Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupSortableTransactionHandle(_txns)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -797,10 +828,11 @@ func SKY_coin_SortableTransactions_Sort(_txns C.SortableTransactionResult_Handle
 
 //export SKY_coin_SortableTransactions_Len
 func SKY_coin_SortableTransactions_Len(_txns C.SortableTransactionResult_Handle, _arg0 *int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupSortableTransactionHandle(_txns)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -813,10 +845,11 @@ func SKY_coin_SortableTransactions_Len(_txns C.SortableTransactionResult_Handle,
 
 //export SKY_coin_SortableTransactions_Less
 func SKY_coin_SortableTransactions_Less(_txns C.SortableTransactionResult_Handle, _i, _j int, _arg1 *bool) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupSortableTransactionHandle(_txns)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -831,10 +864,11 @@ func SKY_coin_SortableTransactions_Less(_txns C.SortableTransactionResult_Handle
 
 //export SKY_coin_SortableTransactions_Swap
 func SKY_coin_SortableTransactions_Swap(_txns C.SortableTransactionResult_Handle, _i, _j int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	txns, ok := lookupSortableTransactionHandle(_txns)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -848,10 +882,11 @@ func SKY_coin_SortableTransactions_Swap(_txns C.SortableTransactionResult_Handle
 
 //export SKY_coin_VerifyTransactionCoinsSpending
 func SKY_coin_VerifyTransactionCoinsSpending(_uxIn *C.coin__UxArray, _uxOut *C.coin__UxArray) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	uxIn := *(*coin.UxArray)(unsafe.Pointer(_uxIn))
 	uxOut := *(*coin.UxArray)(unsafe.Pointer(_uxOut))
 	____return_err := coin.VerifyTransactionCoinsSpending(uxIn, uxOut)
@@ -863,10 +898,11 @@ func SKY_coin_VerifyTransactionCoinsSpending(_uxIn *C.coin__UxArray, _uxOut *C.c
 
 //export SKY_coin_VerifyTransactionHoursSpending
 func SKY_coin_VerifyTransactionHoursSpending(_headTime uint64, _uxIn *C.coin__UxArray, _uxOut *C.coin__UxArray) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	headTime := _headTime
 	uxIn := *(*coin.UxArray)(unsafe.Pointer(_uxIn))
 	uxOut := *(*coin.UxArray)(unsafe.Pointer(_uxOut))

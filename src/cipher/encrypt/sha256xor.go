@@ -1,5 +1,3 @@
-// implements sha256xor encryptor
-
 package encrypt
 
 import (
@@ -27,6 +25,7 @@ const (
 
 )
 
+// Definition of errors
 var (
 	ErrSHA256orMissingPassword         = errors.New("missing password")
 	ErrLenghtDataOverflowMaxUint32     = errors.New("data length overflowed, it must <= math.MaxUint32(4294967295)")

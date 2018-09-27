@@ -18,10 +18,11 @@ import "C"
 
 //export SKY_secp256k1go_XY_Print
 func SKY_secp256k1go_XY_Print(_xy *C.secp256k1go__XY, _lab string) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	lab := _lab
 	xy.Print(lab)
@@ -30,10 +31,11 @@ func SKY_secp256k1go_XY_Print(_xy *C.secp256k1go__XY, _lab string) (____error_co
 
 //export SKY_secp256k1go_XY_ParsePubkey
 func SKY_secp256k1go_XY_ParsePubkey(_xy *C.secp256k1go__XY, _pub []byte, _arg1 *bool) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	pub := *(*[]byte)(unsafe.Pointer(&_pub))
 	__arg1 := xy.ParsePubkey(pub)
@@ -43,10 +45,11 @@ func SKY_secp256k1go_XY_ParsePubkey(_xy *C.secp256k1go__XY, _pub []byte, _arg1 *
 
 //export SKY_secp256k1go_XY_Bytes
 func SKY_secp256k1go_XY_Bytes(_xy *C.secp256k1go__XY, _arg0 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := *(*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	__arg0 := xy.Bytes()
 	copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
@@ -55,10 +58,11 @@ func SKY_secp256k1go_XY_Bytes(_xy *C.secp256k1go__XY, _arg0 *C.GoSlice_) (____er
 
 //export SKY_secp256k1go_XY_BytesUncompressed
 func SKY_secp256k1go_XY_BytesUncompressed(_xy *C.secp256k1go__XY, _arg0 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	__arg0 := xy.BytesUncompressed()
 	copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
@@ -67,10 +71,11 @@ func SKY_secp256k1go_XY_BytesUncompressed(_xy *C.secp256k1go__XY, _arg0 *C.GoSli
 
 //export SKY_secp256k1go_XY_SetXY
 func SKY_secp256k1go_XY_SetXY(_xy *C.secp256k1go__XY, _X, _Y *C.secp256k1go__Field) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	X := (*secp256k1go2.Field)(unsafe.Pointer(_X))
 	Y := (*secp256k1go2.Field)(unsafe.Pointer(_Y))
@@ -80,10 +85,11 @@ func SKY_secp256k1go_XY_SetXY(_xy *C.secp256k1go__XY, _X, _Y *C.secp256k1go__Fie
 
 //export SKY_secp256k1go_XY_IsValid
 func SKY_secp256k1go_XY_IsValid(_xy *C.secp256k1go__XY, _arg0 *bool) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	__arg0 := xy.IsValid()
 	*_arg0 = __arg0
@@ -92,10 +98,11 @@ func SKY_secp256k1go_XY_IsValid(_xy *C.secp256k1go__XY, _arg0 *bool) (____error_
 
 //export SKY_secp256k1go_XY_SetXYZ
 func SKY_secp256k1go_XY_SetXYZ(_xy *C.secp256k1go__XY, _a *C.secp256k1go__XYZ) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	a := (*secp256k1go2.XYZ)(unsafe.Pointer(_a))
 	xy.SetXYZ(a)
@@ -104,10 +111,11 @@ func SKY_secp256k1go_XY_SetXYZ(_xy *C.secp256k1go__XY, _a *C.secp256k1go__XYZ) (
 
 //export SKY_secp256k1go_XY_Neg
 func SKY_secp256k1go_XY_Neg(_xy *C.secp256k1go__XY, _r *C.secp256k1go__XY) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	r := (*secp256k1go2.XY)(unsafe.Pointer(_r))
 	xy.Neg(r)
@@ -116,10 +124,11 @@ func SKY_secp256k1go_XY_Neg(_xy *C.secp256k1go__XY, _r *C.secp256k1go__XY) (____
 
 //export SKY_secp256k1go_XY_SetXO
 func SKY_secp256k1go_XY_SetXO(_xy *C.secp256k1go__XY, _X *C.secp256k1go__Field, _odd bool) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	X := (*secp256k1go2.Field)(unsafe.Pointer(_X))
 	odd := _odd
@@ -129,10 +138,11 @@ func SKY_secp256k1go_XY_SetXO(_xy *C.secp256k1go__XY, _X *C.secp256k1go__Field, 
 
 //export SKY_secp256k1go_XY_AddXY
 func SKY_secp256k1go_XY_AddXY(_xy *C.secp256k1go__XY, _a *C.secp256k1go__XY) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	a := (*secp256k1go2.XY)(unsafe.Pointer(_a))
 	xy.AddXY(a)
@@ -141,10 +151,11 @@ func SKY_secp256k1go_XY_AddXY(_xy *C.secp256k1go__XY, _a *C.secp256k1go__XY) (__
 
 //export SKY_secp256k1go_XY_GetPublicKey
 func SKY_secp256k1go_XY_GetPublicKey(_xy *C.secp256k1go__XY, _arg0 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	xy := (*secp256k1go2.XY)(unsafe.Pointer(_xy))
 	__arg0 := xy.GetPublicKey()
 	copyToGoSlice(reflect.ValueOf(__arg0), _arg0)

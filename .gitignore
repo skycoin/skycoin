@@ -123,6 +123,8 @@ src/mesh/TODO
 *.iml
 *.test
 coverage.html
+coverage/
+*.coverage.out
 
 src/api/integration/wallets/
 src/api/integration/wallets/
@@ -145,3 +147,6 @@ docs/libc/xml
 
 # Do not ignore Docker Cloud build
 !hooks/build
+
+*.prof
+*.profile

@@ -18,7 +18,7 @@ import (
 
 	api "github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 //export SKY_JsonEncode_Handle
@@ -31,7 +31,7 @@ func SKY_JsonEncode_Handle(handle C.Handle, json_string *C.GoString_) uint32 {
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Progress_GetCurrent
@@ -43,43 +43,43 @@ func SKY_Handle_Progress_GetCurrent(handle C.Handle, current *uint64) uint32 {
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Block_GetHeadSeq
 func SKY_Handle_Block_GetHeadSeq(handle C.Handle, seq *uint64) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+		if obj, isOK := (obj).(*readable.Block); isOK {
 			*seq = obj.Head.BkSeq
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Block_GetHeadHash
 func SKY_Handle_Block_GetHeadHash(handle C.Handle, hash *C.GoString_) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+		if obj, isOK := (obj).(*readable.Block); isOK {
 			copyString(obj.Head.BlockHash, hash)
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Block_GetPreviousBlockHash
 func SKY_Handle_Block_GetPreviousBlockHash(handle C.Handle, hash *C.GoString_) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+		if obj, isOK := (obj).(*readable.Block); isOK {
 			copyString(obj.Head.PreviousBlockHash, hash)
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Blocks_GetAt
@@ -87,12 +87,12 @@ func SKY_Handle_Blocks_GetAt(handle C.Handle,
 	index uint64, blockHandle *C.Handle) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
+		if obj, isOK := (obj).(*readable.Blocks); isOK {
 			*blockHandle = registerHandle(&obj.Blocks[index])
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Blocks_GetCount
@@ -100,12 +100,12 @@ func SKY_Handle_Blocks_GetCount(handle C.Handle,
 	count *uint64) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
+		if obj, isOK := (obj).(*readable.Blocks); isOK {
 			*count = uint64(len(obj.Blocks))
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Connections_GetCount
@@ -118,7 +118,7 @@ func SKY_Handle_Connections_GetCount(handle C.Handle,
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Strings_GetCount
@@ -131,7 +131,7 @@ func SKY_Handle_Strings_GetCount(handle C.Strings__Handle,
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Strings_Sort
@@ -143,7 +143,7 @@ func SKY_Handle_Strings_Sort(handle C.Strings__Handle) uint32 {
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_Handle_Strings_GetAt
@@ -157,7 +157,7 @@ func SKY_Handle_Strings_GetAt(handle C.Strings__Handle,
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_Client_GetWalletDir
@@ -171,7 +171,7 @@ func SKY_api_Handle_Client_GetWalletDir(handle C.Client__Handle,
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_Client_GetWalletFileName
@@ -182,7 +182,7 @@ func SKY_api_Handle_Client_GetWalletFileName(handle C.WalletResponse__Handle,
 		copyString(w.Meta.Filename, walletFileName)
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_Client_GetWalletLabel
@@ -193,7 +193,7 @@ func SKY_api_Handle_Client_GetWalletLabel(handle C.WalletResponse__Handle,
 		copyString(w.Meta.Label, walletLabel)
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_Client_GetWalletFullPath
@@ -213,7 +213,7 @@ func SKY_api_Handle_Client_GetWalletFullPath(
 			}
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_GetWalletMeta
@@ -224,7 +224,7 @@ func SKY_api_Handle_GetWalletMeta(handle C.Wallet__Handle,
 		copyToStringMap(w.Meta, gomap)
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_GetWalletEntriesCount
@@ -235,7 +235,7 @@ func SKY_api_Handle_GetWalletEntriesCount(handle C.Wallet__Handle,
 		*count = uint32(len(w.Entries))
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_Client_GetWalletResponseEntriesCount
@@ -247,7 +247,7 @@ func SKY_api_Handle_Client_GetWalletResponseEntriesCount(
 		*count = uint32(len(w.Entries))
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_WalletGetEntry
@@ -263,7 +263,7 @@ func SKY_api_Handle_WalletGetEntry(handle C.Wallet__Handle,
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_WalletResponseGetEntry
@@ -279,7 +279,7 @@ func SKY_api_Handle_WalletResponseGetEntry(handle C.WalletResponse__Handle,
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_WalletResponseIsEncrypted
@@ -291,7 +291,7 @@ func SKY_api_Handle_WalletResponseIsEncrypted(
 		*isEncrypted = w.Meta.Encrypted
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_WalletResponseGetCryptoType
@@ -303,7 +303,7 @@ func SKY_api_Handle_WalletResponseGetCryptoType(
 		copyString(w.Meta.CryptoType, cryptoType)
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_WalletsResponseGetCount
@@ -315,7 +315,7 @@ func SKY_api_Handle_WalletsResponseGetCount(
 		*count = uint32(len(w))
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_WalletsResponseGetAt
@@ -330,7 +330,7 @@ func SKY_api_Handle_WalletsResponseGetAt(
 		}
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_GetWalletFolderAddress
@@ -344,7 +344,7 @@ func SKY_api_Handle_GetWalletFolderAddress(
 			return SKY_OK
 		}
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_GetWalletSeed
@@ -355,7 +355,7 @@ func SKY_api_Handle_GetWalletSeed(handle C.Wallet__Handle,
 		copyString(w.Meta["seed"], seed)
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_GetWalletLastSeed
@@ -366,7 +366,7 @@ func SKY_api_Handle_GetWalletLastSeed(handle C.Wallet__Handle,
 		copyString(w.Meta["lastSeed"], lastSeed)
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_api_Handle_GetBuildInfoData
@@ -379,5 +379,5 @@ func SKY_api_Handle_GetBuildInfoData(handle C.BuildInfo_Handle,
 		copyString(bi.Branch, branch)
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }

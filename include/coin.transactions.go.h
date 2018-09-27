@@ -1,10 +1,4 @@
 typedef GoSlice_  coin__Transactions;
-typedef struct{
-    coin__Transactions Txns;
-    GoSlice_  Fees;
-    GoSlice_  Hashes;
-} coin__SortableTransactions;
-
 /**
  * Skycoin transaction.
  *

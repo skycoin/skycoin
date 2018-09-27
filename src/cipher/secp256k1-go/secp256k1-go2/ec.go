@@ -9,6 +9,7 @@ import (
 	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 )
 
+// Definition of errors
 var (
 	ErrMustPass64bytePubKey = errors.New("must pass in 64 byte pubkey")
 )
@@ -61,7 +62,6 @@ func DecompressPoint(X []byte, off bool, Y []byte) {
 	}
 	ry.Normalize()
 	ry.GetB32(Y)
-	return
 }
 
 //TODO: change signature to []byte type
@@ -172,7 +172,7 @@ func Multiply(xy, k []byte) []byte {
 	xyz.ECmult(&xyz, &na, &nzero)
 	pk.SetXYZ(&xyz)
 
-	if pk.IsValid() == false {
+	if !pk.IsValid() {
 		log.Panic()
 	}
 	return pk.GetPublicKey()
@@ -191,7 +191,7 @@ func BaseMultiply2(k []byte) []byte {
 	n.SetBytes(k)
 	ECmultGen(&r, &n)
 	pk.SetXYZ(&r)
-	if pk.IsValid() == false {
+	if !pk.IsValid() {
 		log.Panic()
 	}
 
@@ -202,15 +202,15 @@ func BaseMultiply2(k []byte) []byte {
 //test assumptions
 func _pubkeyTest(pk XY) {
 
-	if pk.IsValid() == false {
+	if !pk.IsValid() {
 		log.Panic("IMPOSSIBLE3: pubkey invalid")
 	}
 	var pk2 XY
 	retb := pk2.ParsePubkey(pk.Bytes())
-	if retb == false {
+	if !retb {
 		log.Panic("IMPOSSIBLE2: parse failed")
 	}
-	if pk2.IsValid() == false {
+	if !pk2.IsValid() {
 		log.Panic("IMPOSSIBLE3: parse failed non valid key")
 	}
 	if PubkeyIsValid(pk2.Bytes()) != 1 {
@@ -226,7 +226,7 @@ func BaseMultiply(k []byte) []byte {
 	n.SetBytes(k)
 	ECmultGen(&r, &n)
 	pk.SetXYZ(&r)
-	if pk.IsValid() == false {
+	if !pk.IsValid() {
 		log.Panic() //should not occur
 	}
 
@@ -277,7 +277,7 @@ func GeneratePublicKey(k []byte) []byte {
 	}
 	ECmultGen(&r, &n)
 	pk.SetXYZ(&r)
-	if pk.IsValid() == false {
+	if !pk.IsValid() {
 		log.Panic() //should not occur
 	}
 	_pubkeyTest(pk)
@@ -313,16 +313,16 @@ func PubkeyIsValid(pubkey []byte) int {
 		return -2
 	}
 	var pubTest XY
-	err := pubTest.ParsePubkey(pubkey)
-	if err == false {
+	ok := pubTest.ParsePubkey(pubkey)
+	if !ok {
 		//log.Panic("PubkeyIsValid, ERROR: pubkey parse fail, bad pubkey from private key")
 		return -1
 	}
-	if bytes.Equal(pubTest.Bytes(), pubkey) == false {
+	if !bytes.Equal(pubTest.Bytes(), pubkey) {
 		log.Panic("pubkey parses but serialize/deserialize roundtrip fails")
 	}
 	//this fails
-	//if pub_test.IsValid() == false {
+	//if !pub_test.IsValid() {
 	//	return -2
 	//}
 	return 1

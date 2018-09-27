@@ -6,54 +6,109 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-// Returns pending transactions
-func getPendingTxns(gateway Gatewayer) http.HandlerFunc {
+// pendingTxnsHandler returns pending (unconfirmed) transactions
+// Method: GET
+// URI: /api/v1/pendingTxs
+// Args:
+//	verbose: [bool] include verbose transaction input data
+func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		txns, err := gateway.GetAllUnconfirmedTxns()
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
-			wh.Error500(w, err.Error())
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
-		for _, unconfirmedTxn := range txns {
-			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+		if verbose {
+			txns, inputs, err := gateway.GetAllUnconfirmedTransactionsVerbose()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
-			ret = append(ret, readable)
-		}
 
-		wh.SendJSONOr500(logger, w, &ret)
+			vb, err := readable.NewUnconfirmedTransactionsVerbose(txns, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, vb)
+		} else {
+			txns, err := gateway.GetAllUnconfirmedTransactions()
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			ret, err := readable.NewUnconfirmedTransactions(txns)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, ret)
+		}
 	}
 }
 
-func getTransactionByID(gate Gatewayer) http.HandlerFunc {
+// TransactionEncodedResponse represents the data struct of the response to /api/v1/transaction?encoded=1
+type TransactionEncodedResponse struct {
+	Status             readable.TransactionStatus `json:"status"`
+	Time               uint64                     `json:"time"`
+	EncodedTransaction string                     `json:"encoded_transaction"`
+}
+
+// transactionHandler returns a transaction identified by its txid hash
+// Method: GET
+// URI: /api/v1/transaction
+// Args:
+//	txid: transaction hash
+//	verbose: [bool] include verbose transaction input data
+//  encoded: [bool] return as a raw encoded transaction
+func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
+
 		txid := r.FormValue("txid")
 		if txid == "" {
 			wh.Error400(w, "txid is empty")
+			return
+		}
+
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
+			return
+		}
+
+		encoded, err := parseBoolFlag(r.FormValue("encoded"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for encoded")
+			return
+		}
+
+		if verbose && encoded {
+			wh.Error400(w, "verbose and encoded cannot be combined")
 			return
 		}
 
@@ -63,9 +118,30 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := gate.GetTransaction(h)
+		if verbose {
+			txn, inputs, err := gateway.GetTransactionVerbose(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
+
+			rTxn, err := readable.NewTransactionWithStatusVerbose(txn, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, rTxn)
+			return
+		}
+
+		txn, err := gateway.GetTransaction(h)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			wh.Error500(w, err.Error())
 			return
 		}
 		if txn == nil {
@@ -73,31 +149,118 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rbTxn, err := visor.NewReadableTransaction(txn)
+		if encoded {
+			txnStr := hex.EncodeToString(txn.Transaction.Serialize())
+
+			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
+				EncodedTransaction: txnStr,
+				Status:             readable.NewTransactionStatus(txn.Status),
+				Time:               txn.Time,
+			})
+			return
+		}
+
+		rTxn, err := readable.NewTransactionWithStatus(txn)
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		resTxn := daemon.TransactionResult{
-			Transaction: *rbTxn,
-			Status:      txn.Status,
-			Time:        txn.Time,
-		}
-		wh.SendJSONOr500(logger, w, &resTxn)
+		wh.SendJSONOr500(logger, w, rTxn)
 	}
+}
+
+// TransactionsWithStatus array of transaction results
+type TransactionsWithStatus struct {
+	Transactions []readable.TransactionWithStatus `json:"txns"`
+}
+
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionsWithStatus) Sort() {
+	sort.Slice(r.Transactions, func(i, j int) bool {
+		a := r.Transactions[i]
+		b := r.Transactions[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
+// NewTransactionsWithStatus converts []Transaction to TransactionsWithStatus
+func NewTransactionsWithStatus(txns []visor.Transaction) (*TransactionsWithStatus, error) {
+	txnRlts := make([]readable.TransactionWithStatus, 0, len(txns))
+	for _, txn := range txns {
+		rTxn, err := readable.NewTransactionWithStatus(&txn)
+		if err != nil {
+			return nil, err
+		}
+		txnRlts = append(txnRlts, *rTxn)
+	}
+
+	return &TransactionsWithStatus{
+		Transactions: txnRlts,
+	}, nil
+}
+
+// TransactionsWithStatusVerbose array of transaction results
+type TransactionsWithStatusVerbose struct {
+	Transactions []readable.TransactionWithStatusVerbose `json:"txns"`
+}
+
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionsWithStatusVerbose) Sort() {
+	sort.Slice(r.Transactions, func(i, j int) bool {
+		a := r.Transactions[i]
+		b := r.Transactions[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
+// NewTransactionsWithStatusVerbose converts []Transaction to []TransactionsWithStatusVerbose
+func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor.TransactionInput) (*TransactionsWithStatusVerbose, error) {
+	if len(txns) != len(inputs) {
+		return nil, errors.New("NewTransactionsWithStatusVerbose: len(txns) != len(inputs)")
+	}
+
+	txnRlts := make([]readable.TransactionWithStatusVerbose, len(txns))
+	for i, txn := range txns {
+		rTxn, err := readable.NewTransactionWithStatusVerbose(&txn, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+		txnRlts[i] = *rTxn
+	}
+
+	return &TransactionsWithStatusVerbose{
+		Transactions: txnRlts,
+	}, nil
 }
 
 // Returns transactions that match the filters.
 // Method: GET
 // URI: /api/v1/transactions
 // Args:
-//     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
+//     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-func getTransactions(gateway Gatewayer) http.HandlerFunc {
+//	   verbose: [bool] include verbose transaction input data
+func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
+			return
+		}
+
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
@@ -109,7 +272,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Initialize transaction filters
-		flts := []visor.TxFilter{visor.AddrsFilter(addrs)}
+		flts := []visor.TxFilter{visor.NewAddrsFilter(addrs)}
 
 		// Gets the 'confirmed' parameter value
 		confirmedStr := r.FormValue("confirmed")
@@ -120,30 +283,46 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			flts = append(flts, visor.ConfirmedTxFilter(confirmed))
+			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 		}
 
-		// Gets transactions
-		txns, err := gateway.GetTransactions(flts...)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetTransactions failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
+		if verbose {
+			txns, inputs, err := gateway.GetTransactionsVerbose(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 
-		// Converts visor.Transaction to daemon.TransactionResult
-		txnRlts, err := daemon.NewTransactionResults(txns)
-		if err != nil {
-			err = fmt.Errorf("daemon.NewTransactionResults failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
+			rTxns, err := NewTransactionsWithStatusVerbose(txns, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 
-		wh.SendJSONOr500(logger, w, txnRlts.Txns)
+			rTxns.Sort()
+
+			wh.SendJSONOr500(logger, w, rTxns.Transactions)
+		} else {
+			txns, err := gateway.GetTransactions(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			rTxns, err := NewTransactionsWithStatus(txns)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			rTxns.Sort()
+
+			wh.SendJSONOr500(logger, w, rTxns.Transactions)
+		}
 	}
 }
 
-// parseAddressesFromStr parses comma seperated addresses string into []cipher.Address
+// parseAddressesFromStr parses comma separated addresses string into []cipher.Address
 func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 	addrsStr := splitCommaString(s)
 
@@ -168,7 +347,7 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 //      400 - bad transaction
 //      503 - network unavailable for broadcasting transaction
 //      200 - ok, returns the transaction hash in hex as string
-func injectTransaction(gateway Gatewayer) http.HandlerFunc {
+func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -206,25 +385,49 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
+// ResendResult the result of rebroadcasting transaction
+type ResendResult struct {
+	Txids []string `json:"txids"`
+}
+
+// NewResendResult creates a ResendResult from a list of transaction ID hashes
+func NewResendResult(hashes []cipher.SHA256) ResendResult {
+	txids := make([]string, len(hashes))
+	for i, h := range hashes {
+		txids[i] = h.Hex()
+	}
+	return ResendResult{
+		Txids: txids,
+	}
+}
+
+// URI: /api/v1/resendUnconfirmedTxns
+// Method: GET
+// Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
+func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		rlt, err := gateway.ResendUnconfirmedTxns()
+		hashes, err := gateway.ResendUnconfirmedTxns()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, rlt)
-		return
+		wh.SendJSONOr500(logger, w, NewResendResult(hashes))
 	}
 }
 
-func getRawTxn(gateway Gatewayer) http.HandlerFunc {
+// URI: /api/v1/rawtx
+// Method: GET
+// Args:
+//	txid: transaction ID hash
+// Returns the hex-encoded byte serialization of a transaction.
+// The transaction may be confirmed or unconfirmed.
+func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -254,9 +457,8 @@ func getRawTxn(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		d := txn.Txn.Serialize()
+		d := txn.Transaction.Serialize()
 		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
-		return
 	}
 }
 
@@ -389,7 +591,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 	return &txn, nil
 }
 
-// newCreatedTransactionFuzzy creates a CreatedTransaction but accomodates possibly invalid txn input
+// newCreatedTransactionFuzzy creates a CreatedTransaction but accommodates possibly invalid txn input
 func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) && len(inputs) != 0 {
 		return nil, errors.New("len(txn.In) != len(inputs)")

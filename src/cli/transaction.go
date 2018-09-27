@@ -8,7 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 
 	gcli "github.com/urfave/cli"
 )
@@ -34,13 +34,13 @@ func transactionCmd() gcli.Command {
 
 			client := APIClientFromContext(c)
 
-			tx, err := client.Transaction(txid)
+			txn, err := client.Transaction(txid)
 			if err != nil {
 				return err
 			}
 
 			return printJSON(webrpc.TxnResult{
-				Transaction: tx,
+				Transaction: txn,
 			})
 		},
 	}
@@ -56,30 +56,29 @@ func decodeRawTxCmd() gcli.Command {
 		Action: func(c *gcli.Context) error {
 			rawTxStr := c.Args().First()
 			if rawTxStr == "" {
-				errorWithHelp(c, errors.New("missing raw transaction value"))
-				return nil
+				printHelp(c)
+				return errors.New("missing raw transaction value")
 			}
 
 			b, err := hex.DecodeString(rawTxStr)
 			if err != nil {
-				fmt.Printf("invalid raw transaction: %v\n", err)
-				return err
+				return fmt.Errorf("invalid raw transaction: %v", err)
 			}
 
-			tx, err := coin.TransactionDeserialize(b)
+			txn, err := coin.TransactionDeserialize(b)
 			if err != nil {
-				fmt.Printf("Unable to deserialize transaction bytes: %v\n", err)
-				return err
+				return fmt.Errorf("Unable to deserialize transaction bytes: %v", err)
 			}
 
-			txStr, err := visor.TransactionToJSON(tx)
+			// Assume the transaction is not malformed and if it has no inputs
+			// that it is the genesis block's transaction
+			isGenesis := len(txn.In) == 0
+			rTxn, err := readable.NewTransaction(txn, isGenesis)
 			if err != nil {
-				fmt.Println(err)
 				return err
 			}
 
-			fmt.Println(txStr)
-			return nil
+			return printJSON(rTxn)
 		},
 	}
 }

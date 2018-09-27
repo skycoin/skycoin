@@ -36,9 +36,10 @@ const (
 )
 
 // Package prefixes for error codes
+//nolint megacheck
 const (
 	// Error code prefix for api package
-	SKY_PKG_API = (1 + iota) << 24
+	SKY_PKG_API = (1 + iota) << 24 //nolint megacheck
 	// Error code prefix for cipher package and subpackages
 	SKY_PKG_CIPHER
 	// Error code prefix for cli package
@@ -61,12 +62,14 @@ const (
 	SKY_PKG_WALLET
 )
 
+//nolint megacheck
 const (
 	// SKY_PKG_LIBCGO package prefix for internal API errors
 	SKY_PKG_LIBCGO = 0x7F000000
 )
 
 // Error codes defined in cipher package
+//nolint megacheck
 const (
 	// SKY_ErrAddressInvalidLength Unexpected size of address bytes buffer
 	SKY_ErrAddressInvalidLength = SKY_PKG_CIPHER + iota
@@ -145,6 +148,7 @@ const (
 )
 
 // Error codes defined in cli package
+// nolint megacheck
 const (
 	// SKY_ErrTemporaryInsufficientBalance is returned if a wallet does not have
 	// enough balance for a spend, but will have enough after unconfirmed transactions confirm
@@ -162,6 +166,7 @@ const (
 )
 
 // Error codes defined in coin package
+// nolint megacheck
 const (
 	// ErrAddEarnedCoinHoursAdditionOverflow is returned by UxOut.CoinHours()
 	// if during the addition of base coin
@@ -182,6 +187,7 @@ const (
 )
 
 // Error codes defined in daemon package
+// nolint megacheck
 const (
 	// SKY_ErrPeerlistFull is returned when the Pex is at a maximum
 	SKY_ErrPeerlistFull = SKY_PKG_DAEMON + iota
@@ -246,6 +252,7 @@ const (
 )
 
 // Error codes defined in util package
+// nolint megacheck
 const (
 	// ErrTxnNoFee is returned if a transaction has no coinhour fee
 	SKY_ErrTxnNoFee = SKY_PKG_UTIL + iota
@@ -266,6 +273,7 @@ const (
 )
 
 // Error codes defined in visor package
+// nolint megacheck
 const (
 	// SKY_ErrHistoryDBCorrupted Internal format error in HistoryDB database
 	SKY_ErrHistoryDBCorrupted = SKY_PKG_VISOR + iota
@@ -292,6 +300,7 @@ const (
 )
 
 // Error codes defined in wallet package
+// nolint megacheck
 const (
 	// SKY_ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
 	SKY_ErrInsufficientBalance = SKY_PKG_WALLET + iota
@@ -470,33 +479,33 @@ var (
 		coin.ErrUint64OverflowsInt64:               SKY_ErrUint64OverflowsInt64,
 		coin.ErrInt64UnderflowsUint64:              SKY_ErrInt64UnderflowsUint64,
 		// daemon
-		pex.ErrPeerlistFull:                               SKY_ErrPeerlistFull,
-		pex.ErrInvalidAddress:                             SKY_ErrInvalidAddress,
-		pex.ErrNoLocalhost:                                SKY_ErrNoLocalhost,
-		pex.ErrNotExternalIP:                              SKY_ErrNotExternalIP,
-		pex.ErrPortTooLow:                                 SKY_ErrPortTooLow,
-		pex.ErrBlacklistedAddress:                         SKY_ErrBlacklistedAddress,
-		gnet.ErrDisconnectReadFailed:                      SKY_ErrDisconnectReadFailed,
-		gnet.ErrDisconnectWriteFailed:                     SKY_ErrDisconnectWriteFailed,
-		gnet.ErrDisconnectSetReadDeadlineFailed:           SKY_ErrDisconnectSetReadDeadlineFailed,
-		gnet.ErrDisconnectInvalidMessageLength:            SKY_ErrDisconnectInvalidMessageLength,
-		gnet.ErrDisconnectMalformedMessage:                SKY_ErrDisconnectMalformedMessage,
-		gnet.ErrDisconnectUnknownMessage:                  SKY_ErrDisconnectUnknownMessage,
-		gnet.ErrDisconnectUnexpectedError:                 SKY_ErrDisconnectUnexpectedError,
-		gnet.ErrConnectionPoolClosed:                      SKY_ErrConnectionPoolClosed,
-		gnet.ErrWriteQueueFull:                            SKY_ErrWriteQueueFull,
-		gnet.ErrNoReachableConnections:                    SKY_ErrNoReachableConnections,
-		daemon.ErrDisconnectInvalidVersion:                SKY_ErrDisconnectInvalidVersion,
-		daemon.ErrDisconnectIntroductionTimeout:           SKY_ErrDisconnectIntroductionTimeout,
-		daemon.ErrDisconnectVersionSendFailed:             SKY_ErrDisconnectVersionSendFailed,
-		daemon.ErrDisconnectIsBlacklisted:                 SKY_ErrDisconnectIsBlacklisted,
-		daemon.ErrDisconnectSelf:                          SKY_ErrDisconnectSelf,
-		daemon.ErrDisconnectConnectedTwice:                SKY_ErrDisconnectConnectedTwice,
-		daemon.ErrDisconnectIdle:                          SKY_ErrDisconnectIdle,
-		daemon.ErrDisconnectNoIntroduction:                SKY_ErrDisconnectNoIntroduction,
-		daemon.ErrDisconnectIPLimitReached:                SKY_ErrDisconnectIPLimitReached,
-		daemon.ErrDisconnectOtherError:                    SKY_ErrDisconnectOtherError,
-		daemon.ErrDisconnectMaxDefaultConnectionReached:   SKY_ErrDisconnectMaxDefaultConnectionReached,
+		pex.ErrPeerlistFull:                     SKY_ErrPeerlistFull,
+		pex.ErrInvalidAddress:                   SKY_ErrInvalidAddress,
+		pex.ErrNoLocalhost:                      SKY_ErrNoLocalhost,
+		pex.ErrNotExternalIP:                    SKY_ErrNotExternalIP,
+		pex.ErrPortTooLow:                       SKY_ErrPortTooLow,
+		pex.ErrBlacklistedAddress:               SKY_ErrBlacklistedAddress,
+		gnet.ErrDisconnectReadFailed:            SKY_ErrDisconnectReadFailed,
+		gnet.ErrDisconnectWriteFailed:           SKY_ErrDisconnectWriteFailed,
+		gnet.ErrDisconnectSetReadDeadlineFailed: SKY_ErrDisconnectSetReadDeadlineFailed,
+		gnet.ErrDisconnectInvalidMessageLength:  SKY_ErrDisconnectInvalidMessageLength,
+		gnet.ErrDisconnectMalformedMessage:      SKY_ErrDisconnectMalformedMessage,
+		gnet.ErrDisconnectUnknownMessage:        SKY_ErrDisconnectUnknownMessage,
+		gnet.ErrDisconnectUnexpectedError:       SKY_ErrDisconnectUnexpectedError,
+		gnet.ErrConnectionPoolClosed:            SKY_ErrConnectionPoolClosed,
+		gnet.ErrWriteQueueFull:                  SKY_ErrWriteQueueFull,
+		gnet.ErrNoReachableConnections:          SKY_ErrNoReachableConnections,
+		daemon.ErrDisconnectInvalidVersion:      SKY_ErrDisconnectInvalidVersion,
+		daemon.ErrDisconnectIntroductionTimeout: SKY_ErrDisconnectIntroductionTimeout,
+		daemon.ErrDisconnectVersionSendFailed:   SKY_ErrDisconnectVersionSendFailed,
+		daemon.ErrDisconnectIsBlacklisted:       SKY_ErrDisconnectIsBlacklisted,
+		daemon.ErrDisconnectSelf:                SKY_ErrDisconnectSelf,
+		daemon.ErrDisconnectConnectedTwice:      SKY_ErrDisconnectConnectedTwice,
+		daemon.ErrDisconnectIdle:                SKY_ErrDisconnectIdle,
+		daemon.ErrDisconnectNoIntroduction:      SKY_ErrDisconnectNoIntroduction,
+		daemon.ErrDisconnectIPLimitReached:      SKY_ErrDisconnectIPLimitReached,
+		daemon.ErrDisconnectOtherError:          SKY_ErrDisconnectOtherError,
+		// daemon.ErrDisconnectMaxDefaultConnectionReached:   SKY_ErrDisconnectMaxDefaultConnectionReached,
 		daemon.ErrDisconnectMaxOutgoingConnectionsReached: SKY_ErrDisconnectMaxOutgoingConnectionsReached,
 		// util
 		fee.ErrTxnNoFee:                 SKY_ErrTxnNoFee,
@@ -617,6 +626,7 @@ var (
 	haltOnPanic = true
 )
 
+// nolint megacheck
 const (
 	// SKY_OPT_HALTONPANIC controls API behavior on panic
 	// Supported values:
@@ -626,6 +636,7 @@ const (
 )
 
 // SKY_libcgo_ConfigApiOptions set values for configurable API settings
+// nolint megacheck
 func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) {
 	if optionID == SKY_OPT_HALTONPANIC {
 		haltOnPanic = optionValue != 0

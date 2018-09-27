@@ -3,10 +3,12 @@
 # Runs "live"-mode tests against a skycoin node that is already running
 # "live" mode tests assume the blockchain data is active and may change at any time
 # Data is checked for the appearance of correctness but the values themselves are not verified
-# The skycoin node must be run with -enable-wallet-api=true
+# The skycoin node must be run with the wallet API enabled.
 
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
+
+COIN=${COIN:-skycoin}
 PORT="6420"
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
@@ -22,6 +24,7 @@ RUN_TESTS=""
 # run wallet tests
 TEST_LIVE_WALLET=""
 FAILFAST=""
+USE_CSRF=""
 
 usage () {
   echo "Usage: $SCRIPT"
@@ -32,7 +35,7 @@ usage () {
   echo "-v <boolean> -- Run test with -v flag"
   echo "-w <boolean> -- Run wallet tests."
   echo "-f <boolean> -- Run test with -failfast flag"
-  echo "-c <boolean> -- Run tests with CSRF enabled. If not set, node must be run with -disable-csrf"
+  echo "-c <boolean> -- Pass this argument if the node has CSRF enabled"
   exit 1
 }
 
@@ -53,14 +56,14 @@ done
 
 set -euxo pipefail
 
-echo "checking if skycoin node is running"
+echo "checking if $COIN node is running"
 
 HEALTH="$HOST/api/v1/health"
 
 http_proxy="" https_proxy="" wget -O- $HEALTH 2>&1 >/dev/null
 
 if [ ! $? -eq 0 ]; then
-    echo "Skycoin node is not running on $HOST"
+    echo "$COIN node is not running on $HOST"
     exit 1
 fi
 

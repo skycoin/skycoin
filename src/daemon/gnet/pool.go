@@ -1,3 +1,6 @@
+/*
+Package gnet is the core networking library
+*/
 package gnet
 
 import (
@@ -14,10 +17,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
-
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -88,8 +89,10 @@ type Config struct {
 	ConnectCallback ConnectCallback
 	// Print debug logs
 	DebugPrint bool
+	// Default "trusted" peers
+	DefaultConnections []string
 	// Default connections map
-	DefaultPeerConnections map[string]struct{}
+	defaultConnections map[string]struct{}
 }
 
 // NewConfig returns a Config with defaults set
@@ -108,7 +111,7 @@ func NewConfig() Config {
 		DisconnectCallback:                nil,
 		ConnectCallback:                   nil,
 		DebugPrint:                        false,
-		DefaultPeerConnections:            make(map[string]struct{}),
+		defaultConnections:                make(map[string]struct{}),
 	}
 }
 
@@ -185,13 +188,14 @@ type ConnectionPool struct {
 	// All connections, indexed by address
 	addresses map[string]*Connection
 	// connected default peer connections
-	defaultPeerConnections map[string]struct{}
+	defaultConnections map[string]struct{}
 	// User-defined state to be passed into message handlers
 	messageState interface{}
 	// Connection ID counter
 	connID int
 	// Listening connection
-	listener net.Listener
+	listener     net.Listener
+	listenerLock sync.Mutex
 	// operations channel
 	reqC chan strand.Request
 	// quit channel
@@ -205,17 +209,21 @@ type ConnectionPool struct {
 // Config.Port upon StartListen. State is an application defined object that
 // will be passed to a Message's Handle().
 func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
+	for _, p := range c.DefaultConnections {
+		c.defaultConnections[p] = struct{}{}
+	}
+
 	pool := &ConnectionPool{
-		Config:                 c,
-		pool:                   make(map[int]*Connection),
-		addresses:              make(map[string]*Connection),
-		defaultPeerConnections: make(map[string]struct{}),
-		SendResults:            make(chan SendResult, c.SendResultsSize),
-		messageState:           state,
-		quit:                   make(chan struct{}),
-		done:                   make(chan struct{}),
-		strandDone:             make(chan struct{}),
-		reqC:                   make(chan strand.Request),
+		Config:             c,
+		pool:               make(map[int]*Connection),
+		addresses:          make(map[string]*Connection),
+		defaultConnections: make(map[string]struct{}),
+		SendResults:        make(chan SendResult, c.SendResultsSize),
+		messageState:       state,
+		quit:               make(chan struct{}),
+		done:               make(chan struct{}),
+		strandDone:         make(chan struct{}),
+		reqC:               make(chan strand.Request),
 	}
 
 	return pool
@@ -226,6 +234,14 @@ func (pool *ConnectionPool) Run() error {
 	defer close(pool.done)
 	defer logger.Info("Connection pool closed")
 
+	// The strand processing goroutine must be started before any error can be
+	// returned from Run(), otherwise the Shutdown() call will block if an error occurred
+	pool.wg.Add(1)
+	go func() {
+		defer pool.wg.Done()
+		pool.processStrand()
+	}()
+
 	// start the connection accept loop
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
 	logger.Infof("Listening for connections on %s...", addr)
@@ -235,13 +251,9 @@ func (pool *ConnectionPool) Run() error {
 		return err
 	}
 
+	pool.listenerLock.Lock()
 	pool.listener = ln
-
-	pool.wg.Add(1)
-	go func() {
-		defer pool.wg.Done()
-		pool.processStrand()
-	}()
+	pool.listenerLock.Unlock()
 
 loop:
 	for {
@@ -254,7 +266,7 @@ loop:
 				break loop
 			default:
 				// without the default case the select will block.
-				logger.Error(err)
+				logger.Error(err.Error())
 				continue
 			}
 		}
@@ -295,17 +307,27 @@ func (pool *ConnectionPool) processStrand() {
 
 // Shutdown gracefully shutdown the connection pool
 func (pool *ConnectionPool) Shutdown() {
+	logger.Info("ConnectionPool.Shutdown called")
 	close(pool.quit)
+	logger.Info("ConnectionPool.Shutdown closed pool.quit")
 
 	// Wait for all strand() calls to finish
+	logger.Info("ConnectionPool.Shutdown waiting for strandDone")
 	<-pool.strandDone
 
-	// Close to listener to prevent new connections
-	if pool.listener != nil {
-		pool.listener.Close()
-	}
+	logger.Info("ConnectionPool.Shutdown closing the listener")
 
+	// Close to listener to prevent new connections
+	pool.listenerLock.Lock()
+	if pool.listener != nil {
+		if err := pool.listener.Close(); err != nil {
+			logger.WithError(err).Warning("pool.listener.Close error")
+		}
+	}
 	pool.listener = nil
+	pool.listenerLock.Unlock()
+
+	logger.Info("ConnectionPool.Shutdown disconnecting all connections")
 
 	// In readData, reader.Read() sometimes blocks instead of returning an error when the
 	// listener is closed.
@@ -319,6 +341,8 @@ func (pool *ConnectionPool) Shutdown() {
 	if len(pool.addresses) != 0 {
 		logger.Critical().Warning("pool.addresses is not empty after calling pool.disconnectAll()")
 	}
+
+	logger.Info("ConnectionPool.Shutdown waiting for done")
 
 	<-pool.done
 }
@@ -340,13 +364,13 @@ func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Conne
 			return fmt.Errorf("Already connected to %s", a)
 		}
 
-		if _, ok := pool.Config.DefaultPeerConnections[a]; ok {
+		if _, ok := pool.Config.defaultConnections[a]; ok {
 			if pool.isMaxDefaultConnectionsReached() && solicited {
 				return nil
 			}
 
-			pool.defaultPeerConnections[a] = struct{}{}
-			l := len(pool.defaultPeerConnections)
+			pool.defaultConnections[a] = struct{}{}
+			l := len(pool.defaultConnections)
 			logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
 		}
 
@@ -439,19 +463,13 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 		elapser := elapse.NewElapser(receiveMessageDurationThreshold, logger)
 		defer elapser.CheckForDone()
 
-		for {
-			select {
-			case msg, ok := <-msgC:
-				if !ok {
-					return
-				}
-				elapser.Register(fmt.Sprintf("pool.receiveMessage address=%s", addr))
-				if err := pool.receiveMessage(c, msg); err != nil {
-					errC <- err
-					return
-				}
-				elapser.CheckForDone()
+		for msg := range msgC {
+			elapser.Register(fmt.Sprintf("pool.receiveMessage address=%s", addr))
+			if err := pool.receiveMessage(c, msg); err != nil {
+				errC <- err
+				return
 			}
+			elapser.CheckForDone()
 		}
 	}()
 
@@ -641,7 +659,7 @@ func (pool *ConnectionPool) IsConnExist(addr string) (bool, error) {
 
 // IsDefaultConnection returns if the addr is a default connection
 func (pool *ConnectionPool) IsDefaultConnection(addr string) bool {
-	_, ok := pool.Config.DefaultPeerConnections[addr]
+	_, ok := pool.Config.defaultConnections[addr]
 	return ok
 }
 
@@ -659,14 +677,14 @@ func (pool *ConnectionPool) IsMaxDefaultConnectionsReached() (bool, error) {
 }
 
 func (pool *ConnectionPool) isMaxDefaultConnectionsReached() bool {
-	return len(pool.defaultPeerConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections
+	return len(pool.defaultConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections
 }
 
 // DefaultConnectionsInUse returns the default connection in use
 func (pool *ConnectionPool) DefaultConnectionsInUse() (int, error) {
 	var use int
 	if err := pool.strand("GetDefaultConnectionsInUse", func() error {
-		use = len(pool.defaultPeerConnections)
+		use = len(pool.defaultConnections)
 		return nil
 	}); err != nil {
 		return 0, err
@@ -724,7 +742,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 	var hitMaxDefaultConnNum bool
 	// Checks if it's one of the default connection
 	if err := pool.strand("Check default connection", func() error {
-		if _, ok := pool.Config.DefaultPeerConnections[address]; ok {
+		if _, ok := pool.Config.defaultConnections[address]; ok {
 			hitMaxDefaultConnNum = pool.isMaxDefaultConnectionsReached()
 		}
 		return nil
@@ -759,8 +777,8 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 		exist := pool.disconnect(addr)
 
 		// checks if the address is default node address
-		if _, ok := pool.Config.DefaultPeerConnections[addr]; ok {
-			l := len(pool.defaultPeerConnections)
+		if _, ok := pool.Config.defaultConnections[addr]; ok {
+			l := len(pool.defaultConnections)
 			logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
 		}
 
@@ -784,7 +802,7 @@ func (pool *ConnectionPool) disconnect(addr string) bool {
 
 	delete(pool.pool, conn.ID)
 	delete(pool.addresses, addr)
-	delete(pool.defaultPeerConnections, addr)
+	delete(pool.defaultConnections, addr)
 	if err := conn.Close(); err != nil {
 		logger.Errorf("conn.Close() error address=%s: %v", addr, err)
 	} else {
@@ -915,7 +933,7 @@ func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
 
 // SendPings sends a ping if our last message sent was over pingRate ago
 func (pool *ConnectionPool) SendPings(rate time.Duration, msg Message) error {
-	now := utc.Now()
+	now := time.Now().UTC()
 	var addrs []string
 	if err := pool.strand("SendPings", func() error {
 		for _, conn := range pool.pool {
@@ -953,12 +971,14 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 	}
 
 	for _, a := range idleConns {
-		pool.Disconnect(a, reason)
+		if err := pool.Disconnect(a, reason); err != nil {
+			logger.WithError(err).WithField("addr", a).Warning("Error in disconnecting from stale connection")
+		}
 	}
 	return nil
 }
 
 // Now returns the current UTC time
 func Now() time.Time {
-	return utc.Now()
+	return time.Now().UTC()
 }

@@ -60,6 +60,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
+- [Creating a new coin](#creating-a-new-coin)
 - [URI Specification](#uri-specification)
 - [Development](#development)
     - [Modules](#modules)
@@ -70,8 +71,11 @@ scratch, to remedy the rough edges in the Bitcoin design.
         - [Live Integration Tests](#live-integration-tests)
         - [Debugging Integration Tests](#debugging-integration-tests)
         - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
+    - [Test coverage](#test-coverage)
+        - [Test coverage for the live node](#test-coverage-for-the-live-node)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
+    - [Profiling](#profiling)
     - [Dependencies](#dependencies)
         - [Rules](#rules)
         - [Management](#management)
@@ -206,6 +210,10 @@ and used to seed client with peers.
 *Note*: Do not add Skywire nodes to `peers.txt`.
 Only add Skycoin nodes with high uptime and a static IP address (such as a Skycoin node hosted on a VPS).
 
+## Creating a new coin
+
+See the [newcoin tool README](./cmd/newcoin/README.md)
+
 ## URI Specification
 
 Skycoin URIs obey the same rules as specified in Bitcoin's [BIP21](https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki).
@@ -286,11 +294,10 @@ The `-v` option, show verbose logs.
 #### Live Integration Tests
 
 The live integration tests run against a live runnning skycoin node, so before running the test, we
-need to start a skycoin node. Since the `cli` integration test requires the rpc interface enabled,
-we should start node with `rpc-interface`:
+need to start a skycoin node:
 
 ```sh
-./run.sh -launch-browser=false -rpc-interface
+./run.sh -launch-browser=false
 ```
 
 After the skycoin node is up, run the following command to start the live tests:
@@ -355,6 +362,43 @@ To update golden files, use the `-u` option:
 
 We can also update a specific test case's golden file with the `-r` option.
 
+### Test coverage
+
+Coverage is automatically generated for `make test` and integration tests run against a stable node.
+This includes integration test coverage. The coverage output files are placed in `coverage/`.
+
+To merge coverage from all tests into a single HTML file for viewing:
+
+```sh
+make check
+make merge-coverage
+```
+
+Then open `coverage/all-coverage.html` in the browser.
+
+#### Test coverage for the live node
+
+Some tests can only be run with a live node, for example wallet spending tests.
+To generate coverage for this, build and run the skycoin node in test mode before running the live integration tests.
+
+In one shell:
+
+```sh
+make run-integration-test-live-cover
+```
+
+In another shell:
+
+```sh
+make integration-test-live
+```
+
+After the tests have run, CTRL-C to exit the process from the first shell.
+A coverage file will be generated at `coverage/skycoin-live.coverage.out`.
+
+Merge the coverage with `make merge-coverage` then open the `coverage/all-coverage.html` file to view it,
+or generate the HTML coverage in isolation with `go tool cover -html`
+
 ### Formatting
 
 All `.go` source files should be formatted `goimports`.  You can do this with:
@@ -377,6 +421,30 @@ Run linters:
 make lint
 ```
 
+### Profiling
+
+A full CPU profile of the program from start to finish can be obtained by running the node with the `-profile-cpu` flag.
+Once the node terminates, a profile file is written to `-profile-cpu-file` (defaults to `cpu.prof`).
+This profile can be analyzed with
+
+```sh
+go tool pprof cpu.prof
+```
+
+The HTTP interface for obtaining more profiling data or obtaining data while running can be enabled with `-http-prof`.
+The HTTP profiling interface can be controlling with `-http-prof-host` and listens on `localhost:6060` by default.
+
+See https://golang.org/pkg/net/http/pprof/ for guidance on using the HTTP profiler.
+
+Some useful examples include:
+
+```sh
+go tool pprof http://localhost:6060/debug/pprof/profile?seconds=10
+go tool pprof http://localhost:6060/debug/pprof/heap
+```
+
+A web page interface is provided by http/pprof at http://localhost:6060/debug/pprof/.
+
 ### Dependencies
 
 #### Rules
@@ -392,10 +460,10 @@ different version of the `cipher` dependencies than were developed, which could 
 
 Dependencies are managed with [dep](https://github.com/golang/dep).
 
-To install `dep`:
+To [install `dep` for development](https://github.com/golang/dep/blob/master/docs/installation.md#development):
 
 ```sh
-go get -u github.com/golang/dep
+go get -u github.com/golang/dep/cmd/dep
 ```
 
 `dep` vendors all dependencies into the repo.

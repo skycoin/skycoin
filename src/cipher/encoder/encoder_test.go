@@ -1001,7 +1001,46 @@ func TestEncodeStable(t *testing.T) {
 	require.Equal(t, x, y)
 
 	b := Serialize(x)
+	require.Equal(t, len(d), len(b))
 	require.Equal(t, d, b)
+}
+
+func TestEncodeByteSlice(t *testing.T) {
+	type foo struct {
+		W int8
+		X []byte
+		Y int8 // these are added to make sure extra fields don't interact with the byte encoding
+	}
+
+	f := foo{
+		W: 1,
+		X: []byte("abc"),
+		Y: 2,
+	}
+
+	expect := []byte{1, 3, 0, 0, 0, 97, 98, 99, 2}
+
+	b := Serialize(f)
+	require.Equal(t, expect, b)
+}
+
+func TestEncodeByteArray(t *testing.T) {
+	type foo struct {
+		W int8
+		X [3]byte
+		Y int8 // these are added to make sure extra fields don't interact with the byte encoding
+	}
+
+	f := foo{
+		W: 1,
+		X: [3]byte{'a', 'b', 'c'},
+		Y: 2,
+	}
+
+	expect := []byte{1, 97, 98, 99, 2}
+
+	b := Serialize(f)
+	require.Equal(t, expect, b)
 }
 
 func TestEncodeEmptySlice(t *testing.T) {

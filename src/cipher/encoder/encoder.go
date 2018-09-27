@@ -602,30 +602,9 @@ func (e *encoder) uint64(x uint64) {
 	e.buf = e.buf[8:]
 }
 
-func (d decoder) bytes() ([]byte, error) { // nolint: unused,megacheck
-	ul, err := d.uint32() // pop length
-	if err != nil {
-		return nil, err
-	}
-
-	l := int(ul)
-
-	if len(d.buf) < l {
-		return nil, ErrBufferUnderflow
-	}
-
-	t := d.buf[:l]
-	d.buf = d.buf[l:]
-	return t, nil
-}
-
-func (e encoder) bytes(x []byte) { // nolint: unused,megacheck
-	l := len(x)
-	for i := 0; i < l; i++ {
-		e.buf[i] = x[i]
-	} // memcpy
-	e.buf = e.buf[l:] // advance slice l bytes
-
+func (e *encoder) bytes(x []byte) {
+	copy(e.buf, x)
+	e.buf = e.buf[len(x):]
 }
 
 func (d *decoder) int8() (int8, error) {
@@ -1047,21 +1026,36 @@ func (d *decoder) dchk(v reflect.Value) int {
 }
 
 func (e *encoder) value(v reflect.Value) {
-
 	switch v.Kind() {
 	case reflect.Interface:
 		e.value(v.Elem())
 
 	case reflect.Array:
 		// Arrays are a fixed size, so the length is not written
-		for i := 0; i < v.Len(); i++ {
-			e.value(v.Index(i))
+		t := v.Type()
+		elem := t.Elem()
+		switch elem.Kind() {
+		case reflect.Uint8:
+			reflect.Copy(reflect.ValueOf(e.buf), v)
+			e.buf = e.buf[v.Len():]
+		default:
+			for i := 0; i < v.Len(); i++ {
+				e.value(v.Index(i))
+			}
 		}
 
 	case reflect.Slice:
 		e.uint32(uint32(v.Len()))
-		for i := 0; i < v.Len(); i++ {
-			e.value(v.Index(i))
+
+		t := v.Type()
+		elem := t.Elem()
+		switch elem.Kind() {
+		case reflect.Uint8:
+			e.bytes(v.Bytes())
+		default:
+			for i := 0; i < v.Len(); i++ {
+				e.value(v.Index(i))
+			}
 		}
 
 	case reflect.Map:

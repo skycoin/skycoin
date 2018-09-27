@@ -423,3 +423,12 @@
 		return result;
 	}
 }
+
+%rename(SKY_coin_UxOut_Hash) CSharp_skycoin_SKY_coin_UxOut_Hash;
+%inline{
+	GoUint32 CSharp_skycoin_SKY_coin_UxOut_Hash(coin__UxOut* ux, cipher_SHA256* sha){
+		GoUint32 result = SKY_coin_UxOut_Hash(ux, sha);
+		return result;
+	}
+}
+

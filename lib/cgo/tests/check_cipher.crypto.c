@@ -15,7 +15,8 @@ TestSuite(cipher_crypto, .init = setup, .fini = teardown);
 Test(cipher_crypto, TestNewPubKey) {
   unsigned char buff[101];
   GoSlice slice;
-  cipher__PubKey pk;
+  cipher__PubKey pk, pk2;
+  cipher__SecKey sk;
 
   slice.data = buff;
   slice.cap = 101;
@@ -43,13 +44,19 @@ Test(cipher_crypto, TestNewPubKey) {
 
   randBytes(&slice, 33);
   errcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode == SKY_OK, "33 random bytes");
+  cr_assert(errcode != SKY_OK, "33 random bytes");
 
-  cr_assert(eq(u8[33], pk, buff));
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  GoSlice buffer = {pk, sizeof(pk), sizeof(pk)};
+  errcode = SKY_cipher_NewPubKey(buffer, &pk2);
+  cr_assert(errcode == SKY_OK);
+
+  cr_assert(eq(u8[33], pk, pk2));
 }
 
 Test(cipher_crypto, TestPubKeyFromHex) {
   cipher__PubKey p, p1;
+  cipher__SecKey sk;
   GoString s;
   unsigned char buff[51];
   char sbuff[101];
@@ -67,10 +74,10 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   cr_assert(errcode == SKY_ERROR, "TestPubKeyFromHex: Invalid hex. Bad chars");
 
   // Invalid hex length
-  randBytes(&slice, 33);
-  errcode = SKY_cipher_NewPubKey(slice, &p);
-  cr_assert(errcode == SKY_OK);
-  strnhex(&p[0], sbuff, slice.len / 2);
+  SKY_cipher_GenerateKeyPair(&p, &sk);
+  memcpy(slice.data, (void *) p, sizeof(p));
+  slice.len = sizeof(p);
+  strnhex(&p[0], sbuff, slice.len << 1);
   s.p = sbuff;
   s.n = strlen(s.p);
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);
@@ -79,7 +86,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   // Valid
   strnhex(p, sbuff, sizeof(p));
   s.p = sbuff;
-  s.n = strlen(s.p);
+  s.n = sizeof(p) << 1;
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);
   cr_assert(errcode == SKY_OK, "TestPubKeyFromHex: Valid. No panic.");
   cr_assert(eq(u8[33], p, p1));
@@ -87,14 +94,13 @@ Test(cipher_crypto, TestPubKeyFromHex) {
 
 Test(cipher_crypto, TestPubKeyHex) {
   cipher__PubKey p, p2;
+  cipher__SecKey sk;
   GoString s3, s4;
   unsigned char buff[50];
   GoSlice slice = { buff, 0, 50};
   unsigned int errcode;
 
-  randBytes(&slice, 33);
-  errcode = SKY_cipher_NewPubKey(slice, &p);
-  cr_assert(errcode == SKY_OK);
+  SKY_cipher_GenerateKeyPair(&p, &sk);
   SKY_cipher_PubKey_Hex(&p, (GoString_ *) &s3);
   registerMemCleanup((void *) s3.p);
   errcode = SKY_cipher_PubKeyFromHex(s3, &p2);
@@ -113,15 +119,15 @@ Test(cipher_crypto, TestPubKeyVerify) {
   unsigned char buff[50];
   GoSlice slice = { buff, 0, 50 };
   unsigned int errcode;
+  bool failed = false;
 
   int i = 0;
   for (; i < 10; i++) {
     randBytes(&slice, 33);
-    errcode = SKY_cipher_NewPubKey(slice, &p);
-    cr_assert(errcode == SKY_OK);
-    errcode = SKY_cipher_PubKey_Verify(&p);
-    cr_assert(errcode == SKY_ERROR);
+    memcpy((void *) &p, slice.data, 33);
+    failed = failed || (errcode = SKY_cipher_PubKey_Verify(&p));
   }
+  cr_assert(failed);
 }
 
 Test(cipher_crypto, TestPubKeyVerifyNil) {
@@ -705,11 +711,11 @@ Test(cipher_crypto, TestSecKeTest) {
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
-  errcode = SKY_cipher_TestSecKey(&sk);
+  errcode = SKY_cipher_CheckSecKey(&sk);
   cr_assert(errcode == SKY_OK);
 
   memset(&sk, 0, sizeof(sk));
-  errcode = SKY_cipher_TestSecKey(&sk);
+  errcode = SKY_cipher_CheckSecKey(&sk);
   cr_assert(errcode == SKY_ERROR);
 }
 
@@ -724,12 +730,12 @@ Test(cipher_crypto, TestSecKeyHashTest) {
   SKY_cipher_GenerateKeyPair(&pk, &sk);
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h);
-  errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
+  errcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
   cr_assert(errcode == SKY_OK);
 
 
   memset(&sk, 0, sizeof(sk));
-  errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
+  errcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
   cr_assert(errcode == SKY_ERROR);
 }
 

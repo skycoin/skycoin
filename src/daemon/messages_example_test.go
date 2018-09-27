@@ -49,11 +49,6 @@ type Annotation struct {
 	Size int
 }
 
-// IAnnotationsGenerator : Interface to implement by types to use HexDump
-type IAnnotationsGenerator interface {
-	GenerateAnnotations() []Annotation
-}
-
 // IAnnotationsIterator : Interface to implement by types to use HexDumpFromIterator
 type IAnnotationsIterator interface {
 	Next() (Annotation, bool)
@@ -145,20 +140,6 @@ func printFinalHex(i int, writer io.Writer) error {
 
 	_, err := f.Write(serialized[4:])
 	return err
-}
-
-// New : Returns hexdump of buffer according to annotations, via writer
-func New(buffer []byte, annotations []Annotation, writer io.Writer) error {
-	var currentOffset = 0
-
-	for _, element := range annotations {
-		if err := writeHexdumpMember(currentOffset, element.Size, writer, buffer, element.Name); err != nil {
-			return err
-		}
-		currentOffset += element.Size
-	}
-
-	return printFinalHex(currentOffset, writer)
 }
 
 // NewFromIterator : Returns hexdump of buffer according to annotationsIterator, via writer

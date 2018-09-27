@@ -622,6 +622,7 @@ func (e *encoder) uint64(x uint64) {
 }
 
 func (e *encoder) bytes(x []byte) {
+	e.uint32(uint32(len(x)))
 	copy(e.buf, x)
 	e.buf = e.buf[len(x):]
 }
@@ -1064,14 +1065,13 @@ func (e *encoder) value(v reflect.Value) {
 		}
 
 	case reflect.Slice:
-		e.uint32(uint32(v.Len()))
-
 		t := v.Type()
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8:
 			e.bytes(v.Bytes())
 		default:
+			e.uint32(uint32(v.Len()))
 			for i := 0; i < v.Len(); i++ {
 				e.value(v.Index(i))
 			}
@@ -1113,11 +1113,7 @@ func (e *encoder) value(v reflect.Value) {
 		e.bool(v.Bool())
 
 	case reflect.String:
-		vb := []byte(v.String())
-		e.uint32(uint32(len(vb)))
-		for i := 0; i < len(vb); i++ {
-			e.uint8(vb[i])
-		}
+		e.bytes([]byte(v.String()))
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		switch v.Type().Kind() {

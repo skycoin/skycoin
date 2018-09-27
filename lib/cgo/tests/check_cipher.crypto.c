@@ -86,7 +86,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   // Valid
   strnhex(p, sbuff, sizeof(p));
   s.p = sbuff;
-  s.n = strlen(s.p);
+  s.n = sizeof(p) << 1;
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);
   cr_assert(errcode == SKY_OK, "TestPubKeyFromHex: Valid. No panic.");
   cr_assert(eq(u8[33], p, p1));
@@ -119,15 +119,15 @@ Test(cipher_crypto, TestPubKeyVerify) {
   unsigned char buff[50];
   GoSlice slice = { buff, 0, 50 };
   unsigned int errcode;
+  bool failed = false;
 
   int i = 0;
   for (; i < 10; i++) {
     randBytes(&slice, 33);
-    errcode = SKY_cipher_NewPubKey(slice, &p);
-    cr_assert(errcode == SKY_OK);
-    errcode = SKY_cipher_PubKey_Verify(&p);
-    cr_assert(errcode == SKY_ERROR);
+    memcpy((void *) &p, slice.data, 33);
+    failed = failed || (errcode = SKY_cipher_PubKey_Verify(&p));
   }
+  cr_assert(failed);
 }
 
 Test(cipher_crypto, TestPubKeyVerifyNil) {

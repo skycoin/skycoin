@@ -94,14 +94,13 @@ Test(cipher_crypto, TestPubKeyFromHex) {
 
 Test(cipher_crypto, TestPubKeyHex) {
   cipher__PubKey p, p2;
+  cipher__SecKey sk;
   GoString s3, s4;
   unsigned char buff[50];
   GoSlice slice = { buff, 0, 50};
   unsigned int errcode;
 
-  randBytes(&slice, 33);
-  errcode = SKY_cipher_NewPubKey(slice, &p);
-  cr_assert(errcode == SKY_OK);
+  SKY_cipher_GenerateKeyPair(&p, &sk);
   SKY_cipher_PubKey_Hex(&p, (GoString_ *) &s3);
   registerMemCleanup((void *) s3.p);
   errcode = SKY_cipher_PubKeyFromHex(s3, &p2);

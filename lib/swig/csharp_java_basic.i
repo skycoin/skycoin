@@ -400,4 +400,62 @@ int makeUxArray(GoSlice* parray, int n){
   }
   return result;
 }
+int makeAddress(cipher__Address* paddress){
+  cipher__PubKey pubkey;
+  cipher__SecKey seckey;
+  cipher__Address address;
+  int result;
+
+  result = SKY_cipher_GenerateKeyPair(&pubkey, &seckey);
+  if(result != 0) return 1;
+
+  result = SKY_cipher_AddressFromPubKey( &pubkey, paddress );
+  if(result != 0) return 1;
+  return result;
+}
+coin__Transaction* makeTransactionFromUxOut(coin__UxOut* puxOut, cipher__SecKey* pseckey, Transaction__Handle* handle ){
+  int result;
+  coin__Transaction* ptransaction = NULL;
+  result  = SKY_coin_Create_Transaction(handle);
+//   cr_assert(result == SKY_OK, "SKY_coin_Create_Transaction failed");
+  registerHandleClose(*handle);
+  result = SKY_coin_GetTransactionObject( *handle, &ptransaction );
+//   cr_assert(result == SKY_OK, "SKY_coin_GetTransactionObject failed");
+  cipher__SHA256 sha256;
+  result = SKY_coin_UxOut_Hash(puxOut, &sha256);
+//   cr_assert(result == SKY_OK, "SKY_coin_UxOut_Hash failed");
+  GoUint16 r;
+  result = SKY_coin_Transaction_PushInput(*handle, &sha256, &r);
+//   cr_assert(result == SKY_OK, "SKY_coin_Transaction_PushInput failed");
+
+  cipher__Address address1, address2;
+  result = makeAddress(&address1);
+//   cr_assert(result == SKY_OK, "makeAddress failed");
+  result = makeAddress(&address2);
+//   cr_assert(result == SKY_OK, "makeAddress failed");
+
+  result = SKY_coin_Transaction_PushOutput(*handle, &address1, 1000000, 50);
+//   cr_assert(result == SKY_OK, "SKY_coin_Transaction_PushOutput failed");
+  result = SKY_coin_Transaction_PushOutput(*handle, &address2, 5000000, 50);
+//   cr_assert(result == SKY_OK, "SKY_coin_Transaction_PushOutput failed");
+
+  GoSlice secKeys = { pseckey, 1, 1 };
+  result = SKY_coin_Transaction_SignInputs( *handle, secKeys );
+//   cr_assert(result == SKY_OK, "SKY_coin_Transaction_SignInputs failed");
+  result = SKY_coin_Transaction_UpdateHeader( *handle );
+//   cr_assert(result == SKY_OK, "SKY_coin_Transaction_UpdateHeader failed");
+  return ptransaction;
+}
+
+coin__Transaction* makeTransaction(Transaction__Handle* handle){
+  int result;
+  coin__UxOut uxOut;
+  cipher__SecKey seckey;
+  coin__Transaction* ptransaction = NULL;
+  result = makeUxOutWithSecret( &uxOut, &seckey );
+  if(result != 0) return 1;
+  ptransaction = makeTransactionFromUxOut( &uxOut, &seckey, handle );
+  if(result != 0) return 1;
+  return ptransaction;
+}
     %}

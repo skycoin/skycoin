@@ -14,6 +14,7 @@
 %pointer_functions(Transaction__Handle, Transaction__Handlep);
 %pointer_functions(Handle, Handlep);
 %pointer_functions(unsigned long long, GoUint64p);
+%pointer_functions(unsigned short, GoUint16p);
 %pointer_functions(cipher__Address, cipher__Addressp);
 %pointer_functions(Transactions__Handle, Transactions__Handlep);
 
@@ -72,10 +73,14 @@ CSHARP_ARRAYS_FIXED(int, int)
 %typemap(csin) GoSlice_*  "GoSlice.getCPtr ($csinput)"
 
 %apply long long  {GoInt_, GoInt};
+%apply unsigned short  {GoUint16, GoUint16_};
+%apply char  {GoUint8_, GoUint8};
 %apply unsigned long long  {GoUint64, GoUint64_};
 %apply GoSlice_* {coin__UxArray*}
 
-
+%typemap(freearg) (cipher_PubKeys* __in_pubKeys) {
+  if ($1->data) free($1->data);
+}
 
 
 

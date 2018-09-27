@@ -71,11 +71,8 @@ func Test_Encode_1(t *testing.T) {
 
 	b := Serialize(ts)
 
-	var buf bytes.Buffer
-	buf.Write(b)
-
 	var ts2 TestStruct
-	err := Deserialize(&buf, len(b), &ts2)
+	err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
 
 	b2 := Serialize(ts2)
@@ -97,11 +94,8 @@ func Test_Encode_2a(t *testing.T) {
 
 	b := Serialize(ts)
 
-	var buf bytes.Buffer
-	buf.Write(b)
-
 	var ts2 TestStruct2
-	err := Deserialize(&buf, len(b), &ts2)
+	err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
 
 	b2 := Serialize(ts2)
@@ -144,11 +138,8 @@ func Test_Encode_3a(t *testing.T) {
 
 	b := Serialize(t1)
 
-	var buf bytes.Buffer
-	buf.Write(b)
-
 	var t2 TestStruct3
-	err := Deserialize(&buf, len(b), &t2)
+	err := DeserializeRaw(b, &t2)
 	require.NoError(t, err)
 
 	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || !bytes.Equal(t1.K, t2.K))
@@ -260,26 +251,21 @@ func Test_Encode_IgnoreTagSerialize(t *testing.T) {
 	ts.K = []byte("TEST6")
 
 	b := Serialize(ts)
-	var buf bytes.Buffer
-	buf.Write(b)
 
 	var ts2 TestStructIgnore
 	ts.X = 0
 	ts.Y = 0
 	ts.Z = 0
 	ts.K = []byte("")
-	err := Deserialize(&buf, len(b), &ts2)
+	err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
 
 	if ts2.Z != 0 {
 		t.Fatalf("Z should not deserialize. It is %d", ts2.Z)
 	}
 
-	buf.Reset()
-	buf.Write(b)
-
 	var ts3 TestStructWithoutIgnore
-	err = Deserialize(&buf, len(b), &ts3)
+	err = DeserializeRaw(b, &ts3)
 	require.NoError(t, err)
 
 	b2 := Serialize(ts2)
@@ -361,13 +347,13 @@ func TestDecodeNotEnoughLength(t *testing.T) {
 	var d Array
 	err := DeserializeRaw(b, &d)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "Deserialization failed")
+	require.Equal(t, ErrBufferUnderflow, err)
 
 	// Test with slice
 	thing := make([]int, 3)
 	err = DeserializeRaw(b, thing)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "Deserialization failed")
+	require.Equal(t, ErrBufferUnderflow, err)
 }
 
 func TestFlattenMultidimensionalBytes(t *testing.T) {

@@ -1095,8 +1095,6 @@ func (e *encoder) value(v reflect.Value) {
 				continue
 			}
 
-			fmt.Println(ff.Name)
-
 			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {

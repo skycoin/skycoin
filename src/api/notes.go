@@ -54,7 +54,7 @@ func noteHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			if _, err := validateTxIDParameter(note.TxIDHex); err == nil {
+			if err := validateTxID(note.TxIDHex); err == nil {
 				note, err := gateway.AddNote(note)
 				if err != nil {
 					wh.Error400(w, err.Error())
@@ -67,26 +67,32 @@ func noteHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		txID := r.FormValue("txid")
+
 		switch r.Method {
 		case http.MethodGet:
-			if txID, err := validateTxIDParameter(r.FormValue("txid")); err == nil {
-				noteByTxID := gateway.GetNoteByTxID(txID)
-				wh.SendJSONOr500(logger, w, noteByTxID)
+			if err := validateTxID(txID); err != nil {
+				wh.Error400(w, ErrorWrongTxID)
 				return
 			}
-			wh.Error400(w, ErrorWrongTxID)
+
+			noteByTxID := gateway.GetNoteByTxID(txID)
+			wh.SendJSONOr500(logger, w, noteByTxID)
 			return
+
 		case http.MethodDelete:
-			if txID, err := validateTxIDParameter(r.FormValue("txid")); err == nil {
-				if err := gateway.RemoveNote(txID); err != nil {
-					wh.Error400(w, err.Error())
-					return
-				}
-				wh.SendJSONOr500(logger, w, notes.Note{})
+			if err := validateTxID(txID); err != nil {
+				wh.Error400(w, ErrorWrongTxID)
 				return
 			}
-			wh.Error400(w, ErrorWrongTxID)
+
+			if err := gateway.RemoveNote(txID); err != nil {
+				wh.Error400(w, err.Error())
+				return
+			}
+			wh.SendJSONOr500(logger, w, notes.Note{})
 			return
+
 		default:
 			// Bad Method
 			wh.Error405(w)
@@ -95,9 +101,9 @@ func noteHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func validateTxIDParameter(txID string) (string, error) {
+func validateTxID(txID string) error {
 	if _, err := cipher.SHA256FromHex(txID); err != nil {
-		return "", err
+		return err
 	}
-	return txID, nil
+	return nil
 }

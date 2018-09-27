@@ -31,6 +31,12 @@ const (
 	sig4hex = "5edb9bbd4a7820f45391f08e7572c91fb61be7106ddb5346ac00596c8992cfa23aac06469aec55337102418ceb11529b3b30578402e58c2ff66dcd8bbf3521e901"
 )
 
+func setupMsgEncoding() {
+	gnet.EraseMessages()
+	var messagesConfig = NewMessagesConfig()
+	messagesConfig.Register()
+}
+
 /**************************************
  *
  * Test helpers
@@ -41,11 +47,6 @@ const (
 type Annotation struct {
 	Name string
 	Size int
-}
-
-// IAnnotationsGenerator : Interface to implement by types to use HexDump
-type IAnnotationsGenerator interface {
-	GenerateAnnotations() []Annotation
 }
 
 // IAnnotationsIterator : Interface to implement by types to use HexDumpFromIterator
@@ -139,20 +140,6 @@ func printFinalHex(i int, writer io.Writer) error {
 
 	_, err := f.Write(serialized[4:])
 	return err
-}
-
-// New : Returns hexdump of buffer according to annotations, via writer
-func New(buffer []byte, annotations []Annotation, writer io.Writer) error {
-	var currentOffset = 0
-
-	for _, element := range annotations {
-		if err := writeHexdumpMember(currentOffset, element.Size, writer, buffer, element.Name); err != nil {
-			return err
-		}
-		currentOffset += element.Size
-	}
-
-	return printFinalHex(currentOffset, writer)
 }
 
 // NewFromIterator : Returns hexdump of buffer according to annotationsIterator, via writer

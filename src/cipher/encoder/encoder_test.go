@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"io/ioutil"
 	"log"
 	"math"
+	"os"
 	"reflect"
 	"testing"
 
@@ -913,4 +915,91 @@ func TestPrimitiveInts(t *testing.T) {
 			require.Equal(t, tc.c, obj)
 		})
 	}
+}
+
+type hasEveryType struct {
+	A int8
+	B int16
+	C int32
+	D int64
+	E uint8
+	F uint16
+	G uint32
+	H uint64
+	I bool
+	J byte
+	K string
+	L []byte   // slice, byte type
+	M []int64  // slice, non-byte type
+	N [3]byte  // array, byte type
+	O [3]int64 // array, non-byte type
+	P struct {
+		A int8
+		B uint16
+	} // struct
+	Q map[string]byte // map
+	R float32
+	S float64
+}
+
+func TestEncodeStable(t *testing.T) {
+	// Tests encoding against previously encoded data on disk to verify
+	// that encoding results have not changed
+	update := false
+
+	x := hasEveryType{
+		A: -127,
+		B: math.MaxInt16,
+		C: math.MaxInt32,
+		D: math.MaxInt64,
+		E: math.MaxInt8 + 1,
+		F: math.MaxInt16 + 1,
+		G: math.MaxInt32 + 1,
+		H: math.MaxInt64 + 1,
+		I: true,
+		J: byte(128),
+		K: "foo",
+		L: []byte("bar"),
+		M: []int64{math.MaxInt64, math.MaxInt64 / 2, -10000},
+		N: [3]byte{'b', 'a', 'z'},
+		O: [3]int64{math.MaxInt64, math.MaxInt64 / 2, -10000},
+		P: struct {
+			A int8
+			B uint16
+		}{
+			A: -127,
+			B: math.MaxUint16,
+		},
+		Q: map[string]byte{"foo": 100, "bar": 99},
+		R: float32(123.45),
+		S: float64(123.45),
+	}
+
+	goldenFile := "testdata/encode-every-type.golden"
+
+	if update {
+		f, err := os.Create(goldenFile)
+		require.NoError(t, err)
+		defer f.Close()
+
+		b := Serialize(x)
+		_, err = f.Write(b)
+		require.NoError(t, err)
+		return
+	}
+
+	f, err := os.Open(goldenFile)
+	require.NoError(t, err)
+	defer f.Close()
+
+	d, err := ioutil.ReadAll(f)
+	require.NoError(t, err)
+
+	var y hasEveryType
+	err = DeserializeRaw(d, &y)
+	require.NoError(t, err)
+	require.Equal(t, x, y)
+
+	b := Serialize(x)
+	require.Equal(t, d, b)
 }

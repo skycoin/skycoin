@@ -55,6 +55,11 @@
 		$self->data = malloc(n * sizeof(*($self->data)));
 		$self->count = n;
 	}
+
+	void append(coin__UxOut* uxout){
+		coin_UxOutArray_allocate($self,$self->count+1);
+		coin_UxOutArray_setAt($self,$self->count+1,uxout);
+	}
 	
 	void release(){
 		if($self->data != NULL)

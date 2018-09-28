@@ -162,7 +162,6 @@ func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMes
 	dmai.LengthCalled = false
 	dmai.PrefixCalled = false
 	dmai.CurrentField = 0
-	dmai.CurrentIndex = -1
 	dmai.CurrentDepth = 1
 	dmai.MaxDepth = depth
 	dmai.CurrentTypology = make([]reflect.Kind, 1)

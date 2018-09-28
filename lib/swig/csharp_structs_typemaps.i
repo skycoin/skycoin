@@ -60,8 +60,8 @@ return slice;
 
 %extend coin__Transaction {
     int	setInnerHash(cipher_SHA256 h){
-		memset(self->InnerHash, 0, sizeof(cipher__SHA256));
-			cipher_SHA256_assignFrom(self->InnerHash,&h);
+		memset($self->InnerHash, 0, sizeof(cipher__SHA256));
+			cipher_SHA256_assignFrom($self->InnerHash,&h);
 			return 0;
     }
 }

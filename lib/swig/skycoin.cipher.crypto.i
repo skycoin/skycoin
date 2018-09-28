@@ -11,11 +11,11 @@
 	int isEqual(cipher_PubKey* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
-	void assignFrom(void* data){
-		memcpy(&$self->data, data, sizeof($self->data));
+	void assignFrom(cipher_PubKey* data){
+		memcpy(&$self->data, data->data, sizeof($self->data));
 	}
-	void assignTo(void* data){
-		memcpy(data, &$self->data, sizeof($self->data));
+	void assignTo(cipher_PubKey* data){
+		memcpy(data->data, &$self->data, sizeof($self->data));
 	}
 }
 
@@ -59,11 +59,11 @@
 	int isEqual(cipher_SHA256* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
-	void assignFrom(void* data){
-		memcpy(&$self->data, data, sizeof($self->data));
+	void assignFrom(cipher_SHA256* data){
+		memcpy(&$self->data, data->data, sizeof($self->data));
 	}
-	void assignTo(void* data){
-		memcpy(data, &$self->data, sizeof($self->data));
+	void assignTo(cipher_SHA256* data){
+		memcpy(data->data, &$self->data, sizeof($self->data));
 	}
 }
 

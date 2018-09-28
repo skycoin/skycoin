@@ -13,6 +13,8 @@ import 'rxjs/add/observable/zip';
 import { Address, NormalTransaction, PreviewTransaction, Wallet } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { BigNumber } from 'bignumber.js';
 
 @Injectable()
 export class WalletService {
@@ -20,6 +22,8 @@ export class WalletService {
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
   pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
   dataRefreshSubscription: Subscription;
+
+  initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(
     private apiService: ApiService,
@@ -33,10 +37,10 @@ export class WalletService {
     return this.allAddresses().map(addrs => addrs.map(addr => addr.address)).map(addrs => addrs.join(','));
   }
 
-  addAddress(wallet: Wallet, password?: string) {
-    return this.apiService.postWalletNewAddress(wallet, password)
-      .do(address => {
-        wallet.addresses.push(address);
+  addAddress(wallet: Wallet, num: number, password?: string) {
+    return this.apiService.postWalletNewAddress(wallet, num, password)
+      .do(addresses => {
+        addresses.forEach(value => wallet.addresses.push(value));
         this.refreshBalances();
       });
   }
@@ -89,7 +93,7 @@ export class WalletService {
   }
 
   allPendingTransactions(): Observable<any> {
-    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs'));
+    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs', {verbose: 1}));
   }
 
   pendingTransactions(): Observable<any> {
@@ -150,7 +154,7 @@ export class WalletService {
     ).map(response => {
       return {
         ...response.transaction,
-        hoursBurned: response.transaction.fee,
+        hoursBurned: new BigNumber(response.transaction.fee),
         encoded: response.encoded_transaction,
       };
     });
@@ -218,7 +222,17 @@ export class WalletService {
               .filter((dst, i, self) => self.indexOf(dst) === i),
           );
 
-          transaction.balance += calculatedOutputs.reduce((a, b) => a + parseFloat(b.coins), 0) * (outgoing ? -1 : 1);
+          calculatedOutputs.map (output => transaction.balance = transaction.balance.plus(output.coins));
+          transaction.balance = (outgoing ? transaction.balance.negated() : transaction.balance);
+
+          transaction.hoursSent = new BigNumber('0');
+          calculatedOutputs.map(output => transaction.hoursSent = transaction.hoursSent.plus(new BigNumber(output.hours)));
+
+          let inputsHours = new BigNumber('0');
+          transaction.inputs.map(input => inputsHours = inputsHours.plus(new BigNumber(input.calculated_hours)));
+          let outputsHours = new BigNumber('0');
+          transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
+          transaction.hoursBurned = inputsHours.minus(outputsHours);
 
           return transaction;
         });
@@ -240,7 +254,10 @@ export class WalletService {
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(wallets => this.wallets.next(wallets));
+    this.apiService.getWallets().first().subscribe(
+      wallets => this.wallets.next(wallets),
+      () => this.initialLoadFailed.next(true),
+    );
   }
 
   private retrieveInputAddress(input: string) {
@@ -250,12 +267,12 @@ export class WalletService {
   private retrieveWalletBalance(wallet: Wallet): Observable<any> {
     return this.apiService.get('wallet/balance', { id: wallet.filename }).map(balance => {
       return {
-        coins: balance.confirmed.coins / 1000000,
-        hours: balance.confirmed.hours,
+        coins: new BigNumber(balance.confirmed.coins).dividedBy(1000000),
+        hours: new BigNumber(balance.confirmed.hours),
         addresses: Object.keys(balance.addresses).map(address => ({
           address,
-          coins: balance.addresses[address].confirmed.coins / 1000000,
-          hours: balance.addresses[address].confirmed.hours,
+          coins: new BigNumber(balance.addresses[address].confirmed.coins).dividedBy(1000000),
+          hours: new BigNumber(balance.addresses[address].confirmed.hours),
         })),
       };
     });
@@ -271,7 +288,7 @@ export class WalletService {
 
   private refreshPendingTransactions() {
     this.wallets.first().subscribe(wallets => {
-      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename })))
+      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename, verbose: 1 })))
         .subscribe(pending => {
           this.pendingTxs.next([].concat.apply(
             [],

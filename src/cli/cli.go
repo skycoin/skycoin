@@ -1,7 +1,8 @@
 /*
-Package cli implements an interface for creating a CLI application.
+Package cli implements the CLI cmd's methods.
+
 Includes methods for manipulating wallets files and interacting with the
-webrpc API to query a skycoin node's status.
+REST API to query a skycoin node's status.
 */
 package cli
 
@@ -11,7 +12,6 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -20,7 +20,7 @@ import (
 	gcli "github.com/urfave/cli"
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
@@ -39,7 +39,6 @@ var (
 	envVarsHelp = fmt.Sprintf(`ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "%s"
     COIN: Name of the coin. Default "%s"
-    USE_CSRF: Set to 1 or true if the remote node has CSRF enabled. Default false (unset)
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
     WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"
     DATA_DIR: Directory where everything is stored. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName, defaultDataDir)
@@ -109,7 +108,6 @@ type Config struct {
 	DataDir    string `json:"data_directory"`
 	Coin       string `json:"coin"`
 	RPCAddress string `json:"rpc_address"`
-	UseCSRF    bool   `json:"use_csrf"`
 }
 
 // LoadConfig loads config from environment, prior to parsing CLI flags
@@ -153,15 +151,6 @@ func LoadConfig() (Config, error) {
 	if !strings.HasSuffix(wltName, walletExt) {
 		return Config{}, ErrWalletName
 	}
-	var useCSRF bool
-	useCSRFStr := os.Getenv("USE_CSRF")
-	if useCSRFStr != "" {
-		var err error
-		useCSRF, err = strconv.ParseBool(useCSRFStr)
-		if err != nil {
-			return Config{}, errors.New("Invalid USE_CSRF value, must be interpretable as a boolean e.g. 0, 1, true, false")
-		}
-	}
 
 	return Config{
 		WalletDir:  wltDir,
@@ -169,7 +158,6 @@ func LoadConfig() (Config, error) {
 		DataDir:    dataDir,
 		Coin:       coin,
 		RPCAddress: rpcAddr,
-		UseCSRF:    useCSRF,
 	}, nil
 }
 
@@ -245,6 +233,8 @@ func NewApp(cfg Config) (*App, error) {
 		checkdbCmd(),
 		createRawTxCmd(cfg),
 		decodeRawTxCmd(),
+		decryptWalletCmd(cfg),
+		encryptWalletCmd(cfg),
 		generateAddrsCmd(cfg),
 		generateWalletCmd(cfg),
 		lastBlocksCmd(),
@@ -252,6 +242,7 @@ func NewApp(cfg Config) (*App, error) {
 		listWalletsCmd(),
 		sendCmd(),
 		showConfigCmd(),
+		showSeedCmd(cfg),
 		statusCmd(),
 		transactionCmd(),
 		verifyAddressCmd(),
@@ -260,9 +251,6 @@ func NewApp(cfg Config) (*App, error) {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
-		encryptWalletCmd(cfg),
-		decryptWalletCmd(cfg),
-		showSeedCmd(cfg),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)
@@ -272,8 +260,7 @@ func NewApp(cfg Config) (*App, error) {
 	app.EnableBashCompletion = true
 	app.OnUsageError = func(context *gcli.Context, err error, isSubcommand bool) error {
 		fmt.Fprintf(context.App.Writer, "Error: %v\n\n", err)
-		gcli.ShowAppHelp(context)
-		return nil
+		return gcli.ShowAppHelp(context)
 	}
 	app.CommandNotFound = func(ctx *gcli.Context, command string) {
 		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} command. See '{{.HelpName}} --help'.\n", command)
@@ -281,15 +268,11 @@ func NewApp(cfg Config) (*App, error) {
 		gcli.OsExiter(1)
 	}
 
-	rpcClient, err := webrpc.NewClient(cfg.RPCAddress)
-	if err != nil {
-		return nil, err
-	}
-	rpcClient.UseCSRF = cfg.UseCSRF
+	apiClient := api.NewClient(cfg.RPCAddress)
 
 	app.Metadata = map[string]interface{}{
 		"config":   cfg,
-		"rpc":      rpcClient,
+		"api":      apiClient,
 		"quitChan": make(chan struct{}),
 	}
 
@@ -301,9 +284,9 @@ func (app *App) Run(args []string) error {
 	return app.App.Run(args)
 }
 
-// RPCClientFromContext returns a webrpc.Client from a urfave/cli Context
-func RPCClientFromContext(c *gcli.Context) *webrpc.Client {
-	return c.App.Metadata["rpc"].(*webrpc.Client)
+// APIClientFromContext returns an api.Client from a urface/cli Context
+func APIClientFromContext(c *gcli.Context) *api.Client {
+	return c.App.Metadata["api"].(*api.Client)
 }
 
 // ConfigFromContext returns a Config from a urfave/cli Context
@@ -319,13 +302,12 @@ func QuitChanFromContext(c *gcli.Context) chan struct{} {
 func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 	return func(c *gcli.Context, err error, isSubcommand bool) error {
 		fmt.Fprintf(c.App.Writer, "Error: %v\n\n", err)
-		gcli.ShowCommandHelp(c, command)
-		return nil
+		return gcli.ShowCommandHelp(c, command)
 	}
 }
 
-func errorWithHelp(c *gcli.Context, err error) {
-	fmt.Fprintf(c.App.Writer, "Error: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
+func printHelp(c *gcli.Context) {
+	fmt.Fprintf(c.App.Writer, "See '%s %s --help'\n", c.App.HelpName, c.Command.Name)
 }
 
 func formatJSON(obj interface{}) ([]byte, error) {
@@ -351,7 +333,7 @@ func printJSON(obj interface{}) error {
 func readPasswordFromTerminal() ([]byte, error) {
 	// Promotes to enter the wallet password
 	fmt.Fprint(os.Stdout, "enter password:")
-	bp, err := terminal.ReadPassword(int(syscall.Stdin))
+	bp, err := terminal.ReadPassword(int(syscall.Stdin)) // nolint: unconvert
 	if err != nil {
 		return nil, err
 	}
@@ -366,9 +348,17 @@ type WalletLoadError struct {
 	error
 }
 
+func (e WalletLoadError) Error() string {
+	return fmt.Sprintf("Load wallet failed: %v", e.error)
+}
+
 // WalletSaveError is returned if a wallet could not be saved
 type WalletSaveError struct {
 	error
+}
+
+func (e WalletSaveError) Error() string {
+	return fmt.Sprintf("Save wallet failed: %v", e.error)
 }
 
 // PasswordReader is an interface for getting password

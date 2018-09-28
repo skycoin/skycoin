@@ -1,3 +1,18 @@
+/*
+Package cipher implements cryptographic methods.
+
+These methods include:
+
+* Public and private key generation
+* Address generation
+* Signing
+
+Private keys are secp256k1 keys. Addresses are base58 encoded.
+
+All dependencies are either from the go stdlib, or are manually vendored
+below this package. This manual vendoring ensures that the exact same dependencies
+are used by any user of this package, regardless of their gopath.
+*/
 package cipher
 
 import (
@@ -245,6 +260,8 @@ func ECDH(pub PubKey, sec SecKey) []byte {
 		panic(err)
 	}
 
+	// WARNING: This calls TestSecKey if DebugLevel2 is set to true.
+	// TestSecKey is extremely slow and will kill performance if ECDH is called frequently
 	if err := sec.Verify(); err != nil {
 		err := skyerrors.NewValueError(ErrECHDInvalidSecKey, "sec", sec)
 		log.Print(err)
@@ -531,16 +548,18 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	return nil
 }
 
-//do not allow program to start if crypto tests fail
 func init() {
-	// init the reuse hash pool.
-	sha256HashChan = make(chan hash.Hash, poolsize)
-	ripemd160HashChan = make(chan hash.Hash, poolsize)
-	for i := 0; i < poolsize; i++ {
-		sha256HashChan <- sha256.New()
-		ripemd160HashChan <- ripemd160.New()
+	ripemd160HashPool = make(chan hash.Hash, ripemd160HashPoolSize)
+	for i := 0; i < ripemd160HashPoolSize; i++ {
+		ripemd160HashPool <- ripemd160.New()
 	}
 
+	sha256HashPool = make(chan hash.Hash, sha256HashPoolSize)
+	for i := 0; i < sha256HashPoolSize; i++ {
+		sha256HashPool <- sha256.New()
+	}
+
+	// Do not allow program to start if crypto tests fail
 	_, seckey := GenerateKeyPair()
 	if err := TestSecKey(seckey); err != nil {
 		log.Fatalf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)

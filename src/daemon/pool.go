@@ -23,9 +23,11 @@ type PoolConfig struct {
 	// Buffer size for gnet.ConnectionPool's network Read events
 	EventChannelSize int
 	// Maximum number of connections to maintain
-	MaxConnections                    int
+	MaxConnections int
+	// Maximum number of connections to peers in the DefaultConnections list to maintain
 	MaxDefaultPeerOutgoingConnections int
-	DefaultPeerConnections            map[string]struct{}
+	// Default "trusted" peers
+	DefaultConnections []string
 	// These should be assigned by the controlling daemon
 	address string
 	port    int
@@ -33,7 +35,6 @@ type PoolConfig struct {
 
 // NewPoolConfig creates pool config
 func NewPoolConfig() PoolConfig {
-	//defIdleLimit := time.Minute
 	return PoolConfig{
 		port:                              6677,
 		address:                           "",
@@ -46,7 +47,6 @@ func NewPoolConfig() PoolConfig {
 		EventChannelSize:                  4096,
 		MaxConnections:                    128,
 		MaxDefaultPeerOutgoingConnections: 1,
-		DefaultPeerConnections:            make(map[string]struct{}),
 	}
 }
 
@@ -66,7 +66,7 @@ func NewPool(cfg PoolConfig, d *Daemon) *Pool {
 	gnetCfg.DisconnectCallback = d.onGnetDisconnect
 	gnetCfg.MaxConnections = cfg.MaxConnections
 	gnetCfg.MaxDefaultPeerOutgoingConnections = cfg.MaxDefaultPeerOutgoingConnections
-	gnetCfg.DefaultPeerConnections = cfg.DefaultPeerConnections
+	gnetCfg.DefaultConnections = cfg.DefaultConnections
 
 	return &Pool{
 		Config: cfg,
@@ -95,10 +95,14 @@ func (pool *Pool) RunOffline() error {
 
 // Send a ping if our last message sent was over pingRate ago
 func (pool *Pool) sendPings() {
-	pool.Pool.SendPings(pool.Config.PingRate, &PingMessage{})
+	if err := pool.Pool.SendPings(pool.Config.PingRate, &PingMessage{}); err != nil {
+		logger.WithError(err).Error("sendPings failed")
+	}
 }
 
 // Removes connections that have not sent a message in too long
 func (pool *Pool) clearStaleConnections() {
-	pool.Pool.ClearStaleConnections(pool.Config.IdleLimit, ErrDisconnectIdle)
+	if err := pool.Pool.ClearStaleConnections(pool.Config.IdleLimit, ErrDisconnectIdle); err != nil {
+		logger.WithError(err).Error("clearStaleConnections failed")
+	}
 }

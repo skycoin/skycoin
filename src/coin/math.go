@@ -15,7 +15,8 @@ var (
 	ErrInt64UnderflowsUint64 = errors.New("int64 underflows uint64")
 )
 
-func multUint64(a, b uint64) (uint64, error) {
+// MultUint64 multiplies a by b, returning an error if the values would overflow
+func MultUint64(a, b uint64) (uint64, error) {
 	c := a * b
 	if a != 0 && c/a != b {
 		return 0, ErrUint64MultOverflow
@@ -32,7 +33,8 @@ func AddUint64(a, b uint64) (uint64, error) {
 	return c, nil
 }
 
-func addUint32(a, b uint32) (uint32, error) { //nolint: deadcode
+// AddUint32 adds a and b, returning an error if the values would overflow
+func AddUint32(a, b uint32) (uint32, error) {
 	c := a + b
 	if c < a || c < b {
 		return 0, ErrUint32AddOverflow

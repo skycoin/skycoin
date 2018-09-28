@@ -173,6 +173,12 @@ typedef Handle GoStringMap_;
 */
 typedef Handle Wallets__Handle;
 
+typedef Handle ReadableOutputSet__Handle;
+
+/**
+ *  ReadableOutputSet Handle
+ * */
+typedef Handle ReadableOutputSet_Handle;
 /**
  * Instances of Go interface types.
  */
@@ -366,6 +372,10 @@ typedef Handle Number_Handle;
 */
 
 typedef Handle Signature_Handle;
+/**
+ *Handle readable.UnspentOutputsSummary 
+ */
+typedef Handle UnspentOutputsSummary_Handle;
 
 typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
 

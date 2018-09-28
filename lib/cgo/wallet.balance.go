@@ -18,10 +18,11 @@ import "C"
 
 //export SKY_wallet_NewBalance
 func SKY_wallet_NewBalance(_coins, _hours uint64, _arg1 *C.wallet__Balance) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	coins := _coins
 	hours := _hours
 	__arg1 := wallet.NewBalance(coins, hours)
@@ -31,10 +32,11 @@ func SKY_wallet_NewBalance(_coins, _hours uint64, _arg1 *C.wallet__Balance) (___
 
 //export SKY_wallet_NewBalanceFromUxOut
 func SKY_wallet_NewBalanceFromUxOut(_headTime uint64, _ux *C.coin__UxOut, _arg2 *C.wallet__Balance) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	headTime := _headTime
 	ux := (*coin.UxOut)(unsafe.Pointer(_ux))
 	__arg2, ____return_err := wallet.NewBalanceFromUxOut(headTime, ux)
@@ -47,10 +49,11 @@ func SKY_wallet_NewBalanceFromUxOut(_headTime uint64, _ux *C.coin__UxOut, _arg2 
 
 //export SKY_wallet_Balance_Add
 func SKY_wallet_Balance_Add(_bal *C.wallet__Balance, _other *C.wallet__Balance, _arg1 *C.wallet__Balance) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	bal := *(*wallet.Balance)(unsafe.Pointer(_bal))
 	other := *(*wallet.Balance)(unsafe.Pointer(_other))
 	__arg1, ____return_err := bal.Add(other)
@@ -63,10 +66,11 @@ func SKY_wallet_Balance_Add(_bal *C.wallet__Balance, _other *C.wallet__Balance, 
 
 //export SKY_wallet_Balance_Sub
 func SKY_wallet_Balance_Sub(_bal *C.wallet__Balance, _other *C.wallet__Balance, _arg1 *C.wallet__Balance) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	bal := *(*wallet.Balance)(unsafe.Pointer(_bal))
 	other := *(*wallet.Balance)(unsafe.Pointer(_other))
 	__arg1 := bal.Sub(other)
@@ -76,10 +80,11 @@ func SKY_wallet_Balance_Sub(_bal *C.wallet__Balance, _other *C.wallet__Balance, 
 
 //export SKY_wallet_Balance_Equals
 func SKY_wallet_Balance_Equals(_bal *C.wallet__Balance, _other *C.wallet__Balance, _arg1 *bool) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	bal := *(*wallet.Balance)(unsafe.Pointer(_bal))
 	other := *(*wallet.Balance)(unsafe.Pointer(_other))
 	__arg1 := bal.Equals(other)
@@ -89,10 +94,11 @@ func SKY_wallet_Balance_Equals(_bal *C.wallet__Balance, _other *C.wallet__Balanc
 
 //export SKY_wallet_Balance_IsZero
 func SKY_wallet_Balance_IsZero(_bal *C.wallet__Balance, _arg0 *bool) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	bal := *(*wallet.Balance)(unsafe.Pointer(_bal))
 	__arg0 := bal.IsZero()
 	*_arg0 = __arg0

@@ -25,7 +25,7 @@
 	GoStringMap, PasswordReader__Handle_,
 	Transaction__Handle, Transactions__Handle, CreatedTransaction__Handle,
 	CreatedTransactionOutput__Handle, CreatedTransactionInput__Handle, CreateTransactionResponse__Handle,
-	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, AddressUxOuts_Handle
+	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, AddressUxOuts_Handle,ReadableOutputSet__Handle
 	}
 
 %apply Handle* { Wallet__Handle*, Options__Handle*, ReadableEntry__Handle*, ReadableWallet__Handle*, WebRpcClient__Handle*,
@@ -33,7 +33,7 @@
 	App__Handle*, Context__Handle*, GoStringMap_*, PasswordReader__Handle*,
 	Transaction__Handle*, Transactions__Handle*, CreatedTransaction__Handle*,
 	CreatedTransactionOutput__Handle*, CreatedTransactionInput__Handle*, CreateTransactionResponse__Handle*,
-	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*, AddressUxOuts_Handle*
+	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*, AddressUxOuts_Handle*,ReadableOutputSet__Handle*
 	}
 
 #if defined(SWIGPYTHON)
@@ -424,6 +424,17 @@
 			memcpy(__return_Ux->data, data.data, data.len * sizeof(coin__UxOut));
 		}
 		return result;
+	}
+}
+
+%rename(SKY_fee_TransactionFee) wrap_SKY_fee_TransactionFee;
+%inline{
+	GoUint32 wrap_SKY_fee_TransactionFee(Transaction__Handle __txn, GoUint64 __p1, coin_UxOutArray*  __uxIn, GoUint64  *__return_fee ){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_fee_TransactionFee(__txn,__p1, &data,__return_fee);
 	}
 }
 

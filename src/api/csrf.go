@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
 const (

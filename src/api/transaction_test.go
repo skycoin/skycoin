@@ -1,41 +1,35 @@
 package api
 
 import (
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"math"
-
-	"time"
-
-	"net/url"
-
-	"errors"
-
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"math"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTxn {
-	ut := visor.UnconfirmedTxn{}
-	ut.Txn = coin.Transaction{}
-	ut.Txn.InnerHash = testutil.RandSHA256(t)
-	ut.Received = utc.Now().UnixNano()
+func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTransaction {
+	ut := visor.UnconfirmedTransaction{}
+	ut.Transaction = coin.Transaction{}
+	ut.Transaction.InnerHash = testutil.RandSHA256(t)
+	ut.Transaction.In = []cipher.SHA256{testutil.RandSHA256(t)}
+	ut.Received = time.Now().UTC().UnixNano()
 	ut.Checked = ut.Received
 	ut.Announced = time.Time{}.UnixNano()
 	return ut
@@ -81,58 +75,103 @@ func makeTransaction(t *testing.T) coin.Transaction {
 
 func TestGetPendingTxs(t *testing.T) {
 	invalidTxn := createUnconfirmedTxn(t)
-	invalidTxn.Txn.Out = append(invalidTxn.Txn.Out, coin.TransactionOutput{
+	invalidTxn.Transaction.Out = append(invalidTxn.Transaction.Out, coin.TransactionOutput{
 		Coins: math.MaxInt64 + 1,
 	})
 
+	type verboseResult struct {
+		Transactions []visor.UnconfirmedTransaction
+		Inputs       [][]visor.TransactionInput
+	}
+
 	tt := []struct {
-		name                          string
-		method                        string
-		url                           string
-		status                        int
-		err                           string
-		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
-		getAllUnconfirmedTxnsErr      error
-		httpResponse                  []*visor.ReadableUnconfirmedTxn
+		name                                 string
+		method                               string
+		status                               int
+		err                                  string
+		verbose                              bool
+		verboseStr                           string
+		getAllUnconfirmedTxnsResponse        []visor.UnconfirmedTransaction
+		getAllUnconfirmedTxnsErr             error
+		getAllUnconfirmedTxnsVerboseResponse verboseResult
+		getAllUnconfirmedTxnsVerboseErr      error
+		httpResponse                         interface{}
 	}{
 		{
-			name:   "405",
-			method: http.MethodPost,
-			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
+			name:                          "405",
+			method:                        http.MethodPost,
+			status:                        http.StatusMethodNotAllowed,
+			err:                           "405 Method Not Allowed",
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
+		},
+		{
+			name:       "400 - bad verbose",
+			method:     http.MethodGet,
+			status:     http.StatusBadRequest,
+			err:        "400 Bad Request - Invalid value for verbose",
+			verboseStr: "foo",
 		},
 		{
 			name:   "500 - bad unconfirmedTxn",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error - Droplet string conversion failed: Value is too large",
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{
 				invalidTxn,
 			},
 		},
 		{
-			name:   "500 - get unconfirmedTxn error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetAllUnconfirmedTxns failed",
-			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTxns failed"),
+			name:                     "500 - get unconfirmedTxn error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - GetAllUnconfirmedTransactions failed",
+			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTransactions failed"),
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
-			httpResponse:                  []*visor.ReadableUnconfirmedTxn{},
+			name:                            "500 - get unconfirmedTxnVerbose error",
+			method:                          http.MethodGet,
+			status:                          http.StatusInternalServerError,
+			verboseStr:                      "1",
+			verbose:                         true,
+			err:                             "500 Internal Server Error - GetAllUnconfirmedTransactionsVerbose failed",
+			getAllUnconfirmedTxnsVerboseErr: errors.New("GetAllUnconfirmedTransactionsVerbose failed"),
+		},
+		{
+			name:                          "200",
+			method:                        http.MethodGet,
+			status:                        http.StatusOK,
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
+			httpResponse:                  []readable.UnconfirmedTransactions{},
+		},
+		{
+			name:       "200 verbose",
+			method:     http.MethodGet,
+			status:     http.StatusOK,
+			verboseStr: "1",
+			verbose:    true,
+			getAllUnconfirmedTxnsVerboseResponse: verboseResult{
+				Transactions: []visor.UnconfirmedTransaction{},
+				Inputs:       [][]visor.TransactionInput{},
+			},
+			httpResponse: []readable.UnconfirmedTransactionVerbose{},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/pendingTxs"
-			gateway := NewGatewayerMock()
-			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway := &MockGatewayer{}
+			gateway.On("GetAllUnconfirmedTransactions").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
+			gateway.On("GetAllUnconfirmedTransactionsVerbose").Return(tc.getAllUnconfirmedTxnsVerboseResponse.Transactions,
+				tc.getAllUnconfirmedTxnsVerboseResponse.Inputs, tc.getAllUnconfirmedTxnsVerboseErr)
+
+			v := url.Values{}
+			if tc.verboseStr != "" {
+				v.Add("verbose", tc.verboseStr)
+			}
+			if len(v) > 0 {
+				endpoint += "?" + v.Encode()
+			}
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -142,22 +181,28 @@ func TestGetPendingTxs(t *testing.T) {
 			}
 			setCSRFParameters(csrfStore, tokenValid, req)
 
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []*visor.ReadableUnconfirmedTxn
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, msg, tc.name)
+				if tc.verbose {
+					var msg []readable.UnconfirmedTransactionVerbose
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, msg, tc.name)
+				} else {
+					var msg []readable.UnconfirmedTransactions
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, msg, tc.name)
+				}
 			}
 		})
 	}
@@ -167,28 +212,51 @@ func TestGetTransactionByID(t *testing.T) {
 	oddHash := "cafcb"
 	invalidHash := "cabrca"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
+	validHashRaw, err := cipher.SHA256FromHex(validHash)
+	require.NoError(t, err)
+
+	validAddr := "28ATuZGXJm6dJDGyJbdknFWgv8kbBX9hAdN"
+	validAddrRaw, err := cipher.DecodeBase58Address(validAddr)
+	require.NoError(t, err)
+
+	validSig := "cca1595fb27375789da47bb1cf78e14febc2be6f3c3034247fea6f700b853cddbab5d16f4ffc1912fca8373f10e468b745d6a1d686cb73ade1e3c3b3653b2f9d7f"
+	validSigRaw, err := cipher.SigFromHex(validSig)
+	require.NoError(t, err)
+
 	type httpBody struct {
-		txid string
+		txid    string
+		verbose string
+		encoded string
+	}
+
+	type verboseResult struct {
+		Transaction *visor.Transaction
+		Inputs      []visor.TransactionInput
 	}
 
 	tt := []struct {
-		name                  string
-		method                string
-		status                int
-		err                   string
-		httpBody              *httpBody
-		getTransactionArg     cipher.SHA256
-		getTransactionReponse *visor.Transaction
-		getTransactionError   error
-		httpResponse          daemon.TransactionResult
+		name                               string
+		method                             string
+		status                             int
+		err                                string
+		httpBody                           *httpBody
+		verbose                            bool
+		encoded                            bool
+		txid                               cipher.SHA256
+		getTransactionReponse              *visor.Transaction
+		getTransactionError                error
+		getTransactionResultVerboseReponse verboseResult
+		getTransactionResultVerboseError   error
+		httpResponse                       interface{}
 	}{
 		{
-			name:              "405",
-			method:            http.MethodPost,
-			status:            http.StatusMethodNotAllowed,
-			err:               "405 Method Not Allowed",
-			getTransactionArg: testutil.RandSHA256(t),
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+			txid:   testutil.RandSHA256(t),
 		},
+
 		{
 			name:   "400 - empty txid",
 			method: http.MethodGet,
@@ -197,8 +265,9 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: "",
 			},
-			getTransactionArg: testutil.RandSHA256(t),
+			txid: testutil.RandSHA256(t),
 		},
+
 		{
 			name:   "400 - invalid hash: odd length hex string",
 			method: http.MethodGet,
@@ -207,8 +276,9 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: oddHash,
 			},
-			getTransactionArg: testutil.RandSHA256(t),
+			txid: testutil.RandSHA256(t),
 		},
+
 		{
 			name:   "400 - invalid hash: invalid byte: U+0072 'r'",
 			method: http.MethodGet,
@@ -217,19 +287,83 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: invalidHash,
 			},
-			getTransactionArg: testutil.RandSHA256(t),
+			txid: testutil.RandSHA256(t),
 		},
+
 		{
-			name:   "400 - getTransactionError",
+			name:   "400 - invalid verbose",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - getTransactionError",
+			err:    "400 Bad Request - Invalid value for verbose",
+			httpBody: &httpBody{
+				txid:    validHash,
+				verbose: "foo",
+			},
+		},
+
+		{
+			name:   "400 - invalid encoded",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Invalid value for encoded",
+			httpBody: &httpBody{
+				txid:    validHash,
+				encoded: "foo",
+			},
+		},
+
+		{
+			name:   "400 - verbose and encoded combined",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - verbose and encoded cannot be combined",
+			httpBody: &httpBody{
+				txid:    validHash,
+				verbose: "1",
+				encoded: "1",
+			},
+		},
+
+		{
+			name:   "500 - getTransactionError encoded",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - getTransactionError",
+			httpBody: &httpBody{
+				txid:    validHash,
+				encoded: "1",
+			},
+			encoded:             true,
+			txid:                testutil.SHA256FromHex(t, validHash),
+			getTransactionError: errors.New("getTransactionError"),
+		},
+
+		{
+			name:   "500 - getTransactionError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - getTransactionError",
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			getTransactionArg:   testutil.SHA256FromHex(t, validHash),
+			txid:                testutil.SHA256FromHex(t, validHash),
 			getTransactionError: errors.New("getTransactionError"),
 		},
+
+		{
+			name:   "500 - getTransactionResultVerboseError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - getTransactionResultVerboseError",
+			httpBody: &httpBody{
+				txid:    validHash,
+				verbose: "1",
+			},
+			verbose:                          true,
+			txid:                             testutil.SHA256FromHex(t, validHash),
+			getTransactionResultVerboseError: errors.New("getTransactionResultVerboseError"),
+		},
+
 		{
 			name:   "404",
 			method: http.MethodGet,
@@ -238,8 +372,22 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			getTransactionArg: testutil.SHA256FromHex(t, validHash),
+			txid: testutil.SHA256FromHex(t, validHash),
 		},
+
+		{
+			name:   "404 verbose",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			err:    "404 Not Found",
+			httpBody: &httpBody{
+				txid:    validHash,
+				verbose: "1",
+			},
+			verbose: true,
+			txid:    testutil.SHA256FromHex(t, validHash),
+		},
+
 		{
 			name:   "200",
 			method: http.MethodGet,
@@ -247,16 +395,159 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			getTransactionArg:     testutil.SHA256FromHex(t, validHash),
-			getTransactionReponse: &visor.Transaction{},
-			httpResponse: daemon.TransactionResult{
-				Transaction: visor.ReadableTransaction{
-					Sigs:      []string{},
-					In:        []string{},
-					Out:       []visor.ReadableTransactionOutput{},
-					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
-					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+			txid: testutil.SHA256FromHex(t, validHash),
+			getTransactionReponse: &visor.Transaction{
+				Transaction: coin.Transaction{
+					Sigs: []cipher.Sig{validSigRaw},
+					In:   []cipher.SHA256{validHashRaw},
+					Out: []coin.TransactionOutput{
+						{
+							Coins:   9999,
+							Hours:   1111,
+							Address: validAddrRaw,
+						},
+					},
 				},
+				Status: visor.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+			},
+			httpResponse: &readable.TransactionWithStatus{
+				Status: readable.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+				Transaction: readable.Transaction{
+					Hash:      "b64525bc14edb3c838ff3ef4f01bd74712432b32c18463dbda59b431959b2e52",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Sigs:      []string{validSig},
+					In:        []string{validHash},
+					Out: []readable.TransactionOutput{
+						{
+							Hash:    "87ec4d440fd64bb4c26839d58684e567e499265ca396649c03304b928378720b",
+							Coins:   "0.009999",
+							Hours:   1111,
+							Address: validAddr,
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name:   "200 verbose",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
+				txid:    validHash,
+				verbose: "1",
+			},
+			verbose: true,
+			txid:    testutil.SHA256FromHex(t, validHash),
+			getTransactionResultVerboseReponse: verboseResult{
+				Transaction: &visor.Transaction{
+					Transaction: coin.Transaction{
+						Sigs: []cipher.Sig{validSigRaw},
+						In:   []cipher.SHA256{validHashRaw},
+						Out: []coin.TransactionOutput{
+							{
+								Coins:   9999,
+								Hours:   1111,
+								Address: validAddrRaw,
+							},
+						},
+					},
+					Status: visor.TransactionStatus{
+						Confirmed: true,
+						BlockSeq:  100,
+						Height:    9,
+					},
+				},
+				Inputs: []visor.TransactionInput{
+					{
+						UxOut: coin.UxOut{
+							Body: coin.UxBody{
+								Coins:   9999,
+								Hours:   1111,
+								Address: validAddrRaw,
+							},
+						},
+						CalculatedHours: 3333,
+					},
+				},
+			},
+			httpResponse: &readable.TransactionWithStatusVerbose{
+				Status: readable.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+				Transaction: readable.TransactionVerbose{
+					BlockTransactionVerbose: readable.BlockTransactionVerbose{
+						Fee:       2222,
+						Hash:      "b64525bc14edb3c838ff3ef4f01bd74712432b32c18463dbda59b431959b2e52",
+						InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+						Sigs:      []string{validSig},
+						In: []readable.TransactionInput{
+							{
+								Hash:            "50e8ad459e29a051d969f221f1fb9775e26248e8b443982fef0cfaa117ee6c0c",
+								Coins:           "0.009999",
+								Hours:           1111,
+								CalculatedHours: 3333,
+								Address:         validAddr,
+							},
+						},
+						Out: []readable.TransactionOutput{
+							{
+								Hash:    "87ec4d440fd64bb4c26839d58684e567e499265ca396649c03304b928378720b",
+								Coins:   "0.009999",
+								Hours:   1111,
+								Address: validAddr,
+							},
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name:   "200 encoded",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
+				txid:    validHash,
+				encoded: "1",
+			},
+			encoded: true,
+			txid:    testutil.SHA256FromHex(t, validHash),
+			getTransactionReponse: &visor.Transaction{
+				Transaction: coin.Transaction{
+					Sigs: []cipher.Sig{validSigRaw},
+					In:   []cipher.SHA256{validHashRaw},
+					Out: []coin.TransactionOutput{
+						{
+							Coins:   9999,
+							Hours:   1111,
+							Address: validAddrRaw,
+						},
+					},
+				},
+				Status: visor.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+			},
+			httpResponse: &TransactionEncodedResponse{
+				Status: readable.TransactionStatus{
+					Confirmed: true,
+					BlockSeq:  100,
+					Height:    9,
+				},
+				EncodedTransaction: "0000000000000000000000000000000000000000000000000000000000000000000000000001000000cca1595fb27375789da47bb1cf78e14febc2be6f3c3034247fea6f700b853cddbab5d16f4ffc1912fca8373f10e468b745d6a1d686cb73ade1e3c3b3653b2f9d7f0100000079216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b0100000000a1f1da0612c870cbb2d88fb3d7f95ba7118d6efb0f270000000000005704000000000000",
 			},
 		},
 	}
@@ -264,14 +555,21 @@ func TestGetTransactionByID(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/transaction"
-			gateway := NewGatewayerMock()
-			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway := &MockGatewayer{}
+			gateway.On("GetTransaction", tc.txid).Return(tc.getTransactionReponse, tc.getTransactionError)
+			gateway.On("GetTransactionVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse.Transaction,
+				tc.getTransactionResultVerboseReponse.Inputs, tc.getTransactionResultVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
 					v.Add("txid", tc.httpBody.txid)
+				}
+				if tc.httpBody.verbose != "" {
+					v.Add("verbose", tc.httpBody.verbose)
+				}
+				if tc.httpBody.encoded != "" {
+					v.Add("encoded", tc.httpBody.encoded)
 				}
 			}
 			if len(v) > 0 {
@@ -287,22 +585,34 @@ func TestGetTransactionByID(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg daemon.TransactionResult
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, msg, tc.name)
+				if tc.verbose {
+					var msg readable.TransactionWithStatusVerbose
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, &msg, tc.name)
+				} else if tc.encoded {
+					var msg TransactionEncodedResponse
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, &msg, tc.name)
+				} else {
+					var msg readable.TransactionWithStatus
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, &msg, tc.name)
+				}
 			}
+
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 		})
 	}
 }
@@ -397,9 +707,8 @@ func TestInjectTransaction(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/injectTransaction"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -414,16 +723,15 @@ func TestInjectTransaction(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
 				require.NoError(t, err)
@@ -434,15 +742,18 @@ func TestInjectTransaction(t *testing.T) {
 }
 
 func TestResendUnconfirmedTxns(t *testing.T) {
+	validHash1 := testutil.RandSHA256(t)
+	validHash2 := testutil.RandSHA256(t)
+
 	tt := []struct {
 		name                          string
 		method                        string
 		status                        int
 		err                           string
 		httpBody                      string
-		resendUnconfirmedTxnsResponse *daemon.ResendResult
+		resendUnconfirmedTxnsResponse []cipher.SHA256
 		resendUnconfirmedTxnsErr      error
-		httpResponse                  *daemon.ResendResult
+		httpResponse                  ResendResult
 	}{
 		{
 			name:   "405",
@@ -451,27 +762,37 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "500 resend failed",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - ResendUnconfirmedTxns failed",
+			name:                     "500 resend failed",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - ResendUnconfirmedTxns failed",
 			resendUnconfirmedTxnsErr: errors.New("ResendUnconfirmedTxns failed"),
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			resendUnconfirmedTxnsResponse: &daemon.ResendResult{},
-			httpResponse:                  &daemon.ResendResult{},
+			name:                          "200",
+			method:                        http.MethodGet,
+			status:                        http.StatusOK,
+			resendUnconfirmedTxnsResponse: nil,
+			httpResponse: ResendResult{
+				Txids: []string{},
+			},
+		},
+		{
+			name:                          "200 with hashes",
+			method:                        http.MethodGet,
+			status:                        http.StatusOK,
+			resendUnconfirmedTxnsResponse: []cipher.SHA256{validHash1, validHash2},
+			httpResponse: ResendResult{
+				Txids: []string{validHash1.Hex(), validHash2.Hex()},
+			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/resendUnconfirmedTxns"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -482,18 +803,17 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *daemon.ResendResult
+				var msg ResendResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
@@ -513,7 +833,6 @@ func TestGetRawTx(t *testing.T) {
 	tt := []struct {
 		name                   string
 		method                 string
-		url                    string
 		status                 int
 		err                    string
 		httpBody               *httpBody
@@ -594,9 +913,9 @@ func TestGetRawTx(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/rawtx"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
-			gateway.On("IsCSPEnabled").Return(false)
+
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
@@ -616,15 +935,15 @@ func TestGetRawTx(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
 				require.NoError(t, err)
@@ -643,25 +962,31 @@ func TestGetTransactions(t *testing.T) {
 		require.NoError(t, err)
 		addrs = append(addrs, addr)
 	}
-	invalidTxn := makeTransaction(t)
-	invalidTxn.Out = append(invalidTxn.Out, coin.TransactionOutput{
-		Coins: math.MaxInt64 + 1,
-	})
+
 	type httpBody struct {
 		addrs     string
 		confirmed string
+		verbose   string
+	}
+
+	type verboseResult struct {
+		Transactions []visor.Transaction
+		Inputs       [][]visor.TransactionInput
 	}
 
 	tt := []struct {
-		name                    string
-		method                  string
-		status                  int
-		err                     string
-		httpBody                *httpBody
-		getTransactionsArg      []visor.TxFilter
-		getTransactionsResponse []visor.Transaction
-		getTransactionsError    error
-		httpResponse            []visor.Transaction
+		name                           string
+		method                         string
+		status                         int
+		err                            string
+		httpBody                       *httpBody
+		verbose                        bool
+		getTransactionsArg             []visor.TxFilter
+		getTransactionsResponse        []visor.Transaction
+		getTransactionsError           error
+		getTransactionsVerboseResponse verboseResult
+		getTransactionsVerboseError    error
+		httpResponse                   interface{}
 	}{
 		{
 			name:   "405",
@@ -669,6 +994,7 @@ func TestGetTransactions(t *testing.T) {
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
+
 		{
 			name:   "400 - invalid `addrs` param",
 			method: http.MethodGet,
@@ -678,9 +1004,10 @@ func TestGetTransactions(t *testing.T) {
 				addrs: invalidAddrsStr,
 			},
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
+				visor.NewAddrsFilter(addrs),
 			},
 		},
+
 		{
 			name:   "400 - invalid `confirmed` param",
 			method: http.MethodGet,
@@ -691,47 +1018,58 @@ func TestGetTransactions(t *testing.T) {
 				confirmed: "invalidConfirmed",
 			},
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
+				visor.NewAddrsFilter(addrs),
 			},
 		},
+
+		{
+			name:   "400 - invalid verbose",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Invalid value for verbose",
+			httpBody: &httpBody{
+				addrs:   addrsStr,
+				verbose: "foo",
+			},
+			getTransactionsArg: []visor.TxFilter{
+				visor.NewAddrsFilter(addrs),
+			},
+		},
+
 		{
 			name:   "500 - getTransactionsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetTransactions failed: getTransactionsError",
+			err:    "500 Internal Server Error - getTransactionsError",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
 			},
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
-				visor.ConfirmedTxFilter(true),
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
 			},
 			getTransactionsError: errors.New("getTransactionsError"),
 		},
+
 		{
-			name:   "500 - daemon.NewTransactionResults error",
+			name:   "500 - getTransactionsVerboseError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - daemon.NewTransactionResults failed: Droplet string conversion failed: Value is too large",
+			err:    "500 Internal Server Error - getTransactionsVerboseError",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
+				verbose:   "1",
 			},
+			verbose: true,
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
-				visor.ConfirmedTxFilter(true),
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
 			},
-			getTransactionsResponse: []visor.Transaction{
-				{
-					Txn: invalidTxn,
-					Status: visor.TransactionStatus{
-						Confirmed: true,
-						Height:    103,
-					},
-				},
-			},
+			getTransactionsVerboseError: errors.New("getTransactionsVerboseError"),
 		},
+
 		{
 			name:   "200",
 			method: http.MethodGet,
@@ -741,20 +1079,94 @@ func TestGetTransactions(t *testing.T) {
 				confirmed: "true",
 			},
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
-				visor.ConfirmedTxFilter(true),
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
 			},
 			getTransactionsResponse: []visor.Transaction{},
-			httpResponse:            []visor.Transaction{},
+			httpResponse:            []readable.TransactionWithStatus{},
+		},
+
+		{
+			name:   "200 verbose",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
+				addrs:     addrsStr,
+				confirmed: "true",
+				verbose:   "1",
+			},
+			verbose: true,
+			getTransactionsArg: []visor.TxFilter{
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
+			},
+			getTransactionsVerboseResponse: verboseResult{
+				Transactions: []visor.Transaction{},
+				Inputs:       [][]visor.TransactionInput{},
+			},
+			httpResponse: []readable.TransactionWithStatusVerbose{},
 		},
 	}
 
 	for _, tc := range tt {
 		endpoint := "/api/v1/transactions"
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
-			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway := &MockGatewayer{}
+
+			// Custom argument matching function for matching TxFilter args
+			matchFunc := mock.MatchedBy(func(flts []visor.TxFilter) bool {
+				if len(flts) != len(tc.getTransactionsArg) {
+					return false
+				}
+
+				for i, f := range flts {
+					switch f.(type) {
+					case visor.AddrsFilter:
+						flt, ok := tc.getTransactionsArg[i].(visor.AddrsFilter)
+						if !ok {
+							return false
+						}
+
+						if len(flt.Addrs) != len(f.(visor.AddrsFilter).Addrs) {
+							return false
+						}
+
+						for j, a := range flt.Addrs {
+							ab := a.Bytes()
+							bb := f.(visor.AddrsFilter).Addrs[j].Bytes()
+							if !bytes.Equal(ab[:], bb[:]) {
+								return false
+							}
+						}
+
+					case visor.BaseFilter:
+						// This part assumes that the filter is a ConfirmedTxFilter
+						flt, ok := tc.getTransactionsArg[i].(visor.BaseFilter)
+						if !ok {
+							return false
+						}
+
+						dummyTxn := &visor.Transaction{
+							Status: visor.TransactionStatus{
+								Confirmed: true,
+							},
+						}
+
+						if flt.F(dummyTxn) != f.(visor.BaseFilter).F(dummyTxn) {
+							return false
+						}
+
+					default:
+						return false
+					}
+				}
+
+				return true
+			})
+
+			gateway.On("GetTransactions", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
+			gateway.On("GetTransactionsVerbose", matchFunc).Return(tc.getTransactionsVerboseResponse.Transactions,
+				tc.getTransactionsVerboseResponse.Inputs, tc.getTransactionsVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -763,6 +1175,9 @@ func TestGetTransactions(t *testing.T) {
 				}
 				if tc.httpBody.confirmed != "" {
 					v.Add("confirmed", tc.httpBody.confirmed)
+				}
+				if tc.httpBody.verbose != "" {
+					v.Add("verbose", tc.httpBody.verbose)
 				}
 			}
 			if len(v) > 0 {
@@ -778,21 +1193,28 @@ func TestGetTransactions(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []visor.Transaction
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, msg, tc.name)
+				if tc.verbose {
+					var msg []readable.TransactionWithStatusVerbose
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, msg, tc.name)
+				} else {
+					var msg []readable.TransactionWithStatus
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, msg, tc.name)
+				}
 			}
 		})
 	}
@@ -822,7 +1244,7 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	txn.PushOutput(makeAddress(), 5e6, 50)
 	txn.UpdateHeader()
 
-	input, err := wallet.NewUxBalance(uint64(utc.UnixNow()), ux)
+	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
 	require.NoError(t, err)
 
 	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
@@ -838,7 +1260,7 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	txn.PushOutput(cipher.Address{}, 5e6, 50)
 	txn.UpdateHeader()
 
-	input, err := wallet.NewUxBalance(uint64(utc.UnixNow()), ux)
+	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
 	require.NoError(t, err)
 
 	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
@@ -876,7 +1298,6 @@ func TestVerifyTransaction(t *testing.T) {
 		method                        string
 		contentType                   string
 		status                        int
-		err                           string
 		httpBody                      string
 		gatewayVerifyTxnVerboseArg    coin.Transaction
 		gatewayVerifyTxnVerboseResult verifyTxnVerboseResult
@@ -884,9 +1305,9 @@ func TestVerifyTransaction(t *testing.T) {
 		csrfDisabled                  bool
 	}{
 		{
-			name:   "405",
-			method: http.MethodGet,
-			status: http.StatusMethodNotAllowed,
+			name:                       "405",
+			method:                     http.MethodGet,
+			status:                     http.StatusMethodNotAllowed,
 			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
 			httpResponse:               NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""),
 		},
@@ -997,10 +1418,9 @@ func TestVerifyTransaction(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/transaction/verify"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -1016,12 +1436,11 @@ func TestVerifyTransaction(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			var rsp ReceivedHTTPResponse
 			err = json.NewDecoder(rr.Body).Decode(&rsp)

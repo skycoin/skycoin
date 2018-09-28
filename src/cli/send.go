@@ -15,9 +15,8 @@ func sendCmd() gcli.Command {
 		Description: `
 		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
 
-        If you are sending from a wallet the coins will be taken recursively from all
-        addresses within the wallet starting with the first address until the amount of
-        the transaction is met.
+        If you are sending from a wallet without specifying an address,
+        the transaction will use one or more of the addresses within the wallet.
 
         Use caution when using the “-p” command. If you have command history enabled
         your wallet encryption password can be recovered from the history log.
@@ -50,18 +49,22 @@ func sendCmd() gcli.Command {
 				Name:  "json,j",
 				Usage: "Returns the results in JSON format.",
 			},
+			gcli.StringFlag{
+				Name:  "csv",
+				Usage: "[filepath] CSV file containing addresses and amounts to send",
+			},
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rpcClient := RPCClientFromContext(c)
+			apiClient := APIClientFromContext(c)
 
-			rawtx, err := createRawTxCmdHandler(c)
+			rawTxn, err := createRawTxnCmdHandler(c)
 			if err != nil {
-				errorWithHelp(c, err)
-				return nil
+				printHelp(c)
+				return err
 			}
 
-			txid, err := rpcClient.InjectTransaction(rawtx)
+			txid, err := apiClient.InjectTransaction(rawTxn)
 			if err != nil {
 				return err
 			}

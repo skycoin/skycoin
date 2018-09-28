@@ -32,3 +32,4 @@
 /* Find the modified copy of libskycoin */
 %include "libskycoin.h"
 %include "structs.i"
+%include "skyerrors.h"

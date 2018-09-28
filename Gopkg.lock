@@ -8,6 +8,12 @@
   version = "v1.0.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/andreyvit/diff"
+  packages = ["."]
+  revision = "c7f18ee00883bfd3b00e0a2bf7607827e0148ad4"
+
+[[projects]]
   name = "github.com/boltdb/bolt"
   packages = ["."]
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
@@ -88,6 +94,12 @@
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/sergi/go-diff"
+  packages = ["diffmatchpatch"]
+  revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
   version = "v1.0.0"
 
 [[projects]]
@@ -205,6 +217,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "54b60e7f81ba03cf22a9cf957d47f75b9f1592aa729980b6e4af3c208344cbbf"
+  inputs-digest = "329a11cf62a9defc83325e45c1ab0f25ca67be42a29d17ca8947d95dab5e292a"
   solver-name = "gps-cdcl"
   solver-version = 1

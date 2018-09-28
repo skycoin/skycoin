@@ -141,10 +141,10 @@ func (mai *MessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 
 // DeepMessagesAnnotationsIterator : Implementation of deep IAnnotationsIterator for type gnet.Message
 type DeepMessagesAnnotationsIterator struct {
-	Message      gnet.Message
-	LengthCalled bool
-	PrefixCalled bool
-	CurrentField int
+	Message         gnet.Message
+	LengthCalled    bool
+	PrefixCalled    bool
+	CurrentField    int
 	CurrentIndex    int
 	CurrentDepth    int
 	MaxDepth        int
@@ -334,7 +334,7 @@ var sig2, _ = cipher.SigFromHex(sig2hex) // nolint: errcheck
 var sig3, _ = cipher.SigFromHex(sig3hex) // nolint: errcheck
 var sig4, _ = cipher.SigFromHex(sig4hex) // nolint: errcheck
 
-var sigs = []cipher.Sig {
+var sigs = []cipher.Sig{
 	sig1,
 	sig2,
 	sig3,
@@ -505,15 +505,14 @@ func ExampleGiveBlocksMessage() {
 	setupMsgEncoding()
 	var blocks = make([]coin.SignedBlock, 0)
 
-	var transactions1 = make([]coin.Transaction,0)
-	var transactionOutput1_1 = coin.TransactionOutput {Address:addresses[0],Coins:2,Hours:4}
-	var transactionOutput1_2 = coin.TransactionOutput {Address:addresses[1],Coins:1,Hours:2}
-	var transactionOutput2_1 = coin.TransactionOutput {Address:addresses[2],Coins:5,Hours:5}
-	var transactionOutput2_2 = coin.TransactionOutput {Address:addresses[3],Coins:3,Hours:3}
-	var transaction1_1 = coin.Transaction{Type:2,In:hashes[0:2],Out:[]coin.TransactionOutput {transactionOutput1_1,transactionOutput1_2},InnerHash:hashes[3],Length:2,Sigs:sigs[0:2]}
-	var transaction1_2 = coin.Transaction{Type:1,In:hashes[3:4],Out:[]coin.TransactionOutput {transactionOutput2_1,transactionOutput2_2},InnerHash:hashes[4],Length:2,Sigs:sigs[1:3]}
-	transactions1 = append(transactions1,transaction1_1,transaction1_2)
-
+	var transactions1 = make([]coin.Transaction, 0)
+	var transactionOutput1_1 = coin.TransactionOutput{Address: addresses[0], Coins: 2, Hours: 4}
+	var transactionOutput1_2 = coin.TransactionOutput{Address: addresses[1], Coins: 1, Hours: 2}
+	var transactionOutput2_1 = coin.TransactionOutput{Address: addresses[2], Coins: 5, Hours: 5}
+	var transactionOutput2_2 = coin.TransactionOutput{Address: addresses[3], Coins: 3, Hours: 3}
+	var transaction1_1 = coin.Transaction{Type: 2, In: hashes[0:2], Out: []coin.TransactionOutput{transactionOutput1_1, transactionOutput1_2}, InnerHash: hashes[3], Length: 2, Sigs: sigs[0:2]}
+	var transaction1_2 = coin.Transaction{Type: 1, In: hashes[3:4], Out: []coin.TransactionOutput{transactionOutput2_1, transactionOutput2_2}, InnerHash: hashes[4], Length: 2, Sigs: sigs[1:3]}
+	transactions1 = append(transactions1, transaction1_1, transaction1_2)
 
 	var body1 = coin.BlockBody{
 		Transactions: transactions1,

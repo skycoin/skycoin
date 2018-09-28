@@ -326,26 +326,15 @@ func TestEncodeNestedSlice(t *testing.T) {
 	require.NoError(t, err)
 
 	for i, e := range d.Elements {
-		if c.Elements[i].X != e.X || c.Elements[i].Y != e.Y {
-			t.Fatalf("Deserialized x, y to invalid value. "+
-				"Expected %d,%d but got %d,%d", c.Elements[i].X,
-				c.Elements[i].Y, e.X, e.Y)
-		}
-		if len(c.Elements[i].Bytes) != len(e.Bytes) {
-			t.Fatal("Deserialized Bytes to invalid length")
-		}
+		require.Equal(t, c.Elements[i].X, e.X)
+		require.Equal(t, c.Elements[i].Y, e.Y)
+		require.Equal(t, len(c.Elements[i].Bytes), len(e.Bytes))
 		for j, b := range c.Elements[i].Bytes {
-			if c.Elements[i].Bytes[j] != b {
-				t.Fatal("Deserialized to invalid value")
-			}
+			require.Equal(t, c.Elements[i].Bytes[j], b)
 		}
-		if len(c.Elements[i].Ints) != len(e.Ints) {
-			t.Fatal("Deserialized Ints to invalid length")
-		}
+		require.Equal(t, len(c.Elements[i].Ints), len(e.Ints))
 		for j, b := range c.Elements[i].Ints {
-			if c.Elements[i].Ints[j] != b {
-				t.Fatal("Deserialized Ints to invalid value")
-			}
+			require.Equal(t, c.Elements[i].Ints[j], b)
 		}
 	}
 }
@@ -377,11 +366,7 @@ func TestFlattenMultidimensionalBytes(t *testing.T) {
 	}
 
 	b := Serialize(data)
-	expect := 16 * 16
-	if len(b) != expect {
-		t.Fatalf("Expected %d bytes, decoded to %d bytes", expect, len(b))
-	}
-
+	require.Equal(t, 16*16, len(b))
 }
 
 func TestMultiArrays(t *testing.T) {
@@ -401,21 +386,14 @@ func TestMultiArrays(t *testing.T) {
 
 	for i := 0; i < 16; i++ {
 		for j := 0; j < 16; j++ {
-			if data[i][j] != data2[i][j] {
-				t.Fatalf("failed round trip test")
-			}
+			require.Equal(t, data[i][j], data2[i][j])
 		}
 	}
 
 	b2 := Serialize(data2)
-	if !bytes.Equal(b, b2) {
-		t.Fatalf("Failed round trip test")
-	}
+	require.True(t, bytes.Equal(b, b2))
 
-	if len(b) != 256 {
-		t.Fatalf("decoded to wrong byte length")
-	}
-
+	require.Equal(t, 256, len(b))
 }
 
 func TestDeserializeAtomic(t *testing.T) {
@@ -423,11 +401,10 @@ func TestDeserializeAtomic(t *testing.T) {
 	b := SerializeAtomic(sp)
 
 	var i uint64
-	DeserializeAtomic(b, &i)
-
-	if i != sp {
-		t.Fatal("round trip atomic fail")
-	}
+	n, err := DeserializeAtomic(b, &i)
+	require.Equal(t, len(b), n)
+	require.NoError(t, err)
+	require.Equal(t, sp, i)
 }
 
 func TestSerializeDeserializeAtomic(t *testing.T) {
@@ -436,10 +413,8 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, 0, n)
 	require.Equal(t, ErrBufferUnderflow, err)
 
-	d := make([]byte, 8)
-
 	b := false
-	d = SerializeAtomic(b)
+	d := SerializeAtomic(b)
 	var bb bool
 	n, err = DeserializeAtomic(d, &bb)
 	require.NoError(t, err)

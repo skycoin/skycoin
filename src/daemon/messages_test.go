@@ -145,7 +145,6 @@ type DeepMessagesAnnotationsIterator struct {
 	LengthCalled bool
 	PrefixCalled bool
 	CurrentField int
-	//MaxField     	int
 	CurrentIndex    int
 	CurrentDepth    int
 	MaxDepth        int
@@ -166,7 +165,6 @@ func NewDeepMessagesAnnotationsIterator(message gnet.Message, depth int) DeepMes
 	dmai.CurrentIndex = -1
 	dmai.CurrentDepth = 1
 	dmai.MaxDepth = depth
-	//dmai.MaxField = reflect.Indirect(reflect.ValueOf(dmai.Message)).NumField()
 	dmai.CurrentTypology = make([]reflect.Kind, 1)
 	dmai.CurrentTypology[0] = reflect.Struct
 	dmai.CurrentPosition = make([]int, 1)
@@ -230,15 +228,11 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 	var objName string
 	dmai.obj, objName = getCurrentObj(dmai.Message, dmai.CurrentDepth, dmai.CurrentTypology, dmai.CurrentPosition)
 
-	//var annotation = hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(obj.Interface()))}
-
 	for len(dmai.CurrentPosition) != 1 && (dmai.CurrentPosition[len(dmai.CurrentPosition)-1] == dmai.CurrentMax[len(dmai.CurrentPosition)-1]-1) {
 		dmai.CurrentPosition = dmai.CurrentPosition[0 : len(dmai.CurrentPosition)-1]
 		dmai.CurrentTypology = dmai.CurrentTypology[0 : len(dmai.CurrentTypology)-1]
 		dmai.CurrentMax = dmai.CurrentMax[0 : len(dmai.CurrentMax)-1]
 		dmai.CurrentDepth--
-		//dmai.obj = dmai.old_obj
-		//dmai.CurrentPosition[len(dmai.CurrentPosition)-1]++
 	}
 
 	var encTagIsDash bool
@@ -257,12 +251,6 @@ func (dmai *DeepMessagesAnnotationsIterator) Next() (hexdump.Annotation, bool) {
 	dmai.CurrentPosition[len(dmai.CurrentPosition)-1]++
 
 	if len(dmai.CurrentPosition) != 1 || (!encTagIsDash && (fieldIsSettable || fieldNameIsntUnderscore) && !encTagContainsOmitempty) {
-		//fmt.Println(encoder.Serialize(dmai.obj.Interface()))
-		//if strings.Contains(objName,"IP") {
-		//	return hexdump.Annotation{Name: objName, Size: 4},true
-		//} else {
-		//	return hexdump.Annotation{Name: objName, Size: 2},true
-		//}
 		return hexdump.Annotation{Name: objName, Size: len(encoder.Serialize(dmai.obj.Interface()))}, true
 	}
 	return dmai.Next()

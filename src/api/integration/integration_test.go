@@ -1046,6 +1046,9 @@ func TestStableBalance(t *testing.T) {
 }
 
 func TestGetNoteByTxID(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
 	defer testRemoveNotes(t)
 
 	testAddNotes(t)

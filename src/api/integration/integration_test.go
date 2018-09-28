@@ -1084,6 +1084,10 @@ func testRemoveNotes(t *testing.T) {
 		t.Error(err)
 	}
 
+	if len(allNotesBefore) == 0 {
+		require.Equal(t, len(allNotes), len(allNotesBefore))
+		return
+	}
 	require.Equal(t, len(allNotes), len(allNotesBefore)-len(noteList))
 }
 

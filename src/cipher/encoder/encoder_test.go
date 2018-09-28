@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"io/ioutil"
-	"log"
 	"math"
 	"os"
 	"reflect"
@@ -202,15 +201,7 @@ func Test_Encode_4(t *testing.T) {
 	require.True(t, bytes.Equal(b, b2))
 }
 
-// type TestStruct2 struct {
-//     X   int32
-//     Y   int64
-//     Z   uint8
-//     K   [8]byte
-// }
-
 func Test_Encode_5(t *testing.T) {
-
 	var ts TestStruct2
 	ts.X = 345535
 	ts.Y = 23432435443
@@ -219,10 +210,7 @@ func Test_Encode_5(t *testing.T) {
 	b1 := Serialize(ts)
 
 	var tts = reflect.TypeOf(ts)
-	var v = reflect.New(tts) //pointer to type tts
-
-	//New returns a Value representing a pointer to a new zero value for the specified type.
-	//That is, the returned Value's Type is PtrTo(tts).
+	var v = reflect.New(tts) // pointer to type tts
 
 	_, err := DeserializeRawToValue(b1, v)
 	require.NoError(t, err)
@@ -402,10 +390,10 @@ func TestMultiArrays(t *testing.T) {
 
 }
 
-func TestSerializeAtomic(t *testing.T) {
-
+func TestDeserializeAtomic(t *testing.T) {
 	var sp uint64 = 0x000C8A9E1809F720
-	b := SerializeAtomic(sp)
+	b := make([]byte, 8)
+	SerializeAtomic(b, sp)
 
 	var i uint64
 	DeserializeAtomic(b, &i)
@@ -415,51 +403,148 @@ func TestSerializeAtomic(t *testing.T) {
 	}
 }
 
-func TestPushPop(t *testing.T) {
-	var sp uint64 = 0x000C8A9E1809F720
+func TestSerializeDeserializeAtomic(t *testing.T) {
+	var di64 int64
+	err := DeserializeAtomic(nil, &di64)
+	require.Equal(t, ErrBufferUnderflow, err)
 
-	var d [8]byte
-	EncodeInt(d[0:8], sp)
+	var db bool
+	err = DeserializeAtomic([]byte{2}, &db)
+	require.Equal(t, ErrBoolDecode, err)
 
-	//fmt.Printf("d= %X \n", d[:])
+	err = SerializeAtomic(nil, int8(0))
+	require.Equal(t, ErrBufferOverflow, err)
+	err = SerializeAtomic(nil, int16(0))
+	require.Equal(t, ErrBufferOverflow, err)
+	err = SerializeAtomic(nil, int32(0))
+	require.Equal(t, ErrBufferOverflow, err)
+	err = SerializeAtomic(nil, int64(0))
+	require.Equal(t, ErrBufferOverflow, err)
+	err = SerializeAtomic(nil, uint8(0))
+	require.Equal(t, ErrBufferOverflow, err)
+	err = SerializeAtomic(nil, uint16(0))
+	require.Equal(t, ErrBufferOverflow, err)
+	err = SerializeAtomic(nil, uint32(0))
+	require.Equal(t, ErrBufferOverflow, err)
+	err = SerializeAtomic(nil, uint64(0))
+	require.Equal(t, ErrBufferOverflow, err)
 
-	var ti uint64
-	DecodeInt(d[0:8], &ti)
+	d := make([]byte, 8)
 
-	if ti != sp {
-		//fmt.Printf("sp= %X ti= %X \n", sp,ti)
-		t.Error("roundtrip failed")
-	}
+	b := false
+	err = SerializeAtomic(d, b)
+	require.NoError(t, err)
+	var bb bool
+	err = DeserializeAtomic(d, &bb)
+	require.NoError(t, err)
+	require.Equal(t, b, bb)
+
+	b = true
+	bb = false
+	err = SerializeAtomic(d, b)
+	require.NoError(t, err)
+	err = DeserializeAtomic(d, &bb)
+	require.NoError(t, err)
+	require.Equal(t, b, bb)
+
+	var u8 uint8 = 0xF7
+	err = SerializeAtomic(d, u8)
+	require.NoError(t, err)
+	var u8b uint8
+	err = DeserializeAtomic(d, &u8b)
+	require.NoError(t, err)
+	require.Equal(t, u8, u8b)
+
+	var u16 uint16 = 0xF720
+	err = SerializeAtomic(d, u16)
+	require.NoError(t, err)
+	var u16b uint16
+	err = DeserializeAtomic(d, &u16b)
+	require.NoError(t, err)
+	require.Equal(t, u16, u16b)
+
+	var u32 uint32 = 0x1809F720
+	err = SerializeAtomic(d, u32)
+	require.NoError(t, err)
+	var u32b uint32
+	err = DeserializeAtomic(d, &u32b)
+	require.NoError(t, err)
+	require.Equal(t, u32, u32b)
+
+	var u64 uint64 = 0x000C8A9E1809F720
+	err = SerializeAtomic(d, u64)
+	require.NoError(t, err)
+	var u64b uint64
+	err = DeserializeAtomic(d, &u64b)
+	require.NoError(t, err)
+	require.Equal(t, u64, u64b)
+
+	var i8 int8 = 0x69
+	err = SerializeAtomic(d, i8)
+	require.NoError(t, err)
+	var i8b int8
+	err = DeserializeAtomic(d, &i8b)
+	require.NoError(t, err)
+	require.Equal(t, i8, i8b)
+
+	var i16 int16 = 0x6920
+	err = SerializeAtomic(d, i16)
+	require.NoError(t, err)
+	var i16b int16
+	err = DeserializeAtomic(d, &i16b)
+	require.NoError(t, err)
+	require.Equal(t, i16, i16b)
+
+	var i32 int32 = 0x1809F720
+	err = SerializeAtomic(d, i32)
+	require.NoError(t, err)
+	var i32b int32
+	err = DeserializeAtomic(d, &i32b)
+	require.NoError(t, err)
+	require.Equal(t, i32, i32b)
+
+	var i64 int64 = 0x000C8A9E1809F720
+	err = SerializeAtomic(d, i64)
+	require.NoError(t, err)
+	var i64b int64
+	err = DeserializeAtomic(d, &i64b)
+	require.NoError(t, err)
+	require.Equal(t, i64, i64b)
 }
 
 type TestStruct5a struct {
 	Test uint64
 }
 
-func TestPanicTest(t *testing.T) {
-
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("EncodeInt Did not panic")
-		}
-	}()
-
-	log.Panic()
-}
-
-func TestPushPopNegative(t *testing.T) {
-
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("EncodeInt Did not panic on invalid input type")
-		}
-	}()
+func TestSerializeAtomicPanics(t *testing.T) {
+	var x float32
+	require.PanicsWithValue(t, "SerializeAtomic unhandled type", func() {
+		SerializeAtomic(nil, x) // nolint: errcheck
+	})
 
 	var tst TestStruct5a
-	//var sp uint64 = 0x000C8A9E1809F720
-	var d [8]byte
-	EncodeInt(d[0:8], &tst) //attemp to encode invalid type
+	d := make([]byte, 8)
+	require.PanicsWithValue(t, "SerializeAtomic unhandled type", func() {
+		SerializeAtomic(d, &tst) // nolint: errcheck
+	})
+}
 
+func TestDeserializeAtomicPanics(t *testing.T) {
+	var y int8
+	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
+		DeserializeAtomic(nil, y) // nolint: errcheck
+	})
+
+	var x float32
+	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
+		DeserializeAtomic(nil, &x) // nolint: errcheck
+	})
+
+	var tst TestStruct5a
+	d := make([]byte, 8)
+	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
+		DeserializeAtomic(d, &tst) // nolint: errcheck
+	})
 }
 
 func TestByteArray(t *testing.T) {

@@ -279,6 +279,21 @@ func getCurrentObj(message gnet.Message, currentDepth int, currentTypology []ref
  *
  *************************************/
 
+const (
+	// seed = "x"
+	// skhex = "2a2b56833e4fd6e30f4a653e62f4eb7761d7d383baa52496df08c237a2dfff98"
+	// pkhex = "0268bc0885c2b9dc58199403bc5ac529e2962b326188cd09caabeb9d5e61f26c39"
+	//
+	// buffer => 0x00, 0x01, ... 0xff
+	sig1hex = "03213fdd6ddf860e4053e1a97e4276d63454f5195a8321357004d52cdbbfd3886fc7ad3f3f63b65d4a879ce3086daeb3e54a93d3c2f96a5061f9bc493683ca8e01"
+	// buffer => 0x01, 0x01, ... 0xff
+	sig2hex = "aeabca1decb2ab5ba8af93c6f033de6cbf1d50314df275f940778bc720433cbc2194aacfa243cc2a21f85f2fff71d3166d1875e1981a0da5a23d289681fc1fa300"
+	// buffer => 0x02, 0x01, ... 0xff
+	sig3hex = "6765278afc9f3e0ffb95cbb3f01872e92ed1d51e7a83d16d499e9597e24fa6f308d885c831c46b699ad67b2fdd2f762fd65f4fbcf66f981d76a9adfe420d161401"
+	// buffer => 0x03, 0x01, ... 0xff
+	sig4hex = "5edb9bbd4a7820f45391f08e7572c91fb61be7106ddb5346ac00596c8992cfa23aac06469aec55337102418ceb11529b3b30578402e58c2ff66dcd8bbf3521e901"
+)
+
 var hashes = []cipher.SHA256{
 	// buffer => 0x00, 0x01, ... 0xff
 	getSHAFromHex("40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880"),
@@ -312,6 +327,18 @@ var addresses = []cipher.Address{
 	cipher.AddressFromSecKey(secKey2),
 	cipher.AddressFromSecKey(secKey3),
 	cipher.AddressFromSecKey(secKey4),
+}
+
+var sig1, _ = cipher.SigFromHex(sig1hex) // nolint: errcheck
+var sig2, _ = cipher.SigFromHex(sig2hex) // nolint: errcheck
+var sig3, _ = cipher.SigFromHex(sig3hex) // nolint: errcheck
+var sig4, _ = cipher.SigFromHex(sig4hex) // nolint: errcheck
+
+var sigs = []cipher.Sig {
+	sig1,
+	sig2,
+	sig3,
+	sig4,
 }
 
 func getSHAFromHex(hex string) cipher.SHA256 {
@@ -461,7 +488,7 @@ func ExampleGetBlocksMessage() {
 	setupMsgEncoding()
 	var message = NewGetBlocksMessage(1234, 5678)
 	fmt.Println("GetBlocksMessage:")
-	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 6)
 	w := bufio.NewWriter(os.Stdout)
 	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w) // nolint: errcheck
 	// Output:
@@ -476,21 +503,32 @@ func ExampleGetBlocksMessage() {
 func ExampleGiveBlocksMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
-	var blocks = make([]coin.SignedBlock, 1)
+	var blocks = make([]coin.SignedBlock, 0)
+
+	var transactions1 = make([]coin.Transaction,0)
+	var transactionOutput1_1 = coin.TransactionOutput {Address:addresses[0],Coins:2,Hours:4}
+	var transactionOutput1_2 = coin.TransactionOutput {Address:addresses[1],Coins:1,Hours:2}
+	var transactionOutput2_1 = coin.TransactionOutput {Address:addresses[2],Coins:5,Hours:5}
+	var transactionOutput2_2 = coin.TransactionOutput {Address:addresses[3],Coins:3,Hours:3}
+	var transaction1_1 = coin.Transaction{Type:2,In:hashes[0:2],Out:[]coin.TransactionOutput {transactionOutput1_1,transactionOutput1_2},InnerHash:hashes[3],Length:2,Sigs:sigs[0:2]}
+	var transaction1_2 = coin.Transaction{Type:1,In:hashes[3:4],Out:[]coin.TransactionOutput {transactionOutput2_1,transactionOutput2_2},InnerHash:hashes[4],Length:2,Sigs:sigs[1:3]}
+	transactions1 = append(transactions1,transaction1_1,transaction1_2)
+
+
 	var body1 = coin.BlockBody{
-		Transactions: make([]coin.Transaction, 0),
+		Transactions: transactions1,
 	}
 	var block1 = coin.Block{
 		Body: body1,
 		Head: coin.BlockHeader{
 			Version:  0x02,
 			Time:     100,
-			BkSeq:    0,
+			BkSeq:    1,
 			Fee:      10,
 			PrevHash: hashes[0],
 			BodyHash: body1.Hash(),
 		}}
-	var sig, _ = cipher.SigFromHex("123")
+	var sig = sigs[3]
 	var signedBlock = coin.SignedBlock{
 		Sig:   sig,
 		Block: block1,
@@ -498,43 +536,87 @@ func ExampleGiveBlocksMessage() {
 	blocks = append(blocks, signedBlock)
 	var message = NewGiveBlocksMessage(blocks)
 	fmt.Println("GiveBlocksMessage:")
-	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 8)
 	w := bufio.NewWriter(os.Stdout)
 	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w) // nolint: errcheck
 	// Output:
 	// GiveBlocksMessage:
-	// 0x0000 | 8a 01 00 00 ....................................... Length
+	// 0x0000 | 23 03 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 42 ....................................... Prefix
-	// 0x0008 | 02 00 00 00 ....................................... .Blocks length
-	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x004c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x005c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x006c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x007c | 00 00 00 00 00 00 00 00 00 00 00 00 ............... .Blocks[0].Block.Head
-	// 0x0088 | 00 00 00 00 ....................................... .Blocks[0].Block.Body
-	// 0x008c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x009c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00cc | 00 ................................................ .Blocks[0].Sig
-	// 0x00cd | 02 00 00 00 64 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 40 af f2 e9
-	// 0x00ed | d2 d8 92 2e 47 af d4 64 8e 69 67 49 71 58 78 5f
-	// 0x00fd | bd 1d a8 70 e7 11 02 66 bf 94 48 80 00 00 00 00
-	// 0x010d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x011d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x012d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x013d | 00 00 00 00 00 00 00 00 00 00 00 00 ............... .Blocks[1].Block.Head
-	// 0x0149 | 00 00 00 00 ....................................... .Blocks[1].Block.Body
-	// 0x014d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x015d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x016d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x017d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x018d | 00 ................................................ .Blocks[1].Sig
-	// 0x018e |
+	// 0x0008 | 01 00 00 00 ....................................... .Blocks length
+	// 0x000c | 02 00 00 00 ....................................... .Blocks[0].Block.Head.Version
+	// 0x0010 | 64 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Head.Time
+	// 0x0018 | 01 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Head.BkSeq
+	// 0x0020 | 0a 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Head.Fee
+	// 0x0028 | 40 af f2 e9 d2 d8 92 2e 47 af d4 64 8e 69 67 49
+	// 0x0038 | 71 58 78 5f bd 1d a8 70 e7 11 02 66 bf 94 48 80 ... .Blocks[0].Block.Head.PrevHash
+	// 0x0048 | 6c 7b 5a 15 4b 6c 97 ea 8d 89 c1 51 79 a0 d0 03
+	// 0x0058 | 1f 18 9e 3b 93 2a 9a 8e ac c7 70 57 36 09 64 85 ... .Blocks[0].Block.Head.BodyHash
+	// 0x0068 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0078 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... .Blocks[0].Block.Head.UxHash
+	// 0x0088 | 02 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions length
+	// 0x008c | 02 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions[0].Length
+	// 0x0090 | 02 ................................................ .Blocks[0].Block.Body.Transactions[0].Type
+	// 0x0091 | f4 45 7d e9 f5 a5 94 2e 07 6a 7f 2b 28 e1 84 2a
+	// 0x00a1 | b6 1f 1b fc 39 e4 ca 55 75 36 60 0f d6 42 09 f6 ... .Blocks[0].Block.Body.Transactions[0].InnerHash
+	// 0x00b1 | 02 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions[0].Sigs length
+	// 0x00b5 | 03 21 3f dd 6d df 86 0e 40 53 e1 a9 7e 42 76 d6
+	// 0x00c5 | 34 54 f5 19 5a 83 21 35 70 04 d5 2c db bf d3 88
+	// 0x00d5 | 6f c7 ad 3f 3f 63 b6 5d 4a 87 9c e3 08 6d ae b3
+	// 0x00e5 | e5 4a 93 d3 c2 f9 6a 50 61 f9 bc 49 36 83 ca 8e
+	// 0x00f5 | 01 ................................................ .Blocks[0].Block.Body.Transactions[0].Sigs[0]
+	// 0x00f6 | ae ab ca 1d ec b2 ab 5b a8 af 93 c6 f0 33 de 6c
+	// 0x0106 | bf 1d 50 31 4d f2 75 f9 40 77 8b c7 20 43 3c bc
+	// 0x0116 | 21 94 aa cf a2 43 cc 2a 21 f8 5f 2f ff 71 d3 16
+	// 0x0126 | 6d 18 75 e1 98 1a 0d a5 a2 3d 28 96 81 fc 1f a3
+	// 0x0136 | 00 ................................................ .Blocks[0].Block.Body.Transactions[0].Sigs[1]
+	// 0x0137 | 02 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions[0].In length
+	// 0x013b | 40 af f2 e9 d2 d8 92 2e 47 af d4 64 8e 69 67 49
+	// 0x014b | 71 58 78 5f bd 1d a8 70 e7 11 02 66 bf 94 48 80 ... .Blocks[0].Block.Body.Transactions[0].In[0]
+	// 0x015b | 7b b4 62 c3 bd 37 1d d8 1c 06 ad 1d 2b 63 59 71
+	// 0x016b | cb 56 eb 22 23 3d fc 9f eb e8 3e 44 c8 40 b8 d7 ... .Blocks[0].Block.Body.Transactions[0].In[1]
+	// 0x017b | 02 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions[0].Out length
+	// 0x017f | 00 07 6d ca 32 de 03 4e 48 67 fa 7a 2a a9 ee fe
+	// 0x018f | 91 f2 0b a0 74 .................................... .Blocks[0].Block.Body.Transactions[0].Out[0].Address
+	// 0x0194 | 02 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Body.Transactions[0].Out[0].Coins
+	// 0x019c | 04 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Body.Transactions[0].Out[0].Hours
+	// 0x01a4 | 00 e9 cb 47 35 e3 95 cf 36 b0 d1 a6 f2 21 bb 23
+	// 0x01b4 | b3 f7 bf b1 f9 .................................... .Blocks[0].Block.Body.Transactions[0].Out[1].Address
+	// 0x01b9 | 01 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Body.Transactions[0].Out[1].Coins
+	// 0x01c1 | 02 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Body.Transactions[0].Out[1].Hours
+	// 0x01c9 | 02 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions[1].Length
+	// 0x01cd | 01 ................................................ .Blocks[0].Block.Body.Transactions[1].Type
+	// 0x01ce | c4 22 09 82 f9 88 b6 25 d0 af c1 2c 7f fd 06 a7
+	// 0x01de | fe 89 bb e6 60 2c 1f 20 d9 08 91 3f e9 38 10 47 ... .Blocks[0].Block.Body.Transactions[1].InnerHash
+	// 0x01ee | 02 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions[1].Sigs length
+	// 0x01f2 | ae ab ca 1d ec b2 ab 5b a8 af 93 c6 f0 33 de 6c
+	// 0x0202 | bf 1d 50 31 4d f2 75 f9 40 77 8b c7 20 43 3c bc
+	// 0x0212 | 21 94 aa cf a2 43 cc 2a 21 f8 5f 2f ff 71 d3 16
+	// 0x0222 | 6d 18 75 e1 98 1a 0d a5 a2 3d 28 96 81 fc 1f a3
+	// 0x0232 | 00 ................................................ .Blocks[0].Block.Body.Transactions[1].Sigs[0]
+	// 0x0233 | 67 65 27 8a fc 9f 3e 0f fb 95 cb b3 f0 18 72 e9
+	// 0x0243 | 2e d1 d5 1e 7a 83 d1 6d 49 9e 95 97 e2 4f a6 f3
+	// 0x0253 | 08 d8 85 c8 31 c4 6b 69 9a d6 7b 2f dd 2f 76 2f
+	// 0x0263 | d6 5f 4f bc f6 6f 98 1d 76 a9 ad fe 42 0d 16 14
+	// 0x0273 | 01 ................................................ .Blocks[0].Block.Body.Transactions[1].Sigs[1]
+	// 0x0274 | 01 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions[1].In length
+	// 0x0278 | f4 45 7d e9 f5 a5 94 2e 07 6a 7f 2b 28 e1 84 2a
+	// 0x0288 | b6 1f 1b fc 39 e4 ca 55 75 36 60 0f d6 42 09 f6 ... .Blocks[0].Block.Body.Transactions[1].In[0]
+	// 0x0298 | 02 00 00 00 ....................................... .Blocks[0].Block.Body.Transactions[1].Out length
+	// 0x029c | 00 83 f1 96 59 16 14 99 2f a6 03 13 38 6f 72 88
+	// 0x02ac | ac 40 14 c8 bc .................................... .Blocks[0].Block.Body.Transactions[1].Out[0].Address
+	// 0x02b1 | 05 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Body.Transactions[1].Out[0].Coins
+	// 0x02b9 | 05 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Body.Transactions[1].Out[0].Hours
+	// 0x02c1 | 00 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0 e9 f4 f0
+	// 0x02d1 | 88 7b 08 4b 43 .................................... .Blocks[0].Block.Body.Transactions[1].Out[1].Address
+	// 0x02d6 | 03 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Body.Transactions[1].Out[1].Coins
+	// 0x02de | 03 00 00 00 00 00 00 00 ........................... .Blocks[0].Block.Body.Transactions[1].Out[1].Hours
+	// 0x02e6 | 5e db 9b bd 4a 78 20 f4 53 91 f0 8e 75 72 c9 1f
+	// 0x02f6 | b6 1b e7 10 6d db 53 46 ac 00 59 6c 89 92 cf a2
+	// 0x0306 | 3a ac 06 46 9a ec 55 33 71 02 41 8c eb 11 52 9b
+	// 0x0316 | 3b 30 57 84 02 e5 8c 2f f6 6d cd 8b bf 35 21 e9
+	// 0x0326 | 01 ................................................ .Blocks[0].Sig
+	// 0x0327 |
 }
 
 func ExampleAnnounceBlocksMessage() {
@@ -605,18 +687,13 @@ func ExampleGiveTxnsMessage() {
 	transactionOutputs0 = append(transactionOutputs0, txOutput0, txOutput1)
 	transactionOutputs1 = append(transactionOutputs1, txOutput2, txOutput3)
 
-	var sig0, sig1, sig2, sig3 cipher.Sig
-	sig0, _ = cipher.SigFromHex("sig0") // nolint: errcheck
-	sig1, _ = cipher.SigFromHex("sig1") // nolint: errcheck
-	sig2, _ = cipher.SigFromHex("sig2") // nolint: errcheck
-	sig3, _ = cipher.SigFromHex("sig3") // nolint: errcheck
 	var transaction0 = coin.Transaction{
 		Type:      123,
 		In:        []cipher.SHA256{hashes[3], hashes[4]},
 		InnerHash: hashes[5],
 		Length:    5000,
 		Out:       transactionOutputs0,
-		Sigs:      []cipher.Sig{sig0, sig1},
+		Sigs:      []cipher.Sig{sigs[0], sigs[1]},
 	}
 	var transaction1 = coin.Transaction{
 		Type:      123,
@@ -624,12 +701,12 @@ func ExampleGiveTxnsMessage() {
 		InnerHash: hashes[6],
 		Length:    5000,
 		Out:       transactionOutputs1,
-		Sigs:      []cipher.Sig{sig2, sig3},
+		Sigs:      []cipher.Sig{sigs[2], sigs[3]},
 	}
 	transactions = append(transactions, transaction0, transaction1)
 	var message = NewGiveTxnsMessage(transactions)
 	fmt.Println("GiveTxnsMessage:")
-	var dmai = NewDeepMessagesAnnotationsIterator(message, 3)
+	var dmai = NewDeepMessagesAnnotationsIterator(message, 5)
 	w := bufio.NewWriter(os.Stdout)
 	hexdump.NewFromIterator(gnet.EncodeMessage(message), &dmai, w) // nolint: errcheck
 	// Output:
@@ -642,15 +719,15 @@ func ExampleGiveTxnsMessage() {
 	// 0x0011 | 38 62 f1 93 a1 56 4e 5e 26 0f 82 7d a8 e1 69 ca
 	// 0x0021 | d8 11 d8 1d 6a 7c 4f fd 66 1c 00 b1 99 94 17 81 ... .Transactions[0].InnerHash
 	// 0x0031 | 02 00 00 00 ....................................... .Transactions[0].Sigs length
-	// 0x0035 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0045 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0055 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0065 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0075 | 00 ................................................ .Transactions[0].Sigs[0]
-	// 0x0076 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0086 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0096 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00a6 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0035 | 03 21 3f dd 6d df 86 0e 40 53 e1 a9 7e 42 76 d6
+	// 0x0045 | 34 54 f5 19 5a 83 21 35 70 04 d5 2c db bf d3 88
+	// 0x0055 | 6f c7 ad 3f 3f 63 b6 5d 4a 87 9c e3 08 6d ae b3
+	// 0x0065 | e5 4a 93 d3 c2 f9 6a 50 61 f9 bc 49 36 83 ca 8e
+	// 0x0075 | 01 ................................................ .Transactions[0].Sigs[0]
+	// 0x0076 | ae ab ca 1d ec b2 ab 5b a8 af 93 c6 f0 33 de 6c
+	// 0x0086 | bf 1d 50 31 4d f2 75 f9 40 77 8b c7 20 43 3c bc
+	// 0x0096 | 21 94 aa cf a2 43 cc 2a 21 f8 5f 2f ff 71 d3 16
+	// 0x00a6 | 6d 18 75 e1 98 1a 0d a5 a2 3d 28 96 81 fc 1f a3
 	// 0x00b6 | 00 ................................................ .Transactions[0].Sigs[1]
 	// 0x00b7 | 02 00 00 00 ....................................... .Transactions[0].In length
 	// 0x00bb | f4 45 7d e9 f5 a5 94 2e 07 6a 7f 2b 28 e1 84 2a
@@ -658,39 +735,47 @@ func ExampleGiveTxnsMessage() {
 	// 0x00db | c4 22 09 82 f9 88 b6 25 d0 af c1 2c 7f fd 06 a7
 	// 0x00eb | fe 89 bb e6 60 2c 1f 20 d9 08 91 3f e9 38 10 47 ... .Transactions[0].In[1]
 	// 0x00fb | 02 00 00 00 ....................................... .Transactions[0].Out length
-	// 0x00ff | 00 07 6d ca 32 de 03 4e 48 67 fa 7a 2a a9 ee fe
-	// 0x010f | 91 f2 0b a0 74 0c 00 00 00 00 00 00 00 22 00 00
-	// 0x011f | 00 00 00 00 00 .................................... .Transactions[0].Out[0]
-	// 0x0124 | 00 e9 cb 47 35 e3 95 cf 36 b0 d1 a6 f2 21 bb 23
-	// 0x0134 | b3 f7 bf b1 f9 38 00 00 00 00 00 00 00 4e 00 00
-	// 0x0144 | 00 00 00 00 00 .................................... .Transactions[0].Out[1]
+	// 0x00ff | 00 ................................................ .Transactions[0].Out[0].Address.Version
+	// 0x0100 | 07 6d ca 32 de 03 4e 48 67 fa 7a 2a a9 ee fe 91
+	// 0x0110 | f2 0b a0 74 ....................................... .Transactions[0].Out[0].Address.Key
+	// 0x0114 | 0c 00 00 00 00 00 00 00 ........................... .Transactions[0].Out[0].Coins
+	// 0x011c | 22 00 00 00 00 00 00 00 ........................... .Transactions[0].Out[0].Hours
+	// 0x0124 | 00 ................................................ .Transactions[0].Out[1].Address.Version
+	// 0x0125 | e9 cb 47 35 e3 95 cf 36 b0 d1 a6 f2 21 bb 23 b3
+	// 0x0135 | f7 bf b1 f9 ....................................... .Transactions[0].Out[1].Address.Key
+	// 0x0139 | 38 00 00 00 00 00 00 00 ........................... .Transactions[0].Out[1].Coins
+	// 0x0141 | 4e 00 00 00 00 00 00 00 ........................... .Transactions[0].Out[1].Hours
 	// 0x0149 | 88 13 00 00 ....................................... .Transactions[1].Length
 	// 0x014d | 7b ................................................ .Transactions[1].Type
 	// 0x014e | 05 64 0e 44 80 73 9e 87 97 57 b0 a2 d1 bd 59 de
 	// 0x015e | a7 df cc fe f3 df 75 a1 83 0a 50 20 01 10 67 21 ... .Transactions[1].InnerHash
 	// 0x016e | 02 00 00 00 ....................................... .Transactions[1].Sigs length
-	// 0x0172 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0182 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0192 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01a2 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01b2 | 00 ................................................ .Transactions[1].Sigs[0]
-	// 0x01b3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01c3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01d3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01e3 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01f3 | 00 ................................................ .Transactions[1].Sigs[1]
+	// 0x0172 | 67 65 27 8a fc 9f 3e 0f fb 95 cb b3 f0 18 72 e9
+	// 0x0182 | 2e d1 d5 1e 7a 83 d1 6d 49 9e 95 97 e2 4f a6 f3
+	// 0x0192 | 08 d8 85 c8 31 c4 6b 69 9a d6 7b 2f dd 2f 76 2f
+	// 0x01a2 | d6 5f 4f bc f6 6f 98 1d 76 a9 ad fe 42 0d 16 14
+	// 0x01b2 | 01 ................................................ .Transactions[1].Sigs[0]
+	// 0x01b3 | 5e db 9b bd 4a 78 20 f4 53 91 f0 8e 75 72 c9 1f
+	// 0x01c3 | b6 1b e7 10 6d db 53 46 ac 00 59 6c 89 92 cf a2
+	// 0x01d3 | 3a ac 06 46 9a ec 55 33 71 02 41 8c eb 11 52 9b
+	// 0x01e3 | 3b 30 57 84 02 e5 8c 2f f6 6d cd 8b bf 35 21 e9
+	// 0x01f3 | 01 ................................................ .Transactions[1].Sigs[1]
 	// 0x01f4 | 02 00 00 00 ....................................... .Transactions[1].In length
 	// 0x01f8 | 38 62 f1 93 a1 56 4e 5e 26 0f 82 7d a8 e1 69 ca
 	// 0x0208 | d8 11 d8 1d 6a 7c 4f fd 66 1c 00 b1 99 94 17 81 ... .Transactions[1].In[0]
 	// 0x0218 | 05 64 0e 44 80 73 9e 87 97 57 b0 a2 d1 bd 59 de
 	// 0x0228 | a7 df cc fe f3 df 75 a1 83 0a 50 20 01 10 67 21 ... .Transactions[1].In[1]
 	// 0x0238 | 02 00 00 00 ....................................... .Transactions[1].Out length
-	// 0x023c | 00 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0 e9 f4 f0
-	// 0x024c | 88 7b 08 4b 43 09 00 00 00 00 00 00 00 0c 00 00
-	// 0x025c | 00 00 00 00 00 .................................... .Transactions[1].Out[0]
-	// 0x0261 | 00 83 f1 96 59 16 14 99 2f a6 03 13 38 6f 72 88
-	// 0x0271 | ac 40 14 c8 bc 22 00 00 00 00 00 00 00 38 00 00
-	// 0x0281 | 00 00 00 00 00 .................................... .Transactions[1].Out[1]
+	// 0x023c | 00 ................................................ .Transactions[1].Out[0].Address.Version
+	// 0x023d | 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0 e9 f4 f0 88
+	// 0x024d | 7b 08 4b 43 ....................................... .Transactions[1].Out[0].Address.Key
+	// 0x0251 | 09 00 00 00 00 00 00 00 ........................... .Transactions[1].Out[0].Coins
+	// 0x0259 | 0c 00 00 00 00 00 00 00 ........................... .Transactions[1].Out[0].Hours
+	// 0x0261 | 00 ................................................ .Transactions[1].Out[1].Address.Version
+	// 0x0262 | 83 f1 96 59 16 14 99 2f a6 03 13 38 6f 72 88 ac
+	// 0x0272 | 40 14 c8 bc ....................................... .Transactions[1].Out[1].Address.Key
+	// 0x0276 | 22 00 00 00 00 00 00 00 ........................... .Transactions[1].Out[1].Coins
+	// 0x027e | 38 00 00 00 00 00 00 00 ........................... .Transactions[1].Out[1].Hours
 	// 0x0286 |
 }
 

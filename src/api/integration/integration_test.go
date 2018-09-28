@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/notes"
+
 	"github.com/andreyvit/diff"
 	"github.com/stretchr/testify/require"
 
@@ -1040,6 +1042,98 @@ func TestStableBalance(t *testing.T) {
 			var expected api.BalanceResponse
 			checkGoldenFile(t, tc.golden, TestData{*balance, &expected})
 		})
+	}
+}
+
+func TestGetNoteByTxID(t *testing.T) {
+	defer testRemoveNotes(t)
+
+	testAddNotes(t)
+	c := api.NewClient(nodeAddress())
+
+	note, err := c.GetNoteByTxID("9c8995afd843372636ae66391797c824e2fd8dfafa77c901c7f9e8d4f5e87117")
+	if err != nil {
+		t.Error(err)
+	}
+
+	require.Equal(t, "A note...", note.Notes)
+}
+
+func testRemoveNotes(t *testing.T) {
+	c := api.NewClient(nodeAddress())
+
+	allNotesBefore, err := c.GetAllNotes()
+	if err != nil {
+		t.Error(err)
+	}
+
+	noteList := getLocalTestNotes()
+
+	for _, note := range noteList {
+		removedNote, err := c.RemoveNote(note.TxIDHex)
+		if err != nil {
+			t.Error(err)
+		}
+
+		require.Equal(t, "", removedNote.TxIDHex)
+		require.Equal(t, "", removedNote.Notes)
+	}
+
+	allNotes, err := c.GetAllNotes()
+	if err != nil {
+		t.Error(err)
+	}
+
+	require.Equal(t, len(allNotes), len(allNotesBefore)-len(noteList))
+}
+
+func testAddNotes(t *testing.T) int {
+	c := api.NewClient(nodeAddress())
+
+	beforeNotes, err := c.GetAllNotes()
+	if err != nil {
+		t.Error(err)
+	}
+
+	noteList := getLocalTestNotes()
+
+	var addedNotes []notes.Note
+	for _, note := range noteList {
+		addedNote, err := c.AddNote(note)
+		if err != nil {
+			t.Error(err)
+		}
+
+		addedNotes = append(addedNotes, addedNote)
+
+		require.NotEqual(t, "", addedNote.TxIDHex)
+		require.NotEqual(t, "", addedNote.Notes)
+	}
+
+	allNotes, err := c.GetAllNotes()
+	if err != nil {
+		t.Error(err)
+	}
+
+	require.Equal(t, len(allNotes), len(beforeNotes)+len(addedNotes))
+
+	return len(allNotes)
+}
+
+func getLocalTestNotes() []notes.Note {
+	return []notes.Note{
+		{
+			TxIDHex: "9c8995afd843372636ae66391797c824e2fd8dfafa77c901c7f9e8d4f5e87117",
+			Notes:   "A note...",
+		},
+		{
+			TxIDHex: "9c8995afd843372636ae66991747c824e2fd8dfefa77c901c7f9e8d4f5e87112",
+			Notes:   "Another note...",
+		},
+		{
+			TxIDHex: "62b1e205aa2895b7094f708d853a54709e14d4677f3e3eee54ef79bcefdbd4c2",
+			Notes:   "The note for tests",
+		},
 	}
 }
 

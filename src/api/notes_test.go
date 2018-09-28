@@ -42,7 +42,7 @@ func TestGetAllNotes(t *testing.T) {
 					Notes:   "A Note... ",
 				},
 				{
-					TxIDHex: "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e8711",
+					TxIDHex: "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87113",
 					Notes:   "Another note...",
 				},
 				{
@@ -56,7 +56,7 @@ func TestGetAllNotes(t *testing.T) {
 					Notes:   "A Note... ",
 				},
 				{
-					TxIDHex: "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e8711",
+					TxIDHex: "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87113",
 					Notes:   "Another note...",
 				},
 				{
@@ -254,7 +254,6 @@ func TestAddNote(t *testing.T) {
 					t.Error(err)
 				}
 			}
-
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(jsonStr))
 			req.Header.Add("Content-Type", "application/json")
 			require.NoError(t, err)

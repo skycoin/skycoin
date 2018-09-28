@@ -458,4 +458,18 @@ coin__Transaction* makeTransaction(Transaction__Handle* handle){
   if(result != 0) return 1;
   return ptransaction;
 }
+
+int makeTransactions(int n, Transactions__Handle* handle){
+  int result = SKY_coin_Create_Transactions(handle);
+  if(result != 0) return 1;
+  registerHandleClose(*handle);
+  for(int i = 0; i < n; i++){
+    Transaction__Handle thandle;
+    makeTransaction(&thandle);
+    registerHandleClose(thandle);
+    result = SKY_coin_Transactions_Add(*handle, thandle);
+    if(result != 0) return 1;
+  }
+  return result;
+}
     %}

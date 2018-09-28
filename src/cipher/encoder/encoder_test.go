@@ -1078,12 +1078,12 @@ func TestRandomGarbage(t *testing.T) {
 	for j := 0; j < 100; j++ {
 		for i := 0; i < size*2; i++ {
 			b := randBytes(t, i)
-			DeserializeRaw(b, &y)
+			DeserializeRaw(b, &y) // nolint: errcheck
 		}
 	}
 
 	for i := 0; i < 10000; i++ {
 		b := randBytes(t, size)
-		DeserializeRaw(b, &y)
+		DeserializeRaw(b, &y) // nolint: errcheck
 	}
 }

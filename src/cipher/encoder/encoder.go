@@ -34,75 +34,60 @@ var (
 	ErrBufferOverflow = errors.New("Not enough buffer data to serialize")
 	// ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
 	ErrInvalidOmitEmpty = errors.New("omitempty only supported for the final field in the struct")
-	// ErrBoolDecode boolean could not be decoded from bytes
-	ErrBoolDecode = errors.New("Boolean decoding failed, byte must be 0 or 1")
+	// ErrRemainingBytes bytes remain in buffer after deserializing object
+	ErrRemainingBytes = errors.New("Bytes remain in buffer after deserializing object")
 )
 
-// SerializeAtomic encoder an integer or boolean contained in `data` into buffer `b`.
+// SerializeAtomic encoder an integer or boolean contained in `data` to bytes.
 // Panics if `data` is not an integer or boolean type.
-func SerializeAtomic(b []byte, data interface{}) error {
+func SerializeAtomic(data interface{}) []byte {
+	var b [8]byte
+
 	switch v := data.(type) {
 	case bool:
-		if len(b) < 1 {
-			return ErrBufferOverflow
-		}
 		if v {
 			b[0] = 1
 		} else {
 			b[0] = 0
 		}
+		return b[:1]
 	case int8:
-		if len(b) < 1 {
-			return ErrBufferOverflow
-		}
 		b[0] = byte(v)
+		return b[:1]
 	case uint8:
-		if len(b) < 1 {
-			return ErrBufferOverflow
-		}
 		b[0] = v
+		return b[:1]
 	case int16:
-		if len(b) < 2 {
-			return ErrBufferOverflow
-		}
 		lePutUint16(b[:2], uint16(v))
+		return b[:2]
 	case uint16:
-		if len(b) < 2 {
-			return ErrBufferOverflow
-		}
 		lePutUint16(b[:2], v)
+		return b[:2]
 	case int32:
-		if len(b) < 4 {
-			return ErrBufferOverflow
-		}
 		lePutUint32(b[:4], uint32(v))
+		return b[:4]
 	case uint32:
-		if len(b) < 4 {
-			return ErrBufferOverflow
-		}
 		lePutUint32(b[:4], v)
+		return b[:4]
 	case int64:
-		if len(b) < 8 {
-			return ErrBufferOverflow
-		}
 		lePutUint64(b[:8], uint64(v))
+		return b[:8]
 	case uint64:
-		if len(b) < 8 {
-			return ErrBufferOverflow
-		}
 		lePutUint64(b[:8], v)
+		return b[:8]
 	default:
 		log.Panic("SerializeAtomic unhandled type")
+		return nil
 	}
-	return nil
 }
 
 // DeserializeAtomic deserializes `in` buffer into `data`
 // parameter. Panics if `data` is not an integer or boolean type.
-func DeserializeAtomic(in []byte, data interface{}) error {
+// Returns the number of bytes read.
+func DeserializeAtomic(in []byte, data interface{}) (int, error) {
 	n := atomicDestSize(data)
 	if len(in) < n {
-		return ErrBufferUnderflow
+		return 0, ErrBufferUnderflow
 	}
 
 	if n == 0 {
@@ -111,76 +96,83 @@ func DeserializeAtomic(in []byte, data interface{}) error {
 
 	switch v := data.(type) {
 	case *bool:
-		switch in[0] {
-		case 1:
-			*v = true
-		case 0:
+		if in[0] == 0 {
 			*v = false
-		default:
-			return ErrBoolDecode
+		} else {
+			*v = true
 		}
+		return 1, nil
 	case *int8:
 		*v = int8(in[0])
+		return 1, nil
 	case *uint8:
 		*v = in[0]
+		return 1, nil
 	case *int16:
 		*v = int16(leUint16(in[:2]))
+		return 2, nil
 	case *uint16:
 		*v = leUint16(in[:2])
+		return 2, nil
 	case *int32:
 		*v = int32(leUint32(in[:4]))
+		return 4, nil
 	case *uint32:
 		*v = leUint32(in[:4])
+		return 4, nil
 	case *int64:
 		*v = int64(leUint64(in[:8]))
+		return 8, nil
 	case *uint64:
 		*v = leUint64(in[:8])
+		return 8, nil
 	default:
 		log.Panic("DeserializeAtomic unhandled type")
+		return 0, nil
 	}
-
-	return nil
 }
 
 // DeserializeRaw deserializes `in` buffer into return
-// parameter. If `data` is not either a Pointer type,
-// a Slice type or a Struct type, an error message
+// parameter. If `data` is not a Pointer or Map type an error
 // is returned. If `in` buffer can't be deserialized,
-// an error message is returned.
+// an error message is returned. If there are remaining
+// bytes in `in` after decoding to data, ErrRemainingBytes is returned.
 func DeserializeRaw(in []byte, data interface{}) error {
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
 	case reflect.Ptr:
 		v = v.Elem()
-	case reflect.Slice:
-	case reflect.Struct:
 	case reflect.Map:
 	default:
-		return fmt.Errorf("Invalid type %s", reflect.TypeOf(v).String())
+		return fmt.Errorf("DeserializeRaw value must be a ptr, is %s", v.Kind().String())
 	}
 
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)
 
-	return d1.value(v)
+	if err := d1.value(v); err != nil {
+		return err
+	}
+
+	if len(d1.buf) != 0 {
+		return ErrRemainingBytes
+	}
+
+	return nil
 }
 
 // DeserializeRawToValue deserializes `in` buffer into
 // `dst`'s type and returns the number of bytes used and
 // the value of the buffer. If `data` is not either a
-// Pointer type, a Slice type or a Struct type, 0 and an error
-// message are returned. If `in` buffer can't be deserialized, 0 and
-// an error message are returned.
-func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
-	var v reflect.Value
-	switch dst.Kind() {
+// Pointer type an error is returned.
+// If `in` buffer can't be deserialized, the number of bytes read and an error message are returned.
+func DeserializeRawToValue(in []byte, v reflect.Value) (int, error) {
+	switch v.Kind() {
 	case reflect.Ptr:
-		v = dst.Elem()
-	case reflect.Slice:
-		v = dst
-	case reflect.Struct:
+		v = v.Elem()
+	case reflect.Map:
 	default:
-		return 0, fmt.Errorf("binary.Read: invalid type %s", reflect.TypeOf(dst).String())
+		return 0, fmt.Errorf("DeserializeRawToValue value must be a ptr, is %s", v.Kind().String())
 	}
 
 	inlen := len(in)
@@ -194,8 +186,6 @@ func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
 // Serialize returns serialized basic type-based `data`
 // parameter. Encoding is reflect-based. Panics if `data` is not serializable.
 func Serialize(data interface{}) []byte {
-	// Fast path for basic types.
-	// Fallback to reflect-based encoding.
 	v := reflect.Indirect(reflect.ValueOf(data))
 	size, err := datasizeWrite(v)
 	if err != nil {
@@ -214,7 +204,7 @@ func Serialize(data interface{}) []byte {
 func Size(v interface{}) (int, error) {
 	n, err := datasizeWrite(reflect.Indirect(reflect.ValueOf(v)))
 	if err != nil {
-		return 0, erro
+		return 0, err
 	}
 	return n, nil
 }

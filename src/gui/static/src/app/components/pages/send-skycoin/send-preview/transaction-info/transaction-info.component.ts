@@ -2,6 +2,7 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PreviewTransaction, Transaction } from '../../../../../app.datatypes';
 import { PriceService } from '../../../../../services/price.service';
 import { ISubscription } from 'rxjs/Subscription';
+import { BigNumber } from 'bignumber.js';
 
 @Component({
   selector: 'app-transaction-info',
@@ -22,10 +23,10 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (this.isPreview) {
-      this.transaction.hoursSent = this.transaction.outputs
+      this.transaction.hoursSent = new BigNumber('0');
+      this.transaction.outputs
         .filter(o => (<PreviewTransaction> this.transaction).to.find(addr => addr === o.address))
-        .map(o => parseInt(o.hours, 10))
-        .reduce((a, b) => a + b, 0);
+        .map(o => this.transaction.hoursSent = this.transaction.hoursSent.plus(new BigNumber(o.hours)));
     }
   }
 

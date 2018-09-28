@@ -2,6 +2,7 @@ package skycoin
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,9 +11,10 @@ import (
 
 	"log"
 
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -20,10 +22,15 @@ var (
 	help = false
 )
 
+const (
+	// EndpointsAll wildcard value to match all API methods
+	EndpointsAll = "ALL"
+)
+
 // Config records skycoin node and build config
 type Config struct {
 	Node  NodeConfig
-	Build visor.BuildInfo
+	Build readable.BuildInfo
 }
 
 // NodeConfig records the node's configuration
@@ -40,18 +47,22 @@ type NodeConfig struct {
 	DisableIncomingConnections bool
 	// Disables networking altogether
 	DisableNetworking bool
-	// Enable wallet API
-	EnableWalletAPI bool
 	// Enable GUI
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable /api/v1/wallet/seed API endpoint
-	EnableSeedAPI bool
 	// Enable unversioned API endpoints (without the /api/v1 prefix)
 	EnableUnversionedAPI bool
 	// Disable CSP disable content-security-policy in http response
 	DisableCSP bool
+	// Comma separated list of API sets enabled on the remote web interface
+	EnabledAPISets string
+	// Comma separated list of API sets disabled on the remote web interface
+	DisabledAPISets string
+	// Enable all of API sets. Applies before disabling individual sets
+	EnableAllAPISets bool
+
+	enabledAPISets map[string]struct{}
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -71,11 +82,16 @@ type NodeConfig struct {
 	// Wallet Address Version
 	//AddressVersion string
 	// Remote web interface
-	WebInterface      bool
-	WebInterfacePort  int
-	WebInterfaceAddr  string
-	WebInterfaceCert  string
-	WebInterfaceKey   string
+	WebInterface bool
+	// Remote web interface port
+	WebInterfacePort int
+	// Remote web interface address
+	WebInterfaceAddr string
+	// Remote web interface certificate
+	WebInterfaceCert string
+	// Remote web interface key
+	WebInterfaceKey string
+	// Remote web interface HTTPS support
 	WebInterfaceHTTPS bool
 
 	// Enable the deprecated JSON 2.0 RPC interface
@@ -127,8 +143,10 @@ type NodeConfig struct {
 	ProfileCPU bool
 	// Where the file is written to
 	ProfileCPUFile string
-	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
+	// Enable HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 	HTTPProf bool
+	// Expose HTTP profiling on this interface
+	HTTPProfHost string
 
 	DBPath      string
 	DBReadOnly  bool
@@ -169,14 +187,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		DisableIncomingConnections: false,
 		// Disables networking altogether
 		DisableNetworking: false,
-		// Enable wallet API
-		EnableWalletAPI: false,
 		// Enable GUI
 		EnableGUI: false,
 		// Enable unversioned API
 		EnableUnversionedAPI: false,
-		// Enable seed API
-		EnableSeedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
 		// DisableCSP disable content-security-policy in http response
@@ -206,6 +220,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
+		EnabledAPISets:    api.EndpointsRead,
+		DisabledAPISets:   "",
+		EnableAllAPISets:  false,
 
 		RPCInterface: false,
 
@@ -240,9 +257,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Enable cpu profiling
 		ProfileCPU: false,
 		// Where the file is written to
-		ProfileCPUFile: node.ProfileCPUFile,
+		ProfileCPUFile: "cpu.prof",
 		// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
-		HTTPProf: false,
+		HTTPProf:     false,
+		HTTPProfHost: "localhost:6060",
 	}
 
 	nodeConfig.applyConfigMode(mode)
@@ -250,7 +268,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	return nodeConfig
 }
 
-func (c *Config) postProcess() {
+func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
 		os.Exit(0)
@@ -312,8 +330,14 @@ func (c *Config) postProcess() {
 		c.Node.Arbitrating = true
 	}
 
+	apiSets, err := buildAPISets(c.Node)
+	if err != nil {
+		return err
+	}
+
 	// Don't open browser to load wallets if wallet apis are disabled.
-	if !c.Node.EnableWalletAPI {
+	c.Node.enabledAPISets = apiSets
+	if _, ok := c.Node.enabledAPISets[api.EndpointsWallet]; !ok {
 		c.Node.EnableGUI = false
 		c.Node.LaunchBrowser = false
 	}
@@ -325,6 +349,70 @@ func (c *Config) postProcess() {
 	if c.Node.DisableDefaultPeers {
 		c.Node.DefaultConnections = nil
 	}
+
+	return nil
+}
+
+// buildAPISets builds the set of enable APIs by the following rules:
+// * If EnableAll, all API sets are added
+// * For each api set in EnabledAPISets, add
+// * For each api set in DisabledAPISets, remove
+func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
+	enabledAPISets := strings.Split(c.EnabledAPISets, ",")
+	if err := validateAPISets("-enable-api-sets", enabledAPISets); err != nil {
+		return nil, err
+	}
+
+	disabledAPISets := strings.Split(c.DisabledAPISets, ",")
+	if err := validateAPISets("-disable-api-sets", disabledAPISets); err != nil {
+		return nil, err
+	}
+
+	apiSets := make(map[string]struct{})
+
+	allAPISets := []string{
+		api.EndpointsRead,
+		api.EndpointsStatus,
+		api.EndpointsWallet,
+		// Do not include insecure or deprecated API sets, they must always
+		// be explicitly enabled through -enable-api-sets
+	}
+
+	if c.EnableAllAPISets {
+		for _, s := range allAPISets {
+			apiSets[s] = struct{}{}
+		}
+	}
+
+	// Add the enabled API sets
+	for _, k := range enabledAPISets {
+		apiSets[k] = struct{}{}
+	}
+
+	// Remove the disabled API sets
+	for _, k := range disabledAPISets {
+		delete(apiSets, k)
+	}
+
+	return apiSets, nil
+}
+
+func validateAPISets(opt string, apiSets []string) error {
+	for _, k := range apiSets {
+		k = strings.ToUpper(strings.TrimSpace(k))
+		switch k {
+		case api.EndpointsRead,
+			api.EndpointsStatus,
+			api.EndpointsWallet,
+			api.EndpointsInsecureWalletSeed,
+			api.EndpointsDeprecatedWalletSpend:
+		case "":
+			continue
+		default:
+			return fmt.Errorf("Invalid value in %s: %q", opt, k)
+		}
+	}
+	return nil
 }
 
 // RegisterFlags binds CLI flags to config values
@@ -336,11 +424,9 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
-	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /api/v1/wallet/seed api")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -351,6 +437,9 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, "disable API set. Options are ALL, READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 
@@ -361,7 +450,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
-	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "Run the http profiling interface")
+	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "run the HTTP profiling interface")
+	flag.StringVar(&c.HTTPProfHost, "http-prof-host", c.HTTPProfHost, "hostname to bind the HTTP profiling interface to")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, warn, error, fatal, panic")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
 	flag.BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
@@ -402,9 +492,9 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	switch configMode {
 	case "":
 	case "STANDALONE_CLIENT":
-		c.EnableWalletAPI = true
+		c.EnableAllAPISets = true
+		c.EnabledAPISets = "INSECURE_WALLET_SEED"
 		c.EnableGUI = true
-		c.EnableSeedAPI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false
 		c.DisableCSP = false

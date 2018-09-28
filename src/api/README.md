@@ -1,6 +1,6 @@
 # REST API Documentation
 
-API default service port is `6420`.  However, if running the desktop or standalone releases from the website, the port is randomized by default.
+API default service port is `6420`. However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
@@ -13,7 +13,7 @@ with `-enable-unversioned-api`.
 ## API Version 1
 
 `/api/v1` endpoints have no standard format. Most of them accept formdata in POST requests,
-but a few accept `application/json` instead.  Most of them return JSON but one or two
+but a few accept `application/json` instead. Most of them return JSON but one or two
 return a plaintext string.
 
 All endpoints will set an appropriate HTTP status code, using `200` for success and codes greater than or equal to `400` for error.
@@ -33,7 +33,7 @@ In the future we may have choose to have `GET` requests also accept `POST` with 
 to support requests with a large query body, such as when requesting data for a large number
 of addresses or transactions.
 
-`/api/v2` responses are always JSON.  If there is an error, the JSON object will
+`/api/v2` responses are always JSON. If there is an error, the JSON object will
 look like this:
 
 ```json
@@ -53,6 +53,19 @@ All responses will set an appropriate HTTP status code indicating an error, and 
 
 Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
 However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
+
+## API Sets
+
+API endpoints are grouped into "sets" which can be toggled with the command line parameters
+`-enable-api-sets`, `-disable-api-sets` and `-enable-all-api-sets`.
+
+These API sets are:
+
+* `READ` - All query-related endpoints, they do not modify the state of the program
+* `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
+* `WALLET` - These endpoints operate on local wallet files
+* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
+* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
@@ -81,6 +94,7 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 	- [Encrypt wallet](#encrypt-wallet)
 	- [Decrypt wallet](#decrypt-wallet)
 	- [Get wallet seed](#get-wallet-seed)
+	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
 - [Transaction APIs](#transaction-apis)
 	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
 	- [Get transaction info by id](#get-transaction-info-by-id)
@@ -125,6 +139,8 @@ as the response body.
 
 ### Get current csrf token
 
+API sets: any
+
 ```
 URI: /api/v1/csrf
 Method: GET
@@ -147,6 +163,8 @@ Result:
 ## General system checks
 
 ### Health check
+
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/health
@@ -195,6 +213,8 @@ Response:
 
 ### Version info
 
+API sets: any
+
 ```
 URI: /api/v1/version
 Method: GET
@@ -220,6 +240,8 @@ Result:
 ## Simple query APIs
 
 ### Get balance of addresses
+
+API sets: `READ`
 
 ```
 URI: /api/v1/balance
@@ -273,6 +295,8 @@ Result:
 
 ### Get unspent output set of address or hash
 
+API sets: `READ`
+
 ```
 URI: /api/v1/outputs
 Method: GET
@@ -317,6 +341,8 @@ Result:
 ```
 
 ### Verify an address
+
+API sets: `READ`
 
 ```
 URI: /api/v2/address/verify
@@ -373,6 +399,8 @@ Result:
 
 ### Get wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet
 Method: GET
@@ -415,15 +443,23 @@ Result:
 
 ### Get unconfirmed transactions of a wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/transactions
 Method: GET
 Args:
-	id: Wallet ID
-	verbose: [bool] include verbose transaction input data
+    id: Wallet ID
+    verbose: [bool] include verbose transaction input data
 ```
 
 Returns all unconfirmed transactions for all addresses in a given wallet
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
+
 
 Example:
 
@@ -498,18 +534,18 @@ Result:
                 "fee": 495076,
                 "inputs": [
                     {
-                    	"uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
-                    	"owner": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
-                    	"coins": "997.000000",
-                    	"hours": 880000,
-                    	"calculated_hours": 990000
+                        "uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
+                        "owner": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+                        "coins": "997.000000",
+                        "hours": 880000,
+                        "calculated_hours": 990000
                     },
                     {
-                    	"uxid": "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91",
-                    	"owner": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
-                    	"coins": "2.000000",
-                    	"hours": 10,
-                    	"calculated_hours": 152
+                        "uxid": "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91",
+                        "owner": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
+                        "coins": "2.000000",
+                        "hours": 10,
+                        "calculated_hours": 152
                     }
                 ],
                 "outputs": [
@@ -537,6 +573,8 @@ Result:
 ```
 
 ### Get wallets
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallets
@@ -580,6 +618,8 @@ Result:
 
 ### Get wallet folder name
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallets/folderName
 Method: GET
@@ -600,6 +640,8 @@ Result:
 ```
 
 ### Generate wallet seed
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/newSeed
@@ -626,6 +668,8 @@ Result:
 
 ### Create a wallet from seed
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/create
 Method: POST
@@ -634,7 +678,7 @@ Args:
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
     encrypt: encrypt wallet [optional, bool value]
-    password: wallet password[optional, must be provided if encrypt is true]
+    password: wallet password [optional, must be provided if encrypt is true]
 ```
 
 Example:
@@ -673,6 +717,8 @@ Result:
 
 ### Generate new address in wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/newAddress
 Method: POST
@@ -704,6 +750,8 @@ Result:
 
 ### Updates wallet label
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/update
 Method: POST
@@ -728,6 +776,8 @@ Result:
 ```
 
 ### Get wallet balance
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/balance
@@ -810,6 +860,8 @@ Result:
 ```
 
 ### Spend coins from wallet
+
+API sets: `DEPRECATED_WALLET_SPEND`
 
 ```
 URI: /api/v1/wallet/spend
@@ -894,6 +946,8 @@ Result:
 ```
 
 ### Create transaction
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/transaction
@@ -1157,6 +1211,8 @@ Result:
 
 ### Unload wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/unload
 Method: POST
@@ -1173,6 +1229,8 @@ curl -X POST http://127.0.0.1:6420/api/v1/wallet/unload \
 ```
 
 ### Encrypt wallet
+
+API sets: `WALLET`
 
 ```
 URI: /api/v1/wallet/encrypt
@@ -1216,6 +1274,8 @@ Result:
 
 ### Decrypt wallet
 
+API sets: `WALLET`
+
 ```
 URI: /api/v1/wallet/decrypt
 Method: POST
@@ -1258,7 +1318,7 @@ Result:
 
 ### Get wallet seed
 
-This endpoint is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
+API sets: `INSECURE_WALLET_SEED`
 
 ```
 URI: /api/v1/wallet/seed
@@ -1267,6 +1327,8 @@ Args:
     id: wallet id
     password: wallet password
 ```
+
+This endpoint only works for encrypted wallets. If the wallet is unencrypted, the seed will not be returned.
 
 Example:
 
@@ -1285,16 +1347,75 @@ Result:
 }
 ```
 
+### Recover encrypted wallet by seed
+
+API sets: `WALLET_SEED`
+
+```
+URI: /api/v2/wallet/recover
+Method: POST
+Args:
+	id: wallet id
+	seed: wallet seed
+	password: [optional] password to encrypt the recovered wallet with
+```
+
+Recovers an encrypted wallet by providing the wallet seed.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1/api/v2/wallet/recover
+ -H 'Content-Type: application/json' \
+ -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed"}'
+```
+
+Result:
+
+```json
+{
+	"data": {
+	    "meta": {
+	        "coin": "skycoin",
+	        "filename": "2017_11_25_e5fb.wlt",
+	        "label": "test",
+	        "type": "deterministic",
+	        "version": "0.2",
+	        "crypto_type": "",
+	        "timestamp": 1511640884,
+	        "encrypted": false
+	    },
+	    "entries": [
+	        {
+	            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+	            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+	        },
+	        {
+	            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+	            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
+	        }
+	    ]
+	}
+}
+```
+
 ## Transaction APIs
 
 ### Get unconfirmed transactions
+
+API sets: `READ`
 
 ```
 URI: /api/v1/pendingTxs
 Method: GET
 Args:
-	verbose [bool] include verbose transaction input data
+    verbose [bool] include verbose transaction input data
 ```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are calculated based upon the current system time, and provide an approximate
+coin hour value of the output if it were to be confirmed at that instant.
 
 Example:
 
@@ -1397,6 +1518,8 @@ Result:
 
 ### Get transaction info by id
 
+API sets: `READ`
+
 ```
 URI: /api/v1/transaction
 Method: GET
@@ -1405,6 +1528,12 @@ Args:
     verbose: [bool] include verbose transaction input data
     encoded: [bool] return the transaction as hex-encoded serialized bytes
 ```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed..
+If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
 
 Example:
 
@@ -1523,6 +1652,8 @@ Result:
 
 ### Get raw transaction by id
 
+API sets: `READ`
+
 ```
 URI: /api/v1/rawtx
 Method: GET
@@ -1541,6 +1672,8 @@ Result:
 ```
 
 ### Inject raw transaction
+
+API sets: `READ`
 
 ```
 URI: /api/v1/injectTransaction
@@ -1574,14 +1707,22 @@ Result:
 
 ### Get transactions that are addresses related
 
+API sets: `READ`
+
 ```
 URI: /api/v1/transactions
 Method: GET
 Args:
-	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+    addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
     verbose: [bool] include verbose transaction input data
 ```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed.
+If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
 
 To get address related confirmed transactions:
 
@@ -1900,6 +2041,8 @@ Result:
 
 ### Resend unconfirmed transactions
 
+API sets: `READ`
+
 ```
 URI: /api/v1/resendUnconfirmedTxns
 Method: GET
@@ -1924,6 +2067,8 @@ Result:
 
 ### Verify encoded transaction
 
+API sets: `READ`
+
 ```
 URI: /api/v2/transaction/verify
 Method: POST
@@ -1935,7 +2080,7 @@ If the transaction can be parsed, passes validation and has not been spent, retu
 and the `"confirmed"` field will be `false`.
 
 If the transaction is structurally valid, passes validation but has been spent, returns `422 Unprocessable Entity` with the decoded transaction data,
-and the `"confirmed"` field will be `true`.  The `"error"` `"message"` will be `"transaction has been spent"`.
+and the `"confirmed"` field will be `true`. The `"error"` `"message"` will be `"transaction has been spent"`.
 
 If the transaction can be parsed but does not pass validation, returns `422 Unprocessable Entity` with the decoded transaction data.
 The `"error"` object will be included in the response with the reason why.
@@ -2059,6 +2204,8 @@ Result:
 
 ### Get blockchain metadata
 
+API sets: `STATUS`, `READ`
+
 ```
 URI: /api/v1/blockchain/metadata
 Method: GET
@@ -2090,6 +2237,8 @@ Result:
 
 ### Get blockchain progress
 
+API sets: `STATUS`, `READ`
+
 ```
 URI: /api/v1/blockchain/progress
 Method: GET
@@ -2108,19 +2257,21 @@ Result:
     "current": 2760,
     "highest": 2760,
     "peers": [
-	    {
-	        "address": "35.157.164.126:6000",
-	        "height": 2760
-	    },
-	    {
-	        "address": "63.142.253.76:6000",
-	        "height": 2760
-	    },
+        {
+            "address": "35.157.164.126:6000",
+            "height": 2760
+        },
+        {
+            "address": "63.142.253.76:6000",
+            "height": 2760
+        },
     ]
 }
 ```
 
 ### Get block by hash or seq
+
+API sets: `READ`
 
 ```
 URI: /api/v1/block
@@ -2130,6 +2281,10 @@ Args:
     seq: get block by sequence number
     verbose: [bool] return verbose transaction input data
 ```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
 
 Example:
 
@@ -2259,6 +2414,8 @@ Result:
 
 ### Get blocks in specific range
 
+API sets: `READ`
+
 ```
 URI: /api/v1/blocks
 Method: GET
@@ -2268,7 +2425,11 @@ Args:
     verbose: [bool] return verbose transaction input data
 ```
 
-Returns blocks in the range [start, end].  Both start and end sequences are included in the returned array of blocks.
+Returns blocks in the range [start, end]. Both start and end sequences are included in the returned array of blocks.
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
 
 Example:
 
@@ -2461,6 +2622,8 @@ Result:
 
 ### Get last N blocks
 
+API sets: `READ`
+
 ```
 URI: /api/v1/last_blocks
 Method: GET
@@ -2468,6 +2631,10 @@ Args:
     num: number of most recent blocks to return
     verbose: [bool] return verbose transaction input data
 ```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
 
 Example:
 
@@ -2671,6 +2838,8 @@ Result:
 
 ### Get address affected transactions
 
+API sets: `READ`
+
 ```
 URI: /api/v1/explorer/address
 Method: GET
@@ -2729,6 +2898,8 @@ Result:
 
 ### Get uxout
 
+API sets: `READ`
+
 ```
 URI: /api/v1/uxout
 Method: GET
@@ -2760,12 +2931,16 @@ Result:
 
 ### Get historical unspent outputs for an address
 
+API sets: `READ`
+
 ```
 URI: /api/v1/address_uxouts
 Method: GET
 Args:
     address
 ```
+
+Returns the historical, spent outputs of a given address.
 
 Example:
 
@@ -2794,6 +2969,8 @@ Result:
 ## Coin supply related information
 
 ### Coin supply
+
+API sets: `READ`
 
 ```
 URI: /api/v1/coinSupply
@@ -2924,6 +3101,8 @@ Result:
 
 ### Richlist show top N addresses by uxouts
 
+API sets: `READ`
+
 ```
 URI: /api/v1/richlist
 Method: GET
@@ -2969,6 +3148,8 @@ Result:
 
 ### Count unique addresses
 
+API sets: `READ`
+
 ```
 URI: /api/v1/addresscount
 Method: GET
@@ -2991,6 +3172,8 @@ Result:
 ## Network status
 
 ### Get information for a specific connection
+
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connection
@@ -3022,6 +3205,8 @@ Result:
 ```
 
 ### Get a list of all connections
+
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connections
@@ -3079,6 +3264,8 @@ Result:
 
 ### Get a list of all default connections
 
+API sets: `STATUS`, `READ`
+
 ```
 URI: /api/v1/network/defaultConnections
 Method: GET
@@ -3107,6 +3294,8 @@ Result:
 
 ### Get a list of all trusted connections
 
+API sets: `STATUS`, `READ`
+
 ```
 URI: /api/v1/network/connections/trust
 Method: GET
@@ -3134,6 +3323,8 @@ Result:
 ```
 
 ### Get a list of all connections discovered through peer exchange
+
+API sets: `STATUS`, `READ`
 
 ```
 URI: /api/v1/network/connections/exchange

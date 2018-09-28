@@ -97,7 +97,7 @@ echo "starting $COIN node in background with http listener on $HOST"
             -db-read-only=true \
             -launch-browser=false \
             -data-dir="$DATA_DIR" \
-            -enable-wallet-api=true \
+            -enable-all-api-sets=true \
             -wallet-dir="$WALLET_DIR" \
             $DISABLE_CSRF \
             -test.run "^TestRunMain$" \

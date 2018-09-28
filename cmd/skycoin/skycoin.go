@@ -1,3 +1,6 @@
+/*
+skycoin daemon
+*/
 package main
 
 /*
@@ -10,9 +13,9 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 var (
@@ -67,7 +70,6 @@ var (
 		Port:                6000,
 		WebInterfacePort:    6420,
 		DataDirectory:       "$HOME/.skycoin",
-		ProfileCPUFile:      "skycoin.prof",
 	})
 
 	parseFlags = true
@@ -85,7 +87,7 @@ func main() {
 	// create a new fiber coin instance
 	coin := skycoin.NewCoin(skycoin.Config{
 		Node: nodeConfig,
-		Build: visor.BuildInfo{
+		Build: readable.BuildInfo{
 			Version: Version,
 			Commit:  Commit,
 			Branch:  Branch,
@@ -93,7 +95,10 @@ func main() {
 	}, logger)
 
 	// parse config values
-	coin.ParseConfig()
+	if err := coin.ParseConfig(); err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
 
 	// run fiber coin node
 	if err := coin.Run(); err != nil {

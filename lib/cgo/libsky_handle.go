@@ -18,7 +18,7 @@ import (
 	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 	cli "github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -458,14 +458,14 @@ func lookupAddressUxOutHandle(handle C.AddressUxOuts_Handle) (*coin.AddressUxOut
 	return nil, false
 }
 
-func registerBuildInfoHandle(obj *visor.BuildInfo) C.BuildInfo_Handle {
+func registerBuildInfoHandle(obj *readable.BuildInfo) C.BuildInfo_Handle {
 	return (C.BuildInfo_Handle)(registerHandle(obj))
 }
 
-func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*visor.BuildInfo, bool) {
+func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*readable.BuildInfo, bool) {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.BuildInfo); isOK {
+		if obj, isOK := (obj).(*readable.BuildInfo); isOK {
 			return obj, true
 		}
 	}
@@ -514,6 +514,20 @@ func lookupSignatureHandle(handle C.Signature_Handle) (*secp256k1go2.Signature, 
 	return nil, false
 }
 
+func registerUnspentOutputsSummaryHandle(obj *readable.UnspentOutputsSummary) C.UnspentOutputsSummary_Handle {
+	return (C.UnspentOutputsSummary_Handle)(registerHandle(obj))
+}
+
+func lookupUnspentOutputsSummaryHandle(handle C.UnspentOutputsSummary_Handle) (*readable.UnspentOutputsSummary, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*readable.UnspentOutputsSummary); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }
@@ -532,18 +546,4 @@ func SKY_handle_copy(handle C.Handle, copy *C.Handle) uint32 {
 	} else {
 		return SKY_BAD_HANDLE
 	}
-}
-
-func registerReadableOutputSetHandle(obj *visor.ReadableOutputSet) C.ReadableOutputSet_Handle {
-	return (C.ReadableOutputSet_Handle)(registerHandle(obj))
-}
-
-func lookupReadableOutputSetHandle(handle C.ReadableOutputSet_Handle) (*visor.ReadableOutputSet, bool) {
-	obj, ok := lookupHandle(C.Handle(handle))
-	if ok {
-		if obj, isOK := (obj).(*visor.ReadableOutputSet); isOK {
-			return obj, true
-		}
-	}
-	return nil, false
 }

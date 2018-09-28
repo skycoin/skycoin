@@ -29,7 +29,7 @@ func SKY_cli_GetWalletOutputsFromFile(_c C.WebRpcClient__Handle, _walletFile str
 	__arg2, ____return_err := cli.GetWalletOutputsFromFile(c, walletFile)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = registerReadableOutputSetHandle(__arg2)
+		*_arg2 = registerUnspentOutputsSummaryHandle(__arg2)
 	}
 	return
 }
@@ -54,7 +54,7 @@ func SKY_cli_GetWalletOutputs(_c C.WebRpcClient__Handle, _wlt *C.Wallet__Handle,
 	__arg2, ____return_err := cli.GetWalletOutputs(c, wlt)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = registerReadableOutputSetHandle(__arg2)
+		*_arg2 = registerUnspentOutputsSummaryHandle(__arg2)
 	}
 	return
 }

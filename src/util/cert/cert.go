@@ -4,6 +4,9 @@
 
 // Modifications Copyright 2014 Skycoin authors.
 
+/*
+Package cert generates self-signed certificates
+*/
 package cert
 
 import (
@@ -20,7 +23,6 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 var logger = logging.MustGetLogger("util")
@@ -137,7 +139,7 @@ func CreateCertIfNotExists(host, certFile, keyFile string, appName string) error
 	logger.Infof("Creating certificate %s", certFile)
 	logger.Infof("Creating key %s", keyFile)
 	lifetime := time.Hour * 365 * 24 // 1 year
-	if err := GenerateCert(certFile, keyFile, host, appName, 2048, false, utc.Now(), lifetime); err != nil {
+	if err := GenerateCert(certFile, keyFile, host, appName, 2048, false, time.Now().UTC(), lifetime); err != nil {
 		return err
 	}
 

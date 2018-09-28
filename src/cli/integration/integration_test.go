@@ -1,4 +1,4 @@
-// package integration_test implements CLI integration tests
+// Package integration_test implements CLI integration tests
 package integration_test
 
 import (
@@ -29,10 +29,10 @@ import (
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -537,11 +537,11 @@ func TestDecodeRawTransaction(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var txn visor.TransactionJSON
+			var txn readable.Transaction
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
 			require.NoError(t, err)
 
-			var expect visor.TransactionJSON
+			var expect readable.Transaction
 			checkGoldenFile(t, tc.goldenFile, TestData{txn, &expect})
 		})
 	}
@@ -827,6 +827,7 @@ func TestLiveListWallets(t *testing.T) {
 		return
 	}
 
+	requireWalletEnv(t)
 	requireWalletDir(t)
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
@@ -1142,7 +1143,7 @@ func TestStableStatus(t *testing.T) {
 	// TimeSinceLastBlock is not stable
 	ret.Status.BlockchainMetadata.TimeSinceLastBlock = wh.FromDuration(time.Duration(0))
 	// Version is not stable
-	ret.Status.Version = visor.BuildInfo{}
+	ret.Status.Version = readable.BuildInfo{}
 	// Uptime is not stable
 	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
 
@@ -1249,7 +1250,6 @@ func TestStableTransaction(t *testing.T) {
 
 			require.NoError(t, err)
 
-			// Decode the output into visor.TransactionJSON
 			var tx webrpc.TxnResult
 			err = json.NewDecoder(bytes.NewReader(o)).Decode(&tx)
 			require.NoError(t, err)
@@ -1383,7 +1383,7 @@ func getTxidsInBlocks(t *testing.T, start, end int) []string {
 	e := strconv.Itoa(end)
 	o, err := exec.Command(binaryPath, "blocks", s, e).CombinedOutput()
 	require.NoError(t, err)
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.NewDecoder(bytes.NewReader(o)).Decode(&blocks)
 	require.NoError(t, err)
 	require.Len(t, blocks.Blocks, end-start+1)
@@ -1408,11 +1408,11 @@ func TestStableBlocks(t *testing.T) {
 	output, err := exec.Command(binaryPath, "blocks", "180", "181").CombinedOutput()
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 	require.NoError(t, err)
 
-	var expect visor.ReadableBlocks
+	var expect readable.Blocks
 	checkGoldenFile(t, "blocks180.golden", TestData{blocks, &expect})
 }
 
@@ -1429,7 +1429,7 @@ func TestLiveBlocks(t *testing.T) {
 	for _, seq := range blockSeqs {
 		output, err := exec.Command(binaryPath, "blocks", strconv.Itoa(seq)).CombinedOutput()
 		require.NoError(t, err)
-		var blocks visor.ReadableBlocks
+		var blocks readable.Blocks
 		err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 		require.NoError(t, err)
 	}
@@ -1458,11 +1458,11 @@ func testKnownBlocks(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
 			require.NoError(t, err)
 
-			var blocks visor.ReadableBlocks
+			var blocks readable.Blocks
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 			require.NoError(t, err)
 
-			var expect visor.ReadableBlocks
+			var expect readable.Blocks
 			checkGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
 		})
 	}
@@ -1474,11 +1474,11 @@ func scanBlocks(t *testing.T, start, end string) { // nolint: unparam
 	outputs, err := exec.Command(binaryPath, "blocks", start, end).CombinedOutput()
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.NewDecoder(bytes.NewReader(outputs)).Decode(&blocks)
 	require.NoError(t, err)
 
-	var preBlocks visor.ReadableBlock
+	var preBlocks readable.Block
 	preBlocks.Head.BlockHash = "0000000000000000000000000000000000000000000000000000000000000000"
 	for _, b := range blocks.Blocks {
 		require.Equal(t, b.Head.PreviousBlockHash, preBlocks.Head.BlockHash)
@@ -1526,11 +1526,11 @@ func TestStableLastBlocks(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var blocks visor.ReadableBlocks
+			var blocks readable.Blocks
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 			require.NoError(t, err)
 
-			var expect visor.ReadableBlocks
+			var expect readable.Blocks
 			checkGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
 		})
 	}
@@ -1564,7 +1564,7 @@ func TestLiveLastBlocks(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
 			require.NoError(t, err)
 
-			var blocks visor.ReadableBlocks
+			var blocks readable.Blocks
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 			require.NoError(t, err)
 		})
@@ -1590,6 +1590,7 @@ func TestLiveWalletDir(t *testing.T) {
 		return
 	}
 
+	requireWalletEnv(t)
 	requireWalletDir(t)
 
 	walletDir := os.Getenv("WALLET_DIR")
@@ -1723,7 +1724,7 @@ func TestLiveSend(t *testing.T) {
 				return []string{"send", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
 			},
-			errMsg:  []byte("See 'skycoin-cli send --help'\nTransaction has zero coinhour fee."),
+			errMsg:  []byte("See 'skycoin-cli send --help'\nTransaction has zero coinhour fee"),
 			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
@@ -1731,16 +1732,16 @@ func TestLiveSend(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
-			if err != nil {
-				t.Fatalf("err: %v, output: %v", err, string(output))
-				return
-			}
-			require.NoError(t, err)
+
 			output = bytes.TrimRight(output, "\n")
-			if bytes.Contains(output, []byte("Error:")) {
+
+			if tc.errMsg != nil {
+				require.Equal(t, err.Error(), "exit status 1")
 				require.Equal(t, tc.errMsg, output)
 				return
 			}
+
+			require.NoError(t, err)
 
 			// output: "txid:$txid_string"
 			// split the output to get txid value
@@ -1768,21 +1769,39 @@ func TestLiveSend(t *testing.T) {
 			tc.checkTx(t, txid)
 		})
 	}
+}
+
+func TestLiveSendNotEnoughDecimals(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
+	w, _, _ := prepareAndCheckWallet(t, 2e6, 16)
+
+	if w.IsEncrypted() {
+		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
+		return
+	}
 
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
-	errMsg := []byte("See 'skycoin-cli send --help'\ninvalid amount, too many decimal places.")
+	errMsg := []byte("See 'skycoin-cli send --help'\ninvalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, "send", w.Entries[0].Address.String(), v).CombinedOutput()
-			require.NoError(t, err)
-			output = bytes.Trim(output, "\n")
+			require.Error(t, err)
+			require.Equal(t, err.Error(), "exit status 1")
+			output = bytes.TrimRight(output, "\n")
 			require.Equal(t, errMsg, output)
 		})
 	}
+
 }
 
 // TestLiveCreateAndBroadcastRawTransaction does almost the same procedure as TestLiveSend.
@@ -1986,7 +2005,7 @@ func isTxConfirmed(t *testing.T, txid string) bool {
 
 // checkCoinhours checks if the address coinhours in transaction are correct
 func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr string, coins, coinhours uint64) { // nolint: unparam
-	addrCoinhoursMap := make(map[string][]visor.ReadableTransactionOutput)
+	addrCoinhoursMap := make(map[string][]readable.TransactionOutput)
 	for _, o := range tx.Transaction.Transaction.Out {
 		addrCoinhoursMap[o.Address] = append(addrCoinhoursMap[o.Address], o)
 	}
@@ -2083,7 +2102,7 @@ func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
 	return coins, hours
 }
 
-func getWalletOutputs(t *testing.T, walletPath string) visor.ReadableOutputs {
+func getWalletOutputs(t *testing.T, walletPath string) readable.UnspentOutputs {
 	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
 	require.NoError(t, err, string(output))
 

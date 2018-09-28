@@ -41,16 +41,16 @@ func (_m *MockHistoryer) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *histor
 	return r0
 }
 
-// GetAddrUxOuts provides a mock function with given fields: tx, address
-func (_m *MockHistoryer) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*historydb.UxOut, error) {
+// GetOutputsForAddress provides a mock function with given fields: tx, address
+func (_m *MockHistoryer) GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]historydb.UxOut, error) {
 	ret := _m.Called(tx, address)
 
-	var r0 []*historydb.UxOut
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, cipher.Address) []*historydb.UxOut); ok {
+	var r0 []historydb.UxOut
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, cipher.Address) []historydb.UxOut); ok {
 		r0 = rf(tx, address)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*historydb.UxOut)
+			r0 = ret.Get(0).([]historydb.UxOut)
 		}
 	}
 
@@ -111,15 +111,15 @@ func (_m *MockHistoryer) GetTransactionsForAddress(tx *dbutil.Tx, address cipher
 }
 
 // GetUxOuts provides a mock function with given fields: tx, uxids
-func (_m *MockHistoryer) GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]*historydb.UxOut, error) {
+func (_m *MockHistoryer) GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]historydb.UxOut, error) {
 	ret := _m.Called(tx, uxids)
 
-	var r0 []*historydb.UxOut
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, []cipher.SHA256) []*historydb.UxOut); ok {
+	var r0 []historydb.UxOut
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, []cipher.SHA256) []historydb.UxOut); ok {
 		r0 = rf(tx, uxids)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*historydb.UxOut)
+			r0 = ret.Get(0).([]historydb.UxOut)
 		}
 	}
 

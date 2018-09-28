@@ -6,6 +6,7 @@ import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
 import { TranslateService } from '@ngx-translate/core';
+import { BigNumber } from 'bignumber.js';
 
 import {
   Address, GetWalletsResponseEntry, GetWalletsResponseWallet, NormalTransaction,
@@ -25,7 +26,7 @@ export class ApiService {
     return this.get('explorer/address', {address: address.address})
       .map(transactions => transactions.map(transaction => ({
         addresses: [],
-        balance: 0,
+        balance: new BigNumber(0),
         block: transaction.status.block_seq,
         confirmed: transaction.status.confirmed,
         timestamp: transaction.timestamp,
@@ -92,9 +93,23 @@ export class ApiService {
         }));
   }
 
-  postWalletNewAddress(wallet: Wallet, password?: string): Observable<Address> {
-    return this.post('wallet/newAddress', { id: wallet.filename, password })
-      .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));
+  postWalletNewAddress(wallet: Wallet, num: number, password?: string): Observable<Address[]> {
+    const params = new Object();
+    params['id'] = wallet.filename;
+    params['num'] = num;
+    if (password) {
+      params['password'] = password;
+    }
+
+    return this.post('wallet/newAddress', params)
+      .map((response: PostWalletNewAddressResponse) => {
+        const result: Address[] = [];
+        response.addresses.forEach(value => {
+          result.push({ address: value, coins: null, hours: null });
+        });
+
+        return result;
+      });
   }
 
   postWalletToggleEncryption(wallet: Wallet, password: string) {

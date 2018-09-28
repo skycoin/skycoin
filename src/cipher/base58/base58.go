@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+/*
+Package base58 implements base58 encoding, used for Skycoin and Bitcoin addresses
+*/
 package base58
 
 //Subpackage for encoding data (namely Bitcoin Addresses) into base58 strings

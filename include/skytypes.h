@@ -372,6 +372,10 @@ typedef Handle Number_Handle;
 */
 
 typedef Handle Signature_Handle;
+/**
+ *Handle readable.UnspentOutputsSummary 
+ */
+typedef Handle UnspentOutputsSummary_Handle;
 
 typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
 

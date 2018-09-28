@@ -18,7 +18,7 @@ import (
 
 	api "github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 //export SKY_JsonEncode_Handle
@@ -50,7 +50,7 @@ func SKY_Handle_Progress_GetCurrent(handle C.Handle, current *uint64) uint32 {
 func SKY_Handle_Block_GetHeadSeq(handle C.Handle, seq *uint64) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+		if obj, isOK := (obj).(*readable.Block); isOK {
 			*seq = obj.Head.BkSeq
 			return SKY_OK
 		}
@@ -62,7 +62,7 @@ func SKY_Handle_Block_GetHeadSeq(handle C.Handle, seq *uint64) uint32 {
 func SKY_Handle_Block_GetHeadHash(handle C.Handle, hash *C.GoString_) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+		if obj, isOK := (obj).(*readable.Block); isOK {
 			copyString(obj.Head.BlockHash, hash)
 			return SKY_OK
 		}
@@ -74,7 +74,7 @@ func SKY_Handle_Block_GetHeadHash(handle C.Handle, hash *C.GoString_) uint32 {
 func SKY_Handle_Block_GetPreviousBlockHash(handle C.Handle, hash *C.GoString_) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+		if obj, isOK := (obj).(*readable.Block); isOK {
 			copyString(obj.Head.PreviousBlockHash, hash)
 			return SKY_OK
 		}
@@ -87,7 +87,7 @@ func SKY_Handle_Blocks_GetAt(handle C.Handle,
 	index uint64, blockHandle *C.Handle) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
+		if obj, isOK := (obj).(*readable.Blocks); isOK {
 			*blockHandle = registerHandle(&obj.Blocks[index])
 			return SKY_OK
 		}
@@ -100,7 +100,7 @@ func SKY_Handle_Blocks_GetCount(handle C.Handle,
 	count *uint64) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
+		if obj, isOK := (obj).(*readable.Blocks); isOK {
 			*count = uint64(len(obj.Blocks))
 			return SKY_OK
 		}

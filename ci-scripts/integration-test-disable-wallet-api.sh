@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs "disable-wallet-api"-mode tests against a skycoin node configured with -enable-wallet-api=false
+# Runs "disable-wallet-api"-mode tests against a skycoin node configured with the wallet API disabled.
 # "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page
 # does not load, and that a new wallet file is not created.
 
@@ -87,7 +87,8 @@ echo "starting $COIN node in background with http listener on $HOST"
             -data-dir="$DATA_DIR" \
             -wallet-dir="$WALLET_DIR" \
             -enable-unversioned-api=true \
-            -enable-wallet-api=false \
+            -enable-all-api-sets=true \
+            -disable-api-sets=WALLET \
             -test.run "^TestRunMain$" \
             -test.coverprofile="${COVERAGEFILE}" \
             &

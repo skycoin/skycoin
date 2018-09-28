@@ -9,19 +9,19 @@ Do not show balances or outputs that have not cleared yet
 - should only allow spends against outputs that are on head
 */
 
-// BalancePair records the confirmed and predicted balance
+// BalancePair records the confirmed and predicted balance of an address
 type BalancePair struct {
-	Confirmed Balance `json:"confirmed"`
-	Predicted Balance `json:"predicted"` //do "pending"
+	Confirmed Balance
+	Predicted Balance
 }
 
-// AddressBalance represents a map of address balances
-type AddressBalance map[string]BalancePair
+// AddressBalances represents a map of address balances
+type AddressBalances map[string]BalancePair
 
-// Balance is consisted of Coins and Hours
+// Balance has coins and hours
 type Balance struct {
-	Coins uint64 `json:"coins"`
-	Hours uint64 `json:"hours"`
+	Coins uint64
+	Hours uint64
 }
 
 // NewBalance creates balance

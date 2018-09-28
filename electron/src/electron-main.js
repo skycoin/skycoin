@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, Menu, BrowserWindow, dialog, shell, session } = require('electron');
+const { app, Menu, BrowserWindow, shell, session } = require('electron');
 
 const path = require('path');
 
@@ -72,8 +72,8 @@ function startSkycoin() {
     '-color-log=false', // must be disabled for web interface detection
     '-logtofile=true',
     '-download-peerlist=true',
-    '-enable-seed-api=true',
-    '-enable-wallet-api=true',
+    '-enable-all-api-sets=true',
+    '-enable-api-sets=INSECURE_WALLET_SEED',
     '-rpc-interface=false',
     '-disable-csrf=false',
     '-reset-corrupt-db=true',
@@ -88,7 +88,6 @@ function startSkycoin() {
   createWindow();
 
   skycoin.on('error', (e) => {
-    dialog.showErrorBox('Failed to start skycoin', e.toString());
     showError();
     app.quit();
   });

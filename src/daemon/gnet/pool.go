@@ -1,3 +1,6 @@
+/*
+Package gnet is the core networking library
+*/
 package gnet
 
 import (
@@ -14,10 +17,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
-
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -193,7 +194,8 @@ type ConnectionPool struct {
 	// Connection ID counter
 	connID int
 	// Listening connection
-	listener net.Listener
+	listener     net.Listener
+	listenerLock sync.Mutex
 	// operations channel
 	reqC chan strand.Request
 	// quit channel
@@ -249,7 +251,9 @@ func (pool *ConnectionPool) Run() error {
 		return err
 	}
 
+	pool.listenerLock.Lock()
 	pool.listener = ln
+	pool.listenerLock.Unlock()
 
 loop:
 	for {
@@ -314,13 +318,14 @@ func (pool *ConnectionPool) Shutdown() {
 	logger.Info("ConnectionPool.Shutdown closing the listener")
 
 	// Close to listener to prevent new connections
+	pool.listenerLock.Lock()
 	if pool.listener != nil {
 		if err := pool.listener.Close(); err != nil {
 			logger.WithError(err).Warning("pool.listener.Close error")
 		}
 	}
-
 	pool.listener = nil
+	pool.listenerLock.Unlock()
 
 	logger.Info("ConnectionPool.Shutdown disconnecting all connections")
 
@@ -928,7 +933,7 @@ func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
 
 // SendPings sends a ping if our last message sent was over pingRate ago
 func (pool *ConnectionPool) SendPings(rate time.Duration, msg Message) error {
-	now := utc.Now()
+	now := time.Now().UTC()
 	var addrs []string
 	if err := pool.strand("SendPings", func() error {
 		for _, conn := range pool.pool {
@@ -975,5 +980,5 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 
 // Now returns the current UTC time
 func Now() time.Time {
-	return utc.Now()
+	return time.Now().UTC()
 }

@@ -420,7 +420,6 @@ func validateAPISets(opt string, apiSets []string) error {
 		}
 	}
 	return nil
->>>>>>> develop
 }
 
 // RegisterFlags binds CLI flags to config values

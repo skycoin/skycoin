@@ -23,11 +23,10 @@ func SKY_cipher_Ripemd160_Set(_rd *C.cipher__Ripemd160, _b []byte) (____error_co
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	checkAPIReady()
-
 	rd := (*cipher.Ripemd160)(unsafe.Pointer(_rd))
 
-	rd.Set(_b)
-	____error_code = libErrorCode(nil)
+	err := rd.Set(_b)
+	____error_code = libErrorCode(err)
 	return
 }
 
@@ -52,11 +51,10 @@ func SKY_cipher_SHA256_Set(_g *C.cipher__SHA256, _b []byte) (____error_code uint
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	checkAPIReady()
-
 	g := (*cipher.SHA256)(unsafe.Pointer(_g))
 
-	g.Set(_b)
-	____error_code = libErrorCode(nil)
+	err := g.Set(_b)
+	____error_code = libErrorCode(err)
 	return
 }
 
@@ -96,7 +94,6 @@ func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.cipher__SHA256) (____error_code ui
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	checkAPIReady()
-
 	h := cipher.SumSHA256(_b)
 
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))

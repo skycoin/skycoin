@@ -92,7 +92,7 @@ func addGenesisBlockToVisor(t *testing.T, vs *Visor) *coin.SignedBlock {
 	// create genesis block
 	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
-	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
+	gbSig := cipher.MustSignHash(gb.HashHeader(), genSecret)
 	vs.Config.GenesisSignature = gbSig
 
 	sb := coin.SignedBlock{
@@ -2794,7 +2794,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 	addrs := make([]cipher.Address, 5)
 	for i := 0; i < 5; i++ {
-		addrs[i] = cipher.AddressFromSecKey(keys[i])
+		addrs[i] = cipher.MustAddressFromSecKey(keys[i])
 	}
 
 	srcTxnHashes := make([]cipher.SHA256, 5)

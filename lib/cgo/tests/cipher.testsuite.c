@@ -478,7 +478,7 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
             j, i);
 
         cipher__Sig sig2;
-        SKY_cipher_SignHash(h, s, &sig2);
+        SKY_cipher_MustSignHash(h, s, &sig2);
         mem_expect.data = sigNull;
         mem_actual.data = sig2;
         mem_actual.size = mem_expect.size = sizeof(cipher__Sig);

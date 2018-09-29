@@ -1,6 +1,6 @@
 # REST API Documentation
 
-API default service port is `6420`.  However, if running the desktop or standalone releases from the website, the port is randomized by default.
+API default service port is `6420`. However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
@@ -13,7 +13,7 @@ with `-enable-unversioned-api`.
 ## API Version 1
 
 `/api/v1` endpoints have no standard format. Most of them accept formdata in POST requests,
-but a few accept `application/json` instead.  Most of them return JSON but one or two
+but a few accept `application/json` instead. Most of them return JSON but one or two
 return a plaintext string.
 
 All endpoints will set an appropriate HTTP status code, using `200` for success and codes greater than or equal to `400` for error.
@@ -33,7 +33,7 @@ In the future we may have choose to have `GET` requests also accept `POST` with 
 to support requests with a large query body, such as when requesting data for a large number
 of addresses or transactions.
 
-`/api/v2` responses are always JSON.  If there is an error, the JSON object will
+`/api/v2` responses are always JSON. If there is an error, the JSON object will
 look like this:
 
 ```json
@@ -54,62 +54,76 @@ All responses will set an appropriate HTTP status code indicating an error, and 
 Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
 However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
 
+## API Sets
+
+API endpoints are grouped into "sets" which can be toggled with the command line parameters
+`-enable-api-sets`, `-disable-api-sets` and `-enable-all-api-sets`.
+
+These API sets are:
+
+* `READ` - All query-related endpoints, they do not modify the state of the program
+* `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
+* `WALLET` - These endpoints operate on local wallet files
+* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
+* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
+
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)
-    - [Get current csrf token](#get-current-csrf-token)
+	- [Get current csrf token](#get-current-csrf-token)
 - [General system checks](#general-system-checks)
-    - [Health check](#health-check)
-    - [Version info](#version-info)
+	- [Health check](#health-check)
+	- [Version info](#version-info)
 - [Simple query APIs](#simple-query-apis)
-    - [Get balance of addresses](#get-balance-of-addresses)
-    - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-    - [Verify an address](#verify-an-address)
+	- [Get balance of addresses](#get-balance-of-addresses)
+	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+	- [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
-    - [Get wallet](#get-wallet)
-    - [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
-    - [Get wallets](#get-wallets)
-    - [Get wallet folder name](#get-wallet-folder-name)
-    - [Generate wallet seed](#generate-wallet-seed)
-    - [Create a wallet from seed](#create-a-wallet-from-seed)
-    - [Generate new address in wallet](#generate-new-address-in-wallet)
-    - [Updates wallet label](#updates-wallet-label)
-    - [Get wallet balance](#get-wallet-balance)
-    - [Spend coins from wallet](#spend-coins-from-wallet)
-    - [Create transaction](#create-transaction)
-    - [Unload wallet](#unload-wallet)
-    - [Encrypt wallet](#encrypt-wallet)
-    - [Decrypt wallet](#decrypt-wallet)
-    - [Get wallet seed](#get-wallet-seed)
+	- [Get wallet](#get-wallet)
+	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
+	- [Get wallets](#get-wallets)
+	- [Get wallet folder name](#get-wallet-folder-name)
+	- [Generate wallet seed](#generate-wallet-seed)
+	- [Create a wallet from seed](#create-a-wallet-from-seed)
+	- [Generate new address in wallet](#generate-new-address-in-wallet)
+	- [Updates wallet label](#updates-wallet-label)
+	- [Get wallet balance](#get-wallet-balance)
+	- [Spend coins from wallet](#spend-coins-from-wallet)
+	- [Create transaction](#create-transaction)
+	- [Unload wallet](#unload-wallet)
+	- [Encrypt wallet](#encrypt-wallet)
+	- [Decrypt wallet](#decrypt-wallet)
+	- [Get wallet seed](#get-wallet-seed)
+	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
 - [Transaction APIs](#transaction-apis)
-    - [Get unconfirmed transactions](#get-unconfirmed-transactions)
-    - [Get transaction info by id](#get-transaction-info-by-id)
-    - [Get raw transaction by id](#get-raw-transaction-by-id)
-    - [Inject raw transaction](#inject-raw-transaction)
-    - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
-    - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-    - [Verify encoded transaction](#verify-encoded-transaction)
+	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
+	- [Get transaction info by id](#get-transaction-info-by-id)
+	- [Get raw transaction by id](#get-raw-transaction-by-id)
+	- [Inject raw transaction](#inject-raw-transaction)
+	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+	- [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
-    - [Get blockchain metadata](#get-blockchain-metadata)
-    - [Get blockchain progress](#get-blockchain-progress)
-    - [Get block by hash or seq](#get-block-by-hash-or-seq)
-    - [Get blocks in specific range](#get-blocks-in-specific-range)
-    - [Get last N blocks](#get-last-n-blocks)
+	- [Get blockchain metadata](#get-blockchain-metadata)
+	- [Get blockchain progress](#get-blockchain-progress)
+	- [Get block by hash or seq](#get-block-by-hash-or-seq)
+	- [Get blocks in specific range](#get-blocks-in-specific-range)
+	- [Get last N blocks](#get-last-n-blocks)
 - [Explorer APIs](#explorer-apis)
-    - [Get address affected transactions](#get-address-affected-transactions)
+	- [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
-    - [Get uxout](#get-uxout)
-    - [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+	- [Get uxout](#get-uxout)
+	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
 - [Coin supply related information](#coin-supply-related-information)
-    - [Coin supply](#coin-supply)
-    - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-    - [Count unique addresses](#count-unique-addresses)
+	- [Coin supply](#coin-supply)
+	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+	- [Count unique addresses](#count-unique-addresses)
 - [Network status](#network-status)
-    - [Get information for a specific connection](#get-information-for-a-specific-connection)
-    - [Get a list of all connections](#get-a-list-of-all-connections)
-    - [Get a list of all default connections](#get-a-list-of-all-default-connections)
-    - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-    - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+	- [Get information for a specific connection](#get-information-for-a-specific-connection)
+	- [Get a list of all connections](#get-a-list-of-all-connections)
+	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
+	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 - [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 
 <!-- /MarkdownTOC -->
@@ -665,7 +679,7 @@ Args:
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
     encrypt: encrypt wallet [optional, bool value]
-    password: wallet password[optional, must be provided if encrypt is true]
+    password: wallet password [optional, must be provided if encrypt is true]
 ```
 
 Example:
@@ -1305,7 +1319,7 @@ Result:
 
 ### Get wallet seed
 
-API sets: `WALLET_SEED`
+API sets: `INSECURE_WALLET_SEED`
 
 ```
 URI: /api/v1/wallet/seed
@@ -1315,7 +1329,7 @@ Args:
     password: wallet password
 ```
 
-This endpoint only works for encrypted wallets.  If the wallet is unencrypted, the seed will not be returned.
+This endpoint only works for encrypted wallets. If the wallet is unencrypted, the seed will not be returned.
 
 Example:
 
@@ -1331,6 +1345,58 @@ Result:
 ```json
 {
     "seed": "your wallet seed"
+}
+```
+
+### Recover encrypted wallet by seed
+
+API sets: `WALLET_SEED`
+
+```
+URI: /api/v2/wallet/recover
+Method: POST
+Args:
+	id: wallet id
+	seed: wallet seed
+	password: [optional] password to encrypt the recovered wallet with
+```
+
+Recovers an encrypted wallet by providing the wallet seed.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1/api/v2/wallet/recover
+ -H 'Content-Type: application/json' \
+ -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed"}'
+```
+
+Result:
+
+```json
+{
+	"data": {
+	    "meta": {
+	        "coin": "skycoin",
+	        "filename": "2017_11_25_e5fb.wlt",
+	        "label": "test",
+	        "type": "deterministic",
+	        "version": "0.2",
+	        "crypto_type": "",
+	        "timestamp": 1511640884,
+	        "encrypted": false
+	    },
+	    "entries": [
+	        {
+	            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+	            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+	        },
+	        {
+	            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+	            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
+	        }
+	    ]
+	}
 }
 ```
 
@@ -2015,7 +2081,7 @@ If the transaction can be parsed, passes validation and has not been spent, retu
 and the `"confirmed"` field will be `false`.
 
 If the transaction is structurally valid, passes validation but has been spent, returns `422 Unprocessable Entity` with the decoded transaction data,
-and the `"confirmed"` field will be `true`.  The `"error"` `"message"` will be `"transaction has been spent"`.
+and the `"confirmed"` field will be `true`. The `"error"` `"message"` will be `"transaction has been spent"`.
 
 If the transaction can be parsed but does not pass validation, returns `422 Unprocessable Entity` with the decoded transaction data.
 The `"error"` object will be included in the response with the reason why.
@@ -3018,6 +3084,8 @@ Method: GET
 Args:
     address
 ```
+
+Returns the historical, spent outputs of a given address.
 
 Example:
 

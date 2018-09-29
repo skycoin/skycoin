@@ -1,3 +1,6 @@
+/*
+address_stats generates statistical data about address generation
+*/
 package main
 
 import (

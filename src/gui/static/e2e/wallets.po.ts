@@ -47,6 +47,11 @@ export class WalletsPage {
       confirmEl.sendKeys(confirm);
     }
 
+    if (label !== '' && (seed === confirm || (!confirm && seed !== ''))) {
+      const seedValidationCheckBox = element(by.css('.red-disclaimer-box .mat-checkbox-inner-container'));
+      seedValidationCheckBox.click();
+    }
+
     return btn.isEnabled().then(status => {
       if (status) {
         btn.click();

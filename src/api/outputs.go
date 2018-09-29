@@ -10,7 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-// getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
+// outputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
 // URI: /api/v1/outputs
 // Method: GET
 // Args:
@@ -19,7 +19,7 @@ import (
 // If neither addrs nor hashes are specificed, return all unspent outputs.
 // If only one filter is specified, then return outputs match the filter.
 // Both filters cannot be specified.
-func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
+func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

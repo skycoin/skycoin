@@ -1,3 +1,6 @@
+/*
+Package timeutil provides time related utility methods
+*/
 package timeutil
 
 import "time"

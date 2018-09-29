@@ -15,7 +15,8 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 go run -ldflags "${GOLDFLAGS}" cmd/${COIN}/${COIN}.go \
     -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=false \
-    -enable-api-set=ALL \
+    -enable-all-api-sets=true \
+    -enable-api-sets=DEPRECATED_WALLET_SPEND,INSECURE_WALLET_SEED \
     $@
 
 popd >/dev/null

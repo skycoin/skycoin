@@ -1,3 +1,6 @@
+/*
+skycoin daemon
+*/
 package main
 
 /*
@@ -92,7 +95,10 @@ func main() {
 	}, logger)
 
 	// parse config values
-	coin.ParseConfig()
+	if err := coin.ParseConfig(); err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
 
 	// run fiber coin node
 	if err := coin.Run(); err != nil {

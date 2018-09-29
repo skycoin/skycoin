@@ -339,29 +339,6 @@ func (_m *MockGatewayer) GetConnection(addr string) (*daemon.Connection, error) 
 	return r0, r1
 }
 
-// GetOutgoingConnections provides a mock function with given fields:
-func (_m *MockGatewayer) GetOutgoingConnections() ([]daemon.Connection, error) {
-	ret := _m.Called()
-
-	var r0 []daemon.Connection
-	if rf, ok := ret.Get(0).(func() []daemon.Connection); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]daemon.Connection)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetDefaultConnections provides a mock function with given fields:
 func (_m *MockGatewayer) GetDefaultConnections() []string {
 	ret := _m.Called()
@@ -470,6 +447,29 @@ func (_m *MockGatewayer) GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [
 	}
 
 	return r0, r1, r2
+}
+
+// GetOutgoingConnections provides a mock function with given fields:
+func (_m *MockGatewayer) GetOutgoingConnections() ([]daemon.Connection, error) {
+	ret := _m.Called()
+
+	var r0 []daemon.Connection
+	if rf, ok := ret.Get(0).(func() []daemon.Connection); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]daemon.Connection)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetRichlist provides a mock function with given fields: includeDistribution
@@ -927,6 +927,29 @@ func (_m *MockGatewayer) GetWalletSeed(wltID string, password []byte) (string, e
 	return r0, r1
 }
 
+// GetWalletUnconfirmedTransactions provides a mock function with given fields: wltID
+func (_m *MockGatewayer) GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error) {
+	ret := _m.Called(wltID)
+
+	var r0 []visor.UnconfirmedTransaction
+	if rf, ok := ret.Get(0).(func(string) []visor.UnconfirmedTransaction); ok {
+		r0 = rf(wltID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]visor.UnconfirmedTransaction)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(wltID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetWalletUnconfirmedTransactionsVerbose provides a mock function with given fields: wltID
 func (_m *MockGatewayer) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error) {
 	ret := _m.Called(wltID)
@@ -957,29 +980,6 @@ func (_m *MockGatewayer) GetWalletUnconfirmedTransactionsVerbose(wltID string) (
 	}
 
 	return r0, r1, r2
-}
-
-// GetWalletUnconfirmedTransactions provides a mock function with given fields: wltID
-func (_m *MockGatewayer) GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error) {
-	ret := _m.Called(wltID)
-
-	var r0 []visor.UnconfirmedTransaction
-	if rf, ok := ret.Get(0).(func(string) []visor.UnconfirmedTransaction); ok {
-		r0 = rf(wltID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]visor.UnconfirmedTransaction)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(wltID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // GetWallets provides a mock function with given fields:
@@ -1035,6 +1035,29 @@ func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) (
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, []byte, uint64) error); ok {
 		r1 = rf(wltID, password, n)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// RecoverWallet provides a mock function with given fields: wltID, seed, password
+func (_m *MockGatewayer) RecoverWallet(wltID string, seed string, password []byte) (*wallet.Wallet, error) {
+	ret := _m.Called(wltID, seed, password)
+
+	var r0 *wallet.Wallet
+	if rf, ok := ret.Get(0).(func(string, string, []byte) *wallet.Wallet); ok {
+		r0 = rf(wltID, seed, password)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*wallet.Wallet)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, []byte) error); ok {
+		r1 = rf(wltID, seed, password)
 	} else {
 		r1 = ret.Error(1)
 	}

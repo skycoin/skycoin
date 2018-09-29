@@ -15,6 +15,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -33,6 +34,10 @@ type ErrCorruptDB struct {
 
 // CheckDatabase checks the database for corruption, rebuild history if corrupted
 func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
+	elapser := elapse.NewElapser(time.Second*30, logger)
+	elapser.Register("CheckDatabase")
+	defer elapser.CheckForDone()
+
 	var blocksBktExist bool
 	if err := db.View("CheckDatabase", func(tx *dbutil.Tx) error {
 		blocksBktExist = dbutil.Exists(tx, blockdb.BlocksBkt)

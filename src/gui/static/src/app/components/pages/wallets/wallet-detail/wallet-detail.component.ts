@@ -72,6 +72,8 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
 
     if (!this.wallet.encrypted) {
       config.data['description'] = this.encryptionWarning;
+    } else {
+      config.data['wallet'] = this.wallet;
     }
 
     this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
@@ -121,7 +123,12 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
 
   private continueNewAddress() {
     if (this.wallet.encrypted) {
-      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+      const config = new MatDialogConfig();
+      config.data = {
+        wallet: this.wallet,
+      };
+
+      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.walletService.addAddress(this.wallet, this.HowManyAddresses, passwordDialog.password)
             .subscribe(() => passwordDialog.close(), () => passwordDialog.error());

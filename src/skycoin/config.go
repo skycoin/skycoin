@@ -22,11 +22,6 @@ var (
 	help = false
 )
 
-const (
-	// EndpointsAll wildcard value to match all API methods
-	EndpointsAll = "ALL"
-)
-
 // Config records skycoin node and build config
 type Config struct {
 	Node  NodeConfig

@@ -38,7 +38,12 @@ export class BackupComponent implements OnInit, OnDestroy {
   }
 
   showSeed(wallet: Wallet) {
-    this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+    const initialConfig = new MatDialogConfig();
+    initialConfig.data = {
+      wallet: wallet,
+    };
+
+    this.dialog.open(PasswordDialogComponent, initialConfig).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {
         this.walletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {
           passwordDialog.close();

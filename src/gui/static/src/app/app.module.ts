@@ -74,6 +74,7 @@ import { LoadingContentComponent } from './components/layout/loading-content/loa
 import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
+import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
 
 
 const ROUTES = [
@@ -132,6 +133,10 @@ const ROUTES = [
     path: 'wizard',
     component: OnboardingComponent,
   },
+  {
+    path: 'reset/:id',
+    component: ResetPasswordComponent,
+  },
 ];
 
 @NgModule({
@@ -176,6 +181,7 @@ const ROUTES = [
     NumberOfAddressesComponent,
     SelectAddressComponent,
     CreateWalletFormComponent,
+    ResetPasswordComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

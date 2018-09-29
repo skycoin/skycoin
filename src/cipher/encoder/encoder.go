@@ -85,17 +85,11 @@ func SerializeAtomic(data interface{}) []byte {
 // parameter. Panics if `data` is not an integer or boolean type.
 // Returns the number of bytes read.
 func DeserializeAtomic(in []byte, data interface{}) (int, error) {
-	n := atomicDestSize(data)
-	if len(in) < n {
-		return 0, ErrBufferUnderflow
-	}
-
-	if n == 0 {
-		log.Panic("DeserializeAtomic unhandled type")
-	}
-
 	switch v := data.(type) {
 	case *bool:
+		if len(in) < 1 {
+			return 0, ErrBufferUnderflow
+		}
 		if in[0] == 0 {
 			*v = false
 		} else {
@@ -103,27 +97,51 @@ func DeserializeAtomic(in []byte, data interface{}) (int, error) {
 		}
 		return 1, nil
 	case *int8:
+		if len(in) < 1 {
+			return 0, ErrBufferUnderflow
+		}
 		*v = int8(in[0])
 		return 1, nil
 	case *uint8:
+		if len(in) < 1 {
+			return 0, ErrBufferUnderflow
+		}
 		*v = in[0]
 		return 1, nil
 	case *int16:
+		if len(in) < 2 {
+			return 0, ErrBufferUnderflow
+		}
 		*v = int16(leUint16(in[:2]))
 		return 2, nil
 	case *uint16:
+		if len(in) < 2 {
+			return 0, ErrBufferUnderflow
+		}
 		*v = leUint16(in[:2])
 		return 2, nil
 	case *int32:
+		if len(in) < 4 {
+			return 0, ErrBufferUnderflow
+		}
 		*v = int32(leUint32(in[:4]))
 		return 4, nil
 	case *uint32:
+		if len(in) < 4 {
+			return 0, ErrBufferUnderflow
+		}
 		*v = leUint32(in[:4])
 		return 4, nil
 	case *int64:
+		if len(in) < 8 {
+			return 0, ErrBufferUnderflow
+		}
 		*v = int64(leUint64(in[:8]))
 		return 8, nil
 	case *uint64:
+		if len(in) < 8 {
+			return 0, ErrBufferUnderflow
+		}
 		*v = leUint64(in[:8])
 		return 8, nil
 	default:
@@ -865,22 +883,4 @@ func (e *encoder) value(v reflect.Value) {
 	default:
 		log.Panicf("Encoding unhandled type %s", v.Type().Name())
 	}
-}
-
-// atomicDestSize returns the size of the integer that ptrType points to,
-// or 0 if the type is not supported.
-func atomicDestSize(ptrType interface{}) int {
-	switch ptrType.(type) {
-	case *bool:
-		return 1
-	case *int8, *uint8:
-		return 1
-	case *int16, *uint16:
-		return 2
-	case *int32, *uint32:
-		return 4
-	case *int64, *uint64:
-		return 8
-	}
-	return 0
 }

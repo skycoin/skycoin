@@ -98,11 +98,11 @@ Test(cipher_address, TestAddressFromBytes){
   int bytes_len = bytes.len;
 
   bytes.len = bytes.len - 2;
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ErrAddressInvalidLength, "no SKY address due to short bytes length");
+  cr_assert(SKY_cipher_AddressFromBytes(bytes, &addr2) == SKY_ErrAddressInvalidLength, "no SKY address due to short bytes length");
 
   bytes.len = bytes_len;
   ((char *) bytes.data)[bytes.len - 1] = '2';
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ErrAddressInvalidChecksum, "no SKY address due to corrupted bytes");
+  cr_assert(SKY_cipher_AddressFromBytes(bytes, &addr2) == SKY_ErrAddressInvalidChecksum, "no SKY address due to corrupted bytes");
 
   addr.Version = 2;
   SKY_cipher_Address_Bytes(&addr, (GoSlice_ *)&bytes);

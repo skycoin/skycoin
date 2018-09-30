@@ -42,6 +42,7 @@ func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (____error_code ui
 		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
 	}
 	____error_code = libErrorCode(nil)
+	return
 }
 
 //export SKY_cipher_PubKeyFromHex
@@ -70,7 +71,7 @@ func SKY_cipher_PubKeyFromSecKey(_seckey *C.cipher__SecKey, _arg1 *C.cipher__Pub
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
 
 	pubkey, err := cipher.PubKeyFromSecKey(*seckey)
-	____error_code := libErrorCode(err)
+	____error_code = libErrorCode(err)
 
 	if err == nil {
 		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
@@ -131,7 +132,7 @@ func SKY_cipher_PubKey_Hex(_pk *C.cipher__PubKey, _arg1 *C.GoString_) (____error
 }
 
 //export SKY_cipher_PubKeyRipemd160
-func SKY_cipher_PubKey_PubKeyRipemd16(_pk *C.cipher__PubKey, _arg0 *C.cipher__Ripemd160) (____error_code uint32) {
+func SKY_cipher_PubKeyRipemd160(_pk *C.cipher__PubKey, _arg0 *C.cipher__Ripemd160) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -217,7 +218,7 @@ func SKY_cipher_ECDH(_pub *C.cipher__PubKey, _sec *C.cipher__SecKey, _arg2 *C.Go
 	pub := (*cipher.PubKey)(unsafe.Pointer(_pub))
 	sec := (*cipher.SecKey)(unsafe.Pointer(_sec))
 	b, err := cipher.ECDH(*pub, *sec)
-	____error_code := libErrorCode(err)
+	____error_code = libErrorCode(err)
 	if err == nil {
 		copyToGoSlice(reflect.ValueOf(b), _arg2)
 	}
@@ -364,8 +365,8 @@ func SKY_cipher_GenerateDeterministicKeyPair(_seed []byte, _arg1 *C.cipher__PubK
 		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg2), uint(SizeofSecKey))
 	}
 
-	____error_code := libErrorCode(err)
-	return errcode
+	____error_code = libErrorCode(err)
+	return
 }
 
 //export SKY_cipher_DeterministicKeyPairIterator
@@ -377,7 +378,7 @@ func SKY_cipher_DeterministicKeyPairIterator(_seed []byte, _arg1 *C.GoSlice_, _a
 	checkAPIReady()
 
 	h, p, s, err := cipher.DeterministicKeyPairIterator(_seed)
-	____error_code := libErrorCode(err)
+	____error_code = libErrorCode(err)
 
 	if err == nil {
 		copyToGoSlice(reflect.ValueOf(h), _arg1)
@@ -397,7 +398,7 @@ func SKY_cipher_GenerateDeterministicKeyPairs(_seed []byte, _n int, _arg2 *C.GoS
 	checkAPIReady()
 
 	sks, err := cipher.GenerateDeterministicKeyPairs(_seed, _n)
-	__error_code = libErrorCode(err)
+	____error_code = libErrorCode(err)
 	if err == nil {
 		copyToGoSlice(reflect.ValueOf(sks), _arg2)
 	}

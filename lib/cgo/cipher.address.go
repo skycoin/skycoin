@@ -45,7 +45,7 @@ func SKY_cipher_AddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____error
 	checkAPIReady()
 
 	addr, err := cipher.AddressFromBytes(_b)
-	____error_code := libErrorCode(err)
+	____error_code = libErrorCode(err)
 	if err == nil {
 		*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))
 	}

@@ -49,12 +49,12 @@ Test(cipher_crypto, TestNewPubKey) {
 
   randBytes(&slice, 33);
   errorcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode != SKY_OK, "33 random bytes");
+  cr_assert(errorcode != SKY_OK, "33 random bytes");
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
   GoSlice buffer = {pk, sizeof(pk), sizeof(pk)};
-  errcode = SKY_cipher_NewPubKey(buffer, &pk2);
-  cr_assert(errcode == SKY_OK);
+  errorcode = SKY_cipher_NewPubKey(buffer, &pk2);
+  cr_assert(errorcode == SKY_OK);
 
   cr_assert(eq(u8[33], pk, pk2));
 }
@@ -130,7 +130,7 @@ Test(cipher_crypto, TestPubKeyVerify) {
   for (; i < 10; i++) {
     randBytes(&slice, 33);
     memcpy((void *) &p, slice.data, 33);
-    failed = failed || (errcode = SKY_cipher_PubKey_Verify(&p));
+    failed = failed || (errorcode = SKY_cipher_PubKey_Verify(&p));
   }
   cr_assert(failed);
 }
@@ -724,11 +724,11 @@ Test(cipher_crypto, TestSecKeTest) {
   int errorcode;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
-  errcode = SKY_cipher_CheckSecKey(&sk);
+  errorcode = SKY_cipher_CheckSecKey(&sk);
   cr_assert(errorcode == SKY_OK);
 
   memset(&sk, 0, sizeof(sk));
-  errcode = SKY_cipher_CheckSecKey(&sk);
+  errorcode = SKY_cipher_CheckSecKey(&sk);
   cr_assert(errorcode == SKY_ErrInvalidSecKyVerification);
 }
 
@@ -743,12 +743,12 @@ Test(cipher_crypto, TestSecKeyHashTest) {
   SKY_cipher_GenerateKeyPair(&pk, &sk);
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h);
-  errcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
+  errorcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
   cr_assert(errorcode == SKY_OK);
 
 
   memset(&sk, 0, sizeof(sk));
-  errcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
+  errorcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
   cr_assert(errorcode == SKY_ErrInvalidSecKyVerification);
 }
 

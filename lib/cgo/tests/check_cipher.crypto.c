@@ -537,6 +537,7 @@ Test(cipher_crypto, TestChkSig) {
   errorcode = SKY_cipher_ChkSig(&addr, &h2, &sig2);
   cr_assert(errorcode == SKY_OK);
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig2);
+  fprintf(stderr, "Errorcode %d", errorcode);
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
   errorcode = SKY_cipher_ChkSig(&addr, &h2, &sig);
   cr_assert(errorcode != SKY_OK); // One of many error codes

@@ -56,11 +56,11 @@ var (
 	// ErrInvalidSig          Invalid signature
 	ErrInvalidSig = errors.New("Invalid signature")
 	// ErrInvalidSigForPubKey Invalig sig: PubKey recovery failed
-	ErrInvalidSigForPubKey = errors.New("Invalig sig: PubKey recovery failed")
+	ErrInvalidSigForPubKey = errors.New("Invalid sig: PubKey recovery failed")
 	// ErrInvalidAddressForSig Invalid sig: address does not match output address
 	ErrInvalidAddressForSig = errors.New("Invalid sig: address does not match output address")
 	// ErrInvalidHashForSig   Signature invalid for hash
-	ErrInvalidHashForSig = errors.New("Signature invalid for hash")
+	ErrInvalidHashForSig = errors.New("Invalid sig: invalid for hash")
 	// ErrPubKeyRecoverMismatch Recovered pubkey does not match pubkey
 	ErrPubKeyRecoverMismatch = errors.New("Recovered pubkey does not match pubkey")
 	// ErrInvalidSigInvalidPubKey VerifySignature, secp256k1.VerifyPubkey failed
@@ -393,11 +393,11 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 	}
 
 	if address != AddressFromPubKey(pubKey) {
-		return errors.New("Invalid sig: address does not match output address")
+		return ErrInvalidAddressForSig
 	}
 
 	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey[:]) != 1 {
-		return errors.New("Invalid sig: invalid for hash")
+		return ErrInvalidHashForSig
 	}
 
 	return nil

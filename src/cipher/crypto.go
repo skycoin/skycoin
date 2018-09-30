@@ -53,12 +53,10 @@ var (
 	ErrInvalidPubKey = errors.New("Invalid public key")
 	// ErrInvalidSecKey       Invalid public key
 	ErrInvalidSecKey = errors.New("Invalid secret key")
+	// ErrInvalidSig          Invalid signature
+	ErrInvalidSig = errors.New("Invalid signature")
 	// ErrInvalidSigForPubKey Invalig sig: PubKey recovery failed
 	ErrInvalidSigForPubKey = errors.New("Invalig sig: PubKey recovery failed")
-	// ErrInvalidSecKeyHex    Invalid SecKey: not valid hex
-	ErrInvalidSecKeyHex = errors.New("Invalid SecKey: not valid hex")
-	// ErrInvalidSigHex    Invalid Sig: not valid hex
-	ErrInvalidSigHex = errors.New("Invalid Sig: not valid hex")
 	// ErrInvalidAddressForSig Invalid sig: address does not match output address
 	ErrInvalidAddressForSig = errors.New("Invalid sig: address does not match output address")
 	// ErrInvalidHashForSig   Signature invalid for hash
@@ -136,7 +134,7 @@ func MustPubKeyFromHex(s string) PubKey {
 // PubKeyFromSecKey recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) (PubKey, error) {
 	if seckey == (SecKey{}) {
-		return PubKey{}, ErrPubKeyFromNullSecKey)
+		return PubKey{}, ErrPubKeyFromNullSecKey
 	}
 
 	b := secp256k1.PubkeyFromSeckey(seckey[:])
@@ -225,7 +223,7 @@ func MustSecKeyFromHex(s string) SecKey {
 func SecKeyFromHex(s string) (SecKey, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		return SecKey{}, ErrInvalidSecKeyHex
+		return SecKey{}, ErrInvalidSecKey
 	}
 	return NewSecKey(b)
 }
@@ -325,7 +323,7 @@ func MustSigFromHex(s string) Sig {
 func SigFromHex(s string) (Sig, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		return Sig{}, ErrInvalidSigHex
+		return Sig{}, ErrInvalidSig
 	}
 	return NewSig(b)
 }

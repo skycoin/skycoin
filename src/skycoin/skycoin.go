@@ -345,9 +345,6 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 }
 
 func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
-	var s *api.Server
-	var err error
-
 	config := api.Config{
 		StaticDir:            c.config.Node.GUIDirectory,
 		DisableCSRF:          c.config.Node.DisableCSRF,
@@ -366,6 +363,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		},
 	}
 
+	var s *api.Server
 	if c.config.Node.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		exists, err := checkCertFiles(c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
@@ -386,12 +384,17 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		}
 
 		s, err = api.CreateHTTPS(host, config, d.Gateway, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
+		if err != nil {
+			c.logger.Errorf("Failed to start web GUI: %v", err)
+			return nil, err
+		}
 	} else {
+		var err error
 		s, err = api.Create(host, config, d.Gateway)
-	}
-	if err != nil {
-		c.logger.Errorf("Failed to start web GUI: %v", err)
-		return nil, err
+		if err != nil {
+			c.logger.Errorf("Failed to start web GUI: %v", err)
+			return nil, err
+		}
 	}
 
 	return s, nil

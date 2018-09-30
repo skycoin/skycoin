@@ -443,7 +443,7 @@ Test(cipher_crypto, TestMustSigFromHex) {
   str.p = "cascs";
   str.n = strlen(str.p);
   errorcode = SKY_cipher_SigFromHex(str, &s2);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidSig);
 
   // Invalid hex length
   randBytes(&b, 65);

@@ -59,6 +59,7 @@
 #define SKY_ErrBitcoinWIFInvalidSuffix              0x02000027
 #define SKY_ErrBitcoinWIFInvalidChecksum            0x02000028
 #define SKY_ErrEmptySeed                            0x02000029
+#define SKY_ErrInvalidSig                           0x0200002A
 
 #define SKY_ErrTemporaryInsufficientBalance   0x03000000
 #define SKY_ErrAddress                        0x03000001

@@ -150,6 +150,8 @@ const (
 	SKY_ErrBitcoinWIFInvalidChecksum
 	// SKY_ErrEmptySeed Seed input is empty
 	SKY_ErrEmptySeed
+	// SKY_ErrInvalidSig Invalid signature
+	SKY_ErrInvalidSig
 )
 
 // Error codes defined in cli package
@@ -445,6 +447,7 @@ var (
 		cipher.ErrBitcoinWIFInvalidSuffix:        SKY_ErrBitcoinWIFInvalidSuffix,
 		cipher.ErrBitcoinWIFInvalidChecksum:      SKY_ErrBitcoinWIFInvalidChecksum,
 		cipher.ErrEmptySeed:                      SKY_ErrEmptySeed,
+		cipher.ErrInvalidSig:                     SKY_ErrInvalidSig,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,

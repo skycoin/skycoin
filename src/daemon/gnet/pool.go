@@ -1,3 +1,6 @@
+/*
+Package gnet is the core networking library
+*/
 package gnet
 
 import (

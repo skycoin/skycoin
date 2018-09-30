@@ -220,7 +220,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    api.EndpointsDefault,
+		EnabledAPISets:    api.EndpointsRead + "," + api.EndpointsTransaction,
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
 

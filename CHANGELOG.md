@@ -26,6 +26,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `-enable-api-sets`, `-disable-api-sets`, `-enable-all-api-sets` options to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `WALLET`, `INSECURE_WALLET_SEED`, `DEPRECATED_WALLET_SPEND`. Multiple values must be comma separated.
 - `/api/v1/wallet/spend` is deprecated and requires `-enable-api-set=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
+- Add HTTP Basic Auth options `-web-interface-username` and `-web-interface-password`. Auth is only available when using `-web-interface-https` unless `-web-interface-plaintext-auth` is also used.
 
 ### Fixed
 
@@ -50,6 +51,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`
 - `cli decodeRawTransaction` output format changed, see the [CLI README](./src/cli/README.md)
 - `/api/v1/wallet/spend` is deprecated, disabled by default and requires `-enable-api-sets=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
+- Invalid password in `/api/v1/wallet` requests now return `400` instead of `401`
 
 ### Removed
 

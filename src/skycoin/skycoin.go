@@ -363,6 +363,8 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 			Commit:  c.config.Build.Commit,
 			Branch:  c.config.Build.Branch,
 		},
+		Username: c.config.Node.WebInterfaceUsername,
+		Password: c.config.Node.WebInterfacePassword,
 	}
 
 	if c.config.Node.WebInterfaceHTTPS {

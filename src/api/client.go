@@ -54,6 +54,8 @@ type ReceivedHTTPResponse struct {
 type Client struct {
 	HTTPClient *http.Client
 	Addr       string
+	Username   string
+	Password   string
 }
 
 // NewClient creates a Client
@@ -75,6 +77,20 @@ func NewClient(addr string) *Client {
 		Addr:       addr,
 		HTTPClient: httpClient,
 	}
+}
+
+// SetAuth configures the Client's request authentication
+func (c *Client) SetAuth(username, password string) {
+	c.Username = username
+	c.Password = password
+}
+
+func (c *Client) applyAuth(req *http.Request) {
+	if c.Username == "" && c.Password == "" {
+		return
+	}
+
+	req.SetBasicAuth(c.Username, c.Password)
 }
 
 // Get makes a GET request to an endpoint and unmarshals the response to obj.
@@ -115,6 +131,8 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 		return nil, err
 	}
 
+	c.applyAuth(req)
+
 	return c.HTTPClient.Do(req)
 }
 
@@ -147,6 +165,8 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 	if err != nil {
 		return err
 	}
+
+	c.applyAuth(req)
 
 	if csrf != "" {
 		req.Header.Set(CSRFHeaderName, csrf)
@@ -199,6 +219,8 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 	if err != nil {
 		return false, err
 	}
+
+	c.applyAuth(req)
 
 	if csrf != "" {
 		req.Header.Set(CSRFHeaderName, csrf)

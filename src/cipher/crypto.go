@@ -55,7 +55,7 @@ var (
 	ErrInvalidSecKey = errors.New("Invalid secret key")
 	// ErrInvalidSig          Invalid signature
 	ErrInvalidSig = errors.New("Invalid signature")
-	// ErrInvalidSigForPubKey Invalig sig: PubKey recovery failed
+	// ErrInvalidSigForPubKey Invalid sig: PubKey recovery failed
 	ErrInvalidSigForPubKey = errors.New("Invalid sig: PubKey recovery failed")
 	// ErrInvalidAddressForSig Invalid sig: address does not match output address
 	ErrInvalidAddressForSig = errors.New("Invalid sig: address does not match output address")
@@ -79,6 +79,8 @@ var (
 	ErrInvalidPubKeyFromHash = errors.New("Recovered pubkey does not match signed hash")
 	// ErrPubKeyFromSecKeyMismatch impossible error TestSecKey, pubkey does not match recovered pubkey
 	ErrPubKeyFromSecKeyMismatch = errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
+	// ErrEmptySeed Seed input is empty
+	ErrEmptySeed = errors.New("Seed input is empty")
 )
 
 // PubKey public key
@@ -475,7 +477,7 @@ func GenerateKeyPair() (PubKey, SecKey) {
 // GenerateDeterministicKeyPair generates deterministic key pair
 func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey, error) {
 	if len(seed) == 0 {
-		return PubKey{}, SecKey{}, errors.New("seed input is empty")
+		return PubKey{}, SecKey{}, ErrEmptySeed
 	}
 
 	public, secret := secp256k1.GenerateDeterministicKeyPair(seed)
@@ -517,7 +519,7 @@ func MustGenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey) {
 // feeding the SHA256 value back into generate sequence of keys
 func DeterministicKeyPairIterator(seed []byte) ([]byte, PubKey, SecKey, error) {
 	if len(seed) == 0 {
-		return nil, PubKey{}, SecKey{}, errors.New("seed input is empty")
+		return nil, PubKey{}, SecKey{}, ErrEmptySeed
 	}
 
 	hash, public, secret := secp256k1.DeterministicKeyPairIterator(seed)

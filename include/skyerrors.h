@@ -53,7 +53,12 @@
 #define SKY_ErrNullPubKeyFromSecKey                 0x02000021
 #define SKY_ErrInvalidDerivedPubKeyFromSecKey       0x02000022
 #define SKY_ErrInvalidPubKeyFromHash                0x02000023
-#define SKY_ErrPubKeyFromSecKeyMissmatch            0x02000024
+#define SKY_ErrPubKeyFromSecKeyMismatch             0x02000024
+#define SKY_ErrInvalidLength                        0x02000025
+#define SKY_ErrBitcoinWIFInvalidFirstByte           0x02000026
+#define SKY_ErrBitcoinWIFInvalidSuffix              0x02000027
+#define SKY_ErrBitcoinWIFInvalidChecksum            0x02000028
+#define SKY_ErrEmptySeed                            0x02000029
 
 #define SKY_ErrTemporaryInsufficientBalance   0x03000000
 #define SKY_ErrAddress                        0x03000001

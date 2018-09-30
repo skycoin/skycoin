@@ -512,7 +512,7 @@ Test(cipher_crypto, TestChkSig) {
   cr_assert(errorcode == SKY_OK);
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h);
-  SKY_cipher_MustSignHash(&h, &sk, &sig);
+  SKY_cipher_SignHash(&h, &sk, &sig);
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig);
   cr_assert(errorcode == SKY_OK);
 
@@ -533,7 +533,7 @@ Test(cipher_crypto, TestChkSig) {
   // Sig for one hash does not work for another hash
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h2);
-  SKY_cipher_MustSignHash(&h2, &sk, &sig2);
+  SKY_cipher_SignHash(&h2, &sk, &sig2);
   errorcode = SKY_cipher_ChkSig(&addr, &h2, &sig2);
   cr_assert(errorcode == SKY_OK);
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig2);
@@ -545,8 +545,8 @@ Test(cipher_crypto, TestChkSig) {
   SKY_cipher_GenerateKeyPair(&pk2, &sk2);
   SKY_cipher_AddressFromPubKey(&pk2, &addr2);
   memset(&h, 0, sizeof(h));
-  SKY_cipher_MustSignHash(&h, &sk, &sig);
-  SKY_cipher_MustSignHash(&h, &sk2, &sig2);
+  SKY_cipher_SignHash(&h, &sk, &sig);
+  SKY_cipher_SignHash(&h, &sk2, &sig2);
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig);
   cr_assert(errorcode == SKY_OK);
   errorcode = SKY_cipher_ChkSig(&addr2, &h, &sig2);
@@ -555,8 +555,8 @@ Test(cipher_crypto, TestChkSig) {
 
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h);
-  SKY_cipher_MustSignHash(&h, &sk, &sig);
-  SKY_cipher_MustSignHash(&h, &sk2, &sig2);
+  SKY_cipher_SignHash(&h, &sk, &sig);
+  SKY_cipher_SignHash(&h, &sk2, &sig2);
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig);
   cr_assert(errorcode == SKY_OK);
   errorcode = SKY_cipher_ChkSig(&addr2, &h, &sig2);
@@ -570,16 +570,8 @@ Test(cipher_crypto, TestChkSig) {
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
 }
 
-Test(cipher_crypto, TestSignHash, 
-  #if __linux__ 
-    .signal=SIGABRT 
-  #elif __APPLE__
-    #if TARGET_OS_MAC
-    .exit_code=2
-    #endif
-  #endif
-  ) {
-  cipher__PubKey pk;
+Test(cipher_crypto, TestSignHash) { 
+  cipher__PubKey pk, pk2;
   cipher__SecKey sk;
   cipher__Address addr;
   unsigned char buff[257];
@@ -593,11 +585,22 @@ Test(cipher_crypto, TestSignHash,
 
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h);
-  SKY_cipher_MustSignHash(&h, &sk, &sig);
+  errorcode = SKY_cipher_SignHash(&h, &sk, &sig);
+  cr_assert(errorcode == SKY_OK);
   memset((void *) &sig2, 0, 65);
   cr_assert(not(eq(u8[65], sig2, sig)));
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig);
   cr_assert(errorcode == SKY_OK);
+
+  errorcode = SKY_cipher_PubKeyFromSig(&sig, &h, &pk2);
+  cr_assert(errorcode == SKY_OK);
+  cr_assert(eq(u8[33], pk, pk2));
+
+  cipher__SecKey empty_sk;
+  cipher__Sig temp_sig;
+  memset((void *) &empty_sk, 0, 32);
+  errorcode = SKY_cipher_SignHash(&h, &empty_sk, &temp_sig);
+  cr_assert(errorcode == SKY_ErrInvalidSecKey);
 }
 
 Test(cipher_crypto, TestPubKeyFromSecKey) {
@@ -638,7 +641,7 @@ Test(cipher_crypto, TestPubKeyFromSig) {
 
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h);
-  SKY_cipher_MustSignHash(&h, &sk, &sig);
+  SKY_cipher_SignHash(&h, &sk, &sig);
   errorcode = SKY_cipher_PubKeyFromSig(&sig, &h, &pk2);
 
   cr_assert(errorcode == SKY_OK);
@@ -663,7 +666,7 @@ Test(cipher_crypto, TestVerifySignature) {
   SKY_cipher_SumSHA256(b, &h);
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h2);
-  SKY_cipher_MustSignHash(&h, &sk, &sig);
+  SKY_cipher_SignHash(&h, &sk, &sig);
   errorcode = SKY_cipher_VerifySignature(&pk, &sig, &h);
   cr_assert(errorcode == SKY_OK);
 

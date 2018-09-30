@@ -112,7 +112,7 @@ func TestAddressFromBytes(t *testing.T) {
 	a.Version = 2
 	b = a.Bytes()
 	_, err = AddressFromBytes(b)
-	require.EqualError(t, err, "Invalid version")
+	require.EqualError(t, err, "Address version invalid")
 }
 
 func TestMustAddressFromBytes(t *testing.T) {

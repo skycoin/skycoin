@@ -44,7 +44,7 @@ func (rd *Ripemd160) MustSet(b []byte) {
 // Set sets value
 func (rd *Ripemd160) Set(b []byte) error {
 	if len(b) != 20 {
-		return errors.New("Invalid ripemd160 length")
+		return ErrInvalidLengthRipemd160
 	}
 	copy(rd[:], b[:])
 	return nil
@@ -82,7 +82,7 @@ func (g *SHA256) MustSet(b []byte) {
 // Set sets value
 func (g *SHA256) Set(b []byte) error {
 	if len(b) != 32 {
-		return errors.New("Invalid sha256 length")
+		return ErrInvalidLengthSHA256
 	}
 	copy(g[:], b[:])
 	return nil

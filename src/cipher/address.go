@@ -13,7 +13,7 @@ var (
 	// ErrAddressInvalidChecksum Computed checksum did not match expected value
 	ErrAddressInvalidChecksum = errors.New("Invalid checksum")
 	// ErrAddressInvalidVersion Unsupported address version value
-	ErrAddressInvalidVersion = errors.New("Invalid version")
+	ErrAddressInvalidVersion = errors.New("Address version invalid")
 	// ErrAddressInvalidPubKey Public key invalid for address
 	ErrAddressInvalidPubKey = errors.New("Public key invalid for address")
 	// ErrAddressInvalidFirstByte Invalid first byte in wallet import format string
@@ -158,7 +158,7 @@ func (addr Address) Bytes() []byte {
 // Verify checks that the address appears valid for the public key
 func (addr Address) Verify(pubKey PubKey) error {
 	if addr.Version != 0x00 {
-		return errors.New("Address version invalid")
+		return ErrAddressInvalidVersion
 	}
 
 	if addr.Key != PubKeyRipemd160(pubKey) {

@@ -106,7 +106,7 @@ Test(cipher_address, TestAddressFromBytes){
 
   addr.Version = 2;
   SKY_cipher_Address_Bytes(&addr, (GoSlice_ *)&bytes);
-  cr_assert(SKY_cipher_AddressFromBytes(bytes, &addr2) == SKY_ERROR, "Invalid version");
+  cr_assert(SKY_cipher_AddressFromBytes(bytes, &addr2) == SKY_ErrAddressInvalidVersion, "Invalid version");
 }
 
 Test(cipher_address, TestAddressVerify){

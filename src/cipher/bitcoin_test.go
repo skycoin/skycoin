@@ -158,7 +158,7 @@ func TestBitcoinAddressFromBytes(t *testing.T) {
 	a.Version = 2
 	b = a.Bytes()
 	_, err = BitcoinAddressFromBytes(b)
-	require.EqualError(t, err, "Invalid version")
+	require.EqualError(t, err, "Address version invalid")
 }
 
 func TestMustBitcoinAddressFromBytes(t *testing.T) {
@@ -291,24 +291,24 @@ func TestBitcoinWIFFailures(t *testing.T) {
 
 	a = string(base58.Hex2Base58(randBytes(t, 37)))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
-	require.Equal(t, errors.New("invalid length"), err)
+	require.Equal(t, errors.New("Invalid length"), err)
 
 	a = string(base58.Hex2Base58(randBytes(t, 39)))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
-	require.Equal(t, errors.New("invalid length"), err)
+	require.Equal(t, errors.New("Invalid length"), err)
 
 	b := randBytes(t, 38)
 	b[0] = 0x70
 	a = string(base58.Hex2Base58(b))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
-	require.Equal(t, errors.New("first byte invalid"), err)
+	require.Equal(t, errors.New("Bitcoin WIF: First byte invalid"), err)
 
 	b = randBytes(t, 38)
 	b[0] = 0x80
 	b[33] = 0x02
 	a = string(base58.Hex2Base58(b))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
-	require.Equal(t, errors.New("invalid 33rd byte"), err)
+	require.Equal(t, errors.New("Bitcoin WIF: Invalid 33rd byte"), err)
 
 	b = randBytes(t, 38)
 	b[0] = 0x80
@@ -319,7 +319,7 @@ func TestBitcoinWIFFailures(t *testing.T) {
 	copy(b[34:38], chksum[:])
 	a = string(base58.Hex2Base58(b))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
-	require.Equal(t, errors.New("checksum fail"), err)
+	require.Equal(t, errors.New("Bitcoin WIF: Checksum fail"), err)
 }
 
 func TestMustBitcoinWIFFailures(t *testing.T) {

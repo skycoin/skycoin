@@ -132,14 +132,24 @@ const (
 	SKY_ErrInvalidSigForMessage
 	// SKY_ErrInvalidSecKyVerification Seckey secp256k1 verification failed
 	SKY_ErrInvalidSecKyVerification
-	// SKY_ErrNullPubKeyFromSecKey Impossible error, TestSecKey, nil pubkey recovered
+	// SKY_ErrNullPubKeyFromSecKey Impossible error, CheckSecKey, nil pubkey recovered
 	SKY_ErrNullPubKeyFromSecKey
-	// SKY_ErrInvalidDerivedPubKeyFromSecKey impossible error, TestSecKey, Derived Pubkey verification failed
+	// SKY_ErrInvalidDerivedPubKeyFromSecKey impossible error, CheckSecKey, Derived Pubkey verification failed
 	SKY_ErrInvalidDerivedPubKeyFromSecKey
 	// SKY_ErrInvalidPubKeyFromHash Recovered pubkey does not match signed hash
 	SKY_ErrInvalidPubKeyFromHash
-	// SKY_ErrPubKeyFromSecKeyMismatch impossible error TestSecKey, pubkey does not match recovered pubkey
+	// SKY_ErrPubKeyFromSecKeyMismatch impossible error CheckSecKey, pubkey does not match recovered pubkey
 	SKY_ErrPubKeyFromSecKeyMismatch
+	// SKY_ErrInvalidLength Unexpected size of string or bytes buffer
+	SKY_ErrInvalidLength
+	// SKY_ErrBitcoinWIFInvalidFirstByte Unexpected value (!= 0x80) of first byte in Bitcoin Wallet Import Format
+	SKY_ErrBitcoinWIFInvalidFirstByte
+	// SKY_ErrBitcoinWIFInvalidSuffix Unexpected value (!= 0x01) of 33rd byte in Bitcoin Wallet Import Format
+	SKY_ErrBitcoinWIFInvalidSuffix
+	// SKY_ErrBitcoinWIFInvalidChecksum Invalid Checksum in Bitcoin WIF address
+	SKY_ErrBitcoinWIFInvalidChecksum
+	// SKY_ErrEmptySeed Seed input is empty
+	SKY_ErrEmptySeed
 )
 
 // Error codes defined in cli package
@@ -430,6 +440,11 @@ var (
 		cipher.ErrInvalidDerivedPubKeyFromSecKey: SKY_ErrInvalidDerivedPubKeyFromSecKey,
 		cipher.ErrInvalidPubKeyFromHash:          SKY_ErrInvalidPubKeyFromHash,
 		cipher.ErrPubKeyFromSecKeyMismatch:       SKY_ErrPubKeyFromSecKeyMismatch,
+		cipher.ErrInvalidLength:                  SKY_ErrInvalidLength,
+		cipher.ErrBitcoinWIFInvalidFirstByte:     SKY_ErrBitcoinWIFInvalidFirstByte,
+		cipher.ErrBitcoinWIFInvalidSuffix:        SKY_ErrBitcoinWIFInvalidSuffix,
+		cipher.ErrBitcoinWIFInvalidChecksum:      SKY_ErrBitcoinWIFInvalidChecksum,
+		cipher.ErrEmptySeed:                      SKY_ErrEmptySeed,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,

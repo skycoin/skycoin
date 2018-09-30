@@ -272,8 +272,8 @@ func SKY_cipher_Sig_Hex(_s *C.cipher__Sig, _arg1 *C.GoString_) (____error_code u
 	return
 }
 
-//export SKY_cipher_MustSignHash
-func SKY_cipher_MustSignHash(_hash *C.cipher__SHA256, _sec *C.cipher__SecKey, _arg2 *C.cipher__Sig) (____error_code uint32) {
+//export SKY_cipher_SignHash
+func SKY_cipher_SignHash(_hash *C.cipher__SHA256, _sec *C.cipher__SecKey, _arg2 *C.cipher__Sig) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -282,8 +282,11 @@ func SKY_cipher_MustSignHash(_hash *C.cipher__SHA256, _sec *C.cipher__SecKey, _a
 
 	hash := (*cipher.SHA256)(unsafe.Pointer(_hash))
 	sec := (*cipher.SecKey)(unsafe.Pointer(_sec))
-	s := cipher.MustSignHash(*hash, *sec)
-	copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg2), uint(SizeofSig))
+	s, err := cipher.SignHash(*hash, *sec)
+	____error_code = libErrorCode(err)
+	if err == nil {
+		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg2), uint(SizeofSig))
+	}
 	return
 }
 

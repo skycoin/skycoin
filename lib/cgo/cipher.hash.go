@@ -97,7 +97,6 @@ func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.cipher__SHA256) (____error_code ui
 	h := cipher.SumSHA256(_b)
 
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
-	____error_code = libErrorCode(nil)
 	return
 }
 

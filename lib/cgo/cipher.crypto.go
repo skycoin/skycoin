@@ -41,7 +41,7 @@ func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (____error_code ui
 	if err == nil {
 		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
 	}
-	____error_code = libErrorCode(nil)
+	____error_code = libErrorCode(err)
 	return
 }
 

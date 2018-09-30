@@ -54,6 +54,7 @@ Test(cipher_hash,TestRipemd160Set){
   randBytes(&slice,21);
 
   error = SKY_cipher_Ripemd160_Set(&h,slice);
+  fprintf(stderr, "Errorcode %d", error);
   cr_assert( error == SKY_ErrInvalidLengthRipemd160);
 
   randBytes(&slice,100);

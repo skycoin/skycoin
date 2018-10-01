@@ -65,6 +65,7 @@
         }
     },
     "scripts": {
+        "start": "electron ./src/electron-main.js dev",
         "dist-win32": "build -w --ia32 -p=never",
         "dist-win64": "build -w --x64 -p=never",
         "dist-win": "build -w --x64 --ia32 -p=never",

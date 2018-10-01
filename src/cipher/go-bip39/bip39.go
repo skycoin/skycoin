@@ -1,3 +1,6 @@
+/*
+Package bip39 implements mnemonic seeds as defined in BIP 39 https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+*/
 package bip39
 
 import (
@@ -246,10 +249,21 @@ func validateEntropyWithChecksumBitSize(bitSize int) error {
 // Validity is determined by both the number of words being appropriate,
 // and that all the words in the mnemonic are present in the word list.
 func IsMnemonicValid(mnemonic string) bool {
-	// Create a list of all the words in the mnemonic sentence
-	words := strings.Fields(mnemonic)
+	// Make sure no leading/trailing whitespace
+	if mnemonic != strings.TrimSpace(mnemonic) {
+		return false
+	}
 
-	//Get num of words
+	// Create a list of all the words in the mnemonic sentence
+	words := strings.Split(mnemonic, " ")
+
+	// Detect duplicate whitespace
+	for _, w := range words {
+		if w == "" {
+			return false
+		}
+	}
+
 	numOfWords := len(words)
 
 	// The number of words should be 12, 15, 18, 21 or 24

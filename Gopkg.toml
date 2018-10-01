@@ -50,3 +50,7 @@
 [[constraint]]
   name = "github.com/prometheus/client_golang"
   version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/shopspring/decimal"
+  version = "1.1.0"

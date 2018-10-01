@@ -1,3 +1,6 @@
+/*
+Package api implements the REST API interface
+*/
 package api
 
 import (

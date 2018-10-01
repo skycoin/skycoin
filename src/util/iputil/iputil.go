@@ -1,3 +1,6 @@
+/*
+Package iputil provides IP address related utility methods
+*/
 package iputil
 
 import (

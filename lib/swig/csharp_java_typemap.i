@@ -1,3 +1,20 @@
+
+%define %cs_callback(TYPE, CSTYPE)
+%typemap(ctype) TYPE, TYPE& "void*"
+%typemap(in) TYPE %{ $1 = (TYPE)$input; %}
+%typemap(in) TYPE& %{ $1 = (TYPE*)&$input; %}
+%typemap(imtype, out="IntPtr") TYPE, TYPE& "CSTYPE"
+%typemap(cstype, out="IntPtr") TYPE, TYPE& "CSTYPE"
+%typemap(csin) TYPE, TYPE& "$csinput"
+%enddef
+%define %cs_callback2(TYPE, CTYPE, CSTYPE)
+%typemap(ctype) TYPE "CTYPE"
+%typemap(in) TYPE %{ $1 = (TYPE)$input; %}
+%typemap(imtype, out="IntPtr") TYPE "CSTYPE"
+%typemap(cstype, out="IntPtr") TYPE "CSTYPE"
+%typemap(csin) TYPE "$csinput"
+%enddef
+
 /* Handle not as pointer is input. */
 %typemap(in) Handle {
 	$input =  (long*)&$1;
@@ -22,6 +39,7 @@
 %pointer_functions(unsigned char, charp);
 
 CSHARP_ARRAYS(int, int)
+CSHARP_ARRAYS(unsigned char, byte)
 CSHARP_ARRAYS_FIXED(int, int)
 %apply int INPUT[] { int *$imput }
 
@@ -85,6 +103,3 @@ CSHARP_ARRAYS_FIXED(int, int)
 %typemap(freearg) (cipher_PubKeys* __in_pubKeys) {
   if ($1->data) free($1->data);
 }
-
-
-

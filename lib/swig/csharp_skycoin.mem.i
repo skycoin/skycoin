@@ -412,15 +412,15 @@
 
 %rename(SKY_coin_AddressUxOuts_Keys) CSharp_skycoin_SKY_coin_AddressUxOuts_Keys;
 %inline{ 
-	GoUint32 CSharp_skycoin_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_SHA256s* __out_hashes){
+	GoUint32 CSharp_skycoin_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_Addresses* __out_addr){
 		GoSlice_ data;
 		data.data = NULL;
 		data.len = 0;
 		data.cap = 0;
 		GoUint32 result = SKY_coin_AddressUxOuts_Keys(p0, &data);
 		if( result == 0){
-			__out_hashes->data = data.data;
-			__out_hashes->count = data.len;
+			__out_addr->data = data.data;
+			__out_addr->count = data.len;
 		}
 		return result;
 	}
@@ -464,4 +464,32 @@
 		GoUint32 result = SKY_coin_GetTransactionObject(tx,&p1);
 		return result;
 	}
+}
+
+%rename(SKY_coin_UxBody_Hash) CSharp_skycoin_SKY_coin_UxBody_Hash;
+%inline{
+	GoUint32 CSharp_skycoin_SKY_coin_UxBody_Hash(coin__UxBody* p0, cipher_SHA256* p1){
+		GoUint32 result = SKY_coin_UxBody_Hash(p0,p1);
+		return result;
+	}
+}
+
+%rename(SKY_coin_UxOut_SnapshotHash) CSharp_skycoin_SKY_coin_UxOut_SnapshotHash;
+%inline{
+	GoUint32 CSharp_skycoin_SKY_coin_UxOut_SnapshotHash(coin__UxOut* p0, cipher_SHA256* p1){
+		GoUint32 result = SKY_coin_UxOut_SnapshotHash(p0,p1);
+		return result;
+	}
+}
+
+%rename(SKY_fee_TransactionFee) CSharp_skycoin_SKY_fee_TransactionFee;
+%inline {
+	GoUint32 CSharp_skycoin_SKY_fee_TransactionFee(Transaction__Handle handle , GoUint64 p1,coin_UxOutArray* __uxIn, GoUint64* p3){
+		GoSlice_ dataIn;
+		dataIn.data = __uxIn->data;
+		dataIn.len = __uxIn->count;
+		dataIn.cap = __uxIn->count;
+		GoUint32 result = SKY_fee_TransactionFee(handle, p1,&dataIn,p3);
+		return result;
+	};
 }

@@ -65,3 +65,12 @@ return slice;
 			return 0;
     }
 }
+
+%extend Transaction__Handle {
+	char getVersion(){
+		return $self->Version;
+    }
+    	void setVersion(char pValue){
+		$self->Version = pValue;
+    }
+}

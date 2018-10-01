@@ -11,12 +11,15 @@
 %pointer_functions(GoSlice, GoSlicep);
 %pointer_functions(_GoString_, GoStringp);
 %pointer_functions(int, intp);
+%pointer_functions(coin__Transaction, coin__Transactionp);
 %pointer_functions(Transaction__Handle, Transaction__Handlep);
+%pointer_functions(AddressUxOuts_Handle, AddressUxOuts__HandlePtr);
 %pointer_functions(unsigned long long, GoUint64p);
 %pointer_functions(long long, Gointp);
 %pointer_functions(unsigned short, GoUint16p);
 %pointer_functions(cipher__Address, cipher__Addressp);
 %pointer_functions(Transactions__Handle, Transactions__Handlep);
+%pointer_functions(unsigned char, charp);
 
 CSHARP_ARRAYS(int, int)
 CSHARP_ARRAYS_FIXED(int, int)
@@ -74,9 +77,10 @@ CSHARP_ARRAYS_FIXED(int, int)
 
 %apply long long  {GoInt_, GoInt};
 %apply unsigned short  {GoUint16, GoUint16_};
-%apply char  {GoUint8_, GoUint8};
+%apply unsigned char  {GoUint8_, GoUint8};
 %apply unsigned long long  {GoUint64, GoUint64_};
-%apply GoSlice_* {coin__UxArray*}
+%apply GoSlice_* {coin__UxArray*};
+
 
 %typemap(freearg) (cipher_PubKeys* __in_pubKeys) {
   if ($1->data) free($1->data);

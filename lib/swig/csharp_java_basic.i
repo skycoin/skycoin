@@ -384,12 +384,12 @@ int makeUxOut(coin__UxOut* puxOut){
   cipher__SecKey seckey;
   return makeUxOutWithSecret(puxOut, &seckey);
 }
-int makeUxArray(GoSlice* parray, int n){
+int makeUxArray(coin_UxOutArray* parray, int n){
   parray->data = malloc( sizeof(coin__UxOut) * n );
   if(!parray->data)
     return 1;
   registerMemCleanup( parray->data );
-  parray->cap = parray->len = n;
+  parray->count = parray->count = n;
   coin__UxOut* p = (coin__UxOut*)parray->data;
   int result = 0;
   for(int i = 0; i < n; i++){

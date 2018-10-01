@@ -57,8 +57,11 @@
 	}
 
 	void append(coin__UxOut* uxout){
-		coin_UxOutArray_allocate($self,$self->count+1);
-		coin_UxOutArray_setAt($self,$self->count+1,uxout);
+		int n = $self->count+1;
+				$self->data = malloc(n * sizeof(*($self->data)));
+		$self->count =n ;
+		memcpy(&self->data[n-1], uxout, sizeof(*uxout));
+
 	}
 	
 	void release(){
@@ -80,3 +83,10 @@
 	}
 }
 
+%extend coin__UxBody {
+	void SetSrcTransaction(cipher_SHA256 *o){
+			cipher_SHA256* p = (cipher_SHA256*)o;
+			memcpy( &$self->SrcTransaction, &p->data, sizeof(cipher__SHA256));
+		}
+	
+}

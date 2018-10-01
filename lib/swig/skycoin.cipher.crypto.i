@@ -187,3 +187,36 @@
 	}
 }
 
+%extend cipher_Addresses {
+	cipher__Address* getAt(int i){
+		if( i < $self->count ){
+			return &$self->data[i];
+		}
+		else
+			return NULL;
+	}
+	
+	int setAt(int i, cipher_Addresses* addr){
+		if( i < $self->count){
+			memcpy(&self->data[i], addr, sizeof(*addr));
+			return i;
+		} else {
+			return -1;
+		}
+	}
+	
+	int isEqual(cipher_Addresses* a){
+		return $self->count == a->count && memcmp($self->data, a->data, sizeof(cipher__Address) * $self->count) == 0;
+	}
+	
+	void allocate(int n){
+		$self->data = malloc(n * sizeof(*($self->data)));
+		$self->count = n;
+	}
+	
+	void release(){
+		if($self->data != NULL)
+			free($self->data);
+	}
+}
+

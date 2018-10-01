@@ -117,7 +117,7 @@ const (
 	// SKY_ErrInvalidSigForPubKey Invalig sig: PubKey recovery failed
 	SKY_ErrInvalidSigForPubKey
 	// SKY_ErrInvalidSecKeyHex    Invalid SecKey: not valid hex
-	SKY_ErrInvalidSecKeyHex
+	SKY_ErrInvalidSecKeyHex // nolint megacheck
 	// SKY_ErrInvalidAddressForSig Invalid sig: address does not match output address
 	SKY_ErrInvalidAddressForSig
 	// SKY_ErrInvalidHashForSig   Signature invalid for hash

@@ -86,7 +86,77 @@ func BenchmarkSerializeIntroductionMessage(b *testing.B) {
 }
 
 var giveBlocksMessageObj = GiveBlocksMessage{
-	Blocks: make([]coin.SignedBlock, 3),
+	Blocks: []coin.SignedBlock{
+		{
+			Block: coin.Block{
+				Body: coin.BlockBody{
+					Transactions: []coin.Transaction{
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+					},
+				},
+			},
+		},
+		{
+			Block: coin.Block{
+				Body: coin.BlockBody{
+					Transactions: []coin.Transaction{
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+					},
+				},
+			},
+		},
+		{
+			Block: coin.Block{
+				Body: coin.BlockBody{
+					Transactions: []coin.Transaction{
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func BenchmarkDeserializeRawGiveBlocksMessage(b *testing.B) {
@@ -128,7 +198,23 @@ func BenchmarkSerializeAnnounceTxnsMessage(b *testing.B) {
 }
 
 var giveTxnsMessageObj = GiveTxnsMessage{
-	Transactions: make(coin.Transactions, 3),
+	Transactions: []coin.Transaction{
+		{
+			Sigs: make([]cipher.Sig, 3),
+			In:   make([]cipher.SHA256, 3),
+			Out:  make([]coin.TransactionOutput, 3),
+		},
+		{
+			Sigs: make([]cipher.Sig, 3),
+			In:   make([]cipher.SHA256, 3),
+			Out:  make([]coin.TransactionOutput, 3),
+		},
+		{
+			Sigs: make([]cipher.Sig, 3),
+			In:   make([]cipher.SHA256, 3),
+			Out:  make([]coin.TransactionOutput, 3),
+		},
+	},
 }
 
 func BenchmarkDeserializeRawGiveTxnsMessage(b *testing.B) {

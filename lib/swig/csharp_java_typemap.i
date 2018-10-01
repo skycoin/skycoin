@@ -103,3 +103,9 @@ CSHARP_ARRAYS_FIXED(int, int)
 %typemap(freearg) (cipher_PubKeys* __in_pubKeys) {
   if ($1->data) free($1->data);
 }
+
+%typemap(in) FeeCalculator* (FeeCalculator temp) {
+  temp.callback = FeeCalculatorcCall;
+  temp.context = $input;
+  $1 = &temp;
+}

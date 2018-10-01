@@ -82,14 +82,14 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   SKY_cipher_GenerateKeyPair(&p, &sk);
   memcpy(slice.data, (void *) p, sizeof(p));
   slice.len = sizeof(p);
-  strnhex(&p[0], sbuff, slice.len << 1);
+  bytesnhex(&p[0], sbuff, slice.len << 1);
   s.p = sbuff;
   s.n = strlen(s.p);
   errorcode = SKY_cipher_PubKeyFromHex(s, &p1);
   cr_assert(errorcode == SKY_ErrInvalidLengthPubKey, "TestPubKeyFromHex: Invalid hex length");
 
   // Valid
-  strnhex(p, sbuff, sizeof(p));
+  bytesnhex(p, sbuff, sizeof(p));
   s.p = sbuff;
   s.n = sizeof(p) << 1;
   errorcode = SKY_cipher_PubKeyFromHex(s, &p1);
@@ -284,14 +284,14 @@ Test(cipher_crypto, TestMustSecKeyFromHex) {
   randBytes(&b, 32);
   errorcode = SKY_cipher_NewSecKey(b, &sk);
   cr_assert(errorcode == SKY_OK);
-  strnhex(sk, strBuff, 16);
+  bytesnhex(sk, strBuff, 16);
   s.p = strBuff;
   s.n = strlen(strBuff);
   errorcode = SKY_cipher_SecKeyFromHex(s, &sk1);
   cr_assert(errorcode == SKY_ErrInvalidLengthSecKey);
 
   // Valid
-  strnhex(sk, strBuff, 32);
+  bytesnhex(sk, strBuff, 32);
   s.p = strBuff;
   s.n = strlen(strBuff);
   errorcode = SKY_cipher_SecKeyFromHex(s, &sk1);
@@ -451,13 +451,13 @@ Test(cipher_crypto, TestMustSigFromHex) {
   cr_assert(errorcode == SKY_OK);
   str.p = strBuff;
   str.n = 0;
-  strnhex(s, (char *) str.p, 32);
+  bytesnhex(s, (char *) str.p, 32);
   str.n = strlen(str.p);
   errorcode = SKY_cipher_SigFromHex(str, &s2);
   cr_assert(errorcode == SKY_ErrInvalidLengthSig);
 
   // Valid
-  strnhex(s, (char *) str.p, 65);
+  bytesnhex(s, (char *) str.p, 65);
   str.n = strlen(str.p);
   errorcode = SKY_cipher_SigFromHex(str, &s2);
   cr_assert(errorcode == SKY_OK);

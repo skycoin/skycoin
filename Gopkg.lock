@@ -105,8 +105,8 @@
 [[projects]]
   name = "github.com/shopspring/decimal"
   packages = ["."]
-  revision = "69b3a8ad1f5f2c8bd855cb6506d18593064a346b"
-  version = "1.0.1"
+  revision = "cd690d0c9e2447b1ef2a129a6b7b49077da89b8e"
+  version = "1.1.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -217,6 +217,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "329a11cf62a9defc83325e45c1ab0f25ca67be42a29d17ca8947d95dab5e292a"
+  inputs-digest = "a99d92c8d56a63951b728ae447a3ef25c0738367a2ac32ae21d98f5df0f9738e"
   solver-name = "gps-cdcl"
   solver-version = 1

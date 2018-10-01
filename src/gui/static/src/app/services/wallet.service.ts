@@ -131,6 +131,20 @@ export class WalletService {
       });
   }
 
+  resetPassword(wallet: Wallet, seed: string, password: string): Observable<Wallet> {
+    const params = new Object();
+    params['id'] = wallet.filename;
+    params['seed'] = seed;
+    if (password) {
+      params['password'] = password;
+    }
+
+    return this.apiService.post('wallet/recover', params, {}, true).do(w => {
+      wallet.encrypted = w.data.meta.encrypted;
+      this.updateWallet(w.data);
+    });
+  }
+
   getWalletSeed(wallet: Wallet, password: string): Observable<string> {
     return this.apiService.getWalletSeed(wallet, password);
   }

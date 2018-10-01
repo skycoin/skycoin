@@ -2,10 +2,21 @@ package droplet
 
 import (
 	"errors"
+	"fmt"
+	"math/rand"
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+// set rand seed.
+var _ = func() int64 {
+	t := time.Now().Unix()
+	rand.Seed(t)
+	return t
+}()
 
 func TestFromString(t *testing.T) {
 	t.Parallel()
@@ -15,6 +26,10 @@ func TestFromString(t *testing.T) {
 		n uint64
 		e error
 	}{
+		{
+			s: "100000000.000000",
+			n: 1e8 * 1e6,
+		},
 		{
 			s: "0",
 			n: 0,
@@ -197,6 +212,10 @@ func TestToString(t *testing.T) {
 			s: "123.000456",
 		},
 		{
+			n: 1e8 * 1e6,
+			s: "100000000.000000",
+		},
+		{
 			n: 9223372036854775808,
 			e: ErrTooLarge,
 		},
@@ -217,6 +236,55 @@ func TestToString(t *testing.T) {
 				require.Equal(t, tc.e, err)
 				require.Equal(t, "", s)
 			}
+		})
+	}
+}
+
+func TestToFromStringFuzz(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+	}
+
+	t.Parallel()
+
+	verify := func(t *testing.T, x uint64, exp *regexp.Regexp) {
+		s, err := ToString(x)
+		require.NoError(t, err)
+
+		n, err := FromString(s)
+		require.NoError(t, err)
+
+		require.Equal(t, x, n)
+
+		require.True(t, exp.MatchString(s), "%d -> %q", x, s)
+	}
+
+	decRe := regexp.MustCompile(`^0\.[0-9]{6}$`)
+	// Check every possible value <1 whole coin
+	for i := uint64(0); i < uint64(1e6); i++ {
+		j := i
+		t.Run(fmt.Sprint(j), func(t *testing.T) {
+			verify(t, j, decRe)
+		})
+	}
+
+	// Check random values >=1
+	nRand := int(1e5)
+	fullRe := regexp.MustCompile(`^[1-9][0-9]{0,8}\.[0-9]{6}$`)
+	for i := 0; i < nRand; i++ {
+		x := (rand.Uint64() % ((1e8 * 1e6) - 1e6 + 1)) + 1e6 // [1e6, 1e8*1e6]
+		t.Run(fmt.Sprint(x), func(t *testing.T) {
+			verify(t, x, fullRe)
+		})
+	}
+
+	// Check random values >=1 and with no droplets
+	wholeRe := regexp.MustCompile(`^[1-9][0-9]{0,8}\.0{6}$`)
+	for i := 0; i < nRand; i++ {
+		x := (rand.Uint64() % 1e8) + 1 // [1, 1e8]
+		x = x * 1e6
+		t.Run(fmt.Sprint(x), func(t *testing.T) {
+			verify(t, x, wholeRe)
 		})
 	}
 }

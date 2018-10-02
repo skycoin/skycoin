@@ -82,7 +82,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   SKY_cipher_GenerateKeyPair(&p, &sk);
   memcpy(slice.data, (void *) p, sizeof(p));
   slice.len = sizeof(p);
-  bytesnhex(&p[0], sbuff, slice.len << 1);
+  bytesnhex(&p[0], sbuff, slice.len >> 1);
   s.p = sbuff;
   s.n = strlen(s.p);
   errorcode = SKY_cipher_PubKeyFromHex(s, &p1);

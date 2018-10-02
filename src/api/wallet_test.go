@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -1690,6 +1691,78 @@ func TestWalletNewSeed(t *testing.T) {
 				require.Equal(t, tc.resultLen, len(strings.Fields(msg.Seed)), tc.name)
 			}
 		})
+	}
+}
+
+func TestVerifyBip39Seed(t *testing.T) {
+	tt := []struct {
+		method string
+		status int
+		seed   string
+		err    error
+	}{
+		{
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			seed:   "asd",
+			err:    fmt.Errorf("405 Method Not Allowed"),
+		},
+		{
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			seed:   "bag attitude butter flock slab desk ship brain famous scheme clerk",
+			err:    fmt.Errorf("400 Bad Request - seed is not a valid bip39 seed"),
+		},
+		{
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    fmt.Errorf("400 Bad Request - missing seed"),
+		},
+		{
+			method: http.MethodGet,
+			status: http.StatusOK,
+			seed:   "chief stadium sniff exhibit ostrich exit fruit noodle good lava coin supply",
+			err:    nil,
+		},
+	}
+
+	for _, tc := range tt {
+		gateway := &MockGatewayer{}
+		endpoint := "/api/v2/wallet/seed/verify"
+
+		v := url.Values{}
+		if len(tc.seed) > 0 {
+			v.Add("seed", tc.seed)
+			endpoint += "?" + v.Encode()
+		}
+
+		req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+		require.NoError(t, err)
+		req.Header.Add("Content-Type", "application/json")
+
+		csrfStore := &CSRFStore{
+			Enabled: true,
+		}
+		setCSRFParameters(csrfStore, tokenValid, req)
+
+		rr := httptest.NewRecorder()
+		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status)
+
+		if status != http.StatusOK {
+			if tc.err != nil {
+				require.Equal(t, tc.err.Error(), strings.TrimSpace(rr.Body.String()))
+			}
+		} else {
+			var b bool
+			err := json.Unmarshal(rr.Body.Bytes(), &b)
+			require.NoError(t, err)
+			require.True(t, b)
+		}
 	}
 }
 

@@ -800,6 +800,38 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Returns whether the given bip39 Seed is valid or not
+// URI: /api/v1/wallet/seed/verify
+// Method: GET
+// Args:
+//     seed: wallet seed/mnemonic
+func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		wh.Error405(w)
+		return
+	}
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+		writeHTTPResponse(w, resp)
+		return
+	}
+
+	mnemonic := r.FormValue("seed")
+	if mnemonic == "" {
+		wh.Error400(w, "missing seed")
+		return
+	}
+
+	mnemonicValid := bip39.IsMnemonicValid(mnemonic)
+	if !mnemonicValid {
+		wh.Error400(w, fmt.Errorf("seed is not a valid bip39 seed").Error())
+		return
+	}
+
+	wh.SendJSONOr500(logger, w, mnemonicValid)
+}
+
 // Unloads wallet from the wallet service
 // URI: /api/v1/wallet/unload
 // Method: POST

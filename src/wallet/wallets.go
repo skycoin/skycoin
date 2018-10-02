@@ -46,8 +46,7 @@ func LoadWallets(dir string) (Wallets, error) {
 			w.setFilename(name)
 
 			if isLoaded, fileName := wallets.isWalletLoaded(w); isLoaded {
-				err = fmt.Errorf("duplicate Walletfiles: '%v' && '%v'", fileName, name)
-				return nil, err
+				return nil, fmt.Errorf("duplicate Walletfiles: '%v' and '%v'", fileName, name)
 			}
 			wallets[name] = w
 		}
@@ -58,17 +57,21 @@ func LoadWallets(dir string) (Wallets, error) {
 // Returns if wallet was already loaded & if so the filename of the wallet will be returned
 func (wlts Wallets) isWalletLoaded(wlt *Wallet) (bool, string) {
 	var firstAddrLoaded string
-	logger.Info("Checking if Wallet is already loaded: ", wlt.Filename())
+
+	logger.Infof("Checking if wallet is already loaded: %v", wlt.Filename())
+
 	if len(wlt.Entries) > 0 {
 		firstAddrLoaded = wlt.Entries[0].Address.String()
 	} else {
-		logger.Error("Empty wallet!")
+		logger.Error("empty wallet!")
 		return false, ""
 	}
+
 	for _, wltItem := range wlts {
 
 		if len(wltItem.Entries) > 0 {
-			if firstAddrLoading := wltItem.Entries[0].Address.String(); firstAddrLoading == firstAddrLoaded {
+
+			if wltItem.Entries[0].Address.String() == firstAddrLoaded {
 				return true, wltItem.Filename()
 			}
 		}

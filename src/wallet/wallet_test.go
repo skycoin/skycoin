@@ -15,8 +15,6 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 
-	"strconv"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/coin"
@@ -650,7 +648,44 @@ func TestLoadWallet(t *testing.T) {
 				err: nil,
 			},
 		},
+		{
+			"version=0.2 encrypted=flase",
+			"./testdata/duplicate_wallets/test3.wlt",
+			expect{
+				meta: map[string]string{
+					"coin":     "sky",
+					"filename": "test3.wlt",
+					"label":    "test3",
+					"lastSeed": "f3a7942899ed2723999288ea83f4f20908bf9deabc05bc8216339da4d3e02c0b",
+					"seed":     "acoustic test story tank thrive wine able frequent marriage use swim develop",
+					"tm":       "1503458890",
+					"type":     "deterministic",
+					"version":  "0.1",
+				},
+				err: nil,
+			},
+		},
+		{
+			"version=0.2 encrypted=flase",
+			"./testdata/duplicate_wallets/test3.1.wlt",
+			expect{
+				meta: map[string]string{
+					"coin":     "sky",
+					"filename": "test3.1.wlt",
+					"label":    "test3.1",
+					"lastSeed": "f3a7942899ed2723999288ea83f4f20908bf9deabc05bc8216339da4d3e02c0b",
+					"seed":     "acoustic test story tank thrive wine able frequent marriage use swim develop",
+					"tm":       "1503458890",
+					"type":     "deterministic",
+					"version":  "0.1",
+				},
+				err: nil,
+			},
+		},
 	}
+
+	var dupWalletCount int
+	wlts := Wallets{}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
@@ -659,6 +694,12 @@ func TestLoadWallet(t *testing.T) {
 			if err != nil {
 				return
 			}
+
+			if isLoaded, _ := wlts.isWalletLoaded(w); isLoaded {
+				dupWalletCount++
+				return
+			}
+			wlts[tc.file] = w
 
 			for k, v := range tc.expect.meta {
 				vv := w.Meta[k]
@@ -670,61 +711,8 @@ func TestLoadWallet(t *testing.T) {
 			}
 		})
 	}
-}
 
-func TestLoadDupWallets(t *testing.T) {
-	wlts := Wallets{}
-	dupWlt := &Wallet{}
-
-	for i := 0; i < 3; i++ {
-		var entries []Entry
-		var dupEntries []Entry
-
-		if i%2 != 0 {
-			entry := Entry{
-				Address: cipher.MustDecodeBase58Address("2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8"),
-				Secret:  cipher.NewSecKey(make([]byte, 32)),
-				Public:  cipher.NewPubKey(make([]byte, 33)),
-			}
-
-			dupEntries = append(dupEntries, entry)
-			entries = append(entries, entry)
-
-			dupWltItem := &Wallet{
-				Meta:    map[string]string{},
-				Entries: dupEntries,
-			}
-
-			dupWltItem.setFilename("dup_wlt_" + strconv.Itoa(i) + ".wlt")
-
-			log.Info("Adding Duplicate wlt: ", dupWltItem.Entries[0].Address.String())
-			dupWlt = dupWltItem
-		}
-
-		entries = append(entries,
-			Entry{
-				Address: testutil.MakeAddress(),
-				Secret:  cipher.NewSecKey(make([]byte, 32)),
-				Public:  cipher.NewPubKey(make([]byte, 33)),
-			})
-
-		wltItem := &Wallet{
-			Meta:    map[string]string{},
-			Entries: entries,
-		}
-
-		wltItem.setFilename("wlt_" + strconv.Itoa(i) + ".wlt")
-
-		isLoaded, _ := wlts.isWalletLoaded(wltItem)
-		require.False(t, isLoaded)
-
-		wlts[strconv.Itoa(i)] = wltItem
-	}
-
-	isLoaded, fileName := wlts.isWalletLoaded(dupWlt)
-
-	require.True(t, isLoaded)
-	log.Infof("Wallet %v, has been loaded.", fileName)
+	require.Equal(t, dupWalletCount, 1)
 }
 
 func TestWalletGenerateAddress(t *testing.T) {

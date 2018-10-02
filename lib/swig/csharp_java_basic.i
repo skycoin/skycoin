@@ -264,7 +264,7 @@ int concatSlices(GoSlice_* slice1, GoSlice_* slice2, int elem_size, GoSlice_* re
 	}
 	return 0;
 }
-    void parseJsonMetaData(char *metadata, int *n, int *r, int *p, int *keyLen)
+    void parseJsonMetaData(char *metadata, long long *n, long long *r, long long *p, long long *keyLen)
 {
 	*n = *r = *p = *keyLen = 0;
 	int length = strlen(metadata);

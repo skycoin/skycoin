@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -20,7 +21,7 @@ func TestGetAllNotes(t *testing.T) {
 		method                   string
 		body                     *notes.Note
 		status                   int
-		err                      string
+		err                      error
 		gatewayGetAllNotesResult []notes.Note
 		responseBody             []notes.Note
 		gatewayGetAllNotesErr    error
@@ -29,13 +30,14 @@ func TestGetAllNotes(t *testing.T) {
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
+			err:    fmt.Errorf("405 Method Not Allowed"),
 		},
 		{
 			name:   "200 - OK",
 			method: http.MethodGet,
 			body:   nil,
 			status: http.StatusOK,
+			err:    nil,
 			gatewayGetAllNotesResult: []notes.Note{
 				{
 					TxIDHex: "62b1e205aa2895b7094f708d853a64709e14d467ef3e3eee54ef79bcefdbd4c8",
@@ -69,9 +71,10 @@ func TestGetAllNotes(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/api/v2/notes"
 			gateway := &MockGatewayer{}
 			gateway.On("GetAllNotes").Return(tc.gatewayGetAllNotesResult, tc.gatewayGetAllNotesErr)
+
+			endpoint := "/api/v2/notes"
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			req.Header.Add("Content-Type", "application/json")
@@ -91,7 +94,7 @@ func TestGetAllNotes(t *testing.T) {
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+				require.Equal(t, tc.err.Error(), strings.TrimSpace(rr.Body.String()),
 					"got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
@@ -110,21 +113,21 @@ func TestGetNoteByTxID(t *testing.T) {
 		method       string
 		txID         string
 		status       int
-		err          string
+		err          error
 		responseBody notes.Note
 	}{
 		{
 			name:   "405",
 			method: http.MethodPut,
 			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
+			err:    fmt.Errorf("405 Method Not Allowed"),
 		},
 		{
 			name:   "400",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
 			txID:   "tooShortTxID",
-			err:    "400 Bad Request - " + ErrorWrongTxID,
+			err:    fmt.Errorf("400 Bad Request - %v", ErrorWrongTxID),
 		},
 		{
 			name:         "200 - OK",
@@ -132,20 +135,19 @@ func TestGetNoteByTxID(t *testing.T) {
 			status:       http.StatusOK,
 			txID:         "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114",
 			responseBody: notes.Note{TxIDHex: "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114", Notes: ""},
+			err:          nil,
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			var err error
 			gateway := &MockGatewayer{}
-
-			endpoint := "/api/v2/note"
 			gateway.On("GetNoteByTxID", tc.txID).Return(tc.responseBody, tc.err)
 
 			v := url.Values{}
 			v.Add("txid", tc.txID)
 
+			endpoint := "/api/v2/note"
 			endpoint += "?" + v.Encode()
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
@@ -166,7 +168,7 @@ func TestGetNoteByTxID(t *testing.T) {
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+				require.Equal(t, tc.err.Error(), strings.TrimSpace(rr.Body.String()),
 					"got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
@@ -185,7 +187,7 @@ func TestAddNote(t *testing.T) {
 		method            string
 		body              *notes.Note
 		status            int
-		err               string
+		err               error
 		responseBody      notes.Note
 		gatewayAddNoteErr *error
 	}{
@@ -193,13 +195,13 @@ func TestAddNote(t *testing.T) {
 			name:   "405",
 			method: http.MethodPatch,
 			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
+			err:    fmt.Errorf("405 Method Not Allowed"),
 		},
 		{
 			name:              "400",
 			method:            http.MethodPost,
 			status:            http.StatusBadRequest,
-			err:               "400 Bad Request - " + ErrorBadParams,
+			err:               fmt.Errorf("400 Bad Request - %v", ErrorBadParams),
 			gatewayAddNoteErr: nil,
 			body: &notes.Note{
 				TxIDHex: "wrongtxid",
@@ -210,7 +212,7 @@ func TestAddNote(t *testing.T) {
 			name:              "400",
 			method:            http.MethodPost,
 			status:            http.StatusBadRequest,
-			err:               "400 Bad Request - " + ErrorBadParams,
+			err:               fmt.Errorf("400 Bad Request - %v", ErrorBadParams),
 			gatewayAddNoteErr: nil,
 			body: &notes.Note{
 				TxIDHex: "62b1e205aa2895b7094f708d853a64709e14d467ef3e3eee54ef79bcefdbd4c8",
@@ -226,6 +228,7 @@ func TestAddNote(t *testing.T) {
 			method:            http.MethodPost,
 			status:            http.StatusOK,
 			gatewayAddNoteErr: nil,
+			err:               nil,
 			body: &notes.Note{
 				TxIDHex: "62b1e205aa2895b7094f708d853a64709e14d467ef3e3eee54ef79bcefdbd4c8",
 				Notes:   "A Note that is not empty",
@@ -271,7 +274,7 @@ func TestAddNote(t *testing.T) {
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+				require.Equal(t, tc.err.Error(), strings.TrimSpace(rr.Body.String()),
 					"got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
@@ -290,21 +293,21 @@ func TestRemoveNote(t *testing.T) {
 		method       string
 		txID         string
 		status       int
-		err          string
+		err          error
 		responseBody notes.Note
 	}{
 		{
 			name:   "405",
 			method: http.MethodPut,
 			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
+			err:    fmt.Errorf("405 Method Not Allowed"),
 			txID:   "62b1e205aa2895b7094f708d853a64709e14d467ef3e3eee54ef79bcefdbd4c8",
 		},
 		{
 			name:         "400",
 			method:       http.MethodDelete,
 			status:       http.StatusBadRequest,
-			err:          "400 Bad Request - " + ErrorWrongTxID,
+			err:          fmt.Errorf("400 Bad Request - %v", ErrorWrongTxID),
 			txID:         "wrongtxid",
 			responseBody: notes.Note{},
 		},
@@ -314,21 +317,19 @@ func TestRemoveNote(t *testing.T) {
 			status:       http.StatusOK,
 			txID:         "62b1e205aa2895b7094f708d853a64709e14d467ef3e3eee54ef79bcefdbd4c8",
 			responseBody: notes.Note{},
+			err:          nil,
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			var err error
-
 			gateway := &MockGatewayer{}
-			gateway.On("RemoveNote", tc.txID).Return(err, nil)
-
-			endpoint := "/api/v2/note"
+			gateway.On("RemoveNote", tc.txID).Return(tc.err, nil)
 
 			v := url.Values{}
 			v.Add("txid", tc.txID)
 
+			endpoint := "/api/v2/note"
 			endpoint += "?" + v.Encode()
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
@@ -348,7 +349,7 @@ func TestRemoveNote(t *testing.T) {
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+				require.Equal(t, tc.err.Error(), strings.TrimSpace(rr.Body.String()),
 					"got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {

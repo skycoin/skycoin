@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/notes"
 	"github.com/skycoin/skycoin/src/readable"
@@ -162,8 +160,6 @@ func (c *Client) DeleteJSON(endpoint string, v url.Values, obj interface{}) erro
 
 	endpoint = strings.TrimLeft(endpoint, "/")
 	endpoint = c.Addr + endpoint
-
-	// add parameters to url
 	endpoint += "?" + v.Encode()
 
 	req, err := http.NewRequest(http.MethodDelete, endpoint, bytes.NewBufferString(v.Encode()))
@@ -845,7 +841,7 @@ func (c *Client) GetNoteByTxID(txID string) (notes.Note, error) {
 
 // AddNote makes a request to POST /api/v2/note
 func (c *Client) AddNote(note notes.Note) (notes.Note, error) {
-	logrus.Info("Adding Note: " + note.TxIDHex)
+	logger.Info("Adding Note: " + note.TxIDHex)
 
 	v := notes.Note{
 		TxIDHex: note.TxIDHex,

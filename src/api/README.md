@@ -63,6 +63,7 @@ These API sets are:
 
 * `READ` - All query-related endpoints, they do not modify the state of the program
 * `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
+* `TXN` - Enables `/api/v1/injectTransaction` without enabling wallet endpoints
 * `WALLET` - These endpoints operate on local wallet files
 * `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
 * `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
@@ -1793,7 +1794,7 @@ Result:
 
 ### Inject raw transaction
 
-API sets: `READ`
+API sets: `TXN`, `WALLET`
 
 ```
 URI: /api/v1/injectTransaction

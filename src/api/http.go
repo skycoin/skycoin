@@ -38,10 +38,12 @@ const (
 	defaultWriteTimeout = time.Second * 60
 	defaultIdleTimeout  = time.Second * 120
 
-	// EndpointsRead endpoints available when nodes executed with no CLI args
+	// EndpointsRead endpoints with no side-effects and no changes in node state
 	EndpointsRead = "READ"
 	// EndpointsStatus endpoints offer (meta,runtime)data to dashboard and monitoring clients
 	EndpointsStatus = "STATUS"
+	// EndpointsTransaction endpoints export operations on transactions that modify node state
+	EndpointsTransaction = "TXN"
 	// EndpointsWallet endpoints implement wallet interface
 	EndpointsWallet = "WALLET"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
@@ -398,7 +400,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
 	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsTransaction, EndpointsWallet}))
 	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsRead}))
 

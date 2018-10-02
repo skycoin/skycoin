@@ -19,6 +19,7 @@ go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/skycoin/skycoin.go \
     -enable-gui=true \
     -rpc-interface=false \
     -log-level=debug \
+    -disable-csrf
     $@
 
 popd >/dev/null

@@ -2,11 +2,10 @@ package coin
 
 import (
 	"encoding/hex"
-	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 var (
@@ -18,7 +17,7 @@ var (
 )
 
 func tNow() uint64 {
-	return uint64(utc.UnixNow())
+	return uint64(time.Now().UTC().Unix())
 }
 
 func _feeCalc(t *Transaction) (uint64, error) {
@@ -104,67 +103,6 @@ func TestCrypto2(t *testing.T) {
 		t.Fatal()
 	}
 
-}
-
-func _gensec() cipher.SecKey {
-	_, s := cipher.GenerateKeyPair()
-	return s
-}
-
-func _gpub(s cipher.SecKey) cipher.PubKey {
-	return cipher.PubKeyFromSecKey(s)
-}
-
-func _gaddr(s cipher.SecKey) cipher.Address {
-	return cipher.AddressFromSecKey(s)
-}
-
-func _gaddrA1(S []cipher.SecKey) []cipher.Address {
-	A := make([]cipher.Address, len(S))
-	for i := 0; i < len(S); i++ {
-		A[i] = cipher.AddressFromSecKey(S[i])
-	}
-	return A
-}
-
-func _gaddrA2(S []cipher.SecKey, O []UxOut) []int {
-	A := _gaddrA1(S)
-	var M map[cipher.Address]int //address to int
-	for i, a := range A {
-		M[a] = i
-	}
-
-	I := make([]int, len(O)) //output to seckey/address index
-	for i, o := range O {
-		I[i] = M[o.Body.Address]
-	}
-
-	return I
-}
-
-func _gaddrA3(S []cipher.SecKey) map[cipher.Address]int {
-	A := _gaddrA1(S)
-	M := make(map[cipher.Address]int) //address to int
-	for i, a := range A {
-		M[a] = i
-	}
-	return M
-}
-
-//assign amt to n bins in randomized manner
-func _randBins(amt uint64, n int) []uint64 {
-	bins := make([]uint64, n)
-	max := amt / (4 * uint64(n))
-	for i := 0; amt > 0; i++ {
-		//amount going into this bin
-		b := 1 + (uint64(rand.Int63()) % max)
-		if b > amt {
-			b = amt
-		}
-		bins[i%n] += b
-		amt -= b
-	}
-	return bins
 }
 
 /*

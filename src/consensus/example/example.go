@@ -19,6 +19,7 @@ import (
 	mathrand "math/rand"
 	"os"
 	"sort"
+
 	//
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/consensus"

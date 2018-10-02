@@ -1,4 +1,4 @@
-// Package httphelper HTTP Error Response Helpers
+// Package httphelper provides HTTP related utility methods
 package httphelper
 
 import (
@@ -7,10 +7,6 @@ import (
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/util/logging"
-)
-
-var (
-	logger = logging.MustGetLogger("gui")
 )
 
 // HTTPError wraps http.Error
@@ -50,7 +46,7 @@ func Error400(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusBadRequest, msg)
 }
 
-// Error400JSONOr500 returns a 400 error with an object as JSON, writting a 500 error if it fails
+// Error400JSONOr500 returns a 400 error with an object as JSON, writing a 500 error if it fails
 func Error400JSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
 	errorXXXJSONOr500(log, w, http.StatusBadRequest, m)
 }
@@ -90,7 +86,7 @@ func Error422(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusUnprocessableEntity, msg)
 }
 
-// Error422JSONOr500 returns a 422 error with an object as JSON, writting a 500 error if it fails
+// Error422JSONOr500 returns a 422 error with an object as JSON, writing a 500 error if it fails
 func Error422JSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
 	errorXXXJSONOr500(log, w, http.StatusUnprocessableEntity, m)
 }

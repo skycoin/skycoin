@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 const (
@@ -148,19 +148,18 @@ func (c *Client) CSRF() (string, error) {
 	return token, nil
 }
 
-// GetUnspentOutputs returns unspent outputs for a set of addresses
-// TODO -- what is the difference between this and GetAddressUxOuts?
-func (c *Client) GetUnspentOutputs(addrs []string) (*OutputsResult, error) {
+// OutputsForAddresses returns current unspent outputs for a set of addresses
+func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
 	outputs := OutputsResult{}
 	if err := c.Do(&outputs, "get_outputs", addrs); err != nil {
 		return nil, err
 	}
 
-	return &outputs, nil
+	return &outputs.Outputs, nil
 }
 
-// InjectTransactionString injects a hex-encoded transaction string to the network
-func (c *Client) InjectTransactionString(rawtx string) (string, error) {
+// InjectEncodedTransaction injects a hex-encoded transaction string to the network
+func (c *Client) InjectEncodedTransaction(rawtx string) (string, error) {
 	params := []string{rawtx}
 	rlt := TxIDJson{}
 
@@ -175,7 +174,7 @@ func (c *Client) InjectTransactionString(rawtx string) (string, error) {
 func (c *Client) InjectTransaction(tx *coin.Transaction) (string, error) {
 	d := tx.Serialize()
 	rawTx := hex.EncodeToString(d)
-	return c.InjectTransactionString(rawTx)
+	return c.InjectEncodedTransaction(rawTx)
 }
 
 // GetStatus returns status info for a skycoin node
@@ -198,8 +197,7 @@ func (c *Client) GetTransactionByID(txid string) (*TxnResult, error) {
 	return &txn, nil
 }
 
-// GetAddressUxOuts returns unspent outputs for a set of addresses
-// TODO -- what is the difference between this and GetUnspentOutputs?
+// GetAddressUxOuts returns historical unspent outputs for a set of addresses
 func (c *Client) GetAddressUxOuts(addrs []string) ([]AddrUxoutResult, error) {
 	uxouts := []AddrUxoutResult{}
 	if err := c.Do(&uxouts, "get_address_uxouts", addrs); err != nil {
@@ -209,10 +207,10 @@ func (c *Client) GetAddressUxOuts(addrs []string) ([]AddrUxoutResult, error) {
 	return uxouts, nil
 }
 
-// GetBlocks returns a range of blocks
-func (c *Client) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
+// GetBlocksInRange returns a range of blocks
+func (c *Client) GetBlocksInRange(start, end uint64) (*readable.Blocks, error) {
 	param := []uint64{start, end}
-	blocks := visor.ReadableBlocks{}
+	blocks := readable.Blocks{}
 
 	if err := c.Do(&blocks, "get_blocks", param); err != nil {
 		return nil, err
@@ -222,8 +220,8 @@ func (c *Client) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 }
 
 // GetBlocksBySeq returns blocks for a set of block sequences (heights)
-func (c *Client) GetBlocksBySeq(ss []uint64) (*visor.ReadableBlocks, error) {
-	blocks := visor.ReadableBlocks{}
+func (c *Client) GetBlocksBySeq(ss []uint64) (*readable.Blocks, error) {
+	blocks := readable.Blocks{}
 
 	if err := c.Do(&blocks, "get_blocks_by_seq", ss); err != nil {
 		return nil, err
@@ -233,9 +231,9 @@ func (c *Client) GetBlocksBySeq(ss []uint64) (*visor.ReadableBlocks, error) {
 }
 
 // GetLastBlocks returns the last n blocks
-func (c *Client) GetLastBlocks(n uint64) (*visor.ReadableBlocks, error) {
+func (c *Client) GetLastBlocks(n uint64) (*readable.Blocks, error) {
 	param := []uint64{n}
-	blocks := visor.ReadableBlocks{}
+	blocks := readable.Blocks{}
 	if err := c.Do(&blocks, "get_lastblocks", param); err != nil {
 		return nil, err
 	}

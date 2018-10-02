@@ -102,6 +102,9 @@ electron/node_modules
 electron/.gox_output
 electron/.electron_output
 electron/.standalone_output
+# Do not ignore the icons folder
+!electron/build
+!electron/build/icons
 
 .vscode/
 
@@ -120,6 +123,8 @@ src/mesh/TODO
 *.iml
 *.test
 coverage.html
+coverage/
+*.coverage.out
 
 src/api/integration/wallets/
 src/api/integration/wallets/
@@ -142,3 +147,6 @@ docs/libc/xml
 
 # Do not ignore Docker Cloud build
 !hooks/build
+
+*.prof
+*.profile

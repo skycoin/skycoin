@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -42,8 +41,7 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 			// get private key
 			skStr := c.Args().First()
 			if skStr == "" {
-				gcli.ShowSubcommandHelp(c)
-				return nil
+				return gcli.ShowSubcommandHelp(c)
 			}
 			// get wallet file path
 			w, err := resolveWalletPath(cfg, c.String("f"))
@@ -60,10 +58,8 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 				fmt.Println("success")
 				return nil
 			case WalletLoadError:
-				errorWithHelp(c, err)
-				return nil
-			case WalletSaveError:
-				return errors.New("save wallet failed")
+				printHelp(c)
+				return err
 			default:
 				return err
 			}

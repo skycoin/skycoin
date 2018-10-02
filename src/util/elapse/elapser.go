@@ -1,3 +1,6 @@
+/*
+Package elapse provides time measuring instruments
+*/
 package elapse
 
 import (

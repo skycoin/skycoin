@@ -89,7 +89,7 @@ func generateWalletHandler(c *gcli.Context) error {
 
 	// create wallet dir if not exist
 	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(cfg.WalletDir, 0755); err != nil {
+		if err := os.MkdirAll(cfg.WalletDir, 0750); err != nil {
 			return errors.New("create dir failed")
 		}
 	}
@@ -98,7 +98,7 @@ func generateWalletHandler(c *gcli.Context) error {
 	wltName := c.String("f")
 
 	// check if the wallet name has wlt extension.
-	if !strings.HasSuffix(wltName, ".wlt") {
+	if !strings.HasSuffix(wltName, walletExt) {
 		return ErrWalletName
 	}
 
@@ -170,7 +170,7 @@ func generateWalletHandler(c *gcli.Context) error {
 		Seed:       sd,
 		Encrypt:    encrypt,
 		CryptoType: cryptoType,
-		Password:   []byte(password),
+		Password:   password,
 	}
 
 	wlt, err := GenerateWallet(wltName, opts, num)

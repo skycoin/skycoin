@@ -5,6 +5,9 @@ import { environment } from '../../environments/environment';
 import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
+import { TranslateService } from '@ngx-translate/core';
+import { BigNumber } from 'bignumber.js';
+
 import {
   Address, GetWalletsResponseEntry, GetWalletsResponseWallet, NormalTransaction,
   PostWalletNewAddressResponse, Version, Wallet,
@@ -16,13 +19,14 @@ export class ApiService {
 
   constructor(
     private http: Http,
+    private translate: TranslateService,
   ) { }
 
   getExplorerAddress(address: Address): Observable<NormalTransaction[]> {
     return this.get('explorer/address', {address: address.address})
       .map(transactions => transactions.map(transaction => ({
         addresses: [],
-        balance: 0,
+        balance: new BigNumber(0),
         block: transaction.status.block_seq,
         confirmed: transaction.status.confirmed,
         timestamp: transaction.timestamp,
@@ -89,9 +93,23 @@ export class ApiService {
         }));
   }
 
-  postWalletNewAddress(wallet: Wallet, password?: string): Observable<Address> {
-    return this.post('wallet/newAddress', { id: wallet.filename, password })
-      .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));
+  postWalletNewAddress(wallet: Wallet, num: number, password?: string): Observable<Address[]> {
+    const params = new Object();
+    params['id'] = wallet.filename;
+    params['num'] = num;
+    if (password) {
+      params['password'] = password;
+    }
+
+    return this.post('wallet/newAddress', params)
+      .map((response: PostWalletNewAddressResponse) => {
+        const result: Address[] = [];
+        response.addresses.forEach(value => {
+          result.push({ address: value, coins: null, hours: null });
+        });
+
+        return result;
+      });
   }
 
   postWalletToggleEncryption(wallet: Wallet, password: string) {
@@ -101,24 +119,28 @@ export class ApiService {
   get(url, params = null, options = {}) {
     return this.http.get(this.getUrl(url, params), this.returnRequestOptions(options))
       .map((res: any) => res.json())
-      .catch((error: any) => Observable.throw(error || 'Server error'));
+      .catch((error: any) => this.processConnectionError(error));
   }
 
   getCsrf() {
     return this.get('csrf').map(response => response.csrf_token);
   }
 
-  post(url, params = {}, options: any = {}) {
+  post(url, params = {}, options: any = {}, useV2 = false) {
     return this.getCsrf().first().flatMap(csrf => {
       options.csrf = csrf;
 
+      if (useV2) {
+        options.json = true;
+      }
+
       return this.http.post(
-        this.getUrl(url),
-        options.json ? JSON.stringify(params) : this.getQueryString(params),
+        this.getUrl(url, null, useV2),
+        options.json || useV2 ? JSON.stringify(params) : this.getQueryString(params),
         this.returnRequestOptions(options),
       )
         .map((res: any) => res.json())
-        .catch((error: any) => Observable.throw(error || 'Server error'));
+        .catch((error: any) => this.processConnectionError(error));
     });
   }
 
@@ -153,7 +175,31 @@ export class ApiService {
     }, []).join('&');
   }
 
-  private getUrl(url, options = null) {
-    return this.url + url + '?' + this.getQueryString(options);
+  private getUrl(url, options = null, useV2 = false) {
+    return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
+  }
+
+  private processConnectionError(error: any): Observable<void> {
+    if (error) {
+      if (typeof error['_body'] === 'string') {
+
+        return Observable.throw(error);
+      }
+
+      if (error.error && typeof error.error === 'string') {
+        error['_body'] = error.error;
+
+        return Observable.throw(error);
+      } else if (error.message) {
+        error['_body'] = error.message;
+
+        return Observable.throw(error);
+      }
+    }
+
+    const err = Error(this.translate.instant('service.api.server-error'));
+    err['_body'] = err.message;
+
+    return Observable.throw(err);
   }
 }

@@ -29,8 +29,35 @@ if [[ ! "$DATA_DIR" ]]; then
   exit 1
 fi
 
+# Create a dummy wallet with an address existing in the blockchain-180.db dataset
+mkdir "$WALLET_DIR"
+cat >"${WALLET_DIR}/test_wallet.wlt" <<EOL
+{
+    "meta": {
+        "coin": "skycoin",
+        "cryptoType": "scrypt-chacha20poly1305",
+        "encrypted": "true",
+        "filename": "test_wallet.wlt",
+        "label": "Test wallet",
+        "lastSeed": "",
+        "secrets": "dgB7Im4iOjEwNDg1NzYsInIiOjgsInAiOjEsImtleUxlbiI6MzIsInNhbHQiOiIvelgxOFdPQUlzK1FQOXZZWi9aVXlDVktmZWMzY29UdjNzU2h6cENmWDNvPSIsIm5vbmNlIjoid0Qxb0U5VldycW9RTmJKVyJ9qFmBxQnP42SKJsQavIW/8chLo3alLx/KZI/lFFU96iZhTeSAfLNtPajX+4bcAdsdsPPhoBLNRBBuy1O2NImjZOVEc3YPCpXQO2Zj6/AZKu6zRldSSRbyk2blLngHr9Iv2oS4CcofCUdQF6tfc8soU/Vef9pZAHEUn0Soi1i9iprK3trkq0CfgP3LR3faltBfTkJCkOOjNGbHgDfZrGL6TZpllxjEAlO2jzYqMvmucowq3MDlTplFMJoE5Fvw47gjSuOpdRQ0yK4EgTabXKZJbbjvWZzE9pCYuUE=",
+        "seed": "",
+        "tm": "1529948542",
+        "type": "deterministic",
+        "version": "0.2"
+    },
+    "entries": [
+        {
+            "address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+            "public_key": "03cef9d4635c6f075a479415805134daa1b5fda6e0f6a82b154e04b26db6afa770",
+            "secret_key": ""
+        }
+    ]
+}
+EOL
+
 # Compile the skycoin node
-# We can't use "go run" because this creates two processes which doesn't allow us to kill it at the end
+# We can't use "go run" because that creates two processes which doesn't allow us to kill it at the end
 echo "compiling skycoin"
 go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
 
@@ -44,9 +71,10 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -db-read-only=true \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
-                      -enable-wallet-api=true \
+                      -enable-all-api-sets=true \
+                      -enable-api-sets=INSECURE_WALLET_SEED \
                       -wallet-dir="$WALLET_DIR" \
-                      -enable-seed-api=true &
+                      &
 SKYCOIN_PID=$!
 
 echo "skycoin node pid=$SKYCOIN_PID"

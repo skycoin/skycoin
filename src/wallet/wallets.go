@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
@@ -52,7 +51,7 @@ func LoadWallets(dir string) (Wallets, error) {
 	return wallets, nil
 }
 
-func backupWltFile(src, dst string) error {
+func backupWltFile(src, dst string) error { // nolint: deadcode,unused,megacheck
 	if _, err := os.Stat(dst); err == nil {
 		return fmt.Errorf("%v file already exist", dst)
 	}
@@ -102,15 +101,7 @@ func (wlts Wallets) set(w *Wallet) {
 	wlts[w.Filename()] = w.clone()
 }
 
-// NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) newAddresses(id string, num uint64) ([]cipher.Address, error) {
-	if w, ok := (*wlts)[id]; ok {
-		return w.GenerateAddresses(num)
-	}
-	return nil, fmt.Errorf("wallet: %v does not exist", id)
-}
-
-// ToReadable converts Wallets to *ReadableWallet array
+// ToReadable converts Wallets to *ReadableWallet array, sorting them by timestamp
 func (wlts Wallets) ToReadable() []*ReadableWallet {
 	var rw []*ReadableWallet
 	for _, w := range wlts {
@@ -118,28 +109,15 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 	}
 
 	sort.Slice(rw, func(i int, j int) bool {
-		return rw[i].time() < rw[j].time()
+		a := rw[i].timestamp()
+		b := rw[j].timestamp()
+
+		if a == b {
+			return rw[i].filename() < rw[j].filename()
+		}
+
+		return a < b
 	})
+
 	return rw
-}
-
-// Update updates the given wallet, return error if not exist
-func (wlts Wallets) update(id string, updateFunc func(*Wallet) error) error {
-	w, ok := wlts[id]
-	if !ok {
-		return ErrWalletNotExist
-	}
-
-	// Clone the wallet
-	cw := w.clone()
-
-	// update the clone wallet, to avoid updateFunc interrupting the original wallet.
-	if err := updateFunc(cw); err != nil {
-		return err
-	}
-
-	// Wipes secrets in old wallet
-	w.erase()
-	wlts[id] = cw
-	return nil
 }

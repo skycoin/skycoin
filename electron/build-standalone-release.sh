@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
- if [ -n "$1" ]; then
-    GOX_OSARCH="$1"
-fi
+GOX_OSARCH="$@"
 
 . build-conf.sh "$GOX_OSARCH"
 

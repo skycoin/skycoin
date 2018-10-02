@@ -558,7 +558,7 @@ func TestLoadWallet(t *testing.T) {
 			"not_exist_file.wlt",
 			expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("load wallet file failed, wallet not_exist_file.wlt doesn't exist"),
+				err:  fmt.Errorf("wallet not_exist_file.wlt doesn't exist"),
 			},
 		},
 		{
@@ -868,19 +868,21 @@ func TestWalletGuard(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.NoError(t, w.GuardUpdate([]byte("pwd"), func(w *Wallet) error {
+			err = w.GuardUpdate([]byte("pwd"), func(w *Wallet) error {
 				require.Equal(t, "seed", w.seed())
 				w.setLabel("label")
 				return nil
-			}))
+			})
+			require.NoError(t, err)
 			require.Equal(t, "label", w.Label())
 			validate(w)
 
-			w.GuardView([]byte("pwd"), func(w *Wallet) error {
+			err = w.GuardView([]byte("pwd"), func(w *Wallet) error {
 				require.Equal(t, "label", w.Label())
 				w.setLabel("new label")
 				return nil
 			})
+			require.NoError(t, err)
 
 			require.Equal(t, "label", w.Label())
 			validate(w)

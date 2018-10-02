@@ -1,3 +1,6 @@
+/*
+Package bip39 implements mnemonic seeds as defined in BIP 39 https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+*/
 package bip39
 
 import (
@@ -68,7 +71,10 @@ func NewMnemonic(entropy []byte) (string, error) {
 	}
 
 	// Add checksum to entropy
-	entropy = addChecksum(entropy)
+	entropy, err = addChecksum(entropy)
+	if err != nil {
+		return "", err
+	}
 
 	// Break entropy up into sentenceLength chunks of 11 bits
 	// For each word AND mask the rightmost 11 bits and find the word at that index
@@ -109,7 +115,7 @@ func NewMnemonic(entropy []byte) (string, error) {
 // This is not really important because BIP39 doesnt really define a conversion
 // from string to bytes.
 func MnemonicToByteArray(mnemonic string) ([]byte, error) {
-	if IsMnemonicValid(mnemonic) == false {
+	if !IsMnemonicValid(mnemonic) {
 		return nil, fmt.Errorf("Invalid mnemonic")
 	}
 	mnemonicSlice := strings.Split(mnemonic, " ")
@@ -125,7 +131,7 @@ func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 	modulo := big.NewInt(2048)
 	for _, v := range mnemonicSlice {
 		index, found := ReverseWordMap[v]
-		if found == false {
+		if !found {
 			return nil, fmt.Errorf("Word `%v` not found in reverse map", v)
 		}
 		add := big.NewInt(int64(index))
@@ -148,7 +154,11 @@ func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 		hex = tmp
 	}
 
-	validationHex := addChecksum(entropyHex)
+	validationHex, err := addChecksum(entropyHex)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(validationHex) != byteSize {
 		tmp2 := make([]byte, byteSize)
 		diff2 := byteSize - len(validationHex)
@@ -187,10 +197,12 @@ func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 
 // Appends to data the first (len(data) / 32)bits of the result of sha256(data)
 // Currently only supports data up to 32 bytes
-func addChecksum(data []byte) []byte {
+func addChecksum(data []byte) ([]byte, error) {
 	// Get first byte of sha256
 	hasher := sha256.New()
-	hasher.Write(data)
+	if _, err := hasher.Write(data); err != nil {
+		return nil, err
+	}
 	hash := hasher.Sum(nil)
 	firstChecksumByte := hash[0]
 
@@ -206,12 +218,12 @@ func addChecksum(data []byte) []byte {
 		dataBigInt.Mul(dataBigInt, BigTwo)
 
 		// Set rightmost bit if leftmost checksum bit is set
-		if uint8(firstChecksumByte&(1<<(7-i))) > 0 {
+		if uint8(firstChecksumByte&(1<<(7-i))) > 0 { // nolint: unconvert
 			dataBigInt.Or(dataBigInt, BigOne)
 		}
 	}
 
-	return dataBigInt.Bytes()
+	return dataBigInt.Bytes(), nil
 }
 
 func padByteSlice(slice []byte, length int) []byte { // nolint: unparam
@@ -228,7 +240,7 @@ func validateEntropyBitSize(bitSize int) error {
 
 func validateEntropyWithChecksumBitSize(bitSize int) error {
 	if (bitSize != 128+4) && (bitSize != 160+5) && (bitSize != 192+6) && (bitSize != 224+7) && (bitSize != 256+8) {
-		return fmt.Errorf("Wrong entropy + checksum size - expected %v, got %v", int((bitSize-bitSize%32)+(bitSize-bitSize%32)/32), bitSize)
+		return fmt.Errorf("Wrong entropy + checksum size - expected %v, got %v", int((bitSize-bitSize%32)+(bitSize-bitSize%32)/32), bitSize) // nolint: unconvert
 	}
 	return nil
 }
@@ -237,10 +249,21 @@ func validateEntropyWithChecksumBitSize(bitSize int) error {
 // Validity is determined by both the number of words being appropriate,
 // and that all the words in the mnemonic are present in the word list.
 func IsMnemonicValid(mnemonic string) bool {
-	// Create a list of all the words in the mnemonic sentence
-	words := strings.Fields(mnemonic)
+	// Make sure no leading/trailing whitespace
+	if mnemonic != strings.TrimSpace(mnemonic) {
+		return false
+	}
 
-	//Get num of words
+	// Create a list of all the words in the mnemonic sentence
+	words := strings.Split(mnemonic, " ")
+
+	// Detect duplicate whitespace
+	for _, w := range words {
+		if w == "" {
+			return false
+		}
+	}
+
 	numOfWords := len(words)
 
 	// The number of words should be 12, 15, 18, 21 or 24

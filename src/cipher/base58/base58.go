@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+/*
+Package base58 implements base58 encoding, used for Skycoin and Bitcoin addresses
+*/
 package base58
 
 //Subpackage for encoding data (namely Bitcoin Addresses) into base58 strings
 
 import (
-	"encoding/hex"
 	"errors"
 	"math/big"
 )
@@ -41,12 +43,6 @@ func Hex2Big(b []byte) *big.Int {
 		answer.Add(answer, big.NewInt(int64(b[i])))
 	}
 
-	return answer
-}
-
-// String2Hex converts string to hex
-func String2Hex(s string) []byte {
-	answer, _ := hex.DecodeString(s)
 	return answer
 }
 

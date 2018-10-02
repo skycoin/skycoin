@@ -1,3 +1,10 @@
+/*
+cipher-testdata generates testdata to be used by the cipher testsuite
+
+The cipher testsuite is in src/cipher/testsuite.
+The testdata should be reused by ports of the cipher library to verify
+behavior.
+*/
 package main
 
 import (
@@ -151,12 +158,12 @@ func main() {
 	wg.Add(len(jobs))
 	for i, j := range jobs {
 		j.jobID = i
-		go func() {
+		go func(jb job) {
 			defer wg.Done()
-			data := generateSeedTestData(j)
+			data := generateSeedTestData(jb)
 			signSeedTestData(data, inputs.Hashes)
 			seedTestData <- data
-		}()
+		}(j)
 	}
 	wg.Wait()
 

@@ -8,6 +8,12 @@
   version = "v1.0.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/andreyvit/diff"
+  packages = ["."]
+  revision = "c7f18ee00883bfd3b00e0a2bf7607827e0148ad4"
+
+[[projects]]
   name = "github.com/boltdb/bolt"
   packages = ["."]
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
@@ -91,10 +97,16 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/sergi/go-diff"
+  packages = ["diffmatchpatch"]
+  revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/shopspring/decimal"
   packages = ["."]
-  revision = "69b3a8ad1f5f2c8bd855cb6506d18593064a346b"
-  version = "1.0.1"
+  revision = "cd690d0c9e2447b1ef2a129a6b7b49077da89b8e"
+  version = "1.1.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -205,6 +217,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "54b60e7f81ba03cf22a9cf957d47f75b9f1592aa729980b6e4af3c208344cbbf"
+  inputs-digest = "a99d92c8d56a63951b728ae447a3ef25c0738367a2ac32ae21d98f5df0f9738e"
   solver-name = "gps-cdcl"
   solver-version = 1

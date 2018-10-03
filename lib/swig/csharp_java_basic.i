@@ -1,10 +1,6 @@
 
 
 %inline %{
-
-	static inline GoUint32_ FeeCalculatorcCall(FeeCalculator* feeCalc, Transaction__Handle handle, GoUint64_* pFee){
-  return feeCalc->callback(handle, pFee, feeCalc->context);
-}
 #include "json.h"
 	//Define function SKY_handle_close to avoid including libskycoin.h
 void SKY_handle_close(Handle p0);

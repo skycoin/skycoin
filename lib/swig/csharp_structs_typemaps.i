@@ -61,3 +61,7 @@ return out;
 			return 0;
     }
 }
+
+%extend FeeCalculator_ {
+
+}

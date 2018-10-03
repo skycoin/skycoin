@@ -1,20 +1,4 @@
 
-%define %cs_callback(TYPE, CSTYPE)
-%typemap(ctype) TYPE, TYPE& "void*"
-%typemap(in) TYPE %{ $1 = (TYPE)$input; %}
-%typemap(in) TYPE& %{ $1 = (TYPE*)&$input; %}
-%typemap(imtype, out="IntPtr") TYPE, TYPE& "CSTYPE"
-%typemap(cstype, out="IntPtr") TYPE, TYPE& "CSTYPE"
-%typemap(csin) TYPE, TYPE& "$csinput"
-%enddef
-%define %cs_callback2(TYPE, CTYPE, CSTYPE)
-%typemap(ctype) TYPE "CTYPE"
-%typemap(in) TYPE %{ $1 = (TYPE)$input; %}
-%typemap(imtype, out="IntPtr") TYPE "CSTYPE"
-%typemap(cstype, out="IntPtr") TYPE "CSTYPE"
-%typemap(csin) TYPE "$csinput"
-%enddef
-
 /* Handle not as pointer is input. */
 %typemap(in) Handle {
 	$input =  (long*)&$1;
@@ -29,14 +13,15 @@
 %pointer_functions(_GoString_, GoStringp);
 %pointer_functions(int, intp);
 %pointer_functions(coin__Transaction, coin__Transactionp);
-%pointer_functions(Transaction__Handle, Transaction__Handlep);
 %pointer_functions(AddressUxOuts_Handle, AddressUxOuts__HandlePtr);
 %pointer_functions(unsigned long long, GoUint64p);
 %pointer_functions(long long, Gointp);
 %pointer_functions(unsigned short, GoUint16p);
 %pointer_functions(cipher__Address, cipher__Addressp);
 %pointer_functions(Transactions__Handle, Transactions__Handlep);
+%pointer_functions(Transaction__Handle, Transaction__Handlep);
 %pointer_functions(unsigned char, charp);
+%pointer_functions(FeeCalculator, FeeCalculatorPtr);
 
 CSHARP_ARRAYS(int, int)
 CSHARP_ARRAYS(unsigned char, byte)
@@ -108,10 +93,4 @@ CSHARP_ARRAYS_FIXED(int, int)
 
 %typemap(freearg) (cipher_PubKeys* __in_pubKeys) {
   if ($1->data) free($1->data);
-}
-
-%typemap(in) FeeCalculator* (FeeCalculator temp) {
-  temp.callback = FeeCalculatorcCall;
-  temp.context = $input;
-  $1 = &temp;
 }

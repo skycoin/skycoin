@@ -4850,6 +4850,26 @@ func TestRecoverWallet(t *testing.T) {
 	require.Equal(t, w, w4)
 }
 
+func TestVerifyWalletSeed(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	// check with correct seed
+	cSeed := api.SeedVerificationReq{Seed: "nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair"}
+	isBip, err := c.VerifySeed(cSeed)
+	require.NoError(t, err)
+	require.True(t, isBip)
+
+	// check with incorrect seed
+	wSeed := api.SeedVerificationReq{Seed: "nut "}
+	isBip2, err := c.VerifySeed(wSeed)
+	require.Errorf(t, err, "400 Bad Request - seed is not a valid bip39 seed")
+	require.False(t, isBip2)
+}
+
 func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return

@@ -731,6 +731,21 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 	return r.Seed, nil
 }
 
+// VerifySeed verifies whether the given seed is a valid bip39 mnemonic or not
+func (c *Client) VerifySeed(seed SeedVerificationReq) (bool, error) {
+	var resp SeedVerificationResp
+
+	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", seed, &resp)
+	if err != nil {
+		return false, err
+	}
+
+	if ok {
+		return resp.IsValid, nil
+	}
+	return ok, nil
+}
+
 // WalletSeed makes a request to POST /api/v1/wallet/seed
 func (c *Client) WalletSeed(id string, password string) (string, error) {
 	v := url.Values{}

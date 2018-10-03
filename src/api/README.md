@@ -71,6 +71,7 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 	- [Get wallets](#get-wallets)
 	- [Get wallet folder name](#get-wallet-folder-name)
 	- [Generate wallet seed](#generate-wallet-seed)
+	- [Verify Wallet Seed](#verify-wallet-seed)
 	- [Create a wallet from seed](#create-a-wallet-from-seed)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
 	- [Updates wallet label](#updates-wallet-label)
@@ -1331,6 +1332,35 @@ Result:
 ```json
 {
     "seed": "your wallet seed"
+}
+```
+
+### Verify wallet Seed
+
+API sets: `READ`
+
+```
+URI: /api/v2/wallet/seed/verify
+Method: POST
+Args:
+    seed: wallet seed/bip39 mnemonic
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/seed/verify \
+ -H 'Content-type: application/json' \
+ -d '{ "seed": "nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair" }'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "valid": true
+    }
 }
 ```
 

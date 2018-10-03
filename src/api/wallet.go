@@ -740,9 +740,7 @@ func newSeedHandler() http.HandlerFunc {
 			return
 		}
 
-		var rlt = struct {
-			Seed string `json:"seed"`
-		}{
+		var rlt = SeedVerificationReq{
 			mnemonic,
 		}
 		wh.SendJSONOr500(logger, w, rlt)
@@ -790,9 +788,7 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		v := struct {
-			Seed string `json:"seed"`
-		}{
+		v := SeedVerificationReq{
 			Seed: seed,
 		}
 
@@ -800,36 +796,62 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// SeedVerificationReq Request struct for seed
+type SeedVerificationReq struct {
+	Seed string `json:"seed"`
+}
+
+// SeedVerificationResp Response struct for bip39 seed verification
+type SeedVerificationResp struct {
+	IsValid bool `json:"valid"`
+}
+
 // Returns whether the given bip39 Seed is valid or not
-// URI: /api/v1/wallet/seed/verify
-// Method: GET
+// URI: /api/v2/wallet/seed/verify
+// Method: POST
 // Args:
 //     seed: wallet seed/mnemonic
-func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		wh.Error405(w)
-		return
-	}
+func walletVerifySeedHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
 
-	if r.Header.Get("Content-Type") != "application/json" {
-		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-		writeHTTPResponse(w, resp)
-		return
-	}
+		if r.Header.Get("Content-Type") != "application/json" {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
 
-	mnemonic := r.FormValue("seed")
-	if mnemonic == "" {
-		wh.Error400(w, "missing seed")
-		return
-	}
+		var mn SeedVerificationReq
+		if err := json.NewDecoder(r.Body).Decode(&mn); err != nil {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
 
-	mnemonicValid := bip39.IsMnemonicValid(mnemonic)
-	if !mnemonicValid {
-		wh.Error400(w, fmt.Errorf("seed is not a valid bip39 seed").Error())
-		return
-	}
+		if mn.Seed == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "missing seed")
+			writeHTTPResponse(w, resp)
+			return
+		}
 
-	wh.SendJSONOr500(logger, w, mnemonicValid)
+		mnemonicValid := bip39.IsMnemonicValid(mn.Seed)
+		if !mnemonicValid {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "seed is not a valid bip39 seed")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		seedVerResp := SeedVerificationResp{
+			IsValid: mnemonicValid,
+		}
+
+		writeHTTPResponse(w, HTTPResponse{
+			Data: seedVerResp,
+		})
+	}
 }
 
 // Unloads wallet from the wallet service

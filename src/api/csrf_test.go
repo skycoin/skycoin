@@ -122,6 +122,7 @@ var endpoints = []string{
 	"/api/v1/wallet/newAddress",
 	"/api/v1/wallet/newSeed",
 	"/api/v1/wallet/seed",
+	"/api/v2/wallet/seed/verify",
 	"/api/v1/wallet/spend",
 	"/api/v1/wallet/transaction",
 	"/api/v1/wallet/transactions",

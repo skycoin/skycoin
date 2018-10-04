@@ -1,4 +1,4 @@
-// package integration_test implements API integration tests
+// Package integration_test implements API integration tests
 package integration_test
 
 import (

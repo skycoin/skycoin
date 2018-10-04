@@ -1,3 +1,6 @@
+/*
+newcoin generates a new coin cmd from a toml configuration file
+*/
 package main
 
 import (

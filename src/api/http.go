@@ -34,14 +34,16 @@ const (
 	defaultWriteTimeout = time.Second * 60
 	defaultIdleTimeout  = time.Second * 120
 
-	// EndpointsRead endpoints available when nodes executed with no CLI args
+	// EndpointsRead endpoints with no side-effects and no changes in node state
 	EndpointsRead = "READ"
 	// EndpointsStatus endpoints offer (meta,runtime)data to dashboard and monitoring clients
 	EndpointsStatus = "STATUS"
+	// EndpointsTransaction endpoints export operations on transactions that modify node state
+	EndpointsTransaction = "TXN"
 	// EndpointsWallet endpoints implement wallet interface
 	EndpointsWallet = "WALLET"
-	// EndpointsWalletSeed endpoints implement wallet interface
-	EndpointsWalletSeed = "WALLET_SEED"
+	// EndpointsInsecureWalletSeed endpoints implement wallet interface
+	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
 	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 )
@@ -366,8 +368,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/wallets", forAPISet(walletsHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallets/folderName", forAPISet(walletFolderHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/newSeed", forAPISet(newSeedHandler(), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), []string{EndpointsWalletSeed}))
+	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), []string{EndpointsInsecureWalletSeed}))
 	webHandlerV2("/wallet/seed/verify", forAPISet(walletVerifySeedHandler(), []string{EndpointsRead}))
+
 	webHandlerV1("/wallet/unload", forAPISet(walletUnloadHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/encrypt", forAPISet(walletEncryptHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/decrypt", forAPISet(walletDecryptHandler(gateway), []string{EndpointsWallet}))
@@ -392,7 +395,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
 	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsTransaction, EndpointsWallet}))
 	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsRead}))
 

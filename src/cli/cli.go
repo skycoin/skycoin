@@ -1,7 +1,8 @@
 /*
-Package cli implements an interface for creating a CLI application.
+Package cli implements the CLI cmd's methods.
+
 Includes methods for manipulating wallets files and interacting with the
-webrpc API to query a skycoin node's status.
+REST API to query a skycoin node's status.
 */
 package cli
 

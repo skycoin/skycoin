@@ -1,5 +1,6 @@
-// Package historydb is in charge of parsing the consuses blokchain, and providing
-// apis for blockchain explorer.
+/*
+Package historydb stores historical blockchain data.
+*/
 package historydb
 
 import (

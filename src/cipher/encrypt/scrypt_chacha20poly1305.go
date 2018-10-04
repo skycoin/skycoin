@@ -1,6 +1,17 @@
-// uses scrypt for password key derivation, and chacha20poly1305 for
-// encryption/decryption
+/*
+Package encrypt provides encryption methods.
 
+Encryption methods provided:
+
+* chacha20-poly1305 with scrypt key derivation
+* sha256xor with sha256 key derivation
+
+The latter is insecure due to the insecure key derivation so should not be used.
+The keys are easily brute forced.
+
+These methods are design for long-term (3-5 years) encryption of disk-persisted data.
+They are not designed for network traffic encryption.
+*/
 package encrypt
 
 import (

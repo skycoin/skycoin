@@ -20,6 +20,7 @@
 %pointer_functions(cipher__Address, cipher__Addressp);
 %pointer_functions(Transactions__Handle, Transactions__Handlep);
 %pointer_functions(Transaction__Handle, Transaction__Handlep);
+%pointer_functions(Block__Handle,Block__HandlePtr);
 %pointer_functions(unsigned char, charp);
 %pointer_functions(FeeCalculator, FeeCalculatorPtr);
 
@@ -82,13 +83,16 @@ CSHARP_ARRAYS_FIXED(int, int)
 %apply unsigned long  {GoUintptr, __SIZE_TYPE__};
 %apply short  {GoInt16, GoInt16_};
 %apply unsigned char  {GoUint8_, GoUint8};
+%apply unsigned int  {GoUint32_, GoUint32};
 %apply signed char  {GoInt8_, GoInt8};
 %apply unsigned long long  {GoUint64, GoUint64_,GoUint,GoUint_};
 %apply long long  {GoInt64, GoInt64_,GoInt_, GoInt };
 %apply GoSlice_* {coin__UxArray*};
 %apply int {GoInt32,GoInt32_,ptrdiff_t};
+%apply int* {GoInt32*,GoInt32_*,ptrdiff_t*};
 %apply float {GoFloat32};
 %apply double {GoFloat64};
+%apply coin__Block {coin__Block**};
 
 
 %typemap(freearg) (cipher_PubKeys* __in_pubKeys) {

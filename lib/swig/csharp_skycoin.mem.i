@@ -493,3 +493,22 @@
 		return result;
 	};
 }
+
+%rename(SKY_coin_Transactions_Fees) CSharp_skycoin_SKY_coin_Transactions_Fees;
+%inline {
+	GoUint32 CSharp_skycoin_SKY_coin_Transactions_Fees(Transactions__Handle handle ,Fee_Calculator *pFeeCalc, GoUint64* p3){
+     FeeCalculator *out = {callFeeCalculator,NULL} ;
+	 
+		GoUint32 result = SKY_coin_Transactions_Fees(handle, out,p3);
+		*p3 = 3;
+		return result;
+	};
+}
+
+%rename(SKY_coin_GetBlockObject) CSharp_skycoin_SKY_coin_GetBlockObject;
+%inline {
+	GoUint32 CSharp_skycoin_SKY_coin_GetBlockObject(Block__Handle handle, coin__Block* outBlock ){
+		GoUint32 result = SKY_coin_GetBlockObject(handle, &outBlock);
+		return result;
+	};
+}

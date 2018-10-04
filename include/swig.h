@@ -48,7 +48,7 @@ typedef struct{
 	int count;
 } cipher_Addresses;
 
-typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
+typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, unsigned long long * pFee, void* context);
 
 typedef struct {
   FeeCalcFunc callback;

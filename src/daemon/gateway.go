@@ -582,6 +582,20 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet
 	return wlt, err
 }
 
+// RecoverWallet recovers an encrypted wallet from seed
+func (gw *Gateway) RecoverWallet(wltName, seed string, password []byte) (*wallet.Wallet, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var err error
+	var w *wallet.Wallet
+	gw.strand("RecoverWallet", func() {
+		w, err = gw.v.Wallets.RecoverWallet(wltName, seed, password)
+	})
+	return w, err
+}
+
 // EncryptWallet encrypts the wallet
 func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
 	if !gw.Config.EnableWalletAPI {
@@ -732,19 +746,6 @@ func (gw *Gateway) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]viso
 		txns, inputs, err = gw.v.GetWalletUnconfirmedTransactionsVerbose(wltID)
 	})
 	return txns, inputs, err
-}
-
-// ReloadWallets reloads all wallets
-func (gw *Gateway) ReloadWallets() error {
-	if !gw.Config.EnableWalletAPI {
-		return wallet.ErrWalletAPIDisabled
-	}
-
-	var err error
-	gw.strand("ReloadWallets", func() {
-		err = gw.v.Wallets.ReloadWallets()
-	})
-	return err
 }
 
 // UnloadWallet removes wallet of given id from memory.

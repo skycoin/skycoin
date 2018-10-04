@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"io/ioutil"
 	"log"
+	"math"
+	"os"
 	"reflect"
 	"testing"
 
@@ -70,11 +73,8 @@ func Test_Encode_1(t *testing.T) {
 
 	b := Serialize(ts)
 
-	var buf bytes.Buffer
-	buf.Write(b)
-
 	var ts2 TestStruct
-	err := Deserialize(&buf, len(b), &ts2)
+	err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
 
 	b2 := Serialize(ts2)
@@ -90,17 +90,12 @@ func Test_Encode_2a(t *testing.T) {
 	ts.Z = 255
 	ts.W = false
 	_tt := []byte("ASDSADFSDFASDFSD")
-	for i := 0; i < 8; i++ {
-		ts.K[i] = _tt[i]
-	}
+	copy(ts.K[:], _tt)
 
 	b := Serialize(ts)
 
-	var buf bytes.Buffer
-	buf.Write(b)
-
 	var ts2 TestStruct2
-	err := Deserialize(&buf, len(b), &ts2)
+	err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
 
 	b2 := Serialize(ts2)
@@ -115,9 +110,7 @@ func Test_Encode_2b(t *testing.T) {
 	ts.Y = 23432435443
 	ts.Z = 255
 	_tt := []byte("ASDSADFSDFASDFSD")
-	for i := 0; i < 8; i++ {
-		ts.K[i] = _tt[i]
-	}
+	copy(ts.K[:], _tt)
 
 	b := Serialize(ts)
 
@@ -143,11 +136,8 @@ func Test_Encode_3a(t *testing.T) {
 
 	b := Serialize(t1)
 
-	var buf bytes.Buffer
-	buf.Write(b)
-
 	var t2 TestStruct3
-	err := Deserialize(&buf, len(b), &t2)
+	err := DeserializeRaw(b, &t2)
 	require.NoError(t, err)
 
 	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || !bytes.Equal(t1.K, t2.K))
@@ -191,8 +181,7 @@ func Test_Encode_4(t *testing.T) {
 	var t1 TestStruct5
 	t1.X = 345535
 
-	const NUM = 8
-	t1.A = make([]TestStruct4, NUM)
+	t1.A = make([]TestStruct4, 8)
 
 	b := Serialize(t1)
 
@@ -200,18 +189,17 @@ func Test_Encode_4(t *testing.T) {
 	err := DeserializeRaw(b, &t2)
 	require.NoError(t, err)
 
-	require.False(t, t1.X != t2.X, "TestStruct5.X not equal")
+	require.Equal(t, t1.X, t2.X, "TestStruct5.X not equal")
 
-	require.False(t, len(t1.A) != len(t2.A), "Slice lengths not equal")
+	require.Equal(t, len(t1.A), len(t2.A), "Slice lengths not equal: %d != %d", len(t1.A), len(t2.A))
 
 	for i, ts := range t1.A {
-		require.False(t, ts != t2.A[i], "Slice values not equal")
+		require.Equal(t, ts, t2.A[i], "Slice values not equal")
 	}
 
 	b2 := Serialize(t2)
 
-	c := bytes.Compare(b, b2)
-	require.Equal(t, c, 0)
+	require.True(t, bytes.Equal(b, b2))
 }
 
 // type TestStruct2 struct {
@@ -259,26 +247,21 @@ func Test_Encode_IgnoreTagSerialize(t *testing.T) {
 	ts.K = []byte("TEST6")
 
 	b := Serialize(ts)
-	var buf bytes.Buffer
-	buf.Write(b)
 
 	var ts2 TestStructIgnore
 	ts.X = 0
 	ts.Y = 0
 	ts.Z = 0
 	ts.K = []byte("")
-	err := Deserialize(&buf, len(b), &ts2)
+	err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
 
 	if ts2.Z != 0 {
 		t.Fatalf("Z should not deserialize. It is %d", ts2.Z)
 	}
 
-	buf.Reset()
-	buf.Write(b)
-
 	var ts3 TestStructWithoutIgnore
-	err = Deserialize(&buf, len(b), &ts3)
+	err = DeserializeRaw(b, &ts3)
 	require.NoError(t, err)
 
 	b2 := Serialize(ts2)
@@ -360,13 +343,13 @@ func TestDecodeNotEnoughLength(t *testing.T) {
 	var d Array
 	err := DeserializeRaw(b, &d)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "Deserialization failed")
+	require.Equal(t, ErrBufferUnderflow, err)
 
 	// Test with slice
 	thing := make([]int, 3)
 	err = DeserializeRaw(b, thing)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "Deserialization failed")
+	require.Equal(t, ErrBufferUnderflow, err)
 }
 
 func TestFlattenMultidimensionalBytes(t *testing.T) {
@@ -830,4 +813,277 @@ func TestOmitEmptyFinalFieldOnly(t *testing.T) {
 		var b bad
 		Serialize(b)
 	})
+}
+
+func TestParseTag(t *testing.T) {
+	cases := []struct {
+		tag       string
+		name      string
+		omitempty bool
+	}{
+		{
+			tag:  "foo",
+			name: "foo",
+		},
+		{
+			tag:  "foo,",
+			name: "foo",
+		},
+		{
+			tag:  "foo,asdasd",
+			name: "foo",
+		},
+		{
+			tag:       "foo,omitempty",
+			name:      "foo",
+			omitempty: true,
+		},
+		{
+			tag:  "omitempty",
+			name: "omitempty",
+		},
+		{
+			tag:       ",omitempty",
+			omitempty: true,
+		},
+		{
+			tag: "",
+		},
+		{
+			tag:  "-",
+			name: "-",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.tag, func(t *testing.T) {
+			name, omitempty := ParseTag(tc.tag)
+			require.Equal(t, tc.name, name)
+			require.Equal(t, tc.omitempty, omitempty)
+		})
+	}
+}
+
+type primitiveInts struct {
+	A int8
+	B uint8
+	C int16
+	D uint16
+	E int32
+	F uint32
+	G int64
+	H uint64
+}
+
+func TestPrimitiveInts(t *testing.T) {
+	cases := []struct {
+		name string
+		c    primitiveInts
+	}{
+		{
+			name: "all maximums",
+			c: primitiveInts{
+				A: math.MaxInt8,
+				B: math.MaxUint8,
+				C: math.MaxInt16,
+				D: math.MaxUint16,
+				E: math.MaxInt32,
+				F: math.MaxUint32,
+				G: math.MaxInt64,
+				H: math.MaxUint64,
+			},
+		},
+		{
+			name: "negative integers",
+			c: primitiveInts{
+				A: -99,
+				C: -99,
+				E: -99,
+				G: -99,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			bytes := Serialize(tc.c)
+			require.NotEmpty(t, bytes)
+
+			var obj primitiveInts
+			err := DeserializeRaw(bytes, &obj)
+			require.NoError(t, err)
+			require.Equal(t, tc.c, obj)
+		})
+	}
+}
+
+type hasEveryType struct {
+	A int8
+	B int16
+	C int32
+	D int64
+	E uint8
+	F uint16
+	G uint32
+	H uint64
+	I bool
+	J byte
+	K string
+	L []byte   // slice, byte type
+	M []int64  // slice, non-byte type
+	N [3]byte  // array, byte type
+	O [3]int64 // array, non-byte type
+	P struct {
+		A int8
+		B uint16
+	} // struct
+	Q map[string]string // map
+	R float32
+	S float64
+}
+
+func TestEncodeStable(t *testing.T) {
+	// Tests encoding against previously encoded data on disk to verify
+	// that encoding results have not changed
+	update := false
+
+	x := hasEveryType{
+		A: -127,
+		B: math.MaxInt16,
+		C: math.MaxInt32,
+		D: math.MaxInt64,
+		E: math.MaxInt8 + 1,
+		F: math.MaxInt16 + 1,
+		G: math.MaxInt32 + 1,
+		H: math.MaxInt64 + 1,
+		I: true,
+		J: byte(128),
+		K: "foo",
+		L: []byte("bar"),
+		M: []int64{math.MaxInt64, math.MaxInt64 / 2, -10000},
+		N: [3]byte{'b', 'a', 'z'},
+		O: [3]int64{math.MaxInt64, math.MaxInt64 / 2, -10000},
+		P: struct {
+			A int8
+			B uint16
+		}{
+			A: -127,
+			B: math.MaxUint16,
+		},
+		Q: map[string]string{"foo": "bar"},
+		R: float32(123.45),
+		S: float64(123.45),
+	}
+
+	goldenFile := "testdata/encode-every-type.golden"
+
+	if update {
+		f, err := os.Create(goldenFile)
+		require.NoError(t, err)
+		defer f.Close()
+
+		b := Serialize(x)
+		_, err = f.Write(b)
+		require.NoError(t, err)
+		return
+	}
+
+	f, err := os.Open(goldenFile)
+	require.NoError(t, err)
+	defer f.Close()
+
+	d, err := ioutil.ReadAll(f)
+	require.NoError(t, err)
+
+	var y hasEveryType
+	err = DeserializeRaw(d, &y)
+	require.NoError(t, err)
+	require.Equal(t, x, y)
+
+	b := Serialize(x)
+	require.Equal(t, len(d), len(b))
+	require.Equal(t, d, b)
+}
+
+func TestEncodeByteSlice(t *testing.T) {
+	type foo struct {
+		W int8
+		X []byte
+		Y int8 // these are added to make sure extra fields don't interact with the byte encoding
+	}
+
+	f := foo{
+		W: 1,
+		X: []byte("abc"),
+		Y: 2,
+	}
+
+	expect := []byte{1, 3, 0, 0, 0, 97, 98, 99, 2}
+
+	b := Serialize(f)
+	require.Equal(t, expect, b)
+}
+
+func TestEncodeByteArray(t *testing.T) {
+	type foo struct {
+		W int8
+		X [3]byte
+		Y int8 // these are added to make sure extra fields don't interact with the byte encoding
+	}
+
+	f := foo{
+		W: 1,
+		X: [3]byte{'a', 'b', 'c'},
+		Y: 2,
+	}
+
+	expect := []byte{1, 97, 98, 99, 2}
+
+	b := Serialize(f)
+	require.Equal(t, expect, b)
+}
+
+func TestEncodeEmptySlice(t *testing.T) {
+	// Decoding an empty slice should not allocate
+	type foo struct {
+		X []byte
+		Y []int64
+	}
+
+	f := &foo{}
+	b := Serialize(f)
+
+	var g foo
+	err := DeserializeRaw(b, &g)
+	require.NoError(t, err)
+	require.Nil(t, g.X)
+	require.Nil(t, g.Y)
+}
+
+func TestRandomGarbage(t *testing.T) {
+	// Basic fuzz test to check for panics, deserializes random data
+
+	// initialize the struct with data in the variable sized fields
+	x := hasEveryType{
+		K: "string",
+		L: []byte("bar"),
+		M: []int64{math.MaxInt64, math.MaxInt64 / 2, -10000},
+		Q: map[string]string{"foo": "bar", "cat": "dog"},
+	}
+
+	size, err := datasizeWrite(reflect.ValueOf(x))
+	require.NoError(t, err)
+
+	var y hasEveryType
+	for j := 0; j < 100; j++ {
+		for i := 0; i < size*2; i++ {
+			b := randBytes(t, i)
+			DeserializeRaw(b, &y) // nolint: errcheck
+		}
+	}
+
+	for i := 0; i < 10000; i++ {
+		b := randBytes(t, size)
+		DeserializeRaw(b, &y) // nolint: errcheck
+	}
 }

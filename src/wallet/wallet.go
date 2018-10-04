@@ -1,3 +1,6 @@
+/*
+Package wallet implements wallets and the wallet database service
+*/
 package wallet
 
 import (
@@ -95,6 +98,12 @@ var (
 	ErrMissingTo = NewError(errors.New("To is required"))
 	// ErrZeroCoinsTo To.Coins must not be zero
 	ErrZeroCoinsTo = NewError(errors.New("To.Coins must not be zero"))
+	// ErrWalletRecoverSeedWrong is returned if the seed does not match the specified wallet when recovering
+	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed is wrong"))
+	// ErrNilBalanceGetter is returned if Options.ScanN > 0 but a nil BalanceGetter was provided
+	ErrNilBalanceGetter = NewError(errors.New("scan ahead requested but balance getter is nil"))
+	// ErrWalletNotDeterministic is returned if a wallet's type is not deterministic but it is necessary for the requested operation
+	ErrWalletNotDeterministic = NewError(errors.New("wallet type is not deterministic"))
 	// ErrNullAddressTo To.Address must not be the null address
 	ErrNullAddressTo = NewError(errors.New("To.Address must not be the null address"))
 	// ErrDuplicateTo To contains duplicate values
@@ -130,16 +139,19 @@ var (
 )
 
 const (
-	// WalletExt  wallet file extension
+	// WalletExt wallet file extension
 	WalletExt = "wlt"
 
-	// WalletTimestampFormat  wallet timestamp layout
+	// WalletTimestampFormat wallet timestamp layout
 	WalletTimestampFormat = "2006_01_02"
 
 	// CoinTypeSkycoin skycoin type
 	CoinTypeSkycoin CoinType = "skycoin"
 	// CoinTypeBitcoin bitcoin type
 	CoinTypeBitcoin CoinType = "bitcoin"
+
+	// WalletTypeDeterministic deterministic wallet type
+	WalletTypeDeterministic = "deterministic"
 )
 
 // wallet meta fields
@@ -147,7 +159,7 @@ const (
 	metaVersion    = "version"    // wallet version
 	metaFilename   = "filename"   // wallet file name
 	metaLabel      = "label"      // wallet label
-	metaTm         = "tm"         // the timestamp when creating the wallet
+	metaTimestamp  = "tm"         // the timestamp when creating the wallet
 	metaType       = "type"       // wallet type
 	metaCoin       = "coin"       // coin type
 	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
@@ -159,17 +171,6 @@ const (
 
 // CoinType represents the wallet coin type
 type CoinType string
-
-// Options options that could be used when creating a wallet
-type Options struct {
-	Coin       CoinType   // coin type, skycoin, bitcoin, etc.
-	Label      string     // wallet label.
-	Seed       string     // wallet seed.
-	Encrypt    bool       // whether the wallet need to be encrypted.
-	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN      uint64     // number of addresses that're going to be scanned
-}
 
 const (
 	// HoursSelectionTypeManual is used to specify manual hours selection in advanced spend
@@ -322,6 +323,18 @@ func newWalletFilename() string {
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
 }
 
+// Options options that could be used when creating a wallet
+type Options struct {
+	Coin       CoinType   // coin type, skycoin, bitcoin, etc.
+	Label      string     // wallet label.
+	Seed       string     // wallet seed.
+	Encrypt    bool       // whether the wallet need to be encrypted.
+	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN      uint64     // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN  uint64     // number of addresses to generate, regardless of balance
+}
+
 // Wallet is consisted of meta and entries.
 // Meta field records items that are not deterministic, like
 // filename, lable, wallet type, secrets, etc.
@@ -339,6 +352,10 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		return nil, ErrMissingSeed
 	}
 
+	if opts.ScanN > 0 && bg == nil {
+		return nil, ErrNilBalanceGetter
+	}
+
 	coin := opts.Coin
 	if coin == "" {
 		coin = CoinTypeSkycoin
@@ -351,8 +368,8 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			metaLabel:      opts.Label,
 			metaSeed:       opts.Seed,
 			metaLastSeed:   opts.Seed,
-			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
-			metaType:       "deterministic",
+			metaTimestamp:  strconv.FormatInt(time.Now().Unix(), 10),
+			metaType:       WalletTypeDeterministic,
 			metaCoin:       string(coin),
 			metaEncrypted:  "false",
 			metaCryptoType: "",
@@ -361,17 +378,18 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 	}
 
 	// Create a default wallet
-	_, err := w.GenerateAddresses(1)
-	if err != nil {
+	generateN := opts.GenerateN
+	if generateN == 0 {
+		generateN = 1
+	}
+	if _, err := w.GenerateAddresses(generateN); err != nil {
 		return nil, err
 	}
 
-	if opts.ScanN > 0 {
+	if opts.ScanN > generateN {
 		// Scan for addresses with balances
-		if bg != nil {
-			if err := w.ScanAddresses(opts.ScanN-1, bg); err != nil {
-				return nil, err
-			}
+		if err := w.ScanAddresses(opts.ScanN-generateN, bg); err != nil {
+			return nil, err
 		}
 	}
 
@@ -408,9 +426,6 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 
 // NewWallet creates wallet without scanning addresses
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
-	if opts.ScanN != 0 {
-		return nil, errors.New("scan number must be 0")
-	}
 	return newWallet(wltName, opts, nil)
 }
 
@@ -731,41 +746,60 @@ func (w *Wallet) reset() {
 
 // Validate validates the wallet
 func (w *Wallet) Validate() error {
-	if _, ok := w.Meta[metaFilename]; !ok {
+	if fn := w.Meta[metaFilename]; fn == "" {
 		return errors.New("filename not set")
 	}
-	if _, ok := w.Meta[metaSeed]; !ok {
-		return errors.New("seed field not set")
+
+	if tm := w.Meta[metaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
 	}
 
 	walletType, ok := w.Meta[metaType]
 	if !ok {
 		return errors.New("type field not set")
 	}
-	if walletType != "deterministic" {
+	if walletType != WalletTypeDeterministic {
 		return errors.New("wallet type invalid")
 	}
 
-	if _, ok := w.Meta[metaCoin]; !ok {
+	if coinType := w.Meta[metaCoin]; coinType == "" {
 		return errors.New("coin field not set")
 	}
 
+	var isEncrypted bool
 	if encStr, ok := w.Meta[metaEncrypted]; ok {
 		// validate the encrypted value
-		isEncrypted, err := strconv.ParseBool(encStr)
+		var err error
+		isEncrypted, err = strconv.ParseBool(encStr)
 		if err != nil {
-			return fmt.Errorf("invalid encrypted value: %v", err)
+			return errors.New("encrypted field is not a valid bool")
+		}
+	}
+
+	// checks if the secrets field is empty
+	if isEncrypted {
+		cryptoType, ok := w.Meta[metaCryptoType]
+		if !ok {
+			return errors.New("crypto type field not set")
 		}
 
-		// checks if the secrets field is empty
-		if isEncrypted {
-			if _, ok := w.Meta[metaCryptoType]; !ok {
-				return errors.New("crypto type field not set")
-			}
+		if _, err := getCrypto(CryptoType(cryptoType)); err != nil {
+			return errors.New("unknown crypto type")
+		}
 
-			if _, ok := w.Meta[metaSecrets]; !ok {
-				return errors.New("wallet is encrypted, but secrets field not set")
-			}
+		if s := w.Meta[metaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+	} else {
+		if s := w.Meta[metaSeed]; s == "" {
+			return errors.New("seed missing in unencrypted wallet")
+		}
+
+		if s := w.Meta[metaLastSeed]; s == "" {
+			return errors.New("lastSeed missing in unencrypted wallet")
 		}
 	}
 
@@ -823,6 +857,14 @@ func (w *Wallet) setSeed(seed string) {
 	w.Meta[metaSeed] = seed
 }
 
+func (w *Wallet) coin() CoinType {
+	return CoinType(w.Meta[metaCoin])
+}
+
+func (w *Wallet) setCoin(c CoinType) {
+	w.Meta[metaCoin] = string(c)
+}
+
 func (w *Wallet) setEncrypted(encrypt bool) {
 	w.Meta[metaEncrypted] = strconv.FormatBool(encrypt)
 }
@@ -861,6 +903,18 @@ func (w *Wallet) setSecrets(s string) {
 	w.Meta[metaSecrets] = s
 }
 
+func (w *Wallet) timestamp() int64 {
+	// Intentionally ignore the error when parsing the timestamp,
+	// if it isn't valid or is missing it will be set to 0.
+	// Also, this value is validated by wallet.Validate()
+	x, _ := strconv.ParseInt(w.Meta[metaTimestamp], 10, 64) // nolint: errcheck
+	return x
+}
+
+func (w *Wallet) setTimestamp(t int64) {
+	w.Meta[metaTimestamp] = strconv.FormatInt(t, 10)
+}
+
 // GenerateAddresses generates addresses
 func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	if num == 0 {
@@ -874,20 +928,20 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	var seckeys []cipher.SecKey
 	var seed []byte
 	if len(w.Entries) == 0 {
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.seed()), int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.seed()), int(num))
 	} else {
 		sd, err := hex.DecodeString(w.lastSeed())
 		if err != nil {
 			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num))
 	}
 
 	w.setLastSeed(hex.EncodeToString(seed))
 
 	addrs := make([]cipher.Address, len(seckeys))
 	for i, s := range seckeys {
-		p := cipher.PubKeyFromSecKey(s)
+		p := cipher.MustPubKeyFromSecKey(s)
 		a := cipher.AddressFromPubKey(p)
 		addrs[i] = a
 		w.Entries = append(w.Entries, Entry{
@@ -948,7 +1002,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
 func (w *Wallet) GetAddresses() []cipher.Address {
 	addrs := make([]cipher.Address, len(w.Entries))
 	for i, e := range w.Entries {
-		addrs[i] = e.Address
+		addrs[i] = e.SkycoinAddress()
 	}
 	return addrs
 }
@@ -956,7 +1010,7 @@ func (w *Wallet) GetAddresses() []cipher.Address {
 // GetEntry returns entry of given address
 func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 	for _, e := range w.Entries {
-		if e.Address == a {
+		if e.SkycoinAddress() == a {
 			return e, true
 		}
 	}
@@ -967,7 +1021,7 @@ func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 func (w *Wallet) AddEntry(entry Entry) error {
 	// dup check
 	for _, e := range w.Entries {
-		if e.Address == entry.Address {
+		if e.SkycoinAddress() == entry.SkycoinAddress() {
 			return errors.New("duplicate address entry")
 		}
 	}
@@ -1008,7 +1062,7 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 		if !ok {
 			return nil, ErrUnknownAddress
 		}
-		entriesMap[e.Address] = e
+		entriesMap[e.SkycoinAddress()] = e
 	}
 
 	// Determine which unspents to spend.
@@ -1103,7 +1157,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		if !ok {
 			return nil, nil, ErrUnknownAddress
 		}
-		entriesMap[e.Address] = e
+		entriesMap[e.SkycoinAddress()] = e
 	}
 
 	txn := &coin.Transaction{}

@@ -1,3 +1,6 @@
+/*
+Package secp256k1 provides private and public key generation with the secp256k1 elliptic curve.
+*/
 // nolint: golint
 package secp256k1
 
@@ -245,7 +248,7 @@ func Sign(msg []byte, seckey []byte) []byte {
 		log.Print(err)
 		panic(err)
 	}
-	if msg == nil {
+	if len(msg) == 0 {
 		err := skyerrors.NewValueError(ErrSignMessageNil, "msg  ", msg)
 		log.Print(err)
 		panic(err)

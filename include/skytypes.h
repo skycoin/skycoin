@@ -384,4 +384,14 @@ typedef struct {
   void* context;
 } FeeCalculator ;
 
+#include "cipher.hash.go.h"
+#include "cipher.crypto.go.h"
+#include "cipher.address.go.h"
+#include "cipher.bitcoin.go.h"
+#include "cli.create_rawtx.go.h"
+#include "coin.outputs.go.h"
+#include "coin.transactions.go.h"
+#include "wallet.entry.go.h"
+#include "wallet.wallet.go.h"
+
 #endif

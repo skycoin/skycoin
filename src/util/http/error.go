@@ -1,4 +1,4 @@
-// Package httphelper HTTP Error Response Helpers
+// Package httphelper provides HTTP related utility methods
 package httphelper
 
 import (

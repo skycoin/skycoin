@@ -2,15 +2,15 @@ package wallet
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
 var (
-	emptyAddress = cipher.Address{}
-	emptyPubkey  = cipher.PubKey{}
-	emptySeckey  = cipher.SecKey{}
+	emptyPubkey = cipher.PubKey{}
+	emptySeckey = cipher.SecKey{}
 )
 
 // ReadableEntry wallet entry with json tags
@@ -23,7 +23,7 @@ type ReadableEntry struct {
 // NewReadableEntry creates readable wallet entry
 func NewReadableEntry(w Entry) ReadableEntry {
 	re := ReadableEntry{}
-	if w.Address != emptyAddress {
+	if !w.Address.Null() {
 		re.Address = w.Address.String()
 	}
 
@@ -178,8 +178,15 @@ func (rw *ReadableWallet) Load(filename string) error {
 	return file.LoadJSON(filename, rw)
 }
 
-func (rw *ReadableWallet) time() string {
-	return rw.Meta[metaTm]
+func (rw *ReadableWallet) timestamp() int64 {
+	// Intentionally ignore the error when parsing the timestamp,
+	// if it isn't valid or is missing it will be set to 0
+	x, _ := strconv.ParseInt(rw.Meta[metaTimestamp], 10, 64) // nolint: errcheck
+	return x
+}
+
+func (rw *ReadableWallet) filename() string {
+	return rw.Meta[metaFilename]
 }
 
 // Erase remove sensitive data

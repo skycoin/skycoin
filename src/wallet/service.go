@@ -290,23 +290,6 @@ func (serv *Service) GetWallets() (Wallets, error) {
 	return wlts, nil
 }
 
-// ReloadWallets reload wallets
-func (serv *Service) ReloadWallets() error {
-	serv.Lock()
-	defer serv.Unlock()
-	if !serv.enableWalletAPI {
-		return ErrWalletAPIDisabled
-	}
-	wallets, err := LoadWallets(serv.walletDirectory)
-	if err != nil {
-		return err
-	}
-
-	serv.firstAddrIDMap = make(map[string]string)
-	serv.wallets = serv.removeDup(wallets)
-	return nil
-}
-
 // CreateAndSignTransaction creates and signs a transaction from wallet.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
@@ -599,4 +582,66 @@ func (serv *Service) View(wltID string, f func(*Wallet) error) error {
 	}
 
 	return f(w)
+}
+
+// RecoverWallet recovers an encrypted wallet from seed.
+// The recovered wallet will be encrypted with the new password, if provided.
+func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wallet, error) {
+	serv.Lock()
+	defer serv.Unlock()
+	if !serv.enableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltName)
+	if err != nil {
+		return nil, err
+	}
+
+	if !w.IsEncrypted() {
+		return nil, ErrWalletNotEncrypted
+	}
+
+	if w.Type() != WalletTypeDeterministic {
+		return nil, ErrWalletNotDeterministic
+	}
+
+	// Generate the first address from the seed
+	var pk cipher.PubKey
+	pk, _, err = cipher.GenerateDeterministicKeyPair([]byte(seed))
+	if err != nil {
+		return nil, err
+	}
+	addr := cipher.AddressFromPubKey(pk)
+
+	// Compare to the wallet's first address
+	if addr != w.Entries[0].Address {
+		return nil, ErrWalletRecoverSeedWrong
+	}
+
+	// Create a new wallet with the same number of addresses, encrypting if needed
+	w2, err := NewWallet(wltName, Options{
+		Coin:       w.coin(),
+		Label:      w.Label(),
+		Seed:       seed,
+		Encrypt:    len(password) != 0,
+		Password:   password,
+		CryptoType: w.cryptoType(),
+		GenerateN:  uint64(len(w.Entries)),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Preserve the timestamp of the old wallet
+	w2.setTimestamp(w.timestamp())
+
+	// Save to disk
+	if err := w2.Save(serv.walletDirectory); err != nil {
+		return nil, err
+	}
+
+	serv.wallets.set(w2)
+
+	return w2.clone(), nil
 }

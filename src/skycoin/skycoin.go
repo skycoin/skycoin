@@ -1,3 +1,6 @@
+/*
+Package skycoin implements the main daemon cmd's configuration and setup
+*/
 package skycoin
 
 import (
@@ -10,13 +13,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/toqueteos/webbrowser"
+
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
-	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
@@ -201,7 +205,7 @@ func (c *Coin) Run() error {
 					// Wait a moment just to make sure the http interface is up
 				case <-time.After(time.Millisecond * 100):
 					c.logger.Infof("Launching System Browser with %s", fullAddress)
-					if err := browser.Open(fullAddress); err != nil {
+					if err := webbrowser.Open(fullAddress); err != nil {
 						c.logger.Error(err)
 					}
 				}
@@ -323,7 +327,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.Arbitrating = c.config.Node.Arbitrating
 	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
 	_, dc.Visor.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsWalletSeed]
+	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
 
 	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
 	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
@@ -381,8 +385,8 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 }
 
 // ParseConfig prepare the config
-func (c *Coin) ParseConfig() {
-	c.config.postProcess()
+func (c *Coin) ParseConfig() error {
+	return c.config.postProcess()
 }
 
 // InitTransaction creates the initialize transaction

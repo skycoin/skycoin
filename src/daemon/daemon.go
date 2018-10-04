@@ -1,3 +1,6 @@
+/*
+Package daemon controls the networking layer of the skycoin daemon
+*/
 package daemon
 
 import (

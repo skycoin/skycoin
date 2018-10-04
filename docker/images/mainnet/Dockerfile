@@ -47,7 +47,7 @@ ENV RPC_ADDR="http://0.0.0.0:6420" \
     WALLET_NAME="$COIN_cli.wlt"
 
 # copy all the binaries
-COPY --from=build /tmp/files/* /
+COPY --from=build /tmp/files /
 
 # volumes
 VOLUME $WALLET_DIR

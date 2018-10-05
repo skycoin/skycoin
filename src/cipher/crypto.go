@@ -24,7 +24,6 @@ import (
 	"log"
 	"time"
 
-	skyerrors "github.com/skycoin/skycoin/src/cipher/errors"
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )

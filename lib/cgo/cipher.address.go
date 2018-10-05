@@ -40,20 +40,6 @@ func SKY_cipher_AddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____error
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	checkAPIReady()
-	b := *(*[]byte)(unsafe.Pointer(&_b))
-	__arg1, ____return_err := cipher.AddressFromBytes(b)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&__arg1))
-	}
-	return
-}
-
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 
 	addr, err := cipher.AddressFromBytes(_b)
 	____error_code = libErrorCode(err)

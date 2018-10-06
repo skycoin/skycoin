@@ -77,7 +77,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   SKY_cipher_GenerateKeyPair(&p, &sk);
   memcpy(slice.data, (void *) p, sizeof(p));
   slice.len = sizeof(p);
-  bytesnhex(&p[0], sbuff, slice.len << 1);
+  bytesnhex(&p[0], sbuff, slice.len >> 1);
   s.p = sbuff;
   s.n = strlen(s.p);
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);
@@ -86,7 +86,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   // Valid
   bytesnhex(p, sbuff, sizeof(p));
   s.p = sbuff;
-  s.n = sizeof(p) >> 1;
+  s.n = sizeof(p) << 1;
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);
   cr_assert(errcode == SKY_OK, "TestPubKeyFromHex: Valid. No panic.");
   cr_assert(eq(u8[33], p, p1));

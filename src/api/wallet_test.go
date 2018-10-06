@@ -1702,24 +1702,23 @@ func TestVerifyBip39Seed(t *testing.T) {
 		err    error
 	}{
 		{
-			method: http.MethodPost,
+			method: http.MethodGet,
 			status: http.StatusMethodNotAllowed,
-			seed:   "asd",
-			err:    fmt.Errorf("405 Method Not Allowed"),
+			err:    fmt.Errorf(http.StatusText(http.StatusMethodNotAllowed)),
 		},
 		{
-			method: http.MethodGet,
+			method: http.MethodPost,
 			status: http.StatusBadRequest,
 			seed:   "bag attitude butter flock slab desk ship brain famous scheme clerk",
-			err:    fmt.Errorf("400 Bad Request - seed is not a valid bip39 seed"),
+			err:    fmt.Errorf("seed is not a valid bip39 seed"),
 		},
 		{
-			method: http.MethodGet,
+			method: http.MethodPost,
 			status: http.StatusBadRequest,
-			err:    fmt.Errorf("400 Bad Request - missing seed"),
+			err:    fmt.Errorf("missing seed"),
 		},
 		{
-			method: http.MethodGet,
+			method: http.MethodPost,
 			status: http.StatusOK,
 			seed:   "chief stadium sniff exhibit ostrich exit fruit noodle good lava coin supply",
 			err:    nil,
@@ -1730,13 +1729,14 @@ func TestVerifyBip39Seed(t *testing.T) {
 		gateway := &MockGatewayer{}
 		endpoint := "/api/v2/wallet/seed/verify"
 
-		v := url.Values{}
-		if len(tc.seed) > 0 {
-			v.Add("seed", tc.seed)
-			endpoint += "?" + v.Encode()
+		v := SeedVerificationReq{Seed: tc.seed}
+
+		body, err := json.Marshal(v)
+		if err != nil {
+			t.Errorf(err.Error())
 		}
 
-		req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+		req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(body))
 		require.NoError(t, err)
 		req.Header.Add("Content-Type", "application/json")
 
@@ -1754,14 +1754,22 @@ func TestVerifyBip39Seed(t *testing.T) {
 		require.Equal(t, tc.status, status)
 
 		if status != http.StatusOK {
+			var wrapObj ReceivedHTTPResponse
+			err = json.NewDecoder(rr.Body).Decode(&wrapObj)
+			require.NoError(t, err)
+
 			if tc.err != nil {
-				require.Equal(t, tc.err.Error(), strings.TrimSpace(rr.Body.String()))
+				require.Equal(t, tc.err.Error(), strings.TrimSpace(wrapObj.Error.Message))
 			}
 		} else {
-			var b bool
-			err := json.Unmarshal(rr.Body.Bytes(), &b)
+			var resp ReceivedHTTPResponse
+			err := json.Unmarshal(rr.Body.Bytes(), &resp)
 			require.NoError(t, err)
-			require.True(t, b)
+
+			var seedVer SeedVerificationResp
+			err = json.Unmarshal(resp.Data, &seedVer)
+			require.NoError(t, err)
+			require.True(t, seedVer.IsValid)
 		}
 	}
 }

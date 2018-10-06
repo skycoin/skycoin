@@ -814,7 +814,8 @@ type SeedVerificationResp struct {
 func walletVerifySeedHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			wh.Error405(w)
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 

@@ -21,11 +21,13 @@
 %pointer_functions(Transactions__Handle, Transactions__Handlep);
 %pointer_functions(Transaction__Handle, Transaction__Handlep);
 %pointer_functions(Block__Handle,Block__HandlePtr);
-%pointer_functions(unsigned char, charp);
+%pointer_functions(Signature_Handle,Signature_HandlePtr);
+%pointer_functions(Number_Handle,Number_HandlePtr);
+%pointer_functions(unsigned char, CharPtr);
 %pointer_functions(FeeCalculator, FeeCalculatorPtr);
 
 CSHARP_ARRAYS(int, int)
-CSHARP_ARRAYS(unsigned char, byte)
+// CSHARP_ARRAYS(unsigned char, byte)
 CSHARP_ARRAYS_FIXED(int, int)
 %apply int INPUT[] { int *$imput }
 

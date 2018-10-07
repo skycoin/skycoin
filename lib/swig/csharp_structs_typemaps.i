@@ -7,16 +7,6 @@
     }
 }
 
-%extend cipher_Sig{
-
-GoSlice toGoSlice(){
-	GoSlice slice;
-slice.len = sizeof(cipher_Sig);
-slice.cap = sizeof(cipher_Sig)+1;
-slice.data = (cipher_Sig*)&$self;
-return slice;
-	}
-}
 %extend GoSlice {
 	int isEqual(GoSlice *slice){
 		return (($self->len == slice->len)) && (memcmp($self->data,slice->data, sizeof(GoSlice_))==0 );
@@ -28,12 +18,9 @@ return slice;
 		$self->cap = $self->len;
 	}
 
-_GoString_ getString(){
-	_GoString_ out;
-	char * a = (char *)$self->data;
-	out.p = a;
-	out.n = strlen(a);
-return out;
+void getString(_GoString_ *out){
+	out->p = (char *)$self->data;
+	out->n = strlen((char *)$self->data);
 }
 
 }
@@ -66,4 +53,8 @@ return out;
 	GoUint32_ callFeeCalculator(FeeCalculator* feeCalc, Transaction__Handle handle, unsigned long long * pFee){
   	return feeCalc->callback(handle, pFee, feeCalc->context);
 	}
+}
+
+%extend coin__BlockBody{
+	
 }

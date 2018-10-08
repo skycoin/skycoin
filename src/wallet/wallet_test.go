@@ -648,44 +648,7 @@ func TestLoadWallet(t *testing.T) {
 				err: nil,
 			},
 		},
-		{
-			"version=0.2 encrypted=flase",
-			"./testdata/duplicate_wallets/test3.wlt",
-			expect{
-				meta: map[string]string{
-					"coin":     "sky",
-					"filename": "test3.wlt",
-					"label":    "test3",
-					"lastSeed": "f3a7942899ed2723999288ea83f4f20908bf9deabc05bc8216339da4d3e02c0b",
-					"seed":     "acoustic test story tank thrive wine able frequent marriage use swim develop",
-					"tm":       "1503458890",
-					"type":     "deterministic",
-					"version":  "0.1",
-				},
-				err: nil,
-			},
-		},
-		{
-			"version=0.2 encrypted=flase",
-			"./testdata/duplicate_wallets/test3.1.wlt",
-			expect{
-				meta: map[string]string{
-					"coin":     "sky",
-					"filename": "test3.1.wlt",
-					"label":    "test3.1",
-					"lastSeed": "f3a7942899ed2723999288ea83f4f20908bf9deabc05bc8216339da4d3e02c0b",
-					"seed":     "acoustic test story tank thrive wine able frequent marriage use swim develop",
-					"tm":       "1503458890",
-					"type":     "deterministic",
-					"version":  "0.1",
-				},
-				err: nil,
-			},
-		},
 	}
-
-	var dupWalletCount int
-	wlts := Wallets{}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
@@ -694,12 +657,6 @@ func TestLoadWallet(t *testing.T) {
 			if err != nil {
 				return
 			}
-
-			if isLoaded, _ := wlts.isWalletLoaded(w); isLoaded {
-				dupWalletCount++
-				return
-			}
-			wlts[tc.file] = w
 
 			for k, v := range tc.expect.meta {
 				vv := w.Meta[k]
@@ -711,8 +668,6 @@ func TestLoadWallet(t *testing.T) {
 			}
 		})
 	}
-
-	require.Equal(t, dupWalletCount, 1)
 }
 
 func TestWalletGenerateAddress(t *testing.T) {

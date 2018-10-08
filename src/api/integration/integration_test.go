@@ -4866,7 +4866,7 @@ func TestVerifyWalletSeed(t *testing.T) {
 	// check with incorrect seed
 	wSeed := api.SeedVerificationReq{Seed: "nut "}
 	isBip2, err := c.VerifySeed(wSeed)
-	require.Errorf(t, err, "400 Bad Request - seed is not a valid bip39 seed")
+	testutil.RequireError(t, err, "seed is not a valid bip39 seed")
 	require.False(t, isBip2)
 }
 

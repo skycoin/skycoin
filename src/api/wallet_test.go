@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -1704,18 +1703,18 @@ func TestVerifyBip39Seed(t *testing.T) {
 		{
 			method: http.MethodGet,
 			status: http.StatusMethodNotAllowed,
-			err:    fmt.Errorf(http.StatusText(http.StatusMethodNotAllowed)),
+			err:    errors.New(http.StatusText(http.StatusMethodNotAllowed)),
 		},
 		{
 			method: http.MethodPost,
-			status: http.StatusBadRequest,
+			status: http.StatusUnprocessableEntity,
 			seed:   "bag attitude butter flock slab desk ship brain famous scheme clerk",
-			err:    fmt.Errorf("seed is not a valid bip39 seed"),
+			err:    errors.New("seed is not a valid bip39 seed"),
 		},
 		{
 			method: http.MethodPost,
 			status: http.StatusBadRequest,
-			err:    fmt.Errorf("missing seed"),
+			err:    errors.New("missing seed"),
 		},
 		{
 			method: http.MethodPost,
@@ -1730,11 +1729,8 @@ func TestVerifyBip39Seed(t *testing.T) {
 		endpoint := "/api/v2/wallet/seed/verify"
 
 		v := SeedVerificationReq{Seed: tc.seed}
-
 		body, err := json.Marshal(v)
-		if err != nil {
-			t.Errorf(err.Error())
-		}
+		require.NoError(t, err)
 
 		req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(body))
 		require.NoError(t, err)
@@ -1746,8 +1742,8 @@ func TestVerifyBip39Seed(t *testing.T) {
 		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
@@ -1765,11 +1761,6 @@ func TestVerifyBip39Seed(t *testing.T) {
 			var resp ReceivedHTTPResponse
 			err := json.Unmarshal(rr.Body.Bytes(), &resp)
 			require.NoError(t, err)
-
-			var seedVer SeedVerificationResp
-			err = json.Unmarshal(resp.Data, &seedVer)
-			require.NoError(t, err)
-			require.True(t, seedVer.IsValid)
 		}
 	}
 }

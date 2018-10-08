@@ -181,6 +181,7 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 
 // PostJSONV2 makes a POST request to an endpoint with body of json data,
 // and parses the standard JSON response.
+// respObj is nilable
 func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool, error) {
 	body, err := json.Marshal(reqObj)
 	if err != nil {
@@ -244,11 +245,13 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, rspErr
 	}
 
-	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
-	decoder.DisallowUnknownFields()
+	if respObj != nil {
+		decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
+		decoder.DisallowUnknownFields()
 
-	if err := decoder.Decode(respObj); err != nil {
-		return false, err
+		if err := decoder.Decode(respObj); err != nil {
+			return false, err
+		}
 	}
 
 	return true, rspErr
@@ -733,16 +736,11 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 
 // VerifySeed verifies whether the given seed is a valid bip39 mnemonic or not
 func (c *Client) VerifySeed(seed SeedVerificationReq) (bool, error) {
-	var resp SeedVerificationResp
-
-	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", seed, &resp)
+	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", seed, nil)
 	if err != nil {
 		return false, err
 	}
 
-	if ok {
-		return resp.IsValid, nil
-	}
 	return ok, nil
 }
 

@@ -1372,9 +1372,7 @@ Result:
 
 ```json
 {
-    "data": {
-        "valid": true
-    }
+    "data": {}
 }
 ```
 

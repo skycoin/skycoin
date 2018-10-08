@@ -740,7 +740,9 @@ func newSeedHandler() http.HandlerFunc {
 			return
 		}
 
-		var rlt = SeedVerificationReq{
+		var rlt = struct {
+			Seed string `json:"seed"`
+		}{
 			mnemonic,
 		}
 		wh.SendJSONOr500(logger, w, rlt)
@@ -788,10 +790,11 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		v := SeedVerificationReq{
+		v := struct {
+			Seed string `json:"seed"`
+		}{
 			Seed: seed,
 		}
-
 		wh.SendJSONOr500(logger, w, v)
 	}
 }
@@ -799,11 +802,6 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 // SeedVerificationReq Request struct for seed
 type SeedVerificationReq struct {
 	Seed string `json:"seed"`
-}
-
-// SeedVerificationResp Response struct for bip39 seed verification
-type SeedVerificationResp struct {
-	IsValid bool `json:"valid"`
 }
 
 // Returns whether the given bip39 Seed is valid or not
@@ -840,18 +838,12 @@ func walletVerifySeedHandler() http.HandlerFunc {
 
 		mnemonicValid := bip39.IsMnemonicValid(mn.Seed)
 		if !mnemonicValid {
-			resp := NewHTTPErrorResponse(http.StatusBadRequest, "seed is not a valid bip39 seed")
+			resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, "seed is not a valid bip39 seed")
 			writeHTTPResponse(w, resp)
 			return
 		}
 
-		seedVerResp := SeedVerificationResp{
-			IsValid: mnemonicValid,
-		}
-
-		writeHTTPResponse(w, HTTPResponse{
-			Data: seedVerResp,
-		})
+		writeHTTPResponse(w, HTTPResponse{Data: struct{}{}})
 	}
 }
 

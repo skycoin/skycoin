@@ -54,7 +54,7 @@ Test(coin_coin, TestCrypto1){
   for(int i = 0; i < 10; i ++){
     result = SKY_cipher_GenerateKeyPair( &pubkey, &seckey );
     cr_assert( result == SKY_OK, "SKY_cipher_GenerateKeyPair failed" );
-    result = SKY_cipher_TestSecKey( &seckey );
+    result = SKY_cipher_CheckSecKey( &seckey );
     cr_assert( result == SKY_OK, "CRYPTOGRAPHIC INTEGRITY CHECK FAILED" );
   }
 }
@@ -83,6 +83,6 @@ Test(coin_coin, TestCrypto2){
     cipher__SHA256 hash;
     result = SKY_cipher_SumSHA256(textslice, &hash);
     cr_assert( result == SKY_OK, "SKY_cipher_SumSHA256 failed" );
-    result = SKY_cipher_TestSecKeyHash( &seckey, &hash );
-    cr_assert( result == SKY_OK, "SKY_cipher_TestSecKeyHash failed" );
+    result = SKY_cipher_CheckSecKeyHash( &seckey, &hash );
+    cr_assert( result == SKY_OK, "SKY_cipher_CheckSecKeyHash failed" );
 }

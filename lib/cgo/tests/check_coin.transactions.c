@@ -279,18 +279,16 @@ Test(coin_transaction, TestTransactionsSize)
   result = makeTransactions(10, &txns);
   cr_assert(result == SKY_OK);
   GoInt size = 0;
-  for (size_t i = 0; i < 10; i++)
-  {
+  for (size_t i = 0; i < 10; i++) {
     Transaction__Handle handle;
     result = SKY_coin_Transactions_GetAt(txns, i, &handle);
     registerHandleClose(handle);
     cr_assert(result == SKY_OK);
-    cipher__PubKeySlice p1 = {NULL, 0, 0};
-    result = SKY_coin_Transaction_Serialize(handle, &p1);
-    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Serialize failed");
-    GoInt count;
+    GoSlice p1 = {NULL, 0, 0};
+    result = SKY_coin_Transaction_Serialize(handle, (GoSlice_ *) &p1);
+    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Serialize");
     size += p1.len;
-    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Size failed");
+    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Size");
   }
   GoInt sizeTransactions;
   result = SKY_coin_Transactions_Size(txns, &sizeTransactions);

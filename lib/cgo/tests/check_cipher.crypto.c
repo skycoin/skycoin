@@ -174,7 +174,7 @@ Test(cipher_crypto, TestPubKeyVerifyDefault2)
 Test(cipher_crypto, TestPubKeyRipemd160) {
   cipher__PubKey p;
   cipher__SecKey s;
-  Ripemd160 h;
+  cipher__Ripemd160 h;
 
   SKY_cipher_GenerateKeyPair(&p, &s);
   SKY_cipher_PubKeyRipemd160(&p, &h);

@@ -176,10 +176,10 @@ Test(cipher_secp256k1_sig, TestSigVerify) {
   result = SKY_secp256k1go_Number_SetHex(s, str);
   cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
   char buffer_xy[1024];
-  cipher__PubKeySlice xy = {buffer_xy, 0, 1024};
+  GoSlice xy = {buffer_xy, 0, 1024};
   str.p = "02a60d70cfba37177d8239d018185d864b2bdd0caf5e175fd4454cc006fd2d75ac";
   str.n = 66;
-  result = SKY_base58_String2Hex(str, &xy);
+  result = SKY_base58_String2Hex(str, (GoSlice_ *) &xy);
   cr_assert(result == SKY_OK, "SKY_base58_String2Hex");
   GoSlice xyConvert = {xy.data, xy.len, xy.cap};
   result = SKY_secp256k1go_XY_ParsePubkey(&key, xyConvert, &valid);

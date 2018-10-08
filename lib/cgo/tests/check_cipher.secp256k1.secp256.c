@@ -353,7 +353,7 @@ Test(cipher_secp256k1, Test_Secp256_04)
 GoInt randSig(GoSlice *sig)
 {
 	GoInt error_code;
-	error_code = SKY_secp256k1_RandByte(65, sig);
+	error_code = SKY_secp256k1_RandByte(65, (GoSlice_ *) sig);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
 	cr_assert(sig->len == 65, "Signature should be 65 bytes long. is %x",
 			  sig->len);

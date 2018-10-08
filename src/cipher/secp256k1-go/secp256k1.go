@@ -479,6 +479,7 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 
 	if ret != 1 {
 		log.Printf("RecoverPubkey: code %d", ret)
+		return nil
 	}
 
 	if pubkey == nil {

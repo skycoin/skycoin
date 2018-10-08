@@ -724,7 +724,7 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 			panic(err)
 		} else {
 			// Let the caller know specific error that locked the API
-			if _err, isError := err.error; isError {
+			if _err, isError := err.(error); isError {
 				return libErrorCode(_err)
 			}
 			return SKY_ERROR

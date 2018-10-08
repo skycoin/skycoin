@@ -10,7 +10,6 @@ import (
 	"errors"
 	"log"
 
-	skyerrors "github.com/skycoin/skycoin/src/cipher/errors"
 	secp "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 )
 
@@ -34,7 +33,6 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 
 	if secp.SeckeyIsValid(seckey) != 1 {
 		log.Panic("always ensure seckey is valid")
-		return nil
 	}
 
 	var pubkey = secp.GeneratePublicKey(seckey) //always returns true
@@ -239,19 +237,13 @@ func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
 func Sign(msg []byte, seckey []byte) []byte {
 
 	if len(seckey) != 32 {
-		err := skyerrors.NewValueError(ErrSignInvalidSeckeyLength, "seckey  ", seckey)
-		log.Print(err)
-		panic(err)
+		log.Panic(ErrSignInvalidSeckeyLength)
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
-		err := skyerrors.NewValueError(ErrSignInvalidSeckey, "seckey  ", seckey)
-		log.Print(err)
-		panic(err)
+		log.Panic(ErrSignInvalidSeckey)
 	}
 	if len(msg) == 0 {
-		err := skyerrors.NewValueError(ErrSignMessageNil, "msg  ", msg)
-		log.Print(err)
-		panic(err)
+		log.Panic(ErrSignMessageNil)
 	}
 	var nonce = RandByte(32)
 	var sig = make([]byte, 65)
@@ -270,9 +262,7 @@ func Sign(msg []byte, seckey []byte) []byte {
 	ret := cSig.Sign(&seckey1, &msg1, &nonce1, &recid)
 
 	if ret != 1 {
-		err := skyerrors.NewValueError(ErrSecp25k1SignSignatureFailed, "ret   ", ret)
-		log.Print(err)
-		panic(err)
+		log.Panic(ErrSecp25k1SignSignatureFailed)
 	}
 
 	sigBytes := cSig.Bytes()
@@ -408,20 +398,13 @@ func VerifySignatureValidity(sig []byte) int {
 // Rename SignatureChk
 func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	if msg == nil || sig == nil || pubkey1 == nil {
-		err := skyerrors.NewValueError(ErrVerifySignatureInvalidInputsNils, "pubkey1 ", pubkey1)
-		log.Print(err)
-		panic(err)
+		log.Panic("VerifySignature, ERROR: invalid input, nils")
 	}
 	if len(sig) != 65 {
-		err := skyerrors.NewValueError(ErrVerifySignatureInvalidSigLength, "sig    ", sig)
-		log.Print(err)
-		panic(err)
+		log.Panic("VerifySignature, invalid signature length")
 	}
 	if len(pubkey1) != 33 {
-		err := skyerrors.NewValueError(ErrVerifySignatureInvalidPubkeysLength, "pubkey1 ", pubkey1)
-		log.Print(err)
-		panic(err)
-
+		log.Panic("VerifySignature, invalid pubkey length")
 	}
 
 	//malleability check:
@@ -495,21 +478,14 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 		recid)
 
 	if ret != 1 {
-		err := skyerrors.NewValueErrorFromString("RecoverPubkey: code ", "ret ", ret)
-		log.Print(err)
-		return nil
+		log.Printf("RecoverPubkey: code %d", ret)
 	}
 
 	if pubkey == nil {
-		err := skyerrors.NewValueErrorFromString("ERROR: impossible, pubkey nil and ret ==1", "ret ", ret)
-		log.Print(err)
-		panic(err)
+		log.Panic("ERROR: impossible, pubkey nil and ret ==1")
 	}
 	if len(pubkey) != 33 {
-		err := skyerrors.NewValueError(ErrSecp256k1InvalidLengthPubKey, "pubkey", pubkey)
-		log.Print(err)
-		panic(err)
-
+		log.Panic("pubkey length wrong")
 	}
 	return pubkey
 
@@ -539,9 +515,7 @@ func ECDH(pub []byte, sec []byte) []byte {
 		return nil
 	}
 	if len(pubkeyOut) != 33 {
-		err := skyerrors.NewValueError(ErrSecp256k1InvalidLengthPubKey, "pubkeyOut", pubkeyOut)
-		log.Print(err)
-		panic(err)
+		log.Panic("ERROR: impossible, invalid pubkey length")
 	}
 	return pubkeyOut
 }

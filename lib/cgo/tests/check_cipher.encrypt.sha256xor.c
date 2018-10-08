@@ -169,6 +169,7 @@ Test(cipher_encrypt_sha256xor, TestEncrypt){
 		if( test_data[i].success ){
 			cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Encrypt failed.");
 		} else {
+      fprintf(stderr, "Errorcode %d\n", errcode);
 			cr_assert(errcode == SKY_ErrSHA256orMissingPassword, "SKY_encrypt_Sha256Xor_Encrypt with null pwd.");
 		}
 		if( errcode == SKY_OK ){

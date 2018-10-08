@@ -76,16 +76,16 @@
 #define SKY_ErrBitcoinWIFInvalidChecksum            0x02000028
 #define SKY_ErrEmptySeed                            0x02000029
 #define SKY_ErrInvalidSig                           0x0200002A
-#define SKY_ErrSHA256orMissingPassword              0x0200002A
-#define SKY_ErrLenghtDataOverflowMaxUint32          0x02000029
-#define SKY_ErrInvalidChecksumLength                0x0200002B
-#define SKY_ErrInvalidDataChecksumNotMatched        0x0200002C
-#define SKY_ErrInvalidNonceLength                   0x0200002D
-#define SKY_ErrInvalidBlockSizeMultiple32Bytes      0x0200002E
-#define SKY_ErrReadDataHashFailedLength             0x0200002F
-#define SKY_ErrSHA256orInvalidPassword              0x02000030
-#define SKY_ErrReadDataLengthFailed                 0x02000031
-#define SKY_ErrInvalidDataLength                    0x02000032
+#define SKY_ErrSHA256orMissingPassword              0x0200002B
+#define SKY_ErrLenghtDataOverflowMaxUint32          0x0200002C
+#define SKY_ErrInvalidChecksumLength                0x0200002D
+#define SKY_ErrInvalidDataChecksumNotMatched        0x0200002E
+#define SKY_ErrInvalidNonceLength                   0x0200002F
+#define SKY_ErrInvalidBlockSizeMultiple32Bytes      0x02000030
+#define SKY_ErrReadDataHashFailedLength             0x02000031
+#define SKY_ErrSHA256orInvalidPassword              0x02000032
+#define SKY_ErrReadDataLengthFailed                 0x02000033
+#define SKY_ErrInvalidDataLength                    0x02000034
 
 #define SKY_ErrTemporaryInsufficientBalance   0x03000000
 #define SKY_ErrAddress                        0x03000001

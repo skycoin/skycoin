@@ -356,7 +356,7 @@ GoInt randSig(GoSlice *sig)
 	error_code = SKY_secp256k1_RandByte(65, (GoSlice_ *) sig);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
 	cr_assert(sig->len == 65, "Signature should be 65 bytes long. is %x",
-			  sig->len);
+				sig->len);
 	((unsigned char *)sig->data)[32] = ((unsigned char *)sig->data)[32] & 0x70;
 	((unsigned char *)sig->data)[64] = ((unsigned char *)sig->data)[64] % 4;
 	return error_code;
@@ -376,8 +376,7 @@ Test(cipher_secp256k1, Test_Secp256_06a_alt0)
 	GoSlice sig2 = {bufferSig2, 0, BUFFER_SIZE};
 	GoSlice msg = {buff, 0, 32};
 
-	error_code = SKY_secp256k1_GenerateKeyPair((coin__UxArray *)&pub1,
-											   (coin__UxArray *)&sec1);
+	error_code = SKY_secp256k1_GenerateKeyPair((GoSlice_ *)&pub1, (GoSlice_ *)&sec1);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
 	GoInt code;
 	error_code = SKY_secp256k1_RandByte(32, (coin__UxArray *)&msg);
@@ -392,13 +391,15 @@ Test(cipher_secp256k1, Test_Secp256_06a_alt0)
 		GoSlice pub2 = {bufferPub2, 0, BUFFER_SIZE};
 		GoInt result;
 		randSig(&sig2);
-		error_code = SKY_secp256k1_RecoverPubkey(msg, sig2, (coin__UxArray *)&pub2);
+		error_code = SKY_secp256k1_RecoverPubkey(msg, sig2, (GoSlice_ *)&pub2);
 		cr_assert(error_code == SKY_OK, "SKY_secp256k1_RecoverPubkey failed");
 		cr_assert(not(eq(type(GoSlice), pub1, pub2)), "Different public keys.");
-		error_code = SKY_secp256k1_VerifySignature(msg, sig2, pub2, &result);
-		cr_assert(pub2.len == 0 || result, "Public key is not valid");
+		if (pub2.len != 0) {
+			error_code = SKY_secp256k1_VerifySignature(msg, sig2, pub2, &result);
+			cr_assert(result == 1);
+		}
 		error_code = SKY_secp256k1_VerifySignature(msg, sig2, pub1, &result);
-		cr_assert(result == 0, "Public key should not be valid");
+		cr_assert(result != 1);
 	}
 }
 

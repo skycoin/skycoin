@@ -2,9 +2,11 @@
 #ifndef SKY_ERRORS_H
 #define SKY_ERRORS_H
 
+// Generic error conditions
 #define SKY_OK            0
 #define SKY_ERROR         0x7FFFFFFF
 
+// Package error code prefix list
 #define SKY_PKG_API       0x01000000
 #define SKY_PKG_CIPHER    0x02000000
 #define SKY_PKG_CLI       0x03000000
@@ -17,6 +19,13 @@
 #define SKY_PKG_VISOR     0x0A000000
 #define SKY_PKG_WALLET    0x0B000000
 
+#define SKY_PKG_LIBCGO    0x7F000000
+
+// libcgo error codes
+#define SKY_BAD_HANDLE    0x7F000001
+#define SKY_API_LOCKED    0x7F000002
+
+// cipher error codes
 #define SKY_ErrAddressInvalidLength                 0x02000000
 #define SKY_ErrAddressInvalidChecksum               0x02000001
 #define SKY_ErrAddressInvalidVersion                0x02000002
@@ -61,6 +70,7 @@
 #define SKY_ErrEmptySeed                            0x02000029
 #define SKY_ErrInvalidSig                           0x0200002A
 
+// cli error codes
 #define SKY_ErrTemporaryInsufficientBalance   0x03000000
 #define SKY_ErrAddress                        0x03000001
 #define SKY_ErrWalletName                     0x03000002
@@ -68,6 +78,7 @@
 #define SKY_WalletLoadError                   0x03000004
 #define SKY_WalletSaveError                   0x03000005
 
+// coin error codes
 #define SKY_ErrAddEarnedCoinHoursAdditionOverflow 0x04000000
 #define SKY_ErrUint64MultOverflow                 0x04000001
 #define SKY_ErrUint64AddOverflow                  0x04000002
@@ -75,6 +86,7 @@
 #define SKY_ErrUint64OverflowsInt64               0x04000004
 #define SKY_ErrInt64UnderflowsUint64              0x04000005
 
+// daemon error codes
 #define SKY_ErrPeerlistFull                               0x06000000
 #define SKY_ErrInvalidAddress                             0x06000001
 #define SKY_ErrNoLocalhost                                0x06000002
@@ -106,6 +118,7 @@
 #define SKY_ErrDisconnectMaxOutgoingConnectionsReached    0x0600001C
 #define SKY_ConnectionError                               0x0600001D
 
+// util error codes
 #define SKY_ErrTxnNoFee                   0x09000000 
 #define SKY_ErrTxnInsufficientFee         0x09000001 
 #define SKY_ErrTxnInsufficientCoinHours   0x09000002 
@@ -115,6 +128,7 @@
 #define SKY_ErrEmptyDirectoryName         0x09000006 
 #define SKY_ErrDotDirectoryName           0x09000007 
 
+// visor error codes
 #define SKY_ErrHistoryDBCorrupted         0x0A000000
 #define SKY_ErrUxOutNotExist              0x0A000001
 #define SKY_ErrNoHeadBlock                0x0A000002
@@ -127,6 +141,7 @@
 #define SKY_ErrTxnViolatesSoftConstraint  0x0A000008
 #define SKY_ErrTxnViolatesUserConstraint  0x0A000009
 
+// wallet error codes
 #define SKY_ErrInsufficientBalance            0x0B000000
 #define SKY_ErrInsufficientHours              0x0B000001
 #define SKY_ErrZeroSpend                      0x0B000002

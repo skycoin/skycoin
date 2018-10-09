@@ -119,7 +119,7 @@ func AddressFromBytes(b []byte) (Address, error) {
 func MustAddressFromBytes(b []byte) Address {
 	addr, err := AddressFromBytes(b)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	return addr

@@ -88,12 +88,12 @@ func MustPubKeyFromHex(s string) PubKey {
 // PubKeyFromSecKey recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) (PubKey, error) {
 	if seckey == (SecKey{}) {
-		return PubKey{}, errors.New("PubKeyFromSecKey, attempt to load null seckey, unsafe")
+		return PubKey{}, errors.New("Cannot convert null SecKey to PubKey")
 	}
 
 	b := secp256k1.PubkeyFromSeckey(seckey[:])
 	if b == nil {
-		return PubKey{}, errors.New("PubKeyFromSecKey, pubkey recovery failed. Function assumes seckey is valid. Check seckey")
+		return PubKey{}, errors.New("PubKey recovery from SecKey failed. The recovery function assumes SecKey is valid, check SecKey")
 	}
 
 	return NewPubKey(b)
@@ -101,16 +101,11 @@ func PubKeyFromSecKey(seckey SecKey) (PubKey, error) {
 
 // MustPubKeyFromSecKey recovers the public key for a secret key. Panics on error.
 func MustPubKeyFromSecKey(seckey SecKey) PubKey {
-	if seckey == (SecKey{}) {
-		log.Panic("MustPubKeyFromSecKey, attempt to load null seckey, unsafe")
+	pk, err := PubKeyFromSecKey(seckey)
+	if err != nil {
+		log.Panic(err)
 	}
-
-	b := secp256k1.PubkeyFromSeckey(seckey[:])
-	if b == nil {
-		log.Panic("MustPubKeyFromSecKey, pubkey recovery failed. Function assumes seckey is valid. Check seckey")
-	}
-
-	return MustNewPubKey(b)
+	return pk
 }
 
 // PubKeyFromSig recovers the public key from a signed hash
@@ -120,6 +115,15 @@ func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
 		return PubKey{}, errors.New("Invalig sig: PubKey recovery failed")
 	}
 	return NewPubKey(rawPubKey)
+}
+
+// MustPubKeyFromSig recovers the public key from a signed hash, panics on error
+func MustPubKeyFromSig(sig Sig, hash SHA256) PubKey {
+	pk, err := PubKeyFromSig(sig, hash)
+	if err != nil {
+		log.Panic(err)
+	}
+	return pk
 }
 
 // Verify attempts to determine if pubkey is valid. Returns nil on success
@@ -264,22 +268,22 @@ func MustNewSig(b []byte) Sig {
 	return s
 }
 
-// MustSigFromHex decodes a hex-encoded Sig, panicing if invalid
-func MustSigFromHex(s string) Sig {
-	b, err := hex.DecodeString(s)
-	if err != nil {
-		log.Panic(err)
-	}
-	return MustNewSig(b)
-}
-
-// SigFromHex generates signature from hex string
+// SigFromHex converts a hex string to a signature
 func SigFromHex(s string) (Sig, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		return Sig{}, errors.New("Invalid signature")
 	}
 	return NewSig(b)
+}
+
+// MustSigFromHex converts a hex string to a signature, panics on error
+func MustSigFromHex(s string) Sig {
+	sig, err := SigFromHex(s)
+	if err != nil {
+		log.Panic(err)
+	}
+	return sig
 }
 
 // Hex converts signature to hex string
@@ -560,7 +564,7 @@ func CheckSecKeyHash(seckey SecKey, hash SHA256) error {
 	// check pubkey recovery
 	pubkey, err := PubKeyFromSecKey(seckey)
 	if err != nil {
-		return err
+		return fmt.Errorf("PubKeyFromSecKey failed: %v", err)
 	}
 	if pubkey == (PubKey{}) {
 		return errors.New("impossible error, CheckSecKey, nil pubkey recovered")

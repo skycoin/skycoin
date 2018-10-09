@@ -88,22 +88,7 @@ func (g *SHA256) Xor(b SHA256) SHA256 {
 	return c
 }
 
-// SumSHA256 sum sha256
-func SumSHA256(b []byte) SHA256 {
-	sha256Hash := <-sha256HashPool
-	sha256Hash.Reset()
-	// sha256.Write never returns an error
-	sha256Hash.Write(b) // nolint: errcheck
-	sum := sha256Hash.Sum(nil)
-	sha256HashPool <- sha256Hash
-
-	h := SHA256{}
-	h.MustSet(sum)
-	return h
-}
-
-// SHA256FromHex decodes a hex encoded SHA256 hash to bytes.  If invalid, will return error.
-// Does not panic.
+// SHA256FromHex decodes a hex encoded SHA256 hash to bytes
 func SHA256FromHex(hs string) (SHA256, error) {
 	h := SHA256{}
 	b, err := hex.DecodeString(hs)
@@ -117,7 +102,7 @@ func SHA256FromHex(hs string) (SHA256, error) {
 	return h, nil
 }
 
-// MustSHA256FromHex same as SHA256FromHex, except will panic when detect error
+// MustSHA256FromHex decodes a hex encoded SHA256 hash to bytes, panics on error
 func MustSHA256FromHex(hs string) SHA256 {
 	h, err := SHA256FromHex(hs)
 	if err != nil {
@@ -133,21 +118,25 @@ func SHA256FromBytes(b []byte) (SHA256, error) {
 	return h, err
 }
 
-// MustSHA256FromBytes is the same as SHA256FromBytes, except it will panic when it detects an error
+// MustSHA256FromBytes converts []byte to SHA256, panics on error
 func MustSHA256FromBytes(b []byte) SHA256 {
-	h, err := SHA256FromBytes(b)
-	if err != nil {
-		log.Panic(err)
-	}
+	h := SHA256{}
+	h.MustSet(b)
 	return h
 }
 
-// MustSumSHA256 like SumSHA256, but len(b) must equal n, or panic
-func MustSumSHA256(b []byte, n int) SHA256 {
-	if len(b) != n {
-		log.Panicf("Invalid sumsha256 byte length. Expected %d, have %d", n, len(b))
-	}
-	return SumSHA256(b)
+// SumSHA256 sum sha256
+func SumSHA256(b []byte) SHA256 {
+	sha256Hash := <-sha256HashPool
+	sha256Hash.Reset()
+	// sha256.Write never returns an error
+	sha256Hash.Write(b) // nolint: errcheck
+	sum := sha256Hash.Sum(nil)
+	sha256HashPool <- sha256Hash
+
+	h := SHA256{}
+	h.MustSet(sum)
+	return h
 }
 
 // DoubleSHA256 double SHA256

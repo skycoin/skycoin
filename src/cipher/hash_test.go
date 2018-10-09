@@ -243,16 +243,6 @@ func TestMustSHA256FromBytes(t *testing.T) {
 	})
 }
 
-func TestMustSumSHA256(t *testing.T) {
-	b := randBytes(t, 128)
-	require.Panics(t, func() { MustSumSHA256(b, 127) })
-	require.Panics(t, func() { MustSumSHA256(b, 129) })
-	require.NotPanics(t, func() { MustSumSHA256(b, 128) })
-	h := MustSumSHA256(b, 128)
-	require.NotEqual(t, h, SHA256{})
-	require.Equal(t, h, freshSumSHA256(t, b))
-}
-
 func TestDoubleSHA256(t *testing.T) {
 	b := randBytes(t, 128)
 	h := DoubleSHA256(b)

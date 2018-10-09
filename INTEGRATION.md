@@ -164,7 +164,7 @@ That is, create a raw transaction, broadcast it, and wait for it to confirm.
 
 #### Using the REST API
 
-The wallet APIs must be enabled with `-enable-api-sets=WALLET,READ,STATUS`.
+The wallet APIs must be enabled with `-enable-api-sets=WALLET,READ`.
 
 Create a transaction with [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction),
 then inject it to the network with [POST /injectTransaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#inject-raw-transaction).

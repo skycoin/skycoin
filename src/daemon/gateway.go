@@ -759,19 +759,6 @@ func (gw *Gateway) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]viso
 	return txns, inputs, err
 }
 
-// ReloadWallets reloads all wallets
-func (gw *Gateway) ReloadWallets() error {
-	if !gw.Config.EnableWalletAPI {
-		return wallet.ErrWalletAPIDisabled
-	}
-
-	var err error
-	gw.strand("ReloadWallets", func() {
-		err = gw.v.Wallets.ReloadWallets()
-	})
-	return err
-}
-
 // UnloadWallet removes wallet of given id from memory.
 func (gw *Gateway) UnloadWallet(id string) error {
 	if !gw.Config.EnableWalletAPI {

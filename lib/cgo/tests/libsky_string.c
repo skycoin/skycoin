@@ -14,6 +14,17 @@ void randBytes(GoSlice *bytes, size_t n) {
   bytes->len = (GoInt) n;
 }
 
+void bytesnhex(unsigned char* buf, char *str, int n){
+    unsigned char * pin = buf;
+    const char * hex = "0123456789ABCDEF";
+    char * pout = str;
+    for(; n; --n){
+        *pout++ = hex[(*pin>>4)&0xF];
+        *pout++ = hex[(*pin++)&0xF];
+    }
+    *pout = 0;
+}
+
 void strnhex(unsigned char* buf, char *str, int n){
     unsigned char * pin = buf;
     const char * hex = "0123456789ABCDEF";

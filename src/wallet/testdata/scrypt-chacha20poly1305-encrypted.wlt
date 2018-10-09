@@ -16,7 +16,7 @@
         {
             "address": "2EVNa4CK9SKosT4j1GEn8SuuUUEAXaHAMbM",
             "public_key": "02e5be89fa161bf6b0bc64ec9ec7fe27311fbb78949c3ef9739d4c73a84920d6e1",
-            "secret_key": "0000000000000000000000000000000000000000000000000000000000000000"
+            "secret_key": ""
         }
     ]
 }

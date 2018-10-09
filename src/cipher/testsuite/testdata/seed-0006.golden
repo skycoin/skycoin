@@ -3,6 +3,7 @@
     "keys": [
         {
             "address": "rLjV76Fayt9WU5rk19FnzWeZEbF8nWqGHH",
+            "bitcoin_address": "1GL7YXV85q9GDmGXThGx5bYhy26S6H5LhU",
             "secret": "953b69e03457e239449ef051aee7a5fd9ad4f832bc60e8915e0f07b52598206b",
             "public": "0296d12f5627840862172af9aa4a22574c427e60bfccdeef22e675b137b439b92b",
             "signatures": [
@@ -20,6 +21,7 @@
         },
         {
             "address": "2d94nXraZtkPD2GiSCfzugewm9cRbCVDNnm",
+            "bitcoin_address": "18n9xYGZhqQ7bjgSgf54KvGWVt8bjgujac",
             "secret": "4f8db9121a8fb6bdbc8de701593e953b6022431d9045b914e58c0fbf109cf1cb",
             "public": "029cc260c200b5893e55faa5f23baf6268e0f20e77ee1b524b37f6e1e6ca9a1814",
             "signatures": [
@@ -37,6 +39,7 @@
         },
         {
             "address": "gVpAMGVd271pzHcNZiMzU7FDNqUiP78BwT",
+            "bitcoin_address": "1KhP54Cd5pfE492oqWxKxNxiJ7FEinv6hU",
             "secret": "1a59b0065001a05a93d72d5939fddb148c5cfb775a0e2a27a99c6d54372939ca",
             "public": "036de1827a8524f166854bc7b85510d17ebe0369fe828d8f8c40e930569dce118d",
             "signatures": [
@@ -54,6 +57,7 @@
         },
         {
             "address": "2TpmTjZqMDwwnmMum5CqDZjyjekoQxctUaZ",
+            "bitcoin_address": "15PpWQEfVTcRdygX68G2KJAyXASydjS7Ch",
             "secret": "df84bb1a455c464ebb1da23257ce7e2998d6a2f92e2864a9e9adddd3f017d784",
             "public": "03a9aa938ee9aec021db0717c0737973e68a39b4d0a2b0c168135a98a1a7c64dbe",
             "signatures": [
@@ -71,6 +75,7 @@
         },
         {
             "address": "2fznUrLmmNj3vrq6kqhYTPdEcxsPF3gd2Bc",
+            "bitcoin_address": "1EgxcUiXQiP467VJqtHTh7MapbESARYUBm",
             "secret": "49db3eb8a8973862917e151d92ad0d159a5a11de20ca3fe299f2fc4ec71a9161",
             "public": "03b0f175d8daf4d0b353cd28a6d454a39cedfe58d4d9447b47bf19cdcdc985b2c8",
             "signatures": [
@@ -88,6 +93,7 @@
         },
         {
             "address": "2gQbpB4v3yXRyF6oorigjnUUQaNzM8KuQtD",
+            "bitcoin_address": "1HMtJ331rLQR2FhxydXRViun2tQxB7GWL1",
             "secret": "60961b0cb2ff7ec60965404fed8b5dbf29edbec06bb8325b03957ea5cc191970",
             "public": "02c4534d31801b121ff729abc6873ac9ce3fca7f8f87f4b4aa001a9990845bed33",
             "signatures": [
@@ -105,6 +111,7 @@
         },
         {
             "address": "2FmtRamAEN3Eiw2eqroJt3nhHzgo9VxTvPK",
+            "bitcoin_address": "1KyXLZQK4Rg4UBsuJJqrgFFo3VwqNxAZhf",
             "secret": "5127d7f0c06d335e1584ddcbf4534c8a5be109ec2e28a2f40aa5491427b7452c",
             "public": "03103745843f93a49c945f4fbc0bf4ff479101c22a3ece11220cafa109280b494f",
             "signatures": [
@@ -122,6 +129,7 @@
         },
         {
             "address": "k46MSCkDYk6ZaHcj2ytwZamLRr5w4QUEwe",
+            "bitcoin_address": "1MD7YdmaLZ2Q2Xccy7XBsdS1ouo8tKkiWj",
             "secret": "2b1ba25cdecc2b0c4b7938c220615929abca0d1df1d673604f8b370f145467fe",
             "public": "02771a319f31f4d999adb58b1df0042a525e539d6cb4bc3721efd7ab2cfcd0a3e2",
             "signatures": [
@@ -139,6 +147,7 @@
         },
         {
             "address": "2GAWkAhh6ddxLGT38b2XHCuhdbRx9Jvf4pk",
+            "bitcoin_address": "19JtZ2B8VfUGEvVpZDc4DuKUoFAraxpq8w",
             "secret": "e0c84b3bd790f03c58548657cad0a83cc302d1b75d7b6b3d8edfc21d8c2289cd",
             "public": "028209201b8152ea8fd7f7711eeb82354f67cf1cf1b4082160f9f04eca421bea2e",
             "signatures": [
@@ -156,6 +165,7 @@
         },
         {
             "address": "EzfiGbJmK9AtLocAbUUgKt5FbvkptAfLqC",
+            "bitcoin_address": "1Fn4KpLtjzUzupW15VS6s4TpciCkDo8av5",
             "secret": "4da01bf2216bb743f5412fcb843d79ed3bc22a03ff7ca0b314255fd622d90874",
             "public": "0342b3d108f4f046af97cd92244b841b6ada34f52548d944d3e22344a952e3d173",
             "signatures": [

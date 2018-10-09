@@ -23,7 +23,6 @@ const (
 	SizeofRipemd160         = unsafe.Sizeof(C.cipher__Ripemd160{})
 	SizeOfAddress           = unsafe.Sizeof(C.cipher__Address{})
 	SizeofPubKey            = unsafe.Sizeof(C.cipher__PubKey{})
-	SizeofPubKeySlice       = unsafe.Sizeof(C.cipher__PubKeySlice{})
 	SizeofSecKey            = unsafe.Sizeof(C.cipher__SecKey{})
 	SizeofSig               = unsafe.Sizeof(C.cipher__Sig{})
 	SizeofChecksum          = unsafe.Sizeof(C.cipher__Checksum{})
@@ -39,10 +38,6 @@ const (
 /**
  * Inplace memory references
  */
-
-func inplacePubKeySlice(p *C.cipher__PubKeySlice) *cipher.PubKeySlice {
-	return (*cipher.PubKeySlice)(unsafe.Pointer(p))
-}
 
 func inplaceAddress(p *C.cipher__Address) *cipher.Address {
 	return (*cipher.Address)(unsafe.Pointer(p))

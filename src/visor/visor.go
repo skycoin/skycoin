@@ -182,6 +182,7 @@ type Historyer interface {
 // Blockchainer is the interface that provides methods for accessing the blockchain data
 type Blockchainer interface {
 	GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error)
+	GetBlocks(tx *dbutil.Tx, seqs []uint64) ([]coin.SignedBlock, error)
 	GetBlocksInRange(tx *dbutil.Tx, start, end uint64) ([]coin.SignedBlock, error)
 	GetLastBlocks(tx *dbutil.Tx, n uint64) ([]coin.SignedBlock, error)
 	GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error)
@@ -791,29 +792,37 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 	return b, nil
 }
 
-// GetBlocks returns blocks corresponding to an array of block sequences
+// GetBlocks returns blocks matches seqs
 func (vs *Visor) GetBlocks(seqs []uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 
 	if err := vs.DB.View("GetBlocks", func(tx *dbutil.Tx) error {
-		for _, n := range seqs {
-			b, err := vs.Blockchain.GetSignedBlockBySeq(tx, n)
-			if err != nil {
-				return err
-			}
-
-			if b == nil {
-				return fmt.Errorf("block seq=%d not found", n)
-			}
-
-			blocks = append(blocks, *b)
-		}
-		return nil
+		var err error
+		blocks, err = vs.Blockchain.GetBlocks(tx, seqs)
+		return err
 	}); err != nil {
 		return nil, err
 	}
 
 	return blocks, nil
+}
+
+// GetBlocksVerbose returns blocks matches seqs along with verbose transaction input data
+func (vs *Visor) GetBlocksVerbose(seqs []uint64) ([]coin.SignedBlock, [][][]TransactionInput, error) {
+	var blocks []coin.SignedBlock
+	var inputs [][][]TransactionInput
+
+	if err := vs.DB.View("GetBlocksVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		blocks, inputs, err = vs.getBlocksVerbose(tx, func(tx *dbutil.Tx) ([]coin.SignedBlock, error) {
+			return vs.Blockchain.GetBlocks(tx, seqs)
+		})
+		return err
+	}); err != nil {
+		return nil, nil, err
+	}
+
+	return blocks, inputs, nil
 }
 
 // GetBlocksInRange returns multiple blocks between start and end, including both start and end.

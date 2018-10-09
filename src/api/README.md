@@ -127,6 +127,7 @@ These API sets are:
 	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
 	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
 	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+- [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 
 <!-- /MarkdownTOC -->
 
@@ -2544,10 +2545,19 @@ Method: GET
 Args:
     start: start seq
     end: end seq
+    seqs: comma-separated list of block seqs
     verbose: [bool] return verbose transaction input data
 ```
 
-Returns blocks in the range [start, end]. Both start and end sequences are included in the returned array of blocks.
+This endpoint has two modes: range and seqs.
+The `seqs` parameter cannot be combined with `start`, `end`.
+
+If `start` and/or `end` are provided, returns blocks in the range [`start`, `end`].
+Both start and end sequences are included in the returned array of blocks.
+
+If `seqs` is provided, returns blocks matching the specified sequences.
+`seqs` must not contain any duplicate values.
+If a block does not exist for any of the given sequence numbers, a `404` error is returned.
 
 If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
 The hours are the original hours the output was created with.
@@ -2736,6 +2746,141 @@ Result:
                 ]
             },
             "size": 183
+        }
+    ]
+}
+```
+
+Example (seqs):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/blocks?seqs=3,5,7
+```
+
+```json
+{
+    "blocks": [
+        {
+            "header": {
+                "seq": 3,
+                "block_hash": "35c3ebbe6feaeeab27ac77c1712051787bdd4bbfb5cdcdebc81f8aac98a2f3f3",
+                "previous_block_hash": "01723bc4dc90f1cb857a94fe5e3bb50c02e6689fd998f8147c9cae07fbfa63af",
+                "timestamp": 1427927671,
+                "fee": 0,
+                "version": 0,
+                "tx_body_hash": "a6a709e9388a4d67a47d262b11da5f804eddd9d67acc4a3e450f7a567bdc1619"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 183,
+                        "type": 0,
+                        "txid": "a6a709e9388a4d67a47d262b11da5f804eddd9d67acc4a3e450f7a567bdc1619",
+                        "inner_hash": "ea6adee3180c7f9d73d1e693822d5d1c2bba85067f89a873355bc771a078faa1",
+                        "sigs": [
+                            "ce8fd47e2044ed17998f92621e90329f673a746c802d67f639ca083705dd199f6ee346781497b44132434922879244d819694b5903093f784570c55d293ab4af01"
+                        ],
+                        "inputs": [
+                            "af0b2c1cc882a56b6c0c06e99e7d2731413b988329a2c47a5c2aa8be589b707a"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13",
+                                "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+                                "coins": "10.000000",
+                                "hours": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 183
+        },
+        {
+            "header": {
+                "seq": 5,
+                "block_hash": "114fe60587a158428a47e0f9571d764f495912c299aa4e67fc88004cf21b0c24",
+                "previous_block_hash": "415e47348a1e642cb2e31d00ee500747d3aed0336aabfff7d783ed21465251c7",
+                "timestamp": 1428798821,
+                "fee": 2036,
+                "version": 0,
+                "tx_body_hash": "0579e7727627cd9815a8a8b5e1df86124f45a4132cc0dbd00d2f110e4f409b69"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 317,
+                        "type": 0,
+                        "txid": "0579e7727627cd9815a8a8b5e1df86124f45a4132cc0dbd00d2f110e4f409b69",
+                        "inner_hash": "fe123ca954a82bb1ce2cc9ef9c56d6b649a4cbaf5b17394b0ffda651ed32327e",
+                        "sigs": [
+                            "056ed0f74367fb1370d7e98689953983d9cf34eb6669854f1645c8a16c93d85075661e7d4f6df0ce5ca8eb9852eff6a12fbac2caafee03bb8c616f847c61416800",
+                            "8aaa7f320a7b01169d3217a600100cb27c55e4ce56cd3455814f56d8e4e65be746e0e20e776087af6f19361f0b898edc2123a5f9bd35d24ef8b8669ca85b142601"
+                        ],
+                        "inputs": [
+                            "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13",
+                            "706f82c481906108880d79372ab5c126d32ecc98cf3f7c74cf33f5fda49dcf70"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "fa2b598d233fe434f907f858d5de812eacf50c7b3fd152c77cd6e246fe356a9e",
+                                "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+                                "coins": "999890.000000",
+                                "hours": 4073
+                            },
+                            {
+                                "uxid": "dc63c680f408c4e646037966189383a5d50eda34e666c2a0c75c0c6bf13b71a1",
+                                "dst": "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+                                "coins": "100.000000",
+                                "hours": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 317
+        },
+        {
+            "header": {
+                "seq": 7,
+                "block_hash": "6cb71b57c998a5367101e01d48c097eccd4f5abf311c89bcca8ee213581f355f",
+                "previous_block_hash": "103949030e90fcebc5d8ca1c9c59f30a31aa71911401d22a2422e4571b035701",
+                "timestamp": 1428807671,
+                "fee": 0,
+                "version": 0,
+                "tx_body_hash": "f832428481690fa918d6d29946e191f2c8c89b2388a906e0c53dceee6070a24b"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 220,
+                        "type": 0,
+                        "txid": "f832428481690fa918d6d29946e191f2c8c89b2388a906e0c53dceee6070a24b",
+                        "inner_hash": "f440c514779522a6387edda9b9d9835f00680fb314546efb7bc9762a17884156",
+                        "sigs": [
+                            "8fe96f5502270e4efa962b2aef2b81795fe26a8f0c9a494e2ae9c7e624af455c49396270ae7a25b41d439fd56dea9d556a135129122de1b1274b1e2a5d75f2ea01"
+                        ],
+                        "inputs": [
+                            "8ff8a647e4542fab01e078ac467b2c9f2e5f7de55d77ec2711f8abc718e2c91b"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "17090c40091d009d6a684043d3be2e9cb1dc60a664a9c2e388af1f3a7345724b",
+                                "dst": "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+                                "coins": "90.000000",
+                                "hours": 0
+                            },
+                            {
+                                "uxid": "f9e7a412cdff80e95ddbe1d76fcc73f967cb99d383b0659e1355c8e623f02b62",
+                                "dst": "WADSeEwEQVbtUy8CfcVimyxX1KjTRkvfoK",
+                                "coins": "5.000000",
+                                "hours": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 220
         }
     ]
 }
@@ -3489,3 +3634,15 @@ Result:
     "47.88.33.156:6000"
 ]
 ```
+
+## Migrating from the JSONRPC API
+
+The JSONRPC-2.0 RPC API will be removed as of version `0.26.0`.
+Anyone still using this can follow this guide to migrate to the REST API:
+
+* `get_status` is replaced by `/api/v1/blockchain/metadata` and `/api/v1/health`
+* `get_lastblocks` is replaced by `/api/v1/last_blocks`
+* `get_blocks` is replaced by `/api/v1/blocks`
+* `get_outputs` is replaced by `/api/v1/outputs`
+* `inject_transaction` is replaced by `/api/v1/injectTransaction`
+* `get_transaction` is replaced by `/api/v1/transaction`

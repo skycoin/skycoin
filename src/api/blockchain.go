@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -192,13 +193,16 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// blocksHandler returns blocks between a start and end point.
-// The block sequences include both the start and end point.
+// blocksHandler returns blocks between a start and end point,
+// or an explicit list of sequences.
+// If using start and end, the block sequences include both the start and end point.
+// Explicit sequences cannot be combined with start and end.
 // Method: GET
 // URI: /api/v1/blocks
 // Args:
 //	start [int]
 //	end [int]
+//  seqs [comma separated list of ints]
 //  verbose [bool]
 func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -213,24 +217,81 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		sstart := r.FormValue("start")
-		start, err := strconv.ParseUint(sstart, 10, 64)
-		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Invalid start value %q", sstart))
+		sStart := r.FormValue("start")
+		sEnd := r.FormValue("end")
+		sSeqs := r.FormValue("seqs")
+
+		if sSeqs != "" && (sStart != "" || sEnd != "") {
+			wh.Error400(w, "seqs cannot be used with start or end")
 			return
 		}
 
-		send := r.FormValue("end")
-		end, err := strconv.ParseUint(send, 10, 64)
-		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Invalid end value %q", send))
+		if sSeqs == "" && sStart == "" && sEnd == "" {
+			wh.Error400(w, "At least one of seqs or start or end are required")
 			return
+		}
+
+		var start uint64
+		var end uint64
+		var seqs []uint64
+
+		if sStart != "" {
+			var err error
+			start, err = strconv.ParseUint(sStart, 10, 64)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("Invalid start value %q", sStart))
+				return
+			}
+		}
+
+		if sEnd != "" {
+			var err error
+			end, err = strconv.ParseUint(sEnd, 10, 64)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("Invalid end value %q", sEnd))
+				return
+			}
+		}
+
+		if sSeqs != "" {
+			ssSeqs := strings.Split(sSeqs, ",")
+			seqs = make([]uint64, len(ssSeqs))
+			seqsMap := make(map[uint64]struct{}, len(ssSeqs))
+			for i, s := range ssSeqs {
+				x, err := strconv.ParseUint(s, 10, 64)
+				if err != nil {
+					wh.Error400(w, fmt.Sprintf("Invalid sequence %q at seqs[%d]", s, i))
+					return
+				}
+
+				if _, ok := seqsMap[x]; ok {
+					wh.Error400(w, fmt.Sprintf("Duplicate sequence %d at seqs[%d]", x, i))
+					return
+				}
+				seqsMap[x] = struct{}{}
+
+				seqs[i] = x
+			}
 		}
 
 		if verbose {
-			blocks, inputs, err := gateway.GetBlocksInRangeVerbose(start, end)
+			var blocks []coin.SignedBlock
+			var inputs [][][]visor.TransactionInput
+			var err error
+
+			if len(seqs) > 0 {
+				blocks, inputs, err = gateway.GetBlocksVerbose(seqs)
+			} else {
+				blocks, inputs, err = gateway.GetBlocksInRangeVerbose(start, end)
+			}
+
 			if err != nil {
-				wh.Error500(w, err.Error())
+				switch err.(type) {
+				case visor.ErrBlockNotExist:
+					wh.Error404(w, err.Error())
+				default:
+					wh.Error500(w, err.Error())
+				}
 				return
 			}
 
@@ -242,9 +303,22 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 
 			wh.SendJSONOr500(logger, w, rb)
 		} else {
-			blocks, err := gateway.GetBlocksInRange(start, end)
+			var blocks []coin.SignedBlock
+			var err error
+
+			if len(seqs) > 0 {
+				blocks, err = gateway.GetBlocks(seqs)
+			} else {
+				blocks, err = gateway.GetBlocksInRange(start, end)
+			}
+
 			if err != nil {
-				wh.Error500(w, err.Error())
+				switch err.(type) {
+				case visor.ErrBlockNotExist:
+					wh.Error404(w, err.Error())
+				default:
+					wh.Error500(w, err.Error())
+				}
 				return
 			}
 

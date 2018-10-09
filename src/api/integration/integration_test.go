@@ -1547,7 +1547,7 @@ func testBlocks(t *testing.T, seqs []uint64) *readable.Blocks {
 		require.True(t, ok)
 		delete(seqsMap, b.Head.BkSeq)
 
-		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		bHash, err := c.BlockByHash(b.Head.Hash)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
@@ -1629,7 +1629,7 @@ func testBlocksVerbose(t *testing.T, seqs []uint64) *readable.BlocksVerbose {
 
 		assertVerboseBlockFee(t, &b)
 
-		bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
+		bHash, err := c.BlockByHashVerbose(b.Head.Hash)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)

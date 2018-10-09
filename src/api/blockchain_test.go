@@ -847,9 +847,9 @@ func TestGetBlocks(t *testing.T) {
 				Blocks: []readable.BlockVerbose{
 					readable.BlockVerbose{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBodyVerbose{
 							Transactions: []readable.BlockTransactionVerbose{},
@@ -872,9 +872,9 @@ func TestGetBlocks(t *testing.T) {
 				Blocks: []readable.Block{
 					readable.Block{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBody{
 							Transactions: []readable.Transaction{},

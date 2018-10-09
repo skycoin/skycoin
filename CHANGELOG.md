@@ -33,6 +33,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add HTTP Basic Auth options `-web-interface-username` and `-web-interface-password`. Auth is only available when using `-web-interface-https` unless `-web-interface-plaintext-auth` is also used.
 - Go application metrics exported at `/api/v2/metrics` (API set `PROMETHEUS`) in Prometheus format
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
+- Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
 
 ### Fixed
 
@@ -59,6 +60,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `cli decodeRawTransaction` output format changed, see the [CLI README](./src/cli/README.md)
 - `/api/v1/wallet/spend` is deprecated, disabled by default and requires `-enable-api-sets=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 - Invalid password in `/api/v1/wallet` requests now return `400` instead of `401`
+- Replace `cmd/address_gen/` and `cmd/address_gen2` with `go run cmd/cli/cli.go addressGen`
 
 ### Removed
 

@@ -8,11 +8,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
-var (
-	emptyPubkey = cipher.PubKey{}
-	emptySeckey = cipher.SecKey{}
-)
-
 // ReadableEntry wallet entry with json tags
 type ReadableEntry struct {
 	Address string `json:"address"`
@@ -27,38 +22,15 @@ func NewReadableEntry(w Entry) ReadableEntry {
 		re.Address = w.Address.String()
 	}
 
-	if w.Public != emptyPubkey {
+	if !w.Public.Null() {
 		re.Public = w.Public.Hex()
 	}
 
-	if w.Secret != emptySeckey {
+	if !w.Secret.Null() {
 		re.Secret = w.Secret.Hex()
 	}
 
 	return re
-}
-
-// LoadReadableEntry load readable wallet entry from given file
-func LoadReadableEntry(filename string) (ReadableEntry, error) {
-	w := ReadableEntry{}
-	err := file.LoadJSON(filename, &w)
-	return w, err
-}
-
-// NewReadableEntryFromPubkey creates a ReadableWalletEntry given a pubkey hex string.
-// The Secret field is left empty.
-func NewReadableEntryFromPubkey(pub string) ReadableEntry {
-	pubkey := cipher.MustPubKeyFromHex(pub)
-	addr := cipher.AddressFromPubKey(pubkey)
-	return ReadableEntry{
-		Address: addr.String(),
-		Public:  pub,
-	}
-}
-
-// Save persists to disk
-func (re *ReadableEntry) Save(filename string) error {
-	return file.SaveJSONSafe(filename, re, 0600)
 }
 
 // ReadableEntries array of ReadableEntry
@@ -66,10 +38,10 @@ type ReadableEntries []ReadableEntry
 
 // ToWalletEntries convert readable entries to entries
 // converts base on the wallet version.
-func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
+func (res ReadableEntries) toWalletEntries(coinType CoinType, isEncrypted bool) ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
-		e, err := newEntryFromReadable(&re)
+		e, err := newEntryFromReadable(coinType, &re)
 		if err != nil {
 			return []Entry{}, err
 		}
@@ -87,8 +59,19 @@ func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
 }
 
 // newEntryFromReadable creates WalletEntry base one ReadableWalletEntry
-func newEntryFromReadable(w *ReadableEntry) (*Entry, error) {
-	a, err := cipher.DecodeBase58Address(w.Address)
+func newEntryFromReadable(coinType CoinType, w *ReadableEntry) (*Entry, error) {
+	var a cipher.Addresser
+	var err error
+
+	switch coinType {
+	case CoinTypeSkycoin:
+		a, err = cipher.DecodeBase58Address(w.Address)
+	case CoinTypeBitcoin:
+		a, err = cipher.DecodeBase58BitcoinAddress(w.Address)
+	default:
+		logger.Panicf("Invalid coin type %q", coinType)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +141,7 @@ func (rw *ReadableWallet) ToWallet() (*Wallet, error) {
 		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
 	}
 
-	ets, err := rw.Entries.toWalletEntries(w.IsEncrypted())
+	ets, err := rw.Entries.toWalletEntries(w.coin(), w.IsEncrypted())
 	if err != nil {
 		return nil, err
 	}

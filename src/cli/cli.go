@@ -234,6 +234,7 @@ func NewApp(cfg Config) (*App, error) {
 		addPrivateKeyCmd(cfg),
 		addressBalanceCmd(),
 		addressGenCmd(),
+		fiberAddressGenCmd(),
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),

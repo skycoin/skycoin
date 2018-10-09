@@ -150,3 +150,7 @@ docs/libc/xml
 
 *.prof
 *.profile
+
+# cli fiberAddressGen default output
+addresses.txt
+seeds.csv

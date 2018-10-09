@@ -211,7 +211,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	var addrs []cipher.Address
 	f := func(wlt *Wallet) error {
 		var err error
-		addrs, err = wlt.GenerateAddresses(num)
+		addrs, err = wlt.GenerateSkycoinAddresses(num)
 		return err
 	}
 
@@ -239,8 +239,8 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	return addrs, nil
 }
 
-// GetAddresses returns all addresses in given wallet
-func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
+// GetSkycoinAddresses returns all addresses in given wallet
+func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	if !serv.enableWalletAPI {
@@ -252,7 +252,7 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 		return nil, err
 	}
 
-	return w.GetAddresses(), nil
+	return w.GetSkycoinAddresses()
 }
 
 // GetWallet returns wallet by id
@@ -612,7 +612,7 @@ func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wall
 	if err != nil {
 		return nil, err
 	}
-	addr := cipher.AddressFromPubKey(pk)
+	addr := w.addressConstructor()(pk)
 
 	// Compare to the wallet's first address
 	if addr != w.Entries[0].Address {

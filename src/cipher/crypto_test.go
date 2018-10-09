@@ -682,3 +682,22 @@ func TestSecKey1(t *testing.T) {
 	err = CheckSecKeyHash(seckey, hash)
 	require.NoError(t, err)
 }
+
+func TestSecKeyPubKeyNull(t *testing.T) {
+	var pk PubKey
+	require.True(t, pk.Null())
+	pk[0] = 1
+	require.False(t, pk.Null())
+
+	var sk SecKey
+	require.True(t, sk.Null())
+	sk[0] = 1
+	require.False(t, sk.Null())
+
+	sk, err := NewSecKey(randBytes(t, 32))
+	require.NoError(t, err)
+	pk = MustPubKeyFromSecKey(sk)
+
+	require.False(t, sk.Null())
+	require.False(t, pk.Null())
+}

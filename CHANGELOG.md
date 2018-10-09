@@ -28,6 +28,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Database verification will only be performed once when upgrading to the next version. Verification will not be performed on subsequent upgrades unless necessary. To force verification, use `-verify-db=true`. Note that it is unsafe to downgrade the skycoin node without erasing the database first.
 - Add `seqs` parameter to `/api/v1/blocks` to query multiple blocks by sequences
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
+- Add HTTP Basic Auth options `-web-interface-username` and `-web-interface-password`. Auth is only available when using `-web-interface-https` unless `-web-interface-plaintext-auth` is also used.
 - Go application metrics exported at `/api/v2/metrics` (API set `PROMETHEUS`) in Prometheus format
 
 ### Fixed
@@ -54,6 +55,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`
 - `cli decodeRawTransaction` output format changed, see the [CLI README](./src/cli/README.md)
 - `/api/v1/wallet/spend` is deprecated, disabled by default and requires `-enable-api-sets=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
+- Invalid password in `/api/v1/wallet` requests now return `400` instead of `401`
 
 ### Removed
 

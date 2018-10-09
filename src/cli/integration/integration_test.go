@@ -354,6 +354,12 @@ func rpcAddress() string {
 	return rpcAddr
 }
 
+func newClient() *api.Client {
+	c := api.NewClient(rpcAddress())
+	c.SetAuth(os.Getenv("RPC_USER"), os.Getenv("RPC_PASS"))
+	return c
+}
+
 func useCSRF(t *testing.T) bool {
 	x := os.Getenv("USE_CSRF")
 	if x == "" {
@@ -2414,7 +2420,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(rpcAddress())
+	c := newClient()
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 

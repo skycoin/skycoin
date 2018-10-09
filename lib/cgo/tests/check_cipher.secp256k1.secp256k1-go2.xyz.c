@@ -20,45 +20,45 @@
 
 
 
-Test(cipher_secp256k1_xyz, TestXYZDouble){	
-	GoInt32 error_code;
-	secp256k1go__XYZ a; //sample data
-	secp256k1go__XYZ r; //result of double
-	secp256k1go__XYZ e; //expected
-	
-	memset(&a, 0, sizeof(secp256k1go__XYZ));
-	memset(&e, 0, sizeof(secp256k1go__XYZ));
-	memset(&r, 0, sizeof(secp256k1go__XYZ));
-	
-	GoString strAx = {AX, strlen(AX)};
-	GoString strAy = {AY, strlen(AY)};
-	GoString strAz = {AZ, strlen(AZ)};
-	
-	GoString strEx = {EX, strlen(EX)};
-	GoString strEy = {EY, strlen(EY)};
-	GoString strEz = {EZ, strlen(EZ)};
-	
-	error_code = SKY_secp256k1go_Field_SetHex(&a.X, strAx);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
-	error_code = SKY_secp256k1go_Field_SetHex(&a.Y, strAy);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
-	error_code = SKY_secp256k1go_Field_SetHex(&a.Z, strAz);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
-	
-	error_code = SKY_secp256k1go_Field_SetHex(&e.X, strEx);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
-	error_code = SKY_secp256k1go_Field_SetHex(&e.Y, strEy);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
-	error_code = SKY_secp256k1go_Field_SetHex(&e.Z, strEz);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
-	
-	error_code = SKY_secp256k1go_XYZ_Double(&a, &r);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_XYZ_Double failed");
-	
-	GoInt8 equal = 0;
-	error_code = SKY_secp256k1go_XYZ_Equals(&r, &e, &equal);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_XYZ_Equals failed.");
-	cr_assert(equal, "SKY_secp256k1go_XYZ_Double failed, result is different than expected.");
+Test(cipher_secp256k1_xyz, TestXYZDouble){  
+  GoInt32 error_code;
+  secp256k1go__XYZ a; //sample data
+  secp256k1go__XYZ r; //result of double
+  secp256k1go__XYZ e; //expected
+  
+  memset(&a, 0, sizeof(secp256k1go__XYZ));
+  memset(&e, 0, sizeof(secp256k1go__XYZ));
+  memset(&r, 0, sizeof(secp256k1go__XYZ));
+  
+  GoString strAx = {AX, strlen(AX)};
+  GoString strAy = {AY, strlen(AY)};
+  GoString strAz = {AZ, strlen(AZ)};
+  
+  GoString strEx = {EX, strlen(EX)};
+  GoString strEy = {EY, strlen(EY)};
+  GoString strEz = {EZ, strlen(EZ)};
+  
+  error_code = SKY_secp256k1go_Field_SetHex(&a.X, strAx);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  error_code = SKY_secp256k1go_Field_SetHex(&a.Y, strAy);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  error_code = SKY_secp256k1go_Field_SetHex(&a.Z, strAz);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  
+  error_code = SKY_secp256k1go_Field_SetHex(&e.X, strEx);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  error_code = SKY_secp256k1go_Field_SetHex(&e.Y, strEy);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  error_code = SKY_secp256k1go_Field_SetHex(&e.Z, strEz);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  
+  error_code = SKY_secp256k1go_XYZ_Double(&a, &r);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_XYZ_Double failed");
+  
+  GoInt8 equal = 0;
+  error_code = SKY_secp256k1go_XYZ_Equals(&r, &e, &equal);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_XYZ_Equals failed.");
+  cr_assert(equal, "SKY_secp256k1go_XYZ_Double failed, result is different than expected.");
 }
 
 

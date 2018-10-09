@@ -35,6 +35,10 @@ const (
 	dbVerifyCheckpointVersion = "0.25.0"
 )
 
+var (
+	dbVerifyCheckpointVersionParsed semver.Version
+)
+
 // Coin represents a fiber coin instance
 type Coin struct {
 	config Config
@@ -488,21 +492,19 @@ func createDirIfNotExist(dir string) error {
 }
 
 func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
-	// Update this version to a newer version if the newer version requires a new verification scan
-	checkpointVersion := semver.MustParse(dbVerifyCheckpointVersion)
-
 	// If the dbVersion is not set, verify
 	if dbVersion == nil {
 		return true
 	}
 
-	// If the appVersion and dbVersion are different
-	// and the dbVersion is less than the verification checkpoint version, verify
-	if appVersion.NE(*dbVersion) {
-		if dbVersion.LT(checkpointVersion) {
-			return true
-		}
+	// If the dbVersion is less than the verification checkpoint version, verify
+	if dbVersion.LT(dbVerifyCheckpointVersionParsed) {
+		return true
 	}
 
 	return false
+}
+
+func init() {
+	dbVerifyCheckpointVersionParsed = semver.MustParse(dbVerifyCheckpointVersion)
 }

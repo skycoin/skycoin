@@ -31,6 +31,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `seqs` parameter to `/api/v1/blocks` to query multiple blocks by sequences
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 - Go application metrics exported at `/api/v2/metrics` (API set `PROMETHEUS`) in Prometheus format
+- Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 
 ### Fixed
 

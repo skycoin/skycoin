@@ -261,6 +261,29 @@ func (_m *MockGatewayer) GetBlockchainProgress() (*daemon.BlockchainProgress, er
 	return r0, r1
 }
 
+// GetBlocks provides a mock function with given fields: seqs
+func (_m *MockGatewayer) GetBlocks(seqs []uint64) ([]coin.SignedBlock, error) {
+	ret := _m.Called(seqs)
+
+	var r0 []coin.SignedBlock
+	if rf, ok := ret.Get(0).(func([]uint64) []coin.SignedBlock); ok {
+		r0 = rf(seqs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]coin.SignedBlock)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]uint64) error); ok {
+		r1 = rf(seqs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBlocksInRange provides a mock function with given fields: start, end
 func (_m *MockGatewayer) GetBlocksInRange(start uint64, end uint64) ([]coin.SignedBlock, error) {
 	ret := _m.Called(start, end)
@@ -309,6 +332,38 @@ func (_m *MockGatewayer) GetBlocksInRangeVerbose(start uint64, end uint64) ([]co
 	var r2 error
 	if rf, ok := ret.Get(2).(func(uint64, uint64) error); ok {
 		r2 = rf(start, end)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// GetBlocksVerbose provides a mock function with given fields: seqs
+func (_m *MockGatewayer) GetBlocksVerbose(seqs []uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error) {
+	ret := _m.Called(seqs)
+
+	var r0 []coin.SignedBlock
+	if rf, ok := ret.Get(0).(func([]uint64) []coin.SignedBlock); ok {
+		r0 = rf(seqs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]coin.SignedBlock)
+		}
+	}
+
+	var r1 [][][]visor.TransactionInput
+	if rf, ok := ret.Get(1).(func([]uint64) [][][]visor.TransactionInput); ok {
+		r1 = rf(seqs)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([][][]visor.TransactionInput)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func([]uint64) error); ok {
+		r2 = rf(seqs)
 	} else {
 		r2 = ret.Error(2)
 	}

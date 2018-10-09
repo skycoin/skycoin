@@ -481,7 +481,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	// uxIn.CoinHours() errors, which is ignored by VerifyTransactionHoursSpending if the error
 	// is because of the earned hours addition overflow
 	head.Block.Head.Time += 1e6
-	err = VerifySingleTxnHardConstraints(txn, head, uxIn)
+	err = VerifySingleTxnHardConstraints(txn, head.Head, uxIn)
 	testutil.RequireError(t, err, NewErrTxnViolatesHardConstraint(coinHoursErr).Error())
 }
 

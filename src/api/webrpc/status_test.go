@@ -36,7 +36,7 @@ func Test_getStatusHandler(t *testing.T) {
 			makeSuccessResponse("1", StatusResult{
 				Running:            true,
 				BlockNum:           b.Blocks[0].Head.BkSeq + 1,
-				LastBlockHash:      b.Blocks[0].Head.BlockHash,
+				LastBlockHash:      b.Blocks[0].Head.Hash,
 				TimeSinceLastBlock: "", // can't check this
 			}),
 		},

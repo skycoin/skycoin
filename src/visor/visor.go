@@ -2229,7 +2229,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		return VerifySingleTxnHardConstraints(*txn, head, uxa)
+		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa)
 	})
 
 	// If we were able to query the inputs, return the verbose inputs to the caller
@@ -2515,13 +2515,13 @@ func (vs *Visor) GetUnspentOutputsSummary(filters []OutputsFilter) (*UnspentOutp
 	var confirmedOutputs []coin.UxOut
 	var outgoingOutputs coin.UxArray
 	var incomingOutputs coin.UxArray
-	var headTime uint64
+	var head *coin.SignedBlock
 
 	if err := vs.DB.View("GetUnspentOutputsSummary", func(tx *dbutil.Tx) error {
 		var err error
-		headTime, err = vs.Blockchain.Time(tx)
+		head, err = vs.Blockchain.Head(tx)
 		if err != nil {
-			return fmt.Errorf("vs.Blockchain.Time failed: %v", err)
+			return fmt.Errorf("vs.Blockchain.Head failed: %v", err)
 		}
 
 		confirmedOutputs, err = vs.Blockchain.Unspent().GetAll(tx)
@@ -2550,22 +2550,23 @@ func (vs *Visor) GetUnspentOutputsSummary(filters []OutputsFilter) (*UnspentOutp
 		incomingOutputs = flt(incomingOutputs)
 	}
 
-	confirmed, err := NewUnspentOutputs(confirmedOutputs, headTime)
+	confirmed, err := NewUnspentOutputs(confirmedOutputs, head.Time())
 	if err != nil {
 		return nil, err
 	}
 
-	outgoing, err := NewUnspentOutputs(outgoingOutputs, headTime)
+	outgoing, err := NewUnspentOutputs(outgoingOutputs, head.Time())
 	if err != nil {
 		return nil, err
 	}
 
-	incoming, err := NewUnspentOutputs(incomingOutputs, headTime)
+	incoming, err := NewUnspentOutputs(incomingOutputs, head.Time())
 	if err != nil {
 		return nil, err
 	}
 
 	return &UnspentOutputsSummary{
+		HeadBlock: head,
 		Confirmed: confirmed,
 		Outgoing:  outgoing,
 		Incoming:  incoming,

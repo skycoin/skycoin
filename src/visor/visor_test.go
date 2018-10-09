@@ -163,7 +163,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 	require.NotEmpty(t, badDB.Path())
 	t.Logf("badDB.Path() == %s", badDB.Path())
 
-	db, err := RepairCorruptDB(badDB, pubkey, nil)
+	db, err := ResetCorruptDB(badDB, pubkey, nil)
 	require.NoError(t, err)
 
 	err = db.Close()

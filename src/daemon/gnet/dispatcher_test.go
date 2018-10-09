@@ -102,8 +102,7 @@ func TestDeserializeMessageTrapsPanic(t *testing.T) {
 	b := []byte{4, 4, 4, 4, 4, 4, 4, 4}
 	_, err := deserializeMessage(b, reflect.ValueOf(m))
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(),
-		"Decode error: kind invalid not handled")
+	assert.Equal(t, err.Error(), "DeserializeRawToValue value must be a ptr, is struct")
 }
 
 func TestEncodeMessage(t *testing.T) {

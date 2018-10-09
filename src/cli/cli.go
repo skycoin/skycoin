@@ -103,11 +103,13 @@ type App struct {
 
 // Config cli's configuration struct
 type Config struct {
-	WalletDir  string `json:"wallet_directory"`
-	WalletName string `json:"wallet_name"`
-	DataDir    string `json:"data_directory"`
-	Coin       string `json:"coin"`
-	RPCAddress string `json:"rpc_address"`
+	WalletDir   string `json:"wallet_directory"`
+	WalletName  string `json:"wallet_name"`
+	DataDir     string `json:"data_directory"`
+	Coin        string `json:"coin"`
+	RPCAddress  string `json:"rpc_address"`
+	RPCUsername string `json:"-"`
+	RPCPassword string `json:"-"`
 }
 
 // LoadConfig loads config from environment, prior to parsing CLI flags
@@ -127,6 +129,9 @@ func LoadConfig() (Config, error) {
 	if _, err := url.Parse(rpcAddr); err != nil {
 		return Config{}, errors.New("RPC_ADDR must be in scheme://host format")
 	}
+
+	rpcUser := os.Getenv("RPC_USER")
+	rpcPass := os.Getenv("RPC_PASS")
 
 	home := file.UserHome()
 
@@ -153,11 +158,13 @@ func LoadConfig() (Config, error) {
 	}
 
 	return Config{
-		WalletDir:  wltDir,
-		WalletName: wltName,
-		DataDir:    dataDir,
-		Coin:       coin,
-		RPCAddress: rpcAddr,
+		WalletDir:   wltDir,
+		WalletName:  wltName,
+		DataDir:     dataDir,
+		Coin:        coin,
+		RPCAddress:  rpcAddr,
+		RPCUsername: rpcUser,
+		RPCPassword: rpcPass,
 	}, nil
 }
 
@@ -269,6 +276,7 @@ func NewApp(cfg Config) (*App, error) {
 	}
 
 	apiClient := api.NewClient(cfg.RPCAddress)
+	apiClient.SetAuth(cfg.RPCUsername, cfg.RPCPassword)
 
 	app.Metadata = map[string]interface{}{
 		"config":   cfg,

@@ -10,6 +10,8 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Enable command autocomplete](#enable-command-autocomplete)
 - [Environment Setting](#environment-setting)
 	- [RPC_ADDR](#rpc_addr)
+	- [RPC_USER](#rpc_user)
+	- [RPC_PASS](#rpc_pass)
 	- [WALLET_DIR](#wallet_dir)
 	- [WALLET_NAME](#wallet_name)
 - [Usage](#usage)
@@ -68,7 +70,7 @@ The CLI uses environment variable to manage the configurations.
 
 ### RPC_ADDR
 
-CLI will connect to skycoin node rpc address `http://127.0.0.1:6420` by default.
+CLI will connect to skycoin node RPC address `http://127.0.0.1:6420` by default.
 You can change the address by setting the `RPC_ADDR` environment variable
 with the following command:
 
@@ -77,6 +79,22 @@ $ export RPC_ADDR=http://127.0.0.1:6420
 ```
 
 Note: `RPC_ADDR` must be in `scheme://host` format.
+
+### RPC_USER
+
+A username for authenticating requests to the skycoin node.
+
+```bash
+$ export RPC_USER=...
+```
+
+### RPC_PASS
+
+A password for authenticating requests to the skycoin node.
+
+```bash
+$ export RPC_PASS=...
+```
 
 ### WALLET_DIR
 
@@ -492,92 +510,96 @@ $ skycoin-cli blocks 41 42
 
 ```json
 {
- "blocks": [
-     {
-         "header": {
-             "seq": 41,
-             "block_hash": "08f89cfe92be09e9848ba4d77c300908761354933f80401c107644feab1f4c9e",
-             "previous_block_hash": "fad5aca57144cbc86ad916492e814ec84c825d9870a86beac81980de30b0ae60",
-             "timestamp": 1429058524,
-             "fee": 4561,
-             "version": 0,
-             "tx_body_hash": "cf4fe76a08e3296b6f6abdb949604409be66574f211d9d14fde39103c4cfe1d6"
-         },
-         "body": {
-             "txns": [
-                 {
-                     "length": 220,
-                     "type": 0,
-                     "txid": "cf4fe76a08e3296b6f6abdb949604409be66574f211d9d14fde39103c4cfe1d6",
-                     "inner_hash": "2f5942207104d52dbd6191684b2a97392e616b7fa51dde314dbddd58d34b8027",
-                     "sigs": [
-                         "b2b8c8ec1e1dfdeac4690e88d4ef9fcc4b52fcb771153f391cbcb58d651505a94c6263b6dc15a948c0396c0d8be20d9e0d1993b494bd9189c778d3673363bfc401"
-                     ],
-                     "inputs": [
-                         "c65a9e6aa33244958e9595e9eceed678f9f17761753bf77000c5474f7696da53"
-                     ],
-                     "outputs": [
-                         {
-                             "uxid": "195f5e50b4eed1ec7ff968feca90356285437adc8ccfcf6623b55a4eebf7bbb5",
-                             "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-                             "coins": "969790.000000",
-                             "hours": 760
-                         },
-                         {
-                             "uxid": "6bbf13da052e1baade111ae8bb85548732532c8f5286eba8345d436d315d1c93",
-                             "dst": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
-                             "coins": "9000.000000",
-                             "hours": 760
-                         }
-                     ]
-                 }
-             ]
-         }
-     },
-     {
-         "header": {
-             "seq": 42,
-             "block_hash": "60a17e0cf411e5db7150272e597d343beaa5fbce5d61f6f647a14288262593b1",
-             "previous_block_hash": "08f89cfe92be09e9848ba4d77c300908761354933f80401c107644feab1f4c9e",
-             "timestamp": 1429058594,
-             "fee": 292512,
-             "version": 0,
-             "tx_body_hash": "0e91a08561e85a36ddf44e77b9228f7d561c18c0b46d19083d4af511085b697e"
-         },
-         "body": {
-             "txns": [
-                 {
-                     "length": 317,
-                     "type": 0,
-                     "txid": "0e91a08561e85a36ddf44e77b9228f7d561c18c0b46d19083d4af511085b697e",
-                     "inner_hash": "d78230e22b358d7cc8d491adb3c0ec1e77a5170602a4ec92d700c4b4bb101f98",
-                     "sigs": [
-                         "17ba9c495e4d396a37eaf062e1806a13b3bdc91a83151c2455cf948a7e6d91882dc02ec6443970517f0f7daf59ce9b89658a17f5d51c0cbc18056811d0f3006501",
-                         "e4e8f28801fe461cc8097b29cfe1307739bdfbdd6b20c31e04eef89aede641a6407fa0c41b0ad5ef167e3255e1916c0bbd358ffd70f34dc7944ffe67514bc5f501"
-                     ],
-                     "inputs": [
-                         "f48432d381a10abecbd1357d81705ea922246e92170fe405d1a4a35c5ceef6a4",
-                         "6bbf13da052e1baade111ae8bb85548732532c8f5286eba8345d436d315d1c93"
-                     ],
-                     "outputs": [
-                         {
-                             "uxid": "19efa2bd8c59623a092612c511fb66333e2049a57d546269c19255852056fead",
-                             "dst": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
-                             "coins": "9000.000000",
-                             "hours": 48752
-                         },
-                         {
-                             "uxid": "9953e00abe05db134510693a44b8928ca9b29d0009b38d9c4f8dcdedee7edc35",
-                             "dst": "4EHiTjCsxQmt4wRy5yJxBMcxsM5yGqtuqu",
-                             "coins": "1000.000000",
-                             "hours": 48752
-                         }
-                     ]
-                 }
-             ]
-         }
-     }
- ]
+    "blocks": [
+        {
+            "header": {
+                "seq": 41,
+                "block_hash": "08f89cfe92be09e9848ba4d77c300908761354933f80401c107644feab1f4c9e",
+                "previous_block_hash": "fad5aca57144cbc86ad916492e814ec84c825d9870a86beac81980de30b0ae60",
+                "timestamp": 1429058524,
+                "fee": 4561,
+                "version": 0,
+                "tx_body_hash": "cf4fe76a08e3296b6f6abdb949604409be66574f211d9d14fde39103c4cfe1d6",
+                "ux_hash": "d3f60f0d20aeac951aacab8d849696cac54c7057da741cfd90b63018100818d0"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 220,
+                        "type": 0,
+                        "txid": "cf4fe76a08e3296b6f6abdb949604409be66574f211d9d14fde39103c4cfe1d6",
+                        "inner_hash": "2f5942207104d52dbd6191684b2a97392e616b7fa51dde314dbddd58d34b8027",
+                        "sigs": [
+                            "b2b8c8ec1e1dfdeac4690e88d4ef9fcc4b52fcb771153f391cbcb58d651505a94c6263b6dc15a948c0396c0d8be20d9e0d1993b494bd9189c778d3673363bfc401"
+                        ],
+                        "inputs": [
+                            "c65a9e6aa33244958e9595e9eceed678f9f17761753bf77000c5474f7696da53"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "195f5e50b4eed1ec7ff968feca90356285437adc8ccfcf6623b55a4eebf7bbb5",
+                                "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+                                "coins": "969790.000000",
+                                "hours": 760
+                            },
+                            {
+                                "uxid": "6bbf13da052e1baade111ae8bb85548732532c8f5286eba8345d436d315d1c93",
+                                "dst": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+                                "coins": "9000.000000",
+                                "hours": 760
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 220
+        },
+        {
+            "header": {
+                "seq": 42,
+                "block_hash": "60a17e0cf411e5db7150272e597d343beaa5fbce5d61f6f647a14288262593b1",
+                "previous_block_hash": "08f89cfe92be09e9848ba4d77c300908761354933f80401c107644feab1f4c9e",
+                "timestamp": 1429058594,
+                "fee": 292512,
+                "version": 0,
+                "tx_body_hash": "0e91a08561e85a36ddf44e77b9228f7d561c18c0b46d19083d4af511085b697e",
+                "ux_hash": "9173768496bc49e2a34d5a7ea65d05ad6507dfdb489836e861b3c03d35efeb7a"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 317,
+                        "type": 0,
+                        "txid": "0e91a08561e85a36ddf44e77b9228f7d561c18c0b46d19083d4af511085b697e",
+                        "inner_hash": "d78230e22b358d7cc8d491adb3c0ec1e77a5170602a4ec92d700c4b4bb101f98",
+                        "sigs": [
+                            "17ba9c495e4d396a37eaf062e1806a13b3bdc91a83151c2455cf948a7e6d91882dc02ec6443970517f0f7daf59ce9b89658a17f5d51c0cbc18056811d0f3006501",
+                            "e4e8f28801fe461cc8097b29cfe1307739bdfbdd6b20c31e04eef89aede641a6407fa0c41b0ad5ef167e3255e1916c0bbd358ffd70f34dc7944ffe67514bc5f501"
+                        ],
+                        "inputs": [
+                            "f48432d381a10abecbd1357d81705ea922246e92170fe405d1a4a35c5ceef6a4",
+                            "6bbf13da052e1baade111ae8bb85548732532c8f5286eba8345d436d315d1c93"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "19efa2bd8c59623a092612c511fb66333e2049a57d546269c19255852056fead",
+                                "dst": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+                                "coins": "9000.000000",
+                                "hours": 48752
+                            },
+                            {
+                                "uxid": "9953e00abe05db134510693a44b8928ca9b29d0009b38d9c4f8dcdedee7edc35",
+                                "dst": "4EHiTjCsxQmt4wRy5yJxBMcxsM5yGqtuqu",
+                                "coins": "1000.000000",
+                                "hours": 48752
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 317
+        }
+    ]
 }
 ```
 </details>
@@ -1109,49 +1131,57 @@ $ skycoin-cli lastBlocks
 
 ```json
 {
- "blocks": [
-     {
-         "header": {
-             "seq": 21202,
-             "block_hash": "07140b536a5d0c3fcecec6cd61d2d4628a6fe6d7f7933223365269ea78d47c06",
-             "previous_block_hash": "baf74fae7ba8e304236e84e4cbc24b810a3827512bfdb82f892ffcb8682f9d16",
-             "timestamp": 1523179526,
-             "fee": 38,
-             "version": 0,
-             "tx_body_hash": "31b4f132374b4eb6c31c1c2f51a07a336a5d290b859d4c32a4982f325f124023"
-         },
-         "body": {
-             "txns": [
-                 {
-                     "length": 220,
-                     "type": 0,
-                     "txid": "31b4f132374b4eb6c31c1c2f51a07a336a5d290b859d4c32a4982f325f124023",
-                     "inner_hash": "78b51146a1822c777f5de05fd9c78bb457bcbaeec13d9c927f548cc4019a467c",
-                     "sigs": [
-                         "22e13afd39ac22ed452b716c721c82374b4d6d69fe2db8a70ea74f9fa37487761039365a5de0bf741e7c4da171b2164ddf8bd4326b9845784719645fa16a8ec401"
-                     ],
-                     "inputs": [
-                         "1714a29f821bc955857132a495e64c458794564108245bb605d2eb418edb8b54"
-                     ],
-                     "outputs": [
-                         {
-                             "uxid": "8d2fe35c36f69866ea91ff468464ddb6e0bee7fd145df7319fe192245c0dd646",
-                             "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                             "coins": "6458.000000",
-                             "hours": 19
-                         },
-                         {
-                             "uxid": "4d0a689781cd6aaf61d33f8f0bf87f16210c3e5b45f83a789f454530c2d64b21",
-                             "dst": "i66Gax2z4cMiTYGHjRjmKpooWS2Rhnmoeu",
-                             "coins": "1.000000",
-                             "hours": 19
-                         }
-                     ]
-                 }
-             ]
-         }
-     }
- ]
+    "blocks": [
+        {
+            "header": {
+                "seq": 58894,
+                "block_hash": "3961bea8c4ab45d658ae42effd4caf36b81709dc52a5708fdd4c8eb1b199a1f6",
+                "previous_block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+                "timestamp": 1537581604,
+                "fee": 485194,
+                "version": 0,
+                "tx_body_hash": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                "ux_hash": "f7d30ecb49f132283862ad58f691e8747894c9fc241cb3a864fc15bd3e2c83d3"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 257,
+                        "type": 0,
+                        "txid": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                        "inner_hash": "f7dbd09f7e9f65d87003984640f1977fb9eec95b07ef6275a1ec6261065e68d7",
+                        "sigs": [
+                            "af5329e77213f34446a0ff41d249fd25bc1dae913390871df359b9bd587c95a10b625a74a3477a05cc7537cb532253b12c03349ead5be066b8e0009e79462b9501"
+                        ],
+                        "inputs": [
+                            "fb8db3f78928aee3f5cbda8db7fc290df9e64414e8107872a1c5cf83e08e4df7"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "235811602fc96cf8b5b031edb88ee1606830aa641c06e0986681552d8728ec07",
+                                "dst": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                                "coins": "0.500000",
+                                "hours": 1
+                            },
+                            {
+                                "uxid": "873da4edc01c0b5184e1f26c4c3471dd407d08e9ab36b018ab93874e7392320b",
+                                "dst": "2XBMMDMqTTYmqs2rfjEwYDz8ABd38y9B8r7",
+                                "coins": "0.500000",
+                                "hours": 1
+                            },
+                            {
+                                "uxid": "42a6f0127f61e1d7bca8e9680027eddcecad772250c5634a03e56a8b1cf5a816",
+                                "dst": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "25.913000",
+                                "hours": 485192
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 257
+        }
+    ]
 }
 ```
 </details>
@@ -1166,131 +1196,161 @@ $ skycoin-cli lastBlocks 3
 
 ```json
 {
- "blocks": [
-     {
-         "header": {
-             "seq": 21202,
-             "block_hash": "07140b536a5d0c3fcecec6cd61d2d4628a6fe6d7f7933223365269ea78d47c06",
-             "previous_block_hash": "baf74fae7ba8e304236e84e4cbc24b810a3827512bfdb82f892ffcb8682f9d16",
-             "timestamp": 1523179526,
-             "fee": 38,
-             "version": 0,
-             "tx_body_hash": "31b4f132374b4eb6c31c1c2f51a07a336a5d290b859d4c32a4982f325f124023"
-         },
-         "body": {
-             "txns": [
-                 {
-                     "length": 220,
-                     "type": 0,
-                     "txid": "31b4f132374b4eb6c31c1c2f51a07a336a5d290b859d4c32a4982f325f124023",
-                     "inner_hash": "78b51146a1822c777f5de05fd9c78bb457bcbaeec13d9c927f548cc4019a467c",
-                     "sigs": [
-                         "22e13afd39ac22ed452b716c721c82374b4d6d69fe2db8a70ea74f9fa37487761039365a5de0bf741e7c4da171b2164ddf8bd4326b9845784719645fa16a8ec401"
-                     ],
-                     "inputs": [
-                         "1714a29f821bc955857132a495e64c458794564108245bb605d2eb418edb8b54"
-                     ],
-                     "outputs": [
-                         {
-                             "uxid": "8d2fe35c36f69866ea91ff468464ddb6e0bee7fd145df7319fe192245c0dd646",
-                             "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                             "coins": "6458.000000",
-                             "hours": 19
-                         },
-                         {
-                             "uxid": "4d0a689781cd6aaf61d33f8f0bf87f16210c3e5b45f83a789f454530c2d64b21",
-                             "dst": "i66Gax2z4cMiTYGHjRjmKpooWS2Rhnmoeu",
-                             "coins": "1.000000",
-                             "hours": 19
-                         }
-                     ]
-                 }
-             ]
-         }
-     },
-     {
-         "header": {
-             "seq": 21203,
-             "block_hash": "5b1f652bd5639e7cd2f9e5af4c1f86685b3f8104bb2039e2d6e56ec90003b086",
-             "previous_block_hash": "07140b536a5d0c3fcecec6cd61d2d4628a6fe6d7f7933223365269ea78d47c06",
-             "timestamp": 1523179676,
-             "fee": 10,
-             "version": 0,
-             "tx_body_hash": "3c2881347dcd6eb767f447720fc337dc75c8698ff1d25e6ebc490befdb4123fa"
-         },
-         "body": {
-             "txns": [
-                 {
-                     "length": 220,
-                     "type": 0,
-                     "txid": "3c2881347dcd6eb767f447720fc337dc75c8698ff1d25e6ebc490befdb4123fa",
-                     "inner_hash": "ec69bb1f2c2f1acffb95a7623a8f85b0797c48fec251b64622f52b0cb71f1e9f",
-                     "sigs": [
-                         "9287f01192d7b8afe9cd7b15c2859bb13032b96b24d791eacadd612c14a0d30e7f1a503bcb01eb5f4d2ccd2400c320a82fd2825a410309f00c41086debf639d701"
-                     ],
-                     "inputs": [
-                         "8d2fe35c36f69866ea91ff468464ddb6e0bee7fd145df7319fe192245c0dd646"
-                     ],
-                     "outputs": [
-                         {
-                             "uxid": "814922f2428e6a5c8acdd364785309cc9a446a10d80901baf0600c5de3b30171",
-                             "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                             "coins": "6457.000000",
-                             "hours": 5
-                         },
-                         {
-                             "uxid": "70b6b19d632e26b2a2ccae4dce6fc4093c5e02cfde03da6f893e8db14c7afa44",
-                             "dst": "i66Gax2z4cMiTYGHjRjmKpooWS2Rhnmoeu",
-                             "coins": "1.000000",
-                             "hours": 4
-                         }
-                     ]
-                 }
-             ]
-         }
-     },
-     {
-         "header": {
-             "seq": 21204,
-             "block_hash": "bb3dd979527f6133e8a5b9bb9792d2fa964daf6158834a02034719f0e943d049",
-             "previous_block_hash": "5b1f652bd5639e7cd2f9e5af4c1f86685b3f8104bb2039e2d6e56ec90003b086",
-             "timestamp": 1523179736,
-             "fee": 3,
-             "version": 0,
-             "tx_body_hash": "49f0f5813ecfee45556f769c1971cf8b4300ec4ce9f05deedb57b8048e2bd0f9"
-         },
-         "body": {
-             "txns": [
-                 {
-                     "length": 220,
-                     "type": 0,
-                     "txid": "49f0f5813ecfee45556f769c1971cf8b4300ec4ce9f05deedb57b8048e2bd0f9",
-                     "inner_hash": "11a949890d63993b98a92418ba2682795ebad30583e4c16a108939a6945a76a9",
-                     "sigs": [
-                         "9d23748dac110ab464d9cbc2de472fdf00da804a8da440d592667f11fdf7f4937620ddcc265f75751ca2566d3a39df0b04f7ab638ecff5f32f5d2699e627820700"
-                     ],
-                     "inputs": [
-                         "814922f2428e6a5c8acdd364785309cc9a446a10d80901baf0600c5de3b30171"
-                     ],
-                     "outputs": [
-                         {
-                             "uxid": "3ebedfac8cef4d3fc27c48060277a8b4880c047ed77a72ffdab40fdb274c5a93",
-                             "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                             "coins": "6456.000000",
-                             "hours": 1
-                         },
-                         {
-                             "uxid": "78500a48b430d6c6e6b744bdb193df7a4f90c60ec0bf6a7bebf6b6e34f49e6f2",
-                             "dst": "2ESrbYizrvrZNK5zFoHsj69a7fTVXxTTpMi",
-                             "coins": "1.000000",
-                             "hours": 1
-                         }
-                     ]
-                 }
-             ]
-         }
-     }
- ]
+    "blocks": [
+        {
+            "header": {
+                "seq": 58892,
+                "block_hash": "1f042ed976c0cb150ea6b71c9608d65b519e4bc1c507eba9f1146e443a856c2d",
+                "previous_block_hash": "d9ca9442febd8788de0a3093158943beca228017bf8c9c9b8529a382fad8d991",
+                "timestamp": 1537580914,
+                "fee": 94694,
+                "version": 0,
+                "tx_body_hash": "9895f8af790e33a618004dc61f48ecc16bd642751a3fff6b05cecb8815c80942",
+                "ux_hash": "bb188dcaaf28613d49b926636675dacf67a739a4e316253b1207ad674709252b"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 1190,
+                        "type": 0,
+                        "txid": "9895f8af790e33a618004dc61f48ecc16bd642751a3fff6b05cecb8815c80942",
+                        "inner_hash": "8bff0b7572bb49ccde4b2b313e921e5cf302a11fd9f786a2ef97a7c0ddfee261",
+                        "sigs": [
+                            "f843861b301eb025e58bacfb934d615f263419704b0a59f2645845344f2702fa1a7a967651f01933af4d56752c656a7e759e942b9278e228362f2ef273d4ff5200",
+                            "06f15e2522e7413f25dedb5aee67ae880bd98bb7df11a1a92241d88db9bb976d2c707e77a4a3ddfd8d123ad04701fe2538ea2d0f78cfbcdc44e70fd2320a72b500",
+                            "dc32fe308274f9aaa21e09046384a83b4b2c6bf800c6b9ff492af8bd3f5cd7717b245c9d460c242139034c73cd15aca9f288cb69e8ae4c33df2a807ff3b373aa00",
+                            "18d83a122f0ca3629f0c82e21ea3d6fbdfd1ea07ba062ffb6647b7e2c3aa9a1d7c112dc5543435ddd0bccd163f839d9802eb344f6203372deea7402d8476679501",
+                            "26a8723c1ac22dca2b61d807ca2279e341a9f5a371c4d14333f49e52b90ec87f08ab7930e5804367c1dffb01b197d976619ab26f0c8afe8837c41b0df809a23301",
+                            "fe190749475cd66afcdd295b22b007c63726db0fd834acef4ecde9c41ae7d15d54c2c180c8aba5c894d3843405f6243b7ff964f974f607b38298c195d7b523c401",
+                            "d58e8283a28faed377161605e252cd929959e40fd8b996f928049f2b446bc920468d1086a2bc34a8fcaedefdc471427266cc67b9770d9b0482f5f4f22729a79a00",
+                            "2be852a5b589ce49f9d3678fa44a758c2e4d7372620a8241d71c41451c5244387ac337bbee5010b98fc8c38fc44619ed8a7beb2af06385a11ecb53eb0112a8a700",
+                            "b6376cc54078f775da6438960e828c799c780349c8590508b4500f0e6dd9ecbc760992599d698209b078220d8aaa9db9f80091290a18cd0753efd1805515d06600",
+                            "958e17753d4cedc3203b95a39d585314ac10efc00332befa81c8049b4178222d2514ba1d68385b2518d976835dee48f2bb540db0d0e728acbf59d8562cbb7baa00",
+                            "d921e2aa2b1b6778a84efdc7f1d016c7aad66dfc13c0be4fee6a5f303a2c3cf465fa0d549ca5fc57d3a26832bffcaec842837905a78e8ca3fa553522d931571d01"
+                        ],
+                        "inputs": [
+                            "c551da99c0b74b64511aaaf99536cb6d263958064890ef6c27be36e8f5a14fb8",
+                            "64875d950120b16d0f0f84c708e3e48b26fb9c32f36c0fba71764dfc53e7ae05",
+                            "ba50cb14fc26bcf658ace9a3b5d6e0d257fa022e80613902c693ab57a1c0924a",
+                            "b388fdb6dc7c91cab7e72a4786967e18834350c1ccd149790a0a2270bdf91bf9",
+                            "94f87596cb7471e2b96b7e1ddd8194d44ca4858d97ed29f83e926bcdf36601c1",
+                            "dd2a4d942ba1ad4dc55f46adc31e3f62e7326b9a0d511f1faf83911af77018f1",
+                            "35b82981a9648ba871c2c08604cb95f130baafa26761139c7134f5b9e4575b9d",
+                            "aa0f74c067347b0178c6963d8409c6bdf7a39051641f9ba1a5d5c37d88dce7f0",
+                            "5a34d07536c2964338aa89f19ab7ff857056f6ffd16e936ae13229077387afb5",
+                            "dc93bb4a131cea3d3f2b523408f077779384c816a4516dfbe0817845938a26ef",
+                            "53f92392b71ce79ead8452e5c31c8a404acf9770a71d4dc234f2fe54a8671495"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "061a639996b85d2c0f19cf929a83c5abe2667a411de31fbdbd16c1da6c8e4880",
+                                "dst": "2gXHek83jtEdDndgrKkEwgwZZDsHXKfNaD",
+                                "coins": "87.990000",
+                                "hours": 1
+                            },
+                            {
+                                "uxid": "f210a8ed58c92094832ccb4d5a4ae7271df1df0d7176b18d5c7b149ed36a7d80",
+                                "dst": "27ckSMTwxMxHanUM1VmF8BV9JuWdQd4Gd9S",
+                                "coins": "0.010000",
+                                "hours": 94693
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 1190
+        },
+        {
+            "header": {
+                "seq": 58893,
+                "block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+                "previous_block_hash": "1f042ed976c0cb150ea6b71c9608d65b519e4bc1c507eba9f1146e443a856c2d",
+                "timestamp": 1537581594,
+                "fee": 970389,
+                "version": 0,
+                "tx_body_hash": "1bea5cf1279693a0da24828c37b267c702007842b16ca5557ae497574d15aab7",
+                "ux_hash": "bf35652af199779bc40cbeb339e8a782ff70673b07779e5c5621d37dfe13b42b"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 377,
+                        "type": 0,
+                        "txid": "1bea5cf1279693a0da24828c37b267c702007842b16ca5557ae497574d15aab7",
+                        "inner_hash": "a25232405bcef0c007bb2d7d3520f2a389e17e11125c252ab6c00168ec52c08d",
+                        "sigs": [
+                            "2ff7390c3b66c6b0fbb2b4c59c8e218291d4cbb82a836bb577c7264677f4a8320f6f3ad72d804e3014728baa214c223ecced8725b64be96fe3b51332ad1eda4201",
+                            "9e7c715f897b3c987c00ee8c6b14e4b90bb3e4e11d003b481f82042b1795b3c75eaa3d563cd0358cdabdab77cfdbead7323323cf73e781f9c1a8cf6d9b4f8ac100",
+                            "5c9748314f2fe0cd442df5ebb8f211087111d22e9463355bf9eee583d44df1bd36addb510eb470cb5dafba0732615f8533072f80ae05fc728c91ce373ada1e7b00"
+                        ],
+                        "inputs": [
+                            "5f634c825b2a53103758024b3cb8578b17d56d422539e23c26b91ea397161703",
+                            "16ac52084ffdac2e9169b9e057d44630dec23d18cfb90b9437d28220a3dc585d",
+                            "8d3263890d32382e182b86f8772c7685a8f253ed475c05f7d530e9296f692bc9"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "fb8db3f78928aee3f5cbda8db7fc290df9e64414e8107872a1c5cf83e08e4df7",
+                                "dst": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "26.913000",
+                                "hours": 970388
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 377
+        },
+        {
+            "header": {
+                "seq": 58894,
+                "block_hash": "3961bea8c4ab45d658ae42effd4caf36b81709dc52a5708fdd4c8eb1b199a1f6",
+                "previous_block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+                "timestamp": 1537581604,
+                "fee": 485194,
+                "version": 0,
+                "tx_body_hash": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                "ux_hash": "f7d30ecb49f132283862ad58f691e8747894c9fc241cb3a864fc15bd3e2c83d3"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 257,
+                        "type": 0,
+                        "txid": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                        "inner_hash": "f7dbd09f7e9f65d87003984640f1977fb9eec95b07ef6275a1ec6261065e68d7",
+                        "sigs": [
+                            "af5329e77213f34446a0ff41d249fd25bc1dae913390871df359b9bd587c95a10b625a74a3477a05cc7537cb532253b12c03349ead5be066b8e0009e79462b9501"
+                        ],
+                        "inputs": [
+                            "fb8db3f78928aee3f5cbda8db7fc290df9e64414e8107872a1c5cf83e08e4df7"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "235811602fc96cf8b5b031edb88ee1606830aa641c06e0986681552d8728ec07",
+                                "dst": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                                "coins": "0.500000",
+                                "hours": 1
+                            },
+                            {
+                                "uxid": "873da4edc01c0b5184e1f26c4c3471dd407d08e9ab36b018ab93874e7392320b",
+                                "dst": "2XBMMDMqTTYmqs2rfjEwYDz8ABd38y9B8r7",
+                                "coins": "0.500000",
+                                "hours": 1
+                            },
+                            {
+                                "uxid": "42a6f0127f61e1d7bca8e9680027eddcecad772250c5634a03e56a8b1cf5a816",
+                                "dst": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "25.913000",
+                                "hours": 485192
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 257
+        }
+    ]
 }
 ```
 </details>
@@ -1517,17 +1577,18 @@ $ skycoin-cli status
     "status": {
         "blockchain": {
             "head": {
-                "seq": 51173,
-                "block_hash": "62c69f0dce4b05df7ca6b44eb0cf90d71bb09fa416ecaeb3d57b3c1bd210be85",
-                "previous_block_hash": "f300b933c13a6d7c9896bd26deba38b8fe95773fa42e4fd9c7a0ab86e226ca80",
-                "timestamp": 1534430855,
-                "fee": 7450,
+                "seq": 58894,
+                "block_hash": "3961bea8c4ab45d658ae42effd4caf36b81709dc52a5708fdd4c8eb1b199a1f6",
+                "previous_block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+                "timestamp": 1537581604,
+                "fee": 485194,
                 "version": 0,
-                "tx_body_hash": "7081ec7f8c549c75500d4b74ae3a02db4bd7f6a294510e7b25cf8a3ff0a19798"
+                "tx_body_hash": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                "ux_hash": "f7d30ecb49f132283862ad58f691e8747894c9fc241cb3a864fc15bd3e2c83d3"
             },
-            "unspents": 31940,
+            "unspents": 38171,
             "unconfirmed": 1,
-            "time_since_last_block": "8m40s"
+            "time_since_last_block": "7m44s"
         },
         "version": {
             "version": "0.24.1",

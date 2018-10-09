@@ -194,7 +194,7 @@ func TestBitcoinAddressFromSecKey(t *testing.T) {
 	require.NoError(t, a.Verify(p))
 
 	_, err = BitcoinAddressFromSecKey(SecKey{})
-	require.Equal(t, errors.New("PubKeyFromSecKey, attempt to load null seckey, unsafe"), err)
+	require.Equal(t, errors.New("Cannot convert null SecKey to PubKey"), err)
 }
 
 func TestMustBitcoinAddressFromSecKey(t *testing.T) {

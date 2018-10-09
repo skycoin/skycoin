@@ -26,6 +26,14 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
+  name = "github.com/blang/semver"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
+  version = "v3.5.1"
+
+[[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
   name = "github.com/boltdb/bolt"
   packages = ["."]
@@ -201,11 +209,11 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:81ab58782b02fb1417c279bd5f23a4ff9e8351064ba05127eda6ef365f7d698d"
+  digest = "1:81e02c4edb639c80559c0650f9401d3e2dcc3256d1fa215382bb7c83c1db9126"
   name = "github.com/shopspring/decimal"
   packages = ["."]
-  revision = "cd690d0c9e2447b1ef2a129a6b7b49077da89b8e"
   pruneopts = "UT"
+  revision = "cd690d0c9e2447b1ef2a129a6b7b49077da89b8e"
   version = "1.1.0"
 
 [[projects]]
@@ -347,10 +355,10 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a99d92c8d56a63951b728ae447a3ef25c0738367a2ac32ae21d98f5df0f9738e"
   input-imports = [
     "github.com/NYTimes/gziphandler",
     "github.com/andreyvit/diff",
+    "github.com/blang/semver",
     "github.com/boltdb/bolt",
     "github.com/cenkalti/backoff",
     "github.com/mgutz/ansi",

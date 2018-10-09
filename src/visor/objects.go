@@ -160,6 +160,7 @@ func NewUnspentOutputs(uxOuts []coin.UxOut, calculateHoursTime uint64) ([]Unspen
 
 // UnspentOutputsSummary includes current unspent outputs and incoming and outgoing unspent outputs
 type UnspentOutputsSummary struct {
+	HeadBlock *coin.SignedBlock
 	Confirmed []UnspentOutput
 	Outgoing  []UnspentOutput
 	Incoming  []UnspentOutput

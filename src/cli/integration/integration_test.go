@@ -70,7 +70,6 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
-// Do setup and teardown here.
 func TestMain(m *testing.M) {
 	abs, err := filepath.Abs(binaryName)
 	if err != nil {
@@ -353,6 +352,12 @@ func rpcAddress() string {
 	}
 
 	return rpcAddr
+}
+
+func newClient() *api.Client {
+	c := api.NewClient(rpcAddress())
+	c.SetAuth(os.Getenv("RPC_USER"), os.Getenv("RPC_PASS"))
+	return c
 }
 
 func useCSRF(t *testing.T) bool {
@@ -1479,9 +1484,9 @@ func scanBlocks(t *testing.T, start, end string) { // nolint: unparam
 	require.NoError(t, err)
 
 	var preBlocks readable.Block
-	preBlocks.Head.BlockHash = "0000000000000000000000000000000000000000000000000000000000000000"
+	preBlocks.Head.Hash = "0000000000000000000000000000000000000000000000000000000000000000"
 	for _, b := range blocks.Blocks {
-		require.Equal(t, b.Head.PreviousBlockHash, preBlocks.Head.BlockHash)
+		require.Equal(t, b.Head.PreviousHash, preBlocks.Head.Hash)
 		preBlocks = b
 	}
 }
@@ -2415,7 +2420,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(rpcAddress())
+	c := newClient()
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 

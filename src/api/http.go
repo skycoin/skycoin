@@ -15,6 +15,7 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -37,16 +38,20 @@ const (
 	defaultWriteTimeout = time.Second * 60
 	defaultIdleTimeout  = time.Second * 120
 
-	// EndpointsRead endpoints available when nodes executed with no CLI args
+	// EndpointsRead endpoints with no side-effects and no changes in node state
 	EndpointsRead = "READ"
 	// EndpointsStatus endpoints offer (meta,runtime)data to dashboard and monitoring clients
 	EndpointsStatus = "STATUS"
+	// EndpointsTransaction endpoints export operations on transactions that modify node state
+	EndpointsTransaction = "TXN"
 	// EndpointsWallet endpoints implement wallet interface
 	EndpointsWallet = "WALLET"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
 	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
+	// EndpointsPrometheus endpoints for Go application metrics
+	EndpointsPrometheus = "PROMETHEUS"
 )
 
 // Server exposes an HTTP API
@@ -395,7 +400,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
 	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsTransaction, EndpointsWallet}))
 	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsRead}))
 
@@ -404,6 +409,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/balance", forAPISet(balanceHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/uxout", forAPISet(uxOutHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/address_uxouts", forAPISet(addrUxOutsHandler(gateway), []string{EndpointsRead}))
+
+	// golang process internal metrics for Prometheus
+	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), []string{EndpointsPrometheus}))
 
 	// Address related endpoints
 	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsRead}))

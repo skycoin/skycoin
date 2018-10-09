@@ -5,7 +5,7 @@ import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { MatDialog, MatSnackBar } from '@angular/material';
+import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
 import { showSnackbarError } from '../../../../utils/errors';
 import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
@@ -67,7 +67,12 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.sendButton.resetState();
 
     if (this.form.value.wallet.encrypted) {
-      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+      const config = new MatDialogConfig();
+      config.data = {
+        wallet: this.form.value.wallet,
+      };
+
+      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.createTransaction(passwordDialog);
         });

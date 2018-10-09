@@ -1,5 +1,5 @@
 export const environment = {
-  nodeUrl: '/api/v1/',
+  nodeUrl: '/api/',
   production: true,
   tellerUrl: 'https://event.skycoin.net/api/',
 };

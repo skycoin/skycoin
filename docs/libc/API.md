@@ -1,472 +1,460 @@
 # Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`define `[`GO_CGO_EXPORT_PROLOGUE_H`](#libskycoin_8h_1ac91211782906f9494d827fe6e0b2e190)            | 
-`define `[`GO_CGO_PROLOGUE_H`](#libskycoin_8h_1ad45a58cf8a40d22e35017cb53dd6055a)            | 
-`define `[`SKY_OK`](#skyerrors_8h_1a5cd9ddcf04c6f149c283c805c7d296da)            | 
-`define `[`SKY_ERROR`](#skyerrors_8h_1a8405baf075a12e6232d75a8432d44f81)            | 
-`define `[`LIBSKY_TESTING_H`](#skytest_8h_1aa31e87416545dcd6dcad132467018e22)            | 
-`public GoUint32 `[`SKY_cli_CreateRawTxFromWallet`](#libskycoin_8h_1a20c77077115b9e629b9372dc45052978)`(Handle p0,`[`GoString`](#struct___go_string__)` p1,`[`GoString`](#struct___go_string__)` p2,`[`GoSlice`](#struct_go_slice)` p3,`[`Transaction`](#struct_transaction)` * p4)`            | 
-`public GoUint32 `[`SKY_cli_CreateRawTxFromAddress`](#libskycoin_8h_1aa034c786a7dda49ba5caf939787dccd0)`(Handle p0,`[`GoString`](#struct___go_string__)` p1,`[`GoString`](#struct___go_string__)` p2,`[`GoString`](#struct___go_string__)` p3,`[`GoSlice`](#struct_go_slice)` p4,`[`Transaction`](#struct_transaction)` * p5)`            | 
-`public void `[`SKY_cli_CreateRawTx`](#libskycoin_8h_1a8c5f5db1256b025fe16334a5bbbd1060)`(Handle p0,`[`Wallet`](#struct_wallet)` * p1,`[`GoSlice`](#struct_go_slice)` p2,`[`GoString`](#struct___go_string__)` p3,`[`GoSlice`](#struct_go_slice)` p4,`[`Transaction`](#struct_transaction)` * p5)`            | 
-`public void `[`SKY_cli_NewTransaction`](#libskycoin_8h_1a86e20b22f34804b6ae95d334f0f2a51c)`(`[`GoSlice`](#struct_go_slice)` p0,`[`GoSlice`](#struct_go_slice)` p1,`[`GoSlice`](#struct_go_slice)` p2,`[`Transaction`](#struct_transaction)` * p3)`            | 
-`public GoUint32 `[`SKY_cipher_DecodeBase58Address`](#libskycoin_8h_1ac624e50feca30ee4a1d215b55545bee8)`(`[`GoString`](#struct___go_string__)` p0,`[`Address`](#struct_address)` * p1)`            | 
-`public void `[`SKY_cipher_AddressFromPubKey`](#libskycoin_8h_1a19502bcf26285130314d51c51034ed81)`(PubKey * p0,`[`Address`](#struct_address)` * p1)`            | 
-`public void `[`SKY_cipher_AddressFromSecKey`](#libskycoin_8h_1a43dd635ce2999221eaf53443636a2cc9)`(SecKey * p0,`[`Address`](#struct_address)` * p1)`            | 
-`public GoUint32 `[`SKY_cipher_BitcoinDecodeBase58Address`](#libskycoin_8h_1a3dbdee1e58738d24b1eee258971610ff)`(`[`GoString`](#struct___go_string__)` p0,`[`Address`](#struct_address)` * p1)`            | 
-`public void `[`SKY_cipher_Address_Bytes`](#libskycoin_8h_1a2158e97d434d32452c4bc483fc42863e)`(`[`Address`](#struct_address)` * p0,`[`PubKeySlice`](#struct_go_slice__)` * p1)`            | 
-`public void `[`SKY_cipher_Address_BitcoinBytes`](#libskycoin_8h_1ab6e15c43880cab6f2f7283f985c09b8c)`(`[`Address`](#struct_address)` * p0,`[`PubKeySlice`](#struct_go_slice__)` * p1)`            | 
-`public GoUint32 `[`SKY_cipher_Address_Verify`](#libskycoin_8h_1a3c521e58dd6ba4d6c4996c1dd95f445b)`(`[`Address`](#struct_address)` * p0,PubKey * p1)`            | 
-`public void `[`SKY_cipher_Address_String`](#libskycoin_8h_1a3fa26ea0e01795b94c8b163bf19677f6)`(`[`Address`](#struct_address)` * p0,`[`GoString_`](#struct_go_string__)` * p1)`            | 
-`public void `[`SKY_cipher_Address_BitcoinString`](#libskycoin_8h_1a8f650e9df71fc4fec8a9326bd9ad209a)`(`[`Address`](#struct_address)` * p0,`[`GoString_`](#struct_go_string__)` * p1)`            | 
-`public void `[`SKY_cipher_Address_Checksum`](#libskycoin_8h_1a5ccfd64d21d152219b9f6a92ec24099a)`(`[`Address`](#struct_address)` * p0,Checksum * p1)`            | 
-`public void `[`SKY_cipher_Address_BitcoinChecksum`](#libskycoin_8h_1a54f6d9269d976d337431869a6025d1b6)`(`[`Address`](#struct_address)` * p0,Checksum * p1)`            | 
-`public void `[`SKY_cipher_BitcoinAddressFromPubkey`](#libskycoin_8h_1a3bb30e8687b82b3d2b7a3ecb6ad99d51)`(PubKey * p0,`[`GoString_`](#struct_go_string__)` * p1)`            | 
-`public void `[`SKY_cipher_BitcoinWalletImportFormatFromSeckey`](#libskycoin_8h_1a5086015efeb4450facc6e44d01f3c0bf)`(SecKey * p0,`[`GoString_`](#struct_go_string__)` * p1)`            | 
-`public GoUint32 `[`SKY_cipher_BitcoinAddressFromBytes`](#libskycoin_8h_1afd7bbc548f9add0fb3846c5537c3e6bb)`(`[`GoSlice`](#struct_go_slice)` p0,`[`Address`](#struct_address)` * p1)`            | 
-`public GoUint32 `[`SKY_cipher_SecKeyFromWalletImportFormat`](#libskycoin_8h_1aff9f7e90c09af0fbe68de0c2cb93445b)`(`[`GoString`](#struct___go_string__)` p0,SecKey * p1)`            | 
-`public GoInt `[`SKY_cipher_PubKeySlice_Len`](#libskycoin_8h_1a4f8c95cf781be6721227ed34e3e31a82)`(`[`PubKeySlice`](#struct_go_slice__)` * p0)`            | 
-`public GoUint8 `[`SKY_cipher_PubKeySlice_Less`](#libskycoin_8h_1aee5e7adb2fb6a981499b67ccd6950f07)`(`[`PubKeySlice`](#struct_go_slice__)` * p0,GoInt p1,GoInt p2)`            | 
-`public void `[`SKY_cipher_PubKeySlice_Swap`](#libskycoin_8h_1adec780a8bb7a1e6b06e46725d438802f)`(`[`PubKeySlice`](#struct_go_slice__)` * p0,GoInt p1,GoInt p2)`            | 
-`public void `[`SKY_cipher_RandByte`](#libskycoin_8h_1a443396fbe41b5ceca52ca9ce1178da87)`(GoInt p0,`[`PubKeySlice`](#struct_go_slice__)` * p1)`            | 
-`public GoUint32 `[`SKY_cipher_NewPubKey`](#libskycoin_8h_1acce44b33fe66eb8e5a474ce5a52ce6ad)`(`[`GoSlice`](#struct_go_slice)` p0,PubKey * p1)`            | 
-`public GoUint32 `[`SKY_cipher_PubKeyFromHex`](#libskycoin_8h_1a2941fcfb4b91f1a6831ed7a008f2f492)`(`[`GoString`](#struct___go_string__)` p0,PubKey * p1)`            | 
-`public GoUint32 `[`SKY_cipher_PubKeyFromSecKey`](#libskycoin_8h_1afcd38ca547a7dae97d415bbec4d25199)`(SecKey * p0,PubKey * p1)`            | 
-`public GoUint32 `[`SKY_cipher_PubKeyFromSig`](#libskycoin_8h_1a92d9b6d12c0f4eba7aa63336c83b920d)`(Sig * p0,SHA256 * p1,PubKey * p2)`            | 
-`public GoUint32 `[`SKY_cipher_PubKey_Verify`](#libskycoin_8h_1aa758e062425798924e1eea3cddafb8ef)`(PubKey * p0)`            | 
-`public void `[`SKY_cipher_PubKey_Hex`](#libskycoin_8h_1a80a69cd598ab67fc83afa6f8646f4358)`(PubKey * p0,`[`GoString_`](#struct_go_string__)` * p1)`            | 
-`public void `[`SKY_cipher_PubKey_ToAddressHash`](#libskycoin_8h_1ad9c96b9e1d8915c6546d4070f2e76cab)`(PubKey * p0,Ripemd160 * p1)`            | 
-`public GoUint32 `[`SKY_cipher_NewSecKey`](#libskycoin_8h_1a009cc1bf2f436a1a790db7708f17198c)`(`[`GoSlice`](#struct_go_slice)` p0,SecKey * p1)`            | 
-`public GoUint32 `[`SKY_cipher_SecKeyFromHex`](#libskycoin_8h_1a780e839e1ae75fbac8ec674d54927d77)`(`[`GoString`](#struct___go_string__)` p0,SecKey * p1)`            | 
-`public GoUint32 `[`SKY_cipher_SecKey_Verify`](#libskycoin_8h_1aa17089f7a830bbd75d11095f561cf39d)`(SecKey * p0)`            | 
-`public void `[`SKY_cipher_SecKey_Hex`](#libskycoin_8h_1a645f5f92b38653939297b625d0f8dc21)`(SecKey * p0,`[`GoString_`](#struct_go_string__)` * p1)`            | 
-`public void `[`SKY_cipher_ECDH`](#libskycoin_8h_1a23f26a93a05cc2fdb59e6feac5fe5140)`(PubKey * p0,SecKey * p1,`[`PubKeySlice`](#struct_go_slice__)` * p2)`            | 
-`public GoUint32 `[`SKY_cipher_NewSig`](#libskycoin_8h_1ae72cdb33ffdd48382414c6125df5592c)`(`[`GoSlice`](#struct_go_slice)` p0,Sig * p1)`            | 
-`public GoUint32 `[`SKY_cipher_SigFromHex`](#libskycoin_8h_1acd82a1de9be7d7291f79f7b32add9eec)`(`[`GoString`](#struct___go_string__)` p0,Sig * p1)`            | 
-`public void `[`SKY_cipher_Sig_Hex`](#libskycoin_8h_1a0df60afe6e0a6b09a45959c81123cd84)`(Sig * p0,`[`GoString_`](#struct_go_string__)` * p1)`            | 
-`public void `[`SKY_cipher_SignHash`](#libskycoin_8h_1a88c349cd3a7f14df8decd6c9c646c7f3)`(SHA256 * p0,SecKey * p1,Sig * p2)`            | 
-`public GoUint32 `[`SKY_cipher_ChkSig`](#libskycoin_8h_1af512d40dd13c355ee7222f4bd2085f41)`(`[`Address`](#struct_address)` * p0,SHA256 * p1,Sig * p2)`            | 
-`public GoUint32 `[`SKY_cipher_VerifySignedHash`](#libskycoin_8h_1a8a9388cb9ff151f481f4681658381728)`(Sig * p0,SHA256 * p1)`            | 
-`public GoUint32 `[`SKY_cipher_VerifySignature`](#libskycoin_8h_1a24949394563c4a49c502549a96809b32)`(PubKey * p0,Sig * p1,SHA256 * p2)`            | 
-`public void `[`SKY_cipher_GenerateKeyPair`](#libskycoin_8h_1ab601accdb915f5794554f80801a856d1)`(PubKey * p0,SecKey * p1)`            | 
-`public void `[`SKY_cipher_GenerateDeterministicKeyPair`](#libskycoin_8h_1a2e579464b2cf0cdb94701c52b84ad979)`(`[`GoSlice`](#struct_go_slice)` p0,PubKey * p1,SecKey * p2)`            | 
-`public void `[`SKY_cipher_DeterministicKeyPairIterator`](#libskycoin_8h_1a43ef1cf5a3d82f8093ab1a8eee043fcb)`(`[`GoSlice`](#struct_go_slice)` p0,`[`PubKeySlice`](#struct_go_slice__)` * p1,PubKey * p2,SecKey * p3)`            | 
-`public void `[`SKY_cipher_GenerateDeterministicKeyPairs`](#libskycoin_8h_1a60367b51223730d7d77297309b230be4)`(`[`GoSlice`](#struct_go_slice)` p0,GoInt p1,`[`PubKeySlice`](#struct_go_slice__)` * p2)`            | 
-`public void `[`SKY_cipher_GenerateDeterministicKeyPairsSeed`](#libskycoin_8h_1a038ca71fb6cff77b49e41ad69f00a516)`(`[`GoSlice`](#struct_go_slice)` p0,GoInt p1,`[`PubKeySlice`](#struct_go_slice__)` * p2,`[`PubKeySlice`](#struct_go_slice__)` * p3)`            | 
-`public GoUint32 `[`SKY_cipher_TestSecKey`](#libskycoin_8h_1ace44f781f8ec684f8e9c59fb7fa3dbb3)`(SecKey * p0)`            | 
-`public GoUint32 `[`SKY_cipher_TestSecKeyHash`](#libskycoin_8h_1a6cb852f76a408372d3b0aa5221bcdaed)`(SecKey * p0,SHA256 * p1)`            | 
-`public GoUint32 `[`SKY_cipher_Ripemd160_Set`](#libskycoin_8h_1a3ec912a20b9e36b1c12c94f8f5be119e)`(Ripemd160 * p0,`[`GoSlice`](#struct_go_slice)` p1)`            | 
-`public void `[`SKY_cipher_HashRipemd160`](#libskycoin_8h_1a54bd9a7ead7b661260abf98d2490153f)`(`[`GoSlice`](#struct_go_slice)` p0,Ripemd160 * p1)`            | 
-`public GoUint32 `[`SKY_cipher_SHA256_Set`](#libskycoin_8h_1aba4a6f9df12f6384da9eeb93d7723f73)`(SHA256 * p0,`[`GoSlice`](#struct_go_slice)` p1)`            | 
-`public void `[`SKY_cipher_SHA256_Hex`](#libskycoin_8h_1a5c8d433169079581776fe5a5eec1adb4)`(SHA256 * p0,`[`GoString_`](#struct_go_string__)` * p1)`            | 
-`public void `[`SKY_cipher_SHA256_Xor`](#libskycoin_8h_1adf30e083c2811ee14eeef58178ceefc6)`(SHA256 * p0,SHA256 * p1,SHA256 * p2)`            | 
-`public GoUint32 `[`SKY_cipher_SumSHA256`](#libskycoin_8h_1a7f0f0fa3b1610c7e97dc2950b35a75c4)`(`[`GoSlice`](#struct_go_slice)` p0,SHA256 * p1)`            | 
-`public GoUint32 `[`SKY_cipher_SHA256FromHex`](#libskycoin_8h_1a046027f0eb544d6a0b8f1b78a7d189b4)`(`[`GoString`](#struct___go_string__)` p0,SHA256 * p1)`            | 
-`public void `[`SKY_cipher_DoubleSHA256`](#libskycoin_8h_1ad3390997c0c9aec4c2cd678b6356d3ea)`(`[`GoSlice`](#struct_go_slice)` p0,SHA256 * p1)`            | 
-`public void `[`SKY_cipher_AddSHA256`](#libskycoin_8h_1aa5977d4828735c3bceb1153f8bffc21b)`(SHA256 * p0,SHA256 * p1,SHA256 * p2)`            | 
-`public void `[`SKY_cipher_Merkle`](#libskycoin_8h_1a71f945bbf46e4496051c98e390d11460)`(`[`GoSlice`](#struct_go_slice)` * p0,SHA256 * p1)`            | 
-`public int `[`cr_user_Address_eq`](#skycriterion_8h_1a5c3dd4cd20db987c789c0a49ba098185)`(`[`Address`](#struct_address)` * addr1,`[`Address`](#struct_address)` * addr2)`            | 
-`public char * `[`cr_user_Address_tostr`](#skycriterion_8h_1a232c966bd05993a3e9accc2670af2872)`(`[`Address`](#struct_address)` * addr1)`            | 
-`public int `[`cr_user_Address_noteq`](#skycriterion_8h_1a0fc9801f223de4c4dee580e47060ee12)`(`[`Address`](#struct_address)` * addr1,`[`Address`](#struct_address)` * addr2)`            | 
-`public int `[`cr_user_GoString_eq`](#skycriterion_8h_1afde184bfa3d42dadb560478bb384fd0e)`(`[`GoString`](#struct___go_string__)` * string1,`[`GoString`](#struct___go_string__)` * string2)`            | 
-`public int `[`cr_user_GoString__eq`](#skycriterion_8h_1adc4957c85581c8021d1bc5e1fe68954e)`(`[`GoString_`](#struct_go_string__)` * string1,`[`GoString_`](#struct_go_string__)` * string2)`            | 
-`public char * `[`cr_user_GoString_tostr`](#skycriterion_8h_1ac49e1ea1279ec23eb1b06fc4cff4346e)`(`[`GoString`](#struct___go_string__)` * string)`            | 
-`public char * `[`cr_user_GoString__tostr`](#skycriterion_8h_1a8ba00c85c7eede2d955cfe016cb1023d)`(`[`GoString_`](#struct_go_string__)` * string)`            | 
-`public int `[`cr_user_SecKey_eq`](#skycriterion_8h_1a93763ef6964d4cae39c79a7f46a2f42f)`(SecKey * seckey1,SecKey * seckey2)`            | 
-`public char * `[`cr_user_SecKey_tostr`](#skycriterion_8h_1a2285d6f43b6c3d8903444d0983308ad3)`(SecKey * seckey1)`            | 
-`public int `[`cr_user_Ripemd160_noteq`](#skycriterion_8h_1ac402ce38ac35394b35bed0b866266f51)`(Ripemd160 * rp1,Ripemd160 * rp2)`            | 
-`public int `[`cr_user_Ripemd160_eq`](#skycriterion_8h_1ab77cfde0399d3d261908732b6fd0074e)`(Ripemd160 * rp1,Ripemd160 * rp2)`            | 
-`public char * `[`cr_user_Ripemd160_tostr`](#skycriterion_8h_1ab2fe9026270b2ff7589cb44e03bd94c5)`(Ripemd160 * rp1)`            | 
-`public int `[`cr_user_GoSlice_eq`](#skycriterion_8h_1a68e13a153f444839e3dbe06cc14e2348)`(`[`GoSlice`](#struct_go_slice)` * slice1,`[`GoSlice`](#struct_go_slice)` * slice2)`            | 
-`public char * `[`cr_user_GoSlice_tostr`](#skycriterion_8h_1aa058100c8835ae72f2c609ad2ef1ba85)`(`[`GoSlice`](#struct_go_slice)` * slice1)`            | 
-`public int `[`cr_user_GoSlice_noteq`](#skycriterion_8h_1a361dbb4ff75151c68df6d37368880b24)`(`[`GoSlice`](#struct_go_slice)` * slice1,`[`GoSlice`](#struct_go_slice)` * slice2)`            | 
-`public int `[`cr_user_SHA256_noteq`](#skycriterion_8h_1ae300f329a27269668d76e11aeeae30e7)`(SHA256 * sh1,SHA256 * sh2)`            | 
-`public int `[`cr_user_SHA256_eq`](#skycriterion_8h_1a233276e4a1ceab57a648c997c970bf92)`(SHA256 * sh1,SHA256 * sh2)`            | 
-`public char * `[`cr_user_SHA256_tostr`](#skycriterion_8h_1a396e12d7842311b730774d39913d6ab9)`(SHA256 * sh1)`            | 
-`public void `[`randBytes`](#skystring_8h_1abc646fb4e2f83b9ec86bacd6f8006907)`(`[`GoSlice`](#struct_go_slice)` * bytes,size_t n)`            | 
-`public void `[`strnhex`](#skystring_8h_1aef6e4f140a965b05589db78792dc3c09)`(unsigned char * buf,char * str,int n)`            | 
-`public void `[`strhex`](#skystring_8h_1a589986670c6a1cd947da79512078ff05)`(unsigned char * buf,char * str)`            | 
-`public void * `[`registerMemCleanup`](#skytest_8h_1a3138ecc83c1c8906c84ef5e0d54cdfbb)`(void * p)`            | 
-`public void `[`fprintbuff`](#skytest_8h_1a1ee45e153c115a9a735b3ccbf992e495)`(FILE * f,void * buff,size_t n)`            | 
-`public void `[`toGoString`](#skytest_8h_1a1bad90cc197623fa8328f71809dda1a3)`(`[`GoString_`](#struct_go_string__)` * s,`[`GoString`](#struct___go_string__)` * r)`            | 
-`struct `[`_GoString_`](#struct___go_string__) | 
-`struct `[`Address`](#struct_address) | Addresses of SKY accounts
-`struct `[`Entry`](#struct_entry) | [Wallet](#struct_wallet) entry.
-`struct `[`GoInterface`](#struct_go_interface) | 
+`define `[`BUFFER_SIZE`](#cipher_8testsuite_8testsuite_8go_8h_1a6b20d41d6252e9871430c242cb1a56e7)            |
+`define `[`STRING_SIZE`](#cipher_8testsuite_8testsuite_8go_8h_1ad78224efe1d3fb39b67ca74ad9d9eec7)            |
+`define `[`JSON_FILE_SIZE`](#cipher_8testsuite_8testsuite_8go_8h_1aff447440daa595595664e192e1c01d81)            |
+`define `[`JSON_BIG_FILE_SIZE`](#cipher_8testsuite_8testsuite_8go_8h_1a10f4e0e5aa36596ea0886620e02feb49)            |
+`define `[`FILEPATH_SEPARATOR`](#cipher_8testsuite_8testsuite_8go_8h_1a6e456d1a7dded40d4dd4fd854c4e81ec)            |
+`define `[`TEST_DATA_DIR`](#cipher_8testsuite_8testsuite_8go_8h_1a45050bf269268f85a0a8b2d805b334fc)            |
+`define `[`MANY_ADDRESSES_FILENAME`](#cipher_8testsuite_8testsuite_8go_8h_1a6a45cb422542b704977e95e3b843cfba)            |
+`define `[`INPUT_HASHES_FILENAME`](#cipher_8testsuite_8testsuite_8go_8h_1a1bbb758f4454d01355b35a36fa3d7b61)            |
+`define `[`SEED_FILE_REGEX`](#cipher_8testsuite_8testsuite_8go_8h_1a7ae7c06af79cc79a9ad88e8719df1c9e)            |
+`define `[`json_char`](#json_8h_1ae3b21f339690a966e921fe2545939862)            |
+`define `[`json_int_t`](#json_8h_1ae8ad072e93f8e6584af231de2f592fc6)            |
+`define `[`json_enable_comments`](#json_8h_1a893db2e62d8fbf36b27bcea8654f1105)            |
+`define `[`json_error_max`](#json_8h_1a399c15929bed85a9a41bd4cba9703204)            |
+`define `[`GO_CGO_EXPORT_PROLOGUE_H`](#libskycoin_8h_1ac91211782906f9494d827fe6e0b2e190)            |
+`define `[`GO_CGO_PROLOGUE_H`](#libskycoin_8h_1ad45a58cf8a40d22e35017cb53dd6055a)            |
+`define `[`SKY_OK`](#skyerrors_8h_1a5cd9ddcf04c6f149c283c805c7d296da)            |
+`define `[`SKY_ERROR`](#skyerrors_8h_1a8405baf075a12e6232d75a8432d44f81)            |
+`enum `[`json_type`](#json_8h_1ac75c61993722a9b8aaa44704072ec06c)            |
+`public unsigned int `[`b64_int`](#base64_8h_1a0a6be6c96f28086f36d03676296a9372)`(unsigned int ch)`            |
+`public unsigned int `[`b64e_size`](#base64_8h_1ae530f943b1ac55252c7ffba9a56fe946)`(unsigned int in_size)`            |
+`public unsigned int `[`b64d_size`](#base64_8h_1ae6911453bae790c4ba1933674d51c4cb)`(unsigned int in_size)`            |
+`public unsigned int `[`b64_encode`](#base64_8h_1aeddff3b5b68b9080553c10ff2364cc4b)`(const unsigned char * in,unsigned int in_len,unsigned char * out)`            |
+`public unsigned int `[`b64_decode`](#base64_8h_1a181a008944edb84bcfd73efacadb41c5)`(const unsigned char * in,unsigned int in_len,unsigned char * out)`            |
+`public unsigned int `[`b64_encodef`](#base64_8h_1a2ea67610bb294c8d82deed5d9335d877)`(char * InFile,char * OutFile)`            |
+`public unsigned int `[`b64_decodef`](#base64_8h_1ac6582b011d3ebb0af9e47b5ee5d75a2c)`(char * InFile,char * OutFile)`            |
+`public `[`json_value`](#struct__json__value)` * `[`loadGoldenFile`](#cipher_8testsuite_8testsuite_8go_8h_1a97f400dcf2127780240374f791ad55cb)`(const char * file)`            |
+`public `[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * `[`jsonToInputTestData`](#cipher_8testsuite_8testsuite_8go_8h_1acc7925cd0a944333c5b0efef5926eee5)`(`[`json_value`](#struct__json__value)` * json,`[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * input_data)`            |
+`public `[`InputTestData`](#struct_input_test_data)` * `[`registerInputTestDataCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a4940377b4eca6c3728e034a423d5964f)`(`[`InputTestData`](#struct_input_test_data)` * input_data)`            |
+`public `[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * `[`registerInputTestDataJSONCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a45e3d42f145d2065097b1715037973bf)`(`[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * input_data)`            |
+`public void `[`InputTestDataToJSON`](#cipher_8testsuite_8testsuite_8go_8h_1a655f8018783ebb3ff95e7f6fcd392552)`(`[`InputTestData`](#struct_input_test_data)` * input_data,`[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * json_data)`            |
+`public GoUint32 `[`InputTestDataFromJSON`](#cipher_8testsuite_8testsuite_8go_8h_1ab3c102e440e98e8cd90a970ce0ade222)`(`[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * json_data,`[`InputTestData`](#struct_input_test_data)` * input_data)`            |
+`public `[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * `[`jsonToKeysTestData`](#cipher_8testsuite_8testsuite_8go_8h_1adc41ca999e05fb40c7ee8c2b6a59e1bc)`(`[`json_value`](#struct__json__value)` * json,`[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * input_data)`            |
+`public `[`KeysTestData`](#struct_keys_test_data)` * `[`registerKeysTestDataCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a28dfd2ed9cfbf047a378e74ba026f053)`(`[`KeysTestData`](#struct_keys_test_data)` * input_data)`            |
+`public `[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * `[`registerKeysTestDataJSONCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a333892fc9f11cb43ce5b442d3b03f006)`(`[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * input_data)`            |
+`public void `[`KeysTestDataToJson`](#cipher_8testsuite_8testsuite_8go_8h_1af9f0285478f247557b6334618d2aa145)`(`[`KeysTestData`](#struct_keys_test_data)` * input_data,`[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * json_data)`            |
+`public GoUint32 `[`KeysTestDataFromJSON`](#cipher_8testsuite_8testsuite_8go_8h_1a92c62c143ec39d7186c19ab6e43dc92b)`(`[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * json_data,`[`KeysTestData`](#struct_keys_test_data)` * input_data)`            |
+`public `[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * `[`jsonToSeedTestData`](#cipher_8testsuite_8testsuite_8go_8h_1af295a0cdc63ba27fd346852112f28b3c)`(`[`json_value`](#struct__json__value)` * json,`[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * input_data)`            |
+`public `[`SeedTestData`](#struct_seed_test_data)` * `[`registerSeedTestDataCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a96bf06d5429ca3ec74e31e279f7f0cf0)`(`[`SeedTestData`](#struct_seed_test_data)` * input_data)`            |
+`public `[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * `[`registerSeedTestDataJSONCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1ae7d0af21cce697cc8bc097279c3ed398)`(`[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * input_data)`            |
+`public void `[`SeedTestDataToJson`](#cipher_8testsuite_8testsuite_8go_8h_1abde3615ebe8efb1d0c126d4b71120bd7)`(`[`SeedTestData`](#struct_seed_test_data)` * input_data,`[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * json_data)`            |
+`public GoUint32 `[`SeedTestDataFromJSON`](#cipher_8testsuite_8testsuite_8go_8h_1a7fb0e2dc54e3623caf580bab823255e5)`(`[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * json_data,`[`SeedTestData`](#struct_seed_test_data)` * input_data)`            |
+`public void `[`ValidateSeedData`](#cipher_8testsuite_8testsuite_8go_8h_1a2af7891924708bd79f29b5ced351967a)`(`[`SeedTestData`](#struct_seed_test_data)` * seedData,`[`InputTestData`](#struct_input_test_data)` * inputData)`            |
+`public `[`json_value`](#struct__json__value)` * `[`json_parse`](#json_8h_1a4dd0cf45ec85a69a6021b6cfe0287b66)`(const json_char * json,size_t length)`            |
+`public `[`json_value`](#struct__json__value)` * `[`json_parse_ex`](#json_8h_1ae828aab0174a7e20eec19a40d835d3c1)`(`[`json_settings`](#structjson__settings)` * settings,const json_char * json,size_t length,char * error)`            |
+`public void `[`json_value_free`](#json_8h_1a3299652febea64fc59c5917ad47ede28)`(`[`json_value`](#struct__json__value)` *)`            |
+`public void `[`json_value_free_ex`](#json_8h_1a129467197843210b7ce2a2c59e92f781)`(`[`json_settings`](#structjson__settings)` * settings,`[`json_value`](#struct__json__value)` *)`            |
+`public int `[`DecodeBase58Address`](#libskycoin_8h_1af0bc416968a2873cf5952eecd12f1f92)`(`[`GoString`](#struct___go_string__)` p0,`[`Address`](#struct_address)` * p1)`            |
+`public int `[`cr_user_cipher__Address_eq`](#skycriterion_8h_1a00edb99a770d440315ad2c91107a314b)`(`[`cipher__Address`](#structcipher_____address)` * addr1,`[`cipher__Address`](#structcipher_____address)` * addr2)`            |
+`public char * `[`cr_user_cipher__Address_tostr`](#skycriterion_8h_1a7684fd986e502ffa967626174ecb121b)`(`[`cipher__Address`](#structcipher_____address)` * addr1)`            |
+`public int `[`cr_user_cipher__Address_noteq`](#skycriterion_8h_1aef473b3aaf9517e054136597befabb19)`(`[`cipher__Address`](#structcipher_____address)` * addr1,`[`cipher__Address`](#structcipher_____address)` * addr2)`            |
+`public int `[`cr_user_GoString_eq`](#skycriterion_8h_1afde184bfa3d42dadb560478bb384fd0e)`(`[`GoString`](#struct___go_string__)` * string1,`[`GoString`](#struct___go_string__)` * string2)`            |
+`public int `[`cr_user_GoString__eq`](#skycriterion_8h_1adc4957c85581c8021d1bc5e1fe68954e)`(`[`GoString_`](#struct_go_string__)` * string1,`[`GoString_`](#struct_go_string__)` * string2)`            |
+`public char * `[`cr_user_GoString_tostr`](#skycriterion_8h_1ac49e1ea1279ec23eb1b06fc4cff4346e)`(`[`GoString`](#struct___go_string__)` * string)`            |
+`public char * `[`cr_user_GoString__tostr`](#skycriterion_8h_1a8ba00c85c7eede2d955cfe016cb1023d)`(`[`GoString_`](#struct_go_string__)` * string)`            |
+`public int `[`cr_user_cipher__SecKey_eq`](#skycriterion_8h_1ac3d286c06a1659717bc392004b857ba0)`(cipher__SecKey * seckey1,cipher__SecKey * seckey2)`            |
+`public char * `[`cr_user_cipher__SecKey_tostr`](#skycriterion_8h_1ad6ebdf1335f21b53df8a9606e68889af)`(cipher__SecKey * seckey1)`            |
+`public int `[`cr_user_cipher__Ripemd160_noteq`](#skycriterion_8h_1a817a01cd72b552039a61d0add95a14f1)`(cipher__Ripemd160 * rp1,cipher__Ripemd160 * rp2)`            |
+`public int `[`cr_user_cipher__Ripemd160_eq`](#skycriterion_8h_1ac843b722e627d29c8450c766b866edd6)`(cipher__Ripemd160 * rp1,cipher__Ripemd160 * rp2)`            |
+`public char * `[`cr_user_cipher__Ripemd160_tostr`](#skycriterion_8h_1aeee5ce2262f3cfbdc942aa2ae6c16974)`(cipher__Ripemd160 * rp1)`            |
+`public int `[`cr_user_GoSlice_eq`](#skycriterion_8h_1a68e13a153f444839e3dbe06cc14e2348)`(`[`GoSlice`](#struct_go_slice)` * slice1,`[`GoSlice`](#struct_go_slice)` * slice2)`            |
+`public char * `[`cr_user_GoSlice_tostr`](#skycriterion_8h_1aa058100c8835ae72f2c609ad2ef1ba85)`(`[`GoSlice`](#struct_go_slice)` * slice1)`            |
+`public int `[`cr_user_GoSlice_noteq`](#skycriterion_8h_1a361dbb4ff75151c68df6d37368880b24)`(`[`GoSlice`](#struct_go_slice)` * slice1,`[`GoSlice`](#struct_go_slice)` * slice2)`            |
+`public int `[`cr_user_cipher__SHA256_noteq`](#skycriterion_8h_1af9de60cc1f5b338ff07b8a34a0af31d4)`(cipher__SHA256 * sh1,cipher__SHA256 * sh2)`            |
+`public int `[`cr_user_cipher__SHA256_eq`](#skycriterion_8h_1a239dd96034613f7c5d187f355d054843)`(cipher__SHA256 * sh1,cipher__SHA256 * sh2)`            |
+`public char * `[`cr_user_cipher__SHA256_tostr`](#skycriterion_8h_1a24e2acadd37b726ed2d9b07092e739d9)`(cipher__SHA256 * sh1)`            |
+`public void `[`randBytes`](#skystring_8h_1abc646fb4e2f83b9ec86bacd6f8006907)`(`[`GoSlice`](#struct_go_slice)` * bytes,size_t n)`            |
+`public void `[`strnhex`](#skystring_8h_1aef6e4f140a965b05589db78792dc3c09)`(unsigned char * buf,char * str,int n)`            |
+`public void `[`strhex`](#skystring_8h_1a589986670c6a1cd947da79512078ff05)`(unsigned char * buf,char * str)`            |
+`public void `[`fprintbuff`](#skytest_8h_1a1ee45e153c115a9a735b3ccbf992e495)`(FILE * f,void * buff,size_t n)`            |
+`public `[`json_value`](#struct__json__value)` * `[`loadJsonFile`](#skytest_8h_1ae9debe21347a5e30565195425a898448)`(const char * filename)`            |
+`public void * `[`registerMemCleanup`](#skytest_8h_1a3138ecc83c1c8906c84ef5e0d54cdfbb)`(void * p)`            |
+`public void `[`toGoString`](#skytest_8h_1a1bad90cc197623fa8328f71809dda1a3)`(`[`GoString_`](#struct_go_string__)` * s,`[`GoString`](#struct___go_string__)` * r)`            |
+`public `[`json_value`](#struct__json__value)` * `[`json_get_string`](#skytest_8h_1aaa0fcc92ec99e3682126c396c7990724)`(`[`json_value`](#struct__json__value)` * value,const char * key)`            |
+`public int `[`json_set_string`](#skytest_8h_1a532c9bff6c467be505835bcb9a2fcaa0)`(`[`json_value`](#struct__json__value)` * value,const char * new_string_value)`            |
+`public int `[`registerJsonFree`](#skytest_8h_1af298033f76a79ff6945d0a65a83842fe)`(void * p)`            |
+`public void `[`freeRegisteredJson`](#skytest_8h_1ae9eb5fd6a792b4db185089a1a14db57a)`(void * p)`            |
+`public int `[`compareJsonValues`](#skytest_8h_1abf7dd2e2fa866fc3fe6acedbf9842a3a)`(`[`json_value`](#struct__json__value)` * value1,`[`json_value`](#struct__json__value)` * value2)`            |
+`public `[`json_value`](#struct__json__value)` * `[`get_json_value`](#skytest_8h_1ad81ecc74786fda501485b271384b993e)`(`[`json_value`](#struct__json__value)` * node,const char * path,json_type type)`            |
+`public `[`json_value`](#struct__json__value)` * `[`get_json_value_not_strict`](#skytest_8h_1aabc1cef09feea6fdb43c33971366b1b5)`(`[`json_value`](#struct__json__value)` * node,const char * path,json_type type,int allow_null)`            |
+`public void `[`setup`](#skytest_8h_1a7dfd9b79bc5a37d7df40207afbc5431f)`(void)`            |
+`public void `[`teardown`](#skytest_8h_1a75dbff5b7c2c889050e2c49172679905)`(void)`            |
+`struct `[`_GoString_`](#struct___go_string__) |
+`struct `[`_json_object_entry`](#struct__json__object__entry) |
+`struct `[`_json_value`](#struct__json__value) |
+`struct `[`Address`](#struct_address) |
+`struct `[`cipher__Address`](#structcipher_____address) | Addresses of SKY accounts
+`struct `[`cipher__BitcoinAddress`](#structcipher_____bitcoin_address) | Addresses of Bitcoin accounts
+`struct `[`cli__SendAmount`](#structcli_____send_amount) | Structure used to specify amounts transferred in a transaction.
+`struct `[`coin__Transaction`](#structcoin_____transaction) | Skycoin transaction.
+`struct `[`coin__TransactionOutput`](#structcoin_____transaction_output) | Skycoin transaction output.
+`struct `[`coin__UxBody`](#structcoin_____ux_body) |
+`struct `[`coin__UxHead`](#structcoin_____ux_head) |
+`struct `[`coin__UxOut`](#structcoin_____ux_out) |
+`struct `[`GoInterface`](#struct_go_interface) |
 `struct `[`GoInterface_`](#struct_go_interface__) | Instances of Go interface types.
-`struct `[`GoSlice`](#struct_go_slice) | 
+`struct `[`GoSlice`](#struct_go_slice) |
 `struct `[`GoSlice_`](#struct_go_slice__) | Instances of Go slices
 `struct `[`GoString_`](#struct_go_string__) | Instances of Go `string` type.
-`struct `[`SendAmount`](#struct_send_amount) | Structure used to specify amounts transferred in a transaction.
-`struct `[`Transaction`](#struct_transaction) | Skycoin transaction.
-`struct `[`TransactionOutput`](#struct_transaction_output) | Skycoin transaction output.
-`struct `[`UxBalance`](#struct_ux_balance) | Intermediate representation of a UxOut for sorting and spend choosing.
-`struct `[`Wallet`](#struct_wallet) | Internal representation of a Skycoin wallet.
+`struct `[`InputTestData`](#struct_input_test_data) |
+`struct `[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n) |
+`struct `[`json_settings`](#structjson__settings) |
+`struct `[`KeysTestData`](#struct_keys_test_data) |
+`struct `[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n) |
+`struct `[`SeedTestData`](#struct_seed_test_data) |
+`struct `[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n) |
+`struct `[`wallet__Entry`](#structwallet_____entry) | Wallet entry.
+`struct `[`wallet__UxBalance`](#structwallet_____ux_balance) | Intermediate representation of a UxOut for sorting and spend choosing.
+`struct `[`wallet__Wallet`](#structwallet_____wallet) | Internal representation of a Skycoin wallet.
 
 ## Members
 
-#### `define `[`GO_CGO_EXPORT_PROLOGUE_H`](#libskycoin_8h_1ac91211782906f9494d827fe6e0b2e190) 
+#### `define `[`BUFFER_SIZE`](#cipher_8testsuite_8testsuite_8go_8h_1a6b20d41d6252e9871430c242cb1a56e7)
 
-#### `define `[`GO_CGO_PROLOGUE_H`](#libskycoin_8h_1ad45a58cf8a40d22e35017cb53dd6055a) 
+#### `define `[`STRING_SIZE`](#cipher_8testsuite_8testsuite_8go_8h_1ad78224efe1d3fb39b67ca74ad9d9eec7)
 
-#### `define `[`SKY_OK`](#skyerrors_8h_1a5cd9ddcf04c6f149c283c805c7d296da) 
+#### `define `[`JSON_FILE_SIZE`](#cipher_8testsuite_8testsuite_8go_8h_1aff447440daa595595664e192e1c01d81)
 
-#### `define `[`SKY_ERROR`](#skyerrors_8h_1a8405baf075a12e6232d75a8432d44f81) 
+#### `define `[`JSON_BIG_FILE_SIZE`](#cipher_8testsuite_8testsuite_8go_8h_1a10f4e0e5aa36596ea0886620e02feb49)
 
-#### `define `[`LIBSKY_TESTING_H`](#skytest_8h_1aa31e87416545dcd6dcad132467018e22) 
+#### `define `[`FILEPATH_SEPARATOR`](#cipher_8testsuite_8testsuite_8go_8h_1a6e456d1a7dded40d4dd4fd854c4e81ec)
 
-#### `public GoUint32 `[`SKY_cli_CreateRawTxFromWallet`](#libskycoin_8h_1a20c77077115b9e629b9372dc45052978)`(Handle p0,`[`GoString`](#struct___go_string__)` p1,`[`GoString`](#struct___go_string__)` p2,`[`GoSlice`](#struct_go_slice)` p3,`[`Transaction`](#struct_transaction)` * p4)` 
+#### `define `[`TEST_DATA_DIR`](#cipher_8testsuite_8testsuite_8go_8h_1a45050bf269268f85a0a8b2d805b334fc)
 
-#### `public GoUint32 `[`SKY_cli_CreateRawTxFromAddress`](#libskycoin_8h_1aa034c786a7dda49ba5caf939787dccd0)`(Handle p0,`[`GoString`](#struct___go_string__)` p1,`[`GoString`](#struct___go_string__)` p2,`[`GoString`](#struct___go_string__)` p3,`[`GoSlice`](#struct_go_slice)` p4,`[`Transaction`](#struct_transaction)` * p5)` 
+#### `define `[`MANY_ADDRESSES_FILENAME`](#cipher_8testsuite_8testsuite_8go_8h_1a6a45cb422542b704977e95e3b843cfba)
 
-#### `public void `[`SKY_cli_CreateRawTx`](#libskycoin_8h_1a8c5f5db1256b025fe16334a5bbbd1060)`(Handle p0,`[`Wallet`](#struct_wallet)` * p1,`[`GoSlice`](#struct_go_slice)` p2,`[`GoString`](#struct___go_string__)` p3,`[`GoSlice`](#struct_go_slice)` p4,`[`Transaction`](#struct_transaction)` * p5)` 
+#### `define `[`INPUT_HASHES_FILENAME`](#cipher_8testsuite_8testsuite_8go_8h_1a1bbb758f4454d01355b35a36fa3d7b61)
 
-#### `public void `[`SKY_cli_NewTransaction`](#libskycoin_8h_1a86e20b22f34804b6ae95d334f0f2a51c)`(`[`GoSlice`](#struct_go_slice)` p0,`[`GoSlice`](#struct_go_slice)` p1,`[`GoSlice`](#struct_go_slice)` p2,`[`Transaction`](#struct_transaction)` * p3)` 
+#### `define `[`SEED_FILE_REGEX`](#cipher_8testsuite_8testsuite_8go_8h_1a7ae7c06af79cc79a9ad88e8719df1c9e)
 
-#### `public GoUint32 `[`SKY_cipher_DecodeBase58Address`](#libskycoin_8h_1ac624e50feca30ee4a1d215b55545bee8)`(`[`GoString`](#struct___go_string__)` p0,`[`Address`](#struct_address)` * p1)` 
+#### `define `[`json_char`](#json_8h_1ae3b21f339690a966e921fe2545939862)
 
-#### `public void `[`SKY_cipher_AddressFromPubKey`](#libskycoin_8h_1a19502bcf26285130314d51c51034ed81)`(PubKey * p0,`[`Address`](#struct_address)` * p1)` 
+#### `define `[`json_int_t`](#json_8h_1ae8ad072e93f8e6584af231de2f592fc6)
 
-#### `public void `[`SKY_cipher_AddressFromSecKey`](#libskycoin_8h_1a43dd635ce2999221eaf53443636a2cc9)`(SecKey * p0,`[`Address`](#struct_address)` * p1)` 
+#### `define `[`json_enable_comments`](#json_8h_1a893db2e62d8fbf36b27bcea8654f1105)
 
-#### `public GoUint32 `[`SKY_cipher_BitcoinDecodeBase58Address`](#libskycoin_8h_1a3dbdee1e58738d24b1eee258971610ff)`(`[`GoString`](#struct___go_string__)` p0,`[`Address`](#struct_address)` * p1)` 
+#### `define `[`json_error_max`](#json_8h_1a399c15929bed85a9a41bd4cba9703204)
 
-#### `public void `[`SKY_cipher_Address_Bytes`](#libskycoin_8h_1a2158e97d434d32452c4bc483fc42863e)`(`[`Address`](#struct_address)` * p0,`[`PubKeySlice`](#struct_go_slice__)` * p1)` 
+#### `define `[`GO_CGO_EXPORT_PROLOGUE_H`](#libskycoin_8h_1ac91211782906f9494d827fe6e0b2e190)
 
-#### `public void `[`SKY_cipher_Address_BitcoinBytes`](#libskycoin_8h_1ab6e15c43880cab6f2f7283f985c09b8c)`(`[`Address`](#struct_address)` * p0,`[`PubKeySlice`](#struct_go_slice__)` * p1)` 
+#### `define `[`GO_CGO_PROLOGUE_H`](#libskycoin_8h_1ad45a58cf8a40d22e35017cb53dd6055a)
 
-#### `public GoUint32 `[`SKY_cipher_Address_Verify`](#libskycoin_8h_1a3c521e58dd6ba4d6c4996c1dd95f445b)`(`[`Address`](#struct_address)` * p0,PubKey * p1)` 
+#### `define `[`SKY_OK`](#skyerrors_8h_1a5cd9ddcf04c6f149c283c805c7d296da)
 
-#### `public void `[`SKY_cipher_Address_String`](#libskycoin_8h_1a3fa26ea0e01795b94c8b163bf19677f6)`(`[`Address`](#struct_address)` * p0,`[`GoString_`](#struct_go_string__)` * p1)` 
+#### `define `[`SKY_ERROR`](#skyerrors_8h_1a8405baf075a12e6232d75a8432d44f81)
 
-#### `public void `[`SKY_cipher_Address_BitcoinString`](#libskycoin_8h_1a8f650e9df71fc4fec8a9326bd9ad209a)`(`[`Address`](#struct_address)` * p0,`[`GoString_`](#struct_go_string__)` * p1)` 
+#### `enum `[`json_type`](#json_8h_1ac75c61993722a9b8aaa44704072ec06c)
 
-#### `public void `[`SKY_cipher_Address_Checksum`](#libskycoin_8h_1a5ccfd64d21d152219b9f6a92ec24099a)`(`[`Address`](#struct_address)` * p0,Checksum * p1)` 
+ Values                         | Descriptions
+--------------------------------|---------------------------------------------
+json_none            |
+json_object            |
+json_array            |
+json_integer            |
+json_double            |
+json_string            |
+json_boolean            |
+json_null            |
 
-#### `public void `[`SKY_cipher_Address_BitcoinChecksum`](#libskycoin_8h_1a54f6d9269d976d337431869a6025d1b6)`(`[`Address`](#struct_address)` * p0,Checksum * p1)` 
+#### `public unsigned int `[`b64_int`](#base64_8h_1a0a6be6c96f28086f36d03676296a9372)`(unsigned int ch)`
 
-#### `public void `[`SKY_cipher_BitcoinAddressFromPubkey`](#libskycoin_8h_1a3bb30e8687b82b3d2b7a3ecb6ad99d51)`(PubKey * p0,`[`GoString_`](#struct_go_string__)` * p1)` 
+#### `public unsigned int `[`b64e_size`](#base64_8h_1ae530f943b1ac55252c7ffba9a56fe946)`(unsigned int in_size)`
 
-#### `public void `[`SKY_cipher_BitcoinWalletImportFormatFromSeckey`](#libskycoin_8h_1a5086015efeb4450facc6e44d01f3c0bf)`(SecKey * p0,`[`GoString_`](#struct_go_string__)` * p1)` 
+#### `public unsigned int `[`b64d_size`](#base64_8h_1ae6911453bae790c4ba1933674d51c4cb)`(unsigned int in_size)`
 
-#### `public GoUint32 `[`SKY_cipher_BitcoinAddressFromBytes`](#libskycoin_8h_1afd7bbc548f9add0fb3846c5537c3e6bb)`(`[`GoSlice`](#struct_go_slice)` p0,`[`Address`](#struct_address)` * p1)` 
+#### `public unsigned int `[`b64_encode`](#base64_8h_1aeddff3b5b68b9080553c10ff2364cc4b)`(const unsigned char * in,unsigned int in_len,unsigned char * out)`
 
-#### `public GoUint32 `[`SKY_cipher_SecKeyFromWalletImportFormat`](#libskycoin_8h_1aff9f7e90c09af0fbe68de0c2cb93445b)`(`[`GoString`](#struct___go_string__)` p0,SecKey * p1)` 
+#### `public unsigned int `[`b64_decode`](#base64_8h_1a181a008944edb84bcfd73efacadb41c5)`(const unsigned char * in,unsigned int in_len,unsigned char * out)`
 
-#### `public GoInt `[`SKY_cipher_PubKeySlice_Len`](#libskycoin_8h_1a4f8c95cf781be6721227ed34e3e31a82)`(`[`PubKeySlice`](#struct_go_slice__)` * p0)` 
+#### `public unsigned int `[`b64_encodef`](#base64_8h_1a2ea67610bb294c8d82deed5d9335d877)`(char * InFile,char * OutFile)`
 
-#### `public GoUint8 `[`SKY_cipher_PubKeySlice_Less`](#libskycoin_8h_1aee5e7adb2fb6a981499b67ccd6950f07)`(`[`PubKeySlice`](#struct_go_slice__)` * p0,GoInt p1,GoInt p2)` 
+#### `public unsigned int `[`b64_decodef`](#base64_8h_1ac6582b011d3ebb0af9e47b5ee5d75a2c)`(char * InFile,char * OutFile)`
 
-#### `public void `[`SKY_cipher_PubKeySlice_Swap`](#libskycoin_8h_1adec780a8bb7a1e6b06e46725d438802f)`(`[`PubKeySlice`](#struct_go_slice__)` * p0,GoInt p1,GoInt p2)` 
+#### `public `[`json_value`](#struct__json__value)` * `[`loadGoldenFile`](#cipher_8testsuite_8testsuite_8go_8h_1a97f400dcf2127780240374f791ad55cb)`(const char * file)`
 
-#### `public void `[`SKY_cipher_RandByte`](#libskycoin_8h_1a443396fbe41b5ceca52ca9ce1178da87)`(GoInt p0,`[`PubKeySlice`](#struct_go_slice__)` * p1)` 
+#### `public `[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * `[`jsonToInputTestData`](#cipher_8testsuite_8testsuite_8go_8h_1acc7925cd0a944333c5b0efef5926eee5)`(`[`json_value`](#struct__json__value)` * json,`[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * input_data)`
 
-#### `public GoUint32 `[`SKY_cipher_NewPubKey`](#libskycoin_8h_1acce44b33fe66eb8e5a474ce5a52ce6ad)`(`[`GoSlice`](#struct_go_slice)` p0,PubKey * p1)` 
+#### `public `[`InputTestData`](#struct_input_test_data)` * `[`registerInputTestDataCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a4940377b4eca6c3728e034a423d5964f)`(`[`InputTestData`](#struct_input_test_data)` * input_data)`
 
-#### `public GoUint32 `[`SKY_cipher_PubKeyFromHex`](#libskycoin_8h_1a2941fcfb4b91f1a6831ed7a008f2f492)`(`[`GoString`](#struct___go_string__)` p0,PubKey * p1)` 
+#### `public `[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * `[`registerInputTestDataJSONCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a45e3d42f145d2065097b1715037973bf)`(`[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * input_data)`
 
-#### `public GoUint32 `[`SKY_cipher_PubKeyFromSecKey`](#libskycoin_8h_1afcd38ca547a7dae97d415bbec4d25199)`(SecKey * p0,PubKey * p1)` 
+#### `public void `[`InputTestDataToJSON`](#cipher_8testsuite_8testsuite_8go_8h_1a655f8018783ebb3ff95e7f6fcd392552)`(`[`InputTestData`](#struct_input_test_data)` * input_data,`[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * json_data)`
 
-#### `public GoUint32 `[`SKY_cipher_PubKeyFromSig`](#libskycoin_8h_1a92d9b6d12c0f4eba7aa63336c83b920d)`(Sig * p0,SHA256 * p1,PubKey * p2)` 
+#### `public GoUint32 `[`InputTestDataFromJSON`](#cipher_8testsuite_8testsuite_8go_8h_1ab3c102e440e98e8cd90a970ce0ade222)`(`[`InputTestDataJSON`](#struct_input_test_data_j_s_o_n)` * json_data,`[`InputTestData`](#struct_input_test_data)` * input_data)`
 
-#### `public GoUint32 `[`SKY_cipher_PubKey_Verify`](#libskycoin_8h_1aa758e062425798924e1eea3cddafb8ef)`(PubKey * p0)` 
+#### `public `[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * `[`jsonToKeysTestData`](#cipher_8testsuite_8testsuite_8go_8h_1adc41ca999e05fb40c7ee8c2b6a59e1bc)`(`[`json_value`](#struct__json__value)` * json,`[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * input_data)`
 
-#### `public void `[`SKY_cipher_PubKey_Hex`](#libskycoin_8h_1a80a69cd598ab67fc83afa6f8646f4358)`(PubKey * p0,`[`GoString_`](#struct_go_string__)` * p1)` 
+#### `public `[`KeysTestData`](#struct_keys_test_data)` * `[`registerKeysTestDataCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a28dfd2ed9cfbf047a378e74ba026f053)`(`[`KeysTestData`](#struct_keys_test_data)` * input_data)`
 
-#### `public void `[`SKY_cipher_PubKey_ToAddressHash`](#libskycoin_8h_1ad9c96b9e1d8915c6546d4070f2e76cab)`(PubKey * p0,Ripemd160 * p1)` 
+#### `public `[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * `[`registerKeysTestDataJSONCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a333892fc9f11cb43ce5b442d3b03f006)`(`[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * input_data)`
 
-#### `public GoUint32 `[`SKY_cipher_NewSecKey`](#libskycoin_8h_1a009cc1bf2f436a1a790db7708f17198c)`(`[`GoSlice`](#struct_go_slice)` p0,SecKey * p1)` 
+#### `public void `[`KeysTestDataToJson`](#cipher_8testsuite_8testsuite_8go_8h_1af9f0285478f247557b6334618d2aa145)`(`[`KeysTestData`](#struct_keys_test_data)` * input_data,`[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * json_data)`
 
-#### `public GoUint32 `[`SKY_cipher_SecKeyFromHex`](#libskycoin_8h_1a780e839e1ae75fbac8ec674d54927d77)`(`[`GoString`](#struct___go_string__)` p0,SecKey * p1)` 
+#### `public GoUint32 `[`KeysTestDataFromJSON`](#cipher_8testsuite_8testsuite_8go_8h_1a92c62c143ec39d7186c19ab6e43dc92b)`(`[`KeysTestDataJSON`](#struct_keys_test_data_j_s_o_n)` * json_data,`[`KeysTestData`](#struct_keys_test_data)` * input_data)`
 
-#### `public GoUint32 `[`SKY_cipher_SecKey_Verify`](#libskycoin_8h_1aa17089f7a830bbd75d11095f561cf39d)`(SecKey * p0)` 
+#### `public `[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * `[`jsonToSeedTestData`](#cipher_8testsuite_8testsuite_8go_8h_1af295a0cdc63ba27fd346852112f28b3c)`(`[`json_value`](#struct__json__value)` * json,`[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * input_data)`
 
-#### `public void `[`SKY_cipher_SecKey_Hex`](#libskycoin_8h_1a645f5f92b38653939297b625d0f8dc21)`(SecKey * p0,`[`GoString_`](#struct_go_string__)` * p1)` 
+#### `public `[`SeedTestData`](#struct_seed_test_data)` * `[`registerSeedTestDataCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1a96bf06d5429ca3ec74e31e279f7f0cf0)`(`[`SeedTestData`](#struct_seed_test_data)` * input_data)`
 
-#### `public void `[`SKY_cipher_ECDH`](#libskycoin_8h_1a23f26a93a05cc2fdb59e6feac5fe5140)`(PubKey * p0,SecKey * p1,`[`PubKeySlice`](#struct_go_slice__)` * p2)` 
+#### `public `[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * `[`registerSeedTestDataJSONCleanup`](#cipher_8testsuite_8testsuite_8go_8h_1ae7d0af21cce697cc8bc097279c3ed398)`(`[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * input_data)`
 
-#### `public GoUint32 `[`SKY_cipher_NewSig`](#libskycoin_8h_1ae72cdb33ffdd48382414c6125df5592c)`(`[`GoSlice`](#struct_go_slice)` p0,Sig * p1)` 
+#### `public void `[`SeedTestDataToJson`](#cipher_8testsuite_8testsuite_8go_8h_1abde3615ebe8efb1d0c126d4b71120bd7)`(`[`SeedTestData`](#struct_seed_test_data)` * input_data,`[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * json_data)`
 
-#### `public GoUint32 `[`SKY_cipher_SigFromHex`](#libskycoin_8h_1acd82a1de9be7d7291f79f7b32add9eec)`(`[`GoString`](#struct___go_string__)` p0,Sig * p1)` 
+#### `public GoUint32 `[`SeedTestDataFromJSON`](#cipher_8testsuite_8testsuite_8go_8h_1a7fb0e2dc54e3623caf580bab823255e5)`(`[`SeedTestDataJSON`](#struct_seed_test_data_j_s_o_n)` * json_data,`[`SeedTestData`](#struct_seed_test_data)` * input_data)`
 
-#### `public void `[`SKY_cipher_Sig_Hex`](#libskycoin_8h_1a0df60afe6e0a6b09a45959c81123cd84)`(Sig * p0,`[`GoString_`](#struct_go_string__)` * p1)` 
+#### `public void `[`ValidateSeedData`](#cipher_8testsuite_8testsuite_8go_8h_1a2af7891924708bd79f29b5ced351967a)`(`[`SeedTestData`](#struct_seed_test_data)` * seedData,`[`InputTestData`](#struct_input_test_data)` * inputData)`
 
-#### `public void `[`SKY_cipher_SignHash`](#libskycoin_8h_1a88c349cd3a7f14df8decd6c9c646c7f3)`(SHA256 * p0,SecKey * p1,Sig * p2)` 
+#### `public `[`json_value`](#struct__json__value)` * `[`json_parse`](#json_8h_1a4dd0cf45ec85a69a6021b6cfe0287b66)`(const json_char * json,size_t length)`
 
-#### `public GoUint32 `[`SKY_cipher_ChkSig`](#libskycoin_8h_1af512d40dd13c355ee7222f4bd2085f41)`(`[`Address`](#struct_address)` * p0,SHA256 * p1,Sig * p2)` 
+#### `public `[`json_value`](#struct__json__value)` * `[`json_parse_ex`](#json_8h_1ae828aab0174a7e20eec19a40d835d3c1)`(`[`json_settings`](#structjson__settings)` * settings,const json_char * json,size_t length,char * error)`
 
-#### `public GoUint32 `[`SKY_cipher_VerifySignedHash`](#libskycoin_8h_1a8a9388cb9ff151f481f4681658381728)`(Sig * p0,SHA256 * p1)` 
+#### `public void `[`json_value_free`](#json_8h_1a3299652febea64fc59c5917ad47ede28)`(`[`json_value`](#struct__json__value)` *)`
 
-#### `public GoUint32 `[`SKY_cipher_VerifySignature`](#libskycoin_8h_1a24949394563c4a49c502549a96809b32)`(PubKey * p0,Sig * p1,SHA256 * p2)` 
+#### `public void `[`json_value_free_ex`](#json_8h_1a129467197843210b7ce2a2c59e92f781)`(`[`json_settings`](#structjson__settings)` * settings,`[`json_value`](#struct__json__value)` *)`
 
-#### `public void `[`SKY_cipher_GenerateKeyPair`](#libskycoin_8h_1ab601accdb915f5794554f80801a856d1)`(PubKey * p0,SecKey * p1)` 
+#### `public int `[`DecodeBase58Address`](#libskycoin_8h_1af0bc416968a2873cf5952eecd12f1f92)`(`[`GoString`](#struct___go_string__)` p0,`[`Address`](#struct_address)` * p1)`
 
-#### `public void `[`SKY_cipher_GenerateDeterministicKeyPair`](#libskycoin_8h_1a2e579464b2cf0cdb94701c52b84ad979)`(`[`GoSlice`](#struct_go_slice)` p0,PubKey * p1,SecKey * p2)` 
+#### `public int `[`cr_user_cipher__Address_eq`](#skycriterion_8h_1a00edb99a770d440315ad2c91107a314b)`(`[`cipher__Address`](#structcipher_____address)` * addr1,`[`cipher__Address`](#structcipher_____address)` * addr2)`
 
-#### `public void `[`SKY_cipher_DeterministicKeyPairIterator`](#libskycoin_8h_1a43ef1cf5a3d82f8093ab1a8eee043fcb)`(`[`GoSlice`](#struct_go_slice)` p0,`[`PubKeySlice`](#struct_go_slice__)` * p1,PubKey * p2,SecKey * p3)` 
+#### `public char * `[`cr_user_cipher__Address_tostr`](#skycriterion_8h_1a7684fd986e502ffa967626174ecb121b)`(`[`cipher__Address`](#structcipher_____address)` * addr1)`
 
-#### `public void `[`SKY_cipher_GenerateDeterministicKeyPairs`](#libskycoin_8h_1a60367b51223730d7d77297309b230be4)`(`[`GoSlice`](#struct_go_slice)` p0,GoInt p1,`[`PubKeySlice`](#struct_go_slice__)` * p2)` 
+#### `public int `[`cr_user_cipher__Address_noteq`](#skycriterion_8h_1aef473b3aaf9517e054136597befabb19)`(`[`cipher__Address`](#structcipher_____address)` * addr1,`[`cipher__Address`](#structcipher_____address)` * addr2)`
 
-#### `public void `[`SKY_cipher_GenerateDeterministicKeyPairsSeed`](#libskycoin_8h_1a038ca71fb6cff77b49e41ad69f00a516)`(`[`GoSlice`](#struct_go_slice)` p0,GoInt p1,`[`PubKeySlice`](#struct_go_slice__)` * p2,`[`PubKeySlice`](#struct_go_slice__)` * p3)` 
+#### `public int `[`cr_user_GoString_eq`](#skycriterion_8h_1afde184bfa3d42dadb560478bb384fd0e)`(`[`GoString`](#struct___go_string__)` * string1,`[`GoString`](#struct___go_string__)` * string2)`
 
-#### `public GoUint32 `[`SKY_cipher_TestSecKey`](#libskycoin_8h_1ace44f781f8ec684f8e9c59fb7fa3dbb3)`(SecKey * p0)` 
+#### `public int `[`cr_user_GoString__eq`](#skycriterion_8h_1adc4957c85581c8021d1bc5e1fe68954e)`(`[`GoString_`](#struct_go_string__)` * string1,`[`GoString_`](#struct_go_string__)` * string2)`
 
-#### `public GoUint32 `[`SKY_cipher_TestSecKeyHash`](#libskycoin_8h_1a6cb852f76a408372d3b0aa5221bcdaed)`(SecKey * p0,SHA256 * p1)` 
+#### `public char * `[`cr_user_GoString_tostr`](#skycriterion_8h_1ac49e1ea1279ec23eb1b06fc4cff4346e)`(`[`GoString`](#struct___go_string__)` * string)`
 
-#### `public GoUint32 `[`SKY_cipher_Ripemd160_Set`](#libskycoin_8h_1a3ec912a20b9e36b1c12c94f8f5be119e)`(Ripemd160 * p0,`[`GoSlice`](#struct_go_slice)` p1)` 
+#### `public char * `[`cr_user_GoString__tostr`](#skycriterion_8h_1a8ba00c85c7eede2d955cfe016cb1023d)`(`[`GoString_`](#struct_go_string__)` * string)`
 
-#### `public void `[`SKY_cipher_HashRipemd160`](#libskycoin_8h_1a54bd9a7ead7b661260abf98d2490153f)`(`[`GoSlice`](#struct_go_slice)` p0,Ripemd160 * p1)` 
+#### `public int `[`cr_user_cipher__SecKey_eq`](#skycriterion_8h_1ac3d286c06a1659717bc392004b857ba0)`(cipher__SecKey * seckey1,cipher__SecKey * seckey2)`
 
-#### `public GoUint32 `[`SKY_cipher_SHA256_Set`](#libskycoin_8h_1aba4a6f9df12f6384da9eeb93d7723f73)`(SHA256 * p0,`[`GoSlice`](#struct_go_slice)` p1)` 
+#### `public char * `[`cr_user_cipher__SecKey_tostr`](#skycriterion_8h_1ad6ebdf1335f21b53df8a9606e68889af)`(cipher__SecKey * seckey1)`
 
-#### `public void `[`SKY_cipher_SHA256_Hex`](#libskycoin_8h_1a5c8d433169079581776fe5a5eec1adb4)`(SHA256 * p0,`[`GoString_`](#struct_go_string__)` * p1)` 
+#### `public int `[`cr_user_cipher__Ripemd160_noteq`](#skycriterion_8h_1a817a01cd72b552039a61d0add95a14f1)`(cipher__Ripemd160 * rp1,cipher__Ripemd160 * rp2)`
 
-#### `public void `[`SKY_cipher_SHA256_Xor`](#libskycoin_8h_1adf30e083c2811ee14eeef58178ceefc6)`(SHA256 * p0,SHA256 * p1,SHA256 * p2)` 
+#### `public int `[`cr_user_cipher__Ripemd160_eq`](#skycriterion_8h_1ac843b722e627d29c8450c766b866edd6)`(cipher__Ripemd160 * rp1,cipher__Ripemd160 * rp2)`
 
-#### `public GoUint32 `[`SKY_cipher_SumSHA256`](#libskycoin_8h_1a7f0f0fa3b1610c7e97dc2950b35a75c4)`(`[`GoSlice`](#struct_go_slice)` p0,SHA256 * p1)` 
+#### `public char * `[`cr_user_cipher__Ripemd160_tostr`](#skycriterion_8h_1aeee5ce2262f3cfbdc942aa2ae6c16974)`(cipher__Ripemd160 * rp1)`
 
-#### `public GoUint32 `[`SKY_cipher_SHA256FromHex`](#libskycoin_8h_1a046027f0eb544d6a0b8f1b78a7d189b4)`(`[`GoString`](#struct___go_string__)` p0,SHA256 * p1)` 
+#### `public int `[`cr_user_GoSlice_eq`](#skycriterion_8h_1a68e13a153f444839e3dbe06cc14e2348)`(`[`GoSlice`](#struct_go_slice)` * slice1,`[`GoSlice`](#struct_go_slice)` * slice2)`
 
-#### `public void `[`SKY_cipher_DoubleSHA256`](#libskycoin_8h_1ad3390997c0c9aec4c2cd678b6356d3ea)`(`[`GoSlice`](#struct_go_slice)` p0,SHA256 * p1)` 
+#### `public char * `[`cr_user_GoSlice_tostr`](#skycriterion_8h_1aa058100c8835ae72f2c609ad2ef1ba85)`(`[`GoSlice`](#struct_go_slice)` * slice1)`
 
-#### `public void `[`SKY_cipher_AddSHA256`](#libskycoin_8h_1aa5977d4828735c3bceb1153f8bffc21b)`(SHA256 * p0,SHA256 * p1,SHA256 * p2)` 
+#### `public int `[`cr_user_GoSlice_noteq`](#skycriterion_8h_1a361dbb4ff75151c68df6d37368880b24)`(`[`GoSlice`](#struct_go_slice)` * slice1,`[`GoSlice`](#struct_go_slice)` * slice2)`
 
-#### `public void `[`SKY_cipher_Merkle`](#libskycoin_8h_1a71f945bbf46e4496051c98e390d11460)`(`[`GoSlice`](#struct_go_slice)` * p0,SHA256 * p1)` 
+#### `public int `[`cr_user_cipher__SHA256_noteq`](#skycriterion_8h_1af9de60cc1f5b338ff07b8a34a0af31d4)`(cipher__SHA256 * sh1,cipher__SHA256 * sh2)`
 
-#### `public int `[`cr_user_Address_eq`](#skycriterion_8h_1a5c3dd4cd20db987c789c0a49ba098185)`(`[`Address`](#struct_address)` * addr1,`[`Address`](#struct_address)` * addr2)` 
+#### `public int `[`cr_user_cipher__SHA256_eq`](#skycriterion_8h_1a239dd96034613f7c5d187f355d054843)`(cipher__SHA256 * sh1,cipher__SHA256 * sh2)`
 
-#### `public char * `[`cr_user_Address_tostr`](#skycriterion_8h_1a232c966bd05993a3e9accc2670af2872)`(`[`Address`](#struct_address)` * addr1)` 
+#### `public char * `[`cr_user_cipher__SHA256_tostr`](#skycriterion_8h_1a24e2acadd37b726ed2d9b07092e739d9)`(cipher__SHA256 * sh1)`
 
-#### `public int `[`cr_user_Address_noteq`](#skycriterion_8h_1a0fc9801f223de4c4dee580e47060ee12)`(`[`Address`](#struct_address)` * addr1,`[`Address`](#struct_address)` * addr2)` 
+#### `public void `[`randBytes`](#skystring_8h_1abc646fb4e2f83b9ec86bacd6f8006907)`(`[`GoSlice`](#struct_go_slice)` * bytes,size_t n)`
 
-#### `public int `[`cr_user_GoString_eq`](#skycriterion_8h_1afde184bfa3d42dadb560478bb384fd0e)`(`[`GoString`](#struct___go_string__)` * string1,`[`GoString`](#struct___go_string__)` * string2)` 
+#### `public void `[`strnhex`](#skystring_8h_1aef6e4f140a965b05589db78792dc3c09)`(unsigned char * buf,char * str,int n)`
 
-#### `public int `[`cr_user_GoString__eq`](#skycriterion_8h_1adc4957c85581c8021d1bc5e1fe68954e)`(`[`GoString_`](#struct_go_string__)` * string1,`[`GoString_`](#struct_go_string__)` * string2)` 
+#### `public void `[`strhex`](#skystring_8h_1a589986670c6a1cd947da79512078ff05)`(unsigned char * buf,char * str)`
 
-#### `public char * `[`cr_user_GoString_tostr`](#skycriterion_8h_1ac49e1ea1279ec23eb1b06fc4cff4346e)`(`[`GoString`](#struct___go_string__)` * string)` 
+#### `public void `[`fprintbuff`](#skytest_8h_1a1ee45e153c115a9a735b3ccbf992e495)`(FILE * f,void * buff,size_t n)`
 
-#### `public char * `[`cr_user_GoString__tostr`](#skycriterion_8h_1a8ba00c85c7eede2d955cfe016cb1023d)`(`[`GoString_`](#struct_go_string__)` * string)` 
+#### `public `[`json_value`](#struct__json__value)` * `[`loadJsonFile`](#skytest_8h_1ae9debe21347a5e30565195425a898448)`(const char * filename)`
 
-#### `public int `[`cr_user_SecKey_eq`](#skycriterion_8h_1a93763ef6964d4cae39c79a7f46a2f42f)`(SecKey * seckey1,SecKey * seckey2)` 
+#### `public void * `[`registerMemCleanup`](#skytest_8h_1a3138ecc83c1c8906c84ef5e0d54cdfbb)`(void * p)`
 
-#### `public char * `[`cr_user_SecKey_tostr`](#skycriterion_8h_1a2285d6f43b6c3d8903444d0983308ad3)`(SecKey * seckey1)` 
+#### `public void `[`toGoString`](#skytest_8h_1a1bad90cc197623fa8328f71809dda1a3)`(`[`GoString_`](#struct_go_string__)` * s,`[`GoString`](#struct___go_string__)` * r)`
 
-#### `public int `[`cr_user_Ripemd160_noteq`](#skycriterion_8h_1ac402ce38ac35394b35bed0b866266f51)`(Ripemd160 * rp1,Ripemd160 * rp2)` 
+#### `public `[`json_value`](#struct__json__value)` * `[`json_get_string`](#skytest_8h_1aaa0fcc92ec99e3682126c396c7990724)`(`[`json_value`](#struct__json__value)` * value,const char * key)`
 
-#### `public int `[`cr_user_Ripemd160_eq`](#skycriterion_8h_1ab77cfde0399d3d261908732b6fd0074e)`(Ripemd160 * rp1,Ripemd160 * rp2)` 
+#### `public int `[`json_set_string`](#skytest_8h_1a532c9bff6c467be505835bcb9a2fcaa0)`(`[`json_value`](#struct__json__value)` * value,const char * new_string_value)`
 
-#### `public char * `[`cr_user_Ripemd160_tostr`](#skycriterion_8h_1ab2fe9026270b2ff7589cb44e03bd94c5)`(Ripemd160 * rp1)` 
+#### `public int `[`registerJsonFree`](#skytest_8h_1af298033f76a79ff6945d0a65a83842fe)`(void * p)`
 
-#### `public int `[`cr_user_GoSlice_eq`](#skycriterion_8h_1a68e13a153f444839e3dbe06cc14e2348)`(`[`GoSlice`](#struct_go_slice)` * slice1,`[`GoSlice`](#struct_go_slice)` * slice2)` 
+#### `public void `[`freeRegisteredJson`](#skytest_8h_1ae9eb5fd6a792b4db185089a1a14db57a)`(void * p)`
 
-#### `public char * `[`cr_user_GoSlice_tostr`](#skycriterion_8h_1aa058100c8835ae72f2c609ad2ef1ba85)`(`[`GoSlice`](#struct_go_slice)` * slice1)` 
+#### `public int `[`compareJsonValues`](#skytest_8h_1abf7dd2e2fa866fc3fe6acedbf9842a3a)`(`[`json_value`](#struct__json__value)` * value1,`[`json_value`](#struct__json__value)` * value2)`
 
-#### `public int `[`cr_user_GoSlice_noteq`](#skycriterion_8h_1a361dbb4ff75151c68df6d37368880b24)`(`[`GoSlice`](#struct_go_slice)` * slice1,`[`GoSlice`](#struct_go_slice)` * slice2)` 
+#### `public `[`json_value`](#struct__json__value)` * `[`get_json_value`](#skytest_8h_1ad81ecc74786fda501485b271384b993e)`(`[`json_value`](#struct__json__value)` * node,const char * path,json_type type)`
 
-#### `public int `[`cr_user_SHA256_noteq`](#skycriterion_8h_1ae300f329a27269668d76e11aeeae30e7)`(SHA256 * sh1,SHA256 * sh2)` 
+#### `public `[`json_value`](#struct__json__value)` * `[`get_json_value_not_strict`](#skytest_8h_1aabc1cef09feea6fdb43c33971366b1b5)`(`[`json_value`](#struct__json__value)` * node,const char * path,json_type type,int allow_null)`
 
-#### `public int `[`cr_user_SHA256_eq`](#skycriterion_8h_1a233276e4a1ceab57a648c997c970bf92)`(SHA256 * sh1,SHA256 * sh2)` 
+#### `public void `[`setup`](#skytest_8h_1a7dfd9b79bc5a37d7df40207afbc5431f)`(void)`
 
-#### `public char * `[`cr_user_SHA256_tostr`](#skycriterion_8h_1a396e12d7842311b730774d39913d6ab9)`(SHA256 * sh1)` 
+#### `public void `[`teardown`](#skytest_8h_1a75dbff5b7c2c889050e2c49172679905)`(void)`
 
-#### `public void `[`randBytes`](#skystring_8h_1abc646fb4e2f83b9ec86bacd6f8006907)`(`[`GoSlice`](#struct_go_slice)` * bytes,size_t n)` 
-
-#### `public void `[`strnhex`](#skystring_8h_1aef6e4f140a965b05589db78792dc3c09)`(unsigned char * buf,char * str,int n)` 
-
-#### `public void `[`strhex`](#skystring_8h_1a589986670c6a1cd947da79512078ff05)`(unsigned char * buf,char * str)` 
-
-#### `public void * `[`registerMemCleanup`](#skytest_8h_1a3138ecc83c1c8906c84ef5e0d54cdfbb)`(void * p)` 
-
-#### `public void `[`fprintbuff`](#skytest_8h_1a1ee45e153c115a9a735b3ccbf992e495)`(FILE * f,void * buff,size_t n)` 
-
-#### `public void `[`toGoString`](#skytest_8h_1a1bad90cc197623fa8328f71809dda1a3)`(`[`GoString_`](#struct_go_string__)` * s,`[`GoString`](#struct___go_string__)` * r)` 
-
-# struct `_GoString_` 
+# struct `_GoString_`
 
 ## Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`public const char * `[`p`](#struct___go_string___1a6bc6b007533335efe02bafff799ec64c) | 
-`public ptrdiff_t `[`n`](#struct___go_string___1a52d899ae12c13f4df8ff5ee014f3a106) | 
+`public const char * `[`p`](#struct___go_string___1a6bc6b007533335efe02bafff799ec64c) |
+`public ptrdiff_t `[`n`](#struct___go_string___1a52d899ae12c13f4df8ff5ee014f3a106) |
 
 ## Members
 
-#### `public const char * `[`p`](#struct___go_string___1a6bc6b007533335efe02bafff799ec64c) 
+#### `public const char * `[`p`](#struct___go_string___1a6bc6b007533335efe02bafff799ec64c)
 
-#### `public ptrdiff_t `[`n`](#struct___go_string___1a52d899ae12c13f4df8ff5ee014f3a106) 
+#### `public ptrdiff_t `[`n`](#struct___go_string___1a52d899ae12c13f4df8ff5ee014f3a106)
 
-# struct `Address` 
+# struct `_json_object_entry`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public json_char * `[`name`](#struct__json__object__entry_1a3c3e575cdb04c92d1bd8e2ffbfd871cc) |
+`public unsigned int `[`name_length`](#struct__json__object__entry_1a3f3f10ffae1e364e84a38517a174b01e) |
+`public struct `[`_json_value`](#struct__json__value)` * `[`value`](#struct__json__object__entry_1ae4f19c247094dd7870bfbf798d79ac99) |
+
+## Members
+
+#### `public json_char * `[`name`](#struct__json__object__entry_1a3c3e575cdb04c92d1bd8e2ffbfd871cc)
+
+#### `public unsigned int `[`name_length`](#struct__json__object__entry_1a3f3f10ffae1e364e84a38517a174b01e)
+
+#### `public struct `[`_json_value`](#struct__json__value)` * `[`value`](#struct__json__object__entry_1ae4f19c247094dd7870bfbf798d79ac99)
+
+# struct `_json_value`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public struct `[`_json_value`](#struct__json__value)` * `[`parent`](#struct__json__value_1aa86e0e17a210b00b008a001e866050cd) |
+`public json_type `[`type`](#struct__json__value_1a5b632686c28261d4d52390dfc8dc0dcd) |
+`public int `[`boolean`](#struct__json__value_1afc58e0c0df35925913174accbf1114cb) |
+`public json_int_t `[`integer`](#struct__json__value_1a45f8bcb9c0a1417f182d41049a2107e5) |
+`public double `[`dbl`](#struct__json__value_1a57291299e530453fdec37a931c728239) |
+`public unsigned int `[`length`](#struct__json__value_1ac8d42bcd4a44e078047ccd7291059238) |
+`public json_char * `[`ptr`](#struct__json__value_1af340cb5b3b56fa2cc2b043529017fd3a) |
+`public struct _json_value::@0::@2 `[`string`](#struct__json__value_1adbf96c673bfce83dd224c60f5a1eedc4) |
+`public `[`json_object_entry`](#struct__json__object__entry)` * `[`values`](#struct__json__value_1a35eecbf6405a59adaf2c2001b9b224b0) |
+`public struct _json_value::@0::@3 `[`object`](#struct__json__value_1a67174883be078cb852d4748b78aa60ce) |
+`public struct `[`_json_value`](#struct__json__value)` ** `[`values`](#struct__json__value_1a6244a16657c988883bbb1fa7f1f0ba55) |
+`public struct _json_value::@0::@4 `[`array`](#struct__json__value_1ac837a4233a38fcd3c3d51da2c3a56f0c) |
+`public union _json_value::@0 `[`u`](#struct__json__value_1a2e5a72cccd43ae6e6b1dc476fc327d17) |
+`public struct `[`_json_value`](#struct__json__value)` * `[`next_alloc`](#struct__json__value_1a6b6c655ef17b09a6ea18d94612a27304) |
+`public void * `[`object_mem`](#struct__json__value_1aa166262c3b34bfb69a85f6e625970226) |
+`public union _json_value::@1 `[`_reserved`](#struct__json__value_1ac7cdbd31aad7b4a672e38721c1122f35) |
+
+## Members
+
+#### `public struct `[`_json_value`](#struct__json__value)` * `[`parent`](#struct__json__value_1aa86e0e17a210b00b008a001e866050cd)
+
+#### `public json_type `[`type`](#struct__json__value_1a5b632686c28261d4d52390dfc8dc0dcd)
+
+#### `public int `[`boolean`](#struct__json__value_1afc58e0c0df35925913174accbf1114cb)
+
+#### `public json_int_t `[`integer`](#struct__json__value_1a45f8bcb9c0a1417f182d41049a2107e5)
+
+#### `public double `[`dbl`](#struct__json__value_1a57291299e530453fdec37a931c728239)
+
+#### `public unsigned int `[`length`](#struct__json__value_1ac8d42bcd4a44e078047ccd7291059238)
+
+#### `public json_char * `[`ptr`](#struct__json__value_1af340cb5b3b56fa2cc2b043529017fd3a)
+
+#### `public struct _json_value::@0::@2 `[`string`](#struct__json__value_1adbf96c673bfce83dd224c60f5a1eedc4)
+
+#### `public `[`json_object_entry`](#struct__json__object__entry)` * `[`values`](#struct__json__value_1a35eecbf6405a59adaf2c2001b9b224b0)
+
+#### `public struct _json_value::@0::@3 `[`object`](#struct__json__value_1a67174883be078cb852d4748b78aa60ce)
+
+#### `public struct `[`_json_value`](#struct__json__value)` ** `[`values`](#struct__json__value_1a6244a16657c988883bbb1fa7f1f0ba55)
+
+#### `public struct _json_value::@0::@4 `[`array`](#struct__json__value_1ac837a4233a38fcd3c3d51da2c3a56f0c)
+
+#### `public union _json_value::@0 `[`u`](#struct__json__value_1a2e5a72cccd43ae6e6b1dc476fc327d17)
+
+#### `public struct `[`_json_value`](#struct__json__value)` * `[`next_alloc`](#struct__json__value_1a6b6c655ef17b09a6ea18d94612a27304)
+
+#### `public void * `[`object_mem`](#struct__json__value_1aa166262c3b34bfb69a85f6e625970226)
+
+#### `public union _json_value::@1 `[`_reserved`](#struct__json__value_1ac7cdbd31aad7b4a672e38721c1122f35)
+
+# struct `Address`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public unsigned char `[`Version`](#struct_address_1a49fed92a3e4a3cc30678924a13acc19f) |
+`public Ripemd160 `[`Key`](#struct_address_1aa7fd9da55c53a8f7a6abe4987a8ea093) |
+
+## Members
+
+#### `public unsigned char `[`Version`](#struct_address_1a49fed92a3e4a3cc30678924a13acc19f)
+
+#### `public Ripemd160 `[`Key`](#struct_address_1aa7fd9da55c53a8f7a6abe4987a8ea093)
+
+# struct `cipher__Address`
 
 Addresses of SKY accounts
 
 ## Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`public unsigned char `[`Version`](#struct_address_1a49fed92a3e4a3cc30678924a13acc19f) | [Address](#struct_address) version identifier. Used to differentiate testnet vs mainnet addresses, for instance.
-`public Ripemd160 `[`Key`](#struct_address_1aa7fd9da55c53a8f7a6abe4987a8ea093) | [Address](#struct_address) hash identifier.
+`public unsigned char `[`Version`](#structcipher_____address_1a49fed92a3e4a3cc30678924a13acc19f) | [Address](#struct_address) version identifier. Used to differentiate testnet vs mainnet addresses, for instance.
+`public cipher__Ripemd160 `[`Key`](#structcipher_____address_1a16586cd3bfc67010c3c185d0da01317c) | [Address](#struct_address) hash identifier.
 
 ## Members
 
-#### `public unsigned char `[`Version`](#struct_address_1a49fed92a3e4a3cc30678924a13acc19f) 
+#### `public unsigned char `[`Version`](#structcipher_____address_1a49fed92a3e4a3cc30678924a13acc19f)
 
 [Address](#struct_address) version identifier. Used to differentiate testnet vs mainnet addresses, for instance.
 
-#### `public Ripemd160 `[`Key`](#struct_address_1aa7fd9da55c53a8f7a6abe4987a8ea093) 
+#### `public cipher__Ripemd160 `[`Key`](#structcipher_____address_1a16586cd3bfc67010c3c185d0da01317c)
 
 [Address](#struct_address) hash identifier.
 
-# struct `Entry` 
+# struct `cipher__BitcoinAddress`
 
-[Wallet](#struct_wallet) entry.
-
-## Summary
-
- Members                        | Descriptions                                
---------------------------------|---------------------------------------------
-`public `[`Address`](#struct_address)` `[`Address`](#struct_entry_1a0f1895b2f69382d62e5bdc459d30cae1) | [Wallet](#struct_wallet) address.
-`public PubKey `[`Public`](#struct_entry_1ac4e11c22d8462b7633be585127f1a8d0) | Public key used to generate address.
-`public SecKey `[`Secret`](#struct_entry_1a18296486015d3885702241c1d821d563) | Secret key used to generate address.
-
-## Members
-
-#### `public `[`Address`](#struct_address)` `[`Address`](#struct_entry_1a0f1895b2f69382d62e5bdc459d30cae1) 
-
-[Wallet](#struct_wallet) address.
-
-#### `public PubKey `[`Public`](#struct_entry_1ac4e11c22d8462b7633be585127f1a8d0) 
-
-Public key used to generate address.
-
-#### `public SecKey `[`Secret`](#struct_entry_1a18296486015d3885702241c1d821d563) 
-
-Secret key used to generate address.
-
-# struct `GoInterface` 
+Addresses of Bitcoin accounts
 
 ## Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`public void * `[`t`](#struct_go_interface_1a6445205ee90f5ff5131595cf7ddfcec0) | 
-`public void * `[`v`](#struct_go_interface_1a67806b49e20fb1170422969965db6ecb) | 
+`public unsigned char `[`Version`](#structcipher_____bitcoin_address_1a49fed92a3e4a3cc30678924a13acc19f) | [Address](#struct_address) version identifier. Used to differentiate testnet vs mainnet addresses, for instance.
+`public cipher__Ripemd160 `[`Key`](#structcipher_____bitcoin_address_1a16586cd3bfc67010c3c185d0da01317c) | [Address](#struct_address) hash identifier.
 
 ## Members
 
-#### `public void * `[`t`](#struct_go_interface_1a6445205ee90f5ff5131595cf7ddfcec0) 
+#### `public unsigned char `[`Version`](#structcipher_____bitcoin_address_1a49fed92a3e4a3cc30678924a13acc19f)
 
-#### `public void * `[`v`](#struct_go_interface_1a67806b49e20fb1170422969965db6ecb) 
+[Address](#struct_address) version identifier. Used to differentiate testnet vs mainnet addresses, for instance.
 
-# struct `GoInterface_` 
+#### `public cipher__Ripemd160 `[`Key`](#structcipher_____bitcoin_address_1a16586cd3bfc67010c3c185d0da01317c)
 
-Instances of Go interface types.
+[Address](#struct_address) hash identifier.
 
-## Summary
-
- Members                        | Descriptions                                
---------------------------------|---------------------------------------------
-`public void * `[`t`](#struct_go_interface___1a6445205ee90f5ff5131595cf7ddfcec0) | Pointer to the information of the concrete Go type bound to this interface reference.
-`public void * `[`v`](#struct_go_interface___1a67806b49e20fb1170422969965db6ecb) | Pointer to the data corresponding to the value bound to this interface type.
-
-## Members
-
-#### `public void * `[`t`](#struct_go_interface___1a6445205ee90f5ff5131595cf7ddfcec0) 
-
-Pointer to the information of the concrete Go type bound to this interface reference.
-
-#### `public void * `[`v`](#struct_go_interface___1a67806b49e20fb1170422969965db6ecb) 
-
-Pointer to the data corresponding to the value bound to this interface type.
-
-# struct `GoSlice` 
-
-## Summary
-
- Members                        | Descriptions                                
---------------------------------|---------------------------------------------
-`public void * `[`data`](#struct_go_slice_1a735984d41155bc1032e09bece8f8d66d) | 
-`public GoInt `[`len`](#struct_go_slice_1abefd7e3d615fc657a761fd36bcd7296c) | 
-`public GoInt `[`cap`](#struct_go_slice_1a726ab221ad9e219391b7f4c9a5c5ba33) | 
-
-## Members
-
-#### `public void * `[`data`](#struct_go_slice_1a735984d41155bc1032e09bece8f8d66d) 
-
-#### `public GoInt `[`len`](#struct_go_slice_1abefd7e3d615fc657a761fd36bcd7296c) 
-
-#### `public GoInt `[`cap`](#struct_go_slice_1a726ab221ad9e219391b7f4c9a5c5ba33) 
-
-# struct `GoSlice_` 
-
-Instances of Go slices
-
-## Summary
-
- Members                        | Descriptions                                
---------------------------------|---------------------------------------------
-`public void * `[`data`](#struct_go_slice___1a735984d41155bc1032e09bece8f8d66d) | Pointer to buffer containing slice data.
-`public GoInt_ `[`len`](#struct_go_slice___1af7b822f9987d08af70f228eb6dd4b7c7) | Number of items stored in slice buffer.
-`public GoInt_ `[`cap`](#struct_go_slice___1abb0492bac72ee60cd3cafd152291df94) | Maximum number of items that fits in this slice considering allocated memory and item type's size.
-
-## Members
-
-#### `public void * `[`data`](#struct_go_slice___1a735984d41155bc1032e09bece8f8d66d) 
-
-Pointer to buffer containing slice data.
-
-#### `public GoInt_ `[`len`](#struct_go_slice___1af7b822f9987d08af70f228eb6dd4b7c7) 
-
-Number of items stored in slice buffer.
-
-#### `public GoInt_ `[`cap`](#struct_go_slice___1abb0492bac72ee60cd3cafd152291df94) 
-
-Maximum number of items that fits in this slice considering allocated memory and item type's size.
-
-# struct `GoString_` 
-
-Instances of Go `string` type.
-
-## Summary
-
- Members                        | Descriptions                                
---------------------------------|---------------------------------------------
-`public const char * `[`p`](#struct_go_string___1a6bc6b007533335efe02bafff799ec64c) | Pointer to string characters buffer.
-`public GoInt_ `[`n`](#struct_go_string___1aa78f60eaaf1d3eb1661886a694b82b23) | String size not counting trailing `\0` char if at all included.
-
-## Members
-
-#### `public const char * `[`p`](#struct_go_string___1a6bc6b007533335efe02bafff799ec64c) 
-
-Pointer to string characters buffer.
-
-#### `public GoInt_ `[`n`](#struct_go_string___1aa78f60eaaf1d3eb1661886a694b82b23) 
-
-String size not counting trailing `\0` char if at all included.
-
-# struct `SendAmount` 
+# struct `cli__SendAmount`
 
 Structure used to specify amounts transferred in a transaction.
 
 ## Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`public `[`GoString_`](#struct_go_string__)` `[`Addr`](#struct_send_amount_1af646aec99cf83d30d17fd62e014d19f8) | Sender / receipient address.
-`public GoInt64_ `[`Coins`](#struct_send_amount_1a7733f16af3115d3cfc712f2f687b73e4) | Amount transferred (e.g. measured in SKY)
+`public `[`GoString_`](#struct_go_string__)` `[`Addr`](#structcli_____send_amount_1af646aec99cf83d30d17fd62e014d19f8) | Sender / receipient address.
+`public GoInt64_ `[`Coins`](#structcli_____send_amount_1a7733f16af3115d3cfc712f2f687b73e4) | Amount transferred (e.g. measured in SKY)
 
 ## Members
 
-#### `public `[`GoString_`](#struct_go_string__)` `[`Addr`](#struct_send_amount_1af646aec99cf83d30d17fd62e014d19f8) 
+#### `public `[`GoString_`](#struct_go_string__)` `[`Addr`](#structcli_____send_amount_1af646aec99cf83d30d17fd62e014d19f8)
 
 Sender / receipient address.
 
-#### `public GoInt64_ `[`Coins`](#struct_send_amount_1a7733f16af3115d3cfc712f2f687b73e4) 
+#### `public GoInt64_ `[`Coins`](#structcli_____send_amount_1a7733f16af3115d3cfc712f2f687b73e4)
 
 Amount transferred (e.g. measured in SKY)
 
-# struct `Transaction` 
+# struct `coin__Transaction`
 
 Skycoin transaction.
 
@@ -474,42 +462,42 @@ Instances of this struct are included in blocks.
 
 ## Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`public GoInt32_ `[`Length`](#struct_transaction_1a8a3c288e7b3f7245e0b7916ce322e5f9) | Current transaction's length expressed in bytes.
-`public GoInt8_ `[`Type`](#struct_transaction_1a5bf4f40bde41c84f4ab5ff82bc74f744) | [Transaction](#struct_transaction)'s version. When a node tries to process a transaction, it must verify whether it supports the transaction's type. This is intended to provide a way to update skycoin clients and servers without crashing the network. If the transaction is not compatible with the node, it should not process it.
-`public SHA256 `[`InnerHash`](#struct_transaction_1a62befdbe16b0b7f106cc8ac01d88b51f) | It's a SHA256 hash of the inputs and outputs of the transaction. It is used to protect against transaction mutability. This means that the transaction cannot be altered after its creation.
-`public `[`GoSlice_`](#struct_go_slice__)` `[`Sigs`](#struct_transaction_1af0a2ba807a16f9ae66dd5682c243b943) | A list of digital signiatures generated by the skycoin client using the private key. It is used by Skycoin servers to verify the authenticy of the transaction. Each input requires a different signature.
-`public `[`GoSlice_`](#struct_go_slice__)` `[`In`](#struct_transaction_1a317b73fcfa2b93fd16dfeab7ba228c39) | A list of references to unspent transaction outputs. Unlike other cryptocurrencies, such as Bitcoin, Skycoin unspent transaction outputs (UX) and Skycoin transactions (TX) are separated in the blockchain protocol, allowing for lighter transactions, thus reducing the broadcasting costs across the network.
-`public `[`GoSlice_`](#struct_go_slice__)` `[`Out`](#struct_transaction_1a181edcb164c89b192b3838de7792cc89) | Outputs: A list of outputs created by the client, that will be recorded in the blockchain if transactions are confirmed. An output consists of a data structure representing an UTXT, which is composed by a Skycoin address to be sent to, the amount in Skycoin to be sent, and the amount of Coin Hours to be sent, and the SHA256 hash of the previous fields.
+`public GoInt32_ `[`Length`](#structcoin_____transaction_1a8a3c288e7b3f7245e0b7916ce322e5f9) | Current transaction's length expressed in bytes.
+`public GoInt8_ `[`Type`](#structcoin_____transaction_1a5bf4f40bde41c84f4ab5ff82bc74f744) | Transaction's version. When a node tries to process a transaction, it must verify whether it supports the transaction's type. This is intended to provide a way to update skycoin clients and servers without crashing the network. If the transaction is not compatible with the node, it should not process it.
+`public cipher__SHA256 `[`InnerHash`](#structcoin_____transaction_1af5187a82f283be2deca0f1781fa628ad) | It's a SHA256 hash of the inputs and outputs of the transaction. It is used to protect against transaction mutability. This means that the transaction cannot be altered after its creation.
+`public `[`GoSlice_`](#struct_go_slice__)` `[`Sigs`](#structcoin_____transaction_1af0a2ba807a16f9ae66dd5682c243b943) | A list of digital signiatures generated by the skycoin client using the private key. It is used by Skycoin servers to verify the authenticy of the transaction. Each input requires a different signature.
+`public `[`GoSlice_`](#struct_go_slice__)` `[`In`](#structcoin_____transaction_1a317b73fcfa2b93fd16dfeab7ba228c39) | A list of references to unspent transaction outputs. Unlike other cryptocurrencies, such as Bitcoin, Skycoin unspent transaction outputs (UX) and Skycoin transactions (TX) are separated in the blockchain protocol, allowing for lighter transactions, thus reducing the broadcasting costs across the network.
+`public `[`GoSlice_`](#struct_go_slice__)` `[`Out`](#structcoin_____transaction_1a181edcb164c89b192b3838de7792cc89) | Outputs: A list of outputs created by the client, that will be recorded in the blockchain if transactions are confirmed. An output consists of a data structure representing an UTXT, which is composed by a Skycoin address to be sent to, the amount in Skycoin to be sent, and the amount of Coin Hours to be sent, and the SHA256 hash of the previous fields.
 
 ## Members
 
-#### `public GoInt32_ `[`Length`](#struct_transaction_1a8a3c288e7b3f7245e0b7916ce322e5f9) 
+#### `public GoInt32_ `[`Length`](#structcoin_____transaction_1a8a3c288e7b3f7245e0b7916ce322e5f9)
 
 Current transaction's length expressed in bytes.
 
-#### `public GoInt8_ `[`Type`](#struct_transaction_1a5bf4f40bde41c84f4ab5ff82bc74f744) 
+#### `public GoInt8_ `[`Type`](#structcoin_____transaction_1a5bf4f40bde41c84f4ab5ff82bc74f744)
 
-[Transaction](#struct_transaction)'s version. When a node tries to process a transaction, it must verify whether it supports the transaction's type. This is intended to provide a way to update skycoin clients and servers without crashing the network. If the transaction is not compatible with the node, it should not process it.
+Transaction's version. When a node tries to process a transaction, it must verify whether it supports the transaction's type. This is intended to provide a way to update skycoin clients and servers without crashing the network. If the transaction is not compatible with the node, it should not process it.
 
-#### `public SHA256 `[`InnerHash`](#struct_transaction_1a62befdbe16b0b7f106cc8ac01d88b51f) 
+#### `public cipher__SHA256 `[`InnerHash`](#structcoin_____transaction_1af5187a82f283be2deca0f1781fa628ad)
 
 It's a SHA256 hash of the inputs and outputs of the transaction. It is used to protect against transaction mutability. This means that the transaction cannot be altered after its creation.
 
-#### `public `[`GoSlice_`](#struct_go_slice__)` `[`Sigs`](#struct_transaction_1af0a2ba807a16f9ae66dd5682c243b943) 
+#### `public `[`GoSlice_`](#struct_go_slice__)` `[`Sigs`](#structcoin_____transaction_1af0a2ba807a16f9ae66dd5682c243b943)
 
 A list of digital signiatures generated by the skycoin client using the private key. It is used by Skycoin servers to verify the authenticy of the transaction. Each input requires a different signature.
 
-#### `public `[`GoSlice_`](#struct_go_slice__)` `[`In`](#struct_transaction_1a317b73fcfa2b93fd16dfeab7ba228c39) 
+#### `public `[`GoSlice_`](#struct_go_slice__)` `[`In`](#structcoin_____transaction_1a317b73fcfa2b93fd16dfeab7ba228c39)
 
 A list of references to unspent transaction outputs. Unlike other cryptocurrencies, such as Bitcoin, Skycoin unspent transaction outputs (UX) and Skycoin transactions (TX) are separated in the blockchain protocol, allowing for lighter transactions, thus reducing the broadcasting costs across the network.
 
-#### `public `[`GoSlice_`](#struct_go_slice__)` `[`Out`](#struct_transaction_1a181edcb164c89b192b3838de7792cc89) 
+#### `public `[`GoSlice_`](#struct_go_slice__)` `[`Out`](#structcoin_____transaction_1a181edcb164c89b192b3838de7792cc89)
 
 Outputs: A list of outputs created by the client, that will be recorded in the blockchain if transactions are confirmed. An output consists of a data structure representing an UTXT, which is composed by a Skycoin address to be sent to, the amount in Skycoin to be sent, and the amount of Coin Hours to be sent, and the SHA256 hash of the previous fields.
 
-# struct `TransactionOutput` 
+# struct `coin__TransactionOutput`
 
 Skycoin transaction output.
 
@@ -517,82 +505,383 @@ Instances are integral part of transactions included in blocks.
 
 ## Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`public `[`Address`](#struct_address)` `[`Address`](#struct_transaction_output_1a0f1895b2f69382d62e5bdc459d30cae1) | Receipient address.
-`public GoInt64_ `[`Coins`](#struct_transaction_output_1a7733f16af3115d3cfc712f2f687b73e4) | Amount sent to the receipient address.
-`public GoInt64_ `[`Hours`](#struct_transaction_output_1a7aef551ad5991173b5a6160fd8fe1594) | Amount of Coin Hours sent to the receipient address.
+`public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#structcoin_____transaction_output_1a36182709852829827005f90eef8bf78c) | Receipient address.
+`public GoInt64_ `[`Coins`](#structcoin_____transaction_output_1a7733f16af3115d3cfc712f2f687b73e4) | Amount sent to the receipient address.
+`public GoInt64_ `[`Hours`](#structcoin_____transaction_output_1a7aef551ad5991173b5a6160fd8fe1594) | Amount of Coin Hours sent to the receipient address.
 
 ## Members
 
-#### `public `[`Address`](#struct_address)` `[`Address`](#struct_transaction_output_1a0f1895b2f69382d62e5bdc459d30cae1) 
+#### `public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#structcoin_____transaction_output_1a36182709852829827005f90eef8bf78c)
 
 Receipient address.
 
-#### `public GoInt64_ `[`Coins`](#struct_transaction_output_1a7733f16af3115d3cfc712f2f687b73e4) 
+#### `public GoInt64_ `[`Coins`](#structcoin_____transaction_output_1a7733f16af3115d3cfc712f2f687b73e4)
 
 Amount sent to the receipient address.
 
-#### `public GoInt64_ `[`Hours`](#struct_transaction_output_1a7aef551ad5991173b5a6160fd8fe1594) 
+#### `public GoInt64_ `[`Hours`](#structcoin_____transaction_output_1a7aef551ad5991173b5a6160fd8fe1594)
 
 Amount of Coin Hours sent to the receipient address.
 
-# struct `UxBalance` 
+# struct `coin__UxBody`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public cipher__SHA256 `[`SrcTransaction`](#structcoin_____ux_body_1a94a1b2134fcadb6f35f5a1573f771cde) |
+`public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#structcoin_____ux_body_1a36182709852829827005f90eef8bf78c) |
+`public GoUint64_ `[`Coins`](#structcoin_____ux_body_1aa8ecc8470e80feb9af67d2e39d01b1eb) |
+`public GoUint64_ `[`Hours`](#structcoin_____ux_body_1a527c44c111577ee7ae35d7a53ab11332) |
+
+## Members
+
+#### `public cipher__SHA256 `[`SrcTransaction`](#structcoin_____ux_body_1a94a1b2134fcadb6f35f5a1573f771cde)
+
+#### `public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#structcoin_____ux_body_1a36182709852829827005f90eef8bf78c)
+
+#### `public GoUint64_ `[`Coins`](#structcoin_____ux_body_1aa8ecc8470e80feb9af67d2e39d01b1eb)
+
+#### `public GoUint64_ `[`Hours`](#structcoin_____ux_body_1a527c44c111577ee7ae35d7a53ab11332)
+
+# struct `coin__UxHead`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public GoUint64_ `[`Time`](#structcoin_____ux_head_1a1260435bd13330d2d5c2c61d044b1603) |
+`public GoUint64_ `[`BkSeq`](#structcoin_____ux_head_1a5f647c638c8d6a7e2b9ba8b409bf94f2) |
+
+## Members
+
+#### `public GoUint64_ `[`Time`](#structcoin_____ux_head_1a1260435bd13330d2d5c2c61d044b1603)
+
+#### `public GoUint64_ `[`BkSeq`](#structcoin_____ux_head_1a5f647c638c8d6a7e2b9ba8b409bf94f2)
+
+# struct `coin__UxOut`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public `[`coin__UxHead`](#structcoin_____ux_head)` `[`Head`](#structcoin_____ux_out_1ad77c0fb7d1545bcda1657269eab9721c) |
+`public `[`coin__UxBody`](#structcoin_____ux_body)` `[`Body`](#structcoin_____ux_out_1a29e9173d148f64e9129d98a8d9bf5ed2) |
+
+## Members
+
+#### `public `[`coin__UxHead`](#structcoin_____ux_head)` `[`Head`](#structcoin_____ux_out_1ad77c0fb7d1545bcda1657269eab9721c)
+
+#### `public `[`coin__UxBody`](#structcoin_____ux_body)` `[`Body`](#structcoin_____ux_out_1a29e9173d148f64e9129d98a8d9bf5ed2)
+
+# struct `GoInterface`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public void * `[`t`](#struct_go_interface_1a6445205ee90f5ff5131595cf7ddfcec0) |
+`public void * `[`v`](#struct_go_interface_1a67806b49e20fb1170422969965db6ecb) |
+
+## Members
+
+#### `public void * `[`t`](#struct_go_interface_1a6445205ee90f5ff5131595cf7ddfcec0)
+
+#### `public void * `[`v`](#struct_go_interface_1a67806b49e20fb1170422969965db6ecb)
+
+# struct `GoInterface_`
+
+Instances of Go interface types.
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public void * `[`t`](#struct_go_interface___1a6445205ee90f5ff5131595cf7ddfcec0) | Pointer to the information of the concrete Go type bound to this interface reference.
+`public void * `[`v`](#struct_go_interface___1a67806b49e20fb1170422969965db6ecb) | Pointer to the data corresponding to the value bound to this interface type.
+
+## Members
+
+#### `public void * `[`t`](#struct_go_interface___1a6445205ee90f5ff5131595cf7ddfcec0)
+
+Pointer to the information of the concrete Go type bound to this interface reference.
+
+#### `public void * `[`v`](#struct_go_interface___1a67806b49e20fb1170422969965db6ecb)
+
+Pointer to the data corresponding to the value bound to this interface type.
+
+# struct `GoSlice`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public void * `[`data`](#struct_go_slice_1a735984d41155bc1032e09bece8f8d66d) |
+`public GoInt `[`len`](#struct_go_slice_1abefd7e3d615fc657a761fd36bcd7296c) |
+`public GoInt `[`cap`](#struct_go_slice_1a726ab221ad9e219391b7f4c9a5c5ba33) |
+
+## Members
+
+#### `public void * `[`data`](#struct_go_slice_1a735984d41155bc1032e09bece8f8d66d)
+
+#### `public GoInt `[`len`](#struct_go_slice_1abefd7e3d615fc657a761fd36bcd7296c)
+
+#### `public GoInt `[`cap`](#struct_go_slice_1a726ab221ad9e219391b7f4c9a5c5ba33)
+
+# struct `GoSlice_`
+
+Instances of Go slices
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public void * `[`data`](#struct_go_slice___1a735984d41155bc1032e09bece8f8d66d) | Pointer to buffer containing slice data.
+`public GoInt_ `[`len`](#struct_go_slice___1af7b822f9987d08af70f228eb6dd4b7c7) | Number of items stored in slice buffer.
+`public GoInt_ `[`cap`](#struct_go_slice___1abb0492bac72ee60cd3cafd152291df94) | Maximum number of items that fits in this slice considering allocated memory and item type's size.
+
+## Members
+
+#### `public void * `[`data`](#struct_go_slice___1a735984d41155bc1032e09bece8f8d66d)
+
+Pointer to buffer containing slice data.
+
+#### `public GoInt_ `[`len`](#struct_go_slice___1af7b822f9987d08af70f228eb6dd4b7c7)
+
+Number of items stored in slice buffer.
+
+#### `public GoInt_ `[`cap`](#struct_go_slice___1abb0492bac72ee60cd3cafd152291df94)
+
+Maximum number of items that fits in this slice considering allocated memory and item type's size.
+
+# struct `GoString_`
+
+Instances of Go `string` type.
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public const char * `[`p`](#struct_go_string___1a6bc6b007533335efe02bafff799ec64c) | Pointer to string characters buffer.
+`public GoInt_ `[`n`](#struct_go_string___1aa78f60eaaf1d3eb1661886a694b82b23) | String size not counting trailing `\0` char if at all included.
+
+## Members
+
+#### `public const char * `[`p`](#struct_go_string___1a6bc6b007533335efe02bafff799ec64c)
+
+Pointer to string characters buffer.
+
+#### `public GoInt_ `[`n`](#struct_go_string___1aa78f60eaaf1d3eb1661886a694b82b23)
+
+String size not counting trailing `\0` char if at all included.
+
+# struct `InputTestData`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public `[`GoSlice`](#struct_go_slice)` `[`Hashes`](#struct_input_test_data_1ad0e54a71fc762f7f7c7765162e1a738a) |
+
+## Members
+
+#### `public `[`GoSlice`](#struct_go_slice)` `[`Hashes`](#struct_input_test_data_1ad0e54a71fc762f7f7c7765162e1a738a)
+
+# struct `InputTestDataJSON`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public `[`GoSlice`](#struct_go_slice)` `[`Hashes`](#struct_input_test_data_j_s_o_n_1ad0e54a71fc762f7f7c7765162e1a738a) |
+
+## Members
+
+#### `public `[`GoSlice`](#struct_go_slice)` `[`Hashes`](#struct_input_test_data_j_s_o_n_1ad0e54a71fc762f7f7c7765162e1a738a)
+
+# struct `json_settings`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public unsigned long `[`max_memory`](#structjson__settings_1a0a75ed144583eabc50ba61e0e06abfea) |
+`public int `[`settings`](#structjson__settings_1a4bc80b14d6c1a73e1f2ff9f0375dac8b) |
+`public void *(* `[`mem_alloc`](#structjson__settings_1adf6905888aecb418419653d2c2ead6d8) |
+`public void(* `[`mem_free`](#structjson__settings_1a0618e94c18df6d79aaa78fc57d797020) |
+`public void * `[`user_data`](#structjson__settings_1a0f53d287ac7c064d1a49d4bd93ca1cb9) |
+`public size_t `[`value_extra`](#structjson__settings_1af493db885ec44977143063289b5275db) |
+
+## Members
+
+#### `public unsigned long `[`max_memory`](#structjson__settings_1a0a75ed144583eabc50ba61e0e06abfea)
+
+#### `public int `[`settings`](#structjson__settings_1a4bc80b14d6c1a73e1f2ff9f0375dac8b)
+
+#### `public void *(* `[`mem_alloc`](#structjson__settings_1adf6905888aecb418419653d2c2ead6d8)
+
+#### `public void(* `[`mem_free`](#structjson__settings_1a0618e94c18df6d79aaa78fc57d797020)
+
+#### `public void * `[`user_data`](#structjson__settings_1a0f53d287ac7c064d1a49d4bd93ca1cb9)
+
+#### `public size_t `[`value_extra`](#structjson__settings_1af493db885ec44977143063289b5275db)
+
+# struct `KeysTestData`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#struct_keys_test_data_1a36182709852829827005f90eef8bf78c) |
+`public cipher__SecKey `[`Secret`](#struct_keys_test_data_1ab7c6991603c7f6e2f9a7c5b7dd580dac) |
+`public cipher__PubKey `[`Public`](#struct_keys_test_data_1a0bb45c3d09a24a1c34d376092a35dfdc) |
+`public `[`GoSlice`](#struct_go_slice)` `[`Signatures`](#struct_keys_test_data_1ac97779b64174c30fa4cd2386f399d3b5) |
+
+## Members
+
+#### `public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#struct_keys_test_data_1a36182709852829827005f90eef8bf78c)
+
+#### `public cipher__SecKey `[`Secret`](#struct_keys_test_data_1ab7c6991603c7f6e2f9a7c5b7dd580dac)
+
+#### `public cipher__PubKey `[`Public`](#struct_keys_test_data_1a0bb45c3d09a24a1c34d376092a35dfdc)
+
+#### `public `[`GoSlice`](#struct_go_slice)` `[`Signatures`](#struct_keys_test_data_1ac97779b64174c30fa4cd2386f399d3b5)
+
+# struct `KeysTestDataJSON`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public `[`GoString`](#struct___go_string__)` `[`Address`](#struct_keys_test_data_j_s_o_n_1a9d21e8a82d5c1b3ad4f8ecf6f80e62ad) |
+`public `[`GoString`](#struct___go_string__)` `[`Secret`](#struct_keys_test_data_j_s_o_n_1a801564a19fb6529beabfd99e1f4bb12e) |
+`public `[`GoString`](#struct___go_string__)` `[`Public`](#struct_keys_test_data_j_s_o_n_1ac024a1d14cfeb43708ca2b526f176389) |
+`public `[`GoSlice`](#struct_go_slice)` `[`Signatures`](#struct_keys_test_data_j_s_o_n_1ac97779b64174c30fa4cd2386f399d3b5) |
+
+## Members
+
+#### `public `[`GoString`](#struct___go_string__)` `[`Address`](#struct_keys_test_data_j_s_o_n_1a9d21e8a82d5c1b3ad4f8ecf6f80e62ad)
+
+#### `public `[`GoString`](#struct___go_string__)` `[`Secret`](#struct_keys_test_data_j_s_o_n_1a801564a19fb6529beabfd99e1f4bb12e)
+
+#### `public `[`GoString`](#struct___go_string__)` `[`Public`](#struct_keys_test_data_j_s_o_n_1ac024a1d14cfeb43708ca2b526f176389)
+
+#### `public `[`GoSlice`](#struct_go_slice)` `[`Signatures`](#struct_keys_test_data_j_s_o_n_1ac97779b64174c30fa4cd2386f399d3b5)
+
+# struct `SeedTestData`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public `[`GoSlice`](#struct_go_slice)` `[`Seed`](#struct_seed_test_data_1ac243323ff380d4e4df1741f04f272ad7) |
+`public `[`GoSlice`](#struct_go_slice)` `[`Keys`](#struct_seed_test_data_1af7b3b5dfe2d429d7484447fc5135c3b2) |
+
+## Members
+
+#### `public `[`GoSlice`](#struct_go_slice)` `[`Seed`](#struct_seed_test_data_1ac243323ff380d4e4df1741f04f272ad7)
+
+#### `public `[`GoSlice`](#struct_go_slice)` `[`Keys`](#struct_seed_test_data_1af7b3b5dfe2d429d7484447fc5135c3b2)
+
+# struct `SeedTestDataJSON`
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public `[`GoString`](#struct___go_string__)` `[`Seed`](#struct_seed_test_data_j_s_o_n_1a276b95b641aae441b01fe35bf9ffaba1) |
+`public `[`GoSlice`](#struct_go_slice)` `[`Keys`](#struct_seed_test_data_j_s_o_n_1af7b3b5dfe2d429d7484447fc5135c3b2) |
+
+## Members
+
+#### `public `[`GoString`](#struct___go_string__)` `[`Seed`](#struct_seed_test_data_j_s_o_n_1a276b95b641aae441b01fe35bf9ffaba1)
+
+#### `public `[`GoSlice`](#struct_go_slice)` `[`Keys`](#struct_seed_test_data_j_s_o_n_1af7b3b5dfe2d429d7484447fc5135c3b2)
+
+# struct `wallet__Entry`
+
+Wallet entry.
+
+## Summary
+
+ Members                        | Descriptions
+--------------------------------|---------------------------------------------
+`public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#structwallet_____entry_1a36182709852829827005f90eef8bf78c) | Wallet address.
+`public cipher__PubKey `[`Public`](#structwallet_____entry_1a0bb45c3d09a24a1c34d376092a35dfdc) | Public key used to generate address.
+`public cipher__SecKey `[`Secret`](#structwallet_____entry_1ab7c6991603c7f6e2f9a7c5b7dd580dac) | Secret key used to generate address.
+
+## Members
+
+#### `public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#structwallet_____entry_1a36182709852829827005f90eef8bf78c)
+
+Wallet address.
+
+#### `public cipher__PubKey `[`Public`](#structwallet_____entry_1a0bb45c3d09a24a1c34d376092a35dfdc)
+
+Public key used to generate address.
+
+#### `public cipher__SecKey `[`Secret`](#structwallet_____entry_1ab7c6991603c7f6e2f9a7c5b7dd580dac)
+
+Secret key used to generate address.
+
+# struct `wallet__UxBalance`
 
 Intermediate representation of a UxOut for sorting and spend choosing.
 
 ## Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`public SHA256 `[`Hash`](#struct_ux_balance_1a26607631022473d778367a1327b77a4c) | Hash of underlying UxOut.
-`public GoInt64_ `[`BkSeq`](#struct_ux_balance_1a1c1b05acfa8b1a65809ba4525f14a55b) | moment balance calculation is performed at.
-`public `[`Address`](#struct_address)` `[`Address`](#struct_ux_balance_1a0f1895b2f69382d62e5bdc459d30cae1) | Account holder address.
-`public GoInt64_ `[`Coins`](#struct_ux_balance_1a7733f16af3115d3cfc712f2f687b73e4) | Coins amount (e.g. in SKY).
-`public GoInt64_ `[`Hours`](#struct_ux_balance_1a7aef551ad5991173b5a6160fd8fe1594) | Balance of Coin Hours generated by underlying UxOut, depending on UxOut's head time.
+`public cipher__SHA256 `[`Hash`](#structwallet_____ux_balance_1ac47f1b6e05da3c25722b2cc93728ee4d) | Hash of underlying UxOut.
+`public GoInt64_ `[`BkSeq`](#structwallet_____ux_balance_1a1c1b05acfa8b1a65809ba4525f14a55b) | moment balance calculation is performed at.
+`public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#structwallet_____ux_balance_1a36182709852829827005f90eef8bf78c) | Account holder address.
+`public GoInt64_ `[`Coins`](#structwallet_____ux_balance_1a7733f16af3115d3cfc712f2f687b73e4) | Coins amount (e.g. in SKY).
+`public GoInt64_ `[`Hours`](#structwallet_____ux_balance_1a7aef551ad5991173b5a6160fd8fe1594) | Balance of Coin Hours generated by underlying UxOut, depending on UxOut's head time.
 
 ## Members
 
-#### `public SHA256 `[`Hash`](#struct_ux_balance_1a26607631022473d778367a1327b77a4c) 
+#### `public cipher__SHA256 `[`Hash`](#structwallet_____ux_balance_1ac47f1b6e05da3c25722b2cc93728ee4d)
 
 Hash of underlying UxOut.
 
-#### `public GoInt64_ `[`BkSeq`](#struct_ux_balance_1a1c1b05acfa8b1a65809ba4525f14a55b) 
+#### `public GoInt64_ `[`BkSeq`](#structwallet_____ux_balance_1a1c1b05acfa8b1a65809ba4525f14a55b)
 
 moment balance calculation is performed at.
 
 Block height corresponding to the
 
-#### `public `[`Address`](#struct_address)` `[`Address`](#struct_ux_balance_1a0f1895b2f69382d62e5bdc459d30cae1) 
+#### `public `[`cipher__Address`](#structcipher_____address)` `[`Address`](#structwallet_____ux_balance_1a36182709852829827005f90eef8bf78c)
 
 Account holder address.
 
-#### `public GoInt64_ `[`Coins`](#struct_ux_balance_1a7733f16af3115d3cfc712f2f687b73e4) 
+#### `public GoInt64_ `[`Coins`](#structwallet_____ux_balance_1a7733f16af3115d3cfc712f2f687b73e4)
 
 Coins amount (e.g. in SKY).
 
-#### `public GoInt64_ `[`Hours`](#struct_ux_balance_1a7aef551ad5991173b5a6160fd8fe1594) 
+#### `public GoInt64_ `[`Hours`](#structwallet_____ux_balance_1a7aef551ad5991173b5a6160fd8fe1594)
 
 Balance of Coin Hours generated by underlying UxOut, depending on UxOut's head time.
 
-# struct `Wallet` 
+# struct `wallet__Wallet`
 
 Internal representation of a Skycoin wallet.
 
 ## Summary
 
- Members                        | Descriptions                                
+ Members                        | Descriptions
 --------------------------------|---------------------------------------------
-`public GoMap_ `[`Meta`](#struct_wallet_1acdf30a4af55c2c677ebf6fc57b27e740) | Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
-`public `[`GoSlice_`](#struct_go_slice__)` `[`Entries`](#struct_wallet_1a57b718d97f8db7e0bc9d9c755510951b) | Entries field stores the address entries that are deterministically generated from seed.
+`public GoMap_ `[`Meta`](#structwallet_____wallet_1acdf30a4af55c2c677ebf6fc57b27e740) | Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
+`public `[`GoSlice_`](#struct_go_slice__)` `[`Entries`](#structwallet_____wallet_1a57b718d97f8db7e0bc9d9c755510951b) | Entries field stores the address entries that are deterministically generated from seed.
 
 ## Members
 
-#### `public GoMap_ `[`Meta`](#struct_wallet_1acdf30a4af55c2c677ebf6fc57b27e740) 
+#### `public GoMap_ `[`Meta`](#structwallet_____wallet_1acdf30a4af55c2c677ebf6fc57b27e740)
 
 Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
 
-#### `public `[`GoSlice_`](#struct_go_slice__)` `[`Entries`](#struct_wallet_1a57b718d97f8db7e0bc9d9c755510951b) 
+#### `public `[`GoSlice_`](#struct_go_slice__)` `[`Entries`](#structwallet_____wallet_1a57b718d97f8db7e0bc9d9c755510951b)
 
 Entries field stores the address entries that are deterministically generated from seed.
 

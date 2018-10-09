@@ -225,7 +225,7 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	innerHash := txn.HashInner()
 	for i, k := range keys {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
-		sigs[i] = cipher.SignHash(h, k)
+		sigs[i] = cipher.MustSignHash(h, k)
 	}
 	txn.Sigs = sigs
 }

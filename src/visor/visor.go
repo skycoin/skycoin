@@ -153,7 +153,7 @@ func NewVisorConfig() Config {
 // Verify verifies the configuration
 func (c Config) Verify() error {
 	if c.IsMaster {
-		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
+		if c.BlockchainPubkey != cipher.MustPubKeyFromSecKey(c.BlockchainSeckey) {
 			return errors.New("Cannot run in master: invalid seckey for pubkey")
 		}
 	}
@@ -182,6 +182,7 @@ type Historyer interface {
 // Blockchainer is the interface that provides methods for accessing the blockchain data
 type Blockchainer interface {
 	GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error)
+	GetBlocks(tx *dbutil.Tx, seqs []uint64) ([]coin.SignedBlock, error)
 	GetBlocksInRange(tx *dbutil.Tx, start, end uint64) ([]coin.SignedBlock, error)
 	GetLastBlocks(tx *dbutil.Tx, n uint64) ([]coin.SignedBlock, error)
 	GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error)
@@ -222,9 +223,8 @@ type UnconfirmedTxnPooler interface {
 
 // Visor manages the Blockchain as both a Master and a Normal
 type Visor struct {
-	Config Config
-	DB     *dbutil.DB
-	// Unconfirmed transactions, held for relay until we get block confirmation
+	Config      Config
+	DB          *dbutil.DB
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
@@ -426,7 +426,7 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 // GenesisPreconditions panics if conditions for genesis block are not met
 func (vs *Visor) GenesisPreconditions() {
 	if vs.Config.BlockchainSeckey != (cipher.SecKey{}) {
-		if vs.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey) {
+		if vs.Config.BlockchainPubkey != cipher.MustPubKeyFromSecKey(vs.Config.BlockchainSeckey) {
 			logger.Panic("Cannot create genesis block. Invalid secret key for pubkey")
 		}
 	}
@@ -590,7 +590,7 @@ func (vs *Visor) signBlock(b coin.Block) coin.SignedBlock {
 		logger.Panic("Only master chain can sign blocks")
 	}
 
-	sig := cipher.SignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
+	sig := cipher.MustSignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
 
 	return coin.SignedBlock{
 		Block: b,
@@ -791,29 +791,37 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 	return b, nil
 }
 
-// GetBlocks returns blocks corresponding to an array of block sequences
+// GetBlocks returns blocks matches seqs
 func (vs *Visor) GetBlocks(seqs []uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 
 	if err := vs.DB.View("GetBlocks", func(tx *dbutil.Tx) error {
-		for _, n := range seqs {
-			b, err := vs.Blockchain.GetSignedBlockBySeq(tx, n)
-			if err != nil {
-				return err
-			}
-
-			if b == nil {
-				return fmt.Errorf("block seq=%d not found", n)
-			}
-
-			blocks = append(blocks, *b)
-		}
-		return nil
+		var err error
+		blocks, err = vs.Blockchain.GetBlocks(tx, seqs)
+		return err
 	}); err != nil {
 		return nil, err
 	}
 
 	return blocks, nil
+}
+
+// GetBlocksVerbose returns blocks matches seqs along with verbose transaction input data
+func (vs *Visor) GetBlocksVerbose(seqs []uint64) ([]coin.SignedBlock, [][][]TransactionInput, error) {
+	var blocks []coin.SignedBlock
+	var inputs [][][]TransactionInput
+
+	if err := vs.DB.View("GetBlocksVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		blocks, inputs, err = vs.getBlocksVerbose(tx, func(tx *dbutil.Tx) ([]coin.SignedBlock, error) {
+			return vs.Blockchain.GetBlocks(tx, seqs)
+		})
+		return err
+	}); err != nil {
+		return nil, nil, err
+	}
+
+	return blocks, inputs, nil
 }
 
 // GetBlocksInRange returns multiple blocks between start and end, including both start and end.

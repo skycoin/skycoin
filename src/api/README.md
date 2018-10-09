@@ -1472,7 +1472,7 @@ Result:
 
 ### Recover encrypted wallet by seed
 
-API sets: `WALLET_SEED`
+API sets: `INSECURE_WALLET_SEED`
 
 ```
 URI: /api/v2/wallet/recover

@@ -23,11 +23,16 @@ import (
 )
 
 const (
-	testFixturesDir = "testdata"
+	testFixturesDir   = "testdata"
+	checkpointVersion = "0.25.0"
 )
 
 var (
-	ldflagsName string
+	// import path for github.com/skycoin/skycoin/cmd/skycoin
+	ldflagsNameCmd string
+
+	// import path for github.com/skycoin/skycoin/src/skycoin
+	ldflagsNameSkyLib string
 )
 
 func TestMain(m *testing.M) {
@@ -38,7 +43,15 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	ldflagsName = strings.TrimSpace(string(output))
+	ldflagsNameCmd = strings.TrimSpace(string(output))
+
+	output, err = exec.Command("go", "list", ".").CombinedOutput() // nolint: gosec
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "go list failed: %s", output)
+		os.Exit(1)
+	}
+
+	ldflagsNameSkyLib = strings.TrimSpace(string(output))
 
 	ret := m.Run()
 	os.Exit(ret)
@@ -55,16 +68,17 @@ func getCoinName() string {
 func buildBinary(t *testing.T, version string) (string, func()) {
 	coin := getCoinName()
 
-	binaryName := fmt.Sprintf("%s-skycoin-pkg.test", coin)
+	binaryName := fmt.Sprintf("%s-skycoin-pkg-%s.test", coin, version)
 	binaryPath, err := filepath.Abs(binaryName)
 	require.NoError(t, err)
 
-	coverpkgName := filepath.Dir(filepath.Dir(ldflagsName))
+	// coverpkgName will be like github.com/skycoin/skycoin
+	coverpkgName := filepath.Dir(filepath.Dir(ldflagsNameCmd))
 
-	// Build binary file with specific version
+	// Build binary file with specific app version and db checkpoint version
 	args := []string{
 		"test", "-c",
-		"-ldflags", fmt.Sprintf("-X %s.Version=%s", ldflagsName, version),
+		"-ldflags", fmt.Sprintf("-X %s.Version=%s -X %s.DBVerifyCheckpointVersion=%s", ldflagsNameCmd, version, ldflagsNameSkyLib, checkpointVersion),
 		"-tags", "testrunmain",
 		"-o", binaryPath,
 		fmt.Sprintf("-coverpkg=%s/...", coverpkgName),
@@ -115,6 +129,13 @@ func TestDBVerifyLogic(t *testing.T) {
 			shouldVerify: true,
 		},
 		{
+			name:         "db version 0.24.1, app version 0.24.1",
+			dbFile:       "version-0.24.1.db",
+			dbVersion:    "0.24.1",
+			appVersion:   "0.24.1",
+			shouldVerify: false,
+		},
+		{
 			name:         "db version 0.25.0, app version 0.25.0",
 			dbFile:       "version-0.25.0.db",
 			dbVersion:    "0.25.0",
@@ -144,11 +165,11 @@ func TestDBVerifyLogic(t *testing.T) {
 			shouldVerify: true,
 		},
 		{
-			name:       "db version 0.25.0, app version 0.24.0",
+			name:       "db version 0.25.0, app version 0.24.1",
 			dbFile:     "version-0.25.0.db",
 			dbVersion:  "0.25.0",
-			appVersion: "0.24.0",
-			err:        "Cannot use newer DB version=0.25.0 with older software version=0.24.0",
+			appVersion: "0.24.1",
+			err:        "Cannot use newer DB version=0.25.0 with older software version=0.24.1",
 		},
 	}
 
@@ -183,10 +204,8 @@ func TestDBVerifyLogic(t *testing.T) {
 
 	for i, tc := range cases {
 		coverageFile := fmt.Sprintf("../../coverage/db-verify-logic-%d.coverage.out", i)
-
 		t.Run(tc.name, func(t *testing.T) {
 			// Build the binary with a specific version
-
 			binaryPath := func() string {
 				appCacheLock.Lock()
 				defer appCacheLock.Unlock()
@@ -257,7 +276,7 @@ func TestDBVerifyLogic(t *testing.T) {
 			err = cmd.Wait()
 			if err != nil {
 				require.EqualError(t, err, "exit status 1", err.Error())
-				require.NotEmpty(t, tc.err, err.Error())
+				require.NotEmpty(t, tc.err, "unexpected error: %v", err.Error())
 				require.True(t, foundErrMsg)
 
 				// Re-open the database to check that the version was not modified

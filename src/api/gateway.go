@@ -33,6 +33,8 @@ type Gatewayer interface {
 	GetSignedBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]visor.TransactionInput, error)
 	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)
 	GetSignedBlockBySeqVerbose(seq uint64) (*coin.SignedBlock, [][]visor.TransactionInput, error)
+	GetBlocks(seqs []uint64) ([]coin.SignedBlock, error)
+	GetBlocksVerbose(seqs []uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
 	GetBlocksInRange(start, end uint64) ([]coin.SignedBlock, error)
 	GetBlocksInRangeVerbose(start, end uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
 	GetLastBlocks(num uint64) ([]coin.SignedBlock, error)

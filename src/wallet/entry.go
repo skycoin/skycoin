@@ -8,17 +8,33 @@ import (
 
 // Entry represents the wallet entry
 type Entry struct {
-	Address cipher.Address
+	Address cipher.Addresser
 	Public  cipher.PubKey
 	Secret  cipher.SecKey
+}
+
+// SkycoinAddress returns the Skycoin address of an entry. Panics if Address is not a Skycoin address
+func (we *Entry) SkycoinAddress() cipher.Address {
+	return we.Address.(cipher.Address)
+}
+
+// BitcoinAddress returns the Skycoin address of an entry. Panics if Address is not a Bitcoin address
+func (we *Entry) BitcoinAddress() cipher.BitcoinAddress {
+	return we.Address.(cipher.BitcoinAddress)
 }
 
 // Verify checks that the public key is derivable from the secret key,
 // and that the public key is associated with the address
 func (we *Entry) Verify() error {
-	if cipher.PubKeyFromSecKey(we.Secret) != we.Public {
+	pk, err := cipher.PubKeyFromSecKey(we.Secret)
+	if err != nil {
+		return err
+	}
+
+	if pk != we.Public {
 		return errors.New("invalid public key for secret key")
 	}
+
 	return we.VerifyPublic()
 }
 

@@ -63,9 +63,10 @@ func TestGetBlockchainMetadata(t *testing.T) {
 			},
 			result: readable.BlockchainMetadata{
 				Head: readable.BlockHeader{
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Unspents:    12,
 				Unconfirmed: 13,
@@ -369,13 +370,14 @@ func TestGetBlock(t *testing.T) {
 			gatewayGetBlockBySeqResult: &coin.SignedBlock{},
 			response: &readable.Block{
 				Head: readable.BlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					BkSeq:        0x0,
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:         0x0,
+					Fee:          0x0,
+					Version:      0x0,
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Body: readable.BlockBody{
 					Transactions: []readable.Transaction{},
@@ -391,13 +393,14 @@ func TestGetBlock(t *testing.T) {
 			gatewayGetBlockByHashResult: &coin.SignedBlock{},
 			response: &readable.Block{
 				Head: readable.BlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					BkSeq:        0x0,
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:         0x0,
+					Fee:          0x0,
+					Version:      0x0,
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Body: readable.BlockBody{
 					Transactions: []readable.Transaction{},
@@ -419,13 +422,14 @@ func TestGetBlock(t *testing.T) {
 			},
 			response: &readable.BlockVerbose{
 				Head: readable.BlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					BkSeq:        0x0,
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:         0x0,
+					Fee:          0x0,
+					Version:      0x0,
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Body: readable.BlockBodyVerbose{
 					Transactions: []readable.BlockTransactionVerbose{},
@@ -447,13 +451,14 @@ func TestGetBlock(t *testing.T) {
 			},
 			response: &readable.BlockVerbose{
 				Head: readable.BlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+					BkSeq:        0x0,
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:         0x0,
+					Fee:          0x0,
+					Version:      0x0,
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				Body: readable.BlockBodyVerbose{
 					Transactions: []readable.BlockTransactionVerbose{},
@@ -586,6 +591,7 @@ func TestGetBlocks(t *testing.T) {
 	type httpBody struct {
 		Start   string
 		End     string
+		Seqs    string
 		Verbose string
 	}
 
@@ -595,19 +601,24 @@ func TestGetBlocks(t *testing.T) {
 	}
 
 	tt := []struct {
-		name                          string
-		method                        string
-		status                        int
-		err                           string
-		body                          *httpBody
-		start                         uint64
-		end                           uint64
-		verbose                       bool
-		gatewayGetBlocksResult        []coin.SignedBlock
-		gatewayGetBlocksError         error
-		gatewayGetBlocksVerboseResult verboseResult
-		gatewayGetBlocksVerboseError  error
-		response                      interface{}
+		name                                 string
+		method                               string
+		status                               int
+		err                                  string
+		body                                 *httpBody
+		start                                uint64
+		end                                  uint64
+		seqs                                 []uint64
+		verbose                              bool
+		gatewayGetBlocksInRangeResult        []coin.SignedBlock
+		gatewayGetBlocksInRangeError         error
+		gatewayGetBlocksInRangeVerboseResult verboseResult
+		gatewayGetBlocksInRangeVerboseError  error
+		gatewayGetBlocksResult               []coin.SignedBlock
+		gatewayGetBlocksError                error
+		gatewayGetBlocksVerboseResult        verboseResult
+		gatewayGetBlocksVerboseError         error
+		response                             interface{}
 	}{
 		{
 			name:   "405",
@@ -616,10 +627,10 @@ func TestGetBlocks(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "400 - empty start/end",
+			name:   "400 - empty start, end and seqs",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - Invalid start value \"\"",
+			err:    "400 Bad Request - At least one of seqs or start or end are required",
 		},
 		{
 			name:   "400 - bad start",
@@ -653,16 +664,126 @@ func TestGetBlocks(t *testing.T) {
 			},
 		},
 		{
+			name:   "400 - seqs combined with start",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - seqs cannot be used with start or end",
+			body: &httpBody{
+				Seqs:  "1,2,3",
+				Start: "1",
+			},
+		},
+		{
+			name:   "400 - seqs combined with end",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - seqs cannot be used with start or end",
+			body: &httpBody{
+				Seqs: "1,2,3",
+				End:  "1",
+			},
+		},
+		{
+			name:   "400 - bad seqs",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Invalid sequence \"a\" at seqs[2]",
+			body: &httpBody{
+				Seqs: "1,2,a",
+			},
+		},
+		{
+			name:   "400 - bad seqs",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Invalid sequence \"\" at seqs[1]",
+			body: &httpBody{
+				Seqs: "1,,2",
+			},
+		},
+		{
+			name:   "400 - bad seqs",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Invalid sequence \"foo\" at seqs[0]",
+			body: &httpBody{
+				Seqs: "foo",
+			},
+		},
+		{
+			name:   "400 - duplicate seqs",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Duplicate sequence 2 at seqs[3]",
+			body: &httpBody{
+				Seqs: "1,2,3,2",
+			},
+		},
+
+		{
+			name:   "404 - block seq not found",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			err:    "404 Not Found - block does not exist seq=4",
+			body: &httpBody{
+				Seqs: "1,2,4",
+			},
+			seqs:                  []uint64{1, 2, 4},
+			gatewayGetBlocksError: visor.NewErrBlockNotExist(4),
+		},
+
+		{
+			name:   "404 - block seq not found verbose",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			err:    "404 Not Found - block does not exist seq=4",
+			body: &httpBody{
+				Seqs:    "1,2,4",
+				Verbose: "1",
+			},
+			seqs:                         []uint64{1, 2, 4},
+			verbose:                      true,
+			gatewayGetBlocksVerboseError: visor.NewErrBlockNotExist(4),
+		},
+
+		{
+			name:   "500 - gatewayGetBlocksInRangeError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gatewayGetBlocksInRangeError",
+			body: &httpBody{
+				Start: "1",
+				End:   "3",
+			},
+			start:                        1,
+			end:                          3,
+			gatewayGetBlocksInRangeError: errors.New("gatewayGetBlocksInRangeError"),
+		},
+		{
+			name:   "500 - gatewayGetBlocksInRangeVerboseError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gatewayGetBlocksInRangeVerboseError",
+			body: &httpBody{
+				Start:   "1",
+				End:     "3",
+				Verbose: "1",
+			},
+			start:                               1,
+			end:                                 3,
+			verbose:                             true,
+			gatewayGetBlocksInRangeVerboseError: errors.New("gatewayGetBlocksInRangeVerboseError"),
+		},
+
+		{
 			name:   "500 - gatewayGetBlocksError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error - gatewayGetBlocksError",
 			body: &httpBody{
-				Start: "1",
-				End:   "3",
+				Seqs: "1,2,3",
 			},
-			start:                 1,
-			end:                   3,
+			seqs:                  []uint64{1, 2, 3},
 			gatewayGetBlocksError: errors.New("gatewayGetBlocksError"),
 		},
 		{
@@ -671,34 +792,33 @@ func TestGetBlocks(t *testing.T) {
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error - gatewayGetBlocksVerboseError",
 			body: &httpBody{
-				Start:   "1",
-				End:     "3",
+				Seqs:    "1,2,3",
 				Verbose: "1",
 			},
-			start:                        1,
-			end:                          3,
+			seqs:                         []uint64{1, 2, 3},
 			verbose:                      true,
 			gatewayGetBlocksVerboseError: errors.New("gatewayGetBlocksVerboseError"),
 		},
 
 		{
-			name:   "200",
+			name:   "200 range",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			body: &httpBody{
 				Start: "1",
 				End:   "3",
 			},
-			start:                  1,
-			end:                    3,
-			gatewayGetBlocksResult: []coin.SignedBlock{{}},
+			start:                         1,
+			end:                           3,
+			gatewayGetBlocksInRangeResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
 					readable.Block{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBody{
 							Transactions: []readable.Transaction{},
@@ -708,7 +828,7 @@ func TestGetBlocks(t *testing.T) {
 			},
 		},
 		{
-			name:   "200 verbose",
+			name:   "200 range verbose",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			body: &httpBody{
@@ -719,6 +839,62 @@ func TestGetBlocks(t *testing.T) {
 			start:   1,
 			end:     3,
 			verbose: true,
+			gatewayGetBlocksInRangeVerboseResult: verboseResult{
+				Blocks: []coin.SignedBlock{{}},
+				Inputs: [][][]visor.TransactionInput{{}},
+			},
+			response: &readable.BlocksVerbose{
+				Blocks: []readable.BlockVerbose{
+					readable.BlockVerbose{
+						Head: readable.BlockHeader{
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
+						},
+						Body: readable.BlockBodyVerbose{
+							Transactions: []readable.BlockTransactionVerbose{},
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name:   "200 seqs",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			body: &httpBody{
+				Seqs: "1,2,3",
+			},
+			seqs:                   []uint64{1, 2, 3},
+			gatewayGetBlocksResult: []coin.SignedBlock{{}},
+			response: &readable.Blocks{
+				Blocks: []readable.Block{
+					readable.Block{
+						Head: readable.BlockHeader{
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
+						},
+						Body: readable.BlockBody{
+							Transactions: []readable.Transaction{},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:   "200 seqs verbose",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			body: &httpBody{
+				Seqs:    "1,2,3",
+				Verbose: "1",
+			},
+			seqs:    []uint64{1, 2, 3},
+			verbose: true,
 			gatewayGetBlocksVerboseResult: verboseResult{
 				Blocks: []coin.SignedBlock{{}},
 				Inputs: [][][]visor.TransactionInput{{}},
@@ -727,9 +903,10 @@ func TestGetBlocks(t *testing.T) {
 				Blocks: []readable.BlockVerbose{
 					readable.BlockVerbose{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBodyVerbose{
 							Transactions: []readable.BlockTransactionVerbose{},
@@ -743,8 +920,11 @@ func TestGetBlocks(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("GetBlocksInRange", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
-			gateway.On("GetBlocksInRangeVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksVerboseResult.Blocks,
+			gateway.On("GetBlocksInRange", tc.start, tc.end).Return(tc.gatewayGetBlocksInRangeResult, tc.gatewayGetBlocksInRangeError)
+			gateway.On("GetBlocksInRangeVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksInRangeVerboseResult.Blocks,
+				tc.gatewayGetBlocksInRangeVerboseResult.Inputs, tc.gatewayGetBlocksInRangeVerboseError)
+			gateway.On("GetBlocks", tc.seqs).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
+			gateway.On("GetBlocksVerbose", tc.seqs).Return(tc.gatewayGetBlocksVerboseResult.Blocks,
 				tc.gatewayGetBlocksVerboseResult.Inputs, tc.gatewayGetBlocksVerboseError)
 
 			endpoint := "/api/v1/blocks"
@@ -759,6 +939,9 @@ func TestGetBlocks(t *testing.T) {
 				}
 				if tc.body.Verbose != "" {
 					v.Add("verbose", tc.body.Verbose)
+				}
+				if tc.body.Seqs != "" {
+					v.Add("seqs", tc.body.Seqs)
 				}
 			}
 			if len(v) > 0 {
@@ -897,9 +1080,10 @@ func TestGetLastBlocks(t *testing.T) {
 				Blocks: []readable.Block{
 					readable.Block{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBody{
 							Transactions: []readable.Transaction{},
@@ -926,9 +1110,10 @@ func TestGetLastBlocks(t *testing.T) {
 				Blocks: []readable.BlockVerbose{
 					readable.BlockVerbose{
 						Head: readable.BlockHeader{
-							BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-							PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-							BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
 						},
 						Body: readable.BlockBodyVerbose{
 							Transactions: []readable.BlockTransactionVerbose{},

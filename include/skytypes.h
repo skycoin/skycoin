@@ -93,7 +93,7 @@ typedef void *GoChan_;
 typedef struct {
   void *t;      ///< Pointer to the information of the concrete Go type
                 ///< bound to this interface reference.
-  void *v;      ///< Pointer to the data corresponding to the value 
+  void *v;      ///< Pointer to the data corresponding to the value
                 ///< bound to this interface type.
 } GoInterface_;
 /**
@@ -145,6 +145,7 @@ typedef Handle Config__Handle;
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"
 #include "cipher.address.go.h"
+#include "cipher.bitcoin.go.h"
 #include "cli.create_rawtx.go.h"
 #include "coin.outputs.go.h"
 #include "coin.transactions.go.h"

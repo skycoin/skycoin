@@ -28,7 +28,7 @@ func TestBlockSigsGet(t *testing.T) {
 		_, s := cipher.GenerateKeyPair()
 		h := testutil.RandSHA256(t)
 
-		sig := cipher.SignHash(h, s)
+		sig := cipher.MustSignHash(h, s)
 		hashSigs = append(hashSigs, hashSig{
 			hash: h,
 			sig:  sig,
@@ -103,7 +103,7 @@ func TestBlockSigsAddWithTx(t *testing.T) {
 
 	_, s := cipher.GenerateKeyPair()
 	h := testutil.RandSHA256(t)
-	sig := cipher.SignHash(h, s)
+	sig := cipher.MustSignHash(h, s)
 
 	sigs := &blockSigs{}
 

@@ -290,23 +290,6 @@ func (serv *Service) GetWallets() (Wallets, error) {
 	return wlts, nil
 }
 
-// ReloadWallets reload wallets
-func (serv *Service) ReloadWallets() error {
-	serv.Lock()
-	defer serv.Unlock()
-	if !serv.enableWalletAPI {
-		return ErrWalletAPIDisabled
-	}
-	wallets, err := LoadWallets(serv.walletDirectory)
-	if err != nil {
-		return err
-	}
-
-	serv.firstAddrIDMap = make(map[string]string)
-	serv.wallets = serv.removeDup(wallets)
-	return nil
-}
-
 // CreateAndSignTransaction creates and signs a transaction from wallet.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
@@ -619,12 +602,16 @@ func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wall
 		return nil, ErrWalletNotEncrypted
 	}
 
-	if w.Type() != "deterministic" {
+	if w.Type() != WalletTypeDeterministic {
 		return nil, ErrWalletNotDeterministic
 	}
 
 	// Generate the first address from the seed
-	pk, _ := cipher.GenerateDeterministicKeyPair([]byte(seed))
+	var pk cipher.PubKey
+	pk, _, err = cipher.GenerateDeterministicKeyPair([]byte(seed))
+	if err != nil {
+		return nil, err
+	}
 	addr := cipher.AddressFromPubKey(pk)
 
 	// Compare to the wallet's first address

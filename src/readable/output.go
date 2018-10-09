@@ -177,9 +177,10 @@ func OutputsToUxBalances(ros UnspentOutputs) ([]wallet.UxBalance, error) {
 
 // UnspentOutputsSummary records unspent outputs in different status.
 type UnspentOutputsSummary struct {
+	Head BlockHeader `json:"head"`
 	// HeadOutputs are unspent outputs confirmed in the blockchain
 	HeadOutputs UnspentOutputs `json:"head_outputs"`
-	// IncomingOutputs are unspent outputs being spent in unconfirmed transactions
+	// OutgoingOutputs are unspent outputs being spent in unconfirmed transactions
 	OutgoingOutputs UnspentOutputs `json:"outgoing_outputs"`
 	// IncomingOutputs are unspent outputs being created by unconfirmed transactions
 	IncomingOutputs UnspentOutputs `json:"incoming_outputs"`
@@ -203,6 +204,7 @@ func NewUnspentOutputsSummary(summary *visor.UnspentOutputsSummary) (*UnspentOut
 	}
 
 	return &UnspentOutputsSummary{
+		Head:            NewBlockHeader(summary.HeadBlock.Head),
 		HeadOutputs:     headOutputs,
 		OutgoingOutputs: outgoingOutputs,
 		IncomingOutputs: incomingOutputs,

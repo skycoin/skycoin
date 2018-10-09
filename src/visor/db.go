@@ -15,6 +15,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -33,6 +34,10 @@ type ErrCorruptDB struct {
 
 // CheckDatabase checks the database for corruption, rebuild history if corrupted
 func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
+	elapser := elapse.NewElapser(time.Second*30, logger)
+	elapser.Register("CheckDatabase")
+	defer elapser.CheckForDone()
+
 	var blocksBktExist bool
 	if err := db.View("CheckDatabase", func(tx *dbutil.Tx) error {
 		blocksBktExist = dbutil.Exists(tx, blockdb.BlocksBkt)
@@ -154,11 +159,11 @@ func backupDB(db *dbutil.DB) (*dbutil.DB, error) { // nolint: unused,megacheck
 	return OpenDB(dbPath, dbReadOnly)
 }
 
-// RepairCorruptDB checks the database for corruption and if corrupted and
+// ResetCorruptDB checks the database for corruption and if corrupted and
 // is ErrMissingSignature, then then it erases the db and starts over.
 // If it's ErrHistoryDBCorrupted, then rebuild historydb from scratch.
 // A copy of the corrupted database is saved.
-func RepairCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
+func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
 	err := CheckDatabase(db, pubkey, quit)
 	switch err.(type) {
 	case nil:

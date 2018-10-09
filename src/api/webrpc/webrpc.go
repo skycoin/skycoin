@@ -1,3 +1,6 @@
+/*
+Package webrpc implements the JSON-RPC 2.0 interface. DEPRECATED, and will be removed in v0.26.0
+*/
 package webrpc
 
 import (

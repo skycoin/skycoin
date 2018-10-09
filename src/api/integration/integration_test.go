@@ -1,4 +1,4 @@
-// package integration_test implements API integration tests
+// Package integration_test implements API integration tests
 package integration_test
 
 import (
@@ -355,7 +355,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 	badSigStr := "71f2c01516fe696328e79bcf464eb0db374b63d494f7a307d1e77114f18581d7a81eed5275a9e04a336292dd2fd16977d9bef2a54ea3161d0876603d00c53bc9dd"
 	badSigBytes, err := hex.DecodeString(badSigStr)
 	require.NoError(t, err)
-	badSig := cipher.NewSig(badSigBytes)
+	badSig := cipher.MustNewSig(badSigBytes)
 
 	inputHash := "75692aeff988ce0da734c474dbef3a1ce19a5a6823bbcd36acb856c83262261e"
 	input := testutil.SHA256FromHex(t, inputHash)
@@ -1258,7 +1258,7 @@ func TestLiveAddressUxOuts(t *testing.T) {
 	}
 }
 
-func TestStableBlocks(t *testing.T) {
+func TestStableBlocksInRange(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -1314,30 +1314,30 @@ func TestStableBlocks(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.errMsg == "" {
-				resp := testBlocks(t, tc.start, tc.end)
+				resp := testBlocksInRange(t, tc.start, tc.end)
 
 				var expected readable.Blocks
 				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
-				_, err := c.Blocks(tc.start, tc.end)
+				_, err := c.BlocksInRange(tc.start, tc.end)
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 			}
 		})
 	}
 }
 
-func TestLiveBlocks(t *testing.T) {
+func TestLiveBlocksInRange(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
 
-	testBlocks(t, 1, 10)
+	testBlocksInRange(t, 1, 10)
 }
 
-func testBlocks(t *testing.T, start, end uint64) *readable.Blocks {
+func testBlocksInRange(t *testing.T, start, end uint64) *readable.Blocks {
 	c := api.NewClient(nodeAddress())
 
-	blocks, err := c.Blocks(start, end)
+	blocks, err := c.BlocksInRange(start, end)
 	require.NoError(t, err)
 
 	if start > end {
@@ -1364,7 +1364,7 @@ func testBlocks(t *testing.T, start, end uint64) *readable.Blocks {
 	return blocks
 }
 
-func TestStableBlocksVerbose(t *testing.T) {
+func TestStableBlocksInRangeVerbose(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -1426,12 +1426,12 @@ func TestStableBlocksVerbose(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.errMsg == "" {
-				resp := testBlocksVerbose(t, tc.start, tc.end)
+				resp := testBlocksInRangeVerbose(t, tc.start, tc.end)
 
 				var expected readable.BlocksVerbose
 				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
-				blocks, err := c.BlocksVerbose(tc.start, tc.end)
+				blocks, err := c.BlocksInRangeVerbose(tc.start, tc.end)
 				require.Nil(t, blocks)
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 			}
@@ -1439,18 +1439,18 @@ func TestStableBlocksVerbose(t *testing.T) {
 	}
 }
 
-func TestLiveBlocksVerbose(t *testing.T) {
+func TestLiveBlocksInRangeVerbose(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
 
-	testBlocksVerbose(t, 1, 10)
+	testBlocksInRangeVerbose(t, 1, 10)
 }
 
-func testBlocksVerbose(t *testing.T, start, end uint64) *readable.BlocksVerbose {
+func testBlocksInRangeVerbose(t *testing.T, start, end uint64) *readable.BlocksVerbose {
 	c := api.NewClient(nodeAddress())
 
-	blocks, err := c.BlocksVerbose(start, end)
+	blocks, err := c.BlocksInRangeVerbose(start, end)
 	require.NoError(t, err)
 
 	if start > end {
@@ -1475,6 +1475,167 @@ func testBlocksVerbose(t *testing.T, start, end uint64) *readable.BlocksVerbose 
 
 		prevBlock = &blocks.Blocks[idx]
 	}
+
+	return blocks
+}
+
+func TestStableBlocks(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	cases := []struct {
+		name    string
+		golden  string
+		seqs    []uint64
+		errCode int
+		errMsg  string
+	}{
+		{
+			name:   "multiple sequences",
+			golden: "blocks-3-5-7.golden",
+			seqs:   []uint64{3, 5, 7},
+		},
+		{
+			name:    "block seq not found",
+			seqs:    []uint64{3, 5, 7, 99999},
+			errCode: http.StatusNotFound,
+			errMsg:  "404 Not Found - block does not exist seq=99999",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.errMsg == "" {
+				resp := testBlocks(t, tc.seqs)
+
+				var expected readable.Blocks
+				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
+			} else {
+				_, err := c.Blocks(tc.seqs)
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+			}
+		})
+	}
+}
+
+func TestLiveBlocks(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	testBlocks(t, []uint64{3, 5, 7})
+}
+
+func testBlocks(t *testing.T, seqs []uint64) *readable.Blocks {
+	c := api.NewClient(nodeAddress())
+
+	blocks, err := c.Blocks(seqs)
+	require.NoError(t, err)
+
+	require.Equal(t, len(seqs), len(blocks.Blocks))
+
+	seqsMap := make(map[uint64]struct{}, len(seqs))
+	for _, x := range seqs {
+		seqsMap[x] = struct{}{}
+	}
+
+	for _, b := range blocks.Blocks {
+		_, ok := seqsMap[b.Head.BkSeq]
+		require.True(t, ok)
+		delete(seqsMap, b.Head.BkSeq)
+
+		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+	}
+
+	require.Empty(t, seqsMap)
+
+	return blocks
+}
+
+func TestStableBlocksVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	cases := []struct {
+		name    string
+		golden  string
+		seqs    []uint64
+		errCode int
+		errMsg  string
+	}{
+		{
+			name:   "multiple sequences",
+			golden: "blocks-3-5-7-verbose.golden",
+			seqs:   []uint64{3, 5, 7},
+		},
+		{
+			name:    "block seq not found",
+			seqs:    []uint64{3, 5, 7, 99999},
+			errCode: http.StatusNotFound,
+			errMsg:  "404 Not Found - block does not exist seq=99999",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.errMsg == "" {
+				resp := testBlocksVerbose(t, tc.seqs)
+
+				var expected readable.BlocksVerbose
+				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
+			} else {
+				blocks, err := c.BlocksVerbose(tc.seqs)
+				require.Nil(t, blocks)
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+			}
+		})
+	}
+}
+
+func TestLiveBlocksVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	testBlocksVerbose(t, []uint64{3, 5, 7})
+}
+
+func testBlocksVerbose(t *testing.T, seqs []uint64) *readable.BlocksVerbose {
+	c := api.NewClient(nodeAddress())
+
+	blocks, err := c.BlocksVerbose(seqs)
+	require.NoError(t, err)
+
+	require.Equal(t, len(seqs), len(blocks.Blocks))
+
+	seqsMap := make(map[uint64]struct{}, len(seqs))
+	for _, x := range seqs {
+		seqsMap[x] = struct{}{}
+	}
+
+	for _, b := range blocks.Blocks {
+		_, ok := seqsMap[b.Head.BkSeq]
+		require.True(t, ok)
+		delete(seqsMap, b.Head.BkSeq)
+
+		assertVerboseBlockFee(t, &b)
+
+		bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+	}
+
+	require.Empty(t, seqsMap)
 
 	return blocks
 }
@@ -3510,12 +3671,12 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].Address,
+					Address: w.Entries[0].SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -3548,7 +3709,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
@@ -3581,7 +3742,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputsSubset: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   1,
 				},
@@ -3612,7 +3773,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   1,
 				},
@@ -3644,7 +3805,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   1,
 				},
@@ -3673,7 +3834,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   remainingHours,
 				},
@@ -3706,15 +3867,15 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   1e3,
 				},
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 2e3,
 				},
 				{
-					Address: w.Entries[0].Address,
+					Address: w.Entries[0].SkycoinAddress(),
 					Coins:   1e3,
 				},
 			},
@@ -3845,12 +4006,12 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].Address,
+					Address: w.Entries[0].SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -3911,12 +4072,12 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].Address,
+					Address: w.Entries[1].SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].Address,
+					Address: w.Entries[0].SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -4548,10 +4709,10 @@ func TestWalletNewAddress(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), i+1)
+			seckeys := cipher.MustGenerateDeterministicKeyPairs([]byte(seed), i+1)
 			var as []string
 			for _, k := range seckeys {
-				as = append(as, cipher.AddressFromSecKey(k).String())
+				as = append(as, cipher.MustAddressFromSecKey(k).String())
 			}
 
 			// Confirms thoses new generated addresses are the same.
@@ -4777,13 +4938,81 @@ func TestDecryptWallet(t *testing.T) {
 	require.Len(t, lw.Entries, 1)
 
 	// Confirms the last seed is matched
-	lseed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 1)
+	lseed, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 1)
 	require.Equal(t, hex.EncodeToString(lseed), lw.Meta["lastSeed"])
 
 	// Confirms that the first address is derivied from the private key
-	pubkey := cipher.PubKeyFromSecKey(seckeys[0])
+	pubkey := cipher.MustPubKeyFromSecKey(seckeys[0])
 	require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey).String())
 	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
+}
+
+func TestRecoverWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	// Create an encrypted wallet with some addresses pregenerated,
+	// to make sure recover recovers the same number of addresses
+	c := api.NewClient(nodeAddress())
+	wf, err := c.WalletFolderName()
+	require.NoError(t, err)
+
+	// Load the wallet from disk to check that it was saved
+	checkWalletOnDisk := func(w *api.WalletResponse) {
+		wltPath := filepath.Join(wf.Address, w.Meta.Filename)
+		lw, err := wallet.Load(wltPath)
+		require.NoError(t, err)
+		lwr, err := api.NewWalletResponse(lw)
+		require.NoError(t, err)
+		require.Equal(t, w, lwr)
+	}
+
+	w, seed, clean := createWallet(t, c, false, "", "fooseed")
+	require.Equal(t, "fooseed", seed)
+	defer clean()
+
+	_, err = c.NewWalletAddress(w.Meta.Filename, 10, "")
+	require.NoError(t, err)
+
+	w, err = c.Wallet(w.Meta.Filename)
+	require.NoError(t, err)
+
+	// Recover fails if the wallet is not encrypted
+	_, err = c.RecoverWallet(w.Meta.Filename, "fooseed", "")
+	assertResponseError(t, err, http.StatusBadRequest, "wallet is not encrypted")
+
+	_, err = c.EncryptWallet(w.Meta.Filename, "pwd")
+	require.NoError(t, err)
+
+	// Recovery fails if the seed doesn't match
+	_, err = c.RecoverWallet(w.Meta.Filename, "wrongseed", "")
+	assertResponseError(t, err, http.StatusBadRequest, "wallet recovery seed is wrong")
+
+	// Successful recovery with no new password
+	w2, err := c.RecoverWallet(w.Meta.Filename, "fooseed", "")
+	require.NoError(t, err)
+	require.False(t, w2.Meta.Encrypted)
+	checkWalletOnDisk(w2)
+	require.Equal(t, w, w2)
+
+	_, err = c.EncryptWallet(w.Meta.Filename, "pwd2")
+	require.NoError(t, err)
+
+	// Successful recovery with a new password
+	w3, err := c.RecoverWallet(w.Meta.Filename, "fooseed", "pwd3")
+	require.NoError(t, err)
+	require.True(t, w3.Meta.Encrypted)
+	require.Equal(t, w3.Meta.CryptoType, "scrypt-chacha20poly1305")
+	checkWalletOnDisk(w3)
+	w3.Meta.Encrypted = w.Meta.Encrypted
+	w3.Meta.CryptoType = w.Meta.CryptoType
+	require.Equal(t, w, w3)
+
+	w4, err := c.DecryptWallet(w.Meta.Filename, "pwd3")
+	require.NoError(t, err)
+	require.False(t, w.Meta.Encrypted)
+	require.Equal(t, w, w4)
 }
 
 func TestGetWalletSeedDisabledAPI(t *testing.T) {

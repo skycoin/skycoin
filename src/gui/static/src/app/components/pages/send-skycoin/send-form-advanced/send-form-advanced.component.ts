@@ -8,6 +8,7 @@ import { showSnackbarError } from '../../../../utils/errors';
 import { Subscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
+import { BigNumber } from 'bignumber.js';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -91,7 +92,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.sendButton.resetState();
 
     if (this.form.get('wallet').value.encrypted) {
-      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+      const config = new MatDialogConfig();
+      config.data = {
+        wallet: this.form.get('wallet').value,
+      };
+
+      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.createTransaction(passwordDialog);
         });
@@ -221,12 +227,17 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       return { Invalid: true };
     }
 
-    const coins = this.form.get('addresses').value.reduce((a, b) => a + b.coins, 0);
-    const hours = this.form.get('addresses').value.reduce((a, b) => a + b.hours, 0);
-    const destinationsCoins = this.destControls.reduce((a, b) => a + parseFloat(b.value.coins), 0);
-    const destinationsHours = this.destControls.reduce((a, b) => a + parseInt(b.value.hours, 10), 0);
+    let coins = new BigNumber(0);
+    this.form.get('addresses').value.map(control => coins = coins.plus(control.coins));
+    let destinationsCoins = new BigNumber(0);
+    this.destControls.map(control => destinationsCoins = destinationsCoins.plus(control.value.coins));
 
-    if (destinationsCoins > coins || destinationsHours > hours) {
+    let hours = new BigNumber(0);
+    this.form.get('addresses').value.map(control => hours = hours.plus(control.hours));
+    let destinationsHours = new BigNumber(0);
+    this.destControls.map(control => destinationsHours = destinationsHours.plus(control.value.hours));
+
+    if (destinationsCoins.isGreaterThan(coins) || destinationsHours.isGreaterThan(hours)) {
       return { Invalid: true };
     }
 
@@ -268,6 +279,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           return this.walletService.injectTransaction(transaction.encoded).toPromise();
         }
 
+        let amount = new BigNumber('0');
+        this.destinations.map(destination => amount = amount.plus(destination.coins));
+
         this.onFormSubmitted.emit({
           form: {
             wallet: this.form.get('wallet').value,
@@ -277,7 +291,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             hoursSelection: this.hoursSelection,
             autoOptions: this.autoOptions,
           },
-          amount: this.destinations.reduce((a, b) => a + parseFloat(b.coins), 0),
+          amount: amount,
           to: this.destinations.map(d => d.address),
           transaction,
         });

@@ -1,3 +1,6 @@
+/*
+Package blockdb is the core blockchain database wrapper
+*/
 package blockdb
 
 import (

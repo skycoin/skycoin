@@ -1,3 +1,8 @@
+/*
+Package coin defines the core blockchain datastructures.
+
+This package should not have any dependencies except for go stdlib and cipher.
+*/
 package coin
 
 import (

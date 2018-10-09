@@ -400,8 +400,45 @@ func (c *Client) BlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error) {
 	return &b, nil
 }
 
-// Blocks makes a request to GET /api/v1/blocks
-func (c *Client) Blocks(start, end uint64) (*readable.Blocks, error) {
+// Blocks makes a request to GET /api/v1/blocks?seqs=
+func (c *Client) Blocks(seqs []uint64) (*readable.Blocks, error) {
+	sSeqs := make([]string, len(seqs))
+	for i, x := range seqs {
+		sSeqs[i] = fmt.Sprint(x)
+	}
+
+	v := url.Values{}
+	v.Add("seqs", strings.Join(sSeqs, ","))
+	endpoint := "/api/v1/blocks?" + v.Encode()
+
+	var b readable.Blocks
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1&start=&end=
+func (c *Client) BlocksVerbose(seqs []uint64) (*readable.BlocksVerbose, error) {
+	sSeqs := make([]string, len(seqs))
+	for i, x := range seqs {
+		sSeqs[i] = fmt.Sprint(x)
+	}
+
+	v := url.Values{}
+	v.Add("seqs", strings.Join(sSeqs, ","))
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/blocks?" + v.Encode()
+
+	var b readable.BlocksVerbose
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// BlocksInRange makes a request to GET /api/v1/blocks?start=&end=
+func (c *Client) BlocksInRange(start, end uint64) (*readable.Blocks, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
@@ -414,8 +451,8 @@ func (c *Client) Blocks(start, end uint64) (*readable.Blocks, error) {
 	return &b, nil
 }
 
-// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1
-func (c *Client) BlocksVerbose(start, end uint64) (*readable.BlocksVerbose, error) {
+// BlocksInRangeVerbose makes a request to GET /api/v1/blocks?verbose=1&start=&end=
+func (c *Client) BlocksInRangeVerbose(start, end uint64) (*readable.BlocksVerbose, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
@@ -1084,7 +1121,7 @@ func (c *Client) Health() (*HealthResponse, error) {
 }
 
 // EncryptWallet makes a request to POST /api/v1/wallet/encrypt to encrypt a specific wallet with the given password
-func (c *Client) EncryptWallet(id string, password string) (*WalletResponse, error) {
+func (c *Client) EncryptWallet(id, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -1097,7 +1134,7 @@ func (c *Client) EncryptWallet(id string, password string) (*WalletResponse, err
 }
 
 // DecryptWallet makes a request to POST /api/v1/wallet/decrypt to decrypt a wallet
-func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, error) {
+func (c *Client) DecryptWallet(id, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -1107,4 +1144,23 @@ func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, err
 	}
 
 	return &wlt, nil
+}
+
+// RecoverWallet makes a request to POST /api/v2/wallet/recover to recover an encrypted wallet by seed.
+// The password argument is optional, if provided, the recovered wallet will be encrypted with this password,
+// otherwise the recovered wallet will be unencrypted.
+func (c *Client) RecoverWallet(id, seed, password string) (*WalletResponse, error) {
+	req := WalletRecoverRequest{
+		ID:       id,
+		Seed:     seed,
+		Password: password,
+	}
+
+	var rsp WalletResponse
+	ok, err := c.PostJSONV2("/api/v2/wallet/recover", req, &rsp)
+	if ok {
+		return &rsp, err
+	}
+
+	return nil, err
 }

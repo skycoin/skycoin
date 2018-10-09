@@ -43,7 +43,7 @@ func getBlocks(c *gcli.Context) error {
 		return fmt.Errorf("invalid block seq: %v, must be unsigned integer", end)
 	}
 
-	rlt, err := client.Blocks(s, e)
+	rlt, err := client.BlocksInRange(s, e)
 	if err != nil {
 		return err
 	}

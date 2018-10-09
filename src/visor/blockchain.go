@@ -3,6 +3,7 @@ package visor
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -24,6 +25,22 @@ var (
 	// ErrVerifyStopped is returned when database verification is interrupted
 	ErrVerifyStopped = errors.New("database verification stopped")
 )
+
+// ErrBlockNotExist may be returned if a block is not found
+type ErrBlockNotExist struct {
+	Seq uint64
+}
+
+// NewErrBlockNotExist creates an ErrBlockNotExist based on an unknown block sequence
+func NewErrBlockNotExist(seq uint64) ErrBlockNotExist {
+	return ErrBlockNotExist{
+		Seq: seq,
+	}
+}
+
+func (e ErrBlockNotExist) Error() string {
+	return fmt.Sprintf("block does not exist seq=%d", e.Seq)
+}
 
 //Warning: 10e6 is 10 million, 1e6 is 1 million
 
@@ -425,6 +442,26 @@ func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 	}
 
 	return nil
+}
+
+// GetBlocks returns blocks matching seqs. If any block is not found, returns an error.
+func (bc Blockchain) GetBlocks(tx *dbutil.Tx, seqs []uint64) ([]coin.SignedBlock, error) {
+	blocks := make([]coin.SignedBlock, len(seqs))
+
+	for i, s := range seqs {
+		b, err := bc.store.GetSignedBlockBySeq(tx, s)
+		if err != nil {
+			return nil, err
+		}
+
+		if b == nil {
+			return nil, NewErrBlockNotExist(s)
+		}
+
+		blocks[i] = *b
+	}
+
+	return blocks, nil
 }
 
 // GetBlocksInRange return blocks whose seq are in the range of start and end.

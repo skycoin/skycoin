@@ -80,6 +80,20 @@ func nodeAddress() string {
 	return addr
 }
 
+func nodeUsername() string {
+	return os.Getenv("SKYCOIN_NODE_USERNAME")
+}
+
+func nodePassword() string {
+	return os.Getenv("SKYCOIN_NODE_PASSWORD")
+}
+
+func newClient() *api.Client {
+	c := api.NewClient(nodeAddress())
+	c.SetAuth(nodeUsername(), nodePassword())
+	return c
+}
+
 func mode(t *testing.T) string {
 	mode := os.Getenv("SKYCOIN_INTEGRATION_TEST_MODE")
 	switch mode {
@@ -252,7 +266,7 @@ func TestStableCoinSupply(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cs, err := c.CoinSupply()
 	require.NoError(t, err)
@@ -266,7 +280,7 @@ func TestLiveCoinSupply(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cs, err := c.CoinSupply()
 	require.NoError(t, err)
@@ -285,7 +299,7 @@ func TestVersion(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	v, err := c.Version()
 	require.NoError(t, err)
@@ -298,7 +312,7 @@ func TestVerifyAddress(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name    string
@@ -350,7 +364,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	badSigStr := "71f2c01516fe696328e79bcf464eb0db374b63d494f7a307d1e77114f18581d7a81eed5275a9e04a336292dd2fd16977d9bef2a54ea3161d0876603d00c53bc9dd"
 	badSigBytes, err := hex.DecodeString(badSigStr)
@@ -439,7 +453,7 @@ func TestStableNoUnconfirmedOutputs(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name    string
@@ -515,7 +529,7 @@ func TestStableOutputs(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name    string
@@ -594,7 +608,7 @@ func TestLiveOutputs(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// Request all outputs and check that HeadOutputs is not empty
 	// OutgoingOutputs and IncomingOutputs are variable and could be empty
@@ -651,7 +665,7 @@ func TestLiveBlock(t *testing.T) {
 	testKnownBlocks(t)
 
 	// Check the knownBadBlockSeqs
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, seq := range knownBadBlockSeqs {
 		b, err := c.BlockBySeq(seq)
 		require.NoError(t, err)
@@ -660,7 +674,7 @@ func TestLiveBlock(t *testing.T) {
 }
 
 func testKnownBlocks(t *testing.T) {
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name    string
@@ -776,7 +790,7 @@ func TestLiveBlockVerbose(t *testing.T) {
 	testKnownBlocksVerbose(t)
 
 	// Check the knownBadBlockSeqs
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, seq := range knownBadBlockSeqs {
 		b, err := c.BlockBySeqVerbose(seq)
 		require.NoError(t, err)
@@ -786,7 +800,7 @@ func TestLiveBlockVerbose(t *testing.T) {
 }
 
 func testKnownBlocksVerbose(t *testing.T) {
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name    string
@@ -931,7 +945,7 @@ func TestStableBlockchainMetadata(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	metadata, err := c.BlockchainMetadata()
 	require.NoError(t, err)
@@ -951,7 +965,7 @@ func TestLiveBlockchainMetadata(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	metadata, err := c.BlockchainMetadata()
 	require.NoError(t, err)
@@ -964,7 +978,7 @@ func TestStableBlockchainProgress(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -978,7 +992,7 @@ func TestLiveBlockchainProgress(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -999,7 +1013,7 @@ func TestStableBalance(t *testing.T) {
 		addrs  []string
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []balanceTestCase{
 		{
@@ -1048,7 +1062,7 @@ func TestLiveBalance(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// Genesis address check, should not have a balance
 	b, err := c.Balance([]string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"})
@@ -1084,7 +1098,7 @@ func TestStableUxOut(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name   string
@@ -1117,7 +1131,7 @@ func TestLiveUxOut(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// A spent uxout should never change
 	ux, err := c.UxOut("fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20")
@@ -1132,7 +1146,7 @@ func TestLiveUxOut(t *testing.T) {
 }
 
 func scanUxOuts(t *testing.T) {
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	outputs, err := c.Outputs()
 	require.NoError(t, err)
@@ -1166,7 +1180,7 @@ func TestStableAddressUxOuts(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name    string
@@ -1210,7 +1224,7 @@ func TestLiveAddressUxOuts(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name         string
@@ -1259,7 +1273,7 @@ func TestStableBlocksInRange(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -1331,7 +1345,7 @@ func TestLiveBlocksInRange(t *testing.T) {
 }
 
 func testBlocksInRange(t *testing.T, start, end uint64) *readable.Blocks {
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	blocks, err := c.BlocksInRange(start, end)
 	require.NoError(t, err)
@@ -1365,7 +1379,7 @@ func TestStableBlocksInRangeVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -1444,7 +1458,7 @@ func TestLiveBlocksInRangeVerbose(t *testing.T) {
 }
 
 func testBlocksInRangeVerbose(t *testing.T, start, end uint64) *readable.BlocksVerbose {
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	blocks, err := c.BlocksInRangeVerbose(start, end)
 	require.NoError(t, err)
@@ -1480,7 +1494,7 @@ func TestStableBlocks(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name    string
@@ -1526,7 +1540,7 @@ func TestLiveBlocks(t *testing.T) {
 }
 
 func testBlocks(t *testing.T, seqs []uint64) *readable.Blocks {
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	blocks, err := c.Blocks(seqs)
 	require.NoError(t, err)
@@ -1559,7 +1573,7 @@ func TestStableBlocksVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cases := []struct {
 		name    string
@@ -1606,7 +1620,7 @@ func TestLiveBlocksVerbose(t *testing.T) {
 }
 
 func testBlocksVerbose(t *testing.T, seqs []uint64) *readable.BlocksVerbose {
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	blocks, err := c.BlocksVerbose(seqs)
 	require.NoError(t, err)
@@ -1641,7 +1655,7 @@ func TestStableLastBlocks(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	blocks, err := c.LastBlocks(1)
 	require.NoError(t, err)
@@ -1671,7 +1685,7 @@ func TestLiveLastBlocks(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	var prevBlock *readable.Block
 	blocks, err := c.LastBlocks(10)
 	require.NoError(t, err)
@@ -1695,7 +1709,7 @@ func TestStableLastBlocksVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	blocks, err := c.LastBlocksVerbose(1)
 	require.NoError(t, err)
@@ -1728,7 +1742,7 @@ func TestLiveLastBlocksVerbose(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	blocks, err := c.LastBlocksVerbose(10)
 	require.NoError(t, err)
@@ -1756,7 +1770,7 @@ func TestStableNetworkConnections(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	connections, err := c.NetworkConnections()
 	require.NoError(t, err)
 	require.Empty(t, connections.Connections)
@@ -1771,7 +1785,7 @@ func TestLiveNetworkConnections(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	connections, err := c.NetworkConnections()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections.Connections)
@@ -1796,7 +1810,7 @@ func TestNetworkDefaultConnections(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	connections, err := c.NetworkDefaultConnections()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
@@ -1811,7 +1825,7 @@ func TestNetworkTrustedConnections(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	connections, err := c.NetworkTrustedConnections()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
@@ -1826,7 +1840,7 @@ func TestStableNetworkExchangeableConnections(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	connections, err := c.NetworkExchangeableConnections()
 	require.NoError(t, err)
 
@@ -1839,7 +1853,7 @@ func TestLiveNetworkExchangeableConnections(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	_, err := c.NetworkExchangeableConnections()
 	require.NoError(t, err)
 }
@@ -1882,7 +1896,7 @@ func TestLiveTransaction(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.Transaction(tc.txID)
@@ -1961,7 +1975,7 @@ func TestStableTransaction(t *testing.T) {
 		})
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.Transaction(tc.txID)
@@ -2008,7 +2022,7 @@ func TestLiveTransactionVerbose(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.TransactionVerbose(tc.txID)
@@ -2087,7 +2101,7 @@ func TestStableTransactionVerbose(t *testing.T) {
 		})
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.TransactionVerbose(tc.txID)
@@ -2134,7 +2148,7 @@ func TestLiveTransactionEncoded(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			testTransactionEncoded(t, c, tc, false)
@@ -2203,7 +2217,7 @@ func TestStableTransactionEncoded(t *testing.T) {
 		})
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			testTransactionEncoded(t, c, tc, true)
@@ -2257,7 +2271,7 @@ func TestLiveTransactions(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	addrs := []string{
 		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt",
 	}
@@ -2353,7 +2367,7 @@ func TestStableTransactions(t *testing.T) {
 		})
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txnResult, err := c.Transactions(tc.addrs)
@@ -2375,7 +2389,7 @@ func TestLiveConfirmedTransactions(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cTxsSingle, err := c.ConfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
@@ -2449,7 +2463,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txnResult, err := c.ConfirmedTransactions(tc.addrs)
@@ -2515,7 +2529,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 		})
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txnResult, err := c.UnconfirmedTransactions(tc.addrs)
@@ -2537,7 +2551,7 @@ func TestLiveUnconfirmedTransactions(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cTxsSingle, err := c.UnconfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
@@ -2566,7 +2580,7 @@ func TestLiveTransactionsVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	addrs := []string{
 		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt",
 	}
@@ -2639,7 +2653,7 @@ func TestStableTransactionsVerbose(t *testing.T) {
 		})
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txnResult, err := c.TransactionsVerbose(tc.addrs)
@@ -2661,7 +2675,7 @@ func TestLiveConfirmedTransactionsVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cTxsSingle, err := c.ConfirmedTransactionsVerbose([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
@@ -2735,7 +2749,7 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txnResult, err := c.ConfirmedTransactionsVerbose(tc.addrs)
@@ -2801,7 +2815,7 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 		})
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txnResult, err := c.UnconfirmedTransactionsVerbose(tc.addrs)
@@ -2832,7 +2846,7 @@ func TestLiveUnconfirmedTransactionsVerbose(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	cTxsSingle, err := c.UnconfirmedTransactionsVerbose([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
@@ -2848,7 +2862,7 @@ func TestStableResendUnconfirmedTransactions(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	res, err := c.ResendUnconfirmedTransactions()
 	require.NoError(t, err)
 	require.True(t, len(res.Txids) == 0)
@@ -2858,7 +2872,7 @@ func TestLiveResendUnconfirmedTransactions(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	_, err := c.ResendUnconfirmedTransactions()
 	require.NoError(t, err)
 }
@@ -2918,7 +2932,7 @@ func TestStableRawTransaction(t *testing.T) {
 		})
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txnResult, err := c.RawTransaction(tc.txID)
@@ -2967,7 +2981,7 @@ func TestLiveRawTransaction(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txnResult, err := c.RawTransaction(tc.txID)
@@ -3011,7 +3025,7 @@ func TestWalletNewSeed(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			seed, err := c.NewSeed(tc.entropy)
@@ -3087,7 +3101,7 @@ func TestStableAddressTransactions(t *testing.T) {
 		}...)
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txns, err := c.AddressTransactions(tc.address)
@@ -3133,7 +3147,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -3161,7 +3175,7 @@ func TestStableRichlist(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	richlist, err := c.Richlist(nil)
 	require.NoError(t, err)
@@ -3211,7 +3225,7 @@ func TestLiveRichlist(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	richlist, err := c.Richlist(nil)
 	require.NoError(t, err)
@@ -3233,7 +3247,7 @@ func TestStableAddressCount(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	count, err := c.AddressCount()
 	require.NoError(t, err)
@@ -3246,7 +3260,7 @@ func TestLiveAddressCount(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	count, err := c.AddressCount()
 	require.NoError(t, err)
@@ -3260,7 +3274,7 @@ func TestStableNoUnconfirmedPendingTransactions(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	txns, err := c.PendingTransactions()
 	require.NoError(t, err)
@@ -3272,7 +3286,7 @@ func TestStablePendingTransactions(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	txns, err := c.PendingTransactions()
 	require.NoError(t, err)
@@ -3295,7 +3309,7 @@ func TestLivePendingTransactions(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	_, err := c.PendingTransactions()
 	require.NoError(t, err)
@@ -3306,7 +3320,7 @@ func TestStableNoUnconfirmedPendingTransactionsVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	txns, err := c.PendingTransactionsVerbose()
 	require.NoError(t, err)
@@ -3318,7 +3332,7 @@ func TestStablePendingTransactionsVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	txns, err := c.PendingTransactionsVerbose()
 	require.NoError(t, err)
@@ -3341,7 +3355,7 @@ func TestLivePendingTransactionsVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	_, err := c.PendingTransactionsVerbose()
 	require.NoError(t, err)
@@ -3354,7 +3368,7 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
 
 	tt := []struct {
@@ -3480,7 +3494,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
@@ -4101,8 +4115,8 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 					},
 				},
 			},
-			err:  "401 Unauthorized - invalid password",
-			code: http.StatusUnauthorized,
+			err:  "400 Bad Request - invalid password",
+			code: http.StatusBadRequest,
 		})
 
 		cases = append(cases, testCase{
@@ -4230,7 +4244,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
@@ -4578,7 +4592,7 @@ func TestCreateWallet(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	w, seed, clean := createWallet(t, c, false, "", "")
 	defer clean()
@@ -4627,7 +4641,7 @@ func TestGetWallet(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// Create a wallet
 	w, _, clean := createWallet(t, c, false, "", "")
@@ -4644,7 +4658,7 @@ func TestGetWallets(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// Creates 2 new wallets
 	var ws []api.WalletResponse
@@ -4685,7 +4699,7 @@ func TestWalletNewAddress(t *testing.T) {
 	for i := 1; i <= 30; i++ {
 		name := fmt.Sprintf("generate %v addresses", i)
 		t.Run(name, func(t *testing.T) {
-			c := api.NewClient(nodeAddress())
+			c := newClient()
 			var encrypt bool
 			var password string
 			// Test wallet with encryption only when i == 2, so that
@@ -4725,7 +4739,7 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	w, _, clean := createWallet(t, c, false, "", "casino away claim road artist where blossom warrior demise royal still palm")
 	defer clean()
 
@@ -4743,7 +4757,7 @@ func TestLiveWalletBalance(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	_, walletName, _ := getWalletFromEnv(t, c)
 	bp, err := c.WalletBalance(walletName)
 	require.NoError(t, err)
@@ -4756,7 +4770,7 @@ func TestWalletUpdate(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	w, _, clean := createWallet(t, c, false, "", "")
 	defer clean()
 
@@ -4774,7 +4788,7 @@ func TestStableWalletUnconfirmedTransactions(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	w, _, clean := createWallet(t, c, false, "", "")
 	defer clean()
 
@@ -4792,7 +4806,7 @@ func TestLiveWalletUnconfirmedTransactions(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
 	txns, err := c.WalletUnconfirmedTransactions(w.Filename())
 	require.NoError(t, err)
@@ -4813,7 +4827,7 @@ func TestStableWalletUnconfirmedTransactionsVerbose(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	w, _, clean := createWallet(t, c, false, "", "")
 	defer clean()
 
@@ -4831,7 +4845,7 @@ func TestLiveWalletUnconfirmedTransactionsVerbose(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
 	txns, err := c.WalletUnconfirmedTransactionsVerbose(w.Filename())
 	require.NoError(t, err)
@@ -4852,7 +4866,7 @@ func TestWalletFolderName(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	folderName, err := c.WalletFolderName()
 	require.NoError(t, err)
 
@@ -4865,7 +4879,7 @@ func TestEncryptWallet(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// Create a unencrypted wallet
 	w, _, clean := createWallet(t, c, false, "", "")
@@ -4903,13 +4917,13 @@ func TestDecryptWallet(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	w, seed, clean := createWallet(t, c, true, "pwd", "")
 	defer clean()
 
 	// Decrypt wallet with different password, must fail
 	_, err := c.DecryptWallet(w.Meta.Filename, "pwd1")
-	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password")
+	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - invalid password")
 
 	// Decrypt wallet with no password, must fail
 	_, err = c.DecryptWallet(w.Meta.Filename, "")
@@ -4950,7 +4964,7 @@ func TestRecoverWallet(t *testing.T) {
 
 	// Create an encrypted wallet with some addresses pregenerated,
 	// to make sure recover recovers the same number of addresses
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	wf, err := c.WalletFolderName()
 	require.NoError(t, err)
 
@@ -5016,7 +5030,7 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// Create an encrypted wallet
 	w, _, clean := createWallet(t, c, true, "pwd", "")
@@ -5031,7 +5045,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// Create an encrypted wallet
 	w, seed, clean := createWallet(t, c, true, "pwd", "")
@@ -5051,7 +5065,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 
 	// Check with invalid password
 	_, err = c.WalletSeed(w.Meta.Filename, "wrong password")
-	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password")
+	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - invalid password")
 
 	// Check with missing password
 	_, err = c.WalletSeed(w.Meta.Filename, "")
@@ -5418,7 +5432,7 @@ func TestDisableWalletAPI(t *testing.T) {
 		},
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	for _, tc := range tt {
 		f := func(tc testCase) func(t *testing.T) {
 			return func(t *testing.T) {
@@ -5471,7 +5485,7 @@ func TestStableHealth(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	r, err := c.Health()
 	require.NoError(t, err)
@@ -5499,7 +5513,7 @@ func TestLiveHealth(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	r, err := c.Health()
 	require.NoError(t, err)
@@ -5517,7 +5531,108 @@ func TestDisableGUIAPI(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 	err := c.Get("/", nil)
 	assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
+}
+
+func TestInvalidAuth(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	user := nodeUsername()
+	pass := nodePassword()
+
+	c := newClient()
+
+	require.Equal(t, user, c.Username)
+	require.Equal(t, pass, c.Password)
+
+	if user == "" && pass == "" {
+		// If neither user nor pass are set, assume the node is run without auth,
+		// and check that providing auth returns a 401 error
+		testInvalidAuthNoAuthConfigured(t)
+	} else {
+		// If either user or pass are set, assume the node is run with auth,
+		// and check that missing or invalid auth returns a 401 error
+		testInvalidAuthAuthConfigured(t)
+	}
+}
+
+func testInvalidAuthAuthConfigured(t *testing.T) {
+	cases := []struct {
+		user string
+		pass string
+	}{
+		{}, // both missing
+		{
+			user: nodeUsername(), // user right, pass missing
+		},
+		{
+			pass: nodePassword(), // pass right, user missing
+		},
+		{
+			user: nodeUsername() + "x", // user wrong, pass missing
+		},
+		{
+			pass: nodePassword() + "x", // pass wrong, user missing
+		},
+		{
+			user: nodeUsername() + "x", // both wrong
+			pass: nodePassword() + "x",
+		},
+		{
+			user: nodeUsername(), // user right, pass wrong
+			pass: nodePassword() + "x",
+		},
+		{
+			user: nodeUsername() + "x", // user wrong, pass right
+			pass: nodePassword(),
+		},
+	}
+
+	for _, tc := range cases {
+		name := fmt.Sprintf("u=%s p=%s", tc.user, tc.pass)
+		t.Run(name, func(t *testing.T) {
+			c := newClient()
+			c.SetAuth(tc.user, tc.pass)
+			require.Equal(t, tc.user, c.Username)
+			require.Equal(t, tc.pass, c.Password)
+
+			_, err := c.Health()
+			assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized")
+		})
+	}
+}
+
+func testInvalidAuthNoAuthConfigured(t *testing.T) {
+	cases := []struct {
+		user string
+		pass string
+	}{
+		{
+			user: "foo",
+		},
+		{
+			pass: "bar",
+		},
+		{
+			user: "foo",
+			pass: "bar",
+		},
+	}
+
+	for _, tc := range cases {
+		name := fmt.Sprintf("u=%s p=%s", tc.user, tc.pass)
+		t.Run(name, func(t *testing.T) {
+			c := newClient()
+			c.SetAuth(tc.user, tc.pass)
+			require.Equal(t, tc.user, c.Username)
+			require.Equal(t, tc.pass, c.Password)
+
+			_, err := c.Health()
+			assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized")
+		})
+	}
 }

@@ -69,6 +69,13 @@ These API sets are:
 * `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
 * `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
 
+## Authentication
+
+Authentication can be enabled with the `-web-interface-username` and `-web-interface-password` options.
+The username and password should be provided in an `Authorization: Basic` header.
+
+Authentication can only be enabled when using HTTPS with `-web-interface-https`, unless `-web-interface-plaintext-auth` is enabled.
+
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)

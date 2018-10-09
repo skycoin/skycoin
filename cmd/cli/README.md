@@ -10,6 +10,8 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Enable command autocomplete](#enable-command-autocomplete)
 - [Environment Setting](#environment-setting)
 	- [RPC_ADDR](#rpc_addr)
+	- [RPC_USER](#rpc_user)
+	- [RPC_PASS](#rpc_pass)
 	- [WALLET_DIR](#wallet_dir)
 	- [WALLET_NAME](#wallet_name)
 - [Usage](#usage)
@@ -68,7 +70,7 @@ The CLI uses environment variable to manage the configurations.
 
 ### RPC_ADDR
 
-CLI will connect to skycoin node rpc address `http://127.0.0.1:6420` by default.
+CLI will connect to skycoin node RPC address `http://127.0.0.1:6420` by default.
 You can change the address by setting the `RPC_ADDR` environment variable
 with the following command:
 
@@ -77,6 +79,22 @@ $ export RPC_ADDR=http://127.0.0.1:6420
 ```
 
 Note: `RPC_ADDR` must be in `scheme://host` format.
+
+### RPC_USER
+
+A username for authenticating requests to the skycoin node.
+
+```bash
+$ export RPC_USER=...
+```
+
+### RPC_PASS
+
+A password for authenticating requests to the skycoin node.
+
+```bash
+$ export RPC_PASS=...
+```
 
 ### WALLET_DIR
 

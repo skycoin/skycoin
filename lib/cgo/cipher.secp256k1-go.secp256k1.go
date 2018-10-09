@@ -185,10 +185,7 @@ func SKY_secp256k1_VerifySignature(_msg []byte, _sig []byte, _pubkey1 []byte, _a
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	checkAPIReady()
-	msg := *(*[]byte)(unsafe.Pointer(&_msg))
-	sig := *(*[]byte)(unsafe.Pointer(&_sig))
-	pubkey1 := *(*[]byte)(unsafe.Pointer(&_pubkey1))
-	__arg3 := secp256k1go.VerifySignature(msg, sig, pubkey1)
+	__arg3 := secp256k1go.VerifySignature(_msg, _sig, _pubkey1)
 	*_arg3 = __arg3
 	return
 }

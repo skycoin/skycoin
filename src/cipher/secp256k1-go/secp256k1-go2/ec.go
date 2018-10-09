@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"log"
-
-	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 )
 
 // Error definition
@@ -121,9 +119,7 @@ func RecoverPublicKey(sigByte []byte, h []byte, recid int) ([]byte, int) {
 	var pubkey XY
 
 	if len(sigByte) != 64 {
-		err := skyerrors.NewValueError(ErrMustPass64bytePubKey, "sigByte ", sigByte)
-		log.Print(err)
-		panic(err)
+		log.Panic(ErrMustPass64bytePubKey)
 	}
 
 	var sig Signature

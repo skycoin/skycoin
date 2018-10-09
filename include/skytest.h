@@ -29,21 +29,21 @@ void closeRegisteredHandle(Handle handle);
 void freeRegisteredMemCleanup(void *p);
 
 int registerWalletClean(Client__Handle clientHandle,
-						WalletResponse__Handle walletHandle);
+            WalletResponse__Handle walletHandle);
 
 void cleanRegisteredWallet(
-			Client__Handle client,
-			WalletResponse__Handle wallet);
+      Client__Handle client,
+      WalletResponse__Handle wallet);
 
 json_value* loadJsonFile(const char* filename);
 
 int compareJsonValues(json_value* value1, json_value* value2);
 
 json_value* get_json_value(json_value* node, const char* path,
-							json_type type);
+              json_type type);
 
 json_value* get_json_value_not_strict(json_value* node, const char* path,
-							json_type type, int allow_null);
+              json_type type, int allow_null);
 
 int compareJsonValuesWithIgnoreList(json_value* value1, json_value* value2, const char* ignoreList);
 

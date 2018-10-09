@@ -78,5 +78,7 @@ func SHA256FromHex(t *testing.T, hex string) cipher.SHA256 {
 
 // RandSig returns a random cipher.Sig
 func RandSig(t *testing.T) cipher.Sig {
-	return cipher.NewSig(RandBytes(t, 65))
+	s, err := cipher.NewSig(RandBytes(t, 65))
+	require.NoError(t, err)
+	return s
 }

@@ -232,7 +232,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		LogToFile:       false,
 		DisablePingPong: false,
 
-		VerifyDB:       true,
+		VerifyDB:       false,
 		ResetCorruptDB: false,
 
 		// Wallets

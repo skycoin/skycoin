@@ -223,9 +223,8 @@ type UnconfirmedTxnPooler interface {
 
 // Visor manages the Blockchain as both a Master and a Normal
 type Visor struct {
-	Config Config
-	DB     *dbutil.DB
-	// Unconfirmed transactions, held for relay until we get block confirmation
+	Config      Config
+	DB          *dbutil.DB
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service

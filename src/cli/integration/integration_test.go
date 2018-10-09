@@ -70,7 +70,6 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
-// Do setup and teardown here.
 func TestMain(m *testing.M) {
 	abs, err := filepath.Abs(binaryName)
 	if err != nil {

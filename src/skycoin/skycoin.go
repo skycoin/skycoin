@@ -4,6 +4,7 @@ Package skycoin implements the main daemon cmd's configuration and setup
 package skycoin
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -403,24 +404,24 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 // checkCertFiles returns true if both cert and key files exist, false if neither exist,
 // or returns an error if only one does not exist
 func checkCertFiles(cert, key string) (bool, error) {
-	_, certErr := os.Stat(cert)
-	certExists := true
-	if certErr != nil {
-		if os.IsNotExist(certErr) {
-			certExists = false
-		} else {
-			return false, certErr
+	doesFileExist := func(f string) (bool, error) {
+		if _, err := os.Stat(f); err != nil {
+			if os.IsNotExist(err) {
+				return false, nil
+			}
+			return false, err
 		}
+		return true, nil
 	}
 
-	_, keyErr := os.Stat(key)
-	keyExists := true
-	if keyErr != nil {
-		if os.IsNotExist(keyErr) {
-			keyExists = false
-		} else {
-			return false, keyErr
-		}
+	certExists, err := doesFileExist(cert)
+	if err != nil {
+		return false, err
+	}
+
+	keyExists, err := doesFileExist(key)
+	if err != nil {
+		return false, err
 	}
 
 	switch {
@@ -428,11 +429,13 @@ func checkCertFiles(cert, key string) (bool, error) {
 		return true, nil
 	case !certExists && !keyExists:
 		return false, nil
+	case certExists && !keyExists:
+		return false, fmt.Errorf("certfile %s exists but keyfile %s does not", cert, key)
+	case !certExists && keyExists:
+		return false, fmt.Errorf("keyfile %s exists but certfile %s does not", key, cert)
 	default:
-		if certErr != nil {
-			return false, certErr
-		}
-		return false, keyErr
+		log.Panic("unreachable code")
+		return false, errors.New("unreachable code")
 	}
 }
 

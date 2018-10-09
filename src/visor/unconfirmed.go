@@ -19,23 +19,6 @@ var (
 	errUpdateObjectDoesNotExist = errors.New("object does not exist in bucket")
 )
 
-// TxnUnspents maps from coin.Transaction hash to its expected unspents.  The unspents'
-// Head can be different at execution time, but the Unspent's hash is fixed.
-type TxnUnspents map[cipher.SHA256]coin.UxArray
-
-// AllForAddress returns all Unspents for a single address
-func (tus TxnUnspents) AllForAddress(a cipher.Address) coin.UxArray {
-	uxo := make(coin.UxArray, 0)
-	for _, uxa := range tus {
-		for i := range uxa {
-			if uxa[i].Body.Address == a {
-				uxo = append(uxo, uxa[i])
-			}
-		}
-	}
-	return uxo
-}
-
 // unconfirmed transactions bucket
 type unconfirmedTxns struct{}
 

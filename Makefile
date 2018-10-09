@@ -75,16 +75,16 @@ run-integration-test-live-cover: ## Run the skycoin node configured for live int
 
 test: ## Run tests for Skycoin
 	@mkdir -p coverage/
-	go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-cmd.coverage.out -timeout=5m ./cmd/...
-	go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-src.coverage.out -timeout=5m ./src/...
+	COIN=$(COIN) go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-cmd.coverage.out -timeout=5m ./cmd/...
+	COIN=$(COIN) go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-src.coverage.out -timeout=5m ./src/...
 
 test-386: ## Run tests for Skycoin with GOARCH=386
-	GOARCH=386 go test ./cmd/... -timeout=5m
-	GOARCH=386 go test ./src/... -timeout=5m
+	GOARCH=386 COIN=$(COIN) go test ./cmd/... -timeout=5m
+	GOARCH=386 COIN=$(COIN) go test ./src/... -timeout=5m
 
 test-amd64: ## Run tests for Skycoin with GOARCH=amd64
-	GOARCH=amd64 go test ./cmd/... -timeout=5m
-	GOARCH=amd64 go test ./src/... -timeout=5m
+	GOARCH=amd64 COIN=$(COIN) go test ./cmd/... -timeout=5m
+	GOARCH=amd64 COIN=$(COIN) go test ./src/... -timeout=5m
 
 configure-build:
 	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include

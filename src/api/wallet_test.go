@@ -1857,7 +1857,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	var addrs = make([]cipher.Address, 3)
 
 	for i := 0; i < 3; i++ {
-		pub, _ := cipher.GenerateDeterministicKeyPair(cipher.RandByte(32))
+		pub, _ := cipher.MustGenerateDeterministicKeyPair(cipher.RandByte(32))
 		addrs[i] = cipher.AddressFromPubKey(pub)
 		responseAddresses.Address = append(responseAddresses.Address, addrs[i].String())
 	}
@@ -2776,11 +2776,11 @@ func TestDecryptWallet(t *testing.T) {
 // Returns set of wallet.Entry and wallet.ReadableEntry, the readable
 // entries' secrets are removed.
 func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { // nolint: unparam
-	seckeys := cipher.GenerateDeterministicKeyPairs(seed, n)
+	seckeys := cipher.MustGenerateDeterministicKeyPairs(seed, n)
 	var entries []wallet.Entry
 	var responseEntries []readable.WalletEntry
 	for i, seckey := range seckeys {
-		pubkey := cipher.PubKeyFromSecKey(seckey)
+		pubkey := cipher.MustPubKeyFromSecKey(seckey)
 		entries = append(entries, wallet.Entry{
 			Address: cipher.AddressFromPubKey(pubkey),
 			Public:  pubkey,

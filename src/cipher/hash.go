@@ -32,11 +32,7 @@ type Ripemd160 [20]byte
 // MustSet sets value, panics on error
 func (rd *Ripemd160) MustSet(b []byte) {
 	if len(b) != 20 {
-		err := NewValueError(
-			ErrInvalidLengthRipemd160, "b", b,
-		)
-		log.Print(err)
-		panic(err)
+		log.Panic("Invalid ripemd160 length")
 	}
 	copy(rd[:], b[:])
 }
@@ -70,11 +66,7 @@ type SHA256 [32]byte
 // MustSet sets value, panics on error
 func (g *SHA256) MustSet(b []byte) {
 	if len(b) != 32 {
-		err := NewValueError(
-			ErrInvalidLengthSHA256, "b", b,
-		)
-		log.Print(err)
-		panic(err)
+		log.Panic("Invalid sha256 length")
 	}
 	copy(g[:], b[:])
 }

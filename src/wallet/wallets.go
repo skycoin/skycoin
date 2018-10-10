@@ -20,8 +20,8 @@ type Wallets map[string]*Wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered.
 func LoadWallets(dir string) (Wallets, error) {
-	// TODO -- don't load duplicate wallets.
-	// TODO -- save a last_modified value in wallets to decide which to load
+	// TODO -- return error if duplicate wallet (by first address) is found
+	// TODO -- but make sure that the client has a good warning to the user if wallet loading fails
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -34,21 +34,47 @@ func LoadWallets(dir string) (Wallets, error) {
 			if !strings.HasSuffix(name, WalletExt) {
 				continue
 			}
+
 			fullpath := filepath.Join(dir, name)
-			rw, err := LoadReadableWallet(fullpath)
+			w, err := loadWallet(fullpath)
 			if err != nil {
 				return nil, err
 			}
-			w, err := rw.ToWallet()
-			if err != nil {
-				return nil, err
-			}
-			logger.Infof("Loaded wallet from %s", fullpath)
-			w.setFilename(name)
+
 			wallets[name] = w
 		}
 	}
 	return wallets, nil
+}
+
+func loadWallet(fn string) (*Wallet, error) {
+	rw, err := LoadReadableWallet(fn)
+	if err != nil {
+		return nil, err
+	}
+
+	w, err := rw.ToWallet()
+	if err != nil {
+		return nil, err
+	}
+
+	// Normalize coin types (older wallets used different names for the coin type)
+	switch strings.ToLower(string(w.coin())) {
+	case "sky", "skycoin":
+		w.setCoin(CoinTypeSkycoin)
+	case "btc", "bitcoin":
+		w.setCoin(CoinTypeBitcoin)
+	}
+
+	coinType := w.coin()
+	if coinType != CoinTypeSkycoin {
+		return nil, fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", fn, coinType)
+	}
+
+	logger.Infof("Loaded wallet from %s", fn)
+	w.setFilename(filepath.Base(fn))
+
+	return w, nil
 }
 
 func backupWltFile(src, dst string) error { // nolint: deadcode,unused,megacheck

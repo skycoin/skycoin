@@ -70,7 +70,6 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
-// Do setup and teardown here.
 func TestMain(m *testing.M) {
 	abs, err := filepath.Abs(binaryName)
 	if err != nil {
@@ -355,6 +354,12 @@ func rpcAddress() string {
 	return rpcAddr
 }
 
+func newClient() *api.Client {
+	c := api.NewClient(rpcAddress())
+	c.SetAuth(os.Getenv("RPC_USER"), os.Getenv("RPC_PASS"))
+	return c
+}
+
 func useCSRF(t *testing.T) bool {
 	x := os.Getenv("USE_CSRF")
 	if x == "" {
@@ -597,10 +602,10 @@ func TestAddressGen(t *testing.T) {
 				require.Len(t, w.Entries, 2)
 
 				// Confirms the addresses are generated from the seed
-				_, keys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 2)
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
 				for i, key := range keys {
-					pk := cipher.PubKeyFromSecKey(key)
-					addr := cipher.AddressFromSecKey(key)
+					pk := cipher.MustPubKeyFromSecKey(key)
+					addr := cipher.MustAddressFromSecKey(key)
 					require.Equal(t, addr.String(), w.Entries[i].Address)
 					require.Equal(t, pk.Hex(), w.Entries[i].Public)
 					require.Equal(t, key.Hex(), w.Entries[i].Secret)
@@ -628,10 +633,10 @@ func TestAddressGen(t *testing.T) {
 				require.Len(t, w.Entries, 2)
 
 				// Confirms the addresses are generated from the seed
-				_, keys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 2)
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
 				for i, key := range keys {
-					pk := cipher.PubKeyFromSecKey(key)
-					addr := cipher.AddressFromSecKey(key)
+					pk := cipher.MustPubKeyFromSecKey(key)
+					addr := cipher.MustAddressFromSecKey(key)
 					require.Equal(t, addr.String(), w.Entries[i].Address)
 					require.Equal(t, pk.Hex(), w.Entries[i].Public)
 					require.Equal(t, key.Hex(), w.Entries[i].Secret)
@@ -689,12 +694,12 @@ func TestAddressGen(t *testing.T) {
 
 				// Confirms the addresses are bitcoin addresses that generated from the seed
 				seed := w.Meta["seed"]
-				_, keys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 2)
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
 				for i, key := range keys {
-					pk := cipher.PubKeyFromSecKey(key)
+					pk := cipher.MustPubKeyFromSecKey(key)
 					sk := cipher.BitcoinWalletImportFormatFromSeckey(key)
-					address := cipher.BitcoinAddressFromPubkey(pk)
-					require.Equal(t, address, w.Entries[i].Address)
+					address := cipher.BitcoinAddressFromPubKey(pk)
+					require.Equal(t, address.String(), w.Entries[i].Address)
 					require.Equal(t, pk.Hex(), w.Entries[i].Public)
 					require.Equal(t, sk, w.Entries[i].Secret)
 				}
@@ -715,12 +720,12 @@ func TestAddressGen(t *testing.T) {
 
 				// Confirms the addresses are bitcoin addresses that generated from the seed
 				seed := w.Meta["seed"]
-				_, keys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 2)
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
 				for i, key := range keys {
-					pk := cipher.PubKeyFromSecKey(key)
+					pk := cipher.MustPubKeyFromSecKey(key)
 					sk := cipher.BitcoinWalletImportFormatFromSeckey(key)
-					address := cipher.BitcoinAddressFromPubkey(pk)
-					require.Equal(t, address, w.Entries[i].Address)
+					address := cipher.BitcoinAddressFromPubKey(pk)
+					require.Equal(t, address.String(), w.Entries[i].Address)
 					require.Equal(t, pk.Hex(), w.Entries[i].Public)
 					require.Equal(t, sk, w.Entries[i].Secret)
 				}
@@ -780,7 +785,7 @@ func TestAddressGen(t *testing.T) {
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
-				pk, sk := cipher.GenerateDeterministicKeyPair([]byte("123"))
+				pk, sk := cipher.MustGenerateDeterministicKeyPair([]byte("123"))
 				addr := cipher.AddressFromPubKey(pk)
 				require.Len(t, w.Entries, 1)
 				require.Equal(t, addr.String(), w.Entries[0].Address)
@@ -1479,9 +1484,9 @@ func scanBlocks(t *testing.T, start, end string) { // nolint: unparam
 	require.NoError(t, err)
 
 	var preBlocks readable.Block
-	preBlocks.Head.BlockHash = "0000000000000000000000000000000000000000000000000000000000000000"
+	preBlocks.Head.Hash = "0000000000000000000000000000000000000000000000000000000000000000"
 	for _, b := range blocks.Blocks {
-		require.Equal(t, b.Head.PreviousBlockHash, preBlocks.Head.BlockHash)
+		require.Equal(t, b.Head.PreviousHash, preBlocks.Head.Hash)
 		preBlocks = b
 	}
 }
@@ -2394,11 +2399,11 @@ func TestStableGenerateWallet(t *testing.T) {
 func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 	seed, ok := w.Meta["seed"]
 	require.True(t, ok)
-	newSeed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), len(w.Entries))
+	newSeed, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), len(w.Entries))
 	require.Len(t, seckeys, len(w.Entries))
 	for i, sk := range seckeys {
 		require.Equal(t, w.Entries[i].Secret, sk)
-		pk := cipher.PubKeyFromSecKey(sk)
+		pk := cipher.MustPubKeyFromSecKey(sk)
 		require.Equal(t, w.Entries[i].Public, pk)
 	}
 	lastSeed, ok := w.Meta["lastSeed"]
@@ -2415,7 +2420,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := api.NewClient(rpcAddress())
+	c := newClient()
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 

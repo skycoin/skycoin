@@ -17,15 +17,11 @@ import (
 import "C"
 
 //export SKY_cipher_Ripemd160_Set
-func SKY_cipher_Ripemd160_Set(_rd *C.cipher__Ripemd160, _b []byte) (errcode uint32) {
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
-
+func SKY_cipher_Ripemd160_Set(_rd *C.cipher__Ripemd160, _b []byte) uint32 {
 	rd := (*cipher.Ripemd160)(unsafe.Pointer(_rd))
 
-	rd.Set(_b)
-	return libErrorCode(nil)
+	err := rd.Set(_b)
+	return libErrorCode(err)
 }
 
 //export SKY_cipher_HashRipemd160
@@ -36,15 +32,11 @@ func SKY_cipher_HashRipemd160(_data []byte, _arg1 *C.cipher__Ripemd160) {
 }
 
 //export SKY_cipher_SHA256_Set
-func SKY_cipher_SHA256_Set(_g *C.cipher__SHA256, _b []byte) (errcode uint32) {
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
-
+func SKY_cipher_SHA256_Set(_g *C.cipher__SHA256, _b []byte) uint32 {
 	g := (*cipher.SHA256)(unsafe.Pointer(_g))
 
-	g.Set(_b)
-	return libErrorCode(nil)
+	err := g.Set(_b)
+	return libErrorCode(err)
 }
 
 //export SKY_cipher_SHA256_Hex
@@ -63,11 +55,7 @@ func SKY_cipher_SHA256_Xor(_g *C.cipher__SHA256, _b *C.cipher__SHA256, _arg1 *C.
 }
 
 //export SKY_cipher_SumSHA256
-func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.cipher__SHA256) (errcode uint32) {
-	defer func() {
-		errcode = catchApiPanic(errcode, recover())
-	}()
-
+func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.cipher__SHA256) uint32 {
 	h := cipher.SumSHA256(_b)
 
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))

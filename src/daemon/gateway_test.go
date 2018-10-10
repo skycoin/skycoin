@@ -203,35 +203,6 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 	}
 }
 
-func TestGateway_ReloadWallets(t *testing.T) {
-	tests := []struct {
-		name            string
-		enableWalletAPI bool
-		err             error
-	}{
-		{
-			name:            "wallet api disabled",
-			enableWalletAPI: false,
-			err:             wallet.ErrWalletAPIDisabled,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			gw := &Gateway{
-				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
-				},
-			}
-			err := gw.ReloadWallets()
-			if tc.err != nil {
-				require.Equal(t, tc.err, err)
-				return
-			}
-		})
-	}
-}
-
 func TestGateway_Spend(t *testing.T) {
 	tests := []struct {
 		name              string

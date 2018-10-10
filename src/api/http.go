@@ -4,6 +4,7 @@ Package api implements the REST API interface
 package api
 
 import (
+	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
@@ -15,8 +16,10 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -49,6 +52,8 @@ const (
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
 	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
+	// EndpointsPrometheus endpoints for Go application metrics
+	EndpointsPrometheus = "PROMETHEUS"
 )
 
 // Server exposes an HTTP API
@@ -71,6 +76,8 @@ type Config struct {
 	IdleTimeout          time.Duration
 	BuildInfo            readable.BuildInfo
 	EnabledAPISets       map[string]struct{}
+	Username             string
+	Password             string
 }
 
 type muxConfig struct {
@@ -82,6 +89,8 @@ type muxConfig struct {
 	disableCSP           bool
 	buildInfo            readable.BuildInfo
 	enabledAPISets       map[string]struct{}
+	username             string
+	password             string
 }
 
 // HTTPResponse represents the http response struct
@@ -158,6 +167,8 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		disableCSP:           c.DisableCSP,
 		buildInfo:            c.BuildInfo,
 		enabledAPISets:       c.EnabledAPISets,
+		username:             c.Username,
+		password:             c.Password,
 	}
 
 	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
@@ -236,6 +247,9 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 
 // Addr returns the listening address of the Server
 func (s *Server) Addr() string {
+	if s == nil || s.listener == nil {
+		return ""
+	}
 	return s.listener.Addr().String()
 }
 
@@ -300,12 +314,19 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		}
 	}
 
-	webHandler := func(endpoint string, handler http.Handler) {
+	webHandlerCSRFOptional := func(endpoint string, handler http.Handler, checkCSRF bool) {
 		handler = wh.ElapsedHandler(logger, handler)
-		handler = CSRFCheck(csrfStore, handler)
+		if checkCSRF {
+			handler = CSRFCheck(csrfStore, handler)
+		}
 		handler = headerCheck(c.host, handler)
+		handler = basicAuth(c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
+	}
+
+	webHandler := func(endpoint string, handler http.Handler) {
+		webHandlerCSRFOptional(endpoint, handler, true)
 	}
 
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
@@ -351,9 +372,13 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	// get the current CSRF token
-	csrfHandler := headerCheck(c.host, getCSRFToken(csrfStore))
-	mux.Handle("/csrf", csrfHandler)
-	mux.Handle("/api/v1/csrf", csrfHandler) // csrf is always available, regardless of the API set
+	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
+		if c.enableUnversionedAPI {
+			webHandlerCSRFOptional(endpoint, handler, false)
+		}
+		webHandlerCSRFOptional("/api/v1"+endpoint, handler, false)
+	}
+	csrfHandlerV1("/csrf", getCSRFToken(csrfStore)) // csrf is always available, regardless of the API set
 
 	// Status endpoints
 	webHandlerV1("/version", versionHandler(c.buildInfo)) // version is always available, regardless of the API set
@@ -407,6 +432,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/uxout", forAPISet(uxOutHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/address_uxouts", forAPISet(addrUxOutsHandler(gateway), []string{EndpointsRead}))
 
+	// golang process internal metrics for Prometheus
+	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), []string{EndpointsPrometheus}))
+
 	// Address related endpoints
 	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsRead}))
 
@@ -417,6 +445,41 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsRead}))
 
 	return mux
+}
+
+func basicAuth(username, password, realm string, f http.Handler) http.HandlerFunc {
+	needsAuth := username != "" || password != ""
+	usernamePasswordHash := cipher.SumSHA256(append([]byte(username), []byte(password)...))
+	authHeader := fmt.Sprintf("Basic realm=%q", realm)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+
+		if needsAuth {
+			if !ok {
+				wh.Error401(w, authHeader, "")
+				return
+			}
+
+			userPassHash := cipher.SumSHA256(append([]byte(user), []byte(pass)...))
+
+			if subtle.ConstantTimeCompare(userPassHash[:], usernamePasswordHash[:]) != 1 {
+				wh.Error401(w, authHeader, "")
+				return
+			}
+		} else {
+			// If auth is not configured but the request provides auth, reject
+			// This will avoid a mistake where the daemon is not configured with auth,
+			// but the client is, and does not realize the daemon is not configured with auth
+			// because all requests are accepted
+			if user != "" || pass != "" {
+				wh.Error401(w, authHeader, "")
+				return
+			}
+		}
+
+		f.ServeHTTP(w, r)
+	}
 }
 
 // newIndexHandler returns a http.HandlerFunc for index.html, where index.html is in appLoc

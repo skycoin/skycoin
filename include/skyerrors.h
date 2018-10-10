@@ -23,7 +23,6 @@
 
 // libcgo error codes
 #define SKY_BAD_HANDLE    0x7F000001
-#define SKY_API_LOCKED    0x7F000002
 
 // cipher error codes
 #define SKY_ErrAddressInvalidLength                 0x02000000

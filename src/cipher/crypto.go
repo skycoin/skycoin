@@ -36,8 +36,8 @@ var (
 
 	// ErrInvalidLengthPubKey  Invalid public key length
 	ErrInvalidLengthPubKey = errors.New("Invalid public key length")
-	// ErrPubKeyFromNullSecKey PubKeyFromSecKey, attempt to load null seckey, unsafe
-	ErrPubKeyFromNullSecKey = errors.New("PubKeyFromSecKey, attempt to load null seckey, unsafe")
+	// ErrPubKeyFromNullSecKey Attempt to load null seckey, unsafe
+	ErrPubKeyFromNullSecKey = errors.New("Attempt to load null seckey, unsafe")
 	// ErrPubKeyFromBadSecKey  PubKeyFromSecKey, pubkey recovery failed. Function
 	ErrPubKeyFromBadSecKey = errors.New("PubKeyFromSecKey, pubkey recovery failed. Function " +
 		"assumes seckey is valid. Check seckey")

@@ -485,7 +485,7 @@ func TestPubKeyFromSecKey(t *testing.T) {
 	require.Equal(t, p2, p)
 
 	_, err = PubKeyFromSecKey(SecKey{})
-	require.Equal(t, errors.New("Cannot convert null SecKey to PubKey"), err)
+	require.Equal(t, errors.New("Attempt to load null seckey, unsafe"), err)
 }
 
 func TestMustPubKeyFromSecKey(t *testing.T) {

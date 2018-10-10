@@ -320,7 +320,7 @@ func MustNewSig(b []byte) Sig {
 func SigFromHex(s string) (Sig, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		return Sig{}, errors.New("Invalid signature")
+		return Sig{}, ErrInvalidSig
 	}
 	return NewSig(b)
 }

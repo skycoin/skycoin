@@ -154,3 +154,5 @@ docs/libc/xml
 # cli fiberAddressGen default output
 addresses.txt
 seeds.csv
+
+histogram

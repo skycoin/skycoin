@@ -208,7 +208,7 @@ func TestAddressFromSecKey(t *testing.T) {
 	require.NoError(t, a.Verify(p))
 
 	_, err = AddressFromSecKey(SecKey{})
-	require.Equal(t, errors.New("PubKeyFromSecKey, attempt to load null seckey, unsafe"), err)
+	require.Equal(t, errors.New("Attempt to load null seckey, unsafe"), err)
 }
 
 func TestMustAddressFromSecKey(t *testing.T) {

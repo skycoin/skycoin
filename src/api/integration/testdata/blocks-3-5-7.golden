@@ -8,7 +8,8 @@
 				"timestamp": 1427927671,
 				"fee": 0,
 				"version": 0,
-				"tx_body_hash": "a6a709e9388a4d67a47d262b11da5f804eddd9d67acc4a3e450f7a567bdc1619"
+				"tx_body_hash": "a6a709e9388a4d67a47d262b11da5f804eddd9d67acc4a3e450f7a567bdc1619",
+				"ux_hash": "bd8c7dc7aadb8cd70e8ba97fb71b5ca77c9be157932930bc547a30bb095bc6c7"
 			},
 			"body": {
 				"txns": [
@@ -44,7 +45,8 @@
 				"timestamp": 1428798821,
 				"fee": 2036,
 				"version": 0,
-				"tx_body_hash": "0579e7727627cd9815a8a8b5e1df86124f45a4132cc0dbd00d2f110e4f409b69"
+				"tx_body_hash": "0579e7727627cd9815a8a8b5e1df86124f45a4132cc0dbd00d2f110e4f409b69",
+				"ux_hash": "70439be07958c0dfa9932bfa108d7dad20a37db7ae6db4e06a3225443d4b5481"
 			},
 			"body": {
 				"txns": [
@@ -88,7 +90,8 @@
 				"timestamp": 1428807671,
 				"fee": 0,
 				"version": 0,
-				"tx_body_hash": "f832428481690fa918d6d29946e191f2c8c89b2388a906e0c53dceee6070a24b"
+				"tx_body_hash": "f832428481690fa918d6d29946e191f2c8c89b2388a906e0c53dceee6070a24b",
+				"ux_hash": "ee38fa1b02dd0d190187c9cd9aba2d7296e0aa7b6b983f61c1d1fe998c1433c7"
 			},
 			"body": {
 				"txns": [

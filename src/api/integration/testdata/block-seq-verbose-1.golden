@@ -6,7 +6,8 @@
 		"timestamp": 1427926392,
 		"fee": 99999999999900,
 		"version": 0,
-		"tx_body_hash": "86564b421cd3d4fe6f5f2d7a3e5db9d6fc340892bddd3a150533dff7036d0efe"
+		"tx_body_hash": "86564b421cd3d4fe6f5f2d7a3e5db9d6fc340892bddd3a150533dff7036d0efe",
+		"ux_hash": "ecc66d67289ecf8b5c5d2758a8f07ef08373a61a4d4e2736905ac2aaa427655f"
 	},
 	"body": {
 		"txns": [

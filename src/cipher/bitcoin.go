@@ -99,7 +99,7 @@ func BitcoinAddressFromBytes(b []byte) (BitcoinAddress, error) {
 func MustBitcoinAddressFromBytes(b []byte) BitcoinAddress {
 	addr, err := BitcoinAddressFromBytes(b)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	return addr

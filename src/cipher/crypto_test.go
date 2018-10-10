@@ -485,7 +485,7 @@ func TestPubKeyFromSecKey(t *testing.T) {
 	require.Equal(t, p2, p)
 
 	_, err = PubKeyFromSecKey(SecKey{})
-	require.Equal(t, errors.New("PubKeyFromSecKey, attempt to load null seckey, unsafe"), err)
+	require.Equal(t, errors.New("Attempt to load null seckey, unsafe"), err)
 }
 
 func TestMustPubKeyFromSecKey(t *testing.T) {
@@ -503,6 +503,18 @@ func TestPubKeyFromSig(t *testing.T) {
 	require.NoError(t, err)
 	_, err = PubKeyFromSig(Sig{}, h)
 	require.Error(t, err)
+}
+
+func TestMustPubKeyFromSig(t *testing.T) {
+	p, s := GenerateKeyPair()
+	h := SumSHA256(randBytes(t, 256))
+	sig := MustSignHash(h, s)
+	p2 := MustPubKeyFromSig(sig, h)
+	require.Equal(t, p, p2)
+
+	require.Panics(t, func() {
+		_ = MustPubKeyFromSig(Sig{}, h)
+	})
 }
 
 func TestVerifySignature(t *testing.T) {

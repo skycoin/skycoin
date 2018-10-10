@@ -2113,7 +2113,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 	childSeeds := make([]string, 20)
 	lastSeed := []byte(seed)
 	for i := range addrs {
-		s, pk, _, _ := cipher.DeterministicKeyPairIterator(lastSeed) // nolint errcheck
+		s, pk, _, err := cipher.DeterministicKeyPairIterator(lastSeed)
+		require.NoError(t, err)
 		addrs[i] = cipher.AddressFromPubKey(pk)
 		childSeeds[i] = hex.EncodeToString(s)
 		lastSeed = s

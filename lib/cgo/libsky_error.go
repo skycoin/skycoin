@@ -654,28 +654,27 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		return SKY_API_LOCKED
 	}
 	if err != nil {
-		if valueErr, isValueError := err.(cipher.ValueError); isValueError {
-			return libErrorCode(valueErr.ErrorData)
+		// Setting flag every time (i.e. even when haltOnPanic is active
+		// protects against hypothetical situations in which panic()
+		// does not abort the current process.
+		lockAPI()
+		if haltOnPanic {
+			// FIXME: Set process exit code on panic
+			/*
+				var exitCode int
+				if _err, isError := err.(error); isError {
+					exitCode = int(libErrorCode(_err))
+				} else {
+					exitCode = SKY_ERROR
+				}
+			*/
+			panic(err)
 		} else {
-			// Setting flag every time (i.e. even when haltOnPanic is active
-			// protects against hypothetical situations in which panic()
-			// does not abort the current process.
-			lockAPI()
-			if haltOnPanic {
-				// FIXME: Set process exit code on panic
-				/*
-					var exitCode int
-					if _err, isError := err.(error); isError {
-						exitCode = int(libErrorCode(_err))
-					} else {
-						exitCode = SKY_ERROR
-					}
-				*/
-				panic(err)
-			} else {
-				// Let the caller know specific error that locked the API
-				return libErrorCode(valueErr.ErrorData)
+			// Let the caller know specific error that locked the API
+			if _err, isError := err.(error); isError {
+				return libErrorCode(_err)
 			}
+			return SKY_ERROR
 		}
 	}
 	return SKY_OK

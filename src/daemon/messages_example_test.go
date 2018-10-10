@@ -900,7 +900,7 @@ func ExampleAnnounceTxnsMessage() {
 
 	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[7], hashes[8]})
 	fmt.Println("AnnounceTxnsMessage:")
-	var mai = NewMessagesAnnotationsIterator(message)
+	var mai = NewDeepMessagesAnnotationsIterator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
 	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
 	if err != nil {

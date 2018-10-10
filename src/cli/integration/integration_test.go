@@ -1082,6 +1082,16 @@ func TestFiberAddressGen(t *testing.T) {
 				checkSeedsFile(t, "fooseeds.csv", 128, addrs)
 			},
 		},
+		{
+			name: "fiberAddressGen positional-args-not-allowed",
+			args: []string{"fiberAddressGen", "foo"},
+			check: func(t *testing.T, v []byte) {
+				checkFileNotExists(t, addrsFilename)
+				checkFileNotExists(t, seedsFilename)
+				require.Equal(t, "This command does not take any positional arguments\n", string(v))
+			},
+			err: errors.New("exit status 1"),
+		},
 	}
 
 	for _, tc := range cases {

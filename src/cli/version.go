@@ -10,10 +10,9 @@ import (
 func versionCmd() gcli.Command {
 	name := "version"
 	return gcli.Command{
-		SkipFlagParsing: true,
-		Name:            name,
-		ArgsUsage:       "List the current version of Skycoin components",
-		Usage:           " ",
+		Name:      name,
+		ArgsUsage: "List the current version of Skycoin components",
+		Usage:     " ",
 		Flags: []gcli.Flag{
 			gcli.BoolFlag{
 				Name:  "json,j",

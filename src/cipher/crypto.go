@@ -36,8 +36,8 @@ var (
 
 	// ErrInvalidLengthPubKey  Invalid public key length
 	ErrInvalidLengthPubKey = errors.New("Invalid public key length")
-	// ErrPubKeyFromNullSecKey PubKeyFromSecKey, attempt to load null seckey, unsafe
-	ErrPubKeyFromNullSecKey = errors.New("PubKeyFromSecKey, attempt to load null seckey, unsafe")
+	// ErrPubKeyFromNullSecKey Attempt to load null seckey, unsafe
+	ErrPubKeyFromNullSecKey = errors.New("Attempt to load null seckey, unsafe")
 	// ErrPubKeyFromBadSecKey  PubKeyFromSecKey, pubkey recovery failed. Function
 	ErrPubKeyFromBadSecKey = errors.New("PubKeyFromSecKey, pubkey recovery failed. Function " +
 		"assumes seckey is valid. Check seckey")
@@ -136,12 +136,12 @@ func MustPubKeyFromHex(s string) PubKey {
 // PubKeyFromSecKey recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) (PubKey, error) {
 	if seckey == (SecKey{}) {
-		return PubKey{}, errors.New("Cannot convert null SecKey to PubKey")
+		return PubKey{}, ErrPubKeyFromNullSecKey
 	}
 
 	b := secp256k1.PubkeyFromSeckey(seckey[:])
 	if b == nil {
-		return PubKey{}, errors.New("PubKey recovery from SecKey failed. The recovery function assumes SecKey is valid, check SecKey")
+		return PubKey{}, ErrPubKeyFromBadSecKey
 	}
 
 	return NewPubKey(b)
@@ -320,7 +320,7 @@ func MustNewSig(b []byte) Sig {
 func SigFromHex(s string) (Sig, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		return Sig{}, errors.New("Invalid signature")
+		return Sig{}, ErrInvalidSig
 	}
 	return NewSig(b)
 }

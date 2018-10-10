@@ -136,7 +136,7 @@ Test(cipher_address,TestAddressString){
   cipher__Address addr, addr2, addr3;
   GoString str;
 
-  str.p = buff;
+  str.p = (char *) buff;
   str.n = 0;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);

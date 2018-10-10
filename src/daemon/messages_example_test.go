@@ -894,6 +894,31 @@ func ExampleGiveTxnsMessage() {
 	// 0x0286 |
 }
 
+func ExampleAnnounceTxnsMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+
+	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[7], hashes[8]})
+	fmt.Println("AnnounceTxnsMessage:")
+	var mai = NewMessagesAnnotationsIterator(message)
+	w := bufio.NewWriter(os.Stdout)
+	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Output:
+	// AnnounceTxnsMessage:
+	// 0x0000 | 48 00 00 00 ....................................... Length
+	// 0x0004 | 41 4e 4e 54 ....................................... Prefix
+	// 0x0008 | 02 00 00 00 ....................................... .Transactions length
+	// 0x000c | 8a 5d bf bb 7e 64 66 49 5e 30 78 1c 15 40 b5 e3
+	// 0x001c | 98 e0 84 4f 60 c9 1e c6 78 9d 4b bb 36 7e 33 a6 ... .Transactions[0]
+	// 0x002c | 1c 1d 7d bf d7 ba 2b b1 aa 9b 56 ed ae 26 ea 56
+	// 0x003c | 5c bf 72 f9 8c c6 a6 2c 72 97 23 cb c0 75 0d 3b ... .Transactions[1]
+	// 0x004c |
+}
+
 func TestIntroductionMessage(t *testing.T) {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()

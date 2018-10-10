@@ -391,9 +391,6 @@ var (
 	ErrorBadHandle = errors.New("Invalid or unknown handle value")
 	// ErrorUnknown unexpected error
 	ErrorUnknown = errors.New("Unexpected error")
-	// ErrorLockApi unrecoverable panic detected.
-	// Subsequent API requests should be rejected since API will be locked
-	ErrorLockApi = errors.New("Unrecoverable panic detected. API locked.")
 
 	errorToCodeMap = map[error]uint32{
 		// libcgo

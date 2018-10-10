@@ -245,7 +245,7 @@ func TestDBVerifyLogic(t *testing.T) {
 
 			// Kill the process if it hasn't had an error or checked the database within a timeout,
 			// so that the tests that the database is not checked can complete
-			go time.AfterFunc(time.Second*3, func() {
+			go time.AfterFunc(time.Second*5, func() {
 				if tc.shouldVerify {
 					cmd.Process.Kill() // nolint: errcheck
 				} else {

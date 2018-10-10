@@ -61,6 +61,9 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `/api/v1/wallet/spend` is deprecated, disabled by default and requires `-enable-api-sets=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 - Invalid password in `/api/v1/wallet` requests now return `400` instead of `401`
 - Replace `cmd/address_gen/` and `cmd/address_gen2` with `go run cmd/cli/cli.go addressGen`
+- `cli addressGen` arguments have changed
+- `cli generateWallet` renamed to `cli walletCreate`
+- `cli generateAddresses` renamed to `cli walletAddAddresses`
 
 ### Removed
 

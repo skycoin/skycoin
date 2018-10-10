@@ -32,7 +32,7 @@ func addressGenCmd() gcli.Command {
 			gcli.StringFlag{
 				Name:  "coin,c",
 				Value: "skycoin",
-				Usage: "Coin type. Must be skycoin or bitcoin",
+				Usage: "Coin type. Must be skycoin or bitcoin. If bitcoin, secret keys are in Wallet Import Format instead of hex.",
 			},
 			gcli.StringFlag{
 				Name:  "label,l",
@@ -44,7 +44,7 @@ func addressGenCmd() gcli.Command {
 				Usage: "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided",
 			},
 			gcli.StringFlag{
-				Name:  "seed",
+				Name:  "seed,s",
 				Usage: "Seed for deterministic key generation. Will use bip39 as the seed if not provided.",
 			},
 			gcli.IntFlag{
@@ -59,7 +59,7 @@ func addressGenCmd() gcli.Command {
 			gcli.StringFlag{
 				Name:  "mode,m",
 				Value: "addresses",
-				Usage: `Output mode. Options are json (prints a full JSON wallet), addresses (prints addresses in plain text), secrets (prints secret keys in plain text)`,
+				Usage: `Output mode. Options are wallet (prints a full JSON wallet), addresses (prints addresses in plain text), secrets (prints secret keys in plain text)`,
 			},
 			gcli.BoolFlag{
 				Name:  "encrypt,e",
@@ -118,14 +118,14 @@ func addressGenCmd() gcli.Command {
 
 			hideSecrets := c.Bool("hide-secrets")
 
+			if hideSecrets {
+				w.Erase()
+			}
+
+			rw := wallet.NewReadableWallet(w)
+
 			switch strings.ToLower(mode) {
 			case "json", "wallet":
-				if hideSecrets {
-					w.Erase()
-				}
-
-				rw := wallet.NewReadableWallet(w)
-
 				output, err := json.MarshalIndent(rw, "", "    ")
 				if err != nil {
 					return err
@@ -133,14 +133,14 @@ func addressGenCmd() gcli.Command {
 
 				fmt.Println(string(output))
 			case "addrs", "addresses":
-				for _, e := range w.Entries {
+				for _, e := range rw.Entries {
 					fmt.Println(e.Address)
 				}
 			case "secrets":
 				if hideSecrets {
 					return errors.New("secrets mode selected but hideSecrets enabled")
 				}
-				for _, e := range w.Entries {
+				for _, e := range rw.Entries {
 					fmt.Println(e.Secret)
 				}
 			default:
@@ -200,7 +200,7 @@ these seeds can be imported into the wallet to access distribution coins.`,
 		Flags: []gcli.Flag{
 			gcli.IntFlag{
 				Name:  "num,n",
-				Value: 1,
+				Value: 100,
 				Usage: "Number of addresses to generate",
 			},
 			gcli.IntFlag{
@@ -277,6 +277,16 @@ these seeds can be imported into the wallet to access distribution coins.`,
 				return fmt.Errorf("-addrs-file %q already exists. Use -overwrite to force writing", addrsFilename)
 			}
 
+			seedsFilename := c.String("seeds-file")
+			_, err = os.Stat(seedsFilename)
+			if err != nil {
+				if !os.IsNotExist(err) {
+					return err
+				}
+			} else if !overwrite {
+				return fmt.Errorf("-seeds-file %q already exists. Use -overwrite to force writing", seedsFilename)
+			}
+
 			addrsF, err := os.Create(addrsFilename)
 			if err != nil {
 				return err
@@ -287,16 +297,6 @@ these seeds can be imported into the wallet to access distribution coins.`,
 					err = cErr
 				}
 			}()
-
-			seedsFilename := c.String("seeds-file")
-			_, err = os.Stat(seedsFilename)
-			if err != nil {
-				if !os.IsNotExist(err) {
-					return err
-				}
-			} else if !overwrite {
-				return fmt.Errorf("-seeds-file %q already exists. Use -overwrite to force writing", seedsFilename)
-			}
 
 			seedsF, err := os.Create(seedsFilename)
 			defer func() {

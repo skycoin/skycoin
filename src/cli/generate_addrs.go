@@ -12,8 +12,8 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func generateAddrsCmd(cfg Config) gcli.Command {
-	name := "generateAddresses"
+func walletAddAddressesCmd(cfg Config) gcli.Command {
+	name := "walletAddAddresses"
 	return gcli.Command{
 		Name:      name,
 		Usage:     "Generate additional addresses for a wallet",

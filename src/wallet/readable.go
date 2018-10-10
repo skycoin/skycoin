@@ -16,7 +16,7 @@ type ReadableEntry struct {
 }
 
 // NewReadableEntry creates readable wallet entry
-func NewReadableEntry(w Entry) ReadableEntry {
+func NewReadableEntry(coinType CoinType, w Entry) ReadableEntry {
 	re := ReadableEntry{}
 	if !w.Address.Null() {
 		re.Address = w.Address.String()
@@ -27,7 +27,14 @@ func NewReadableEntry(w Entry) ReadableEntry {
 	}
 
 	if !w.Secret.Null() {
-		re.Secret = w.Secret.Hex()
+		switch coinType {
+		case CoinTypeSkycoin:
+			re.Secret = w.Secret.Hex()
+		case CoinTypeBitcoin:
+			re.Secret = cipher.BitcoinWalletImportFormatFromSeckey(w.Secret)
+		default:
+			logger.Panicf("Invalid coin type %q", coinType)
+		}
 	}
 
 	return re
@@ -84,8 +91,14 @@ func newEntryFromReadable(coinType CoinType, w *ReadableEntry) (*Entry, error) {
 	// Decodes the secret hex string if any
 	var secret cipher.SecKey
 	if w.Secret != "" {
-		var err error
-		secret, err = cipher.SecKeyFromHex(w.Secret)
+		switch coinType {
+		case CoinTypeSkycoin:
+			secret, err = cipher.SecKeyFromHex(w.Secret)
+		case CoinTypeBitcoin:
+			secret, err = cipher.SecKeyFromBitcoinWalletImportFormat(w.Secret)
+		default:
+			logger.Panicf("Invalid coin type %q", coinType)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +121,7 @@ type ReadableWallet struct {
 func NewReadableWallet(w *Wallet) *ReadableWallet {
 	readable := make(ReadableEntries, len(w.Entries))
 	for i, e := range w.Entries {
-		readable[i] = NewReadableEntry(e)
+		readable[i] = NewReadableEntry(w.coin(), e)
 	}
 
 	meta := make(map[string]string, len(w.Meta))

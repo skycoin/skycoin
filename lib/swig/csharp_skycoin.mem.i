@@ -38,13 +38,13 @@
 	}
 }
 
-%rename(SKY_cipher_TestSecKeyHash) CSharp_skycoin_SKY_cipher_TestSecKeyHash;
-%inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_TestSecKeyHash(cipher_SecKey *s,cipher_SHA256 *h){
-		GoUint32 result = SKY_cipher_TestSecKeyHash(s,h);
-		return result;
-	}
-}
+// %rename(SKY_cipher_TestSecKeyHash) CSharp_skycoin_SKY_cipher_TestSecKeyHash;
+// %inline {
+// 	GoUint32 CSharp_skycoin_SKY_cipher_TestSecKeyHash(cipher_SecKey *s,cipher_SHA256 *h){
+// 		GoUint32 result = SKY_cipher_TestSecKeyHash(s,h);
+// 		return result;
+// 	}
+// }
 
 %rename(SKY_cipher_SHA256_Set) CSharp_skycoin_SKY_cipher_SHA256_Set;
 %inline {
@@ -160,17 +160,17 @@
 }
 
 
-%rename(SKY_cipher_PubKeySlice_Swap) CSharp_skycoin_SKY_cipher_PubKeySlice_Swap;
-%inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
-		GoSlice_ data;
-		data.data = __in_pubKeys->data;
-		data.len = __in_pubKeys->count;
-		data.cap = __in_pubKeys->count;
-		GoUint32 result = SKY_cipher_PubKeySlice_Swap(&data, p1, p2);
-		return result;
-	}
-}
+// %rename(SKY_cipher_PubKeySlice_Swap) CSharp_skycoin_SKY_cipher_PubKeySlice_Swap;
+// %inline {
+// 	GoUint32 CSharp_skycoin_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
+// 		GoSlice_ data;
+// 		data.data = __in_pubKeys->data;
+// 		data.len = __in_pubKeys->count;
+// 		data.cap = __in_pubKeys->count;
+// 		GoUint32 result = SKY_cipher_PubKeySlice_Swap(&data, p1, p2);
+// 		return result;
+// 	}
+// }
 
 %rename(SKY_coin_VerifyTransactionCoinsSpending) CSharp_skycoin_SKY_coin_VerifyTransactionCoinsSpending;
 %inline {
@@ -501,4 +501,12 @@
 		GoUint32 result = SKY_coin_GetBlockObject(handle, &outBlock);
 		return result;
 	};
+}
+
+%rename(SKY_cipher_CheckSecKeyHash) CSharp_skycoin_SKY_cipher_CheckSecKeyHash;
+%inline {
+	GoUint32 CSharp_skycoin_SKY_cipher_CheckSecKeyHash(cipher_SecKey *s, cipher_SHA256* sha){
+		GoUint32 result = SKY_cipher_CheckSecKeyHash(s,  sha);
+		return result;
+	}
 }

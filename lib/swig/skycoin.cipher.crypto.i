@@ -17,6 +17,15 @@
 	void assignTo(cipher_PubKey* data){
 		memcpy(data->data, &$self->data, sizeof($self->data));
 	}
+
+	void assignSlice(GoSlice slice){
+		memcpy((void *) &$self->data, slice.data, 33);
+	}
+
+	GoSlice toSlice( ){
+		GoSlice buffer = {$self, sizeof($self->data), sizeof($self->data)};
+		return buffer;
+	}
 }
 
 %extend cipher_SecKey {
@@ -220,3 +229,11 @@
 	}
 }
 
+%extend cipher__BitcoinAddress {
+	int isEqual(cipher__BitcoinAddress* a){
+		if( $self->Version == a->Version ){
+			return memcmp($self->Key, a->Key, sizeof(a->Key)) == 0;
+		}
+		return 0;
+	}
+}

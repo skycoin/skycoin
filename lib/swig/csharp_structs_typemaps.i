@@ -18,6 +18,10 @@
 		$self->cap = $self->len;
 	}
 
+	void setAtChar(char p,unsigned long long i){
+		((char *) $self->data)[i] = p;
+	}
+
 void getString(_GoString_ *out){
 	out->p = (char *)$self->data;
 	out->n = strlen((char *)$self->data);

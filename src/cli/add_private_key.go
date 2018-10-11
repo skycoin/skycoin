@@ -74,7 +74,11 @@ func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 		return fmt.Errorf("invalid private key: %s, must be a hex string of length 64", key)
 	}
 
-	pk := cipher.PubKeyFromSecKey(sk)
+	pk, err := cipher.PubKeyFromSecKey(sk)
+	if err != nil {
+		return err
+	}
+
 	addr := cipher.AddressFromPubKey(pk)
 
 	entry := wallet.Entry{

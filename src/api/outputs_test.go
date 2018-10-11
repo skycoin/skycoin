@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -69,11 +70,19 @@ func TestGetOutputsHandler(t *testing.T) {
 			getUnspentOutputsError:    errors.New("getUnspentOutputsError"),
 		},
 		{
-			name:                      "200 - OK",
-			method:                    http.MethodGet,
-			status:                    http.StatusOK,
-			getUnspentOutputsResponse: &visor.UnspentOutputsSummary{},
+			name:   "200 - OK",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			getUnspentOutputsResponse: &visor.UnspentOutputsSummary{
+				HeadBlock: &coin.SignedBlock{},
+			},
 			httpResponse: &readable.UnspentOutputsSummary{
+				Head: readable.BlockHeader{
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
+				},
 				HeadOutputs:     readable.UnspentOutputs{},
 				OutgoingOutputs: readable.UnspentOutputs{},
 				IncomingOutputs: readable.UnspentOutputs{},

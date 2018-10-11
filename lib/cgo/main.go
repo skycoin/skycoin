@@ -1,3 +1,6 @@
+/*
+libskycoin shim
+*/
 package main
 
 // #cgo CFLAGS: -I../../include

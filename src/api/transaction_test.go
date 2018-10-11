@@ -658,10 +658,10 @@ func TestInjectTransaction(t *testing.T) {
 			err:    "400 Bad Request - EOF",
 		},
 		{
-			name:     "400 - Invalid transaction: Deserialization failed",
+			name:     "400 - Invalid transaction: Not enough buffer data to deserialize",
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
+			err:      "400 Bad Request - Invalid transaction: Not enough buffer data to deserialize",
 			httpBody: `{"wrongKey":"wrongValue"}`,
 		},
 		{
@@ -675,7 +675,7 @@ func TestInjectTransaction(t *testing.T) {
 			name:     "400 - rawtx deserialization error",
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
+			err:      "400 Bad Request - Invalid transaction: Not enough buffer data to deserialize",
 			httpBody: string(invalidTxnBodyJSON),
 		},
 		{
@@ -1355,12 +1355,12 @@ func TestVerifyTransaction(t *testing.T) {
 			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
 		},
 		{
-			name:         "400 - Invalid transaction: Deserialization failed",
+			name:         "400 - Invalid transaction: Not enough buffer data to deserialize",
 			method:       http.MethodPost,
 			contentType:  "application/json",
 			status:       http.StatusBadRequest,
 			httpBody:     `{"wrongKey":"wrongValue"}`,
-			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Deserialization failed"),
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Not enough buffer data to deserialize"),
 		},
 		{
 			name:         "400 - encoding/hex: odd length hex string",
@@ -1376,7 +1376,7 @@ func TestVerifyTransaction(t *testing.T) {
 			contentType:  "application/json",
 			status:       http.StatusBadRequest,
 			httpBody:     string(invalidTxnBodyJSON),
-			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Deserialization failed"),
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Not enough buffer data to deserialize"),
 		},
 		{
 			name:                       "422 - txn sends to empty address",

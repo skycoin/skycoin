@@ -253,7 +253,7 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 //	   verbose: [bool] include verbose transaction input data
-func getTransactions(gateway Gatewayer) http.HandlerFunc {
+func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -350,7 +350,7 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 //      400 - bad transaction
 //		500 - other error
 //      503 - network unavailable for broadcasting transaction
-func injectTransaction(gateway Gatewayer) http.HandlerFunc {
+func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -408,7 +408,10 @@ func NewResendResult(hashes []cipher.SHA256) ResendResult {
 	}
 }
 
-func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
+// URI: /api/v1/resendUnconfirmedTxns
+// Method: GET
+// Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
+func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -425,7 +428,13 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func getRawTxn(gateway Gatewayer) http.HandlerFunc {
+// URI: /api/v1/rawtx
+// Method: GET
+// Args:
+//	txid: transaction ID hash
+// Returns the hex-encoded byte serialization of a transaction.
+// The transaction may be confirmed or unconfirmed.
+func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

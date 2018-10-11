@@ -42,7 +42,7 @@ func init() {
 
 // MakeBlockchain creates a new blockchain with a genesis block
 func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockchain {
-	pubkey := cipher.PubKeyFromSecKey(seckey)
+	pubkey := cipher.MustPubKeyFromSecKey(seckey)
 	b, err := NewBlockchain(db, BlockchainConfig{
 		Pubkey: pubkey,
 	})
@@ -52,7 +52,7 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockcha
 		panic(fmt.Errorf("create genesis block failed: %v", err))
 	}
 
-	sig := cipher.SignHash(gb.HashHeader(), seckey)
+	sig := cipher.MustSignHash(gb.HashHeader(), seckey)
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		return b.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *gb,
@@ -101,7 +101,7 @@ func ExecuteGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain,
 	require.NoError(t, err)
 	require.NotNil(t, block)
 
-	sig := cipher.SignHash(block.HashHeader(), GenesisSecret)
+	sig := cipher.MustSignHash(block.HashHeader(), GenesisSecret)
 	sb := coin.SignedBlock{
 		Block: *block,
 		Sig:   sig,
@@ -127,7 +127,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	chrs, err := ux.CoinHours(tim)
 	require.NoError(t, err)
 
-	require.Equal(t, cipher.AddressFromPubKey(cipher.PubKeyFromSecKey(sec)), ux.Body.Address)
+	require.Equal(t, cipher.AddressFromPubKey(cipher.MustPubKeyFromSecKey(sec)), ux.Body.Address)
 
 	knownUx, err := bc.Unspent().Get(tx, ux.Hash())
 	require.NoError(t, err)
@@ -394,7 +394,7 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	err = bc.db.Update("", func(tx *dbutil.Tx) error {
 		return bc.store.AddBlock(tx, &coin.SignedBlock{
 			Block: *b,
-			Sig:   cipher.SignHash(b.HashHeader(), genSecret),
+			Sig:   cipher.MustSignHash(b.HashHeader(), genSecret),
 		})
 	})
 	require.NoError(t, err)
@@ -481,7 +481,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	// uxIn.CoinHours() errors, which is ignored by VerifyTransactionHoursSpending if the error
 	// is because of the earned hours addition overflow
 	head.Block.Head.Time += 1e6
-	err = VerifySingleTxnHardConstraints(txn, head, uxIn)
+	err = VerifySingleTxnHardConstraints(txn, head.Head, uxIn)
 	testutil.RequireError(t, err, NewErrTxnViolatesHardConstraint(coinHoursErr).Error())
 }
 

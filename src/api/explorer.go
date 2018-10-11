@@ -40,10 +40,10 @@ func newStringSet(keys []string) map[string]struct{} {
 	return s
 }
 
-// coinSupply returns coin distribution supply stats
+// coinSupplyHandler returns coin distribution supply stats
 // Method: GET
 // URI: /api/v1/coinSupply
-func coinSupply(gateway Gatewayer) http.HandlerFunc {
+func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -156,12 +156,12 @@ func coinSupply(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// getTransactionsForAddress returns all transactions (confirmed and unconfirmed) for an address
+// transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
 // Method: GET
 // URI: /explorer/address
 // Args:
 //	address [string]
-func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
+func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -207,13 +207,13 @@ type Richlist struct {
 	Richlist []readable.RichlistBalance `json:"richlist"`
 }
 
-// getRichlist returns the top skycoin holders
+// richlistHandler returns the top skycoin holders
 // Method: GET
 // URI: /richlist?n=${number}&include-distribution=${bool}
 // Args:
 //	n [int, number of results to include]
 //  include-distribution [bool, include the distribution addresses in the richlist]
-func getRichlist(gateway Gatewayer) http.HandlerFunc {
+func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -262,10 +262,10 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// getAddressCount returns the total number of unique address that have coins
+// addressCountHandler returns the total number of unique address that have coins
 // Method: GET
 // URI: /addresscount
-func getAddressCount(gateway Gatewayer) http.HandlerFunc {
+func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

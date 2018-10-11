@@ -62,7 +62,7 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 
 	m, succ = (v.Interface()).(Message)
 	if !succ {
-		// This occurs only when the user registers an interface that does
+		// This occurs only when the user registers an interface that does not
 		// match the Message interface.  They should have known about this
 		// earlier via a call to VerifyMessages
 		logger.Panic("Message obtained from map does not match Message interface")

@@ -1,4 +1,4 @@
-// Package file Filesystem related utilities
+// Package file provides filesystem related utilities
 package file
 
 import (

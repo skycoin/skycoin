@@ -21,7 +21,7 @@
         {{ 'header.syncing-blocks' | translate }}
         {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}
       </p>
-      <p *ngIf="!loading">{{ hours | number }} {{ 'common.coin-hours' | translate }}</p>
+      <p *ngIf="!loading">{{ hours | number:'1.0-0' }} {{ 'common.coin-hours' | translate }}</p>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>

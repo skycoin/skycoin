@@ -16,9 +16,10 @@ const configuredHost = "127.0.0.1:6420"
 
 var allAPISetsEnabled = map[string]struct{}{
 	EndpointsRead:                  struct{}{},
+	EndpointsTransaction:           struct{}{},
 	EndpointsStatus:                struct{}{},
 	EndpointsWallet:                struct{}{},
-	EndpointsWalletSeed:            struct{}{},
+	EndpointsInsecureWalletSeed:    struct{}{},
 	EndpointsDeprecatedWalletSpend: struct{}{},
 }
 
@@ -230,5 +231,119 @@ func TestAPISetDisabled(t *testing.T) {
 				require.Equal(t, "403 Forbidden - Endpoint is disabled", strings.TrimSpace(rr.Body.String()))
 			}
 		})
+	}
+}
+
+func TestHTTPBasicAuthInvalid(t *testing.T) {
+	username := "foo"
+	badUsername := "foof"
+	password := "bar"
+	badPassword := "barb"
+
+	userPassCombos := []struct {
+		u, p string
+	}{
+		{},
+		{
+			u: username,
+		},
+		{
+			p: password,
+		},
+		{
+			u: username,
+			p: password,
+		},
+	}
+
+	reqUserPassCombos := []struct {
+		u, p string
+	}{
+		{},
+		{
+			u: username,
+		},
+		{
+			u: badUsername,
+		},
+		{
+			p: password,
+		},
+		{
+			p: badPassword,
+		},
+		{
+			u: username,
+			p: password,
+		},
+		{
+			u: badUsername,
+			p: badPassword,
+		},
+		{
+			u: username,
+			p: badPassword,
+		},
+		{
+			u: badUsername,
+			p: password,
+		},
+	}
+
+	type testCase struct {
+		username    string
+		password    string
+		reqUsername string
+		reqPassword string
+		authorized  bool
+	}
+
+	cases := []testCase{}
+
+	for _, a := range userPassCombos {
+		for _, b := range reqUserPassCombos {
+			cases = append(cases, testCase{
+				username:    a.u,
+				password:    a.p,
+				reqUsername: b.u,
+				reqPassword: b.p,
+				authorized:  a.u == b.u && a.p == b.p,
+			})
+		}
+	}
+
+	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
+		for _, tc := range cases {
+			name := fmt.Sprintf("u=%s p=%s ru=%s rp=%s auth=%v e=%s", tc.username, tc.password, tc.reqUsername, tc.reqPassword, tc.authorized, e)
+			t.Run(name, func(t *testing.T) {
+				// Use a made-up request method so that any authorized request
+				// is guaranteed to fail before it reaches the mock gateway,
+				// which will panic without the mocks configured
+				req, err := http.NewRequest("FOOBAR", e, nil)
+				require.NoError(t, err)
+
+				req.SetBasicAuth(tc.reqUsername, tc.reqPassword)
+
+				cfg := defaultMuxConfig()
+				cfg.enableUnversionedAPI = true
+				cfg.enableJSON20RPC = false
+				cfg.username = tc.username
+				cfg.password = tc.password
+
+				handler := newServerMux(cfg, &MockGatewayer{}, &CSRFStore{
+					Enabled: true,
+				}, nil)
+
+				rr := httptest.NewRecorder()
+				handler.ServeHTTP(rr, req)
+
+				if !tc.authorized {
+					require.Equal(t, http.StatusUnauthorized, rr.Code)
+					require.Equal(t, "401 Unauthorized", strings.TrimSpace(rr.Body.String()))
+				} else {
+					require.NotEqual(t, http.StatusUnauthorized, rr.Code)
+				}
+			})
+		}
 	}
 }

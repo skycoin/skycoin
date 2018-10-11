@@ -12,6 +12,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
@@ -344,9 +346,10 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 // Content-Type: application/json
 // Body: {"rawtx": "<hex encoded transaction>"}
 // Response:
-//      400 - bad transaction
-//      503 - network unavailable for broadcasting transaction
 //      200 - ok, returns the transaction hash in hex as string
+//      400 - bad transaction
+//		500 - other error
+//      503 - network unavailable for broadcasting transaction
 func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -376,8 +379,12 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			err = fmt.Errorf("inject tx failed: %v", err)
-			wh.Error503(w, err.Error())
+			switch err {
+			case daemon.ErrOutgoingConnectionsDisabled, gnet.ErrPoolEmpty, gnet.ErrNoReachableConnections:
+				wh.Error503(w, err.Error())
+			default:
+				wh.Error500(w, err.Error())
+			}
 			return
 		}
 

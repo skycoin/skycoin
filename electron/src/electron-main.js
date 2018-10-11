@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, Menu, BrowserWindow, shell, session } = require('electron');
+const { app, Menu, BrowserWindow, shell, session, ipcMain } = require('electron');
 
 const path = require('path');
 
@@ -9,6 +9,8 @@ const childProcess = require('child_process');
 const cwd = require('process').cwd();
 
 const axios = require('axios');
+
+const deviceWallet = require('./device-wallet');
 
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
@@ -28,6 +30,10 @@ let showErrorCalled = false;
 // reload the URLs using the Electron window, so that it is easier to test the changes made to
 // the UI using npm start.
 let dev = process.argv.find(arg => arg === 'dev') ? true : false;
+
+// Detect if the code is running with the "hw" arg. The "hw" arg is added when running npm
+// start. If this is true, the UI will show the hardware wallet options.
+let hw = process.argv.find(arg => arg === 'hw') ? true : false;
 
 // Force everything localhost, in case of a leak
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com, api.github.com');
@@ -169,13 +175,14 @@ function createWindow(url) {
     webPreferences: {
       webgl: false,
       webaudio: false,
-      contextIsolation: true,
+      contextIsolation: false,
       webviewTag: false,
       nodeIntegration: false,
       nodeIntegrationInWorker: false,
       allowRunningInsecureContent: false,
       webSecurity: true,
       plugins: false,
+      preload: __dirname + '/electron-api.js',
     },
   });
 
@@ -359,4 +366,12 @@ app.on('web-contents-created', (event, contents) => {
       event.preventDefault();
     }
   });
+});
+
+ipcMain.on('hwCompatibilityActivated', (event) => {
+  event.returnValue = hw;
+});
+
+ipcMain.on('hwGetDevice', (event) => {
+  event.returnValue = deviceWallet.getDevice();
 });

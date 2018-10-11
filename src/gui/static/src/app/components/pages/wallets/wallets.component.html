@@ -39,6 +39,9 @@
       <button mat-button (click)="addWallet(false)">
         <img src="../../../../assets/img/load-gold.png"> {{ 'wallet.load' | translate }}
       </button>
+      <button mat-button *ngIf="hwCompatibilityActivated" (click)="adminHwWallet()">
+        <img src="../../../../assets/img/load-gold.png"> {{ 'wallet.hardware' | translate }}
+      </button>
     </div>
   </div>
 </div>

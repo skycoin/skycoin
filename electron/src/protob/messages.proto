@@ -1,0 +1,391 @@
+syntax = "proto2";
+
+/**
+ * Messages for TREZOR communication
+ */
+
+// Sugar for easier handling in Java
+option java_package = "com.satoshilabs.trezor.lib.protobuf";
+option java_outer_classname = "TrezorMessage";
+
+import "types.proto";
+
+/**
+ * Mapping between Trezor wire identifier (uint) and a protobuf message
+ */
+enum MessageType {
+	MessageType_Initialize = 0 [(wire_in) = true];
+	MessageType_Ping = 1 [(wire_in) = true];
+	MessageType_Success = 2 [(wire_out) = true];
+	MessageType_Failure = 3 [(wire_out) = true];
+	MessageType_ChangePin = 4 [(wire_in) = true];
+	MessageType_WipeDevice = 5 [(wire_in) = true];
+	MessageType_GetEntropy = 9 [(wire_in) = true];
+	MessageType_Entropy = 10 [(wire_out) = true];
+	MessageType_LoadDevice = 13 [(wire_in) = true];
+	MessageType_ResetDevice = 14 [(wire_in) = true];
+	MessageType_Features = 17 [(wire_out) = true];
+	MessageType_PinMatrixRequest = 18 [(wire_out) = true];
+	MessageType_PinMatrixAck = 19 [(wire_in) = true, (wire_tiny) = true];
+	MessageType_Cancel = 20 [(wire_in) = true];
+	MessageType_ButtonRequest = 26 [(wire_out) = true];
+	MessageType_ButtonAck = 27 [(wire_in) = true, (wire_tiny) = true];
+	MessageType_BackupDevice = 34 [(wire_in) = true];
+	MessageType_EntropyRequest = 35 [(wire_out) = true];
+	MessageType_EntropyAck = 36 [(wire_in) = true];
+	MessageType_PassphraseRequest = 41 [(wire_out) = true];
+	MessageType_PassphraseAck = 42 [(wire_in) = true, (wire_tiny) = true];
+	MessageType_PassphraseStateRequest = 77 [(wire_out) = true];
+	MessageType_PassphraseStateAck = 78 [(wire_in) = true, (wire_tiny) = true];
+	MessageType_RecoveryDevice = 45 [(wire_in) = true];
+	MessageType_WordRequest = 46 [(wire_out) = true];
+	MessageType_WordAck = 47 [(wire_in) = true];
+	MessageType_SetMnemonic = 113 [(wire_in) = true];
+	MessageType_SkycoinAddress = 114 [(wire_in) = true];
+	MessageType_SkycoinCheckMessageSignature = 115 [(wire_in) = true];
+	MessageType_SkycoinSignMessage = 116 [(wire_in) = true];
+	MessageType_ResponseSkycoinAddress = 117 [(wire_out) = true];
+	MessageType_ResponseSkycoinSignMessage = 118 [(wire_out) = true];
+}
+
+////////////////////
+// Basic messages //
+////////////////////
+
+/**
+ * Request: Reset device to default state and ask for device details
+ * @next Features
+ */
+message Initialize {
+	optional bytes state = 1;			// assumed device state, clear session if set and different
+}
+
+/**
+ * Request: Ask for device details (no device reset)
+ * @next Features
+ */
+message GetFeatures {
+}
+
+/**
+ * Response: Reports various information about the device
+ * @prev Initialize
+ * @prev GetFeatures
+ */
+message Features {
+	optional string vendor = 1;			// name of the manufacturer, e.g. "trezor.io"
+	optional uint32 major_version = 2;		// major version of the firmware/bootloader, e.g. 1
+	optional uint32 minor_version = 3;		// minor version of the firmware/bootloader, e.g. 0
+	optional uint32 patch_version = 4;		// patch version of the firmware/bootloader, e.g. 0
+	optional bool bootloader_mode = 5;		// is device in bootloader mode?
+	optional string device_id = 6;			// device's unique identifier
+	optional bool pin_protection = 7;		// is device protected by PIN?
+	optional bool passphrase_protection = 8;	// is node/mnemonic encrypted using passphrase?
+	optional string language = 9;			// device language
+	optional string label = 10;			// device description label
+	repeated CoinType coins = 11;			// supported coins
+	optional bool initialized = 12;			// does device contain seed?
+	optional bytes revision = 13;			// SCM revision of firmware
+	optional bytes bootloader_hash = 14;		// hash of the bootloader
+	optional bool imported = 15;			// was storage imported from an external source?
+	optional bool pin_cached = 16;			// is PIN already cached in session?
+	optional bool passphrase_cached = 17;		// is passphrase already cached in session?
+	optional bool firmware_present = 18;		// is valid firmware loaded?
+	optional bool needs_backup = 19;		// does storage need backup? (equals to Storage.needs_backup)
+	optional uint32 flags = 20;			// device flags (equals to Storage.flags)
+	optional string model = 21;			// device hardware model
+	optional uint32 fw_major = 22;			// reported firmware version if in bootloader mode
+	optional uint32 fw_minor = 23;			// reported firmware version if in bootloader mode
+	optional uint32 fw_patch = 24;			// reported firmware version if in bootloader mode
+	optional string fw_vendor = 25;			// reported firmware vendor if in bootloader mode
+	optional bytes fw_vendor_keys = 26;		// reported firmware vendor keys (their hash)
+	optional bool unfinished_backup = 27;		// report unfinished backup (equals to Storage.unfinished_backup)
+}
+
+
+/**
+ * Request: Send a mnemonic to the device
+ * @next Success
+ */
+ message SetMnemonic {
+	required string mnemonic = 1; // mnemonic
+}
+
+/**
+ * Request: Starts workflow for setting/changing/removing the PIN
+ * @next ButtonRequest
+ * @next PinMatrixRequest
+ */
+message ChangePin {
+	optional bool remove = 1;	// is PIN removal requested?
+}
+
+/**
+ * Request: Generate a Skycoin or a Bitcoin address from a seed, device sends back the address in a Success message
+ * @next Failure
+ * @next ResponseSkycoinAddress
+ */
+message SkycoinAddress {
+	required uint32 address_n = 1; // address iterator
+	optional uint32 start_index = 2; // index of the first address - if not provided the device will assume 0
+}
+
+
+/**
+ * Response: Return the generated skycoin address
+ * @prev SkycoinAddress
+ */
+ message ResponseSkycoinAddress {
+	repeated string addresses = 1; // generated addresses in base58 format
+}
+
+/**
+ * Request: Check a message signature matches the given address.
+ * @next Success
+ */
+message SkycoinCheckMessageSignature {
+	required string address = 1; //address that was supposedly used to produce the signature
+	required string message = 2; //message that was signed
+	required string signature = 3; //electronic signature of the message
+}
+
+/**
+ * Request: Sign a message digest using the given secret key.
+ * @next Failure
+ * @next ResponseSkycoinSignMessage
+ */
+message SkycoinSignMessage {
+	required uint32 address_n = 1; //address iterator
+	required string message = 2;   //message that we want to sign
+}
+
+/**
+ * Response: Return the generated skycoin address
+ * @prev SkycoinAddress
+ */
+ message ResponseSkycoinSignMessage {
+	required string signed_message = 1; // generated addresses in base58 format
+}
+
+/**
+ * Request: Test if the device is alive, device sends back the message in Success response
+ * @next Success
+ */
+message Ping {
+	optional string message = 1;			// message to send back in Success message
+	optional bool button_protection = 2;		// ask for button press
+	optional bool pin_protection = 3;		// ask for PIN if set in device
+	optional bool passphrase_protection = 4;	// ask for passphrase if set in device
+}
+
+/**
+ * Response: Success of the previous request
+ */
+message Success {
+	optional string message = 1;	// human readable description of action or request-specific payload
+}
+
+/**
+ * Response: Failure of the previous request
+ */
+message Failure {
+	optional FailureType code = 1;	// computer-readable definition of the error state
+	optional string message = 2;	// human-readable message of the error state
+}
+
+/**
+ * Response: Device is waiting for HW button press.
+ * @next ButtonAck
+ * @next Cancel
+ */
+message ButtonRequest {
+	optional ButtonRequestType code = 1;
+	optional string data = 2;
+}
+
+/**
+ * Request: Computer agrees to wait for HW button press
+ * @prev ButtonRequest
+ */
+message ButtonAck {
+}
+
+/**
+ * Response: Device is asking computer to show PIN matrix and awaits PIN encoded using this matrix scheme
+ * @next PinMatrixAck
+ * @next Cancel
+ */
+message PinMatrixRequest {
+	optional PinMatrixRequestType type = 1;
+}
+
+/**
+ * Request: Computer responds with encoded PIN
+ * @prev PinMatrixRequest
+ */
+message PinMatrixAck {
+	required string pin = 1;		// matrix encoded PIN entered by user
+}
+
+/**
+ * Request: Abort last operation that required user interaction
+ * @prev ButtonRequest
+ * @prev PinMatrixRequest
+ * @prev PassphraseRequest
+ */
+message Cancel {
+}
+
+/**
+ * Response: Device awaits encryption passphrase
+ * @next PassphraseAck
+ * @next Cancel
+ */
+message PassphraseRequest {
+	optional bool on_device = 1;		// passphrase is being entered on the device
+}
+
+/**
+ * Request: Send passphrase back
+ * @prev PassphraseRequest
+ * @next PassphraseStateRequest
+ */
+message PassphraseAck {
+	optional string passphrase = 1;
+	optional bytes state = 2;		// expected device state
+}
+
+/**
+ * @prev PassphraseAck
+ * @next PassphraseStateAck
+ */
+message PassphraseStateRequest {
+	optional bytes state = 1;		// actual device state
+}
+
+/**
+ * @prev PassphraseStateRequest
+ */
+message PassphraseStateAck {
+}
+
+/**
+ * Request: Request a sample of random data generated by hardware RNG. May be used for testing.
+ * @next ButtonRequest
+ * @next Entropy
+ * @next Failure
+ */
+message GetEntropy {
+	required uint32 size = 1;		// size of requested entropy
+}
+
+/**
+ * Response: Reply with random data generated by internal RNG
+ * @prev GetEntropy
+ */
+message Entropy {
+	required bytes entropy = 1;		// stream of random generated bytes
+}
+
+/**
+ * Request: Request device to wipe all sensitive data and settings
+ * @next ButtonRequest
+ */
+message WipeDevice {
+}
+
+/**
+ * Request: Load seed and related internal settings from the computer
+ * @next ButtonRequest
+ * @next Success
+ * @next Failure
+ */
+message LoadDevice {
+	optional string mnemonic = 1;				// seed encoded as BIP-39 mnemonic (12, 18 or 24 words)
+	optional HDNodeType node = 2;				// BIP-32 node
+	optional string pin = 3;				// set PIN protection
+	optional bool passphrase_protection = 4;		// enable master node encryption using passphrase
+	optional string language = 5 [default='english'];	// device language
+	optional string label = 6;				// device label
+	optional bool skip_checksum = 7;			// do not test mnemonic for valid BIP-39 checksum
+	optional uint32 u2f_counter = 8;			// U2F counter
+}
+
+/**
+ * Request: Ask device to do initialization involving user interaction
+ * @next EntropyRequest
+ * @next Failure
+ */
+message ResetDevice {
+	optional bool display_random = 1;			// display entropy generated by the device before asking for additional entropy
+	optional uint32 strength = 2 [default=256];		// strength of seed in bits
+	optional bool passphrase_protection = 3;		// enable master node encryption using passphrase
+	optional bool pin_protection = 4;			// enable PIN protection
+	optional string language = 5 [default='english'];	// device language
+	optional string label = 6;				// device label
+	optional uint32 u2f_counter = 7;			// U2F counter
+	optional bool skip_backup = 8;				// postpone seed backup to BackupDevice workflow
+}
+
+/**
+ * Request: Perform backup of the device seed if not backed up using ResetDevice
+ * @next ButtonRequest
+ */
+message BackupDevice {
+}
+
+/**
+ * Response: Ask for additional entropy from host computer
+ * @prev ResetDevice
+ * @next EntropyAck
+ */
+message EntropyRequest {
+}
+
+/**
+ * Request: Provide additional entropy for seed generation function
+ * @prev EntropyRequest
+ * @next ButtonRequest
+ */
+message EntropyAck {
+	optional bytes entropy = 1;				// 256 bits (32 bytes) of random data
+}
+
+/**
+ * Request: Start recovery workflow asking user for specific words of mnemonic
+ * Used to recovery device safely even on untrusted computer.
+ * @next WordRequest
+ */
+message RecoveryDevice {
+	optional uint32 word_count = 1;				// number of words in BIP-39 mnemonic
+	optional bool passphrase_protection = 2;		// enable master node encryption using passphrase
+	optional bool pin_protection = 3;			// enable PIN protection
+	optional string language = 4 [default='english'];	// device language
+	optional string label = 5;				// device label
+	optional bool enforce_wordlist = 6;			// enforce BIP-39 wordlist during the process
+	// 7 reserved for unused recovery method
+	optional uint32 type = 8;				// supported recovery type (see RecoveryType)
+	optional bool dry_run = 10;				// perform dry-run recovery workflow (for safe mnemonic validation)
+}
+
+/**
+ * Response: Device is waiting for user to enter word of the mnemonic
+ * Its position is shown only on device's internal display.
+ * @prev RecoveryDevice
+ * @prev WordAck
+ */
+message WordRequest {
+	optional WordRequestType type = 1;
+}
+
+/**
+ * Request: Computer replies with word from the mnemonic
+ * @prev WordRequest
+ * @next WordRequest
+ * @next Success
+ * @next Failure
+ */
+message WordAck {
+	required string word = 1;				// one word of mnemonic on asked position
+}
+

@@ -5,6 +5,13 @@
   "dependencies": {
     "axios": "^0.18.0",
     "electron-context-menu": "^0.9.1",
-    "electron-debug": "^1.5.0"
+    "electron-debug": "^1.5.0",
+    "dgram": "^1.0.1",
+    "node-hid": "^0.7.3",
+    "protobufjs": "^6.8.8",
+    "scanf": "^1.0.2"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^1.8.2"
   }
 }

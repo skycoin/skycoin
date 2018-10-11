@@ -99,6 +99,7 @@
     "edit": "Edit Wallet",
     "add": "Add Wallet",
     "load": "Load Wallet",
+    "hardware": "Hardware Wallet",
     "encryption-enabled": "Encryption enabled",
     "encryption-disabled": "Encryption disabled",
     "wallet": "Wallet",

@@ -38,6 +38,8 @@ const (
 var (
 	envVarsHelp = fmt.Sprintf(`ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "%s"
+    RPC_USER: Username for RPC API, if enabled in the RPC.
+    RPC_PASS: Password for RPC API, if enabled in the RPC.
     COIN: Name of the coin. Default "%s"
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
     WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"
@@ -234,6 +236,7 @@ func NewApp(cfg Config) (*App, error) {
 		addPrivateKeyCmd(cfg),
 		addressBalanceCmd(),
 		addressGenCmd(),
+		fiberAddressGenCmd(),
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
@@ -242,8 +245,6 @@ func NewApp(cfg Config) (*App, error) {
 		decodeRawTxCmd(),
 		decryptWalletCmd(cfg),
 		encryptWalletCmd(cfg),
-		generateAddrsCmd(cfg),
-		generateWalletCmd(cfg),
 		lastBlocksCmd(),
 		listAddressesCmd(),
 		listWalletsCmd(),
@@ -254,6 +255,8 @@ func NewApp(cfg Config) (*App, error) {
 		transactionCmd(),
 		verifyAddressCmd(),
 		versionCmd(),
+		walletCreateCmd(cfg),
+		walletAddAddressesCmd(cfg),
 		walletBalanceCmd(cfg),
 		walletDirCmd(),
 		walletHisCmd(),

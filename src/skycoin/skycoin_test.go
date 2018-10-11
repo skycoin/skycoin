@@ -65,6 +65,17 @@ func getCoinName() string {
 	return coin
 }
 
+func versionUpgradeWaitTimeout(t *testing.T) time.Duration {
+	x := os.Getenv("VERSION_UPGRADE_TEST_WAIT_TIMEOUT")
+	if x == "" {
+		return time.Second * 3
+	}
+
+	d, err := time.ParseDuration(x)
+	require.NoError(t, err)
+	return d
+}
+
 func buildBinary(t *testing.T, version string) (string, func()) {
 	coin := getCoinName()
 
@@ -244,8 +255,8 @@ func TestDBVerifyLogic(t *testing.T) {
 			require.NoError(t, err)
 
 			// Kill the process if it hasn't had an error or checked the database within a timeout,
-			// so that the tests that the database is not checked can complete
-			go time.AfterFunc(time.Second*5, func() {
+			// so that the tests that test that the database is not checked can complete
+			go time.AfterFunc(versionUpgradeWaitTimeout(t), func() {
 				if tc.shouldVerify {
 					cmd.Process.Kill() // nolint: errcheck
 				} else {

@@ -222,7 +222,7 @@ clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
 
 clean-coverage: ## Remove coverage output files
-	rm -r ./coverage/
+	rm -rf ./coverage/
 
 newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
 	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)

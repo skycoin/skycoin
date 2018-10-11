@@ -166,8 +166,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				_, ok := s.wallets[dupWlt]
 				require.False(t, ok)
 
-				_, err = os.Stat(filepath.Join(dir, dupWlt))
-				require.True(t, os.IsNotExist(err))
+				testutil.RequireFileNotExists(t, filepath.Join(dir, dupWlt))
 			})
 		}
 	}
@@ -263,7 +262,7 @@ func TestServiceLoadWallet(t *testing.T) {
 					EnableWalletAPI: true,
 				})
 				require.NoError(t, err)
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 
 				w, err := s.loadWallet(wltName, tc.opts, tc.bg)
 				require.Equal(t, tc.err, err)
@@ -411,7 +410,7 @@ func TestServiceNewAddress(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 
 				w, err := s.CreateWallet(wltName, tc.opts, nil)
 				if err != nil {
@@ -479,19 +478,19 @@ func TestServiceGetAddress(t *testing.T) {
 					dirIsEmpty(t, dir)
 
 					require.Empty(t, s.wallets)
-					addrs, err := s.GetAddresses("")
+					addrs, err := s.GetSkycoinAddresses("")
 					require.Equal(t, ErrWalletAPIDisabled, err)
 					require.Equal(t, 0, len(addrs))
 					return
 				}
 
-				addrs, err := s.GetAddresses("test1.wlt")
+				addrs, err := s.GetSkycoinAddresses("test1.wlt")
 				require.NoError(t, err)
 				require.Equal(t, 1, len(addrs))
 
 				// test none exist wallet
 				notExistID := "not_exist_id.wlt"
-				_, err = s.GetAddresses(notExistID)
+				_, err = s.GetSkycoinAddresses(notExistID)
 				require.Equal(t, ErrWalletNotExist, err)
 			})
 		}
@@ -582,7 +581,7 @@ func TestServiceGetWallets(t *testing.T) {
 				wallets = append(wallets, w)
 
 				// Create a new wallet
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 				w1, err := s.CreateWallet(wltName, Options{
 					Label: "label1",
 					Seed:  "seed1",
@@ -765,7 +764,7 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 					return
 				}
 
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 
 				w, err := s.CreateWallet(wltName, tc.opts, nil)
 				require.NoError(t, err)
@@ -1654,7 +1653,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				if tc.walletNotExist {
 					tc.params.Wallet.ID = "foo.wlt"
 				} else {
-					wltName := newWalletFilename()
+					wltName := NewWalletFilename()
 					opts := tc.opts
 					if opts.Encrypt && len(opts.Password) == 0 {
 						opts.Password = []byte("password")
@@ -1957,13 +1956,11 @@ func TestServiceEncryptWallet(t *testing.T) {
 
 				// Check if the wallet file does exist
 				path := filepath.Join(dir, w.Filename())
-				_, err = os.Stat(path)
-				require.True(t, !os.IsNotExist(err))
+				testutil.RequireFileExists(t, path)
 
 				// Check if the backup wallet file, which should not exist
 				bakPath := path + ".bak"
-				_, err = os.Stat(bakPath)
-				require.True(t, os.IsNotExist(err))
+				testutil.RequireFileNotExists(t, bakPath)
 			})
 		}
 	}
@@ -2095,8 +2092,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 
 				// Checks the existence of the wallet file
 				fn := filepath.Join(dir, tc.wltName)
-				_, err = os.Stat(fn)
-				require.True(t, !os.IsNotExist(err))
+				testutil.RequireFileExists(t, fn)
 
 				// Loads wallet from the file and check if it's decrypted
 				w1, err := Load(fn)
@@ -2506,7 +2502,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 				w, err := s.CreateWallet(wltName, tc.opts, tc.balGetter)
 				require.Equal(t, tc.expect.err, err)
 				if err != nil {

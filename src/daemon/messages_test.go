@@ -284,6 +284,8 @@ func TestIntroductionMessage(t *testing.T) {
 func TestMessageEncodeDecode(t *testing.T) {
 	update := false
 
+	introPubKey := cipher.MustPubKeyFromHex("03cd7dfcd8c3452d1bb5d9d9e34dd95d6848cb9f66c2aad127b60578f4be7498f2")
+
 	cases := []struct {
 		goldenFile string
 		obj        interface{}
@@ -299,13 +301,13 @@ func TestMessageEncodeDecode(t *testing.T) {
 			},
 		},
 		{
-			goldenFile: "intro-msg-extra.golden",
+			goldenFile: "intro-msg-pubkey.golden",
 			obj:        &IntroductionMessage{},
 			msg: &IntroductionMessage{
 				Mirror:  99998888,
 				Port:    8888,
 				Version: 12341234,
-				Extra:   []byte("abcdef"),
+				Pubkey:  introPubKey[:],
 			},
 		},
 		{

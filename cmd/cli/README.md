@@ -140,8 +140,6 @@ COMMANDS:
      checkdb               Verify the database
      createRawTransaction  Create a raw transaction to be broadcast to the network later
      decodeRawTransaction  Decode raw transaction
-     generateAddresses     Generate additional addresses for a wallet
-     generateWallet        Generate a new wallet
      lastBlocks            Displays the content of the most recently N generated blocks
      listAddresses         Lists all addresses in a given wallet
      listWallets           Lists all wallets stored in the wallet directory
@@ -151,6 +149,8 @@ COMMANDS:
      transaction           Show detail info of specific transaction
      verifyAddress         Verify a skycoin address
      version
+     walletCreate          Generate a new wallet
+     walletAddAddresses    Generate additional addresses for a wallet
      walletBalance         Check the balance of a wallet
      walletDir             Displays wallet folder address
      walletHistory         Display the transaction history of specific wallet. Requires skycoin node rpc.

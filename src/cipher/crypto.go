@@ -139,6 +139,11 @@ func (pk PubKey) Hex() string {
 	return hex.EncodeToString(pk[:])
 }
 
+// Null returns true if PubKey is the null PubKey
+func (pk PubKey) Null() bool {
+	return pk == PubKey{}
+}
+
 // SecKey secret key
 type SecKey [32]byte
 
@@ -209,6 +214,11 @@ func (sk SecKey) verify(debugLevel2Check bool) error {
 // Hex returns a hex encoded SecKey string
 func (sk SecKey) Hex() string {
 	return hex.EncodeToString(sk[:])
+}
+
+// Null returns true if SecKey is the null SecKey
+func (sk SecKey) Null() bool {
+	return sk == SecKey{}
 }
 
 //ECDH generates a shared secret
@@ -571,7 +581,7 @@ func CheckSecKeyHash(seckey SecKey, hash SHA256) error {
 	}
 	// verify recovered pubkey
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
-		return errors.New("impossible error, CheckSecKey, Derived Pubkey verification failed")
+		return errors.New("impossible error, CheckSecKey, Derived PubKey verification failed")
 	}
 
 	// check signature production

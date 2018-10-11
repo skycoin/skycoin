@@ -5472,8 +5472,7 @@ func TestDisableWalletAPI(t *testing.T) {
 	}
 
 	// Confirms that the wallet directory does not exist
-	_, err := os.Stat(walletDir)
-	require.True(t, os.IsNotExist(err))
+	testutil.RequireFileNotExists(t, walletDir)
 }
 
 func checkHealthResponse(t *testing.T, r *api.HealthResponse) {

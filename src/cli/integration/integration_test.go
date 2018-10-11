@@ -54,9 +54,10 @@ const (
 var (
 	binaryPath string
 
-	update         = flag.Bool("update", false, "update golden files")
-	liveTxFull     = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
-	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
+	update                    = flag.Bool("update", false, "update golden files")
+	liveTxFull                = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
+	testLiveWallet            = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
+	testLiveDisableNetworking = flag.Bool("test-live-disable-networking", false, "run live wallet tests, requires node run with -disable-networking")
 
 	cryptoTypes = []wallet.CryptoType{wallet.CryptoTypeScryptChacha20poly1305, wallet.CryptoTypeSha256Xor}
 )
@@ -266,7 +267,7 @@ func doStable(t *testing.T) bool {
 
 func doLive(t *testing.T) bool {
 	if enabled() && mode(t) == testModeLive {
-		return true
+		return !*testLiveDisableNetworking
 	}
 
 	t.Skip("Live tests disabled")
@@ -336,8 +337,10 @@ func getWalletPathFromEnv(t *testing.T) (string, string) {
 func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
-		case testModeStable, testModeLive:
+		case testModeStable:
 			return true
+		case testModeLive:
+			return !*testLiveDisableNetworking
 		}
 	}
 

@@ -21,16 +21,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-/*
-Todo
-- verify that minimum/maximum connections are working
-- keep max connections
-- maintain minimum number of outgoing connections per server?
-
-
-*/
 var (
-	// ErrDisconnectReasons invalid version
+	// ErrDisconnectInvalidVersion invalid version
 	ErrDisconnectInvalidVersion gnet.DisconnectReason = errors.New("Invalid version")
 	// ErrDisconnectIntroductionTimeout timeout
 	ErrDisconnectIntroductionTimeout gnet.DisconnectReason = errors.New("Version timeout")
@@ -1235,7 +1227,8 @@ func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
 	return dm.pool.Pool.SendMessage(addr, m)
 }
 
-// ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast
+// ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast.
+// It does not return an error if broadcasting fails.
 func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	if dm.Config.DisableOutgoingConnections {
 		return nil, nil

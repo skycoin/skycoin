@@ -155,6 +155,9 @@ integration-test-live-wallet: ## Run live integration tests with wallet
 integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
+integration-test-live-disable-networking: ## Run live integration tests against a node with networking disabled (requires wallet)
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
+
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
 

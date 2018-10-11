@@ -25,6 +25,7 @@ RUN_TESTS=""
 TEST_LIVE_WALLET=""
 FAILFAST=""
 USE_CSRF=""
+DISABLE_NETWORKING=""
 
 usage () {
   echo "Usage: $SCRIPT"
@@ -33,13 +34,14 @@ usage () {
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
-  echo "-w <boolean> -- Run wallet tests."
+  echo "-w <boolean> -- Run wallet tests"
   echo "-f <boolean> -- Run test with -failfast flag"
   echo "-c <boolean> -- Pass this argument if the node has CSRF enabled"
+  echo "-k <boolean> -- Run the tests that require networking disabled (live node must be run with -disable-networking)"
   exit 1
 }
 
-while getopts "h?t:r:uvwfc" args; do
+while getopts "h?t:r:uvwfck" args; do
 case $args in
     h|\?)
         usage;
@@ -50,7 +52,8 @@ case $args in
     v ) VERBOSE="-v";;
     w ) TEST_LIVE_WALLET="--test-live-wallet";;
     f ) FAILFAST="-failfast";;
-    c ) USE_CSRF="1"
+    c ) USE_CSRF="1";;
+	k ) DISABLE_NETWORKING="--test-live-disable-networking"; TEST_LIVE_WALLET="--test-live-wallet";
   esac
 done
 
@@ -70,13 +73,14 @@ fi
 if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
-    go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
+    go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET $DISABLE_NETWORKING
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF \
-    go test ./src/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
+	SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF \
+    go test ./src/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET $DISABLE_NETWORKING
 
 fi

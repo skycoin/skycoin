@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -422,17 +423,19 @@ func (gw *Gateway) GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction
 func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
-		_, err = gw.v.InjectTransactionStrict(txn)
-		if err != nil {
-			logger.WithError(err).Error("InjectTransactionStrict failed")
-			return
-		}
+		err = gw.v.WithUpdateTx("gateway.InjectBroadcastTransaction", func(tx *dbutil.Tx) error {
+			if _, err := gw.v.InjectTransactionStrictTx(tx, txn); err != nil {
+				logger.WithError(err).Error("InjectTransactionStrict failed")
+				return err
+			}
 
-		err = gw.d.BroadcastTransaction(txn)
-		if err != nil {
-			logger.WithError(err).Error("BroadcastTransaction failed")
-			return
-		}
+			if err := gw.d.BroadcastTransaction(txn); err != nil {
+				logger.WithError(err).Error("BroadcastTransaction failed")
+				return err
+			}
+
+			return nil
+		})
 	})
 	return err
 }

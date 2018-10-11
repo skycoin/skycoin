@@ -83,7 +83,7 @@ Authentication can only be enabled when using HTTPS with `-web-interface-https`,
 - [General system checks](#general-system-checks)
 	- [Health check](#health-check)
 	- [Version info](#version-info)
-  - [Prometheus metrics](#prometheus-metrics) 
+	- [Prometheus metrics](#prometheus-metrics)
 - [Simple query APIs](#simple-query-apis)
 	- [Get balance of addresses](#get-balance-of-addresses)
 	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
@@ -1848,10 +1848,20 @@ Transactions are serialized with the `encoder` package.
 See [`coin.Transaction.Serialize`](https://godoc.org/github.com/skycoin/skycoin/src/coin#Transaction.Serialize).
 
 If there are no available connections, the API responds with a `503 Service Unavailable` error.
-However, the transaction will be saved locally in the database and will be rebroadcast automatically on the next startup.
 
 Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
 This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
+
+Also, in rare cases the transaction may be broadcast but might not be saved to the database. In this case the client
+would have a window of opportunity to attempt a double spend, resulting in unexpected behavior.
+However, if the database save failed, it is likely that a subsequent call to inject transaction will also fail.
+
+The recommended way to handle transaction injections from your system is to inject the transaction then wait
+for the transaction to be confirmed.  Transactions typically confirm quickly, so if it is not confirmed after some
+timeout such as 1 minute, the application can continue to retry the broadcast with `/api/v1/resendUnconfirmedTxns`.
+Broadcast only fails without an error if the node's peers disconnect or timeout after the broadcast was initiated,
+which is a network problem that may recover, so rebroadcasting with `/api/v1/resendUnconfirmedTxns` will resolve it,
+or else the network is unavailable.  Any transactions saved to the database will be resent on startup.
 
 It is safe to retry the injection after a `503` failure.
 

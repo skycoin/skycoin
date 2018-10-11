@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,26 +16,30 @@ func TestOriginRefererCheck(t *testing.T) {
 		origin        string
 		referer       string
 		status        int
-		err           string
+		errV1         string
+		errV2         string
 		hostWhitelist []string
 	}{
 		{
 			name:   "unparseable origin header",
 			origin: ":?4foo",
 			status: http.StatusForbidden,
-			err:    "403 Forbidden - Invalid URL in Origin or Referer header\n",
+			errV1:  "403 Forbidden - Invalid URL in Origin or Referer header\n",
+			errV2:  "{\n    \"error\": {\n        \"message\": \"Invalid URL in Origin or Referer header\",\n        \"code\": 403\n    }\n}",
 		},
 		{
 			name:   "mismatched origin header",
 			origin: "http://example.com/",
 			status: http.StatusForbidden,
-			err:    "403 Forbidden - Invalid Origin or Referer\n",
+			errV1:  "403 Forbidden - Invalid Origin or Referer\n",
+			errV2:  "{\n    \"error\": {\n        \"message\": \"Invalid Origin or Referer\",\n        \"code\": 403\n    }\n}",
 		},
 		{
 			name:    "mismatched referer header",
 			referer: "http://example.com/",
 			status:  http.StatusForbidden,
-			err:     "403 Forbidden - Invalid Origin or Referer\n",
+			errV1:   "403 Forbidden - Invalid Origin or Referer\n",
+			errV2:   "{\n    \"error\": {\n        \"message\": \"Invalid Origin or Referer\",\n        \"code\": 403\n    }\n}",
 		},
 		{
 			name:          "whitelisted referer header",
@@ -83,12 +88,17 @@ func TestOriginRefererCheck(t *testing.T) {
 				switch tc.status {
 				case http.StatusForbidden:
 					require.Equal(t, tc.status, rr.Code)
-					require.Equal(t, tc.err, rr.Body.String())
+
+					if strings.HasPrefix(endpoint, "/api/v2") {
+						require.Equal(t, tc.errV2, rr.Body.String())
+					} else {
+						require.Equal(t, tc.errV1, rr.Body.String())
+					}
 				default:
 					// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
 					// Make sure that the request only didn't return the origin check error
-					require.NotEqual(t, "403 Forbidden - Invalid URL in Origin or Referer header\n", rr.Body.String())
-					require.NotEqual(t, "403 Forbidden - Invalid Origin or Referer\n", rr.Body.String())
+					require.False(t, strings.Contains("Invalid URL in Origin or Referer header", rr.Body.String()))
+					require.False(t, strings.Contains("Invalid Origin or Referer", rr.Body.String()))
 				}
 			})
 		}
@@ -100,14 +110,16 @@ func TestHostCheck(t *testing.T) {
 		name          string
 		host          string
 		status        int
-		err           string
+		errV1         string
+		errV2         string
 		hostWhitelist []string
 	}{
 		{
 			name:   "invalid host",
 			host:   "example.com",
 			status: http.StatusForbidden,
-			err:    "403 Forbidden - Invalid Host\n",
+			errV1:  "403 Forbidden - Invalid Host\n",
+			errV2:  "{\n    \"error\": {\n        \"message\": \"Invalid Host\",\n        \"code\": 403\n    }\n}",
 		},
 		{
 			name:          "invalid host is whitelisted",
@@ -146,11 +158,15 @@ func TestHostCheck(t *testing.T) {
 				switch tc.status {
 				case http.StatusForbidden:
 					require.Equal(t, http.StatusForbidden, rr.Code)
-					require.Equal(t, tc.err, rr.Body.String())
+					if strings.HasPrefix(endpoint, "/api/v2") {
+						require.Equal(t, tc.errV2, rr.Body.String())
+					} else {
+						require.Equal(t, tc.errV1, rr.Body.String())
+					}
 				default:
 					// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
 					// Make sure that the request only didn't return the invalid host error
-					require.NotEqual(t, "403 Forbidden - Invalid Host\n", rr.Body.String())
+					require.False(t, strings.Contains("Invalid Host", rr.Body.String()))
 				}
 			})
 		}

@@ -1,11 +1,13 @@
 package api
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/iputil"
 )
@@ -32,6 +34,10 @@ func CSPHandler(handler http.Handler) http.Handler {
 // All major browsers send the Host header as required by the HTTP spec.
 // hostWhitelist allows additional Host header values to be accepted.
 func HostCheck(host string, hostWhitelist []string, handler http.Handler) http.Handler {
+	return hostCheck(apiVersion1, host, hostWhitelist, handler)
+}
+
+func hostCheck(apiVersion, host string, hostWhitelist []string, handler http.Handler) http.Handler {
 	addr := host
 	var port uint16
 	if strings.Contains(host, ":") {
@@ -60,7 +66,7 @@ func HostCheck(host string, hostWhitelist []string, handler http.Handler) http.H
 		_, isWhitelisted := hostWhitelistMap[r.Host]
 		if isLocalhost && r.Host != "" && !isWhitelisted {
 			logger.Critical().Errorf("Detected DNS rebind attempt - configured-host=%s header-host=%s", host, r.Host)
-			wh.Error403(w, "Invalid Host")
+			writeError(w, apiVersion, http.StatusForbidden, "Invalid Host")
 			return
 		}
 
@@ -74,6 +80,10 @@ func HostCheck(host string, hostWhitelist []string, handler http.Handler) http.H
 // at least one of these values. If neither are set, assume it is a request
 // from curl/wget.
 func OriginRefererCheck(host string, hostWhitelist []string, handler http.Handler) http.Handler {
+	return originRefererCheck(apiVersion1, host, hostWhitelist, handler)
+}
+
+func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler http.Handler) http.Handler {
 	hostWhitelistMap := make(map[string]struct{}, len(hostWhitelist)+1)
 	for _, k := range hostWhitelist {
 		hostWhitelistMap[k] = struct{}{}
@@ -93,17 +103,66 @@ func OriginRefererCheck(host string, hostWhitelist []string, handler http.Handle
 			u, err := url.Parse(toCheck)
 			if err != nil {
 				logger.Critical().Errorf("Invalid URL in Origin or Referer header: %s %v", toCheck, err)
-				wh.Error403(w, "Invalid URL in Origin or Referer header")
+				writeError(w, apiVersion, http.StatusForbidden, "Invalid URL in Origin or Referer header")
 				return
 			}
 
 			if _, isWhitelisted := hostWhitelistMap[u.Host]; !isWhitelisted {
 				logger.Critical().Errorf("Origin or Referer header value %s does not match host and is not whitelisted", toCheck)
-				wh.Error403(w, "Invalid Origin or Referer")
+				writeError(w, apiVersion, http.StatusForbidden, "Invalid Origin or Referer")
 				return
 			}
 		}
 
 		handler.ServeHTTP(w, r)
 	})
+}
+
+func basicAuth(apiVersion, username, password, realm string, f http.Handler) http.HandlerFunc {
+	needsAuth := username != "" || password != ""
+	usernamePasswordHash := cipher.SumSHA256(append([]byte(username), []byte(password)...))
+	authHeader := fmt.Sprintf("Basic realm=%q", realm)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+
+		if needsAuth {
+			if !ok {
+				w.Header().Set("WWW-Authenticate", authHeader)
+				writeError(w, apiVersion, http.StatusUnauthorized, "")
+				return
+			}
+
+			userPassHash := cipher.SumSHA256(append([]byte(user), []byte(pass)...))
+
+			if subtle.ConstantTimeCompare(userPassHash[:], usernamePasswordHash[:]) != 1 {
+				w.Header().Set("WWW-Authenticate", authHeader)
+				writeError(w, apiVersion, http.StatusUnauthorized, "")
+				return
+			}
+		} else {
+			// If auth is not configured but the request provides auth, reject
+			// This will avoid a mistake where the daemon is not configured with auth,
+			// but the client is, and does not realize the daemon is not configured with auth
+			// because all requests are accepted
+			if user != "" || pass != "" {
+				w.Header().Set("WWW-Authenticate", authHeader)
+				writeError(w, apiVersion, http.StatusUnauthorized, "")
+				return
+			}
+		}
+
+		f.ServeHTTP(w, r)
+	}
+}
+
+func writeError(w http.ResponseWriter, apiVersion string, code int, msg string) {
+	switch apiVersion {
+	case apiVersion1:
+		wh.ErrorXXX(w, code, msg)
+	case apiVersion2:
+		writeHTTPResponse(w, NewHTTPErrorResponse(code, msg))
+	default:
+		wh.Error500(w, "Invalid internal API version")
+	}
 }

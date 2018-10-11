@@ -54,6 +54,9 @@ All responses will set an appropriate HTTP status code indicating an error, and 
 Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
 However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
 
+Under some circumstances an error response body may not be valid JSON.
+Any client consuming the API should accomodate this and conditionally parse JSON for non-`200` responses.
+
 ## API Sets
 
 API endpoints are grouped into "sets" which can be toggled with the command line parameters

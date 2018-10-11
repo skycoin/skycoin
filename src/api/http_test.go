@@ -445,7 +445,11 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 
 				if !tc.authorized {
 					require.Equal(t, http.StatusUnauthorized, rr.Code)
-					require.Equal(t, "401 Unauthorized", strings.TrimSpace(rr.Body.String()))
+					if strings.HasPrefix(e, "/api/v2") {
+						require.Equal(t, "{\n    \"error\": {\n        \"message\": \"Unauthorized\",\n        \"code\": 401\n    }\n}", rr.Body.String())
+					} else {
+						require.Equal(t, "401 Unauthorized", strings.TrimSpace(rr.Body.String()))
+					}
 				} else {
 					require.NotEqual(t, http.StatusUnauthorized, rr.Code)
 				}

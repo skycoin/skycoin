@@ -4,8 +4,8 @@ Package api implements the REST API interface
 package api
 
 import (
-	"crypto/subtle"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -20,7 +20,6 @@ import (
 	"github.com/rs/cors"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -36,6 +35,9 @@ const (
 	resourceDir = "dist/"
 	devDir      = "dev/"
 	indexPage   = "index.html"
+
+	apiVersion1 = "v1"
+	apiVersion2 = "v2"
 
 	defaultReadTimeout  = time.Second * 10
 	defaultWriteTimeout = time.Second * 60
@@ -119,6 +121,31 @@ func NewHTTPErrorResponse(code int, msg string) HTTPResponse {
 			Code:    code,
 			Message: msg,
 		},
+	}
+}
+
+func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
+	out, err := json.MarshalIndent(resp, "", "    ")
+	if err != nil {
+		wh.Error500(w, "json.MarshalIndent failed")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+
+	if resp.Error == nil {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		if resp.Error.Code < 400 || resp.Error.Code >= 600 {
+			logger.Critical().Errorf("writeHTTPResponse invalid error status code: %d", resp.Error.Code)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(resp.Error.Code)
+		}
+	}
+
+	if _, err := w.Write(out); err != nil {
+		logger.WithError(err).Error("http Write failed")
 	}
 }
 
@@ -303,9 +330,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		OptionsPassthrough: false,
 	})
 
-	headerCheck := func(host string, hostWhitelist []string, handler http.Handler) http.Handler {
-		handler = OriginRefererCheck(host, hostWhitelist, handler)
-		handler = HostCheck(host, hostWhitelist, handler)
+	headerCheck := func(apiVersion, host string, hostWhitelist []string, handler http.Handler) http.Handler {
+		handler = originRefererCheck(apiVersion, host, hostWhitelist, handler)
+		handler = hostCheck(apiVersion, host, hostWhitelist, handler)
 		return handler
 	}
 
@@ -332,38 +359,38 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		}
 	}
 
-	webHandlerCSRFOptional := func(endpoint string, handler http.Handler, checkCSRF bool) {
+	webHandlerCSRFOptional := func(apiVersion, endpoint string, handler http.Handler, checkCSRF bool) {
 		handler = wh.ElapsedHandler(logger, handler)
 		handler = corsHandler.Handler(handler)
 		if checkCSRF {
-			handler = CSRFCheck(csrfStore, handler)
+			handler = CSRFCheck(apiVersion, csrfStore, handler)
 		}
-		handler = headerCheck(c.host, c.hostWhitelist, handler)
-		handler = basicAuth(c.username, c.password, "skycoin daemon", handler)
+		handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 
-	webHandler := func(endpoint string, handler http.Handler) {
-		webHandlerCSRFOptional(endpoint, handler, true)
+	webHandler := func(apiVersion, endpoint string, handler http.Handler) {
+		webHandlerCSRFOptional(apiVersion, endpoint, handler, true)
 	}
 
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
 		if c.enableUnversionedAPI {
-			webHandler(endpoint, handler)
+			webHandler(apiVersion1, endpoint, handler)
 		}
-		webHandler("/api/v1"+endpoint, handler)
+		webHandler(apiVersion1, "/api/v1"+endpoint, handler)
 	}
 
 	webHandlerV2 := func(endpoint string, handler http.Handler) {
-		webHandler("/api/v2"+endpoint, handler)
+		webHandler(apiVersion2, "/api/v2"+endpoint, handler)
 	}
 
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
 	if !c.disableCSP {
 		indexHandler = CSPHandler(indexHandler)
 	}
-	webHandler("/", indexHandler)
+	webHandler(apiVersion1, "/", indexHandler)
 
 	if c.enableGUI {
 		fileInfos, err := ioutil.ReadDir(c.appLoc)
@@ -382,7 +409,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 				route = route + "/"
 			}
 
-			webHandler(route, fs)
+			webHandler(apiVersion1, route, fs)
 		}
 	}
 
@@ -393,9 +420,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
 		if c.enableUnversionedAPI {
-			webHandlerCSRFOptional(endpoint, handler, false)
+			webHandlerCSRFOptional(apiVersion1, endpoint, handler, false)
 		}
-		webHandlerCSRFOptional("/api/v1"+endpoint, handler, false)
+		webHandlerCSRFOptional(apiVersion1, "/api/v1"+endpoint, handler, false)
 	}
 	csrfHandlerV1("/csrf", getCSRFToken(csrfStore)) // csrf is always available, regardless of the API set
 
@@ -464,41 +491,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsRead}))
 
 	return mux
-}
-
-func basicAuth(username, password, realm string, f http.Handler) http.HandlerFunc {
-	needsAuth := username != "" || password != ""
-	usernamePasswordHash := cipher.SumSHA256(append([]byte(username), []byte(password)...))
-	authHeader := fmt.Sprintf("Basic realm=%q", realm)
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		user, pass, ok := r.BasicAuth()
-
-		if needsAuth {
-			if !ok {
-				wh.Error401(w, authHeader, "")
-				return
-			}
-
-			userPassHash := cipher.SumSHA256(append([]byte(user), []byte(pass)...))
-
-			if subtle.ConstantTimeCompare(userPassHash[:], usernamePasswordHash[:]) != 1 {
-				wh.Error401(w, authHeader, "")
-				return
-			}
-		} else {
-			// If auth is not configured but the request provides auth, reject
-			// This will avoid a mistake where the daemon is not configured with auth,
-			// but the client is, and does not realize the daemon is not configured with auth
-			// because all requests are accepted
-			if user != "" || pass != "" {
-				wh.Error401(w, authHeader, "")
-				return
-			}
-		}
-
-		f.ServeHTTP(w, r)
-	}
 }
 
 // newIndexHandler returns a http.HandlerFunc for index.html, where index.html is in appLoc

@@ -480,31 +480,6 @@ type VerifyTxnResponse struct {
 	Transaction CreatedTransaction `json:"transaction"`
 }
 
-func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
-	out, err := json.MarshalIndent(resp, "", "    ")
-	if err != nil {
-		wh.Error500(w, "json.MarshalIndent failed")
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-
-	if resp.Error == nil {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		if resp.Error.Code < 400 || resp.Error.Code >= 600 {
-			logger.Critical().Errorf("writeHTTPResponse invalid error status code: %d", resp.Error.Code)
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(resp.Error.Code)
-		}
-	}
-
-	if _, err := w.Write(out); err != nil {
-		logger.WithError(err).Error("http Write failed")
-	}
-}
-
 // Decode and verify an encoded transaction
 // Method: POST
 // URI: /api/v2/transaction/verify

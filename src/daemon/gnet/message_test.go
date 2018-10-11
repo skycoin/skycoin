@@ -145,10 +145,6 @@ func (dm *DummyMessage) Handle(context *MessageContext, x interface{}) error {
 	return nil
 }
 
-func NewDummyMessage() Message {
-	return &DummyMessage{}
-}
-
 type ErrorMessage struct{}
 
 var (
@@ -158,10 +154,6 @@ var (
 
 func (em *ErrorMessage) Handle(context *MessageContext, x interface{}) error {
 	return ErrErrorMessageHandler
-}
-
-func NewErrorMessage() Message {
-	return &ErrorMessage{}
 }
 
 type ByteMessage struct {

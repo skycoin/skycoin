@@ -1,3 +1,6 @@
+/*
+Package fee provides methods to calculate and verify transaction fees
+*/
 package fee
 
 import (

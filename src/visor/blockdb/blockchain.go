@@ -1,3 +1,6 @@
+/*
+Package blockdb is the core blockchain database wrapper
+*/
 package blockdb
 
 import (
@@ -60,6 +63,9 @@ type BlockSigs interface {
 	Get(*dbutil.Tx, cipher.SHA256) (cipher.Sig, bool, error)
 	ForEach(*dbutil.Tx, func(cipher.SHA256, cipher.Sig) error) error
 }
+
+//go:generate go install
+//go:generate mockery -name UnspentPooler -case underscore -testonly -inpkg
 
 // UnspentPooler unspent outputs pool
 type UnspentPooler interface {

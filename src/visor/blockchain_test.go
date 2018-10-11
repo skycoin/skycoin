@@ -9,7 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -22,10 +21,6 @@ var (
 var genTime uint64 = 1000
 var genCoins uint64 = 1000e6
 
-func tNow() uint64 {
-	return uint64(utc.UnixNow())
-}
-
 func feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
@@ -34,7 +29,7 @@ func addGenesisBlockToBlockchain(t *testing.T, bc *Blockchain) *coin.SignedBlock
 	// create genesis block
 	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
-	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
+	gbSig := cipher.MustSignHash(gb.HashHeader(), genSecret)
 
 	// add genesis block to blockchain
 	err = bc.db.Update("", func(tx *dbutil.Tx) error {
@@ -76,9 +71,7 @@ func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr ci
 
 /* Helpers */
 type fakeChainStore struct {
-	len    uint64
 	blocks []coin.SignedBlock
-	up     blockdb.UnspentPooler
 }
 
 func (fcs *fakeChainStore) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
@@ -433,7 +426,7 @@ func TestGetBlocks(t *testing.T) {
 			}
 
 			err := db.View("", func(tx *dbutil.Tx) error {
-				bs, err := bc.GetBlocks(tx, tc.req.st, tc.req.ed)
+				bs, err := bc.GetBlocksInRange(tx, tc.req.st, tc.req.ed)
 				require.NoError(t, err)
 				require.Equal(t, len(tc.expect), len(bs))
 				require.Equal(t, tc.expect, bs)
@@ -517,19 +510,6 @@ func newBlock(t *testing.T, bc *Blockchain, txn coin.Transaction, timestamp uint
 	})
 	require.NoError(t, err)
 	return b
-}
-
-// blockchainHead calls bc.Head in a dbutil.Tx
-func blockchainHead(t *testing.T, bc *Blockchain) *coin.SignedBlock {
-	var head *coin.SignedBlock
-	err := bc.db.View("", func(tx *dbutil.Tx) error {
-		var err error
-		head, err = bc.Head(tx)
-		require.NoError(t, err)
-		return nil
-	})
-	require.NoError(t, err)
-	return head
 }
 
 type spending struct {
@@ -694,7 +674,7 @@ func TestProcessTransactions(t *testing.T) {
 
 				sb := &coin.SignedBlock{
 					Block: *b,
-					Sig:   cipher.SignHash(b.HashHeader(), genSecret),
+					Sig:   cipher.MustSignHash(b.HashHeader(), genSecret),
 				}
 				err = db.Update("", func(tx *dbutil.Tx) error {
 					return bc.store.AddBlock(tx, sb)
@@ -792,7 +772,7 @@ func TestProcessBlock(t *testing.T) {
 
 	sb := coin.SignedBlock{
 		Block: *gb,
-		Sig:   cipher.SignHash(gb.HashHeader(), genSecret),
+		Sig:   cipher.MustSignHash(gb.HashHeader(), genSecret),
 	}
 
 	// Test with empty blockchain
@@ -822,7 +802,7 @@ func TestProcessBlock(t *testing.T) {
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		_, err := bc.processBlock(tx, coin.SignedBlock{
 			Block: *b,
-			Sig:   cipher.SignHash(b.HashHeader(), genSecret),
+			Sig:   cipher.MustSignHash(b.HashHeader(), genSecret),
 		})
 		require.NoError(t, err)
 		return nil
@@ -850,7 +830,7 @@ func TestExecuteBlock(t *testing.T) {
 
 	sb := coin.SignedBlock{
 		Block: *gb,
-		Sig:   cipher.SignHash(gb.HashHeader(), genSecret),
+		Sig:   cipher.MustSignHash(gb.HashHeader(), genSecret),
 	}
 
 	// test with empty chain
@@ -871,7 +851,7 @@ func TestExecuteBlock(t *testing.T) {
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		err := bc.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *b,
-			Sig:   cipher.SignHash(b.HashHeader(), genSecret),
+			Sig:   cipher.MustSignHash(b.HashHeader(), genSecret),
 		})
 		require.NoError(t, err)
 		return nil

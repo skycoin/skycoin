@@ -14,7 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -183,7 +183,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 		return nil, err
 	}
 	if t.Hash() != hash {
-		return nil, errors.New("ReadableTransaction.Hash does not match parsed transaction hash")
+		return nil, errors.New("readable.Transaction.Hash does not match parsed transaction hash")
 	}
 
 	return &t, nil
@@ -465,6 +465,10 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 	}
 }
 
+// createTransactionHandler creates a signed transaction
+// Method: POST
+// URI: /api/v1/wallet/transaction
+// Args: JSON body
 func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

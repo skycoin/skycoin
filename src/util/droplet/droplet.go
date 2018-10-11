@@ -1,3 +1,8 @@
+/*
+Package droplet provides methods for handling droplet integers and string.
+
+A droplet is the smallest possible coin amount in Skycoin, equal to 1/1000000 of a whole skycoin.
+*/
 package droplet
 
 import (
@@ -57,7 +62,7 @@ func FromString(b string) (uint64, error) {
 	}
 
 	// Multiply the coin balance by 1e6 to obtain droplets amount
-	e := d.Mul(decimal.New(1, Exponent))
+	e := d.Shift(Exponent)
 
 	// Check that there are no decimal places remaining. This error should not
 	// occur, because of the earlier check of Exponent()

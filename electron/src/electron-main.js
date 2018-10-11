@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, Menu, BrowserWindow, dialog, shell, session } = require('electron');
+const { app, Menu, BrowserWindow, shell, session } = require('electron');
 
 const path = require('path');
 
@@ -20,6 +20,14 @@ require('electron-context-menu')({});
 global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
+let showErrorCalled = false;
+
+// Detect if the code is running with the "dev" arg. The "dev" arg is added when running npm
+// start. If this is true, a local node will not be started, but one is expected to be running,
+// the contents served in http://localhost:4200 will be displayed and it will be allowed to
+// reload the URLs using the Electron window, so that it is easier to test the changes made to
+// the UI using npm start.
+let dev = process.argv.find(arg => arg === 'dev') ? true : false;
 
 // Force everything localhost, in case of a leak
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com, api.github.com');
@@ -36,93 +44,109 @@ let win;
 var skycoin = null;
 
 function startSkycoin() {
-  console.log('Starting skycoin from electron');
+  if (!dev) {
+    console.log('Starting skycoin from electron');
 
-  if (skycoin) {
-    console.log('Skycoin already running');
-    app.emit('skycoin-ready');
-    return
-  }
-
-  var reset = () => {
-    skycoin = null;
-  }
-
-  // Resolve skycoin binary location
-  var appPath = app.getPath('exe');
-  var exe = (() => {
-    switch (process.platform) {
-      case 'darwin':
-        return path.join(appPath, '../../Resources/app/skycoin');
-      case 'win32':
-        // Use only the relative path on windows due to short path length
-        // limits
-        return './resources/app/skycoin.exe';
-      case 'linux':
-        return path.join(path.dirname(appPath), './resources/app/skycoin');
-      default:
-        return './resources/app/skycoin';
-    }
-  })()
-
-  var args = [
-    '-launch-browser=false',
-    '-gui-dir=' + path.dirname(exe),
-    '-color-log=false', // must be disabled for web interface detection
-    '-logtofile=true',
-    '-download-peerlist=true',
-    '-enable-seed-api=true',
-    '-enable-wallet-api=true',
-    '-rpc-interface=false',
-    '-disable-csrf=false',
-    '-reset-corrupt-db=true',
-    '-enable-gui=true',
-    '-web-interface-port=0' // random port assignment
-    // will break
-    // broken (automatically generated certs do not work):
-    // '-web-interface-https=true',
-  ]
-  skycoin = childProcess.spawn(exe, args);
-
-  createWindow();
-
-  skycoin.on('error', (e) => {
-    dialog.showErrorBox('Failed to start skycoin', e.toString());
-    app.quit();
-  });
-
-  skycoin.stdout.on('data', (data) => {
-    console.log(data.toString());
-    // Scan for the web URL string
-    if (currentURL) {
+    if (skycoin) {
+      console.log('Skycoin already running');
+      app.emit('skycoin-ready');
       return
     }
 
-    const marker = 'Starting web interface on ';
+    var reset = () => {
+      skycoin = null;
+    }
 
-    data.toString().split("\n").forEach(line => {
-      if (line.indexOf(marker) !== -1) {
-        currentURL = 'http://' + line.split(marker)[1].trim();
-        app.emit('skycoin-ready', { url: currentURL });
+    // Resolve skycoin binary location
+    var appPath = app.getPath('exe');
+    var exe = (() => {
+      switch (process.platform) {
+        case 'darwin':
+          return path.join(appPath, '../../Resources/app/skycoin');
+        case 'win32':
+          // Use only the relative path on windows due to short path length
+          // limits
+          return './resources/app/skycoin.exe';
+        case 'linux':
+          return path.join(path.dirname(appPath), './resources/app/skycoin');
+        default:
+          return './resources/app/skycoin';
       }
+    })()
+
+    var args = [
+      '-launch-browser=false',
+      '-gui-dir=' + path.dirname(exe),
+      '-color-log=false', // must be disabled for web interface detection
+      '-logtofile=true',
+      '-download-peerlist=true',
+      '-enable-all-api-sets=true',
+      '-enable-api-sets=INSECURE_WALLET_SEED',
+      '-rpc-interface=false',
+      '-disable-csrf=false',
+      '-reset-corrupt-db=true',
+      '-enable-gui=true',
+      '-web-interface-port=0' // random port assignment
+      // will break
+      // broken (automatically generated certs do not work):
+      // '-web-interface-https=true',
+    ]
+    skycoin = childProcess.spawn(exe, args);
+
+    createWindow();
+
+    skycoin.on('error', (e) => {
+      showError();
+      app.quit();
     });
-  });
 
-  skycoin.stderr.on('data', (data) => {
-    console.log(data.toString());
-  });
+    skycoin.stdout.on('data', (data) => {
+      console.log(data.toString());
+      if (currentURL) {
+        return
+      }
 
-  skycoin.on('close', (code) => {
-    // log.info('Skycoin closed');
-    console.log('Skycoin closed');
-    reset();
-  });
+      const marker = 'Starting web interface on ';
 
-  skycoin.on('exit', (code) => {
-    // log.info('Skycoin exited');
-    console.log('Skycoin exited');
-    reset();
-  });
+      data.toString().split('\n').forEach(line => {
+        if (line.indexOf(marker) !== -1) {
+          currentURL = 'http://' + line.split(marker)[1].trim();
+          app.emit('skycoin-ready', { url: currentURL });
+        }
+      });
+    });
+
+    skycoin.stderr.on('data', (data) => {
+      console.log(data.toString());
+    });
+
+    skycoin.on('close', (code) => {
+      // log.info('Skycoin closed');
+      console.log('Skycoin closed');
+      showError();
+      reset();
+    });
+
+    skycoin.on('exit', (code) => {
+      // log.info('Skycoin exited');
+      console.log('Skycoin exited');
+      showError();
+      reset();
+    });
+
+  } else {
+    // If in dev mode, simply open the dev server URL.
+    currentURL = 'http://localhost:4200/';
+    app.emit('skycoin-ready', { url: currentURL });
+  }
+}
+
+function showError() {
+  if (win) {
+    showErrorCalled = true;
+    win.loadURL('file://' + process.resourcesPath + '/app/dist/assets/error-alert/index.html');
+    console.log('Showing the error message');
+  }
 }
 
 function createWindow(url) {
@@ -155,6 +179,12 @@ function createWindow(url) {
     },
   });
 
+  win.webContents.on('did-fail-load', function() {
+    if (!showErrorCalled) {
+      showError();
+    }
+  });
+
   // patch out eval
   win.eval = global.eval;
   win.webContents.executeJavaScript('window.eval = 0;');
@@ -171,7 +201,7 @@ function createWindow(url) {
   if (url) {
     win.loadURL(url);
   } else {
-    win.loadURL('file://' + process.resourcesPath + '/splash/index.html');
+    win.loadURL('file://' + __dirname + '/splash/index.html');
   }
 
   // Open the DevTools.
@@ -185,10 +215,13 @@ function createWindow(url) {
     win = null;
   });
 
-  win.webContents.on('will-navigate', function(e, url) {
-    e.preventDefault();
-    require('electron').shell.openExternal(url);
-  });
+  // If in dev mode, allow to open URLs.
+  if (!dev) {
+    win.webContents.on('will-navigate', function(e, url) {
+      e.preventDefault();
+      require('electron').shell.openExternal(url);
+    });
+  }
 
   // create application's main menu
   var template = [{
@@ -212,11 +245,23 @@ function createWindow(url) {
     submenu: [
       {
         label: 'Wallets folder',
-        click: () => shell.showItemInFolder(walletsFolder),
+        click: () => {
+          if (walletsFolder) {
+            shell.showItemInFolder(walletsFolder)
+          } else {
+            shell.showItemInFolder(path.join(app.getPath("home"), '.skycoin', 'wallets'));
+          }
+        },
       },
       {
         label: 'Logs folder',
-        click: () => shell.showItemInFolder(walletsFolder.replace('wallets', 'logs')),
+        click: () => {
+          if (walletsFolder) {
+            shell.showItemInFolder(walletsFolder.replace('wallets', 'logs'))
+          } else {
+            shell.showItemInFolder(path.join(app.getPath("home"), '.skycoin', 'logs'));
+          }
+        },
       },
       {
         label: 'DevTools',

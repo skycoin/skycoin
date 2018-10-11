@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
@@ -21,8 +20,8 @@ type Wallets map[string]*Wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered.
 func LoadWallets(dir string) (Wallets, error) {
-	// TODO -- don't load duplicate wallets.
-	// TODO -- save a last_modified value in wallets to decide which to load
+	// TODO -- return error if duplicate wallet (by first address) is found
+	// TODO -- but make sure that the client has a good warning to the user if wallet loading fails
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -35,24 +34,50 @@ func LoadWallets(dir string) (Wallets, error) {
 			if !strings.HasSuffix(name, WalletExt) {
 				continue
 			}
+
 			fullpath := filepath.Join(dir, name)
-			rw, err := LoadReadableWallet(fullpath)
+			w, err := loadWallet(fullpath)
 			if err != nil {
 				return nil, err
 			}
-			w, err := rw.ToWallet()
-			if err != nil {
-				return nil, err
-			}
-			logger.Infof("Loaded wallet from %s", fullpath)
-			w.setFilename(name)
+
 			wallets[name] = w
 		}
 	}
 	return wallets, nil
 }
 
-func backupWltFile(src, dst string) error {
+func loadWallet(fn string) (*Wallet, error) {
+	rw, err := LoadReadableWallet(fn)
+	if err != nil {
+		return nil, err
+	}
+
+	w, err := rw.ToWallet()
+	if err != nil {
+		return nil, err
+	}
+
+	// Normalize coin types (older wallets used different names for the coin type)
+	switch strings.ToLower(string(w.coin())) {
+	case "sky", "skycoin":
+		w.setCoin(CoinTypeSkycoin)
+	case "btc", "bitcoin":
+		w.setCoin(CoinTypeBitcoin)
+	}
+
+	coinType := w.coin()
+	if coinType != CoinTypeSkycoin {
+		return nil, fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", fn, coinType)
+	}
+
+	logger.Infof("Loaded wallet from %s", fn)
+	w.setFilename(filepath.Base(fn))
+
+	return w, nil
+}
+
+func backupWltFile(src, dst string) error { // nolint: deadcode,unused,megacheck
 	if _, err := os.Stat(dst); err == nil {
 		return fmt.Errorf("%v file already exist", dst)
 	}
@@ -102,15 +127,7 @@ func (wlts Wallets) set(w *Wallet) {
 	wlts[w.Filename()] = w.clone()
 }
 
-// NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) newAddresses(id string, num uint64) ([]cipher.Address, error) {
-	if w, ok := (*wlts)[id]; ok {
-		return w.GenerateAddresses(num)
-	}
-	return nil, fmt.Errorf("wallet: %v does not exist", id)
-}
-
-// ToReadable converts Wallets to *ReadableWallet array
+// ToReadable converts Wallets to *ReadableWallet array, sorting them by timestamp
 func (wlts Wallets) ToReadable() []*ReadableWallet {
 	var rw []*ReadableWallet
 	for _, w := range wlts {
@@ -118,28 +135,15 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 	}
 
 	sort.Slice(rw, func(i int, j int) bool {
-		return rw[i].time() < rw[j].time()
+		a := rw[i].timestamp()
+		b := rw[j].timestamp()
+
+		if a == b {
+			return rw[i].filename() < rw[j].filename()
+		}
+
+		return a < b
 	})
+
 	return rw
-}
-
-// Update updates the given wallet, return error if not exist
-func (wlts Wallets) update(id string, updateFunc func(*Wallet) error) error {
-	w, ok := wlts[id]
-	if !ok {
-		return ErrWalletNotExist
-	}
-
-	// Clone the wallet
-	cw := w.clone()
-
-	// update the clone wallet, to avoid updateFunc interrupting the original wallet.
-	if err := updateFunc(cw); err != nil {
-		return err
-	}
-
-	// Wipes secrets in old wallet
-	w.erase()
-	wlts[id] = cw
-	return nil
 }

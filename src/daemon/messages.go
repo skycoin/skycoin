@@ -7,13 +7,13 @@ import (
 	"math/rand"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/iputil"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // Message represent a packet to be serialized over the network by
@@ -90,7 +90,7 @@ type Messages struct {
 func NewMessages(c MessagesConfig) *Messages {
 	return &Messages{
 		Config: c,
-		Mirror: rand.New(rand.NewSource(utc.Now().UnixNano())).Uint32(),
+		Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 	}
 }
 
@@ -116,7 +116,7 @@ func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
 
 	ip := binary.BigEndian.Uint32(ipb)
 	ipaddr.IP = ip
-	ipaddr.Port = uint16(port)
+	ipaddr.Port = port
 	return
 }
 
@@ -257,16 +257,19 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		// Disconnect if this is a self connection (we have the same mirror value)
 		if intro.Mirror == d.Mirror() {
 			logger.Infof("Remote mirror value %v matches ours", intro.Mirror)
-			d.Disconnect(mc.Addr, ErrDisconnectSelf)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectSelf); err != nil {
+				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+			}
 			return ErrDisconnectSelf
-
 		}
 
 		// Disconnect if not running the same version
 		if intro.Version != d.DaemonConfig().Version {
 			logger.Infof("%s has different version %d. Disconnecting.",
 				mc.Addr, intro.Version)
-			d.Disconnect(mc.Addr, ErrDisconnectInvalidVersion)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidVersion); err != nil {
+				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+			}
 			return ErrDisconnectInvalidVersion
 		}
 
@@ -278,14 +281,18 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			var bcPubKey cipher.PubKey
 			if len(intro.Pubkey) < len(bcPubKey) {
 				logger.Infof("Extra data length does not meet the minimum requirement")
-				d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData)
+				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
+					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+				}
 				return ErrDisconnectInvalidExtraData
 			}
 			copy(bcPubKey[:], intro.Pubkey[:len(bcPubKey)])
 
 			if d.BlockchainPubkey() != bcPubKey {
 				logger.Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())
-				d.Disconnect(mc.Addr, ErrDisconnectBlockchainPubkeyNotMatched)
+				if err := d.Disconnect(mc.Addr, ErrDisconnectBlockchainPubkeyNotMatched); err != nil {
+					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+				}
 				return ErrDisconnectBlockchainPubkeyNotMatched
 			}
 		}
@@ -297,7 +304,9 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			// This should never happen, but the program should still work if it
 			// does.
 			logger.Errorf("Invalid Addr() for connection: %s", mc.Addr)
-			d.Disconnect(mc.Addr, ErrDisconnectOtherError)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectOtherError); err != nil {
+				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+			}
 			return ErrDisconnectOtherError
 		}
 
@@ -306,20 +315,6 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		// connection's port is a random port, it's different from the port
 		// in introduction message.
 		if port == intro.Port {
-			if d.IsDefaultConnection(mc.Addr) {
-				reached, err := d.IsMaxDefaultConnectionsReached()
-				if err != nil {
-					logger.Errorf("Check IsMaxDefaultConnReached failed: %v", err)
-					return err
-				}
-
-				if reached {
-					logger.Debugf("Disconnect %s: maximum default connections reached ", mc.Addr)
-					d.Disconnect(mc.Addr, ErrDisconnectMaxDefaultConnectionReached)
-					return ErrDisconnectMaxDefaultConnectionReached
-				}
-			}
-
 			if err := d.SetHasIncomingPort(mc.Addr); err != nil {
 				logger.Errorf("Failed to set peer has incoming port status, %v", err)
 			}
@@ -333,7 +328,9 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		knownPort, exists := d.GetMirrorPort(mc.Addr, intro.Mirror)
 		if exists {
 			logger.Infof("%s is already connected on port %d", mc.Addr, knownPort)
-			d.Disconnect(mc.Addr, ErrDisconnectConnectedTwice)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectConnectedTwice); err != nil {
+				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+			}
 			return ErrDisconnectConnectedTwice
 		}
 		return nil
@@ -368,7 +365,9 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
 		logger.Errorf("Invalid port for connection %s", a)
-		d.Disconnect(intro.c.Addr, ErrDisconnectOtherError)
+		if err := d.Disconnect(intro.c.Addr, ErrDisconnectOtherError); err != nil {
+			logger.WithError(err).WithField("addr", intro.c.Addr).Warning("Disconnect")
+		}
 		return
 	}
 
@@ -380,8 +379,10 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		logger.Warning(err)
 	}
 
-	// Anounce unconfirmed know txns
-	d.AnnounceAllTxns()
+	// Announce unconfirmed txns
+	if err := d.AnnounceAllTxns(); err != nil {
+		logger.WithError(err).Warning("AnnounceAllTxns failed")
+	}
 }
 
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.
@@ -553,10 +554,15 @@ func (gbm *GiveBlocksMessage) Process(d Daemoner) {
 
 	// Announce our new blocks to peers
 	m1 := NewAnnounceBlocksMessage(headBkSeq)
-	d.BroadcastMessage(m1)
-	//request more blocks.
+	if err := d.BroadcastMessage(m1); err != nil {
+		logger.WithError(err).Warning("Broadcast AnnounceBlocksMessage failed")
+	}
+
+	// Request more blocks
 	m2 := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().BlocksResponseCount)
-	d.BroadcastMessage(m2)
+	if err := d.BroadcastMessage(m2); err != nil {
+		logger.WithError(err).Warning("Broadcast GetBlocksMessage failed")
+	}
 }
 
 // AnnounceBlocksMessage tells a peer our highest known BkSeq. The receiving peer can choose
@@ -609,25 +615,25 @@ func (abm *AnnounceBlocksMessage) Process(d Daemoner) {
 
 // SendingTxnsMessage send transaction message interface
 type SendingTxnsMessage interface {
-	GetTxns() []cipher.SHA256
+	GetFiltered() []cipher.SHA256
 }
 
 // AnnounceTxnsMessage tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
-	Txns []cipher.SHA256
-	c    *gnet.MessageContext `enc:"-"`
+	Transactions []cipher.SHA256
+	c            *gnet.MessageContext `enc:"-"`
 }
 
 // NewAnnounceTxnsMessage creates announce txns message
 func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 	return &AnnounceTxnsMessage{
-		Txns: txns,
+		Transactions: txns,
 	}
 }
 
-// GetTxns returns txns
-func (atm *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
-	return atm.Txns
+// GetFiltered returns txns
+func (atm *AnnounceTxnsMessage) GetFiltered() []cipher.SHA256 {
+	return atm.Transactions
 }
 
 // Handle handle message
@@ -642,7 +648,7 @@ func (atm *AnnounceTxnsMessage) Process(d Daemoner) {
 		return
 	}
 
-	unknown, err := d.GetUnconfirmedUnknown(atm.Txns)
+	unknown, err := d.GetUnconfirmedUnknown(atm.Transactions)
 	if err != nil {
 		logger.WithError(err).Error("AnnounceTxnsMessage Visor.GetUnconfirmedUnknown failed")
 		return
@@ -660,14 +666,14 @@ func (atm *AnnounceTxnsMessage) Process(d Daemoner) {
 
 // GetTxnsMessage request transactions of given hash
 type GetTxnsMessage struct {
-	Txns []cipher.SHA256
-	c    *gnet.MessageContext `enc:"-"`
+	Transactions []cipher.SHA256
+	c            *gnet.MessageContext `enc:"-"`
 }
 
 // NewGetTxnsMessage creates GetTxnsMessage
 func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 	return &GetTxnsMessage{
-		Txns: txns,
+		Transactions: txns,
 	}
 }
 
@@ -684,7 +690,7 @@ func (gtm *GetTxnsMessage) Process(d Daemoner) {
 	}
 
 	// Locate all txns from the unconfirmed pool
-	known, err := d.GetUnconfirmedKnown(gtm.Txns)
+	known, err := d.GetUnconfirmedKnown(gtm.Transactions)
 	if err != nil {
 		logger.WithError(err).Error("GetTxnsMessage Visor.GetUnconfirmedKnown failed")
 		return
@@ -702,20 +708,20 @@ func (gtm *GetTxnsMessage) Process(d Daemoner) {
 
 // GiveTxnsMessage tells the transaction of given hashes
 type GiveTxnsMessage struct {
-	Txns coin.Transactions
-	c    *gnet.MessageContext `enc:"-"`
+	Transactions coin.Transactions
+	c            *gnet.MessageContext `enc:"-"`
 }
 
 // NewGiveTxnsMessage creates GiveTxnsMessage
 func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
 	return &GiveTxnsMessage{
-		Txns: txns,
+		Transactions: txns,
 	}
 }
 
-// GetTxns returns transactions hashes
-func (gtm *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
-	return gtm.Txns.Hashes()
+// GetFiltered returns transactions hashes
+func (gtm *GiveTxnsMessage) GetFiltered() []cipher.SHA256 {
+	return gtm.Transactions.Hashes()
 }
 
 // Handle handle message
@@ -730,10 +736,12 @@ func (gtm *GiveTxnsMessage) Process(d Daemoner) {
 		return
 	}
 
-	hashes := make([]cipher.SHA256, 0, len(gtm.Txns))
+	hashes := make([]cipher.SHA256, 0, len(gtm.Transactions))
 	// Update unconfirmed pool with these transactions
-	for _, txn := range gtm.Txns {
+	for _, txn := range gtm.Transactions {
 		// Only announce transactions that are new to us, so that peers can't spam relays
+		// It is not necessary to inject all of the transactions inside a database transaction,
+		// since each is independent
 		known, softErr, err := d.InjectTransaction(txn)
 		if err != nil {
 			logger.Warningf("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
@@ -753,6 +761,8 @@ func (gtm *GiveTxnsMessage) Process(d Daemoner) {
 	if len(hashes) != 0 {
 		logger.Debugf("Announce %d transactions", len(hashes))
 		m := NewAnnounceTxnsMessage(hashes)
-		d.BroadcastMessage(m)
+		if err := d.BroadcastMessage(m); err != nil {
+			logger.WithError(err).Warning("Broadcast AnnounceTxnsMessage failed")
+		}
 	}
 }

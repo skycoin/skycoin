@@ -1,28 +1,42 @@
+/*
+Package skycoin implements the main daemon cmd's configuration and setup
+*/
 package skycoin
 
 import (
-	"flag"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime/debug"
 	"runtime/pprof"
 	"sync"
 	"time"
+
+	"github.com/blang/semver"
+	"github.com/toqueteos/webbrowser"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
-	"github.com/skycoin/skycoin/src/util/browser"
-	"github.com/skycoin/skycoin/src/util/cert"
+	"github.com/skycoin/skycoin/src/util/certutil"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
+)
+
+var (
+	// DBVerifyCheckpointVersion is a checkpoint for determining if DB verification should be run.
+	// Any DB upgrading from less than this version to equal or higher than this version will be forced to verify.
+	// Update this version checkpoint if a newer version requires a new verification run.
+	DBVerifyCheckpointVersion       = "0.25.0"
+	dbVerifyCheckpointVersionParsed semver.Version
 )
 
 // Coin represents a fiber coin instance
@@ -32,27 +46,23 @@ type Coin struct {
 }
 
 // Run starts the node
-func (c *Coin) Run() {
-	defer func() {
-		// try catch panic in main thread
-		if r := recover(); r != nil {
-			c.logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
-		}
-	}()
+func (c *Coin) Run() error {
 	var db *dbutil.DB
 	var d *daemon.Daemon
 	var webInterface *api.Server
+	var retErr error
 	errC := make(chan error, 10)
 
 	if c.config.Node.Version {
 		fmt.Println(c.config.Build.Version)
-		return
+		return nil
 	}
 
 	logLevel, err := logging.LevelFromString(c.config.Node.LogLevel)
 	if err != nil {
-		c.logger.Error("Invalid -log-level:", err)
-		return
+		err = fmt.Errorf("Invalid -log-level: %v", err)
+		c.logger.Error(err)
+		return err
 	}
 
 	logging.SetLevel(logLevel)
@@ -69,22 +79,38 @@ func (c *Coin) Run() {
 		logFile, err = c.initLogFile()
 		if err != nil {
 			c.logger.Error(err)
-			return
+			return err
 		}
 	}
 
+	var fullAddress string
 	scheme := "http"
 	if c.config.Node.WebInterfaceHTTPS {
 		scheme = "https"
 	}
 	host := fmt.Sprintf("%s:%d", c.config.Node.WebInterfaceAddr, c.config.Node.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	c.logger.Critical().Infof("Full address: %s", fullAddress)
-	if c.config.Node.PrintWebInterfaceAddress {
-		fmt.Println(fullAddress)
+
+	if c.config.Node.ProfileCPU {
+		f, err := os.Create(c.config.Node.ProfileCPUFile)
+		if err != nil {
+			c.logger.Error(err)
+			return err
+		}
+
+		if err := pprof.StartCPUProfile(f); err != nil {
+			c.logger.Error(err)
+			return err
+		}
+		defer pprof.StopCPUProfile()
 	}
 
-	c.initProfiling()
+	if c.config.Node.HTTPProf {
+		go func() {
+			if err := http.ListenAndServe(c.config.Node.HTTPProfHost, nil); err != nil {
+				c.logger.WithError(err).Errorf("Listen on HTTP profiling interface %s failed", c.config.Node.HTTPProfHost)
+			}
+		}()
+	}
 
 	var wg sync.WaitGroup
 
@@ -96,40 +122,88 @@ func (c *Coin) Run() {
 	// Catch SIGUSR1 (prints runtime stack to stdout)
 	go apputil.CatchDebug()
 
-	// creates blockchain instance
-	dconf := c.configureDaemon()
+	// Parse the current app version
+	appVersion, err := c.config.Build.Semver()
+	if err != nil {
+		c.logger.WithError(err).Errorf("Version %s is not a valid semver", c.config.Build.Version)
+		return err
+	}
 
+	c.logger.Infof("App version: %s", appVersion)
+
+	// Open the database
+	dconf := c.ConfigureDaemon()
 	c.logger.Infof("Opening database %s", dconf.Visor.DBPath)
 	db, err = visor.OpenDB(dconf.Visor.DBPath, c.config.Node.DBReadOnly)
 	if err != nil {
 		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
-		return
+		return err
 	}
 
-	if c.config.Node.ResetCorruptDB {
-		// Check the database integrity and recreate it if necessary
-		c.logger.Info("Checking database and resetting if corrupted")
-		if newDB, err := visor.RepairCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
-			if err != visor.ErrVerifyStopped {
-				c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+	// Look for saved app version
+	dbVersion, err := visor.GetDBVersion(db)
+	if err != nil {
+		c.logger.WithError(err).Error("visor.GetDBVersion failed")
+		retErr = err
+		goto earlyShutdown
+	}
+
+	if dbVersion == nil {
+		c.logger.Info("DB version not found in DB")
+	} else {
+		c.logger.Infof("DB version: %s", dbVersion)
+	}
+
+	c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
+
+	// If the saved DB version is higher than the app version, abort.
+	// Otherwise DB corruption could occur.
+	if dbVersion != nil && dbVersion.GT(*appVersion) {
+		err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, appVersion)
+		c.logger.WithError(err).Error()
+		retErr = err
+		goto earlyShutdown
+	}
+
+	// Verify the DB if the version detection says to, or if it was requested on the command line
+	if shouldVerifyDB(appVersion, dbVersion) || c.config.Node.VerifyDB {
+		if c.config.Node.ResetCorruptDB {
+			// Check the database integrity and recreate it if necessary
+			c.logger.Info("Checking database and resetting if corrupted")
+			if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
+				if err != visor.ErrVerifyStopped {
+					c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+					retErr = err
+				}
+				goto earlyShutdown
+			} else {
+				db = newDB
 			}
-			goto earlyShutdown
 		} else {
-			db = newDB
-		}
-	} else if c.config.Node.VerifyDB {
-		c.logger.Info("Checking database")
-		if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
-			if err != visor.ErrVerifyStopped {
-				c.logger.Errorf("visor.CheckDatabase failed: %v", err)
+			c.logger.Info("Checking database")
+			if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
+				if err != visor.ErrVerifyStopped {
+					c.logger.Errorf("visor.CheckDatabase failed: %v", err)
+					retErr = err
+				}
+				goto earlyShutdown
 			}
+		}
+	}
+
+	// Update the DB version
+	if !db.IsReadOnly() {
+		if err := visor.SetDBVersion(db, *appVersion); err != nil {
+			c.logger.WithError(err).Error("visor.SetDBVersion failed")
+			retErr = err
 			goto earlyShutdown
 		}
 	}
 
-	d, err = daemon.NewDaemon(dconf, db, c.config.Node.DefaultConnections)
+	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {
 		c.logger.Error(err)
+		retErr = err
 		goto earlyShutdown
 	}
 
@@ -137,8 +211,21 @@ func (c *Coin) Run() {
 		webInterface, err = c.createGUI(d, host)
 		if err != nil {
 			c.logger.Error(err)
+			retErr = err
 			goto earlyShutdown
 		}
+
+		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
+		c.logger.Critical().Infof("Full address: %s", fullAddress)
+		if c.config.Node.PrintWebInterfaceAddress {
+			fmt.Println(fullAddress)
+		}
+	}
+
+	if err := d.Init(); err != nil {
+		c.logger.Error(err)
+		retErr = err
+		goto earlyShutdown
 	}
 
 	wg.Add(1)
@@ -174,7 +261,7 @@ func (c *Coin) Run() {
 					// Wait a moment just to make sure the http interface is up
 				case <-time.After(time.Millisecond * 100):
 					c.logger.Infof("Launching System Browser with %s", fullAddress)
-					if err := browser.Open(fullAddress); err != nil {
+					if err := webbrowser.Open(fullAddress); err != nil {
 						c.logger.Error(err)
 					}
 				}
@@ -182,36 +269,10 @@ func (c *Coin) Run() {
 		}
 	}
 
-	/*
-	   time.Sleep(5)
-	   tx := InitTransaction()
-	   _ = tx
-	   err, _ = d.Visor.Visor.InjectTransaction(tx)
-	   if err != nil {
-	       log.Panic(err)
-	   }
-	*/
-
-	/*
-	   //first transaction
-	   if c.RunMaster == true {
-	       go func() {
-	           for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
-	               time.Sleep(5)
-	               tx := InitTransaction()
-	               err, _ := d.Visor.Visor.InjectTransaction(tx)
-	               if err != nil {
-	                   //log.Panic(err)
-	               }
-	           }
-	       }()
-	   }
-	*/
-
 	select {
 	case <-quit:
-	case err := <-errC:
-		c.logger.Error(err)
+	case retErr = <-errC:
+		c.logger.Error(retErr)
 	}
 
 	c.logger.Info("Shutting down...")
@@ -242,6 +303,8 @@ earlyShutdown:
 			fmt.Println("Failed to close log file")
 		}
 	}
+
+	return retErr
 }
 
 // NewCoin returns a new fiber coin instance
@@ -275,30 +338,11 @@ func (c *Coin) initLogFile() (*os.File, error) {
 	return f, nil
 }
 
-func (c *Coin) initProfiling() {
-	if c.config.Node.ProfileCPU {
-		f, err := os.Create(c.config.Node.ProfileCPUFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
-	if c.config.Node.HTTPProf {
-		go func() {
-			log.Println(http.ListenAndServe("localhost:6060", nil))
-		}()
-	}
-}
-
-func (c *Coin) configureDaemon() daemon.Config {
-	//cipher.SetAddressVersion(c.AddressVersion)
+// ConfigureDaemon sets the daemon config values
+func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc := daemon.NewConfig()
 
-	for _, c := range c.config.Node.DefaultConnections {
-		dc.Pool.DefaultPeerConnections[c] = struct{}{}
-	}
-
+	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
 
 	dc.Pex.DataDirectory = c.config.Node.DataDirectory
@@ -306,6 +350,11 @@ func (c *Coin) configureDaemon() daemon.Config {
 	dc.Pex.Max = c.config.Node.PeerlistSize
 	dc.Pex.DownloadPeerList = c.config.Node.DownloadPeerList
 	dc.Pex.PeerListURL = c.config.Node.PeerListURL
+	dc.Pex.DisableTrustedPeers = c.config.Node.DisableDefaultPeers
+	dc.Pex.CustomPeersFile = c.config.Node.CustomPeersFile
+	dc.Pex.DefaultConnections = c.config.Node.DefaultConnections
+
+	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.config.Node.DisableNetworking
@@ -332,16 +381,12 @@ func (c *Coin) configureDaemon() daemon.Config {
 	dc.Visor.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
 	dc.Visor.DBPath = c.config.Node.DBPath
 	dc.Visor.Arbitrating = c.config.Node.Arbitrating
-	dc.Visor.EnableWalletAPI = c.config.Node.EnableWalletAPI
 	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
-	dc.Visor.BuildInfo = visor.BuildInfo{
-		Version: c.config.Build.Version,
-		Commit:  c.config.Build.Commit,
-		Branch:  c.config.Build.Branch,
-	}
-	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
+	_, dc.Visor.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
+	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
 
-	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
+	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
+	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
@@ -355,56 +400,130 @@ func (c *Coin) configureDaemon() daemon.Config {
 }
 
 func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
-	var s *api.Server
-	var err error
-
 	config := api.Config{
 		StaticDir:            c.config.Node.GUIDirectory,
 		DisableCSRF:          c.config.Node.DisableCSRF,
-		EnableWalletAPI:      c.config.Node.EnableWalletAPI,
+		DisableCSP:           c.config.Node.DisableCSP,
 		EnableJSON20RPC:      c.config.Node.RPCInterface,
 		EnableGUI:            c.config.Node.EnableGUI,
 		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,
 		ReadTimeout:          c.config.Node.ReadTimeout,
 		WriteTimeout:         c.config.Node.WriteTimeout,
 		IdleTimeout:          c.config.Node.IdleTimeout,
+		EnabledAPISets:       c.config.Node.enabledAPISets,
+		BuildInfo: readable.BuildInfo{
+			Version: c.config.Build.Version,
+			Commit:  c.config.Build.Commit,
+			Branch:  c.config.Build.Branch,
+		},
+		Username: c.config.Node.WebInterfaceUsername,
+		Password: c.config.Node.WebInterfacePassword,
 	}
 
+	var s *api.Server
 	if c.config.Node.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
-		if err := cert.CreateCertIfNotExists(host, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey, "Skycoind"); err != nil {
-			c.logger.Errorf("cert.CreateCertIfNotExists failure: %v", err)
+		exists, err := checkCertFiles(c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
+		if err != nil {
+			c.logger.Errorf("checkCertFiles failed: %v", err)
 			return nil, err
 		}
 
+		if !exists {
+			c.logger.Infof("Autogenerating HTTP certificate and key files %s, %s", c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
+			if err := createCertFiles(c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey); err != nil {
+				c.logger.Errorf("createCertFiles failed: %v", err)
+				return nil, err
+			}
+
+			c.logger.Infof("Created cert file %s", c.config.Node.WebInterfaceCert)
+			c.logger.Infof("Created key file %s", c.config.Node.WebInterfaceKey)
+		}
+
 		s, err = api.CreateHTTPS(host, config, d.Gateway, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
+		if err != nil {
+			c.logger.Errorf("Failed to start web GUI: %v", err)
+			return nil, err
+		}
 	} else {
+		var err error
 		s, err = api.Create(host, config, d.Gateway)
-	}
-	if err != nil {
-		c.logger.Errorf("Failed to start web GUI: %v", err)
-		return nil, err
+		if err != nil {
+			c.logger.Errorf("Failed to start web GUI: %v", err)
+			return nil, err
+		}
 	}
 
 	return s, nil
 }
 
-// ParseConfig prepare the config
-func (c *Coin) ParseConfig() {
-	c.config.register()
-	flag.Parse()
-	if help {
-		flag.Usage()
-		os.Exit(0)
+// checkCertFiles returns true if both cert and key files exist, false if neither exist,
+// or returns an error if only one does not exist
+func checkCertFiles(cert, key string) (bool, error) {
+	doesFileExist := func(f string) (bool, error) {
+		if _, err := os.Stat(f); err != nil {
+			if os.IsNotExist(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
 	}
-	c.config.postProcess()
+
+	certExists, err := doesFileExist(cert)
+	if err != nil {
+		return false, err
+	}
+
+	keyExists, err := doesFileExist(key)
+	if err != nil {
+		return false, err
+	}
+
+	switch {
+	case certExists && keyExists:
+		return true, nil
+	case !certExists && !keyExists:
+		return false, nil
+	case certExists && !keyExists:
+		return false, fmt.Errorf("certfile %s exists but keyfile %s does not", cert, key)
+	case !certExists && keyExists:
+		return false, fmt.Errorf("keyfile %s exists but certfile %s does not", key, cert)
+	default:
+		log.Panic("unreachable code")
+		return false, errors.New("unreachable code")
+	}
+}
+
+func createCertFiles(certFile, keyFile string) error {
+	org := "skycoin daemon autogenerated cert"
+	validUntil := time.Now().Add(10 * 365 * 24 * time.Hour)
+	cert, key, err := certutil.NewTLSCertPair(org, validUntil, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := ioutil.WriteFile(certFile, cert, 0600); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(keyFile, key, 0600); err != nil {
+		os.Remove(certFile)
+		return err
+	}
+
+	return nil
+}
+
+// ParseConfig prepare the config
+func (c *Coin) ParseConfig() error {
+	return c.config.postProcess()
 }
 
 // InitTransaction creates the initialize transaction
-func InitTransaction() coin.Transaction {
+func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction {
 	var tx coin.Transaction
 
-	output := cipher.MustSHA256FromHex("043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0")
+	output := cipher.MustSHA256FromHex(UxID)
 	tx.PushInput(output)
 
 	addrs := visor.GetDistributionAddresses()
@@ -422,17 +541,11 @@ func InitTransaction() coin.Transaction {
 		addr := cipher.MustDecodeBase58Address(addrs[i])
 		tx.PushOutput(addr, visor.DistributionAddressInitialBalance*1e6, 1)
 	}
-	/*
-		seckeys := make([]cipher.SecKey, 1)
-		seckey := ""
-		seckeys[0] = cipher.MustSecKeyFromHex(seckey)
-		tx.SignInputs(seckeys)
-	*/
 
-	txs := make([]cipher.Sig, 1)
-	sig := "ed9bd7a31fe30b9e2d53b35154233dfdf48aaaceb694a07142f84cdf4f5263d21b723f631817ae1c1f735bea13f0ff2a816e24a53ccb92afae685fdfc06724de01"
-	txs[0] = cipher.MustSigFromHex(sig)
-	tx.Sigs = txs
+	seckeys := make([]cipher.SecKey, 1)
+	seckey := genesisSecKey.Hex()
+	seckeys[0] = cipher.MustSecKeyFromHex(seckey)
+	tx.SignInputs(seckeys)
 
 	tx.UpdateHeader()
 
@@ -451,5 +564,25 @@ func createDirIfNotExist(dir string) error {
 		return nil
 	}
 
-	return os.Mkdir(dir, 0777)
+	return os.Mkdir(dir, 0750)
+}
+
+func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
+	// If the dbVersion is not set, verify
+	if dbVersion == nil {
+		return true
+	}
+
+	// If the dbVersion is less than the verification checkpoint version
+	// and the appVersion is greater than or equal to the checkpoint version,
+	// verify
+	if dbVersion.LT(dbVerifyCheckpointVersionParsed) && appVersion.GTE(dbVerifyCheckpointVersionParsed) {
+		return true
+	}
+
+	return false
+}
+
+func init() {
+	dbVerifyCheckpointVersionParsed = semver.MustParse(DBVerifyCheckpointVersion)
 }

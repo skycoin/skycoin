@@ -14,18 +14,19 @@ import (
 )
 
 var (
-	poolsize       = 10
-	sha256HashChan chan hash.Hash
-	// sha256Hash hash.Hash = sha256.New()
+	// Memory pool for SHA256 hashes
+	sha256HashPoolSize = 30
+	sha256HashPool     chan hash.Hash
 )
 
 // SumSHA256 sum sha256
 func SumSHA256(b []byte) []byte {
-	sha256Hash := <-sha256HashChan
+	sha256Hash := <-sha256HashPool
 	sha256Hash.Reset()
-	sha256Hash.Write(b)
+	// sha256.Write never returns an error
+	sha256Hash.Write(b) // nolint: errcheck
 	sum := sha256Hash.Sum(nil)
-	sha256HashChan <- sha256Hash
+	sha256HashPool <- sha256Hash
 	return sum[:]
 }
 
@@ -43,19 +44,18 @@ Entropy pool needs
 
 // EntropyPool entropy pool
 type EntropyPool struct {
-	Ent  [32]byte //256 bit accumulator
+	Ent  [32]byte // 256 bit accumulator
 	lock sync.Mutex
 }
 
 // Mix256 mixes in 256 bits, outputs 256 bits
 func (ep *EntropyPool) Mix256(in []byte) (out []byte) {
-
-	//hash input
+	// hash input
 	val1 := SumSHA256(in)
-	//return value
+	// return value
 	ep.lock.Lock()
 	val2 := SumSHA256(append(val1, ep.Ent[:]...))
-	//next ent value
+	// next ent value
 	val3 := SumSHA256(append(val1, val2...))
 
 	for i := 0; i < 32; i++ {
@@ -67,10 +67,10 @@ func (ep *EntropyPool) Mix256(in []byte) (out []byte) {
 	return val2
 }
 
-//Mix take in N bytes, salts, return N
+// Mix take in N bytes, salts, return N
 func (ep *EntropyPool) Mix(in []byte) []byte {
 	length := len(in) - len(in)%32 + 32
-	buff := make([]byte, length, length)
+	buff := make([]byte, length)
 	for i := 0; i < len(in); i++ {
 		buff[i] = in[i]
 	}
@@ -98,35 +98,32 @@ Therefore the output is salted.
 Note:
 
 Should allow pseudo-random mode for repeatability for certain types of tests
-
 */
 
-//var _rand *mrand.Rand //pseudorandom number generator
 var _ent EntropyPool
 
-//seed pseudo random number generator with
-// hash of system time in nano seconds
-// hash of system environmental variables
-// hash of process id
+// seed pseudo random number generator with
+// - hash of system time in nano seconds
+// - hash of system environmental variables
+// - hash of process id
 func init() {
+	// init the hash reuse pool
+	sha256HashPool = make(chan hash.Hash, sha256HashPoolSize)
+	for i := 0; i < sha256HashPoolSize; i++ {
+		sha256HashPool <- sha256.New()
+	}
+
 	seed1 := []byte(strconv.FormatUint(uint64(time.Now().UnixNano()), 16))
 	seed2 := []byte(strings.Join(os.Environ(), ""))
 	seed3 := []byte(strconv.FormatUint(uint64(os.Getpid()), 16))
 
 	seed4 := make([]byte, 256)
-	_, err := io.ReadFull(crand.Reader, seed4) //system secure random number generator
+	_, err := io.ReadFull(crand.Reader, seed4) // system secure random number generator
 	if err != nil {
 		log.Panic(err)
 	}
 
-	// init the hash reuse pool
-	sha256HashChan = make(chan hash.Hash, poolsize)
-	for i := 0; i < poolsize; i++ {
-		sha256HashChan <- sha256.New()
-	}
-
-	//mrand.Rand_rand = mrand.New(mrand.NewSource(int64(time.Now().UnixNano()))) //pseudo random
-	//seed entropy pool
+	// seed entropy pool
 	_ent.Mix256(seed1)
 	_ent.Mix256(seed2)
 	_ent.Mix256(seed3)
@@ -140,12 +137,12 @@ func init() {
 // and process id is mixed in for forward security. Future version should use entropy pool
 func RandByte(n int) []byte {
 	buff := make([]byte, n)
-	_, err := io.ReadFull(crand.Reader, buff) //system secure random number generator
+	_, err := io.ReadFull(crand.Reader, buff) // system secure random number generator
 	if err != nil {
 		log.Panic(err)
 	}
 
-	//XORing in sequence, cannot reduce security (even if sequence is bad/known/non-random)
+	// XORing in sequence, cannot reduce security (even if sequence is bad/known/non-random)
 	buff2 := _ent.Mix(buff)
 	for i := 0; i < n; i++ {
 		buff[i] ^= buff2[i]

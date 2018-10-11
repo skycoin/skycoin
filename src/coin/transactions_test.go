@@ -2,6 +2,7 @@ package coin
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"math"
 	"sort"
@@ -62,7 +63,7 @@ func TestTransactionVerify(t *testing.T) {
 	// Mismatch header hash
 	tx := makeTransaction(t)
 	tx.InnerHash = cipher.SHA256{}
-	testutil.RequireError(t, tx.Verify(), "Invalid header hash")
+	testutil.RequireError(t, tx.Verify(), "InnerHash does not match computed hash")
 
 	// No inputs
 	tx = makeTransaction(t)
@@ -151,13 +152,13 @@ func TestTransactionVerifyInput(t *testing.T) {
 	// Invalid uxIn args
 	tx := makeTransaction(t)
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(nil)
+		_ = tx.VerifyInput(nil) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(UxArray{})
+		_ = tx.VerifyInput(UxArray{}) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(make(UxArray, 3))
+		_ = tx.VerifyInput(make(UxArray, 3)) // nolint: errcheck
 	})
 
 	// tx.In != tx.Sigs
@@ -165,14 +166,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.Sigs = []cipher.Sig{}
 	_require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.Sigs = append(tx.Sigs, cipher.Sig{})
 	_require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	// tx.InnerHash != tx.HashInner()
@@ -180,14 +181,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.InnerHash = cipher.SHA256{}
 	_require.PanicsWithLogMessage(t, "Invalid Tx Inner Hash", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	// tx.In does not match uxIn hashes
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(ux, s)
 	_require.PanicsWithLogMessage(t, "Ux hash mismatch", func() {
-		tx.VerifyInput(UxArray{UxOut{}})
+		_ = tx.VerifyInput(UxArray{UxOut{}}) // nolint: errcheck
 	})
 
 	// Invalid signature
@@ -257,9 +258,9 @@ func TestTransactionSignInputs(t *testing.T) {
 	require.NotPanics(t, func() { tx.SignInputs([]cipher.SecKey{s, s2}) })
 	require.Equal(t, len(tx.Sigs), 2)
 	require.Equal(t, tx.HashInner(), h)
-	p := cipher.PubKeyFromSecKey(s)
+	p := cipher.MustPubKeyFromSecKey(s)
 	a := cipher.AddressFromPubKey(p)
-	p = cipher.PubKeyFromSecKey(s2)
+	p = cipher.MustPubKeyFromSecKey(s2)
 	a2 := cipher.AddressFromPubKey(p)
 	require.Nil(t, cipher.ChkSig(a, cipher.AddSHA256(h, tx.In[0]), tx.Sigs[0]))
 	require.Nil(t, cipher.ChkSig(a2, cipher.AddSHA256(h, tx.In[1]), tx.Sigs[1]))
@@ -317,6 +318,21 @@ func TestTransactionSerialization(t *testing.T) {
 	tx2, err := TransactionDeserialize(b)
 	require.NoError(t, err)
 	require.Equal(t, tx, tx2)
+
+	// Check reserializing deserialized txn
+	b2 := tx2.Serialize()
+	tx3, err := TransactionDeserialize(b2)
+	require.NoError(t, err)
+	require.Equal(t, tx2, tx3)
+
+	// Check hex encode/decode followed by deserialize
+	s := hex.EncodeToString(b)
+	sb, err := hex.DecodeString(s)
+	require.NoError(t, err)
+	tx4, err := TransactionDeserialize(sb)
+	require.NoError(t, err)
+	require.Equal(t, tx2, tx4)
+
 	// Invalid deserialization
 	require.Panics(t, func() { MustTransactionDeserialize([]byte{0x04}) })
 }
@@ -334,59 +350,6 @@ func TestTransactionOutputHours(t *testing.T) {
 	tx.PushOutput(makeAddress(), 1e6, math.MaxUint64-700)
 	_, err = tx.OutputHours()
 	testutil.RequireError(t, err, "Transaction output hours overflow")
-}
-
-type outAddr struct {
-	Addr  cipher.Address
-	Coins uint64
-	Hours uint64
-}
-
-func makeTx(s cipher.SecKey, ux *UxOut, outs []outAddr, tm uint64, seq uint64) (*Transaction, UxArray, error) {
-	if ux == nil {
-		// genesis block tx.
-		tx := Transaction{}
-		tx.PushOutput(outs[0].Addr, outs[0].Coins, outs[0].Hours)
-		_, s = cipher.GenerateKeyPair()
-		ux := UxOut{
-			Head: UxHead{
-				Time:  100,
-				BkSeq: 0,
-			},
-			Body: UxBody{
-				SrcTransaction: tx.InnerHash,
-				Address:        outs[0].Addr,
-				Coins:          outs[0].Coins,
-				Hours:          outs[0].Hours,
-			},
-		}
-		return &tx, []UxOut{ux}, nil
-	}
-
-	tx := Transaction{}
-	tx.PushInput(ux.Hash())
-	tx.SignInputs([]cipher.SecKey{s})
-	for _, o := range outs {
-		tx.PushOutput(o.Addr, o.Coins, o.Hours)
-	}
-	tx.UpdateHeader()
-
-	uxo := make(UxArray, len(tx.Out))
-	for i := range tx.Out {
-		uxo[i] = UxOut{
-			Head: UxHead{
-				Time:  tm,
-				BkSeq: seq,
-			},
-			Body: UxBody{
-				SrcTransaction: tx.Hash(),
-				Address:        tx.Out[i].Address,
-				Coins:          tx.Out[i].Coins,
-				Hours:          tx.Out[i].Hours,
-			},
-		}
-	}
-	return &tx, uxo, nil
 }
 
 func TestTransactionsSize(t *testing.T) {
@@ -875,10 +838,7 @@ func TestSortTransactions(t *testing.T) {
 		txns = append(txns, txn)
 	}
 
-	var hashSortedTxns Transactions
-	for _, txn := range txns {
-		hashSortedTxns = append(hashSortedTxns, txn)
-	}
+	hashSortedTxns := append(Transactions{}, txns...)
 
 	sort.Slice(hashSortedTxns, func(i, j int) bool {
 		ihash := hashSortedTxns[i].Hash()

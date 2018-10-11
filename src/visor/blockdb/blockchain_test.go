@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -110,7 +109,6 @@ func (bt *fakeBlockTree) ForEachBlock(tx *dbutil.Tx, f func(*coin.Block) error) 
 }
 
 type fakeSignatureStore struct {
-	db         *bolt.DB
 	sigs       map[string]cipher.Sig
 	saveFailed bool
 	getSigErr  error
@@ -285,7 +283,7 @@ func makeGenesisBlock(t *testing.T) coin.SignedBlock {
 	gb, err := coin.NewGenesisBlock(genAddress, genCoinHours, genTime)
 	require.NoError(t, err)
 
-	sig := cipher.SignHash(gb.HashHeader(), genSecret)
+	sig := cipher.MustSignHash(gb.HashHeader(), genSecret)
 	return coin.SignedBlock{
 		Block: *gb,
 		Sig:   sig,

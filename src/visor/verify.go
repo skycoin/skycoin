@@ -129,7 +129,7 @@ func (e ErrTxnViolatesUserConstraint) Error() string {
 }
 
 // VerifySingleTxnSoftConstraints returns an error if any "soft" constraint are violated.
-// "soft" constaints are enforced at the network and block publication level,
+// "soft" constraints are enforced at the network and block publication level,
 // but are not enforced at the blockchain level.
 // Clients will not accept blocks that violate hard constraints, but will
 // accept blocks that violate soft constraints.
@@ -187,7 +187,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 //      * That the transaction input and output coins do not overflow uint64
 //      * That the transaction input and output hours do not overflow uint64
 // NOTE: Double spends are checked against the unspent output pool when querying for uxIn
-func VerifySingleTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
+func VerifySingleTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray) error {
 	// Check for output hours overflow
 	// When verifying a single transaction, this is considered a hard constraint.
 	// For transactions inside of a block, it is a soft constraint.
@@ -200,7 +200,7 @@ func VerifySingleTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock
 	// Check for input CoinHours calculation overflow, since it is ignored by
 	// VerifyTransactionHoursSpending
 	for _, ux := range uxIn {
-		if _, err := ux.CoinHours(head.Time()); err != nil {
+		if _, err := ux.CoinHours(head.Time); err != nil {
 			return NewErrTxnViolatesHardConstraint(err)
 		}
 	}
@@ -227,7 +227,7 @@ func VerifySingleTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock
 // NOTE: Double spends are checked against the unspent output pool when querying for uxIn
 // NOTE: output hours overflow is treated as a soft constraint for transactions inside of a block, due to a bug
 //       which allowed some blocks to be published with overflowing output hours.
-func VerifyBlockTxnConstraints(txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
+func VerifyBlockTxnConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray) error {
 	if err := verifyTxnHardConstraints(txn, head, uxIn); err != nil {
 		return NewErrTxnViolatesHardConstraint(err)
 	}
@@ -235,7 +235,7 @@ func VerifyBlockTxnConstraints(txn coin.Transaction, head *coin.SignedBlock, uxI
 	return nil
 }
 
-func verifyTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
+func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray) error {
 	//CHECKLIST: DONE: check for duplicate ux inputs/double spending
 	//     NOTE: Double spends are checked against the unspent output pool when querying for uxIn
 
@@ -267,7 +267,7 @@ func verifyTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock, uxIn
 		return err
 	}
 
-	uxOut := coin.CreateUnspents(head.Head, txn)
+	uxOut := coin.CreateUnspents(head, txn)
 
 	// Check that there are any duplicates within this set
 	// NOTE: This should already be checked by txn.Verify()
@@ -286,7 +286,7 @@ func verifyTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock, uxIn
 	// existing blocks would invalidate.
 	// The hours overflow check is handled as an extra step in the SingleTxnHard constraints,
 	// to allow existing blocks which violate the overflow rules to pass.
-	return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
+	return coin.VerifyTransactionHoursSpending(head.Time, uxIn, uxOut)
 }
 
 // VerifySingleTxnUserConstraints applies additional verification for a

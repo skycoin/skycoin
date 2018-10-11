@@ -44,7 +44,7 @@ func TestNewConnectionPool(t *testing.T) {
 
 	p := NewConnectionPool(cfg, nil)
 	require.Equal(t, p.Config, cfg)
-	require.Equal(t, p.Config.Port, uint16(cfg.Port))
+	require.Equal(t, p.Config.Port, cfg.Port)
 	require.Equal(t, p.Config.Address, cfg.Address)
 	require.NotNil(t, p.pool)
 	require.Equal(t, len(p.pool), 0)
@@ -61,7 +61,8 @@ func TestNewConnection(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 
 	wait()
@@ -101,7 +102,8 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -138,7 +140,8 @@ func TestAcceptConnections(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -167,13 +170,15 @@ func TestStartListenFailed(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
 	pp := NewConnectionPool(cfg, nil)
 	err := pp.Run()
 	require.Error(t, err)
+	require.True(t, strings.HasSuffix(err.Error(), "bind: address already in use"))
 
 	p.Shutdown()
 	<-q
@@ -186,7 +191,8 @@ func TestStopListen(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -222,7 +228,8 @@ func TestHandleConnection(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -251,7 +258,7 @@ func TestHandleConnection(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		p.handleConnection(conn, true)
+		p.handleConnection(conn, true) // nolint: errcheck
 	}()
 
 	c = <-cc
@@ -277,13 +284,13 @@ func TestHandleConnection(t *testing.T) {
 
 func TestConnect(t *testing.T) {
 	cfg := newTestConfig()
-	// cfg.Port
 	p := NewConnectionPool(cfg, nil)
 
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -324,7 +331,8 @@ func TestConnectNoTimeout(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -350,7 +358,8 @@ func TestDisconnect(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -457,7 +466,8 @@ func TestGetConnections(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -491,7 +501,8 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 
 	wait()
@@ -538,7 +549,8 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 
 	wait()
@@ -580,7 +592,8 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 
 	wait()
@@ -611,7 +624,6 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 
 	p.Shutdown()
 	<-q
-
 }
 
 func TestConnectionReadLoopTerminates(t *testing.T) {
@@ -626,7 +638,8 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 
 	wait()
@@ -680,7 +693,8 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -786,6 +800,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 		require.Nil(t, p.pool[3])
 		return nil
 	})
+	require.NoError(t, err)
 
 	p.Shutdown()
 	<-q
@@ -815,7 +830,8 @@ func TestConnectionWriteLoop(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 
 	wait()
@@ -908,7 +924,8 @@ func TestPoolSendMessageOK(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -945,7 +962,8 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -1007,7 +1025,8 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 
@@ -1033,7 +1052,9 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	err = p.BroadcastMessage(m)
 	require.NoError(t, err)
 
-	attempts := 100
+	// Spam the connections with so much data that their write queue overflows,
+	// which will cause ErrNoReachableConnections
+	attempts := 1000
 	gotErr := false
 	var once sync.Once
 	var wg sync.WaitGroup
@@ -1072,7 +1093,8 @@ func TestPoolReceiveMessage(t *testing.T) {
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
-		p.Run()
+		err := p.Run()
+		require.NoError(t, err)
 	}()
 	wait()
 

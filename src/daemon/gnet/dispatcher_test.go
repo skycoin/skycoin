@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 var (
@@ -77,7 +79,7 @@ func TestConvertToMessageBadDeserialize(t *testing.T) {
 	b = append([]byte{}, BytePrefix[:]...)
 	m, err = convertToMessage(c.ID, b, testing.Verbose())
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Deserialization failed")
+	assert.Equal(t, encoder.ErrBufferUnderflow, err)
 	assert.Nil(t, m)
 }
 
@@ -88,7 +90,7 @@ func TestConvertToMessageNotMessage(t *testing.T) {
 	// don't verify messages
 	c := &Connection{}
 	assert.Panics(t, func() {
-		convertToMessage(c.ID, NothingPrefix[:], testing.Verbose())
+		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) // nolint: errcheck
 	})
 }
 
@@ -100,8 +102,7 @@ func TestDeserializeMessageTrapsPanic(t *testing.T) {
 	b := []byte{4, 4, 4, 4, 4, 4, 4, 4}
 	_, err := deserializeMessage(b, reflect.ValueOf(m))
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(),
-		"Decode error: kind invalid not handled")
+	assert.Equal(t, err.Error(), "DeserializeRawToValue value must be a ptr, is struct")
 }
 
 func TestEncodeMessage(t *testing.T) {
@@ -170,10 +171,6 @@ func TestSendMessage(t *testing.T) {
 }
 
 /* Helpers */
-
-func noopSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
-	return nil
-}
 
 func failingSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
 	return errors.New("send byte message failed")

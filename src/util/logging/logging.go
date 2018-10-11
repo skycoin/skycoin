@@ -1,3 +1,6 @@
+/*
+Package logging provides application logging utilities
+*/
 package logging
 
 import (

@@ -13,8 +13,8 @@ var AddressTxnsBkt = []byte("address_txns")
 // address as key, transaction id slice as value
 type addressTxns struct{}
 
-// Get returns the transaction hashes of given address
-func (atx *addressTxns) Get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
+// get returns the transaction hashes of given address
+func (atx *addressTxns) get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
 	var txHashes []cipher.SHA256
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, AddressTxnsBkt, address.Bytes(), &txHashes); err != nil {
 		return nil, err
@@ -25,9 +25,9 @@ func (atx *addressTxns) Get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA
 	return txHashes, nil
 }
 
-// Add adds a hash to an address's hash list
-func (atx *addressTxns) Add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA256) error {
-	hashes, err := atx.Get(tx, addr)
+// add adds a hash to an address's hash list
+func (atx *addressTxns) add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA256) error {
+	hashes, err := atx.get(tx, addr)
 	if err != nil {
 		return err
 	}
@@ -43,12 +43,12 @@ func (atx *addressTxns) Add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA2
 	return dbutil.PutBucketValue(tx, AddressTxnsBkt, addr.Bytes(), encoder.Serialize(hashes))
 }
 
-// IsEmpty checks if address transactions bucket is empty
-func (atx *addressTxns) IsEmpty(tx *dbutil.Tx) (bool, error) {
+// isEmpty checks if address transactions bucket is empty
+func (atx *addressTxns) isEmpty(tx *dbutil.Tx) (bool, error) {
 	return dbutil.IsEmpty(tx, AddressTxnsBkt)
 }
 
-// Reset resets the bucket
-func (atx *addressTxns) Reset(tx *dbutil.Tx) error {
+// reset resets the bucket
+func (atx *addressTxns) reset(tx *dbutil.Tx) error {
 	return dbutil.Reset(tx, AddressTxnsBkt)
 }

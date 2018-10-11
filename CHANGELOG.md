@@ -25,6 +25,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
 - Add `-enable-api-sets`, `-disable-api-sets`, `-enable-all-api-sets` options to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `TXN`, `WALLET`, `PROMETHEUS`, `INSECURE_WALLET_SEED`, `DEPRECATED_WALLET_SPEND`. Multiple values must be comma separated.
 - `/api/v1/wallet/spend` is deprecated and requires `-enable-api-set=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
+- Add `-host-whitelist` option to specify alternate allowed hosts when communicating with the API bound to a localhost interface
 - Add the head block header to the response of `GET /api/v1/outputs`
 - Add `"ux_hash"` to block headers in API responses
 - Database verification will only be performed once when upgrading to the next version. Verification will not be performed on subsequent upgrades unless necessary. To force verification, use `-verify-db=true`. Note that it is unsafe to downgrade the skycoin node without erasing the database first.

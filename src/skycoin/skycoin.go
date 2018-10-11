@@ -411,6 +411,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		WriteTimeout:         c.config.Node.WriteTimeout,
 		IdleTimeout:          c.config.Node.IdleTimeout,
 		EnabledAPISets:       c.config.Node.enabledAPISets,
+		HostWhitelist:        c.config.Node.hostWhitelist,
 		BuildInfo: readable.BuildInfo{
 			Version: c.config.Build.Version,
 			Commit:  c.config.Build.Commit,

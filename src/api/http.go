@@ -17,6 +17,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/cors"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -75,6 +76,7 @@ type Config struct {
 	WriteTimeout         time.Duration
 	IdleTimeout          time.Duration
 	BuildInfo            readable.BuildInfo
+	HostWhitelist        []string
 	EnabledAPISets       map[string]struct{}
 	Username             string
 	Password             string
@@ -89,6 +91,7 @@ type muxConfig struct {
 	disableCSP           bool
 	buildInfo            readable.BuildInfo
 	enabledAPISets       map[string]struct{}
+	hostWhitelist        []string
 	username             string
 	password             string
 }
@@ -167,6 +170,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		disableCSP:           c.DisableCSP,
 		buildInfo:            c.BuildInfo,
 		enabledAPISets:       c.EnabledAPISets,
+		hostWhitelist:        c.HostWhitelist,
 		username:             c.Username,
 		password:             c.Password,
 	}
@@ -285,9 +289,23 @@ func (s *Server) Shutdown() {
 func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *webrpc.WebRPC) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	headerCheck := func(host string, handler http.Handler) http.Handler {
-		handler = OriginRefererCheck(host, handler)
-		handler = wh.HostCheck(logger, host, handler)
+	allowedOrigins := []string{fmt.Sprintf("http://%s", c.host)}
+	for _, s := range c.hostWhitelist {
+		allowedOrigins = append(allowedOrigins, fmt.Sprintf("http://%s", s))
+	}
+
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:     allowedOrigins,
+		Debug:              false,
+		AllowedMethods:     []string{http.MethodGet, http.MethodPost},
+		AllowedHeaders:     []string{"Origin", "Accept", "Content-Type", "X-Requested-With", CSRFHeaderName},
+		AllowCredentials:   false, // credentials are not used, but it would be safe to enable if necessary
+		OptionsPassthrough: false,
+	})
+
+	headerCheck := func(host string, hostWhitelist []string, handler http.Handler) http.Handler {
+		handler = OriginRefererCheck(host, hostWhitelist, handler)
+		handler = HostCheck(host, hostWhitelist, handler)
 		return handler
 	}
 
@@ -316,10 +334,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	webHandlerCSRFOptional := func(endpoint string, handler http.Handler, checkCSRF bool) {
 		handler = wh.ElapsedHandler(logger, handler)
+		handler = corsHandler.Handler(handler)
 		if checkCSRF {
 			handler = CSRFCheck(csrfStore, handler)
 		}
-		handler = headerCheck(c.host, handler)
+		handler = headerCheck(c.host, c.hostWhitelist, handler)
 		handler = basicAuth(c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
@@ -342,7 +361,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
 	if !c.disableCSP {
-		indexHandler = wh.CSPHandler(indexHandler)
+		indexHandler = CSPHandler(indexHandler)
 	}
 	webHandler("/", indexHandler)
 
@@ -354,7 +373,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 		fs := http.FileServer(http.Dir(c.appLoc))
 		if !c.disableCSP {
-			fs = wh.CSPHandler(fs)
+			fs = CSPHandler(fs)
 		}
 
 		for _, fileInfo := range fileInfos {

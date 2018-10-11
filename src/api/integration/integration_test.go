@@ -69,11 +69,8 @@ type TestData struct {
 	expected interface{}
 }
 
-var (
-	update                    = flag.Bool("update", false, "update golden files")
-	testLiveWallet            = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
-	testLiveDisableNetworking = flag.Bool("test-live-disable-networking", false, "run live wallet tests, requires node run with -disable-networking")
-)
+var update = flag.Bool("update", false, "update golden files")
+var testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
@@ -139,7 +136,7 @@ func doStable(t *testing.T) bool {
 
 func doLive(t *testing.T) bool {
 	if enabled() && mode(t) == testModeLive {
-		return !*testLiveDisableNetworking
+		return true
 	}
 
 	t.Skip("Live tests disabled")
@@ -176,10 +173,8 @@ func doDisableGUI(t *testing.T) bool {
 func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
-		case testModeStable:
+		case testModeStable, testModeLive:
 			return true
-		case testModeLive:
-			return !*testLiveDisableNetworking
 		}
 	}
 
@@ -196,15 +191,6 @@ func doLiveWallet(t *testing.T) bool {
 	return false
 }
 
-func doLiveDisableNetworking(t *testing.T) bool {
-	if *testLiveDisableNetworking {
-		return true
-	}
-
-	t.Skip("Tests requiring -disable-networking are disabled")
-	return false
-}
-
 func envParseBool(t *testing.T, key string) bool {
 	x := os.Getenv(key)
 	if x == "" {
@@ -218,6 +204,10 @@ func envParseBool(t *testing.T, key string) bool {
 
 func dbNoUnconfirmed(t *testing.T) bool {
 	return envParseBool(t, "DB_NO_UNCONFIRMED")
+}
+
+func liveDisableNetworking(t *testing.T) bool {
+	return envParseBool(t, "LIVE_DISABLE_NETWORKING")
 }
 
 func loadGoldenFile(t *testing.T, filename string, testData TestData) {
@@ -680,6 +670,11 @@ func TestLiveBlock(t *testing.T) {
 		return
 	}
 
+	if liveDisableNetworking(t) {
+		t.Skip("Skipping slow block tests when networking disabled")
+		return
+	}
+
 	testKnownBlocks(t)
 
 	// Check the knownBadBlockSeqs
@@ -802,6 +797,11 @@ func TestStableBlockVerbose(t *testing.T) {
 
 func TestLiveBlockVerbose(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if liveDisableNetworking(t) {
+		t.Skip("Skipping slow block tests when networking disabled")
 		return
 	}
 
@@ -1016,8 +1016,14 @@ func TestLiveBlockchainProgress(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEqual(t, uint64(0), progress.Current)
-	require.NotEmpty(t, progress.Peers)
-	require.True(t, progress.Current <= progress.Highest)
+
+	if liveDisableNetworking(t) {
+		require.Empty(t, progress.Peers)
+		require.Equal(t, progress.Current, progress.Highest)
+	} else {
+		require.NotEmpty(t, progress.Peers)
+		require.True(t, progress.Current <= progress.Highest)
+	}
 }
 
 func TestStableBalance(t *testing.T) {
@@ -1150,6 +1156,11 @@ func TestStableUxOut(t *testing.T) {
 
 func TestLiveUxOut(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if liveDisableNetworking(t) {
+		t.Skip("Skipping slow ux out tests when networking disabled")
 		return
 	}
 
@@ -1810,6 +1821,11 @@ func TestLiveNetworkConnections(t *testing.T) {
 	c := newClient()
 	connections, err := c.NetworkConnections()
 	require.NoError(t, err)
+
+	if liveDisableNetworking(t) {
+		require.Empty(t, connections.Connections)
+		return
+	}
 
 	require.NotEmpty(t, connections.Connections)
 
@@ -3389,6 +3405,11 @@ func TestLiveWalletSpend(t *testing.T) {
 		return
 	}
 
+	if liveDisableNetworking(t) {
+		t.Skip("Spend tests require networking")
+		return
+	}
+
 	requireWalletEnv(t)
 
 	c := newClient()
@@ -3551,7 +3572,12 @@ func TestStableInjectTransaction(t *testing.T) {
 }
 
 func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
-	if !doLiveDisableNetworking(t) {
+	if !doLive(t) {
+		return
+	}
+
+	if !liveDisableNetworking(t) {
+		t.Skip("Networking must be disabled for this test")
 		return
 	}
 
@@ -3623,6 +3649,11 @@ func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
 
 func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if liveDisableNetworking(t) {
+		t.Skip("This tests requires networking enabled")
 		return
 	}
 
@@ -5800,7 +5831,11 @@ func TestLiveHealth(t *testing.T) {
 
 	checkHealthResponse(t, r)
 
-	require.NotEqual(t, 0, r.OpenConnections)
+	if liveDisableNetworking(t) {
+		require.Equal(t, 0, r.OpenConnections)
+	} else {
+		require.NotEqual(t, 0, r.OpenConnections)
+	}
 
 	// The TimeSinceLastBlock can be any value, including negative values, due to clock skew
 	// The live node is not necessarily run with the commit and branch ldflags, so don't check them

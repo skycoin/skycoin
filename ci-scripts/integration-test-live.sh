@@ -53,7 +53,7 @@ case $args in
     w ) TEST_LIVE_WALLET="--test-live-wallet";;
     f ) FAILFAST="-failfast";;
     c ) USE_CSRF="1";;
-	k ) DISABLE_NETWORKING="--test-live-disable-networking"; TEST_LIVE_WALLET="--test-live-wallet";
+	k ) DISABLE_NETWORKING="true"
   esac
 done
 
@@ -73,14 +73,15 @@ fi
 if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
-    go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET $DISABLE_NETWORKING
+	LIVE_DISABLE_NETWORKING=$DISABLE_NETWORKING \
+    go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
-	SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF \
-    go test ./src/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET $DISABLE_NETWORKING
+	SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF LIVE_DISABLE_NETWORKING=$DISABLE_NETWORKING \
+    go test ./src/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi

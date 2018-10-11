@@ -858,16 +858,6 @@ func TestFiberAddressGen(t *testing.T) {
 		return
 	}
 
-	checkFileExists := func(t *testing.T, fn string) {
-		_, err := os.Stat(fn)
-		require.NoError(t, err)
-	}
-
-	checkFileNotExists := func(t *testing.T, fn string) {
-		_, err := os.Stat(fn)
-		require.True(t, os.IsNotExist(err))
-	}
-
 	checkAddrsFile := func(t *testing.T, fn string, n int) []string {
 		b, err := ioutil.ReadFile(fn)
 		require.NoError(t, err)
@@ -968,14 +958,14 @@ func TestFiberAddressGen(t *testing.T) {
 			name: "fiberAddressGen",
 			args: []string{"fiberAddressGen"},
 			setup: func(t *testing.T) {
-				checkFileNotExists(t, addrsFilename)
-				checkFileNotExists(t, seedsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
-				checkFileExists(t, addrsFilename)
-				checkFileExists(t, seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
 				checkSeedsFile(t, seedsFilename, 128, addrs)
 			},
@@ -984,14 +974,14 @@ func TestFiberAddressGen(t *testing.T) {
 			name: "fiberAddressGen --entropy=256",
 			args: []string{"fiberAddressGen", "--entropy=256"},
 			setup: func(t *testing.T) {
-				checkFileNotExists(t, addrsFilename)
-				checkFileNotExists(t, seedsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
-				checkFileExists(t, addrsFilename)
-				checkFileExists(t, seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
 				checkSeedsFile(t, seedsFilename, 256, addrs)
 			},
@@ -1000,14 +990,14 @@ func TestFiberAddressGen(t *testing.T) {
 			name: "fiberAddressGen --n=1",
 			args: []string{"fiberAddressGen", "--n=1"},
 			setup: func(t *testing.T) {
-				checkFileNotExists(t, addrsFilename)
-				checkFileNotExists(t, seedsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
-				checkFileExists(t, addrsFilename)
-				checkFileExists(t, seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 1)
 				checkSeedsFile(t, seedsFilename, 128, addrs)
 			},
@@ -1016,15 +1006,15 @@ func TestFiberAddressGen(t *testing.T) {
 			name: "fiberAddressGen can't overwrite addrs file",
 			args: []string{"fiberAddressGen"},
 			setup: func(t *testing.T) {
-				checkFileNotExists(t, addrsFilename)
-				checkFileNotExists(t, seedsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
 				touch(t, addrsFilename)
-				checkFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
-				checkFileNotExists(t, seedsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
 				require.Equal(t, "-addrs-file \"addresses.txt\" already exists. Use -overwrite to force writing\n", string(v))
 			},
 			err: errors.New("exit status 1"),
@@ -1033,15 +1023,15 @@ func TestFiberAddressGen(t *testing.T) {
 			name: "fiberAddressGen can't overwrite seeds file",
 			args: []string{"fiberAddressGen"},
 			setup: func(t *testing.T) {
-				checkFileNotExists(t, addrsFilename)
-				checkFileNotExists(t, seedsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
 				touch(t, seedsFilename)
-				checkFileExists(t, seedsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
-				checkFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
 				require.Equal(t, "-seeds-file \"seeds.csv\" already exists. Use -overwrite to force writing\n", string(v))
 			},
 			err: errors.New("exit status 1"),
@@ -1050,18 +1040,18 @@ func TestFiberAddressGen(t *testing.T) {
 			name: "fiberAddressGen --overwrite",
 			args: []string{"fiberAddressGen", "--overwrite"},
 			setup: func(t *testing.T) {
-				checkFileNotExists(t, addrsFilename)
-				checkFileNotExists(t, seedsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
 				touch(t, addrsFilename)
 				touch(t, seedsFilename)
-				checkFileExists(t, addrsFilename)
-				checkFileExists(t, seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
-				checkFileExists(t, addrsFilename)
-				checkFileExists(t, seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
 				checkSeedsFile(t, seedsFilename, 128, addrs)
 			},
@@ -1070,14 +1060,14 @@ func TestFiberAddressGen(t *testing.T) {
 			name: "fiberAddressGen -addrs-file=fooaddrs.txt -seeds-file=fooseeds.csv",
 			args: []string{"fiberAddressGen", "-addrs-file", "fooaddrs.txt", "-seeds-file", "fooseeds.csv"},
 			setup: func(t *testing.T) {
-				checkFileNotExists(t, "fooaddrs.txt")
-				checkFileNotExists(t, "fooseeds.csv")
+				testutil.RequireFileNotExists(t, "fooaddrs.txt")
+				testutil.RequireFileNotExists(t, "fooseeds.csv")
 			},
 			check: func(t *testing.T, v []byte) {
 				defer os.Remove("fooaddrs.txt")
 				defer os.Remove("fooseeds.csv")
-				checkFileExists(t, "fooaddrs.txt")
-				checkFileExists(t, "fooseeds.csv")
+				testutil.RequireFileExists(t, "fooaddrs.txt")
+				testutil.RequireFileExists(t, "fooseeds.csv")
 				addrs := checkAddrsFile(t, "fooaddrs.txt", 100)
 				checkSeedsFile(t, "fooseeds.csv", 128, addrs)
 			},
@@ -1086,8 +1076,8 @@ func TestFiberAddressGen(t *testing.T) {
 			name: "fiberAddressGen positional-args-not-allowed",
 			args: []string{"fiberAddressGen", "foo"},
 			check: func(t *testing.T, v []byte) {
-				checkFileNotExists(t, addrsFilename)
-				checkFileNotExists(t, seedsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
 				require.Equal(t, "This command does not take any positional arguments\n", string(v))
 			},
 			err: errors.New("exit status 1"),

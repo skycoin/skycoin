@@ -166,8 +166,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				_, ok := s.wallets[dupWlt]
 				require.False(t, ok)
 
-				_, err = os.Stat(filepath.Join(dir, dupWlt))
-				require.True(t, os.IsNotExist(err))
+				testutil.RequireFileNotExists(t, filepath.Join(dir, dupWlt))
 			})
 		}
 	}
@@ -1957,13 +1956,11 @@ func TestServiceEncryptWallet(t *testing.T) {
 
 				// Check if the wallet file does exist
 				path := filepath.Join(dir, w.Filename())
-				_, err = os.Stat(path)
-				require.True(t, !os.IsNotExist(err))
+				testutil.RequireFileExists(t, path)
 
 				// Check if the backup wallet file, which should not exist
 				bakPath := path + ".bak"
-				_, err = os.Stat(bakPath)
-				require.True(t, os.IsNotExist(err))
+				testutil.RequireFileNotExists(t, bakPath)
 			})
 		}
 	}
@@ -2095,8 +2092,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 
 				// Checks the existence of the wallet file
 				fn := filepath.Join(dir, tc.wltName)
-				_, err = os.Stat(fn)
-				require.True(t, !os.IsNotExist(err))
+				testutil.RequireFileExists(t, fn)
 
 				// Loads wallet from the file and check if it's decrypted
 				w1, err := Load(fn)

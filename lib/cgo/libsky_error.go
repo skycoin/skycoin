@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/base58"
@@ -36,8 +35,8 @@ const (
 const (
 	// SKY_BAD_HANDLE invalid handle argument
 	SKY_BAD_HANDLE = SKY_PKG_LIBCGO + iota + 1
-	// SKY_API_LOCKED API locked for security reasons
-	SKY_API_LOCKED
+	// SKY_ErrInvalidTimeString invalid time value
+	SKY_ErrInvalidTimeString
 )
 
 // Package prefixes for error codes
@@ -431,15 +430,15 @@ var (
 	ErrorBadHandle = errors.New("Invalid or unknown handle value")
 	// ErrorUnknown unexpected error
 	ErrorUnknown = errors.New("Unexpected error")
-	// ErrorLockApi unrecoverable panic detected.
-	// Subsequent API requests should be rejected since API will be locked
-	ErrorLockApi = errors.New("Unrecoverable panic detected. API locked.")
+	// ErrorInvalidTimeString time string does not match expected time format
+	// More precise errors conditions can be found in the logs
+	ErrorInvalidTimeString = errors.New("Invalid time value")
 
 	errorToCodeMap = map[error]uint32{
 		// libcgo
-		ErrorBadHandle: SKY_BAD_HANDLE,
-		ErrorUnknown:   SKY_ERROR,
-		ErrorLockApi:   SKY_API_LOCKED,
+		ErrorBadHandle:         SKY_BAD_HANDLE,
+		ErrorUnknown:           SKY_ERROR,
+		ErrorInvalidTimeString: SKY_ErrInvalidTimeString,
 		// cipher
 		cipher.ErrAddressInvalidLength:    SKY_ErrAddressInvalidLength,
 		cipher.ErrAddressInvalidChecksum:  SKY_ErrAddressInvalidChecksum,
@@ -636,99 +635,4 @@ func libErrorCode(err error) uint32 {
 		return SKY_ErrTxnViolatesUserConstraint
 	}
 	return SKY_ERROR
-}
-
-var (
-	// isApiLocked flag set when previous unrecoverable panic is detected
-	// subsequent use of the API leads to SKY_API_LOCKED returned
-	isAPILocked = false
-	// apiWriteLock locks write access to isAPILocked
-	apiWriteLock = &sync.RWMutex{}
-	// apiReadLock locks read access to isAPILocked
-	apiReadLock = apiWriteLock.RLocker()
-	// haltOnPanic is enabled by default to halt process on unhandled panic
-	// if disabled then locking is activated instead.
-	// Subsequent use of the API leads to SKY_API_LOCKED error code returned
-	haltOnPanic = true
-)
-
-// nolint megacheck
-const (
-	// SKY_OPT_HALTONPANIC controls API behavior on panic
-	// Supported values:
-	// 0        - do not halt on panic, lock API instead
-	// non-zero - exit the process on unrecoverable panic
-	SKY_OPT_HALTONPANIC = 1 + iota // nolint megacheck
-)
-
-func getIsAPILocked() bool {
-	defer apiReadLock.Unlock()
-	apiReadLock.Lock()
-	return isAPILocked
-}
-
-func lockAPI() {
-	defer apiWriteLock.Unlock()
-	apiWriteLock.Lock()
-	isAPILocked = true
-}
-
-// SKY_libcgo_ConfigApiOptions set values for configurable API settings
-//export SKY_libcgo_ConfigApiOption
-func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) { // nolint megacheck
-	if optionID == SKY_OPT_HALTONPANIC {
-		haltOnPanic = optionValue != 0
-	}
-}
-
-// checkAPIReady ensure preconditions are met for API functions to be invoked
-// and lock API otherwise
-func checkAPIReady() {
-	if getIsAPILocked() {
-		panic(ErrorLockApi)
-	}
-}
-
-// catchApiPanic intercept signals emitted by internal implementation
-// of API methods. This function is mainly used in defer statements
-// exceuted immediately before returning from API calls.
-//
-// @param errcode error status in function body
-// @param err			`recover()` result
-//
-func catchApiPanic(errcode uint32, err interface{}) uint32 {
-	if errcode != SKY_OK {
-		// Error already detected in function body
-		// Return right away
-		return errcode
-	}
-	if getIsAPILocked() || err == ErrorLockApi {
-		lockAPI()
-		return SKY_API_LOCKED
-	}
-	if err != nil {
-		// Setting flag every time (i.e. even when haltOnPanic is active
-		// protects against hypothetical situations in which panic()
-		// does not abort the current process.
-		lockAPI()
-		if haltOnPanic {
-			// FIXME: Set process exit code on panic
-			/*
-				var exitCode int
-				if _err, isError := err.(error); isError {
-					exitCode = int(libErrorCode(_err))
-				} else {
-					exitCode = SKY_ERROR
-				}
-			*/
-			panic(err)
-		} else {
-			// Let the caller know specific error that locked the API
-			if _err, isError := err.(error); isError {
-				return libErrorCode(_err)
-			}
-			return SKY_ERROR
-		}
-	}
-	return SKY_OK
 }

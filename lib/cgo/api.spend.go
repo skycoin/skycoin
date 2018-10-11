@@ -20,11 +20,6 @@ import "C"
 
 //export SKY_api_NewCreateTransactionResponse
 func SKY_api_NewCreateTransactionResponse(_txn C.Transaction__Handle, _inputs []C.wallet__UxBalance, _arg2 *C.CreateTransactionResponse__Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	txn, ok := lookupTransactionHandle(_txn)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -41,11 +36,6 @@ func SKY_api_NewCreateTransactionResponse(_txn C.Transaction__Handle, _inputs []
 
 //export SKY_api_NewCreatedTransaction
 func SKY_api_NewCreatedTransaction(_txn C.Transaction__Handle, _inputs []C.wallet__UxBalance, _arg2 *C.CreatedTransaction__Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	txn, ok := lookupTransactionHandle(_txn)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -62,11 +52,6 @@ func SKY_api_NewCreatedTransaction(_txn C.Transaction__Handle, _inputs []C.walle
 
 //export SKY_api_CreatedTransaction_ToTransaction
 func SKY_api_CreatedTransaction_ToTransaction(_r C.CreatedTransaction__Handle, _arg0 *C.Transaction__Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	r, ok := lookupCreatedTransactionHandle(_r)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -82,11 +67,6 @@ func SKY_api_CreatedTransaction_ToTransaction(_r C.CreatedTransaction__Handle, _
 
 //export SKY_api_NewCreatedTransactionOutput
 func SKY_api_NewCreatedTransactionOutput(_out *C.coin__TransactionOutput, _txid *C.cipher__SHA256, _arg2 *C.CreatedTransactionOutput__Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	out := *(*coin.TransactionOutput)(unsafe.Pointer(_out))
 	txid := *(*cipher.SHA256)(unsafe.Pointer(_txid))
 	__arg2, ____return_err := api.NewCreatedTransactionOutput(out, txid)
@@ -99,11 +79,6 @@ func SKY_api_NewCreatedTransactionOutput(_out *C.coin__TransactionOutput, _txid 
 
 //export SKY_api_NewCreatedTransactionInput
 func SKY_api_NewCreatedTransactionInput(_out *C.wallet__UxBalance, _arg1 *C.CreatedTransactionInput__Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	out := *(*wallet.UxBalance)(unsafe.Pointer(_out))
 	__arg1, ____return_err := api.NewCreatedTransactionInput(out)
 	____error_code = libErrorCode(____return_err)

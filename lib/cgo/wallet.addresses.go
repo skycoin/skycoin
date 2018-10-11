@@ -15,11 +15,6 @@ import "C"
 
 //export SKY_wallet_CreateAddresses
 func SKY_wallet_CreateAddresses(_coinType string, _seed string, _genCount int, _hideSecretKey bool, _arg4 *C.ReadableWallet__Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	coinType := _coinType
 	seed := _seed
 	genCount := _genCount

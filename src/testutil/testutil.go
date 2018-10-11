@@ -82,3 +82,16 @@ func RandSig(t *testing.T) cipher.Sig {
 	require.NoError(t, err)
 	return s
 }
+
+// RequireFileExists requires that a file exists
+func RequireFileExists(t *testing.T, fn string) os.FileInfo {
+	stat, err := os.Stat(fn)
+	require.NoError(t, err)
+	return stat
+}
+
+// RequireFileNotExists requires that a file doesn't exist
+func RequireFileNotExists(t *testing.T, fn string) {
+	_, err := os.Stat(fn)
+	require.True(t, os.IsNotExist(err))
+}

@@ -53,17 +53,17 @@ func loadWallet(fn string) (*Wallet, error) {
 		return nil, err
 	}
 
+	// Normalize coin types (older wallets used different names for the coin type)
+	switch strings.ToLower(rw.Meta[metaCoin]) {
+	case "sky", "skycoin":
+		rw.Meta[metaCoin] = string(CoinTypeSkycoin)
+	case "btc", "bitcoin":
+		rw.Meta[metaCoin] = string(CoinTypeBitcoin)
+	}
+
 	w, err := rw.ToWallet()
 	if err != nil {
 		return nil, err
-	}
-
-	// Normalize coin types (older wallets used different names for the coin type)
-	switch strings.ToLower(string(w.coin())) {
-	case "sky", "skycoin":
-		w.setCoin(CoinTypeSkycoin)
-	case "btc", "bitcoin":
-		w.setCoin(CoinTypeBitcoin)
 	}
 
 	coinType := w.coin()

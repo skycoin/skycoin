@@ -268,7 +268,7 @@ func TestNewWallet(t *testing.T) {
 					require.Equal(t, "", w.lastSeed())
 
 					for _, e := range w.Entries {
-						require.Equal(t, emptySeckey, e.Secret)
+						require.True(t, e.Secret.Null())
 					}
 
 					// Confirms that secrets field is not empty
@@ -321,7 +321,7 @@ func TestWalletLock(t *testing.T) {
 				tc.opts.CryptoType = ct
 			}
 			t.Run(name, func(t *testing.T) {
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 				w, err := NewWallet(wltName, tc.opts)
 				require.NoError(t, err)
 

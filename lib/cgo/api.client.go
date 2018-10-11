@@ -193,7 +193,7 @@ func SKY_api_Client_BlockBySeq(_c C.Client__Handle, _seq uint64, _arg1 *C.Handle
 }
 
 //export SKY_api_Client_Blocks
-func SKY_api_Client_Blocks(_c C.Client__Handle, _start uint64, _end uint64, _arg1 *C.Handle) (____error_code uint32) {
+func SKY_api_Client_Blocks(_c C.Client__Handle, _seqs []uint64, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -204,7 +204,7 @@ func SKY_api_Client_Blocks(_c C.Client__Handle, _start uint64, _end uint64, _arg
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg1, ____return_err := c.Blocks(_start, _end)
+	__arg1, ____return_err := c.Blocks(_seqs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg1 = registerHandle(__arg1)
@@ -579,8 +579,8 @@ func SKY_api_Client_NewSeed(_c C.Client__Handle, _entropy int, _arg1 *C.GoString
 	return
 }
 
-//export SKY_api_Client_GetWalletSeed
-func SKY_api_Client_GetWalletSeed(_c C.Client__Handle, _id string, _password string, _arg2 *C.GoString_) (____error_code uint32) {
+//export SKY_api_Client_WalletSeed
+func SKY_api_Client_WalletSeed(_c C.Client__Handle, _id string, _password string, _arg2 *C.GoString_) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

@@ -25,7 +25,7 @@
 	GoStringMap, PasswordReader__Handle_,
 	Transaction__Handle, Transactions__Handle, CreatedTransaction__Handle,
 	CreatedTransactionOutput__Handle, CreatedTransactionInput__Handle, CreateTransactionResponse__Handle,
-	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, AddressUxOuts_Handle,ReadableOutputSet__Handle
+	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle
 	}
 
 %apply Handle* { Wallet__Handle*, Options__Handle*, ReadableEntry__Handle*, ReadableWallet__Handle*, WebRpcClient__Handle*,
@@ -33,10 +33,8 @@
 	App__Handle*, Context__Handle*, GoStringMap_*, PasswordReader__Handle*,
 	Transaction__Handle*, Transactions__Handle*, CreatedTransaction__Handle*,
 	CreatedTransactionOutput__Handle*, CreatedTransactionInput__Handle*, CreateTransactionResponse__Handle*,
-	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*, AddressUxOuts_Handle*,ReadableOutputSet__Handle*
+	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*
 	}
-
-#if defined(SWIGPYTHON)
 
 %typecheck(SWIG_TYPECHECK_INTEGER) Transaction__Handle {
   $1 = PyInt_Check($input) ? 1 : 0;
@@ -46,14 +44,10 @@
   $1 = PyInt_Check($input) ? 1 : 0;
 }
 
-%typecheck(SWIG_TYPECHECK_INTEGER) AddressUxOuts_Handle {
-  $1 = PyInt_Check($input) ? 1 : 0;
-}
-
-%include "python_seckeys.i"
-%include "python_pubkeys.i"
-%include "python_uxarray.i"
-%include "python_addresses.i"
+#if defined(SWIGPYTHON)
+	%include "python_seckeys.i"
+	%include "python_pubkeys.i"
+	%include "python_uxarray.i"
 #endif
 
 %rename(SKY_coin_Transaction_SignInputs) wrap_SKY_coin_Transaction_SignInputs;
@@ -86,7 +80,6 @@
 	}
 }
 
-%rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
 		__out_secKeys->data = NULL;
@@ -106,24 +99,24 @@
 
 %rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
 %inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* __in_pubKeys, GoInt* __out_Len){
+	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* __in_pubKeys){
 		GoSlice_ data;
 		data.data = __in_pubKeys->data;
 		data.len = __in_pubKeys->count;
 		data.cap = __in_pubKeys->count;
-		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data,__out_Len);
+		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data);
 		return result;
 	}
 }
 
 %rename(SKY_cipher_PubKeySlice_Less) wrap_SKY_cipher_PubKeySlice_Less;
 %inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2, GoUint8* __out_Less){
+	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
 		GoSlice_ data;
 		data.data = __in_pubKeys->data;
 		data.len = __in_pubKeys->count;
 		data.cap = __in_pubKeys->count;
-		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2,__out_Less);
+		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2);
 		return result;
 	}
 }
@@ -380,15 +373,15 @@
 
 %rename(SKY_coin_AddressUxOuts_Keys) wrap_SKY_coin_AddressUxOuts_Keys;
 %inline{ 
-	GoUint32 wrap_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_Addresses* __out_addresses){
+	GoUint32 wrap_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_SHA256s* __out_hashes){
 		GoSlice_ data;
 		data.data = NULL;
 		data.len = 0;
 		data.cap = 0;
 		GoUint32 result = SKY_coin_AddressUxOuts_Keys(p0, &data);
 		if( result == 0){
-			__out_addresses->data = data.data;
-			__out_addresses->count = data.len;
+			__out_hashes->data = data.data;
+			__out_hashes->count = data.len;
 		}
 		return result;
 	}
@@ -407,34 +400,6 @@
 			__out_hashes->count = data.len;
 		}
 		return result;
-	}
-}
-
-%rename(SKY_coin_UxArray_Sort) wrap_SKY_coin_UxArray_Sort;
-%inline{
-	GoUint32 wrap_SKY_coin_UxArray_Sort(coin_UxOutArray* __uxIn, coin_UxOutArray* __return_Ux){
-		GoSlice_ data;
-		data.data = __uxIn->data;
-		data.len = __uxIn->count;
-		data.cap = __uxIn->count;
-		GoUint32 result = SKY_coin_UxArray_Sort(&data);
-		if( result == 0){
-			__return_Ux->data = malloc(data.len * sizeof(coin__UxOut));
-			__return_Ux->count = data.len;
-			memcpy(__return_Ux->data, data.data, data.len * sizeof(coin__UxOut));
-		}
-		return result;
-	}
-}
-
-%rename(SKY_fee_TransactionFee) wrap_SKY_fee_TransactionFee;
-%inline{
-	GoUint32 wrap_SKY_fee_TransactionFee(Transaction__Handle __txn, GoUint64 __p1, coin_UxOutArray*  __uxIn, GoUint64  *__return_fee ){
-		GoSlice_ data;
-		data.data = __uxIn->data;
-		data.len = __uxIn->count;
-		data.cap = __uxIn->count;
-		return SKY_fee_TransactionFee(__txn,__p1, &data,__return_fee);
 	}
 }
 

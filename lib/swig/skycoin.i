@@ -4,6 +4,7 @@
 	#define SWIG_FILE_WITH_INIT
 	#include "libskycoin.h"
 	#include "swig.h"
+	#include "base64.h"
 %}
 
 //Apply strictly to python
@@ -22,10 +23,18 @@
 //Apply typemaps for Python for now
 //It can be applied to other languages that fit in
 //Not languages can't return multiple values
+
 #if defined(SWIGPYTHON)
 %include "golang.cgo.i"
 %include "structs_typemaps.i"
 %include "skycoin.mem.i"
+#endif
+#if defined(SWIGCSHARP)
+%include "csharp_java_typemap.i"
+%include "csharp_structs_typemaps.i"
+%include "csharp_java_basic.i"
+%include "csharp_skycoin.mem.i"
+%include csharp_java_callback.i
 #endif
 
 %include "swig.h"
@@ -33,3 +42,4 @@
 %include "libskycoin.h"
 %include "structs.i"
 %include "skyerrors.h"
+%include "base64.h"

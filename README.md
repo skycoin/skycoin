@@ -46,49 +46,50 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-    - [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
-    - [Go get skycoin](#go-get-skycoin)
-    - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
-    - [Show Skycoin node options](#show-skycoin-node-options)
-    - [Run Skycoin with options](#run-skycoin-with-options)
-    - [Docker image](#docker-image)
-    - [Building your own images](#building-your-own-images)
-    - [Development image](#development-image)
+	- [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
+	- [Go get skycoin](#go-get-skycoin)
+	- [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
+	- [Show Skycoin node options](#show-skycoin-node-options)
+	- [Run Skycoin with options](#run-skycoin-with-options)
+	- [Docker image](#docker-image)
+	- [Building your own images](#building-your-own-images)
+	- [Development image](#development-image)
 - [API Documentation](#api-documentation)
-    - [REST API](#rest-api)
-    - [JSON-RPC 2.0 API](#json-rpc-20-api)
-    - [Skycoin command line interface](#skycoin-command-line-interface)
+	- [REST API](#rest-api)
+	- [JSON-RPC 2.0 API](#json-rpc-20-api)
+	- [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
 - [URI Specification](#uri-specification)
 - [Development](#development)
-    - [Modules](#modules)
-    - [Client libraries](#client-libraries)
-    - [Running Tests](#running-tests)
-    - [Running Integration Tests](#running-integration-tests)
-        - [Stable Integration Tests](#stable-integration-tests)
-        - [Live Integration Tests](#live-integration-tests)
-        - [Debugging Integration Tests](#debugging-integration-tests)
-        - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
-    - [Test coverage](#test-coverage)
-        - [Test coverage for the live node](#test-coverage-for-the-live-node)
-    - [Formatting](#formatting)
-    - [Code Linting](#code-linting)
-    - [Profiling](#profiling)
-    - [Dependencies](#dependencies)
-        - [Rules](#rules)
-        - [Management](#management)
-    - [Configuration Modes](#configuration-modes)
-        - [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
-        - [Server Daemon Mode](#server-daemon-mode)
-        - [Electron Desktop Client Mode](#electron-desktop-client-mode)
-        - [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
-    - [Wallet GUI Development](#wallet-gui-development)
-    - [Releases](#releases)
-        - [Pre-release testing](#pre-release-testing)
-        - [Creating release builds](#creating-release-builds)
-        - [Release signing](#release-signing)
+	- [Modules](#modules)
+	- [Client libraries](#client-libraries)
+	- [Running Tests](#running-tests)
+	- [Running Integration Tests](#running-integration-tests)
+		- [Stable Integration Tests](#stable-integration-tests)
+		- [Live Integration Tests](#live-integration-tests)
+		- [Debugging Integration Tests](#debugging-integration-tests)
+		- [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
+	- [Test coverage](#test-coverage)
+		- [Test coverage for the live node](#test-coverage-for-the-live-node)
+	- [Formatting](#formatting)
+	- [Code Linting](#code-linting)
+	- [Profiling](#profiling)
+	- [Dependencies](#dependencies)
+		- [Rules](#rules)
+		- [Management](#management)
+	- [Configuration Modes](#configuration-modes)
+		- [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
+		- [Server Daemon Mode](#server-daemon-mode)
+		- [Electron Desktop Client Mode](#electron-desktop-client-mode)
+		- [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
+	- [Wallet GUI Development](#wallet-gui-development)
+	- [Releases](#releases)
+		- [Update the version](#update-the-version)
+		- [Pre-release testing](#pre-release-testing)
+		- [Creating release builds](#creating-release-builds)
+		- [Release signing](#release-signing)
 - [Responsible Disclosure](#responsible-disclosure)
 
 <!-- /MarkdownTOC -->
@@ -254,7 +255,6 @@ Skycoin implements client libraries which export core functionality for usage fr
 other programming languages.
 
 * `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
-* `Swig` - Skycoin contains Swig interface files to generate libraries in different languages. ( Python library [Pyskycoin] (https://github.com/skycoin/pyskycoin))
 
 For further details run `make docs` to generate documetation and read the corresponding README and API references.
 
@@ -537,20 +537,23 @@ Instructions for doing this:
 
 ### Releases
 
+#### Update the version
+
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
-1. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
-2. Update all version strings in the repo (grep for them) to the new version
-3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-4. Update files in `docker/images/mainnet/repo-info/remote/`, adding a new file for the new version and adjusting any configuration text that may have changed
-5. Merge these changes to `develop`
-6. Follow the steps in [pre-release testing](#pre-release-testing)
-7. Make a PR merging `develop` into `master`
-8. Review the PR and merge it
-9. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
+0. Update all version strings in the repo (grep for them) to the new version
+0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `dbVerifyCheckpointVersion`	value
+0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
+0. Update files in `docker/images/mainnet/repo-info/remote/`, adding a new file for the new version and adjusting any configuration text that may have changed
+0. Merge these changes to `develop`
+0. Follow the steps in [pre-release testing](#pre-release-testing)
+0. Make a PR merging `develop` into `master`
+0. Review the PR and merge it
+0. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
     Sign the tag. If you have your GPG key in github, creating a release on the Github website will automatically tag the release.
     It can be tagged from the command line with `git tag -as v0.20.0 $COMMIT_ID`, but Github will not recognize it as a "release".
-10. Make sure that the client runs properly from the `master` branch
-11. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
+0. Make sure that the client runs properly from the `master` branch
+0. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
 
 If there are problems discovered after merging to master, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.

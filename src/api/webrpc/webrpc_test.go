@@ -59,6 +59,7 @@ func (fg fakeGateway) GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*
 	}
 
 	return &visor.UnspentOutputsSummary{
+		HeadBlock: &coin.SignedBlock{},
 		Confirmed: rbOuts,
 	}, nil
 }

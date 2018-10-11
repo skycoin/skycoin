@@ -25,17 +25,17 @@ func CreateAddresses(coinType CoinType, seed string, genCount int, hideSecretKey
 		},
 	}
 
-	seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), genCount)
+	seckeys := cipher.MustGenerateDeterministicKeyPairs([]byte(seed), genCount)
 
 	for _, sec := range seckeys {
-		pub := cipher.PubKeyFromSecKey(sec)
+		pub := cipher.MustPubKeyFromSecKey(sec)
 
 		var entry ReadableEntry
 		switch coinType {
 		case CoinTypeBitcoin:
-			entry = GetBitcoinWalletEntry(pub, sec)
+			entry = MakeReadableBitcoinWalletEntry(pub, sec)
 		case CoinTypeSkycoin:
-			entry = GetSkycoinWalletEntry(pub, sec)
+			entry = MakeReadableSkycoinWalletEntry(pub, sec)
 		default:
 			return nil, fmt.Errorf(`unknown coinType "%s"`, coinType)
 		}
@@ -50,8 +50,8 @@ func CreateAddresses(coinType CoinType, seed string, genCount int, hideSecretKey
 	return wallet, nil
 }
 
-// GetSkycoinWalletEntry returns a ReadableEntry in Skycoin format
-func GetSkycoinWalletEntry(pub cipher.PubKey, sec cipher.SecKey) ReadableEntry {
+// MakeReadableSkycoinWalletEntry returns a ReadableEntry in Skycoin format
+func MakeReadableSkycoinWalletEntry(pub cipher.PubKey, sec cipher.SecKey) ReadableEntry {
 	return ReadableEntry{
 		Address: cipher.AddressFromPubKey(pub).String(),
 		Public:  pub.Hex(),
@@ -59,10 +59,10 @@ func GetSkycoinWalletEntry(pub cipher.PubKey, sec cipher.SecKey) ReadableEntry {
 	}
 }
 
-// GetBitcoinWalletEntry returns a ReadableEntry in Bitcoin format
-func GetBitcoinWalletEntry(pub cipher.PubKey, sec cipher.SecKey) ReadableEntry {
+// MakeReadableBitcoinWalletEntry returns a ReadableEntry in Bitcoin format
+func MakeReadableBitcoinWalletEntry(pub cipher.PubKey, sec cipher.SecKey) ReadableEntry {
 	return ReadableEntry{
-		Address: cipher.BitcoinAddressFromPubkey(pub),
+		Address: cipher.BitcoinAddressFromPubKey(pub).String(),
 		Public:  pub.Hex(),
 		Secret:  cipher.BitcoinWalletImportFormatFromSeckey(sec),
 	}

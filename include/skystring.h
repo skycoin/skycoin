@@ -7,6 +7,8 @@
 
 extern void randBytes(GoSlice *bytes, size_t n);
 
+extern void bytesnhex(unsigned char* buf, char *str, int n);
+
 extern void strnhex(unsigned char* buf, char *str, int n);
 
 extern void strnhexlower(unsigned char* buf, char *str, int n);

@@ -10,6 +10,11 @@
 	int isEqual(coin__Transaction* t){
 		return equalTransactions($self, t);
 	}
+	cipher_SHA256 getInnerHash(){
+		cipher_SHA256 h;
+		cipher_SHA256_assignFrom(&h,$self->InnerHash);
+		return h;
+	}
 }
 
 %extend coin__BlockBody {
@@ -20,19 +25,7 @@
 
 %extend coin__UxOut {
 	int isEqual(coin__UxOut* u){
-		if($self->Head.Time != u->Head.Time)
-			return 0;
-		if($self->Head.BkSeq != u->Head.BkSeq)
-			return 0;
-		if($self->Body.Coins != u->Body.Coins)
-			return 0;
-		if($self->Body.Hours != u->Body.Hours)
-			return 0;
-		if(memcmp(&$self->Body.Address, &u->Body.Address, sizeof(cipher__Address)) != 0)
-			return 0;
-		if(memcmp(&$self->Body.SrcTransaction, &u->Body.SrcTransaction, sizeof(cipher__SHA256)) != 0)
-			return 0;
-		return 1;
+		return memcmp(&$self, u, sizeof(coin__UxOut)) == 0;
 	}
 }
 
@@ -62,6 +55,14 @@
 		$self->data = malloc(n * sizeof(*($self->data)));
 		$self->count = n;
 	}
+
+	void append(coin__UxOut* uxout){
+		int n = $self->count+1;
+				$self->data = malloc(n * sizeof(*($self->data)));
+		$self->count =n ;
+		memcpy(&self->data[n-1], uxout, sizeof(*uxout));
+
+	}
 	
 	void release(){
 		if($self->data != NULL)
@@ -82,3 +83,10 @@
 	}
 }
 
+%extend coin__UxBody {
+	void SetSrcTransaction(cipher_SHA256 *o){
+			cipher_SHA256* p = (cipher_SHA256*)o;
+			memcpy( &$self->SrcTransaction, &p->data, sizeof(cipher__SHA256));
+		}
+	
+}

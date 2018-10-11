@@ -200,14 +200,14 @@ typedef struct {
 } GoSlice_;
 
 typedef struct {
-	BOOL 		neg;
-	GoSlice_ 	nat;
+  BOOL     neg;
+  GoSlice_   nat;
 } Number;
 
 typedef struct {
-	//TODO: stdevEclipse Define Signature
-	Number R;
-	Number S;
+  //TODO: stdevEclipse Define Signature
+  Number R;
+  Number S;
 } Signature;
 
 #include "skytypes.gen.h"
@@ -216,8 +216,8 @@ typedef struct {
  * Internal representation of a Skycoin wallet.
  */
 typedef struct {
-	GoMap_ Meta;        ///< Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
-	GoSlice_ Entries;   ///< Entries field stores the address entries that are deterministically generated from seed.
+  GoMap_ Meta;        ///< Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
+  GoSlice_ Entries;   ///< Entries field stores the address entries that are deterministically generated from seed.
 } Wallet;
 
 typedef GoUint8_  poly1305__Mac[16];
@@ -323,7 +323,6 @@ typedef Handle SortableTransactionResult_Handle;
  * Memory handle to access to wallet.Notes
  */
 
-typedef Handle WalletNotes_Handle;
 
 /**
  * Memory handle to access to wallet.ReadableNotes
@@ -350,10 +349,16 @@ typedef Handle StatusResult_Handle;
 typedef Handle AddressUxOuts_Handle;
 
 /**
- * Memory handle to access to visor.BuildInfo (BuildInfo)
+ * Memory handle to access to readable.BuildInfo (BuildInfo)
  */
 
 typedef Handle BuildInfo_Handle;
+
+/**
+ * Memory handle to access to readable.UnspentOutputsSummary (UnspentOutputsSummary)
+ */
+
+typedef Handle ReadableUnspentOutputsSummary_Handle;
 
 /**
  * Memory handle for hash (ripemd160.digest)
@@ -373,8 +378,8 @@ typedef Handle Number_Handle;
 
 typedef Handle Signature_Handle;
 /**
- *Handle readable.UnspentOutputsSummary 
- */
+ * Handle for readable.UnspentOutputsSummary
+ * */
 typedef Handle UnspentOutputsSummary_Handle;
 
 typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);

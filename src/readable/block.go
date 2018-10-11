@@ -4,30 +4,76 @@ for use by the API and CLI.
 */
 package readable
 
-import "github.com/skycoin/skycoin/src/coin"
+import (
+	"errors"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+)
 
 // BlockHeader represents the readable block header
 type BlockHeader struct {
-	BkSeq             uint64 `json:"seq"`
-	BlockHash         string `json:"block_hash"`
-	PreviousBlockHash string `json:"previous_block_hash"`
-	Time              uint64 `json:"timestamp"`
-	Fee               uint64 `json:"fee"`
-	Version           uint32 `json:"version"`
-	BodyHash          string `json:"tx_body_hash"`
+	BkSeq        uint64 `json:"seq"`
+	Hash         string `json:"block_hash"`
+	PreviousHash string `json:"previous_block_hash"`
+	Time         uint64 `json:"timestamp"`
+	Fee          uint64 `json:"fee"`
+	Version      uint32 `json:"version"`
+	BodyHash     string `json:"tx_body_hash"`
+	UxHash       string `json:"ux_hash"`
 }
 
 // NewBlockHeader creates a readable block header
 func NewBlockHeader(b coin.BlockHeader) BlockHeader {
 	return BlockHeader{
-		BkSeq:             b.BkSeq,
-		BlockHash:         b.Hash().Hex(),
-		PreviousBlockHash: b.PrevHash.Hex(),
-		Time:              b.Time,
-		Fee:               b.Fee,
-		Version:           b.Version,
-		BodyHash:          b.BodyHash.Hex(),
+		BkSeq:        b.BkSeq,
+		Hash:         b.Hash().Hex(),
+		PreviousHash: b.PrevHash.Hex(),
+		Time:         b.Time,
+		Fee:          b.Fee,
+		Version:      b.Version,
+		BodyHash:     b.BodyHash.Hex(),
+		UxHash:       b.UxHash.Hex(),
 	}
+}
+
+// ToCoinBlockHeader converts BlockHeader back to coin.BlockHeader
+func (bh BlockHeader) ToCoinBlockHeader() (coin.BlockHeader, error) {
+	prevHash, err := cipher.SHA256FromHex(bh.PreviousHash)
+	if err != nil {
+		return coin.BlockHeader{}, err
+	}
+
+	bodyHash, err := cipher.SHA256FromHex(bh.BodyHash)
+	if err != nil {
+		return coin.BlockHeader{}, err
+	}
+
+	uxHash, err := cipher.SHA256FromHex(bh.UxHash)
+	if err != nil {
+		return coin.BlockHeader{}, err
+	}
+
+	headHash, err := cipher.SHA256FromHex(bh.Hash)
+	if err != nil {
+		return coin.BlockHeader{}, err
+	}
+
+	cbh := coin.BlockHeader{
+		Version:  bh.Version,
+		Time:     bh.Time,
+		BkSeq:    bh.BkSeq,
+		Fee:      bh.Fee,
+		PrevHash: prevHash,
+		BodyHash: bodyHash,
+		UxHash:   uxHash,
+	}
+
+	if cbh.Hash() != headHash {
+		return coin.BlockHeader{}, errors.New("readable.BlockHeader.Hash != recovered coin.BlockHeader.Hash()")
+	}
+
+	return cbh, nil
 }
 
 // BlockBody represents a readable block body

@@ -218,6 +218,9 @@ See the [newcoin tool README](./cmd/newcoin/README.md)
 
 ## Running with a custom coin hour burn factor
 
+The coin hour burn factor is the denominator in the ratio of coinhours that must be burned by a transaction.
+For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor of 10 means 1/10 of coin hours must be burned.
+
 The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar. It cannot be configured through the command line.
 
 ```sh

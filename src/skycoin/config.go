@@ -275,6 +275,8 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
+		fmt.Println("Additional environment variables:")
+		fmt.Println("* COINHOUR_BURN_FACTOR - Set the coin hour burn factor required for transactions. Must be > 1.")
 		os.Exit(0)
 	}
 

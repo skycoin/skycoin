@@ -7,10 +7,12 @@ go:
 matrix:
   include:
     - os: linux
+      env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=5s
     - os: osx
       # Do not start osx build for PR
       if: type != pull_request
       osx_image: xcode8
+      env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=30s
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq; fi

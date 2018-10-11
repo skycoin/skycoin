@@ -58,7 +58,7 @@ func addressGenCmd() gcli.Command {
 			},
 			gcli.StringFlag{
 				Name:  "mode,m",
-				Value: "addresses",
+				Value: "wallet",
 				Usage: `Output mode. Options are wallet (prints a full JSON wallet), addresses (prints addresses in plain text), secrets (prints secret keys in plain text)`,
 			},
 			gcli.BoolFlag{

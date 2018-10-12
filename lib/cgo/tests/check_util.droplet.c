@@ -9,7 +9,6 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
-#include "transutil.h"
 
 TestSuite(util_droplet, .init = setup, .fini = teardown);
 #define BUFFER_SIZE 1024

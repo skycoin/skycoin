@@ -500,6 +500,20 @@ func lookupSignatureHandle(handle C.Signature_Handle) (*secp256k1go2.Signature, 
 	return nil, false
 }
 
+func registerUnspentOutputsSummaryHandle(obj *readable.UnspentOutputsSummary) C.UnspentOutputsSummary_Handle {
+	return (C.UnspentOutputsSummary_Handle)(registerHandle(obj))
+}
+
+func lookupUnspentOutputsSummaryHandle(handle C.UnspentOutputsSummary_Handle) (*readable.UnspentOutputsSummary, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*readable.UnspentOutputsSummary); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

@@ -1,8 +1,6 @@
 package main
 
-import (
 // wallet "github.com/skycoin/skycoin/src/wallet"
-)
 
 /*
 

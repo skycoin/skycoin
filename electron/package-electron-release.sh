@@ -40,7 +40,7 @@ function copy_if_exists {
         exit 1
     fi
 
-    BIN="${GOX_OUTPUT}/${1}"
+    BIN="${GOX_GUI_OUTPUT}/${1}"
     DESTDIR="$2"
     DESTBIN="${DESTDIR}/${3}"
     DESTSRC="$4"
@@ -55,6 +55,10 @@ function copy_if_exists {
         echo "Copying $GUI_DIST_DIR to $DESTDIR"
         cp -R "$GUI_DIST_DIR" "$DESTDIR"
 
+        # Copy changelog to app
+        echo "Copying CHANGELOG.md to $DESTDIR"
+        cp ../CHANGELOG.md "$DESTDIR"
+
         DESTSRCS+=("$DESTSRC")
     else
         echo "$BIN does not exist"
@@ -68,8 +72,8 @@ copy_if_exists "${PKG_NAME}_windows_amd64.exe" "$WIN64_RES" "${PKG_NAME}.exe" "$
 copy_if_exists "${PKG_NAME}_windows_386.exe" "$WIN32_RES" "${PKG_NAME}.exe" "$WIN32_SRC"
 copy_if_exists "${PKG_NAME}_linux_amd64" "$LNX64_RES" "${PKG_NAME}" "$LNX64_SRC"
 
-# Copy the source for reference
-# tar it with filters, move it, then untar in order to do this
-echo "Copying source snapshot"
+# # Copy the source for reference
+# # tar it with filters, move it, then untar in order to do this
+# echo "Copying source snapshot"
 
-./package-source.sh "${DESTSRCS[@]}"
+# ./package-source.sh "${DESTSRCS[@]}"

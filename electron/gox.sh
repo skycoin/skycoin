@@ -20,6 +20,8 @@ CMD="${PKG_NAME}"
 OSARCH="$1"
 OUTPUT="$2"
 
+CONFIG_MODE=${CONFIG_MODE:-}
+
 if [ -z "$OSARCH" ]; then
     echo "$USAGE"
     exit 1
@@ -46,7 +48,7 @@ COMMIT=`git rev-parse HEAD`
 gox -osarch="$OSARCH" \
     -gcflags="-trimpath=${HOME}" \
     -asmflags="-trimpath=${HOME}" \
-    -ldflags="-X main.Version=${APP_VERSION} -X main.Commit=${COMMIT} -X main.ConfigMode=STANDALONE_CLIENT" \
+    -ldflags="-X main.Version=${APP_VERSION} -X main.Commit=${COMMIT} -X main.ConfigMode=${CONFIG_MODE}" \
     -output="${OUTPUT}{{.Dir}}_{{.OS}}_{{.Arch}}" \
     "${CMDDIR}/${CMD}"
 

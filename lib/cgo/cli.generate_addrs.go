@@ -37,11 +37,7 @@ func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, pwd C.Pass
 //export SKY_cli_FormatAddressesAsJSON
 func SKY_cli_FormatAddressesAsJSON(_addrs []C.cipher__Address, _arg1 *C.GoString_) (____error_code uint32) {
 	addrs := *(*[]cipher.Address)(unsafe.Pointer(&_addrs))
-	// TODO : Support for arrays of interface objects in cgogen
-	var __addrs = make([]cipher.Addresser, len(addrs))
-	for _, addr := range addrs {
-		__addrs = append(__addrs, addr)
-	}
+	__addrs := toAddresserArray(addrs)
 	__arg1, ____return_err := cli.FormatAddressesAsJSON(__addrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
@@ -53,10 +49,7 @@ func SKY_cli_FormatAddressesAsJSON(_addrs []C.cipher__Address, _arg1 *C.GoString
 //export SKY_cli_FormatAddressesAsJoinedArray
 func SKY_cli_FormatAddressesAsJoinedArray(_addrs []C.cipher__Address, _arg1 *C.GoString_) (____error_code uint32) {
 	addrs := *(*[]cipher.Address)(unsafe.Pointer(&_addrs))
-	var __addrs = make([]cipher.Addresser, len(addrs))
-	for _, addr := range addrs {
-		__addrs = append(__addrs, addr)
-	}
+	__addrs := toAddresserArray(addrs)
 	__arg1 := cli.FormatAddressesAsJoinedArray(__addrs)
 	copyString(__arg1, _arg1)
 	return
@@ -65,10 +58,7 @@ func SKY_cli_FormatAddressesAsJoinedArray(_addrs []C.cipher__Address, _arg1 *C.G
 //export SKY_cli_AddressesToStrings
 func SKY_cli_AddressesToStrings(_addrs []C.cipher__Address, _arg1 *C.GoSlice_) (____error_code uint32) {
 	addrs := *(*[]cipher.Address)(unsafe.Pointer(&_addrs))
-	var __addrs = make([]cipher.Addresser, len(addrs))
-	for _, addr := range addrs {
-		__addrs = append(__addrs, addr)
-	}
+	__addrs := toAddresserArray(addrs)
 	__arg1 := cli.AddressesToStrings(__addrs)
 	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	return

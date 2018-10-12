@@ -1,5 +1,7 @@
 package main
 
+// wallet "github.com/skycoin/skycoin/src/wallet"
+
 /*
 
   #include <string.h>

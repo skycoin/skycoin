@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Runs skycoin in desktop client configuration
+
 set -x
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

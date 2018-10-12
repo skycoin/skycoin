@@ -9,7 +9,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
-#include "transutil.h"
+#include "skytxn.h"
 #include "time.h"
 
 TestSuite(coin_coin, .init = setup, .fini = teardown);

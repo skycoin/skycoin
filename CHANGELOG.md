@@ -76,6 +76,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `cli addressGen` arguments have changed
 - `cli generateWallet` renamed to `cli walletCreate`
 - `cli generateAddresses` renamed to `cli walletAddAddresses`
+- `run.sh` is now `run-client.sh` and a new `run-daemon.sh` script is added for running in server daemon mode.
 
 ### Removed
 

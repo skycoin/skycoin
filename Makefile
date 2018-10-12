@@ -61,8 +61,11 @@ else
   LDFLAGS=$(LIBC_FLAGS)
 endif
 
-run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
-	./run.sh ${ARGS}
+run-client:  ## Run skycoin with desktop client configuration. To add arguments, do 'make ARGS="--foo" run'.
+	./run-client.sh ${ARGS}
+
+run-daemon:  ## Run skycoin with server daemon configuration. To add arguments, do 'make ARGS="--foo" run'.
+	./run-daemon.sh ${ARGS}
 
 run-help: ## Show skycoin node help
 	@go run cmd/$(COIN)/$(COIN).go --help

@@ -984,7 +984,7 @@ GoUint32_ feeCalculator3(Transaction__Handle handle, GoUint64_ * pFee, void *con
   cipher__SHA256 hash;
 
   int result = SKY_coin_Transaction_Hash(handle, &hash);
-  if (result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0))
+  if (result == SKY_OK && (memcmp(&hash, thirdHash, sizeof(cipher__SHA256)) == 0))
   {
     *pFee = MaxUint64 / 2;
   }
@@ -1007,7 +1007,7 @@ GoUint32_ feeCalculator4(Transaction__Handle handle, GoUint64_ * pFee, void *con
   cipher__SHA256 *thirdHash = (cipher__SHA256 *) context;
 
   int result = SKY_coin_Transaction_Hash(handle, &hash);
-  if (result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0))
+  if (result == SKY_OK && (memcmp(&hash, thirdHash, sizeof(cipher__SHA256)) == 0))
   {
     *pFee = 0;
     result = SKY_ERROR;

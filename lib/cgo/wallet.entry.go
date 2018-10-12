@@ -18,10 +18,6 @@ import "C"
 //export SKY_wallet_Entry_Verify
 func SKY_wallet_Entry_Verify(_we *C.wallet__Entry) (____error_code uint32) {
 	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	we := (*wallet.Entry)(unsafe.Pointer(_we))
 	____return_err := we.Verify()
 	____error_code = libErrorCode(____return_err)
@@ -33,10 +29,6 @@ func SKY_wallet_Entry_Verify(_we *C.wallet__Entry) (____error_code uint32) {
 //export SKY_wallet_Entry_VerifyPublic
 func SKY_wallet_Entry_VerifyPublic(_we *C.wallet__Entry) (____error_code uint32) {
 	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	we := (*wallet.Entry)(unsafe.Pointer(_we))
 	____return_err := we.VerifyPublic()
 	____error_code = libErrorCode(____return_err)

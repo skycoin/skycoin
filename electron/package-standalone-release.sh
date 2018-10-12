@@ -21,7 +21,7 @@ function copy_if_exists {
         exit 1
     fi
 
-    BIN="${GOX_OUTPUT}/${1}"
+    BIN="${GOX_GUI_OUTPUT}/${1}"
     DESTDIR="$2"
     DESTSRC="$3"
 
@@ -40,6 +40,10 @@ function copy_if_exists {
         mkdir -p "${DESTDIR}/src/gui/static"
         cp -R "$GUI_DIST_DIR" "${DESTDIR}/src/gui/static"
 
+        # Copy changelog to app
+        echo "Copying CHANGELOG.md to $DESTDIR"
+        cp ../CHANGELOG.md "$DESTDIR"
+
         echo "Adding $DESTSRC to package-source.sh list"
         DESTSRCS+=("$DESTSRC")
     else
@@ -49,7 +53,7 @@ function copy_if_exists {
 
 echo "Copying ${PKG_NAME} binaries"
 
-# OS X 
+# OS X
 if [ ! -z "$OSX64_STL" ]; then
     OSX64="${STL_OUTPUT}/${OSX64_STL}"
     OSX64_SRC="${OSX64}/src"
@@ -84,8 +88,8 @@ if [ ! -z "$WIN32_STL" ]; then
     copy_if_exists "${WIN32_OUT}/${PKG_NAME}.exe" "$WIN32" "$WIN32_SRC"
 fi
 
-# Copy the source for reference
-# tar it with filters, move it, then untar in order to do this
-echo "Copying source snapshot"
+# # Copy the source for reference
+# # tar it with filters, move it, then untar in order to do this
+# echo "Copying source snapshot"
 
-./package-source.sh "${DESTSRCS[@]}"
+# ./package-source.sh "${DESTSRCS[@]}"

@@ -25,10 +25,6 @@ func SKY_logging_EnableColors() (____error_code uint32) {
 //export SKY_logging_DisableColors
 func SKY_logging_DisableColors() (____error_code uint32) {
 	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	logging.DisableColors()
 	return
 }
@@ -36,10 +32,6 @@ func SKY_logging_DisableColors() (____error_code uint32) {
 //export SKY_logging_Disable
 func SKY_logging_Disable() (____error_code uint32) {
 	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	logging.Disable()
 	return
 }

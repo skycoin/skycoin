@@ -102,6 +102,7 @@ electron/node_modules
 electron/.gox_output
 electron/.electron_output
 electron/.standalone_output
+electron/.daemon_output
 # Do not ignore the icons folder
 !electron/build
 !electron/build/icons
@@ -150,3 +151,9 @@ docs/libc/xml
 
 *.prof
 *.profile
+
+# cli fiberAddressGen default output
+addresses.txt
+seeds.csv
+
+histogram

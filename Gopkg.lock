@@ -201,6 +201,14 @@
   revision = "05ee40e3a273f7245e8777337fc7b46e533a9a92"
 
 [[projects]]
+  digest = "1:0b8dd7447e420afff0260179dc892711e837edd1d446bc78dab924624a3c3c81"
+  name = "github.com/rs/cors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3fb1b69b103a84de38a19c3c6ec073dd6caa4d3f"
+  version = "v1.5.0"
+
+[[projects]]
   digest = "1:d917313f309bda80d27274d53985bc65651f81a5b66b820749ac7f8ef061fd04"
   name = "github.com/sergi/go-diff"
   packages = ["diffmatchpatch"]
@@ -363,6 +371,7 @@
     "github.com/cenkalti/backoff",
     "github.com/mgutz/ansi",
     "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/rs/cors",
     "github.com/shopspring/decimal",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",

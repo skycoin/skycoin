@@ -1,9 +1,5 @@
 package main
 
-import (
-	wallet "github.com/skycoin/skycoin/src/wallet"
-)
-
 /*
 
   #include <string.h>
@@ -12,22 +8,3 @@ import (
   #include "skytypes.h"
 */
 import "C"
-
-//export SKY_wallet_CreateAddresses
-func SKY_wallet_CreateAddresses(_coinType string, _seed string, _genCount int, _hideSecretKey bool, _arg4 *C.ReadableWallet__Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
-	coinType := _coinType
-	seed := _seed
-	genCount := _genCount
-	hideSecretKey := _hideSecretKey
-	__arg4, ____return_err := wallet.CreateAddresses(wallet.CoinType(coinType), seed, genCount, hideSecretKey)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg4 = registerReadableWalletHandle(__arg4)
-	}
-	return
-}

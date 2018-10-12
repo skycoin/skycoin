@@ -61,6 +61,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
+- [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
 - [URI Specification](#uri-specification)
 - [Development](#development)
 	- [Modules](#modules)
@@ -80,7 +81,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 		- [Rules](#rules)
 		- [Management](#management)
 	- [Configuration Modes](#configuration-modes)
-		- [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
+		- [Development Desktop Client Mode](#development-desktop-client-mode)
 		- [Server Daemon Mode](#server-daemon-mode)
 		- [Electron Desktop Client Mode](#electron-desktop-client-mode)
 		- [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
@@ -215,6 +216,17 @@ Only add Skycoin nodes with high uptime and a static IP address (such as a Skyco
 
 See the [newcoin tool README](./cmd/newcoin/README.md)
 
+## Running with a custom coin hour burn factor
+
+The coin hour burn factor is the denominator in the ratio of coinhours that must be burned by a transaction.
+For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor of 10 means 1/10 of coin hours must be burned.
+
+The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar. It cannot be configured through the command line.
+
+```sh
+COINHOUR_BURN_FACTOR=999 ./run.sh
+```
+
 ## URI Specification
 
 Skycoin URIs obey the same rules as specified in Bitcoin's [BIP21](https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki).
@@ -297,7 +309,7 @@ The live integration tests run against a live runnning skycoin node, so before r
 need to start a skycoin node:
 
 ```sh
-./run.sh -launch-browser=false
+./run-daemon.sh
 ```
 
 After the skycoin node is up, run the following command to start the live tests:
@@ -507,17 +519,24 @@ There are 4 configuration modes in which you can run a skycoin node:
 - Electron Desktop Client
 - Standalone Desktop Client
 
-#### Development Desktop Daemon Mode
-This mode is configured via `run.sh`
+#### Development Desktop Client Mode
+This mode is configured via `run-client.sh`
 ```bash
-$ ./run.sh
+$ ./run-client.sh
 ```
 
 #### Server Daemon Mode
 The default settings for a skycoin node are chosen for `Server Daemon`, which is typically run from source.
 This mode is usually preferred to be run with security options, though `-disable-csrf` is normal for server daemon mode, it is left enabled by default.
+
 ```bash
-$ go run cmd/skycoin/skycoin.go
+$ ./run-daemon.sh
+```
+
+To disable CSRF:
+
+```bash
+$ ./run-daemon.sh -disable-csrf
 ```
 
 #### Electron Desktop Client Mode
@@ -563,9 +582,9 @@ For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 Performs these actions before releasing:
 
 * `make check`
-* `make integration-test-live` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet.
+* `make integration-test-live` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet, and once with `-networking-disabled`
 * `go run cmd/cli/cli.go checkdb` against a synced node
-* On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
+* On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
     * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works

@@ -132,7 +132,7 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt)
     registerMemCleanup((void *)result.data);
     cr_assert(result.len > SCRYPTCHACHA20METALENGTHSIZE, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed, result data length too short");
     int decode_len = b64_decode((const unsigned char *)result.data,
-                  result.len, str);
+                  result.len, (unsigned char *) str);
     cr_assert(decode_len >= SCRYPTCHACHA20METALENGTHSIZE, "base64_decode_string failed");
     cr_assert(decode_len < BUFFER_SIZE, "base64_decode_string failed, buffer overflow");
     metalength = (unsigned int)str[0];

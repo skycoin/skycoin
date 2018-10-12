@@ -26,7 +26,7 @@ Test(cipher_secp256k1_field, TestFieldInv){
   memset(&expected, 0, sizeof(secp256k1go__Field));
   
   GoUint32 error_code;
-  GoInt8 equal = 0;
+  GoUint8 equal = 0;
   
   GoString InStr = {INHEX, strlen(INHEX)};
   GoString ExpStr = {EXPHEX, strlen(EXPHEX)};

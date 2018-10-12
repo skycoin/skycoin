@@ -55,7 +55,7 @@ Test(cipher_secp256k1_xyz, TestXYZDouble){
   error_code = SKY_secp256k1go_XYZ_Double(&a, &r);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1go_XYZ_Double failed");
   
-  GoInt8 equal = 0;
+  GoUint8 equal = 0;
   error_code = SKY_secp256k1go_XYZ_Equals(&r, &e, &equal);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1go_XYZ_Equals failed.");
   cr_assert(equal, "SKY_secp256k1go_XYZ_Double failed, result is different than expected.");

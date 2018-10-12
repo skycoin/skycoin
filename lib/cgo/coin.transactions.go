@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"reflect"
+	"strconv"
 	"unsafe"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -559,13 +560,15 @@ func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc *C.FeeCalcul
 	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
 		var fee C.GoUint64_
 		handle := registerTransactionHandle(pTx)
-		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
+		errorcode := C.callFeeCalculator(pFeeCalc, handle, &fee)
 		closeHandle(Handle(handle))
-		if result == SKY_OK {
-			return uint64(fee), nil
-		} else {
-			return 0, errors.New("Error calculating fee")
+		if errorcode != SKY_OK {
+			if err, exists := codeToErrorMap[uint32(errorcode)]; exists {
+				return 0, err
+			}
+			return 0, errors.New("C fee calculator failed code=" + strconv.Itoa(int(errorcode)))
 		}
+		return uint64(fee), nil
 	}
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {

@@ -61,6 +61,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
+- [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
 - [URI Specification](#uri-specification)
 - [Development](#development)
 	- [Modules](#modules)
@@ -214,6 +215,17 @@ Only add Skycoin nodes with high uptime and a static IP address (such as a Skyco
 ## Creating a new coin
 
 See the [newcoin tool README](./cmd/newcoin/README.md)
+
+## Running with a custom coin hour burn factor
+
+The coin hour burn factor is the denominator in the ratio of coinhours that must be burned by a transaction.
+For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor of 10 means 1/10 of coin hours must be burned.
+
+The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar. It cannot be configured through the command line.
+
+```sh
+COINHOUR_BURN_FACTOR=999 ./run.sh
+```
 
 ## URI Specification
 

@@ -25,6 +25,7 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/certutil"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -199,6 +200,8 @@ func (c *Coin) Run() error {
 			goto earlyShutdown
 		}
 	}
+
+	c.logger.Infof("Coinhour burn factor is %d", fee.BurnFactor)
 
 	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {

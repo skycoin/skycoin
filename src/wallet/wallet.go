@@ -92,6 +92,12 @@ var (
 	ErrUnknownUxOut = NewError(errors.New("uxout is not owned by any address in the wallet"))
 	// ErrNoUnspents is returned if a wallet has no unspents to spend
 	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
+	// ErrNullChangeAddress ChangeAddress must not be the null address
+	ErrNullChangeAddress = NewError(errors.New("ChangeAddress must not be the null address"))
+	// ErrMissingTo To is required
+	ErrMissingTo = NewError(errors.New("To is required"))
+	// ErrZeroCoinsTo To.Coins must not be zero
+	ErrZeroCoinsTo = NewError(errors.New("To.Coins must not be zero"))
 	// ErrWalletRecoverSeedWrong is returned if the seed does not match the specified wallet when recovering
 	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed is wrong"))
 	// ErrNilBalanceGetter is returned if Options.ScanN > 0 but a nil BalanceGetter was provided
@@ -100,6 +106,38 @@ var (
 	ErrWalletNotDeterministic = NewError(errors.New("wallet type is not deterministic"))
 	// ErrInvalidCoinType is returned for invalid coin types
 	ErrInvalidCoinType = NewError(errors.New("invalid coin type"))
+	// ErrNullAddressTo To.Address must not be the null address
+	ErrNullAddressTo = NewError(errors.New("To.Address must not be the null address"))
+	// ErrDuplicateTo To contains duplicate values
+	ErrDuplicateTo = NewError(errors.New("To contains duplicate values"))
+	// ErrMissingWalletID Wallet.ID is required
+	ErrMissingWalletID = NewError(errors.New("Wallet.ID is required"))
+	// ErrIncludesNullAddress Wallet.Addresses must not contain the null address
+	ErrIncludesNullAddress = NewError(errors.New("Wallet.Addresses must not contain the null address"))
+	// ErrDuplicateAddresses Wallet.Addresses contains duplicate values
+	ErrDuplicateAddresses = NewError(errors.New("Wallet.Addresses contains duplicate values"))
+	// ErrZeroToHoursAuto To.Hours must be zero for auto type hours selection
+	ErrZeroToHoursAuto = NewError(errors.New("To.Hours must be zero for auto type hours selection"))
+	// ErrMissingModeAuto HoursSelection.Mode is required for auto type hours selection
+	ErrMissingModeAuto = NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
+	// ErrInvalidHoursSelMode Invalid HoursSelection.Mode
+	ErrInvalidHoursSelMode = NewError(errors.New("Invalid HoursSelection.Mode"))
+	// ErrInvalidModeManual HoursSelection.Mode cannot be used for manual type hours selection
+	ErrInvalidModeManual = NewError(errors.New("HoursSelection.Mode cannot be used for manual type hours selection"))
+	// ErrInvalidHoursSelType Invalid HoursSelection.Type
+	ErrInvalidHoursSelType = NewError(errors.New("Invalid HoursSelection.Type"))
+	// ErrMissingShareFactor HoursSelection.ShareFactor must be set for share mode
+	ErrMissingShareFactor = NewError(errors.New("HoursSelection.ShareFactor must be set for share mode"))
+	// ErrInvalidShareFactor HoursSelection.ShareFactor can only be used for share mode
+	ErrInvalidShareFactor = NewError(errors.New("HoursSelection.ShareFactor can only be used for share mode"))
+	// ErrShareFactorOutOfRange HoursSelection.ShareFactor must be >= 0 and <= 1
+	ErrShareFactorOutOfRange = NewError(errors.New("HoursSelection.ShareFactor must be >= 0 and <= 1"))
+	// ErrWalletParamsConflict Wallet.UxOuts and Wallet.Addresses cannot be combined
+	ErrWalletParamsConflict = NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
+	// ErrDuplicateUxOuts Wallet.UxOuts contains duplicate values
+	ErrDuplicateUxOuts = NewError(errors.New("Wallet.UxOuts contains duplicate values"))
+	// ErrUnknownWalletID params.Wallet.ID does not match wallet
+	ErrUnknownWalletID = NewError(errors.New("params.Wallet.ID does not match wallet"))
 )
 
 const (
@@ -185,20 +223,20 @@ type CreateTransactionParams struct {
 // Validate validates CreateTransactionParams
 func (c CreateTransactionParams) Validate() error {
 	if c.ChangeAddress != nil && c.ChangeAddress.Null() {
-		return NewError(errors.New("ChangeAddress must not be the null address"))
+		return ErrNullChangeAddress
 	}
 
 	if len(c.To) == 0 {
-		return NewError(errors.New("To is required"))
+		return ErrMissingTo
 	}
 
 	for _, to := range c.To {
 		if to.Coins == 0 {
-			return NewError(errors.New("To.Coins must not be zero"))
+			return ErrZeroCoinsTo
 		}
 
 		if to.Address.Null() {
-			return NewError(errors.New("To.Address must not be the null address"))
+			return ErrNullAddressTo
 		}
 	}
 
@@ -213,69 +251,69 @@ func (c CreateTransactionParams) Validate() error {
 	}
 
 	if len(outputs) != len(c.To) {
-		return NewError(errors.New("To contains duplicate values"))
+		return ErrDuplicateTo
 	}
 
 	if c.Wallet.ID == "" {
-		return NewError(errors.New("Wallet.ID is required"))
+		return ErrMissingWalletID
 	}
 
 	addressMap := make(map[cipher.Address]struct{}, len(c.Wallet.Addresses))
 	for _, a := range c.Wallet.Addresses {
 		if a.Null() {
-			return NewError(errors.New("Wallet.Addresses must not contain the null address"))
+			return ErrIncludesNullAddress
 		}
 
 		addressMap[a] = struct{}{}
 	}
 
 	if len(addressMap) != len(c.Wallet.Addresses) {
-		return NewError(errors.New("Wallet.Addresses contains duplicate values"))
+		return ErrDuplicateAddresses
 	}
 
 	switch c.HoursSelection.Type {
 	case HoursSelectionTypeAuto:
 		for _, to := range c.To {
 			if to.Hours != 0 {
-				return NewError(errors.New("To.Hours must be zero for auto type hours selection"))
+				return ErrZeroToHoursAuto
 			}
 		}
 
 		switch c.HoursSelection.Mode {
 		case HoursSelectionModeShare:
 		case "":
-			return NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
+			return ErrMissingModeAuto
 		default:
-			return NewError(errors.New("Invalid HoursSelection.Mode"))
+			return ErrInvalidHoursSelMode
 		}
 
 	case HoursSelectionTypeManual:
 		if c.HoursSelection.Mode != "" {
-			return NewError(errors.New("HoursSelection.Mode cannot be used for manual type hours selection"))
+			return ErrInvalidModeManual
 		}
 
 	default:
-		return NewError(errors.New("Invalid HoursSelection.Type"))
+		return ErrInvalidHoursSelType
 	}
 
 	if c.HoursSelection.ShareFactor == nil {
 		if c.HoursSelection.Mode == HoursSelectionModeShare {
-			return NewError(errors.New("HoursSelection.ShareFactor must be set for share mode"))
+			return ErrMissingShareFactor
 		}
 	} else {
 		if c.HoursSelection.Mode != HoursSelectionModeShare {
-			return NewError(errors.New("HoursSelection.ShareFactor can only be used for share mode"))
+			return ErrInvalidShareFactor
 		}
 
 		zero := decimal.New(0, 0)
 		one := decimal.New(1, 0)
 		if c.HoursSelection.ShareFactor.LessThan(zero) || c.HoursSelection.ShareFactor.GreaterThan(one) {
-			return NewError(errors.New("HoursSelection.ShareFactor must be >= 0 and <= 1"))
+			return ErrShareFactorOutOfRange
 		}
 	}
 
 	if len(c.Wallet.UxOuts) != 0 && len(c.Wallet.Addresses) != 0 {
-		return NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
+		return ErrWalletParamsConflict
 	}
 
 	// Check for duplicate spending uxouts
@@ -285,7 +323,7 @@ func (c CreateTransactionParams) Validate() error {
 	}
 
 	if len(uxouts) != len(c.Wallet.UxOuts) {
-		return NewError(errors.New("Wallet.UxOuts contains duplicate values"))
+		return ErrDuplicateUxOuts
 	}
 
 	return nil

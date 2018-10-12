@@ -10,7 +10,7 @@ pushd "$DIR" >/dev/null
 
 COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
+GOLDFLAGS="${GOLDFLAGS} -X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 
 GORUNFLAGS=${GORUNFLAGS:-}
 

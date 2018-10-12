@@ -112,7 +112,7 @@ func TestAddressFromBytes(t *testing.T) {
 	a.Version = 2
 	b = a.Bytes()
 	_, err = AddressFromBytes(b)
-	require.EqualError(t, err, "Invalid version")
+	require.EqualError(t, err, "Address version invalid")
 }
 
 func TestMustAddressFromBytes(t *testing.T) {
@@ -208,7 +208,7 @@ func TestAddressFromSecKey(t *testing.T) {
 	require.NoError(t, a.Verify(p))
 
 	_, err = AddressFromSecKey(SecKey{})
-	require.Equal(t, errors.New("Cannot convert null SecKey to PubKey"), err)
+	require.Equal(t, errors.New("Attempt to load null seckey, unsafe"), err)
 }
 
 func TestMustAddressFromSecKey(t *testing.T) {

@@ -35,6 +35,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Go application metrics exported at `/api/v2/metrics` (API set `PROMETHEUS`) in Prometheus format
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 - Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
+- Coinhour burn factor can be configured at runtime with `COINHOUR_BURN_FACTOR` envvar
 
 ### Fixed
 

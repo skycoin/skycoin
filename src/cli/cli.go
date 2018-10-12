@@ -41,8 +41,8 @@ var (
     RPC_USER: Username for RPC API, if enabled in the RPC.
     RPC_PASS: Password for RPC API, if enabled in the RPC.
     COIN: Name of the coin. Default "%s"
-    WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
-    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"
+    WALLET_DIR: Directory where wallets are stored. This value is overridden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
+    WALLET_NAME: Name of wallet file (without path). This value is overridden by any subcommand flag specifying a wallet filename. Default "%s"
     DATA_DIR: Directory where everything is stored. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName, defaultDataDir)
 
 	commandHelpTemplate = fmt.Sprintf(`USAGE:

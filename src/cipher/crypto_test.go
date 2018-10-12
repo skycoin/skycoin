@@ -485,7 +485,7 @@ func TestPubKeyFromSecKey(t *testing.T) {
 	require.Equal(t, p2, p)
 
 	_, err = PubKeyFromSecKey(SecKey{})
-	require.Equal(t, errors.New("Cannot convert null SecKey to PubKey"), err)
+	require.Equal(t, errors.New("Attempt to load null seckey, unsafe"), err)
 }
 
 func TestMustPubKeyFromSecKey(t *testing.T) {
@@ -552,7 +552,7 @@ func TestGenerateDeterministicKeyPair(t *testing.T) {
 	require.NoError(t, s.Verify())
 
 	_, _, err := GenerateDeterministicKeyPair(nil)
-	require.Equal(t, errors.New("seed input is empty"), err)
+	require.Equal(t, errors.New("Seed input is empty"), err)
 
 	require.Panics(t, func() {
 		MustGenerateDeterministicKeyPair(nil)
@@ -572,7 +572,7 @@ func TestGenerateDeterministicKeyPairs(t *testing.T) {
 	require.Equal(t, keys, keys2)
 
 	_, err = GenerateDeterministicKeyPairs(nil, 1)
-	require.Equal(t, errors.New("seed input is empty"), err)
+	require.Equal(t, errors.New("Seed input is empty"), err)
 
 	require.Panics(t, func() {
 		MustGenerateDeterministicKeyPairs(nil, 1)
@@ -595,7 +595,7 @@ func TestGenerateDeterministicKeyPairsSeed(t *testing.T) {
 	require.Equal(t, keys, keys2)
 
 	_, _, err = GenerateDeterministicKeyPairsSeed(nil, 4)
-	require.Equal(t, errors.New("seed input is empty"), err)
+	require.Equal(t, errors.New("Seed input is empty"), err)
 
 	require.Panics(t, func() {
 		MustGenerateDeterministicKeyPairsSeed(nil, 4)
@@ -617,7 +617,7 @@ func TestDeterministicKeyPairIterator(t *testing.T) {
 	require.Equal(t, s, s2)
 
 	_, _, _, err = DeterministicKeyPairIterator(nil)
-	require.Equal(t, errors.New("seed input is empty"), err)
+	require.Equal(t, errors.New("Seed input is empty"), err)
 
 	require.Panics(t, func() {
 		MustDeterministicKeyPairIterator(nil)

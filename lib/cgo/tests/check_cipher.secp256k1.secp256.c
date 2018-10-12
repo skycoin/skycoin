@@ -203,7 +203,7 @@ Test(cipher_secp256k1, Test_Secp256_02s)
 
   error_code = SKY_secp256k1_RandByte(32, (GoSlice_ *)&msg);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
-  error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
+  error_code = SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
   cr_assert(pub1.len == 33, "Public key should be 33 bytes long.");
   cr_assert(sec1.len == 32, "Private key should be 32 bytes long.");
@@ -233,7 +233,7 @@ Test(cipher_secp256k1, Test_Secp256_02)
 
   error_code = SKY_secp256k1_RandByte(32, (GoSlice_ *)&msg);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
-  error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
+  error_code = SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
   cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
 
@@ -268,7 +268,7 @@ Test(cipher_secp256k1, Test_Secp256_02a)
 
   error_code = SKY_secp256k1_RandByte(32, (GoSlice_ *)&msg);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
-  error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
+  error_code = SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
   cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
   GoInt result;
@@ -304,7 +304,7 @@ Test(cipher_secp256k1, Test_Secp256_03)
 
     error_code = SKY_secp256k1_RandByte(32, (GoSlice_ *)&msg);
     cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
-    error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
+    error_code = SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
     cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
     cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
     ((unsigned char *)sig.data)[64] = ((unsigned char *)sig.data)[64] % 4;
@@ -338,7 +338,7 @@ Test(cipher_secp256k1, Test_Secp256_04)
 
     error_code = SKY_secp256k1_RandByte(32, (GoSlice_ *)&msg);
     cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
-    error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
+    error_code = SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
     cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
     cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
     unsigned char last = ((unsigned char *)sig.data)[64];
@@ -381,7 +381,7 @@ Test(cipher_secp256k1, Test_Secp256_06a_alt0)
   GoInt code;
   error_code = SKY_secp256k1_RandByte(32, (GoSlice_ *)&msg);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
-  error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
+  error_code = SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
   cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
 
@@ -421,7 +421,7 @@ Test(cipher_secp256k1, Test_Secp256_06b)
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
   error_code = SKY_secp256k1_RandByte(32, (GoSlice_ *)&msg);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
-  error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
+  error_code = SKY_secp256k1_Sign(msg, sec1, (GoSlice_ *)&sig);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
 
   GoInt result;
@@ -599,7 +599,7 @@ Test(cipher_secp256k1, Test_Deterministic_Keypairs_03)
     seed.data = (void *)testArray[2 * i];
     seed.len = strlen(testArray[2 * i]);
     seed.cap = seed.len;
-    sec1.len = hexnstr(testArray[2 * i + 1], bufferSec1, BUFFER_SIZE);
+    sec1.len = hexnstr(testArray[2 * i + 1], (unsigned char*) bufferSec1, BUFFER_SIZE);
     error_code = SKY_secp256k1_DeterministicKeyPairIterator(seed,
                                 (GoSlice_ *)&s1, (GoSlice_ *)&s2,
                                 (GoSlice_ *)&sec2);
@@ -660,8 +660,8 @@ Test(cipher_secp256k1, Test_DeterministicWallets1)
 
   for (int i = 0; i < test_count; i++)
   {
-    seed.len = hexnstr(testArray[2 * i], bufferSeed, BUFFER_SIZE);
-    sec1.len = hexnstr(testArray[2 * i + 1], bufferSec1, BUFFER_SIZE);
+    seed.len = hexnstr(testArray[2 * i], (unsigned char*) bufferSeed, BUFFER_SIZE);
+    sec1.len = hexnstr(testArray[2 * i + 1], (unsigned char*) bufferSec1, BUFFER_SIZE);
     error_code = SKY_secp256k1_DeterministicKeyPairIterator(seed,
                                 (GoSlice_ *)&s1, (GoSlice_ *)&s2,
                                 (GoSlice_ *)&sec2);
@@ -717,8 +717,8 @@ Test(cipher_secp256k1, Test_Secp256k1_Hash)
 
   for (int i = 0; i < test_count; i++)
   {
-    hash1.len = hexnstr(testArray[2 * i], bufferHash1, BUFFER_SIZE);
-    hash2.len = hexnstr(testArray[2 * i + 1], bufferHash2, BUFFER_SIZE);
+    hash1.len = hexnstr(testArray[2 * i], (unsigned char*) bufferHash1, BUFFER_SIZE);
+    hash2.len = hexnstr(testArray[2 * i + 1], (unsigned char*) bufferHash2, BUFFER_SIZE);
     error_code = SKY_secp256k1_Secp256k1Hash(hash1, (GoSlice_ *)&hash3);
     cr_assert(error_code == SKY_OK, "SKY_secp256k1_Secp256k1Hash failed");
     cr_assert(eq(type(GoSlice), hash2, hash3), "Different hashes");
@@ -791,8 +791,8 @@ Test(cipher_secp256k1, Test_DeterministicWalletGeneration)
     seed.len = newSeed.len;
   }
 
-  privateExpected.len = hexnstr(pSecOut, bufferPrivateExpected, BUFFER_SIZE);
-  publicExpected.len = hexnstr(pPubOut, bufferPublicExpected, BUFFER_SIZE);
+  privateExpected.len = hexnstr(pSecOut, (unsigned char*)bufferPrivateExpected, BUFFER_SIZE);
+  publicExpected.len = hexnstr(pPubOut, (unsigned char*)bufferPublicExpected, BUFFER_SIZE);
 
   cr_assert(eq(type(GoSlice), privateExpected, private), "Private keyd didn\'t match");
   cr_assert(eq(type(GoSlice), public, publicExpected), "Public keyd didn\'t match");

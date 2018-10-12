@@ -47,7 +47,7 @@ Test(cipher_secp256k1_sig, TestSigRecover){
   GoString X = {X1, strlen(X1)};
   GoString Y = {Y1, strlen(Y1)};
   GoInt rid = 0;
-  GoInt8 result;
+  GoUint8 result;
 
   error_code = SKY_secp256k1go_Signature_Create(&sig);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Signature_Create failed");
@@ -107,7 +107,7 @@ Test(cipher_secp256k1_sig, TestSigRecover){
   cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Signature_Recover failed");
   cr_assert(result, "SKY_secp256k1go_Signature_Recover failed");
 
-  GoInt8 equal;
+  GoUint8 equal;
   error_code = SKY_secp256k1go_Field_Equals(&pubKey.X, &expected.X, &equal);
   cr_assert(error_code == SKY_OK && equal, "SKY_secp256k1go_Signature_Recover Xs different.");
   SKY_secp256k1go_Field_Equals(&pubKey.Y, &expected.Y, &equal);
@@ -235,7 +235,7 @@ Test(cipher_secp256k1_sig, TestSigSign) {
   registerHandleClose(sig);
 
   GoInt res;
-  GoInt8 equal;
+  GoUint8 equal;
 
   result = SKY_secp256k1go_Signature_Sign(sig, sec, msg, non, &recid, &res);
   cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Sign failed");

@@ -89,7 +89,7 @@ Test(cipher_secp256k1_xyz, TestXYZECMult){
   error_code = SKY_secp256k1go_XYZ_ECmult(&pubkey, &pr, u2, u1);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1go_XYZ_ECmult failed");
 
-  GoInt8 equal = 0;
+  GoUint8 equal = 0;
   error_code = SKY_secp256k1go_XYZ_Equals(&pr, &e, &equal);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1go_XYZ_Equals failed.");
   cr_assert(equal, "SKY_secp256k1go_XYZ_ECmult failed, result is different than expected.");
@@ -138,7 +138,7 @@ Test(cipher_secp256k1_xyz, TestXYZECMultGen){
   error_code = SKY_secp256k1go_Field_Normalize(&pr.Z);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_Normalize failed.");
 
-  GoInt8 equal = 0;
+  GoUint8 equal = 0;
   error_code = SKY_secp256k1go_Field_Equals(&pr.X, &x, &equal);
   cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_Equals failed.");
   cr_assert(equal, "SKY_secp256k1go_ECmultGen failed. X is different than expected");

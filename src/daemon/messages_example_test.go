@@ -294,16 +294,38 @@ var hashes = []cipher.SHA256{
 	GetSHAFromHex("66dd3fc45be9b4fbb1fbed2be5de4e8a479f6638adfe4675b8544ae84eca3f75"),
 }
 
-var secKey1 = cipher.MustNewSecKey([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32})
-var secKey2 = cipher.MustNewSecKey([]byte{33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64})
-var secKey3 = cipher.MustNewSecKey([]byte{65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96})
-var secKey4 = cipher.MustNewSecKey([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96})
+func initSecKey(secKeyHex string) cipher.SecKey {
+	sk, err := cipher.SecKeyFromHex(secKeyHex)
+	if err != nil {
+		sk = cipher.SecKey{}
+	}
+	return sk
+}
+
+func initAddress(sk cipher.SecKey) cipher.Address {
+	addr, err := cipher.AddressFromSecKey(sk)
+	if err != nil {
+		addr = cipher.Address{}
+	}
+	return addr
+}
+
+var (
+	// seed = 'w'
+	secKey1 = initSecKey("2c08fb99b0ba9b8c32072ae52719f25c064735d03618354656fdb31a88150f7f")
+	// seed = 'x'
+	secKey2 = initSecKey("7a0f56ee1c49ef669235065f0b1d7a03c252b7f7bdcf39704c7cc1feff41cf53")
+	// seed = 'y'
+	secKey3 = initSecKey("def165004ebc06530105cc82496816ef754933d6668db5780c16c00c853a7991")
+	// seed = 'z'
+	secKey4 = initSecKey("061035ba600bcc4442389011d310ffcb19177626eaf582b344804d395805b5e1")
+)
 
 var addresses = []cipher.Address{
-	cipher.MustAddressFromSecKey(secKey1),
-	cipher.MustAddressFromSecKey(secKey2),
-	cipher.MustAddressFromSecKey(secKey3),
-	cipher.MustAddressFromSecKey(secKey4),
+	initAddress(secKey1),
+	initAddress(secKey2),
+	initAddress(secKey3),
+	initAddress(secKey4),
 }
 
 func GetSHAFromHex(hex string) cipher.SHA256 {
@@ -685,10 +707,10 @@ func ExampleGiveTxnsMessage() {
 	// 0x00cc | 1f 1b fc 39 e4 ca 55 75 36 60 0f d6 42 09 f6 c4
 	// 0x00dc | 22 09 82 f9 88 b6 25 d0 af c1 2c 7f fd 06 a7 fe
 	// 0x00ec | 89 bb e6 60 2c 1f 20 d9 08 91 3f e9 38 10 47 02
-	// 0x00fc | 00 00 00 00 07 6d ca 32 de 03 4e 48 67 fa 7a 2a
-	// 0x010c | a9 ee fe 91 f2 0b a0 74 0c 00 00 00 00 00 00 00
-	// 0x011c | 22 00 00 00 00 00 00 00 00 e9 cb 47 35 e3 95 cf
-	// 0x012c | 36 b0 d1 a6 f2 21 bb 23 b3 f7 bf b1 f9 38 00 00
+	// 0x00fc | 00 00 00 00 ad dc d4 a7 19 6a 8c a8 6b 9b 3d 74
+	// 0x010c | 16 95 f3 69 ef 1b 3d ba 0c 00 00 00 00 00 00 00
+	// 0x011c | 22 00 00 00 00 00 00 00 00 31 7c 95 cb 68 79 ac
+	// 0x012c | 7e e5 3a f9 98 c0 b6 70 37 6c 7c 51 38 38 00 00
 	// 0x013c | 00 00 00 00 00 4e 00 00 00 00 00 00 00 ............ Transactions[0]
 	// 0x0149 | 88 13 00 00 7b 05 64 0e 44 80 73 9e 87 97 57 b0
 	// 0x0159 | a2 d1 bd 59 de a7 df cc fe f3 df 75 a1 83 0a 50
@@ -705,10 +727,10 @@ func ExampleGiveTxnsMessage() {
 	// 0x0209 | 11 d8 1d 6a 7c 4f fd 66 1c 00 b1 99 94 17 81 05
 	// 0x0219 | 64 0e 44 80 73 9e 87 97 57 b0 a2 d1 bd 59 de a7
 	// 0x0229 | df cc fe f3 df 75 a1 83 0a 50 20 01 10 67 21 02
-	// 0x0239 | 00 00 00 00 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0
-	// 0x0249 | e9 f4 f0 88 7b 08 4b 43 09 00 00 00 00 00 00 00
-	// 0x0259 | 0c 00 00 00 00 00 00 00 00 83 f1 96 59 16 14 99
-	// 0x0269 | 2f a6 03 13 38 6f 72 88 ac 40 14 c8 bc 22 00 00
+	// 0x0239 | 00 00 00 00 89 e6 17 1b d0 e4 8b fc 31 68 a5 f0
+	// 0x0249 | 3c 5e 16 10 8a ed e7 6f 09 00 00 00 00 00 00 00
+	// 0x0259 | 0c 00 00 00 00 00 00 00 00 76 60 d2 e5 38 f9 69
+	// 0x0269 | 46 5f 22 a2 bb ae 9b a8 4e c5 f3 77 a1 22 00 00
 	// 0x0279 | 00 00 00 00 00 38 00 00 00 00 00 00 00 ............ Transactions[1]
 	// 0x0286 |
 }

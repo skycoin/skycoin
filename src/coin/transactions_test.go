@@ -112,7 +112,7 @@ func TestTransactionVerify(t *testing.T) {
 	// Invalid signature, empty
 	tx = makeTransaction(t)
 	tx.Sigs[0] = cipher.Sig{}
-	testutil.RequireError(t, tx.Verify(), "Failed to recover public key")
+	testutil.RequireError(t, tx.Verify(), "Invalid sig: PubKey recovery failed")
 	// We can't check here for other invalid signatures:
 	//      - Signatures signed by someone else, spending coins they don't own
 	//      - Signature is for wrong hash

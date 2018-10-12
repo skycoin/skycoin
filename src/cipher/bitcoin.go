@@ -8,6 +8,17 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/base58"
 )
 
+var (
+	// ErrInvalidLength Unexpected size of string or bytes buffer
+	ErrInvalidLength = errors.New("Invalid length")
+	// ErrBitcoinWIFInvalidFirstByte Unexpected value (!= 0x80) of first byte in Bitcoin Wallet Import Format
+	ErrBitcoinWIFInvalidFirstByte = errors.New("Bitcoin WIF: First byte invalid")
+	// ErrBitcoinWIFInvalidSuffix Unexpected value (!= 0x01) of 33rd byte in Bitcoin Wallet Import Format
+	ErrBitcoinWIFInvalidSuffix = errors.New("Bitcoin WIF: Invalid 33rd byte")
+	// ErrBitcoinWIFInvalidChecksum Invalid Checksum in Bitcoin WIF address
+	ErrBitcoinWIFInvalidChecksum = errors.New("Bitcoin WIF: Checksum fail")
+)
+
 // BitcoinAddress is a bitcoin address
 type BitcoinAddress struct {
 	Version byte      // 1 byte
@@ -63,7 +74,7 @@ func MustDecodeBase58BitcoinAddress(addr string) BitcoinAddress {
 // BitcoinAddressFromBytes converts []byte to a BitcoinAddress. Only supports mainnet (version 0) addresses.
 func BitcoinAddressFromBytes(b []byte) (BitcoinAddress, error) {
 	if len(b) != 20+1+4 {
-		return BitcoinAddress{}, errors.New("Invalid address length")
+		return BitcoinAddress{}, ErrAddressInvalidLength
 	}
 	a := BitcoinAddress{}
 	copy(a.Key[0:20], b[1:21])
@@ -73,12 +84,12 @@ func BitcoinAddressFromBytes(b []byte) (BitcoinAddress, error) {
 	copy(checksum[0:4], b[21:25])
 
 	if checksum != a.Checksum() {
-		return BitcoinAddress{}, errors.New("Invalid checksum")
+		return BitcoinAddress{}, ErrAddressInvalidChecksum
 	}
 
 	// BitcoinAddress only supports mainnet addresses for now
 	if a.Version != 0 {
-		return BitcoinAddress{}, errors.New("Invalid version")
+		return BitcoinAddress{}, ErrAddressInvalidVersion
 	}
 
 	return a, nil
@@ -113,10 +124,10 @@ func (addr BitcoinAddress) Bytes() []byte {
 func (addr BitcoinAddress) Verify(key PubKey) error {
 	// BitcoinAddress only supports mainnet addresses for now
 	if addr.Version != 0x00 {
-		return errors.New("Address version invalid")
+		return ErrAddressInvalidVersion
 	}
 	if addr.Key != BitcoinPubKeyRipemd160(key) {
-		return errors.New("Public key invalid for address")
+		return ErrAddressInvalidPubKey
 	}
 	return nil
 }
@@ -154,21 +165,21 @@ func SecKeyFromBitcoinWalletImportFormat(input string) (SecKey, error) {
 
 	//1+32+1+4
 	if len(b) != 38 {
-		return SecKey{}, errors.New("invalid length")
+		return SecKey{}, ErrInvalidLength
 	}
 	if b[0] != 0x80 {
-		return SecKey{}, errors.New("first byte invalid")
+		return SecKey{}, ErrBitcoinWIFInvalidFirstByte
 	}
 
 	if b[1+32] != 0x01 {
-		return SecKey{}, errors.New("invalid 33rd byte")
+		return SecKey{}, ErrBitcoinWIFInvalidSuffix
 	}
 
 	b2 := DoubleSHA256(b[0:34])
 	chksum := b[34:38]
 
 	if !bytes.Equal(chksum, b2[0:4]) {
-		return SecKey{}, errors.New("checksum fail")
+		return SecKey{}, ErrBitcoinWIFInvalidChecksum
 	}
 
 	return NewSecKey(b[1:33])

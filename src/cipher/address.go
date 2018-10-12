@@ -7,6 +7,21 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/base58"
 )
 
+var (
+	// ErrAddressInvalidLength Unexpected size of address bytes buffer
+	ErrAddressInvalidLength = errors.New("Invalid address length")
+	// ErrAddressInvalidChecksum Computed checksum did not match expected value
+	ErrAddressInvalidChecksum = errors.New("Invalid checksum")
+	// ErrAddressInvalidVersion Unsupported address version value
+	ErrAddressInvalidVersion = errors.New("Address version invalid")
+	// ErrAddressInvalidPubKey Public key invalid for address
+	ErrAddressInvalidPubKey = errors.New("Public key invalid for address")
+	// ErrAddressInvalidFirstByte Invalid first byte in wallet import format string
+	ErrAddressInvalidFirstByte = errors.New("first byte invalid")
+	// ErrAddressInvalidLastByte 33rd byte in wallet import format string is invalid
+	ErrAddressInvalidLastByte = errors.New("invalid 33rd byte")
+)
+
 /*
 Addresses are the Ripemd160 of the double SHA256 of the public key
 - public key must be in compressed format
@@ -94,7 +109,7 @@ func MustDecodeBase58Address(addr string) Address {
 // AddressFromBytes converts []byte to an Address
 func AddressFromBytes(b []byte) (Address, error) {
 	if len(b) != 20+1+4 {
-		return Address{}, errors.New("Invalid address length")
+		return Address{}, ErrAddressInvalidLength
 	}
 	a := Address{}
 	copy(a.Key[0:20], b[0:20])
@@ -105,11 +120,11 @@ func AddressFromBytes(b []byte) (Address, error) {
 	copy(checksum[0:4], b[21:25])
 
 	if checksum != chksum {
-		return Address{}, errors.New("Invalid checksum")
+		return Address{}, ErrAddressInvalidChecksum
 	}
 
 	if a.Version != 0 {
-		return Address{}, errors.New("Invalid version")
+		return Address{}, ErrAddressInvalidVersion
 	}
 
 	return a, nil
@@ -143,11 +158,11 @@ func (addr Address) Bytes() []byte {
 // Verify checks that the address appears valid for the public key
 func (addr Address) Verify(pubKey PubKey) error {
 	if addr.Version != 0x00 {
-		return errors.New("Address version invalid")
+		return ErrAddressInvalidVersion
 	}
 
 	if addr.Key != PubKeyRipemd160(pubKey) {
-		return errors.New("Public key invalid for address")
+		return ErrAddressInvalidPubKey
 	}
 
 	return nil

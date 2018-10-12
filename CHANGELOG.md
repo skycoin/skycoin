@@ -14,6 +14,14 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead)
 - The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`)
 
+### Notice
+
+Nodes v0.23.0 and earlier will not be able to connect to v0.25.0 due to a change in the introduction packet message.
+
+Nodes v0.24.1 and earlier will not be able to connect to v0.26.0 due to a similar change.
+
+Make sure to upgrade to v0.25.0 so that your node will continue to connect once v0.26.0 is released.
+
 ### Added
 
 - Add `util/droplet` and `util/fee` API's as part of `libskycoin`
@@ -39,6 +47,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 - Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
 - Coinhour burn factor can be configured at runtime with `COINHOUR_BURN_FACTOR` envvar
+- Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
 
 ### Fixed
 
@@ -71,11 +80,13 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `cli addressGen` arguments have changed
 - `cli generateWallet` renamed to `cli walletCreate`
 - `cli generateAddresses` renamed to `cli walletAddAddresses`
+- `run.sh` is now `run-client.sh` and a new `run-daemon.sh` script is added for running in server daemon mode.
 
 ### Removed
 
 - Remove `USE_CSRF` envvar from the CLI tool. It uses the REST API client now, which will automatically detect CSRF as needed, so no additional configuration is necessary.  Operators may still wish to disable CSRF on their remote node to reduce request overhead.
 - Remove `-enable-wallet-api` and `-enable-seed-api` in place of including `WALLET` and `INSECURE_WALLET_SEED` in `-enable-api-sets`.
+- Copies of the source code removed from release builds due to build artifact size
 
 ## [0.24.1] - 2018-07-30
 

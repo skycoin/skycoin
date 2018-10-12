@@ -9,7 +9,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
-#include "transutil.h"
+#include "skytxn.h"
 
 GoUint32_ zeroFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
   *pFee = 0;

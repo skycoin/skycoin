@@ -18,11 +18,6 @@ import "C"
 
 //export SKY_secp256k1go_Signature_Create
 func SKY_secp256k1go_Signature_Create(handle *C.Signature_Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	var sig secp256k1go2.Signature
 	*handle = registerSignatureHandle(&sig)
 	return
@@ -30,11 +25,6 @@ func SKY_secp256k1go_Signature_Create(handle *C.Signature_Handle) (____error_cod
 
 //export SKY_secp256k1go_Signature_GetR
 func SKY_secp256k1go_Signature_GetR(handle C.Signature_Handle, r *C.Number_Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -46,11 +36,6 @@ func SKY_secp256k1go_Signature_GetR(handle C.Signature_Handle, r *C.Number_Handl
 
 //export SKY_secp256k1go_Signature_GetS
 func SKY_secp256k1go_Signature_GetS(handle C.Signature_Handle, s *C.Number_Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -62,11 +47,6 @@ func SKY_secp256k1go_Signature_GetS(handle C.Signature_Handle, s *C.Number_Handl
 
 //export SKY_secp256k1go_Signature_Print
 func SKY_secp256k1go_Signature_Print(handle C.Signature_Handle, _lab string) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -78,11 +58,6 @@ func SKY_secp256k1go_Signature_Print(handle C.Signature_Handle, _lab string) (__
 
 //export SKY_secp256k1go_Signature_Verify
 func SKY_secp256k1go_Signature_Verify(handle C.Signature_Handle, _pubkey *C.secp256k1go__XY, _message C.Number_Handle, _arg2 *bool) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -101,11 +76,6 @@ func SKY_secp256k1go_Signature_Verify(handle C.Signature_Handle, _pubkey *C.secp
 
 //export SKY_secp256k1go_Signature_Recover
 func SKY_secp256k1go_Signature_Recover(handle C.Signature_Handle, _pubkey *C.secp256k1go__XY, _message C.Number_Handle, _recid int, _arg3 *bool) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -125,11 +95,6 @@ func SKY_secp256k1go_Signature_Recover(handle C.Signature_Handle, _pubkey *C.sec
 
 //export SKY_secp256k1go_Signature_Sign
 func SKY_secp256k1go_Signature_Sign(handle C.Signature_Handle, _seckey, _message, _nonce C.Number_Handle, _recid *int, _arg2 *int) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -158,11 +123,6 @@ func SKY_secp256k1go_Signature_Sign(handle C.Signature_Handle, _seckey, _message
 
 //export SKY_secp256k1go_Signature_ParseBytes
 func SKY_secp256k1go_Signature_ParseBytes(handle C.Signature_Handle, _v []byte) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -175,11 +135,6 @@ func SKY_secp256k1go_Signature_ParseBytes(handle C.Signature_Handle, _v []byte) 
 
 //export SKY_secp256k1go_Signature_Bytes
 func SKY_secp256k1go_Signature_Bytes(handle C.Signature_Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE

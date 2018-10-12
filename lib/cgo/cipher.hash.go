@@ -104,11 +104,6 @@ func SKY_cipher_Merkle(_h0 *[]C.cipher__SHA256, _arg1 *C.cipher__SHA256) (____er
 
 //export SKY_cipher_SHA256_Null
 func SKY_cipher_SHA256_Null(_g *C.cipher__SHA256, _arg0 *bool) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	g := (*cipher.SHA256)(unsafe.Pointer(_g))
 	*_arg0 = g.Null()
 	return

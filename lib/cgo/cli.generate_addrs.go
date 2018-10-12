@@ -19,11 +19,6 @@ import "C"
 
 //export SKY_cli_GenerateAddressesInFile
 func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, pwd C.PasswordReader__Handle, _arg3 *C.GoSlice_) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	walletFile := _walletFile
 	num := _num
 	pr, okc := lookupPasswordReaderHandle(pwd)
@@ -41,13 +36,13 @@ func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, pwd C.Pass
 
 //export SKY_cli_FormatAddressesAsJSON
 func SKY_cli_FormatAddressesAsJSON(_addrs []C.cipher__Address, _arg1 *C.GoString_) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	addrs := *(*[]cipher.Address)(unsafe.Pointer(&_addrs))
-	__arg1, ____return_err := cli.FormatAddressesAsJSON(addrs)
+	// TODO : Support for arrays of interface objects in cgogen
+	var __addrs = make([]cipher.Addresser, len(addrs))
+	for _, addr := range addrs {
+		__addrs = append(__addrs, addr)
+	}
+	__arg1, ____return_err := cli.FormatAddressesAsJSON(__addrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyString(__arg1, _arg1)
@@ -57,26 +52,24 @@ func SKY_cli_FormatAddressesAsJSON(_addrs []C.cipher__Address, _arg1 *C.GoString
 
 //export SKY_cli_FormatAddressesAsJoinedArray
 func SKY_cli_FormatAddressesAsJoinedArray(_addrs []C.cipher__Address, _arg1 *C.GoString_) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	addrs := *(*[]cipher.Address)(unsafe.Pointer(&_addrs))
-	__arg1 := cli.FormatAddressesAsJoinedArray(addrs)
+	var __addrs = make([]cipher.Addresser, len(addrs))
+	for _, addr := range addrs {
+		__addrs = append(__addrs, addr)
+	}
+	__arg1 := cli.FormatAddressesAsJoinedArray(__addrs)
 	copyString(__arg1, _arg1)
 	return
 }
 
 //export SKY_cli_AddressesToStrings
 func SKY_cli_AddressesToStrings(_addrs []C.cipher__Address, _arg1 *C.GoSlice_) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	addrs := *(*[]cipher.Address)(unsafe.Pointer(&_addrs))
-	__arg1 := cli.AddressesToStrings(addrs)
+	var __addrs = make([]cipher.Addresser, len(addrs))
+	for _, addr := range addrs {
+		__addrs = append(__addrs, addr)
+	}
+	__arg1 := cli.AddressesToStrings(__addrs)
 	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	return
 }

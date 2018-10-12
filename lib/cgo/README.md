@@ -99,6 +99,15 @@ invocation. The caller will be responsible for
 [reallocating another memory buffer](http://en.cppreference.com/w/c/memory/realloc)
 using a higher `cap` and retry.
 
+### Instances of `time.Time`
+
+Instances of `time.Time` will be formatted as RFC3339 strings before crossing API boundaries.
+
+### Interface types
+
+At the moment there is limited support for functions with arguments
+of interface types or collections of these types.
+
 ## Generating documentation
 
 Follow these steps to generate API documentation.

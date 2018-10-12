@@ -15,7 +15,6 @@ import "C"
 
 //export SKY_wallet_CryptoTypeFromString
 func SKY_wallet_CryptoTypeFromString(_s string, _arg1 *C.GoString_) (____error_code uint32) {
-	____error_code = SKY_OK
 	s := _s
 	__arg1, ____return_err := wallet.CryptoTypeFromString(s)
 	____error_code = libErrorCode(____return_err)

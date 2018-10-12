@@ -9,7 +9,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
-#include "transutil.h"
+#include "skytxn.h"
 #include "time.h"
 
 TestSuite(coin_coin, .init = setup, .fini = teardown);
@@ -18,7 +18,7 @@ Test(coin_coin, TestAddress1){
   char* address_hex = "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8";
   char address[128];
   int result;
-  int length = hexnstr(address_hex, address, 128);
+  int length = hexnstr(address_hex, (unsigned char *) address, 128);
   cr_assert(length > 0, "Error decoding hex string");
   GoSlice slice = { address, length, 128 };
   cipher__PubKey pubkey;
@@ -33,7 +33,7 @@ Test(coin_coin, TestAddress2){
   char* address_hex = "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d";
   char address[128];
   int result;
-  int length = hexnstr(address_hex, address, 128);
+  int length = hexnstr(address_hex, (unsigned char *) address, 128);
   cr_assert(length > 0, "Error decoding hex string");
   GoSlice slice = { address, length, 128 };
   cipher__PubKey pubkey;
@@ -63,7 +63,7 @@ Test(coin_coin, TestCrypto2){
     char* address_hex = "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d";
     char address[128];
     int result;
-    int length = hexnstr(address_hex, address, 128);
+    int length = hexnstr(address_hex, (unsigned char *) address, 128);
     cr_assert(length == 32, "Error decoding hex string");
 
     GoSlice slice = { address, length, 128 };

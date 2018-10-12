@@ -35,6 +35,8 @@ const (
 const (
 	// SKY_BAD_HANDLE invalid handle argument
 	SKY_BAD_HANDLE = SKY_PKG_LIBCGO + iota + 1
+	// SKY_INVALID_TIMESTRING invalid time value
+	SKY_INVALID_TIMESTRING
 )
 
 // Package prefixes for error codes
@@ -428,11 +430,16 @@ var (
 	ErrorBadHandle = errors.New("Invalid or unknown handle value")
 	// ErrorUnknown unexpected error
 	ErrorUnknown = errors.New("Unexpected error")
+	// ErrorInvalidTimeString time string does not match expected time format
+	// More precise errors conditions can be found in the logs
+	ErrorInvalidTimeString = errors.New("Invalid time value")
 
+	codeToErrorMap = make(map[uint32]error)
 	errorToCodeMap = map[error]uint32{
 		// libcgo
-		ErrorBadHandle: SKY_BAD_HANDLE,
-		ErrorUnknown:   SKY_ERROR,
+		ErrorBadHandle:         SKY_BAD_HANDLE,
+		ErrorUnknown:           SKY_ERROR,
+		ErrorInvalidTimeString: SKY_INVALID_TIMESTRING,
 		// cipher
 		cipher.ErrAddressInvalidLength:    SKY_ErrAddressInvalidLength,
 		cipher.ErrAddressInvalidChecksum:  SKY_ErrAddressInvalidChecksum,
@@ -629,4 +636,11 @@ func libErrorCode(err error) uint32 {
 		return SKY_ErrTxnViolatesUserConstraint
 	}
 	return SKY_ERROR
+}
+
+func init() {
+	// Init reverse error code map
+	for _err := range errorToCodeMap {
+		codeToErrorMap[errorToCodeMap[_err]] = _err
+	}
 }

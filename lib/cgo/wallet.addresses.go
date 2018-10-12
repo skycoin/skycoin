@@ -13,6 +13,8 @@ import (
 */
 import "C"
 
+// FIXME: Removed from src/ . What's the way to do it now?
+/*
 //export SKY_wallet_CreateAddresses
 func SKY_wallet_CreateAddresses(_coinType string, _seed string, _genCount int, _hideSecretKey bool, _arg4 *C.ReadableWallet__Handle) (____error_code uint32) {
 	coinType := _coinType
@@ -26,3 +28,4 @@ func SKY_wallet_CreateAddresses(_coinType string, _seed string, _genCount int, _
 	}
 	return
 }
+*/

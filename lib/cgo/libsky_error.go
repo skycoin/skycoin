@@ -642,3 +642,5 @@ func init() {
 	// Init reverse error code map
 	for _err := range errorToCodeMap {
 		codeToErrorMap[errorToCodeMap[_err]] = _err
+	}
+}

@@ -944,7 +944,7 @@ func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 
 	if err := vs.DB.Update("InjectTransactionStrict", func(tx *dbutil.Tx) error {
 		var err error
-		known, err = vs.injectTransactionStrict(tx, txn)
+		known, err = vs.InjectTransactionStrictTx(tx, txn)
 		return err
 	}); err != nil {
 		return false, err
@@ -953,7 +953,12 @@ func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 	return known, nil
 }
 
-func (vs *Visor) injectTransactionStrict(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
+// InjectTransactionStrictTx records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
+// already in the blockchain.
+// The bool return value is whether or not the transaction was already in the pool.
+// If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
+// This method is only exported for use by the daemon gateway's InjectBroadcastTransaction method.
+func (vs *Visor) InjectTransactionStrictTx(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
 	if err := VerifySingleTxnUserConstraints(txn); err != nil {
 		return false, err
 	}
@@ -2571,4 +2576,13 @@ func (vs *Visor) GetUnspentOutputsSummary(filters []OutputsFilter) (*UnspentOutp
 		Outgoing:  outgoing,
 		Incoming:  incoming,
 	}, nil
+}
+
+// WithUpdateTx executes a function inside of a db.Update transaction.
+// This is exported for use by the daemon gateway's InjectBroadcastTransaction method.
+// Do not use it for other purposes.
+func (vs *Visor) WithUpdateTx(name string, f func(tx *dbutil.Tx) error) error {
+	return vs.DB.Update(name, func(tx *dbutil.Tx) error {
+		return f(tx)
+	})
 }

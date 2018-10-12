@@ -268,7 +268,7 @@ func TestNewWallet(t *testing.T) {
 					require.Equal(t, "", w.lastSeed())
 
 					for _, e := range w.Entries {
-						require.Equal(t, emptySeckey, e.Secret)
+						require.True(t, e.Secret.Null())
 					}
 
 					// Confirms that secrets field is not empty
@@ -321,7 +321,7 @@ func TestWalletLock(t *testing.T) {
 				tc.opts.CryptoType = ct
 			}
 			t.Run(name, func(t *testing.T) {
-				wltName := newWalletFilename()
+				wltName := NewWalletFilename()
 				w, err := NewWallet(wltName, tc.opts)
 				require.NoError(t, err)
 
@@ -1108,79 +1108,231 @@ var burnFactor3TestCases = []distributeSpendHoursTestCase{
 	},
 }
 
+var burnFactor10TestCases = []distributeSpendHoursTestCase{
+	{
+		name:            "no input hours, one addr, no change",
+		inputHours:      0,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "no input hours, two addrs, no change",
+		inputHours:      0,
+		nAddrs:          2,
+		haveChange:      false,
+		expectAddrHours: []uint64{0, 0},
+	},
+	{
+		name:            "no input hours, one addr, change",
+		inputHours:      0,
+		nAddrs:          1,
+		haveChange:      true,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "one input hour, one addr, no change",
+		inputHours:      1,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{0},
+	},
+	{
+		name:            "two input hours, one addr, no change",
+		inputHours:      2,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{1},
+	},
+	{
+		name:            "three input hours, one addr, no change",
+		inputHours:      3,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{2},
+	},
+	{
+		name:              "two input hours, one addr, change",
+		inputHours:        2,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{0},
+	},
+	{
+		name:              "three input hours, one addr, change",
+		inputHours:        3,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 1,
+		expectAddrHours:   []uint64{1},
+	},
+	{
+		name:              "four input hours, one addr, change",
+		inputHours:        4,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 2,
+		expectAddrHours:   []uint64{1},
+	},
+	{
+		name:            "four input hours, one addr, no change",
+		inputHours:      4,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{3},
+	},
+	{
+		name:            "four input hours, two addrs, no change",
+		inputHours:      4,
+		nAddrs:          2,
+		haveChange:      false,
+		expectAddrHours: []uint64{2, 1},
+	},
+	{
+		name:            "five input hours, one addr, no change",
+		inputHours:      5,
+		nAddrs:          1,
+		haveChange:      false,
+		expectAddrHours: []uint64{4},
+	},
+	{
+		name:              "five input hours, one addr, change",
+		inputHours:        5,
+		nAddrs:            1,
+		haveChange:        true,
+		expectChangeHours: 2,
+		expectAddrHours:   []uint64{2},
+	},
+	{
+		name:              "five input hours, two addr, change",
+		inputHours:        5,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 2,
+		expectAddrHours:   []uint64{1, 1},
+	},
+	{
+		name:              "32 input hours, two addr, change",
+		inputHours:        32,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 14,
+		expectAddrHours:   []uint64{7, 7},
+	},
+	{
+		name:              "35 input hours, two addr, change",
+		inputHours:        35,
+		nAddrs:            2,
+		haveChange:        true,
+		expectChangeHours: 16,
+		expectAddrHours:   []uint64{8, 7},
+	},
+	{
+		name:              "32 input hours, three addr, change",
+		inputHours:        32,
+		nAddrs:            3,
+		haveChange:        true,
+		expectChangeHours: 14,
+		expectAddrHours:   []uint64{5, 5, 4},
+	},
+}
+
 func TestWalletDistributeSpendHours(t *testing.T) {
-	var cases []distributeSpendHoursTestCase
-	switch fee.BurnFactor {
-	case 2:
-		cases = burnFactor2TestCases
-	case 3:
-		cases = burnFactor3TestCases
-	default:
-		t.Fatalf("No test cases defined for fee.BurnFactor=%d", fee.BurnFactor)
+	originalBurnFactor := fee.BurnFactor
+
+	cases := []struct {
+		burnFactor uint64
+		cases      []distributeSpendHoursTestCase
+	}{
+		{2, burnFactor2TestCases},
+		{3, burnFactor3TestCases},
+		{10, burnFactor10TestCases},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			changeHours, addrHours, totalHours := DistributeSpendHours(tc.inputHours, tc.nAddrs, tc.haveChange)
-			require.Equal(t, tc.expectChangeHours, changeHours)
-			require.Equal(t, tc.expectAddrHours, addrHours)
-			require.Equal(t, tc.nAddrs, uint64(len(addrHours)))
+	tested := false
+	for _, tcc := range cases {
+		if tcc.burnFactor == fee.BurnFactor {
+			tested = true
+		}
 
-			outputHours := changeHours
-			for _, h := range addrHours {
-				outputHours += h
-			}
-			require.True(t, tc.inputHours >= outputHours)
-			require.Equal(t, outputHours, totalHours)
+		for _, tc := range tcc.cases {
+			t.Run(tc.name, func(t *testing.T) {
+				fee.BurnFactor = tcc.burnFactor
+				defer func() {
+					fee.BurnFactor = originalBurnFactor
+				}()
 
-			if tc.inputHours != 0 {
-				err := fee.VerifyTransactionFeeForHours(outputHours, tc.inputHours-outputHours)
-				require.NoError(t, err)
+				changeHours, addrHours, totalHours := DistributeSpendHours(tc.inputHours, tc.nAddrs, tc.haveChange)
+				require.Equal(t, tc.expectChangeHours, changeHours)
+				require.Equal(t, tc.expectAddrHours, addrHours)
+				require.Equal(t, tc.nAddrs, uint64(len(addrHours)))
+
+				outputHours := changeHours
+				for _, h := range addrHours {
+					outputHours += h
+				}
+				require.True(t, tc.inputHours >= outputHours)
+				require.Equal(t, outputHours, totalHours)
+
+				if tc.inputHours != 0 {
+					err := fee.VerifyTransactionFeeForHours(outputHours, tc.inputHours-outputHours)
+					require.NoError(t, err)
+				}
+			})
+		}
+
+		t.Run(fmt.Sprintf("burn-factor-%d-range", tcc.burnFactor), func(t *testing.T) {
+			fee.BurnFactor = tcc.burnFactor
+			defer func() {
+				fee.BurnFactor = originalBurnFactor
+			}()
+
+			// Tests over range of values
+			for inputHours := uint64(0); inputHours <= 1e3; inputHours++ {
+				for nAddrs := uint64(1); nAddrs < 16; nAddrs++ {
+					for _, haveChange := range []bool{true, false} {
+						name := fmt.Sprintf("inputHours=%d nAddrs=%d haveChange=%v", inputHours, nAddrs, haveChange)
+						t.Run(name, func(t *testing.T) {
+							changeHours, addrHours, totalHours := DistributeSpendHours(inputHours, nAddrs, haveChange)
+							require.Equal(t, nAddrs, uint64(len(addrHours)))
+
+							var sumAddrHours uint64
+							for _, h := range addrHours {
+								sumAddrHours += h
+							}
+
+							if haveChange {
+								remainingHours := (inputHours - fee.RequiredFee(inputHours))
+								splitRemainingHours := remainingHours / 2
+								require.True(t, changeHours == splitRemainingHours || changeHours == splitRemainingHours+1)
+								require.Equal(t, splitRemainingHours, sumAddrHours)
+							} else {
+								require.Equal(t, uint64(0), changeHours)
+								require.Equal(t, inputHours-fee.RequiredFee(inputHours), sumAddrHours)
+							}
+
+							outputHours := sumAddrHours + changeHours
+							require.True(t, inputHours >= outputHours)
+							require.Equal(t, outputHours, totalHours)
+
+							if inputHours != 0 {
+								err := fee.VerifyTransactionFeeForHours(outputHours, inputHours-outputHours)
+								require.NoError(t, err)
+							}
+
+							// addrHours at the beginning and end of the array should not differ by more than one
+							max := addrHours[0]
+							min := addrHours[len(addrHours)-1]
+							require.True(t, max-min <= 1)
+						})
+					}
+				}
 			}
 		})
 	}
 
-	// Tests over range of values
-	for inputHours := uint64(0); inputHours <= 1e3; inputHours++ {
-		for nAddrs := uint64(1); nAddrs < 16; nAddrs++ {
-			for _, haveChange := range []bool{true, false} {
-				name := fmt.Sprintf("inputHours=%d nAddrs=%d haveChange=%v", inputHours, nAddrs, haveChange)
-				t.Run(name, func(t *testing.T) {
-					changeHours, addrHours, totalHours := DistributeSpendHours(inputHours, nAddrs, haveChange)
-					require.Equal(t, nAddrs, uint64(len(addrHours)))
-
-					var sumAddrHours uint64
-					for _, h := range addrHours {
-						sumAddrHours += h
-					}
-
-					if haveChange {
-						remainingHours := (inputHours - fee.RequiredFee(inputHours))
-						splitRemainingHours := remainingHours / 2
-						require.True(t, changeHours == splitRemainingHours || changeHours == splitRemainingHours+1)
-						require.Equal(t, splitRemainingHours, sumAddrHours)
-					} else {
-						require.Equal(t, uint64(0), changeHours)
-						require.Equal(t, inputHours-fee.RequiredFee(inputHours), sumAddrHours)
-					}
-
-					outputHours := sumAddrHours + changeHours
-					require.True(t, inputHours >= outputHours)
-					require.Equal(t, outputHours, totalHours)
-
-					if inputHours != 0 {
-						err := fee.VerifyTransactionFeeForHours(outputHours, inputHours-outputHours)
-						require.NoError(t, err)
-					}
-
-					// addrHours at the beginning and end of the array should not differ by more than one
-					max := addrHours[0]
-					min := addrHours[len(addrHours)-1]
-					require.True(t, max-min <= 1)
-				})
-			}
-		}
-	}
+	require.True(t, tested, "configured BurnFactor=%d has not been tested", fee.BurnFactor)
 }
 
 func uxBalancesEqual(a, b []UxBalance) bool {

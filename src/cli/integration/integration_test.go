@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,6 +29,7 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -371,7 +373,7 @@ func useCSRF(t *testing.T) bool {
 	return useCSRF
 }
 
-func TestGenerateAddresses(t *testing.T) {
+func TestWalletAddAddresses(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return
 	}
@@ -385,44 +387,44 @@ func TestGenerateAddresses(t *testing.T) {
 		goldenFile   string
 	}{
 		{
-			name:         "generateAddresses",
+			name:         "walletAddAddresses",
 			encrypted:    false,
-			args:         []string{"generateAddresses"},
+			args:         []string{"walletAddAddresses"},
 			expectOutput: []byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
 			goldenFile:   "generate-addresses.golden",
 		},
 		{
-			name:         "generateAddresses -n 2 -j",
+			name:         "walletAddAddresses -n 2 -j",
 			encrypted:    false,
-			args:         []string{"generateAddresses", "-n", "2", "-j"},
+			args:         []string{"walletAddAddresses", "-n", "2", "-j"},
 			expectOutput: []byte("{\n    \"addresses\": [\n        \"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\",\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\"\n    ]\n}\n"),
 			goldenFile:   "generate-addresses-2.golden",
 		},
 		{
-			name:         "generateAddresses -n -2 -j",
+			name:         "walletAddAddresses -n -2 -j",
 			encrypted:    false,
-			args:         []string{"generateAddresses", "-n", "-2", "-j"},
+			args:         []string{"walletAddAddresses", "-n", "-2", "-j"},
 			isUsageErr:   true,
 			expectOutput: []byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
 			goldenFile:   "generate-addresses-2.golden",
 		},
 		{
-			name:         "generateAddresses in encrypted wallet",
+			name:         "walletAddAddresses in encrypted wallet",
 			encrypted:    true,
-			args:         []string{"generateAddresses", "-p", "pwd", "-j"},
+			args:         []string{"walletAddAddresses", "-p", "pwd", "-j"},
 			expectOutput: []byte("{\n    \"addresses\": [\n        \"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\"\n    ]\n}\n"),
 			goldenFile:   "generate-addresses-encrypted.golden",
 		},
 		{
-			name:         "generateAddresses in encrypted wallet with invalid password",
+			name:         "walletAddAddresses in encrypted wallet with invalid password",
 			encrypted:    true,
-			args:         []string{"generateAddresses", "-p", "invalid password", "-j"},
+			args:         []string{"walletAddAddresses", "-p", "invalid password", "-j"},
 			expectOutput: []byte("invalid password\n"),
 		},
 		{
-			name:         "generateAddresses in unencrypted wallet with password",
+			name:         "walletAddAddresses in unencrypted wallet with password",
 			encrypted:    false,
-			args:         []string{"generateAddresses", "-p", "pwd"},
+			args:         []string{"walletAddAddresses", "-p", "pwd"},
 			expectOutput: []byte("wallet is not encrypted\n"),
 		},
 	}
@@ -559,20 +561,22 @@ func TestAddressGen(t *testing.T) {
 	}
 
 	tt := []struct {
-		name        string
-		args        []string
-		outputCheck func(t *testing.T, output []byte)
+		name  string
+		args  []string
+		err   error
+		check func(t *testing.T, output []byte)
 	}{
 		{
-			"addressGen",
-			[]string{"addressGen"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --mode=wallet",
+			args: []string{"addressGen", "--mode=wallet"},
+			check: func(t *testing.T, v []byte) {
+
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, "skycoin", w.Meta["coin"])
+				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
 
 				// Confirms that the seed is consisted of 12 words
 				seed := w.Meta["seed"]
@@ -582,46 +586,15 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen --count 2",
-			[]string{"addressGen", "--count", "2"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen  --mode=wallet --num 2",
+			args: []string{"addressGen", "--mode=wallet", "--num", "2"},
+			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, "skycoin", w.Meta["coin"])
-
-				// Confirms that the seed is consisted of 12 words
-				seed := w.Meta["seed"]
-				require.NotEmpty(t, seed)
-				ss := strings.Split(seed, " ")
-				require.Len(t, ss, 12)
-
-				// Confirms that the wallet have 2 address
-				require.Len(t, w.Entries, 2)
-
-				// Confirms the addresses are generated from the seed
-				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
-				for i, key := range keys {
-					pk := cipher.MustPubKeyFromSecKey(key)
-					addr := cipher.MustAddressFromSecKey(key)
-					require.Equal(t, addr.String(), w.Entries[i].Address)
-					require.Equal(t, pk.Hex(), w.Entries[i].Public)
-					require.Equal(t, key.Hex(), w.Entries[i].Secret)
-				}
-			},
-		},
-		{
-			"addressGen -c 2",
-			[]string{"addressGen", "-c", "2"},
-			func(t *testing.T, v []byte) {
-				var w wallet.ReadableWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
-
-				// Confirms the wallet type is skycoin
-				require.Equal(t, "skycoin", w.Meta["coin"])
+				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
 
 				// Confirms that the seed is consisted of 12 words
 				seed := w.Meta["seed"]
@@ -644,15 +617,46 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen --hide-secret -c 2",
-			[]string{"addressGen", "--hide-secret", "-c", "2"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --mode=wallet -n 2",
+			args: []string{"addressGen", "--mode=wallet", "-n", "2"},
+			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, "skycoin", w.Meta["coin"])
+				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
+
+				// Confirms that the seed is consisted of 12 words
+				seed := w.Meta["seed"]
+				require.NotEmpty(t, seed)
+				ss := strings.Split(seed, " ")
+				require.Len(t, ss, 12)
+
+				// Confirms that the wallet have 2 address
+				require.Len(t, w.Entries, 2)
+
+				// Confirms the addresses are generated from the seed
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
+				for i, key := range keys {
+					pk := cipher.MustPubKeyFromSecKey(key)
+					addr := cipher.MustAddressFromSecKey(key)
+					require.Equal(t, addr.String(), w.Entries[i].Address)
+					require.Equal(t, pk.Hex(), w.Entries[i].Public)
+					require.Equal(t, key.Hex(), w.Entries[i].Secret)
+				}
+			},
+		},
+		{
+			name: "addressGen  --mode=wallet --hide-secrets -n 2",
+			args: []string{"addressGen", "--mode=wallet", "--hide-secrets", "-n", "2"},
+			check: func(t *testing.T, v []byte) {
+				var w wallet.ReadableWallet
+				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				require.NoError(t, err)
+
+				// Confirms the wallet type is skycoin
+				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
 
 				// Confirms the secrets in Entries are hidden
 				require.Len(t, w.Entries, 2)
@@ -662,15 +666,15 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen -s -c 2",
-			[]string{"addressGen", "-s", "-c", "2"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --m=wallet -hs -n 2",
+			args: []string{"addressGen", "--m=wallet", "-hs", "-n", "2"},
+			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, "skycoin", w.Meta["coin"])
+				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
 
 				// Confirms the secrets in Entries are hidden
 				require.Len(t, w.Entries, 2)
@@ -680,15 +684,15 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen --bitcoin -c 2",
-			[]string{"addressGen", "--bitcoin", "-c", "2"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --mode=wallet--coin=bitcoin -n 2",
+			args: []string{"addressGen", "--mode=wallet", "--coin=bitcoin", "-n", "2"},
+			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, "bitcoin", w.Meta["coin"])
+				require.Equal(t, wallet.CoinTypeBitcoin, wallet.CoinType(w.Meta["coin"]))
 
 				require.Len(t, w.Entries, 2)
 
@@ -706,15 +710,15 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen -b -c 2",
-			[]string{"addressGen", "-b", "-c", "2"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --mode=wallet --c=btc -n 2",
+			args: []string{"addressGen", "--mode=wallet", "--c=btc", "-n", "2"},
+			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, "bitcoin", w.Meta["coin"])
+				require.Equal(t, wallet.CoinTypeBitcoin, wallet.CoinType(w.Meta["coin"]))
 
 				require.Len(t, w.Entries, 2)
 
@@ -732,9 +736,9 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen --hex",
-			[]string{"addressGen", "--hex"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --mode=wallet --hex",
+			args: []string{"addressGen", "--mode=wallet", "--hex"},
+			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
@@ -745,22 +749,9 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen -x",
-			[]string{"addressGen", "-x"},
-			func(t *testing.T, v []byte) {
-				var w wallet.ReadableWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
-
-				// Confirms the seed is a valid hex string
-				_, err = hex.DecodeString(w.Meta["seed"])
-				require.NoError(t, err)
-			},
-		},
-		{
-			"addressGen --only-addr",
-			[]string{"addressGen", "--only-addr"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --mode=addresses",
+			args: []string{"addressGen", "--mode=addresses"},
+			check: func(t *testing.T, v []byte) {
 				// Confirms that only addresses are returned
 				v = bytes.Trim(v, "\n")
 				_, err := cipher.DecodeBase58Address(string(v))
@@ -768,9 +759,9 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen --oa",
-			[]string{"addressGen", "--oa"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --mode=addresses --entropy=256",
+			args: []string{"addressGen", "--mode=addresses", "--entropy=256"},
+			check: func(t *testing.T, v []byte) {
 				// Confirms that only addresses are returned
 				v = bytes.Trim(v, "\n")
 				_, err := cipher.DecodeBase58Address(string(v))
@@ -778,9 +769,17 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			"addressGen --seed=123",
-			[]string{"addressGen", "--seed", "123"},
-			func(t *testing.T, v []byte) {
+			name: "addressGen --entropy=9",
+			args: []string{"addressGen", "--entropy=9"},
+			check: func(t *testing.T, v []byte) {
+				require.Equal(t, "entropy must be 128 or 256\n", string(v))
+			},
+			err: errors.New("exit status 1"),
+		},
+		{
+			name: "addressGen --mode=wallet --seed 123",
+			args: []string{"addressGen", "--mode=wallet", "--seed", "123"},
+			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
@@ -793,13 +792,313 @@ func TestAddressGen(t *testing.T) {
 				require.Equal(t, sk.Hex(), w.Entries[0].Secret)
 			},
 		},
+		{
+			name: "addressGen --mode=wallet -s 123",
+			args: []string{"addressGen", "--mode=wallet", "-s", "123"},
+			check: func(t *testing.T, v []byte) {
+				var w wallet.ReadableWallet
+				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				require.NoError(t, err)
+
+				pk, sk := cipher.MustGenerateDeterministicKeyPair([]byte("123"))
+				addr := cipher.AddressFromPubKey(pk)
+				require.Len(t, w.Entries, 1)
+				require.Equal(t, addr.String(), w.Entries[0].Address)
+				require.Equal(t, pk.Hex(), w.Entries[0].Public)
+				require.Equal(t, sk.Hex(), w.Entries[0].Secret)
+			},
+		},
+		{
+			name: "addressGen --hide-secrets --mode=secrets",
+			args: []string{"addressGen", "--mode=secrets", "--hide-secrets"},
+			check: func(t *testing.T, v []byte) {
+				require.Equal(t, "secrets mode selected but hideSecrets enabled\n", string(v))
+			},
+			err: errors.New("exit status 1"),
+		},
+		{
+			name: "addressGen --mode=secrets",
+			args: []string{"addressGen", "--mode=secrets"},
+			check: func(t *testing.T, v []byte) {
+				// Confirms that only secret keys are returned
+				v = bytes.Trim(v, "\n")
+				_, err := cipher.SecKeyFromHex(string(v))
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "addressGen --mode=secrets --coin=bitcoin",
+			args: []string{"addressGen", "--mode=secrets", "--coin=bitcoin"},
+			check: func(t *testing.T, v []byte) {
+				// Confirms that only secret keys are returned
+				v = bytes.Trim(v, "\n")
+				_, err := cipher.SecKeyFromBitcoinWalletImportFormat(string(v))
+				require.NoError(t, err)
+			},
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			if tc.err != nil {
+				require.Error(t, err)
+				require.Equal(t, tc.err.Error(), err.Error())
+			} else {
+				require.NoError(t, err)
+			}
+
+			tc.check(t, output)
+		})
+	}
+}
+
+func TestFiberAddressGen(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	checkAddrsFile := func(t *testing.T, fn string, n int) []string {
+		b, err := ioutil.ReadFile(fn)
+		require.NoError(t, err)
+
+		addrs := strings.Split(strings.TrimSpace(string(b)), "\n")
+		require.Equal(t, n, len(addrs))
+
+		rx := regexp.MustCompile(`"([a-zA-Z0-9]+)",`)
+
+		addrsMap := make(map[string]struct{}, len(addrs))
+		out := make([]string, len(addrs))
+		for i, a := range addrs {
+			_, ok := addrsMap[a]
+			require.False(t, ok)
+			addrsMap[a] = struct{}{}
+
+			matches := rx.FindStringSubmatch(a)
+			require.Len(t, matches, 2)
+			addr := matches[1]
+
+			_, err := cipher.DecodeBase58Address(addr)
 			require.NoError(t, err)
-			tc.outputCheck(t, output)
+
+			out[i] = addr
+		}
+
+		return out
+	}
+
+	checkSeedsFile := func(t *testing.T, fn string, entropy int, addrs []string) {
+		f, err := os.Open(fn)
+		require.NoError(t, err)
+		defer f.Close()
+
+		r := csv.NewReader(f)
+		records, err := r.ReadAll()
+		require.NoError(t, err)
+		require.Len(t, records, len(addrs))
+
+		seedsMap := make(map[string]struct{}, len(records))
+
+		for i, x := range records {
+			require.Len(t, x, 2)
+
+			// addr is valid and matches the addr written to the addrs file
+			addr := x[0]
+			_, err := cipher.DecodeBase58Address(addr)
+			require.NoError(t, err)
+			require.Equal(t, addrs[i], addr)
+
+			seed := x[1]
+
+			// no duplicate seeds
+			_, ok := seedsMap[seed]
+			require.False(t, ok)
+			seedsMap[seed] = struct{}{}
+
+			// seed is a valid mnemoic
+			isValid := bip39.IsMnemonicValid(seed)
+			require.True(t, isValid)
+
+			// seed entropy is as expected
+			switch entropy {
+			case 128:
+				require.Len(t, strings.Split(seed, " "), 12)
+			case 256:
+				require.Len(t, strings.Split(seed, " "), 24)
+			default:
+				t.Fatalf("entropy must be 128 or 256")
+			}
+
+			// seed generates the correct address
+			pk, _ := cipher.MustGenerateDeterministicKeyPair([]byte(seed))
+			regenAddr := cipher.AddressFromPubKey(pk)
+			require.Equal(t, addr, regenAddr.String())
+		}
+	}
+
+	touch := func(t *testing.T, fn string) {
+		f, err := os.Create(fn)
+		require.NoError(t, err)
+		defer f.Close()
+		err = f.Close()
+		require.NoError(t, err)
+	}
+
+	addrsFilename := "addresses.txt"
+	seedsFilename := "seeds.csv"
+
+	cases := []struct {
+		name  string
+		args  []string
+		err   error
+		setup func(t *testing.T)
+		check func(t *testing.T, v []byte)
+	}{
+		{
+			name: "fiberAddressGen",
+			args: []string{"fiberAddressGen"},
+			setup: func(t *testing.T) {
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
+			},
+			check: func(t *testing.T, v []byte) {
+				defer os.Remove(addrsFilename)
+				defer os.Remove(seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
+				addrs := checkAddrsFile(t, addrsFilename, 100)
+				checkSeedsFile(t, seedsFilename, 128, addrs)
+			},
+		},
+		{
+			name: "fiberAddressGen --entropy=256",
+			args: []string{"fiberAddressGen", "--entropy=256"},
+			setup: func(t *testing.T) {
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
+			},
+			check: func(t *testing.T, v []byte) {
+				defer os.Remove(addrsFilename)
+				defer os.Remove(seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
+				addrs := checkAddrsFile(t, addrsFilename, 100)
+				checkSeedsFile(t, seedsFilename, 256, addrs)
+			},
+		},
+		{
+			name: "fiberAddressGen --n=1",
+			args: []string{"fiberAddressGen", "--n=1"},
+			setup: func(t *testing.T) {
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
+			},
+			check: func(t *testing.T, v []byte) {
+				defer os.Remove(addrsFilename)
+				defer os.Remove(seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
+				addrs := checkAddrsFile(t, addrsFilename, 1)
+				checkSeedsFile(t, seedsFilename, 128, addrs)
+			},
+		},
+		{
+			name: "fiberAddressGen can't overwrite addrs file",
+			args: []string{"fiberAddressGen"},
+			setup: func(t *testing.T) {
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
+				touch(t, addrsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+			},
+			check: func(t *testing.T, v []byte) {
+				defer os.Remove(addrsFilename)
+				defer os.Remove(seedsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
+				require.Equal(t, "-addrs-file \"addresses.txt\" already exists. Use -overwrite to force writing\n", string(v))
+			},
+			err: errors.New("exit status 1"),
+		},
+		{
+			name: "fiberAddressGen can't overwrite seeds file",
+			args: []string{"fiberAddressGen"},
+			setup: func(t *testing.T) {
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
+				touch(t, seedsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
+			},
+			check: func(t *testing.T, v []byte) {
+				defer os.Remove(addrsFilename)
+				defer os.Remove(seedsFilename)
+				testutil.RequireFileNotExists(t, addrsFilename)
+				require.Equal(t, "-seeds-file \"seeds.csv\" already exists. Use -overwrite to force writing\n", string(v))
+			},
+			err: errors.New("exit status 1"),
+		},
+		{
+			name: "fiberAddressGen --overwrite",
+			args: []string{"fiberAddressGen", "--overwrite"},
+			setup: func(t *testing.T) {
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
+				touch(t, addrsFilename)
+				touch(t, seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
+			},
+			check: func(t *testing.T, v []byte) {
+				defer os.Remove(addrsFilename)
+				defer os.Remove(seedsFilename)
+				testutil.RequireFileExists(t, addrsFilename)
+				testutil.RequireFileExists(t, seedsFilename)
+				addrs := checkAddrsFile(t, addrsFilename, 100)
+				checkSeedsFile(t, seedsFilename, 128, addrs)
+			},
+		},
+		{
+			name: "fiberAddressGen -addrs-file=fooaddrs.txt -seeds-file=fooseeds.csv",
+			args: []string{"fiberAddressGen", "-addrs-file", "fooaddrs.txt", "-seeds-file", "fooseeds.csv"},
+			setup: func(t *testing.T) {
+				testutil.RequireFileNotExists(t, "fooaddrs.txt")
+				testutil.RequireFileNotExists(t, "fooseeds.csv")
+			},
+			check: func(t *testing.T, v []byte) {
+				defer os.Remove("fooaddrs.txt")
+				defer os.Remove("fooseeds.csv")
+				testutil.RequireFileExists(t, "fooaddrs.txt")
+				testutil.RequireFileExists(t, "fooseeds.csv")
+				addrs := checkAddrsFile(t, "fooaddrs.txt", 100)
+				checkSeedsFile(t, "fooseeds.csv", 128, addrs)
+			},
+		},
+		{
+			name: "fiberAddressGen positional-args-not-allowed",
+			args: []string{"fiberAddressGen", "foo"},
+			check: func(t *testing.T, v []byte) {
+				testutil.RequireFileNotExists(t, addrsFilename)
+				testutil.RequireFileNotExists(t, seedsFilename)
+				require.Equal(t, "This command does not take any positional arguments\n", string(v))
+			},
+			err: errors.New("exit status 1"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.setup != nil {
+				tc.setup(t)
+			}
+
+			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			if tc.err != nil {
+				require.Error(t, err)
+				require.Equal(t, tc.err.Error(), err.Error())
+			} else {
+				require.NoError(t, err)
+			}
+
+			tc.check(t, output)
 		})
 	}
 }
@@ -2225,7 +2524,7 @@ func TestVersion(t *testing.T) {
 	require.Len(t, vers, 4)
 }
 
-func TestStableGenerateWallet(t *testing.T) {
+func TestStableWalletCreate(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -2362,7 +2661,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			defer clean()
 
 			// Run command with arguments
-			args := append([]string{"generateWallet"}, tc.args...)
+			args := append([]string{"walletCreate"}, tc.args...)
 			output, err := exec.Command(binaryPath, args...).CombinedOutput()
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")

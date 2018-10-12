@@ -12,13 +12,13 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
-type verifyTxFeeTestCase struct {
+type verifyTxnFeeTestCase struct {
 	inputHours  uint64
 	outputHours uint64
 	err         error
 }
 
-var burnFactor2verifyTxFeeTestCase = []verifyTxFeeTestCase{
+var burnFactor2VerifyTxnFeeTestCases = []verifyTxnFeeTestCase{
 	{0, 0, ErrTxnNoFee},
 	{1, 0, nil},
 	{1, 1, ErrTxnNoFee},
@@ -36,7 +36,7 @@ var burnFactor2verifyTxFeeTestCase = []verifyTxFeeTestCase{
 	{4, 4, ErrTxnNoFee},
 }
 
-var burnFactor3verifyTxFeeTestCase = []verifyTxFeeTestCase{
+var burnFactor3VerifyTxnFeeTestCases = []verifyTxnFeeTestCase{
 	{0, 0, ErrTxnNoFee},
 	{1, 0, nil},
 	{1, 1, ErrTxnNoFee},
@@ -60,7 +60,47 @@ var burnFactor3verifyTxFeeTestCase = []verifyTxFeeTestCase{
 	{5, 5, ErrTxnNoFee},
 }
 
+var burnFactor10VerifyTxnFeeTestCases = []verifyTxnFeeTestCase{
+	{0, 0, ErrTxnNoFee},
+	{1, 0, nil},
+	{1, 1, ErrTxnNoFee},
+	{2, 0, nil},
+	{2, 1, nil},
+	{2, 2, ErrTxnNoFee},
+	{3, 0, nil},
+	{3, 1, nil},
+	{3, 2, nil},
+	{3, 3, ErrTxnNoFee},
+	{4, 0, nil},
+	{4, 1, nil},
+	{4, 2, nil},
+	{4, 3, nil},
+	{4, 4, ErrTxnNoFee},
+	{5, 0, nil},
+	{5, 1, nil},
+	{5, 2, nil},
+	{5, 3, nil},
+	{5, 4, nil},
+	{5, 5, ErrTxnNoFee},
+	{9, 8, nil},
+	{9, 9, ErrTxnNoFee},
+	{10, 5, nil},
+	{10, 9, nil},
+	{10, 10, ErrTxnNoFee},
+	{11, 9, nil},
+	{11, 10, ErrTxnInsufficientFee},
+	{11, 11, ErrTxnNoFee},
+	{19, 17, nil},
+	{19, 18, ErrTxnInsufficientFee},
+	{19, 19, ErrTxnNoFee},
+	{20, 18, nil},
+	{20, 19, ErrTxnInsufficientFee},
+	{20, 20, ErrTxnNoFee},
+}
+
 func TestVerifyTransactionFee(t *testing.T) {
+	originalBurnFactor := BurnFactor
+
 	emptyTxn := &coin.Transaction{}
 	hours, err := emptyTxn.OutputHours()
 	require.NoError(t, err)
@@ -114,29 +154,42 @@ func TestVerifyTransactionFee(t *testing.T) {
 	err = VerifyTransactionFee(txn, 10)
 	testutil.RequireError(t, err, "Transaction output hours overflow")
 
-	var cases []verifyTxFeeTestCase
-	switch BurnFactor {
-	case 2:
-		cases = burnFactor2verifyTxFeeTestCase
-	case 3:
-		cases = burnFactor3verifyTxFeeTestCase
-	default:
-		t.Fatalf("No test cases for BurnFactor=%d", BurnFactor)
+	cases := []struct {
+		burnFactor uint64
+		cases      []verifyTxnFeeTestCase
+	}{
+		{2, burnFactor2VerifyTxnFeeTestCases},
+		{3, burnFactor3VerifyTxnFeeTestCases},
+		{10, burnFactor10VerifyTxnFeeTestCases},
 	}
 
-	for _, tc := range cases {
-		name := fmt.Sprintf("input=%d output=%d", tc.inputHours, tc.outputHours)
-		t.Run(name, func(t *testing.T) {
-			txn := &coin.Transaction{}
-			txn.Out = append(txn.Out, coin.TransactionOutput{
-				Hours: tc.outputHours,
+	tested := false
+	for _, tcc := range cases {
+		if tcc.burnFactor == BurnFactor {
+			tested = true
+		}
+
+		for _, tc := range tcc.cases {
+			name := fmt.Sprintf("burnFactor=%d input=%d output=%d", tcc.burnFactor, tc.inputHours, tc.outputHours)
+			t.Run(name, func(t *testing.T) {
+				BurnFactor = tcc.burnFactor
+				defer func() {
+					BurnFactor = originalBurnFactor
+				}()
+
+				txn := &coin.Transaction{}
+				txn.Out = append(txn.Out, coin.TransactionOutput{
+					Hours: tc.outputHours,
+				})
+
+				require.True(t, tc.inputHours >= tc.outputHours)
+				err := VerifyTransactionFee(txn, tc.inputHours-tc.outputHours)
+				require.Equal(t, tc.err, err)
 			})
-
-			require.True(t, tc.inputHours >= tc.outputHours)
-			err := VerifyTransactionFee(txn, tc.inputHours-tc.outputHours)
-			require.Equal(t, tc.err, err)
-		})
+		}
 	}
+
+	require.True(t, tested, "configured BurnFactor=%d has not been tested", BurnFactor)
 }
 
 type requiredFeeTestCase struct {
@@ -175,27 +228,65 @@ var burnFactor3RequiredFeeTestCases = []requiredFeeTestCase{
 	{1003, 335},
 }
 
+var burnFactor10RequiredFeeTestCases = []requiredFeeTestCase{
+	{0, 0},
+	{1, 1},
+	{2, 1},
+	{3, 1},
+	{4, 1},
+	{5, 1},
+	{6, 1},
+	{7, 1},
+	{8, 1},
+	{9, 1},
+	{10, 1},
+	{11, 2},
+	{19, 2},
+	{20, 2},
+	{21, 3},
+	{999, 100},
+	{1000, 100},
+	{1001, 101},
+	{1002, 101},
+	{1003, 101},
+}
+
 func TestRequiredFee(t *testing.T) {
-	var cases []requiredFeeTestCase
-	switch BurnFactor {
-	case 2:
-		cases = burnFactor2RequiredFeeTestCases
-	case 3:
-		cases = burnFactor3RequiredFeeTestCases
-	default:
-		t.Fatalf("No test cases for BurnFactor=%d", BurnFactor)
+	originalBurnFactor := BurnFactor
+
+	cases := []struct {
+		burnFactor uint64
+		cases      []requiredFeeTestCase
+	}{
+		{2, burnFactor2RequiredFeeTestCases},
+		{3, burnFactor3RequiredFeeTestCases},
+		{10, burnFactor10RequiredFeeTestCases},
 	}
 
-	for _, tc := range cases {
-		name := fmt.Sprintf("hours=%d fee=%d", tc.hours, tc.fee)
-		t.Run(name, func(t *testing.T) {
-			fee := RequiredFee(tc.hours)
-			require.Equal(t, tc.fee, fee)
+	tested := false
+	for _, tcc := range cases {
+		if tcc.burnFactor == BurnFactor {
+			tested = true
+		}
 
-			remainingHours := RemainingHours(tc.hours)
-			require.Equal(t, tc.hours-fee, remainingHours)
-		})
+		for _, tc := range tcc.cases {
+			name := fmt.Sprintf("burnFactor=%d hours=%d fee=%d", tcc.burnFactor, tc.hours, tc.fee)
+			t.Run(name, func(t *testing.T) {
+				BurnFactor = tcc.burnFactor
+				defer func() {
+					BurnFactor = originalBurnFactor
+				}()
+
+				fee := RequiredFee(tc.hours)
+				require.Equal(t, tc.fee, fee)
+
+				remainingHours := RemainingHours(tc.hours)
+				require.Equal(t, tc.hours-fee, remainingHours)
+			})
+		}
 	}
+
+	require.True(t, tested, "configured BurnFactor=%d has not been tested", BurnFactor)
 }
 
 func TestTransactionFee(t *testing.T) {

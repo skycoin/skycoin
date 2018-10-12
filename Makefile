@@ -155,6 +155,9 @@ integration-test-live-wallet: ## Run live integration tests with wallet
 integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
+integration-test-live-disable-networking: ## Run live integration tests against a node with networking disabled (requires wallet)
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
+
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
 
@@ -222,7 +225,7 @@ clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
 
 clean-coverage: ## Remove coverage output files
-	rm -r ./coverage/
+	rm -rf ./coverage/
 
 newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
 	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)

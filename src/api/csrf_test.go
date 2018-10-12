@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -81,7 +82,12 @@ func TestCSRFWrapper(t *testing.T) {
 
 					status := rr.Code
 					require.Equal(t, http.StatusForbidden, status, "wrong status code: got `%v` want `%v`", status, http.StatusForbidden)
-					require.Equal(t, "403 Forbidden - invalid CSRF token\n", rr.Body.String())
+
+					if strings.HasPrefix(endpoint, "/api/v2") {
+						require.Equal(t, "{\n    \"error\": {\n        \"message\": \"invalid CSRF token\",\n        \"code\": 403\n    }\n}", rr.Body.String())
+					} else {
+						require.Equal(t, "403 Forbidden - invalid CSRF token\n", rr.Body.String())
+					}
 				})
 			}
 		}

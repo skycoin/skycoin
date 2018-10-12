@@ -123,7 +123,7 @@ func getCSRFToken(store *CSRFStore) http.HandlerFunc {
 }
 
 // CSRFCheck verifies X-CSRF-Token header value
-func CSRFCheck(store *CSRFStore, handler http.Handler) http.Handler {
+func CSRFCheck(apiVersion string, store *CSRFStore, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if store.Enabled {
 			switch r.Method {
@@ -131,7 +131,7 @@ func CSRFCheck(store *CSRFStore, handler http.Handler) http.Handler {
 				token := r.Header.Get(CSRFHeaderName)
 				if err := store.verifyToken(token); err != nil {
 					logger.Errorf("CSRF token invalid: %v", err)
-					wh.Error403(w, "invalid CSRF token")
+					writeError(w, apiVersion, http.StatusForbidden, "invalid CSRF token")
 					return
 				}
 			}

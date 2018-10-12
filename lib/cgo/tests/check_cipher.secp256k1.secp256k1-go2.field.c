@@ -17,25 +17,25 @@
 TestSuite(cipher_secp256k1_field, .init = setup, .fini = teardown);
 
 Test(cipher_secp256k1_field, TestFieldInv){
-	secp256k1go__Field in;
-	secp256k1go__Field out;
-	secp256k1go__Field expected;
-	
-	memset(&in, 0, sizeof(secp256k1go__Field));
-	memset(&out, 0, sizeof(secp256k1go__Field));
-	memset(&expected, 0, sizeof(secp256k1go__Field));
-	
-	GoUint32 error_code;
-	GoInt8 equal = 0;
-	
-	GoString InStr = {INHEX, strlen(INHEX)};
-	GoString ExpStr = {EXPHEX, strlen(EXPHEX)};
-	error_code = SKY_secp256k1go_Field_SetHex(&in, InStr);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
-	error_code = SKY_secp256k1go_Field_SetHex(&expected, ExpStr);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
-	error_code = SKY_secp256k1go_Field_Inv(&in, &out);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_Inv failed");
-	error_code = SKY_secp256k1go_Field_Equals(&out, &expected, &equal);
-	cr_assert(error_code == SKY_OK && equal, "SKY_secp256k1go_Field_Inv failed, result is different than expected.");
+  secp256k1go__Field in;
+  secp256k1go__Field out;
+  secp256k1go__Field expected;
+  
+  memset(&in, 0, sizeof(secp256k1go__Field));
+  memset(&out, 0, sizeof(secp256k1go__Field));
+  memset(&expected, 0, sizeof(secp256k1go__Field));
+  
+  GoUint32 error_code;
+  GoUint8 equal = 0;
+  
+  GoString InStr = {INHEX, strlen(INHEX)};
+  GoString ExpStr = {EXPHEX, strlen(EXPHEX)};
+  error_code = SKY_secp256k1go_Field_SetHex(&in, InStr);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  error_code = SKY_secp256k1go_Field_SetHex(&expected, ExpStr);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  error_code = SKY_secp256k1go_Field_Inv(&in, &out);
+  cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_Inv failed");
+  error_code = SKY_secp256k1go_Field_Equals(&out, &expected, &equal);
+  cr_assert(error_code == SKY_OK && equal, "SKY_secp256k1go_Field_Inv failed, result is different than expected.");
 }

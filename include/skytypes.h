@@ -180,6 +180,10 @@ typedef Handle ReadableOutputSet__Handle;
  * */
 typedef Handle ReadableOutputSet_Handle;
 /**
+ *  ReadableOutputSet Handle
+ * */
+typedef Handle ReadableOutputSet_Handle;
+/**
  * Instances of Go interface types.
  */
 typedef struct {
@@ -200,14 +204,14 @@ typedef struct {
 } GoSlice_;
 
 typedef struct {
-	BOOL 		neg;
-	GoSlice_ 	nat;
+  BOOL     neg;
+  GoSlice_   nat;
 } Number;
 
 typedef struct {
-	//TODO: stdevEclipse Define Signature
-	Number R;
-	Number S;
+  //TODO: stdevEclipse Define Signature
+  Number R;
+  Number S;
 } Signature;
 
 #include "skytypes.gen.h"
@@ -216,8 +220,8 @@ typedef struct {
  * Internal representation of a Skycoin wallet.
  */
 typedef struct {
-	GoMap_ Meta;        ///< Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
-	GoSlice_ Entries;   ///< Entries field stores the address entries that are deterministically generated from seed.
+  GoMap_ Meta;        ///< Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
+  GoSlice_ Entries;   ///< Entries field stores the address entries that are deterministically generated from seed.
 } Wallet;
 
 typedef GoUint8_  poly1305__Mac[16];
@@ -258,15 +262,6 @@ typedef Handle Transaction__Handle;
  * Memory handle to access to coin.Transactions
  */
 typedef Handle Transactions__Handle;
-#include "cipher.hash.go.h"
-#include "cipher.crypto.go.h"
-#include "cipher.address.go.h"
-#include "cipher.bitcoin.go.h"
-#include "cli.create_rawtx.go.h"
-#include "coin.outputs.go.h"
-#include "coin.transactions.go.h"
-#include "wallet.entry.go.h"
-#include "wallet.wallet.go.h"
 
 /**
  * Memory handle to access to api.CreatedTransaction
@@ -362,6 +357,12 @@ typedef Handle AddressUxOuts_Handle;
  */
 
 typedef Handle BuildInfo_Handle;
+
+/**
+ * Memory handle to access to readable.UnspentOutputsSummary (UnspentOutputsSummary)
+ */
+
+typedef Handle ReadableUnspentOutputsSummary_Handle;
 
 /**
  * Memory handle for hash (ripemd160.digest)

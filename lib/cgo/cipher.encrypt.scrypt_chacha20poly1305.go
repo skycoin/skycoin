@@ -18,11 +18,6 @@ import "C"
 
 //export SKY_encrypt_ScryptChacha20poly1305_Encrypt
 func SKY_encrypt_ScryptChacha20poly1305_Encrypt(_s *C.encrypt__ScryptChacha20poly1305, _data []byte, _password []byte, _arg1 *C.GoSlice_) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	s := *(*encrypt.ScryptChacha20poly1305)(unsafe.Pointer(_s))
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))
@@ -36,11 +31,6 @@ func SKY_encrypt_ScryptChacha20poly1305_Encrypt(_s *C.encrypt__ScryptChacha20pol
 
 //export SKY_encrypt_ScryptChacha20poly1305_Decrypt
 func SKY_encrypt_ScryptChacha20poly1305_Decrypt(_s *C.encrypt__ScryptChacha20poly1305, _data []byte, _password []byte, _arg1 *C.GoSlice_) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	s := *(*encrypt.ScryptChacha20poly1305)(unsafe.Pointer(_s))
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))

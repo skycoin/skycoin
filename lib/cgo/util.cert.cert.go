@@ -1,5 +1,11 @@
 package main
 
+import (
+	"reflect"
+
+	cert "github.com/skycoin/skycoin/src/util/certutil"
+)
+
 /*
 
   #include <string.h>
@@ -9,20 +15,16 @@ package main
 */
 import "C"
 
-// //export SKY_cert_CreateCertIfNotExists
-// func SKY_cert_CreateCertIfNotExists(_host, _certFile, _keyFile string, _appName string) (____error_code uint32) {
-// 	____error_code = SKY_OK
-// 	defer func() {
-// 		____error_code = catchApiPanic(____error_code, recover())
-// 	}()
-// 	checkAPIReady()
-// 	host := _host
-// 	certFile := _certFile
-// 	keyFile := _keyFile
-// 	appName := _appName
-// 	____return_err := cert.CreateCertIfNotExists(host, certFile, keyFile, appName)
-// 	____error_code = libErrorCode(____return_err)
-// 	if ____return_err == nil {
-// 	}
-// 	return
-// }
+//export SKY_certutil_NewTLSCertPair
+func SKY_certutil_NewTLSCertPair(organization string, validUntil string, extraHosts []string, _cert *C.GoSlice_, _key *C.GoSlice_) (____error_code uint32) {
+	____time_validUntil, ____return_err := parseTimeValue(validUntil)
+	if ____return_err == nil {
+		cert, key, ____return_err := cert.NewTLSCertPair(organization, ____time_validUntil, extraHosts)
+		if ____return_err == nil {
+			copyToGoSlice(reflect.ValueOf(cert), _cert)
+			copyToGoSlice(reflect.ValueOf(key), _key)
+		}
+	}
+	____error_code = libErrorCode(____return_err)
+	return
+}

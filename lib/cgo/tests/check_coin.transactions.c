@@ -278,18 +278,16 @@ Test(coin_transaction, TestTransactionsSize)
   result = makeTransactions(10, &txns);
   cr_assert(result == SKY_OK);
   GoInt size = 0;
-  for (size_t i = 0; i < 10; i++)
-  {
+  for (size_t i = 0; i < 10; i++) {
     Transaction__Handle handle;
     result = SKY_coin_Transactions_GetAt(txns, i, &handle);
     registerHandleClose(handle);
     cr_assert(result == SKY_OK);
-    cipher__PubKeySlice p1 = {NULL, 0, 0};
-    result = SKY_coin_Transaction_Serialize(handle, &p1);
-    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Serialize failed");
-    GoInt count;
+    GoSlice p1 = {NULL, 0, 0};
+    result = SKY_coin_Transaction_Serialize(handle, (GoSlice_ *) &p1);
+    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Serialize");
     size += p1.len;
-    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Size failed");
+    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Size");
   }
   GoInt sizeTransactions;
   result = SKY_coin_Transactions_Size(txns, &sizeTransactions);
@@ -979,6 +977,53 @@ void testTransactionSorting(Transactions__Handle hTrans,
   }
 }
 
+GoUint32_ feeCalculator3(Transaction__Handle handle, GoUint64_ * pFee, void *context)
+{
+  cipher__SHA256 *thirdHash = (cipher__SHA256 *) context;
+  cipher__SHA256 hash;
+
+  int result = SKY_coin_Transaction_Hash(handle, &hash);
+  if (result == SKY_OK && (memcmp(&hash, thirdHash, sizeof(cipher__SHA256)) == 0))
+  {
+    *pFee = MaxUint64 / 2;
+  }
+  else
+  {
+    coin__Transaction *pTx;
+    result = SKY_coin_GetTransactionObject(handle, &pTx);
+    if (result == SKY_OK)
+    {
+      coin__TransactionOutput *pOutput = pTx->Out.data;
+      *pFee = 100 * Million - pOutput->Hours;
+    }
+  }
+  return result;
+}
+
+GoUint32_ feeCalculator4(Transaction__Handle handle, GoUint64_ * pFee, void *context)
+{
+  cipher__SHA256 hash;
+  cipher__SHA256 *thirdHash = (cipher__SHA256 *) context;
+
+  int result = SKY_coin_Transaction_Hash(handle, &hash);
+  if (result == SKY_OK && (memcmp(&hash, thirdHash, sizeof(cipher__SHA256)) == 0))
+  {
+    *pFee = 0;
+    result = SKY_ERROR;
+  }
+  else
+  {
+    coin__Transaction *pTx;
+    result = SKY_coin_GetTransactionObject(handle, &pTx);
+    if (result == SKY_OK)
+    {
+      coin__TransactionOutput *pOutput = pTx->Out.data;
+      *pFee = 100 * Million - pOutput->Hours;
+    }
+  }
+  return result;
+}
+
 Test(coin_transactions, TestSortTransactions)
 {
   int n = 6;
@@ -1021,55 +1066,13 @@ Test(coin_transactions, TestSortTransactions)
   FeeCalculator fc2 = {feeCalculator2, NULL};
   testTransactionSorting(hashSortedTxnsHandle, index2, 2, expec2, 2, &fc2, "hash tiebreaker");
 
-  GoUint32_ feeCalculator3(Transaction__Handle handle, GoUint64_ * pFee, void *context)
-  {
-    cipher__SHA256 hash;
-    int result = SKY_coin_Transaction_Hash(handle, &hash);
-    if (result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0))
-    {
-      *pFee = MaxUint64 / 2;
-    }
-    else
-    {
-      coin__Transaction *pTx;
-      result = SKY_coin_GetTransactionObject(handle, &pTx);
-      if (result == SKY_OK)
-      {
-        coin__TransactionOutput *pOutput = pTx->Out.data;
-        *pFee = 100 * Million - pOutput->Hours;
-      }
-    }
-    return result;
-  }
   int index3[] = {1, 2, 0};
   int expec3[] = {2, 0, 1};
-  FeeCalculator f3 = {feeCalculator3, NULL};
+  FeeCalculator f3 = {feeCalculator3, &thirdHash};
   testTransactionSorting(transactionsHandle, index3, 3, expec3, 3, &f3, "invalid fee multiplication is capped");
-
-  GoUint32_ feeCalculator4(Transaction__Handle handle, GoUint64_ * pFee, void *context)
-  {
-    cipher__SHA256 hash;
-    int result = SKY_coin_Transaction_Hash(handle, &hash);
-    if (result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0))
-    {
-      *pFee = 0;
-      result = SKY_ERROR;
-    }
-    else
-    {
-      coin__Transaction *pTx;
-      result = SKY_coin_GetTransactionObject(handle, &pTx);
-      if (result == SKY_OK)
-      {
-        coin__TransactionOutput *pOutput = pTx->Out.data;
-        *pFee = 100 * Million - pOutput->Hours;
-      }
-    }
-    return result;
-  }
 
   int index4[] = {1, 2, 0};
   int expec4[] = {0, 1};
-  FeeCalculator f4 = {feeCalculator4, NULL};
+  FeeCalculator f4 = {feeCalculator4, &thirdHash};
   testTransactionSorting(transactionsHandle, index4, 3, expec4, 2, &f4, "failed fee calc is filtered");
 }

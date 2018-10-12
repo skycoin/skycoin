@@ -13,11 +13,6 @@ import "C"
 
 //export SKY_api_NewWalletResponse
 func SKY_api_NewWalletResponse(_w C.Wallet__Handle, _arg1 *C.WalletResponse__Handle) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_BAD_HANDLE

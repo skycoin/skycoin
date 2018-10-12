@@ -25,7 +25,7 @@ const (
 
 )
 
-// Definition of errors
+// Error definition
 var (
 	ErrSHA256orMissingPassword         = errors.New("missing password")
 	ErrLenghtDataOverflowMaxUint32     = errors.New("data length overflowed, it must <= math.MaxUint32(4294967295)")

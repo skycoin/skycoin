@@ -155,7 +155,6 @@ func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) (____error_code uint32) 
 	if err == nil {
 		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSig))
 	}
-
 	____error_code = libErrorCode(err)
 	return
 }
@@ -294,19 +293,5 @@ func SKY_cipher_CheckSecKeyHash(_seckey *C.cipher__SecKey, _hash *C.cipher__SHA2
 
 	err := cipher.CheckSecKeyHash(*seckey, *hash)
 	____error_code = libErrorCode(err)
-	return
-}
-
-//export SKY_cipher_GenerateKeyPair
-func SKY_cipher_GenerateKeyPair(_arg0 *C.cipher__PubKey, _arg1 *C.cipher__SecKey) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
-
-	p, s := cipher.GenerateKeyPair()
-	copyToBuffer(reflect.ValueOf(p[:]), unsafe.Pointer(_arg0), uint(SizeofPubKey))
-	copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
 	return
 }

@@ -18,21 +18,17 @@ unsigned char buff[1024];
 
 Test(cipher_address, TestDecodeBase58Address) {
 
-  cipher__Address a;
-  cipher__PubKey p;
-  cipher__SecKey s;
-
-  cr_assert(SKY_cipher_GenerateKeyPair(&p, &s) == SKY_OK);
-  cr_assert(SKY_cipher_AddressFromPubKey(&p, &a) == SKY_OK);
-  cr_assert(SKY_cipher_Address_Verify(&a, &p) == SKY_OK);
-
+  GoString strAddr = {
+    SKYCOIN_ADDRESS_VALID,
+    35
+  };
   cipher__Address addr;
-  GoString strAddr = {SKYCOIN_ADDRESS_VALID, 35};
-  cr_assert(SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_OK,
-            "accept valid address");
 
-  int errorcode;
+  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_OK, "accept valid address");
+
   char tempStr[50];
+  int errorcode;
+
   // preceding whitespace is invalid
   strcpy(tempStr, " ");
   strcat(tempStr, SKYCOIN_ADDRESS_VALID);
@@ -111,7 +107,7 @@ Test(cipher_address, TestAddressFromBytes){
   cr_assert(SKY_cipher_AddressFromBytes(bytes, &addr2) == SKY_ErrAddressInvalidVersion, "Invalid version");
 }
 
-Test(cipher_address, TestAddressVerify) {
+Test(cipher_address, TestAddressVerify){
 
   cipher__PubKey pubkey;
   cipher__SecKey seckey;
@@ -123,8 +119,7 @@ Test(cipher_address, TestAddressVerify) {
   SKY_cipher_AddressFromPubKey(&pubkey, &addr);
 
   // Valid pubkey+address
-  cr_assert(SKY_cipher_Address_Verify(&addr, &pubkey) == SKY_OK,
-            "Valid pubkey + address");
+  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_OK ,"Valid pubkey + address");
 
   SKY_cipher_GenerateKeyPair(&pubkey, &seckey2);
   //   // Invalid pubkey
@@ -172,95 +167,14 @@ Test(cipher_address, TestAddressBulk) {
     cr_assert(err == SKY_OK);
     GoString strAddr;
     SKY_cipher_Address_String(&addr, (GoString_ *)&strAddr);
-    registerMemCleanup((void *)strAddr.p);
+    registerMemCleanup((void *) strAddr.p);
     cipher__Address addr2;
 
     err = SKY_cipher_DecodeBase58Address(strAddr, &addr2);
     cr_assert(err == SKY_OK);
     cr_assert(eq(type(cipher__Address), addr, addr2));
   }
-}
 
-Test(cipher_address, TestBitcoinAddressFromBytes) {
-  cipher__PubKey p;
-  cipher__SecKey s;
-  GoInt result;
-  result = SKY_cipher_GenerateKeyPair(&p, &s);
-  cr_assert(result == SKY_OK, "SKY_cipher_GenerateKeyPair failed");
-  cipher__Address a;
-  result = SKY_cipher_AddressFromPubKey(&p, &a);
-  cr_assert(result == SKY_OK, "SKY_cipher_AddressFromPubKey failed");
-  cipher__Address a2;
-  cipher__PubKeySlice pk = {NULL, 0, 0};
-  result = SKY_cipher_Address_BitcoinBytes(&a, &pk);
-  cr_assert(result == SKY_OK, "SKY_cipher_Address_BitcoinBytes failed");
-  registerMemCleanup(pk.data);
-  GoSlice pk_convert = {pk.data, pk.len, pk.cap};
-  result = SKY_cipher_BitcoinAddressFromBytes(pk_convert, &a2);
-  cr_assert(result == SKY_OK);
-  cr_assert(eq(type(cipher__Address), a2, a));
-
-  cipher__PubKeySlice b = {NULL, 0, 0};
-  result = SKY_cipher_Address_BitcoinBytes(&a, &b);
-  cr_assert(result == SKY_OK, "SKY_cipher_Address_BitcoinBytes");
-  registerMemCleanup(b.data);
-
-  GoInt_ b_len = b.len;
-
-  // Invalid number of bytes
-  b.len = b.len - 2;
-  cipher__Address addr2;
-  GoSlice b_convert = {b.data, b.len, b.cap};
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(b_convert, &addr2) ==
-                SKY_ErrAddressInvalidLength,
-            "Invalid address length");
-
-  // Invalid checksum
-  b_convert.len = b_len;
-  (((char *)b_convert.data)[b_convert.len - 1])++;
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(b_convert, &addr2) ==
-                SKY_ErrAddressInvalidChecksum,
-            "Invalid checksum");
-
-  result = SKY_cipher_AddressFromPubKey(&p, &a);
-  cr_assert(result == SKY_OK, "SKY_cipher_AddressFromPubKey failed");
-  a.Version = 2;
-  char *buffer[1024];
-  cipher__PubKeySlice b1 = {buffer, 0, 1024};
-  result = SKY_cipher_Address_BitcoinBytes(&a, &b1);
-  cr_assert(result == SKY_OK, "SKY_cipher_Address_BitcoinBytes failed");
-  GoSlice b1_convert = {b1.data, b1.len, b1.cap};
-  result = SKY_cipher_BitcoinAddressFromBytes(b1_convert, &addr2);
-  cr_assert(result == SKY_ErrAddressInvalidVersion, "Invalid version");
-}
-
-Test(cipher_address, TestAddressRoundtrip) {
-  cipher__PubKey p;
-  cipher__SecKey s;
-  GoInt result;
-  result = SKY_cipher_GenerateKeyPair(&p, &s);
-  cr_assert(result == SKY_OK, "SKY_cipher_GenerateKeyPair");
-  cipher__Address a;
-  result = SKY_cipher_AddressFromPubKey(&p, &a);
-  cr_assert(result == SKY_OK, "SKY_cipher_AddressFromPubKey failed");
-  char buffer_aBytes[1024];
-  cipher__PubKeySlice aBytes = {buffer_aBytes, 0, 1024};
-  result = SKY_cipher_Address_Bytes(&a, &aBytes);
-  cr_assert(result == SKY_OK, "SKY_cipher_Address_Bytes failed");
-  GoSlice aBytesSlice = {aBytes.data, aBytes.len, aBytes.cap};
-  cipher__Address a2;
-  result = SKY_cipher_AddressFromBytes(aBytesSlice, &a2);
-  cr_assert(result == SKY_OK, "SKY_cipher_AddressFromBytes failed");
-
-  cr_assert(eq(type(cipher__Address), a, a2));
-  char buffer_aString[1024];
-  char buffer_a2String[1024];
-  GoString_ aString = {buffer_aString, 0};
-  GoString_ a2String = {buffer_a2String, 0};
-  result = SKY_cipher_Address_String(&a, &aString);
-  result = SKY_cipher_Address_String(&a2, &a2String);
-
-  cr_assert(eq(type(GoString_), a2String, aString));
 }
 
 Test(cipher_address, TestAddressNull) {

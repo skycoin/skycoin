@@ -35,6 +35,8 @@ const (
 const (
 	// SKY_BAD_HANDLE invalid handle argument
 	SKY_BAD_HANDLE = SKY_PKG_LIBCGO + iota + 1
+	// SKY_INVALID_TIMESTRING invalid time value
+	SKY_INVALID_TIMESTRING
 )
 
 // Package prefixes for error codes
@@ -64,6 +66,7 @@ const (
 	SKY_PKG_WALLET
 )
 
+//nolint megacheck
 // Error codes defined in cipher package
 //nolint megacheck
 const (
@@ -153,6 +156,26 @@ const (
 	SKY_ErrEmptySeed
 	// SKY_ErrInvalidSig Invalid signature
 	SKY_ErrInvalidSig
+	// SKY_ErrSHA256orMissingPassword missing password
+	SKY_ErrSHA256orMissingPassword
+	// SKY_ErrSHA256LenghtDataOverflowMaxUint32 data length overflowed, it must <= math.MaxUint32(4294967295)
+	SKY_ErrLenghtDataOverflowMaxUint32
+	// SKY_ErrInvalidChecksumLength invalid checksum length
+	SKY_ErrInvalidChecksumLength
+	// SKY_ErrInvalidDataChecksumNotMatched invalid data, checksum is not matched
+	SKY_ErrInvalidDataChecksumNotMatched
+	// SKY_ErrInvalidNonceLength invalid nonce length
+	SKY_ErrInvalidNonceLength
+	// SKY_ErrInvalidBlockSizeMultiple32Bytes invalid block size, must be multiple of 32 bytes
+	SKY_ErrInvalidBlockSizeMultiple32Bytes
+	// SKY_ErrReadDataHashFailedLength read data hash failed: read length != 32
+	SKY_ErrReadDataHashFailedLength
+	// SKY_ErrSHA256orInvalidPassword invalid password SHA256or
+	SKY_ErrSHA256orInvalidPassword
+	// SKY_ErrReadDataLengthFailed read data length failed
+	SKY_ErrReadDataLengthFailed
+	// SKY_ErrInvalidDataLength invalid data length
+	SKY_ErrInvalidDataLength
 )
 
 // Error codes defined in cli package
@@ -394,26 +417,6 @@ const (
 	SKY_ErrDuplicateUxOuts
 	// SKY_ErrUnknownWalletID params.Wallet.ID does not match wallet
 	SKY_ErrUnknownWalletID
-	// SKY_ErrSHA256orMissingPassword missing password
-	SKY_ErrSHA256orMissingPassword
-	// SKY_ErrSHA256LenghtDataOverflowMaxUint32 data length overflowed, it must <= math.MaxUint32(4294967295)
-	SKY_ErrLenghtDataOverflowMaxUint32
-	// SKY_ErrInvalidChecksumLength invalid checksum length
-	SKY_ErrInvalidChecksumLength
-	// SKY_ErrInvalidDataChecksumNotMatched invalid data, checksum is not matched
-	SKY_ErrInvalidDataChecksumNotMatched
-	// SKY_ErrInvalidNonceLength invalid nonce length
-	SKY_ErrInvalidNonceLength
-	// SKY_ErrInvalidBlockSizeMultiple32Bytes invalid block size, must be multiple of 32 bytes
-	SKY_ErrInvalidBlockSizeMultiple32Bytes
-	// SKY_ErrReadDataHashFailedLength read data hash failed: read length != 32
-	SKY_ErrReadDataHashFailedLength
-	// SKY_ErrSHA256orInvalidPassword invalid password SHA256or
-	SKY_ErrSHA256orInvalidPassword
-	// SKY_ErrReadDataLengthFailed read data length failed
-	SKY_ErrReadDataLengthFailed
-	// SKY_ErrInvalidDataLength invalid data length
-	SKY_ErrInvalidDataLength
 	// SKY_ErrVerifySignatureInvalidInputsNils VerifySignature, ERROR: invalid input, nils
 	SKY_ErrVerifySignatureInvalidInputsNils
 	// SKY_ErrVerifySignatureInvalidSigLength
@@ -427,11 +430,16 @@ var (
 	ErrorBadHandle = errors.New("Invalid or unknown handle value")
 	// ErrorUnknown unexpected error
 	ErrorUnknown = errors.New("Unexpected error")
+	// ErrorInvalidTimeString time string does not match expected time format
+	// More precise errors conditions can be found in the logs
+	ErrorInvalidTimeString = errors.New("Invalid time value")
 
+	codeToErrorMap = make(map[uint32]error, 0)
 	errorToCodeMap = map[error]uint32{
 		// libcgo
-		ErrorBadHandle: SKY_BAD_HANDLE,
-		ErrorUnknown:   SKY_ERROR,
+		ErrorBadHandle:         SKY_BAD_HANDLE,
+		ErrorUnknown:           SKY_ERROR,
+		ErrorInvalidTimeString: SKY_INVALID_TIMESTRING,
 		// cipher
 		cipher.ErrAddressInvalidLength:    SKY_ErrAddressInvalidLength,
 		cipher.ErrAddressInvalidChecksum:  SKY_ErrAddressInvalidChecksum,
@@ -460,23 +468,34 @@ var (
 		cipher.ErrInvalidSigForPubKey:     SKY_ErrInvalidSigForPubKey,
 		// Removed in ea0aafbffb76
 		// cipher.ErrInvalidSecKeyHex:               SKY_ErrInvalidSecKeyHex,
-		cipher.ErrInvalidAddressForSig:           SKY_ErrInvalidAddressForSig,
-		cipher.ErrInvalidHashForSig:              SKY_ErrInvalidHashForSig,
-		cipher.ErrPubKeyRecoverMismatch:          SKY_ErrPubKeyRecoverMismatch,
-		cipher.ErrInvalidSigInvalidPubKey:        SKY_ErrInvalidSigInvalidPubKey,
-		cipher.ErrInvalidSigValidity:             SKY_ErrInvalidSigValidity,
-		cipher.ErrInvalidSigForMessage:           SKY_ErrInvalidSigForMessage,
-		cipher.ErrInvalidSecKyVerification:       SKY_ErrInvalidSecKyVerification,
-		cipher.ErrNullPubKeyFromSecKey:           SKY_ErrNullPubKeyFromSecKey,
-		cipher.ErrInvalidDerivedPubKeyFromSecKey: SKY_ErrInvalidDerivedPubKeyFromSecKey,
-		cipher.ErrInvalidPubKeyFromHash:          SKY_ErrInvalidPubKeyFromHash,
-		cipher.ErrPubKeyFromSecKeyMismatch:       SKY_ErrPubKeyFromSecKeyMismatch,
-		cipher.ErrInvalidLength:                  SKY_ErrInvalidLength,
-		cipher.ErrBitcoinWIFInvalidFirstByte:     SKY_ErrBitcoinWIFInvalidFirstByte,
-		cipher.ErrBitcoinWIFInvalidSuffix:        SKY_ErrBitcoinWIFInvalidSuffix,
-		cipher.ErrBitcoinWIFInvalidChecksum:      SKY_ErrBitcoinWIFInvalidChecksum,
-		cipher.ErrEmptySeed:                      SKY_ErrEmptySeed,
-		cipher.ErrInvalidSig:                     SKY_ErrInvalidSig,
+		cipher.ErrInvalidAddressForSig:             SKY_ErrInvalidAddressForSig,
+		cipher.ErrInvalidHashForSig:                SKY_ErrInvalidHashForSig,
+		cipher.ErrPubKeyRecoverMismatch:            SKY_ErrPubKeyRecoverMismatch,
+		cipher.ErrInvalidSigInvalidPubKey:          SKY_ErrInvalidSigInvalidPubKey,
+		cipher.ErrInvalidSigValidity:               SKY_ErrInvalidSigValidity,
+		cipher.ErrInvalidSigForMessage:             SKY_ErrInvalidSigForMessage,
+		cipher.ErrInvalidSecKyVerification:         SKY_ErrInvalidSecKyVerification,
+		cipher.ErrNullPubKeyFromSecKey:             SKY_ErrNullPubKeyFromSecKey,
+		cipher.ErrInvalidDerivedPubKeyFromSecKey:   SKY_ErrInvalidDerivedPubKeyFromSecKey,
+		cipher.ErrInvalidPubKeyFromHash:            SKY_ErrInvalidPubKeyFromHash,
+		cipher.ErrPubKeyFromSecKeyMismatch:         SKY_ErrPubKeyFromSecKeyMismatch,
+		cipher.ErrInvalidLength:                    SKY_ErrInvalidLength,
+		cipher.ErrBitcoinWIFInvalidFirstByte:       SKY_ErrBitcoinWIFInvalidFirstByte,
+		cipher.ErrBitcoinWIFInvalidSuffix:          SKY_ErrBitcoinWIFInvalidSuffix,
+		cipher.ErrBitcoinWIFInvalidChecksum:        SKY_ErrBitcoinWIFInvalidChecksum,
+		cipher.ErrEmptySeed:                        SKY_ErrEmptySeed,
+		cipher.ErrInvalidSig:                       SKY_ErrInvalidSig,
+		encrypt.ErrSHA256orMissingPassword:         SKY_ErrSHA256orMissingPassword,
+		encrypt.ErrLenghtDataOverflowMaxUint32:     SKY_ErrLenghtDataOverflowMaxUint32,
+		encrypt.ErrInvalidChecksumLength:           SKY_ErrInvalidChecksumLength,
+		encrypt.ErrInvalidDataChecksumNotMatched:   SKY_ErrInvalidDataChecksumNotMatched,
+		encrypt.ErrInvalidNonceLength:              SKY_ErrInvalidNonceLength,
+		encrypt.ErrInvalidBlockSizeMultiple32Bytes: SKY_ErrInvalidBlockSizeMultiple32Bytes,
+		encrypt.ErrReadDataHashFailedLength:        SKY_ErrReadDataHashFailedLength,
+		encrypt.ErrSHA256orInvalidPassword:         SKY_ErrSHA256orInvalidPassword,
+		encrypt.ErrReadDataLengthFailed:            SKY_ErrReadDataLengthFailed,
+		encrypt.ErrInvalidDataLength:               SKY_ErrInvalidDataLength,
+
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,
@@ -577,22 +596,15 @@ var (
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
 
-		encrypt.ErrSHA256orMissingPassword:         SKY_ErrSHA256orMissingPassword,
-		encrypt.ErrLenghtDataOverflowMaxUint32:     SKY_ErrLenghtDataOverflowMaxUint32,
-		encrypt.ErrInvalidChecksumLength:           SKY_ErrInvalidChecksumLength,
-		encrypt.ErrInvalidDataChecksumNotMatched:   SKY_ErrInvalidDataChecksumNotMatched,
-		encrypt.ErrInvalidNonceLength:              SKY_ErrInvalidNonceLength,
-		encrypt.ErrInvalidBlockSizeMultiple32Bytes: SKY_ErrInvalidBlockSizeMultiple32Bytes,
-		encrypt.ErrReadDataHashFailedLength:        SKY_ErrReadDataHashFailedLength,
-		encrypt.ErrSHA256orInvalidPassword:         SKY_ErrSHA256orInvalidPassword,
-		encrypt.ErrReadDataLengthFailed:            SKY_ErrReadDataLengthFailed,
-		encrypt.ErrInvalidDataLength:               SKY_ErrInvalidDataLength,
-
 		secp256k1.ErrVerifySignatureInvalidInputsNils:    SKY_ErrVerifySignatureInvalidInputsNils,
 		secp256k1.ErrVerifySignatureInvalidSigLength:     SKY_ErrVerifySignatureInvalidSigLength,
 		secp256k1.ErrVerifySignatureInvalidPubkeysLength: SKY_ErrVerifySignatureInvalidPubkeysLength,
 	}
 )
+
+func errorObjectFromCode(errcode uint32) error {
+	return codeToErrorMap[errcode]
+}
 
 func libErrorCode(err error) uint32 {
 	if err == nil {
@@ -628,4 +640,11 @@ func libErrorCode(err error) uint32 {
 		return SKY_ErrTxnViolatesUserConstraint
 	}
 	return SKY_ERROR
+}
+
+func init() {
+	// Init reverse error code map
+	for _err := range errorToCodeMap {
+		codeToErrorMap[errorToCodeMap[_err]] = _err
+	}
 }

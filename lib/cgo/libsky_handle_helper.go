@@ -63,7 +63,7 @@ func SKY_Handle_Block_GetHeadHash(handle C.Handle, hash *C.GoString_) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*readable.Block); isOK {
-			copyString(obj.Head.BlockHash, hash)
+			copyString(obj.Head.Hash, hash)
 			return SKY_OK
 		}
 	}
@@ -75,7 +75,7 @@ func SKY_Handle_Block_GetPreviousBlockHash(handle C.Handle, hash *C.GoString_) u
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*readable.Block); isOK {
-			copyString(obj.Head.PreviousBlockHash, hash)
+			copyString(obj.Head.PreviousHash, hash)
 			return SKY_OK
 		}
 	}

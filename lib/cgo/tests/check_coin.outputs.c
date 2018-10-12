@@ -577,7 +577,7 @@ Test(coin_outputs, TestAddressUxOutsSub)
   cr_assert(result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed");
   // One address should have been removed, because no elements
   cr_assert(length == 2, "Invalid length %d", length);
-  GoInt8_ hasKey;
+  GoUint8_ hasKey;
   result = SKY_coin_AddressUxOuts_HasKey(h3, &(pData + 2)->Body.Address, &hasKey);
   cr_assert(result == SKY_OK, "SKY_coin_AddressUxOuts_HasKey failed");
   cr_assert(hasKey == 0);

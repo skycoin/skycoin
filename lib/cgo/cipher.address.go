@@ -60,11 +60,6 @@ func SKY_cipher_AddressFromSecKey(_secKey *C.cipher__SecKey, _arg1 *C.cipher__Ad
 
 //export SKY_cipher_Address_Null
 func SKY_cipher_Address_Null(_addr *C.cipher__Address, _arg0 *bool) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
 
 	addr := *inplaceAddress(_addr)
 	__arg0 := addr.Null()

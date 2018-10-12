@@ -458,20 +458,6 @@ func lookupAddressUxOutHandle(handle C.AddressUxOuts_Handle) (*coin.AddressUxOut
 	return nil, false
 }
 
-func registerBuildInfoHandle(obj *readable.BuildInfo) C.BuildInfo_Handle {
-	return (C.BuildInfo_Handle)(registerHandle(obj))
-}
-
-func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*readable.BuildInfo, bool) {
-	obj, ok := lookupHandle(C.Handle(handle))
-	if ok {
-		if obj, isOK := (obj).(*readable.BuildInfo); isOK {
-			return obj, true
-		}
-	}
-	return nil, false
-}
-
 func registerHashHandle(obj *hash.Hash) C.Hash_Handle {
 	return (C.Hash_Handle)(registerHandle(obj))
 }
@@ -534,14 +520,28 @@ func SKY_handle_copy(handle C.Handle, copy *C.Handle) uint32 {
 	}
 }
 
-func registerUnspentOutputsSummaryHandle(obj *readable.UnspentOutputsSummary) C.UnspentOutputsSummary_Handle {
-	return (C.UnspentOutputsSummary_Handle)(registerHandle(obj))
+func registerReadableUnspentOutputsSummaryHandle(obj *readable.UnspentOutputsSummary) C.ReadableUnspentOutputsSummary_Handle {
+	return (C.ReadableUnspentOutputsSummary_Handle)(registerHandle(obj))
 }
 
-func lookupUnspentOutputsSummaryHandle(handle C.UnspentOutputsSummary_Handle) (*readable.UnspentOutputsSummary, bool) {
+func lookupReadableUnspentOutputsSummaryHandle(handle C.ReadableUnspentOutputsSummary_Handle) (*readable.UnspentOutputsSummary, bool) {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*readable.UnspentOutputsSummary); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerBuildInfoHandle(obj *readable.BuildInfo) C.BuildInfo_Handle {
+	return (C.BuildInfo_Handle)(registerHandle(obj))
+}
+
+func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*readable.BuildInfo, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*readable.BuildInfo); isOK {
 			return obj, true
 		}
 	}

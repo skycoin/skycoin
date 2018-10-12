@@ -12,7 +12,3 @@ func parseTimeValue(strTime string) (time.Time, error) {
 	}
 	return t, err
 }
-
-func timeValueToString(t time.Time) string {
-	return t.Format(time.RFC3339)
-}

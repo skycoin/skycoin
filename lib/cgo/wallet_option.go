@@ -14,7 +14,6 @@ import "C"
 
 //export SKY_wallet_CreateOptionsHandle
 func SKY_wallet_CreateOptionsHandle(coin string, label string, seed string, encrypt bool, pwd string, cryptoType string, scanN uint64, _opts *C.Options__Handle) (____error_code uint32) {
-
 	var walletOptions wallet.Options
 	walletOptions.Coin = (wallet.CoinType)(coin)
 	walletOptions.Label = label

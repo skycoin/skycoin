@@ -223,19 +223,18 @@ func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 	return pubkey, seckey
 }
 
-// DeterministicKeyPairIterator iteratores for deterministic keypair generation. Returns SHA256, Pubkey, Seckey
-//Feed SHA256 back into function to generate sequence of seckeys
-//If private key is diclosed, should not be able to compute future or past keys in sequence
+// DeterministicKeyPairIterator iteratores for deterministic keypair generation. Returns SHA256, PubKey, SecKey as bytes
+// Feeds SHA256 back into function to generate sequence of seckeys
+// If private key is disclosed, should not be able to compute future or past keys in sequence
 func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
-	seed1 := Secp256k1Hash(seedIn) //make it difficult to derive future seckeys from previous seckeys
+	seed1 := Secp256k1Hash(seedIn) // make it difficult to derive future seckeys from previous seckeys
 	seed2 := SumSHA256(append(seedIn, seed1...))
-	pubkey, seckey := generateDeterministicKeyPair(seed2) //this is our seckey
+	pubkey, seckey := generateDeterministicKeyPair(seed2) // this is our seckey
 	return seed1, pubkey, seckey
 }
 
 // Sign sign hash
 func Sign(msg []byte, seckey []byte) []byte {
-
 	if len(seckey) != 32 {
 		log.Panic(ErrSignInvalidSeckeyLength)
 	}

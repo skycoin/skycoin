@@ -40,7 +40,7 @@ function copy_if_exists {
         exit 1
     fi
 
-    BIN="${GOX_OUTPUT}/${1}"
+    BIN="${GOX_GUI_OUTPUT}/${1}"
     DESTDIR="$2"
     DESTBIN="${DESTDIR}/${3}"
     DESTSRC="$4"

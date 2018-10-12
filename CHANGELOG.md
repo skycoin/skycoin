@@ -75,6 +75,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 
 - Remove `USE_CSRF` envvar from the CLI tool. It uses the REST API client now, which will automatically detect CSRF as needed, so no additional configuration is necessary.  Operators may still wish to disable CSRF on their remote node to reduce request overhead.
 - Remove `-enable-wallet-api` and `-enable-seed-api` in place of including `WALLET` and `INSECURE_WALLET_SEED` in `-enable-api-sets`.
+- Copies of the source code removed from release builds due to build artifact size
 
 ## [0.24.1] - 2018-07-30
 

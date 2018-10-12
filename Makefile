@@ -229,7 +229,7 @@ release-daemon: ## Build daemon apps. Use osarch=${osarch} to specify the platfo
 	@echo release files are in the folder of electron/release
 
 clean-release: ## Clean dist files and delete all builds in electron/release
-	rm $(ELECTRON_DIR)/release/*
+	rm -r $(ELECTRON_DIR)/release
 
 clean-coverage: ## Remove coverage output files
 	rm -rf ./coverage/

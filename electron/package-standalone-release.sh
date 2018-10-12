@@ -40,6 +40,10 @@ function copy_if_exists {
         mkdir -p "${DESTDIR}/src/gui/static"
         cp -R "$GUI_DIST_DIR" "${DESTDIR}/src/gui/static"
 
+        # Copy changelog to app
+        echo "Copying CHANGELOG.md to $DESTDIR"
+        cp ../CHANGELOG.md "$DESTDIR"
+
         echo "Adding $DESTSRC to package-source.sh list"
         DESTSRCS+=("$DESTSRC")
     else
@@ -84,8 +88,8 @@ if [ ! -z "$WIN32_STL" ]; then
     copy_if_exists "${WIN32_OUT}/${PKG_NAME}.exe" "$WIN32" "$WIN32_SRC"
 fi
 
-# Copy the source for reference
-# tar it with filters, move it, then untar in order to do this
-echo "Copying source snapshot"
+# # Copy the source for reference
+# # tar it with filters, move it, then untar in order to do this
+# echo "Copying source snapshot"
 
-./package-source.sh "${DESTSRCS[@]}"
+# ./package-source.sh "${DESTSRCS[@]}"

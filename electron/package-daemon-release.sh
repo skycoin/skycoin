@@ -31,14 +31,13 @@ function copy_if_exists {
         fi
         mkdir -p "$DESTDIR"
 
-        # Copy binary to electron app
+        # Copy binary to app
         echo "Copying $BIN to $DESTDIR"
         cp "$BIN" "$DESTDIR"
 
-        # Copy static resources to electron app
-        echo "Copying $GUI_DIST_DIR to ${DESTDIR}/src/gui/static"
-        mkdir -p "${DESTDIR}/src/gui/static"
-        cp -R "$GUI_DIST_DIR" "${DESTDIR}/src/gui/static"
+        # Copy changelog to app
+        echo "Copying CHANGELOG.md to $DESTDIR"
+        cp ../CHANGELOG.md "$DESTDIR"
 
         echo "Adding $DESTSRC to package-source.sh list"
         DESTSRCS+=("$DESTSRC")
@@ -84,8 +83,8 @@ if [ ! -z "$WIN32_DMN" ]; then
     copy_if_exists "${WIN32_OUT}/${PKG_NAME}.exe" "$WIN32" "$WIN32_SRC"
 fi
 
-# Copy the source for reference
-# tar it with filters, move it, then untar in order to do this
-echo "Copying source snapshot"
+# # Copy the source for reference
+# # tar it with filters, move it, then untar in order to do this
+# echo "Copying source snapshot"
 
-./package-source.sh "${DESTSRCS[@]}"
+# ./package-source.sh "${DESTSRCS[@]}"

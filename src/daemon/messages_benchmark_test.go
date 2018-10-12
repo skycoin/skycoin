@@ -61,11 +61,13 @@ func BenchmarkSerializeGivePeersMessage(b *testing.B) {
 	}
 }
 
+var introPubKey = cipher.MustPubKeyFromHex("03cd7dfcd8c3452d1bb5d9d9e34dd95d6848cb9f66c2aad127b60578f4be7498f2")
+
 var introMessageObj = IntroductionMessage{
 	Mirror:  1234,
 	Port:    5678,
 	Version: 1,
-	Extra:   []byte("abcdefghijklmnoqrstuvwxyz1234567890"),
+	Pubkey:  introPubKey[:],
 }
 
 func BenchmarkDeserializeRawIntroductionMessage(b *testing.B) {
@@ -86,7 +88,77 @@ func BenchmarkSerializeIntroductionMessage(b *testing.B) {
 }
 
 var giveBlocksMessageObj = GiveBlocksMessage{
-	Blocks: make([]coin.SignedBlock, 3),
+	Blocks: []coin.SignedBlock{
+		{
+			Block: coin.Block{
+				Body: coin.BlockBody{
+					Transactions: []coin.Transaction{
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+					},
+				},
+			},
+		},
+		{
+			Block: coin.Block{
+				Body: coin.BlockBody{
+					Transactions: []coin.Transaction{
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+					},
+				},
+			},
+		},
+		{
+			Block: coin.Block{
+				Body: coin.BlockBody{
+					Transactions: []coin.Transaction{
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+						{
+							Sigs: make([]cipher.Sig, 3),
+							In:   make([]cipher.SHA256, 3),
+							Out:  make([]coin.TransactionOutput, 3),
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func BenchmarkDeserializeRawGiveBlocksMessage(b *testing.B) {
@@ -128,7 +200,23 @@ func BenchmarkSerializeAnnounceTxnsMessage(b *testing.B) {
 }
 
 var giveTxnsMessageObj = GiveTxnsMessage{
-	Transactions: make(coin.Transactions, 3),
+	Transactions: []coin.Transaction{
+		{
+			Sigs: make([]cipher.Sig, 3),
+			In:   make([]cipher.SHA256, 3),
+			Out:  make([]coin.TransactionOutput, 3),
+		},
+		{
+			Sigs: make([]cipher.Sig, 3),
+			In:   make([]cipher.SHA256, 3),
+			Out:  make([]coin.TransactionOutput, 3),
+		},
+		{
+			Sigs: make([]cipher.Sig, 3),
+			In:   make([]cipher.SHA256, 3),
+			Out:  make([]coin.TransactionOutput, 3),
+		},
+	},
 }
 
 func BenchmarkDeserializeRawGiveTxnsMessage(b *testing.B) {

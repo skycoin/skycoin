@@ -258,6 +258,15 @@ typedef Handle Transaction__Handle;
  * Memory handle to access to coin.Transactions
  */
 typedef Handle Transactions__Handle;
+#include "cipher.hash.go.h"
+#include "cipher.crypto.go.h"
+#include "cipher.address.go.h"
+#include "cipher.bitcoin.go.h"
+#include "cli.create_rawtx.go.h"
+#include "coin.outputs.go.h"
+#include "coin.transactions.go.h"
+#include "wallet.entry.go.h"
+#include "wallet.wallet.go.h"
 
 /**
  * Memory handle to access to api.CreatedTransaction

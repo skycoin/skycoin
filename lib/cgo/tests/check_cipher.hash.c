@@ -214,19 +214,18 @@ Test(cipher_hash, TestSHA256FromHex)
   cipher__SHA256 h;
   unsigned char buff[130];
   char sbuff[300];
-  GoSlice slice = {buff, 0, 130};
-  randBytes(&slice, 128);
-  SKY_cipher_SumSHA256(slice, &h);
-  strnhex(h, sbuff, sizeof(h) >> 1);
-  GoString s1 = {sbuff, strlen(sbuff)};
-  error = SKY_cipher_SHA256FromHex(s1, &h);
+  GoSlice slice = { buff,0,130 };
+  randBytes(&slice,128);
+  SKY_cipher_SumSHA256(slice,&h);
+  bytesnhex(h,sbuff,sizeof(h) >> 1);
+  GoString s1 = { sbuff, strlen(sbuff) };
+  error = SKY_cipher_SHA256FromHex(s1,&h);
   cr_assert(error == SKY_ErrInvalidHexLength);
 
   // Valid hex hash
-  // char sbuff1[300];
-  GoString_ s2;
-  // strnhex(h,sbuff1,sizeof(h));
-  SKY_cipher_SHA256_Hex(&h, &s2);
+  GoString_ s2 = {NULL, 0};
+  SKY_cipher_SHA256_Hex(&h, &s2 );
+  registerMemCleanup((void *) s2.p);
   cipher__SHA256 h2;
   error = SKY_cipher_SHA256FromHex((*((GoString *)&s2)), &h2);
   cr_assert(error == SKY_OK);

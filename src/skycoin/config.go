@@ -1,6 +1,7 @@
 package skycoin
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -20,11 +21,6 @@ import (
 
 var (
 	help = false
-)
-
-const (
-	// EndpointsAll wildcard value to match all API methods
-	EndpointsAll = "ALL"
 )
 
 // Config records skycoin node and build config
@@ -63,6 +59,9 @@ type NodeConfig struct {
 	EnableAllAPISets bool
 
 	enabledAPISets map[string]struct{}
+	// Comma separate list of hostnames to accept in the Host header, used to bypass the Host header check which only applies to localhost addresses
+	HostWhitelist string
+	hostWhitelist []string
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -93,6 +92,11 @@ type NodeConfig struct {
 	WebInterfaceKey string
 	// Remote web interface HTTPS support
 	WebInterfaceHTTPS bool
+	// Remote web interface username and password
+	WebInterfaceUsername string
+	WebInterfacePassword string
+	// Allow web interface auth without HTTPS
+	WebInterfacePlaintextAuth bool
 
 	// Enable the deprecated JSON 2.0 RPC interface
 	RPCInterface bool
@@ -220,7 +224,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    api.EndpointsRead,
+		EnabledAPISets:    api.EndpointsRead + "," + api.EndpointsTransaction,
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
 
@@ -237,7 +241,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		LogToFile:       false,
 		DisablePingPong: false,
 
-		VerifyDB:       true,
+		VerifyDB:       false,
 		ResetCorruptDB: false,
 
 		// Wallets
@@ -271,6 +275,8 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
+		fmt.Println("Additional environment variables:")
+		fmt.Println("* COINHOUR_BURN_FACTOR - Set the coin hour burn factor required for transactions. Must be > 1.")
 		os.Exit(0)
 	}
 
@@ -302,13 +308,13 @@ func (c *Config) postProcess() error {
 	panicIfError(err, "Invalid DataDirectory")
 
 	if c.Node.WebInterfaceCert == "" {
-		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "cert.pem")
+		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "skycoind.cert")
 	} else {
 		c.Node.WebInterfaceCert = replaceHome(c.Node.WebInterfaceCert, home)
 	}
 
 	if c.Node.WebInterfaceKey == "" {
-		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "key.pem")
+		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "skycoind.key")
 	} else {
 		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
 	}
@@ -350,6 +356,15 @@ func (c *Config) postProcess() error {
 		c.Node.DefaultConnections = nil
 	}
 
+	if c.Node.HostWhitelist != "" {
+		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
+	}
+
+	httpAuthEnabled := c.Node.WebInterfaceUsername != "" || c.Node.WebInterfacePassword != ""
+	if httpAuthEnabled && !c.Node.WebInterfaceHTTPS && !c.Node.WebInterfacePlaintextAuth {
+		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
+	}
+
 	return nil
 }
 
@@ -374,6 +389,7 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsRead,
 		api.EndpointsStatus,
 		api.EndpointsWallet,
+		api.EndpointsTransaction,
 		// Do not include insecure or deprecated API sets, they must always
 		// be explicitly enabled through -enable-api-sets
 	}
@@ -403,6 +419,7 @@ func validateAPISets(opt string, apiSets []string) error {
 		switch k {
 		case api.EndpointsRead,
 			api.EndpointsStatus,
+			api.EndpointsTransaction,
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
 			api.EndpointsDeprecatedWalletSpend:
@@ -434,12 +451,16 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
 	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in -data-directory")
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
-	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, "disable API set. Options are ALL, READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
+	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, "enable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, "disable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
 	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
+	flag.StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
+	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
+	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 

@@ -54,6 +54,8 @@ type ReceivedHTTPResponse struct {
 type Client struct {
 	HTTPClient *http.Client
 	Addr       string
+	Username   string
+	Password   string
 }
 
 // NewClient creates a Client
@@ -75,6 +77,20 @@ func NewClient(addr string) *Client {
 		Addr:       addr,
 		HTTPClient: httpClient,
 	}
+}
+
+// SetAuth configures the Client's request authentication
+func (c *Client) SetAuth(username, password string) {
+	c.Username = username
+	c.Password = password
+}
+
+func (c *Client) applyAuth(req *http.Request) {
+	if c.Username == "" && c.Password == "" {
+		return
+	}
+
+	req.SetBasicAuth(c.Username, c.Password)
 }
 
 // Get makes a GET request to an endpoint and unmarshals the response to obj.
@@ -115,6 +131,8 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 		return nil, err
 	}
 
+	c.applyAuth(req)
+
 	return c.HTTPClient.Do(req)
 }
 
@@ -147,6 +165,8 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 	if err != nil {
 		return err
 	}
+
+	c.applyAuth(req)
 
 	if csrf != "" {
 		req.Header.Set(CSRFHeaderName, csrf)
@@ -199,6 +219,8 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 	if err != nil {
 		return false, err
 	}
+
+	c.applyAuth(req)
 
 	if csrf != "" {
 		req.Header.Set(CSRFHeaderName, csrf)
@@ -400,8 +422,45 @@ func (c *Client) BlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error) {
 	return &b, nil
 }
 
-// Blocks makes a request to GET /api/v1/blocks
-func (c *Client) Blocks(start, end uint64) (*readable.Blocks, error) {
+// Blocks makes a request to GET /api/v1/blocks?seqs=
+func (c *Client) Blocks(seqs []uint64) (*readable.Blocks, error) {
+	sSeqs := make([]string, len(seqs))
+	for i, x := range seqs {
+		sSeqs[i] = fmt.Sprint(x)
+	}
+
+	v := url.Values{}
+	v.Add("seqs", strings.Join(sSeqs, ","))
+	endpoint := "/api/v1/blocks?" + v.Encode()
+
+	var b readable.Blocks
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1&start=&end=
+func (c *Client) BlocksVerbose(seqs []uint64) (*readable.BlocksVerbose, error) {
+	sSeqs := make([]string, len(seqs))
+	for i, x := range seqs {
+		sSeqs[i] = fmt.Sprint(x)
+	}
+
+	v := url.Values{}
+	v.Add("seqs", strings.Join(sSeqs, ","))
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/blocks?" + v.Encode()
+
+	var b readable.BlocksVerbose
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// BlocksInRange makes a request to GET /api/v1/blocks?start=&end=
+func (c *Client) BlocksInRange(start, end uint64) (*readable.Blocks, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
@@ -414,8 +473,8 @@ func (c *Client) Blocks(start, end uint64) (*readable.Blocks, error) {
 	return &b, nil
 }
 
-// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1
-func (c *Client) BlocksVerbose(start, end uint64) (*readable.BlocksVerbose, error) {
+// BlocksInRangeVerbose makes a request to GET /api/v1/blocks?verbose=1&start=&end=
+func (c *Client) BlocksInRangeVerbose(start, end uint64) (*readable.BlocksVerbose, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
@@ -949,11 +1008,11 @@ func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
 
 // InjectEncodedTransaction makes a request to POST /api/v1/injectTransaction.
 // rawTx is a hex-encoded, serialized transaction
-func (c *Client) InjectEncodedTransaction(rawTx string) (string, error) {
+func (c *Client) InjectEncodedTransaction(rawTxn string) (string, error) {
 	v := struct {
-		Rawtx string `json:"rawtx"`
+		Rawtxn string `json:"rawtx"`
 	}{
-		Rawtx: rawTx,
+		Rawtxn: rawTxn,
 	}
 
 	var txid string

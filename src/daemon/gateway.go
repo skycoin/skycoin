@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -316,6 +317,27 @@ func (gw *Gateway) GetSignedBlockBySeqVerbose(seq uint64) (*coin.SignedBlock, []
 	return b, inputs, err
 }
 
+// GetBlocks returns blocks matching given block sequences
+func (gw *Gateway) GetBlocks(seqs []uint64) ([]coin.SignedBlock, error) {
+	var blocks []coin.SignedBlock
+	var err error
+	gw.strand("GetBlocks", func() {
+		blocks, err = gw.v.GetBlocks(seqs)
+	})
+	return blocks, err
+}
+
+// GetBlocksVerbose returns blocks matching given block sequences, with verbose transaction input data
+func (gw *Gateway) GetBlocksVerbose(seqs []uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error) {
+	var blocks []coin.SignedBlock
+	var inputs [][][]visor.TransactionInput
+	var err error
+	gw.strand("GetBlocksVerbose", func() {
+		blocks, inputs, err = gw.v.GetBlocksVerbose(seqs)
+	})
+	return blocks, inputs, err
+}
+
 // GetBlocksInRange returns blocks between start and end, including start and end
 func (gw *Gateway) GetBlocksInRange(start, end uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
@@ -336,16 +358,6 @@ func (gw *Gateway) GetBlocksInRangeVerbose(start, end uint64) ([]coin.SignedBloc
 		blocks, inputs, err = gw.v.GetBlocksInRangeVerbose(start, end)
 	})
 	return blocks, inputs, err
-}
-
-// GetBlocks returns blocks in different depth
-func (gw *Gateway) GetBlocks(seqs []uint64) ([]coin.SignedBlock, error) {
-	var blocks []coin.SignedBlock
-	var err error
-	gw.strand("GetBlocks", func() {
-		blocks, err = gw.v.GetBlocks(seqs)
-	})
-	return blocks, err
 }
 
 // GetLastBlocks get last N blocks
@@ -411,16 +423,19 @@ func (gw *Gateway) GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction
 func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
-		_, err = gw.v.InjectTransactionStrict(txn)
-		if err != nil {
-			logger.WithError(err).Error("InjectTransactionStrict failed")
-			return
-		}
+		err = gw.v.WithUpdateTx("gateway.InjectBroadcastTransaction", func(tx *dbutil.Tx) error {
+			if _, err := gw.v.InjectTransactionStrictTx(tx, txn); err != nil {
+				logger.WithError(err).Error("InjectTransactionStrict failed")
+				return err
+			}
 
-		err = gw.d.BroadcastTransaction(txn)
-		if err != nil {
-			logger.WithError(err).Error("BroadcastTransaction failed")
-		}
+			if err := gw.d.BroadcastTransaction(txn); err != nil {
+				logger.WithError(err).Error("BroadcastTransaction failed")
+				return err
+			}
+
+			return nil
+		})
 	})
 	return err
 }
@@ -746,19 +761,6 @@ func (gw *Gateway) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]viso
 		txns, inputs, err = gw.v.GetWalletUnconfirmedTransactionsVerbose(wltID)
 	})
 	return txns, inputs, err
-}
-
-// ReloadWallets reloads all wallets
-func (gw *Gateway) ReloadWallets() error {
-	if !gw.Config.EnableWalletAPI {
-		return wallet.ErrWalletAPIDisabled
-	}
-
-	var err error
-	gw.strand("ReloadWallets", func() {
-		err = gw.v.Wallets.ReloadWallets()
-	})
-	return err
 }
 
 // UnloadWallet removes wallet of given id from memory.

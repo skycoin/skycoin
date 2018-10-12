@@ -14,6 +14,14 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead)
 - The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`)
 
+### Notice
+
+Nodes v0.23.0 and earlier will not be able to connect to v0.25.0 due to a change in the introduction packet message.
+
+Nodes v0.24.1 and earlier will not be able to connect to v0.26.0 due to a similar change.
+
+Make sure to upgrade to v0.25.0 so that your node will continue to connect once v0.26.0 is released.
+
 ### Added
 
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file

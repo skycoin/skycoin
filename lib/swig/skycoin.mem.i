@@ -97,41 +97,41 @@
 	}
 }
 
-%rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
-%inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* __in_pubKeys){
-		GoSlice_ data;
-		data.data = __in_pubKeys->data;
-		data.len = __in_pubKeys->count;
-		data.cap = __in_pubKeys->count;
-		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data);
-		return result;
-	}
-}
+// %rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
+// %inline {
+// 	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* __in_pubKeys){
+// 		GoSlice_ data;
+// 		data.data = __in_pubKeys->data;
+// 		data.len = __in_pubKeys->count;
+// 		data.cap = __in_pubKeys->count;
+// 		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data);
+// 		return result;
+// 	}
+// }
 
-%rename(SKY_cipher_PubKeySlice_Less) wrap_SKY_cipher_PubKeySlice_Less;
-%inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
-		GoSlice_ data;
-		data.data = __in_pubKeys->data;
-		data.len = __in_pubKeys->count;
-		data.cap = __in_pubKeys->count;
-		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2);
-		return result;
-	}
-}
+// %rename(SKY_cipher_PubKeySlice_Less) wrap_SKY_cipher_PubKeySlice_Less;
+// %inline {
+// 	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
+// 		GoSlice_ data;
+// 		data.data = __in_pubKeys->data;
+// 		data.len = __in_pubKeys->count;
+// 		data.cap = __in_pubKeys->count;
+// 		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2);
+// 		return result;
+// 	}
+// }
 
-%rename(SKY_cipher_PubKeySlice_Swap) wrap_SKY_cipher_PubKeySlice_Swap;
-%inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
-		GoSlice_ data;
-		data.data = __in_pubKeys->data;
-		data.len = __in_pubKeys->count;
-		data.cap = __in_pubKeys->count;
-		GoUint32 result = SKY_cipher_PubKeySlice_Swap(&data, p1, p2);
-		return result;
-	}
-}
+// %rename(SKY_cipher_PubKeySlice_Swap) wrap_SKY_cipher_PubKeySlice_Swap;
+// %inline {
+// 	GoUint32 wrap_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
+// 		GoSlice_ data;
+// 		data.data = __in_pubKeys->data;
+// 		data.len = __in_pubKeys->count;
+// 		data.cap = __in_pubKeys->count;
+// 		GoUint32 result = SKY_cipher_PubKeySlice_Swap(&data, p1, p2);
+// 		return result;
+// 	}
+// }
 
 %rename(SKY_coin_VerifyTransactionCoinsSpending) wrap_SKY_coin_VerifyTransactionCoinsSpending;
 %inline {

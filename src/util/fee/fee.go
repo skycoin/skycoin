@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	// BurnFactor inverse fraction of coinhours that must be burned (can be overriden with COINHOUR_BURN_FACTOR env var)
+	// BurnFactor inverse fraction of coinhours that must be burned (can be overridden with COINHOUR_BURN_FACTOR env var)
 	BurnFactor uint64 = 2
 )
 

@@ -59,6 +59,9 @@ type NodeConfig struct {
 	EnableAllAPISets bool
 
 	enabledAPISets map[string]struct{}
+	// Comma separate list of hostnames to accept in the Host header, used to bypass the Host header check which only applies to localhost addresses
+	HostWhitelist string
+	hostWhitelist []string
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -272,6 +275,8 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
+		fmt.Println("Additional environment variables:")
+		fmt.Println("* COINHOUR_BURN_FACTOR - Set the coin hour burn factor required for transactions. Must be > 1.")
 		os.Exit(0)
 	}
 
@@ -349,6 +354,10 @@ func (c *Config) postProcess() error {
 
 	if c.Node.DisableDefaultPeers {
 		c.Node.DefaultConnections = nil
+	}
+
+	if c.Node.HostWhitelist != "" {
+		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
 	}
 
 	httpAuthEnabled := c.Node.WebInterfaceUsername != "" || c.Node.WebInterfacePassword != ""
@@ -445,6 +454,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in -data-directory")
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
 	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, "enable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
 	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, "disable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
 	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")

@@ -54,6 +54,9 @@ All responses will set an appropriate HTTP status code indicating an error, and 
 Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
 However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
 
+Under some circumstances an error response body may not be valid JSON.
+Any client consuming the API should accomodate this and conditionally parse JSON for non-`200` responses.
+
 ## API Sets
 
 API endpoints are grouped into "sets" which can be toggled with the command line parameters
@@ -83,7 +86,7 @@ Authentication can only be enabled when using HTTPS with `-web-interface-https`,
 - [General system checks](#general-system-checks)
 	- [Health check](#health-check)
 	- [Version info](#version-info)
-  - [Prometheus metrics](#prometheus-metrics) 
+	- [Prometheus metrics](#prometheus-metrics)
 - [Simple query APIs](#simple-query-apis)
 	- [Get balance of addresses](#get-balance-of-addresses)
 	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
@@ -1837,16 +1840,33 @@ URI: /api/v1/injectTransaction
 Method: POST
 Content-Type: application/json
 Body: {"rawtx": "hex-encoded serialized transaction string"}
+Errors:
+	400 - Bad input
+	500 - Other
+	503 - Network unavailable (transaction failed to broadcast)
 ```
 
 Broadcasts a hex-encoded, serialized transaction to the network.
 Transactions are serialized with the `encoder` package.
 See [`coin.Transaction.Serialize`](https://godoc.org/github.com/skycoin/skycoin/src/coin#Transaction.Serialize).
 
-If there are no available connections, the API responds with a 503 Service Unavailable error.
+If there are no available connections, the API responds with a `503 Service Unavailable` error.
 
 Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
 This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
+
+Also, in rare cases the transaction may be broadcast but might not be saved to the database. In this case the client
+would have a window of opportunity to attempt a double spend, resulting in unexpected behavior.
+However, if the database save failed, it is likely that a subsequent call to inject transaction will also fail.
+
+The recommended way to handle transaction injections from your system is to inject the transaction then wait
+for the transaction to be confirmed.  Transactions typically confirm quickly, so if it is not confirmed after some
+timeout such as 1 minute, the application can continue to retry the broadcast with `/api/v1/resendUnconfirmedTxns`.
+Broadcast only fails without an error if the node's peers disconnect or timeout after the broadcast was initiated,
+which is a network problem that may recover, so rebroadcasting with `/api/v1/resendUnconfirmedTxns` will resolve it,
+or else the network is unavailable.  Any transactions saved to the database will be resent on startup.
+
+It is safe to retry the injection after a `503` failure.
 
 Example:
 
@@ -3629,7 +3649,6 @@ Result:
 [
     "104.237.142.206:6000",
     "118.178.135.93:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "139.162.7.132:6000",
     "172.104.85.6:6000",
@@ -3659,7 +3678,6 @@ Result:
 [
     "104.237.142.206:6000",
     "118.178.135.93:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "139.162.7.132:6000",
     "172.104.85.6:6000",
@@ -3690,7 +3708,6 @@ Result:
     "104.237.142.206:6000",
     "116.62.220.158:7200",
     "118.237.210.163:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "121.41.103.148:7200",
     "139.162.161.41:20000",

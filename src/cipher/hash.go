@@ -15,6 +15,17 @@ var (
 	ripemd160HashPool     chan hash.Hash
 )
 
+var (
+	// ErrInvalidLengthRipemd160 Invalid ripemd160 length
+	ErrInvalidLengthRipemd160 = errors.New("Invalid ripemd160 length")
+	// ErrInvalidLengthSHA256    Invalid sha256 length
+	ErrInvalidLengthSHA256 = errors.New("Invalid sha256 length")
+	// ErrInvalidHexLength       Invalid hex length
+	ErrInvalidHexLength = errors.New("Invalid hex length")
+	// ErrInvalidBytesLength     Invalid bytes length
+	ErrInvalidBytesLength = errors.New("Invalid bytes length")
+)
+
 // Ripemd160 ripemd160
 type Ripemd160 [20]byte
 
@@ -29,7 +40,7 @@ func (rd *Ripemd160) MustSet(b []byte) {
 // Set sets value
 func (rd *Ripemd160) Set(b []byte) error {
 	if len(b) != 20 {
-		return errors.New("Invalid ripemd160 length")
+		return ErrInvalidLengthRipemd160
 	}
 	copy(rd[:], b[:])
 	return nil
@@ -63,7 +74,7 @@ func (g *SHA256) MustSet(b []byte) {
 // Set sets value
 func (g *SHA256) Set(b []byte) error {
 	if len(b) != 32 {
-		return errors.New("Invalid sha256 length")
+		return ErrInvalidLengthSHA256
 	}
 	copy(g[:], b[:])
 	return nil
@@ -96,7 +107,7 @@ func SHA256FromHex(hs string) (SHA256, error) {
 		return h, err
 	}
 	if len(b) != len(h) {
-		return h, errors.New("Invalid hex length")
+		return h, ErrInvalidHexLength
 	}
 	h.MustSet(b)
 	return h, nil

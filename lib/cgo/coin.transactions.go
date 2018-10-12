@@ -16,7 +16,7 @@ import (
   #include <stdlib.h>
 
   #include "skytypes.h"
-	#include "feecalc.h"
+	#include "skyfee.h"
 */
 import "C"
 

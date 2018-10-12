@@ -434,7 +434,7 @@ var (
 	// More precise errors conditions can be found in the logs
 	ErrorInvalidTimeString = errors.New("Invalid time value")
 
-	codeToErrorMap = make(map[uint32]error, 0)
+	codeToErrorMap = make(map[uint32]error)
 	errorToCodeMap = map[error]uint32{
 		// libcgo
 		ErrorBadHandle:         SKY_BAD_HANDLE,
@@ -601,10 +601,6 @@ var (
 		secp256k1.ErrVerifySignatureInvalidPubkeysLength: SKY_ErrVerifySignatureInvalidPubkeysLength,
 	}
 )
-
-func errorObjectFromCode(errcode uint32) error {
-	return codeToErrorMap[errcode]
-}
 
 func libErrorCode(err error) uint32 {
 	if err == nil {

@@ -18,9 +18,7 @@ import "C"
 
 //export SKY_webrpc_NewClient
 func SKY_webrpc_NewClient(_addr string, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
-
-	addr := _addr
-	__arg1, ____return_err := webrpc.NewClient(addr)
+	__arg1, ____return_err := webrpc.NewClient(_addr)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg1 = registerWebRpcClientHandle(__arg1)
@@ -30,7 +28,6 @@ func SKY_webrpc_NewClient(_addr string, _arg1 *C.WebRpcClient__Handle) (____erro
 
 //export SKY_webrpc_Client_CSRF
 func SKY_webrpc_Client_CSRF(_c C.WebRpcClient__Handle, _arg0 *C.GoString_) (____error_code uint32) {
-
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_BAD_HANDLE

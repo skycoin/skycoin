@@ -20,7 +20,6 @@ import "C"
 
 //export SKY_cli_CreateRawTxFromWallet
 func SKY_cli_CreateRawTxFromWallet(_c C.WebRpcClient__Handle, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd C.PasswordReader__Handle, _arg4 *C.Transaction__Handle) (____error_code uint32) {
-
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_BAD_HANDLE
@@ -45,7 +44,6 @@ func SKY_cli_CreateRawTxFromWallet(_c C.WebRpcClient__Handle, _walletFile, _chgA
 
 //export SKY_cli_CreateRawTxFromAddress
 func SKY_cli_CreateRawTxFromAddress(_c C.WebRpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd C.PasswordReader__Handle, _arg4 *C.Transaction__Handle) (____error_code uint32) {
-
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_BAD_HANDLE
@@ -95,7 +93,6 @@ func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt C.Wallet__Handle, _inAd
 
 //export SKY_cli_NewTransaction
 func SKY_cli_NewTransaction(_utxos []C.wallet__UxBalance, _keys []C.cipher__SecKey, _outs []C.coin__TransactionOutput, _arg3 *C.Transaction__Handle) (____error_code uint32) {
-
 	utxos := *(*[]wallet.UxBalance)(unsafe.Pointer(&_utxos))
 	keys := *(*[]cipher.SecKey)(unsafe.Pointer(&_keys))
 	outs := *(*[]coin.TransactionOutput)(unsafe.Pointer(&_outs))

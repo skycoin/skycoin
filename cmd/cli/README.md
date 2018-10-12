@@ -18,14 +18,15 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Add Private Key](#add-private-key)
 	- [Check address balance](#check-address-balance)
 	- [Generate new addresses](#generate-new-addresses)
+	- [Generate distribution addresses for a new fiber coin](#generate-distribution-addresses-for-a-new-fiber-coin)
 	- [Check address outputs](#check-address-outputs)
 	- [Check block data](#check-block-data)
 	- [Check database integrity](#check-database-integrity)
 	- [Create a raw transaction](#create-a-raw-transaction)
 	- [Decode a raw transaction](#decode-a-raw-transaction)
 	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
-	- [Generate a wallet](#generate-a-wallet)
-	- [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
+	- [Create a wallet](#create-a-wallet)
+	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
 	- [Last blocks](#last-blocks)
 	- [List wallet addresses](#list-wallet-addresses)
 	- [List wallets](#list-wallets)
@@ -128,29 +129,33 @@ USAGE:
    skycoin-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.24.1
+   0.25.0-rc1
 
 COMMANDS:
      addPrivateKey         Add a private key to specific wallet
      addressBalance        Check the balance of specific addresses
      addressGen            Generate skycoin or bitcoin addresses
+     fiberAddressGen       Generate addresses and seeds for a new fiber coin.
      addressOutputs        Display outputs of specific addresses
      blocks                Lists the content of a single block or a range of blocks
      broadcastTransaction  Broadcast a raw transaction to the network
      checkdb               Verify the database
      createRawTransaction  Create a raw transaction to be broadcast to the network later
      decodeRawTransaction  Decode raw transaction
-     generateAddresses     Generate additional addresses for a wallet
-     generateWallet        Generate a new wallet
+     decryptWallet         Decrypt wallet
+     encryptWallet         Encrypt wallet
      lastBlocks            Displays the content of the most recently N generated blocks
      listAddresses         Lists all addresses in a given wallet
      listWallets           Lists all wallets stored in the wallet directory
      send                  Send skycoin from a wallet or an address to a recipient address
-     showConfig            show cli configuration
+     showConfig            Show cli configuration
+     showSeed              Show wallet seed
      status                Check the status of current skycoin node
      transaction           Show detail info of specific transaction
      verifyAddress         Verify a skycoin address
      version
+     walletCreate          Generate a new wallet
+     walletAddAddresses    Generate additional addresses for a wallet
      walletBalance         Check the balance of a wallet
      walletDir             Displays wallet folder address
      walletHistory         Display the transaction history of specific wallet. Requires skycoin node rpc.
@@ -162,9 +167,12 @@ GLOBAL OPTIONS:
    --version, -v  print the version
 ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
+    RPC_USER: Username for RPC API, if enabled in the RPC.
+    RPC_PASS: Password for RPC API, if enabled in the RPC.
     COIN: Name of the coin. Default "skycoin"
-    WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "$HOME/.$COIN/wallets"
-    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "$COIN_cli.wlt"
+    WALLET_DIR: Directory where wallets are stored. This value is overridden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "$DATA_DIR/wallets"
+    WALLET_NAME: Name of wallet file (without path). This value is overridden by any subcommand flag specifying a wallet filename. Default "$COIN_cli.wlt"
+    DATA_DIR: Directory where everything is stored. Default "$HOME/.$COIN/"
 ```
 
 ### Add Private Key
@@ -263,18 +271,21 @@ $ skycoin-cli addressGen [command options] [arguments...]
 
 ```
 OPTIONS:
-        --count value, -c value  Number of addresses to generate (default: 1)
-        --hide-secret, -s        Hide the secret key from the output
-        --bitcoin, -b            Output the addresses as bitcoin addresses instead of skycoin addresses
-        --hex, -x                Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if no seed is not provided
-        --only-addr, --oa        Only show generated address list, hide seed, secret key and public key
-        --seed value             Seed for deterministic key generation. If `--hex` is not defined will use bip39 to generate a seed if not provided.
+        --num value, -n value    Number of addresses to generate (default: 1)
+        --coin value, -c value   Coin type. Must be skycoin or bitcoin. If bitcoin, secret keys are in Wallet Import Format instead of hex. (default: "skycoin")
+        --label value, -l value  Wallet label to use when printing or writing a wallet file
+        --hex                    Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided
+        --seed value, -s value   Seed for deterministic key generation. Will use bip39 as the seed if not provided.
+        --entropy value          Entropy of the autogenerated bip39 seed, when the seed is not provided. Can be 128 or 256 (default: 128)
+        --hide-secrets, --hs     Hide the secret key and seed from the output when printing a JSON wallet file
+        --mode value, -m value   Output mode. Options are wallet (prints a full JSON wallet), addresses (prints addresses in plain text), secrets (prints secret keys in plain text) (default: "addresses")
+        --encrypt, -e            Encrypt the wallet when printing a JSON wallet
 ```
 
 #### Examples
 ##### Generate `n` number of skycoin addresses
 ```bash
-$ skycoin-cli addressGen --count 2
+$ skycoin-cli addressGen --num 2
 ```
 
 <details>
@@ -305,7 +316,7 @@ $ skycoin-cli addressGen --count 2
 
 ##### Generate `n` number of bitcoin addresses
 ```bash
-$ skycoin-cli addressGen --count 2 --bitcoin
+$ skycoin-cli addressGen --num 2 --coin bitcoin
 ```
 
 <details>
@@ -335,7 +346,7 @@ $ skycoin-cli addressGen --count 2 --bitcoin
 
 ##### Hide secret in output
 ```bash
-$ skycoin-cli addressGen --count 2 --hide-secret
+$ skycoin-cli addressGen --num 2 --hide-secrets
 ```
 
 <details>
@@ -365,7 +376,7 @@ $ skycoin-cli addressGen --count 2 --hide-secret
 
 ##### Output only an address list
 ```bash
-$ skycoin-cli addressGen --count 2 --only-addr
+$ skycoin-cli addressGen --num 2 --mode addresses
 ```
 
 ```
@@ -377,7 +388,7 @@ $ skycoin-cli addressGen --count 2 --only-addr
 
 ##### Use a predefined seed value
 ```bash
-$ skycoin-cli addressGen --count 2 --seed "my super secret seed"
+$ skycoin-cli addressGen --num 2 --seed "my super secret seed"
 ```
 
 <details>
@@ -407,7 +418,7 @@ $ skycoin-cli addressGen --count 2 --seed "my super secret seed"
 
 ##### Generate addresses with a hex (CSPRNG-generated) seed
 ```bash
-skycoin-cli addressGen --count 2 --hex
+skycoin-cli addressGen --num 2 --hex
 ```
 
 <details>
@@ -435,6 +446,30 @@ skycoin-cli addressGen --count 2 --hex
 ```
 </details>
 
+### Generate distribution addresses for a new fiber coin
+```bash
+skycoin-cli fiberAddressGen [command options] [arguments...]
+```
+
+```
+DESCRIPTION:
+        Addresses are written in a format that can be copied into fiber.toml
+for configuring distribution addresses. Addresses along with their seeds are written to a csv file,
+these seeds can be imported into the wallet to access distribution coins.
+
+OPTIONS:
+        --num value, -n value         Number of addresses to generate (default: 100)
+        --entropy value, -e value     Entropy of the autogenerated bip39 seeds. Can be 128 or 256 (default: 128)
+        --addrs-file value, -a value  Output file for the generated addresses in fiber.toml format (default: "addresses.txt")
+        --seeds-file value, -s value  Output file for the generated addresses and seeds in a csv (default: "seeds.csv")
+        --overwrite, -o               Allow overwriting any existing addrs-file or seeds-file
+```
+
+
+#### Examples
+```bash
+skycoin-cli fiberAddressGen
+```
 
 ### Check address outputs
 Display outputs of specific addresses, join multiple addresses with space.
@@ -773,11 +808,11 @@ ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5
 ```
 </details>
 
-### Generate a wallet
-Generate a new skycoin wallet.
+### Create a wallet
+Create a new skycoin wallet.
 
 ```bash
-$ skycoin-cli generateWallet [command options]
+$ skycoin-cli walletCreate [command options]
 ```
 
 ```
@@ -793,9 +828,9 @@ OPTIONS:
 ```
 
 #### Examples
-##### Generate the default wallet
+##### Create the default wallet
 ```bash
-$ skycoin-cli generateWallet
+$ skycoin-cli walletCreate
 ```
 
 <details>
@@ -829,9 +864,9 @@ $ skycoin-cli generateWallet
 
 > NOTE: If a wallet with the same name already exists then the cli exits with an error.
 
-##### Generate a wallet with a random alpha numeric seed
+##### Create a wallet with a random alpha numeric seed
 ```bash
-$ skycoin-cli generateWallet -r
+$ skycoin-cli walletCreate -r
 ```
 
 <details>
@@ -863,9 +898,9 @@ $ skycoin-cli generateWallet -r
 ```
 </details>
 
-##### Generate a wallet with a 12 word mnemomic seed
+##### Create a wallet with a 12 word mnemomic seed
 ```bash
-$ skycoin-cli generateWallet -rd
+$ skycoin-cli walletCreate -rd
 ```
 
 <details>
@@ -897,9 +932,9 @@ $ skycoin-cli generateWallet -rd
 ```
 </details>
 
-##### Generate a wallet with a specified seed
+##### Create a wallet with a specified seed
 ```bash
-$ skycoin-cli generateWallet -s "this is the super secret seed everyone needs but does not have"
+$ skycoin-cli walletCreate -s "this is the super secret seed everyone needs but does not have"
 ```
 
 <details>
@@ -932,9 +967,9 @@ $ skycoin-cli generateWallet -s "this is the super secret seed everyone needs bu
 </details>
 
 
-##### Generate more than 1 default address
+##### Create more than 1 default address
 ```bash
-$ skycoin-cli generateWallet -n 2
+$ skycoin-cli walletCreate -n 2
 ```
 
 <details>
@@ -971,9 +1006,9 @@ $ skycoin-cli generateWallet -n 2
 ```
 </details>
 
-##### Generate wallet with a custom wallet name
+##### Create a wallet with a custom wallet name
 ```bash
-$ skycoin-cli generateWallet -f "secret_wallet.wlt"
+$ skycoin-cli walletCreate -f "secret_wallet.wlt"
 ```
 
 <details>
@@ -1007,10 +1042,10 @@ $ skycoin-cli generateWallet -f "secret_wallet.wlt"
 
 > NOTE: The wallet name needs to end with `.wlt` and it should not be a path.
 
-##### Generate wallet with a custom wallet label
+##### Create a wallet with a custom wallet label
 By default the wallet label is an empty field
 ```bash
-$ skycoin-cli generateWallet -l "cli wallet"
+$ skycoin-cli walletCreate -l "cli wallet"
 ```
 
 <details>
@@ -1042,11 +1077,11 @@ $ skycoin-cli generateWallet -l "cli wallet"
 ```
 </details>
 
-### Generate addresses for a wallet
-Generate new addresses for a skycoin wallet.
+### Add addresses to a wallet
+Add new addresses to a skycoin wallet.
 
 ```bash
-$ skycoin-cli generateAddresses [command options]
+$ skycoin-cli walletAddAddresses [command options]
 ```
 
 ```
@@ -1056,9 +1091,9 @@ OPTIONS:
         --json, -j  Returns the results in JSON format
 ```
 
-##### Generate an address for the default wallet
+##### Add an address to the default wallet
 ```bash
-$ skycoin-cli generateAddresses
+$ skycoin-cli walletAddAddresses
 ```
 
 <details>
@@ -1069,9 +1104,9 @@ $ skycoin-cli generateAddresses
 ```
 </details>
 
-##### Generate an address for a specific wallet
+##### Add an address to a specific wallet
 ```bash
-$ skycoin-cli generateAddresses $WALLET_PATH
+$ skycoin-cli walletAddAddresses $WALLET_PATH
 ```
 
 <details>
@@ -1082,9 +1117,9 @@ $ skycoin-cli generateAddresses $WALLET_PATH
 ```
 </details>
 
-##### Generate `n` addresses
+##### Add `n` addresses
 ```bash
-$ skycoin-cli generateAddresses -n 2
+$ skycoin-cli walletAddAddresses -n 2
 ```
 
 <details>
@@ -1095,9 +1130,9 @@ $ skycoin-cli generateAddresses -n 2
 ```
 </details>
 
-##### Generate a JSON output
+##### Add an address to a wallet with JSON output
 ```bash
-$ skycoin-cli generateAddresses --json
+$ skycoin-cli walletAddAddresses --json
 ```
 
 <details>

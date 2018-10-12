@@ -56,6 +56,12 @@ func MakeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
+// MakePubKey creates a cipher.PubKey
+func MakePubKey() cipher.PubKey {
+	p, _ := cipher.GenerateKeyPair()
+	return p
+}
+
 // RandBytes returns n random bytes
 func RandBytes(t *testing.T, n int) []byte {
 	b := make([]byte, n)

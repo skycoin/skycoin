@@ -962,8 +962,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.expectingIntroductions.Add(a, time.Now().UTC())
 	logger.Debugf("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
-	// TODO: replace the last paramenter of nil with dm.Config.BlockchainPubkey in v25
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.pool.Pool.Config.Port, nil)
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey[:])
 	if err := dm.pool.Pool.SendMessage(a, m); err != nil {
 		logger.Errorf("Send IntroductionMessage to %s failed: %v", a, err)
 	}

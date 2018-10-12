@@ -51,6 +51,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 
 ### Changed
 
+- Add blockchain pubkey in introduction message, it would close the connection if the pubkey is not matched, but would accept it if pubkey is not provided.
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
 - `/api/v1/network/` endpoints will return an empty array for array values instead of `null`

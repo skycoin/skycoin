@@ -181,17 +181,17 @@ func TestIntroductionMessage(t *testing.T) {
 			err: ErrDisconnectSelf,
 		},
 		{
-			name: "Invalid version",
+			name: "Version below minimum supported version",
 			mockValue: daemonMockValue{
 				mirror:           10000,
 				version:          1,
-				disconnectReason: ErrDisconnectInvalidVersion,
+				disconnectReason: ErrDisconnectVersionNotSupported,
 			},
 			intro: &IntroductionMessage{
 				Mirror:  10001,
 				Version: 0,
 			},
-			err: ErrDisconnectInvalidVersion,
+			err: ErrDisconnectVersionNotSupported,
 		},
 		{
 			name: "Invalid address",

@@ -103,7 +103,7 @@
 #define SKY_ErrWriteQueueFull                             0x0600000E
 #define SKY_ErrNoReachableConnections                     0x0600000F
 #define SKY_ErrMaxDefaultConnectionsReached               0x06000010
-#define SKY_ErrDisconnectInvalidVersion                   0x06000011
+#define SKY_ErrDisconnectVersionNotSupported              0x06000011
 #define SKY_ErrDisconnectIntroductionTimeout              0x06000012
 #define SKY_ErrDisconnectVersionSendFailed                0x06000013
 #define SKY_ErrDisconnectIsBlacklisted                    0x06000014
@@ -118,14 +118,14 @@
 #define SKY_ConnectionError                               0x0600001D
 
 // util error codes
-#define SKY_ErrTxnNoFee                   0x09000000 
-#define SKY_ErrTxnInsufficientFee         0x09000001 
-#define SKY_ErrTxnInsufficientCoinHours   0x09000002 
-#define SKY_ErrNegativeValue              0x09000003 
-#define SKY_ErrTooManyDecimals            0x09000004 
-#define SKY_ErrTooLarge                   0x09000005 
-#define SKY_ErrEmptyDirectoryName         0x09000006 
-#define SKY_ErrDotDirectoryName           0x09000007 
+#define SKY_ErrTxnNoFee                   0x09000000
+#define SKY_ErrTxnInsufficientFee         0x09000001
+#define SKY_ErrTxnInsufficientCoinHours   0x09000002
+#define SKY_ErrNegativeValue              0x09000003
+#define SKY_ErrTooManyDecimals            0x09000004
+#define SKY_ErrTooLarge                   0x09000005
+#define SKY_ErrEmptyDirectoryName         0x09000006
+#define SKY_ErrDotDirectoryName           0x09000007
 
 // visor error codes
 #define SKY_ErrHistoryDBCorrupted         0x0A000000

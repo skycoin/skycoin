@@ -228,13 +228,14 @@ type IntroductionMessage struct {
 	Mirror uint32
 	// Port is the port that this client is listening on
 	Port uint16
-	// Our client version
+	// Protocol version
 	Version int32
 	c       *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
 	valid bool `enc:"-"` // skip it during encoding
-	// Pubkey is the blockchain pubkey
-	Pubkey []byte `enc:",omitempty"`
+	// Extra is extra bytes added to the struct to accomodate multiple version of this packet.
+	// Currently it contains the blockchain pubkey but will accept a client that does not provide it.
+	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
@@ -243,7 +244,7 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey []
 		Mirror:  mirror,
 		Version: version,
 		Port:    port,
-		Pubkey:  pubkey,
+		Extra:   pubkey,
 	}
 }
 
@@ -263,14 +264,14 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			return ErrDisconnectSelf
 		}
 
-		// Disconnect if not running the same version
-		if intro.Version != d.DaemonConfig().Version {
-			logger.Infof("%s has different version %d. Disconnecting.",
-				mc.Addr, intro.Version)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidVersion); err != nil {
+		// Disconnect if peer version is not within the supported range
+		dc := d.DaemonConfig()
+		if intro.Version < dc.MinProtocolVersion {
+			logger.Infof("%s protocol version %d below minimum supported protocol version %d. Disconnecting.", mc.Addr, intro.Version, dc.MinProtocolVersion)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectVersionBelowMin); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
-			return ErrDisconnectInvalidVersion
+			return ErrDisconnectVersionNotSupported
 		}
 
 		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)

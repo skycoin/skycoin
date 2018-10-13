@@ -225,7 +225,7 @@ const (
 	// SKY_ErrMaxDefaultConnectionsReached returns when maximum number of default connections is reached
 	SKY_ErrMaxDefaultConnectionsReached // nolint megacheck
 	// SKY_ErrDisconnectReasons invalid version
-	SKY_ErrDisconnectInvalidVersion
+	SKY_ErrDisconnectVersionNotSupported
 	// SKY_ErrDisconnectIntroductionTimeout timeout
 	SKY_ErrDisconnectIntroductionTimeout
 	// SKY_ErrDisconnectVersionSendFailed version send failed
@@ -472,7 +472,7 @@ var (
 		gnet.ErrConnectionPoolClosed:            SKY_ErrConnectionPoolClosed,
 		gnet.ErrWriteQueueFull:                  SKY_ErrWriteQueueFull,
 		gnet.ErrNoReachableConnections:          SKY_ErrNoReachableConnections,
-		daemon.ErrDisconnectInvalidVersion:      SKY_ErrDisconnectInvalidVersion,
+		daemon.ErrDisconnectVersionNotSupported: SKY_ErrDisconnectVersionNotSupported,
 		daemon.ErrDisconnectIntroductionTimeout: SKY_ErrDisconnectIntroductionTimeout,
 		daemon.ErrDisconnectVersionSendFailed:   SKY_ErrDisconnectVersionSendFailed,
 		daemon.ErrDisconnectIsBlacklisted:       SKY_ErrDisconnectIsBlacklisted,

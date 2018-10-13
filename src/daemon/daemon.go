@@ -22,8 +22,8 @@ import (
 )
 
 var (
-	// ErrDisconnectInvalidVersion invalid version
-	ErrDisconnectInvalidVersion gnet.DisconnectReason = errors.New("Invalid version")
+	// ErrDisconnectVersionNotSupported version is below minimum supported version
+	ErrDisconnectVersionNotSupported gnet.DisconnectReason = errors.New("Version is below minimum supported version")
 	// ErrDisconnectIntroductionTimeout timeout
 	ErrDisconnectIntroductionTimeout gnet.DisconnectReason = errors.New("Version timeout")
 	// ErrDisconnectVersionSendFailed version send failed
@@ -123,7 +123,11 @@ func (cfg *Config) preprocess() Config {
 // DaemonConfig configuration for the Daemon
 type DaemonConfig struct { // nolint: golint
 	// Protocol version. TODO -- manage version better
-	Version int32
+	ProtocolVersion int32
+	// Minimum accepted protocol version
+	MinProtocolVersion int32
+	// Maximum accepted protocol version
+	MaxProtocolVersion int32
 	// IP Address to serve on. Leave empty for automatic assignment
 	Address string
 	// BlockchainPubkey blockchain pubkey string
@@ -181,6 +185,8 @@ type DaemonConfig struct { // nolint: golint
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
 		Version:                      2,
+		MinProtocolVersion:           2,
+		MaxProtocolVersion:           2,
 		Address:                      "",
 		Port:                         6677,
 		OutgoingRate:                 time.Second * 5,
@@ -962,7 +968,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.expectingIntroductions.Add(a, time.Now().UTC())
 	logger.Debugf("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey[:])
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey[:])
 	if err := dm.pool.Pool.SendMessage(a, m); err != nil {
 		logger.Errorf("Send IntroductionMessage to %s failed: %v", a, err)
 	}

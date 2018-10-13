@@ -2211,8 +2211,8 @@ curl -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/notes
 
 Result:
 
-```json
-[
+ ```json
+ [
     {
         "txid": "62b1e205aa2895b7094f708d853a64709e14d467ef3e3eee54ef79bcefdbd4c8",
         "notes": "Paycheck for Mr. Mueller"
@@ -2221,8 +2221,8 @@ Result:
         "txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114",
         "notes": "A Note \n"
     }
-]
-```
+ ]
+ ```
 
 ### Get Note by ID
 
@@ -2242,12 +2242,12 @@ curl -X GET -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/not
 Result:
  
  ```json
- [
-     {
-         "txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114",
-         "notes": "A Note... \n"
-     }
- ]
+ {
+    "data": {
+        "txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114",
+        "notes": "A note..."
+    }
+ }
  ```
 
 ### Add Note
@@ -2269,12 +2269,12 @@ curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/no
 Result:
  
  ```json
- [
-     {
+ {
+     "data": {
          "txid": "9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114",
          "notes": "A Note... \n"
      }
- ]
+ }
  ```
 
 ### Removes Note by ID
@@ -2295,12 +2295,9 @@ curl -X DELETE -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/
 Result:
  
  ```json
- [
-     {
-         "txid": "",
-         "notes": ""
-     }
- ]
+ {
+     "data": {}
+ }
  ```
 
 

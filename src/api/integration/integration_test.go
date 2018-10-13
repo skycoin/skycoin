@@ -1049,82 +1049,62 @@ func TestGetNoteByTxID(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
-	defer testRemoveNotes(t)
 
-	testAddNotes(t)
+	addedNotesCount := testAddNotes(t)
+
 	c := api.NewClient(nodeAddress())
 
-	note, err := c.GetNoteByTxID("9c8995afd843372636ae66391797c824e2fd8dfafa77c901c7f9e8d4f5e87117")
-	if err != nil {
-		t.Error(err)
-	}
+	note, err := c.GetNote("9c8995afd843372636ae66391797c824e2fd8dfafa77c901c7f9e8d4f5e87117")
+	require.NoError(t, err)
 
 	require.Equal(t, "A note...", note.Notes)
+
+	testRemoveNotes(t, addedNotesCount)
 }
 
-func testRemoveNotes(t *testing.T) {
+func testRemoveNotes(t *testing.T, noteCount int) {
 	c := api.NewClient(nodeAddress())
 
-	allNotesBefore, err := c.GetAllNotes()
-	if err != nil {
-		t.Error(err)
-	}
-
 	noteList := getLocalTestNotes()
-
 	for _, note := range noteList {
 		removedNote, err := c.RemoveNote(note.TxIDHex)
-		if err != nil {
-			t.Error(err)
-		}
-
-		require.Equal(t, "", removedNote.TxIDHex)
-		require.Equal(t, "", removedNote.Notes)
+		require.NoError(t, err)
+		require.Equal(t, struct{}{}, removedNote)
 	}
 
-	allNotes, err := c.GetAllNotes()
-	if err != nil {
-		t.Error(err)
-	}
+	allNotes, err := c.GetNotes()
+	require.NoError(t, err)
 
-	if len(allNotesBefore) == 0 {
-		require.Equal(t, len(allNotes), len(allNotesBefore))
+	if noteCount == 0 {
+		require.Equal(t, len(allNotes), noteCount)
 		return
 	}
-	require.Equal(t, len(allNotes), len(allNotesBefore)-len(noteList))
+	require.Equal(t, len(allNotes), noteCount-len(noteList))
 }
 
 func testAddNotes(t *testing.T) int {
 	c := api.NewClient(nodeAddress())
 
-	beforeNotes, err := c.GetAllNotes()
-	if err != nil {
-		t.Error(err)
-	}
+	bNotes, err := c.GetNotes()
+	require.NoError(t, err)
 
 	noteList := getLocalTestNotes()
 
-	var addedNotes []notes.Note
+	var addedNotes int
 	for _, note := range noteList {
 		addedNote, err := c.AddNote(note)
-		if err != nil {
-			t.Error(err)
-		}
-
-		addedNotes = append(addedNotes, addedNote)
-
+		require.NoError(t, err)
 		require.NotEqual(t, "", addedNote.TxIDHex)
 		require.NotEqual(t, "", addedNote.Notes)
+
+		addedNotes++
 	}
 
-	allNotes, err := c.GetAllNotes()
-	if err != nil {
-		t.Error(err)
-	}
+	allNotes, err := c.GetNotes()
+	require.NoError(t, err)
+	require.Equal(t, len(allNotes), len(bNotes)+addedNotes)
 
-	require.Equal(t, len(allNotes), len(beforeNotes)+len(addedNotes))
-
-	return len(allNotes)
+	return len(bNotes)
 }
 
 func getLocalTestNotes() []notes.Note {
@@ -1140,6 +1120,10 @@ func getLocalTestNotes() []notes.Note {
 		{
 			TxIDHex: "62b1e205aa2895b7094f708d853a54709e14d4677f3e3eee54ef79bcefdbd4c2",
 			Notes:   "The note for tests",
+		},
+		{
+			TxIDHex: "74b2e205aa2895b7094f708d853a54709e14d4677f3e3eee54ef79bcefdbd4d3",
+			Notes:   "The note for \n",
 		},
 	}
 }

@@ -81,35 +81,7 @@ func NewClient(addr string) *Client {
 // Get makes a GET request to an endpoint and unmarshals the response to obj.
 // If the response is not 200 OK, returns an error
 func (c *Client) Get(endpoint string, obj interface{}) error {
-	resp, err := c.get(endpoint, "")
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		return NewClientError(resp.Status, resp.StatusCode, string(body))
-	}
-
-	if obj == nil {
-		return nil
-	}
-
-	d := json.NewDecoder(resp.Body)
-	d.DisallowUnknownFields()
-	return d.Decode(obj)
-}
-
-// GetJSON makes a GET request to an endpoint with Content-Type "application/json" and unmarshals the response to obj.
-// If the response is not 200 OK, returns an error
-func (c *Client) GetJSON(endpoint string, obj interface{}) error {
-	resp, err := c.get(endpoint, "application/json")
+	resp, err := c.get(endpoint)
 	if err != nil {
 		return err
 	}
@@ -135,7 +107,7 @@ func (c *Client) GetJSON(endpoint string, obj interface{}) error {
 }
 
 // get makes a GET request to an endpoint. Caller must close response body.
-func (c *Client) get(endpoint string, contentType string) (*http.Response, error) {
+func (c *Client) get(endpoint string) (*http.Response, error) {
 	endpoint = strings.TrimLeft(endpoint, "/")
 	endpoint = c.Addr + endpoint
 
@@ -144,15 +116,11 @@ func (c *Client) get(endpoint string, contentType string) (*http.Response, error
 		return nil, err
 	}
 
-	if contentType != "" {
-		req.Header.Add("Content-Type", contentType)
-	}
-
 	return c.HTTPClient.Do(req)
 }
 
-// DeleteJSON makes a DELETE request to an endpoint. Adds Content-Type application/json
-func (c *Client) DeleteJSON(endpoint string, v url.Values, obj interface{}) error {
+// Delete makes a DELETE request to an endpoint. Adds Content-Type application/json
+func (c *Client) Delete(endpoint string, v url.Values, obj interface{}) error {
 	csrf, err := c.CSRF()
 	if err != nil {
 		return err
@@ -162,7 +130,7 @@ func (c *Client) DeleteJSON(endpoint string, v url.Values, obj interface{}) erro
 	endpoint = c.Addr + endpoint
 	endpoint += "?" + v.Encode()
 
-	req, err := http.NewRequest(http.MethodDelete, endpoint, bytes.NewBufferString(v.Encode()))
+	req, err := http.NewRequest(http.MethodDelete, endpoint, nil)
 	if err != nil {
 		return err
 	}
@@ -170,8 +138,6 @@ func (c *Client) DeleteJSON(endpoint string, v url.Values, obj interface{}) erro
 	if csrf != "" {
 		req.Header.Set(CSRFHeaderName, csrf)
 	}
-
-	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -183,7 +149,11 @@ func (c *Client) DeleteJSON(endpoint string, v url.Values, obj interface{}) erro
 		return err
 	}
 
-	return json.Unmarshal(body, &obj)
+	if obj != nil {
+		return json.Unmarshal(body, &obj)
+	}
+
+	return nil
 }
 
 // PostForm makes a POST request to an endpoint with body of "application/x-www-form-urlencoded" formated data.
@@ -324,7 +294,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 
 // CSRF returns a CSRF token. If CSRF is disabled on the node, returns an empty string and nil error.
 func (c *Client) CSRF() (string, error) {
-	resp, err := c.get("/api/v1/csrf", "")
+	resp, err := c.get("/api/v1/csrf")
 	if err != nil {
 		return "", err
 	}
@@ -815,62 +785,59 @@ func (c *Client) WalletSeed(id string, password string) (string, error) {
 	return r.Seed, nil
 }
 
-// GetAllNotes makes a request to GET /api/v2/notes
-func (c *Client) GetAllNotes() ([]notes.Note, error) {
+// GetNotes makes a request to GET /api/v2/notes
+func (c *Client) GetNotes() ([]notes.Note, error) {
 	var allNotes []notes.Note
 
-	if err := c.GetJSON("/api/v2/notes", &allNotes); err != nil {
+	if err := c.Get("/api/v2/notes", &allNotes); err != nil {
 		return nil, err
 	}
 
 	return allNotes, nil
 }
 
-// GetNoteByTxID makes a request to GET /api/v2/note?txid=""
-func (c *Client) GetNoteByTxID(txID string) (notes.Note, error) {
+// GetNote makes a request to GET /api/v2/note?txid=""
+func (c *Client) GetNote(txID string) (notes.Note, error) {
+	var rsp ReceivedHTTPResponse
 	var note notes.Note
+
 	v := url.Values{}
 	v.Add("txid", txID)
 
-	if err := c.GetJSON("/api/v2/note?"+v.Encode(), &note); err != nil {
+	if err := c.Get("/api/v2/note?"+v.Encode(), &rsp); err != nil {
 		return notes.Note{}, err
 	}
 
+	if err := json.Unmarshal(rsp.Data, &note); err != nil {
+		return notes.Note{}, err
+	}
 	return note, nil
 }
 
 // AddNote makes a request to POST /api/v2/note
 func (c *Client) AddNote(note notes.Note) (notes.Note, error) {
-	logger.Info("Adding Note: " + note.TxIDHex)
+	var rsp ReceivedHTTPResponse
 
-	v := notes.Note{
-		TxIDHex: note.TxIDHex,
-		Notes:   note.Notes,
-	}
-
-	if err := c.PostJSON("/api/v2/note", v, &note); err != nil {
+	if err := c.PostJSON("/api/v2/note", note, &rsp); err != nil {
 		return notes.Note{}, err
 	}
 
+	if err := json.Unmarshal(rsp.Data, &note); err != nil {
+		return notes.Note{}, err
+	}
 	return note, nil
 }
 
 // RemoveNote makes a request to DELETE /api/v2/note?txid=
-func (c *Client) RemoveNote(txID string) (notes.Note, error) {
-	var note notes.Note
+func (c *Client) RemoveNote(txID string) (interface{}, error) {
 	v := url.Values{}
 	v.Add("txid", txID)
 
-	if err := c.DeleteJSON("/api/v2/note", v, &note); err != nil {
+	if err := c.Delete("/api/v2/note", v, nil); err != nil {
 		return notes.Note{}, err
 	}
 
-	if note.TxIDHex != "" && note.Notes != "" {
-		err := fmt.Errorf("the Note hasn't been deleted")
-		return notes.Note{}, err
-	}
-
-	return note, nil
+	return struct{}{}, nil
 }
 
 // NetworkConnection makes a request to GET /api/v1/network/connection

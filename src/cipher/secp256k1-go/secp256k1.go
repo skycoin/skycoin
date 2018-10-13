@@ -17,11 +17,11 @@ import (
 func pubkeyFromSeckey(seckey []byte) []byte {
 	if len(seckey) != 32 {
 		log.Panic("seckey length invalid")
-		return nil
 	}
 
 	if secp.SeckeyIsValid(seckey) != 1 {
 		log.Panic("always ensure seckey is valid")
+		return nil
 	}
 
 	var pubkey = secp.GeneratePublicKey(seckey) //always returns true

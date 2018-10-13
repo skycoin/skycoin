@@ -63,6 +63,23 @@ equivalent C types are defined for each Skycoin core struct that
 might be needed by developers. The result of this translation is
 available in [skytpes.h](../../include/skytypes.h).
 
+#### Instances of `time.Time`
+
+Instances of `time.Time` will be formatted as RFC3339 strings before crossing API boundaries.
+
+#### Interface types
+
+At present there is limited support for functions with arguments
+of interface types or collections of such types.
+
+#### Callback functions
+
+Given the fact that most widely used C language toolchains have no support for
+function closures, signatures of API functions with callback parameters differ
+from the originals in that they include an additional `void *` parameter
+callers can use to supply context information. The very same pointer is passed
+in to the callback function itself in a similar manner.
+
 ### Memory management
 
 Caller is responsible for allocating memory for objects meant to be
@@ -98,15 +115,6 @@ and `len` field will be set to `-1` as a side-effect of function
 invocation. The caller will be responsible for
 [reallocating another memory buffer](http://en.cppreference.com/w/c/memory/realloc)
 using a higher `cap` and retry.
-
-### Instances of `time.Time`
-
-Instances of `time.Time` will be formatted as RFC3339 strings before crossing API boundaries.
-
-### Interface types
-
-At the moment there is limited support for functions with arguments
-of interface types or collections of these types.
 
 ## Generating documentation
 

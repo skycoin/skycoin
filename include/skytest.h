@@ -10,13 +10,19 @@
 #define MaxUint64 0xFFFFFFFFFFFFFFFF
 #define MaxUint16  0xFFFF
 
-void * registerMemCleanup(void *p);
+/*----------------------------------------------------------------------
+ * I/O
+ *----------------------------------------------------------------------
+ */
 
 void fprintbuff(FILE *f, void *buff, size_t n);
 
-json_value* json_get_string(json_value* value, const char* key);
+/*----------------------------------------------------------------------
+ * Memory handling
+ *----------------------------------------------------------------------
+ */
 
-int json_set_string(json_value* value, const char* new_string_value);
+void * registerMemCleanup(void *p);
 
 int registerJsonFree(void *p);
 
@@ -35,7 +41,22 @@ void cleanRegisteredWallet(
       Client__Handle client,
       WalletResponse__Handle wallet);
 
+int copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size);
+
+int cutSlice(GoSlice_* slice, int start, int end, int elem_size, GoSlice_* result);
+
+int concatSlices(GoSlice_* slice1, GoSlice_* slice2, int elem_size, GoSlice_* result);
+
+/*----------------------------------------------------------------------
+ * JSON helpers
+ *----------------------------------------------------------------------
+ */
+
 json_value* loadJsonFile(const char* filename);
+
+json_value* json_get_string(json_value* value, const char* key);
+
+int json_set_string(json_value* value, const char* new_string_value);
 
 int compareJsonValues(json_value* value1, json_value* value2);
 
@@ -49,16 +70,12 @@ int compareJsonValuesWithIgnoreList(json_value* value1, json_value* value2, cons
 
 int parseBoolean(const char* str, int length);
 
-int copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size);
-
-int cutSlice(GoSlice_* slice, int start, int end, int elem_size, GoSlice_* result);
-
-int concatSlices(GoSlice_* slice1, GoSlice_* slice2, int elem_size, GoSlice_* result);
+/*----------------------------------------------------------------------
+ * Test infrastructure
+ *----------------------------------------------------------------------
+ */
 
 void setup(void);
 void teardown(void);
-
-extern void toGoString(GoString_ *s, GoString *r);
-extern int copyUxArraytoSlice(coin__UxArray* pdest, GoSlice* psource);
 
 #endif

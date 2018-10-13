@@ -23,11 +23,11 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPTDIR" >/dev/null
 
 if [ $SKIP_COMPILATION -ne 1 ]; then
-    CONFIG_MODE=STANDALONE_CLIENT ./gox.sh "$GOX_OSARCH" "$GOX_GUI_OUTPUT"
+    CONFIG_MODE=STANDALONE_CLIENT ./gox.sh "$GOX_OSARCH" "$GOX_GUI_OUTPUT_DIR"
 fi
 
-if [ -e "$ELN_OUTPUT" ]; then
-    rm -r "$ELN_OUTPUT"
+if [ -e "$ELN_OUTPUT_DIR" ]; then
+    rm -r "$ELN_OUTPUT_DIR"
 fi
 
 if [ ! -z "$WIN64_ELN" ] && [ ! -z "$WIN32_ELN" ]; then
@@ -53,7 +53,7 @@ if [ ! -z "$OSX64_ELN" ]; then
     fi
 fi
 
-pushd "$FINAL_OUTPUT" >/dev/null
+pushd "$FINAL_OUTPUT_DIR" >/dev/null
 if [ -e "mac" ]; then
     pushd "mac" >/dev/null
     if [ -e "${PDT_NAME}-${APP_VERSION}.dmg" ]; then

@@ -265,12 +265,6 @@ int parseBoolean(const char* str, int length){
   return result;
 }
 
-void toGoString(GoString_ *s, GoString *r){
-GoString * tmp = r;
-
-  *tmp = (*(GoString *) s);
-}
-
 int copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size){
   pdest->len = psource->len;
   pdest->cap = psource->len;
@@ -324,86 +318,3 @@ int concatSlices(GoSlice_* slice1, GoSlice_* slice2, int elem_size, GoSlice_* re
   return SKY_OK;
 }
 
-/*
-json_value *loadGoldenFile_Cli(const char *file) {
-  char path[STRING_SIZE];
-  if (strlen(TEST_DATA_DIR) + strlen(file) < STRING_SIZE) {
-    strcpy(path, TEST_DATA_DIR);
-    strcat(path, file);
-    return loadJsonFile(path);
-  }
-  return NULL;
-}
-
-void createTempWalletDir(bool encrypt) {
-  const char *temp = "build/libskycoin/wallet-data-dir";
-
-  int valueMkdir = mkdir(temp, S_IRWXU);
-
-  if (valueMkdir == -1) {
-    int errr = system("rm -r build/libskycoin/wallet-data-dir/*.*");
-  }
-
-  // Copy the testdata/$stableWalletName to the temporary dir.
-  char walletPath[JSON_BIG_FILE_SIZE];
-  if (encrypt) {
-    strcpy(walletPath, stableEncryptWalletName);
-  } else {
-    strcpy(walletPath, stableWalletName);
-  }
-  unsigned char pathnameURL[BUFFER_SIZE];
-  strcpy(pathnameURL, temp);
-  strcat(pathnameURL, "/");
-  strcat(pathnameURL, walletPath);
-
-  FILE *rf;
-  FILE *f;
-  f = fopen(pathnameURL, "wb");
-  unsigned char fullUrl[BUFFER_SIZE];
-  strcpy(fullUrl, TEST_DATA_DIR);
-  strcat(fullUrl, walletPath);
-  rf = fopen(fullUrl, "rb");
-  unsigned char buff[2048];
-  int readBits;
-  // Copy file rf to f
-  if (f && rf) {
-    while ((readBits = fread(buff, 1, 2048, rf)))
-      fwrite(buff, 1, readBits, f);
-
-    fclose(rf);
-    fclose(f);
-
-    GoString WalletDir = {"WALLET_DIR", 10};
-    GoString Dir = {temp, strlen(temp)};
-    SKY_cli_Setenv(WalletDir, Dir);
-    GoString WalletPath = {"WALLET_NAME", 11};
-    GoString pathname = {walletPath, strlen(walletPath)};
-    SKY_cli_Setenv(WalletPath, pathname);
-  }
-  strcpy(walletPath, "");
-};
-
-
-int getCountWord(const char *str) {
-  int len = 0;
-  do {
-    str = strpbrk(str, " "); // find separator
-    if (str)
-      str += strspn(str, " "); // skip separator
-    ++len;                     // increment word count
-  } while (str && *str);
-
-  return len;
-}*/
-
-int copyUxArraytoSlice(coin__UxArray* pdest, GoSlice* psource){
-  pdest->len = psource->len;
-  pdest->cap = psource->len;
-  int size = pdest->len * sizeof(coin__UxArray);
-  pdest->data = malloc(size);
-  if( pdest->data == NULL )
-    return SKY_ERROR;
-  registerMemCleanup( pdest->data );
-  memcpy(pdest->data, psource->data, size );
-  return SKY_OK;
-}

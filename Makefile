@@ -231,8 +231,17 @@ release-daemon: ## Build daemon apps. Use osarch=${osarch} to specify the platfo
 	cd $(ELECTRON_DIR) && ./build-daemon-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-clean-release: ## Clean dist files and delete all builds in electron/release
-	rm -r $(ELECTRON_DIR)/release
+release-cli: ## Build CLI apps. Use osarch=${osarch} to specify the platform. Example: 'make release-cli osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-cli-release.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
+clean-release: ## Remove all electron build artifacts
+	rm -rf $(ELECTRON_DIR)/release
+	rm -rf $(ELECTRON_DIR)/.gox_output
+	rm -rf $(ELECTRON_DIR)/.daemon_output
+	rm -rf $(ELECTRON_DIR)/.cli_output
+	rm -rf $(ELECTRON_DIR)/.standalone_output
+	rm -rf $(ELECTRON_DIR)/.electron_output
 
 clean-coverage: ## Remove coverage output files
 	rm -rf ./coverage/

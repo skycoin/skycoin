@@ -104,6 +104,7 @@ char *cr_user_cipher__Ripemd160_tostr(cipher__Ripemd160 *rp1)
 
   strnhex((unsigned char *)rp1, hexdump, sizeof(cipher__Ripemd160));
   cr_asprintf(&out, "(cipher__Ripemd160) { %s }", hexdump);
+  return out;
 }
 
 int cr_user_cipher__SHA256_noteq(cipher__SHA256 *sh1, cipher__SHA256 *sh2)

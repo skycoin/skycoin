@@ -150,6 +150,14 @@ func TestFromString(t *testing.T) {
 			s: "1.0000001",
 			e: ErrTooManyDecimals,
 		},
+		{
+			s: "1.0000000", // 7 decimal places, but they are 0s
+			n: 1e6,
+		},
+		{
+			s: "1.000001000",
+			n: 1e6 + 1e0,
+		},
 	}
 
 	for _, tcc := range cases {

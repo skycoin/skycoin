@@ -15,10 +15,11 @@ if it does not exist.  Defaults to the working directory.
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 CMDDIR="../cmd"  # relative to compile/electron/
-CMD="${PKG_NAME}"
+CMD="${CMD:-$PKG_NAME}"  # name of folder in ../cmd to build. defaults to PKG_NAME which is the name of the coin
 
 OSARCH="$1"
-OUTPUT="$2"
+OUTPUT_DIR="$2"
+BIN_NAME="${3:-$CMD}"
 
 CONFIG_MODE=${CONFIG_MODE:-}
 
@@ -27,29 +28,31 @@ if [ -z "$OSARCH" ]; then
     exit 1
 fi
 
-case "$OUTPUT" in
+case "$OUTPUT_DIR" in
 "")
     ;;
 */)
     ;;
 *)
-    OUTPUT+="/"
+    OUTPUT_DIR+="/"
     ;;
 esac
 
 pushd "$SCRIPTDIR" >/dev/null
 
-if [ -n "$OUTPUT" ]; then
-    mkdir -p "$OUTPUT"
+if [ -n "$OUTPUT_DIR" ]; then
+    mkdir -p "$OUTPUT_DIR"
 fi
 
 COMMIT=`git rev-parse HEAD`
 
+CLI_IMPORT_PATH=`go list ../src/cli`
+
 gox -osarch="$OSARCH" \
     -gcflags="-trimpath=${HOME}" \
     -asmflags="-trimpath=${HOME}" \
-    -ldflags="-X main.Version=${APP_VERSION} -X main.Commit=${COMMIT} -X main.ConfigMode=${CONFIG_MODE}" \
-    -output="${OUTPUT}{{.Dir}}_{{.OS}}_{{.Arch}}" \
+    -ldflags="-X main.Version=${APP_VERSION} -X main.Commit=${COMMIT} -X main.ConfigMode=${CONFIG_MODE} -X ${CLI_IMPORT_PATH}.Version=${APP_VERSION}" \
+    -output="${OUTPUT_DIR}{{.Dir}}_{{.OS}}_{{.Arch}}" \
     "${CMDDIR}/${CMD}"
 
 # move the executable files into ${os}_${arch} folders, electron-builder will pack
@@ -64,33 +67,33 @@ do
     case "${s[0]}" in
     "windows")
         if [ "${s[1]}" = "386" ]; then
-            OUT="${OUTPUT}${WIN32_OUT}"
+            OUT="${OUTPUT_DIR}${WIN32_OUT}"
             echo "mkdir $OUT"
             mkdir -p "$OUT"
-            mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}.exe" "${OUT}/${PKG_NAME}.exe"
+            mv "${OUTPUT_DIR}${CMD}_${s[0]}_${s[1]}.exe" "${OUT}/${BIN_NAME}.exe"
         else
-            OUT="${OUTPUT}${WIN64_OUT}"
+            OUT="${OUTPUT_DIR}${WIN64_OUT}"
             mkdir -p "${OUT}"
-            mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}.exe" "${OUT}/${PKG_NAME}.exe"
+            mv "${OUTPUT_DIR}${CMD}_${s[0]}_${s[1]}.exe" "${OUT}/${BIN_NAME}.exe"
         fi
         ;;
     "darwin")
-        OUT="${OUTPUT}${OSX64_OUT}"
+        OUT="${OUTPUT_DIR}${OSX64_OUT}"
         echo "mkdir ${OUT}"
         mkdir -p "${OUT}"
-        mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}" "${OUT}/${PKG_NAME}"
+        mv "${OUTPUT_DIR}${CMD}_${s[0]}_${s[1]}" "${OUT}/${BIN_NAME}"
         ;;
     "linux")
         if [ "${s[1]}" = "amd64" ]; then
-            OUT="${OUTPUT}${LNX64_OUT}"
+            OUT="${OUTPUT_DIR}${LNX64_OUT}"
             echo "mkdir ${OUT}"
             mkdir -p "${OUT}"
-            mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}" "${OUT}/${PKG_NAME}"
+            mv "${OUTPUT_DIR}${CMD}_${s[0]}_${s[1]}" "${OUT}/${BIN_NAME}"
         elif [ "${s[1]}" = "arm" ]; then
-            OUT="${OUTPUT}${LNX_ARM_OUT}"
+            OUT="${OUTPUT_DIR}${LNX_ARM_OUT}"
             echo "mkdir ${OUT}"
             mkdir -p "${OUT}"
-            mv "${OUTPUT}${PKG_NAME}_${s[0]}_${s[1]}" "${OUT}/${PKG_NAME}"
+            mv "${OUTPUT_DIR}${CMD}_${s[0]}_${s[1]}" "${OUT}/${BIN_NAME}"
         fi
         ;;
     esac

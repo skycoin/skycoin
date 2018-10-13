@@ -12,7 +12,7 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPTDIR" >/dev/null
 
 if [ $SKIP_COMPILATION -ne 1 ]; then
-    CONFIG_MODE= ./gox.sh "$GOX_OSARCH" "$GOX_DMN_OUTPUT"
+    CONFIG_MODE= ./gox.sh "$GOX_OSARCH" "$GOX_DMN_OUTPUT_DIR"
 fi
 
 echo

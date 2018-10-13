@@ -83,7 +83,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Port:            6000,
 				Version:         1,
 				validationError: nil,
-				Pubkey:  pubkey[:],
+				Pubkey:          pubkey[:],
 			},
 			err: nil,
 		},
@@ -103,7 +103,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Port:            6000,
 				Version:         1,
 				validationError: nil,
-				Pubkey:  pubkey[:],
+				Pubkey:          pubkey[:],
 			},
 			err: nil,
 		},
@@ -123,7 +123,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Port:            6000,
 				Version:         1,
 				validationError: nil,
-				Pubkey:  append(pubkey[:], []byte("additional data")...),
+				Pubkey:          append(pubkey[:], []byte("additional data")...),
 			},
 			err: nil,
 		},
@@ -144,7 +144,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Port:            6000,
 				Version:         1,
 				validationError: nil,
-				Pubkey:  pubkey2[:],
+				Pubkey:          pubkey2[:],
 			},
 			err: ErrDisconnectBlockchainPubkeyNotMatched,
 		},
@@ -165,7 +165,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Port:            6000,
 				Version:         1,
 				validationError: nil,
-				Pubkey:  []byte("invalid extra data"),
+				Pubkey:          []byte("invalid extra data"),
 			},
 			err: ErrDisconnectInvalidExtraData,
 		},
@@ -280,30 +280,6 @@ func TestIntroductionMessage(t *testing.T) {
 		})
 	}
 }
-
-}
-
-func ExampleRejectMessage() {
-	defer gnet.EraseMessages()
-	setupMsgEncoding()
-
-	rejectedMessage := NewIntroductionMessage(0x0123456, 0x789ABCD, 6000, []byte{})
-	message := NewRejectMessage(rejectedMessage, gnet.ErrDisconnectWriteFailed, "ExampleRejectWithPeersMessage")
-	fmt.Println("RejectWithPeersMessage:")
-	var mai = NewMessagesAnnotationsIterator(message)
-	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	// Output:
-	// RejectWithPeersMessage:
-	// 0x0000 | 31 00 00 00 ....................................... Length
-	// 0x0004 | 52 4a 43 54 ....................................... Prefix
-	// 0x0008 | 49 4e 54 52 ....................................... TargetPrefix
-	// 0x000c | 0c 00 00 00 ....................................... ErrorCode
-	// 0x0010 | 1d 00 00 00 45 78 61 6d 70 6c 65 52 65 6a 65 63
-	// 0x0020 | 74 57 69 74 68 50 65 65 72 73 4d 65 73 73 61 67
-	// 0x0030 | 65 ................................................ Reason
-	// 0x0031 | 00 00 00 00 ....................................... Reserved length
-	// 0x0035 |
 
 func TestMessageEncodeDecode(t *testing.T) {
 	update := false

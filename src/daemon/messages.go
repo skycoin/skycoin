@@ -366,9 +366,14 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		if intro.validationError == pex.ErrPeerlistFull {
 			peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
 			givpMsg := NewGivePeersMessage(peers)
-			d.SendMessage(intro.c.Addr, givpMsg)
+			if err := d.SendMessage(intro.c.Addr, givpMsg); err != nil {
+				logger.Errorf("Send GivePeersMessage to %s failed: %v", intro.c.Addr, err)
+			}
 			rjctMsg := NewRejectMessage(intro, pex.ErrPeerlistFull, "")
-			d.SendMessage(intro.c.Addr, rjctMsg)
+			if err := d.SendMessage(intro.c.Addr, rjctMsg); err != nil {
+				logger.Errorf("Send RejectMessage to %s failed: %v", intro.c.Addr, err)
+			}
+
 		}
 		return
 	}

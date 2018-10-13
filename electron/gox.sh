@@ -19,7 +19,7 @@ CMD="${CMD:-$PKG_NAME}"  # name of folder in ../cmd to build. defaults to PKG_NA
 
 OSARCH="$1"
 OUTPUT_DIR="$2"
-BIN_NAME="${3:-CMD}"
+BIN_NAME="${3:-$CMD}"
 
 CONFIG_MODE=${CONFIG_MODE:-}
 

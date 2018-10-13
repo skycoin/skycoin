@@ -73,7 +73,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
 	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
 	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
-- [Migration from the unversioned API](#migration-from-the-unversioned-api)
+- [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
 - [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 - [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
 
@@ -3738,7 +3738,7 @@ Result:
 ]
 ```
 
-## Migration from the unversioned API
+## Migrating from the unversioned API
 
 The unversioned API are the API endpoints without an `/api` prefix.
 These endpoints are all prefixed with `/api/v1` now.

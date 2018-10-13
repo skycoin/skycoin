@@ -12,7 +12,7 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 
 - JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-jsonrpc-api
 - `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-spend
-- The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`)
+- The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-unversioned-api
 
 ### Notice
 

@@ -3,10 +3,12 @@
 # Runs "live"-mode tests against a skycoin node that is already running
 # "live" mode tests assume the blockchain data is active and may change at any time
 # Data is checked for the appearance of correctness but the values themselves are not verified
-# The skycoin node must be run with -enable-wallet-api=true
+# The skycoin node must be run with the wallet API enabled.
 
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
+
+COIN=${COIN:-skycoin}
 PORT="6420"
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
@@ -22,6 +24,8 @@ RUN_TESTS=""
 # run wallet tests
 TEST_LIVE_WALLET=""
 FAILFAST=""
+USE_CSRF=""
+DISABLE_NETWORKING=""
 
 usage () {
   echo "Usage: $SCRIPT"
@@ -30,13 +34,14 @@ usage () {
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
-  echo "-w <boolean> -- Run wallet tests."
+  echo "-w <boolean> -- Run wallet tests"
   echo "-f <boolean> -- Run test with -failfast flag"
-  echo "-c <boolean> -- Run tests with CSRF enabled. If not set, node must be run with -disable-csrf"
+  echo "-c <boolean> -- Pass this argument if the node has CSRF enabled"
+  echo "-k <boolean> -- Run the tests that require networking disabled (live node must be run with -disable-networking)"
   exit 1
 }
 
-while getopts "h?t:r:uvwfc" args; do
+while getopts "h?t:r:uvwfck" args; do
 case $args in
     h|\?)
         usage;
@@ -47,33 +52,36 @@ case $args in
     v ) VERBOSE="-v";;
     w ) TEST_LIVE_WALLET="--test-live-wallet";;
     f ) FAILFAST="-failfast";;
-    c ) USE_CSRF="1"
+    c ) USE_CSRF="1";;
+	k ) DISABLE_NETWORKING="true"
   esac
 done
 
 set -euxo pipefail
 
-echo "checking if skycoin node is running"
+echo "checking if $COIN node is running"
 
 HEALTH="$HOST/api/v1/health"
 
 http_proxy="" https_proxy="" wget -O- $HEALTH 2>&1 >/dev/null
 
 if [ ! $? -eq 0 ]; then
-    echo "Skycoin node is not running on $HOST"
+    echo "$COIN node is not running on $HOST"
     exit 1
 fi
 
 if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
+	LIVE_DISABLE_NETWORKING=$DISABLE_NETWORKING \
     go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF \
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
+	SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF LIVE_DISABLE_NETWORKING=$DISABLE_NETWORKING \
     go test ./src/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi

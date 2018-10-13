@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 func TestExpectIntroductions(t *testing.T) {
@@ -30,7 +29,7 @@ func TestExpectIntroductions(t *testing.T) {
 
 func TestExpectIntroductionsCullInvalidConnections(t *testing.T) {
 	ei := NewExpectIntroductions()
-	now := utc.Now()
+	now := time.Now().UTC()
 	ei.Add("a", now)
 	ei.Add("b", now.Add(1))
 	ei.Add("c", now.Add(2))

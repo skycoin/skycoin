@@ -64,7 +64,7 @@ type TransactionOutput struct {
 func (txn *Transaction) Verify() error {
 	h := txn.HashInner()
 	if h != txn.InnerHash {
-		return errors.New("Invalid header hash")
+		return errors.New("InnerHash does not match computed hash")
 	}
 
 	if len(txn.In) == 0 {
@@ -225,7 +225,7 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	innerHash := txn.HashInner()
 	for i, k := range keys {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
-		sigs[i] = cipher.SignHash(h, k)
+		sigs[i] = cipher.MustSignHash(h, k)
 	}
 	txn.Sigs = sigs
 }
@@ -369,9 +369,9 @@ func (txns Transactions) TruncateBytesTo(size int) Transactions {
 
 // SortableTransactions allows sorting transactions by fee & hash
 type SortableTransactions struct {
-	Txns   Transactions
-	Fees   []uint64
-	Hashes []cipher.SHA256
+	Transactions Transactions
+	Fees         []uint64
+	Hashes       []cipher.SHA256
 }
 
 // FeeCalculator given a transaction, return its fee or an error if the fee cannot be
@@ -383,7 +383,7 @@ type FeeCalculator func(*Transaction) (uint64, error)
 func SortTransactions(txns Transactions, feeCalc FeeCalculator) Transactions {
 	sorted := NewSortableTransactions(txns, feeCalc)
 	sorted.Sort()
-	return sorted.Txns
+	return sorted.Transactions
 }
 
 // NewSortableTransactions returns an array of txns that can be sorted by fee.  On creation, fees are
@@ -417,9 +417,9 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableT
 		j++
 	}
 	return SortableTransactions{
-		Txns:   newTxns[:j],
-		Fees:   fees[:j],
-		Hashes: hashes[:j],
+		Transactions: newTxns[:j],
+		Fees:         fees[:j],
+		Hashes:       hashes[:j],
 	}
 }
 
@@ -430,7 +430,7 @@ func (txns SortableTransactions) Sort() {
 
 // Len returns length of transactions
 func (txns SortableTransactions) Len() int {
-	return len(txns.Txns)
+	return len(txns.Transactions)
 }
 
 // Less default sorting is fees descending, hash ascending if fees equal
@@ -445,7 +445,7 @@ func (txns SortableTransactions) Less(i, j int) bool {
 
 // Swap swaps txns
 func (txns SortableTransactions) Swap(i, j int) {
-	txns.Txns[i], txns.Txns[j] = txns.Txns[j], txns.Txns[i]
+	txns.Transactions[i], txns.Transactions[j] = txns.Transactions[j], txns.Transactions[i]
 	txns.Fees[i], txns.Fees[j] = txns.Fees[j], txns.Fees[i]
 	txns.Hashes[i], txns.Hashes[j] = txns.Hashes[j], txns.Hashes[i]
 }

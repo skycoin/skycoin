@@ -1,3 +1,6 @@
+/*
+Package gnet is the core networking library
+*/
 package gnet
 
 import (
@@ -14,10 +17,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
-
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -52,6 +53,8 @@ var (
 	ErrWriteQueueFull = errors.New("Write queue full")
 	// ErrNoReachableConnections when broadcasting a message, no connections were available to send a message to
 	ErrNoReachableConnections = errors.New("All pool connections are unreachable at this time")
+	// ErrPoolEmpty when broadcasting a message, the connection pool was empty
+	ErrPoolEmpty = errors.New("Connection pool is empty")
 	// Logger
 	logger = logging.MustGetLogger("gnet")
 )
@@ -193,7 +196,8 @@ type ConnectionPool struct {
 	// Connection ID counter
 	connID int
 	// Listening connection
-	listener net.Listener
+	listener     net.Listener
+	listenerLock sync.Mutex
 	// operations channel
 	reqC chan strand.Request
 	// quit channel
@@ -249,7 +253,9 @@ func (pool *ConnectionPool) Run() error {
 		return err
 	}
 
+	pool.listenerLock.Lock()
 	pool.listener = ln
+	pool.listenerLock.Unlock()
 
 loop:
 	for {
@@ -314,13 +320,14 @@ func (pool *ConnectionPool) Shutdown() {
 	logger.Info("ConnectionPool.Shutdown closing the listener")
 
 	// Close to listener to prevent new connections
+	pool.listenerLock.Lock()
 	if pool.listener != nil {
 		if err := pool.listener.Close(); err != nil {
 			logger.WithError(err).Warning("pool.listener.Close error")
 		}
 	}
-
 	pool.listener = nil
+	pool.listenerLock.Unlock()
 
 	logger.Info("ConnectionPool.Shutdown disconnecting all connections")
 
@@ -612,7 +619,15 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		prefix := buf.Bytes()[:messageLengthSize]
 		// decode message length
 		tmpLength := uint32(0)
-		encoder.DeserializeAtomic(prefix, &tmpLength)
+
+		_, err := encoder.DeserializeAtomic(prefix, &tmpLength)
+		if err != nil {
+			// encoder.DeserializeAtomic should only return an error if there wasn't
+			// enough data in buf to read the integer, but the prefix buf length
+			// is already ensured to be long enough
+			logger.Panic("encoder.DeserializeAtomic failed unexpectedly: %v", err)
+		}
+
 		length := int(tmpLength)
 		// logger.Debugf("Length is %d", length)
 		// Disconnect if we received an invalid length.
@@ -627,7 +642,7 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 
 		buf.Next(messageLengthSize) // strip the length prefix
 		data := make([]byte, length)
-		_, err := buf.Read(data)
+		_, err = buf.Read(data)
 		if err != nil {
 			return [][]byte{}, err
 		}
@@ -886,7 +901,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 	fullWriteQueue := []string{}
 	if err := pool.strand("BroadcastMessage", func() error {
 		if len(pool.pool) == 0 {
-			return errors.New("Connection pool is empty")
+			return ErrPoolEmpty
 		}
 
 		for _, conn := range pool.pool {
@@ -928,7 +943,7 @@ func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
 
 // SendPings sends a ping if our last message sent was over pingRate ago
 func (pool *ConnectionPool) SendPings(rate time.Duration, msg Message) error {
-	now := utc.Now()
+	now := time.Now().UTC()
 	var addrs []string
 	if err := pool.strand("SendPings", func() error {
 		for _, conn := range pool.pool {
@@ -975,5 +990,5 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 
 // Now returns the current UTC time
 func Now() time.Time {
-	return utc.Now()
+	return time.Now().UTC()
 }

@@ -6,11 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 func TestValidateAddress(t *testing.T) {
@@ -1063,7 +1063,7 @@ func TestPexIncreaseRetryTimes(t *testing.T) {
 			},
 			testPeers[0],
 			map[string]Peer{
-				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: utc.UnixNow(), RetryTimes: 1},
+				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix(), RetryTimes: 1},
 				testPeers[1]: Peer{Addr: testPeers[1]},
 			},
 		},
@@ -1110,12 +1110,12 @@ func TestPexResetRetryTimes(t *testing.T) {
 		{
 			"reset one",
 			[]Peer{
-				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow(), RetryTimes: 10},
+				Peer{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix(), RetryTimes: 10},
 				Peer{Addr: testPeers[1], RetryTimes: 2},
 			},
 			testPeers[0],
 			[]Peer{
-				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow()},
+				Peer{Addr: testPeers[0], LastSeen: time.Now().UTC().Unix()},
 				Peer{Addr: testPeers[1], RetryTimes: 2},
 			},
 		},

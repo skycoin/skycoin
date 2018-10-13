@@ -14,7 +14,7 @@ export class OnboardingCreatePage {
   }
 
   acceptSafeguard() {
-   return element.all(by.css('.mat-checkbox-label')).first().click().then(() => {
+   return element.all(by.css('app-modal .mat-checkbox-label')).first().click().then(() => {
      return element(by.buttonText('Continue')).click().then(() => {
         return this.getSafeguardIsShown();
       });
@@ -28,6 +28,7 @@ export class OnboardingCreatePage {
     const seed = element(by.css('[formcontrolname="seed"]'));
     const confirm = element(by.css('[formcontrolname="confirm_seed"]'));
     const btnCreate = element(by.buttonText('Create'));
+    const seedValidationCheckBox = element(by.css('.-check'));
 
     label.clear();
     label.sendKeys('Test onboarding wallet');
@@ -35,6 +36,7 @@ export class OnboardingCreatePage {
     seed.sendKeys('test test');
     confirm.clear();
     confirm.sendKeys('test test');
+    seedValidationCheckBox.click();
 
     return btnCreate.isEnabled().then(status => {
       if (status) {
@@ -51,11 +53,13 @@ export class OnboardingCreatePage {
     const label = element(by.css('[formcontrolname="label"]'));
     const seed = element(by.css('[formcontrolname="seed"]'));
     const btnLoad = element(by.buttonText('Create'));
+    const seedValidationCheckBox = element(by.css('.-check'));
 
     label.clear();
     label.sendKeys('Test wallet');
     seed.clear();
     seed.sendKeys('test test');
+    seedValidationCheckBox.click();
 
     return btnLoad.isEnabled();
   }

@@ -97,7 +97,7 @@ func (self *ConsensusParticipant) SignatureOf(hash cipher.SHA256) cipher.Sig {
 
 	// PERFORMANCE: This is expensive when cipher.DebugLevel2 or
 	// cipher.DebugLevel1 are true:
-	return cipher.SignHash(hash, self.Seckey)
+	return cipher.MustSignHash(hash, self.Seckey)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

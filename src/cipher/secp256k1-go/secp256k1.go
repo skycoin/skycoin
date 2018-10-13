@@ -1,3 +1,6 @@
+/*
+Package secp256k1 provides private and public key generation with the secp256k1 elliptic curve.
+*/
 // nolint: golint
 package secp256k1
 
@@ -209,26 +212,25 @@ func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 	return pubkey, seckey
 }
 
-// DeterministicKeyPairIterator iteratores for deterministic keypair generation. Returns SHA256, Pubkey, Seckey
-//Feed SHA256 back into function to generate sequence of seckeys
-//If private key is diclosed, should not be able to compute future or past keys in sequence
+// DeterministicKeyPairIterator iteratores for deterministic keypair generation. Returns SHA256, PubKey, SecKey as bytes
+// Feeds SHA256 back into function to generate sequence of seckeys
+// If private key is disclosed, should not be able to compute future or past keys in sequence
 func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
-	seed1 := Secp256k1Hash(seedIn) //make it difficult to derive future seckeys from previous seckeys
+	seed1 := Secp256k1Hash(seedIn) // make it difficult to derive future seckeys from previous seckeys
 	seed2 := SumSHA256(append(seedIn, seed1...))
-	pubkey, seckey := generateDeterministicKeyPair(seed2) //this is our seckey
+	pubkey, seckey := generateDeterministicKeyPair(seed2) // this is our seckey
 	return seed1, pubkey, seckey
 }
 
 // Sign sign hash
 func Sign(msg []byte, seckey []byte) []byte {
-
 	if len(seckey) != 32 {
 		log.Panic("Sign, Invalid seckey length")
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
 		log.Panic("Attempting to sign with invalid seckey")
 	}
-	if msg == nil {
+	if len(msg) == 0 {
 		log.Panic("Sign, message nil")
 	}
 	var nonce = RandByte(32)

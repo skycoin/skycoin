@@ -22,7 +22,6 @@ func TestNewParameters(t *testing.T) {
 				"118.178.135.93:6000",
 				"47.88.33.156:6000",
 				"121.41.103.148:6000",
-				"120.77.69.188:6000",
 				"104.237.142.206:6000",
 				"176.58.126.224:6000",
 				"172.104.85.6:6000",
@@ -31,11 +30,6 @@ func TestNewParameters(t *testing.T) {
 			Port:             6000,
 			PeerListURL:      "https://downloads.skycoin.net/blockchain/peers.txt",
 			WebInterfacePort: 6420,
-		},
-		Build: BuildParameters{
-			Version: "0.23.1-rc2",
-			Commit:  "0aab9bf7730827d6fd11beb0d02096b40cea1872",
-			Branch:  "test-branch",
 		},
 		Visor: VisorParameters{
 			MaxCoinSupply:              1e8,

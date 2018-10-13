@@ -7,13 +7,13 @@ import (
 	"math/rand"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/iputil"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 // Message represent a packet to be serialized over the network by
@@ -90,7 +90,7 @@ type Messages struct {
 func NewMessages(c MessagesConfig) *Messages {
 	return &Messages{
 		Config: c,
-		Mirror: rand.New(rand.NewSource(utc.Now().UnixNano())).Uint32(),
+		Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 	}
 }
 
@@ -233,17 +233,17 @@ type IntroductionMessage struct {
 	c       *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
 	validationError error `enc:"-"` // skip it during encoding
-	// Extra would be parsed as blockchain pubkey if it's not empty
-	Extra []byte `enc:",omitempty"`
+	// Pubkey is the blockchain pubkey
+	Pubkey []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, extra []byte) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey []byte) *IntroductionMessage {
 	return &IntroductionMessage{
 		Mirror:  mirror,
 		Version: version,
 		Port:    port,
-		Extra:   extra,
+		Pubkey:  pubkey,
 	}
 }
 
@@ -275,17 +275,18 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)
 
-		// Checks the genesis hash if not empty
-		if len(intro.Extra) > 0 {
+		// v25 Checks the blockchain pubkey, would accept message with no Pubkey
+		// v26 would check the blockchain pubkey and reject if not matched or not provided
+		if len(intro.Pubkey) > 0 {
 			var bcPubKey cipher.PubKey
-			if len(intro.Extra) < len(bcPubKey) {
+			if len(intro.Pubkey) < len(bcPubKey) {
 				logger.Infof("Extra data length does not meet the minimum requirement")
 				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
 					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 				}
 				return ErrDisconnectInvalidExtraData
 			}
-			copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
+			copy(bcPubKey[:], intro.Pubkey[:len(bcPubKey)])
 
 			if d.BlockchainPubkey() != bcPubKey {
 				logger.Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())
@@ -621,25 +622,25 @@ func (abm *AnnounceBlocksMessage) Process(d Daemoner) {
 
 // SendingTxnsMessage send transaction message interface
 type SendingTxnsMessage interface {
-	GetTxns() []cipher.SHA256
+	GetFiltered() []cipher.SHA256
 }
 
 // AnnounceTxnsMessage tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
-	Txns []cipher.SHA256
-	c    *gnet.MessageContext `enc:"-"`
+	Transactions []cipher.SHA256
+	c            *gnet.MessageContext `enc:"-"`
 }
 
 // NewAnnounceTxnsMessage creates announce txns message
 func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 	return &AnnounceTxnsMessage{
-		Txns: txns,
+		Transactions: txns,
 	}
 }
 
-// GetTxns returns txns
-func (atm *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
-	return atm.Txns
+// GetFiltered returns txns
+func (atm *AnnounceTxnsMessage) GetFiltered() []cipher.SHA256 {
+	return atm.Transactions
 }
 
 // Handle handle message
@@ -654,7 +655,7 @@ func (atm *AnnounceTxnsMessage) Process(d Daemoner) {
 		return
 	}
 
-	unknown, err := d.GetUnconfirmedUnknown(atm.Txns)
+	unknown, err := d.GetUnconfirmedUnknown(atm.Transactions)
 	if err != nil {
 		logger.WithError(err).Error("AnnounceTxnsMessage Visor.GetUnconfirmedUnknown failed")
 		return
@@ -672,14 +673,14 @@ func (atm *AnnounceTxnsMessage) Process(d Daemoner) {
 
 // GetTxnsMessage request transactions of given hash
 type GetTxnsMessage struct {
-	Txns []cipher.SHA256
-	c    *gnet.MessageContext `enc:"-"`
+	Transactions []cipher.SHA256
+	c            *gnet.MessageContext `enc:"-"`
 }
 
 // NewGetTxnsMessage creates GetTxnsMessage
 func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 	return &GetTxnsMessage{
-		Txns: txns,
+		Transactions: txns,
 	}
 }
 
@@ -696,7 +697,7 @@ func (gtm *GetTxnsMessage) Process(d Daemoner) {
 	}
 
 	// Locate all txns from the unconfirmed pool
-	known, err := d.GetUnconfirmedKnown(gtm.Txns)
+	known, err := d.GetUnconfirmedKnown(gtm.Transactions)
 	if err != nil {
 		logger.WithError(err).Error("GetTxnsMessage Visor.GetUnconfirmedKnown failed")
 		return
@@ -714,20 +715,20 @@ func (gtm *GetTxnsMessage) Process(d Daemoner) {
 
 // GiveTxnsMessage tells the transaction of given hashes
 type GiveTxnsMessage struct {
-	Txns coin.Transactions
-	c    *gnet.MessageContext `enc:"-"`
+	Transactions coin.Transactions
+	c            *gnet.MessageContext `enc:"-"`
 }
 
 // NewGiveTxnsMessage creates GiveTxnsMessage
 func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
 	return &GiveTxnsMessage{
-		Txns: txns,
+		Transactions: txns,
 	}
 }
 
-// GetTxns returns transactions hashes
-func (gtm *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
-	return gtm.Txns.Hashes()
+// GetFiltered returns transactions hashes
+func (gtm *GiveTxnsMessage) GetFiltered() []cipher.SHA256 {
+	return gtm.Transactions.Hashes()
 }
 
 // Handle handle message
@@ -742,10 +743,12 @@ func (gtm *GiveTxnsMessage) Process(d Daemoner) {
 		return
 	}
 
-	hashes := make([]cipher.SHA256, 0, len(gtm.Txns))
+	hashes := make([]cipher.SHA256, 0, len(gtm.Transactions))
 	// Update unconfirmed pool with these transactions
-	for _, txn := range gtm.Txns {
+	for _, txn := range gtm.Transactions {
 		// Only announce transactions that are new to us, so that peers can't spam relays
+		// It is not necessary to inject all of the transactions inside a database transaction,
+		// since each is independent
 		known, softErr, err := d.InjectTransaction(txn)
 		if err != nil {
 			logger.Warningf("Failed to record transaction %s: %v", txn.Hash().Hex(), err)

@@ -2,7 +2,6 @@ package webrpc
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -12,7 +11,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -31,33 +29,23 @@ type fakeGateway struct {
 	uxouts               []coin.UxOut
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) { // nolint: unparam
-	var blocks visor.ReadableBlocks
-	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		return nil, err
-	}
-
-	return &blocks, nil
+func (fg fakeGateway) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) { // nolint: unparam
+	return makeTestBlocksWithErr()
 }
 
-func (fg fakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
-	var blocks visor.ReadableBlocks
+func (fg fakeGateway) GetBlocksInRange(start, end uint64) ([]coin.SignedBlock, error) {
 	if start > end {
 		return nil, nil
 	}
 
-	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		return nil, err
-	}
-
-	return &blocks, nil
+	return makeTestBlocksWithErr()
 }
 
-func (fg fakeGateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
+func (fg fakeGateway) GetBlocks(vs []uint64) ([]coin.SignedBlock, error) {
 	return nil, nil
 }
 
-func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error) {
+func (fg fakeGateway) GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error) {
 	outs := []coin.UxOut{}
 	for _, f := range filters {
 		outs = f(fg.uxouts)
@@ -65,13 +53,14 @@ func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor
 
 	headTime := uint64(time.Now().UTC().Unix())
 
-	rbOuts, err := visor.NewReadableOutputs(headTime, outs)
+	rbOuts, err := visor.NewUnspentOutputs(outs, headTime)
 	if err != nil {
 		return nil, err
 	}
 
-	return &visor.ReadableOutputSet{
-		HeadOutputs: rbOuts,
+	return &visor.UnspentOutputsSummary{
+		HeadBlock: &coin.SignedBlock{},
+		Confirmed: rbOuts,
 	}, nil
 }
 
@@ -95,12 +84,8 @@ func (fg *fakeGateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return errors.New("fake gateway inject transaction failed")
 }
 
-func (fg fakeGateway) GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error) {
-	return nil, nil
-}
-
-func (fg fakeGateway) GetTimeNow() uint64 {
-	return 0
+func (fg fakeGateway) GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, error) {
+	return make([][]historydb.UxOut, len(addr)), nil
 }
 
 func Test_rpcHandler_HandlerFunc(t *testing.T) {

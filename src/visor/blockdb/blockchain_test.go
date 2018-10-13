@@ -283,7 +283,7 @@ func makeGenesisBlock(t *testing.T) coin.SignedBlock {
 	gb, err := coin.NewGenesisBlock(genAddress, genCoinHours, genTime)
 	require.NoError(t, err)
 
-	sig := cipher.SignHash(gb.HashHeader(), genSecret)
+	sig := cipher.MustSignHash(gb.HashHeader(), genSecret)
 	return coin.SignedBlock{
 		Block: *gb,
 		Sig:   sig,

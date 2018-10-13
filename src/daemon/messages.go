@@ -233,17 +233,17 @@ type IntroductionMessage struct {
 	c       *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
 	valid bool `enc:"-"` // skip it during encoding
-	// Extra would be parsed as blockchain pubkey if it's not empty
-	Extra []byte `enc:",omitempty"`
+	// Pubkey is the blockchain pubkey
+	Pubkey []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, extra []byte) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey []byte) *IntroductionMessage {
 	return &IntroductionMessage{
 		Mirror:  mirror,
 		Version: version,
 		Port:    port,
-		Extra:   extra,
+		Pubkey:  pubkey,
 	}
 }
 
@@ -275,17 +275,18 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)
 
-		// Checks the genesis hash if not empty
-		if len(intro.Extra) > 0 {
+		// v25 Checks the blockchain pubkey, would accept message with no Pubkey
+		// v26 would check the blockchain pubkey and reject if not matched or not provided
+		if len(intro.Pubkey) > 0 {
 			var bcPubKey cipher.PubKey
-			if len(intro.Extra) < len(bcPubKey) {
+			if len(intro.Pubkey) < len(bcPubKey) {
 				logger.Infof("Extra data length does not meet the minimum requirement")
 				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
 					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 				}
 				return ErrDisconnectInvalidExtraData
 			}
-			copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
+			copy(bcPubKey[:], intro.Pubkey[:len(bcPubKey)])
 
 			if d.BlockchainPubkey() != bcPubKey {
 				logger.Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())

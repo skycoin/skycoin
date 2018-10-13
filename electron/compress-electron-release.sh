@@ -13,7 +13,7 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPTDIR" >/dev/null
 
 # Compress archives
-pushd "$ELN_OUTPUT" >/dev/null
+pushd "$ELN_OUTPUT_DIR" >/dev/null
 
 FINALS=()
 
@@ -81,9 +81,9 @@ fi
 popd >/dev/null
 
 # Move to final release dir
-mkdir -p "$FINAL_OUTPUT"
+mkdir -p "$FINAL_OUTPUT_DIR"
 for var in "${FINALS[@]}"; do
-    mv "${ELN_OUTPUT}/${var}" "$FINAL_OUTPUT"
+    mv "${ELN_OUTPUT_DIR}/${var}" "$FINAL_OUTPUT_DIR"
 done
 
 popd >/dev/null

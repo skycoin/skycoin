@@ -5,6 +5,7 @@ package api
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -15,6 +16,8 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/cors"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -33,6 +36,9 @@ const (
 	devDir      = "dev/"
 	indexPage   = "index.html"
 
+	apiVersion1 = "v1"
+	apiVersion2 = "v2"
+
 	defaultReadTimeout  = time.Second * 10
 	defaultWriteTimeout = time.Second * 60
 	defaultIdleTimeout  = time.Second * 120
@@ -49,6 +55,8 @@ const (
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
 	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
+	// EndpointsPrometheus endpoints for Go application metrics
+	EndpointsPrometheus = "PROMETHEUS"
 )
 
 // Server exposes an HTTP API
@@ -70,7 +78,10 @@ type Config struct {
 	WriteTimeout         time.Duration
 	IdleTimeout          time.Duration
 	BuildInfo            readable.BuildInfo
+	HostWhitelist        []string
 	EnabledAPISets       map[string]struct{}
+	Username             string
+	Password             string
 }
 
 type muxConfig struct {
@@ -82,6 +93,9 @@ type muxConfig struct {
 	disableCSP           bool
 	buildInfo            readable.BuildInfo
 	enabledAPISets       map[string]struct{}
+	hostWhitelist        []string
+	username             string
+	password             string
 }
 
 // HTTPResponse represents the http response struct
@@ -107,6 +121,31 @@ func NewHTTPErrorResponse(code int, msg string) HTTPResponse {
 			Code:    code,
 			Message: msg,
 		},
+	}
+}
+
+func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
+	out, err := json.MarshalIndent(resp, "", "    ")
+	if err != nil {
+		wh.Error500(w, "json.MarshalIndent failed")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+
+	if resp.Error == nil {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		if resp.Error.Code < 400 || resp.Error.Code >= 600 {
+			logger.Critical().Errorf("writeHTTPResponse invalid error status code: %d", resp.Error.Code)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(resp.Error.Code)
+		}
+	}
+
+	if _, err := w.Write(out); err != nil {
+		logger.WithError(err).Error("http Write failed")
 	}
 }
 
@@ -158,6 +197,9 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		disableCSP:           c.DisableCSP,
 		buildInfo:            c.BuildInfo,
 		enabledAPISets:       c.EnabledAPISets,
+		hostWhitelist:        c.HostWhitelist,
+		username:             c.Username,
+		password:             c.Password,
 	}
 
 	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
@@ -236,6 +278,9 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 
 // Addr returns the listening address of the Server
 func (s *Server) Addr() string {
+	if s == nil || s.listener == nil {
+		return ""
+	}
 	return s.listener.Addr().String()
 }
 
@@ -271,9 +316,23 @@ func (s *Server) Shutdown() {
 func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *webrpc.WebRPC) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	headerCheck := func(host string, handler http.Handler) http.Handler {
-		handler = OriginRefererCheck(host, handler)
-		handler = wh.HostCheck(logger, host, handler)
+	allowedOrigins := []string{fmt.Sprintf("http://%s", c.host)}
+	for _, s := range c.hostWhitelist {
+		allowedOrigins = append(allowedOrigins, fmt.Sprintf("http://%s", s))
+	}
+
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:     allowedOrigins,
+		Debug:              false,
+		AllowedMethods:     []string{http.MethodGet, http.MethodPost},
+		AllowedHeaders:     []string{"Origin", "Accept", "Content-Type", "X-Requested-With", CSRFHeaderName},
+		AllowCredentials:   false, // credentials are not used, but it would be safe to enable if necessary
+		OptionsPassthrough: false,
+	})
+
+	headerCheck := func(apiVersion, host string, hostWhitelist []string, handler http.Handler) http.Handler {
+		handler = originRefererCheck(apiVersion, host, hostWhitelist, handler)
+		handler = hostCheck(apiVersion, host, hostWhitelist, handler)
 		return handler
 	}
 
@@ -300,30 +359,38 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		}
 	}
 
-	webHandler := func(endpoint string, handler http.Handler) {
+	webHandlerCSRFOptional := func(apiVersion, endpoint string, handler http.Handler, checkCSRF bool) {
 		handler = wh.ElapsedHandler(logger, handler)
-		handler = CSRFCheck(csrfStore, handler)
-		handler = headerCheck(c.host, handler)
+		handler = corsHandler.Handler(handler)
+		if checkCSRF {
+			handler = CSRFCheck(apiVersion, csrfStore, handler)
+		}
+		handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 
+	webHandler := func(apiVersion, endpoint string, handler http.Handler) {
+		webHandlerCSRFOptional(apiVersion, endpoint, handler, true)
+	}
+
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
 		if c.enableUnversionedAPI {
-			webHandler(endpoint, handler)
+			webHandler(apiVersion1, endpoint, handler)
 		}
-		webHandler("/api/v1"+endpoint, handler)
+		webHandler(apiVersion1, "/api/v1"+endpoint, handler)
 	}
 
 	webHandlerV2 := func(endpoint string, handler http.Handler) {
-		webHandler("/api/v2"+endpoint, handler)
+		webHandler(apiVersion2, "/api/v2"+endpoint, handler)
 	}
 
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
 	if !c.disableCSP {
-		indexHandler = wh.CSPHandler(indexHandler)
+		indexHandler = CSPHandler(indexHandler)
 	}
-	webHandler("/", indexHandler)
+	webHandler(apiVersion1, "/", indexHandler)
 
 	if c.enableGUI {
 		fileInfos, err := ioutil.ReadDir(c.appLoc)
@@ -333,7 +400,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 		fs := http.FileServer(http.Dir(c.appLoc))
 		if !c.disableCSP {
-			fs = wh.CSPHandler(fs)
+			fs = CSPHandler(fs)
 		}
 
 		for _, fileInfo := range fileInfos {
@@ -342,7 +409,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 				route = route + "/"
 			}
 
-			webHandler(route, fs)
+			webHandler(apiVersion1, route, fs)
 		}
 	}
 
@@ -351,9 +418,13 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	// get the current CSRF token
-	csrfHandler := headerCheck(c.host, getCSRFToken(csrfStore))
-	mux.Handle("/csrf", csrfHandler)
-	mux.Handle("/api/v1/csrf", csrfHandler) // csrf is always available, regardless of the API set
+	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
+		if c.enableUnversionedAPI {
+			webHandlerCSRFOptional(apiVersion1, endpoint, handler, false)
+		}
+		webHandlerCSRFOptional(apiVersion1, "/api/v1"+endpoint, handler, false)
+	}
+	csrfHandlerV1("/csrf", getCSRFToken(csrfStore)) // csrf is always available, regardless of the API set
 
 	// Status endpoints
 	webHandlerV1("/version", versionHandler(c.buildInfo)) // version is always available, regardless of the API set
@@ -406,6 +477,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/balance", forAPISet(balanceHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/uxout", forAPISet(uxOutHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/address_uxouts", forAPISet(addrUxOutsHandler(gateway), []string{EndpointsRead}))
+
+	// golang process internal metrics for Prometheus
+	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), []string{EndpointsPrometheus}))
 
 	// Address related endpoints
 	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsRead}))

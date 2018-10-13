@@ -13,8 +13,8 @@ pushd "$SCRIPTDIR" >/dev/null
 
 echo "Compiling with gox"
 pwd
-# Build with gox here and make the other scripts skip it
-./gox.sh "$GOX_OSARCH" "$GOX_OUTPUT"
+# Build the client mode with gox here so that the standalone and electron releases don't need to compile twice
+CONFIG_MODE=STANDALONE_CLIENT ./gox.sh "$GOX_OSARCH" "$GOX_GUI_OUTPUT_DIR"
 
 echo "Installing node modules"
 ./install-node-modules.sh
@@ -30,5 +30,17 @@ echo "==========================="
 echo "Building electron release"
 
 SKIP_COMPILATION=1 ./build-electron-release.sh "$GOX_OSARCH"
+
+echo
+echo "==========================="
+echo "Building daemon release"
+
+./build-daemon-release.sh "$GOX_OSARCH"
+
+echo
+echo "==========================="
+echo "Building cli release"
+
+./build-cli-release.sh "$GOX_OSARCH"
 
 popd >/dev/null

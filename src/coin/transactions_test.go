@@ -112,7 +112,7 @@ func TestTransactionVerify(t *testing.T) {
 	// Invalid signature, empty
 	tx = makeTransaction(t)
 	tx.Sigs[0] = cipher.Sig{}
-	testutil.RequireError(t, tx.Verify(), "Failed to recover public key")
+	testutil.RequireError(t, tx.Verify(), "Invalid sig: PubKey recovery failed")
 	// We can't check here for other invalid signatures:
 	//      - Signatures signed by someone else, spending coins they don't own
 	//      - Signature is for wrong hash
@@ -258,9 +258,9 @@ func TestTransactionSignInputs(t *testing.T) {
 	require.NotPanics(t, func() { tx.SignInputs([]cipher.SecKey{s, s2}) })
 	require.Equal(t, len(tx.Sigs), 2)
 	require.Equal(t, tx.HashInner(), h)
-	p := cipher.PubKeyFromSecKey(s)
+	p := cipher.MustPubKeyFromSecKey(s)
 	a := cipher.AddressFromPubKey(p)
-	p = cipher.PubKeyFromSecKey(s2)
+	p = cipher.MustPubKeyFromSecKey(s2)
 	a2 := cipher.AddressFromPubKey(p)
 	require.Nil(t, cipher.ChkSig(a, cipher.AddSHA256(h, tx.In[0]), tx.Sigs[0]))
 	require.Nil(t, cipher.ChkSig(a2, cipher.AddSHA256(h, tx.In[1]), tx.Sigs[1]))

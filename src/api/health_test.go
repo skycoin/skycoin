@@ -167,8 +167,8 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, metadata.HeadBlock.Block.Head.Time, r.BlockchainMetadata.Head.Time)
 			require.Equal(t, metadata.HeadBlock.Block.Head.Fee, r.BlockchainMetadata.Head.Fee)
 			require.Equal(t, metadata.HeadBlock.Block.Head.Version, r.BlockchainMetadata.Head.Version)
-			require.Equal(t, metadata.HeadBlock.Block.Head.PrevHash.Hex(), r.BlockchainMetadata.Head.PreviousBlockHash)
-			require.Equal(t, metadata.HeadBlock.Block.Head.Hash().Hex(), r.BlockchainMetadata.Head.BlockHash)
+			require.Equal(t, metadata.HeadBlock.Block.Head.PrevHash.Hex(), r.BlockchainMetadata.Head.PreviousHash)
+			require.Equal(t, metadata.HeadBlock.Block.Head.Hash().Hex(), r.BlockchainMetadata.Head.Hash)
 			require.Equal(t, metadata.HeadBlock.Block.Head.BodyHash.Hex(), r.BlockchainMetadata.Head.BodyHash)
 
 			require.Equal(t, tc.csrfEnabled, r.CSRFEnabled)

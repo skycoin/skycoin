@@ -54,6 +54,9 @@ All responses will set an appropriate HTTP status code indicating an error, and 
 Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
 However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
 
+Under some circumstances an error response body may not be valid JSON.
+Any client consuming the API should accomodate this and conditionally parse JSON for non-`200` responses.
+
 ## API Sets
 
 API endpoints are grouped into "sets" which can be toggled with the command line parameters
@@ -67,6 +70,14 @@ These API sets are:
 * `WALLET` - These endpoints operate on local wallet files
 * `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
 * `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
+* `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
+
+## Authentication
+
+Authentication can be enabled with the `-web-interface-username` and `-web-interface-password` options.
+The username and password should be provided in an `Authorization: Basic` header.
+
+Authentication can only be enabled when using HTTPS with `-web-interface-https`, unless `-web-interface-plaintext-auth` is enabled.
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
@@ -75,6 +86,7 @@ These API sets are:
 - [General system checks](#general-system-checks)
 	- [Health check](#health-check)
 	- [Version info](#version-info)
+	- [Prometheus metrics](#prometheus-metrics)
 - [Simple query APIs](#simple-query-apis)
 	- [Get balance of addresses](#get-balance-of-addresses)
 	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
@@ -125,6 +137,7 @@ These API sets are:
 	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
 	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
 	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+- [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 
 <!-- /MarkdownTOC -->
 
@@ -184,25 +197,26 @@ Response:
 {
     "blockchain": {
         "head": {
-            "seq": 53522,
-            "block_hash": "95fa50f505c02589faf598bfc8ac44b9e3c7f25690a0a16725b63836459c1b5f",
-            "previous_block_hash": "d3af6cc4e65ac650d73835681075a95ba59743721506b6fc1d891e7b7d8f7900",
-            "timestamp": 1535002265,
-            "fee": 7064,
+            "seq": 58894,
+            "block_hash": "3961bea8c4ab45d658ae42effd4caf36b81709dc52a5708fdd4c8eb1b199a1f6",
+            "previous_block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+            "timestamp": 1537581604,
+            "fee": 485194,
             "version": 0,
-            "tx_body_hash": "1ed5bee9c6cfe96a971232e8fee0d2b90d1e0c14867dd8505d0897476ec47e31"
+            "tx_body_hash": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+            "ux_hash": "f7d30ecb49f132283862ad58f691e8747894c9fc241cb3a864fc15bd3e2c83d3"
         },
-        "unspents": 34159,
+        "unspents": 38171,
         "unconfirmed": 1,
-        "time_since_last_block": "6m47s"
+        "time_since_last_block": "4m46s"
     },
     "version": {
         "version": "0.24.1",
-        "commit": "991b8c0cfe7ca4aed41d6c4bc960b61e9612c516",
+        "commit": "8798b5ee43c7ce43b9b75d57a1a6cd2c1295cd1e",
         "branch": "develop"
     },
-    "open_connections": 5,
-    "uptime": "11.158716091s",
+    "open_connections": 8,
+    "uptime": "6m30.629057248s",
     "csrf_enabled": true,
     "csp_enabled": true,
     "wallet_api_enabled": true,
@@ -237,6 +251,125 @@ Result:
 }
 ```
 
+### Prometheus metrics
+
+API sets: `PROMETHEUS`
+
+```
+URI: /api/v2/metrics
+Method: GET
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/metrics
+```
+
+Result:
+
+```
+# HELP go_gc_duration_seconds A summary of the GC invocation durations.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 5.31e-05
+go_gc_duration_seconds{quantile="0.25"} 0.000158
+go_gc_duration_seconds{quantile="0.5"} 0.0001789
+go_gc_duration_seconds{quantile="0.75"} 0.0002216
+go_gc_duration_seconds{quantile="1"} 0.0005878
+go_gc_duration_seconds_sum 0.3881053
+go_gc_duration_seconds_count 1959
+# HELP go_goroutines Number of goroutines that currently exist.
+# TYPE go_goroutines gauge
+go_goroutines 30
+# HELP go_memstats_alloc_bytes Number of bytes allocated and still in use.
+# TYPE go_memstats_alloc_bytes gauge
+go_memstats_alloc_bytes 2.862168e+06
+# HELP go_memstats_alloc_bytes_total Total number of bytes allocated, even if freed.
+# TYPE go_memstats_alloc_bytes_total counter
+go_memstats_alloc_bytes_total 4.462792584e+09
+# HELP go_memstats_buck_hash_sys_bytes Number of bytes used by the profiling bucket hash table.
+# TYPE go_memstats_buck_hash_sys_bytes gauge
+go_memstats_buck_hash_sys_bytes 1.794588e+06
+# HELP go_memstats_frees_total Total number of frees.
+# TYPE go_memstats_frees_total counter
+go_memstats_frees_total 4.7917586e+07
+# HELP go_memstats_gc_sys_bytes Number of bytes used for garbage collection system metadata.
+# TYPE go_memstats_gc_sys_bytes gauge
+go_memstats_gc_sys_bytes 2.392064e+06
+# HELP go_memstats_heap_alloc_bytes Number of heap bytes allocated and still in use.
+# TYPE go_memstats_heap_alloc_bytes gauge
+go_memstats_heap_alloc_bytes 2.862168e+06
+# HELP go_memstats_heap_idle_bytes Number of heap bytes waiting to be used.
+# TYPE go_memstats_heap_idle_bytes gauge
+go_memstats_heap_idle_bytes 6.0973056e+07
+# HELP go_memstats_heap_inuse_bytes Number of heap bytes that are in use.
+# TYPE go_memstats_heap_inuse_bytes gauge
+go_memstats_heap_inuse_bytes 5.087232e+06
+# HELP go_memstats_heap_objects Number of allocated objects.
+# TYPE go_memstats_heap_objects gauge
+go_memstats_heap_objects 16326
+# HELP go_memstats_heap_released_bytes_total Total number of heap bytes released to OS.
+# TYPE go_memstats_heap_released_bytes_total counter
+go_memstats_heap_released_bytes_total 0
+# HELP go_memstats_heap_sys_bytes Number of heap bytes obtained from system.
+# TYPE go_memstats_heap_sys_bytes gauge
+go_memstats_heap_sys_bytes 6.6060288e+07
+# HELP go_memstats_last_gc_time_seconds Number of seconds since 1970 of last garbage collection.
+# TYPE go_memstats_last_gc_time_seconds gauge
+go_memstats_last_gc_time_seconds 1.5366276699863462e+09
+# HELP go_memstats_lookups_total Total number of pointer lookups.
+# TYPE go_memstats_lookups_total counter
+go_memstats_lookups_total 0
+# HELP go_memstats_mallocs_total Total number of mallocs.
+# TYPE go_memstats_mallocs_total counter
+go_memstats_mallocs_total 4.7933912e+07
+# HELP go_memstats_mcache_inuse_bytes Number of bytes in use by mcache structures.
+# TYPE go_memstats_mcache_inuse_bytes gauge
+go_memstats_mcache_inuse_bytes 6912
+# HELP go_memstats_mcache_sys_bytes Number of bytes used for mcache structures obtained from system.
+# TYPE go_memstats_mcache_sys_bytes gauge
+go_memstats_mcache_sys_bytes 16384
+# HELP go_memstats_mspan_inuse_bytes Number of bytes in use by mspan structures.
+# TYPE go_memstats_mspan_inuse_bytes gauge
+go_memstats_mspan_inuse_bytes 76000
+# HELP go_memstats_mspan_sys_bytes Number of bytes used for mspan structures obtained from system.
+# TYPE go_memstats_mspan_sys_bytes gauge
+go_memstats_mspan_sys_bytes 180224
+# HELP go_memstats_next_gc_bytes Number of heap bytes when next garbage collection will take place.
+# TYPE go_memstats_next_gc_bytes gauge
+go_memstats_next_gc_bytes 5.576912e+06
+# HELP go_memstats_other_sys_bytes Number of bytes used for other system allocations.
+# TYPE go_memstats_other_sys_bytes gauge
+go_memstats_other_sys_bytes 792284
+# HELP go_memstats_stack_inuse_bytes Number of bytes in use by the stack allocator.
+# TYPE go_memstats_stack_inuse_bytes gauge
+go_memstats_stack_inuse_bytes 1.048576e+06
+# HELP go_memstats_stack_sys_bytes Number of bytes obtained from system for stack allocator.
+# TYPE go_memstats_stack_sys_bytes gauge
+go_memstats_stack_sys_bytes 1.048576e+06
+# HELP go_memstats_sys_bytes Number of bytes obtained by system. Sum of all system allocations.
+# TYPE go_memstats_sys_bytes gauge
+go_memstats_sys_bytes 7.2284408e+07
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 36.04
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 1.048576e+06
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 15
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 4.9025024e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.53662761869e+09
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 8.22317056e+08
+```
+
 
 ## Simple query APIs
 
@@ -254,7 +387,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq
+curl http://127.0.0.1:6420/api/v1/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq,2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6
 ```
 
 Result:
@@ -270,6 +403,16 @@ Result:
         "hours": 142744
     },
     "addresses": {
+        "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6": {
+            "confirmed": {
+                "coins": 0,
+                "hours": 0
+            },
+            "predicted": {
+                "coins": 0,
+                "hours": 0
+            }
+        },
         "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD": {
             "confirmed": {
                 "coins": 9000000,
@@ -308,6 +451,12 @@ Args:
 
 Addrs and hashes cannot be combined.
 
+In the response, `"head_outputs"` are outputs in the current unspent output set,
+`"outgoing_outputs"` are head outputs that are being spent by an unconfirmed transaction,
+and `"incoming_outputs"` are outputs that will be created by an unconfirmed transaction.
+
+The current head block header is returned as `"head"`.
+
 Example:
 
 ```sh
@@ -324,6 +473,16 @@ Result:
 
 ```json
 {
+    "head": {
+        "seq": 58891,
+        "block_hash": "d9ca9442febd8788de0a3093158943beca228017bf8c9c9b8529a382fad8d991",
+        "previous_block_hash": "098ea5c6e12370c38529ef7c7c38779f83d05f707affb747022eee77332ba510",
+        "timestamp": 1537580414,
+        "fee": 2165,
+        "version": 0,
+        "tx_body_hash": "c488835c85ccb153a6d42b39aaae01c3e30d16de33de282f4b3f6fa1ccf6f7eb",
+        "ux_hash": "f7d30ecb49f132283862ad58f691e8747894c9fc241cb3a864fc15bd3e2c83d3"
+    },
     "head_outputs": [
         {
             "hash": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
@@ -1350,7 +1509,7 @@ Result:
 
 ### Recover encrypted wallet by seed
 
-API sets: `WALLET_SEED`
+API sets: `INSECURE_WALLET_SEED`
 
 ```
 URI: /api/v2/wallet/recover
@@ -1681,16 +1840,33 @@ URI: /api/v1/injectTransaction
 Method: POST
 Content-Type: application/json
 Body: {"rawtx": "hex-encoded serialized transaction string"}
+Errors:
+	400 - Bad input
+	500 - Other
+	503 - Network unavailable (transaction failed to broadcast)
 ```
 
 Broadcasts a hex-encoded, serialized transaction to the network.
 Transactions are serialized with the `encoder` package.
 See [`coin.Transaction.Serialize`](https://godoc.org/github.com/skycoin/skycoin/src/coin#Transaction.Serialize).
 
-If there are no available connections, the API responds with a 503 Service Unavailable error.
+If there are no available connections, the API responds with a `503 Service Unavailable` error.
 
 Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
 This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
+
+Also, in rare cases the transaction may be broadcast but might not be saved to the database. In this case the client
+would have a window of opportunity to attempt a double spend, resulting in unexpected behavior.
+However, if the database save failed, it is likely that a subsequent call to inject transaction will also fail.
+
+The recommended way to handle transaction injections from your system is to inject the transaction then wait
+for the transaction to be confirmed.  Transactions typically confirm quickly, so if it is not confirmed after some
+timeout such as 1 minute, the application can continue to retry the broadcast with `/api/v1/resendUnconfirmedTxns`.
+Broadcast only fails without an error if the node's peers disconnect or timeout after the broadcast was initiated,
+which is a network problem that may recover, so rebroadcasting with `/api/v1/resendUnconfirmedTxns` will resolve it,
+or else the network is unavailable.  Any transactions saved to the database will be resent on startup.
+
+It is safe to retry the injection after a `503` failure.
 
 Example:
 
@@ -2223,16 +2399,17 @@ Result:
 ```json
 {
     "head": {
-        "seq": 17936,
-        "block_hash": "b91663fa8ff14aab529cd7bfd48bde5bd86e3c2db154d601528801ee0d064d19",
-        "previous_block_hash": "b57d3b644898f95c9f7a9281e786a0ae2a567e9dc573654363ffafaa41ab4caf",
-        "timestamp": 1520967639,
-        "fee": 61662,
+        "seq": 58894,
+        "block_hash": "3961bea8c4ab45d658ae42effd4caf36b81709dc52a5708fdd4c8eb1b199a1f6",
+        "previous_block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+        "timestamp": 1537581604,
+        "fee": 485194,
         "version": 0,
-        "tx_body_hash": "f0e8440f30acf01def3acaa9a88ea91f1fbaea19c0df003726edfe5bd1c7b51d"
+        "tx_body_hash": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+        "ux_hash": "f7d30ecb49f132283862ad58f691e8747894c9fc241cb3a864fc15bd3e2c83d3"
     },
-    "unspents": 12704,
-    "unconfirmed": 0
+    "unspents": 38171,
+    "unconfirmed": 1
 }
 ```
 
@@ -2310,7 +2487,8 @@ Result:
         "timestamp": 1504220821,
         "fee": 196130,
         "version": 0,
-        "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
+        "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
+        "ux_hash": "366af6bd80cfce79ce1ef63b45fb3ae8d9a6afc92a8590f14e18220884bd9d22"
     },
     "body": {
         "txns": [
@@ -2369,7 +2547,8 @@ Result:
         "timestamp": 1504220821,
         "fee": 196130,
         "version": 0,
-        "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
+        "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
+        "ux_hash": "366af6bd80cfce79ce1ef63b45fb3ae8d9a6afc92a8590f14e18220884bd9d22"
     },
     "body": {
         "txns": [
@@ -2423,10 +2602,19 @@ Method: GET
 Args:
     start: start seq
     end: end seq
+    seqs: comma-separated list of block seqs
     verbose: [bool] return verbose transaction input data
 ```
 
-Returns blocks in the range [start, end]. Both start and end sequences are included in the returned array of blocks.
+This endpoint has two modes: range and seqs.
+The `seqs` parameter cannot be combined with `start`, `end`.
+
+If `start` and/or `end` are provided, returns blocks in the range [`start`, `end`].
+Both start and end sequences are included in the returned array of blocks.
+
+If `seqs` is provided, returns blocks matching the specified sequences.
+`seqs` must not contain any duplicate values.
+If a block does not exist for any of the given sequence numbers, a `404` error is returned.
 
 If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
 The hours are the original hours the output was created with.
@@ -2451,7 +2639,8 @@ Result:
                 "timestamp": 1429274666,
                 "fee": 720335,
                 "version": 0,
-                "tx_body_hash": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18"
+                "tx_body_hash": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
+                "ux_hash": "348989599d30d3adfaaea98577963caa419ab0276279296e7d194a9cbb8cad04"
             },
             "body": {
                 "txns": [
@@ -2487,7 +2676,8 @@ Result:
                 "timestamp": 1429274686,
                 "fee": 710046,
                 "version": 0,
-                "tx_body_hash": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d"
+                "tx_body_hash": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d",
+                "ux_hash": "f7512b0718f392c7503f86e69175efd7835ea4c3dd3f71ff65c7ad8873a6a9e8"
             },
             "body": {
                 "txns": [
@@ -2538,7 +2728,8 @@ Result:
                 "timestamp": 1429274666,
                 "fee": 720335,
                 "version": 0,
-                "tx_body_hash": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18"
+                "tx_body_hash": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
+                "ux_hash": "348989599d30d3adfaaea98577963caa419ab0276279296e7d194a9cbb8cad04"
             },
             "body": {
                 "txns": [
@@ -2581,7 +2772,8 @@ Result:
                 "timestamp": 1429274686,
                 "fee": 710046,
                 "version": 0,
-                "tx_body_hash": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d"
+                "tx_body_hash": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d",
+                "ux_hash": "f7512b0718f392c7503f86e69175efd7835ea4c3dd3f71ff65c7ad8873a6a9e8"
             },
             "body": {
                 "txns": [
@@ -2620,6 +2812,141 @@ Result:
 }
 ```
 
+Example (seqs):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/blocks?seqs=3,5,7
+```
+
+```json
+{
+    "blocks": [
+        {
+            "header": {
+                "seq": 3,
+                "block_hash": "35c3ebbe6feaeeab27ac77c1712051787bdd4bbfb5cdcdebc81f8aac98a2f3f3",
+                "previous_block_hash": "01723bc4dc90f1cb857a94fe5e3bb50c02e6689fd998f8147c9cae07fbfa63af",
+                "timestamp": 1427927671,
+                "fee": 0,
+                "version": 0,
+                "tx_body_hash": "a6a709e9388a4d67a47d262b11da5f804eddd9d67acc4a3e450f7a567bdc1619"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 183,
+                        "type": 0,
+                        "txid": "a6a709e9388a4d67a47d262b11da5f804eddd9d67acc4a3e450f7a567bdc1619",
+                        "inner_hash": "ea6adee3180c7f9d73d1e693822d5d1c2bba85067f89a873355bc771a078faa1",
+                        "sigs": [
+                            "ce8fd47e2044ed17998f92621e90329f673a746c802d67f639ca083705dd199f6ee346781497b44132434922879244d819694b5903093f784570c55d293ab4af01"
+                        ],
+                        "inputs": [
+                            "af0b2c1cc882a56b6c0c06e99e7d2731413b988329a2c47a5c2aa8be589b707a"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13",
+                                "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+                                "coins": "10.000000",
+                                "hours": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 183
+        },
+        {
+            "header": {
+                "seq": 5,
+                "block_hash": "114fe60587a158428a47e0f9571d764f495912c299aa4e67fc88004cf21b0c24",
+                "previous_block_hash": "415e47348a1e642cb2e31d00ee500747d3aed0336aabfff7d783ed21465251c7",
+                "timestamp": 1428798821,
+                "fee": 2036,
+                "version": 0,
+                "tx_body_hash": "0579e7727627cd9815a8a8b5e1df86124f45a4132cc0dbd00d2f110e4f409b69"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 317,
+                        "type": 0,
+                        "txid": "0579e7727627cd9815a8a8b5e1df86124f45a4132cc0dbd00d2f110e4f409b69",
+                        "inner_hash": "fe123ca954a82bb1ce2cc9ef9c56d6b649a4cbaf5b17394b0ffda651ed32327e",
+                        "sigs": [
+                            "056ed0f74367fb1370d7e98689953983d9cf34eb6669854f1645c8a16c93d85075661e7d4f6df0ce5ca8eb9852eff6a12fbac2caafee03bb8c616f847c61416800",
+                            "8aaa7f320a7b01169d3217a600100cb27c55e4ce56cd3455814f56d8e4e65be746e0e20e776087af6f19361f0b898edc2123a5f9bd35d24ef8b8669ca85b142601"
+                        ],
+                        "inputs": [
+                            "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13",
+                            "706f82c481906108880d79372ab5c126d32ecc98cf3f7c74cf33f5fda49dcf70"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "fa2b598d233fe434f907f858d5de812eacf50c7b3fd152c77cd6e246fe356a9e",
+                                "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+                                "coins": "999890.000000",
+                                "hours": 4073
+                            },
+                            {
+                                "uxid": "dc63c680f408c4e646037966189383a5d50eda34e666c2a0c75c0c6bf13b71a1",
+                                "dst": "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+                                "coins": "100.000000",
+                                "hours": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 317
+        },
+        {
+            "header": {
+                "seq": 7,
+                "block_hash": "6cb71b57c998a5367101e01d48c097eccd4f5abf311c89bcca8ee213581f355f",
+                "previous_block_hash": "103949030e90fcebc5d8ca1c9c59f30a31aa71911401d22a2422e4571b035701",
+                "timestamp": 1428807671,
+                "fee": 0,
+                "version": 0,
+                "tx_body_hash": "f832428481690fa918d6d29946e191f2c8c89b2388a906e0c53dceee6070a24b"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 220,
+                        "type": 0,
+                        "txid": "f832428481690fa918d6d29946e191f2c8c89b2388a906e0c53dceee6070a24b",
+                        "inner_hash": "f440c514779522a6387edda9b9d9835f00680fb314546efb7bc9762a17884156",
+                        "sigs": [
+                            "8fe96f5502270e4efa962b2aef2b81795fe26a8f0c9a494e2ae9c7e624af455c49396270ae7a25b41d439fd56dea9d556a135129122de1b1274b1e2a5d75f2ea01"
+                        ],
+                        "inputs": [
+                            "8ff8a647e4542fab01e078ac467b2c9f2e5f7de55d77ec2711f8abc718e2c91b"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "17090c40091d009d6a684043d3be2e9cb1dc60a664a9c2e388af1f3a7345724b",
+                                "dst": "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+                                "coins": "90.000000",
+                                "hours": 0
+                            },
+                            {
+                                "uxid": "f9e7a412cdff80e95ddbe1d76fcc73f967cb99d383b0659e1355c8e623f02b62",
+                                "dst": "WADSeEwEQVbtUy8CfcVimyxX1KjTRkvfoK",
+                                "coins": "5.000000",
+                                "hours": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 220
+        }
+    ]
+}
+```
+
 
 ### Get last N blocks
 
@@ -2650,87 +2977,93 @@ Result:
     "blocks": [
         {
             "header": {
-                "seq": 21182,
-                "block_hash": "a9045e524ff3bef82955198f274a5538ccec3958b3045c396a4b2a591fa1d99c",
-                "previous_block_hash": "819b3f83afef7be9c37ab7819e193ad3a55439fb3cda52cb8691aab62bfc3936",
-                "timestamp": 1523174576,
-                "fee": 34572,
+                "seq": 58893,
+                "block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+                "previous_block_hash": "1f042ed976c0cb150ea6b71c9608d65b519e4bc1c507eba9f1146e443a856c2d",
+                "timestamp": 1537581594,
+                "fee": 970389,
                 "version": 0,
-                "tx_body_hash": "99548cd7cc0091ce2d324647c20d22616e44424961f098c7fc81be9e9dc90c62"
+                "tx_body_hash": "1bea5cf1279693a0da24828c37b267c702007842b16ca5557ae497574d15aab7",
+                "ux_hash": "bf35652af199779bc40cbeb339e8a782ff70673b07779e5c5621d37dfe13b42b"
             },
             "body": {
                 "txns": [
                     {
-                        "length": 220,
+                        "length": 377,
                         "type": 0,
-                        "txid": "99548cd7cc0091ce2d324647c20d22616e44424961f098c7fc81be9e9dc90c62",
-                        "inner_hash": "b283e783a3055c5b9e89449434ebd4f63c88450d48bc0eccd274c39c347a498a",
+                        "txid": "1bea5cf1279693a0da24828c37b267c702007842b16ca5557ae497574d15aab7",
+                        "inner_hash": "a25232405bcef0c007bb2d7d3520f2a389e17e11125c252ab6c00168ec52c08d",
                         "sigs": [
-                            "c0e8e1b6252cc9a5e0de3ded8a63f291781cc5866956b4409e1afa165b56245e5adb87dd29e10c73038389a056667ebba76545e0e931d261444da5e09cf4b7d901"
+                            "2ff7390c3b66c6b0fbb2b4c59c8e218291d4cbb82a836bb577c7264677f4a8320f6f3ad72d804e3014728baa214c223ecced8725b64be96fe3b51332ad1eda4201",
+                            "9e7c715f897b3c987c00ee8c6b14e4b90bb3e4e11d003b481f82042b1795b3c75eaa3d563cd0358cdabdab77cfdbead7323323cf73e781f9c1a8cf6d9b4f8ac100",
+                            "5c9748314f2fe0cd442df5ebb8f211087111d22e9463355bf9eee583d44df1bd36addb510eb470cb5dafba0732615f8533072f80ae05fc728c91ce373ada1e7b00"
                         ],
                         "inputs": [
-                            "0973f15386bbf39ad530c704bcfa3e768ec6515a3798455feaa89a7f00beb276"
+                            "5f634c825b2a53103758024b3cb8578b17d56d422539e23c26b91ea397161703",
+                            "16ac52084ffdac2e9169b9e057d44630dec23d18cfb90b9437d28220a3dc585d",
+                            "8d3263890d32382e182b86f8772c7685a8f253ed475c05f7d530e9296f692bc9"
                         ],
                         "outputs": [
                             {
-                                "uxid": "7c061ba81dedcf9046d6f964efea99860dfa0b07a2de80dd24f658b8c12d2ffc",
-                                "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                                "coins": "648.000000",
-                                "hours": 2
-                            },
-                            {
-                                "uxid": "89835a170bf7b1d5067c77b84c15ddc9b7d62da213eef34d8c4dbe40ab2b3158",
-                                "dst": "2QzAjmkm9UZoYodZLDrDUjEuFCjU3uoNoEm",
-                                "coins": "283.000000",
-                                "hours": 2
+                                "uxid": "fb8db3f78928aee3f5cbda8db7fc290df9e64414e8107872a1c5cf83e08e4df7",
+                                "dst": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "26.913000",
+                                "hours": 970388
                             }
                         ]
                     }
                 ]
             },
-            "size": 220
+            "size": 377
         },
         {
             "header": {
-                "seq": 21183,
-                "block_hash": "96a2f810e56545bf819ad76123609e16e4c82b5d14911b0b18368e4347e8b1b5",
-                "previous_block_hash": "a9045e524ff3bef82955198f274a5538ccec3958b3045c396a4b2a591fa1d99c",
-                "timestamp": 1523174636,
-                "fee": 108118,
+                "seq": 58894,
+                "block_hash": "3961bea8c4ab45d658ae42effd4caf36b81709dc52a5708fdd4c8eb1b199a1f6",
+                "previous_block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+                "timestamp": 1537581604,
+                "fee": 485194,
                 "version": 0,
-                "tx_body_hash": "c3052a92828873a0594a95a44051a9962f3794b0bcd4948d2d616496f1e06cd7"
+                "tx_body_hash": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                "ux_hash": "f7d30ecb49f132283862ad58f691e8747894c9fc241cb3a864fc15bd3e2c83d3"
             },
             "body": {
                 "txns": [
                     {
-                        "length": 220,
+                        "length": 257,
                         "type": 0,
-                        "txid": "c3052a92828873a0594a95a44051a9962f3794b0bcd4948d2d616496f1e06cd7",
-                        "inner_hash": "a81ae47fdf0a09933576da113ed098b1f8e62b7fdddf318fd5cc70420bad2228",
+                        "txid": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                        "inner_hash": "f7dbd09f7e9f65d87003984640f1977fb9eec95b07ef6275a1ec6261065e68d7",
                         "sigs": [
-                            "6bb47b0ac89cc3b0bf7b276c98dcf553f6f8980ced386cccca927d439f7cfb9c56cf6019a299f917ce62c4ab3277b7b624a351808513400d1f240f1b900d65b701"
+                            "af5329e77213f34446a0ff41d249fd25bc1dae913390871df359b9bd587c95a10b625a74a3477a05cc7537cb532253b12c03349ead5be066b8e0009e79462b9501"
                         ],
                         "inputs": [
-                            "898d42774d3cd9910691630fb7c22f786d3ee99a6616bc5bc1b8b813e1499b06"
+                            "fb8db3f78928aee3f5cbda8db7fc290df9e64414e8107872a1c5cf83e08e4df7"
                         ],
                         "outputs": [
                             {
-                                "uxid": "96f14e7e9d024aa49ad7e3e7b55d98bef8601ce9696f09581391eb07cda42ffe",
-                                "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                                "coins": "921.000000",
-                                "hours": 98
+                                "uxid": "235811602fc96cf8b5b031edb88ee1606830aa641c06e0986681552d8728ec07",
+                                "dst": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                                "coins": "0.500000",
+                                "hours": 1
                             },
                             {
-                                "uxid": "5cd59f80656e92961f824a9c65b30f61badd9265069f0a504f5c73a2bea54990",
-                                "dst": "CP7tbttW82zNdygJ1UBFhzbhu9bbz8Rcez",
-                                "coins": "10.000000",
-                                "hours": 98
+                                "uxid": "873da4edc01c0b5184e1f26c4c3471dd407d08e9ab36b018ab93874e7392320b",
+                                "dst": "2XBMMDMqTTYmqs2rfjEwYDz8ABd38y9B8r7",
+                                "coins": "0.500000",
+                                "hours": 1
+                            },
+                            {
+                                "uxid": "42a6f0127f61e1d7bca8e9680027eddcecad772250c5634a03e56a8b1cf5a816",
+                                "dst": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "25.913000",
+                                "hours": 485192
                             }
                         ]
                     }
                 ]
             },
-            "size": 220
+            "size": 257
         }
     ]
 }
@@ -2749,87 +3082,119 @@ Result:
     "blocks": [
         {
             "header": {
-                "seq": 54281,
-                "block_hash": "226ad00fd6c25b916d5660d56da42f9775e277a293251c826a9dc6c88a6257f3",
-                "previous_block_hash": "b765fab948af06d51028bec33e50de8f0cc794abdb725c7529564638e847f291",
-                "timestamp": 1535270765,
-                "fee": 5166,
+                "seq": 58893,
+                "block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+                "previous_block_hash": "1f042ed976c0cb150ea6b71c9608d65b519e4bc1c507eba9f1146e443a856c2d",
+                "timestamp": 1537581594,
+                "fee": 970389,
                 "version": 0,
-                "tx_body_hash": "69d704a7c1137c2c86c1abe631521d4c81d7f16a4885d01418958c40dfffd56f"
+                "tx_body_hash": "1bea5cf1279693a0da24828c37b267c702007842b16ca5557ae497574d15aab7",
+                "ux_hash": "bf35652af199779bc40cbeb339e8a782ff70673b07779e5c5621d37dfe13b42b"
             },
             "body": {
                 "txns": [
                     {
-                        "length": 220,
+                        "length": 377,
                         "type": 0,
-                        "txid": "69d704a7c1137c2c86c1abe631521d4c81d7f16a4885d01418958c40dfffd56f",
-                        "inner_hash": "06af77a238310fdb47d88bebe3dba3d6018ac0db465de6fe5ca883e8d517f33f",
+                        "txid": "1bea5cf1279693a0da24828c37b267c702007842b16ca5557ae497574d15aab7",
+                        "inner_hash": "a25232405bcef0c007bb2d7d3520f2a389e17e11125c252ab6c00168ec52c08d",
+                        "fee": 970389,
                         "sigs": [
-                            "80848efe341526498d73642f419991fc0c695c85047703dc2665655de09a7e081e4385f759ebd31b70c715e8ee12c575232010625798b84506b3580d955a1d6c01"
+                            "2ff7390c3b66c6b0fbb2b4c59c8e218291d4cbb82a836bb577c7264677f4a8320f6f3ad72d804e3014728baa214c223ecced8725b64be96fe3b51332ad1eda4201",
+                            "9e7c715f897b3c987c00ee8c6b14e4b90bb3e4e11d003b481f82042b1795b3c75eaa3d563cd0358cdabdab77cfdbead7323323cf73e781f9c1a8cf6d9b4f8ac100",
+                            "5c9748314f2fe0cd442df5ebb8f211087111d22e9463355bf9eee583d44df1bd36addb510eb470cb5dafba0732615f8533072f80ae05fc728c91ce373ada1e7b00"
                         ],
                         "inputs": [
-                            "b9a22a6abaa9b2ef990995b510c4839862ed98e28495f76d992153c69c598c0e"
+                            {
+                                "uxid": "5f634c825b2a53103758024b3cb8578b17d56d422539e23c26b91ea397161703",
+                                "owner": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "25.910000",
+                                "hours": 7745,
+                                "calculated_hours": 17458
+                            },
+                            {
+                                "uxid": "16ac52084ffdac2e9169b9e057d44630dec23d18cfb90b9437d28220a3dc585d",
+                                "owner": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "1.000000",
+                                "hours": 1915246,
+                                "calculated_hours": 1915573
+                            },
+                            {
+                                "uxid": "8d3263890d32382e182b86f8772c7685a8f253ed475c05f7d530e9296f692bc9",
+                                "owner": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                                "coins": "0.003000",
+                                "hours": 7745,
+                                "calculated_hours": 7746
+                            }
                         ],
                         "outputs": [
                             {
-                                "uxid": "c26db0ee0fc96f3744f0ed484ceb4aae38e43f6703ec3d875b6ded49c16b4285",
-                                "dst": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
-                                "coins": "6568.304000",
-                                "hours": 2583
-                            },
-                            {
-                                "uxid": "d45581e327b02bf32dd64fb1dd2b4809ad257276ac03464f83b77cde65b1c181",
-                                "dst": "cm7qnyrM8zGf9QGdgyv19781WWC1Kaj7Sb",
-                                "coins": "61.628000",
-                                "hours": 2582
+                                "uxid": "fb8db3f78928aee3f5cbda8db7fc290df9e64414e8107872a1c5cf83e08e4df7",
+                                "dst": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "26.913000",
+                                "hours": 970388
                             }
                         ]
                     }
                 ]
             },
-            "size": 220
+            "size": 377
         },
         {
             "header": {
-                "seq": 54282,
-                "block_hash": "13bdc4078216499ccc4e96b0ffed4a130299b321b1101c5bb648c0e1f010d81e",
-                "previous_block_hash": "226ad00fd6c25b916d5660d56da42f9775e277a293251c826a9dc6c88a6257f3",
-                "timestamp": 1535271135,
-                "fee": 226666,
+                "seq": 58894,
+                "block_hash": "3961bea8c4ab45d658ae42effd4caf36b81709dc52a5708fdd4c8eb1b199a1f6",
+                "previous_block_hash": "8eca94e7597b87c8587286b66a6b409f6b4bf288a381a56d7fde3594e319c38a",
+                "timestamp": 1537581604,
+                "fee": 485194,
                 "version": 0,
-                "tx_body_hash": "6a8d90df3e80f6ba4908e3fe9230a0db8811dbd257674d165b5f3fa620141cf9"
+                "tx_body_hash": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                "ux_hash": "f7d30ecb49f132283862ad58f691e8747894c9fc241cb3a864fc15bd3e2c83d3"
             },
             "body": {
                 "txns": [
                     {
-                        "length": 220,
+                        "length": 257,
                         "type": 0,
-                        "txid": "6a8d90df3e80f6ba4908e3fe9230a0db8811dbd257674d165b5f3fa620141cf9",
-                        "inner_hash": "c0185353ac63b8dad341e9a948cf89c5d943f48f322c5f876f3f94e66608d0e5",
+                        "txid": "c03c0dd28841d5aa87ce4e692ec8adde923799146ec5504e17ac0c95036362dd",
+                        "inner_hash": "f7dbd09f7e9f65d87003984640f1977fb9eec95b07ef6275a1ec6261065e68d7",
+                        "fee": 485194,
                         "sigs": [
-                            "98ea0220447f96026abd1ff5fa965714d49007678c4b0fb9807b6b9c92998230605d4f4505a9b723ce6c120da1c90381a961a5faa5c3d4de1ae16edbee656c7500"
+                            "af5329e77213f34446a0ff41d249fd25bc1dae913390871df359b9bd587c95a10b625a74a3477a05cc7537cb532253b12c03349ead5be066b8e0009e79462b9501"
                         ],
                         "inputs": [
-                            "ac8f02f60941d6e1fdaa1a298dbca837cc661b13fda03b795db0457767263686"
+                            {
+                                "uxid": "fb8db3f78928aee3f5cbda8db7fc290df9e64414e8107872a1c5cf83e08e4df7",
+                                "owner": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "26.913000",
+                                "hours": 970388,
+                                "calculated_hours": 970388
+                            }
                         ],
                         "outputs": [
                             {
-                                "uxid": "41cbd18f8914089966e91960dff5d8e7abf116cc71c605aa93b730f0e784d8e1",
-                                "dst": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
-                                "coins": "6582.090000",
-                                "hours": 113333
+                                "uxid": "235811602fc96cf8b5b031edb88ee1606830aa641c06e0986681552d8728ec07",
+                                "dst": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                                "coins": "0.500000",
+                                "hours": 1
                             },
                             {
-                                "uxid": "567e119e5cd58a958182ea6faf2b968a8d6d59b6a14877fe08f7918d3edf933a",
-                                "dst": "2maszCHKu8v6tzrwDqZTRHvvSPPrYASTvtB",
-                                "coins": "43.990000",
-                                "hours": 113332
+                                "uxid": "873da4edc01c0b5184e1f26c4c3471dd407d08e9ab36b018ab93874e7392320b",
+                                "dst": "2XBMMDMqTTYmqs2rfjEwYDz8ABd38y9B8r7",
+                                "coins": "0.500000",
+                                "hours": 1
+                            },
+                            {
+                                "uxid": "42a6f0127f61e1d7bca8e9680027eddcecad772250c5634a03e56a8b1cf5a816",
+                                "dst": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                                "coins": "25.913000",
+                                "hours": 485192
                             }
                         ]
                     }
                 ]
             },
-            "size": 220
+            "size": 257
         }
     ]
 }
@@ -3284,7 +3649,6 @@ Result:
 [
     "104.237.142.206:6000",
     "118.178.135.93:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "139.162.7.132:6000",
     "172.104.85.6:6000",
@@ -3314,7 +3678,6 @@ Result:
 [
     "104.237.142.206:6000",
     "118.178.135.93:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "139.162.7.132:6000",
     "172.104.85.6:6000",
@@ -3345,7 +3708,6 @@ Result:
     "104.237.142.206:6000",
     "116.62.220.158:7200",
     "118.237.210.163:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "121.41.103.148:7200",
     "139.162.161.41:20000",
@@ -3368,3 +3730,15 @@ Result:
     "47.88.33.156:6000"
 ]
 ```
+
+## Migrating from the JSONRPC API
+
+The JSONRPC-2.0 RPC API will be removed as of version `0.26.0`.
+Anyone still using this can follow this guide to migrate to the REST API:
+
+* `get_status` is replaced by `/api/v1/blockchain/metadata` and `/api/v1/health`
+* `get_lastblocks` is replaced by `/api/v1/last_blocks`
+* `get_blocks` is replaced by `/api/v1/blocks`
+* `get_outputs` is replaced by `/api/v1/outputs`
+* `inject_transaction` is replaced by `/api/v1/injectTransaction`
+* `get_transaction` is replaced by `/api/v1/transaction`

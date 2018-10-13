@@ -12,16 +12,16 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPTDIR" >/dev/null
 
 if [ $SKIP_COMPILATION -ne 1 ]; then
-    CONFIG_MODE=STANDALONE_CLIENT ./gox.sh "$GOX_OSARCH" "$GOX_GUI_OUTPUT_DIR"
+    CMD="cli" CONFIG_MODE= ./gox.sh "$GOX_OSARCH" "$GOX_CLI_OUTPUT_DIR" "$GOX_CLI_OUTPUT_NAME"
 fi
 
 echo
 echo "==========================="
-echo "Packaging standalone release"
-./package-standalone-release.sh "$GOX_OSARCH"
+echo "Packaging cli release"
+./package-cli-release.sh "$GOX_OSARCH"
 
 echo "------------------------------"
-echo "Compressing standalone release"
-./compress-standalone-release.sh "$GOX_OSARCH"
+echo "Compressing cli release"
+./compress-cli-release.sh "$GOX_OSARCH"
 
 popd >/dev/null

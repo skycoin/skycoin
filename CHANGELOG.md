@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 In the v0.26.0 these features and functions will be removed.  If you have a need for any of these features, let us know.
 
 - JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-jsonrpc-api
-- `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead)
-- The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`)
+- `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-spend
+- The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-unversioned-api
 
 ### Notice
 
@@ -45,6 +45,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
 - Coinhour burn factor can be configured at runtime with `COINHOUR_BURN_FACTOR` envvar
 - Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
+- `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
 
 ### Fixed
 

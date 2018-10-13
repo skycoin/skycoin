@@ -16,10 +16,10 @@
 #define SKY_ERRORS_H
 
 // Generic error conditions
-#define SKY_OK            0
-#define SKY_ERROR         0x7FFFFFFF
-#define SKY_BAD_HANDLE    0x7F000001
-#define SKY_API_LOCKED    0x7F000002
+#define SKY_OK                    0
+#define SKY_ERROR                 0x7FFFFFFF
+#define SKY_BAD_HANDLE            0x7F000001
+#define SKY_INVALID_TIMESTRING    0x7F000002
 
 // Package error code prefix list
 #define SKY_PKG_API       0x01000000

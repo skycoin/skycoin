@@ -4,7 +4,6 @@
 	#define SWIG_FILE_WITH_INIT
 	#include "libskycoin.h"
 	#include "swig.h"
-	// #include "base64.h"
 %}
 
 //Apply strictly to python
@@ -34,7 +33,7 @@
 %include "csharp_structs_typemaps.i"
 %include "csharp_java_basic.i"
 %include "csharp_skycoin.mem.i"
-%include csharp_java_callback.i
+%include "csharp_java_callback.i"
 #endif
 
 %include "swig.h"

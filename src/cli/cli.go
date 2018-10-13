@@ -24,9 +24,12 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
-const (
+var (
 	// Version is the CLI Version
-	Version           = "0.25.0-rc1"
+	Version = "0.25.0-rc1"
+)
+
+const (
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt

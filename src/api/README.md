@@ -3806,6 +3806,8 @@ Extra zeros on the `"coins"` string are ok, for example `"1"` is the same as `"1
 Only provide `"password"` if the wallet is encrypted.  Note that decryption can take a few seconds, and this can impact
 throughput.
 
+The request header `Content-Type` must be `application/json`.
+
 The response to `POST /api/v1/wallet/transaction` will include a verbose decoded transaction with details
 and the hex-encoded binary transaction in the `"encoded_transaction"` field.
 Use the value of `"encoded_transaction"` as the `"rawtx"` value in the request to `/api/v1/injectTransaction`.

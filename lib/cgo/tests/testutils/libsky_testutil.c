@@ -265,12 +265,6 @@ int parseBoolean(const char* str, int length){
   return result;
 }
 
-void toGoString(GoString_ *s, GoString *r){
-GoString * tmp = r;
-
-  *tmp = (*(GoString *) s);
-}
-
 int copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size){
   pdest->len = psource->len;
   pdest->cap = psource->len;
@@ -396,14 +390,3 @@ int getCountWord(const char *str) {
   return len;
 }*/
 
-int copyUxArraytoSlice(coin__UxArray* pdest, GoSlice* psource){
-  pdest->len = psource->len;
-  pdest->cap = psource->len;
-  int size = pdest->len * sizeof(coin__UxArray);
-  pdest->data = malloc(size);
-  if( pdest->data == NULL )
-    return SKY_ERROR;
-  registerMemCleanup( pdest->data );
-  memcpy(pdest->data, psource->data, size );
-  return SKY_OK;
-}

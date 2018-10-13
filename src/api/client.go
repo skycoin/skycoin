@@ -15,10 +15,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 const (
@@ -57,6 +54,8 @@ type ReceivedHTTPResponse struct {
 type Client struct {
 	HTTPClient *http.Client
 	Addr       string
+	Username   string
+	Password   string
 }
 
 // NewClient creates a Client
@@ -78,6 +77,20 @@ func NewClient(addr string) *Client {
 		Addr:       addr,
 		HTTPClient: httpClient,
 	}
+}
+
+// SetAuth configures the Client's request authentication
+func (c *Client) SetAuth(username, password string) {
+	c.Username = username
+	c.Password = password
+}
+
+func (c *Client) applyAuth(req *http.Request) {
+	if c.Username == "" && c.Password == "" {
+		return
+	}
+
+	req.SetBasicAuth(c.Username, c.Password)
 }
 
 // Get makes a GET request to an endpoint and unmarshals the response to obj.
@@ -102,7 +115,10 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 	if obj == nil {
 		return nil
 	}
-	return json.NewDecoder(resp.Body).Decode(obj)
+
+	d := json.NewDecoder(resp.Body)
+	d.DisallowUnknownFields()
+	return d.Decode(obj)
 }
 
 // get makes a GET request to an endpoint. Caller must close response body.
@@ -114,6 +130,8 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.applyAuth(req)
 
 	return c.HTTPClient.Do(req)
 }
@@ -147,6 +165,8 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 	if err != nil {
 		return err
 	}
+
+	c.applyAuth(req)
 
 	if csrf != "" {
 		req.Header.Set(CSRFHeaderName, csrf)
@@ -199,6 +219,8 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 	if err != nil {
 		return false, err
 	}
+
+	c.applyAuth(req)
 
 	if csrf != "" {
 		req.Header.Set(CSRFHeaderName, csrf)
@@ -277,8 +299,11 @@ func (c *Client) CSRF() (string, error) {
 		return "", NewClientError(resp.Status, resp.StatusCode, string(body))
 	}
 
+	d := json.NewDecoder(resp.Body)
+	d.DisallowUnknownFields()
+
 	var m map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&m); err != nil {
+	if err := d.Decode(&m); err != nil {
 		return "", err
 	}
 
@@ -291,8 +316,8 @@ func (c *Client) CSRF() (string, error) {
 }
 
 // Version makes a request to GET /api/v1/version
-func (c *Client) Version() (*visor.BuildInfo, error) {
-	var bi visor.BuildInfo
+func (c *Client) Version() (*readable.BuildInfo, error) {
+	var bi readable.BuildInfo
 	if err := c.Get("/api/v1/version", &bi); err != nil {
 		return nil, err
 	}
@@ -300,8 +325,8 @@ func (c *Client) Version() (*visor.BuildInfo, error) {
 }
 
 // Outputs makes a request to GET /api/v1/outputs
-func (c *Client) Outputs() (*visor.ReadableOutputSet, error) {
-	var o visor.ReadableOutputSet
+func (c *Client) Outputs() (*readable.UnspentOutputsSummary, error) {
+	var o readable.UnspentOutputsSummary
 	if err := c.Get("/api/v1/outputs", &o); err != nil {
 		return nil, err
 	}
@@ -309,12 +334,12 @@ func (c *Client) Outputs() (*visor.ReadableOutputSet, error) {
 }
 
 // OutputsForAddresses makes a request to GET /api/v1/outputs?addrs=xxx
-func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
+func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/outputs?" + v.Encode()
 
-	var o visor.ReadableOutputSet
+	var o readable.UnspentOutputsSummary
 	if err := c.Get(endpoint, &o); err != nil {
 		return nil, err
 	}
@@ -322,12 +347,12 @@ func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, 
 }
 
 // OutputsForHashes makes a request to GET /api/v1/outputs?hashes=zzz
-func (c *Client) OutputsForHashes(hashes []string) (*visor.ReadableOutputSet, error) {
+func (c *Client) OutputsForHashes(hashes []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
 	endpoint := "/api/v1/outputs?" + v.Encode()
 
-	var o visor.ReadableOutputSet
+	var o readable.UnspentOutputsSummary
 	if err := c.Get(endpoint, &o); err != nil {
 		return nil, err
 	}
@@ -344,12 +369,12 @@ func (c *Client) CoinSupply() (*CoinSupply, error) {
 }
 
 // BlockByHash makes a request to GET /api/v1/block?hash=xxx
-func (c *Client) BlockByHash(hash string) (*visor.ReadableBlock, error) {
+func (c *Client) BlockByHash(hash string) (*readable.Block, error) {
 	v := url.Values{}
 	v.Add("hash", hash)
 	endpoint := "/api/v1/block?" + v.Encode()
 
-	var b visor.ReadableBlock
+	var b readable.Block
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -357,13 +382,13 @@ func (c *Client) BlockByHash(hash string) (*visor.ReadableBlock, error) {
 }
 
 // BlockByHashVerbose makes a request to GET /api/v1/block?hash=xxx&verbose=1
-func (c *Client) BlockByHashVerbose(hash string) (*visor.ReadableBlockVerbose, error) {
+func (c *Client) BlockByHashVerbose(hash string) (*readable.BlockVerbose, error) {
 	v := url.Values{}
 	v.Add("hash", hash)
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/block?" + v.Encode()
 
-	var b visor.ReadableBlockVerbose
+	var b readable.BlockVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -371,12 +396,12 @@ func (c *Client) BlockByHashVerbose(hash string) (*visor.ReadableBlockVerbose, e
 }
 
 // BlockBySeq makes a request to GET /api/v1/block?seq=xxx
-func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
+func (c *Client) BlockBySeq(seq uint64) (*readable.Block, error) {
 	v := url.Values{}
 	v.Add("seq", fmt.Sprint(seq))
 	endpoint := "/api/v1/block?" + v.Encode()
 
-	var b visor.ReadableBlock
+	var b readable.Block
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -384,42 +409,79 @@ func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
 }
 
 // BlockBySeqVerbose makes a request to GET /api/v1/block?seq=xxx&verbose=1
-func (c *Client) BlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error) {
+func (c *Client) BlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error) {
 	v := url.Values{}
 	v.Add("seq", fmt.Sprint(seq))
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/block?" + v.Encode()
 
-	var b visor.ReadableBlockVerbose
+	var b readable.BlockVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-// Blocks makes a request to GET /api/v1/blocks
-func (c *Client) Blocks(start, end uint64) (*visor.ReadableBlocks, error) {
+// Blocks makes a request to GET /api/v1/blocks?seqs=
+func (c *Client) Blocks(seqs []uint64) (*readable.Blocks, error) {
+	sSeqs := make([]string, len(seqs))
+	for i, x := range seqs {
+		sSeqs[i] = fmt.Sprint(x)
+	}
+
+	v := url.Values{}
+	v.Add("seqs", strings.Join(sSeqs, ","))
+	endpoint := "/api/v1/blocks?" + v.Encode()
+
+	var b readable.Blocks
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1&start=&end=
+func (c *Client) BlocksVerbose(seqs []uint64) (*readable.BlocksVerbose, error) {
+	sSeqs := make([]string, len(seqs))
+	for i, x := range seqs {
+		sSeqs[i] = fmt.Sprint(x)
+	}
+
+	v := url.Values{}
+	v.Add("seqs", strings.Join(sSeqs, ","))
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/blocks?" + v.Encode()
+
+	var b readable.BlocksVerbose
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// BlocksInRange makes a request to GET /api/v1/blocks?start=&end=
+func (c *Client) BlocksInRange(start, end uint64) (*readable.Blocks, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
 	endpoint := "/api/v1/blocks?" + v.Encode()
 
-	var b visor.ReadableBlocks
+	var b readable.Blocks
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1
-func (c *Client) BlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose, error) {
+// BlocksInRangeVerbose makes a request to GET /api/v1/blocks?verbose=1&start=&end=
+func (c *Client) BlocksInRangeVerbose(start, end uint64) (*readable.BlocksVerbose, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/blocks?" + v.Encode()
 
-	var b visor.ReadableBlocksVerbose
+	var b readable.BlocksVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -427,12 +489,12 @@ func (c *Client) BlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose,
 }
 
 // LastBlocks makes a request to GET /api/v1/last_blocks
-func (c *Client) LastBlocks(n uint64) (*visor.ReadableBlocks, error) {
+func (c *Client) LastBlocks(n uint64) (*readable.Blocks, error) {
 	v := url.Values{}
 	v.Add("num", fmt.Sprint(n))
 	endpoint := "/api/v1/last_blocks?" + v.Encode()
 
-	var b visor.ReadableBlocks
+	var b readable.Blocks
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -440,13 +502,13 @@ func (c *Client) LastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 }
 
 // LastBlocksVerbose makes a request to GET /api/v1/last_blocks?verbose=1
-func (c *Client) LastBlocksVerbose(n uint64) (*visor.ReadableBlocksVerbose, error) {
+func (c *Client) LastBlocksVerbose(n uint64) (*readable.BlocksVerbose, error) {
 	v := url.Values{}
 	v.Add("num", fmt.Sprint(n))
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/last_blocks?" + v.Encode()
 
-	var b visor.ReadableBlocksVerbose
+	var b readable.BlocksVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -454,8 +516,8 @@ func (c *Client) LastBlocksVerbose(n uint64) (*visor.ReadableBlocksVerbose, erro
 }
 
 // BlockchainMetadata makes a request to GET /api/v1/blockchain/metadata
-func (c *Client) BlockchainMetadata() (*visor.BlockchainMetadata, error) {
-	var b visor.BlockchainMetadata
+func (c *Client) BlockchainMetadata() (*readable.BlockchainMetadata, error) {
+	var b readable.BlockchainMetadata
 	if err := c.Get("/api/v1/blockchain/metadata", &b); err != nil {
 		return nil, err
 	}
@@ -463,8 +525,8 @@ func (c *Client) BlockchainMetadata() (*visor.BlockchainMetadata, error) {
 }
 
 // BlockchainProgress makes a request to GET /api/v1/blockchain/progress
-func (c *Client) BlockchainProgress() (*daemon.BlockchainProgress, error) {
-	var b daemon.BlockchainProgress
+func (c *Client) BlockchainProgress() (*readable.BlockchainProgress, error) {
+	var b readable.BlockchainProgress
 	if err := c.Get("/api/v1/blockchain/progress", &b); err != nil {
 		return nil, err
 	}
@@ -472,12 +534,12 @@ func (c *Client) BlockchainProgress() (*daemon.BlockchainProgress, error) {
 }
 
 // Balance makes a request to GET /api/v1/balance?addrs=xxx
-func (c *Client) Balance(addrs []string) (*wallet.BalancePair, error) {
+func (c *Client) Balance(addrs []string) (*BalanceResponse, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/balance?" + v.Encode()
 
-	var b wallet.BalancePair
+	var b BalanceResponse
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -485,12 +547,12 @@ func (c *Client) Balance(addrs []string) (*wallet.BalancePair, error) {
 }
 
 // UxOut makes a request to GET /api/v1/uxout?uxid=xxx
-func (c *Client) UxOut(uxID string) (*historydb.UxOutJSON, error) {
+func (c *Client) UxOut(uxID string) (*readable.SpentOutput, error) {
 	v := url.Values{}
 	v.Add("uxid", uxID)
 	endpoint := "/api/v1/uxout?" + v.Encode()
 
-	var b historydb.UxOutJSON
+	var b readable.SpentOutput
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -498,12 +560,12 @@ func (c *Client) UxOut(uxID string) (*historydb.UxOutJSON, error) {
 }
 
 // AddressUxOuts makes a request to GET /api/v1/address_uxouts
-func (c *Client) AddressUxOuts(addr string) ([]historydb.UxOutJSON, error) {
+func (c *Client) AddressUxOuts(addr string) ([]readable.SpentOutput, error) {
 	v := url.Values{}
 	v.Add("address", addr)
 	endpoint := "/api/v1/address_uxouts?" + v.Encode()
 
-	var b []historydb.UxOutJSON
+	var b []readable.SpentOutput
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -728,8 +790,8 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 	return r.Seed, nil
 }
 
-// GetWalletSeed makes a request to POST /api/v1/wallet/seed
-func (c *Client) GetWalletSeed(id string, password string) (string, error) {
+// WalletSeed makes a request to POST /api/v1/wallet/seed
+func (c *Client) WalletSeed(id string, password string) (string, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -745,12 +807,12 @@ func (c *Client) GetWalletSeed(id string, password string) (string, error) {
 }
 
 // NetworkConnection makes a request to GET /api/v1/network/connection
-func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
+func (c *Client) NetworkConnection(addr string) (*readable.Connection, error) {
 	v := url.Values{}
 	v.Add("addr", addr)
 	endpoint := "/api/v1/network/connection?" + v.Encode()
 
-	var dc daemon.Connection
+	var dc readable.Connection
 	if err := c.Get(endpoint, &dc); err != nil {
 		return nil, err
 	}
@@ -794,8 +856,8 @@ func (c *Client) NetworkExchangeableConnections() ([]string, error) {
 }
 
 // PendingTransactions makes a request to GET /api/v1/pendingTxs
-func (c *Client) PendingTransactions() ([]visor.ReadableUnconfirmedTxn, error) {
-	var v []visor.ReadableUnconfirmedTxn
+func (c *Client) PendingTransactions() ([]readable.UnconfirmedTransactions, error) {
+	var v []readable.UnconfirmedTransactions
 	if err := c.Get("/api/v1/pendingTxs", &v); err != nil {
 		return nil, err
 	}
@@ -803,8 +865,8 @@ func (c *Client) PendingTransactions() ([]visor.ReadableUnconfirmedTxn, error) {
 }
 
 // PendingTransactionsVerbose makes a request to GET /api/v1/pendingTxs?verbose=1
-func (c *Client) PendingTransactionsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error) {
-	var v []visor.ReadableUnconfirmedTxnVerbose
+func (c *Client) PendingTransactionsVerbose() ([]readable.UnconfirmedTransactionVerbose, error) {
+	var v []readable.UnconfirmedTransactionVerbose
 	if err := c.Get("/api/v1/pendingTxs?verbose=1", &v); err != nil {
 		return nil, err
 	}
@@ -812,12 +874,12 @@ func (c *Client) PendingTransactionsVerbose() ([]visor.ReadableUnconfirmedTxnVer
 }
 
 // Transaction makes a request to GET /api/v1/transaction
-func (c *Client) Transaction(txid string) (*daemon.TransactionResult, error) {
+func (c *Client) Transaction(txid string) (*readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	endpoint := "/api/v1/transaction?" + v.Encode()
 
-	var r daemon.TransactionResult
+	var r readable.TransactionWithStatus
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -825,13 +887,13 @@ func (c *Client) Transaction(txid string) (*daemon.TransactionResult, error) {
 }
 
 // TransactionVerbose makes a request to GET /api/v1/transaction?verbose=1
-func (c *Client) TransactionVerbose(txid string) (*daemon.TransactionResultVerbose, error) {
+func (c *Client) TransactionVerbose(txid string) (*readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/transaction?" + v.Encode()
 
-	var r daemon.TransactionResultVerbose
+	var r readable.TransactionWithStatusVerbose
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -853,12 +915,12 @@ func (c *Client) TransactionEncoded(txid string) (*TransactionEncodedResponse, e
 }
 
 // Transactions makes a request to GET /api/v1/transactions
-func (c *Client) Transactions(addrs []string) ([]daemon.TransactionResult, error) {
+func (c *Client) Transactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/transactions?" + v.Encode()
 
-	var r []daemon.TransactionResult
+	var r []readable.TransactionWithStatus
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -866,13 +928,13 @@ func (c *Client) Transactions(addrs []string) ([]daemon.TransactionResult, error
 }
 
 // ConfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=true
-func (c *Client) ConfirmedTransactions(addrs []string) ([]daemon.TransactionResult, error) {
+func (c *Client) ConfirmedTransactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
 	endpoint := "/api/v1/transactions?" + v.Encode()
 
-	var r []daemon.TransactionResult
+	var r []readable.TransactionWithStatus
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -880,13 +942,13 @@ func (c *Client) ConfirmedTransactions(addrs []string) ([]daemon.TransactionResu
 }
 
 // UnconfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=false
-func (c *Client) UnconfirmedTransactions(addrs []string) ([]daemon.TransactionResult, error) {
+func (c *Client) UnconfirmedTransactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
 	endpoint := "/api/v1/transactions?" + v.Encode()
 
-	var r []daemon.TransactionResult
+	var r []readable.TransactionWithStatus
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -894,13 +956,13 @@ func (c *Client) UnconfirmedTransactions(addrs []string) ([]daemon.TransactionRe
 }
 
 // TransactionsVerbose makes a request to GET /api/v1/transactions?verbose=1
-func (c *Client) TransactionsVerbose(addrs []string) ([]daemon.TransactionResultVerbose, error) {
+func (c *Client) TransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/transactions?" + v.Encode()
 
-	var r []daemon.TransactionResultVerbose
+	var r []readable.TransactionWithStatusVerbose
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -908,14 +970,14 @@ func (c *Client) TransactionsVerbose(addrs []string) ([]daemon.TransactionResult
 }
 
 // ConfirmedTransactionsVerbose makes a request to GET /api/v1/transactions?confirmed=true&verbose=1
-func (c *Client) ConfirmedTransactionsVerbose(addrs []string) ([]daemon.TransactionResultVerbose, error) {
+func (c *Client) ConfirmedTransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/transactions?" + v.Encode()
 
-	var r []daemon.TransactionResultVerbose
+	var r []readable.TransactionWithStatusVerbose
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -923,14 +985,14 @@ func (c *Client) ConfirmedTransactionsVerbose(addrs []string) ([]daemon.Transact
 }
 
 // UnconfirmedTransactionsVerbose makes a request to GET /api/v1/transactions?confirmed=false&verbose=1
-func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]daemon.TransactionResultVerbose, error) {
+func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
 	v.Add("verbose", "1")
 	endpoint := "/api/v1/transactions?" + v.Encode()
 
-	var r []daemon.TransactionResultVerbose
+	var r []readable.TransactionWithStatusVerbose
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -946,11 +1008,11 @@ func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
 
 // InjectEncodedTransaction makes a request to POST /api/v1/injectTransaction.
 // rawTx is a hex-encoded, serialized transaction
-func (c *Client) InjectEncodedTransaction(rawTx string) (string, error) {
+func (c *Client) InjectEncodedTransaction(rawTxn string) (string, error) {
 	v := struct {
-		Rawtx string `json:"rawtx"`
+		Rawtxn string `json:"rawtx"`
 	}{
-		Rawtx: rawTx,
+		Rawtxn: rawTxn,
 	}
 
 	var txid string
@@ -961,8 +1023,8 @@ func (c *Client) InjectEncodedTransaction(rawTx string) (string, error) {
 }
 
 // ResendUnconfirmedTransactions makes a request to GET /api/v1/resendUnconfirmedTxns
-func (c *Client) ResendUnconfirmedTransactions() (*daemon.ResendResult, error) {
-	var r daemon.ResendResult
+func (c *Client) ResendUnconfirmedTransactions() (*ResendResult, error) {
+	var r ResendResult
 	if err := c.Get("/api/v1/resendUnconfirmedTxns", &r); err != nil {
 		return nil, err
 	}
@@ -1015,12 +1077,12 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 }
 
 // AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]visor.ReadableTransactionVerbose, error) {
+func (c *Client) AddressTransactions(addr string) ([]readable.TransactionVerbose, error) {
 	v := url.Values{}
 	v.Add("address", addr)
 	endpoint := "/api/v1/explorer/address?" + v.Encode()
 
-	var b []visor.ReadableTransactionVerbose
+	var b []readable.TransactionVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -1081,7 +1143,7 @@ func (c *Client) Health() (*HealthResponse, error) {
 }
 
 // EncryptWallet makes a request to POST /api/v1/wallet/encrypt to encrypt a specific wallet with the given password
-func (c *Client) EncryptWallet(id string, password string) (*WalletResponse, error) {
+func (c *Client) EncryptWallet(id, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -1094,7 +1156,7 @@ func (c *Client) EncryptWallet(id string, password string) (*WalletResponse, err
 }
 
 // DecryptWallet makes a request to POST /api/v1/wallet/decrypt to decrypt a wallet
-func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, error) {
+func (c *Client) DecryptWallet(id, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -1104,4 +1166,23 @@ func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, err
 	}
 
 	return &wlt, nil
+}
+
+// RecoverWallet makes a request to POST /api/v2/wallet/recover to recover an encrypted wallet by seed.
+// The password argument is optional, if provided, the recovered wallet will be encrypted with this password,
+// otherwise the recovered wallet will be unencrypted.
+func (c *Client) RecoverWallet(id, seed, password string) (*WalletResponse, error) {
+	req := WalletRecoverRequest{
+		ID:       id,
+		Seed:     seed,
+		Password: password,
+	}
+
+	var rsp WalletResponse
+	ok, err := c.PostJSONV2("/api/v2/wallet/recover", req, &rsp)
+	if ok {
+		return &rsp, err
+	}
+
+	return nil, err
 }

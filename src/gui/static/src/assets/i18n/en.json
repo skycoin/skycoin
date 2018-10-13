@@ -29,7 +29,8 @@
     "backup": "Backup Wallet",
     "explorer": "Skycoin Explorer",
     "seed": "Wallet Seed",
-    "qrcode": "QR Code"
+    "qrcode": "QR Code",
+    "reset": "Reset Password"
   },
 
   "header": {
@@ -53,7 +54,8 @@
     "title": "Enter Password",
     "label": "Password",
     "confirm-label": "Confirm password",
-    "button": "Proceed"
+    "button": "Proceed",
+    "reset-link": "I forgot my password"
   },
 
   "buy": {
@@ -89,7 +91,7 @@
   },
 
   "wallet": {
-    "new-address": "New Address",
+    "new-address": "New Addresses",
     "show-empty": "Show Empty",
     "hide-empty": "Hide Empty",
     "encrypt": "Encrypt Wallet",
@@ -117,7 +119,10 @@
       "generate-12-seed": "Generate 12 word seed",
       "generate-24-seed": "Generate 24 word seed",
       "encrypt": "Encrypt wallet",
-      "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet."
+      "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
+      "unconventional-seed-title": "Possible error",
+      "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
+      "unconventional-seed-check": "Continue with the unconventional seed."
     },
 
     "rename": {
@@ -125,6 +130,13 @@
       "name-label": "Name",
       "cancel-button": "Cancel",
       "rename-button": "Rename"
+    },
+
+    "add-addresses": {
+      "title": "Select quantity",
+      "name-quantity": "How many addresses to create",
+      "cancel-button": "Cancel",
+      "create-button": "Create"
     },
 
     "address": {
@@ -144,7 +156,8 @@
     "addresses-label": "Addresses",
     "addresses-help": "Wallet addresses to send from",
     "change-address-label": "Custom change address",
-    "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically",
+    "change-address-select": "Select",
+    "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets",
     "destinations-label": "Destinations",
     "destinations-help1": "Destination addresses and their coins",
     "destinations-help2": "Destination addresses, their coins and coin hours",
@@ -159,6 +172,14 @@
     "advanced": "Advanced"
   },
 
+  "reset": {
+    "wallet-label": "Wallet",
+    "seed-label": "Wallet seed",
+    "password-label": "New password (leave empty if you want the wallet not to be encrypted)",
+    "confirm-label": "Confirm new password",
+    "reset-button": "Reset"
+  },
+
   "tx": {
     "transaction": "Transaction",
     "confirm-transaction": "Confirm Transaction",
@@ -171,6 +192,7 @@
     "id": "Tx ID",
     "show-more": "Show more",
     "hours-sent": "sent",
+    "hours-received": "received",
     "hours-burned": "burned",
     "inputs": "Inputs",
     "outputs": "Outputs",

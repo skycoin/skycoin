@@ -8,7 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/readable"
 
 	gcli "github.com/urfave/cli"
 )
@@ -34,13 +34,13 @@ func transactionCmd() gcli.Command {
 
 			client := APIClientFromContext(c)
 
-			tx, err := client.Transaction(txid)
+			txn, err := client.Transaction(txid)
 			if err != nil {
 				return err
 			}
 
 			return printJSON(webrpc.TxnResult{
-				Transaction: tx,
+				Transaction: txn,
 			})
 		},
 	}
@@ -65,18 +65,20 @@ func decodeRawTxCmd() gcli.Command {
 				return fmt.Errorf("invalid raw transaction: %v", err)
 			}
 
-			tx, err := coin.TransactionDeserialize(b)
+			txn, err := coin.TransactionDeserialize(b)
 			if err != nil {
 				return fmt.Errorf("Unable to deserialize transaction bytes: %v", err)
 			}
 
-			txStr, err := visor.TransactionToJSON(tx)
+			// Assume the transaction is not malformed and if it has no inputs
+			// that it is the genesis block's transaction
+			isGenesis := len(txn.In) == 0
+			rTxn, err := readable.NewTransaction(txn, isGenesis)
 			if err != nil {
 				return err
 			}
 
-			fmt.Println(txStr)
-			return nil
+			return printJSON(rTxn)
 		},
 	}
 }

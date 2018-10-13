@@ -11,7 +11,6 @@ default_connections = [
 	"118.178.135.93:6000",
 	"47.88.33.156:6000",
 	"121.41.103.148:6000",
-	"120.77.69.188:6000",
 	"104.237.142.206:6000",
 	"176.58.126.224:6000",
 	"172.104.85.6:6000",
@@ -19,9 +18,3 @@ default_connections = [
 ]
 launch_browser = true
 peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
-
-[build]
-version = "0.23.1-rc2"
-commit = "0aab9bf7730827d6fd11beb0d02096b40cea1872"
-branch = "test-branch"
-

@@ -12,12 +12,35 @@ type MockUnconfirmedTxnPooler struct {
 	mock.Mock
 }
 
+// AllRawTransactions provides a mock function with given fields: tx
+func (_m *MockUnconfirmedTxnPooler) AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error) {
+	ret := _m.Called(tx)
+
+	var r0 coin.Transactions
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx) coin.Transactions); ok {
+		r0 = rf(tx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(coin.Transactions)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx) error); ok {
+		r1 = rf(tx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ForEach provides a mock function with given fields: tx, f
-func (_m *MockUnconfirmedTxnPooler) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTxn) error) error {
+func (_m *MockUnconfirmedTxnPooler) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTransaction) error) error {
 	ret := _m.Called(tx, f)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, func(cipher.SHA256, UnconfirmedTxn) error) error); ok {
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, func(cipher.SHA256, UnconfirmedTransaction) error) error); ok {
 		r0 = rf(tx, f)
 	} else {
 		r0 = ret.Error(0)
@@ -27,21 +50,67 @@ func (_m *MockUnconfirmedTxnPooler) ForEach(tx *dbutil.Tx, f func(cipher.SHA256,
 }
 
 // Get provides a mock function with given fields: tx, hash
-func (_m *MockUnconfirmedTxnPooler) Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
+func (_m *MockUnconfirmedTxnPooler) Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTransaction, error) {
 	ret := _m.Called(tx, hash)
 
-	var r0 *UnconfirmedTxn
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, cipher.SHA256) *UnconfirmedTxn); ok {
+	var r0 *UnconfirmedTransaction
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, cipher.SHA256) *UnconfirmedTransaction); ok {
 		r0 = rf(tx, hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*UnconfirmedTxn)
+			r0 = ret.Get(0).(*UnconfirmedTransaction)
 		}
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(*dbutil.Tx, cipher.SHA256) error); ok {
 		r1 = rf(tx, hash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetFiltered provides a mock function with given fields: tx, filter
+func (_m *MockUnconfirmedTxnPooler) GetFiltered(tx *dbutil.Tx, filter func(UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+	ret := _m.Called(tx, filter)
+
+	var r0 []UnconfirmedTransaction
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, func(UnconfirmedTransaction) bool) []UnconfirmedTransaction); ok {
+		r0 = rf(tx, filter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]UnconfirmedTransaction)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, func(UnconfirmedTransaction) bool) error); ok {
+		r1 = rf(tx, filter)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetHashes provides a mock function with given fields: tx, filter
+func (_m *MockUnconfirmedTxnPooler) GetHashes(tx *dbutil.Tx, filter func(UnconfirmedTransaction) bool) ([]cipher.SHA256, error) {
+	ret := _m.Called(tx, filter)
+
+	var r0 []cipher.SHA256
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, func(UnconfirmedTransaction) bool) []cipher.SHA256); ok {
+		r0 = rf(tx, filter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]cipher.SHA256)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, func(UnconfirmedTransaction) bool) error); ok {
+		r1 = rf(tx, filter)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -88,52 +157,6 @@ func (_m *MockUnconfirmedTxnPooler) GetKnown(tx *dbutil.Tx, txns []cipher.SHA256
 	var r1 error
 	if rf, ok := ret.Get(1).(func(*dbutil.Tx, []cipher.SHA256) error); ok {
 		r1 = rf(tx, txns)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetTxHashes provides a mock function with given fields: tx, filter
-func (_m *MockUnconfirmedTxnPooler) GetTxHashes(tx *dbutil.Tx, filter func(UnconfirmedTxn) bool) ([]cipher.SHA256, error) {
-	ret := _m.Called(tx, filter)
-
-	var r0 []cipher.SHA256
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, func(UnconfirmedTxn) bool) []cipher.SHA256); ok {
-		r0 = rf(tx, filter)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]cipher.SHA256)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx, func(UnconfirmedTxn) bool) error); ok {
-		r1 = rf(tx, filter)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetTxns provides a mock function with given fields: tx, filter
-func (_m *MockUnconfirmedTxnPooler) GetTxns(tx *dbutil.Tx, filter func(UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
-	ret := _m.Called(tx, filter)
-
-	var r0 []UnconfirmedTxn
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, func(UnconfirmedTxn) bool) []UnconfirmedTxn); ok {
-		r0 = rf(tx, filter)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]UnconfirmedTxn)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx, func(UnconfirmedTxn) bool) error); ok {
-		r1 = rf(tx, filter)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -238,29 +261,6 @@ func (_m *MockUnconfirmedTxnPooler) Len(tx *dbutil.Tx) (uint64, error) {
 	return r0, r1
 }
 
-// RawTxns provides a mock function with given fields: tx
-func (_m *MockUnconfirmedTxnPooler) RawTxns(tx *dbutil.Tx) (coin.Transactions, error) {
-	ret := _m.Called(tx)
-
-	var r0 coin.Transactions
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx) coin.Transactions); ok {
-		r0 = rf(tx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(coin.Transactions)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx) error); ok {
-		r1 = rf(tx)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // RecvOfAddresses provides a mock function with given fields: tx, bh, addrs
 func (_m *MockUnconfirmedTxnPooler) RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	ret := _m.Called(tx, bh, addrs)
@@ -344,8 +344,8 @@ func (_m *MockUnconfirmedTxnPooler) RemoveTransactions(tx *dbutil.Tx, txns []cip
 	return r0
 }
 
-// SetTxnsAnnounced provides a mock function with given fields: tx, hashes
-func (_m *MockUnconfirmedTxnPooler) SetTxnsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error {
+// SetTransactionsAnnounced provides a mock function with given fields: tx, hashes
+func (_m *MockUnconfirmedTxnPooler) SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error {
 	ret := _m.Called(tx, hashes)
 
 	var r0 error

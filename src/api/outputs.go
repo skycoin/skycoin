@@ -5,11 +5,12 @@ import (
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
-// getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
+// outputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
 // URI: /api/v1/outputs
 // Method: GET
 // Args:
@@ -18,7 +19,7 @@ import (
 // If neither addrs nor hashes are specificed, return all unspent outputs.
 // If only one filter is specified, then return outputs match the filter.
 // Both filters cannot be specified.
-func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
+func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -36,7 +37,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		filters := []daemon.OutputsFilter{}
+		filters := []visor.OutputsFilter{}
 
 		if addrStr != "" {
 			addrs = splitCommaString(addrStr)
@@ -49,24 +50,30 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			if len(addrs) > 0 {
-				filters = append(filters, daemon.FbyAddresses(addrs))
+				filters = append(filters, visor.FbyAddresses(addrs))
 			}
 		}
 
 		if hashStr != "" {
 			hashes = splitCommaString(hashStr)
 			if len(hashes) > 0 {
-				filters = append(filters, daemon.FbyHashes(hashes))
+				filters = append(filters, visor.FbyHashes(hashes))
 			}
 		}
 
-		outs, err := gateway.GetUnspentOutputs(filters...)
+		summary, err := gateway.GetUnspentOutputsSummary(filters)
 		if err != nil {
-			err = fmt.Errorf("get unspent outputs failed: %v", err)
+			err = fmt.Errorf("gateway.GetUnspentOutputsSummary failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, outs)
+		rSummary, err := readable.NewUnspentOutputsSummary(summary)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, rSummary)
 	}
 }

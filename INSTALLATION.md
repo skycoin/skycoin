@@ -53,8 +53,8 @@ In China, use `--source=https://github.com/golang/go` to bypass firewall when fe
 gvm install go1.4 --source=https://github.com/golang/go
 gvm use go1.4
 
-gvm install go1.10.2
-gvm use go1.10.2 --default
+gvm install go1.11.1
+gvm use go1.11.1 --default
 ```
 
 #### Installation issues
@@ -62,7 +62,7 @@ If you open up new a terminal and the `go` command is not found then add this to
 
 ```sh
 [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-gvm use go1.10.2 >/dev/null
+gvm use go1.11.1 >/dev/null
 ```
 
 ## Install Go manually
@@ -72,7 +72,7 @@ Let's go to home directory and declare `go`'s version that you want to download.
 
 ```sh
 cd ~
-export GOV=1.10.2 # golang version
+export GOV=1.11.1 # golang version
 ```
 
 After that, let's download and uncompress golang source.

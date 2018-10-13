@@ -20,7 +20,6 @@ import (
 	"github.com/cenkalti/backoff"
 
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
 //TODO:
@@ -105,7 +104,7 @@ type Peer struct {
 	RetryTimes      int    `json:"-"` // records the retry times
 }
 
-// NewPeer returns a *Peer initialised by an address string of the form ip:port
+// NewPeer returns a *Peer initialized by an address string of the form ip:port
 func NewPeer(address string) *Peer {
 	p := &Peer{
 		Addr:    address,
@@ -118,7 +117,7 @@ func NewPeer(address string) *Peer {
 
 // Seen marks the peer as seen
 func (peer *Peer) Seen() {
-	peer.LastSeen = utc.UnixNow()
+	peer.LastSeen = time.Now().UTC().Unix()
 }
 
 // IncreaseRetryTimes adds the retry times
@@ -142,7 +141,7 @@ func (peer *Peer) CanTry() bool {
 	}
 
 	// Random time elapsed
-	now := utc.UnixNow()
+	now := time.Now().UTC().Unix()
 	t := rnum.Int63n(int64(mod))
 	return now-peer.LastSeen > t
 }
@@ -544,35 +543,35 @@ func (px *Pex) GetPeerByAddr(addr string) (Peer, bool) {
 func (px *Pex) Trusted() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getPeers(isTrusted)
+	return px.peerlist.getPeers([]Filter{isTrusted})
 }
 
 // Private returns private peers
 func (px *Pex) Private() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getCanTryPeers(isPrivate)
+	return px.peerlist.getCanTryPeers([]Filter{isPrivate})
 }
 
 // TrustedPublic returns trusted public peers
 func (px *Pex) TrustedPublic() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getCanTryPeers(isPublic, isTrusted)
+	return px.peerlist.getCanTryPeers([]Filter{isPublic, isTrusted})
 }
 
 // RandomPublic returns N random public peers
 func (px *Pex) RandomPublic(n int) Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.random(n, isPublic)
+	return px.peerlist.random(n, []Filter{isPublic})
 }
 
 // RandomExchangeable returns N random exchangeable peers
 func (px *Pex) RandomExchangeable(n int) Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.random(n, isExchangeable...)
+	return px.peerlist.random(n, isExchangeable)
 }
 
 // IncreaseRetryTimes increases retry times

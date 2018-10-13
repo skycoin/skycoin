@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+/*
+Package base58 implements base58 encoding, used for Skycoin and Bitcoin addresses
+*/
 package base58
 
 //Subpackage for encoding data (namely Bitcoin Addresses) into base58 strings
 
 import (
-	"encoding/hex"
 	"errors"
 	"math/big"
 )
@@ -18,6 +20,15 @@ import (
 
 //alphabet used by Bitcoins
 var alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+var (
+	// ErrInvalidBase58Char   Invalid base58 character
+	ErrInvalidBase58Char = errors.New("Invalid base58 character")
+	// ErrInvalidBase58String Invalid base58 string
+	ErrInvalidBase58String = errors.New("Invalid base58 string")
+	// ErrInvalidBase58Length Invalid base58 length
+	ErrInvalidBase58Length = errors.New("base58 invalid length")
+)
 
 // Base58 type to hold the Base58 string
 type Base58 string
@@ -44,12 +55,6 @@ func Hex2Big(b []byte) *big.Int {
 	return answer
 }
 
-// String2Hex converts string to hex
-func String2Hex(s string) []byte {
-	answer, _ := hex.DecodeString(s)
-	return answer
-}
-
 // ToBig convert base58 to big.Int
 func (b Base58) ToBig() (*big.Int, error) {
 	answer := new(big.Int)
@@ -57,7 +62,7 @@ func (b Base58) ToBig() (*big.Int, error) {
 		answer.Mul(answer, big.NewInt(58)) //multiply current value by 58
 		c, ok := revalp[string(b[i:i+1])]
 		if !ok {
-			return nil, errors.New("Invalid base58 character")
+			return nil, ErrInvalidBase58Char
 		}
 		answer.Add(answer, big.NewInt(int64(c))) //add value of the current letter
 	}
@@ -71,7 +76,7 @@ func (b Base58) ToInt() (int, error) {
 		answer *= 58 //multiply current value by 58
 		c, ok := revalp[string(b[i:i+1])]
 		if !ok {
-			return 0, errors.New("Invalid base58 character")
+			return 0, ErrInvalidBase58Char
 		}
 		answer += c //add value of the current letter
 	}
@@ -87,12 +92,12 @@ func (b Base58) ToHex() ([]byte, error) {
 	oneCount := 0
 	bs := string(b)
 	if len(bs) == 0 {
-		return nil, errors.New("Invalid base58 string")
+		return nil, ErrInvalidBase58String
 	}
 	for bs[oneCount] == '1' {
 		oneCount++
 		if oneCount >= len(bs) {
-			return nil, errors.New("Invalid base58 string")
+			return nil, ErrInvalidBase58String
 		}
 	}
 	//convert big.Int to bytes
@@ -106,7 +111,7 @@ func (b Base58) Base582Big() (*big.Int, error) {
 		answer.Mul(answer, big.NewInt(58)) //multiply current value by 58
 		c, ok := revalp[string(b[i:i+1])]
 		if !ok {
-			return nil, errors.New("Invalid base58 character")
+			return nil, ErrInvalidBase58Char
 		}
 		answer.Add(answer, big.NewInt(int64(c))) //add value of the current letter
 	}
@@ -120,7 +125,7 @@ func (b Base58) Base582Int() (int, error) {
 		answer *= 58 //multiply current value by 58
 		c, ok := revalp[string(b[i:i+1])]
 		if !ok {
-			return 0, errors.New("Invalid base58 character")
+			return 0, ErrInvalidBase58Char
 		}
 		answer += c //add value of the current letter
 	}
@@ -143,7 +148,7 @@ func (b Base58) BitHex() ([]byte, error) {
 	if len(tmp) == 25 {  //if it is exactly 25 bytes, return
 		return tmp, nil
 	} else if len(tmp) > 25 { //if it is longer than 25, return nothing
-		return nil, errors.New("base58 invalid length")
+		return nil, ErrInvalidBase58Length
 	}
 	answer := make([]byte, 25)      //make 25 byte container
 	for i := 0; i < len(tmp); i++ { //copy converted bytes

@@ -8,79 +8,15 @@ The API has two versions, `/api/v1` and `/api/v2`.
 Previously, there was no `/api/vx` prefix.
 Starting in application version v0.24.0, the existing endpoints from v0.23.0
 are now prefixed with `/api/v1`. To retain the old endpoints, run the application
-with `-enable-unversioned-api`.
-
-## API Version 1
-
-`/api/v1` endpoints have no standard format. Most of them accept formdata in POST requests,
-but a few accept `application/json` instead. Most of them return JSON but one or two
-return a plaintext string.
-
-All endpoints will set an appropriate HTTP status code, using `200` for success and codes greater than or equal to `400` for error.
-
-`/api/v1` endpoints guarantee backwards compatibility.
-
-## API Version 2
-
-*Note: API Version 2 is under development, and not stable. The guidelines here are subject to change.*
-
-`/api/v2` endpoints have a standard format.
-
-All `/api/v2` `POST` endpoints accept only `application/json` and return `application/json`.
-
-All `/api/v2` `GET` requires accept data in the query string.
-In the future we may have choose to have `GET` requests also accept `POST` with a JSON body,
-to support requests with a large query body, such as when requesting data for a large number
-of addresses or transactions.
-
-`/api/v2` responses are always JSON. If there is an error, the JSON object will
-look like this:
-
-```json
-{
-    "error": {
-        "code": 400,
-        "message": "bad arguments"
-    }
-}
-```
-
-Response data will be included in a `"data"` field, which will always be a JSON object (not an array).
-
-Some endpoints may return both `"error"` and `"data"`. This will be noted in the documentation for that endpoint.
-
-All responses will set an appropriate HTTP status code indicating an error, and it will be equal to the value of `response["error"]["code"]`.
-
-Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
-However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
-
-Under some circumstances an error response body may not be valid JSON.
-Any client consuming the API should accomodate this and conditionally parse JSON for non-`200` responses.
-
-## API Sets
-
-API endpoints are grouped into "sets" which can be toggled with the command line parameters
-`-enable-api-sets`, `-disable-api-sets` and `-enable-all-api-sets`.
-
-These API sets are:
-
-* `READ` - All query-related endpoints, they do not modify the state of the program
-* `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
-* `TXN` - Enables `/api/v1/injectTransaction` without enabling wallet endpoints
-* `WALLET` - These endpoints operate on local wallet files
-* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
-* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
-* `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
-
-## Authentication
-
-Authentication can be enabled with the `-web-interface-username` and `-web-interface-password` options.
-The username and password should be provided in an `Authorization: Basic` header.
-
-Authentication can only be enabled when using HTTPS with `-web-interface-https`, unless `-web-interface-plaintext-auth` is enabled.
+with `-enable-unversioned-api`.  This option will be removed in v0.26.0
+and the `/api/v1` prefix will be required for previously unversioned endpoints.
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
+- [API Version 1](#api-version-1)
+- [API Version 2](#api-version-2)
+- [API Sets](#api-sets)
+- [Authentication](#authentication)
 - [CSRF](#csrf)
 	- [Get current csrf token](#get-current-csrf-token)
 - [General system checks](#general-system-checks)
@@ -142,9 +78,80 @@ Authentication can only be enabled when using HTTPS with `-web-interface-https`,
 	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
 	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
 	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+- [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
 - [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
+- [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
 
 <!-- /MarkdownTOC -->
+
+## API Version 1
+
+`/api/v1` endpoints have no standard format. Most of them accept formdata in POST requests,
+but a few accept `application/json` instead. Most of them return JSON but one or two
+return a plaintext string.
+
+All endpoints will set an appropriate HTTP status code, using `200` for success and codes greater than or equal to `400` for error.
+
+`/api/v1` endpoints guarantee backwards compatibility.
+
+## API Version 2
+
+*Note: API Version 2 is under development, and not stable. The guidelines here are subject to change.*
+
+`/api/v2` endpoints have a standard format.
+
+All `/api/v2` `POST` endpoints accept only `application/json` and return `application/json`.
+
+All `/api/v2` `GET` requires accept data in the query string.
+In the future we may have choose to have `GET` requests also accept `POST` with a JSON body,
+to support requests with a large query body, such as when requesting data for a large number
+of addresses or transactions.
+
+`/api/v2` responses are always JSON. If there is an error, the JSON object will
+look like this:
+
+```json
+{
+    "error": {
+        "code": 400,
+        "message": "bad arguments",
+    }
+}
+```
+
+Response data will be included in a `"data"` field, which will always be a JSON object (not an array).
+
+Some endpoints may return both `"error"` and `"data"`. This will be noted in the documentation for that endpoint.
+
+All responses will set an appropriate HTTP status code indicating an error, and it will be equal to the value of `response["error"]["code"]`.
+
+Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
+However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
+
+Under some circumstances an error response body may not be valid JSON.
+Any client consuming the API should accomodate this and conditionally parse JSON for non-`200` responses.
+
+## API Sets
+
+API endpoints are grouped into "sets" which can be toggled with the command line parameters
+`-enable-api-sets`, `-disable-api-sets` and `-enable-all-api-sets`.
+
+These API sets are:
+
+* `READ` - All query-related endpoints, they do not modify the state of the program
+* `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
+* `TXN` - Enables `/api/v1/injectTransaction` without enabling wallet endpoints
+* `WALLET` - These endpoints operate on local wallet files
+* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
+* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
+* `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
+
+## Authentication
+
+Authentication can be enabled with the `-web-interface-username` and `-web-interface-password` options.
+The username and password should be provided in an `Authorization: Basic` header.
+
+Authentication can only be enabled when using HTTPS with `-web-interface-https`, unless `-web-interface-plaintext-auth` is enabled.
 
 ## CSRF
 
@@ -3763,7 +3770,6 @@ Result:
 [
     "104.237.142.206:6000",
     "118.178.135.93:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "139.162.7.132:6000",
     "172.104.85.6:6000",
@@ -3793,7 +3799,6 @@ Result:
 [
     "104.237.142.206:6000",
     "118.178.135.93:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "139.162.7.132:6000",
     "172.104.85.6:6000",
@@ -3824,7 +3829,6 @@ Result:
     "104.237.142.206:6000",
     "116.62.220.158:7200",
     "118.237.210.163:6000",
-    "120.77.69.188:6000",
     "121.41.103.148:6000",
     "121.41.103.148:7200",
     "139.162.161.41:20000",
@@ -3848,9 +3852,22 @@ Result:
 ]
 ```
 
+## Migrating from the unversioned API
+
+The unversioned API are the API endpoints without an `/api` prefix.
+These endpoints are all prefixed with `/api/v1` now.
+
+`-enable-unversioned-api` was added as an option to assist migration to `/api/v1`
+but this option will be removed in v0.26.0.
+
+To migrate from the unversioned API, add `/api/v1` to all endpoints that you call
+that do not have an `/api` prefix already.
+
+For example, `/block` would become `/api/v1/block`.
+
 ## Migrating from the JSONRPC API
 
-The JSONRPC-2.0 RPC API will be removed as of version `0.26.0`.
+The JSONRPC-2.0 RPC API will be removed in v0.26.0.
 Anyone still using this can follow this guide to migrate to the REST API:
 
 * `get_status` is replaced by `/api/v1/blockchain/metadata` and `/api/v1/health`
@@ -3859,3 +3876,52 @@ Anyone still using this can follow this guide to migrate to the REST API:
 * `get_outputs` is replaced by `/api/v1/outputs`
 * `inject_transaction` is replaced by `/api/v1/injectTransaction`
 * `get_transaction` is replaced by `/api/v1/transaction`
+
+## Migrating from /api/v1/spend
+
+The `POST /api/v1/spend` endpoint is deprecated and will be removed in v0.26.0.
+
+To migrate from it, use [`POST /api/v1/wallet/transaction`](#create-transaction) followed by [`POST /api/v1/injectTransaction`](#inject-raw-transaction).
+Do not create another transaction before injecting the created transaction, otherwise you might create two conflicting transactions.
+
+`POST /api/v1/wallet/transaction` has more options for creating the transaction than the `/api/v1/spend` endpoint.
+To replicate the same behavior as `/api/v1/spend`, use the following request body template:
+
+```json
+{
+	"hours_selection": {
+		"type": "auto",
+		"mode": "share",
+		"share_factor": "0.5",
+	},
+	"wallet": {
+		"id": "$wallet_id",
+		"password": "$password"
+	},
+	"to": [{
+		"address": "$dst",
+		"coins": "$coins"
+	}]
+}
+```
+
+You must use a string for `"coins"` instead of an integer measured in "droplets" (the smallest unit of currency in Skycoin, 1/1000000 of a skycoin).
+For example, if you sent 1 Skycoin with `/api/v1/spend` you would have specified the `coins` field as `1000000`.
+Now, you would specify it as `"1"`.
+
+Some examples:
+
+* 123.456 coins: before `123456000`, now `"123.456"`
+* 0.1 coins: before `100000`, now `"0.1"`
+* 1 coin: before `1000000`, now `"1"`
+
+Extra zeros on the `"coins"` string are ok, for example `"1"` is the same as `"1.0"` or `"1.000000"`.
+
+Only provide `"password"` if the wallet is encrypted.  Note that decryption can take a few seconds, and this can impact
+throughput.
+
+The request header `Content-Type` must be `application/json`.
+
+The response to `POST /api/v1/wallet/transaction` will include a verbose decoded transaction with details
+and the hex-encoded binary transaction in the `"encoded_transaction"` field.
+Use the value of `"encoded_transaction"` as the `"rawtx"` value in the request to `/api/v1/injectTransaction`.

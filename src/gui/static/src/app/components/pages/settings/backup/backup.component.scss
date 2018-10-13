@@ -1,27 +1,39 @@
 @import '../../../../../theme/variables';
 
-mat-card {
-  margin: 40px 20px 20px 20px;
-}
+.-paper {
+  background-color: #fbfbfb;
+  border-radius: 15px;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
+  padding: 20px;
+  font-size: $font-size-standard;
+  margin: 30px 30px 0;
 
-.-table {
-  .-table-header {
-    font-size: 10px;
-    color: $grey-dark;
-    margin-bottom: 20px;
-  }
-
-  .-table-row {
-    &:not(:last-child) {
-      margin-bottom: 10px;
+  p {
+    &:first-child {
+      margin-top: 0;
     }
 
-    span {
-      line-height: 40px;
+    &:last-child {
+      margin-bottom: 0;
     }
   }
 }
 
-.text-muted {
-  color: $grey-dark;
+.-text-muted {
+  color: $grey;
+}
+
+.-text-right {
+  text-align: right;
+}
+
+.-link {
+  color: $blue;
+  cursor: pointer;
+}
+
+.-label {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }

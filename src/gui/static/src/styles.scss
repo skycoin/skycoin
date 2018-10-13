@@ -1,5 +1,7 @@
-@import 'theme/_variables';
+@import 'theme/variables';
+@import 'theme/tables';
 @import '~bootstrap/scss/bootstrap-grid.scss';
+@import '~bootstrap/scss/utilities/_display.scss';
 
 /* You can add global styles to this file, and also import other style files */
 //@import '~@angular/material/prebuilt-themes/indigo-pink.css';
@@ -130,11 +132,11 @@ mat-panel-title {
   min-height: 100%;
 
   &.sky-container-grey {
-    background-color: $grey-light;
+    background-color: $grey-lightest;
   }
 }
 
-.flex-fill {
+.flex-fill, .-flex-fill {
   flex: 1 1 auto;
 }
 
@@ -250,6 +252,12 @@ On-boarding components
   background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
   background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
 
+  .row-container {
+    max-width: 450px;
+    width: 80%;
+    margin: 0px auto;
+  }
+
   label {
     color: white;
   }
@@ -336,5 +344,24 @@ On-boarding components
       height: 35px;
       line-height: 35px;
     }
+  }
+}
+
+.qr-code-button {
+  opacity: 0.6;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.mat-dialog-content {
+  max-height: 90vh !important;
+}
+
+@media (max-height: 600px) {
+  .mat-dialog-content {
+    max-height: 80vh !important;
   }
 }

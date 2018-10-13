@@ -64,12 +64,16 @@ import { SeedModalComponent } from './components/pages/settings/backup/seed-moda
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
 import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
-import { SendVerifyComponent } from './components/pages/send-skycoin/send-verify/send-verify.component';
-import { TransactionInfoComponent } from './components/pages/send-skycoin/send-verify/transaction-info/transaction-info.component';
+import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
+import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
 import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';
 import { NavBarService } from './services/nav-bar.service';
+import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
+import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
+import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
+import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 
 
 const ROUTES = [
@@ -168,6 +172,10 @@ const ROUTES = [
     SendVerifyComponent,
     TransactionInfoComponent,
     SendFormAdvancedComponent,
+    LoadingContentComponent,
+    NumberOfAddressesComponent,
+    SelectAddressComponent,
+    CreateWalletFormComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -179,6 +187,8 @@ const ROUTES = [
     OnboardingSafeguardComponent,
     PasswordDialogComponent,
     SeedModalComponent,
+    NumberOfAddressesComponent,
+    SelectAddressComponent,
   ],
   imports: [
     BrowserModule,

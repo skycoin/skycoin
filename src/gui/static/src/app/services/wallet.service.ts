@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
@@ -13,6 +13,8 @@ import 'rxjs/add/observable/zip';
 import { Address, NormalTransaction, PreviewTransaction, Wallet } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { BigNumber } from 'bignumber.js';
 
 @Injectable()
 export class WalletService {
@@ -21,8 +23,11 @@ export class WalletService {
   pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
   dataRefreshSubscription: Subscription;
 
+  initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+
   constructor(
     private apiService: ApiService,
+    private ngZone: NgZone,
   ) {
     this.loadData();
     this.startDataRefreshSubscription();
@@ -32,10 +37,10 @@ export class WalletService {
     return this.allAddresses().map(addrs => addrs.map(addr => addr.address)).map(addrs => addrs.join(','));
   }
 
-  addAddress(wallet: Wallet, password?: string) {
-    return this.apiService.postWalletNewAddress(wallet, password)
-      .do(address => {
-        wallet.addresses.push(address);
+  addAddress(wallet: Wallet, num: number, password?: string) {
+    return this.apiService.postWalletNewAddress(wallet, num, password)
+      .do(addresses => {
+        addresses.forEach(value => wallet.addresses.push(value));
         this.refreshBalances();
       });
   }
@@ -68,15 +73,14 @@ export class WalletService {
 
   outputs(): Observable<any> {
     return this.addressesAsString()
+      .first()
       .filter(addresses => !!addresses)
       .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
   }
 
   outputsWithWallets(): Observable<any> {
     return Observable.zip(this.all(), this.outputs(), (wallets, outputs) => {
-      wallets = JSON.parse(JSON.stringify(wallets));
-
-      return !wallets ? [] : wallets.map(wallet => {
+      return wallets.map(wallet => {
         wallet.addresses = wallet.addresses.map(address => {
           address.outputs = outputs.head_outputs.filter(output => output.address === address.address);
 
@@ -89,7 +93,7 @@ export class WalletService {
   }
 
   allPendingTransactions(): Observable<any> {
-    return this.apiService.get('pendingTxs');
+    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs'));
   }
 
   pendingTransactions(): Observable<any> {
@@ -150,7 +154,7 @@ export class WalletService {
     ).map(response => {
       return {
         ...response.transaction,
-        hoursBurned: response.transaction.fee,
+        hoursBurned: new BigNumber(response.transaction.fee),
         encoded: response.encoded_transaction,
       };
     });
@@ -177,37 +181,62 @@ export class WalletService {
   }
 
   transactions(): Observable<NormalTransaction[]> {
-    return this.allAddresses().filter(addresses => !!addresses.length).first().flatMap(addresses => {
+    return this.allAddresses().first().flatMap(addresses => {
       this.addresses = addresses;
 
       return Observable.forkJoin(addresses.map(address => this.apiService.getExplorerAddress(address)));
-    }).map(transactions => [].concat.apply([], transactions).sort((a, b) =>  b.timestamp - a.timestamp))
-      .map(transactions => transactions.reduce((array, item) => {
-        if (!array.find(trans => trans.txid === item.txid)) {
-          array.push(item);
-        }
-
-        return array;
-      }, []))
-      .map(transactions => transactions.map(transaction => {
-        const outgoing = !!this.addresses.find(address => transaction.inputs[0].owner === address.address);
-
-        transaction.outputs.forEach(output => {
-          if (outgoing && !this.addresses.find(address => output.dst === address.address)) {
-            transaction.addresses.push(output.dst);
-            transaction.balance = transaction.balance - parseFloat(output.coins);
+    }).map(transactions => {
+      return []
+        .concat.apply([], transactions)
+        .reduce((array, item) => {
+          if (!array.find(trans => trans.txid === item.txid)) {
+            array.push(item);
           }
 
-          if (!outgoing && this.addresses.find(address => output.dst === address.address)) {
-            transaction.addresses.push(output.dst);
-            transaction.balance = transaction.balance + parseFloat(output.coins);
-          }
+          return array;
+        }, [])
+        .sort((a, b) =>  b.timestamp - a.timestamp)
+        .map(transaction => {
+          const outgoing = this.addresses.some(address => {
+            return transaction.inputs.some(input => input.owner === address.address);
+          });
+
+          const relevantOutputs = transaction.outputs.reduce((array, output) => {
+            const isMyOutput = this.addresses.some(address => address.address === output.dst);
+
+            if ((outgoing && !isMyOutput) || (!outgoing && isMyOutput)) {
+              array.push(output);
+            }
+
+            return array;
+          }, []);
+
+          const calculatedOutputs = (outgoing && relevantOutputs.length === 0)
+          || (!outgoing && relevantOutputs.length === transaction.outputs.length)
+            ? transaction.outputs
+            : relevantOutputs;
+
+          transaction.addresses.push(
+            ...calculatedOutputs
+              .map(output => output.dst)
+              .filter((dst, i, self) => self.indexOf(dst) === i),
+          );
+
+          calculatedOutputs.map (output => transaction.balance = transaction.balance.plus(output.coins));
+          transaction.balance = (outgoing ? transaction.balance.negated() : transaction.balance);
+
+          transaction.hoursSent = new BigNumber('0');
+          calculatedOutputs.map(output => transaction.hoursSent = transaction.hoursSent.plus(new BigNumber(output.hours)));
+
+          let inputsHours = new BigNumber('0');
+          transaction.inputs.map(input => inputsHours = inputsHours.plus(new BigNumber(input.calculated_hours)));
+          let outputsHours = new BigNumber('0');
+          transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
+          transaction.hoursBurned = inputsHours.minus(outputsHours);
 
           return transaction;
         });
-
-        return transaction;
-      }));
+    });
   }
 
   startDataRefreshSubscription() {
@@ -215,15 +244,20 @@ export class WalletService {
       this.dataRefreshSubscription.unsubscribe();
     }
 
-    this.dataRefreshSubscription = Observable.timer(0, 10000)
-      .subscribe(() => {
-        this.refreshBalances();
-        this.refreshPendingTransactions();
-      });
+    this.ngZone.runOutsideAngular(() => {
+      this.dataRefreshSubscription = Observable.timer(0, 10000)
+        .subscribe(() => this.ngZone.run(() => {
+          this.refreshBalances();
+          this.refreshPendingTransactions();
+        }));
+    });
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(wallets => this.wallets.next(wallets));
+    this.apiService.getWallets().first().subscribe(
+      wallets => this.wallets.next(wallets),
+      () => this.initialLoadFailed.next(true),
+    );
   }
 
   private retrieveInputAddress(input: string) {
@@ -233,12 +267,12 @@ export class WalletService {
   private retrieveWalletBalance(wallet: Wallet): Observable<any> {
     return this.apiService.get('wallet/balance', { id: wallet.filename }).map(balance => {
       return {
-        coins: balance.confirmed.coins / 1000000,
-        hours: balance.confirmed.hours,
+        coins: new BigNumber(balance.confirmed.coins).dividedBy(1000000),
+        hours: new BigNumber(balance.confirmed.hours),
         addresses: Object.keys(balance.addresses).map(address => ({
           address,
-          coins: balance.addresses[address].confirmed.coins / 1000000,
-          hours: balance.addresses[address].confirmed.hours,
+          coins: new BigNumber(balance.addresses[address].confirmed.coins).dividedBy(1000000),
+          hours: new BigNumber(balance.addresses[address].confirmed.hours),
         })),
       };
     });

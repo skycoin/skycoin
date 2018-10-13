@@ -1,10 +1,9 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
-import { ApiService } from '../../../../services/api.service';
+import { CreateWalletFormComponent } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -12,50 +11,31 @@ import { ApiService } from '../../../../services/api.service';
   styleUrls: ['./onboarding-create-wallet.component.scss'],
 })
 export class OnboardingCreateWalletComponent implements OnInit {
+  @ViewChild('formControl') formControl: CreateWalletFormComponent;
   @Input() fill = null;
-  @Output() onLabelAndSeedCreated = new EventEmitter<[string, string]>();
-  form: FormGroup;
+  @Output() onLabelAndSeedCreated = new EventEmitter<[string, string, boolean]>();
+
+  showNewForm = true;
   doubleButtonActive = DoubleButtonActive.LeftButton;
 
   constructor(
     private dialog: MatDialog,
-    private apiService: ApiService,
-    private formBuilder: FormBuilder,
   ) { }
 
   ngOnInit() {
-    this.initForm();
-  }
-
-  initForm() {
-    this.form = this.formBuilder.group({
-        label: new FormControl('', Validators.compose([
-          Validators.required, Validators.minLength(2),
-        ])),
-        seed: new FormControl('', Validators.compose([
-          Validators.required, Validators.minLength(2),
-        ])),
-        confirm_seed: new FormControl('',
-          Validators.compose(this.showCreateForm ? [Validators.required, Validators.minLength(2)] : []),
-        ),
-      },
-      this.showCreateForm ? { validator: this.seedMatchValidator.bind(this) } : {},
-    );
-
+    setTimeout(() => { this.formControl.initForm(null, this.fill); });
     if (this.fill) {
-      this.form.get('label').setValue(this.fill['label']);
-      this.form.get('seed').setValue(this.fill['seed']);
-      this.form.get('confirm_seed').setValue(this.fill['seed']);
       this.doubleButtonActive = this.fill['create'] ? DoubleButtonActive.LeftButton : DoubleButtonActive.RightButton;
-    } else if (this.showCreateForm) {
-      this.generateSeed(128);
+      this.showNewForm = this.fill['create'];
     }
   }
 
   changeForm(newState) {
+    newState === DoubleButtonActive.RightButton ? this.showNewForm = false : this.showNewForm = true;
+
     this.doubleButtonActive = newState;
     this.fill = null;
-    this.initForm();
+    this.formControl.initForm(this.showNewForm, this.fill);
   }
 
   createWallet() {
@@ -70,25 +50,15 @@ export class OnboardingCreateWalletComponent implements OnInit {
     this.emitCreatedData();
   }
 
-  generateSeed(entropy: number) {
-    this.apiService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
-  }
-
-  get showCreateForm() {
-    return this.doubleButtonActive === DoubleButtonActive.LeftButton;
-  }
-
   private emitCreatedData() {
+
+    const data = this.formControl.getData();
+
     this.onLabelAndSeedCreated.emit([
-      this.form.get('label').value,
-      this.form.get('seed').value,
+      data.label,
+      data.seed,
       this.doubleButtonActive === DoubleButtonActive.LeftButton,
     ]);
-  }
-
-  private seedMatchValidator(g: FormGroup) {
-    return g.get('seed').value === g.get('confirm_seed').value
-      ? null : { mismatch: true };
   }
 
   private showSafe(): MatDialogRef<OnboardingSafeguardComponent> {

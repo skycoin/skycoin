@@ -5,9 +5,10 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
-import { parseResponseMessage } from '../../../../utils/errors';
+import { MatSnackBar } from '@angular/material';
+import { showSnackbarError } from '../../../../utils/errors';
 import { TranslateService } from '@ngx-translate/core';
+import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -18,6 +19,7 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
   @Input() wallet: Wallet;
 
   private encryptionWarning: string;
+  private HowManyAddresses: number;
 
   constructor(
     private dialog: MatDialog,
@@ -46,19 +48,15 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
   newAddress() {
     this.snackbar.dismiss();
 
-    if (this.wallet.encrypted) {
-      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
-        .subscribe(passwordDialog => {
-          this.walletService.addAddress(this.wallet, passwordDialog.password)
-            .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
-        });
-    } else {
-      this.walletService.addAddress(this.wallet).subscribe(null, err => {
-        const config = new MatSnackBarConfig();
-        config.duration = 300000;
-        this.snackbar.open(parseResponseMessage(err['_body']), null, config);
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    this.dialog.open(NumberOfAddressesComponent, config).afterClosed()
+      .subscribe(response => {
+        if (response) {
+          this.HowManyAddresses = response;
+          this.continueNewAddress();
+        }
       });
-    }
   }
 
   toggleEmpty() {
@@ -119,5 +117,17 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
     const config = new MatDialogConfig();
     config.data = { address };
     this.dialog.open(QrCodeComponent, config);
+  }
+
+  private continueNewAddress() {
+    if (this.wallet.encrypted) {
+      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+        .subscribe(passwordDialog => {
+          this.walletService.addAddress(this.wallet, this.HowManyAddresses, passwordDialog.password)
+            .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
+        });
+    } else {
+      this.walletService.addAddress(this.wallet, this.HowManyAddresses).subscribe(null, err => showSnackbarError(this.snackbar, err));
+    }
   }
 }

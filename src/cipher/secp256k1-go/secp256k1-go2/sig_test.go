@@ -34,7 +34,11 @@ func TestSigRecover(t *testing.T) {
 		sig.R.SetHex(vs[i][0])
 		sig.S.SetHex(vs[i][1])
 		msg.SetHex(vs[i][2])
-		rid, _ := strconv.ParseInt(vs[i][3], 10, 32)
+		rid, err := strconv.ParseInt(vs[i][3], 10, 32)
+		if err != nil {
+			t.Fail()
+		}
+
 		exp.X.SetHex(vs[i][4])
 		exp.Y.SetHex(vs[i][5])
 
@@ -78,7 +82,11 @@ func TestSigVerify(t *testing.T) {
 	msg.SetHex("2c43a883f4edc2b66c67a7a355b9312a565bb3d33bb854af36a06669e2028377")
 	sig.R.SetHex("6b2fa9344462c958d4a674c2a42fbedf7d6159a5276eb658887e2e1b3915329b")
 	sig.S.SetHex("eddc6ea7f190c14a0aa74e41519d88d2681314f011d253665f301425caf86b86")
-	xy, _ := hex.DecodeString("02a60d70cfba37177d8239d018185d864b2bdd0caf5e175fd4454cc006fd2d75ac")
+	xy, err := hex.DecodeString("02a60d70cfba37177d8239d018185d864b2bdd0caf5e175fd4454cc006fd2d75ac")
+	if err != nil {
+		t.Fail()
+	}
+
 	key.ParsePubkey(xy)
 	if !sig.Verify(&key, &msg) {
 		t.Error("sig.Verify 2")

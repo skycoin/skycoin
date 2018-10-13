@@ -1,23 +1,34 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.outputs' | translate"></app-header>
 
-  <div class="-wallet" *ngFor="let wallet of wallets">
-    <h3>{{ wallet.label }}</h3>
+  <app-loading-content
+    [isLoading]="!wallets"
+    noDataText="errors.no-outputs"
+    *ngIf="!wallets || wallets.length === 0 || wallets[0].addresses[0].outputs.length === 0"
+  ></app-loading-content>
 
-    <mat-card class="-address" *ngFor="let address of wallet.addresses">
-      <h4>{{ address.address }}</h4>
-
-      <div class="-output" *ngFor="let output of address.outputs">
-        <div class="-hash">{{ output.hash }}</div>
-        <div class="-balance">
-          <div class="-item">
-            <span>{{ 'common.coins' | translate }}:</span>
-            {{ output.coins | number:'1.0-6' }}</div>
-          <div class="-item">
-            <span>{{ 'common.hours' | translate }}:</span>
-            {{ output.calculated_hours | number:'1.0-6' }}</div>
-        </div>
+  <div class="container" *ngIf="wallets && wallets.length > 0">
+    <div class="-table" *ngFor="let wallet of wallets">
+      <div class="-headers">
+        <div class="-flex-fill -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
+        <div class="-width-150 -text-right">{{ 'common.coin-id' | translate }}</div>
+        <div class="-width-150 -text-right">{{ 'common.coin-hours' | translate }}</div>
       </div>
-    </mat-card>
+      <div class="-body">
+        <ng-container *ngFor="let address of wallet.addresses">
+          <div class="-row">
+            <div class="-flex-fill -address">
+              <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
+              {{ address.address }}
+            </div>
+          </div>
+          <div class="-row" *ngFor="let output of address.outputs">
+            <div class="-flex-fill -hash">{{ output.hash }}</div>
+            <div class="-width-150 -text-right">{{ output.coins | number:'1.0-6' }}</div>
+            <div class="-width-150 -text-right -grey">{{ output.calculated_hours | number:'1.0-6' }}</div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
   </div>
 </div>

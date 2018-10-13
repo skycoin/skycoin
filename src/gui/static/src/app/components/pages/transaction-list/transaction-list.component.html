@@ -1,6 +1,12 @@
 <app-header [headline]="'title.transactions' | translate"></app-header>
 <div class="container">
-  <div class="-paper">
+  <app-loading-content
+    [isLoading]="!transactions"
+    noDataText="history.no-txs"
+    *ngIf="!transactions || transactions.length === 0"
+  ></app-loading-content>
+
+  <div class="-paper" *ngIf="transactions && transactions.length > 0">
     <ng-container *ngFor="let transaction of transactions">
       <div class="-transaction" *ngIf="transaction.balance !== 0" (click)="showTransaction(transaction)">
         <div class="-icon" [ngClass]="{ '-incoming': transaction.balance > 0, '-pending': !transaction.confirmed }">
@@ -24,12 +30,12 @@
             <span class="-pending">{{ 'history.pending' | translate }}</span>
           </h4>
           <div class="-item" *ngFor="let address of transaction.addresses">
-            <img src="../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address)">
+            <img src="../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address)" class="qr-code-button">
             <span>{{ address }}</span>
           </div>
         </div>
         <div class="-balance">
-          <h4>{{ transaction.balance | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>
+          <h4>{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>
           <p *ngIf="price" [matTooltip]="'tx.current-rate' | translate">
             {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
           </p>

@@ -14,7 +14,8 @@
 // numbers with smaller absolute value take a smaller number of bytes.
 // For a specification, see http://code.google.com/apis/protocolbuffers/docs/encoding.html.
 //
-// Fields can be ignored with the struct tag `enc:"-"`
+// Fields can be ignored with the struct tag `enc:"-"` .
+// Unexported struct fields are ignored by default .
 //
 // Fields can be skipped if empty with the struct tag `enc:",omitempty"`
 // Note the comma, which follows package json's conventions.
@@ -40,6 +41,13 @@ Todo:
 - validate packet legnth for incoming
 */
 
+var (
+	// ErrBufferUnderflow bytes in input buffer not enough to deserialize expected type
+	ErrBufferUnderflow = errors.New("Not enough buffer data to deserialize")
+	// ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
+	ErrInvalidOmitEmpty = errors.New("omitempty only supported for the final field in the struct")
+)
+
 // TODO: constant length byte arrays must not be prefixed
 
 // EncodeInt encodes an Integer type contained in `data`
@@ -51,11 +59,11 @@ func EncodeInt(b []byte, data interface{}) {
 	switch v := data.(type) {
 
 	case int8:
-		bs = b[:1]
+		// bs = b[:1]
 		b[0] = byte(v)
 	case uint8:
-		bs = b[:1]
-		b[0] = byte(v)
+		// bs = b[:1]
+		b[0] = v
 	case int16:
 		bs = b[:2]
 		lePutUint16(bs, uint16(v))
@@ -125,7 +133,7 @@ func DecodeInt(in []byte, data interface{}) {
 func DeserializeAtomic(in []byte, data interface{}) {
 	n := intDestSize(data)
 	if len(in) < n {
-		log.Panic("Not enough data to deserialize")
+		log.Panic(ErrBufferUnderflow)
 	}
 	if n != 0 {
 		var b [8]byte
@@ -247,10 +255,7 @@ func Deserialize(r io.Reader, dsize int, data interface{}) error {
 func CanDeserialize(in []byte, dst reflect.Value) bool {
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)
-	if d1.dchk(dst) != 0 {
-		return false
-	}
-	return true
+	return d1.dchk(dst) == 0
 }
 
 // DeserializeRawToValue deserializes `in` buffer into
@@ -349,7 +354,7 @@ func SerializeAtomic(data interface{}) []byte {
 		b[0] = *v
 	case uint8:
 		bs = b[:1]
-		b[0] = byte(v)
+		b[0] = v
 	case *int16:
 		bs = b[:2]
 		lePutUint16(bs, uint16(*v))
@@ -495,11 +500,15 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		nFields := t.NumField()
 		for i, n := 0, nFields; i < n; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -531,7 +540,8 @@ func datasizeWrite(v reflect.Value) (int, error) {
 	}
 }
 
-func parseTag(tag string) (string, bool) {
+// ParseTag to extract encoder args from raw string
+func ParseTag(tag string) (string, bool) {
 	tagSplit := strings.Split(tag, ",")
 	name := tagSplit[0]
 
@@ -582,7 +592,7 @@ func lePutUint64(b []byte, v uint64) {
 }
 
 type coder struct {
-	buf []byte
+	buf []byte //nolint: structcheck
 }
 
 type decoder coder
@@ -591,10 +601,7 @@ type encoder coder
 func (d *decoder) bool() bool {
 	x := d.buf[0]
 	d.buf = d.buf[1:] //advance slice
-	if x == 0 {
-		return false
-	}
-	return true
+	return x != 0
 }
 
 func (e *encoder) bool(x bool) {
@@ -606,14 +613,14 @@ func (e *encoder) bool(x bool) {
 	e.buf = e.buf[1:]
 }
 
-func (d decoder) string() string {
+func (d decoder) string() string { // nolint: unused,megacheck
 	l := int(d.uint32()) //pop length
 	t := d.buf[:l]
 	d.buf = d.buf[l:]
 	return string(t)
 }
 
-func (e encoder) string(xs string) {
+func (e encoder) string(xs string) { // nolint: unused,megacheck
 	x := []byte(xs)
 	l := len(x)
 	for i := 0; i < l; i++ {
@@ -668,14 +675,14 @@ func (e *encoder) uint64(x uint64) {
 }
 
 //v.SetBytes(d.bytes())
-func (d decoder) bytes() []byte {
+func (d decoder) bytes() []byte { // nolint: unused,megacheck
 	l := int(d.uint32()) //pop length
 	t := d.buf[:l]
 	d.buf = d.buf[l:]
 	return t
 }
 
-func (e encoder) bytes(x []byte) {
+func (e encoder) bytes(x []byte) { // nolint: unused,megacheck
 	l := len(x)
 	for i := 0; i < l; i++ {
 		e.buf[i] = x[i]
@@ -714,7 +721,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Map:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -740,7 +747,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Slice:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -765,11 +772,15 @@ func (d *decoder) value(v reflect.Value) error {
 		nFields := v.NumField()
 		for i := 0; i < nFields; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -781,16 +792,13 @@ func (d *decoder) value(v reflect.Value) error {
 							return err
 						}
 					}
-				} else {
-					//dont decode anything
-					//d.skip(fv) //BUG!?
 				}
 			}
 		}
 
 	case reflect.String:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -916,11 +924,15 @@ func (d *decoder) dchk(v reflect.Value) int {
 		nFields := v.NumField()
 		for i := 0; i < nFields; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -929,9 +941,6 @@ func (d *decoder) dchk(v reflect.Value) int {
 					if d.dchk(fv) < 0 {
 						return -1
 					}
-				} else {
-					//dont try to decode anything
-					//d.skip(fv) //BUG!?
 				}
 			}
 		}
@@ -1012,20 +1021,21 @@ func (e *encoder) value(v reflect.Value) {
 		for i := 0; i < nFields; i++ {
 			// see comment for corresponding code in decoder.value()
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
 				fv := v.Field(i)
 				if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
 					e.value(fv)
-				} else {
-					//dont write anything
-					//e.skip(v)
 				}
 			}
 		}
@@ -1079,8 +1089,11 @@ func (e *encoder) value(v reflect.Value) {
 
 }
 
-func (d *decoder) skip(v reflect.Value) {
-	n, _ := datasizeWrite(v)
+func (d *decoder) skip(v reflect.Value) { // nolint: unused,megacheck
+	n, err := datasizeWrite(v)
+	if err != nil {
+		panic(err)
+	}
 	d.buf = d.buf[n:]
 }
 
@@ -1095,8 +1108,11 @@ func (d *decoder) skipn(v reflect.Value) int {
     return n
 }
 */
-func (e *encoder) skip(v reflect.Value) {
-	n, _ := datasizeWrite(v)
+func (e *encoder) skip(v reflect.Value) { // nolint: unused,megacheck
+	n, err := datasizeWrite(v)
+	if err != nil {
+		panic(err)
+	}
 	for i := range e.buf[0:n] {
 		e.buf[i] = 0
 	}

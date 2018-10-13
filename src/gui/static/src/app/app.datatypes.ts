@@ -1,11 +1,12 @@
+import { BigNumber } from 'bignumber.js';
 /**
  * Internal Objects
  */
 
 export class Address {
   address: string;
-  coins: number;
-  hours: number;
+  coins: BigNumber = new BigNumber('0');
+  hours: BigNumber = new BigNumber('0');
   copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
   outputs?: any;
 }
@@ -24,12 +25,12 @@ export class TellerConfig {
 }
 
 export class Transaction {
-  balance: number;
+  balance: BigNumber = new BigNumber('0');
   inputs: any[];
   outputs: any[];
   txid: string;
-  hoursSent?: number;
-  hoursBurned?: number;
+  hoursSent?: BigNumber;
+  hoursBurned?: BigNumber;
 }
 
 export class PreviewTransaction extends Transaction {
@@ -52,8 +53,8 @@ export class Version {
 export class Wallet {
   label: string;
   filename: string;
-  coins: number;
-  hours: number;
+  coins: BigNumber = new BigNumber('0');
+  hours: BigNumber = new BigNumber('0');
   addresses: Address[];
   encrypted: boolean;
   hideEmpty?: boolean;
@@ -62,8 +63,9 @@ export class Wallet {
 
 export class Connection {
   id: number;
-  address: number;
-  listen_port: boolean;
+  address: string;
+  listen_port: number;
+  source?: string;
 }
 
 /**

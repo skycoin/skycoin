@@ -22,7 +22,7 @@ func (s *StructField) String() string {
 }
 
 //TODO: replace fieldType on reflect.Kind
-func getFieldSize(d *decoder, fieldType reflect.Kind, s int) (int, error) {
+func getFieldSize(d *decoder, fieldType reflect.Kind, s int) int {
 	switch fieldType {
 	case reflect.Slice, reflect.String:
 		length := int(leUint32(d.buf[s : s+4]))
@@ -41,7 +41,7 @@ func getFieldSize(d *decoder, fieldType reflect.Kind, s int) (int, error) {
 		fmt.Println(fieldType)
 		log.Panicf("Decode error: kind %s not handled", fieldType)
 	}
-	return s, nil
+	return s
 }
 
 //TODO: replace fieldType on reflect.Kind
@@ -82,7 +82,6 @@ func getFieldValue(in []byte, d *decoder, fieldType reflect.Kind, s int) string 
 
 // DeserializeField deserialize field
 func DeserializeField(in []byte, fields []StructField, fieldName string, field interface{}) error {
-
 	d := &decoder{buf: make([]byte, len(in))}
 	copy(d.buf, in)
 	fv := reflect.ValueOf(field).Elem()
@@ -91,13 +90,9 @@ func DeserializeField(in []byte, fields []StructField, fieldName string, field i
 		if f.Name == fieldName {
 			fd := &decoder{buf: make([]byte, len(in)-s)}
 			copy(fd.buf, d.buf[s:])
-			fd.value(fv)
-			return nil
+			return fd.value(fv)
 		}
-		res, err := getFieldSize(d, reflect.Kind(f.Kind), s)
-		if err != nil {
-			return err
-		}
+		res := getFieldSize(d, reflect.Kind(f.Kind), s)
 		s = res
 	}
 	return nil
@@ -110,7 +105,7 @@ func ParseFields(in []byte, fields []StructField) map[string]string {
 	copy(d.buf, in)
 	s := 0
 	for _, f := range fields {
-		resShift, _ := getFieldSize(d, reflect.Kind(f.Kind), s)
+		resShift := getFieldSize(d, reflect.Kind(f.Kind), s)
 		result[f.Name] = getFieldValue(in, d, reflect.Kind(f.Kind), s)
 		s = resShift
 	}

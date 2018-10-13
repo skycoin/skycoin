@@ -1,37 +1,36 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
-	"testing"
-
-	"encoding/json"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
-
-	"github.com/stretchr/testify/require"
+	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
-	"strconv"
-
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputSet) *CoinSupply {
+func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutputsSummary) *CoinSupply {
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
 	var unlockedSupply uint64
 	// check confirmed unspents only
 	// Search map of unlocked addresses
 	// used to filter unspents
-	unlockedAddrMap := daemon.MakeSearchMap(unlockedAddrs)
+	unlockedAddrSet := newStringSet(unlockedAddrs)
 	for _, u := range allUnspents.HeadOutputs {
 		// check if address is an unlocked distribution address
-		if _, ok := unlockedAddrMap[u.Address]; ok {
+		if _, ok := unlockedAddrSet[u.Address]; ok {
 			coins, err := droplet.FromString(u.Coins)
 			require.NoError(t, err)
 			unlockedSupply += coins
@@ -56,12 +55,12 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 
 	// locked distribution addresses
 	lockedAddrs := visor.GetLockedDistributionAddresses()
-	lockedAddrMap := daemon.MakeSearchMap(lockedAddrs)
+	lockedAddrSet := newStringSet(lockedAddrs)
 
 	// get total coins hours which excludes locked distribution addresses
 	var totalCoinHours uint64
 	for _, out := range allUnspents.HeadOutputs {
-		if _, ok := lockedAddrMap[out.Address]; !ok {
+		if _, ok := lockedAddrSet[out.Address]; !ok {
 			totalCoinHours += out.Hours
 		}
 	}
@@ -70,9 +69,9 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 	var currentCoinHours uint64
 	for _, out := range allUnspents.HeadOutputs {
 		// check if address not in locked distribution addresses
-		if _, ok := lockedAddrMap[out.Address]; !ok {
+		if _, ok := lockedAddrSet[out.Address]; !ok {
 			// check if address not in unlocked distribution addresses
-			if _, ok := unlockedAddrMap[out.Address]; !ok {
+			if _, ok := unlockedAddrSet[out.Address]; !ok {
 				currentCoinHours += out.Hours
 			}
 		}
@@ -93,16 +92,28 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 func TestGetTransactionsForAddress(t *testing.T) {
 	address := testutil.MakeAddress()
 	successAddress := "111111111111111111111691FSP"
+	successAddressRaw, err := cipher.DecodeBase58Address(successAddress)
+	require.NoError(t, err)
+
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
+	validHashRaw, err := cipher.SHA256FromHex(validHash)
+	require.NoError(t, err)
+
+	type verboseResult struct {
+		Transactions []visor.Transaction
+		Inputs       [][]visor.TransactionInput
+	}
+
 	tt := []struct {
-		name                                string
-		method                              string
-		status                              int
-		err                                 string
-		addressParam                        string
-		gatewayGetTransactionsForAddressErr error
-		result                              []daemon.ReadableTransaction
-		csrfDisabled                        bool
+		name                                   string
+		method                                 string
+		status                                 int
+		err                                    string
+		addressParam                           string
+		gatewayGetTransactionsForAddressErr    error
+		gatewayGetTransactionsForAddressResult verboseResult
+		result                                 []readable.TransactionVerbose
+		csrfDisabled                           bool
 	}{
 		{
 			name:         "405",
@@ -126,10 +137,10 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			addressParam: "badAddress",
 		},
 		{
-			name:                                "500 - gw GetTransactionsForAddress error",
+			name:                                "500 - gw GetVerboseTransactionsForAddress error",
 			method:                              http.MethodGet,
 			status:                              http.StatusInternalServerError,
-			err:                                 "500 Internal Server Error - gateway.GetTransactionsForAddress failed: gatewayGetTransactionsForAddressErr",
+			err:                                 "500 Internal Server Error - gateway.GetVerboseTransactionsForAddress failed: gatewayGetTransactionsForAddressErr",
 			addressParam:                        address.String(),
 			gatewayGetTransactionsForAddressErr: errors.New("gatewayGetTransactionsForAddressErr"),
 		},
@@ -138,15 +149,51 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			method:       http.MethodGet,
 			status:       http.StatusOK,
 			addressParam: address.String(),
-			result: []daemon.ReadableTransaction{
-				{
-					In: []visor.ReadableTransactionInput{
-						{
-							Hash:    validHash,
-							Address: successAddress,
-							Coins:   "0.000000",
-							Hours:   0,
+			gatewayGetTransactionsForAddressResult: verboseResult{
+				Transactions: []visor.Transaction{
+					{
+						Transaction: coin.Transaction{
+							In: []cipher.SHA256{
+								validHashRaw,
+							},
 						},
+					},
+				},
+				Inputs: [][]visor.TransactionInput{
+					[]visor.TransactionInput{
+						{
+							UxOut: coin.UxOut{
+								Body: coin.UxBody{
+									Address: successAddressRaw,
+									Coins:   99000000,
+									Hours:   100,
+								},
+							},
+							CalculatedHours: 101,
+						},
+					},
+				},
+			},
+			result: []readable.TransactionVerbose{
+				{
+					Status: &readable.TransactionStatus{
+						Unconfirmed: true,
+					},
+					BlockTransactionVerbose: readable.BlockTransactionVerbose{
+						Hash:      "4fa025f043d1e5e8895ca4dc6602dac8d5c315544c166044d80c98a09e950c71",
+						InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+						Fee:       101,
+						Sigs:      []string{},
+						In: []readable.TransactionInput{
+							{
+								Hash:            "e8ca653d9953b548f0098dd303f8166e636856a5c40e478e3756e440c01e9cb9",
+								Address:         successAddress,
+								Coins:           "99.000000",
+								Hours:           100,
+								CalculatedHours: 101,
+							},
+						},
+						Out: []readable.TransactionOutput{},
 					},
 				},
 			},
@@ -156,8 +203,9 @@ func TestGetTransactionsForAddress(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/explorer/address"
-			gateway := NewGatewayerMock()
-			gateway.On("GetTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
+			gateway := &MockGatewayer{}
+			gateway.On("GetVerboseTransactionsForAddress", address).Return(tc.gatewayGetTransactionsForAddressResult.Transactions,
+				tc.gatewayGetTransactionsForAddressResult.Inputs, tc.gatewayGetTransactionsForAddressErr)
 
 			v := url.Values{}
 			if tc.addressParam != "" {
@@ -179,17 +227,17 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []daemon.ReadableTransaction
+				var msg []readable.TransactionVerbose
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
@@ -200,25 +248,33 @@ func TestGetTransactionsForAddress(t *testing.T) {
 
 func TestCoinSupply(t *testing.T) {
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
-	successGatewayGetUnspentOutputsResult := visor.ReadableOutputSet{
-		HeadOutputs: visor.ReadableOutputs{
-			visor.ReadableOutput{
+	successGatewayGetUnspentOutputsResult := readable.UnspentOutputsSummary{
+		HeadOutputs: readable.UnspentOutputs{
+			readable.UnspentOutput{
 				Coins: "0",
 			},
-			visor.ReadableOutput{
+			readable.UnspentOutput{
 				Coins: "0",
 			},
 		},
 	}
-	var filterInUnlocked []daemon.OutputsFilter
-	filterInUnlocked = append(filterInUnlocked, daemon.FbyAddresses(unlockedAddrs))
+
+	unlockedAddrsRaw := make([]cipher.Address, len(unlockedAddrs))
+	for i, addr := range unlockedAddrs {
+		a, err := cipher.DecodeBase58Address(addr)
+		require.NoError(t, err)
+		unlockedAddrsRaw[i] = a
+	}
+
+	var filterInUnlocked []visor.OutputsFilter
+	filterInUnlocked = append(filterInUnlocked, visor.FbyAddresses(unlockedAddrs))
 	tt := []struct {
 		name                           string
 		method                         string
 		status                         int
 		err                            string
-		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
-		gatewayGetUnspentOutputsResult *visor.ReadableOutputSet
+		gatewayGetUnspentOutputsArg    []visor.OutputsFilter
+		gatewayGetUnspentOutputsResult *visor.UnspentOutputsSummary
 		gatewayGetUnspentOutputsErr    error
 		result                         *CoinSupply
 		csrfDisabled                   bool
@@ -230,35 +286,44 @@ func TestCoinSupply(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "500 - gatewayGetUnspentOutputsErr",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetUnspentOutputs failed: gatewayGetUnspentOutputsErr",
+			name:                        "500 - gatewayGetUnspentOutputsErr",
+			method:                      http.MethodGet,
+			status:                      http.StatusInternalServerError,
+			err:                         "500 Internal Server Error - gateway.GetUnspentOutputsSummary failed: gatewayGetUnspentOutputsErr",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
 		},
 		{
-			name:   "500 - gatewayGetUnspentOutputsErr",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetUnspentOutputs failed: gatewayGetUnspentOutputsErr",
+			name:                        "500 - gatewayGetUnspentOutputsErr",
+			method:                      http.MethodGet,
+			status:                      http.StatusInternalServerError,
+			err:                         "500 Internal Server Error - gateway.GetUnspentOutputsSummary failed: gatewayGetUnspentOutputsErr",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
 		},
 		{
-			name:   "500 - too large HeadOutputs item",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - Invalid unlocked output balance string 9223372036854775807: Droplet string conversion failed: Value is too large",
+			name:                        "500 - too large HeadOutputs item",
+			method:                      http.MethodGet,
+			status:                      http.StatusInternalServerError,
+			err:                         "500 Internal Server Error - Failed to convert coins to string: Droplet string conversion failed: Value is too large",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
-					visor.ReadableOutput{
-						Coins:   "9223372036854775807",
-						Address: unlockedAddrs[0],
+			gatewayGetUnspentOutputsResult: &visor.UnspentOutputsSummary{
+				Confirmed: []visor.UnspentOutput{
+					visor.UnspentOutput{
+						UxOut: coin.UxOut{
+							Body: coin.UxBody{
+								Coins:   9223372036854775807,
+								Address: unlockedAddrsRaw[0],
+							},
+						},
 					},
-					visor.ReadableOutput{
-						Coins: "1",
+					visor.UnspentOutput{
+						UxOut: coin.UxOut{
+							Body: coin.UxBody{
+								Coins:   1000000,
+								Address: unlockedAddrsRaw[0],
+							},
+						},
 					},
 				},
 			},
@@ -269,13 +334,21 @@ func TestCoinSupply(t *testing.T) {
 			status: http.StatusOK,
 
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
-					visor.ReadableOutput{
-						Coins: "0",
+			gatewayGetUnspentOutputsResult: &visor.UnspentOutputsSummary{
+				Confirmed: []visor.UnspentOutput{
+					visor.UnspentOutput{
+						UxOut: coin.UxOut{
+							Body: coin.UxBody{
+								Coins: 0,
+							},
+						},
 					},
-					visor.ReadableOutput{
-						Coins: "0",
+					visor.UnspentOutput{
+						UxOut: coin.UxOut{
+							Body: coin.UxBody{
+								Coins: 0,
+							},
+						},
 					},
 				},
 			},
@@ -286,8 +359,8 @@ func TestCoinSupply(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/coinSupply"
-			gateway := NewGatewayerMock()
-			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
+			gateway := &MockGatewayer{}
+			gateway.On("GetUnspentOutputsSummary", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -301,15 +374,14 @@ func TestCoinSupply(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`", strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg *CoinSupply
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -409,7 +481,7 @@ func TestGetRichlist(t *testing.T) {
 				},
 			},
 			result: Richlist{
-				Richlist: visor.Richlist{
+				Richlist: []readable.RichlistBalance{
 					{
 						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
 						Coins:   "1000000.000000",
@@ -464,7 +536,7 @@ func TestGetRichlist(t *testing.T) {
 				},
 			},
 			result: Richlist{
-				Richlist: visor.Richlist{
+				Richlist: []readable.RichlistBalance{
 					{
 						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
 						Coins:   "1000000.000000",
@@ -498,7 +570,7 @@ func TestGetRichlist(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/richlist"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetRichlist", tc.includeDistribution).Return(tc.gatewayGetRichlistResult, tc.gatewayGetRichlistErr)
 
 			v := url.Values{}
@@ -526,15 +598,15 @@ func TestGetRichlist(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg Richlist
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -566,16 +638,16 @@ func TestGetAddressCount(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "500 - gw GetAddressCount error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gatewayGetAddressCountErr",
+			name:                      "500 - gw GetAddressCount error",
+			method:                    http.MethodGet,
+			status:                    http.StatusInternalServerError,
+			err:                       "500 Internal Server Error - gatewayGetAddressCountErr",
 			gatewayGetAddressCountErr: errors.New("gatewayGetAddressCountErr"),
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
+			name:                         "200",
+			method:                       http.MethodGet,
+			status:                       http.StatusOK,
 			gatewayGetAddressCountResult: 1,
 			result: Result{
 				Count: 1,
@@ -586,7 +658,7 @@ func TestGetAddressCount(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/addresscount"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetAddressCount").Return(tc.gatewayGetAddressCountResult, tc.gatewayGetAddressCountErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
@@ -601,15 +673,15 @@ func TestGetAddressCount(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg Result
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)

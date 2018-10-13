@@ -2,7 +2,7 @@ sudo: required
 dist: trusty
 language: go
 go:
-  - "1.10.x"
+  - "1.11.x"
 
 matrix:
   include:
@@ -10,6 +10,11 @@ matrix:
     - os: osx
       # Do not start osx build for PR
       if: type != pull_request
+      osx_image: xcode8
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq; fi
+  - eval "CC=gcc-6 && CXX=g++-6"
 
 env:
   global:
@@ -21,7 +26,6 @@ env:
     - BUILD_UI_TRAVIS_DIR: HOME/.skycoin-ui-travis
 
 cache:
-  yarn: true
   directories:
   - electron/node_modules
   - electron/src/node_modules
@@ -42,11 +46,15 @@ install:
   - cd $GOPATH/src/github.com/skycoin/skycoin
   - go get -t ./...
   - make install-linters
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 && sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update ; echo 'Available versions (gcc)' && brew list --versions gcc ; brew list gcc@6 &>/dev/null || brew install gcc@6 ; fi
   - make install-deps-libc
+  - nvm install 8.11.0
+  - nvm use 8.11.0
   - make install-deps-ui
 
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh; fi
   - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start; fi
 
 script:
@@ -62,8 +70,11 @@ script:
   # Disable seed api test
   - make integration-test-disable-seed-api
   # libskycoin tests
-  - make test-libc
+  - CC=gcc-6 make test-libc
   # TODO: test pyskycoin
+  # - CC=gcc-6 make test-libpy
+  # TODO: test ui
+  # - make test-ui
   # - make test-libpy
   - make lint-ui
   - make build-ui-travis

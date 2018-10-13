@@ -1,17 +1,26 @@
+/*
+skycoin daemon
+*/
 package main
 
-import (
-	_ "net/http/pprof"
-	"time"
+/*
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
+*/
 
+import (
+	"flag"
+	_ "net/http/pprof"
+	"os"
+
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.23.1-rc2"
+	Version = "0.24.1"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -35,7 +44,7 @@ var (
 	// GenesisTimestamp genesis block create unix time
 	GenesisTimestamp uint64 = 1426562704
 	// GenesisCoinVolume represents the coin capacity
-	GenesisCoinVolume uint64 = 100e12
+	GenesisCoinVolume uint64 = 100000000000000
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
@@ -48,140 +57,51 @@ var (
 		"172.104.85.6:6000",
 		"139.162.7.132:6000",
 	}
+
+	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+		GenesisSignatureStr: GenesisSignatureStr,
+		GenesisAddressStr:   GenesisAddressStr,
+		GenesisCoinVolume:   GenesisCoinVolume,
+		GenesisTimestamp:    GenesisTimestamp,
+		BlockchainPubkeyStr: BlockchainPubkeyStr,
+		BlockchainSeckeyStr: BlockchainSeckeyStr,
+		DefaultConnections:  DefaultConnections,
+		PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
+		Port:                6000,
+		WebInterfacePort:    6420,
+		DataDirectory:       "$HOME/.skycoin",
+	})
+
+	parseFlags = true
 )
 
-var devConfig = skycoin.NodeConfig{
-	GenesisSignatureStr: GenesisSignatureStr,
-	GenesisAddressStr:   GenesisAddressStr,
-	GenesisCoinVolume:   GenesisCoinVolume,
-	GenesisTimestamp:    GenesisTimestamp,
-	BlockchainPubkeyStr: BlockchainPubkeyStr,
-	BlockchainSeckeyStr: BlockchainSeckeyStr,
-	DefaultConnections:  DefaultConnections,
-	// Disable peer exchange
-	DisablePEX: false,
-	// Don't make any outgoing connections
-	DisableOutgoingConnections: false,
-	// Don't allowing incoming connections
-	DisableIncomingConnections: false,
-	// Disables networking altogether
-	DisableNetworking: false,
-	// Enable wallet API
-	EnableWalletAPI: false,
-	// Enable GUI
-	EnableGUI: false,
-	// Enable unversioned API
-	EnableUnversionedAPI: false,
-	// Enable seed API
-	EnableSeedAPI: false,
-	// Disable CSRF check in the wallet API
-	DisableCSRF: false,
-	// Only run on localhost and only connect to others on localhost
-	LocalhostOnly: false,
-	// Which address to serve on. Leave blank to automatically assign to a
-	// public interface
-	Address: "",
-	//gnet uses this for TCP incoming and outgoing
-	Port: 6000,
-	// MaxOutgoingConnections is the maximum outgoing connections allowed.
-	MaxOutgoingConnections: 8,
-	// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
-	MaxDefaultPeerOutgoingConnections: 1,
-	DownloadPeerList:                  false,
-	PeerListURL:                       "https://downloads.skycoin.net/blockchain/peers.txt",
-	// How often to make outgoing connections, in seconds
-	OutgoingConnectionsRate: time.Second * 5,
-	PeerlistSize:            65535,
-	// Wallet Address Version
-	//AddressVersion: "test",
-	// Remote web interface
-	WebInterface:      true,
-	WebInterfacePort:  6420,
-	WebInterfaceAddr:  "127.0.0.1",
-	WebInterfaceCert:  "",
-	WebInterfaceKey:   "",
-	WebInterfaceHTTPS: false,
-
-	RPCInterface: true,
-
-	LaunchBrowser: false,
-	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory: "$HOME/.skycoin",
-	// Web GUI static resources
-	GUIDirectory: "./src/gui/static/",
-	// Logging
-	ColorLog:        true,
-	LogLevel:        "INFO",
-	LogToFile:       false,
-	DisablePingPong: false,
-
-	VerifyDB:       true,
-	ResetCorruptDB: false,
-
-	// Wallets
-	WalletDirectory:  "",
-	WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
-
-	// Timeout settings for http.Server
-	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-	ReadTimeout:  10 * time.Second,
-	WriteTimeout: 60 * time.Second,
-	IdleTimeout:  120 * time.Second,
-
-	// Centralized network configuration
-	RunMaster: false,
-	/* Developer options */
-
-	// Enable cpu profiling
-	ProfileCPU: false,
-	// Where the file is written to
-	ProfileCPUFile: "skycoin.prof",
-	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
-	HTTPProf: false,
-}
-
 func init() {
-	applyConfigMode()
-}
-
-func applyConfigMode() {
-	switch ConfigMode {
-	case "":
-	case "STANDALONE_CLIENT":
-		devConfig.EnableWalletAPI = true
-		devConfig.EnableGUI = true
-		devConfig.EnableSeedAPI = true
-		devConfig.LaunchBrowser = true
-		devConfig.DisableCSRF = false
-		devConfig.DownloadPeerList = true
-		devConfig.RPCInterface = false
-		devConfig.WebInterface = true
-		devConfig.LogToFile = false
-		devConfig.ColorLog = true
-		devConfig.ResetCorruptDB = true
-		devConfig.WebInterfacePort = 0 // randomize web interface port
-	default:
-		panic("Invalid ConfigMode")
-	}
+	nodeConfig.RegisterFlags()
 }
 
 func main() {
+	if parseFlags {
+		flag.Parse()
+	}
+
 	// create a new fiber coin instance
-	coin := skycoin.NewCoin(
-		skycoin.Config{
-			Node: devConfig,
-			Build: skycoin.BuildConfig{
-				Version: Version,
-				Commit:  Commit,
-				Branch:  Branch,
-			},
+	coin := skycoin.NewCoin(skycoin.Config{
+		Node: nodeConfig,
+		Build: readable.BuildInfo{
+			Version: Version,
+			Commit:  Commit,
+			Branch:  Branch,
 		},
-		logger,
-	)
+	}, logger)
 
 	// parse config values
-	coin.ParseConfig()
+	if err := coin.ParseConfig(); err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
 
 	// run fiber coin node
-	coin.Run()
+	if err := coin.Run(); err != nil {
+		os.Exit(1)
+	}
 }

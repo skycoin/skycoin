@@ -1,15 +1,20 @@
 @import '../../../../theme/variables';
 
-.-width-150 {
-  width: 150px;
+.-width-130 {
+  width: 130px;
+  flex-shrink: 0;
 }
 
 .-width-250 {
   width: 250px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  padding-right: 20px;
 }
 
 .-headers {
-  color: rgba(30, 34, 39, 0.2);
+  color: $grey-light;
   display: flex;
   font-size: 12px;
   font-weight: 700;
@@ -19,49 +24,63 @@
 }
 
 .-wallets {
+  margin: 0 30px;
+}
+
+.-body {
   border-radius: 15px;
   box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
-  margin: 0 30px;
+  margin: 0;
+  margin-bottom: 10px;
 }
 
 .-wallet {
   background-color: $white;
-  border-bottom: 1px solid #eff0f0;
-  cursor: pointer;
+  border-bottom: 1px solid rgba(30, 34, 39, 0.05);
   display: flex;
   font-size: $font-size-standard;
-  line-height: $row-height;
-  height: $row-height;
+  line-height: 60px;
+  height: 60px;
   padding-left: 20px;
+  cursor: pointer;
 
   &:first-child {
-    border-top-left-radius: 15px;
-    border-top-right-radius: 15px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
   }
 
   &:last-child {
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+
+  .-label {
+    color: $grey-dark;
   }
 
   .-hours {
-    color: $grey-dark;
+    color: $grey;
     text-align: right;
   }
 
   .-coins {
-    color: black;
+    color: $grey-dark;
     text-align: right;
   }
 
-  .-encryption img {
-    border-radius: 50%;
-    background-color: #f7f7f7;
-    display: inline-block;
-    height: 38px;
-    margin: 11px 0;
-    padding: 3px;
-    width: 38px;
+  .-encryption {
+    padding-left: 20px;
+
+    img {
+      border-radius: 50%;
+      background-color: $grey-lightest;
+      display: inline-block;
+      height: 38px;
+      margin: 11px 0;
+      padding: 3px;
+      width: 38px;
+      cursor: pointer;
+    }
   }
 
   .-expand {
@@ -70,21 +89,17 @@
     align-items: center;
     width: 85px;
     margin-right: 15px;
+    flex-shrink: 0;
 
     img {
       width: $row-detail-size;
       height: $row-detail-size;
     }
   }
-
-  &.-opened {
-    background-color: #fefefe;
-    border-color: #f7f7f7;
-  }
 }
 
-.-wallet-detail {
-  background-color: $white;
+.-text-right {
+  text-align: right;
 }
 
 .action-buttons {
@@ -93,10 +108,10 @@
   text-align: center;
 
   button {
-    background-color: $grey-light;
+    background-color: $grey-lightest;
     border: none;
     box-shadow: none;
-    color: $grey-dark;
+    color: $grey;
     font-size: 13px;
     margin: 0 5px;
     min-width: 140px;
@@ -107,13 +122,4 @@
       width: 28px;
     }
   }
-}
-
-span {
-  display: inline-block;
-  width: 50%;
-}
-
-.-align-right {
-  text-align: right;
 }

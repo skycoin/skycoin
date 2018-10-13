@@ -21,11 +21,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-type spending struct {
-	ToAddr cipher.Address
-	Coins  uint64
-}
-
 func makeUxBody(t *testing.T) coin.UxBody {
 	p, _ := cipher.GenerateKeyPair()
 	return coin.UxBody{
@@ -69,7 +64,7 @@ func TestNewUnspentPool(t *testing.T) {
 
 func addUxOut(db *dbutil.DB, up *Unspents, ux coin.UxOut) error {
 	return db.Update("", func(tx *dbutil.Tx) error {
-		if err := up.pool.set(tx, ux.Hash(), ux); err != nil {
+		if err := up.pool.put(tx, ux.Hash(), ux); err != nil {
 			return err
 		}
 
@@ -679,7 +674,7 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 		add       addrHashMap
 		remove    addrHashMap
 		expect    addrHashMap
-		setErr    error
+		putErr    error
 		adjustErr error
 	}{
 		{
@@ -723,19 +718,19 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 		},
 
 		{
-			name: "set error duplicate",
+			name: "put error duplicate",
 			init: addrHashMap{
 				addrs[0]: []cipher.SHA256{hashes[0], hashes[0]},
 			},
-			setErr: errors.New("poolAddrIndex.set: hashes array contains duplicate"),
+			putErr: errors.New("poolAddrIndex.put: hashes array contains duplicate"),
 		},
 
 		{
-			name: "set error empty array",
+			name: "put error empty array",
 			init: addrHashMap{
 				addrs[0]: []cipher.SHA256{},
 			},
-			setErr: errors.New("poolAddrIndex.set cannot set to empty hash array"),
+			putErr: errors.New("poolAddrIndex.put cannot put empty hash array"),
 		},
 
 		{
@@ -810,10 +805,10 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 			p := &poolAddrIndex{}
 			m := &unspentMeta{}
 
-			// Initialize the data, test that set() works
+			// Initialize the data, test that put() works
 			err := db.Update("", func(tx *dbutil.Tx) error {
 				for addr, hashes := range tc.init {
-					if err := p.set(tx, addr, hashes); err != nil {
+					if err := p.put(tx, addr, hashes); err != nil {
 						return err
 					}
 				}
@@ -821,10 +816,10 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 				return m.setAddrIndexHeight(tx, uint64(len(tc.init)))
 			})
 
-			if tc.setErr == nil {
+			if tc.putErr == nil {
 				require.NoError(t, err)
 			} else {
-				require.Equal(t, tc.setErr, err)
+				require.Equal(t, tc.putErr, err)
 				return
 			}
 
@@ -955,7 +950,7 @@ func TestUnspentMaybeBuildIndexesPartialIndex(t *testing.T) {
 			}
 
 			for addr, hashes := range addrHashes {
-				if err := up.poolAddrIndex.set(tx, addr, hashes); err != nil {
+				if err := up.poolAddrIndex.put(tx, addr, hashes); err != nil {
 					return err
 				}
 			}
@@ -1058,7 +1053,7 @@ func TestUnspentMaybeBuildIndexesNoRebuild(t *testing.T) {
 
 	u := NewUnspentPool()
 
-	// Create the bucket and artifically set the indexed height, without indexing
+	// Create the bucket and artificially set the indexed height, without indexing
 	headSeq := uint64(180)
 	err := db.Update("", func(tx *dbutil.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists(UnspentPoolAddrIndexBkt); err != nil {

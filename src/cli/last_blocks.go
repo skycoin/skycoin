@@ -17,11 +17,10 @@ func lastBlocksCmd() gcli.Command {
 		OnUsageError: onCommandUsageError(name),
 		Action:       getLastBlocks,
 	}
-	// Commands = append(Commands, cmd)
 }
 
 func getLastBlocks(c *gcli.Context) error {
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	num := c.Args().First()
 	if num == "" {
@@ -33,8 +32,7 @@ func getLastBlocks(c *gcli.Context) error {
 		return fmt.Errorf("invalid block number, %s", err)
 	}
 
-	blocks, err := rpcClient.GetLastBlocks(n)
-
+	blocks, err := client.LastBlocks(n)
 	if err != nil {
 		return err
 	}

@@ -1,9 +1,9 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatDialogRef, MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { MatDialogRef, MatSnackBar } from '@angular/material';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
-import { parseResponseMessage } from '../../../utils/errors';
+import { parseResponseMessage, showSnackbarError } from '../../../utils/errors';
 import { Subject } from 'rxjs/Subject';
 import { ISubscription } from 'rxjs/Subscription';
 import { TranslateService } from '@ngx-translate/core';
@@ -32,6 +32,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       confirm: false,
       description: null,
       title: null,
+      wallet: null,
     }, data || {});
 
     this.translateService.get(['errors.incorrect-password', 'errors.api-disabled', 'errors.no-wallet']).subscribe(res => {
@@ -121,9 +122,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
           error = this.errors['errors.no-wallet'];
           break;
         default:
-          const config = new MatSnackBarConfig();
-          config.duration = 5000;
-          this.snackbar.open(parseResponseMessage(error['_body']), null, config);
+          showSnackbarError(this.snackbar, error, 5000);
       }
     }
 

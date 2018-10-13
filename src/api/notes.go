@@ -1,65 +1,133 @@
 package api
 
-// NotesRPC note rpc
-// type NotesRPC struct {
-// 	Notes           wallet.Notes
-// 	WalletDirectory string
-// }
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
 
-// // Ng global note
-// var Ng *NotesRPC
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/notes"
 
-// // InitWalletRPC init wallet rpc
-// func InitWalletRPC(walletDir string, options ...wallet.Option) {
-// 	Ng = NewNotesRPC(walletDir)
-// }
+	wh "github.com/skycoin/skycoin/src/util/http"
+)
 
-// // NewNotesRPC new notes rpc
-// func NewNotesRPC(walletDir string) *NotesRPC {
-// 	rpc := &NotesRPC{}
-// 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
-// 		logger.Panicf("Failed to create notes directory %s: %v", walletDir, err)
-// 	}
-// 	rpc.WalletDirectory = walletDir
-// 	w, err := wallet.LoadNotes(rpc.WalletDirectory)
-// 	if err != nil {
-// 		logger.Panicf("Failed to load all notes: %v", err)
-// 	}
-// 	wallet.CreateNoteFileIfNotExist(walletDir)
-// 	rpc.Notes = w
-// 	return rpc
-// }
+const (
+	// ErrorWrongTxID appears when TransactionID has wrong format
+	ErrorWrongTxID = "wrong 'txid'"
+	// ErrorBadParams appears when note obj isn't complete
+	ErrorBadParams = "bad parameters"
+)
 
-// GetNotesReadable returns readable notes
-// func (nt *NotesRPC) GetNotesReadable() wallet.ReadableNotes {
-// 	return nt.Notes.ToReadable()
-// }
+// URI: /api/v2/notes
+// Method: GET
+// Response:
+//      200 - ok, returns all notes
+func getAllNotesHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+		savedNotes := gateway.GetAllNotes()
 
-// // Create a wallet Name is set by creation date
-// func notesCreate(gateway *daemon.Gateway) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		logger.Info("API request made to create a note")
-// 		note := r.FormValue("note")
-// 		transactionID := r.FormValue("transaction_id")
-// 		newNote := wallet.Note{
-// 			TxID:  transactionID,
-// 			Value: note,
-// 		}
-// 		Ng.Notes.SaveNote(Ng.WalletDirectory, newNote)
-// 		rlt := Ng.GetNotesReadable()
-// 		wh.SendOr500(w, rlt)
-// 	}
-// }
+		wh.SendJSONOr500(logger, w, savedNotes)
+	}
+}
 
-// // Returns a wallet by ID if GET.  Creates or updates a wallet if POST.
-// func notesHandler(gateway *daemon.Gateway) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		//ret := wallet.Wallets.ToPublicReadable()
-// 		ret := Ng.GetNotesReadable()
-// 		wh.SendOr404(w, ret)
-// 	}
-// }
+// URI: /api/v2/note
+// Method: POST, GET, DELETE
+// Content-Type: application/json
+// Body: { "txid": "<Transaction ID>" }
+// Response:
+//      400 - bad parameters
+//      200 - POST: returns added Note
+//			- GET: returns note by Transaction ID
+//			- DELETE: removes note by Transaction ID
+func noteHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "application/json" && r.Method == http.MethodPost {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
 
-// mux.Handle("/notes", notesHandler(gateway))
+		// Add Note
+		if r.Method == http.MethodPost {
+			var note notes.Note
 
-// mux.Handle("/notes/create", notesCreate(gateway))
+			if err := json.NewDecoder(r.Body).Decode(&note); err != nil || len(note.Notes) == 0 {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprint(http.StatusText(http.StatusBadRequest), " - ", ErrorBadParams))
+				writeHTTPResponse(w, resp)
+				return
+			}
+
+			if err := validateTxID(note.TxIDHex); err != nil {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprint(http.StatusText(http.StatusBadRequest), " - ", ErrorWrongTxID))
+				writeHTTPResponse(w, resp)
+				return
+			}
+
+			note, err := gateway.AddNote(note)
+			if err != nil {
+				resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, fmt.Sprint(http.StatusText(http.StatusUnprocessableEntity), " - ", err.Error()))
+				writeHTTPResponse(w, resp)
+				return
+			}
+
+			resp := HTTPResponse{Data: note}
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		txID := r.FormValue("txid")
+		txID = strings.Replace(txID, "\"", "", -1)
+
+		switch r.Method {
+		case http.MethodGet:
+			// Get Note by TxID
+			if err := validateTxID(txID); err != nil {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprint(http.StatusText(http.StatusBadRequest), " - ", ErrorWrongTxID))
+				writeHTTPResponse(w, resp)
+				return
+			}
+
+			noteByTxID := gateway.GetNoteByTxID(txID)
+
+			resp := HTTPResponse{Data: noteByTxID}
+			writeHTTPResponse(w, resp)
+			return
+
+		case http.MethodDelete:
+			// Remove Note by TxID
+			if err := validateTxID(txID); err != nil {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprint(http.StatusText(http.StatusBadRequest), " - ", ErrorWrongTxID))
+				writeHTTPResponse(w, resp)
+				return
+			}
+
+			if err := gateway.RemoveNote(txID); err != nil {
+				resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, http.StatusText(http.StatusUnprocessableEntity))
+				writeHTTPResponse(w, resp)
+				return
+			}
+
+			resp := HTTPResponse{Data: struct{}{}}
+			writeHTTPResponse(w, resp)
+			return
+
+		default:
+			// Bad request method
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
+			writeHTTPResponse(w, resp)
+			return
+		}
+	}
+}
+
+func validateTxID(txID string) error {
+	if _, err := cipher.SHA256FromHex(txID); err != nil {
+		return err
+	}
+	return nil
+}

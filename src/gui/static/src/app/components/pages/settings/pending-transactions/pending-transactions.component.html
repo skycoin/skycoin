@@ -1,21 +1,26 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.pending-txs' | translate"></app-header>
 
-  <mat-card class="-table">
-    <div class="row -table-header">
-      <div class="col-md-2">{{ 'pending-txs.timestamp' | translate }}</div>
-      <div class="col-md-2">{{ 'pending-txs.amount' | translate }}</div>
-      <div class="col-md-8">{{ 'pending-txs.txid' | translate }}</div>
-    </div>
-    <ng-container *ngIf="transactions && transactions.length">
-      <div class="row -table-row" *ngFor="let tx of transactions">
-        <div class="col-md-2"><span>{{ tx.timestamp | dateTime }}</span></div>
-        <div class="col-md-2"><span>{{ tx.amount | number:'1.0-6' }}</span></div>
-        <div class="col-md-8"><span>{{ tx.txid }}</span></div>
+  <app-loading-content
+    [isLoading]="!transactions"
+    noDataText="pending-txs.none"
+    *ngIf="!transactions || transactions.length === 0"
+  ></app-loading-content>
+
+  <div class="container" *ngIf="transactions && transactions.length > 0">
+    <div class="-table">
+      <div class="-headers">
+        <div class="-flex-fill">{{ 'pending-txs.txid' | translate }}</div>
+        <div class="-width-150">{{ 'common.coin-id' | translate }}</div>
+        <div class="-width-150">{{ 'pending-txs.timestamp' | translate }}</div>
       </div>
-    </ng-container>
-    <div class="row -table-row" *ngIf="transactions && !transactions.length">
-      <div class="col-lg-12">{{ 'pending-txs.none' | translate }}</div>
+      <div class="-body">
+        <div class="-row" *ngFor="let tx of transactions">
+          <div class="-flex-fill -txid">{{ tx.txid }}</div>
+          <div class="-width-150">{{ tx.amount | number:'1.0-6' }}</div>
+          <div class="-width-150 -timestamp">{{ tx.timestamp | dateTime }}</div>
+        </div>
+      </div>
     </div>
-  </mat-card>
+  </div>
 </div>

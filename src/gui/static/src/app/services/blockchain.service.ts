@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
@@ -18,22 +18,25 @@ export class BlockchainService {
   constructor(
     private apiService: ApiService,
     private walletService: WalletService,
+    private ngZone: NgZone,
   ) {
-    Observable.timer(0, 2000)
-      .flatMap(() => this.getBlockchainProgress())
-      .takeWhile((response: any) => !response.current || response.current !== response.highest)
-      .subscribe(
-        response => {
-          this.progressSubject.next(response);
+    this.ngZone.runOutsideAngular(() => {
+      Observable.timer(0, 2000)
+        .flatMap(() => this.getBlockchainProgress())
+        .takeWhile((response: any) => !response.current || response.current !== response.highest)
+        .subscribe(
+          response => this.ngZone.run(() => {
+            this.progressSubject.next(response);
 
-          if (! this.refreshedBalance) {
-            this.walletService.refreshBalances();
-            this.refreshedBalance = true;
-          }
-        },
-        error => console.log(error),
-        () => this.completeLoading(),
-      );
+            if (!this.refreshedBalance) {
+              this.walletService.refreshBalances();
+              this.refreshedBalance = true;
+            }
+          }),
+          error => console.log(error),
+          () => this.ngZone.run(() => this.completeLoading()),
+        );
+    });
   }
 
   block(id): Observable<any> {
@@ -68,6 +71,10 @@ export class BlockchainService {
 
   getBlockchainProgress() {
     return this.apiService.get('blockchain/progress');
+  }
+
+  coinSupply() {
+    return this.apiService.get('coinSupply');
   }
 
   private completeLoading() {

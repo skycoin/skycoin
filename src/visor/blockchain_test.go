@@ -9,7 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -21,10 +20,6 @@ var (
 
 var genTime uint64 = 1000
 var genCoins uint64 = 1000e6
-
-func tNow() uint64 {
-	return uint64(utc.UnixNow())
-}
 
 func feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
@@ -76,9 +71,7 @@ func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr ci
 
 /* Helpers */
 type fakeChainStore struct {
-	len    uint64
 	blocks []coin.SignedBlock
-	up     blockdb.UnspentPooler
 }
 
 func (fcs *fakeChainStore) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
@@ -433,7 +426,7 @@ func TestGetBlocks(t *testing.T) {
 			}
 
 			err := db.View("", func(tx *dbutil.Tx) error {
-				bs, err := bc.GetBlocks(tx, tc.req.st, tc.req.ed)
+				bs, err := bc.GetBlocksInRange(tx, tc.req.st, tc.req.ed)
 				require.NoError(t, err)
 				require.Equal(t, len(tc.expect), len(bs))
 				require.Equal(t, tc.expect, bs)
@@ -517,19 +510,6 @@ func newBlock(t *testing.T, bc *Blockchain, txn coin.Transaction, timestamp uint
 	})
 	require.NoError(t, err)
 	return b
-}
-
-// blockchainHead calls bc.Head in a dbutil.Tx
-func blockchainHead(t *testing.T, bc *Blockchain) *coin.SignedBlock {
-	var head *coin.SignedBlock
-	err := bc.db.View("", func(tx *dbutil.Tx) error {
-		var err error
-		head, err = bc.Head(tx)
-		require.NoError(t, err)
-		return nil
-	})
-	require.NoError(t, err)
-	return head
 }
 
 type spending struct {

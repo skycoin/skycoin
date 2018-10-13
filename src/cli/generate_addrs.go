@@ -72,10 +72,8 @@ func generateAddrs(c *gcli.Context) error {
 	switch err.(type) {
 	case nil:
 	case WalletLoadError:
-		errorWithHelp(c, err)
-		return nil
-	case WalletSaveError:
-		return errors.New("save wallet failed")
+		printHelp(c)
+		return err
 	default:
 		return err
 	}

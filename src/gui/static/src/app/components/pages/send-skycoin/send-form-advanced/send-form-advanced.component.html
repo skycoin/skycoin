@@ -3,9 +3,9 @@
     <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
     <div class="-select">
       <select formControlName="wallet" id="wallets">
-        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.coins <= 0" [ngValue]="wallet">
-          {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-          ({{ wallet.hours }} {{ 'common.coin-hours' | translate }})
+        <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
+          {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
         </option>
       </select>
     </div>
@@ -19,42 +19,40 @@
     <div class="-select">
       <mat-select #selectAddresses multiple formControlName="addresses" [compareWith]="addressCompare" id="addresses">
         <mat-option *ngFor="let addr of addresses" [value]="addr">
-          {{ addr.address }} - {{ addr.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-          ({{ addr.hours }} {{ 'common.coin-hours' | translate }})
+          {{ addr.address }} - {{ (addr.coins ? addr.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ addr.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
         </mat-option>
+        <mat-select-trigger>
+          <div *ngFor="let address of form.get('addresses').value">
+            {{ address.address }} - {{ (address.coins ? address.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+            ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+          </div>
+        </mat-select-trigger>
       </mat-select>
     </div>
   </div>
 
   <div class="form-field">
-    <label for="change-address">
-      {{ 'send.change-address-label' | translate }}
-      <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
-    </label>
-    <input formControlName="changeAddress" id="change-address">
-  </div>
-
-  <div class="form-field">
     <label for="destination">
       {{ 'send.destinations-label' | translate }}
-      <mat-icon [matTooltip]="'send.destinations-help' | translate">help</mat-icon>
+      <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
     </label>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
-        <div class="col-md-5">
+        <div class="col-lg-5 col-md-4">
           <input formControlName="address" [id]="i === 0 ? 'destination' : ''">
         </div>
         <div class="col-md-3">
           <div class="-input-addon">
             <input formControlName="coins">
-            <span>{{ 'common.coins' | translate }}</span>
+            <span>{{ 'common.coin-id' | translate }}</span>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-4">
           <div [ngClass]="{ '-input-addon': true, '-hidden': autoHours }">
             <input formControlName="hours">
-            <span>{{ 'common.hours' | translate }}</span>
+            <span>{{ 'common.coin-hours' | translate }}</span>
           </div>
         </div>
         <div class="col-md-1 -icons">
@@ -65,9 +63,20 @@
     </div>
   </div>
 
+  <div class="form-field">
+    <label for="change-address">
+      {{ 'send.change-address-label' | translate }}
+      <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+      <span class="-options" (click)="selectChangeAddress($event)">
+        {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+      </span>
+    </label>
+    <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()">
+  </div>
+
   <div class="-autohours">
     <div class="row">
-      <div class="col-md-5">
+      <div class="col-xl-4 col-lg-5 col-md-7">
         <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
           <div class="-space-between">
             <span>{{ 'send.hours-allocation-label' | translate }}</span>
@@ -89,7 +98,7 @@
             </span>
             <span>{{ autoShareValue | number:'1.0-2' }}</span>
           </label>
-          <mat-slider class="-slider" min="0.01" max="1" step="0.01" id="value"
+          <mat-slider class="-slider" min="0.1" max="1" step="0.01" id="value"
                       (input)="setShareValue($event)" [value]="autoShareValue"
           ></mat-slider>
         </div>
@@ -99,7 +108,10 @@
 </div>
 
 <div class="-buttons">
-  <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
-    {{ 'send.verify-button' | translate }}
+  <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
+    {{ 'send.preview-button' | translate }}
+  </app-button>
+  <app-button #sendButton (action)="send()" class="primary" [disabled]="!form.valid">
+    {{ 'send.send-button' | translate }}
   </app-button>
 </div>

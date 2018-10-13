@@ -1,6 +1,7 @@
 package skycoin
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -20,11 +21,6 @@ import (
 
 var (
 	help = false
-)
-
-const (
-	// EndpointsAll wildcard value to match all API methods
-	EndpointsAll = "ALL"
 )
 
 // Config records skycoin node and build config
@@ -47,21 +43,25 @@ type NodeConfig struct {
 	DisableIncomingConnections bool
 	// Disables networking altogether
 	DisableNetworking bool
-	// DEPRECATED Enable wallet API
-	EnableWalletAPI bool
 	// Enable GUI
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// DEPRECATED Enable /api/v1/wallet/seed API endpoint
-	EnableSeedAPI bool
 	// Enable unversioned API endpoints (without the /api/v1 prefix)
 	EnableUnversionedAPI bool
 	// Disable CSP disable content-security-policy in http response
 	DisableCSP bool
-	// Comma separated list of API sets exported via remote web interface
+	// Comma separated list of API sets enabled on the remote web interface
 	EnabledAPISets string
+	// Comma separated list of API sets disabled on the remote web interface
+	DisabledAPISets string
+	// Enable all of API sets. Applies before disabling individual sets
+	EnableAllAPISets bool
+
 	enabledAPISets map[string]struct{}
+	// Comma separate list of hostnames to accept in the Host header, used to bypass the Host header check which only applies to localhost addresses
+	HostWhitelist string
+	hostWhitelist []string
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -92,6 +92,11 @@ type NodeConfig struct {
 	WebInterfaceKey string
 	// Remote web interface HTTPS support
 	WebInterfaceHTTPS bool
+	// Remote web interface username and password
+	WebInterfaceUsername string
+	WebInterfacePassword string
+	// Allow web interface auth without HTTPS
+	WebInterfacePlaintextAuth bool
 
 	// Enable the deprecated JSON 2.0 RPC interface
 	RPCInterface bool
@@ -186,14 +191,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		DisableIncomingConnections: false,
 		// Disables networking altogether
 		DisableNetworking: false,
-		// Enable wallet API
-		EnableWalletAPI: false,
 		// Enable GUI
 		EnableGUI: false,
 		// Enable unversioned API
 		EnableUnversionedAPI: false,
-		// Enable seed API
-		EnableSeedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
 		// DisableCSP disable content-security-policy in http response
@@ -223,7 +224,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    api.EndpointsRead,
+		EnabledAPISets:    api.EndpointsRead + "," + api.EndpointsTransaction,
+		DisabledAPISets:   "",
+		EnableAllAPISets:  false,
 
 		RPCInterface: false,
 
@@ -238,7 +241,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		LogToFile:       false,
 		DisablePingPong: false,
 
-		VerifyDB:       true,
+		VerifyDB:       false,
 		ResetCorruptDB: false,
 
 		// Wallets
@@ -269,9 +272,11 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	return nodeConfig
 }
 
-func (c *Config) postProcess() {
+func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
+		fmt.Println("Additional environment variables:")
+		fmt.Println("* COINHOUR_BURN_FACTOR - Set the coin hour burn factor required for transactions. Must be > 1.")
 		os.Exit(0)
 	}
 
@@ -303,59 +308,16 @@ func (c *Config) postProcess() {
 	panicIfError(err, "Invalid DataDirectory")
 
 	if c.Node.WebInterfaceCert == "" {
-		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "cert.pem")
+		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "skycoind.cert")
 	} else {
 		c.Node.WebInterfaceCert = replaceHome(c.Node.WebInterfaceCert, home)
 	}
 
 	if c.Node.WebInterfaceKey == "" {
-		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "key.pem")
+		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "skycoind.key")
 	} else {
 		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
 	}
-
-	c.Node.enabledAPISets = make(map[string]struct{})
-	apiSets := strings.Split(c.Node.EnabledAPISets, ",")
-	for _, k := range apiSets {
-		k = strings.ToUpper(strings.TrimSpace(k))
-		switch k {
-		case EndpointsAll,
-			api.EndpointsRead,
-			api.EndpointsStatus,
-			api.EndpointsWallet,
-			api.EndpointsWalletSeed,
-			api.EndpointsDeprecatedWalletSpend:
-		default:
-			fmt.Println("Invalid value in -enable-api-set:", k)
-			os.Exit(1)
-		}
-
-		if k == EndpointsAll {
-			for _, s := range []string{
-				api.EndpointsRead,
-				api.EndpointsStatus,
-				api.EndpointsWallet,
-				api.EndpointsWalletSeed,
-				api.EndpointsDeprecatedWalletSpend,
-			} {
-				c.Node.enabledAPISets[s] = struct{}{}
-			}
-		} else {
-			c.Node.enabledAPISets[k] = struct{}{}
-		}
-	}
-
-	// Accept the deprecated -enable options
-	if c.Node.EnableWalletAPI {
-		c.Node.enabledAPISets[api.EndpointsWallet] = struct{}{}
-	}
-	if c.Node.EnableSeedAPI {
-		c.Node.enabledAPISets[api.EndpointsWalletSeed] = struct{}{}
-	}
-	_, enableWalletAPI := c.Node.enabledAPISets[api.EndpointsWallet]
-	_, enableWalletSeedAPI := c.Node.enabledAPISets[api.EndpointsWalletSeed]
-	c.Node.EnableWalletAPI = c.Node.EnableWalletAPI || enableWalletAPI
-	c.Node.EnableSeedAPI = c.Node.EnableSeedAPI || enableWalletSeedAPI
 
 	if c.Node.WalletDirectory == "" {
 		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")
@@ -374,7 +336,13 @@ func (c *Config) postProcess() {
 		c.Node.Arbitrating = true
 	}
 
+	apiSets, err := buildAPISets(c.Node)
+	if err != nil {
+		return err
+	}
+
 	// Don't open browser to load wallets if wallet apis are disabled.
+	c.Node.enabledAPISets = apiSets
 	if _, ok := c.Node.enabledAPISets[api.EndpointsWallet]; !ok {
 		c.Node.EnableGUI = false
 		c.Node.LaunchBrowser = false
@@ -387,6 +355,81 @@ func (c *Config) postProcess() {
 	if c.Node.DisableDefaultPeers {
 		c.Node.DefaultConnections = nil
 	}
+
+	if c.Node.HostWhitelist != "" {
+		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
+	}
+
+	httpAuthEnabled := c.Node.WebInterfaceUsername != "" || c.Node.WebInterfacePassword != ""
+	if httpAuthEnabled && !c.Node.WebInterfaceHTTPS && !c.Node.WebInterfacePlaintextAuth {
+		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
+	}
+
+	return nil
+}
+
+// buildAPISets builds the set of enable APIs by the following rules:
+// * If EnableAll, all API sets are added
+// * For each api set in EnabledAPISets, add
+// * For each api set in DisabledAPISets, remove
+func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
+	enabledAPISets := strings.Split(c.EnabledAPISets, ",")
+	if err := validateAPISets("-enable-api-sets", enabledAPISets); err != nil {
+		return nil, err
+	}
+
+	disabledAPISets := strings.Split(c.DisabledAPISets, ",")
+	if err := validateAPISets("-disable-api-sets", disabledAPISets); err != nil {
+		return nil, err
+	}
+
+	apiSets := make(map[string]struct{})
+
+	allAPISets := []string{
+		api.EndpointsRead,
+		api.EndpointsStatus,
+		api.EndpointsWallet,
+		api.EndpointsTransaction,
+		// Do not include insecure or deprecated API sets, they must always
+		// be explicitly enabled through -enable-api-sets
+	}
+
+	if c.EnableAllAPISets {
+		for _, s := range allAPISets {
+			apiSets[s] = struct{}{}
+		}
+	}
+
+	// Add the enabled API sets
+	for _, k := range enabledAPISets {
+		apiSets[k] = struct{}{}
+	}
+
+	// Remove the disabled API sets
+	for _, k := range disabledAPISets {
+		delete(apiSets, k)
+	}
+
+	return apiSets, nil
+}
+
+func validateAPISets(opt string, apiSets []string) error {
+	for _, k := range apiSets {
+		k = strings.ToUpper(strings.TrimSpace(k))
+		switch k {
+		case api.EndpointsRead,
+			api.EndpointsStatus,
+			api.EndpointsTransaction,
+			api.EndpointsWallet,
+			api.EndpointsInsecureWalletSeed,
+			api.EndpointsDeprecatedWalletSpend:
+		case "":
+			continue
+		default:
+			return fmt.Errorf("Invalid value in %s: %q", opt, k)
+		}
+	}
+	return nil
 }
 
 // RegisterFlags binds CLI flags to config values
@@ -398,11 +441,9 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
-	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "[DEPRECATED, use -enable-api-set] Enable the wallet API")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "[DEPRECATED, use -enable-api-set] enable /api/v1/wallet/seed api")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -410,10 +451,16 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
 	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in -data-directory")
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.StringVar(&c.EnabledAPISets, "enable-api-set", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
+	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, "enable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, "disable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
+	flag.StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
+	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
+	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 
@@ -466,7 +513,8 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	switch configMode {
 	case "":
 	case "STANDALONE_CLIENT":
-		c.EnabledAPISets = EndpointsAll
+		c.EnableAllAPISets = true
+		c.EnabledAPISets = "INSECURE_WALLET_SEED"
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false

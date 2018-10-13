@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -48,96 +49,6 @@ func setCSRFParameters(csrfStore *CSRFStore, tokenType string, req *http.Request
 	}
 }
 
-var endpoints = []string{
-	"/address_uxouts",
-	"/addresscount",
-	"/balance",
-	"/block",
-	"/blockchain/metadata",
-	"/blockchain/progress",
-	"/blocks",
-	"/coinSupply",
-	"/explorer/address",
-	"/health",
-	"/injectTransaction",
-	"/last_blocks",
-	"/version",
-	"/network/connection",
-	"/network/connections",
-	"/network/connections/exchange",
-	"/network/connections/trust",
-	"/network/defaultConnections",
-	"/outputs",
-	"/pendingTxs",
-	"/rawtx",
-	"/richlist",
-	"/resendUnconfirmedTxns",
-	"/transaction",
-	"/transactions",
-	"/uxout",
-	"/wallet",
-	"/wallet/balance",
-	"/wallet/create",
-	"/wallet/newAddress",
-	"/wallet/newSeed",
-	"/wallet/seed",
-	"/wallet/spend",
-	"/wallet/transaction",
-	"/wallet/transactions",
-	"/wallet/unload",
-	"/wallet/update",
-	"/wallets",
-	"/wallets/folderName",
-	"/webrpc",
-
-	"/api/v1/address_uxouts",
-	"/api/v1/addresscount",
-	"/api/v1/balance",
-	"/api/v1/block",
-	"/api/v1/blockchain/metadata",
-	"/api/v1/blockchain/progress",
-	"/api/v1/blocks",
-	"/api/v1/coinSupply",
-	"/api/v1/explorer/address",
-	"/api/v1/health",
-	"/api/v1/injectTransaction",
-	"/api/v1/last_blocks",
-	"/api/v1/version",
-	"/api/v1/network/connection",
-	"/api/v1/network/connections",
-	"/api/v1/network/connections/exchange",
-	"/api/v1/network/connections/trust",
-	"/api/v1/network/defaultConnections",
-	"/api/v1/outputs",
-	"/api/v1/pendingTxs",
-	"/api/v1/rawtx",
-	"/api/v1/richlist",
-	"/api/v1/resendUnconfirmedTxns",
-	"/api/v1/transaction",
-	"/api/v1/transactions",
-	"/api/v1/uxout",
-	"/api/v1/wallet",
-	"/api/v1/wallet/balance",
-	"/api/v1/wallet/create",
-	"/api/v1/wallet/newAddress",
-	"/api/v1/wallet/newSeed",
-	"/api/v1/wallet/seed",
-	"/api/v1/wallet/spend",
-	"/api/v1/wallet/transaction",
-	"/api/v1/wallet/transactions",
-	"/api/v1/wallet/unload",
-	"/api/v1/wallet/update",
-	"/api/v1/wallets",
-	"/api/v1/wallets/folderName",
-	"/api/v1/webrpc",
-
-	"/api/v2/transaction/verify",
-	"/api/v2/address/verify",
-	"/api/v2/notes",
-	"/api/v2/note",
-	"/api/v2/wallet/recover",
-}
-
 func TestCSRFWrapper(t *testing.T) {
 	methods := []string{http.MethodPost, http.MethodPut, http.MethodDelete}
 	cases := []string{tokenInvalid, tokenExpired, tokenEmpty, tokenNotGenerated}
@@ -171,97 +82,15 @@ func TestCSRFWrapper(t *testing.T) {
 
 					status := rr.Code
 					require.Equal(t, http.StatusForbidden, status, "wrong status code: got `%v` want `%v`", status, http.StatusForbidden)
-					require.Equal(t, "403 Forbidden - invalid CSRF token\n", rr.Body.String())
+
+					if strings.HasPrefix(endpoint, "/api/v2") {
+						require.Equal(t, "{\n    \"error\": {\n        \"message\": \"invalid CSRF token\",\n        \"code\": 403\n    }\n}", rr.Body.String())
+					} else {
+						require.Equal(t, "403 Forbidden - invalid CSRF token\n", rr.Body.String())
+					}
 				})
 			}
 		}
-	}
-}
-
-func TestOriginRefererCheck(t *testing.T) {
-	cases := []struct {
-		name    string
-		origin  string
-		referer string
-	}{
-		{
-			name:   "mismatched origin header",
-			origin: "http://example.com/",
-		},
-		{
-			name:    "mismatched referer header",
-			referer: "http://example.com/",
-		},
-	}
-
-	for _, endpoint := range endpoints {
-		for _, tc := range cases {
-			name := fmt.Sprintf("%s %s", tc.name, endpoint)
-			t.Run(name, func(t *testing.T) {
-				gateway := &MockGatewayer{}
-
-				req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-				require.NoError(t, err)
-
-				csrfStore := &CSRFStore{
-					Enabled: true,
-				}
-				setCSRFParameters(csrfStore, tokenValid, req)
-
-				if tc.origin != "" {
-					req.Header.Set("Origin", tc.origin)
-				}
-				if tc.referer != "" {
-					req.Header.Set("Referer", tc.referer)
-				}
-
-				rr := httptest.NewRecorder()
-				handler := newServerMux(muxConfig{
-					host:            configuredHost,
-					appLoc:          ".",
-					enableJSON20RPC: true,
-					disableCSP:      true,
-				}, gateway, csrfStore, nil)
-
-				handler.ServeHTTP(rr, req)
-
-				status := rr.Code
-				require.Equal(t, http.StatusForbidden, status, "wrong status code: got `%v` want `%v`", status, http.StatusForbidden)
-				require.Equal(t, "403 Forbidden\n", rr.Body.String())
-			})
-		}
-	}
-}
-
-func TestHostCheck(t *testing.T) {
-	for _, endpoint := range endpoints {
-		t.Run(endpoint, func(t *testing.T) {
-			gateway := &MockGatewayer{}
-
-			req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-			require.NoError(t, err)
-
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
-
-			req.Host = "example.com"
-
-			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{
-				host:            configuredHost,
-				appLoc:          ".",
-				enableJSON20RPC: true,
-				disableCSP:      true,
-			}, gateway, csrfStore, nil)
-
-			handler.ServeHTTP(rr, req)
-
-			status := rr.Code
-			require.Equal(t, http.StatusForbidden, status, "wrong status code: got `%v` want `%v`", status, http.StatusForbidden)
-			require.Equal(t, "403 Forbidden\n", rr.Body.String())
-		})
 	}
 }
 

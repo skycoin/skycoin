@@ -16,7 +16,7 @@ function rmnofail {
     done
 }
 
-rmnofail "$ELN_OUTPUT_BASE" "$STL_OUTPUT" "$GOX_OUTPUT" "$FINAL_OUTPUT"
+rmnofail "$ELN_OUTPUT_BASE" "$STL_OUTPUT_DIR" "$GOX_OUTPUT_DIR" "$FINAL_OUTPUT_DIR"
 
 # don't remove the electron cache by default, most of the time when we want
 # to clean up build artifacts we don't want to clean this up, and downloading

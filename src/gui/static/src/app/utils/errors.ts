@@ -5,6 +5,10 @@ export function parseResponseMessage(body: string): string {
     body = body['_body'];
   }
 
+  if (body.indexOf('"error":') !== -1) {
+    body = JSON.parse(body).error.message;
+  }
+
   if (body.startsWith('400') || body.startsWith('403')) {
     const parts = body.split(' - ', 2);
 

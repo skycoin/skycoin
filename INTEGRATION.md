@@ -21,7 +21,10 @@ If your application is written in Go, you can use these client libraries to inte
 The wallet APIs in the REST API operate on wallets loaded from and saved to `~/.skycoin/wallets`.
 Use the CLI tool to perform seed generation and transaction signing outside of the Skycoin node.
 
-The Skycoin node's wallet APIs can be enabled with `-enable-api-set=READ,STATUS,WALLET`.
+The Skycoin node's wallet APIs can be enabled from the command line.
+`-enable-all-api-sets` will enable all of the APIs which includes the wallet APIs,
+or for more control it can specified in a list of API sets, e.g. `-enable-api-sets=READ,STATUS,WALLET`.
+See the [REST API](src/api/README.md) for information on API sets.
 
 For a node used to support another application,
 it is recommended to use the REST API for blockchain queries and disable the wallet APIs,
@@ -29,6 +32,7 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5,6" -->
 
+- [Running the skycoin node](#running-the-skycoin-node)
 - [API Documentation](#api-documentation)
 	- [Wallet REST API](#wallet-rest-api)
 	- [Skycoin command line interface](#skycoin-command-line-interface)
@@ -64,6 +68,9 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
 
 <!-- /MarkdownTOC -->
 
+## Running the skycoin node
+
+For integrations, the skycoin node should be run from source with `./run-daemon.sh`. This requires go1.10+ to be installed.
 
 ## API Documentation
 
@@ -161,7 +168,7 @@ That is, create a raw transaction, broadcast it, and wait for it to confirm.
 
 #### Using the REST API
 
-The wallet APIs must be enabled with `-enable-api-set=WALLET,READ,STATUS`.
+The wallet APIs must be enabled with `-enable-api-sets=WALLET,READ`.
 
 Create a transaction with [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction),
 then inject it to the network with [POST /injectTransaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#inject-raw-transaction).

@@ -29,6 +29,12 @@ func filterOut(t *testing.T, headTime uint64, outs []coin.UxOut, f func(out coin
 	require.NoError(t, err)
 
 	return readable.UnspentOutputsSummary{
+		Head: readable.BlockHeader{
+			Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+			PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+			BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+			UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
+		},
 		HeadOutputs:     headOuts,
 		IncomingOutputs: readable.UnspentOutputs{},
 		OutgoingOutputs: readable.UnspentOutputs{},

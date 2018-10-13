@@ -17,9 +17,12 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 	var addrs []cipher.Address
 
 	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
-		addrs = w.GetAddresses()
-
 		var err error
+		addrs, err = w.GetSkycoinAddresses()
+		if err != nil {
+			return err
+		}
+
 		addrsBalanceList, err = vs.GetBalanceOfAddrs(addrs)
 		return err
 	}); err != nil {
@@ -64,9 +67,11 @@ func (vs *Visor) GetWalletUnconfirmedTransactions(wltID string) ([]UnconfirmedTr
 	var txns []UnconfirmedTransaction
 
 	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
-		addrs := w.GetAddresses()
+		addrs, err := w.GetSkycoinAddresses()
+		if err != nil {
+			return err
+		}
 
-		var err error
 		txns, err = vs.GetUnconfirmedTransactions(SendsToAddresses(addrs))
 		return err
 	}); err != nil {
@@ -82,9 +87,11 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 	var inputs [][]TransactionInput
 
 	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
-		addrs := w.GetAddresses()
+		addrs, err := w.GetSkycoinAddresses()
+		if err != nil {
+			return err
+		}
 
-		var err error
 		txns, inputs, err = vs.GetUnconfirmedTransactionsVerbose(SendsToAddresses(addrs))
 		return err
 	}); err != nil {
@@ -105,7 +112,10 @@ func (vs *Visor) CreateTransaction(params wallet.CreateTransactionParams) (*coin
 
 	if err := vs.Wallets.ViewSecrets(params.Wallet.ID, params.Wallet.Password, func(w *wallet.Wallet) error {
 		// Get all addresses from the wallet for checking params against
-		allAddrs := w.GetAddresses()
+		allAddrs, err := w.GetSkycoinAddresses()
+		if err != nil {
+			return err
+		}
 
 		return vs.DB.View("CreateTransaction", func(tx *dbutil.Tx) error {
 			head, err := vs.Blockchain.Head(tx)
@@ -155,7 +165,10 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 
 	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
 		// Get all addresses from the wallet for checking params against
-		addrs := w.GetAddresses()
+		addrs, err := w.GetSkycoinAddresses()
+		if err != nil {
+			return err
+		}
 
 		return vs.DB.View("CreateTransactionDeprecated", func(tx *dbutil.Tx) error {
 			head, err := vs.Blockchain.Head(tx)

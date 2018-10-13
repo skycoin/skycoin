@@ -3887,6 +3887,272 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 		return
 	}
 
+	c := newClient()
+
+	cases := []struct {
+		name string
+		txn  coin.Transaction
+		code int
+		err  string
+	}{
+		{
+			name: "database is read only",
+			txn:  coin.Transaction{},
+			code: http.StatusInternalServerError,
+			err:  "500 Internal Server Error - database is in read-only mode",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := c.InjectTransaction(&tc.txn)
+			if tc.err != "" {
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			// Result should be a valid txid
+			require.NotEmpty(t, result)
+			h, err := cipher.SHA256FromHex(result)
+			require.NoError(t, err)
+			require.NotEqual(t, cipher.SHA256{}, h)
+		})
+	}
+}
+
+func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	if !liveDisableNetworking(t) {
+		t.Skip("Networking must be disabled for this test")
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := newClient()
+
+	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
+
+	defaultChangeAddress := w.Entries[0].Address.String()
+
+	type testCase struct {
+		name         string
+		createTxnReq api.CreateTransactionRequest
+		err          string
+		code         int
+	}
+
+	cases := []testCase{
+		{
+			name: "valid request, networking disabled",
+			err:  "503 Service Unavailable - Outgoing connections are disabled",
+			code: http.StatusServiceUnavailable,
+			createTxnReq: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins),
+						Hours:   fmt.Sprint(totalHours / 2),
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txnResp, err := c.CreateTransaction(tc.createTxnReq)
+			require.NoError(t, err)
+
+			txid, err := c.InjectEncodedTransaction(txnResp.EncodedTransaction)
+			if tc.err != "" {
+				assertResponseError(t, err, tc.code, tc.err)
+
+				// A second injection will fail with the same error,
+				// since the transaction should not be saved to the DB
+				_, err = c.InjectEncodedTransaction(txnResp.EncodedTransaction)
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
+
+			require.NotEmpty(t, txid)
+			require.Equal(t, txnResp.Transaction.TxID, txid)
+
+			h, err := cipher.SHA256FromHex(txid)
+			require.NoError(t, err)
+			require.NotEqual(t, cipher.SHA256{}, h)
+		})
+	}
+}
+
+func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	if liveDisableNetworking(t) {
+		t.Skip("This tests requires networking enabled")
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := newClient()
+	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
+
+	defaultChangeAddress := w.Entries[0].Address.String()
+
+	tt := []struct {
+		name         string
+		createTxnReq api.CreateTransactionRequest
+		checkTxn     func(t *testing.T, tx *readable.TransactionWithStatus)
+	}{
+		{
+			name: "send all coins to the first address",
+			createTxnReq: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: "1",
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   toDropletString(t, totalCoins),
+					},
+				},
+			},
+			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
+				// Confirms the total output coins are equal to the totalCoins
+				var coins uint64
+				for _, o := range tx.Transaction.Out {
+					c, err := droplet.FromString(o.Coins)
+					require.NoError(t, err)
+					coins, err = coin.AddUint64(coins, c)
+					require.NoError(t, err)
+				}
+
+				// Confirms the address balance are equal to the totalCoins
+				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
+				require.Equal(t, totalCoins, coins)
+			},
+		},
+		{
+			// send 0.003 coin to the second address,
+			// this amount is chosen to not interfere with TestLiveWalletCreateTransaction
+			name: "send 0.003 coin to second address",
+			createTxnReq: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: "0.5",
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, 3e3),
+					},
+				},
+			},
+			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
+				// Confirms there're two outputs, one to the second address, one as change output to the first address.
+				require.Len(t, tx.Transaction.Out, 2)
+
+				// Gets the output of the second address in the transaction
+				getAddrOutputInTxn := func(t *testing.T, tx *readable.TransactionWithStatus, addr string) *readable.TransactionOutput {
+					for _, output := range tx.Transaction.Out {
+						if output.Address == addr {
+							return &output
+						}
+					}
+					t.Fatalf("transaction doesn't have output to address: %v", addr)
+					return nil
+				}
+
+				out := getAddrOutputInTxn(t, tx, w.Entries[1].Address.String())
+
+				// Confirms the second address has 0.003 coin
+				require.Equal(t, out.Coins, "0.003000")
+				require.Equal(t, out.Address, w.Entries[1].Address.String())
+
+				coin, err := droplet.FromString(out.Coins)
+				require.NoError(t, err)
+
+				// Gets the expected change coins
+				expectChangeCoins := totalCoins - coin
+
+				// Gets the real change coins
+				changeOut := getAddrOutputInTxn(t, tx, w.Entries[0].Address.String())
+				changeCoins, err := droplet.FromString(changeOut.Coins)
+				require.NoError(t, err)
+				// Confirms the change coins are matched.
+				require.Equal(t, expectChangeCoins, changeCoins)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			txnResp, err := c.CreateTransaction(tc.createTxnReq)
+			require.NoError(t, err)
+
+			txid, err := c.InjectEncodedTransaction(txnResp.EncodedTransaction)
+			require.NoError(t, err)
+			require.Equal(t, txnResp.Transaction.TxID, txid)
+
+			tk := time.NewTicker(time.Second)
+			var txn *readable.TransactionWithStatus
+		loop:
+			for {
+				select {
+				case <-time.After(30 * time.Second):
+					t.Fatal("Waiting for transaction to be confirmed timeout")
+				case <-tk.C:
+					txn = getTransaction(t, c, txnResp.Transaction.TxID)
+					if txn.Status.Confirmed {
+						break loop
+					}
+				}
+			}
+			tc.checkTxn(t, txn)
+		})
+	}
+}
+
+func toDropletString(t *testing.T, i uint64) string {
+	x, err := droplet.ToString(i)
+	require.NoError(t, err)
+	return x
+}
+
+func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
 	requireWalletEnv(t)
 
 	c := newClient()

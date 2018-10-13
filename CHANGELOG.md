@@ -31,7 +31,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
-- Add `-enable-api-set` option to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `WALLET`, `WALLET_SEED`, `DEPRECATED_WALLET_SPEND`. Multiple values must be comma separated. Deprecates `-enable-wallet-api` and `-enable-seed-api`.
+- Add `-enable-api-sets`, `-disable-api-sets`, `-enable-all-api-sets` options to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `TXN`, `WALLET`, `PROMETHEUS`, `INSECURE_WALLET_SEED`, `DEPRECATED_WALLET_SPEND`. Multiple values must be comma separated.
 - `/api/v1/wallet/spend` is deprecated and requires `-enable-api-set=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 - Add `-host-whitelist` option to specify alternate allowed hosts when communicating with the API bound to a localhost interface
 - Add the head block header to the response of `GET /api/v1/outputs`

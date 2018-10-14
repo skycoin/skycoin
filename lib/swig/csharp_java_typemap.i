@@ -83,6 +83,8 @@ CSHARP_ARRAYS_FIXED(int, int)
 %typemap(csin) GoSlice_*  "GoSlice.getCPtr ($csinput)"
 
 // FeeCalculator
+%typemap(ctype) FeeCalculator*  "FeeCalculator_ *"
+
 
 %apply unsigned short  {GoUint16, GoUint16_};
 %apply unsigned long  {GoUintptr, __SIZE_TYPE__};

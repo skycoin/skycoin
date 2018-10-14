@@ -1083,6 +1083,16 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	switch r.Message.(type) {
 	case SendingTxnsMessage:
 		dm.announcedTxns.add(r.Message.(SendingTxnsMessage).GetFiltered())
+	case DisconnectPeerMessage:
+		// If message was sent successfully and disconnection follows
+		// since the other end should eventually disconnect after processing it
+		// then it's safe at this point to close connection to peer
+		dpm := r.Message.(DisconnectPeerMessage)
+		address := dpm.PeerAddress()
+		reason := dpm.ErrorReason()
+		if err := dm.Disconnect(address, reason); err != nil {
+			logger.WithError(reason).WithField("addr", address).Warning("Failed to disconnect peer")
+		}
 	default:
 	}
 }

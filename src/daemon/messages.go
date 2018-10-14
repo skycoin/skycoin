@@ -20,8 +20,10 @@ import (
 var (
 	// Every rejection message prefix must start with "RJCT" prefix
 	rejectPrefix = [...]byte{82, 74, 67, 84}
-	// ErrAckReject disconnect since peer sent RJCT message
-	ErrAckReject gnet.DisconnectReason = errors.New("Disconnect: Message rejected by peer")
+	// ErrRecvReject disconnect since peer sent RJCT message
+	ErrRecvReject gnet.DisconnectReason = errors.New("Disconnect: Message rejected by peer")
+	// ErrSendReject disconnect since RJCT message was sent to peer
+	ErrSendReject gnet.DisconnectReason = errors.New("Disconnect: Reject message sent to peer")
 )
 
 // Message represent a packet to be serialized over the network by
@@ -367,14 +369,14 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 			peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
 			givpMsg := NewGivePeersMessage(peers)
 			if err := d.SendMessage(intro.c.Addr, givpMsg); err != nil {
-				logger.Errorf("Send GivePeersMessage to %s failed: %v", intro.c.Addr, err)
+				logger.WithError(err).WithField("addr", intro.c.Addr).Error("Send GivePeersMessage failed")
 			}
-			rjctMsg := NewRejectMessage(intro, pex.ErrPeerlistFull, "")
-			if err := d.SendMessage(intro.c.Addr, rjctMsg); err != nil {
-				logger.Errorf("Send RejectMessage to %s failed: %v", intro.c.Addr, err)
-			}
-
 		}
+		rjctMsg := NewRejectMessage(intro, pex.ErrPeerlistFull, "")
+		if err := d.SendMessage(intro.c.Addr, rjctMsg); err != nil {
+			logger.Errorf("Send RejectMessage to %s failed: %v", intro.c.Addr, err)
+		}
+
 		return
 	}
 	// Add the remote peer with their chosen listening port
@@ -441,6 +443,14 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 	return nil
 }
 
+// DisconnectPeerMessage sent to peer immediately before disconnection
+type DisconnectPeerMessage interface {
+	// PeerAddress to disconnect
+	PeerAddress() string
+	// ErrorReason leading to disconnection
+	ErrorReason() gnet.DisconnectReason
+}
+
 // RejectMessage sent to inform peers of a protocol failure.
 // Whenever possible the node should send back prior to this
 // other message including data useful for peer recovery, especially
@@ -466,8 +476,9 @@ func NewRejectMessage(msg gnet.Message, err error, reason string) *RejectMessage
 	if !exists {
 		logger.Panicf("Rejecting unknown message type %s", t)
 	}
+	// Infinite loop. Never reject RJCT message
 	if reflect.DeepEqual(prefix[:], rejectPrefix[:]) {
-		logger.Panicf("Message type %s (prefix = %s) may not be rejected", t, prefix)
+		logger.WithField("gnetmsg", prefix).Panicf("Message type %s may not be rejected", t)
 	}
 
 	return &RejectMessage{
@@ -478,6 +489,16 @@ func NewRejectMessage(msg gnet.Message, err error, reason string) *RejectMessage
 	}
 }
 
+// PeerAddress extracted from message context
+func (rpm *RejectMessage) PeerAddress() string {
+	return rpm.c.Addr
+}
+
+// Reason disconnect peer after sending RejectMessage
+func (rpm *RejectMessage) ErrorReason() gnet.DisconnectReason {
+	return ErrSendReject
+}
+
 // Handle an event queued by Handle()
 func (rpm *RejectMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	rpm.c = mc
@@ -486,7 +507,9 @@ func (rpm *RejectMessage) Handle(mc *gnet.MessageContext, daemon interface{}) er
 
 // Process Recover from message rejection state
 func (rpm *RejectMessage) Process(d Daemoner) {
-	d.Disconnect(rpm.c.Addr, ErrAckReject)
+	if err := d.Disconnect(rpm.c.Addr, ErrRecvReject); err != nil {
+		logger.WithError(err).WithField("addr", rpm.c.Addr).Warning("Failed to disconnect peer")
+	}
 }
 
 // GetBlocksMessage sent to request blocks since LastBlock

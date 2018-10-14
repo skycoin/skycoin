@@ -1,8 +1,8 @@
 %{
 
 GoUint32_ _WrapperFeeCalculator(Transaction__Handle handle, GoUint64_* pFee, void* context){
-	PyObject* feeCalc = (PyObject*)context;
-	PyObject *result = PyObject_CallFunctionObjArgs(feeCalc, PyLong_FromLong(handle), NULL);
+	csObject* feeCalc = (csObject*)context;
+	  = PyObject_CallFunctionObjArgs(feeCalc, PyLong_FromLong(handle), NULL);
 	GoUint32_ error = 0;
 	if(PyTuple_Check(result)){
 		PyObject* objerror = PyTuple_GetItem(result, 0);

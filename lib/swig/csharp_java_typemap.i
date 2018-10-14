@@ -25,6 +25,7 @@
 %pointer_functions(Number_Handle,Number_HandlePtr);
 %pointer_functions(unsigned char, CharPtr);
 %pointer_functions(FeeCalculator, FeeCalculatorPtr);
+%pointer_functions(FeeCalcFunc, FeeCalcFuncPtr);
 
 CSHARP_ARRAYS(int, int)
 // CSHARP_ARRAYS(unsigned char, byte)
@@ -80,6 +81,8 @@ CSHARP_ARRAYS_FIXED(int, int)
 %typemap(ctype) GoSlice_*  "GoSlice_ *"
 %typemap(cstype,pre=" var tmp$csinput = GoSlice.getCPtr ($csinput);") GoSlice_*  "GoSlice"
 %typemap(csin) GoSlice_*  "GoSlice.getCPtr ($csinput)"
+
+// FeeCalculator
 
 %apply unsigned short  {GoUint16, GoUint16_};
 %apply unsigned long  {GoUintptr, __SIZE_TYPE__};

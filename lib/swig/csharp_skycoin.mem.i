@@ -510,3 +510,16 @@
 		return result;
 	}
 }
+
+%rename(SKY_coin_NewBlock) CSharp_skycoin_SKY_coin_NewBlock;
+%inline {
+	GoUint32 CSharp_skycoin_SKY_coin_NewBlock(Block__Handle p0, GoUint64 p1, cipher_SHA256* p2, Transactions__Handle p3, FeeCalculator* p4, Block__Handle* p5){
+		  FeeCalculator temp;
+		  FeeCalculator *arg2 = (FeeCalculator *) 0 ;
+  temp.callback = zeroFeeCalculator;
+  temp.context = p4;
+  arg2 = &temp;
+		GoUint32 result = SKY_coin_NewBlock(p0,  p1,p2,p3,arg2,p5);
+		return result;
+	}
+}

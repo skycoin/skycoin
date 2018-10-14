@@ -4,6 +4,11 @@
 	//Define function SKY_handle_close to avoid including libskycoin.h
 	void SKY_handle_close(Handle p0);
 
+	GoUint32_ zeroFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+  *pFee = 0;
+  return 0;
+}
+
 	int MEMPOOLIDX = 0;
 	void *MEMPOOL[1024 * 256];
 

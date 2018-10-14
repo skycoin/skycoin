@@ -52,13 +52,3 @@ void getString(_GoString_ *out){
 			return 0;
     }
 }
-
-%extend Fee_Calculator {
-	GoUint32_ callFeeCalculator(FeeCalculator* feeCalc, Transaction__Handle handle, unsigned long long * pFee){
-  	return feeCalc->callback(handle, pFee, feeCalc->context);
-	}
-}
-
-%extend coin__BlockBody{
-	
-}

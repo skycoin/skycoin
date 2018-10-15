@@ -40,9 +40,9 @@ var (
 	ErrDisconnectNoIntroduction gnet.DisconnectReason = errors.New("First message was not an Introduction")
 	// ErrDisconnectIPLimitReached ip limit reached
 	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
-	// ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
+	// ErrDisconnectIncomprehensibleError this is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
-	ErrDisconnectOtherError gnet.DisconnectReason = errors.New("Incomprehensible error")
+	ErrDisconnectIncomprehensibleError gnet.DisconnectReason = errors.New("Incomprehensible error")
 	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
 	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
@@ -126,8 +126,6 @@ type DaemonConfig struct { // nolint: golint
 	ProtocolVersion int32
 	// Minimum accepted protocol version
 	MinProtocolVersion int32
-	// Maximum accepted protocol version
-	MaxProtocolVersion int32
 	// IP Address to serve on. Leave empty for automatic assignment
 	Address string
 	// BlockchainPubkey blockchain pubkey string
@@ -184,9 +182,8 @@ type DaemonConfig struct { // nolint: golint
 // NewDaemonConfig creates daemon config
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		Version:                      2,
+		ProtocolVersion:              2,
 		MinProtocolVersion:           2,
-		MaxProtocolVersion:           2,
 		Address:                      "",
 		Port:                         6677,
 		OutgoingRate:                 time.Second * 5,
@@ -968,7 +965,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.expectingIntroductions.Add(a, time.Now().UTC())
 	logger.Debugf("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey[:])
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey)
 	if err := dm.pool.Pool.SendMessage(a, m); err != nil {
 		logger.Errorf("Send IntroductionMessage to %s failed: %v", a, err)
 	}

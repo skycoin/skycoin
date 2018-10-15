@@ -28,7 +28,7 @@
 %pointer_functions(unsigned char, CharPtr);
 %pointer_functions(FeeCalculator, FeeCalculatorPtr);
 %pointer_functions(FeeCalcFunc, FeeCalcFuncPtr);
-%pointer_functions(coin__Block*, coin__BlockPtrPtr);
+%pointer_functions(coin__Block*, coin__BlockPtr);
 
 CSHARP_ARRAYS(int, int)
 // CSHARP_ARRAYS(unsigned char, byte)
@@ -70,11 +70,9 @@ CSHARP_ARRAYS_FIXED(int, int)
 
 // GoString
 %typemap(cstype,pre=" var tmp$csinput = $csinput;") GoString "string"
-%typemap(cstype,pre=" var tmp$csinput = $csinput;") GoUint8_* "string"
 %typemap(csin,pre="var tmp$csinput = $csinput;") GoString  "tmp$csinput"
 %typemap(imtype,pre="var tmp$csinput  = $csinput;") GoString  "string"
 %typemap(ctype) GoString  "char*"
-%typemap(ctype) GoUint8_*  "char*"
 %typemap(in) GoString  "$1.p=$input;$1.n=strlen($input);"
 
 %typemap(ctype,pre="GoString_ tmp$csinput = new_GoStringp_();") GoString_*  "GoString*"
@@ -90,6 +88,7 @@ CSHARP_ARRAYS_FIXED(int, int)
 %apply unsigned long  {GoUintptr, __SIZE_TYPE__};
 %apply short  {GoInt16, GoInt16_};
 %apply unsigned char  {GoUint8_, GoUint8};
+%apply string  {GoUint8_*, GoUint8*};
 %apply unsigned int  {GoUint32_, GoUint32};
 %apply signed char  {GoInt8_, GoInt8};
 %apply unsigned long long  {GoUint64, GoUint64_,GoUint,GoUint_};

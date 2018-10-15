@@ -7,7 +7,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
-	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -595,10 +594,6 @@ var (
 		wallet.ErrWalletParamsConflict:      SKY_ErrWalletParamsConflict,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
-
-		secp256k1.ErrVerifySignatureInvalidInputsNils:    SKY_ErrVerifySignatureInvalidInputsNils,
-		secp256k1.ErrVerifySignatureInvalidSigLength:     SKY_ErrVerifySignatureInvalidSigLength,
-		secp256k1.ErrVerifySignatureInvalidPubkeysLength: SKY_ErrVerifySignatureInvalidPubkeysLength,
 	}
 )
 

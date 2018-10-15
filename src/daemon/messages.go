@@ -494,7 +494,7 @@ func (rpm *RejectMessage) PeerAddress() string {
 	return rpm.c.Addr
 }
 
-// Reason disconnect peer after sending RejectMessage
+// ErrorReason disconnect peer after sending RejectMessage
 func (rpm *RejectMessage) ErrorReason() gnet.DisconnectReason {
 	return ErrSendReject
 }

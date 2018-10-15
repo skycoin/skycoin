@@ -371,10 +371,10 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 			if err := d.SendMessage(intro.c.Addr, givpMsg); err != nil {
 				logger.WithError(err).WithField("addr", intro.c.Addr).Error("Send GivePeersMessage failed")
 			}
-		}
-		rjctMsg := NewRejectMessage(intro, pex.ErrPeerlistFull, "")
-		if err := d.SendMessage(intro.c.Addr, rjctMsg); err != nil {
-			logger.Errorf("Send RejectMessage to %s failed: %v", intro.c.Addr, err)
+			rjctMsg := NewRejectMessage(intro, pex.ErrPeerlistFull, "")
+			if err := d.SendMessage(intro.c.Addr, rjctMsg); err != nil {
+				logger.Errorf("Send RejectMessage to %s failed: %v", intro.c.Addr, err)
+			}
 		}
 
 		return

@@ -50,14 +50,21 @@ const Success = 0
 
 // GetError Retrieve error object by corresponding error code
 func GetError(code uint32) error {
-	return errorByCode[code]
+	if code < uint32(len(errorByCode)) {
+		return errorByCode[code]
+	}
+	return nil
 }
 
 // GetErrorCode Retrieve error code representing corresponding error object
 func GetErrorCode(err error) uint32 {
-	if initErrorCodeMap != nil {
-		initErrorCodeMap()
-		initErrorCodeMap = nil
+	if code, exists := errorCodeByError[err]; exists {
+		return code
 	}
-	return errorCodeByError[err]
+	return ErrorCodeUnknown
+}
+
+func init() {
+	initErrorCodeMap()
+	initErrorCodeMap = nil
 }

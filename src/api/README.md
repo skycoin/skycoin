@@ -2388,7 +2388,6 @@ Result:
 }
 ```
 
-
 ## Notes APIs
 
 ### Get all Notes
@@ -2488,15 +2487,6 @@ Example:
 ```sh
 curl -X DELETE -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/note?txid="9c8995afd843372636ae66991797c824e2fd8dfffa77c901c7f9e8d4f5e87114"
 ```
-
-Result:
-
- ```json
- {
-     "data": {}
- }
- ```
-
 
 ## Block APIs
 

@@ -1088,48 +1088,23 @@ func TestGetNoteByTxID(t *testing.T) {
 		return
 	}
 
-	addedNotesCount := testAddNotes(t)
+	c := newClient()
 
-	c := api.NewClient(nodeAddress())
+	testAddNotes(t, c)
 
 	note, err := c.GetNote("9c8995afd843372636ae66391797c824e2fd8dfafa77c901c7f9e8d4f5e87117")
 	require.NoError(t, err)
-
 	require.Equal(t, "A note...", note.Notes)
 
-	testRemoveNotes(t, addedNotesCount)
+	testRemoveNotes(t, c)
 }
 
-func testRemoveNotes(t *testing.T, noteCount int) {
-	c := api.NewClient(nodeAddress())
-
-	noteList := getLocalTestNotes()
-	for _, note := range noteList {
-		removedNote, err := c.RemoveNote(note.TxIDHex)
-		require.NoError(t, err)
-		require.Equal(t, struct{}{}, removedNote)
-	}
-
-	allNotes, err := c.GetNotes()
-	require.NoError(t, err)
-
-	if noteCount == 0 {
-		require.Equal(t, len(allNotes), noteCount)
-		return
-	}
-	require.Equal(t, len(allNotes), noteCount-len(noteList))
-}
-
-func testAddNotes(t *testing.T) int {
-	c := api.NewClient(nodeAddress())
-
-	bNotes, err := c.GetNotes()
-	require.NoError(t, err)
-
-	noteList := getLocalTestNotes()
+func testAddNotes(t *testing.T, c *api.Client) {
+	notesToAdd := getLocalTestNotes()
 
 	var addedNotes int
-	for _, note := range noteList {
+	for _, note := range notesToAdd {
+
 		addedNote, err := c.AddNote(note)
 		require.NoError(t, err)
 		require.NotEqual(t, "", addedNote.TxIDHex)
@@ -1140,9 +1115,22 @@ func testAddNotes(t *testing.T) int {
 
 	allNotes, err := c.GetNotes()
 	require.NoError(t, err)
-	require.Equal(t, len(allNotes), len(bNotes)+addedNotes)
+	require.Equal(t, len(allNotes), addedNotes)
+}
 
-	return len(bNotes)
+func testRemoveNotes(t *testing.T, c *api.Client) {
+	var remNotesCount int
+
+	noteList := getLocalTestNotes()
+	for _, note := range noteList {
+		removedNote, err := c.RemoveNote(note.TxIDHex)
+		require.NoError(t, err)
+		require.Equal(t, struct{}{}, removedNote)
+
+		remNotesCount++
+	}
+
+	require.Equal(t, len(noteList), remNotesCount)
 }
 
 func getLocalTestNotes() []notes.Note {

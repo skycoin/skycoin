@@ -26,7 +26,7 @@ func GetAll() []Note {
 	return gNotes
 }
 
-// GetByTxID If note wasn't found by Id -> return empty Note
+// GetByTxID If note wasn't found by ID -> return empty Note
 func GetByTxID(txID string) Note {
 	for i := 0; i < len(gNotes); i++ {
 
@@ -41,11 +41,11 @@ func GetByTxID(txID string) Note {
 // Add Note, if Note already exists, the old one will be overwritten
 func Add(note Note) (Note, error) {
 	if !isNoteExist(note.TxIDHex) {
-		log.Info("Adding Note with txid=" + note.TxIDHex)
+		log.Infof("Adding Note with txID=&v", note.TxIDHex)
 
 		gNotes = append(gNotes, note)
 	} else {
-		log.Info("Overwriting Note with txid=" + note.TxIDHex)
+		log.Infof("Overwriting Note with txID=%v", note.TxIDHex)
 
 		for i := 0; i < len(gNotes); i++ {
 			if gNotes[i].TxIDHex == note.TxIDHex {
@@ -61,18 +61,26 @@ func Add(note Note) (Note, error) {
 	return note, nil
 }
 
-// Remove Note by txId
+// Remove Note by txID
 func Remove(txID string) error {
+	log.Infof("Removing note with txID=%v", txID)
+
 	for i := 0; i < len(gNotes); i++ {
+
 		if gNotes[i].TxIDHex == txID {
 			gNotes = append(gNotes[:i], gNotes[i+1:]...)
 			return nil
 		}
 	}
-	return fmt.Errorf("Note with txid='" + txID + "' has not been removed")
+
+	if err := writeJSON(); err != nil {
+		return err
+	}
+
+	return fmt.Errorf("note with txID='%v' has not been removed: Note doesn't exist", txID)
 }
 
-// Check if Note with txId exists
+// Check if Note with given txID exists
 func isNoteExist(txID string) bool {
 	for i := 0; i < len(gNotes); i++ {
 		if gNotes[i].TxIDHex == txID {
@@ -98,7 +106,7 @@ func writeJSON() error {
 func loadJSON(notesPath string) {
 	var notes []Note
 
-	// Set Path for transactionnotes file
+	// Set Path for notes file
 	gNotesPath = notesPath
 
 	// Open jsonFile
@@ -110,7 +118,7 @@ func loadJSON(notesPath string) {
 			return
 		}
 
-		log.Info("File does not Exist: " + notesPath + "; Creating empty File...")
+		log.Infof("File does not exist: %v; Creating empty File...", notesPath)
 
 		err = ioutil.WriteFile(notesPath, []byte{}, 0644)
 		if err != nil {
@@ -125,6 +133,7 @@ func loadJSON(notesPath string) {
 		}
 	}
 
+	// When give json file doesn't exist, create an empty one
 	if jsonFile != nil {
 		var fi os.FileInfo
 		var byteValue []byte
@@ -158,7 +167,7 @@ func loadJSON(notesPath string) {
 
 			gNotes = notes
 
-			log.Info("Loaded Notes from " + fi.Name())
+			log.Infof("Loaded Notes from %v", fi.Name())
 		}
 	}
 }

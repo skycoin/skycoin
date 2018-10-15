@@ -9,6 +9,30 @@
   return 0;
 }
 
+ GoUint32_ fix121FeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+  *pFee = 121;
+  return 0;
+}
+
+ GoUint32_ badFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+  return 0x7FFFFFFF;
+}
+
+FeeCalculator feeCalc(){
+ FeeCalculator feeCalc = {zeroFeeCalculator, NULL};
+ return feeCalc;
+}
+
+FeeCalculator fix121(){
+ FeeCalculator feeCalc = {fix121FeeCalculator, NULL};
+ return feeCalc;
+}
+
+FeeCalculator badCalc(){
+ FeeCalculator feeCalc = {badFeeCalculator, NULL};
+ return feeCalc;
+}
+
 	int MEMPOOLIDX = 0;
 	void *MEMPOOL[1024 * 256];
 

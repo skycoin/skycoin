@@ -9,6 +9,11 @@
   return 0;
 }
 
+	GoUint32_ calcFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+  *pFee = 1;
+  return 0;
+}
+
  GoUint32_ fix121FeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
   *pFee = 121;
   return 0;
@@ -16,6 +21,12 @@
 
  GoUint32_ badFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
   return 0x7FFFFFFF;
+}
+
+GoUint32_ overflowFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void *context)
+{
+  *pFee = 0xFFFFFFFFFFFFFFFF;
+  return 0;
 }
 
 FeeCalculator feeCalc(){
@@ -33,6 +44,15 @@ FeeCalculator badCalc(){
  return feeCalc;
 }
 
+FeeCalculator calcCalc(){
+ FeeCalculator feeCalc = {calcFeeCalculator, NULL};
+ return feeCalc;
+}
+
+FeeCalculator overflow(){
+ FeeCalculator feeCalc = {overflowFeeCalculator, NULL};
+ return feeCalc;
+}
 	int MEMPOOLIDX = 0;
 	void *MEMPOOL[1024 * 256];
 
@@ -753,5 +773,9 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	unsigned char bufferb64[1024];
 	unsigned int size = b64_encode((const unsigned char*)dest_buffer, fullDestLength, encrypted->data);
 	encrypted->len = size;
+}
+
+void convertGoUint8toSHA256(GoUint8_* __in, cipher_SHA256* __out){
+memcpy(__out->data, __in, 32);
 }
 	%}

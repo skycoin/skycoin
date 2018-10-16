@@ -88,7 +88,6 @@ CSHARP_ARRAYS_FIXED(int, int)
 %apply unsigned long  {GoUintptr, __SIZE_TYPE__};
 %apply short  {GoInt16, GoInt16_};
 %apply unsigned char  {GoUint8_, GoUint8};
-%apply string  {GoUint8_*, GoUint8*};
 %apply unsigned int  {GoUint32_, GoUint32};
 %apply signed char  {GoInt8_, GoInt8};
 %apply unsigned long long  {GoUint64, GoUint64_,GoUint,GoUint_};

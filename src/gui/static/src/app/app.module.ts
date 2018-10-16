@@ -71,6 +71,10 @@ import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';
 import { NavBarService } from './services/nav-bar.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
+import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
+import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
+import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
+import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
 
 
 const ROUTES = [
@@ -129,6 +133,10 @@ const ROUTES = [
     path: 'wizard',
     component: OnboardingComponent,
   },
+  {
+    path: 'reset/:id',
+    component: ResetPasswordComponent,
+  },
 ];
 
 @NgModule({
@@ -170,6 +178,10 @@ const ROUTES = [
     TransactionInfoComponent,
     SendFormAdvancedComponent,
     LoadingContentComponent,
+    NumberOfAddressesComponent,
+    SelectAddressComponent,
+    CreateWalletFormComponent,
+    ResetPasswordComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -181,6 +193,8 @@ const ROUTES = [
     OnboardingSafeguardComponent,
     PasswordDialogComponent,
     SeedModalComponent,
+    NumberOfAddressesComponent,
+    SelectAddressComponent,
   ],
   imports: [
     BrowserModule,

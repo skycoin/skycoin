@@ -1,3 +1,6 @@
+/*
+skycoin daemon
+*/
 package main
 
 /*
@@ -6,17 +9,18 @@ AVOID EDITING THIS MANUALLY
 */
 
 import (
+	"flag"
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.24.1"
+	Version = "0.25.0-rc1"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -47,17 +51,13 @@ var (
 		"118.178.135.93:6000",
 		"47.88.33.156:6000",
 		"121.41.103.148:6000",
-		"120.77.69.188:6000",
 		"104.237.142.206:6000",
 		"176.58.126.224:6000",
 		"172.104.85.6:6000",
 		"139.162.7.132:6000",
 	}
-)
 
-func main() {
-	// get node config
-	nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
 		GenesisSignatureStr: GenesisSignatureStr,
 		GenesisAddressStr:   GenesisAddressStr,
 		GenesisCoinVolume:   GenesisCoinVolume,
@@ -69,24 +69,35 @@ func main() {
 		Port:                6000,
 		WebInterfacePort:    6420,
 		DataDirectory:       "$HOME/.skycoin",
-		ProfileCPUFile:      "skycoin.prof",
 	})
 
+	parseFlags = true
+)
+
+func init() {
+	nodeConfig.RegisterFlags()
+}
+
+func main() {
+	if parseFlags {
+		flag.Parse()
+	}
+
 	// create a new fiber coin instance
-	coin := skycoin.NewCoin(
-		skycoin.Config{
-			Node: *nodeConfig,
-			Build: visor.BuildInfo{
-				Version: Version,
-				Commit:  Commit,
-				Branch:  Branch,
-			},
+	coin := skycoin.NewCoin(skycoin.Config{
+		Node: nodeConfig,
+		Build: readable.BuildInfo{
+			Version: Version,
+			Commit:  Commit,
+			Branch:  Branch,
 		},
-		logger,
-	)
+	}, logger)
 
 	// parse config values
-	coin.ParseConfig()
+	if err := coin.ParseConfig(); err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
 
 	// run fiber coin node
 	if err := coin.Run(); err != nil {

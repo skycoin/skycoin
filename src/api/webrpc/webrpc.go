@@ -1,3 +1,6 @@
+/*
+Package webrpc implements the JSON-RPC 2.0 interface. DEPRECATED, and will be removed in v0.26.0
+*/
 package webrpc
 
 import (
@@ -95,8 +98,12 @@ func (r *Request) DecodeParams(v interface{}) error {
 }
 
 func makeSuccessResponse(id string, result interface{}) Response {
-	// TODO -- don't ignore error
-	rlt, _ := json.Marshal(result)
+	rlt, err := json.Marshal(result)
+	// TODO -- handle error
+	if err != nil {
+		logger.WithError(err).Error("makeSuccessResponse JSON marshal failed")
+	}
+
 	return Response{
 		ID:      &id,
 		Result:  rlt,

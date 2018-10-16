@@ -1,4 +1,4 @@
-// Package file Filesystem related utilities
+// Package file provides filesystem related utilities
 package file
 
 import (
@@ -142,7 +142,9 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 		err = errors.New("Failed to save complete file")
 	}
 	if err != nil {
-		os.Remove(filename)
+		if removeErr := os.Remove(filename); removeErr != nil {
+			logger.WithError(removeErr).Warningf("os.Remove(%s) failed", filename)
+		}
 	}
 	return err
 }
@@ -212,7 +214,11 @@ func ResolveResourceDirectory(path string) string {
 	//must be an absolute path
 	//error and problem and crash if not absolute path
 	for i := range dirs {
-		absPath, _ := filepath.Abs(dirs[i])
+		absPath, err := filepath.Abs(dirs[i])
+		if err != nil {
+			logger.WithError(err).Errorf("filepath.Abs(%s) failed", dirs[i])
+			continue
+		}
 		dirs[i] = absPath
 	}
 

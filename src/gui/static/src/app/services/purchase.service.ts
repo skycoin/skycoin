@@ -38,13 +38,13 @@ export class PurchaseService {
   }
 
   generate(wallet: Wallet): Observable<PurchaseOrder> {
-    return this.walletService.addAddress(wallet).flatMap(address => {
-      return this.post('bind', { skyaddr: address.address, coin_type: 'BTC' })
+    return this.walletService.addAddress(wallet, 1).flatMap(address => {
+      return this.post('bind', { skyaddr: address[0].address, coin_type: 'BTC' })
         .map(response => ({
           coin_type: response.coin_type,
           deposit_address: response.deposit_address,
           filename: wallet.filename,
-          recipient_address: address.address,
+          recipient_address: address[0].address,
           status: 'waiting_deposit',
         }));
     });

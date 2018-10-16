@@ -10,17 +10,17 @@ pushd "${SCRIPTDIR}"
 if [[ "$OSTYPE" == "linux"* ]]; then
     tar -C .. -cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.*' \
-        src cmd run.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
+        src cmd run-client.sh run-daemon.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
         >/dev/null
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     tar -C .. -cvf "${SRC_TAR}" --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.*' \
-        src cmd run.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
+        src cmd run-client.sh run-daemon.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
         >/dev/null
 elif [[ "$OSTYPE" == "msys"* ]]; then
     tar -C .. -cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.*' \
-        src cmd run.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
+        src cmd run-client.sh run-daemon.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
         >/dev/null
 fi
 

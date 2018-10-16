@@ -8,8 +8,8 @@ import (
 
 // PeerBlockchainHeight is a peer's IP address with their reported blockchain height
 type PeerBlockchainHeight struct {
-	Address string `json:"address"`
-	Height  uint64 `json:"height"`
+	Address string
+	Height  uint64
 }
 
 // peerBlockchainHeights tracks reported blockchain heights of peers
@@ -56,6 +56,15 @@ func (p *peerBlockchainHeights) Estimate(headSeq uint64) uint64 {
 	}
 
 	return headSeq
+}
+
+// Get returns the height for a given address
+func (p *peerBlockchainHeights) Get(addr string) (uint64, bool) {
+	p.Lock()
+	defer p.Unlock()
+
+	height, ok := p.heights[addr]
+	return height, ok
 }
 
 // All returns recorded peers' blockchain heights as an array.

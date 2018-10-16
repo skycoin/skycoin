@@ -12,8 +12,8 @@ var AddressUxBkt = []byte("address_in")
 // bucket for storing address with UxOut, key as address, value as UxOut.
 type addressUx struct{}
 
-// Get return nil on not found.
-func (au *addressUx) Get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
+// get return nil on not found.
+func (au *addressUx) get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
 	var uxHashes []cipher.SHA256
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, AddressUxBkt, address.Bytes(), &uxHashes); err != nil {
@@ -25,9 +25,9 @@ func (au *addressUx) Get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256
 	return uxHashes, nil
 }
 
-// Add adds a hash to an address's hash list
-func (au *addressUx) Add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SHA256) error {
-	hashes, err := au.Get(tx, address)
+// add adds a hash to an address's hash list
+func (au *addressUx) add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SHA256) error {
+	hashes, err := au.get(tx, address)
 	if err != nil {
 		return err
 	}
@@ -43,12 +43,12 @@ func (au *addressUx) Add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SH
 	return dbutil.PutBucketValue(tx, AddressUxBkt, address.Bytes(), encoder.Serialize(hashes))
 }
 
-// IsEmpty checks if the addressUx bucket is empty
-func (au *addressUx) IsEmpty(tx *dbutil.Tx) (bool, error) {
+// isEmpty checks if the addressUx bucket is empty
+func (au *addressUx) isEmpty(tx *dbutil.Tx) (bool, error) {
 	return dbutil.IsEmpty(tx, AddressUxBkt)
 }
 
-// Reset resets the bucket
-func (au *addressUx) Reset(tx *dbutil.Tx) error {
+// reset resets the bucket
+func (au *addressUx) reset(tx *dbutil.Tx) error {
 	return dbutil.Reset(tx, AddressUxBkt)
 }

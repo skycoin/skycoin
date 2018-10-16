@@ -6,18 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/readable"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-// pendingTxnsHandler returns pending transactions
+// pendingTxnsHandler returns pending (unconfirmed) transactions
 // Method: GET
 // URI: /api/v1/pendingTxs
 // Args:
@@ -36,32 +39,30 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txns, err := gateway.GetAllUnconfirmedTxnsVerbose()
+			txns, inputs, err := gateway.GetAllUnconfirmedTransactionsVerbose()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
 
-			if len(txns) == 0 {
-				txns = []visor.ReadableUnconfirmedTxnVerbose{}
+			vb, err := readable.NewUnconfirmedTransactionsVerbose(txns, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
 			}
 
-			wh.SendJSONOr500(logger, w, txns)
+			wh.SendJSONOr500(logger, w, vb)
 		} else {
-			txns, err := gateway.GetAllUnconfirmedTxns()
+			txns, err := gateway.GetAllUnconfirmedTransactions()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
 
-			ret := make([]*visor.ReadableUnconfirmedTxn, len(txns))
-			for i, unconfirmedTxn := range txns {
-				readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
-				if err != nil {
-					wh.Error500(w, err.Error())
-					return
-				}
-				ret[i] = readable
+			ret, err := readable.NewUnconfirmedTransactions(txns)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
 			}
 
 			wh.SendJSONOr500(logger, w, ret)
@@ -71,9 +72,9 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 
 // TransactionEncodedResponse represents the data struct of the response to /api/v1/transaction?encoded=1
 type TransactionEncodedResponse struct {
-	Status             visor.TransactionStatus `json:"status"`
-	Time               uint64                  `json:"time"`
-	EncodedTransaction string                  `json:"encoded_transaction"`
+	Status             readable.TransactionStatus `json:"status"`
+	Time               uint64                     `json:"time"`
+	EncodedTransaction string                     `json:"encoded_transaction"`
 }
 
 // transactionHandler returns a transaction identified by its txid hash
@@ -120,7 +121,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txn, err := gateway.GetTransactionResultVerbose(h)
+			txn, inputs, err := gateway.GetTransactionVerbose(h)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -130,39 +131,119 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			wh.SendJSONOr500(logger, w, &txn)
-		} else if encoded {
-			txn, err := gateway.GetTransaction(h)
+			rTxn, err := readable.NewTransactionWithStatusVerbose(txn, inputs)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
-			if txn == nil {
-				wh.Error404(w, "")
-				return
-			}
 
-			txnStr := hex.EncodeToString(txn.Txn.Serialize())
+			wh.SendJSONOr500(logger, w, rTxn)
+			return
+		}
+
+		txn, err := gateway.GetTransaction(h)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+		if txn == nil {
+			wh.Error404(w, "")
+			return
+		}
+
+		if encoded {
+			txnStr := hex.EncodeToString(txn.Transaction.Serialize())
 
 			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
 				EncodedTransaction: txnStr,
-				Status:             txn.Status,
+				Status:             readable.NewTransactionStatus(txn.Status),
 				Time:               txn.Time,
 			})
-		} else {
-			txn, err := gateway.GetTransactionResult(h)
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-			if txn == nil {
-				wh.Error404(w, "")
-				return
-			}
-
-			wh.SendJSONOr500(logger, w, &txn)
+			return
 		}
+
+		rTxn, err := readable.NewTransactionWithStatus(txn)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, rTxn)
 	}
+}
+
+// TransactionsWithStatus array of transaction results
+type TransactionsWithStatus struct {
+	Transactions []readable.TransactionWithStatus `json:"txns"`
+}
+
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionsWithStatus) Sort() {
+	sort.Slice(r.Transactions, func(i, j int) bool {
+		a := r.Transactions[i]
+		b := r.Transactions[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
+// NewTransactionsWithStatus converts []Transaction to TransactionsWithStatus
+func NewTransactionsWithStatus(txns []visor.Transaction) (*TransactionsWithStatus, error) {
+	txnRlts := make([]readable.TransactionWithStatus, 0, len(txns))
+	for _, txn := range txns {
+		rTxn, err := readable.NewTransactionWithStatus(&txn)
+		if err != nil {
+			return nil, err
+		}
+		txnRlts = append(txnRlts, *rTxn)
+	}
+
+	return &TransactionsWithStatus{
+		Transactions: txnRlts,
+	}, nil
+}
+
+// TransactionsWithStatusVerbose array of transaction results
+type TransactionsWithStatusVerbose struct {
+	Transactions []readable.TransactionWithStatusVerbose `json:"txns"`
+}
+
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionsWithStatusVerbose) Sort() {
+	sort.Slice(r.Transactions, func(i, j int) bool {
+		a := r.Transactions[i]
+		b := r.Transactions[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
+// NewTransactionsWithStatusVerbose converts []Transaction to []TransactionsWithStatusVerbose
+func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor.TransactionInput) (*TransactionsWithStatusVerbose, error) {
+	if len(txns) != len(inputs) {
+		return nil, errors.New("NewTransactionsWithStatusVerbose: len(txns) != len(inputs)")
+	}
+
+	txnRlts := make([]readable.TransactionWithStatusVerbose, len(txns))
+	for i, txn := range txns {
+		rTxn, err := readable.NewTransactionWithStatusVerbose(&txn, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+		txnRlts[i] = *rTxn
+	}
+
+	return &TransactionsWithStatusVerbose{
+		Transactions: txnRlts,
+	}, nil
 }
 
 // Returns transactions that match the filters.
@@ -172,7 +253,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 //	   verbose: [bool] include verbose transaction input data
-func getTransactions(gateway Gatewayer) http.HandlerFunc {
+func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -208,34 +289,37 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txnRlts, err := gateway.GetTransactionResultsVerbose(flts)
+			txns, inputs, err := gateway.GetTransactionsVerbose(flts)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
 
-			txns := []daemon.TransactionResultVerbose{}
-			if txnRlts != nil && txnRlts.Txns != nil {
-				txnRlts.Sort()
-				txns = txnRlts.Txns
+			rTxns, err := NewTransactionsWithStatusVerbose(txns, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
 			}
 
-			wh.SendJSONOr500(logger, w, txns)
+			rTxns.Sort()
+
+			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		} else {
-			// Gets transactions
-			txnRlts, err := gateway.GetTransactionResults(flts)
+			txns, err := gateway.GetTransactions(flts)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
 
-			txns := []daemon.TransactionResult{}
-			if txnRlts != nil && txnRlts.Txns != nil {
-				txnRlts.Sort()
-				txns = txnRlts.Txns
+			rTxns, err := NewTransactionsWithStatus(txns)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
 			}
 
-			wh.SendJSONOr500(logger, w, txns)
+			rTxns.Sort()
+
+			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		}
 	}
 }
@@ -262,10 +346,11 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 // Content-Type: application/json
 // Body: {"rawtx": "<hex encoded transaction>"}
 // Response:
-//      400 - bad transaction
-//      503 - network unavailable for broadcasting transaction
 //      200 - ok, returns the transaction hash in hex as string
-func injectTransaction(gateway Gatewayer) http.HandlerFunc {
+//      400 - bad transaction
+//		500 - other error
+//      503 - network unavailable for broadcasting transaction
+func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -294,8 +379,12 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			err = fmt.Errorf("inject tx failed: %v", err)
-			wh.Error503(w, err.Error())
+			switch err {
+			case daemon.ErrOutgoingConnectionsDisabled, gnet.ErrPoolEmpty, gnet.ErrNoReachableConnections:
+				wh.Error503(w, err.Error())
+			default:
+				wh.Error500(w, err.Error())
+			}
 			return
 		}
 
@@ -303,24 +392,49 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
+// ResendResult the result of rebroadcasting transaction
+type ResendResult struct {
+	Txids []string `json:"txids"`
+}
+
+// NewResendResult creates a ResendResult from a list of transaction ID hashes
+func NewResendResult(hashes []cipher.SHA256) ResendResult {
+	txids := make([]string, len(hashes))
+	for i, h := range hashes {
+		txids[i] = h.Hex()
+	}
+	return ResendResult{
+		Txids: txids,
+	}
+}
+
+// URI: /api/v1/resendUnconfirmedTxns
+// Method: GET
+// Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
+func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		rlt, err := gateway.ResendUnconfirmedTxns()
+		hashes, err := gateway.ResendUnconfirmedTxns()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, rlt)
+		wh.SendJSONOr500(logger, w, NewResendResult(hashes))
 	}
 }
 
-func getRawTxn(gateway Gatewayer) http.HandlerFunc {
+// URI: /api/v1/rawtx
+// Method: GET
+// Args:
+//	txid: transaction ID hash
+// Returns the hex-encoded byte serialization of a transaction.
+// The transaction may be confirmed or unconfirmed.
+func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -350,7 +464,7 @@ func getRawTxn(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		d := txn.Txn.Serialize()
+		d := txn.Transaction.Serialize()
 		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
 	}
 }
@@ -364,31 +478,6 @@ type VerifyTxnRequest struct {
 type VerifyTxnResponse struct {
 	Confirmed   bool               `json:"confirmed"`
 	Transaction CreatedTransaction `json:"transaction"`
-}
-
-func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
-	out, err := json.MarshalIndent(resp, "", "    ")
-	if err != nil {
-		wh.Error500(w, "json.MarshalIndent failed")
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-
-	if resp.Error == nil {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		if resp.Error.Code < 400 || resp.Error.Code >= 600 {
-			logger.Critical().Errorf("writeHTTPResponse invalid error status code: %d", resp.Error.Code)
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(resp.Error.Code)
-		}
-	}
-
-	if _, err := w.Write(out); err != nil {
-		logger.WithError(err).Error("http Write failed")
-	}
 }
 
 // Decode and verify an encoded transaction

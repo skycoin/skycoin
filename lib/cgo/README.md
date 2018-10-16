@@ -99,3 +99,13 @@ invocation. The caller will be responsible for
 [reallocating another memory buffer](http://en.cppreference.com/w/c/memory/realloc)
 using a higher `cap` and retry.
 
+## Generating documentation
+
+Follow these steps to generate API documentation.
+
+- [Install `doxygen`](https://www.stack.nl/~dimitri/doxygen/manual/install.html)
+- Install `moxygen` like so: `npm install moxygen -g`
+- At the project top-level folder invoke `make docs-libc` (libskycoin docs only) or `make docs` (all docs).
+
+Both `doxygen` and `moxygen` are pre-installed in [`skycoin/skycoindev-cli:develop`](https://hub.docker.com/r/skycoin/skycoindev-cli) Docker image.
+

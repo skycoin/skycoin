@@ -207,8 +207,12 @@ func (sig *Signature) Bytes() []byte {
 	}
 
 	res := new(bytes.Buffer)
-	res.Write(r)
-	res.Write(s)
+	if _, err := res.Write(r); err != nil {
+		panic(err)
+	}
+	if _, err := res.Write(s); err != nil {
+		panic(err)
+	}
 
 	//test
 	if true {

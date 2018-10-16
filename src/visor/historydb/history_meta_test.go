@@ -15,7 +15,7 @@ func TestHistoryMetaGetSetParsedHeight(t *testing.T) {
 	hm := &historyMeta{}
 
 	err := db.View("", func(tx *dbutil.Tx) error {
-		height, ok, err := hm.ParsedBlockSeq(tx)
+		height, ok, err := hm.parsedBlockSeq(tx)
 		require.NoError(t, err)
 		require.False(t, ok)
 		require.Equal(t, uint64(0), height)
@@ -24,14 +24,14 @@ func TestHistoryMetaGetSetParsedHeight(t *testing.T) {
 	require.NoError(t, err)
 
 	err = db.Update("", func(tx *dbutil.Tx) error {
-		err := hm.SetParsedBlockSeq(tx, 10)
+		err := hm.setParsedBlockSeq(tx, 10)
 		require.NoError(t, err)
 		return err
 	})
 	require.NoError(t, err)
 
 	err = db.View("", func(tx *dbutil.Tx) error {
-		height, ok, err := hm.ParsedBlockSeq(tx)
+		height, ok, err := hm.parsedBlockSeq(tx)
 		require.NoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, uint64(10), height)
@@ -40,14 +40,14 @@ func TestHistoryMetaGetSetParsedHeight(t *testing.T) {
 	require.NoError(t, err)
 
 	err = db.Update("", func(tx *dbutil.Tx) error {
-		err := hm.SetParsedBlockSeq(tx, 0)
+		err := hm.setParsedBlockSeq(tx, 0)
 		require.NoError(t, err)
 		return err
 	})
 	require.NoError(t, err)
 
 	err = db.View("", func(tx *dbutil.Tx) error {
-		height, ok, err := hm.ParsedBlockSeq(tx)
+		height, ok, err := hm.parsedBlockSeq(tx)
 		require.NoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, uint64(0), height)

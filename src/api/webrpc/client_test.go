@@ -14,7 +14,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -28,12 +28,16 @@ func TestClientGetUnspentOutputs(t *testing.T) {
 	headTime := uint64(time.Now().UTC().Unix())
 	uxouts := make([]coin.UxOut, 5)
 	addrs := make([]cipher.Address, 5)
-	rbOutputs := make(visor.ReadableOutputs, 5)
+	rbOutputs := make(readable.UnspentOutputs, 5)
 	for i := 0; i < 5; i++ {
 		addrs[i] = testutil.MakeAddress()
 		uxouts[i] = coin.UxOut{}
 		uxouts[i].Body.Address = addrs[i]
-		rbOut, err := visor.NewReadableOutput(headTime, uxouts[i])
+
+		vOut, err := visor.NewUnspentOutput(uxouts[i], headTime)
+		require.NoError(t, err)
+
+		rbOut, err := readable.NewUnspentOutput(vOut)
 		require.NoError(t, err)
 		rbOutputs[i] = rbOut
 	}
@@ -118,11 +122,11 @@ func TestClientInjectTransaction(t *testing.T) {
 	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	s.Gateway.(*fakeGateway).injectRawTxMap = map[string]bool{
-		rawTxID: true,
+		rawTxnID: true,
 	}
 	require.Empty(t, s.Gateway.(*fakeGateway).injectedTransactions)
 
-	rpcReq, err := NewRequest("inject_transaction", []string{rawTxStr}, "1")
+	rpcReq, err := NewRequest("inject_transaction", []string{rawTxnStr}, "1")
 	require.NoError(t, err)
 
 	body, err := json.Marshal(rpcReq)
@@ -147,7 +151,7 @@ func TestClientInjectTransaction(t *testing.T) {
 	require.NotEmpty(t, txidJSON.Txid)
 
 	require.Len(t, s.Gateway.(*fakeGateway).injectedTransactions, 1)
-	require.Contains(t, s.Gateway.(*fakeGateway).injectedTransactions, rawTxID)
+	require.Contains(t, s.Gateway.(*fakeGateway).injectedTransactions, rawTxnID)
 }
 
 func TestClientGetStatus(t *testing.T) {
@@ -179,12 +183,16 @@ func TestClientGetStatus(t *testing.T) {
 	err = json.Unmarshal(resp.Result, &result)
 	require.NoError(t, err)
 
-	// values derived from hardcoded `blockString`
+	// Patch TimeSinceLastBlock since it is not stable
+	require.NotEmpty(t, result.TimeSinceLastBlock)
+	require.NotEqual(t, "s", result.TimeSinceLastBlock)
+	result.TimeSinceLastBlock = ""
+
 	require.Equal(t, StatusResult{
 		Running:            true,
 		BlockNum:           455,
-		LastBlockHash:      "",
-		TimeSinceLastBlock: "18446744072232256374s",
+		LastBlockHash:      "b46651a61ca4d90bc2442e2041480ad3960c6ef10b902c70d4fa823b02974f63",
+		TimeSinceLastBlock: "",
 	}, result)
 }
 
@@ -207,14 +215,14 @@ func TestClientGetTransactionByID(t *testing.T) {
 		},
 		{
 			name:   "valid txn id, but does not exist",
-			txid:   rawTxID,
+			txid:   rawTxnID,
 			errMsg: "transaction doesn't exist",
 		},
 		{
 			name: "valid txn id exists",
-			txid: rawTxID,
+			txid: rawTxnID,
 			gatewayTransactions: map[string]string{
-				rawTxID: rawTxStr,
+				rawTxnID: rawTxnStr,
 			},
 		},
 	}
@@ -254,11 +262,11 @@ func TestClientGetTransactionByID(t *testing.T) {
 			err = json.Unmarshal(resp.Result, &txn)
 			require.NoError(t, err)
 
-			expectedTxn := decodeRawTransaction(rawTxStr)
-			rbTx, err := visor.NewReadableTransaction(expectedTxn)
+			expectedTxn := decodeRawTransaction(rawTxnStr)
+			rbTx, err := readable.NewTransaction(expectedTxn.Transaction, false)
 			require.NoError(t, err)
-			require.Equal(t, &daemon.TransactionResult{
-				Status:      expectedTxn.Status,
+			require.Equal(t, &readable.TransactionWithStatus{
+				Status:      readable.NewTransactionStatus(expectedTxn.Status),
 				Time:        0,
 				Transaction: *rbTx,
 			}, txn.Transaction)
@@ -290,7 +298,7 @@ func TestClientGetAddressUxOuts(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gatewayerMock, mockData := newUxOutMock()
+			gatewayerMock, mockData := newUxOutMock(t)
 			s.Gateway = gatewayerMock
 
 			rpcReq, err := NewRequest("get_address_uxouts", []string{tc.addr}, "1")
@@ -356,12 +364,12 @@ func TestClientGetBlocks(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &resp)
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.Unmarshal(resp.Result, &blocks)
 	require.NoError(t, err)
 
 	require.NotNil(t, blocks.Blocks)
-	require.Equal(t, decodeBlock(blockString), &blocks)
+	require.Equal(t, makeTestReadableBlocks(t), &blocks)
 }
 
 func TestClientGetBlocksBySeq(t *testing.T) {
@@ -369,7 +377,7 @@ func TestClientGetBlocksBySeq(t *testing.T) {
 
 	gatewayerMock := &MockGatewayer{}
 	s.Gateway = gatewayerMock
-	gatewayerMock.On("GetBlocksInDepth", []uint64{454}).Return(decodeBlock(blockString), nil)
+	gatewayerMock.On("GetBlocks", []uint64{454}).Return(makeTestBlocks(t), nil)
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
@@ -395,12 +403,12 @@ func TestClientGetBlocksBySeq(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &resp)
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.Unmarshal(resp.Result, &blocks)
 	require.NoError(t, err)
 
 	require.NotNil(t, blocks.Blocks)
-	require.Equal(t, decodeBlock(blockString), &blocks)
+	require.Equal(t, makeTestReadableBlocks(t), &blocks)
 }
 
 func TestClientGetLastBlocks(t *testing.T) {
@@ -429,10 +437,10 @@ func TestClientGetLastBlocks(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &resp)
 	require.NoError(t, err)
 
-	var blocks visor.ReadableBlocks
+	var blocks readable.Blocks
 	err = json.Unmarshal(resp.Result, &blocks)
 	require.NoError(t, err)
 
 	require.Len(t, blocks.Blocks, 1)
-	require.Equal(t, decodeBlock(blockString), &blocks)
+	require.Equal(t, makeTestReadableBlocks(t), &blocks)
 }

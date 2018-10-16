@@ -4,7 +4,6 @@ package webrpc
 
 import cipher "github.com/skycoin/skycoin/src/cipher"
 import coin "github.com/skycoin/skycoin/src/coin"
-import daemon "github.com/skycoin/skycoin/src/daemon"
 import historydb "github.com/skycoin/skycoin/src/visor/historydb"
 import mock "github.com/stretchr/testify/mock"
 import visor "github.com/skycoin/skycoin/src/visor"
@@ -14,62 +13,16 @@ type MockGatewayer struct {
 	mock.Mock
 }
 
-// GetAddrUxOuts provides a mock function with given fields: addr
-func (_m *MockGatewayer) GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error) {
-	ret := _m.Called(addr)
-
-	var r0 []*historydb.UxOut
-	if rf, ok := ret.Get(0).(func([]cipher.Address) []*historydb.UxOut); ok {
-		r0 = rf(addr)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*historydb.UxOut)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
-		r1 = rf(addr)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetBlocks provides a mock function with given fields: start, end
-func (_m *MockGatewayer) GetBlocks(start uint64, end uint64) (*visor.ReadableBlocks, error) {
-	ret := _m.Called(start, end)
-
-	var r0 *visor.ReadableBlocks
-	if rf, ok := ret.Get(0).(func(uint64, uint64) *visor.ReadableBlocks); ok {
-		r0 = rf(start, end)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*visor.ReadableBlocks)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(uint64, uint64) error); ok {
-		r1 = rf(start, end)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetBlocksInDepth provides a mock function with given fields: vs
-func (_m *MockGatewayer) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
+// GetBlocks provides a mock function with given fields: vs
+func (_m *MockGatewayer) GetBlocks(vs []uint64) ([]coin.SignedBlock, error) {
 	ret := _m.Called(vs)
 
-	var r0 *visor.ReadableBlocks
-	if rf, ok := ret.Get(0).(func([]uint64) *visor.ReadableBlocks); ok {
+	var r0 []coin.SignedBlock
+	if rf, ok := ret.Get(0).(func([]uint64) []coin.SignedBlock); ok {
 		r0 = rf(vs)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*visor.ReadableBlocks)
+			r0 = ret.Get(0).([]coin.SignedBlock)
 		}
 	}
 
@@ -83,16 +36,39 @@ func (_m *MockGatewayer) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, e
 	return r0, r1
 }
 
+// GetBlocksInRange provides a mock function with given fields: start, end
+func (_m *MockGatewayer) GetBlocksInRange(start uint64, end uint64) ([]coin.SignedBlock, error) {
+	ret := _m.Called(start, end)
+
+	var r0 []coin.SignedBlock
+	if rf, ok := ret.Get(0).(func(uint64, uint64) []coin.SignedBlock); ok {
+		r0 = rf(start, end)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]coin.SignedBlock)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64, uint64) error); ok {
+		r1 = rf(start, end)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetLastBlocks provides a mock function with given fields: num
-func (_m *MockGatewayer) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
+func (_m *MockGatewayer) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	ret := _m.Called(num)
 
-	var r0 *visor.ReadableBlocks
-	if rf, ok := ret.Get(0).(func(uint64) *visor.ReadableBlocks); ok {
+	var r0 []coin.SignedBlock
+	if rf, ok := ret.Get(0).(func(uint64) []coin.SignedBlock); ok {
 		r0 = rf(num)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*visor.ReadableBlocks)
+			r0 = ret.Get(0).([]coin.SignedBlock)
 		}
 	}
 
@@ -106,18 +82,27 @@ func (_m *MockGatewayer) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error
 	return r0, r1
 }
 
-// GetTimeNow provides a mock function with given fields:
-func (_m *MockGatewayer) GetTimeNow() uint64 {
-	ret := _m.Called()
+// GetSpentOutputsForAddresses provides a mock function with given fields: addr
+func (_m *MockGatewayer) GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, error) {
+	ret := _m.Called(addr)
 
-	var r0 uint64
-	if rf, ok := ret.Get(0).(func() uint64); ok {
-		r0 = rf()
+	var r0 [][]historydb.UxOut
+	if rf, ok := ret.Get(0).(func([]cipher.Address) [][]historydb.UxOut); ok {
+		r0 = rf(addr)
 	} else {
-		r0 = ret.Get(0).(uint64)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([][]historydb.UxOut)
+		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
+		r1 = rf(addr)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetTransaction provides a mock function with given fields: txid
@@ -143,28 +128,22 @@ func (_m *MockGatewayer) GetTransaction(txid cipher.SHA256) (*visor.Transaction,
 	return r0, r1
 }
 
-// GetUnspentOutputs provides a mock function with given fields: filters
-func (_m *MockGatewayer) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error) {
-	_va := make([]interface{}, len(filters))
-	for _i := range filters {
-		_va[_i] = filters[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+// GetUnspentOutputsSummary provides a mock function with given fields: filters
+func (_m *MockGatewayer) GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error) {
+	ret := _m.Called(filters)
 
-	var r0 *visor.ReadableOutputSet
-	if rf, ok := ret.Get(0).(func(...daemon.OutputsFilter) *visor.ReadableOutputSet); ok {
-		r0 = rf(filters...)
+	var r0 *visor.UnspentOutputsSummary
+	if rf, ok := ret.Get(0).(func([]visor.OutputsFilter) *visor.UnspentOutputsSummary); ok {
+		r0 = rf(filters)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*visor.ReadableOutputSet)
+			r0 = ret.Get(0).(*visor.UnspentOutputsSummary)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(...daemon.OutputsFilter) error); ok {
-		r1 = rf(filters...)
+	if rf, ok := ret.Get(1).(func([]visor.OutputsFilter) error); ok {
+		r1 = rf(filters)
 	} else {
 		r1 = ret.Error(1)
 	}

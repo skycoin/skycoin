@@ -85,17 +85,6 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
       flex: 1;
     }
 
-    .-options {
-      color: $gradient-blue-dark;
-      cursor: pointer;
-
-      mat-icon {
-        display: inline;
-        vertical-align: middle;
-        font-size: 13px;
-      }
-    }
-
     .mat-checkbox-layout {
       display: flex;
     }
@@ -131,6 +120,20 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
         }
       }
     }
+  }
+}
+
+.-options {
+  padding-left: 5px;
+  color: $gradient-blue-dark;
+  cursor: pointer;
+
+  mat-icon {
+    color: $gradient-blue-dark;
+    padding: 0;
+    display: inline;
+    vertical-align: middle;
+    font-size: 13px;
   }
 }
 

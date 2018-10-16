@@ -20,13 +20,9 @@ import "C"
 
 //export SKY_cli_CreateRawTxFromWallet
 func SKY_cli_CreateRawTxFromWallet(_c C.WebRpcClient__Handle, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg4 *C.coin__Transaction) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	walletFile := _walletFile
@@ -43,13 +39,9 @@ func SKY_cli_CreateRawTxFromWallet(_c C.WebRpcClient__Handle, _walletFile, _chgA
 
 //export SKY_cli_CreateRawTxFromAddress
 func SKY_cli_CreateRawTxFromAddress(_c C.WebRpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg4 *C.coin__Transaction) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addr := _addr
@@ -67,18 +59,15 @@ func SKY_cli_CreateRawTxFromAddress(_c C.WebRpcClient__Handle, _addr, _walletFil
 
 //export SKY_cli_CreateRawTx
 func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt C.Wallet__Handle, _inAddrs []string, _chgAddr string, _toAddrs []C.cli__SendAmount, _password []byte, _arg6 *C.coin__Transaction) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
+
 	wlt, okwlt := lookupWalletHandle(_wlt)
 	if !okwlt {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	inAddrs := *(*[]string)(unsafe.Pointer(&_inAddrs))
@@ -95,10 +84,6 @@ func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt C.Wallet__Handle, _inAd
 
 //export SKY_cli_NewTransaction
 func SKY_cli_NewTransaction(_utxos []C.wallet__UxBalance, _keys []C.cipher__SecKey, _outs []C.coin__TransactionOutput, _arg3 *C.coin__Transaction) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
 	utxos := *(*[]wallet.UxBalance)(unsafe.Pointer(&_utxos))
 	keys := *(*[]cipher.SecKey)(unsafe.Pointer(&_keys))
 	outs := *(*[]coin.TransactionOutput)(unsafe.Pointer(&_outs))

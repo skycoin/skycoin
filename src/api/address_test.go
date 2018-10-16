@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestVerifyAddress(t *testing.T) {
-	toJSON := func(r VerifyAddressRequest) string {
-		b, err := json.Marshal(r)
-		require.NoError(t, err)
-		return string(b)
-	}
+func toJSON(t *testing.T, r interface{}) string {
+	b, err := json.Marshal(r)
+	require.NoError(t, err)
+	return string(b)
+}
 
+func TestVerifyAddress(t *testing.T) {
 	cases := []struct {
 		name         string
 		method       string
@@ -62,7 +62,7 @@ func TestVerifyAddress(t *testing.T) {
 			name:   "422 - Invalid checksum",
 			method: http.MethodPost,
 			status: http.StatusUnprocessableEntity,
-			httpBody: toJSON(VerifyAddressRequest{
+			httpBody: toJSON(t, VerifyAddressRequest{
 				Address: "7apQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
 			}),
 			httpResponse: NewHTTPErrorResponse(http.StatusUnprocessableEntity, "Invalid checksum"),
@@ -71,7 +71,7 @@ func TestVerifyAddress(t *testing.T) {
 			name:   "200",
 			method: http.MethodPost,
 			status: http.StatusOK,
-			httpBody: toJSON(VerifyAddressRequest{
+			httpBody: toJSON(t, VerifyAddressRequest{
 				Address: "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
 			}),
 			httpResponse: HTTPResponse{
@@ -84,7 +84,7 @@ func TestVerifyAddress(t *testing.T) {
 			name:   "200 - csrf disabled",
 			method: http.MethodPost,
 			status: http.StatusOK,
-			httpBody: toJSON(VerifyAddressRequest{
+			httpBody: toJSON(t, VerifyAddressRequest{
 				Address: "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
 			}),
 			httpResponse: HTTPResponse{
@@ -125,8 +125,7 @@ func TestVerifyAddress(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			var rsp ReceivedHTTPResponse
 			err = json.NewDecoder(rr.Body).Decode(&rsp)

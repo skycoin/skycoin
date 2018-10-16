@@ -228,22 +228,23 @@ type IntroductionMessage struct {
 	Mirror uint32
 	// Port is the port that this client is listening on
 	Port uint16
-	// Our client version
+	// Protocol version
 	Version int32
 	c       *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
 	valid bool `enc:"-"` // skip it during encoding
-	// Extra would be parsed as blockchain pubkey if it's not empty
+	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
+	// Currently it contains the blockchain pubkey but will accept a client that does not provide it.
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, extra []byte) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey) *IntroductionMessage {
 	return &IntroductionMessage{
 		Mirror:  mirror,
 		Version: version,
 		Port:    port,
-		Extra:   extra,
+		Extra:   pubkey[:],
 	}
 }
 
@@ -263,19 +264,20 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			return ErrDisconnectSelf
 		}
 
-		// Disconnect if not running the same version
-		if intro.Version != d.DaemonConfig().Version {
-			logger.Infof("%s has different version %d. Disconnecting.",
-				mc.Addr, intro.Version)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidVersion); err != nil {
+		// Disconnect if peer version is not within the supported range
+		dc := d.DaemonConfig()
+		if intro.Version < dc.MinProtocolVersion {
+			logger.Infof("%s protocol version %d below minimum supported protocol version %d. Disconnecting.", mc.Addr, intro.Version, dc.MinProtocolVersion)
+			if err := d.Disconnect(mc.Addr, ErrDisconnectVersionNotSupported); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
-			return ErrDisconnectInvalidVersion
+			return ErrDisconnectVersionNotSupported
 		}
 
 		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)
 
-		// Checks the genesis hash if not empty
+		// v25 Checks the blockchain pubkey, would accept message with no Pubkey
+		// v26 would check the blockchain pubkey and reject if not matched or not provided
 		if len(intro.Extra) > 0 {
 			var bcPubKey cipher.PubKey
 			if len(intro.Extra) < len(bcPubKey) {
@@ -296,17 +298,16 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			}
 		}
 
-		// only solicited connection can be added to exchange peer list, cause accepted
-		// connection may not have incomming  port.
+		// only solicited connection can be added to exchange peer list, because accepted
+		// connection may not have an incoming port
 		ip, port, err := iputil.SplitAddr(mc.Addr)
 		if err != nil {
-			// This should never happen, but the program should still work if it
-			// does.
+			// This should never happen, but the program should still work if it does
 			logger.Errorf("Invalid Addr() for connection: %s", mc.Addr)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectOtherError); err != nil {
+			if err := d.Disconnect(mc.Addr, ErrDisconnectIncomprehensibleError); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
-			return ErrDisconnectOtherError
+			return ErrDisconnectIncomprehensibleError
 		}
 
 		// Checks if the introduction message is from outgoing connection.
@@ -364,7 +365,7 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
 		logger.Errorf("Invalid port for connection %s", a)
-		if err := d.Disconnect(intro.c.Addr, ErrDisconnectOtherError); err != nil {
+		if err := d.Disconnect(intro.c.Addr, ErrDisconnectIncomprehensibleError); err != nil {
 			logger.WithError(err).WithField("addr", intro.c.Addr).Warning("Disconnect")
 		}
 		return

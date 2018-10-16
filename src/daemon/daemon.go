@@ -21,17 +21,9 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-/*
-Todo
-- verify that minimum/maximum connections are working
-- keep max connections
-- maintain minimum number of outgoing connections per server?
-
-
-*/
 var (
-	// ErrDisconnectReasons invalid version
-	ErrDisconnectInvalidVersion gnet.DisconnectReason = errors.New("Invalid version")
+	// ErrDisconnectVersionNotSupported version is below minimum supported version
+	ErrDisconnectVersionNotSupported gnet.DisconnectReason = errors.New("Version is below minimum supported version")
 	// ErrDisconnectIntroductionTimeout timeout
 	ErrDisconnectIntroductionTimeout gnet.DisconnectReason = errors.New("Version timeout")
 	// ErrDisconnectVersionSendFailed version send failed
@@ -48,9 +40,9 @@ var (
 	ErrDisconnectNoIntroduction gnet.DisconnectReason = errors.New("First message was not an Introduction")
 	// ErrDisconnectIPLimitReached ip limit reached
 	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
-	// ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
+	// ErrDisconnectIncomprehensibleError this is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
-	ErrDisconnectOtherError gnet.DisconnectReason = errors.New("Incomprehensible error")
+	ErrDisconnectIncomprehensibleError gnet.DisconnectReason = errors.New("Incomprehensible error")
 	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
 	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
@@ -58,6 +50,9 @@ var (
 	// ErrDisconnectInvalidExtraData is returned when extra field can't be parsed as specific data type.
 	// e.g. ExtraData length in IntroductionMessage is not the same as cipher.PubKey
 	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data")
+
+	// ErrOutgoingConnectionsDisabled is returned if outgoing connections are disabled
+	ErrOutgoingConnectionsDisabled = errors.New("Outgoing connections are disabled")
 
 	logger = logging.MustGetLogger("daemon")
 )
@@ -128,7 +123,9 @@ func (cfg *Config) preprocess() Config {
 // DaemonConfig configuration for the Daemon
 type DaemonConfig struct { // nolint: golint
 	// Protocol version. TODO -- manage version better
-	Version int32
+	ProtocolVersion int32
+	// Minimum accepted protocol version
+	MinProtocolVersion int32
 	// IP Address to serve on. Leave empty for automatic assignment
 	Address string
 	// BlockchainPubkey blockchain pubkey string
@@ -185,7 +182,8 @@ type DaemonConfig struct { // nolint: golint
 // NewDaemonConfig creates daemon config
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		Version:                      2,
+		ProtocolVersion:              2,
+		MinProtocolVersion:           2,
 		Address:                      "",
 		Port:                         6677,
 		OutgoingRate:                 time.Second * 5,
@@ -967,8 +965,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.expectingIntroductions.Add(a, time.Now().UTC())
 	logger.Debugf("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
-	// TODO: replace the last paramenter of nil with dm.Config.BlockchainPubkey in v25
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.pool.Pool.Config.Port, nil)
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey)
 	if err := dm.pool.Pool.SendMessage(a, m); err != nil {
 		logger.Errorf("Send IntroductionMessage to %s failed: %v", a, err)
 	}
@@ -1232,7 +1229,8 @@ func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
 	return dm.pool.Pool.SendMessage(addr, m)
 }
 
-// ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast
+// ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast.
+// It does not return an error if broadcasting fails.
 func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	if dm.Config.DisableOutgoingConnections {
 		return nil, nil
@@ -1256,25 +1254,24 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 // BroadcastTransaction broadcasts a single transaction to all peers.
 func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
-	// TODO -- should return error if disabled or if broadcast fails, so that the caller can detect it
 	if dm.Config.DisableOutgoingConnections {
-		return nil
+		return ErrOutgoingConnectionsDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{t})
 	l, err := dm.pool.Pool.Size()
 	if err != nil {
 		return err
 	}
 
-	logger.Debugf("Broadcasting GiveTxnsMessage to %d conns", l)
+	logger.Debugf("BroadcastTransaction to %d conns", l)
 
-	err = dm.pool.Pool.BroadcastMessage(m)
-	if err != nil {
-		logger.Errorf("Broadcast GivenTxnsMessage failed: %v", err)
+	m := NewGiveTxnsMessage(coin.Transactions{t})
+	if err := dm.pool.Pool.BroadcastMessage(m); err != nil {
+		logger.WithError(err).Error("BroadcastTransaction Pool.BroadcastMessage failed")
+		return err
 	}
 
-	return err
+	return nil
 }
 
 // CreateAndPublishBlock creates a block from unconfirmed transactions and sends it to the network.

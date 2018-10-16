@@ -114,7 +114,7 @@ func TestBlockStat_01(t *testing.T) {
 
 	_, seckey := cipher.GenerateKeyPair()
 	hash := cipher.SumSHA256(secp256k1.RandByte(888))
-	sig := cipher.SignHash(hash, seckey)
+	sig := cipher.MustSignHash(hash, seckey)
 
 	var r int = -1
 
@@ -153,7 +153,7 @@ func TestBlockStat_01(t *testing.T) {
 		t.Fail()
 	}
 
-	sig2 := cipher.SignHash(hash, seckey) // Redo signing.
+	sig2 := cipher.MustSignHash(hash, seckey) // Redo signing.
 	r4 := bs.try_add_hash_and_sig(hash, sig2)
 	if r4 != 1 {
 		t.Log("BlockStat::try_add_hash_and_sig() failed to detect duplicate (hash,pubkey).")
@@ -178,7 +178,7 @@ func TestBlockStat_02(t *testing.T) {
 
 	for i := 0; i < n1; i++ {
 		_, seckey := cipher.GenerateKeyPair()
-		sig := cipher.SignHash(hash1, seckey)
+		sig := cipher.MustSignHash(hash1, seckey)
 		bs.try_add_hash_and_sig(hash1, sig)
 	}
 
@@ -187,7 +187,7 @@ func TestBlockStat_02(t *testing.T) {
 
 	for i := 0; i < n2; i++ {
 		_, seckey := cipher.GenerateKeyPair()
-		sig := cipher.SignHash(hash2, seckey)
+		sig := cipher.MustSignHash(hash2, seckey)
 		bs.try_add_hash_and_sig(hash2, sig)
 	}
 
@@ -196,7 +196,7 @@ func TestBlockStat_02(t *testing.T) {
 
 	for i := 0; i < n3; i++ {
 		_, seckey := cipher.GenerateKeyPair()
-		sig := cipher.SignHash(hash3, seckey)
+		sig := cipher.MustSignHash(hash3, seckey)
 		bs.try_add_hash_and_sig(hash3, sig)
 	}
 

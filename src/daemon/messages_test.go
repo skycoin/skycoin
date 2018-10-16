@@ -27,7 +27,8 @@ func TestIntroductionMessage(t *testing.T) {
 	}
 
 	type daemonMockValue struct {
-		version                    uint32
+		protocolVersion            uint32
+		minProtocolVersion         uint32
 		mirror                     uint32
 		isDefaultConnection        bool
 		isMaxConnectionsReached    bool
@@ -53,8 +54,8 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message without extra bytes",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
+				mirror:          10000,
+				protocolVersion: 1,
 				getMirrorPortResult: mirrorPortResult{
 					exist: false,
 				},
@@ -71,8 +72,8 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message with pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
+				mirror:          10000,
+				protocolVersion: 1,
 				getMirrorPortResult: mirrorPortResult{
 					exist: false,
 				},
@@ -91,8 +92,8 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message with pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
+				mirror:          10000,
+				protocolVersion: 1,
 				getMirrorPortResult: mirrorPortResult{
 					exist: false,
 				},
@@ -111,8 +112,8 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message with pubkey and additional data",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
+				mirror:          10000,
+				protocolVersion: 1,
 				getMirrorPortResult: mirrorPortResult{
 					exist: false,
 				},
@@ -131,8 +132,8 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message with different pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
+				mirror:          10000,
+				protocolVersion: 1,
 				getMirrorPortResult: mirrorPortResult{
 					exist: false,
 				},
@@ -152,8 +153,8 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message with invalid pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
+				mirror:          10000,
+				protocolVersion: 1,
 				getMirrorPortResult: mirrorPortResult{
 					exist: false,
 				},
@@ -181,25 +182,26 @@ func TestIntroductionMessage(t *testing.T) {
 			err: ErrDisconnectSelf,
 		},
 		{
-			name: "Invalid version",
+			name: "Version below minimum supported version",
 			mockValue: daemonMockValue{
-				mirror:           10000,
-				version:          1,
-				disconnectReason: ErrDisconnectInvalidVersion,
+				mirror:             10000,
+				protocolVersion:    1,
+				minProtocolVersion: 2,
+				disconnectReason:   ErrDisconnectVersionNotSupported,
 			},
 			intro: &IntroductionMessage{
 				Mirror:  10001,
 				Version: 0,
 			},
-			err: ErrDisconnectInvalidVersion,
+			err: ErrDisconnectVersionNotSupported,
 		},
 		{
 			name: "Invalid address",
 			addr: "121.121.121.121",
 			mockValue: daemonMockValue{
 				mirror:           10000,
-				version:          1,
-				disconnectReason: ErrDisconnectOtherError,
+				protocolVersion:  1,
+				disconnectReason: ErrDisconnectIncomprehensibleError,
 				pubkey:           pubkey,
 			},
 			intro: &IntroductionMessage{
@@ -207,14 +209,14 @@ func TestIntroductionMessage(t *testing.T) {
 				Version: 1,
 				Port:    6000,
 			},
-			err: ErrDisconnectOtherError,
+			err: ErrDisconnectIncomprehensibleError,
 		},
 		{
 			name: "incomming connection",
 			addr: "121.121.121.121:12345",
 			mockValue: daemonMockValue{
 				mirror:                  10000,
-				version:                 1,
+				protocolVersion:         1,
 				isDefaultConnection:     true,
 				isMaxConnectionsReached: true,
 				getMirrorPortResult: mirrorPortResult{
@@ -236,7 +238,7 @@ func TestIntroductionMessage(t *testing.T) {
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
 				mirror:              10000,
-				version:             1,
+				protocolVersion:     1,
 				isDefaultConnection: true,
 				getMirrorPortResult: mirrorPortResult{
 					exist: true,
@@ -261,7 +263,10 @@ func TestIntroductionMessage(t *testing.T) {
 			tc.intro.c = mc
 
 			d := &MockDaemoner{}
-			d.On("DaemonConfig").Return(DaemonConfig{Version: int32(tc.mockValue.version)})
+			d.On("DaemonConfig").Return(DaemonConfig{
+				ProtocolVersion:    int32(tc.mockValue.protocolVersion),
+				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion),
+			})
 			d.On("Mirror").Return(tc.mockValue.mirror)
 			d.On("IsDefaultConnection", tc.addr).Return(tc.mockValue.isDefaultConnection)
 			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
@@ -284,6 +289,8 @@ func TestIntroductionMessage(t *testing.T) {
 func TestMessageEncodeDecode(t *testing.T) {
 	update := false
 
+	introPubKey := cipher.MustPubKeyFromHex("03cd7dfcd8c3452d1bb5d9d9e34dd95d6848cb9f66c2aad127b60578f4be7498f2")
+
 	cases := []struct {
 		goldenFile string
 		obj        interface{}
@@ -299,13 +306,13 @@ func TestMessageEncodeDecode(t *testing.T) {
 			},
 		},
 		{
-			goldenFile: "intro-msg-extra.golden",
+			goldenFile: "intro-msg-pubkey.golden",
 			obj:        &IntroductionMessage{},
 			msg: &IntroductionMessage{
 				Mirror:  99998888,
 				Port:    8888,
 				Version: 12341234,
-				Extra:   []byte("abcdef"),
+				Extra:   introPubKey[:],
 			},
 		},
 		{

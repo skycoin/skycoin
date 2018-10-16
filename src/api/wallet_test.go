@@ -505,7 +505,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			},
 		},
 		{
-			name:   "401 Unauthorized - invalid password",
+			name:   "400 Bad Request - invalid password",
 			method: http.MethodPost,
 			body: &httpBody{
 				WalletID: "wallet.wlt",
@@ -514,9 +514,9 @@ func TestWalletSpendHandler(t *testing.T) {
 				Password: "pwd",
 			},
 			password:        "pwd",
-			status:          http.StatusUnauthorized,
+			status:          http.StatusBadRequest,
 			gatewaySpendErr: wallet.ErrInvalidPassword,
-			err:             "401 Unauthorized - invalid password",
+			err:             "400 Bad Request - invalid password",
 			walletID:        "wallet.wlt",
 			coins:           1,
 			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
@@ -622,9 +622,6 @@ func TestWalletSpendHandler(t *testing.T) {
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
-				if status == http.StatusUnauthorized {
-					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
-				}
 			} else {
 				var msg SpendResult
 				err := json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -1828,7 +1825,7 @@ func TestGetWalletSeed(t *testing.T) {
 			expectErr:    "400 Bad Request - missing password",
 		},
 		{
-			name:     "401 Unauthorized - Invalid password",
+			name:     "400 Bad Request - Invalid password",
 			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
@@ -1836,8 +1833,8 @@ func TestGetWalletSeed(t *testing.T) {
 				"",
 				wallet.ErrInvalidPassword,
 			},
-			expectStatus: http.StatusUnauthorized,
-			expectErr:    "401 Unauthorized - invalid password",
+			expectStatus: http.StatusBadRequest,
+			expectErr:    "400 Bad Request - invalid password",
 		},
 		{
 			name:     "400 - wallet not encrypted",
@@ -1903,9 +1900,6 @@ func TestGetWalletSeed(t *testing.T) {
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.expectErr, strings.TrimSpace(rr.Body.String()))
-				if status == http.StatusUnauthorized {
-					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
-				}
 			} else {
 				var r struct {
 					Seed string `json:"seed"`
@@ -1935,7 +1929,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	var addrs = make([]cipher.Address, 3)
 
 	for i := 0; i < 3; i++ {
-		pub, _ := cipher.GenerateDeterministicKeyPair(cipher.RandByte(32))
+		pub, _ := cipher.MustGenerateDeterministicKeyPair(cipher.RandByte(32))
 		addrs[i] = cipher.AddressFromPubKey(pub)
 		responseAddresses.Address = append(responseAddresses.Address, addrs[i].String())
 	}
@@ -2016,14 +2010,14 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			gatewayNewAddressesErr: wallet.ErrMissingPassword,
 		},
 		{
-			name:   "401 Unauthorized - Invalid password",
+			name:   "400 Bad Request - Invalid password",
 			method: http.MethodPost,
 			body: &httpBody{
 				ID:  "foo",
 				Num: "1",
 			},
-			status:                 http.StatusUnauthorized,
-			err:                    "401 Unauthorized - invalid password",
+			status:                 http.StatusBadRequest,
+			err:                    "400 Bad Request - invalid password",
 			walletID:               "foo",
 			n:                      1,
 			gatewayNewAddressesErr: wallet.ErrInvalidPassword,
@@ -2125,9 +2119,6 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
-				if status == http.StatusUnauthorized {
-					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
-				}
 			} else {
 				var msg Addresses
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -2596,15 +2587,15 @@ func TestEncryptWallet(t *testing.T) {
 			expectErr: "400 Bad Request - missing wallet id",
 		},
 		{
-			name:     "401 Unauthorized - Invalid Password",
+			name:     "400 Bad Request - Invalid Password",
 			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
 				err: wallet.ErrInvalidPassword,
 			},
-			status:    http.StatusUnauthorized,
-			expectErr: "401 Unauthorized - invalid password",
+			status:    http.StatusBadRequest,
+			expectErr: "400 Bad Request - invalid password",
 		},
 		{
 			name:     "404 - Wallet Not Found",
@@ -2659,9 +2650,6 @@ func TestEncryptWallet(t *testing.T) {
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.expectErr, strings.TrimSpace(rr.Body.String()))
-				if status == http.StatusUnauthorized {
-					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
-				}
 				return
 			}
 
@@ -2793,15 +2781,15 @@ func TestDecryptWallet(t *testing.T) {
 			expectErr: "400 Bad Request - wallet is not encrypted",
 		},
 		{
-			name:     "401 Unauthorized - Invalid Password",
+			name:     "400 Bad Request - Invalid Password",
 			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
 				err: wallet.ErrInvalidPassword,
 			},
-			status:    http.StatusUnauthorized,
-			expectErr: "401 Unauthorized - invalid password",
+			status:    http.StatusBadRequest,
+			expectErr: "400 Bad Request - invalid password",
 		},
 		{
 			name:     "404 - Wallet Does Not Exist",
@@ -2845,9 +2833,6 @@ func TestDecryptWallet(t *testing.T) {
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.expectErr, strings.TrimSpace(rr.Body.String()))
-				if status == http.StatusUnauthorized {
-					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
-				}
 				return
 			}
 
@@ -2863,11 +2848,11 @@ func TestDecryptWallet(t *testing.T) {
 // Returns set of wallet.Entry and wallet.ReadableEntry, the readable
 // entries' secrets are removed.
 func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { // nolint: unparam
-	seckeys := cipher.GenerateDeterministicKeyPairs(seed, n)
+	seckeys := cipher.MustGenerateDeterministicKeyPairs(seed, n)
 	var entries []wallet.Entry
 	var responseEntries []readable.WalletEntry
 	for i, seckey := range seckeys {
-		pubkey := cipher.PubKeyFromSecKey(seckey)
+		pubkey := cipher.MustPubKeyFromSecKey(seckey)
 		entries = append(entries, wallet.Entry{
 			Address: cipher.AddressFromPubKey(pubkey),
 			Public:  pubkey,

@@ -32,6 +32,7 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5,6" -->
 
+- [Running the skycoin node](#running-the-skycoin-node)
 - [API Documentation](#api-documentation)
 	- [Wallet REST API](#wallet-rest-api)
 	- [Skycoin command line interface](#skycoin-command-line-interface)
@@ -67,6 +68,9 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
 
 <!-- /MarkdownTOC -->
 
+## Running the skycoin node
+
+For integrations, the skycoin node should be run from source with `./run-daemon.sh`. This requires go1.10+ to be installed.
 
 ## API Documentation
 

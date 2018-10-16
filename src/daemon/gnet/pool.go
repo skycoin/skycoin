@@ -53,6 +53,8 @@ var (
 	ErrWriteQueueFull = errors.New("Write queue full")
 	// ErrNoReachableConnections when broadcasting a message, no connections were available to send a message to
 	ErrNoReachableConnections = errors.New("All pool connections are unreachable at this time")
+	// ErrPoolEmpty when broadcasting a message, the connection pool was empty
+	ErrPoolEmpty = errors.New("Connection pool is empty")
 	// Logger
 	logger = logging.MustGetLogger("gnet")
 )
@@ -617,7 +619,15 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		prefix := buf.Bytes()[:messageLengthSize]
 		// decode message length
 		tmpLength := uint32(0)
-		encoder.DeserializeAtomic(prefix, &tmpLength)
+
+		_, err := encoder.DeserializeAtomic(prefix, &tmpLength)
+		if err != nil {
+			// encoder.DeserializeAtomic should only return an error if there wasn't
+			// enough data in buf to read the integer, but the prefix buf length
+			// is already ensured to be long enough
+			logger.Panic("encoder.DeserializeAtomic failed unexpectedly: %v", err)
+		}
+
 		length := int(tmpLength)
 		// logger.Debugf("Length is %d", length)
 		// Disconnect if we received an invalid length.
@@ -632,7 +642,7 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 
 		buf.Next(messageLengthSize) // strip the length prefix
 		data := make([]byte, length)
-		_, err := buf.Read(data)
+		_, err = buf.Read(data)
 		if err != nil {
 			return [][]byte{}, err
 		}
@@ -800,6 +810,8 @@ func (pool *ConnectionPool) disconnect(addr string) bool {
 		return false
 	}
 
+	// TODO -- send disconnect reason packet
+
 	delete(pool.pool, conn.ID)
 	delete(pool.addresses, addr)
 	delete(pool.defaultConnections, addr)
@@ -891,7 +903,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 	fullWriteQueue := []string{}
 	if err := pool.strand("BroadcastMessage", func() error {
 		if len(pool.pool) == 0 {
-			return errors.New("Connection pool is empty")
+			return ErrPoolEmpty
 		}
 
 		for _, conn := range pool.pool {

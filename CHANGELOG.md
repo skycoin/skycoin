@@ -71,8 +71,8 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
 - The deprecated JSON 2.0 RPC interface is disabled by default for all run modes, since it is no longer needed for the CLI tool
 - Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`
-- Reply to `INTR` message with `GIVP` on pex pool overflow
 - `cli decodeRawTransaction` output format changed, see the [CLI README](./src/cli/README.md)
+- Reply to `INTR` message with `GIVP` on pex pool overflow
 - `/api/v1/wallet/spend` is deprecated, disabled by default and requires `-enable-api-sets=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 - Invalid password in `/api/v1/wallet` requests now return `400` instead of `401`
 - Replace `cmd/address_gen/` and `cmd/address_gen2` with `go run cmd/cli/cli.go addressGen`

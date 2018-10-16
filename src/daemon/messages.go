@@ -233,8 +233,9 @@ type IntroductionMessage struct {
 	c       *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
 	validationError error `enc:"-"` // skip it during encoding
+	// Pubkey is the blockchain pubkey
+	Pubkey []byte `enc:",omitempty"`
 	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
-	// Currently it contains the blockchain pubkey but will accept a client that does not provide it.
 	Extra []byte `enc:",omitempty"`
 }
 
@@ -357,7 +358,9 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		if intro.validationError == pex.ErrPeerlistFull {
 			peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
 			givpMsg := NewGivePeersMessage(peers)
-			d.SendMessage(intro.c.Addr, givpMsg)
+			if err := d.SendMessage(intro.c.Addr, givpMsg); err != nil {
+				logger.Errorf("Send GivePeersMessage to %s failed: %v", intro.c.Addr, err)
+			}
 		}
 		return
 	}

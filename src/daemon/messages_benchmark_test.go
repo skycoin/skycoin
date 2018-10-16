@@ -67,7 +67,7 @@ var introMessageObj = IntroductionMessage{
 	Mirror:  1234,
 	Port:    5678,
 	Version: 1,
-	Pubkey:  introPubKey[:],
+	Extra:   introPubKey[:],
 }
 
 func BenchmarkDeserializeRawIntroductionMessage(b *testing.B) {

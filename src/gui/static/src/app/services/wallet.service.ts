@@ -93,7 +93,7 @@ export class WalletService {
   }
 
   allPendingTransactions(): Observable<any> {
-    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs'));
+    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs', {verbose: 1}));
   }
 
   pendingTransactions(): Observable<any> {
@@ -129,6 +129,20 @@ export class WalletService {
         wallet.encrypted = w.meta.encrypted;
         this.updateWallet(w);
       });
+  }
+
+  resetPassword(wallet: Wallet, seed: string, password: string): Observable<Wallet> {
+    const params = new Object();
+    params['id'] = wallet.filename;
+    params['seed'] = seed;
+    if (password) {
+      params['password'] = password;
+    }
+
+    return this.apiService.post('wallet/recover', params, {}, true).do(w => {
+      wallet.encrypted = w.data.meta.encrypted;
+      this.updateWallet(w.data);
+    });
   }
 
   getWalletSeed(wallet: Wallet, password: string): Observable<string> {
@@ -288,7 +302,7 @@ export class WalletService {
 
   private refreshPendingTransactions() {
     this.wallets.first().subscribe(wallets => {
-      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename })))
+      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename, verbose: 1 })))
         .subscribe(pending => {
           this.pendingTxs.next([].concat.apply(
             [],

@@ -1,3 +1,6 @@
+/*
+Package testutil provides utility methods for testing
+*/
 package testutil
 
 import (
@@ -53,6 +56,12 @@ func MakeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
+// MakePubKey creates a cipher.PubKey
+func MakePubKey() cipher.PubKey {
+	p, _ := cipher.GenerateKeyPair()
+	return p
+}
+
 // RandBytes returns n random bytes
 func RandBytes(t *testing.T, n int) []byte {
 	b := make([]byte, n)
@@ -75,5 +84,20 @@ func SHA256FromHex(t *testing.T, hex string) cipher.SHA256 {
 
 // RandSig returns a random cipher.Sig
 func RandSig(t *testing.T) cipher.Sig {
-	return cipher.NewSig(RandBytes(t, 65))
+	s, err := cipher.NewSig(RandBytes(t, 65))
+	require.NoError(t, err)
+	return s
+}
+
+// RequireFileExists requires that a file exists
+func RequireFileExists(t *testing.T, fn string) os.FileInfo {
+	stat, err := os.Stat(fn)
+	require.NoError(t, err)
+	return stat
+}
+
+// RequireFileNotExists requires that a file doesn't exist
+func RequireFileNotExists(t *testing.T, fn string) {
+	_, err := os.Stat(fn)
+	require.True(t, os.IsNotExist(err))
 }

@@ -1,5 +1,3 @@
-// implements sha256xor encryptor
-
 package encrypt
 
 import (

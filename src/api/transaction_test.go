@@ -18,6 +18,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
@@ -656,10 +658,10 @@ func TestInjectTransaction(t *testing.T) {
 			err:    "400 Bad Request - EOF",
 		},
 		{
-			name:     "400 - Invalid transaction: Deserialization failed",
+			name:     "400 - Invalid transaction: Not enough buffer data to deserialize",
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
+			err:      "400 Bad Request - Invalid transaction: Not enough buffer data to deserialize",
 			httpBody: `{"wrongKey":"wrongValue"}`,
 		},
 		{
@@ -673,14 +675,41 @@ func TestInjectTransaction(t *testing.T) {
 			name:     "400 - rawtx deserialization error",
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
+			err:      "400 Bad Request - Invalid transaction: Not enough buffer data to deserialize",
 			httpBody: string(invalidTxnBodyJSON),
 		},
 		{
-			name:                   "503 - injectTransactionError",
+			name:                   "503 - daemon.ErrOutgoingConnectionsDisabled",
 			method:                 http.MethodPost,
 			status:                 http.StatusServiceUnavailable,
-			err:                    "503 Service Unavailable - inject tx failed: injectTransactionError",
+			err:                    "503 Service Unavailable - Outgoing connections are disabled",
+			httpBody:               string(validTxnBodyJSON),
+			injectTransactionArg:   validTransaction,
+			injectTransactionError: daemon.ErrOutgoingConnectionsDisabled,
+		},
+		{
+			name:                   "503 - gnet.ErrNoReachableConnections",
+			method:                 http.MethodPost,
+			status:                 http.StatusServiceUnavailable,
+			err:                    "503 Service Unavailable - All pool connections are unreachable at this time",
+			httpBody:               string(validTxnBodyJSON),
+			injectTransactionArg:   validTransaction,
+			injectTransactionError: gnet.ErrNoReachableConnections,
+		},
+		{
+			name:                   "503 - gnet.ErrPoolEmpty",
+			method:                 http.MethodPost,
+			status:                 http.StatusServiceUnavailable,
+			err:                    "503 Service Unavailable - Connection pool is empty",
+			httpBody:               string(validTxnBodyJSON),
+			injectTransactionArg:   validTransaction,
+			injectTransactionError: gnet.ErrPoolEmpty,
+		},
+		{
+			name:                   "500 - other injectTransactionError",
+			method:                 http.MethodPost,
+			status:                 http.StatusInternalServerError,
+			err:                    "500 Internal Server Error - injectTransactionError",
 			httpBody:               string(validTxnBodyJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),
@@ -1326,12 +1355,12 @@ func TestVerifyTransaction(t *testing.T) {
 			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
 		},
 		{
-			name:         "400 - Invalid transaction: Deserialization failed",
+			name:         "400 - Invalid transaction: Not enough buffer data to deserialize",
 			method:       http.MethodPost,
 			contentType:  "application/json",
 			status:       http.StatusBadRequest,
 			httpBody:     `{"wrongKey":"wrongValue"}`,
-			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Deserialization failed"),
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Not enough buffer data to deserialize"),
 		},
 		{
 			name:         "400 - encoding/hex: odd length hex string",
@@ -1347,7 +1376,7 @@ func TestVerifyTransaction(t *testing.T) {
 			contentType:  "application/json",
 			status:       http.StatusBadRequest,
 			httpBody:     string(invalidTxnBodyJSON),
-			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Deserialization failed"),
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Not enough buffer data to deserialize"),
 		},
 		{
 			name:                       "422 - txn sends to empty address",

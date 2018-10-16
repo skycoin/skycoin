@@ -92,7 +92,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.sendButton.resetState();
 
     if (this.form.get('wallet').value.encrypted) {
-      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+      const config = new MatDialogConfig();
+      config.data = {
+        wallet: this.form.get('wallet').value,
+      };
+
+      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.createTransaction(passwordDialog);
         });

@@ -1,7 +1,8 @@
 /*
-Package cli implements an interface for creating a CLI application.
+Package cli implements the CLI cmd's methods.
+
 Includes methods for manipulating wallets files and interacting with the
-webrpc API to query a skycoin node's status.
+REST API to query a skycoin node's status.
 */
 package cli
 
@@ -23,9 +24,12 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
-const (
+var (
 	// Version is the CLI Version
-	Version           = "0.24.1"
+	Version = "0.25.0-rc1"
+)
+
+const (
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt
@@ -37,9 +41,11 @@ const (
 var (
 	envVarsHelp = fmt.Sprintf(`ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "%s"
+    RPC_USER: Username for RPC API, if enabled in the RPC.
+    RPC_PASS: Password for RPC API, if enabled in the RPC.
     COIN: Name of the coin. Default "%s"
-    WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
-    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"
+    WALLET_DIR: Directory where wallets are stored. This value is overridden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
+    WALLET_NAME: Name of wallet file (without path). This value is overridden by any subcommand flag specifying a wallet filename. Default "%s"
     DATA_DIR: Directory where everything is stored. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName, defaultDataDir)
 
 	commandHelpTemplate = fmt.Sprintf(`USAGE:
@@ -102,11 +108,13 @@ type App struct {
 
 // Config cli's configuration struct
 type Config struct {
-	WalletDir  string `json:"wallet_directory"`
-	WalletName string `json:"wallet_name"`
-	DataDir    string `json:"data_directory"`
-	Coin       string `json:"coin"`
-	RPCAddress string `json:"rpc_address"`
+	WalletDir   string `json:"wallet_directory"`
+	WalletName  string `json:"wallet_name"`
+	DataDir     string `json:"data_directory"`
+	Coin        string `json:"coin"`
+	RPCAddress  string `json:"rpc_address"`
+	RPCUsername string `json:"-"`
+	RPCPassword string `json:"-"`
 }
 
 // LoadConfig loads config from environment, prior to parsing CLI flags
@@ -126,6 +134,9 @@ func LoadConfig() (Config, error) {
 	if _, err := url.Parse(rpcAddr); err != nil {
 		return Config{}, errors.New("RPC_ADDR must be in scheme://host format")
 	}
+
+	rpcUser := os.Getenv("RPC_USER")
+	rpcPass := os.Getenv("RPC_PASS")
 
 	home := file.UserHome()
 
@@ -152,11 +163,13 @@ func LoadConfig() (Config, error) {
 	}
 
 	return Config{
-		WalletDir:  wltDir,
-		WalletName: wltName,
-		DataDir:    dataDir,
-		Coin:       coin,
-		RPCAddress: rpcAddr,
+		WalletDir:   wltDir,
+		WalletName:  wltName,
+		DataDir:     dataDir,
+		Coin:        coin,
+		RPCAddress:  rpcAddr,
+		RPCUsername: rpcUser,
+		RPCPassword: rpcPass,
 	}, nil
 }
 
@@ -226,6 +239,7 @@ func NewApp(cfg Config) (*App, error) {
 		addPrivateKeyCmd(cfg),
 		addressBalanceCmd(),
 		addressGenCmd(),
+		fiberAddressGenCmd(),
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
@@ -234,8 +248,6 @@ func NewApp(cfg Config) (*App, error) {
 		decodeRawTxCmd(),
 		decryptWalletCmd(cfg),
 		encryptWalletCmd(cfg),
-		generateAddrsCmd(cfg),
-		generateWalletCmd(cfg),
 		lastBlocksCmd(),
 		listAddressesCmd(),
 		listWalletsCmd(),
@@ -246,6 +258,8 @@ func NewApp(cfg Config) (*App, error) {
 		transactionCmd(),
 		verifyAddressCmd(),
 		versionCmd(),
+		walletCreateCmd(cfg),
+		walletAddAddressesCmd(cfg),
 		walletBalanceCmd(cfg),
 		walletDirCmd(),
 		walletHisCmd(),
@@ -268,6 +282,7 @@ func NewApp(cfg Config) (*App, error) {
 	}
 
 	apiClient := api.NewClient(cfg.RPCAddress)
+	apiClient.SetAuth(cfg.RPCUsername, cfg.RPCPassword)
 
 	app.Metadata = map[string]interface{}{
 		"config":   cfg,

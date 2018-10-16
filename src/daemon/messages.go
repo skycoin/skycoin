@@ -232,9 +232,10 @@ type IntroductionMessage struct {
 	Version int32
 	c       *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
-	valid bool `enc:"-"` // skip it during encoding
+	validationError error `enc:"-"` // skip it during encoding
+	// Pubkey is the blockchain pubkey
+	Pubkey []byte `enc:",omitempty"`
 	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
-	// Currently it contains the blockchain pubkey but will accept a client that does not provide it.
 	Extra []byte `enc:",omitempty"`
 }
 
@@ -336,7 +337,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		return nil
 	}()
 
-	intro.valid = (err == nil)
+	intro.validationError = err
 	intro.c = mc
 
 	if err != nil {
@@ -353,7 +354,14 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 // Process an event queued by Handle()
 func (intro *IntroductionMessage) Process(d Daemoner) {
 	d.RemoveFromExpectingIntroductions(intro.c.Addr)
-	if !intro.valid {
+	if intro.validationError != nil {
+		if intro.validationError == pex.ErrPeerlistFull {
+			peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
+			givpMsg := NewGivePeersMessage(peers)
+			if err := d.SendMessage(intro.c.Addr, givpMsg); err != nil {
+				logger.Errorf("Send GivePeersMessage to %s failed: %v", intro.c.Addr, err)
+			}
+		}
 		return
 	}
 	// Add the remote peer with their chosen listening port

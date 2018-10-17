@@ -723,7 +723,8 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	char* buffer = malloc(fullLength);
 	if(buffer != NULL){return;}
 	//Add data length to the beginning, saving space for the checksum
-	for(int i = 0; i < 4; i++){
+	int i;
+	for(i = 0; i < 4; i++){
 		int shift = i * 8;
 		buffer[i + 32] = (dataLength & (0xFF << shift)) >> shift;
 	}
@@ -731,7 +732,7 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	memcpy(buffer + 4 + 32,
 		data.data, dataLength);
 	//Add padding
-	for(int i = dataLength + 4 + 32; i < fullLength; i++){
+	for(i = dataLength + 4 + 32; i < fullLength; i++){
 		buffer[i] = 0;
 	}
 	//Buffer with space for the checksum, then data length, then data, and then padding
@@ -755,7 +756,7 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	int destBufferStart = sizeof(cipher__SHA256) + 32;
 	unsigned char* dest_buffer = malloc(fullDestLength);
 	if(dest_buffer != NULL){return;}
-	for(int i = 0; i < n; i++){
+	for(i = 0; i < n; i++){
 		hashKeyIndexNonce(hashPassword, i, &hashNonce, &h);
 		cipher__SHA256* pBuffer = (cipher__SHA256*)(buffer + i *32);
 		cipher__SHA256* xorResult = (cipher__SHA256*)(dest_buffer + destBufferStart + i *32);

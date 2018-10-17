@@ -366,7 +366,9 @@ FeeCalculator overflow(){
 		int keysCount = 4;
 		int keyIndex = -1;
 		int startNumber = -1;
-		for (int i = 0; i < length; i++)
+		int i;
+		int k;
+		for (i = 0; i < length; i++)
 		{
 			if (metadata[i] == '\"')
 			{
@@ -375,7 +377,7 @@ FeeCalculator overflow(){
 				{
 					keyIndex = -1;
 					metadata[i] = 0;
-					for (int k = 0; k < keysCount; k++)
+					for (k = 0; k < keysCount; k++)
 					{
 						if (strcmp(metadata + openingQuote + 1, keys[k]) == 0)
 						{
@@ -507,7 +509,8 @@ FeeCalculator overflow(){
 		parray->count = parray->count = n;
 		coin__UxOut *p = (coin__UxOut *)parray->data;
 		int result = 0;
-		for (int i = 0; i < n; i++)
+		int i;
+		for (i = 0; i < n; i++)
 		{
 			result = makeUxOut(p);
 			if (result != 0)
@@ -584,7 +587,8 @@ FeeCalculator overflow(){
 		if (result != 0)
 			return 1;
 		registerHandleClose(*handle);
-		for (int i = 0; i < n; i++)
+		int i;
+		for (i = 0; i < n; i++)
 		{
 			Transaction__Handle thandle;
 			makeTransaction(&thandle);

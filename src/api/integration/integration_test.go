@@ -5341,7 +5341,7 @@ func TestVerifyWalletSeed(t *testing.T) {
 		return
 	}
 
-	c := api.NewClient(nodeAddress())
+	c := newClient()
 
 	// check with correct seed
 	cSeed := api.SeedVerificationReq{Seed: "nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair"}

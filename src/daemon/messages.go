@@ -237,11 +237,22 @@ type IntroductionMessage struct {
 	userAgentData useragent.Data `enc:"-"`
 	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
 	// Currently it contains the blockchain pubkey and user agent but will accept a client that does not provide it.
+	// If any of this data is provided, it must include a valid blockchain pubkey and a valid user agent string (maxlen=256).
 	Extra []byte `enc:",omitempty"`
+
+	// v26 fields:
+	// ExtraByte uint32
+	// Pubkey    cipher.Pubkey
+	// UserAgent string `enc:",maxlen=256"`
+	// Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
 func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string) *IntroductionMessage {
+	if len(userAgent) > useragent.MaxLen {
+		logger.Panicf("user agent %q exceeds max len %d", userAgent, useragent.MaxLen)
+	}
+
 	userAgentSerialized := encoder.SerializeString(userAgent)
 
 	extra := make([]byte, len(pubkey)+len(userAgentSerialized))
@@ -309,7 +320,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			}
 
 			userAgentSerialized := intro.Extra[len(bcPubKey):]
-			userAgent, _, err := encoder.DeserializeString(userAgentSerialized)
+			userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 			if err != nil {
 				logger.WithError(err).Info("Extra data user agent string could not be deserialized")
 				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {

@@ -16,6 +16,13 @@
 //
 // Encoding of maps is supported, but note that the use of them results in non-deterministic output.
 // If determinism is required, do not use map.
+//
+// A length restriction to certain fields can be applied when decoding.
+// Use the tag `,maxlen=` on a struct field to apply this restriction.
+// `maxlen` works for string and slice types. The length is interpreted as the length
+// of the string or the number of elements in the slice.
+// Note that maxlen does not affect serialization; it may serialize objects which could fail deserialization.
+// Callers should check their length restricted values manually prior to serialization.
 package encoder
 
 import (
@@ -24,6 +31,7 @@ import (
 	"log"
 	"math"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -36,6 +44,8 @@ var (
 	ErrInvalidOmitEmpty = errors.New("omitempty only supported for the final field in the struct")
 	// ErrRemainingBytes bytes remain in buffer after deserializing object
 	ErrRemainingBytes = errors.New("Bytes remain in buffer after deserializing object")
+	// ErrMaxLenExceeded a specified maximum length was exceeded when serializing or deserializing a variable length field
+	ErrMaxLenExceeded = errors.New("Maximum length exceeded for variable length field")
 )
 
 // SerializeAtomic encoder an integer or boolean contained in `data` to bytes.
@@ -164,16 +174,21 @@ func SerializeString(s string) []byte {
 }
 
 // DeserializeString deserializes a string from []byte, returning the string and the number of bytes read
-func DeserializeString(b []byte) (string, int, error) {
+func DeserializeString(in []byte, maxlen int) (string, int, error) {
 	var s string
 	v := reflect.ValueOf(&s)
+	v = v.Elem()
 
-	n, err := DeserializeRawToValue(b, v)
+	inlen := len(in)
+	d1 := &decoder{buf: make([]byte, inlen)}
+	copy(d1.buf, in)
+
+	err := d1.value(v, maxlen)
 	if err != nil {
 		return "", 0, err
 	}
 
-	return s, n, nil
+	return s, inlen - len(d1.buf), nil
 }
 
 // DeserializeRaw deserializes `in` buffer into return
@@ -194,7 +209,7 @@ func DeserializeRaw(in []byte, data interface{}) error {
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)
 
-	if err := d1.value(v); err != nil {
+	if err := d1.value(v, 0); err != nil {
 		return err
 	}
 
@@ -223,7 +238,7 @@ func DeserializeRawToValue(in []byte, v reflect.Value) (int, error) {
 	d1 := &decoder{buf: make([]byte, inlen)}
 	copy(d1.buf, in)
 
-	err := d1.value(v)
+	err := d1.value(v, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -363,21 +378,24 @@ func datasizeWrite(v reflect.Value) (int, error) {
 				continue
 			}
 
-			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
+			tag := ff.Tag.Get("enc")
+			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
 				log.Panic(ErrInvalidOmitEmpty)
 			}
 
-			if tag != "-" {
-				fv := v.Field(i)
-				if !omitempty || !isEmpty(fv) {
-					s, err := datasizeWrite(fv)
-					if err != nil {
-						return 0, err
-					}
-					sum += s
+			if len(tag) > 0 && tag[0] == '-' {
+				continue
+			}
+
+			fv := v.Field(i)
+			if !omitempty || !isEmpty(fv) {
+				s, err := datasizeWrite(fv)
+				if err != nil {
+					return 0, err
 				}
+				sum += s
 			}
 		}
 		return sum, nil
@@ -398,18 +416,37 @@ func datasizeWrite(v reflect.Value) (int, error) {
 	}
 }
 
-// ParseTag to extract encoder args from raw string. Returns the tag name and if omitempty was specified
-func ParseTag(tag string) (string, bool) {
+func TagOmitempty(tag string) bool {
+	return strings.Contains(tag, ",omitempty")
+}
+
+func tagName(tag string) string {
 	commaIndex := strings.Index(tag, ",")
 	if commaIndex == -1 {
-		return tag, false
+		return tag
 	}
 
-	if tag[commaIndex+1:] == "omitempty" {
-		return tag[:commaIndex], true
+	return tag[:commaIndex]
+}
+
+func tagMaxLen(tag string) int {
+	maxlenIndex := strings.Index(tag, ",maxlen=")
+	if maxlenIndex == -1 {
+		return 0
 	}
 
-	return tag[:commaIndex], false
+	maxlenRem := tag[maxlenIndex+len(",maxlen="):]
+	commaIndex := strings.Index(maxlenRem, ",")
+	if commaIndex != -1 {
+		maxlenRem = maxlenRem[:commaIndex]
+	}
+
+	maxlen, err := strconv.Atoi(maxlenRem)
+	if err != nil {
+		panic("maxlen must be a number")
+	}
+
+	return maxlen
 }
 
 /*
@@ -586,7 +623,7 @@ func (d *decoder) int64() (int64, error) {
 
 func (e *encoder) int64(x int64) { e.uint64(uint64(x)) }
 
-func (d *decoder) value(v reflect.Value) error {
+func (d *decoder) value(v reflect.Value, maxlen int) error {
 	kind := v.Kind()
 	switch kind {
 	case reflect.Array:
@@ -607,7 +644,7 @@ func (d *decoder) value(v reflect.Value) error {
 			d.buf = d.buf[length:]
 		default:
 			for i := 0; i < length; i++ {
-				if err := d.value(v.Index(i)); err != nil {
+				if err := d.value(v.Index(i), 0); err != nil {
 					return err
 				}
 			}
@@ -639,10 +676,10 @@ func (d *decoder) value(v reflect.Value) error {
 		for i := 0; i < length; i++ {
 			keyv := reflect.Indirect(reflect.New(key))
 			elemv := reflect.Indirect(reflect.New(elem))
-			if err := d.value(keyv); err != nil {
+			if err := d.value(keyv, 0); err != nil {
 				return err
 			}
-			if err := d.value(elemv); err != nil {
+			if err := d.value(elemv, 0); err != nil {
 				return err
 			}
 			v.SetMapIndex(keyv, elemv)
@@ -667,6 +704,10 @@ func (d *decoder) value(v reflect.Value) error {
 			return nil
 		}
 
+		if maxlen > 0 && length > maxlen {
+			return ErrMaxLenExceeded
+		}
+
 		t := v.Type()
 		elem := t.Elem()
 
@@ -678,7 +719,7 @@ func (d *decoder) value(v reflect.Value) error {
 			elemvs := reflect.MakeSlice(t, length, length)
 			for i := 0; i < length; i++ {
 				elemv := reflect.Indirect(elemvs.Index(i))
-				if err := d.value(elemv); err != nil {
+				if err := d.value(elemv, 0); err != nil {
 					return err
 				}
 			}
@@ -695,20 +736,29 @@ func (d *decoder) value(v reflect.Value) error {
 				continue
 			}
 
-			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
+			tag := ff.Tag.Get("enc")
+			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
 				log.Panic(ErrInvalidOmitEmpty)
 			}
 
-			if tag != "-" {
-				fv := v.Field(i)
-				if fv.CanSet() && ff.Name != "_" {
-					if err := d.value(fv); err != nil {
-						// omitempty fields at the end of the buffer are ignored
-						if !(omitempty && len(d.buf) == 0) {
-							return err
-						}
+			if len(tag) > 0 && tag[0] == '-' {
+				continue
+			}
+
+			fv := v.Field(i)
+			if fv.CanSet() && ff.Name != "_" {
+				maxlen := tagMaxLen(tag)
+
+				if err := d.value(fv, maxlen); err != nil {
+					if err == ErrMaxLenExceeded {
+						return err
+					}
+
+					// omitempty fields at the end of the buffer are ignored if missing
+					if !omitempty || len(d.buf) != 0 {
+						return err
 					}
 				}
 			}
@@ -727,6 +777,10 @@ func (d *decoder) value(v reflect.Value) error {
 		length := int(ul)
 		if length < 0 || length > len(d.buf) {
 			return ErrBufferUnderflow
+		}
+
+		if maxlen > 0 && length > maxlen {
+			return ErrMaxLenExceeded
 		}
 
 		v.SetString(string(d.buf[:length]))
@@ -858,17 +912,20 @@ func (e *encoder) value(v reflect.Value) {
 				continue
 			}
 
-			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
+			tag := ff.Tag.Get("enc")
+			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
 				log.Panic(ErrInvalidOmitEmpty)
 			}
 
-			if tag != "-" {
-				fv := v.Field(i)
-				if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
-					e.value(fv)
-				}
+			if len(tag) > 0 && tag[0] == '-' {
+				continue
+			}
+
+			fv := v.Field(i)
+			if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
+				e.value(fv)
 			}
 		}
 

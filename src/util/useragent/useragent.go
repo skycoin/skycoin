@@ -1,16 +1,16 @@
 // Package useragent implements methods for managing Skycoin user agents.
 //
 // A skycoin user agent has the following format:
+//
 //   `$NAME:$VERSION[$GIT_HASH]($REMARK)`
 //
 // `$NAME` and `$VERSION` are required.
 //
 // * `$NAME` is the coin or application's name, e.g. `Skycoin`. It can contain the following characters: `A-Za-z0-9\-_+`.
-// * `$VERSION` must start with a valid semver version, e.g. `1.2.3`, and maybe follow by additional characters, e.g. `1.2.3-rc1`
-// * `$GIT_HASH` is optional. If not present, the enclosing brackets `[]` should be omitted.
-//   The value of `$GIT_HASH` should be the short hash of the git head of the current build.
+// * `$VERSION` must be a valid [semver](http://semver.org/) version, e.g. `1.2.3` or `1.2.3-rc1`.
+//   Semver has the option of including build metadata such as the git commit hash, but this is not included by the default client.
 // * `$REMARK` is optional. If not present, the enclosing brackets `()` should be omitted.
-//   It can contain the following characters: `A-Za-z0-9\-_+;:!$%,.=?~ ` (include the space character).
+//   It can contain the following characters: `A-Za-z0-9\-_+;:!$%,.=?~ ` (includes the space character).
 package useragent
 
 import (
@@ -29,7 +29,7 @@ const (
 	// MaxLen the maximum length of a user agent
 	MaxLen = 256
 
-	pattern = `^([A-Za-z0-9\-_+]+):([0-9]+\.[0-9]+\.[0-9][\-A-Za-z0-9]*)(\([A-Za-z0-9\-_+;:!$%,.=?~ ]+\))?$`
+	pattern = `^([A-Za-z0-9\-_+]+):([0-9]+\.[0-9]+\.[0-9][A-Za-z0-9\-.+]*)(\([A-Za-z0-9\-_+;:!$%,.=?~ ]+\))?$`
 )
 
 var (
@@ -43,6 +43,8 @@ var (
 	ErrTooLong = errors.New("User agent is too long")
 	// ErrMalformed user agent does not match the user agent pattern
 	ErrMalformed = errors.New("User agent is malformed")
+	// ErrEmpty user agent is an empty string
+	ErrEmpty = errors.New("User agent is an empty string")
 )
 
 func init() {
@@ -75,7 +77,6 @@ func (d Data) Build() (string, error) {
 	s := d.build()
 
 	if err := validate(s); err != nil {
-		fmt.Println("validate failed")
 		return "", err
 	}
 
@@ -131,6 +132,10 @@ func (d *Data) UnmarshalJSON(v []byte) error {
 
 // Parse parses a user agent string to Data
 func Parse(userAgent string) (Data, error) {
+	if len(userAgent) == 0 {
+		return Data{}, ErrEmpty
+	}
+
 	if err := validate(userAgent); err != nil {
 		return Data{}, err
 	}
@@ -152,6 +157,10 @@ func Parse(userAgent string) (Data, error) {
 	version := m[2]
 	remark := m[3]
 
+	if _, err := semver.Parse(version); err != nil {
+		return Data{}, errors.New("User agent version is not a valid semver: %v", err)
+	}
+
 	remark = strings.TrimPrefix(remark, "(")
 	remark = strings.TrimSuffix(remark, ")")
 
@@ -168,7 +177,6 @@ func validate(userAgent string) error {
 		return ErrTooLong
 	}
 
-	fmt.Println("validate", userAgent)
 	if illegalCharsCheckRe.MatchString(userAgent) {
 		return ErrIllegalChars
 	}

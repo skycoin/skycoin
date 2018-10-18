@@ -108,15 +108,6 @@ func TestDataBuild(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-
-	strOfLen := func(n int) string {
-		x := make([]string, n)
-		for i := range x {
-			x[i] = "a"
-		}
-		return strings.Join(x, "")
-	}
-
 	cases := []struct {
 		name      string
 		userAgent string
@@ -125,7 +116,7 @@ func TestParse(t *testing.T) {
 	}{
 		{
 			name:      "too long",
-			userAgent: fmt.Sprintf("skycoin:0.24.1[abcdefg](%s)", strOfLen(245)),
+			userAgent: fmt.Sprintf("skycoin:0.24.1[abcdefg](%s)", strings.Repeat("a", 245)),
 			err:       ErrTooLong,
 		},
 		{

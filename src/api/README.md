@@ -8,7 +8,76 @@ The API has two versions, `/api/v1` and `/api/v2`.
 Previously, there was no `/api/vx` prefix.
 Starting in application version v0.24.0, the existing endpoints from v0.23.0
 are now prefixed with `/api/v1`. To retain the old endpoints, run the application
-with `-enable-unversioned-api`.
+with `-enable-unversioned-api`.  This option will be removed in v0.26.0
+and the `/api/v1` prefix will be required for previously unversioned endpoints.
+
+<!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
+
+- [API Version 1](#api-version-1)
+- [API Version 2](#api-version-2)
+- [API Sets](#api-sets)
+- [Authentication](#authentication)
+- [CSRF](#csrf)
+	- [Get current csrf token](#get-current-csrf-token)
+- [General system checks](#general-system-checks)
+	- [Health check](#health-check)
+	- [Version info](#version-info)
+	- [Prometheus metrics](#prometheus-metrics)
+- [Simple query APIs](#simple-query-apis)
+	- [Get balance of addresses](#get-balance-of-addresses)
+	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+	- [Verify an address](#verify-an-address)
+- [Wallet APIs](#wallet-apis)
+	- [Get wallet](#get-wallet)
+	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
+	- [Get wallets](#get-wallets)
+	- [Get wallet folder name](#get-wallet-folder-name)
+	- [Generate wallet seed](#generate-wallet-seed)
+	- [Create a wallet from seed](#create-a-wallet-from-seed)
+	- [Generate new address in wallet](#generate-new-address-in-wallet)
+	- [Updates wallet label](#updates-wallet-label)
+	- [Get wallet balance](#get-wallet-balance)
+	- [Spend coins from wallet](#spend-coins-from-wallet)
+	- [Create transaction](#create-transaction)
+	- [Unload wallet](#unload-wallet)
+	- [Encrypt wallet](#encrypt-wallet)
+	- [Decrypt wallet](#decrypt-wallet)
+	- [Get wallet seed](#get-wallet-seed)
+	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
+- [Transaction APIs](#transaction-apis)
+	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
+	- [Get transaction info by id](#get-transaction-info-by-id)
+	- [Get raw transaction by id](#get-raw-transaction-by-id)
+	- [Inject raw transaction](#inject-raw-transaction)
+	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+	- [Verify encoded transaction](#verify-encoded-transaction)
+- [Block APIs](#block-apis)
+	- [Get blockchain metadata](#get-blockchain-metadata)
+	- [Get blockchain progress](#get-blockchain-progress)
+	- [Get block by hash or seq](#get-block-by-hash-or-seq)
+	- [Get blocks in specific range](#get-blocks-in-specific-range)
+	- [Get last N blocks](#get-last-n-blocks)
+- [Explorer APIs](#explorer-apis)
+	- [Get address affected transactions](#get-address-affected-transactions)
+- [Uxout APIs](#uxout-apis)
+	- [Get uxout](#get-uxout)
+	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+- [Coin supply related information](#coin-supply-related-information)
+	- [Coin supply](#coin-supply)
+	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+	- [Count unique addresses](#count-unique-addresses)
+- [Network status](#network-status)
+	- [Get information for a specific connection](#get-information-for-a-specific-connection)
+	- [Get a list of all connections](#get-a-list-of-all-connections)
+	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
+	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+- [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
+- [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
+- [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
+
+<!-- /MarkdownTOC -->
 
 ## API Version 1
 
@@ -78,68 +147,6 @@ Authentication can be enabled with the `-web-interface-username` and `-web-inter
 The username and password should be provided in an `Authorization: Basic` header.
 
 Authentication can only be enabled when using HTTPS with `-web-interface-https`, unless `-web-interface-plaintext-auth` is enabled.
-
-<!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
-
-- [CSRF](#csrf)
-	- [Get current csrf token](#get-current-csrf-token)
-- [General system checks](#general-system-checks)
-	- [Health check](#health-check)
-	- [Version info](#version-info)
-	- [Prometheus metrics](#prometheus-metrics)
-- [Simple query APIs](#simple-query-apis)
-	- [Get balance of addresses](#get-balance-of-addresses)
-	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-	- [Verify an address](#verify-an-address)
-- [Wallet APIs](#wallet-apis)
-	- [Get wallet](#get-wallet)
-	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
-	- [Get wallets](#get-wallets)
-	- [Get wallet folder name](#get-wallet-folder-name)
-	- [Generate wallet seed](#generate-wallet-seed)
-	- [Create a wallet from seed](#create-a-wallet-from-seed)
-	- [Generate new address in wallet](#generate-new-address-in-wallet)
-	- [Updates wallet label](#updates-wallet-label)
-	- [Get wallet balance](#get-wallet-balance)
-	- [Spend coins from wallet](#spend-coins-from-wallet)
-	- [Create transaction](#create-transaction)
-	- [Unload wallet](#unload-wallet)
-	- [Encrypt wallet](#encrypt-wallet)
-	- [Decrypt wallet](#decrypt-wallet)
-	- [Get wallet seed](#get-wallet-seed)
-	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
-- [Transaction APIs](#transaction-apis)
-	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
-	- [Get transaction info by id](#get-transaction-info-by-id)
-	- [Get raw transaction by id](#get-raw-transaction-by-id)
-	- [Inject raw transaction](#inject-raw-transaction)
-	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
-	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-	- [Verify encoded transaction](#verify-encoded-transaction)
-- [Block APIs](#block-apis)
-	- [Get blockchain metadata](#get-blockchain-metadata)
-	- [Get blockchain progress](#get-blockchain-progress)
-	- [Get block by hash or seq](#get-block-by-hash-or-seq)
-	- [Get blocks in specific range](#get-blocks-in-specific-range)
-	- [Get last N blocks](#get-last-n-blocks)
-- [Explorer APIs](#explorer-apis)
-	- [Get address affected transactions](#get-address-affected-transactions)
-- [Uxout APIs](#uxout-apis)
-	- [Get uxout](#get-uxout)
-	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
-- [Coin supply related information](#coin-supply-related-information)
-	- [Coin supply](#coin-supply)
-	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-	- [Count unique addresses](#count-unique-addresses)
-- [Network status](#network-status)
-	- [Get information for a specific connection](#get-information-for-a-specific-connection)
-	- [Get a list of all connections](#get-a-list-of-all-connections)
-	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
-	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
-- [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
-
-<!-- /MarkdownTOC -->
 
 ## CSRF
 
@@ -3731,9 +3738,22 @@ Result:
 ]
 ```
 
+## Migrating from the unversioned API
+
+The unversioned API are the API endpoints without an `/api` prefix.
+These endpoints are all prefixed with `/api/v1` now.
+
+`-enable-unversioned-api` was added as an option to assist migration to `/api/v1`
+but this option will be removed in v0.26.0.
+
+To migrate from the unversioned API, add `/api/v1` to all endpoints that you call
+that do not have an `/api` prefix already.
+
+For example, `/block` would become `/api/v1/block`.
+
 ## Migrating from the JSONRPC API
 
-The JSONRPC-2.0 RPC API will be removed as of version `0.26.0`.
+The JSONRPC-2.0 RPC API will be removed in v0.26.0.
 Anyone still using this can follow this guide to migrate to the REST API:
 
 * `get_status` is replaced by `/api/v1/blockchain/metadata` and `/api/v1/health`
@@ -3742,3 +3762,52 @@ Anyone still using this can follow this guide to migrate to the REST API:
 * `get_outputs` is replaced by `/api/v1/outputs`
 * `inject_transaction` is replaced by `/api/v1/injectTransaction`
 * `get_transaction` is replaced by `/api/v1/transaction`
+
+## Migrating from /api/v1/spend
+
+The `POST /api/v1/spend` endpoint is deprecated and will be removed in v0.26.0.
+
+To migrate from it, use [`POST /api/v1/wallet/transaction`](#create-transaction) followed by [`POST /api/v1/injectTransaction`](#inject-raw-transaction).
+Do not create another transaction before injecting the created transaction, otherwise you might create two conflicting transactions.
+
+`POST /api/v1/wallet/transaction` has more options for creating the transaction than the `/api/v1/spend` endpoint.
+To replicate the same behavior as `/api/v1/spend`, use the following request body template:
+
+```json
+{
+	"hours_selection": {
+		"type": "auto",
+		"mode": "share",
+		"share_factor": "0.5",
+	},
+	"wallet": {
+		"id": "$wallet_id",
+		"password": "$password"
+	},
+	"to": [{
+		"address": "$dst",
+		"coins": "$coins"
+	}]
+}
+```
+
+You must use a string for `"coins"` instead of an integer measured in "droplets" (the smallest unit of currency in Skycoin, 1/1000000 of a skycoin).
+For example, if you sent 1 Skycoin with `/api/v1/spend` you would have specified the `coins` field as `1000000`.
+Now, you would specify it as `"1"`.
+
+Some examples:
+
+* 123.456 coins: before `123456000`, now `"123.456"`
+* 0.1 coins: before `100000`, now `"0.1"`
+* 1 coin: before `1000000`, now `"1"`
+
+Extra zeros on the `"coins"` string are ok, for example `"1"` is the same as `"1.0"` or `"1.000000"`.
+
+Only provide `"password"` if the wallet is encrypted.  Note that decryption can take a few seconds, and this can impact
+throughput.
+
+The request header `Content-Type` must be `application/json`.
+
+The response to `POST /api/v1/wallet/transaction` will include a verbose decoded transaction with details
+and the hex-encoded binary transaction in the `"encoded_transaction"` field.
+Use the value of `"encoded_transaction"` as the `"rawtx"` value in the request to `/api/v1/injectTransaction`.

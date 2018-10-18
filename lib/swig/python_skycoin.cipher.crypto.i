@@ -255,3 +255,15 @@
 	}
 }
 
+
+%extend cipher__BitcoinAddress{
+	int __eq__(cipher__BitcoinAddress* a){
+		if( $self->Version == a->Version ){
+			return memcmp($self->Key, a->Key, sizeof(a->Key)) == 0;
+		}
+		return 0;
+	}
+	PyObject* toStr(){
+		return PyBytes_FromStringAndSize((const char*)$self->Key, sizeof($self->Key));
+	}
+}

@@ -33,7 +33,7 @@ var (
 	logger = logging.MustGetLogger("main")
 
 	// CoinName name of coin
-	CoinName = "skycoin"
+	CoinName = "{{.CoinName}}"
 
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "{{.GenesisSignatureStr}}"

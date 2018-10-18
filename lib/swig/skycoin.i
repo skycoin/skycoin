@@ -36,6 +36,9 @@
 %include "csharp_java_callback.i"
 #endif
 
+#if defined(SWIGJAVA)
+#endif
+
 %include "swig.h"
 /* Find the modified copy of libskycoin */
 %include "libskycoin.h"

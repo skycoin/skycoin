@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
@@ -14,7 +14,7 @@ import (
 var (
 	noteServ *Service
 	noteCFG  = Config{
-		NotesPath: "transactionnotes_temp.json",
+		NotesPath: "./transactionnotes_temp.json",
 	}
 )
 
@@ -25,17 +25,6 @@ const (
 
 func TestMain(m *testing.M) {
 	os.Exit(teardown(m.Run()))
-}
-
-func TestNewService(t *testing.T) {
-	var err error
-
-	noteServ, err = NewService(noteCFG)
-	if err != nil {
-		t.Error(err)
-	}
-
-	assert.NotNil(t, noteServ)
 }
 
 func teardown(i int) int {
@@ -58,41 +47,38 @@ func teardown(i int) int {
 	return i
 }
 
+func TestNewService(t *testing.T) {
+	var err error
+
+	noteServ, err = NewService(noteCFG)
+	require.NoError(t, err)
+	require.NotNil(t, noteServ)
+}
+
 func TestAddNotes(t *testing.T) {
 	beforeAddCount := len(noteServ.GetAll())
 
 	for i := 0; i < totalNotes; i++ {
 		key, err := generateRandomBytes(txIDByteLength)
-		if err != nil {
-			t.Error(err)
-			return
-		}
+		require.NoError(t, err)
 
 		sha, err := cipher.SHA256FromBytes(key)
-		if err != nil {
-			t.Error(err)
-			return
-		}
+		require.NoError(t, err)
 
 		rndmTxIDHex := sha.Hex()
 		rndmNotes, err := getRndmID(txIDByteLength)
-
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		note := Note{}
 		note.TxIDHex = rndmTxIDHex
 		note.Notes = rndmNotes
 
 		note, err = noteServ.Add(note)
-
-		if err != nil {
-			t.Error(err)
-		}
+		require.NoError(t, err)
 	}
 
 	allNotesCount := len(noteServ.GetAll())
-
-	assert.True(t, allNotesCount == (totalNotes+beforeAddCount))
+	require.Equal(t, totalNotes+beforeAddCount, allNotesCount)
 }
 
 func getRndmID(s int) (string, error) {
@@ -107,11 +93,8 @@ func getRndmID(s int) (string, error) {
 func generateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
 
-	return b, nil
+	return b, err
 }
 
 func TestGetNoteByID(t *testing.T) {
@@ -128,45 +111,42 @@ func TestGetNoteByID(t *testing.T) {
 		txID := testNotes[i].TxIDHex
 		note := noteServ.GetByTxID(txID)
 
-		assert.NotNil(t, note)
+		require.NotNil(t, note)
 
-		assert.NotEmpty(t, note.Notes)
-		assert.True(t, len(note.Notes) > 0)
+		require.NotEmpty(t, note.Notes)
+		require.True(t, len(note.Notes) > 0)
 
-		assert.NotEmpty(t, note.TxIDHex)
-		assert.True(t, len(note.TxIDHex) > 0)
+		require.NotEmpty(t, note.TxIDHex)
+		require.True(t, len(note.TxIDHex) > 0)
 	}
 
 	// Test not existent note
 	noteByTransID := noteServ.GetByTxID("TRANSAKTIONSID")
 
-	assert.Empty(t, noteByTransID.TxIDHex)
-	assert.Empty(t, noteByTransID.Notes)
+	require.Empty(t, noteByTransID.TxIDHex)
+	require.Empty(t, noteByTransID.Notes)
 }
 
-func TestRemoveNote(t *testing.T) {
+func TestRemoveNotes(t *testing.T) {
 	allNotes := noteServ.GetAll()
 
 	var notesToRem []Note
 
-	// Get every 2nd Note for testing
+	// Get every 2nd Note to test remove mechanism
 	for i := 0; i < len(allNotes); i += 4 {
 		notesToRem = append(notesToRem, allNotes[i])
 	}
 
-	// Remove Notes
 	for i := 0; i < len(notesToRem); i++ {
 		txID := notesToRem[i].TxIDHex
 
 		err := noteServ.RemoveByTxID(txID)
-
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	// Test remove non existent Note
 	err := noteServ.RemoveByTxID("NotExistentTxID")
-
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestOverwriteNotes(t *testing.T) {
@@ -187,14 +167,14 @@ func TestOverwriteNotes(t *testing.T) {
 		noteToOverwrite.Notes = "New Note"
 		_, err := noteServ.Add(noteToOverwrite)
 
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
-		// Check if Note with TransId has changed
+		// Check if Note with TxID has changed
 		checkNote := noteServ.GetByTxID(noteToOverwrite.TxIDHex)
-
-		assert.NotNil(t, checkNote)
-		assert.True(t, checkNote.Notes == noteToOverwrite.Notes)
+		require.NotNil(t, checkNote)
+		require.Equal(t, checkNote.Notes, noteToOverwrite.Notes)
+		require.NotEqual(t, checkNote.Notes, testNotes[i].Notes)
 	}
 
-	assert.NotNil(t, testNotes)
+	require.NotNil(t, testNotes)
 }

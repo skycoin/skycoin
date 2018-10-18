@@ -153,6 +153,8 @@ func (c *Client) Delete(endpoint string, v url.Values, obj interface{}) error {
 		return err
 	}
 
+	c.applyAuth(req)
+
 	if csrf != "" {
 		req.Header.Set(CSRFHeaderName, csrf)
 	}

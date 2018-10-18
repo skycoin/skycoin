@@ -42,7 +42,6 @@ func GetByTxID(txID string) Note {
 func Add(note Note) (Note, error) {
 	if !isNoteExist(note.TxIDHex) {
 		log.Infof("Adding Note with txID=&v", note.TxIDHex)
-
 		gNotes = append(gNotes, note)
 	} else {
 		log.Infof("Overwriting Note with txID=%v", note.TxIDHex)
@@ -69,12 +68,12 @@ func Remove(txID string) error {
 
 		if gNotes[i].TxIDHex == txID {
 			gNotes = append(gNotes[:i], gNotes[i+1:]...)
+
+			if err := writeJSON(); err != nil {
+				return err
+			}
 			return nil
 		}
-	}
-
-	if err := writeJSON(); err != nil {
-		return err
 	}
 
 	return fmt.Errorf("note with txID='%v' has not been removed: Note doesn't exist", txID)

@@ -1,0 +1,182 @@
+// Package useragent implements methods for managing Skycoin user agents.
+//
+// A skycoin user agent has the following format:
+//   `$NAME:$VERSION[$GIT_HASH]($REMARK)`
+//
+// `$NAME` and `$VERSION` are required.
+//
+// * `$NAME` is the coin or application's name, e.g. `Skycoin`. It can contain the following characters: `A-Za-z0-9\-_+`.
+// * `$VERSION` must start with a valid semver version, e.g. `1.2.3`, and maybe follow by additional characters, e.g. `1.2.3-rc1`
+// * `$GIT_HASH` is optional. If not present, the enclosing brackets `[]` should be omitted.
+//   The value of `$GIT_HASH` should be the short hash of the git head of the current build.
+// * `$REMARK` is optional. If not present, the enclosing brackets `()` should be omitted.
+//   It can contain the following characters: `A-Za-z0-9\-_+;:!$%,.=?~ ` (include the space character).
+package useragent
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+
+	"github.com/blang/semver"
+)
+
+const (
+	// IllegalChars are printable ascii characters forbidden from a user agent string. All other ascii or bytes are also forbidden.
+	IllegalChars = `<>&"'#@|{}` + "`"
+	// MaxLen the maximum length of a user agent
+	MaxLen = 256
+
+	pattern = `^([A-Za-z0-9\-_+]+):([0-9]+\.[0-9]+\.[0-9][\-A-Za-z0-9]*)(\([A-Za-z0-9\-_+;:!$%,.=?~ ]+\))?$`
+)
+
+var (
+	illegalCharsSanitizeRe *regexp.Regexp
+	illegalCharsCheckRe    *regexp.Regexp
+	re                     *regexp.Regexp
+
+	// ErrIllegalChars user agent contains illegal characters
+	ErrIllegalChars = errors.New("User agent has invalid character(s)")
+	// ErrTooLong user agent exceeds a certain max length
+	ErrTooLong = errors.New("User agent is too long")
+	// ErrMalformed user agent does not match the user agent pattern
+	ErrMalformed = errors.New("User agent is malformed")
+)
+
+func init() {
+	illegalCharsSanitizeRe = regexp.MustCompile(fmt.Sprintf("([^[:print:]]|[%s])+", IllegalChars))
+	illegalCharsCheckRe = regexp.MustCompile(fmt.Sprintf("[^[:print:]]|[%s]", IllegalChars))
+	re = regexp.MustCompile(pattern)
+}
+
+// Data holds parsed user agent data
+type Data struct {
+	Coin    string
+	Version string
+	Remark  string
+}
+
+// Build builds a user agent string. Returns an error if the user agent would be invalid.
+func (d Data) Build() (string, error) {
+	if d.Coin == "" {
+		return "", errors.New("missing coin name")
+	}
+	if d.Version == "" {
+		return "", errors.New("missing version")
+	}
+
+	_, err := semver.Parse(d.Version)
+	if err != nil {
+		return "", err
+	}
+
+	s := d.build()
+
+	if err := validate(s); err != nil {
+		fmt.Println("validate failed")
+		return "", err
+	}
+
+	d2, err := Parse(s)
+	if err != nil {
+		return "", fmt.Errorf("Built a user agent that fails to parse: %q %v", s, err)
+	}
+
+	if d2 != d {
+		return "", errors.New("Built a user agent that does not parse to the original format")
+	}
+
+	return s, nil
+}
+
+func (d Data) build() string {
+	if d.Coin == "" || d.Version == "" {
+		return ""
+	}
+
+	remark := d.Remark
+	if remark != "" {
+		remark = fmt.Sprintf("(%s)", remark)
+	}
+
+	return fmt.Sprintf("%s:%s%s", d.Coin, d.Version, remark)
+}
+
+// MarshalJSON marshals Data as JSON
+func (d Data) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, d.build())), nil
+}
+
+// UnmarshalJSON unmarshals []byte to Data
+func (d *Data) UnmarshalJSON(v []byte) error {
+	var s string
+	if err := json.Unmarshal(v, &s); err != nil {
+		return err
+	}
+
+	if s == "" {
+		return nil
+	}
+
+	parsed, err := Parse(s)
+	if err != nil {
+		return err
+	}
+
+	*d = parsed
+	return nil
+}
+
+// Parse parses a user agent string to Data
+func Parse(userAgent string) (Data, error) {
+	if err := validate(userAgent); err != nil {
+		return Data{}, err
+	}
+
+	subs := re.FindAllStringSubmatch(userAgent, -1)
+
+	if len(subs) == 0 {
+		return Data{}, ErrMalformed
+	}
+
+	m := subs[0]
+
+	if m[0] != userAgent {
+		// This should not occur since the pattern has ^$ boundaries applied, but just in case
+		return Data{}, errors.New("User agent did not match pattern completely")
+	}
+
+	coin := m[1]
+	version := m[2]
+	remark := m[3]
+
+	remark = strings.TrimPrefix(remark, "(")
+	remark = strings.TrimSuffix(remark, ")")
+
+	return Data{
+		Coin:    coin,
+		Version: version,
+		Remark:  remark,
+	}, nil
+}
+
+// validate validates a user agent string. The user agent must not contain illegal characters.
+func validate(userAgent string) error {
+	if len(userAgent) > MaxLen {
+		return ErrTooLong
+	}
+
+	fmt.Println("validate", userAgent)
+	if illegalCharsCheckRe.MatchString(userAgent) {
+		return ErrIllegalChars
+	}
+
+	return nil
+}
+
+// Sanitize removes illegal characters from a user agent string
+func Sanitize(userAgent string) string {
+	return illegalCharsSanitizeRe.ReplaceAllLiteralString(userAgent, "")
+}

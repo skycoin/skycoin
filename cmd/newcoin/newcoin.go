@@ -4,7 +4,9 @@ newcoin generates a new coin cmd from a toml configuration file
 package main
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 
 	"os"
 	"path/filepath"
@@ -23,6 +25,7 @@ const (
 
 // CoinTemplateParameters represents parameters used to generate the new coin files.
 type CoinTemplateParameters struct {
+	CoinName            string
 	Version             string
 	PeerListURL         string
 	Port                int
@@ -108,6 +111,12 @@ func createCoinCommand() cli.Command {
 		Action: func(c *cli.Context) error {
 			// -- parse flags -- //
 
+			coinName := c.String("coin")
+
+			if err := validateCoinName(coinName); err != nil {
+				return err
+			}
+
 			templateDir := c.String("template-dir")
 
 			coinTemplateFile := c.String("coin-template-file")
@@ -135,8 +144,6 @@ func createCoinCommand() cli.Command {
 			if _, err := os.Stat(configFilepath); os.IsNotExist(err) {
 				return err
 			}
-
-			coinName := c.String("coin")
 
 			// -- parse template and create new coin.go and visor parameters.go -- //
 
@@ -200,6 +207,7 @@ func createCoinCommand() cli.Command {
 			}
 
 			err = t.ExecuteTemplate(coinFile, coinTemplateFile, CoinTemplateParameters{
+				CoinName:            coinName,
 				PeerListURL:         config.Node.PeerListURL,
 				Port:                config.Node.Port,
 				WebInterfacePort:    config.Node.WebInterfacePort,
@@ -232,6 +240,14 @@ func createCoinCommand() cli.Command {
 			return nil
 		},
 	}
+}
+
+func validateCoinName(s string) error {
+	x := regexp.MustCompile(`^[A-Za-z0-9\-_+]+$`)
+	if !x.MatchString(s) {
+		return errors.New("invalid coin name. must only contain the characters A-Za-z0-9 and -_+")
+	}
+	return nil
 }
 
 func main() {

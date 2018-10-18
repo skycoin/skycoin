@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
@@ -1190,4 +1191,78 @@ func TestDeserializeRawNotPointer(t *testing.T) {
 	m := map[string]int64{"foo": 32, "bar": 64}
 	b = Serialize(m)
 	require.NotEmpty(t, b)
+}
+
+func TestSerializeString(t *testing.T) {
+	cases := []struct {
+		s string
+		x []byte
+	}{
+		{
+			s: "",
+			x: []byte{0, 0, 0, 0},
+		},
+		{
+			s: "foo",
+			x: []byte{3, 0, 0, 0, 'f', 'o', 'o'},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.s, func(t *testing.T) {
+			require.Equal(t, tc.x, SerializeString(tc.s))
+		})
+	}
+}
+
+func TestDeserializeString(t *testing.T) {
+	cases := []struct {
+		s   string
+		x   []byte
+		n   int
+		err error
+	}{
+		{
+			s: "",
+			x: []byte{0, 0, 0, 0},
+			n: 4,
+		},
+		{
+			s: "foo",
+			x: []byte{3, 0, 0, 0, 'f', 'o', 'o'},
+			n: 7,
+		},
+		{
+			x:   []byte{3, 0, 0},
+			err: ErrBufferUnderflow,
+		},
+		{
+			x:   nil,
+			err: ErrBufferUnderflow,
+		},
+		{
+			x:   []byte{3, 0, 0, 0, 'f'},
+			err: ErrBufferUnderflow,
+		},
+		{
+			s: "foo",
+			x: []byte{3, 0, 0, 0, 'f', 'o', 'o', 'x'},
+			n: 7,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("s=%s err=%s", tc.s, tc.err), func(t *testing.T) {
+			s, n, err := DeserializeString(tc.x)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				require.Equal(t, tc.n, n)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.s, s)
+			require.Equal(t, tc.n, n)
+		})
+	}
 }

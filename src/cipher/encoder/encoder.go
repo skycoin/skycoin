@@ -150,6 +150,32 @@ func DeserializeAtomic(in []byte, data interface{}) (int, error) {
 	}
 }
 
+// SerializeString serializes a string to []byte
+func SerializeString(s string) []byte {
+	v := reflect.ValueOf(s)
+	size, err := datasizeWrite(v)
+	if err != nil {
+		log.Panic(err)
+	}
+	buf := make([]byte, size)
+	e := &encoder{buf: buf}
+	e.value(v)
+	return buf
+}
+
+// DeserializeString deserializes a string from []byte, returning the string and the number of bytes read
+func DeserializeString(b []byte) (string, int, error) {
+	var s string
+	v := reflect.ValueOf(&s)
+
+	n, err := DeserializeRawToValue(b, v)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return s, n, nil
+}
+
 // DeserializeRaw deserializes `in` buffer into return
 // parameter. If `data` is not a Pointer or Map type an error
 // is returned. If `in` buffer can't be deserialized,
@@ -198,7 +224,11 @@ func DeserializeRawToValue(in []byte, v reflect.Value) (int, error) {
 	copy(d1.buf, in)
 
 	err := d1.value(v)
-	return inlen - len(d1.buf), err
+	if err != nil {
+		return 0, err
+	}
+
+	return inlen - len(d1.buf), nil
 }
 
 // Serialize returns serialized basic type-based `data`

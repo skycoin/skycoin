@@ -18,6 +18,7 @@ type Connection struct {
 	Mirror     uint32 `json:"mirror"`
 	ListenPort uint16 `json:"listen_port"`
 	Height     uint64 `json:"height"`
+	UserAgent  string `json:"user_agent"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags
@@ -32,5 +33,6 @@ func NewConnection(c *daemon.Connection) Connection {
 		Mirror:       c.Mirror,
 		ListenPort:   c.ListenPort,
 		Height:       c.Height,
+		UserAgent:    c.UserAgent,
 	}
 }

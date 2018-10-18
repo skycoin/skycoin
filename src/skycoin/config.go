@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -31,6 +32,9 @@ type Config struct {
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {
+	// Name of the coin
+	CoinName string
+
 	// Disable peer exchange
 	DisablePEX bool
 	// Download peer list
@@ -112,9 +116,14 @@ type NodeConfig struct {
 	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
 
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	// Timeouts for the HTTP listener
+	HTTPReadTimeout  time.Duration
+	HTTPWriteTimeout time.Duration
+	HTTPIdleTimeout  time.Duration
+
+	// Remark to include in user agent sent in the wire protocol introduction
+	UserAgentRemark string
+	userAgent       string
 
 	// Logging
 	ColorLog bool
@@ -176,6 +185,7 @@ type NodeConfig struct {
 // NewNodeConfig returns a new node config instance
 func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	nodeConfig := NodeConfig{
+		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
@@ -250,9 +260,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 
 		// Timeout settings for http.Server
 		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 60,
-		IdleTimeout:  time.Second * 120,
+		HTTPReadTimeout:  time.Second * 10,
+		HTTPWriteTimeout: time.Second * 60,
+		HTTPIdleTimeout:  time.Second * 120,
 
 		// Centralized network configuration
 		RunMaster: false,
@@ -335,6 +345,19 @@ func (c *Config) postProcess() error {
 		// Run in arbitrating mode if the node is master
 		c.Node.Arbitrating = true
 	}
+
+	userAgentData := useragent.Data{
+		Coin:    c.Node.CoinName,
+		Version: c.Build.Version,
+		Remark:  c.Node.UserAgentRemark,
+	}
+
+	userAgent, err := userAgentData.Build()
+	if err != nil {
+		return err
+	}
+
+	c.Node.userAgent = userAgent
 
 	apiSets, err := buildAPISets(c.Node)
 	if err != nil {
@@ -484,6 +507,8 @@ func (c *NodeConfig) RegisterFlags() {
 
 	flag.BoolVar(&c.DisableDefaultPeers, "disable-default-peers", c.DisableDefaultPeers, "disable the hardcoded default peers")
 	flag.StringVar(&c.CustomPeersFile, "custom-peers-file", c.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
+
+	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
 
 	// Key Configuration Data
 	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")

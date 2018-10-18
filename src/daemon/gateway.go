@@ -99,6 +99,7 @@ type Connection struct {
 	Mirror     uint32
 	ListenPort uint16
 	Height     uint64
+	UserAgent  string
 }
 
 // GetOutgoingConnections returns solicited (outgoing) connections
@@ -113,6 +114,7 @@ func (gw *Gateway) GetOutgoingConnections() ([]Connection, error) {
 
 func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 	if gw.d.pool.Pool == nil {
+		logger.Debug("getOutgoingConnections pool is nil")
 		return nil, nil
 	}
 
@@ -121,6 +123,8 @@ func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 		logger.Error(err)
 		return nil, err
 	}
+
+	logger.Info("getOutgoingConnections: Number of conns:", len(cs))
 
 	conns := make([]Connection, 0, len(cs))
 
@@ -186,6 +190,16 @@ func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
 
 	height, _ := gw.d.Heights.Get(addr)
 
+	var userAgent string
+	pexPeer, exist := gw.d.pex.GetPeerByAddr(addr)
+	if exist {
+		var err error
+		userAgent, err = pexPeer.UserAgent.Build()
+		if err != nil {
+			logger.WithError(err).WithField("addr", addr).Error("pex peer's user agent data cannot be built to string")
+		}
+	}
+
 	return &Connection{
 		ID:           c.ID,
 		Addr:         addr,
@@ -196,6 +210,7 @@ func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
 		Mirror:       mirror,
 		ListenPort:   gw.d.GetListenPort(addr),
 		Height:       height,
+		UserAgent:    userAgent,
 	}
 }
 

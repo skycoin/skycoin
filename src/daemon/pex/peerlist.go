@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 // Peers peer list
@@ -204,7 +205,7 @@ func (pl *peerlist) setAllUntrusted() {
 	}
 }
 
-// setHasIncomingPort updates whether the peer is valid and has public incoming port
+// setHasIncomingPort marks the peer's port as being publicly accessible
 func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error {
 	if p, ok := pl.peers[addr]; ok {
 		p.HasIncomingPort = hasIncomingPort
@@ -213,6 +214,17 @@ func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error 
 	}
 
 	return fmt.Errorf("set peer.HasIncomingPort failed: %v does not exist in peer list", addr)
+}
+
+// setUserAgent sets a peer's user agent
+func (pl *peerlist) setUserAgent(addr string, userAgent useragent.Data) error {
+	if p, ok := pl.peers[addr]; ok {
+		p.UserAgent = userAgent
+		p.Seen()
+		return nil
+	}
+
+	return fmt.Errorf("set peer.UserAgent failed: %v does not exist in peer list", addr)
 }
 
 // len returns number of peers

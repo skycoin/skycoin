@@ -52,6 +52,7 @@ func loadCachedPeersFile(path string) (map[string]*Peer, error) {
 	}
 
 	if err != nil {
+		logger.WithField("path", path).WithError(err).Error("Failed to load peers file")
 		return nil, err
 	}
 
@@ -324,6 +325,7 @@ type PeerJSON struct {
 	Trusted         bool  // Whether this peer is trusted
 	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
 	HasIncomingPort *bool // Whether this peer has incoming port
+	UserAgent       useragent.Data
 }
 
 // newPeerJSON returns a PeerJSON from a Peer
@@ -334,6 +336,7 @@ func newPeerJSON(p Peer) PeerJSON {
 		Private:         p.Private,
 		Trusted:         p.Trusted,
 		HasIncomingPort: &p.HasIncomingPort,
+		UserAgent:       p.UserAgent,
 	}
 }
 
@@ -377,5 +380,6 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 		Private:         p.Private,
 		Trusted:         p.Trusted,
 		HasIncomingPort: hasIncomingPort,
+		UserAgent:       p.UserAgent,
 	}, nil
 }

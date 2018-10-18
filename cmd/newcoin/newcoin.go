@@ -4,7 +4,6 @@ newcoin generates a new coin cmd from a toml configuration file
 package main
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 
@@ -16,6 +15,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 const (
@@ -243,9 +243,9 @@ func createCoinCommand() cli.Command {
 }
 
 func validateCoinName(s string) error {
-	x := regexp.MustCompile(`^[A-Za-z0-9\-_+]+$`)
+	x := regexp.MustCompile(fmt.Sprintf(`^%s$`, useragent.NamePattern))
 	if !x.MatchString(s) {
-		return errors.New("invalid coin name. must only contain the characters A-Za-z0-9 and -_+")
+		return fmt.Errorf("invalid coin name. must only contain the characters %s", useragent.NamePattern)
 	}
 	return nil
 }

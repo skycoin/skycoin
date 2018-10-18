@@ -223,7 +223,7 @@ func (gpm *GivePeersMessage) Process(d Daemoner) {
 	d.AddPeers(peers)
 }
 
-// IntroductionMessage an IntroductionMessage is sent on first connect by both parties
+// IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -235,16 +235,15 @@ type IntroductionMessage struct {
 	// We validate the message in Handle() and cache the result for Process()
 	valid         bool           `enc:"-"` // skip it during encoding
 	userAgentData useragent.Data `enc:"-"`
+
 	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
 	// Currently it contains the blockchain pubkey and user agent but will accept a client that does not provide it.
 	// If any of this data is provided, it must include a valid blockchain pubkey and a valid user agent string (maxlen=256).
-	Extra []byte `enc:",omitempty"`
-
-	// v26 fields:
-	// ExtraByte uint32
-	// Pubkey    cipher.Pubkey
+	// Contents of extra:
+	// ExtraByte uint32 // length prefix of []byte
+	// Pubkey    cipher.Pubkey // blockchain pubkey
 	// UserAgent string `enc:",maxlen=256"`
-	// Extra []byte `enc:",omitempty"`
+	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message

@@ -114,7 +114,6 @@ func (gw *Gateway) GetOutgoingConnections() ([]Connection, error) {
 
 func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 	if gw.d.pool.Pool == nil {
-		logger.Debug("getOutgoingConnections pool is nil")
 		return nil, nil
 	}
 
@@ -123,8 +122,6 @@ func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 		logger.Error(err)
 		return nil, err
 	}
-
-	logger.Info("getOutgoingConnections: Number of conns:", len(cs))
 
 	conns := make([]Connection, 0, len(cs))
 
@@ -196,7 +193,7 @@ func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
 		var err error
 		userAgent, err = pexPeer.UserAgent.Build()
 		if err != nil {
-			logger.WithError(err).WithField("addr", addr).Error("pex peer's user agent data cannot be built to string")
+			logger.Critical().WithError(err).WithField("addr", addr).Error("pex peer's user agent data cannot be built to string")
 		}
 	}
 

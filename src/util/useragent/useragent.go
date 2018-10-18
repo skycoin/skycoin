@@ -29,7 +29,15 @@ const (
 	// MaxLen the maximum length of a user agent
 	MaxLen = 256
 
-	pattern = `^([A-Za-z0-9\-_+]+):([0-9]+\.[0-9]+\.[0-9][A-Za-z0-9\-.+]*)(\([A-Za-z0-9\-_+;:!$%,.=?~ ]+\))?$`
+	// NamePattern is the regex pattern for the name portion of the user agent
+	NamePattern = `[A-Za-z0-9\-_+]+`
+	// VersionPattern is the regex pattern for the version portion of the user agent
+	VersionPattern = `[0-9]+\.[0-9]+\.[0-9][A-Za-z0-9\-.+]*`
+	// RemarkPattern is the regex pattern for the remark portion of the user agent
+	RemarkPattern = `[A-Za-z0-9\-_+;:!$%,.=?~ ]+`
+
+	// Pattern is the regex pattern for the user agent in entirety
+	Pattern = `^(` + NamePattern + `):(` + VersionPattern + `)(\(` + RemarkPattern + `\))?$`
 )
 
 var (
@@ -50,7 +58,7 @@ var (
 func init() {
 	illegalCharsSanitizeRe = regexp.MustCompile(fmt.Sprintf("([^[:print:]]|[%s])+", IllegalChars))
 	illegalCharsCheckRe = regexp.MustCompile(fmt.Sprintf("[^[:print:]]|[%s]", IllegalChars))
-	re = regexp.MustCompile(pattern)
+	re = regexp.MustCompile(Pattern)
 }
 
 // Data holds parsed user agent data
@@ -158,7 +166,7 @@ func Parse(userAgent string) (Data, error) {
 	remark := m[3]
 
 	if _, err := semver.Parse(version); err != nil {
-		return Data{}, errors.New("User agent version is not a valid semver: %v", err)
+		return Data{}, fmt.Errorf("User agent version is not a valid semver: %v", err)
 	}
 
 	remark = strings.TrimPrefix(remark, "(")

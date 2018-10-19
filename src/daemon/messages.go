@@ -404,7 +404,7 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 	if err := d.RecordConnectionMirror(a, intro.Mirror); err != nil {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
-		logger.Errorf("Invalid port for connection %s", a)
+		logger.WithError(err).WithField("addr", a).Error("Invalid port for connection")
 		if err := d.Disconnect(intro.c.Addr, ErrDisconnectIncomprehensibleError); err != nil {
 			logger.WithError(err).WithField("addr", intro.c.Addr).Warning("Disconnect")
 		}
@@ -412,11 +412,13 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 	}
 
 	// Record the user agent of the peer
-	d.RecordUserAgent(a, intro.userAgentData)
+	if err := d.RecordUserAgent(a, intro.userAgentData); err != nil {
+		logger.WithError(err).WithField("addr", a).Errorf("RecordUserAgent failed, userAgentData=%+v", intro.userAgentData)
+	}
 
 	// Request blocks immediately after they're confirmed
 	if err := d.RequestBlocksFromAddr(intro.c.Addr); err != nil {
-		logger.Warning(err)
+		logger.WithError(err).Warning()
 	} else {
 		logger.Debugf("Successfully requested blocks from %s", intro.c.Addr)
 	}

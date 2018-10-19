@@ -1232,7 +1232,7 @@ func TestDeserializeMaxLenExceeded(t *testing.T) {
 
 	var z Baz
 	require.Panics(t, func() {
-		DeserializeRaw(b, &z)
+		_ = DeserializeRaw(b, &z) // nolint: errcheck
 	})
 
 	// maxlen for final omitempty byte array

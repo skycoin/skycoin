@@ -218,3 +218,12 @@ func TestSanitize(t *testing.T) {
 	x := "Skycoin:0.24.1(foo; bar)"
 	require.Equal(t, x, Sanitize(x))
 }
+
+func TestEmpty(t *testing.T) {
+	var d Data
+	require.True(t, d.Empty())
+
+	d.Coin = "skycoin"
+	d.Version = "0.24.1"
+	require.False(t, d.Empty())
+}

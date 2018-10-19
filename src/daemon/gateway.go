@@ -189,7 +189,7 @@ func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
 
 	var userAgent string
 	pexPeer, exist := gw.d.pex.GetPeerByAddr(addr)
-	if exist {
+	if exist && !pexPeer.UserAgent.Empty() {
 		var err error
 		userAgent, err = pexPeer.UserAgent.Build()
 		if err != nil {

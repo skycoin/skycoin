@@ -68,6 +68,11 @@ type Data struct {
 	Remark  string
 }
 
+// Empty returns true if the Data is empty
+func (d Data) Empty() bool {
+	return d == (Data{})
+}
+
 // Build builds a user agent string. Returns an error if the user agent would be invalid.
 func (d Data) Build() (string, error) {
 	if d.Coin == "" {

@@ -1918,13 +1918,13 @@ To get confirmed transactions for one or more addresses:
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
 ```
 
-To unconfirmed transactions for one or more addresses:
+To get unconfirmed transactions for one or more addresses:
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
 ```
 
-To both confirmed and unconfirmed transactions for one or more addresses:
+To get both confirmed and unconfirmed transactions for one or more addresses:
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY

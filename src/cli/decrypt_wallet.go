@@ -4,40 +4,31 @@ import (
 	"fmt"
 	"path/filepath"
 
-	gcli "github.com/urfave/cli"
-
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func decryptWalletCmd(cfg Config) gcli.Command {
-	name := "decryptWallet"
-	return gcli.Command{
-		Name:  name,
-		Usage: "Decrypt wallet",
-		Description: fmt.Sprintf(`
-		The default wallet (%s) will be
-		used if no wallet was specified.
+import (
+	gcli "github.com/spf13/cobra"
+)
 
-		Use caution when using the "-p" command. If you have command history enabled
-		your wallet encryption password can be recovered from the history log. If you
-		do not include the "-p" option you will be prompted to enter your password
-		after you enter your command.`, cfg.FullWalletPath()),
-		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Wallet password",
-			},
-		},
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			cfg := ConfigFromContext(c)
+func decryptWalletCmd() *gcli.Command {
+	decryptWalletCmd := &gcli.Command{
+		Use:   "decryptWallet",
+		Short: "Decrypt wallet",
+		Long: fmt.Sprintf(`
+		The default wallet (%s) will be used if no wallet was specified.
 
-			w, err := resolveWalletPath(cfg, "")
+	Use caution when using the "-p" command. If you have command history enabled
+    your wallet encryption password can be recovered from the history log. If you
+	do not include the "-p" option you will be prompted to enter your password
+	after you enter your command.`, cliConfig.FullWalletPath()),
+		RunE: func(c *gcli.Command, args []string) error {
+			w, err := resolveWalletPath(cliConfig, "")
 			if err != nil {
 				return err
 			}
 
-			pr := NewPasswordReader([]byte(c.String("p")))
+			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
 			wlt, err := decryptWallet(w, pr)
 			switch err.(type) {
@@ -52,6 +43,10 @@ func decryptWalletCmd(cfg Config) gcli.Command {
 			return printJSON(wallet.NewReadableWallet(wlt))
 		},
 	}
+
+	decryptWalletCmd.Flags().StringP("password", "p", "", "wallet password")
+
+	return decryptWalletCmd
 }
 
 func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error) {
@@ -68,12 +63,12 @@ func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error)
 		return nil, wallet.ErrMissingPassword
 	}
 
-	password, err := pr.Password()
+	wltPassword, err := pr.Password()
 	if err != nil {
 		return nil, err
 	}
 
-	unlockedWlt, err := wlt.Unlock(password)
+	unlockedWlt, err := wlt.Unlock(wltPassword)
 	if err != nil {
 		return nil, err
 	}

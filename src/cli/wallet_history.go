@@ -8,7 +8,7 @@ import (
 
 	"sort"
 
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/readable"
@@ -42,33 +42,21 @@ func (obt byTime) Len() int {
 	return len(obt)
 }
 
-func walletHisCmd() gcli.Command {
-	name := "walletHistory"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Display the transaction history of specific wallet. Requires skycoin node rpc.",
-		ArgsUsage:    " ",
-		OnUsageError: onCommandUsageError(name),
-		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "f",
-				Usage: "[wallet file or path] From wallet. If no path is specified your default wallet path will be used.",
-			},
-		},
-		Action: walletHistoryAction,
+func walletHisCmd() *gcli.Command {
+	walletHisCmd := &gcli.Command{
+		Short: "Display the transaction history of specific wallet. Requires skycoin node rpc.",
+		Use:   "walletHistory",
+		Args:  gcli.NoArgs,
+		RunE:  walletHistoryAction,
 	}
+
+	walletHisCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
+
+	return walletHisCmd
 }
 
-func walletHistoryAction(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-	client := APIClientFromContext(c)
-
-	if c.NArg() > 0 {
-		fmt.Printf("Error: invalid argument\n\n")
-		return gcli.ShowSubcommandHelp(c)
-	}
-
-	w, err := resolveWalletPath(cfg, c.String("f"))
+func walletHistoryAction(c *gcli.Command, args []string) error {
+	w, err := resolveWalletPath(cliConfig, walletFile)
 	if err != nil {
 		return err
 	}
@@ -86,12 +74,12 @@ func walletHistoryAction(c *gcli.Context) error {
 	// Get all the addresses' historical uxouts
 	totalAddrHis := []AddrHistory{}
 	for _, addr := range addrs {
-		uxouts, err := client.AddressUxOuts(addr)
+		uxouts, err := apiClient.AddressUxOuts(addr)
 		if err != nil {
 			return err
 		}
 
-		addrHis, err := makeAddrHisArray(client, addr, uxouts)
+		addrHis, err := makeAddrHisArray(apiClient, addr, uxouts)
 		if err != nil {
 			return err
 		}

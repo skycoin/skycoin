@@ -1,21 +1,18 @@
 package cli
 
 import (
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func verifyAddressCmd() gcli.Command {
-	name := "verifyAddress"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Verify a skycoin address",
-		ArgsUsage:    "[skycoin address]",
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			skyAddr := c.Args().First()
-			_, err := cipher.DecodeBase58Address(skyAddr)
+func verifyAddressCmd() *gcli.Command {
+	return &gcli.Command{
+		Short: "Verify a skycoin address",
+		Use:   "verifyAddress [skycoin address]",
+		Args:  gcli.ExactArgs(1),
+		RunE: func(c *gcli.Command, args []string) error {
+			_, err := cipher.DecodeBase58Address(args[0])
 			return err
 		},
 	}

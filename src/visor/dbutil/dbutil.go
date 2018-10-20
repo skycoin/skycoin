@@ -69,7 +69,7 @@ func WrapDB(db *bolt.DB) *DB {
 		UpdateTrace:                txUpdateTrace,
 		DurationLog:                txDurationLog,
 		DurationReportingThreshold: txDurationReportingThreshold,
-		DB:                         db,
+		DB: db,
 	}
 }
 

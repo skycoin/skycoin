@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
@@ -34,51 +34,44 @@ type BalanceResult struct {
 	Addresses []AddressBalances `json:"addresses"`
 }
 
-func walletBalanceCmd(cfg Config) gcli.Command {
-	name := "walletBalance"
-	return gcli.Command{
-		Name:      name,
-		Usage:     "Check the balance of a wallet",
-		ArgsUsage: "[wallet]",
-		Description: fmt.Sprintf(`Check balance of specific wallet, the default
-		wallet (%s) will be
-		used if no wallet was specified, use ENV 'WALLET_NAME'
-		to update default wallet file name, and 'WALLET_DIR' to update
-		the default wallet directory`, cfg.FullWalletPath()),
-		OnUsageError: onCommandUsageError(name),
-		Action:       checkWltBalance,
+func walletBalanceCmd() *gcli.Command {
+	return &gcli.Command{
+		Short: "Check the balance of a wallet",
+		Use:   "walletBalance [wallet]",
+		Long: fmt.Sprintf(`Check balance of specific wallet, the default
+    wallet (%s) will be
+	used if no wallet was specified, use ENV 'WALLET_NAME'
+	to update default wallet file name, and 'WALLET_DIR' to update
+	the default wallet directory`, cliConfig.FullWalletPath()),
+		Args: gcli.MaximumNArgs(1),
+		RunE: checkWltBalance,
 	}
 }
 
-func addressBalanceCmd() gcli.Command {
-	name := "addressBalance"
-	return gcli.Command{
-		Name:      name,
-		Usage:     "Check the balance of specific addresses",
-		ArgsUsage: "[addresses]",
-		Description: `Check balance of specific addresses, join multiple addresses with space.
-		example: addressBalance "$addr1 $addr2 $addr3"`,
-		OnUsageError: onCommandUsageError(name),
-		Action:       addrBalance,
+func addressBalanceCmd() *gcli.Command {
+	return &gcli.Command{
+		Short: "Check the balance of specific addresses",
+		Use:   "addressBalance [addresses]",
+		Long: `Check balance of specific addresses, join multiple addresses with space.
+    example: addressBalance "$addr1 $addr2 $addr3"`,
+		Args: gcli.MinimumNArgs(1),
+		RunE: addrBalance,
 	}
 }
 
-func checkWltBalance(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-	client := APIClientFromContext(c)
-
+func checkWltBalance(c *gcli.Command, args []string) error {
 	var w string
-	if c.NArg() > 0 {
-		w = c.Args().First()
+	if len(args) > 0 {
+		w = args[0]
 	}
 
 	var err error
-	w, err = resolveWalletPath(cfg, w)
+	w, err = resolveWalletPath(cliConfig, w)
 	if err != nil {
 		return err
 	}
 
-	balRlt, err := CheckWalletBalance(client, w)
+	balRlt, err := CheckWalletBalance(apiClient, w)
 	switch err.(type) {
 	case nil:
 	case WalletLoadError:
@@ -91,19 +84,20 @@ func checkWltBalance(c *gcli.Context) error {
 	return printJSON(balRlt)
 }
 
-func addrBalance(c *gcli.Context) error {
-	client := APIClientFromContext(c)
+func addrBalance(c *gcli.Command, args []string) error {
+	numArgs := len(args)
 
-	addrs := make([]string, c.NArg())
+	addrs := make([]string, numArgs)
+
 	var err error
-	for i := 0; i < c.NArg(); i++ {
-		addrs[i] = c.Args().Get(i)
+	for i := 0; i < numArgs; i++ {
+		addrs[i] = args[i]
 		if _, err = cipher.DecodeBase58Address(addrs[i]); err != nil {
 			return fmt.Errorf("invalid address: %v, err: %v", addrs[i], err)
 		}
 	}
 
-	balRlt, err := GetBalanceOfAddresses(client, addrs)
+	balRlt, err := GetBalanceOfAddresses(apiClient, addrs)
 	if err != nil {
 		return err
 	}

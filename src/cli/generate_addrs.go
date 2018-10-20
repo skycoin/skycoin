@@ -6,67 +6,57 @@ import (
 	"path/filepath"
 	"strings"
 
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func walletAddAddressesCmd(cfg Config) gcli.Command {
-	name := "walletAddAddresses"
-	return gcli.Command{
-		Name:      name,
-		Usage:     "Generate additional addresses for a wallet",
-		ArgsUsage: " ",
-		Description: fmt.Sprintf(`The default wallet (%s) will
+func walletAddAddressesCmd() *gcli.Command {
+	walletAddAddressesCmd := &gcli.Command{
+		Use:   "walletAddAddresses",
+		Short: "Generate additional addresses for a wallet",
+		Long: fmt.Sprintf(`The default wallet (%s) will
 		be used if no wallet was specified.
 
-		Use caution when using the "-p" command. If you have command
-		history enabled your wallet encryption password can be recovered from the
-		history log. If you do not include the "-p" option you will be prompted to
-		enter your password after you enter your command.`, cfg.FullWalletPath()),
-		Flags: []gcli.Flag{
-			gcli.UintFlag{
-				Name:  "n",
-				Value: 1,
-				Usage: `[numberOfAddresses]	Number of addresses to generate`,
-			},
-			gcli.StringFlag{
-				Name:  "f",
-				Value: cfg.FullWalletPath(),
-				Usage: `[wallet file or path] Generate addresses in the wallet`,
-			},
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: `[password] wallet password`,
-			},
-			gcli.BoolFlag{
-				Name:  "json,j",
-				Usage: "Returns the results in JSON format",
-			},
-		},
-		OnUsageError: onCommandUsageError(name),
-		Action:       generateAddrs,
+	Use caution when using the "-p" command. If you have command
+	history enabled your wallet encryption password can be recovered from the
+	history log. If you do not include the "-p" option you will be prompted to
+	enter your password after you enter your command.`, cliConfig.FullWalletPath()),
+		RunE: generateAddrs,
 	}
+
+	walletAddAddressesCmd.Flags().Uint64P("num", "n", 1, "Number of addresses to generate")
+	walletAddAddressesCmd.Flags().StringP("wallet-file", "f", cliConfig.FullWalletPath(), "Generate addresses in the wallet")
+	walletAddAddressesCmd.Flags().StringP("password", "p", "", "wallet password")
+	walletAddAddressesCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format")
+	walletAddAddressesCmd.MarkFlagRequired("num")
+
+	return walletAddAddressesCmd
 }
 
-func generateAddrs(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-
+func generateAddrs(c *gcli.Command, args []string) error {
 	// get number of address that are need to be generated.
-	num := c.Uint64("n")
-	if num == 0 {
-		return errors.New("-n must > 0")
-	}
-
-	jsonFmt := c.Bool("json")
-
-	w, err := resolveWalletPath(cfg, c.String("f"))
+	num, err := c.Flags().GetUint64("num")
 	if err != nil {
 		return err
 	}
 
-	pr := NewPasswordReader([]byte(c.String("p")))
+	if num == 0 {
+		return errors.New("-n must > 0")
+	}
+
+	jsonFmt, err := c.Flags().GetBool("json")
+	if err != nil {
+		return err
+	}
+
+	w, err := resolveWalletPath(cliConfig, c.Flag("wallet-file").Value.String())
+	if err != nil {
+		return err
+	}
+
+	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 	addrs, err := GenerateAddressesInFile(w, num, pr)
 
 	switch err.(type) {

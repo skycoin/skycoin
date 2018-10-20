@@ -7,7 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/wallet"
 
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 )
 
 // WalletEntry represents an enty in a wallet file
@@ -17,26 +17,20 @@ type WalletEntry struct {
 	AddressNum int    `json:"address_num"`
 }
 
-func listWalletsCmd() gcli.Command {
-	name := "listWallets"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Lists all wallets stored in the wallet directory",
-		ArgsUsage:    " ",
-		OnUsageError: onCommandUsageError(name),
-		Action:       listWallets,
+func listWalletsCmd() *gcli.Command {
+	return &gcli.Command{
+		Short: "Lists all wallets stored in the wallet directory",
+		Use:   "listWallets",
+		RunE:  listWallets,
 	}
-	// Commands = append(Commands, cmd)
 }
 
-func listWallets(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-
+func listWallets(c *gcli.Command, args []string) error {
 	var wlts struct {
 		Wallets []WalletEntry `json:"wallets"`
 	}
 
-	entries, err := ioutil.ReadDir(cfg.WalletDir)
+	entries, err := ioutil.ReadDir(cliConfig.WalletDir)
 	if err != nil {
 		return err
 	}
@@ -48,7 +42,7 @@ func listWallets(c *gcli.Context) error {
 				continue
 			}
 
-			path := filepath.Join(cfg.WalletDir, name)
+			path := filepath.Join(cliConfig.WalletDir, name)
 			w, err := wallet.Load(path)
 			if err != nil {
 				return WalletLoadError{err}

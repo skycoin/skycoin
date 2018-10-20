@@ -5,24 +5,20 @@ import (
 
 	"strconv"
 
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 )
 
-func lastBlocksCmd() gcli.Command {
-	name := "lastBlocks"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Displays the content of the most recently N generated blocks",
-		ArgsUsage:    "[numberOfBlocks]",
-		OnUsageError: onCommandUsageError(name),
-		Action:       getLastBlocks,
+func lastBlocksCmd() *gcli.Command {
+	return &gcli.Command{
+		Short: "Displays the content of the most recently N generated blocks",
+		Use:   "lastBlocks [numberOfBlocks]",
+		RunE:  getLastBlocks,
+		Args:  gcli.MaximumNArgs(1),
 	}
 }
 
-func getLastBlocks(c *gcli.Context) error {
-	client := APIClientFromContext(c)
-
-	num := c.Args().First()
+func getLastBlocks(c *gcli.Command, args []string) error {
+	num := args[0]
 	if num == "" {
 		num = "1"
 	}
@@ -32,7 +28,7 @@ func getLastBlocks(c *gcli.Context) error {
 		return fmt.Errorf("invalid block number, %s", err)
 	}
 
-	blocks, err := client.LastBlocks(n)
+	blocks, err := apiClient.LastBlocks(n)
 	if err != nil {
 		return err
 	}

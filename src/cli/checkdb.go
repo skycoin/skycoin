@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/apputil"
@@ -29,23 +29,19 @@ func wrapDB(db *bolt.DB) *dbutil.DB {
 	return wdb
 }
 
-func checkdbCmd() gcli.Command {
-	name := "checkdb"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Verify the database",
-		ArgsUsage:    "[db path]",
-		Description:  "If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.",
-		OnUsageError: onCommandUsageError(name),
-		Action:       checkdb,
+func checkdbCmd() *gcli.Command {
+	return &gcli.Command{
+		Short: "Verify the database",
+		Use:   "checkdb [db path]",
+		Long:  "If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.",
+		Args:  gcli.MaximumNArgs(1),
+		RunE:  checkdb,
 	}
 }
 
-func checkdb(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-
+func checkdb(c *gcli.Command, args []string) error {
 	// get db path
-	dbpath, err := resolveDBPath(cfg, c.Args().First())
+	dbpath, err := resolveDBPath(cliConfig, args[0])
 	if err != nil {
 		return err
 	}
@@ -68,12 +64,11 @@ func checkdb(c *gcli.Context) error {
 		return fmt.Errorf("decode blockchain pubkey failed: %v", err)
 	}
 
-	quit := QuitChanFromContext(c)
 	go func() {
-		apputil.CatchInterrupt(quit)
+		apputil.CatchInterrupt(quitChan)
 	}()
 
-	if err := visor.CheckDatabase(wrapDB(db), pubkey, quit); err != nil {
+	if err := visor.CheckDatabase(wrapDB(db), pubkey, quitChan); err != nil {
 		if err == visor.ErrVerifyStopped {
 			return nil
 		}

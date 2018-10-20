@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
@@ -21,81 +21,47 @@ const (
 	AlphaNumericSeedLength = 64
 )
 
-func walletCreateCmd(cfg Config) gcli.Command {
-	name := "walletCreate"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Generate a new wallet",
-		ArgsUsage:    " ",
-		OnUsageError: onCommandUsageError(name),
-		Description: fmt.Sprintf(`The default wallet (%s) will
-		be created if no wallet and address was specified.
+func walletCreateCmd() *gcli.Command {
+	walletCreateCmd := &gcli.Command{
+		Use:   "walletCreate",
+		Short: "Generate a new wallet",
+		Long: fmt.Sprintf(`The default wallet (%s) will be created if no wallet and address was specified.
 
-		Use caution when using the "-p" command. If you have command
-		history enabled your wallet encryption password can be recovered
-		from the history log. If you do not include the "-p" option you will
-		be prompted to enter your password after you enter your command.
+    Use caution when using the "-p" command. If you have command
+    history enabled your wallet encryption password can be recovered
+    from the history log. If you do not include the "-p" option you will
+    be prompted to enter your password after you enter your command.
 
-		All results are returned in JSON format.`, cfg.FullWalletPath()),
-		Flags: []gcli.Flag{
-			gcli.BoolFlag{
-				Name:  "r",
-				Usage: "A random alpha numeric seed will be generated for you",
-			},
-			gcli.BoolFlag{
-				Name:  "rd",
-				Usage: "A random seed consisting of 12 dictionary words will be generated for you",
-			},
-			gcli.StringFlag{
-				Name:  "s",
-				Usage: "Your seed",
-			},
-			gcli.UintFlag{
-				Name:  "n",
-				Value: 1,
-				Usage: `[numberOfAddresses] Number of addresses to generate
-						By default 1 address is generated.`,
-			},
-			gcli.StringFlag{
-				Name:  "f",
-				Value: cfg.WalletName,
-				Usage: `[walletName] Name of wallet. The final format will be "yourName.wlt".
-						 If no wallet name is specified a generic name will be selected.`,
-			},
-			gcli.StringFlag{
-				Name:  "l",
-				Usage: "[label] Label used to idetify your wallet.",
-			},
-			gcli.BoolFlag{
-				Name:  "e,encrypt",
-				Usage: `Whether creates wallet with encryption `,
-			},
-			gcli.StringFlag{
-				Name:  "x,crypto-type",
-				Value: string(wallet.CryptoTypeScryptChacha20poly1305),
-				Usage: "[crypto type] The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor",
-			},
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Wallet password",
-			},
-		},
-		Action: generateWalletHandler,
+    All results are returned in JSON format.`, cliConfig.FullWalletPath()),
+		RunE: generateWalletHandler,
 	}
+
+	walletCreateCmd.Flags().BoolP("random", "r", false, "A random alpha numeric seed will be generated")
+	walletCreateCmd.Flags().BoolP("mnemonic", "m", false, "A mnemonic seed consisting of 12 dictionary words will be generated")
+	walletCreateCmd.Flags().StringP("seed", "s", "", "Your seed")
+	walletCreateCmd.Flags().Uint64P("num", "n", 1, `[numberOfAddresses] Number of addresses to generate
+    By default 1 address is generated.`)
+	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
+    If no wallet name is specified a generic name will be selected.`)
+	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
+	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
+	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.CryptoTypeScryptChacha20poly1305),
+		"The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
+	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
+
+	return walletCreateCmd
 }
 
-func generateWalletHandler(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-
+func generateWalletHandler(c *gcli.Command, args []string) error {
 	// create wallet dir if not exist
-	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(cfg.WalletDir, 0750); err != nil {
+	if _, err := os.Stat(cliConfig.WalletDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(cliConfig.WalletDir, 0750); err != nil {
 			return errors.New("create dir failed")
 		}
 	}
 
 	// get wallet name
-	wltName := c.String("f")
+	wltName := c.Flag("wallet-file").Value.String()
 
 	// check if the wallet name has wlt extension.
 	if !strings.HasSuffix(wltName, walletExt) {
@@ -108,42 +74,55 @@ func generateWalletHandler(c *gcli.Context) error {
 	}
 
 	// check if the wallet file does exist
-	if _, err := os.Stat(filepath.Join(cfg.WalletDir, wltName)); err == nil {
+	if _, err := os.Stat(filepath.Join(cliConfig.WalletDir, wltName)); err == nil {
 		return fmt.Errorf("%v already exist", wltName)
 	}
 
 	// check if the wallet dir does exist.
-	if _, err := os.Stat(cfg.WalletDir); os.IsNotExist(err) {
+	if _, err := os.Stat(cliConfig.WalletDir); os.IsNotExist(err) {
 		return err
 	}
 
 	// get number of address that are need to be generated, if m is 0, set to 1.
-	num := c.Uint64("n")
+	num, err := c.Flags().GetUint64("num")
+	if err != nil {
+		return err
+	}
 	if num == 0 {
 		return errors.New("-n must > 0")
 	}
 
 	// get label
-	label := c.String("l")
+	label := c.Flag("label").Value.String()
 
 	// get seed
-	s := c.String("s")
-	r := c.Bool("r")
-	rd := c.Bool("rd")
-
-	encrypt := c.Bool("e")
-
-	sd, err := makeSeed(s, r, rd)
+	s := c.Flag("seed").Value.String()
+	random, err := c.Flags().GetBool("random")
 	if err != nil {
 		return err
 	}
 
-	cryptoType, err := wallet.CryptoTypeFromString(c.String("x"))
+	mnemonic, err := c.Flags().GetBool("mnemonic")
 	if err != nil {
 		return err
 	}
 
-	pr := NewPasswordReader([]byte(c.String("p")))
+	encrypt, err := c.Flags().GetBool("encrypt")
+	if err != nil {
+		return err
+	}
+
+	sd, err := makeSeed(s, random, mnemonic)
+	if err != nil {
+		return err
+	}
+
+	cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
+	if err != nil {
+		return err
+	}
+
+	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 	switch pr.(type) {
 	case PasswordFromBytes:
 		p, err := pr.Password()
@@ -178,7 +157,7 @@ func generateWalletHandler(c *gcli.Context) error {
 		return err
 	}
 
-	if err := wlt.Save(cfg.WalletDir); err != nil {
+	if err := wlt.Save(cliConfig.WalletDir); err != nil {
 		return err
 	}
 

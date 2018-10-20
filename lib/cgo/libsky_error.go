@@ -66,7 +66,6 @@ const (
 	SKY_PKG_WALLET
 )
 
-//nolint megacheck
 // Error codes defined in cipher package
 //nolint megacheck
 const (
@@ -636,6 +635,49 @@ func libErrorCode(err error) uint32 {
 		return SKY_ErrTxnViolatesUserConstraint
 	}
 	return SKY_ERROR
+}
+
+func errorFromLibCode(errcode uint32) error {
+	if err, exists := codeToErrorMap[errcode]; exists {
+		return err
+	}
+
+	// FIXME: Be more specific and encode type, sub-error in error code
+	err := errors.New("libskycoin error")
+	if errcode == SKY_WalletLoadError {
+		return cli.WalletLoadError{}
+	}
+	if errcode == SKY_WalletSaveError {
+		return cli.WalletSaveError{}
+	}
+	if errcode == SKY_ErrHistoryDBCorrupted {
+		return historydb.NewErrHistoryDBCorrupted(err)
+	}
+	if errcode == SKY_ErrUxOutNotExist {
+		return historydb.ErrUxOutNotExist{UxID: ""}
+	}
+	if errcode == SKY_ErrUnspentNotExist {
+		return blockdb.ErrUnspentNotExist{UxID: ""}
+	}
+	if errcode == SKY_ErrMissingSignature {
+		return blockdb.NewErrMissingSignature(nil)
+	}
+	if errcode == SKY_ErrCreateBucketFailed {
+		return dbutil.ErrCreateBucketFailed{Bucket: "", Err: nil}
+	}
+	if errcode == SKY_ErrBucketNotExist {
+		return dbutil.ErrBucketNotExist{Bucket: ""}
+	}
+	if errcode == SKY_ErrTxnViolatesHardConstraint {
+		return visor.ErrTxnViolatesHardConstraint{Err: err}
+	}
+	if errcode == SKY_ErrTxnViolatesSoftConstraint {
+		return visor.ErrTxnViolatesSoftConstraint{Err: err}
+	}
+	if errcode == SKY_ErrTxnViolatesUserConstraint {
+		return visor.ErrTxnViolatesUserConstraint{Err: err}
+	}
+	return nil
 }
 
 func init() {

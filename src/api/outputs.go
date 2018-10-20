@@ -21,7 +21,7 @@ import (
 // Both filters cannot be specified.
 func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}

@@ -111,7 +111,7 @@ func TestCSRF(t *testing.T) {
 
 		req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBufferString(v.Encode()))
 		require.NoError(t, err)
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Content-Type", ContentTypeForm)
 
 		if csrfToken != "" {
 			req.Header.Set("X-CSRF-Token", csrfToken)

@@ -206,7 +206,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 //  verbose [bool]
 func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}

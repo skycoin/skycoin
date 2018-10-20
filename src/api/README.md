@@ -386,10 +386,13 @@ API sets: `READ`
 
 ```
 URI: /api/v1/balance
-Method: GET
+Method: GET, POST
 Args:
     addrs: comma-separated list of addresses. must contain at least one address
 ```
+
+Returns the cumulative and individual balances of one or more addresses.
+The `POST` method can be used if many addresses need to be queried.
 
 Example:
 
@@ -450,7 +453,7 @@ API sets: `READ`
 
 ```
 URI: /api/v1/outputs
-Method: GET
+Method: GET, POST
 Args:
     addrs: address list, joined with ","
     hashes: hash list, joined with ","
@@ -463,6 +466,8 @@ In the response, `"head_outputs"` are outputs in the current unspent output set,
 and `"incoming_outputs"` are outputs that will be created by an unconfirmed transaction.
 
 The current head block header is returned as `"head"`.
+
+The `POST` method can be used if many addresses or hashes need to be queried.
 
 Example:
 
@@ -1895,7 +1900,7 @@ API sets: `READ`
 
 ```
 URI: /api/v1/transactions
-Method: GET
+Method: GET, POST
 Args:
     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
@@ -1907,6 +1912,8 @@ The hours are the original hours the output was created with.
 If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed.
 If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
 equal to the hours the output would have if it become confirmed immediately.
+
+The `POST` method can be used if many addresses need to be queried.
 
 To get address related confirmed transactions:
 

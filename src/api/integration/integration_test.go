@@ -5719,7 +5719,7 @@ func TestDisableWalletAPI(t *testing.T) {
 			name:        "create transaction",
 			method:      http.MethodPost,
 			endpoint:    "/api/v1/wallet/transaction",
-			contentType: "application/json",
+			contentType: api.ContentTypeJSON,
 			json: func() interface{} {
 				return api.CreateTransactionRequest{
 					HoursSelection: api.HoursSelection{
@@ -5753,7 +5753,7 @@ func TestDisableWalletAPI(t *testing.T) {
 					err = c.Get(tc.endpoint, nil)
 				case http.MethodPost:
 					switch tc.contentType {
-					case "application/json":
+					case api.ContentTypeJSON:
 						err = c.PostJSON(tc.endpoint, tc.json(), nil)
 					default:
 						err = c.PostForm(tc.endpoint, tc.body(), nil)

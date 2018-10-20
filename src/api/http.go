@@ -131,7 +131,7 @@ func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Add("Content-Type", ContentTypeJSON)
 
 	if resp.Error == nil {
 		w.WriteHeader(http.StatusOK)
@@ -208,6 +208,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		ReadTimeout:  c.ReadTimeout,
 		WriteTimeout: c.WriteTimeout,
 		IdleTimeout:  c.IdleTimeout,
+		// MaxHeaderBytes: http.DefaultMaxHeaderBytes, // adjust this to allow longer GET queries
 	}
 
 	return &Server{

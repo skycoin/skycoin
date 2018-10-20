@@ -22,6 +22,11 @@ const (
 	dialTimeout         = 60 * time.Second
 	httpClientTimeout   = 120 * time.Second
 	tlsHandshakeTimeout = 60 * time.Second
+
+	// ContentTypeJSON json content type header
+	ContentTypeJSON = "application/json"
+	// ContentTypeForm form data content type header
+	ContentTypeForm = "application/x-www-form-urlencoded"
 )
 
 // ClientError is used for non-200 API responses
@@ -136,9 +141,9 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 	return c.HTTPClient.Do(req)
 }
 
-// PostForm makes a POST request to an endpoint with body of "application/x-www-form-urlencoded" formated data.
+// PostForm makes a POST request to an endpoint with body of ContentTypeForm formated data.
 func (c *Client) PostForm(endpoint string, body io.Reader, obj interface{}) error {
-	return c.post(endpoint, "application/x-www-form-urlencoded", body, obj)
+	return c.Post(endpoint, ContentTypeForm, body, obj)
 }
 
 // PostJSON makes a POST request to an endpoint with body of json data.
@@ -148,11 +153,11 @@ func (c *Client) PostJSON(endpoint string, reqObj, respObj interface{}) error {
 		return err
 	}
 
-	return c.post(endpoint, "application/json", bytes.NewReader(body), respObj)
+	return c.Post(endpoint, ContentTypeJSON, bytes.NewReader(body), respObj)
 }
 
-// post makes a POST request to an endpoint.
-func (c *Client) post(endpoint string, contentType string, body io.Reader, obj interface{}) error {
+// Post makes a POST request to an endpoint.
+func (c *Client) Post(endpoint string, contentType string, body io.Reader, obj interface{}) error {
 	csrf, err := c.CSRF()
 	if err != nil {
 		return err
@@ -226,8 +231,8 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		req.Header.Set(CSRFHeaderName, csrf)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", ContentTypeJSON)
+	req.Header.Set("Accept", ContentTypeJSON)
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -337,10 +342,11 @@ func (c *Client) Outputs() (*readable.UnspentOutputsSummary, error) {
 func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/api/v1/outputs?" + v.Encode()
+
+	endpoint := "/api/v1/outputs"
 
 	var o readable.UnspentOutputsSummary
-	if err := c.Get(endpoint, &o); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &o); err != nil {
 		return nil, err
 	}
 	return &o, nil
@@ -350,10 +356,10 @@ func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSu
 func (c *Client) OutputsForHashes(hashes []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
-	endpoint := "/api/v1/outputs?" + v.Encode()
+	endpoint := "/api/v1/outputs"
 
 	var o readable.UnspentOutputsSummary
-	if err := c.Get(endpoint, &o); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &o); err != nil {
 		return nil, err
 	}
 	return &o, nil
@@ -431,10 +437,10 @@ func (c *Client) Blocks(seqs []uint64) (*readable.Blocks, error) {
 
 	v := url.Values{}
 	v.Add("seqs", strings.Join(sSeqs, ","))
-	endpoint := "/api/v1/blocks?" + v.Encode()
+	endpoint := "/api/v1/blocks"
 
 	var b readable.Blocks
-	if err := c.Get(endpoint, &b); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
@@ -450,10 +456,10 @@ func (c *Client) BlocksVerbose(seqs []uint64) (*readable.BlocksVerbose, error) {
 	v := url.Values{}
 	v.Add("seqs", strings.Join(sSeqs, ","))
 	v.Add("verbose", "1")
-	endpoint := "/api/v1/blocks?" + v.Encode()
+	endpoint := "/api/v1/blocks"
 
 	var b readable.BlocksVerbose
-	if err := c.Get(endpoint, &b); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
@@ -537,10 +543,10 @@ func (c *Client) BlockchainProgress() (*readable.BlockchainProgress, error) {
 func (c *Client) Balance(addrs []string) (*BalanceResponse, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/api/v1/balance?" + v.Encode()
+	endpoint := "/api/v1/balance"
 
 	var b BalanceResponse
-	if err := c.Get(endpoint, &b); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
@@ -918,10 +924,10 @@ func (c *Client) TransactionEncoded(txid string) (*TransactionEncodedResponse, e
 func (c *Client) Transactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatus
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -932,10 +938,10 @@ func (c *Client) ConfirmedTransactions(addrs []string) ([]readable.TransactionWi
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatus
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -946,10 +952,10 @@ func (c *Client) UnconfirmedTransactions(addrs []string) ([]readable.Transaction
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatus
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -960,10 +966,10 @@ func (c *Client) TransactionsVerbose(addrs []string) ([]readable.TransactionWith
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("verbose", "1")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatusVerbose
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -975,10 +981,10 @@ func (c *Client) ConfirmedTransactionsVerbose(addrs []string) ([]readable.Transa
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
 	v.Add("verbose", "1")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatusVerbose
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -990,10 +996,10 @@ func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.Tran
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
 	v.Add("verbose", "1")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatusVerbose
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil

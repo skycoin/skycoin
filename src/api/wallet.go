@@ -128,12 +128,12 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 // Returns the balance of one or more addresses, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
 // URI: /api/v1/balance
-// Method: GET
+// Method: GET, POST
 // Args:
 //     addrs: command separated list of addresses [required]
 func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
@@ -949,7 +949,7 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if r.Header.Get("Content-Type") != "application/json" {
+		if r.Header.Get("Content-Type") != ContentTypeJSON {
 			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
 			writeHTTPResponse(w, resp)
 			return

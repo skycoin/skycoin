@@ -55,12 +55,12 @@ var (
 	ErrInvalidSecKey = errors.New("Invalid secret key")
 	// ErrInvalidSig          Invalid signature
 	ErrInvalidSig = errors.New("Invalid signature")
-	// ErrInvalidSigForPubKey Invalid sig: PubKey recovery failed
-	ErrInvalidSigForPubKey = errors.New("Invalid sig: PubKey recovery failed")
-	// ErrInvalidAddressForSig Invalid sig: address does not match output address
-	ErrInvalidAddressForSig = errors.New("Invalid sig: address does not match output address")
+	// ErrInvalidSigPubKeyRecovery could not recover pubkey from sig
+	ErrInvalidSigPubKeyRecovery = errors.New("Failed to recover pubkey from signature")
+	// ErrInvalidAddressForSig the address derived from the pubkey recovered from the signature does not match a provided address
+	ErrInvalidAddressForSig = errors.New("Address does not match recovered signing address")
 	// ErrInvalidHashForSig   Signature invalid for hash
-	ErrInvalidHashForSig = errors.New("Invalid sig: invalid for hash")
+	ErrInvalidHashForSig = errors.New("Signature not valid for hash")
 	// ErrPubKeyRecoverMismatch Recovered pubkey does not match pubkey
 	ErrPubKeyRecoverMismatch = errors.New("Recovered pubkey does not match pubkey")
 	// ErrInvalidSigInvalidPubKey VerifySignature, secp256k1.VerifyPubkey failed
@@ -160,7 +160,7 @@ func MustPubKeyFromSecKey(seckey SecKey) PubKey {
 func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
-		return PubKey{}, ErrInvalidSigForPubKey
+		return PubKey{}, ErrInvalidSigPubKeyRecovery
 	}
 	return NewPubKey(rawPubKey)
 }
@@ -400,7 +400,7 @@ func MustSignHash(hash SHA256, sec SecKey) Sig {
 func ChkSig(address Address, hash SHA256, sig Sig) error {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
-		return ErrInvalidSigForPubKey
+		return ErrInvalidSigPubKeyRecovery
 	}
 
 	pubKey, err := NewPubKey(rawPubKey)
@@ -425,11 +425,9 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 func VerifySignedHash(sig Sig, hash SHA256) error {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
-		return ErrInvalidSigForPubKey
+		return ErrInvalidSigPubKeyRecovery
 	}
 	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
-		// If this occurs, secp256k1 is bugged
-		log.Printf("Recovered public key is not valid for signed hash")
 		return ErrInvalidHashForSig
 	}
 	return nil
@@ -439,7 +437,7 @@ func VerifySignedHash(sig Sig, hash SHA256) error {
 func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 	pubkeyRec, err := PubKeyFromSig(sig, hash) //recovered pubkey
 	if err != nil {
-		return ErrInvalidSigForPubKey
+		return ErrInvalidSigPubKeyRecovery
 	}
 	if pubkeyRec != pubkey {
 		return ErrPubKeyRecoverMismatch

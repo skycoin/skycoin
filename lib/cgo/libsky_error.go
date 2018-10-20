@@ -111,8 +111,8 @@ const (
 	SKY_ErrInvalidPubKey
 	// SKY_ErrInvalidSecKey       Invalid public key
 	SKY_ErrInvalidSecKey
-	// SKY_ErrInvalidSigForPubKey Invalig sig: PubKey recovery failed
-	SKY_ErrInvalidSigForPubKey
+	// SKY_ErrInvalidSigPubKeyRecovery Invalig sig: PubKey recovery failed
+	SKY_ErrInvalidSigPubKeyRecovery
 	// SKY_ErrInvalidSecKeyHex    Invalid SecKey: not valid hex
 	SKY_ErrInvalidSecKeyHex // nolint megacheck
 	// SKY_ErrInvalidAddressForSig Invalid sig: address does not match output address
@@ -397,31 +397,31 @@ var (
 		ErrorBadHandle: SKY_BAD_HANDLE,
 		ErrorUnknown:   SKY_ERROR,
 		// cipher
-		cipher.ErrAddressInvalidLength:    SKY_ErrAddressInvalidLength,
-		cipher.ErrAddressInvalidChecksum:  SKY_ErrAddressInvalidChecksum,
-		cipher.ErrAddressInvalidVersion:   SKY_ErrAddressInvalidVersion,
-		cipher.ErrAddressInvalidPubKey:    SKY_ErrAddressInvalidPubKey,
-		cipher.ErrAddressInvalidFirstByte: SKY_ErrAddressInvalidFirstByte,
-		cipher.ErrAddressInvalidLastByte:  SKY_ErrAddressInvalidLastByte,
-		encoder.ErrBufferUnderflow:        SKY_ErrBufferUnderflow,
-		encoder.ErrInvalidOmitEmpty:       SKY_ErrInvalidOmitEmpty,
-		cipher.ErrInvalidLengthPubKey:     SKY_ErrInvalidLengthPubKey,
-		cipher.ErrPubKeyFromNullSecKey:    SKY_ErrPubKeyFromNullSecKey,
-		cipher.ErrPubKeyFromBadSecKey:     SKY_ErrPubKeyFromBadSecKey,
-		cipher.ErrInvalidLengthSecKey:     SKY_ErrInvalidLengthSecKey,
-		cipher.ErrECHDInvalidPubKey:       SKY_ErrECHDInvalidPubKey,
-		cipher.ErrECHDInvalidSecKey:       SKY_ErrECHDInvalidSecKey,
-		cipher.ErrInvalidLengthSig:        SKY_ErrInvalidLengthSig,
-		cipher.ErrInvalidLengthRipemd160:  SKY_ErrInvalidLengthRipemd160,
-		cipher.ErrInvalidLengthSHA256:     SKY_ErrInvalidLengthSHA256,
-		base58.ErrInvalidBase58Char:       SKY_ErrInvalidBase58Char,
-		base58.ErrInvalidBase58String:     SKY_ErrInvalidBase58String,
-		base58.ErrInvalidBase58Length:     SKY_ErrInvalidBase58Length,
-		cipher.ErrInvalidHexLength:        SKY_ErrInvalidHexLength,
-		cipher.ErrInvalidBytesLength:      SKY_ErrInvalidBytesLength,
-		cipher.ErrInvalidPubKey:           SKY_ErrInvalidPubKey,
-		cipher.ErrInvalidSecKey:           SKY_ErrInvalidSecKey,
-		cipher.ErrInvalidSigForPubKey:     SKY_ErrInvalidSigForPubKey,
+		cipher.ErrAddressInvalidLength:     SKY_ErrAddressInvalidLength,
+		cipher.ErrAddressInvalidChecksum:   SKY_ErrAddressInvalidChecksum,
+		cipher.ErrAddressInvalidVersion:    SKY_ErrAddressInvalidVersion,
+		cipher.ErrAddressInvalidPubKey:     SKY_ErrAddressInvalidPubKey,
+		cipher.ErrAddressInvalidFirstByte:  SKY_ErrAddressInvalidFirstByte,
+		cipher.ErrAddressInvalidLastByte:   SKY_ErrAddressInvalidLastByte,
+		encoder.ErrBufferUnderflow:         SKY_ErrBufferUnderflow,
+		encoder.ErrInvalidOmitEmpty:        SKY_ErrInvalidOmitEmpty,
+		cipher.ErrInvalidLengthPubKey:      SKY_ErrInvalidLengthPubKey,
+		cipher.ErrPubKeyFromNullSecKey:     SKY_ErrPubKeyFromNullSecKey,
+		cipher.ErrPubKeyFromBadSecKey:      SKY_ErrPubKeyFromBadSecKey,
+		cipher.ErrInvalidLengthSecKey:      SKY_ErrInvalidLengthSecKey,
+		cipher.ErrECHDInvalidPubKey:        SKY_ErrECHDInvalidPubKey,
+		cipher.ErrECHDInvalidSecKey:        SKY_ErrECHDInvalidSecKey,
+		cipher.ErrInvalidLengthSig:         SKY_ErrInvalidLengthSig,
+		cipher.ErrInvalidLengthRipemd160:   SKY_ErrInvalidLengthRipemd160,
+		cipher.ErrInvalidLengthSHA256:      SKY_ErrInvalidLengthSHA256,
+		base58.ErrInvalidBase58Char:        SKY_ErrInvalidBase58Char,
+		base58.ErrInvalidBase58String:      SKY_ErrInvalidBase58String,
+		base58.ErrInvalidBase58Length:      SKY_ErrInvalidBase58Length,
+		cipher.ErrInvalidHexLength:         SKY_ErrInvalidHexLength,
+		cipher.ErrInvalidBytesLength:       SKY_ErrInvalidBytesLength,
+		cipher.ErrInvalidPubKey:            SKY_ErrInvalidPubKey,
+		cipher.ErrInvalidSecKey:            SKY_ErrInvalidSecKey,
+		cipher.ErrInvalidSigPubKeyRecovery: SKY_ErrInvalidSigPubKeyRecovery,
 		// Removed in ea0aafbffb76
 		// cipher.ErrInvalidSecKeyHex:               SKY_ErrInvalidSecKeyHex,
 		cipher.ErrInvalidAddressForSig:           SKY_ErrInvalidAddressForSig,

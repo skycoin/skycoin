@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -700,4 +701,31 @@ func TestSecKeyPubKeyNull(t *testing.T) {
 
 	require.False(t, sk.Null())
 	require.False(t, pk.Null())
+}
+
+func TestVerifySignedHash(t *testing.T) {
+	h := SumSHA256(randBytes(t, 256))
+	fmt.Println("hash:", h.Hex())
+
+	_, sk := GenerateKeyPair()
+	fmt.Println("sk:", sk.Hex())
+
+	sig := MustSignHash(h, sk)
+	fmt.Println("sig:", sig.Hex())
+
+	err := VerifySignedHash(sig, h)
+	require.NoError(t, err)
+
+	// Fails with ErrInvalidHashForSig
+	badSigHex := "71f2c01516fe696328e79bcf464eb0db374b63d494f7a307d1e77114f18581d7a81eed5275a9e04a336292dd2fd16977d9bef2a54ea3161d0876603d00c53bc9dd"
+	badSig := MustSigFromHex(badSigHex)
+	err = VerifySignedHash(badSig, h)
+	require.Equal(t, ErrInvalidHashForSig, err)
+
+	// Fails with ErrInvalidSigPubKeyRecovery
+	badSig = sig
+	badSig[0] = 0xE3
+	fmt.Println("badSig:", badSig.Hex())
+	err = VerifySignedHash(badSig, h)
+	require.Equal(t, ErrInvalidSigPubKeyRecovery, err)
 }

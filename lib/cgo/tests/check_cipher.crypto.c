@@ -519,7 +519,7 @@ Test(cipher_crypto, TestChkSig) {
   // Empty sig should be invalid
   memset(&sig, 0, sizeof(sig));
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig);
-  cr_assert(errorcode == SKY_ErrInvalidSigForPubKey);
+  cr_assert(errorcode == SKY_ErrInvalidSigPubKeyRecovery);
 
   // Random sigs should not pass
   int i;
@@ -570,7 +570,7 @@ Test(cipher_crypto, TestChkSig) {
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
 }
 
-Test(cipher_crypto, TestSignHash) { 
+Test(cipher_crypto, TestSignHash) {
   cipher__PubKey pk, pk2;
   cipher__SecKey sk;
   cipher__Address addr;
@@ -649,7 +649,7 @@ Test(cipher_crypto, TestPubKeyFromSig) {
 
   memset(&sig, 0, sizeof(sig));
   errorcode = SKY_cipher_PubKeyFromSig(&sig, &h, &pk2);
-  cr_assert(errorcode == SKY_ErrInvalidSigForPubKey);
+  cr_assert(errorcode == SKY_ErrInvalidSigPubKeyRecovery);
 }
 
 Test(cipher_crypto, TestVerifySignature) {
@@ -672,7 +672,7 @@ Test(cipher_crypto, TestVerifySignature) {
 
   memset(&sig2, 0, sizeof(sig2));
   errorcode = SKY_cipher_VerifySignature(&pk, &sig2, &h);
-  cr_assert(errorcode == SKY_ErrInvalidSigForPubKey);
+  cr_assert(errorcode == SKY_ErrInvalidSigPubKeyRecovery);
 
   errorcode = SKY_cipher_VerifySignature(&pk, &sig, &h2);
   cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);

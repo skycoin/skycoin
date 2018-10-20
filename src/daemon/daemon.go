@@ -87,7 +87,7 @@ func NewConfig() Config {
 }
 
 // preprocess preprocess for config
-func (cfg *Config) preprocess() Config {
+func (cfg *Config) preprocess() (Config, error) {
 	config := *cfg
 	if config.Daemon.LocalhostOnly {
 		if config.Daemon.Address == "" {
@@ -120,7 +120,16 @@ func (cfg *Config) preprocess() Config {
 		}
 	}
 
-	return config
+	userAgent, err := config.Daemon.UserAgent.Build()
+	if err != nil {
+		return Config{}, err
+	}
+	if userAgent == "" {
+		return Config{}, errors.New("user agent is required")
+	}
+	config.Daemon.userAgent = userAgent
+
+	return config, nil
 }
 
 // DaemonConfig configuration for the Daemon
@@ -181,7 +190,8 @@ type DaemonConfig struct { // nolint: golint
 	// Default "trusted" peers
 	DefaultConnections []string
 	// User agent (sent in introduction messages)
-	UserAgent string
+	UserAgent useragent.Data
+	userAgent string // parsed from UserAgent in preprocess()
 }
 
 // NewDaemonConfig creates daemon config
@@ -304,7 +314,11 @@ type Daemon struct {
 
 // NewDaemon returns a Daemon with primitives allocated
 func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
-	config = config.preprocess()
+	config, err := config.preprocess()
+	if err != nil {
+		return nil, err
+	}
+
 	vs, err := visor.NewVisor(config.Visor, db)
 	if err != nil {
 		return nil, err
@@ -410,7 +424,7 @@ func (dm *Daemon) Run() error {
 	defer logger.Info("Daemon closed")
 	defer close(dm.done)
 
-	logger.Infof("Daemon UserAgent is %s", dm.Config.UserAgent)
+	logger.Infof("Daemon UserAgent is %s", dm.Config.userAgent)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -973,7 +987,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.expectingIntroductions.Add(a, time.Now().UTC())
 	logger.Debugf("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.UserAgent)
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
 	if err := dm.pool.Pool.SendMessage(a, m); err != nil {
 		logger.Errorf("Send IntroductionMessage to %s failed: %v", a, err)
 	}

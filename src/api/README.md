@@ -222,6 +222,8 @@ Response:
         "commit": "8798b5ee43c7ce43b9b75d57a1a6cd2c1295cd1e",
         "branch": "develop"
     },
+    "coin": "skycoin",
+    "user_agent": "skycoin:0.25.0-rc1",
     "open_connections": 8,
     "uptime": "6m30.629057248s",
     "csrf_enabled": true,

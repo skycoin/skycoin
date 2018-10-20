@@ -123,7 +123,7 @@ type NodeConfig struct {
 
 	// Remark to include in user agent sent in the wire protocol introduction
 	UserAgentRemark string
-	userAgent       string
+	userAgent       useragent.Data
 
 	// Logging
 	ColorLog bool
@@ -352,12 +352,11 @@ func (c *Config) postProcess() error {
 		Remark:  c.Node.UserAgentRemark,
 	}
 
-	userAgent, err := userAgentData.Build()
-	if err != nil {
+	if _, err := userAgentData.Build(); err != nil {
 		return err
 	}
 
-	c.Node.userAgent = userAgent
+	c.Node.userAgent = userAgentData
 
 	apiSets, err := buildAPISets(c.Node)
 	if err != nil {

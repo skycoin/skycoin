@@ -251,6 +251,9 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 	if len(userAgent) > useragent.MaxLen {
 		logger.Panicf("user agent %q exceeds max len %d", userAgent, useragent.MaxLen)
 	}
+	if userAgent == "" {
+		logger.Panic("user agent is required")
+	}
 
 	userAgentSerialized := encoder.SerializeString(userAgent)
 

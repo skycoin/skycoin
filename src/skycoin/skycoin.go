@@ -416,10 +416,14 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		IdleTimeout:          c.config.Node.HTTPIdleTimeout,
 		EnabledAPISets:       c.config.Node.enabledAPISets,
 		HostWhitelist:        c.config.Node.hostWhitelist,
-		BuildInfo: readable.BuildInfo{
-			Version: c.config.Build.Version,
-			Commit:  c.config.Build.Commit,
-			Branch:  c.config.Build.Branch,
+		Health: api.HealthConfig{
+			BuildInfo: readable.BuildInfo{
+				Version: c.config.Build.Version,
+				Commit:  c.config.Build.Commit,
+				Branch:  c.config.Build.Branch,
+			},
+			CoinName:        c.config.Node.CoinName,
+			DaemonUserAgent: c.config.Node.userAgent,
 		},
 		Username: c.config.Node.WebInterfaceUsername,
 		Password: c.config.Node.WebInterfacePassword,

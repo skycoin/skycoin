@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 func TestIntroductionMessage(t *testing.T) {
@@ -309,7 +310,10 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("DaemonConfig").Return(DaemonConfig{
 				ProtocolVersion:    int32(tc.mockValue.protocolVersion),
 				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion),
-				UserAgent:          "skycoin:0.24.1",
+				UserAgent: useragent.Data{
+					Coin:    "skycoin",
+					Version: "0.24.1",
+				},
 			})
 			d.On("Mirror").Return(tc.mockValue.mirror)
 			d.On("IsDefaultConnection", tc.addr).Return(tc.mockValue.isDefaultConnection)

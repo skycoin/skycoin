@@ -52,7 +52,7 @@ type SignedBlock struct {
 
 // VerifySignature verifies that the block is signed by pubkey
 func (b SignedBlock) VerifySignature(pubkey cipher.PubKey) error {
-	return cipher.VerifySignature(pubkey, b.Sig, b.Block.HashHeader())
+	return cipher.VerifySignatureForPubKey(pubkey, b.Sig, b.HashHeader())
 }
 
 // NewBlock creates new block.

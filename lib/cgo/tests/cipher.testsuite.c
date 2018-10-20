@@ -463,8 +463,8 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
         GoUint32 err = SKY_cipher_VerifySignature(&p, sig, h);
         cr_assert(err == SKY_OK,
             "SKY_cipher_VerifySignature failed: error=%d dataset=%d hashidx=%d", err, i, j);
-        err = SKY_cipher_ChkSig(&addr1, h, sig);
-        cr_assert(err == SKY_OK, "SKY_cipher_ChkSig failed: error=%d dataset=%d hashidx=%d", err, i, j);
+        err = SKY_cipher_VerifySignatureForAddress(&addr1, h, sig);
+        cr_assert(err == SKY_OK, "SKY_cipher_VerifySignatureForAddress failed: error=%d dataset=%d hashidx=%d", err, i, j);
         err = SKY_cipher_VerifySignedHash(sig, h);
         cr_assert(err == SKY_OK,
             "SKY_cipher_VerifySignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);

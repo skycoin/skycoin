@@ -189,13 +189,13 @@ func SKY_cipher_SignHash(_hash *C.cipher__SHA256, _sec *C.cipher__SecKey, _arg2 
 	return
 }
 
-//export SKY_cipher_ChkSig
-func SKY_cipher_ChkSig(_address *C.cipher__Address, _hash *C.cipher__SHA256, _sig *C.cipher__Sig) (____error_code uint32) {
+//export SKY_cipher_VerifySignatureForAddress
+func SKY_cipher_VerifySignatureForAddress(_address *C.cipher__Address, _hash *C.cipher__SHA256, _sig *C.cipher__Sig) (____error_code uint32) {
 	address := inplaceAddress(_address)
 	hash := (*cipher.SHA256)(unsafe.Pointer(_hash))
 	sig := (*cipher.Sig)(unsafe.Pointer(_sig))
 
-	err := cipher.ChkSig(*address, *hash, *sig)
+	err := cipher.VerifySignatureForAddress(*address, *hash, *sig)
 	____error_code = libErrorCode(err)
 	return
 }
@@ -210,13 +210,13 @@ func SKY_cipher_VerifySignedHash(_sig *C.cipher__Sig, _hash *C.cipher__SHA256) (
 	return
 }
 
-//export SKY_cipher_VerifySignature
-func SKY_cipher_VerifySignature(_pubkey *C.cipher__PubKey, _sig *C.cipher__Sig, _hash *C.cipher__SHA256) (____error_code uint32) {
+//export SKY_cipher_VerifySignatureForPubKey
+func SKY_cipher_VerifySignatureForPubKey(_pubkey *C.cipher__PubKey, _sig *C.cipher__Sig, _hash *C.cipher__SHA256) (____error_code uint32) {
 	pubkey := (*cipher.PubKey)(unsafe.Pointer(_pubkey))
 	sig := (*cipher.Sig)(unsafe.Pointer(_sig))
 	hash := (*cipher.SHA256)(unsafe.Pointer(_hash))
 
-	err := cipher.VerifySignature(*pubkey, *sig, *hash)
+	err := cipher.VerifySignatureForPubKey(*pubkey, *sig, *hash)
 	____error_code = libErrorCode(err)
 	return
 }

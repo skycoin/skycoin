@@ -667,22 +667,22 @@ Test(cipher_crypto, TestVerifySignature) {
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h2);
   SKY_cipher_SignHash(&h, &sk, &sig);
-  errorcode = SKY_cipher_VerifySignature(&pk, &sig, &h);
+  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk, &sig, &h);
   cr_assert(errorcode == SKY_OK);
 
   memset(&sig2, 0, sizeof(sig2));
-  errorcode = SKY_cipher_VerifySignature(&pk, &sig2, &h);
+  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk, &sig2, &h);
   cr_assert(errorcode == SKY_ErrInvalidSigPubKeyRecovery);
 
-  errorcode = SKY_cipher_VerifySignature(&pk, &sig, &h2);
+  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk, &sig, &h2);
   cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 
   SKY_cipher_GenerateKeyPair(&pk2, &sk2);
-  errorcode = SKY_cipher_VerifySignature(&pk2, &sig, &h);
+  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk2, &sig, &h);
   cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 
   memset(&pk2, 0, sizeof(pk2));
-  errorcode = SKY_cipher_VerifySignature(&pk2, &sig, &h);
+  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk2, &sig, &h);
   cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 }
 

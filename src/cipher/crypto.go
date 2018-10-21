@@ -65,8 +65,8 @@ var (
 	ErrPubKeyRecoverMismatch = errors.New("Recovered pubkey does not match pubkey")
 	// ErrInvalidSigInvalidPubKey VerifySignedHash, secp256k1.VerifyPubkey failed
 	ErrInvalidSigInvalidPubKey = errors.New("VerifySignedHash, secp256k1.VerifyPubkey failed")
-	// ErrInvalidSigValidity  VerifySignedHash, VerifySignedHashValidity failed
-	ErrInvalidSigValidity = errors.New("VerifySignedHash, VerifySignedHashValidity failed")
+	// ErrInvalidSigValidity  VerifySignedHash, VerifySignatureValidity failed
+	ErrInvalidSigValidity = errors.New("VerifySignedHash, VerifySignatureValidity failed")
 	// ErrInvalidSigForMessage Invalid signature for this message
 	ErrInvalidSigForMessage = errors.New("Invalid signature for this message")
 	// ErrInvalidSecKyVerification Seckey secp256k1 verification failed
@@ -412,7 +412,7 @@ func VerifyAddressSignedHash(address Address, hash SHA256, sig Sig) error {
 		return ErrInvalidAddressForSig
 	}
 
-	if secp256k1.VerifySignedHash(hash[:], sig[:], rawPubKey[:]) != 1 {
+	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey[:]) != 1 {
 		return ErrInvalidHashForSig
 	}
 
@@ -430,16 +430,16 @@ func VerifyPubKeySignedHash(pubkey PubKey, sig Sig, hash SHA256) error {
 	}
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
 		if DebugLevel2 {
-			if secp256k1.VerifySignedHash(hash[:], sig[:], pubkey[:]) == 1 {
+			if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) == 1 {
 				log.Panic("VerifyPubKeySignedHash warning, invalid pubkey is valid for signature")
 			}
 		}
 		return ErrInvalidSigInvalidPubKey
 	}
-	if secp256k1.VerifySignedHashValidity(sig[:]) != 1 {
+	if secp256k1.VerifySignatureValidity(sig[:]) != 1 {
 		return ErrInvalidSigValidity
 	}
-	if secp256k1.VerifySignedHash(hash[:], sig[:], pubkey[:]) != 1 {
+	if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) != 1 {
 		return ErrInvalidSigForMessage
 	}
 	return nil
@@ -453,7 +453,7 @@ func VerifySignedHash(sig Sig, hash SHA256) error {
 	if rawPubKey == nil {
 		return ErrInvalidSigPubKeyRecovery
 	}
-	if secp256k1.VerifySignedHash(hash[:], sig[:], rawPubKey) != 1 {
+	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
 		return ErrInvalidHashForSig
 	}
 	return nil

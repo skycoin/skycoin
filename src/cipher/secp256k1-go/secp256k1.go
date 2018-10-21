@@ -364,8 +364,8 @@ func VerifyPubkey(pubkey []byte) int {
 	return 1 //valid
 }
 
-// VerifySignedHashValidity renames VerifyAddressSignedHashnatureValidity
-func VerifySignedHashValidity(sig []byte) int {
+// VerifySignatureValidity renames VerifyAddressSignedHashnatureValidity
+func VerifySignatureValidity(sig []byte) int {
 	//64+1
 	if len(sig) != 65 {
 		log.Fatal("1")
@@ -386,17 +386,16 @@ func VerifySignedHashValidity(sig []byte) int {
 	return 1
 }
 
-// VerifySignedHash for compressed signatures, does not need pubkey
-// Rename SignatureChk
-func VerifySignedHash(msg []byte, sig []byte, pubkey1 []byte) int {
+// VerifySignature for compressed signatures, does not need pubkey
+func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	if msg == nil || sig == nil || pubkey1 == nil {
-		log.Panic("VerifySignedHash, ERROR: invalid input, nils")
+		log.Panic("VerifySignature, ERROR: invalid input, nils")
 	}
 	if len(sig) != 65 {
-		log.Panic("VerifySignedHash, invalid signature length")
+		log.Panic("VerifySignature, invalid signature length")
 	}
 	if len(pubkey1) != 33 {
-		log.Panic("VerifySignedHash, invalid pubkey length")
+		log.Panic("VerifySignature, invalid pubkey length")
 	}
 
 	//malleability check:

@@ -123,7 +123,7 @@ const (
 	SKY_ErrPubKeyRecoverMismatch
 	// SKY_ErrInvalidSigInvalidPubKey VerifySignedHash, secp256k1.VerifyPubkey failed
 	SKY_ErrInvalidSigInvalidPubKey
-	// SKY_ErrInvalidSigValidity  VerifySignedHash, VerifySignedHashValidity failed
+	// SKY_ErrInvalidSigValidity  VerifySignedHash, VerifySignatureValidity failed
 	SKY_ErrInvalidSigValidity
 	// SKY_ErrInvalidSigForMessage Invalid signature for this message
 	SKY_ErrInvalidSigForMessage

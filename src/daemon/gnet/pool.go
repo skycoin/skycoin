@@ -810,6 +810,8 @@ func (pool *ConnectionPool) disconnect(addr string) bool {
 		return false
 	}
 
+	// TODO -- send disconnect reason packet
+
 	delete(pool.pool, conn.ID)
 	delete(pool.addresses, addr)
 	delete(pool.defaultConnections, addr)

@@ -13,7 +13,7 @@ import (
 
 var (
 	noteServ *Service
-	noteCFG = Config{
+	noteCFG  = Config{
 		NotesPath:  "./transactionnotes_temp.json",
 		NotesStore: NewStore(),
 	}

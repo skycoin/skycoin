@@ -491,7 +491,7 @@ Test(cipher_crypto, TestSigHex) {
 }
 
 // FIXME: Split in multiple test cases so as to catch panic at the right place
-Test(cipher_crypto, TestVerifySignatureForAddress) {
+Test(cipher_crypto, TestVerifyAddressSignedHash) {
   cipher__PubKey pk, pk2;
   cipher__SecKey sk, sk2;
   cipher__Address addr, addr2;
@@ -513,12 +513,12 @@ Test(cipher_crypto, TestVerifySignatureForAddress) {
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h);
   SKY_cipher_SignHash(&h, &sk, &sig);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h, &sig);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h, &sig);
   cr_assert(errorcode == SKY_OK);
 
   // Empty sig should be invalid
   memset(&sig, 0, sizeof(sig));
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h, &sig);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h, &sig);
   cr_assert(errorcode == SKY_ErrInvalidSigPubKeyRecovery);
 
   // Random sigs should not pass
@@ -526,7 +526,7 @@ Test(cipher_crypto, TestVerifySignatureForAddress) {
   for (i = 0; i < 100; i++) {
     randBytes(&b, 65);
     SKY_cipher_NewSig(b, &sig);
-    errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h, &sig);
+    errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h, &sig);
     cr_assert(errorcode != SKY_OK); // One of many error codes
   }
 
@@ -534,11 +534,11 @@ Test(cipher_crypto, TestVerifySignatureForAddress) {
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h2);
   SKY_cipher_SignHash(&h2, &sk, &sig2);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h2, &sig2);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h2, &sig2);
   cr_assert(errorcode == SKY_OK);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h, &sig2);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h, &sig2);
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h2, &sig);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h2, &sig);
   cr_assert(errorcode != SKY_OK); // One of many error codes
 
   // Different secret keys should not create same sig
@@ -547,9 +547,9 @@ Test(cipher_crypto, TestVerifySignatureForAddress) {
   memset(&h, 0, sizeof(h));
   SKY_cipher_SignHash(&h, &sk, &sig);
   SKY_cipher_SignHash(&h, &sk2, &sig2);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h, &sig);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h, &sig);
   cr_assert(errorcode == SKY_OK);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr2, &h, &sig2);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr2, &h, &sig2);
   cr_assert(errorcode == SKY_OK);
   cr_assert(not(eq(u8[65], sig, sig2)));
 
@@ -557,16 +557,16 @@ Test(cipher_crypto, TestVerifySignatureForAddress) {
   SKY_cipher_SumSHA256(b, &h);
   SKY_cipher_SignHash(&h, &sk, &sig);
   SKY_cipher_SignHash(&h, &sk2, &sig2);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h, &sig);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h, &sig);
   cr_assert(errorcode == SKY_OK);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr2, &h, &sig2);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr2, &h, &sig2);
   cr_assert(errorcode == SKY_OK);
   cr_assert(not(eq(u8[65], sig, sig2)));
 
   // Bad address should be invalid
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h, &sig2);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h, &sig2);
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr2, &h, &sig);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr2, &h, &sig);
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
 }
 
@@ -589,7 +589,7 @@ Test(cipher_crypto, TestSignHash) {
   cr_assert(errorcode == SKY_OK);
   memset((void *) &sig2, 0, 65);
   cr_assert(not(eq(u8[65], sig2, sig)));
-  errorcode = SKY_cipher_VerifySignatureForAddress(&addr, &h, &sig);
+  errorcode = SKY_cipher_VerifyAddressSignedHash(&addr, &h, &sig);
   cr_assert(errorcode == SKY_OK);
 
   errorcode = SKY_cipher_PubKeyFromSig(&sig, &h, &pk2);
@@ -652,7 +652,7 @@ Test(cipher_crypto, TestPubKeyFromSig) {
   cr_assert(errorcode == SKY_ErrInvalidSigPubKeyRecovery);
 }
 
-Test(cipher_crypto, TestVerifySignature) {
+Test(cipher_crypto, TestVerifySignedHash) {
   cipher__PubKey pk, pk2;
   cipher__SecKey sk, sk2;
   cipher__SHA256 h, h2;
@@ -667,22 +667,22 @@ Test(cipher_crypto, TestVerifySignature) {
   randBytes(&b, 256);
   SKY_cipher_SumSHA256(b, &h2);
   SKY_cipher_SignHash(&h, &sk, &sig);
-  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk, &sig, &h);
+  errorcode = SKY_cipher_VerifyPubKeySignedHash(&pk, &sig, &h);
   cr_assert(errorcode == SKY_OK);
 
   memset(&sig2, 0, sizeof(sig2));
-  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk, &sig2, &h);
+  errorcode = SKY_cipher_VerifyPubKeySignedHash(&pk, &sig2, &h);
   cr_assert(errorcode == SKY_ErrInvalidSigPubKeyRecovery);
 
-  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk, &sig, &h2);
+  errorcode = SKY_cipher_VerifyPubKeySignedHash(&pk, &sig, &h2);
   cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 
   SKY_cipher_GenerateKeyPair(&pk2, &sk2);
-  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk2, &sig, &h);
+  errorcode = SKY_cipher_VerifyPubKeySignedHash(&pk2, &sig, &h);
   cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 
   memset(&pk2, 0, sizeof(pk2));
-  errorcode = SKY_cipher_VerifySignatureForPubKey(&pk2, &sig, &h);
+  errorcode = SKY_cipher_VerifyPubKeySignedHash(&pk2, &sig, &h);
   cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 }
 

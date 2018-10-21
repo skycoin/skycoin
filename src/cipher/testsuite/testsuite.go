@@ -250,14 +250,14 @@ func ValidateSeedData(seedData *SeedTestData, inputData *InputTestData) error {
 					return errors.New("provided signature is null")
 				}
 
-				err := cipher.VerifySignatureForPubKey(p, sig, h)
+				err := cipher.VerifyPubKeySignedHash(p, sig, h)
 				if err != nil {
-					return fmt.Errorf("cipher.VerifySignatureForPubKey failed: %v", err)
+					return fmt.Errorf("cipher.VerifyPubKeySignedHash failed: %v", err)
 				}
 
-				err = cipher.VerifySignatureForAddress(addr1, h, sig)
+				err = cipher.VerifyAddressSignedHash(addr1, h, sig)
 				if err != nil {
-					return fmt.Errorf("cipher.VerifySignatureForAddress failed: %v", err)
+					return fmt.Errorf("cipher.VerifyAddressSignedHash failed: %v", err)
 				}
 
 				err = cipher.VerifySignedHash(sig, h)

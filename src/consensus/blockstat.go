@@ -473,7 +473,7 @@ func (self *BlockStatQueue) try_append_to_BlockStatQueue(
 
 	// Use a superficial, quick test here. A thorough check will be
 	// done later in this function.
-	if secp256k1.VerifySignatureValidity(blockPtr.Sig[:]) != 1 {
+	if secp256k1.VerifySignedHashValidity(blockPtr.Sig[:]) != 1 {
 		return 4 // Error
 	}
 

@@ -685,7 +685,7 @@ func (bc Blockchain) TransactionFee(tx *dbutil.Tx, headTime uint64) coin.FeeCalc
 func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {
 	err := block.VerifySignature(bc.cfg.Pubkey)
 	if err != nil {
-		logger.Errorf("Signature verification failed: %v", err)
+		logger.Errorf("Blockchain signature verification failed for block %d: %v", block.Head.BkSeq, err)
 	}
 	return err
 }
@@ -711,7 +711,7 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 			if err := bc.db.View("WalkChain verify blocks", func(tx *dbutil.Tx) error {
 				for b := range signedBlockC {
 					if err := f(tx, b); err != nil {
-						// if err := cipher.VerifySignatureForPubKey(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
+						// if err := cipher.VerifyPubKeySignedHash(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
 						// logger.Errorf("Signature verification failed: %v", err)
 						select {
 						case errC <- err:

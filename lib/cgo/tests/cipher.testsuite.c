@@ -460,11 +460,11 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
         mem_actual.size = mem_expect.size = sizeof(cipher__Sig);
         cr_assert(ne(mem, mem_actual, mem_expect),
             "%d-th provided signature for %d-th data set must not be null", j, i);
-        GoUint32 err = SKY_cipher_VerifySignatureForPubKey(&p, sig, h);
+        GoUint32 err = SKY_cipher_VerifyPubKeySignedHash(&p, sig, h);
         cr_assert(err == SKY_OK,
-            "SKY_cipher_VerifySignatureForPubKey failed: error=%d dataset=%d hashidx=%d", err, i, j);
-        err = SKY_cipher_VerifySignatureForAddress(&addr1, h, sig);
-        cr_assert(err == SKY_OK, "SKY_cipher_VerifySignatureForAddress failed: error=%d dataset=%d hashidx=%d", err, i, j);
+            "SKY_cipher_VerifyPubKeySignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);
+        err = SKY_cipher_VerifyAddressSignedHash(&addr1, h, sig);
+        cr_assert(err == SKY_OK, "SKY_cipher_VerifyAddressSignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);
         err = SKY_cipher_VerifySignedHash(sig, h);
         cr_assert(err == SKY_OK,
             "SKY_cipher_VerifySignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);

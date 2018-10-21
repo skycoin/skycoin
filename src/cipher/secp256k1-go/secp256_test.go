@@ -133,7 +133,7 @@ func Test_verify_functions(t *testing.T) {
 	if VerifyPubkey(pubkey) == 0 {
 		t.Fail()
 	}
-	if VerifySignature(hash, sig, pubkey) == 0 {
+	if VerifySignedHash(hash, sig, pubkey) == 0 {
 		t.Fail()
 	}
 	_ = sig
@@ -189,7 +189,7 @@ func Test_Secp256_02(t *testing.T) {
 		t.Fatal("Recovered pubkey does not match")
 	}
 
-	ret := VerifySignature(msg, sig, pubkey1)
+	ret := VerifySignedHash(msg, sig, pubkey1)
 	if ret != 1 {
 		t.Fatal("Signature invalid")
 	}
@@ -204,7 +204,7 @@ func Test_Secp256_02a(t *testing.T) {
 	if sig == nil {
 		t.Fatal("Signature nil")
 	}
-	ret := VerifySignature(msg, sig, pubkey1)
+	ret := VerifySignedHash(msg, sig, pubkey1)
 	if ret != 1 {
 		t.Fatal("Signature invalid")
 	}
@@ -291,11 +291,11 @@ func Test_Secp256_06a_alt0(t *testing.T) {
 			t.Fail()
 		}
 
-		if pubkey2 != nil && VerifySignature(msg, sig, pubkey2) != 1 {
+		if pubkey2 != nil && VerifySignedHash(msg, sig, pubkey2) != 1 {
 			t.Fail()
 		}
 
-		if VerifySignature(msg, sig, pubkey1) == 1 {
+		if VerifySignedHash(msg, sig, pubkey1) == 1 {
 			t.Fail()
 		}
 	}
@@ -316,11 +316,11 @@ func Test_Secp256_06b(t *testing.T) {
 			t.Fail()
 		}
 
-		if pubkey2 != nil && VerifySignature(msg, sig, pubkey2) != 1 {
+		if pubkey2 != nil && VerifySignedHash(msg, sig, pubkey2) != 1 {
 			t.Fail()
 		}
 
-		if VerifySignature(msg, sig, pubkey1) == 1 {
+		if VerifySignedHash(msg, sig, pubkey1) == 1 {
 			t.Fail()
 		}
 	}

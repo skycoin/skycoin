@@ -121,9 +121,9 @@ const (
 	SKY_ErrInvalidHashForSig
 	// SKY_ErrPubKeyRecoverMismatch Recovered pubkey does not match pubkey
 	SKY_ErrPubKeyRecoverMismatch
-	// SKY_ErrInvalidSigInvalidPubKey VerifySignature, secp256k1.VerifyPubkey failed
+	// SKY_ErrInvalidSigInvalidPubKey VerifySignedHash, secp256k1.VerifyPubkey failed
 	SKY_ErrInvalidSigInvalidPubKey
-	// SKY_ErrInvalidSigValidity  VerifySignature, VerifySignatureValidity failed
+	// SKY_ErrInvalidSigValidity  VerifySignedHash, VerifySignedHashValidity failed
 	SKY_ErrInvalidSigValidity
 	// SKY_ErrInvalidSigForMessage Invalid signature for this message
 	SKY_ErrInvalidSigForMessage

@@ -364,7 +364,7 @@ func VerifyPubkey(pubkey []byte) int {
 	return 1 //valid
 }
 
-// VerifySignatureValidity renames VerifyAddressSignedHashnatureValidity
+// VerifySignatureValidity verifies a signature is well formed and not malleable
 func VerifySignatureValidity(sig []byte) int {
 	//64+1
 	if len(sig) != 65 {

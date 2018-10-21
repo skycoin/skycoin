@@ -262,10 +262,10 @@ func TestTransactionSignInputs(t *testing.T) {
 	a := cipher.AddressFromPubKey(p)
 	p = cipher.MustPubKeyFromSecKey(s2)
 	a2 := cipher.AddressFromPubKey(p)
-	require.Nil(t, cipher.VerifyAddressSignedHash(a, cipher.AddSHA256(h, tx.In[0]), tx.Sigs[0]))
-	require.Nil(t, cipher.VerifyAddressSignedHash(a2, cipher.AddSHA256(h, tx.In[1]), tx.Sigs[1]))
-	require.NotNil(t, cipher.VerifyAddressSignedHash(a, h, tx.Sigs[1]))
-	require.NotNil(t, cipher.VerifyAddressSignedHash(a2, h, tx.Sigs[0]))
+	require.NoError(t, cipher.VerifyAddressSignedHash(a, tx.Sigs[0], cipher.AddSHA256(h, tx.In[0])))
+	require.NoError(t, cipher.VerifyAddressSignedHash(a2, tx.Sigs[1], cipher.AddSHA256(h, tx.In[1])))
+	require.Error(t, cipher.VerifyAddressSignedHash(a, tx.Sigs[1], h))
+	require.Error(t, cipher.VerifyAddressSignedHash(a2, tx.Sigs[0], h))
 }
 
 func TestTransactionHash(t *testing.T) {

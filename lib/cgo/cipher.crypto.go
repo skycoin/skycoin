@@ -190,12 +190,12 @@ func SKY_cipher_SignHash(_hash *C.cipher__SHA256, _sec *C.cipher__SecKey, _arg2 
 }
 
 //export SKY_cipher_VerifyAddressSignedHash
-func SKY_cipher_VerifyAddressSignedHash(_address *C.cipher__Address, _hash *C.cipher__SHA256, _sig *C.cipher__Sig) (____error_code uint32) {
+func SKY_cipher_VerifyAddressSignedHash(_address *C.cipher__Address, _sig *C.cipher__Sig, _hash *C.cipher__SHA256) (____error_code uint32) {
 	address := inplaceAddress(_address)
 	hash := (*cipher.SHA256)(unsafe.Pointer(_hash))
 	sig := (*cipher.Sig)(unsafe.Pointer(_sig))
 
-	err := cipher.VerifyAddressSignedHash(*address, *hash, *sig)
+	err := cipher.VerifyAddressSignedHash(*address, *sig, *hash)
 	____error_code = libErrorCode(err)
 	return
 }

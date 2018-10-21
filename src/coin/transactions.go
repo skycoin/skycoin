@@ -165,7 +165,7 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 	// Check signatures against unspent address
 	for i := range txn.In {
 		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
-		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, hash, txn.Sigs[i])
+		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")
 		}

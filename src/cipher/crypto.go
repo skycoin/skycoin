@@ -39,8 +39,7 @@ var (
 	// ErrPubKeyFromNullSecKey Attempt to load null seckey, unsafe
 	ErrPubKeyFromNullSecKey = errors.New("Attempt to load null seckey, unsafe")
 	// ErrPubKeyFromBadSecKey  PubKeyFromSecKey, pubkey recovery failed. Function
-	ErrPubKeyFromBadSecKey = errors.New("PubKeyFromSecKey, pubkey recovery failed. Function " +
-		"assumes seckey is valid. Check seckey")
+	ErrPubKeyFromBadSecKey = errors.New("PubKeyFromSecKey, pubkey recovery failed. Function assumes seckey is valid. Check seckey")
 	// ErrInvalidLengthSecKey Invalid secret key length
 	ErrInvalidLengthSecKey = errors.New("Invalid secret key length")
 	// ErrECHDInvalidPubKey   ECDH invalid pubkey input
@@ -374,7 +373,7 @@ func SignHash(hash SHA256, sec SecKey) (Sig, error) {
 		if VerifyPubKeySignedHash(pubkey, sig, hash) != nil {
 			log.Panic("SignHash error: secp256k1.Sign returned non-null invalid non-null signature")
 		}
-		if VerifyAddressSignedHash(AddressFromPubKey(pubkey), hash, sig) != nil {
+		if VerifyAddressSignedHash(AddressFromPubKey(pubkey), sig, hash) != nil {
 			log.Panic("SignHash error: VerifyAddressSignedHash failed for signature")
 		}
 	}
@@ -397,7 +396,7 @@ func MustSignHash(hash SHA256, sec SecKey) Sig {
 // - computes the address from the PubKey
 // - fail if recovered address does not match PubKey hash
 // - verify that signature is valid for hash for PubKey
-func VerifyAddressSignedHash(address Address, hash SHA256, sig Sig) error {
+func VerifyAddressSignedHash(address Address, sig Sig, hash SHA256) error {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
 		return ErrInvalidSigPubKeyRecovery
@@ -661,7 +660,7 @@ func CheckSecKeyHash(seckey SecKey, hash SHA256) error {
 
 	// verify VerifyAddressSignedHash
 	addr := AddressFromPubKey(pubkey)
-	err = VerifyAddressSignedHash(addr, hash, sig)
+	err = VerifyAddressSignedHash(addr, sig, hash)
 	if err != nil {
 		return fmt.Errorf("impossible error CheckSecKeyHash, VerifyAddressSignedHash Failed, should not get this far: %v", err)
 	}

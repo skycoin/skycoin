@@ -16,7 +16,7 @@
             "category": "public.app-category.productivity",
             "extraFiles": [
                 {
-                    "from": ".gox_output/${os}_${arch}",
+                    "from": ".gox_output/gui/${os}_${arch}",
                     "to": "./Resources/app"
                 }
             ]
@@ -25,7 +25,7 @@
             "target": "nsis",
             "extraFiles": [
                 {
-                    "from": ".gox_output/${os}_${arch}",
+                    "from": ".gox_output/gui/${os}_${arch}",
                     "to": "./resources/app"
                 }
             ]
@@ -34,7 +34,7 @@
             "category": "Network",
             "extraFiles": [
                 {
-                    "from": ".gox_output/${os}_${arch}",
+                    "from": ".gox_output/gui/${os}_${arch}",
                     "to": "./resources/app"
                 },
                 {

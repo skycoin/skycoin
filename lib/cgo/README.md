@@ -56,6 +56,10 @@ classes and objects. This makes it suitable for writing third-party
 applications and integrations. The notable differences between go lang
 and C languages have consequences for the consumers of the API.
 
+The following subsets of the golang API are not available in the C client library:
+
+- `cipher.encrypt.sha256xor`
+
 ### Data types
 
 Skycoin core objects may not be passed across API boundaries. Therefore

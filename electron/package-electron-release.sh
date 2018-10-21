@@ -12,10 +12,10 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$SCRIPTDIR" >/dev/null
 
-OSX64="${ELN_OUTPUT}/${OSX64_ELN_PLT}"
-WIN64="${ELN_OUTPUT}/${WIN64_ELN_PLT}"
-WIN32="${ELN_OUTPUT}/${WIN32_ELN_PLT}"
-LNX64="${ELN_OUTPUT}/${LNX64_ELN_PLT}"
+OSX64="${ELN_OUTPUT_DIR}/${OSX64_ELN_PLT}"
+WIN64="${ELN_OUTPUT_DIR}/${WIN64_ELN_PLT}"
+WIN32="${ELN_OUTPUT_DIR}/${WIN32_ELN_PLT}"
+LNX64="${ELN_OUTPUT_DIR}/${LNX64_ELN_PLT}"
 
 OSX64_RES="${OSX64}/${OSX64_APP}/Contents/Resources/app"
 WIN64_RES="${WIN64}/resources/app"
@@ -40,7 +40,7 @@ function copy_if_exists {
         exit 1
     fi
 
-    BIN="${GOX_GUI_OUTPUT}/${1}"
+    BIN="${GOX_GUI_OUTPUT_DIR}/${1}"
     DESTDIR="$2"
     DESTBIN="${DESTDIR}/${3}"
     DESTSRC="$4"

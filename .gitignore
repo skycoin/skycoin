@@ -103,6 +103,7 @@ electron/.gox_output
 electron/.electron_output
 electron/.standalone_output
 electron/.daemon_output
+electron/.cli_output
 # Do not ignore the icons folder
 !electron/build
 !electron/build/icons

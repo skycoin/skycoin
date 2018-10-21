@@ -262,9 +262,10 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		return nil, err
 	}
 
-	// Loads notes
+	// Init notes configuration
 	notesServConfig := notes.Config{
-		NotesPath: c.DataDirectory + "/transactionnotes.json",
+		NotesPath:  c.DataDirectory + "/transactionnotes.json",
+		NotesStore: notes.NewStore(),
 	}
 
 	noteServ, err := notes.NewService(notesServConfig)

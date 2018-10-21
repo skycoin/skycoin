@@ -13,8 +13,9 @@ import (
 
 var (
 	noteServ *Service
-	noteCFG  = Config{
-		NotesPath: "./transactionnotes_temp.json",
+	noteCFG = Config{
+		NotesPath:  "./transactionnotes_temp.json",
+		NotesStore: NewStore(),
 	}
 )
 
@@ -29,7 +30,6 @@ func TestMain(m *testing.M) {
 
 func teardown(i int) int {
 	fi, err := os.Stat(noteCFG.NotesPath)
-
 	if err != nil {
 		panic(err)
 	}
@@ -152,10 +152,13 @@ func TestRemoveNotes(t *testing.T) {
 func TestOverwriteNotes(t *testing.T) {
 	allNotes := noteServ.GetAll()
 
+	log.Info(len(allNotes))
+
 	var testNotes []Note
 
 	// Get every 2nd Note for testing
 	for i := 0; i < len(allNotes); i += 10 {
+		log.Info(allNotes[i].Notes)
 		testNotes = append(testNotes, allNotes[i])
 	}
 

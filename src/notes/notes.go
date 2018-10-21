@@ -15,22 +15,33 @@ type Note struct {
 	Notes   string `json:"notes"`
 }
 
+// CacheStore for caching notes
+type CacheStore struct {
+	notes []Note
+}
+
 var (
-	gNotes     []Note
 	log        = logging.MustGetLogger("notes")
 	gNotesPath string
 )
 
+// NewStore returns an instance of a Notes Store
+func NewStore() *CacheStore {
+	return &CacheStore{
+		notes: make([]Note, 0),
+	}
+}
+
 // GetAll returns all saved Notes
-func GetAll() []Note {
-	return gNotes
+func (c *CacheStore) GetAll() []Note {
+	return c.notes
 }
 
 // GetByTxID If note wasn't found by ID -> return empty Note
-func GetByTxID(txID string) Note {
-	for i := 0; i < len(gNotes); i++ {
+func (c *CacheStore) GetByTxID(txID string) Note {
+	for i := 0; i < len(c.notes); i++ {
 
-		if note := gNotes[i]; note.TxIDHex == txID {
+		if note := c.notes[i]; note.TxIDHex == txID {
 			return note
 		}
 	}
@@ -39,21 +50,21 @@ func GetByTxID(txID string) Note {
 }
 
 // Add Note, if Note already exists, the old one will be overwritten
-func Add(note Note) (Note, error) {
-	if !isNoteExist(note.TxIDHex) {
+func (c *CacheStore) Add(note Note) (Note, error) {
+	if !c.isNoteExist(note.TxIDHex) {
 		log.Infof("Adding Note with txID=&v", note.TxIDHex)
-		gNotes = append(gNotes, note)
+		c.notes = append(c.notes, note)
 	} else {
 		log.Infof("Overwriting Note with txID=%v", note.TxIDHex)
 
-		for i := 0; i < len(gNotes); i++ {
-			if gNotes[i].TxIDHex == note.TxIDHex {
-				gNotes[i] = note
+		for i := 0; i < len(c.notes); i++ {
+			if c.notes[i].TxIDHex == note.TxIDHex {
+				c.notes[i] = note
 			}
 		}
 	}
 
-	if err := writeJSON(); err != nil {
+	if err := c.writeJSON(); err != nil {
 		return Note{}, err
 	}
 
@@ -61,15 +72,15 @@ func Add(note Note) (Note, error) {
 }
 
 // Remove Note by txID
-func Remove(txID string) error {
+func (c *CacheStore) Remove(txID string) error {
 	log.Infof("Removing note with txID=%v", txID)
 
-	for i := 0; i < len(gNotes); i++ {
+	for i := 0; i < len(c.notes); i++ {
 
-		if gNotes[i].TxIDHex == txID {
-			gNotes = append(gNotes[:i], gNotes[i+1:]...)
+		if c.notes[i].TxIDHex == txID {
+			c.notes = append(c.notes[:i], c.notes[i+1:]...)
 
-			if err := writeJSON(); err != nil {
+			if err := c.writeJSON(); err != nil {
 				return err
 			}
 			return nil
@@ -80,18 +91,19 @@ func Remove(txID string) error {
 }
 
 // Check if Note with given txID exists
-func isNoteExist(txID string) bool {
-	for i := 0; i < len(gNotes); i++ {
-		if gNotes[i].TxIDHex == txID {
+func (c *CacheStore) isNoteExist(txID string) bool {
+	for i := 0; i < len(c.notes); i++ {
+
+		if c.notes[i].TxIDHex == txID {
 			return true
 		}
 	}
 	return false
 }
 
-// Write Notes to configured gNotesPath
-func writeJSON() error {
-	notesJSON, err := json.Marshal(gNotes)
+// Write Notes to configured notes path
+func (c *CacheStore) writeJSON() error {
+	notesJSON, err := json.Marshal(c.notes)
 
 	if err != nil {
 		log.Error(err)
@@ -101,8 +113,8 @@ func writeJSON() error {
 	return ioutil.WriteFile(gNotesPath, notesJSON, 0644)
 }
 
-// Read Notes from configured gNotesPath
-func loadJSON(notesPath string) {
+// LoadJSON loads Notes from given path
+func (c *CacheStore) loadJSON(notesPath string) error {
 	var notes []Note
 
 	// Set Path for notes file
@@ -114,7 +126,7 @@ func loadJSON(notesPath string) {
 
 		if os.IsExist(err) {
 			log.Error(err)
-			return
+			return err
 		}
 
 		log.Infof("File does not exist: %v; Creating empty File...", notesPath)
@@ -122,17 +134,17 @@ func loadJSON(notesPath string) {
 		err = ioutil.WriteFile(notesPath, []byte{}, 0644)
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 
 		jsonFile, err = os.Open(notesPath)
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 	}
 
-	// When give json file doesn't exist, create an empty one
+	// When given json path doesn't exist, create an empty json file
 	if jsonFile != nil {
 		var fi os.FileInfo
 		var byteValue []byte
@@ -140,7 +152,7 @@ func loadJSON(notesPath string) {
 		fi, err = jsonFile.Stat()
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 
 		if fi.Size() > 0 {
@@ -148,12 +160,12 @@ func loadJSON(notesPath string) {
 			byteValue, err = ioutil.ReadAll(jsonFile)
 			if err != nil {
 				log.Error(err)
-				return
+				return err
 			}
 
 		} else {
 			log.Info("Failed to load Notes: File is empty")
-			return
+			return err
 		}
 
 		if len(byteValue) > 0 {
@@ -161,12 +173,13 @@ func loadJSON(notesPath string) {
 			err = json.Unmarshal(byteValue, &notes)
 			if err != nil {
 				log.Error(err)
-				return
+				return err
 			}
 
-			gNotes = notes
+			c.notes = notes
 
 			log.Infof("Loaded Notes from %v", fi.Name())
 		}
 	}
+	return nil
 }

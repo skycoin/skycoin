@@ -106,7 +106,6 @@ func TestGetNoteByID(t *testing.T) {
 		testNotes = append(testNotes, allNotes[i])
 	}
 
-	// check
 	for i := 0; i < len(testNotes); i++ {
 		txID := testNotes[i].TxIDHex
 		note := noteServ.GetByTxID(txID)

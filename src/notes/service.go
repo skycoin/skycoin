@@ -2,26 +2,24 @@ package notes
 
 // Service for Notes
 type Service struct {
-	dataDirectory string
-	store         *CacheStore
+	store *Store
 }
 
 // Config for Notes
 type Config struct {
 	NotesPath  string
-	NotesStore *CacheStore
+	NotesStore *Store
 }
 
 // NewService returns a Service for Notes
 func NewService(c Config) (*Service, error) {
-	c.NotesStore.notes = []Note{}
+	c.NotesStore.notesPath = c.NotesPath
 
 	service := &Service{
-		dataDirectory: c.NotesPath,
-		store:         c.NotesStore,
+		store: c.NotesStore,
 	}
 
-	err := service.store.loadJSON(c.NotesPath)
+	err := service.store.loadJSON()
 	if err != nil {
 		return nil, err
 	}

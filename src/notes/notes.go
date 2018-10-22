@@ -15,30 +15,28 @@ type Note struct {
 	Notes   string `json:"notes"`
 }
 
-// CacheStore for caching notes
-type CacheStore struct {
-	notes []Note
+// Store for caching notes
+type Store struct {
+	notes     []Note
+	notesPath string
 }
 
-var (
-	log        = logging.MustGetLogger("notes")
-	gNotesPath string
-)
+var log = logging.MustGetLogger("notes")
 
 // NewStore returns an instance of a Notes Store
-func NewStore() *CacheStore {
-	return &CacheStore{
+func NewStore() *Store {
+	return &Store{
 		notes: make([]Note, 0),
 	}
 }
 
 // GetAll returns all saved Notes
-func (c *CacheStore) GetAll() []Note {
+func (c *Store) GetAll() []Note {
 	return c.notes
 }
 
 // GetByTxID If note wasn't found by ID -> return empty Note
-func (c *CacheStore) GetByTxID(txID string) Note {
+func (c *Store) GetByTxID(txID string) Note {
 	for i := 0; i < len(c.notes); i++ {
 
 		if note := c.notes[i]; note.TxIDHex == txID {
@@ -50,7 +48,7 @@ func (c *CacheStore) GetByTxID(txID string) Note {
 }
 
 // Add Note, if Note already exists, the old one will be overwritten
-func (c *CacheStore) Add(note Note) (Note, error) {
+func (c *Store) Add(note Note) (Note, error) {
 	if !c.isNoteExist(note.TxIDHex) {
 		log.Infof("Adding Note with txID=&v", note.TxIDHex)
 		c.notes = append(c.notes, note)
@@ -72,7 +70,7 @@ func (c *CacheStore) Add(note Note) (Note, error) {
 }
 
 // Remove Note by txID
-func (c *CacheStore) Remove(txID string) error {
+func (c *Store) Remove(txID string) error {
 	log.Infof("Removing note with txID=%v", txID)
 
 	for i := 0; i < len(c.notes); i++ {
@@ -91,7 +89,7 @@ func (c *CacheStore) Remove(txID string) error {
 }
 
 // Check if Note with given txID exists
-func (c *CacheStore) isNoteExist(txID string) bool {
+func (c *Store) isNoteExist(txID string) bool {
 	for i := 0; i < len(c.notes); i++ {
 
 		if c.notes[i].TxIDHex == txID {
@@ -102,26 +100,22 @@ func (c *CacheStore) isNoteExist(txID string) bool {
 }
 
 // Write Notes to configured notes path
-func (c *CacheStore) writeJSON() error {
+func (c *Store) writeJSON() error {
 	notesJSON, err := json.Marshal(c.notes)
 
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-
-	return ioutil.WriteFile(gNotesPath, notesJSON, 0644)
+	return ioutil.WriteFile(c.notesPath, notesJSON, 0644)
 }
 
-// LoadJSON loads Notes from given path
-func (c *CacheStore) loadJSON(notesPath string) error {
+// LoadJSON loads Notes from configured path
+func (c *Store) loadJSON() error {
 	var notes []Note
 
-	// Set Path for notes file
-	gNotesPath = notesPath
-
 	// Open jsonFile
-	jsonFile, err := os.Open(notesPath)
+	jsonFile, err := os.Open(c.notesPath)
 	if err != nil {
 
 		if os.IsExist(err) {
@@ -129,15 +123,15 @@ func (c *CacheStore) loadJSON(notesPath string) error {
 			return err
 		}
 
-		log.Infof("File does not exist: %v; Creating empty File...", notesPath)
+		log.Infof("File does not exist: %v; Creating empty File...", c.notesPath)
 
-		err = ioutil.WriteFile(notesPath, []byte{}, 0644)
+		err = ioutil.WriteFile(c.notesPath, []byte{}, 0644)
 		if err != nil {
 			log.Error(err)
 			return err
 		}
 
-		jsonFile, err = os.Open(notesPath)
+		jsonFile, err = os.Open(c.notesPath)
 		if err != nil {
 			log.Error(err)
 			return err

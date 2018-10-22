@@ -48,6 +48,8 @@ install:
   - cd $GOPATH/src/github.com/skycoin/skycoin
   - go get -t ./...
   - make install-linters
+  # Install pinned golangci-lint, overriding the latest version install by make install-linters
+  - VERSION=1.10.2 ./ci-scripts/install-golangci-lint.sh
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 && sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update ; echo 'Available versions (gcc)' && brew list --versions gcc ; brew list gcc@6 &>/dev/null || brew install gcc@6 ; fi
   - make install-deps-libc

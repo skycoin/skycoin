@@ -112,7 +112,7 @@ func TestTransactionVerify(t *testing.T) {
 	// Invalid signature, empty
 	tx = makeTransaction(t)
 	tx.Sigs[0] = cipher.Sig{}
-	testutil.RequireError(t, tx.Verify(), "Invalid sig: PubKey recovery failed")
+	testutil.RequireError(t, tx.Verify(), "Failed to recover pubkey from signature")
 	// We can't check here for other invalid signatures:
 	//      - Signatures signed by someone else, spending coins they don't own
 	//      - Signature is for wrong hash
@@ -262,10 +262,10 @@ func TestTransactionSignInputs(t *testing.T) {
 	a := cipher.AddressFromPubKey(p)
 	p = cipher.MustPubKeyFromSecKey(s2)
 	a2 := cipher.AddressFromPubKey(p)
-	require.Nil(t, cipher.ChkSig(a, cipher.AddSHA256(h, tx.In[0]), tx.Sigs[0]))
-	require.Nil(t, cipher.ChkSig(a2, cipher.AddSHA256(h, tx.In[1]), tx.Sigs[1]))
-	require.NotNil(t, cipher.ChkSig(a, h, tx.Sigs[1]))
-	require.NotNil(t, cipher.ChkSig(a2, h, tx.Sigs[0]))
+	require.NoError(t, cipher.VerifyAddressSignedHash(a, tx.Sigs[0], cipher.AddSHA256(h, tx.In[0])))
+	require.NoError(t, cipher.VerifyAddressSignedHash(a2, tx.Sigs[1], cipher.AddSHA256(h, tx.In[1])))
+	require.Error(t, cipher.VerifyAddressSignedHash(a, tx.Sigs[1], h))
+	require.Error(t, cipher.VerifyAddressSignedHash(a2, tx.Sigs[0], h))
 }
 
 func TestTransactionHash(t *testing.T) {

@@ -61,6 +61,9 @@ else
   LDFLAGS=$(LIBC_FLAGS)
 endif
 
+# Integration tests
+SIMTESTNET_BASE_PORT = 26000
+
 run-client:  ## Run skycoin with desktop client configuration. To add arguments, do 'make ARGS="--foo" run'.
 	./run-client.sh ${ARGS}
 
@@ -137,6 +140,12 @@ lint: ## Run linters. Use make install-linters first.
 	golangci-lint run -c .golangci.libcgo.yml ./lib/cgo/...
 	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
+
+# Simulate running a testnet on isolated mainnet nodes
+# see https://github.com/skycoin/skycoin/wiki/Running-multiple-nodes-locally-isolated-for-manual-testing
+run-testnet:
+	./run-testnet.sh $(SIMTESTNET_BASE_PORT) 
+	./ci-scripts/run-live-integration-test-testnet.sh $(SIMTESTNET_BASE_PORT)
 
 check: lint clean-coverage test integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \

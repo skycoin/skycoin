@@ -24,6 +24,9 @@ var (
 	ErrSecp256k1InvalidLengthPubKey        = errors.New("pubkey length wrong")
 )
 
+// DebugPrint enable debug print statements
+var DebugPrint = false
+
 //intenal, may fail
 //may return nil
 func pubkeyFromSeckey(seckey []byte) []byte {
@@ -50,7 +53,6 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {
-
 		log.Printf("seckey= %s", hex.EncodeToString(seckey))
 		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
 		log.Panicf("ERROR: pubkey verification failed, for deterministic. ret=%d", ret)
@@ -179,7 +181,9 @@ new_seckey:
 		log.Panic()
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
-		log.Printf("generateDeterministicKeyPair, secp.SeckeyIsValid fail")
+		if DebugPrint {
+			log.Printf("generateDeterministicKeyPair, secp.SeckeyIsValid fail")
+		}
 		goto new_seckey //regen
 	}
 
@@ -371,7 +375,7 @@ func VerifyPubkey(pubkey []byte) int {
 	return 1 //valid
 }
 
-// VerifySignatureValidity renames ChkSignatureValidity
+// VerifySignatureValidity verifies a signature is well formed and not malleable
 func VerifySignatureValidity(sig []byte) int {
 	//64+1
 	if len(sig) != 65 {
@@ -394,7 +398,6 @@ func VerifySignatureValidity(sig []byte) int {
 }
 
 // VerifySignature for compressed signatures, does not need pubkey
-// Rename SignatureChk
 func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	if msg == nil || sig == nil || pubkey1 == nil {
 		log.Panic("VerifySignature, ERROR: invalid input, nils")
@@ -477,7 +480,9 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 		recid)
 
 	if ret != 1 {
-		log.Printf("RecoverPubkey: code %d", ret)
+		if DebugPrint {
+			log.Printf("RecoverPubkey: code %d", ret)
+		}
 		return nil
 	}
 
@@ -502,11 +507,15 @@ func ECDH(pub []byte, sec []byte) []byte {
 	}
 
 	if VerifySeckey(sec) != 1 {
-		log.Printf("Invalid Seckey")
+		if DebugPrint {
+			log.Printf("Invalid Seckey")
+		}
 	}
 
 	if ret := VerifyPubkey(pub); ret != 1 {
-		log.Printf("Invalid Pubkey, %d", ret)
+		if DebugPrint {
+			log.Printf("Invalid Pubkey, %d", ret)
+		}
 		return nil
 	}
 

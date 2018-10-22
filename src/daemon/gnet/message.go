@@ -24,50 +24,6 @@ func MessagePrefixFromString(prefix string) MessagePrefix {
 	return p
 }
 
-/*
-   Need to use bytes type
-   - need to get rid of interface message type
-   - need to store abstract function pointer
-   - need to invoke the abstract message pointer
-
-Operations
-- store a function signature (variable?)
-- store a function
--
-
-*/
-
-/*
-Message Type needs to embody multiple types of struct data
-- each type must have a response function
-- the second parameter of each response function is different for each type
-*/
-
-/*
-func Call(m map[string]interface{}, name string, params ... interface{}) (result []reflect.Value, err error) {
-    f = reflect.ValueOf(m[name])
-    if len(params) != f.Type().NumIn() {
-        err = errors.New("The number of params is not adapted.")
-        return
-    }
-    in := make([]reflect.Value, len(params))
-    for k, param := range params {
-        in[k] = reflect.ValueOf(param)
-    }
-    result = f[name].Call(in)
-    return
-}
-Call(funcs, "foo")
-Call(funcs, "bar", 1, 2, 3)
-
-func foobar() {
-    // bla...bla...bla...
-}
-funcs := map[string]func() {"foobar":foobar}
-funcs["foobar"]()
-
-*/
-
 // Message message interface
 type Message interface {
 	// State is user-defined application state that is attached to the
@@ -107,8 +63,7 @@ func RegisterMessage(prefix MessagePrefix, msg interface{}) {
 	copy(id[:], prefix[:])
 	_, exists := MessageIDReverseMap[id]
 	if exists {
-		logger.Panicf("Attempted to register message prefix %s twice",
-			string(id[:]))
+		logger.Panicf("Attempted to register message prefix %s twice", string(id[:]))
 	}
 	_, exists = MessageIDMap[t]
 	if exists {

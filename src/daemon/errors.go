@@ -23,7 +23,6 @@ var errorByCode = [...]error{
 	ErrDisconnectPeerlistFull,
 	ErrOutgoingConnectionsDisabled,
 	ErrRecvReject,
-	ErrSendReject,
 	gnet.ErrDisconnectReadFailed,
 	gnet.ErrDisconnectWriteFailed,
 	gnet.ErrDisconnectSetReadDeadlineFailed,

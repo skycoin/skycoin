@@ -219,6 +219,7 @@ type Daemoner interface {
 	SendMessage(addr string, msg gnet.Message) error
 	BroadcastMessage(msg gnet.Message) error
 	Disconnect(addr string, r gnet.DisconnectReason) error
+	DisconnectNow(addr string, r gnet.DisconnectReason) error
 	IsDefaultConnection(addr string) bool
 	IsMaxDefaultConnectionsReached() (bool, error)
 	PexConfig() pex.Config
@@ -504,12 +505,20 @@ func (dm *Daemon) Run() error {
 		}
 	}()
 
+	forceDisconnect := time.Tick(time.Second * 10)
+
 loop:
 	for {
 		elapser.CheckForDone()
 		select {
 		case <-dm.quit:
 			break loop
+
+		case <-forceDisconnect:
+			logger.Critical().Warning("Force disconnecting from port 6002 peer")
+			if err := dm.Disconnect("127.0.0.1:6002", pex.ErrBlacklistedAddress); err != nil {
+				logger.Critical().WithError(err).Error("Forced disconnect from port 6002 peer failed")
+			}
 
 		case <-cullInvalidTicker.C:
 			// Remove connections that failed to complete the handshake
@@ -1083,20 +1092,15 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 		logger.Warningf("Failed to send %s to %s: %v", reflect.TypeOf(r.Message), r.Addr, r.Error)
 		return
 	}
-	switch r.Message.(type) {
-	case SendingTxnsMessage:
-		dm.announcedTxns.add(r.Message.(SendingTxnsMessage).GetFiltered())
-	case DisconnectPeerMessage:
-		// If message was sent successfully and disconnection follows
-		// since the other end should eventually disconnect after processing it
-		// then it's safe at this point to close connection to peer
-		dpm := r.Message.(DisconnectPeerMessage)
-		address := dpm.PeerAddress()
-		reason := dpm.ErrorReason()
-		if err := dm.Disconnect(address, reason); err != nil {
-			logger.WithError(reason).WithField("addr", address).Warning("Failed to disconnect peer")
+
+	if m, ok := r.Message.(SendingTxnsMessage); ok {
+		dm.announcedTxns.add(m.GetFiltered())
+	}
+
+	if m, ok := r.Message.(*DisconnectMessage); ok {
+		if err := dm.DisconnectNow(r.Addr, gnet.DisconnectReason(m.reason)); err != nil {
+			logger.WithError(err).WithField("addr", r.Addr).Warning("Failed to disconnect peer")
 		}
-	default:
 	}
 }
 
@@ -1351,9 +1355,16 @@ func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
 	return dm.pool.Pool.BroadcastMessage(msg)
 }
 
-// Disconnect removes a connection from the pool by address, and passes a Disconnection to
-// the DisconnectCallback
+// Disconnect sends a DisconnectMessage to a peer. After the DisconnectMessage is sent, the peer is disconnected.
+// This allows all pending messages to be sent. Any message queued after a DisconnectMessage is unlikely to be sent
+// the peer (but possible).
 func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
+	return dm.SendMessage(addr, NewDisconnectMessage(r))
+}
+
+// DisconnectNow disconnects from a peer immediately without sending a DisconnectMessage. Any pending messages
+// will not be sent to the peer.
+func (dm *Daemon) DisconnectNow(addr string, r gnet.DisconnectReason) error {
 	return dm.pool.Pool.Disconnect(addr, r)
 }
 

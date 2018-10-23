@@ -12,8 +12,10 @@ func lastBlocksCmd() *gcli.Command {
 	return &gcli.Command{
 		Short: "Displays the content of the most recently N generated blocks",
 		Use:   "lastBlocks [numberOfBlocks]",
+        Args:  gcli.MaximumNArgs(1),
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
 		RunE:  getLastBlocks,
-		Args:  gcli.MaximumNArgs(1),
 	}
 }
 

@@ -11,6 +11,8 @@ func versionCmd() *gcli.Command {
 	versionCmd := &gcli.Command{
 		Use:   "version",
 		Short: "List the current version of Skycoin components",
+        Args: gcli.NoArgs,
+        SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
 			var ver = struct {
 				Skycoin string `json:"skycoin"`

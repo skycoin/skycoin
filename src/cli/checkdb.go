@@ -33,8 +33,11 @@ func checkdbCmd() *gcli.Command {
 	return &gcli.Command{
 		Short: "Verify the database",
 		Use:   "checkdb [db path]",
-		Long:  "If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.",
+		Long:  `Checks if the given database file contains valid skycoin blockchain data.
+    If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.`,
 		Args:  gcli.MaximumNArgs(1),
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
 		RunE:  checkdb,
 	}
 }

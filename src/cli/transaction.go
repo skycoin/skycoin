@@ -17,6 +17,8 @@ func transactionCmd() *gcli.Command {
 	return &gcli.Command{
 		Short: "Show detail info of specific transaction",
 		Use:   "transaction [transaction id]",
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
 		Args:  gcli.MaximumNArgs(1),
 		RunE: func(c *gcli.Command, args []string) error {
 			txid := args[0]
@@ -46,6 +48,8 @@ func decodeRawTxCmd() *gcli.Command {
 	return &gcli.Command{
 		Short: "Decode raw transaction",
 		Use:   "decodeRawTransaction [raw transaction]",
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
 		Args:  gcli.ExactArgs(1),
 		RunE: func(c *gcli.Command, args []string) error {
 			b, err := hex.DecodeString(args[0])

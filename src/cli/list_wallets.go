@@ -21,11 +21,13 @@ func listWalletsCmd() *gcli.Command {
 	return &gcli.Command{
 		Short: "Lists all wallets stored in the wallet directory",
 		Use:   "listWallets",
-		RunE:  listWallets,
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
+        RunE:  listWallets,
 	}
 }
 
-func listWallets(c *gcli.Command, args []string) error {
+func listWallets(_ *gcli.Command, _ []string) error {
 	var wlts struct {
 		Wallets []WalletEntry `json:"wallets"`
 	}

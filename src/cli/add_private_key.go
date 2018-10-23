@@ -13,7 +13,7 @@ import (
 func addPrivateKeyCmd() *gcli.Command {
 	addPrivateKeyCmd := &gcli.Command{
 		Short: "Add a private key to specific wallet",
-		Use:   "addPrivateKey [private key]",
+		Use: "addPrivateKey [flags] [private key]",
 		Long: fmt.Sprintf(`Add a private key to specific wallet, the default
     wallet (%s) will be
     used if the wallet file or path is not specified
@@ -22,7 +22,9 @@ func addPrivateKeyCmd() *gcli.Command {
     history enabled your wallet encryption password can be recovered from the
     history log. If you do not include the "-p" option you will be prompted to
     enter your password after you enter your command.`, cliConfig.FullWalletPath()),
+        SilenceUsage: true,
 		Args: gcli.MinimumNArgs(1),
+		DisableFlagsInUseLine: true,
 		RunE: func(c *gcli.Command, args []string) error {
 			// get private key
 			skStr := args[0]

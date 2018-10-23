@@ -1,247 +1,252 @@
 package cli
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"os"
-	"strings"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "os"
+    "strings"
 
-	gcli "github.com/spf13/cobra"
+    gcli "github.com/spf13/cobra"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/wallet"
+    "github.com/skycoin/skycoin/src/cipher"
+    "github.com/skycoin/skycoin/src/cipher/go-bip39"
+    "github.com/skycoin/skycoin/src/wallet"
 )
 
 func addressGenCmd() *gcli.Command {
-	addressGenCmd := &gcli.Command{
-		Short: "Generate skycoin or bitcoin addresses",
-		Use:   "addressGen",
-		Long: `Use caution when using the "-p" command. If you have command history enabled
+    addressGenCmd := &gcli.Command{
+        Short: "Generate skycoin or bitcoin addresses",
+        Use:   "addressGen",
+        Long: `Use caution when using the "-p" command. If you have command history enabled
     your wallet encryption password can be recovered from the history log. If you
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`,
-		RunE: func(c *gcli.Command, args []string) error {
-			if num <= 0 {
-				return errors.New("num must be > 0")
-			}
+        SilenceUsage: true,
+        RunE: func(c *gcli.Command, _ []string) error {
+            if numAddresses <= 0 {
+                return errors.New("num must be > 0")
+            }
 
-			coinType, err := wallet.ResolveCoinType(coinName)
-			if err != nil {
-				return err
-			}
+            coinType, err := wallet.ResolveCoinType(coinName)
+            if err != nil {
+                return err
+            }
 
-			seed, err := resolveSeed()
-			if err != nil {
-				return err
-			}
+            seed, err := resolveSeed()
+            if err != nil {
+                return err
+            }
 
-			var password []byte
-			if encrypt {
-				switch strings.ToLower(mode) {
-				case "json", "wallet":
-				default:
-					return errors.New("Encrypt flag requires -mode to be json")
-				}
+            var password []byte
+            if encrypt {
+                switch strings.ToLower(mode) {
+                case "json", "wallet":
+                default:
+                    return errors.New("Encrypt flag requires -mode to be json")
+                }
 
-				var err error
-				password, err = PasswordFromTerm{}.Password()
-				if err != nil {
-					return err
-				}
-			}
+                var err error
+                password, err = PasswordFromTerm{}.Password()
+                if err != nil {
+                    return err
+                }
+            }
 
-			w, err := wallet.NewWallet(wallet.NewWalletFilename(), wallet.Options{
-				Coin:       coinType,
-				Label:      label,
-				Seed:       seed,
-				Encrypt:    encrypt,
-				Password:   password,
-				CryptoType: wallet.CryptoTypeScryptChacha20poly1305,
-				GenerateN:  uint64(num),
-			})
-			if err != nil {
-				return err
-			}
+            w, err := wallet.NewWallet(wallet.NewWalletFilename(), wallet.Options{
+                Coin:       coinType,
+                Label:      label,
+                Seed:       seed,
+                Encrypt:    encrypt,
+                Password:   password,
+                CryptoType: wallet.CryptoTypeScryptChacha20poly1305,
+                GenerateN:  uint64(numAddresses),
+            })
+            if err != nil {
+                return err
+            }
 
-			if hideSecrets {
-				w.Erase()
-			}
+            if hideSecrets {
+                w.Erase()
+            }
 
-			rw := wallet.NewReadableWallet(w)
+            rw := wallet.NewReadableWallet(w)
 
-			switch strings.ToLower(mode) {
-			case "json", "wallet":
-				output, err := json.MarshalIndent(rw, "", "    ")
-				if err != nil {
-					return err
-				}
+            switch strings.ToLower(mode) {
+            case "json", "wallet":
+                output, err := json.MarshalIndent(rw, "", "    ")
+                if err != nil {
+                    return err
+                }
 
-				fmt.Println(string(output))
-			case "addrs", "addresses":
-				for _, e := range rw.Entries {
-					fmt.Println(e.Address)
-				}
-			case "secrets":
-				if hideSecrets {
-					return errors.New("secrets mode selected but hideSecrets enabled")
-				}
-				for _, e := range rw.Entries {
-					fmt.Println(e.Secret)
-				}
-			default:
-				return errors.New("invalid mode")
-			}
+                fmt.Println(string(output))
+            case "addrs", "addresses":
+                for _, e := range rw.Entries {
+                    fmt.Println(e.Address)
+                }
+            case "secrets":
+                if hideSecrets {
+                    return errors.New("secrets mode selected but hideSecrets enabled")
+                }
+                for _, e := range rw.Entries {
+                    fmt.Println(e.Secret)
+                }
+            default:
+                return errors.New("invalid mode")
+            }
 
-			return nil
-		},
-	}
+            return nil
+        },
+    }
 
-	addressGenCmd.Flags().IntVarP(&num, "num", "n", 1, "Number of addresses to generate")
-	addressGenCmd.Flags().StringVarP(&coinName, "coin", "c", "skycoin", "Coin type. Must be skycoin or bitcoin. If bitcoin, secret keys are in Wallet Import Format instead of hex.")
-	addressGenCmd.Flags().StringVarP(&label, "label", "l", "", "Wallet label to use when printing or writing a wallet file")
-	addressGenCmd.Flags().BoolVar(&useHex, "hex", false, "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided")
-	addressGenCmd.Flags().StringVarP(&seed, "seed", "s", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided.")
-	addressGenCmd.Flags().BoolVarP(&strictSeed, "strict-seed", `t`, false, "Seed should be a valid bip39 mnemonic seed.")
-	addressGenCmd.Flags().IntVarP(&entropy, "entropy", "e", 128, "Entropy of the autogenerated bip39 seed, when the seed is not provided. Can be 128 or 256")
-	addressGenCmd.Flags().BoolVarP(&hideSecrets, "hide-secrets", "i", false, "Hide the secret key and seed from the output when printing a JSON wallet file")
-	addressGenCmd.Flags().StringVarP(&mode, "mode", "m", "wallet", "Output mode. Options are wallet (prints a full JSON wallet), addresses (prints addresses in plain text), secrets (prints secret keys in plain text)")
-	addressGenCmd.Flags().BoolVarP(&encrypt, "encrypt", "x", false, "Encrypt the wallet when printing a JSON wallet")
+    addressGenCmd.Flags().IntVarP(&numAddresses, "num", "n", 1, "Number of addresses to generate")
+    addressGenCmd.Flags().StringVarP(&coinName, "coin", "c", "skycoin", "Coin type. Must be skycoin or bitcoin. If bitcoin, secret keys are in Wallet Import Format instead of hex.")
+    addressGenCmd.Flags().StringVarP(&label, "label", "l", "", "Wallet label to use when printing or writing a wallet file")
+    addressGenCmd.Flags().BoolVar(&useHex, "hex", false, "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided")
+    addressGenCmd.Flags().StringVarP(&seed, "seed", "s", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided.")
+    addressGenCmd.Flags().BoolVarP(&strictSeed, "strict-seed", `t`, false, "Seed should be a valid bip39 mnemonic seed.")
+    addressGenCmd.Flags().IntVarP(&entropy, "entropy", "e", 128, "Entropy of the autogenerated bip39 seed, when the seed is not provided. Can be 128 or 256")
+    addressGenCmd.Flags().BoolVarP(&hideSecrets, "hide-secrets", "i", false, "Hide the secret key and seed from the output when printing a JSON wallet file")
+    addressGenCmd.Flags().StringVarP(&mode, "mode", "m", "wallet", "Output mode. Options are wallet (prints a full JSON wallet), addresses (prints addresses in plain text), secrets (prints secret keys in plain text)")
+    addressGenCmd.Flags().BoolVarP(&encrypt, "encrypt", "x", false, "Encrypt the wallet when printing a JSON wallet")
 
-	return addressGenCmd
+    return addressGenCmd
 }
 
 func resolveSeed() (string, error) {
-	switch entropy {
-	case 128, 256:
-	default:
-		return "", errors.New("entropy must be 128 or 256")
-	}
+    switch entropy {
+    case 128, 256:
+    default:
+        return "", errors.New("entropy must be 128 or 256")
+    }
 
-	if seed != "" {
-		if strictSeed && !bip39.IsMnemonicValid(seed) {
-			return "", errors.New("seed is not a valid bip39 seed")
-		}
+    if seed != "" {
+        if strictSeed && !bip39.IsMnemonicValid(seed) {
+            return "", errors.New("seed is not a valid bip39 seed")
+        }
 
-		return seed, nil
-	}
+        return seed, nil
+    }
 
-	if useHex {
-		seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
-	} else {
-		e, err := bip39.NewEntropy(entropy)
-		if err != nil {
-			return "", err
-		}
+    if useHex {
+        seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
+    } else {
+        e, err := bip39.NewEntropy(entropy)
+        if err != nil {
+            return "", err
+        }
 
-		seed, err = bip39.NewMnemonic(e)
-		if err != nil {
-			return "", err
-		}
-	}
+        seed, err = bip39.NewMnemonic(e)
+        if err != nil {
+            return "", err
+        }
+    }
 
-	return seed, nil
+    return seed, nil
 }
 
 func fiberAddressGenCmd() *gcli.Command {
-	fiberAddressGenCmd := &gcli.Command{
-		Use:   "fiberAddressGen",
-		Short: "Generate addresses and seeds for a new fiber coin",
-		Long: `Addresses are written in a format that can be copied into fiber.toml
+    fiberAddressGenCmd := &gcli.Command{
+        Use:   "fiberAddressGen",
+        Short: "Generate addresses and seeds for a new fiber coin",
+        Long: `Addresses are written in a format that can be copied into fiber.toml
     for configuring distribution addresses. Addresses along with their seeds are written to a csv file,
     these seeds can be imported into the wallet to access distribution coins.`,
-		Args: gcli.NoArgs,
-		RunE: func(c *gcli.Command, args []string) (err error) {
-			if num < 1 {
-				return errors.New("num must be > 0")
-			}
+        SilenceUsage: true,
+        RunE: func(c *gcli.Command, args []string) (err error) {
+            if len(args) > 0 {
+                return errors.New("this command does not take any positional arguments")
+            }
 
-			switch entropy {
-			case 128, 256:
-			default:
-				return errors.New("entropy must be 128 or 256")
-			}
+            if fiberNumAddresses < 1 {
+                return errors.New("num must be > 0")
+            }
 
-			addrs := make([]cipher.Address, num)
-			seeds := make([]string, num)
+            switch entropy {
+            case 128, 256:
+            default:
+                return errors.New("entropy must be 128 or 256")
+            }
 
-			for i := 0; i < num; i++ {
-				e, err := bip39.NewEntropy(entropy)
-				if err != nil {
-					return err
-				}
+            addrs := make([]cipher.Address, fiberNumAddresses)
+            seeds := make([]string, fiberNumAddresses)
 
-				seed, err := bip39.NewMnemonic(e)
-				if err != nil {
-					return err
-				}
+            for i := 0; i < fiberNumAddresses; i++ {
+                e, err := bip39.NewEntropy(entropy)
+                if err != nil {
+                    return err
+                }
 
-				_, seckey, err := cipher.GenerateDeterministicKeyPair([]byte(seed))
-				if err != nil {
-					return err
-				}
-				addr := cipher.MustAddressFromSecKey(seckey)
+                seed, err := bip39.NewMnemonic(e)
+                if err != nil {
+                    return err
+                }
 
-				seeds[i] = seed
-				addrs[i] = addr
-			}
+                _, seckey, err := cipher.GenerateDeterministicKeyPair([]byte(seed))
+                if err != nil {
+                    return err
+                }
+                addr := cipher.MustAddressFromSecKey(seckey)
 
-			_, err = os.Stat(addrsFilename)
-			if err != nil {
-				if !os.IsNotExist(err) {
-					return err
-				}
-			} else if !overwrite {
-				return fmt.Errorf("-addrs-file %q already exists. Use -overwrite to force writing", addrsFilename)
-			}
+                seeds[i] = seed
+                addrs[i] = addr
+            }
 
-			_, err = os.Stat(seedsFilename)
-			if err != nil {
-				if !os.IsNotExist(err) {
-					return err
-				}
-			} else if !overwrite {
-				return fmt.Errorf("-seeds-file %q already exists. Use -overwrite to force writing", seedsFilename)
-			}
+            _, err = os.Stat(addrsFilename)
+            if err != nil {
+                if !os.IsNotExist(err) {
+                    return err
+                }
+            } else if !overwrite {
+                return fmt.Errorf("-addrs-file %q already exists. Use -overwrite to force writing", addrsFilename)
+            }
 
-			addrsF, err := os.Create(addrsFilename)
-			if err != nil {
-				return err
-			}
-			defer func() {
-				cErr := addrsF.Close()
-				if cErr != nil {
-					err = cErr
-				}
-			}()
+            _, err = os.Stat(seedsFilename)
+            if err != nil {
+                if !os.IsNotExist(err) {
+                    return err
+                }
+            } else if !overwrite {
+                return fmt.Errorf("-seeds-file %q already exists. Use -overwrite to force writing", seedsFilename)
+            }
 
-			seedsF, err := os.Create(seedsFilename)
-			defer func() {
-				cErr := seedsF.Close()
-				if cErr != nil {
-					err = cErr
-				}
-			}()
+            addrsF, err := os.Create(addrsFilename)
+            if err != nil {
+                return err
+            }
+            defer func() {
+                cErr := addrsF.Close()
+                if cErr != nil {
+                    err = cErr
+                }
+            }()
 
-			for i, a := range addrs {
-				if _, err := fmt.Fprintf(addrsF, "\"%s\",\n", a); err != nil {
-					return err
-				}
-				if _, err := fmt.Fprintf(seedsF, "\"%s\",\"%s\"\n", a, seeds[i]); err != nil {
-					return err
-				}
-			}
+            seedsF, err := os.Create(seedsFilename)
+            defer func() {
+                cErr := seedsF.Close()
+                if cErr != nil {
+                    err = cErr
+                }
+            }()
 
-			return nil
-		},
-	}
+            for i, a := range addrs {
+                if _, err := fmt.Fprintf(addrsF, "\"%s\",\n", a); err != nil {
+                    return err
+                }
+                if _, err := fmt.Fprintf(seedsF, "\"%s\",\"%s\"\n", a, seeds[i]); err != nil {
+                    return err
+                }
+            }
 
-	fiberAddressGenCmd.Flags().IntVarP(&num, "num", "n", 100, "Number of addresses to generate")
-	fiberAddressGenCmd.Flags().IntVarP(&entropy, "entropy", "e", 128, "Entropy of the autogenerated bip39 seeds. Can be 128 or 256")
-	fiberAddressGenCmd.Flags().StringVarP(&addrsFilename, "addres-file", "a", "addresses.txt", "Output file for the generated addresses in fiber.toml format")
-	fiberAddressGenCmd.Flags().StringVarP(&seedsFilename, "seeds-file", "s", "seeds.csv", "Output file for the generated addresses and seeds in a csv")
-	fiberAddressGenCmd.Flags().BoolVarP(&overwrite, "overwrite", "o", false, "Allow overwriting any existing addrs-file or seeds-file")
+            return nil
+        },
+    }
 
-	return fiberAddressGenCmd
+    fiberAddressGenCmd.Flags().IntVarP(&fiberNumAddresses, "num", "n", 100, "Number of addresses to generate")
+    fiberAddressGenCmd.Flags().IntVarP(&entropy, "entropy", "e", 128, "Entropy of the autogenerated bip39 seeds. Can be 128 or 256")
+    fiberAddressGenCmd.Flags().StringVarP(&addrsFilename, "addrs-file", "a", "addresses.txt", "Output file for the generated addresses in fiber.toml format")
+    fiberAddressGenCmd.Flags().StringVarP(&seedsFilename, "seeds-file", "s", "seeds.csv", "Output file for the generated addresses and seeds in a csv")
+    fiberAddressGenCmd.Flags().BoolVarP(&overwrite, "overwrite", "o", false, "Allow overwriting any existing addrs-file or seeds-file")
+
+    return fiberAddressGenCmd
 }

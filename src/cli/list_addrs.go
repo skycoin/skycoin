@@ -12,14 +12,21 @@ func listAddressesCmd() *gcli.Command {
 	return &gcli.Command{
 		Short: "Lists all addresses in a given wallet",
 		Use:   "listAddresses [walletName]",
+        Args:  gcli.MaximumNArgs(1),
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
 		RunE:  listAddresses,
-		Args:  gcli.MaximumNArgs(1),
 	}
 }
 
 func listAddresses(c *gcli.Command, args []string) error {
+    var wltPath string
+    if len(args) > 0 {
+        wltPath = args[0]
+    }
+
 	// get wallet name
-	w, err := resolveWalletPath(cliConfig, args[0])
+	w, err := resolveWalletPath(cliConfig, wltPath)
 	if err != nil {
 		return err
 	}

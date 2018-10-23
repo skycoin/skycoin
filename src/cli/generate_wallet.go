@@ -33,16 +33,16 @@ func walletCreateCmd() *gcli.Command {
     be prompted to enter your password after you enter your command.
 
     All results are returned in JSON format.`, cliConfig.FullWalletPath()),
+        SilenceUsage: true,
 		RunE: generateWalletHandler,
 	}
 
 	walletCreateCmd.Flags().BoolP("random", "r", false, "A random alpha numeric seed will be generated")
 	walletCreateCmd.Flags().BoolP("mnemonic", "m", false, "A mnemonic seed consisting of 12 dictionary words will be generated")
 	walletCreateCmd.Flags().StringP("seed", "s", "", "Your seed")
-	walletCreateCmd.Flags().Uint64P("num", "n", 1, `[numberOfAddresses] Number of addresses to generate
-    By default 1 address is generated.`)
+	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate. By default 1 address is generated.`)
 	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
-    If no wallet name is specified a generic name will be selected.`)
+If no wallet name is specified a generic name will be selected.`)
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
 	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.CryptoTypeScryptChacha20poly1305),
@@ -164,19 +164,19 @@ func generateWalletHandler(c *gcli.Command, args []string) error {
 	return printJSON(wallet.NewReadableWallet(wlt))
 }
 
-func makeSeed(s string, r, rd bool) (string, error) {
+func makeSeed(s string, r, m bool) (string, error) {
 	if s != "" {
 		// 111, 101, 110
-		if r || rd {
-			return "", errors.New("seed already specified, must not use -r or -rd again")
+		if r || m {
+			return "", errors.New("seed already specified, must not use -r or -m again")
 		}
 		// 100
 		return s, nil
 	}
 
 	// 011
-	if r && rd {
-		return "", errors.New("for -r and -rd, only one option can be used")
+	if r && m {
+		return "", errors.New("for -r and -m, only one option can be used")
 	}
 
 	// 010

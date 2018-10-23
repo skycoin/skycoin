@@ -46,6 +46,7 @@ func walletHisCmd() *gcli.Command {
 	walletHisCmd := &gcli.Command{
 		Short: "Display the transaction history of specific wallet. Requires skycoin node rpc.",
 		Use:   "walletHistory",
+        SilenceUsage: true,
 		Args:  gcli.NoArgs,
 		RunE:  walletHistoryAction,
 	}

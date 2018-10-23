@@ -18,8 +18,9 @@ func showSeedCmd() *gcli.Command {
     your wallet encryption password can be recovered from the history log. If you
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`, cliConfig.FullWalletPath()),
+        SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
-			w, err := resolveWalletPath(cliConfig, "")
+            w, err := resolveWalletPath(cliConfig, walletFile)
 			if err != nil {
 				return err
 			}
@@ -50,7 +51,8 @@ func showSeedCmd() *gcli.Command {
 		},
 	}
 
-	showSeedCmd.Flags().StringVarP(&password, "password", "p", "", "Wallet password")
+    showSeedCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
+    showSeedCmd.Flags().StringVarP(&password, "password", "p", "", "Wallet password")
 	showSeedCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Returns the results in JSON format.")
 
 	return showSeedCmd

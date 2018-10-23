@@ -9,7 +9,7 @@ import (
 func sendCmd() *gcli.Command {
 	sendCmd := &gcli.Command{
 		Short: "Send skycoin from a wallet or an address to a recipient address",
-		Use:   "send [to address] [amount]",
+		Use:   "send [flags] [to address] [amount]",
 		Long: `Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
 
     If you are sending from a wallet without specifying an address,
@@ -19,6 +19,7 @@ func sendCmd() *gcli.Command {
     your wallet encryption password can be recovered from the history log.
     If you do not include the “-p” option you will be prompted to enter your password
     after you enter your command.`,
+        SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
 			rawTxn, err := createRawTxnCmdHandler(args)
 			if err != nil {

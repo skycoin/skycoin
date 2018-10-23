@@ -16,13 +16,13 @@ func walletAddAddressesCmd() *gcli.Command {
 	walletAddAddressesCmd := &gcli.Command{
 		Use:   "walletAddAddresses",
 		Short: "Generate additional addresses for a wallet",
-		Long: fmt.Sprintf(`The default wallet (%s) will
-		be used if no wallet was specified.
+		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
 
-	Use caution when using the "-p" command. If you have command
-	history enabled your wallet encryption password can be recovered from the
-	history log. If you do not include the "-p" option you will be prompted to
-	enter your password after you enter your command.`, cliConfig.FullWalletPath()),
+    Use caution when using the "-p" command. If you have command
+    history enabled your wallet encryption password can be recovered from the
+    history log. If you do not include the "-p" option you will be prompted to
+    enter your password after you enter your command.`, cliConfig.FullWalletPath()),
+        SilenceUsage: true,
 		RunE: generateAddrs,
 	}
 

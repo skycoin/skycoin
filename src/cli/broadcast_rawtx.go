@@ -11,6 +11,8 @@ func broadcastTxCmd() *gcli.Command {
 		Short: "Broadcast a raw transaction to the network",
 		Use:   "broadcastTransaction [raw transaction]",
 		Args:  gcli.ExactArgs(1),
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
 			rawtx := args[0]
 

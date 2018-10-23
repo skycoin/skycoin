@@ -13,20 +13,20 @@ func encryptWalletCmd() *gcli.Command {
 	encryptWalletCmd := &gcli.Command{
 		Short: "Encrypt wallet",
 		Use:   "encryptWallet",
-		Long: fmt.Sprintf(`
-		The default wallet (%s) will be used if no wallet was specified.
-
-	Use caution when using the "-p" command. If you have command history enabled
-	your wallet encryption password can be recovered from the history log. If you
-	do not include the "-p" option you will be prompted to enter your password
-	after you enter your command.`, cliConfig.FullWalletPath()),
+		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
+    
+    Use caution when using the "-p" command. If you have command history enabled
+    your wallet encryption password can be recovered from the history log. If you
+    do not include the "-p" option you will be prompted to enter your password
+    after you enter your command.`, cliConfig.FullWalletPath()),
+        SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
 			w, err := resolveWalletPath(cliConfig, "")
 			if err != nil {
 				return err
 			}
 
-			cryptoType, err := wallet.CryptoTypeFromString(c.Flag("password").Value.String())
+			cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
 			if err != nil {
 				printHelp(c)
 				return err
@@ -48,6 +48,7 @@ func encryptWalletCmd() *gcli.Command {
 		},
 	}
 
+    encryptWalletCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
 	encryptWalletCmd.Flags().StringP("password", "p", "", "wallet password")
 	encryptWalletCmd.Flags().StringP("crypto-type", "x", "", "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	return encryptWalletCmd

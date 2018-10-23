@@ -19,8 +19,9 @@ func walletOutputsCmd() *gcli.Command {
     used if no wallet was specified, use ENV 'WALLET_NAME'
     to update default wallet file name, and 'WALLET_DIR' to update
     the default wallet directory`, cliConfig.FullWalletPath()),
-		RunE: getWalletOutputsCmd,
-		Args: gcli.MaximumNArgs(1),
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
+        RunE: getWalletOutputsCmd,
 	}
 }
 
@@ -28,16 +29,22 @@ func addressOutputsCmd() *gcli.Command {
 	return &gcli.Command{
 		Short: "Display outputs of specific addresses",
 		Use:   "addressOutputs [address list]",
-		Long: `Display outputs of specific addresses, join multiple addresses with space,
-       example: addressOutputs $addr1 $addr2 $addr3`,
-		RunE: getAddressOutputsCmd,
-		Args: gcli.MinimumNArgs(1),
+        Long: `Display outputs of specific addresses, join multiple addresses with space,
+    example: addressOutputs $addr1 $addr2 $addr3`,
+        Args: gcli.MinimumNArgs(1),
+        DisableFlagsInUseLine: true,
+        SilenceUsage: true,
+        RunE: getAddressOutputsCmd,
 	}
 }
 
 func getWalletOutputsCmd(c *gcli.Command, args []string) error {
+    var wltPath string
+    if len(args) == 1 {
+        wltPath = args[0]
+    }
 	var err error
-	w, err := resolveWalletPath(cliConfig, args[0])
+	w, err := resolveWalletPath(cliConfig, wltPath)
 	if err != nil {
 		return err
 	}

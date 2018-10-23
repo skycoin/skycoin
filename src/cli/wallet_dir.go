@@ -7,9 +7,11 @@ import (
 )
 
 func walletDirCmd() *gcli.Command {
-	return &gcli.Command{
+    walletDirCmd := &gcli.Command{
 		Use:   "walletDir",
 		Short: "Displays wallet folder address",
+        Args: gcli.NoArgs,
+        SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
 			if jsonOutput {
 				return printJSON(struct {
@@ -23,4 +25,7 @@ func walletDirCmd() *gcli.Command {
 			return nil
 		},
 	}
+
+    walletDirCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Returns the results in JSON format.")
+    return walletDirCmd
 }

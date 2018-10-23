@@ -1586,6 +1586,7 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS --json $RECIPIENT_ADDRESS $A
 ### Show Seed
 Show seed of a specified wallet.
 The default wallet `($HOME/wallets/skycoin_cli.wlt)` will be used if no wallet was specified.
+The wallet file is configured through `WALLET_NAME` env var.
 
 
 ```bash
@@ -1596,7 +1597,6 @@ $ skycoin-cli showSeed [flags]
 FLAGS:
   -j, --json                 Returns the results in JSON format.
   -p, --password string      Wallet password
-  -f, --wallet-file string   wallet file or path. If no path is specified your default wallet path will be used.
 ```
 
 #### Example

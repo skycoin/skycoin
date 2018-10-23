@@ -48,7 +48,6 @@ func encryptWalletCmd() *gcli.Command {
 		},
 	}
 
-	encryptWalletCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
 	encryptWalletCmd.Flags().StringP("password", "p", "", "wallet password")
 	encryptWalletCmd.Flags().StringP("crypto-type", "x", "", "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	return encryptWalletCmd

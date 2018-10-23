@@ -45,7 +45,6 @@ func decryptWalletCmd() *gcli.Command {
 		},
 	}
 
-	decryptWalletCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
 	decryptWalletCmd.Flags().StringP("password", "p", "", "wallet password")
 
 	return decryptWalletCmd

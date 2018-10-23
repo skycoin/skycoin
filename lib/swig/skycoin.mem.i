@@ -25,7 +25,7 @@
 	GoStringMap, PasswordReader__Handle_,
 	Transaction__Handle, Transactions__Handle, CreatedTransaction__Handle,
 	CreatedTransactionOutput__Handle, CreatedTransactionInput__Handle, CreateTransactionResponse__Handle,
-	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle
+	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle,AddressUxOuts_Handle
 	}
 
 %apply Handle* { Wallet__Handle*, Options__Handle*, ReadableEntry__Handle*, ReadableWallet__Handle*, WebRpcClient__Handle*,
@@ -33,7 +33,7 @@
 	App__Handle*, Context__Handle*, GoStringMap_*, PasswordReader__Handle*,
 	Transaction__Handle*, Transactions__Handle*, CreatedTransaction__Handle*,
 	CreatedTransactionOutput__Handle*, CreatedTransactionInput__Handle*, CreateTransactionResponse__Handle*,
-	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*
+	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*,AddressUxOuts_Handle*
 	}
 
 %typecheck(SWIG_TYPECHECK_INTEGER) Transaction__Handle {
@@ -300,7 +300,7 @@
 %rename(SKY_coin_NewAddressUxOuts) wrap_SKY_coin_NewAddressUxOuts;
 %inline{ 
 	GoUint32 wrap_SKY_coin_NewAddressUxOuts(coin_UxOutArray* __uxIn,  AddressUxOuts_Handle* p1){
-		GoSlice_ data;
+		coin__UxArray data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
 		data.cap = __uxIn->count;
@@ -373,15 +373,15 @@
 
 %rename(SKY_coin_AddressUxOuts_Keys) wrap_SKY_coin_AddressUxOuts_Keys;
 %inline{ 
-	GoUint32 wrap_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_SHA256s* __out_hashes){
-		GoSlice_ data;
+	GoUint32 wrap_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_Addresses* __out_addresses){
+		coin__UxArray data;
 		data.data = NULL;
 		data.len = 0;
 		data.cap = 0;
 		GoUint32 result = SKY_coin_AddressUxOuts_Keys(p0, &data);
 		if( result == 0){
-			__out_hashes->data = data.data;
-			__out_hashes->count = data.len;
+			__out_addresses->data = data.data;
+			__out_addresses->count = data.len;
 		}
 		return result;
 	}

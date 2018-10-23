@@ -15,13 +15,12 @@ func decryptWalletCmd() *gcli.Command {
 	decryptWalletCmd := &gcli.Command{
 		Use:   "decryptWallet",
 		Short: "Decrypt wallet",
-		Long: fmt.Sprintf(`
-		The default wallet (%s) will be used if no wallet was specified.
-
-	Use caution when using the "-p" command. If you have command history enabled
+		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
+    
+    Use caution when using the "-p" command. If you have command history enabled
     your wallet encryption password can be recovered from the history log. If you
-	do not include the "-p" option you will be prompted to enter your password
-	after you enter your command.`, cliConfig.FullWalletPath()),
+    do not include the "-p" option you will be prompted to enter your password
+    after you enter your command.`, cliConfig.FullWalletPath()),
 		SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
 			w, err := resolveWalletPath(cliConfig, "")

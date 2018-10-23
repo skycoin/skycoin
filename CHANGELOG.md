@@ -47,7 +47,6 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Coinhour burn factor can be configured at runtime with `COINHOUR_BURN_FACTOR` envvar
 - Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
 - `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
-- Add wallet file flag in `encryptWallet`, `decryptWallet` and `showSeed`
 
 ### Fixed
 

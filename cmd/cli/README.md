@@ -27,6 +27,8 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
 	- [Create a wallet](#create-a-wallet)
 	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
+	- [Encrypt Wallet][#encrypt-wallet]
+	- [Decrypt Wallet][#decrypt-wallet]
 	- [Last blocks](#last-blocks)
 	- [List wallet addresses](#list-wallet-addresses)
 	- [List wallets](#list-wallets)
@@ -1151,6 +1153,139 @@ $ skycoin-cli walletAddAddresses --json
  ]
 }
 ```
+</details>
+
+### Encrypt Wallet
+Encrypt a wallet seed
+
+```bash
+$ skycoin-cli encryptWallet [flags]
+```
+
+```
+FLAGS:
+  -x, --crypto-type string   The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor
+  -h, --help                 help for encryptWallet
+  -p, --password string      wallet password
+```
+
+### Examples
+#### Encrypt wallet
+```bash
+$ skycoin-cli encryptWallet -p test
+```
+
+<details>
+ <summary>View Output</summary>
+
+ ```json
+ {
+     "meta": {
+         "coin": "skycoin",
+         "cryptoType": "scrypt-chacha20poly1305",
+         "encrypted": "true",
+         "filename": "skycoin_cli.wlt",
+         "label": "",
+         "lastSeed": "",
+         "secrets": "dgB7Im4iOjEwNDg1NzYsInIiOjgsInAiOjEsImtleUxlbiI6MzIsInNhbHQiOiJRNVRSVHh0VFpieERpUWt0dnkzc01SYTl6U0t2aFJqVlpUUHQzeldSVGs4PSIsIm5vbmNlIjoiSUt5VG8zdWdGdFY3MWYxTiJ9LB7Cu3bvZFzsmKqToPi3bjARIRfmhL8HBUdnwLzS5Rxu4uw1tIlDDmEKUpgDWV3RvB+xDz3sHchQr5BpK72LDOwbZ6BubMHovTqC4+lx9hKc2qnDGwsymxLQJHQrQ23DkHMioSUVYNZv1/DwzJ2qI0WIOTkb+L34e9f60YV+2zF7v+C/nTS8AjMwjGYldKinPEjyDXkpxB2d4Sd3EnfUm8u76TvTKxqZpZ/tr+in/OfRsJsN7dC7rMFRZukoCJYNnWv/wgPn/NMu4DIxqF+WUQhCsCgqk6oMderdK/E/xtLJmKnbHRLH4PO/Dh4ypLXg2EzW+JBN6RpzVEXxYdvVCqmKfs7d+hnHWDmDtCLGqYyPsUa+d4PPhylruNE=",
+         "seed": "",
+         "tm": "1540305209",
+         "type": "deterministic",
+         "version": "0.2"
+     },
+     "entries": [
+         {
+             "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
+             "secret_key": ""
+         }
+     ]
+ }
+ ```
+</details>
+
+
+#### Encrypt wallet with different crypto type
+```bash
+$ skycoin-cli encryptWallet -x sha256-xor -p test
+```
+
+<details>
+ <summary>View Output</summary>
+
+ ```json
+ {
+     "meta": {
+         "coin": "skycoin",
+         "cryptoType": "sha256-xor",
+         "encrypted": "true",
+         "filename": "skycoin_cli.wlt",
+         "label": "",
+         "lastSeed": "",
+         "secrets": "mJ4g+/NgncOVp7gKIZqVPysmrRYKjprSuMvvpq3HLt7ajjMOheEdyU0PGtueDQADIhhTFZlQh/eaaYXF3fecS7OrGa79F+2lRRdD7Tva/MueiL9TL0ng12x0I7dXkUVsXLTl3MJK27JwS9hKedcVvnmFysJA6W3lX2aE7Qn+v6cyMbfgR8r89OHGaUZ9SPZn2HKOhhIcXt66Q/t0kVWU0XEH+G
+ xUyX23ksN3scQoAshVidLAgXwpkgExEl+qjCpDNQga3MncZV+WuQxpIKodJ3l5TKoJAA0/Taz9O9Se0tIoiK2ls2m6JUayev3Id0+hkmNNSUKQ53Ni3xwjNzZXoPQAemMWpkdUSv8qNuhh7C/4gBBrZROM6ZyxmsdlWgcG0Yfrh8o505D0i4mtubkdZSGi8Djm9j1mpWTZi3VuUjtGvBAmH3Qzdma+nvORZj11QuEuCcO+
+ 8jmQB9bVxcTL9u4Nan2+cYijVNul93m7xWik/mSB7uIFVIJAm4kSMiJm",
+         "seed": "",
+         "tm": "1540305209",
+         "type": "deterministic",
+         "version": "0.2"
+     },
+     "entries": [
+         {
+             "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
+             "secret_key": ""
+         }
+     ]
+ }
+ ```
+</details>
+
+### Decrypt Wallet
+Decrypt a wallet seed
+
+```bash
+$ skycoin-cli decryptWallet [flags]
+```
+
+```
+FLAGS:
+  -h, --help              help for decryptWallet
+  -p, --password string   wallet password
+```
+
+### Example
+```bash
+$ skycoin-cli decryptWallet -p test
+```
+
+<details>
+ <summary>View Output</summary>
+
+ ```json
+ {
+     "meta": {
+         "coin": "skycoin",
+         "cryptoType": "",
+         "encrypted": "false",
+         "filename": "skycoin_cli.wlt",
+         "label": "",
+         "lastSeed": "522dba68fe58c179f3467f9e799c02b25552143b250626cc03281faa28c262c0",
+         "secrets": "",
+         "seed": "select salute trip target blur short link suspect river ready senior bleak",
+         "tm": "1540305209",
+         "type": "deterministic",
+         "version": "0.2"
+     },
+     "entries": [
+         {
+             "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
+             "secret_key": "080bfb86463da87e06f816c4326a11b84806c9744235bb7ce7bc8d63acb4f6c2"
+         }
+     ]
+ }
+ ```
 </details>
 
 ### Last blocks

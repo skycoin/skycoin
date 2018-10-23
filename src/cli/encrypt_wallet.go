@@ -49,7 +49,7 @@ func encryptWalletCmd() *gcli.Command {
 	}
 
 	encryptWalletCmd.Flags().StringP("password", "p", "", "wallet password")
-	encryptWalletCmd.Flags().StringP("crypto-type", "x", "", "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
+	encryptWalletCmd.Flags().StringP("crypto-type", "x", "scrypt-chacha20poly1305", "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	return encryptWalletCmd
 }
 

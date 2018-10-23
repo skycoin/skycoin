@@ -53,8 +53,8 @@ func createRawTxCmd() *gcli.Command {
     your wallet encryption password can be recovered from the history log. If you
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`, cliConfig.FullWalletPath()),
-        SilenceUsage: true,
-		Args: gcli.MinimumNArgs(2),
+		SilenceUsage: true,
+		Args:         gcli.MinimumNArgs(2),
 		RunE: func(c *gcli.Command, args []string) error {
 			txn, err := createRawTxnCmdHandler(args)
 			switch err.(type) {

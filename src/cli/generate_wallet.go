@@ -33,8 +33,8 @@ func walletCreateCmd() *gcli.Command {
     be prompted to enter your password after you enter your command.
 
     All results are returned in JSON format.`, cliConfig.FullWalletPath()),
-        SilenceUsage: true,
-		RunE: generateWalletHandler,
+		SilenceUsage: true,
+		RunE:         generateWalletHandler,
 	}
 
 	walletCreateCmd.Flags().BoolP("random", "r", false, "A random alpha numeric seed will be generated")

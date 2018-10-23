@@ -44,11 +44,11 @@ func (obt byTime) Len() int {
 
 func walletHisCmd() *gcli.Command {
 	walletHisCmd := &gcli.Command{
-		Short: "Display the transaction history of specific wallet. Requires skycoin node rpc.",
-		Use:   "walletHistory",
-        SilenceUsage: true,
-		Args:  gcli.NoArgs,
-		RunE:  walletHistoryAction,
+		Short:        "Display the transaction history of specific wallet. Requires skycoin node rpc.",
+		Use:          "walletHistory",
+		SilenceUsage: true,
+		Args:         gcli.NoArgs,
+		RunE:         walletHistoryAction,
 	}
 
 	walletHisCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")

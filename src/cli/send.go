@@ -19,7 +19,7 @@ func sendCmd() *gcli.Command {
     your wallet encryption password can be recovered from the history log.
     If you do not include the “-p” option you will be prompted to enter your password
     after you enter your command.`,
-        SilenceUsage: true,
+		SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
 			rawTxn, err := createRawTxnCmdHandler(args)
 			if err != nil {

@@ -30,7 +30,6 @@ func walletAddAddressesCmd() *gcli.Command {
 	walletAddAddressesCmd.Flags().StringP("wallet-file", "f", cliConfig.FullWalletPath(), "Generate addresses in the wallet")
 	walletAddAddressesCmd.Flags().StringP("password", "p", "", "wallet password")
 	walletAddAddressesCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format")
-	walletAddAddressesCmd.MarkFlagRequired("num")
 
 	return walletAddAddressesCmd
 }

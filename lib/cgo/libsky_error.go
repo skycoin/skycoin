@@ -228,8 +228,6 @@ const (
 	SKY_ErrDisconnectVersionNotSupported
 	// SKY_ErrDisconnectIntroductionTimeout timeout
 	SKY_ErrDisconnectIntroductionTimeout
-	// SKY_ErrDisconnectVersionSendFailed version send failed
-	SKY_ErrDisconnectVersionSendFailed
 	// SKY_ErrDisconnectIsBlacklisted is blacklisted
 	SKY_ErrDisconnectIsBlacklisted
 	// SKY_ErrDisconnectSelf self connnect
@@ -474,7 +472,6 @@ var (
 		gnet.ErrNoReachableConnections:            SKY_ErrNoReachableConnections,
 		daemon.ErrDisconnectVersionNotSupported:   SKY_ErrDisconnectVersionNotSupported,
 		daemon.ErrDisconnectIntroductionTimeout:   SKY_ErrDisconnectIntroductionTimeout,
-		daemon.ErrDisconnectVersionSendFailed:     SKY_ErrDisconnectVersionSendFailed,
 		daemon.ErrDisconnectIsBlacklisted:         SKY_ErrDisconnectIsBlacklisted,
 		daemon.ErrDisconnectSelf:                  SKY_ErrDisconnectSelf,
 		daemon.ErrDisconnectConnectedTwice:        SKY_ErrDisconnectConnectedTwice,

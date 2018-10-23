@@ -63,7 +63,6 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 ### Changed
 
 - Add blockchain pubkey in introduction message, it would close the connection if the pubkey is not matched, but would accept it if pubkey is not provided.
-- Reply to `INTR` message with `GIVP` + `RJCT` on pex pool overflow
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
 - `/api/v1/network/` endpoints will return an empty array for array values instead of `null`
@@ -80,6 +79,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `cli generateWallet` renamed to `cli walletCreate`
 - `cli generateAddresses` renamed to `cli walletAddAddresses`
 - `run.sh` is now `run-client.sh` and a new `run-daemon.sh` script is added for running in server daemon mode.
+- Send new `DISC` disconnect packet to peer before disconnecting
 
 ### Removed
 

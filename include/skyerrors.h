@@ -105,7 +105,6 @@
 #define SKY_ErrMaxDefaultConnectionsReached               0x06000010
 #define SKY_ErrDisconnectVersionNotSupported              0x06000011
 #define SKY_ErrDisconnectIntroductionTimeout              0x06000012
-#define SKY_ErrDisconnectVersionSendFailed                0x06000013
 #define SKY_ErrDisconnectIsBlacklisted                    0x06000014
 #define SKY_ErrDisconnectSelf                             0x06000015
 #define SKY_ErrDisconnectConnectedTwice                   0x06000016

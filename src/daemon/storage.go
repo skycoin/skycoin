@@ -51,8 +51,11 @@ func (s *ExpectIntroductions) CullInvalidConns(f CullMatchFunc) ([]string, error
 
 		if ok {
 			addrs = append(addrs, addr)
-			delete(s.value, addr)
 		}
+	}
+
+	for _, addr := range addrs {
+		delete(s.value, addr)
 	}
 
 	return addrs, nil

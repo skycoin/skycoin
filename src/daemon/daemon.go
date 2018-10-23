@@ -22,37 +22,6 @@ import (
 )
 
 var (
-	// ErrDisconnectVersionNotSupported version is below minimum supported version
-	ErrDisconnectVersionNotSupported gnet.DisconnectReason = errors.New("Version is below minimum supported version")
-	// ErrDisconnectIntroductionTimeout timeout
-	ErrDisconnectIntroductionTimeout gnet.DisconnectReason = errors.New("Version timeout")
-	// ErrDisconnectVersionSendFailed version send failed
-	ErrDisconnectVersionSendFailed gnet.DisconnectReason = errors.New("Version send failed")
-	// ErrDisconnectIsBlacklisted is blacklisted
-	ErrDisconnectIsBlacklisted gnet.DisconnectReason = errors.New("Blacklisted")
-	// ErrDisconnectSelf self connnect
-	ErrDisconnectSelf gnet.DisconnectReason = errors.New("Self connect")
-	// ErrDisconnectConnectedTwice connect twice
-	ErrDisconnectConnectedTwice gnet.DisconnectReason = errors.New("Already connected")
-	// ErrDisconnectIdle idle
-	ErrDisconnectIdle gnet.DisconnectReason = errors.New("Idle")
-	// ErrDisconnectNoIntroduction no introduction
-	ErrDisconnectNoIntroduction gnet.DisconnectReason = errors.New("First message was not an Introduction")
-	// ErrDisconnectIPLimitReached ip limit reached
-	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
-	// ErrDisconnectIncomprehensibleError this is returned when a seemingly impossible error is encountered
-	// e.g. net.Conn.Addr() returns an invalid ip:port
-	ErrDisconnectIncomprehensibleError gnet.DisconnectReason = errors.New("Incomprehensible error")
-	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
-	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
-	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
-	ErrDisconnectBlockchainPubkeyNotMatched gnet.DisconnectReason = errors.New("Blockchain pubkey in Introduction message is not matched ")
-	// ErrDisconnectInvalidExtraData is returned when extra field can't be parsed as specific data type.
-	// e.g. ExtraData length in IntroductionMessage is not the same as cipher.PubKey
-	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data")
-	// ErrDisconnectPeerlistFull no space in peers pool
-	ErrDisconnectPeerlistFull gnet.DisconnectReason = errors.New("No space in device pex")
-
 	// ErrOutgoingConnectionsDisabled is returned if outgoing connections are disabled
 	ErrOutgoingConnectionsDisabled = errors.New("Outgoing connections are disabled")
 
@@ -505,20 +474,12 @@ func (dm *Daemon) Run() error {
 		}
 	}()
 
-	forceDisconnect := time.Tick(time.Second * 10)
-
 loop:
 	for {
 		elapser.CheckForDone()
 		select {
 		case <-dm.quit:
 			break loop
-
-		case <-forceDisconnect:
-			logger.Critical().Warning("Force disconnecting from port 6002 peer")
-			if err := dm.Disconnect("127.0.0.1:6002", pex.ErrBlacklistedAddress); err != nil {
-				logger.Critical().WithError(err).Error("Forced disconnect from port 6002 peer failed")
-			}
 
 		case <-cullInvalidTicker.C:
 			// Remove connections that failed to complete the handshake
@@ -547,7 +508,17 @@ loop:
 			// Remove connections that haven't said anything in a while
 			elapser.Register("clearStaleConnectionsTicker")
 			if !dm.Config.DisableNetworking {
-				dm.pool.clearStaleConnections()
+				conns, err := dm.pool.getStaleConnections()
+				if err != nil {
+					logger.WithError(err).Error("getStaleConnections failed")
+					continue
+				}
+
+				for _, addr := range conns {
+					if err := dm.Disconnect(addr, ErrDisconnectIdle); err != nil {
+						logger.WithError(err).WithField("addr", addr).Error("Disconnect")
+					}
+				}
 			}
 
 		case <-idleCheckTicker.C:
@@ -831,32 +802,29 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 	dm.pex.IncreaseRetryTimes(c.Addr)
 }
 
-// Removes unsolicited connections who haven't sent a version
+// cullInvalidConnections removes unsolicited connections who haven't sent a version
 func (dm *Daemon) cullInvalidConnections() {
-	// This method only handles the erroneous people from the DHT, but not
-	// malicious nodes
 	now := time.Now().UTC()
-	addrs, err := dm.expectingIntroductions.CullInvalidConns(
-		func(addr string, t time.Time) (bool, error) {
-			conned, err := dm.pool.Pool.IsConnExist(addr)
-			if err != nil {
-				return false, err
-			}
+	addrs, err := dm.expectingIntroductions.CullInvalidConns(func(addr string, t time.Time) (bool, error) {
+		conned, err := dm.pool.Pool.IsConnExist(addr)
+		if err != nil {
+			return false, err
+		}
 
-			// Do not remove trusted peers
-			if dm.isTrustedPeer(addr) {
-				return false, nil
-			}
-
-			if !conned {
-				return true, nil
-			}
-
-			if t.Add(dm.Config.IntroductionWait).Before(now) {
-				return true, nil
-			}
+		// Do not remove trusted peers
+		if dm.isTrustedPeer(addr) {
 			return false, nil
-		})
+		}
+
+		if !conned {
+			return true, nil
+		}
+
+		if t.Add(dm.Config.IntroductionWait).Before(now) {
+			return true, nil
+		}
+		return false, nil
+	})
 
 	if err != nil {
 		logger.Errorf("expectingIntroduction cull invalid connections failed: %v", err)
@@ -872,7 +840,7 @@ func (dm *Daemon) cullInvalidConnections() {
 
 		if exist {
 			logger.Infof("Removing %s for not sending a version", a)
-			if err := dm.pool.Pool.Disconnect(a, ErrDisconnectIntroductionTimeout); err != nil {
+			if err := dm.Disconnect(a, ErrDisconnectIntroductionTimeout); err != nil {
 				logger.Error(err)
 				return
 			}
@@ -909,12 +877,10 @@ func (dm *Daemon) processMessageEvent(e MessageEvent) {
 	// We have to check at process time and not record time because
 	// Introduction message does not update ExpectingIntroductions until its
 	// Process() is called
-	// _, needsIntro := self.expectingIntroductions[e.Context.Addr]
-	// if needsIntro {
 	if dm.needsIntro(e.Context.Addr) {
 		_, isIntro := e.Message.(*IntroductionMessage)
 		if !isIntro {
-			if err := dm.pool.Pool.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
+			if err := dm.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
 				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
 			}
 		}
@@ -947,7 +913,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	if dm.ipCountMaxed(a) {
 		logger.Infof("Max connections for %s reached, disconnecting", a)
-		if err := dm.pool.Pool.Disconnect(a, ErrDisconnectIPLimitReached); err != nil {
+		if err := dm.Disconnect(a, ErrDisconnectIPLimitReached); err != nil {
 			logger.WithError(err).WithField("addr", a).Error("Disconnect")
 		}
 		return
@@ -965,7 +931,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 		if n > dm.Config.OutgoingMax {
 			logger.Warningf("max outgoing connections is reached, disconnecting %v", a)
-			if err := dm.pool.Pool.Disconnect(a, ErrDisconnectMaxOutgoingConnectionsReached); err != nil {
+			if err := dm.Disconnect(a, ErrDisconnectMaxOutgoingConnectionsReached); err != nil {
 				logger.WithError(err).WithField("addr", a).Error("Disconnect")
 			}
 			return
@@ -1099,7 +1065,7 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 
 	if m, ok := r.Message.(*DisconnectMessage); ok {
 		if err := dm.DisconnectNow(r.Addr, gnet.DisconnectReason(m.reason)); err != nil {
-			logger.WithError(err).WithField("addr", r.Addr).Warning("Failed to disconnect peer")
+			logger.WithError(err).WithField("addr", r.Addr).Warning("DisconnectNow")
 		}
 	}
 }

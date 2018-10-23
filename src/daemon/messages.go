@@ -9,16 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/iputil"
-)
-
-var (
-	// ErrRecvReject disconnect since peer sent RJCT message
-	ErrRecvReject gnet.DisconnectReason = errors.New("Disconnect: Message rejected by peer")
 )
 
 // Message represent a packet to be serialized over the network by
@@ -60,7 +57,7 @@ func getMessageConfigs() []MessageConfig {
 		NewMessageConfig("GETT", GetTxnsMessage{}),
 		NewMessageConfig("GIVT", GiveTxnsMessage{}),
 		NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
-		NewMessageConfig("RJCT", DisconnectMessage{}),
+		NewMessageConfig("DISC", DisconnectMessage{}),
 	}
 }
 
@@ -229,16 +226,14 @@ func (gpm *GivePeersMessage) Process(d Daemoner) {
 
 // IntroductionMessage jan IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
-	// Mirror is a random value generated on client startup that is used
-	// to identify self-connections
+	c *gnet.MessageContext `enc:"-"`
+
+	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
 	// Port is the port that this client is listening on
 	Port uint16
 	// Protocol version
 	Version int32
-	c       *gnet.MessageContext `enc:"-"`
-	// We validate the message in Handle() and cache the result for Process()
-	validationError error `enc:"-"` // skip it during encoding
 	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
 	// Currently it contains the blockchain pubkey but will accept a client that does not provide it.
 	Extra []byte `enc:",omitempty"`
@@ -258,15 +253,22 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 // need to control the DisconnectReason sent back to gnet.  We still implement
 // Process(), where we do modifications that are not threadsafe
 func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	intro.c = mc
+	return d.RecordMessageEvent(intro, mc)
+}
+
+// Process an event queued by Handle()
+func (intro *IntroductionMessage) Process(d Daemoner) {
 	d := daemon.(Daemoner)
+
+	d.RemoveFromExpectingIntroductions(intro.c.Addr)
+
+	var port uint16
 
 	err := func() error {
 		// Disconnect if this is a self connection (we have the same mirror value)
 		if intro.Mirror == d.Mirror() {
 			logger.Infof("Remote mirror value %v matches ours", intro.Mirror)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectSelf); err != nil {
-				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-			}
 			return ErrDisconnectSelf
 		}
 
@@ -274,9 +276,6 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		dc := d.DaemonConfig()
 		if intro.Version < dc.MinProtocolVersion {
 			logger.Infof("%s protocol version %d below minimum supported protocol version %d. Disconnecting.", mc.Addr, intro.Version, dc.MinProtocolVersion)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectVersionNotSupported); err != nil {
-				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-			}
 			return ErrDisconnectVersionNotSupported
 		}
 
@@ -306,7 +305,9 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		// only solicited connection can be added to exchange peer list, because accepted
 		// connection may not have an incoming port
-		ip, port, err := iputil.SplitAddr(mc.Addr)
+		var ip string
+		var err error
+		ip, port, err = iputil.SplitAddr(mc.Addr)
 		if err != nil {
 			// This should never happen, but the program should still work if it does
 			logger.Errorf("Invalid Addr() for connection: %s", mc.Addr)
@@ -314,20 +315,6 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
 			return ErrDisconnectIncomprehensibleError
-		}
-
-		// Checks if the introduction message is from outgoing connection.
-		// It's outgoing connection if port == intro.Port, as the incoming
-		// connection's port is a random port, it's different from the port
-		// in introduction message.
-		if port == intro.Port {
-			if err := d.SetHasIncomingPort(mc.Addr); err != nil {
-				logger.Errorf("Failed to set peer has incoming port status, %v", err)
-			}
-		} else {
-			if err := d.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port)); err != nil {
-				logger.Errorf("Failed to add peer: %v", err)
-			}
 		}
 
 		// Disconnect if connected twice to the same peer (judging by ip:mirror)
@@ -342,39 +329,29 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		return nil
 	}()
 
-	intro.validationError = err
-	intro.c = mc
-
 	if err != nil {
 		d.IncreaseRetryTimes(mc.Addr)
-		d.RemoveFromExpectingIntroductions(mc.Addr)
-		return err
+
+		if err := d.Disconnect(intro.c.Addr, err); err != nil {
+			logger.WithError(err).WithField("addr", intro.c.Addr).Warning("Disconnect")
+		}
 	}
 
-	err = d.RecordMessageEvent(intro, mc)
+	// Checks if the introduction message is from outgoing connection.
+	// It's outgoing connection if port == intro.Port, as the incoming
+	// connection's port is a random port, it's different from the port
+	// in introduction message.
+	if port == intro.Port {
+		if err := d.SetHasIncomingPort(mc.Addr); err != nil {
+			logger.Errorf("Failed to set peer has incoming port status, %v", err)
+		}
+	} else {
+		if err := d.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port)); err != nil {
+			logger.Errorf("Failed to add peer: %v", err)
+		}
+	}
+
 	d.ResetRetryTimes(mc.Addr)
-	return err
-}
-
-// Process an event queued by Handle()
-func (intro *IntroductionMessage) Process(d Daemoner) {
-	if intro.validationError == pex.ErrPeerlistFull {
-		peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
-		givpMsg := NewGivePeersMessage(peers)
-		if err := d.SendMessage(intro.c.Addr, givpMsg); err != nil {
-			logger.WithError(err).WithField("addr", intro.c.Addr).Error("Send GivePeersMessage failed")
-		}
-
-		if err := d.Disconnect(intro.c.Addr, pex.ErrPeerlistFull); err != nil {
-			logger.WithError(err).WithField("addr", intro.c.Addr).Error("Disconnect")
-		}
-	}
-
-	d.RemoveFromExpectingIntroductions(intro.c.Addr)
-
-	if intro.validationError != nil {
-		return
-	}
 
 	// Add the remote peer with their chosen listening port
 	a := intro.c.Addr
@@ -456,7 +433,7 @@ type DisconnectMessage struct {
 func NewDisconnectMessage(reason gnet.DisconnectReason) *DisconnectMessage {
 	return &DisconnectMessage{
 		reason:     reason,
-		ReasonCode: GetErrorCode(reason),
+		ReasonCode: DisconnectReasonToCode(reason),
 		Reserved:   nil,
 	}
 }
@@ -469,7 +446,12 @@ func (dm *DisconnectMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // Process Recover from message rejection state
 func (dm *DisconnectMessage) Process(d Daemoner) {
-	logger.Critical().WithField("addr", dm.c.Addr).Infof("DisconnectMessage received, reason: %d", dm.ReasonCode)
+	logger.Critical().WithFields(logrus.Fields{
+		"addr":   dm.c.Addr,
+		"code":   dm.ReasonCode,
+		"reason": DisconnectCodeToReason(dm.ReasonCode),
+		"note":   dm.Note,
+	}).Infof("DisconnectMessage received")
 	if err := d.DisconnectNow(dm.c.Addr, gnet.DisconnectReason(errors.New("TODO - a reason"))); err != nil {
 		logger.WithError(err).WithField("addr", dm.c.Addr).Warning("DisconnectNow")
 	}

@@ -15,6 +15,8 @@ import (
 
 	"io"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/elapse"
@@ -38,7 +40,7 @@ var (
 	// ErrDisconnectWriteFailed write faile
 	ErrDisconnectWriteFailed DisconnectReason = errors.New("Write failed")
 	// ErrDisconnectSetReadDeadlineFailed set read deadline failed
-	ErrDisconnectSetReadDeadlineFailed = errors.New("SetReadDeadline failed")
+	ErrDisconnectSetReadDeadlineFailed DisconnectReason = errors.New("SetReadDeadline failed")
 	// ErrDisconnectInvalidMessageLength invalid message length
 	ErrDisconnectInvalidMessageLength DisconnectReason = errors.New("Invalid message length")
 	// ErrDisconnectMalformedMessage malformed message
@@ -661,7 +663,7 @@ func (pool *ConnectionPool) IsConnExist(addr string) (bool, error) {
 		}
 		return nil
 	}); err != nil {
-		return false, fmt.Errorf("Check connection existence failed: %v ", err)
+		return false, err
 	}
 
 	return exist, nil
@@ -783,7 +785,12 @@ func (pool *ConnectionPool) Connect(address string) error {
 // Disconnect removes a connection from the pool by address, and passes a Disconnection to
 // the DisconnectCallback
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
-	if err := pool.strand("Disconnect", func() error {
+	return pool.strand("Disconnect", func() error {
+		logger.WithFields(logrus.Fields{
+			"addr":   addr,
+			"reason": r.Error(),
+		}).Info("Disconnecting")
+
 		exist := pool.disconnect(addr)
 
 		// checks if the address is default node address
@@ -797,11 +804,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 		}
 
 		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	})
 }
 
 func (pool *ConnectionPool) disconnect(addr string) bool {
@@ -809,8 +812,6 @@ func (pool *ConnectionPool) disconnect(addr string) bool {
 	if !ok {
 		return false
 	}
-
-	// TODO -- send disconnect reason packet
 
 	delete(pool.pool, conn.ID)
 	delete(pool.addresses, addr)
@@ -932,7 +933,6 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
-
 	m, err := convertToMessage(c.ID, msg, pool.Config.DebugPrint)
 	if err != nil {
 		return err
@@ -967,11 +967,11 @@ func (pool *ConnectionPool) SendPings(rate time.Duration, msg Message) error {
 	return nil
 }
 
-// ClearStaleConnections removes connections that have not sent a message in too long
-func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reason DisconnectReason) error {
+// GetStaleConnections returns connections that have been idle for longer than idleLimit
+func (pool *ConnectionPool) GetStaleConnections(idleLimit time.Duration) ([]string, error) {
 	now := Now()
-	idleConns := []string{}
-	if err := pool.strand("ClearStaleConnections", func() error {
+	var idleConns []string
+	if err := pool.strand("GetStaleConnections", func() error {
 		for _, conn := range pool.pool {
 			if conn.LastReceived.Add(idleLimit).Before(now) {
 				idleConns = append(idleConns, conn.Addr())
@@ -979,15 +979,10 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 		}
 		return nil
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, a := range idleConns {
-		if err := pool.Disconnect(a, reason); err != nil {
-			logger.WithError(err).WithField("addr", a).Warning("Error in disconnecting from stale connection")
-		}
-	}
-	return nil
+	return idleConns, nil
 }
 
 // Now returns the current UTC time

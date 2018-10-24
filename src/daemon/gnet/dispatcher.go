@@ -31,6 +31,16 @@ func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
 	return sendByteMessage(conn, m, timeout)
 }
 
+func msgIDStringSafe(msgID [4]byte) string {
+	for _, c := range msgID {
+		if c < ' ' || c > '~' {
+			return "<unprintable message ID>"
+		}
+	}
+
+	return string(msgID[:])
+}
+
 // Event handler that is called after a Connection sends a complete message
 func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 	msgID := [4]byte{}
@@ -38,6 +48,11 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 		return nil, errors.New("Not enough data to read msg id")
 	}
 	copy(msgID[:], msg[:len(msgID)])
+
+	if debugPrint {
+		logger.Debugf("Received %s message", msgIDStringSafe(msgID))
+	}
+
 	msg = msg[len(msgID):]
 	t, succ := MessageIDReverseMap[msgID]
 	if !succ {
@@ -50,7 +65,6 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 
 	var m Message
 	v := reflect.New(t)
-	//logger.Debugf("Giving %d bytes to the decoder", len(msg))
 	used, err := deserializeMessage(msg, v)
 	if err != nil {
 		return nil, err

@@ -986,6 +986,11 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 		return true
 	}
 
+	// The IP count doesn't apply to localhost addresses
+	if iputil.IsLocalhost(ip) {
+		return false
+	}
+
 	if cnt, ok := dm.ipCounts.Get(ip); ok {
 		return cnt >= dm.Config.IPCountsMax
 	}

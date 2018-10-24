@@ -111,7 +111,7 @@
 #define SKY_ErrDisconnectIdle                             0x06000017
 #define SKY_ErrDisconnectNoIntroduction                   0x06000018
 #define SKY_ErrDisconnectIPLimitReached                   0x06000019
-#define SKY_ErrDisconnectIncomprehensibleError            0x0600001A
+#define SKY_ErrDisconnectUnexpectedError            0x0600001A
 #define SKY_ErrDisconnectMaxDefaultConnectionReached      0x0600001B
 #define SKY_ErrDisconnectMaxOutgoingConnectionsReached    0x0600001C
 #define SKY_ConnectionError                               0x0600001D

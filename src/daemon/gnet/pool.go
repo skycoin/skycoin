@@ -788,7 +788,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	return pool.strand("Disconnect", func() error {
 		logger.WithFields(logrus.Fields{
 			"addr":   addr,
-			"reason": r.Error(),
+			"reason": r,
 		}).Info("Disconnecting")
 
 		exist := pool.disconnect(addr)

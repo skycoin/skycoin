@@ -26,12 +26,8 @@ func MessagePrefixFromString(prefix string) MessagePrefix {
 
 // Message message interface
 type Message interface {
-	// State is user-defined application state that is attached to the
-	// Dispatcher.
-	// Return a non-nil error from handle only if you've disconnected the
-	// client.  You don't have to return the DisconnectReason but that may
-	// be the most convenient.  If error is not nil, event buffer processing
-	// is aborted.
+	// State is user-defined application state that is attached to the Dispatcher.
+	// If a non-nil error is returned, the connection will be disconnected.
 	Handle(context *MessageContext, state interface{}) error
 }
 

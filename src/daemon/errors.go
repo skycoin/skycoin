@@ -23,9 +23,9 @@ var (
 	ErrDisconnectNoIntroduction gnet.DisconnectReason = errors.New("First message was not an Introduction")
 	// ErrDisconnectIPLimitReached ip limit reached
 	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
-	// ErrDisconnectIncomprehensibleError this is returned when a seemingly impossible error is encountered
+	// ErrDisconnectUnexpectedError this is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
-	ErrDisconnectIncomprehensibleError gnet.DisconnectReason = errors.New("Incomprehensible error")
+	ErrDisconnectUnexpectedError gnet.DisconnectReason = errors.New("Unexpected error")
 	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
 	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
@@ -45,18 +45,18 @@ var (
 
 		ErrDisconnectVersionNotSupported:           1,
 		ErrDisconnectIntroductionTimeout:           2,
-		ErrDisconnectIsBlacklisted:                 4,
-		ErrDisconnectSelf:                          5,
-		ErrDisconnectConnectedTwice:                6,
-		ErrDisconnectIdle:                          7,
-		ErrDisconnectNoIntroduction:                8,
-		ErrDisconnectIPLimitReached:                9,
-		ErrDisconnectIncomprehensibleError:         10,
+		ErrDisconnectIsBlacklisted:                 3,
+		ErrDisconnectSelf:                          4,
+		ErrDisconnectConnectedTwice:                5,
+		ErrDisconnectIdle:                          6,
+		ErrDisconnectNoIntroduction:                7,
+		ErrDisconnectIPLimitReached:                8,
+		ErrDisconnectUnexpectedError:               9,
 		ErrDisconnectMaxOutgoingConnectionsReached: 11,
 		ErrDisconnectBlockchainPubkeyNotMatched:    12,
 		ErrDisconnectInvalidExtraData:              13,
 		ErrDisconnectPeerlistFull:                  14,
-		ErrDisconnectReceivedDisconnect:            16,
+		ErrDisconnectReceivedDisconnect:            15,
 
 		gnet.ErrDisconnectReadFailed:            1001,
 		gnet.ErrDisconnectWriteFailed:           1002,
@@ -72,6 +72,10 @@ var (
 
 func init() {
 	disconnectCodeReasons = make(map[uint16]gnet.DisconnectReason, len(disconnectReasonCodes))
+
+	for r, c := range disconnectReasonCodes {
+		disconnectCodeReasons[c] = r
+	}
 }
 
 // DisconnectReasonToCode maps a gnet.DisconnectReason to a 16-byte code

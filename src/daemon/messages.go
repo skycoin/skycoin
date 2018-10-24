@@ -263,56 +263,8 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 
 	d.RemoveFromExpectingIntroductions(addr)
 
-	var ip string
-	var port uint16
-
-	if err := func() error {
-		var err error
-		ip, port, err = iputil.SplitAddr(addr)
-		if err != nil {
-			// This should never happen, but the program should still work if it does
-			logger.WithField("addr", addr).Error("Invalid addr")
-			return ErrDisconnectIncomprehensibleError
-		}
-
-		// Disconnect if this is a self connection (we have the same mirror value)
-		if intro.Mirror == d.Mirror() {
-			logger.WithField("addr", addr).Infof("Remote mirror value %d matches ours", intro.Mirror)
-			return ErrDisconnectSelf
-		}
-
-		// Disconnect if peer version is not within the supported range
-		dc := d.DaemonConfig()
-		if intro.Version < dc.MinProtocolVersion {
-			logger.WithField("addr", addr).Infof("protocol version %d below minimum supported protocol version %d. Disconnecting.", intro.Version, dc.MinProtocolVersion)
-			return ErrDisconnectVersionNotSupported
-		}
-
-		// v25 Checks the blockchain pubkey, would accept message with no Pubkey
-		// v26 would check the blockchain pubkey and reject if not matched or not provided
-		if len(intro.Extra) > 0 {
-			var bcPubKey cipher.PubKey
-			if len(intro.Extra) < len(bcPubKey) {
-				logger.WithField("addr", addr).Infof("Extra data length does not meet the minimum requirement")
-				return ErrDisconnectInvalidExtraData
-			}
-			copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
-
-			if d.BlockchainPubkey() != bcPubKey {
-				logger.WithField("addr", addr).Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())
-				return ErrDisconnectBlockchainPubkeyNotMatched
-			}
-		}
-
-		// Disconnect if connected twice to the same peer (judging by ip:mirror)
-		knownPort, exists := d.GetMirrorPort(addr, intro.Mirror)
-		if exists {
-			logger.WithField("addr", addr).Infof("Already connected on port %d", knownPort)
-			return ErrDisconnectConnectedTwice
-		}
-
-		return nil
-	}(); err != nil {
+	ip, port, err := intro.verify(d)
+	if err != nil {
 		d.IncreaseRetryTimes(addr)
 		if err := d.Disconnect(addr, err); err != nil {
 			logger.WithField("addr", addr).WithError(err).Warning("Disconnect")
@@ -336,13 +288,12 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 	}
 
 	// Record their listener, to avoid double connections
-	err := d.RecordConnectionMirror(addr, intro.Mirror)
-	if err != nil {
+	if err := d.RecordConnectionMirror(addr, intro.Mirror); err != nil {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
 		logger.WithField("addr", addr).WithError(err).Errorf("Invalid port for connection")
 		d.IncreaseRetryTimes(addr)
-		if err := d.Disconnect(addr, ErrDisconnectIncomprehensibleError); err != nil {
+		if err := d.Disconnect(addr, ErrDisconnectUnexpectedError); err != nil {
 			logger.WithField("addr", addr).WithError(err).Warning("Disconnect")
 		}
 		return
@@ -363,6 +314,55 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 	if err := d.AnnounceAllTxns(); err != nil {
 		logger.WithError(err).Warning("AnnounceAllTxns failed")
 	}
+}
+
+func (intro *IntroductionMessage) verify(d Daemoner) (string, uint16, error) {
+	addr := intro.c.Addr
+
+	ip, port, err := iputil.SplitAddr(addr)
+	if err != nil {
+		// This should never happen, but the program should still work if it does
+		logger.WithField("addr", addr).Error("Invalid addr")
+		return "", 0, ErrDisconnectUnexpectedError
+	}
+
+	// Disconnect if this is a self connection (we have the same mirror value)
+	if intro.Mirror == d.Mirror() {
+		logger.WithField("addr", addr).Infof("Remote mirror value %d matches ours", intro.Mirror)
+		return "", 0, ErrDisconnectSelf
+	}
+
+	// Disconnect if peer version is not within the supported range
+	dc := d.DaemonConfig()
+	if intro.Version < dc.MinProtocolVersion {
+		logger.WithField("addr", addr).Infof("protocol version %d below minimum supported protocol version %d. Disconnecting.", intro.Version, dc.MinProtocolVersion)
+		return "", 0, ErrDisconnectVersionNotSupported
+	}
+
+	// v25 Checks the blockchain pubkey, would accept message with no Pubkey
+	// v26 would check the blockchain pubkey and reject if not matched or not provided
+	if len(intro.Extra) > 0 {
+		var bcPubKey cipher.PubKey
+		if len(intro.Extra) < len(bcPubKey) {
+			logger.WithField("addr", addr).Infof("Extra data length does not meet the minimum requirement")
+			return "", 0, ErrDisconnectInvalidExtraData
+		}
+		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
+
+		if d.BlockchainPubkey() != bcPubKey {
+			logger.WithField("addr", addr).Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())
+			return "", 0, ErrDisconnectBlockchainPubkeyNotMatched
+		}
+	}
+
+	// Disconnect if connected twice to the same peer (judging by ip:mirror)
+	knownPort, exists := d.GetMirrorPort(addr, intro.Mirror)
+	if exists {
+		logger.WithField("addr", addr).Infof("Already connected on port %d", knownPort)
+		return "", 0, ErrDisconnectConnectedTwice
+	}
+
+	return ip, port, nil
 }
 
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.
@@ -409,7 +409,7 @@ type DisconnectMessage struct {
 	ReasonCode uint16
 
 	// Reserved for future use
-	Reserved []byte `enc:",omitempty"`
+	Reserved []byte
 }
 
 // NewDisconnectMessage creates message sent to reject previously received message

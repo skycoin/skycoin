@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -61,10 +62,9 @@ func TestIntroductionMessage(t *testing.T) {
 				},
 			},
 			intro: &IntroductionMessage{
-				Mirror:          10001,
-				Port:            6000,
-				Version:         1,
-				validationError: nil,
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
 			},
 			err: nil,
 		},
@@ -80,11 +80,10 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey: pubkey,
 			},
 			intro: &IntroductionMessage{
-				Mirror:          10001,
-				Port:            6000,
-				Version:         1,
-				validationError: nil,
-				Extra:           pubkey[:],
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				Extra:   pubkey[:],
 			},
 			err: nil,
 		},
@@ -100,11 +99,10 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey: pubkey,
 			},
 			intro: &IntroductionMessage{
-				Mirror:          10001,
-				Port:            6000,
-				Version:         1,
-				validationError: nil,
-				Extra:           pubkey[:],
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				Extra:   pubkey[:],
 			},
 			err: nil,
 		},
@@ -120,11 +118,10 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey: pubkey,
 			},
 			intro: &IntroductionMessage{
-				Mirror:          10001,
-				Port:            6000,
-				Version:         1,
-				validationError: nil,
-				Extra:           append(pubkey[:], []byte("additional data")...),
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				Extra:   append(pubkey[:], []byte("additional data")...),
 			},
 			err: nil,
 		},
@@ -141,11 +138,10 @@ func TestIntroductionMessage(t *testing.T) {
 				disconnectReason: ErrDisconnectBlockchainPubkeyNotMatched,
 			},
 			intro: &IntroductionMessage{
-				Mirror:          10001,
-				Port:            6000,
-				Version:         1,
-				validationError: nil,
-				Extra:           pubkey2[:],
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				Extra:   pubkey2[:],
 			},
 			err: ErrDisconnectBlockchainPubkeyNotMatched,
 		},
@@ -162,16 +158,16 @@ func TestIntroductionMessage(t *testing.T) {
 				disconnectReason: ErrDisconnectInvalidExtraData,
 			},
 			intro: &IntroductionMessage{
-				Mirror:          10001,
-				Port:            6000,
-				Version:         1,
-				validationError: nil,
-				Extra:           []byte("invalid extra data"),
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				Extra:   []byte("invalid extra data"),
 			},
 			err: ErrDisconnectInvalidExtraData,
 		},
 		{
 			name: "Disconnect self connection",
+			addr: "12.12.12.12:6000",
 			mockValue: daemonMockValue{
 				mirror:           10000,
 				disconnectReason: ErrDisconnectSelf,
@@ -183,6 +179,7 @@ func TestIntroductionMessage(t *testing.T) {
 		},
 		{
 			name: "Version below minimum supported version",
+			addr: "12.12.12.12:6000",
 			mockValue: daemonMockValue{
 				mirror:             10000,
 				protocolVersion:    1,
@@ -201,7 +198,7 @@ func TestIntroductionMessage(t *testing.T) {
 			mockValue: daemonMockValue{
 				mirror:           10000,
 				protocolVersion:  1,
-				disconnectReason: ErrDisconnectIncomprehensibleError,
+				disconnectReason: ErrDisconnectUnexpectedError,
 				pubkey:           pubkey,
 			},
 			intro: &IntroductionMessage{
@@ -209,7 +206,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Version: 1,
 				Port:    6000,
 			},
-			err: ErrDisconnectIncomprehensibleError,
+			err: ErrDisconnectUnexpectedError,
 		},
 		{
 			name: "incomming connection",
@@ -227,10 +224,9 @@ func TestIntroductionMessage(t *testing.T) {
 				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
-				Mirror:          10001,
-				Version:         1,
-				Port:            6000,
-				validationError: nil,
+				Mirror:  10001,
+				Version: 1,
+				Port:    6000,
 			},
 		},
 		{
@@ -281,7 +277,13 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
 
 			err := tc.intro.Handle(mc, d)
+			require.NoError(t, err)
+
+			ip, port, err := tc.intro.verify(d)
 			require.Equal(t, tc.err, err)
+			if err == nil {
+				require.Equal(t, tc.addr, fmt.Sprintf("%s:%d", ip, port))
+			}
 		})
 	}
 }

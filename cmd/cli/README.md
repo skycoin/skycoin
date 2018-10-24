@@ -1631,6 +1631,8 @@ $ skycoin-cli status
             "branch": "develop"
         },
         "open_connections": 8,
+        "outgoing_connections": 5,
+        "incoming_connections": 3,
         "uptime": "4h1m23.697072461s",
         "csrf_enabled": true,
         "csp_enabled": true,

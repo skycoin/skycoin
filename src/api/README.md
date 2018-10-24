@@ -224,6 +224,8 @@ Response:
         "branch": "develop"
     },
     "open_connections": 8,
+    "outgoing_connections": 5,
+    "incoming_connections": 3,
     "uptime": "6m30.629057248s",
     "csrf_enabled": true,
     "csp_enabled": true,

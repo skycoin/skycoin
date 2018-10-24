@@ -83,6 +83,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Send new `DISC` disconnect packet to peer before disconnecting
 - `/api/v1/network/connections` now returns both outgoing and incoming connections by default. Previously it returned only outgoing connections. A `type` parameter is added to filter by outgoing or incoming connections.
 - `/api/v1/explorer/address` is deprecated in favor of `/api/v1/transactions?verbose=1`
+- `/api/v1/health` `"open_connections"` value now includes incoming connections. Added `"outgoing_connections"` and `"incoming_connections"` fields to separate the two.
 
 ### Removed
 

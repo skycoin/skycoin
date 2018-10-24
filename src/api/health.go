@@ -20,6 +20,8 @@ type HealthResponse struct {
 	BlockchainMetadata    BlockchainMetadata `json:"blockchain"`
 	Version               readable.BuildInfo `json:"version"`
 	OpenConnections       int                `json:"open_connections"`
+	OutgoingConnections   int                `json:"outgoing_connections"`
+	IncomingConnections   int                `json:"incoming_connections"`
 	Uptime                wh.Duration        `json:"uptime"`
 	CSRFEnabled           bool               `json:"csrf_enabled"`
 	CSPEnabled            bool               `json:"csp_enabled"`
@@ -57,7 +59,9 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
 			Version:               c.buildInfo,
-			OpenConnections:       health.OpenConnections,
+			OpenConnections:       health.OutgoingConnections + health.IncomingConnections,
+			OutgoingConnections:   health.OutgoingConnections,
+			IncomingConnections:   health.IncomingConnections,
 			Uptime:                wh.FromDuration(health.Uptime),
 			CSRFEnabled:           csrfStore.Enabled,
 			CSPEnabled:            !c.disableCSP,

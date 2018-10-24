@@ -49,7 +49,7 @@
 #define SKY_ErrInvalidBytesLength                   0x02000015
 #define SKY_ErrInvalidPubKey                        0x02000016
 #define SKY_ErrInvalidSecKey                        0x02000017
-#define SKY_ErrInvalidSigForPubKey                  0x02000018
+#define SKY_ErrInvalidSigPubKeyRecovery                  0x02000018
 #define SKY_ErrInvalidSecKeyHex                     0x02000019
 #define SKY_ErrInvalidAddressForSig                 0x0200001A
 #define SKY_ErrInvalidHashForSig                    0x0200001B

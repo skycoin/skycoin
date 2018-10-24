@@ -7,7 +7,6 @@ import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatSnackBar } from '@angular/material';
 import { showSnackbarError } from '../../../../utils/errors';
-import { TranslateService } from '@ngx-translate/core';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 
 @Component({
@@ -15,24 +14,16 @@ import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-add
   templateUrl: './wallet-detail.component.html',
   styleUrls: ['./wallet-detail.component.scss'],
 })
-export class WalletDetailComponent implements OnInit, OnDestroy {
+export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
-  private encryptionWarning: string;
   private HowManyAddresses: number;
 
   constructor(
     private dialog: MatDialog,
     private walletService: WalletService,
-    private snackbar: MatSnackBar,
-    private translateService: TranslateService,
+    private snackbar: MatSnackBar
   ) { }
-
-  ngOnInit() {
-    this.translateService.get('wallet.new.encrypt-warning').subscribe(msg => {
-      this.encryptionWarning = msg;
-    });
-  }
 
   ngOnDestroy() {
     this.snackbar.dismiss();
@@ -71,8 +62,10 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
     };
 
     if (!this.wallet.encrypted) {
-      config.data['description'] = this.encryptionWarning;
+      config.data['description'] = 'wallet.new.encrypt-warning';
     } else {
+      config.data['description'] = 'wallet.decrypt-warning';
+      config.data['warning'] = true;
       config.data['wallet'] = this.wallet;
     }
 

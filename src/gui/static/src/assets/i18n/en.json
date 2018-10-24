@@ -96,6 +96,7 @@
     "hide-empty": "Hide Empty",
     "encrypt": "Encrypt Wallet",
     "decrypt": "Decrypt Wallet",
+    "decrypt-warning": "Warning: for security reasons, it is not recommended to keep the wallets unencrypted. Caution is advised.",
     "edit": "Edit Wallet",
     "add": "Add Wallet",
     "load": "Load Wallet",

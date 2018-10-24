@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
@@ -1325,6 +1327,10 @@ func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
 // This allows all pending messages to be sent. Any message queued after a DisconnectMessage is unlikely to be sent
 // the peer (but possible).
 func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
+	logger.WithFields(logrus.Fields{
+		"addr":   addr,
+		"reason": r,
+	}).Debug("Sending DisconnectMessage")
 	return dm.SendMessage(addr, NewDisconnectMessage(r))
 }
 

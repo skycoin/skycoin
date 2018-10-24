@@ -116,9 +116,10 @@ func TestHealthHandler(t *testing.T) {
 			tc.cfg.buildInfo = buildInfo
 
 			health := &daemon.Health{
-				BlockchainMetadata: metadata,
-				OpenConnections:    3,
-				Uptime:             time.Second * 4,
+				BlockchainMetadata:  metadata,
+				OutgoingConnections: 3,
+				IncomingConnections: 2,
+				Uptime:              time.Second * 4,
 			}
 
 			gateway := &MockGatewayer{}
@@ -157,7 +158,9 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, buildInfo.Branch, r.Version.Branch)
 			require.Equal(t, health.Uptime, r.Uptime.Duration)
 
-			require.Equal(t, health.OpenConnections, r.OpenConnections)
+			require.Equal(t, health.OutgoingConnections, r.OutgoingConnections)
+			require.Equal(t, health.IncomingConnections, r.IncomingConnections)
+			require.Equal(t, health.OutgoingConnections+health.IncomingConnections, r.OpenConnections)
 
 			require.Equal(t, unconfirmed, r.BlockchainMetadata.Unconfirmed)
 			require.Equal(t, unspents, r.BlockchainMetadata.Unspents)

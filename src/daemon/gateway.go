@@ -902,7 +902,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 		outgoingConns := 0
 		incomingConns := 0
 		for _, c := range conns {
-			if c.Solicited {
+			if c.Outgoing {
 				outgoingConns++
 			} else {
 				incomingConns++

@@ -22,7 +22,7 @@ export class WalletDetailComponent implements OnDestroy {
   constructor(
     private dialog: MatDialog,
     private walletService: WalletService,
-    private snackbar: MatSnackBar
+    private snackbar: MatSnackBar,
   ) { }
 
   ngOnDestroy() {

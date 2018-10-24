@@ -214,8 +214,6 @@ const (
 	SKY_ErrDisconnectMalformedMessage
 	// SKY_ErrDisconnectUnknownMessage unknow message
 	SKY_ErrDisconnectUnknownMessage
-	// SKY_ErrDisconnectUnexpectedError  unexpected error
-	SKY_ErrDisconnectUnexpectedError
 	// SKY_ErrConnectionPoolClosed error message indicates the connection pool is closed
 	SKY_ErrConnectionPoolClosed
 	// SKY_ErrWriteQueueFull write queue is full
@@ -466,7 +464,6 @@ var (
 		gnet.ErrDisconnectInvalidMessageLength:  SKY_ErrDisconnectInvalidMessageLength,
 		gnet.ErrDisconnectMalformedMessage:      SKY_ErrDisconnectMalformedMessage,
 		gnet.ErrDisconnectUnknownMessage:        SKY_ErrDisconnectUnknownMessage,
-		gnet.ErrDisconnectUnexpectedError:       SKY_ErrDisconnectUnexpectedError,
 		gnet.ErrConnectionPoolClosed:            SKY_ErrConnectionPoolClosed,
 		gnet.ErrWriteQueueFull:                  SKY_ErrWriteQueueFull,
 		gnet.ErrNoReachableConnections:          SKY_ErrNoReachableConnections,

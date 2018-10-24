@@ -47,8 +47,6 @@ var (
 	ErrDisconnectMalformedMessage DisconnectReason = errors.New("Malformed message body")
 	// ErrDisconnectUnknownMessage unknow message
 	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
-	// ErrDisconnectUnexpectedError  unexpected error
-	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
 	// ErrConnectionPoolClosed error message indicates the connection pool is closed
 	ErrConnectionPoolClosed = errors.New("Connection pool is closed")
 	// ErrWriteQueueFull write queue is full

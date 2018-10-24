@@ -114,6 +114,20 @@ func (_m *MockDaemoner) Disconnect(addr string, r gnet.DisconnectReason) error {
 	return r0
 }
 
+// DisconnectNow provides a mock function with given fields: addr, r
+func (_m *MockDaemoner) DisconnectNow(addr string, r gnet.DisconnectReason) error {
+	ret := _m.Called(addr, r)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, gnet.DisconnectReason) error); ok {
+		r0 = rf(addr, r)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ExecuteSignedBlock provides a mock function with given fields: b
 func (_m *MockDaemoner) ExecuteSignedBlock(b coin.SignedBlock) error {
 	ret := _m.Called(b)

@@ -254,126 +254,109 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 // Process(), where we do modifications that are not threadsafe
 func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	intro.c = mc
-	return d.RecordMessageEvent(intro, mc)
+	return daemon.(Daemoner).RecordMessageEvent(intro, mc)
 }
 
 // Process an event queued by Handle()
 func (intro *IntroductionMessage) Process(d Daemoner) {
-	d := daemon.(Daemoner)
+	addr := intro.c.Addr
 
-	d.RemoveFromExpectingIntroductions(intro.c.Addr)
+	d.RemoveFromExpectingIntroductions(addr)
 
+	var ip string
 	var port uint16
 
-	err := func() error {
+	if err := func() error {
+		var err error
+		ip, port, err = iputil.SplitAddr(addr)
+		if err != nil {
+			// This should never happen, but the program should still work if it does
+			logger.WithField("addr", addr).Error("Invalid addr")
+			return ErrDisconnectIncomprehensibleError
+		}
+
 		// Disconnect if this is a self connection (we have the same mirror value)
 		if intro.Mirror == d.Mirror() {
-			logger.Infof("Remote mirror value %v matches ours", intro.Mirror)
+			logger.WithField("addr", addr).Infof("Remote mirror value %d matches ours", intro.Mirror)
 			return ErrDisconnectSelf
 		}
 
 		// Disconnect if peer version is not within the supported range
 		dc := d.DaemonConfig()
 		if intro.Version < dc.MinProtocolVersion {
-			logger.Infof("%s protocol version %d below minimum supported protocol version %d. Disconnecting.", mc.Addr, intro.Version, dc.MinProtocolVersion)
+			logger.WithField("addr", addr).Infof("protocol version %d below minimum supported protocol version %d. Disconnecting.", intro.Version, dc.MinProtocolVersion)
 			return ErrDisconnectVersionNotSupported
 		}
-
-		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)
 
 		// v25 Checks the blockchain pubkey, would accept message with no Pubkey
 		// v26 would check the blockchain pubkey and reject if not matched or not provided
 		if len(intro.Extra) > 0 {
 			var bcPubKey cipher.PubKey
 			if len(intro.Extra) < len(bcPubKey) {
-				logger.Infof("Extra data length does not meet the minimum requirement")
-				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
-					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-				}
+				logger.WithField("addr", addr).Infof("Extra data length does not meet the minimum requirement")
 				return ErrDisconnectInvalidExtraData
 			}
 			copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
 			if d.BlockchainPubkey() != bcPubKey {
-				logger.Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())
-				if err := d.Disconnect(mc.Addr, ErrDisconnectBlockchainPubkeyNotMatched); err != nil {
-					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-				}
+				logger.WithField("addr", addr).Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())
 				return ErrDisconnectBlockchainPubkeyNotMatched
 			}
 		}
 
-		// only solicited connection can be added to exchange peer list, because accepted
-		// connection may not have an incoming port
-		var ip string
-		var err error
-		ip, port, err = iputil.SplitAddr(mc.Addr)
-		if err != nil {
-			// This should never happen, but the program should still work if it does
-			logger.Errorf("Invalid Addr() for connection: %s", mc.Addr)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectIncomprehensibleError); err != nil {
-				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-			}
-			return ErrDisconnectIncomprehensibleError
-		}
-
 		// Disconnect if connected twice to the same peer (judging by ip:mirror)
-		knownPort, exists := d.GetMirrorPort(mc.Addr, intro.Mirror)
+		knownPort, exists := d.GetMirrorPort(addr, intro.Mirror)
 		if exists {
-			logger.Infof("%s is already connected on port %d", mc.Addr, knownPort)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectConnectedTwice); err != nil {
-				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-			}
+			logger.WithField("addr", addr).Infof("Already connected on port %d", knownPort)
 			return ErrDisconnectConnectedTwice
 		}
+
 		return nil
-	}()
-
-	if err != nil {
-		d.IncreaseRetryTimes(mc.Addr)
-
-		if err := d.Disconnect(intro.c.Addr, err); err != nil {
-			logger.WithError(err).WithField("addr", intro.c.Addr).Warning("Disconnect")
+	}(); err != nil {
+		d.IncreaseRetryTimes(addr)
+		if err := d.Disconnect(addr, err); err != nil {
+			logger.WithField("addr", addr).WithError(err).Warning("Disconnect")
 		}
+		return
 	}
 
+	// Add the remote peer with their chosen listening port
 	// Checks if the introduction message is from outgoing connection.
 	// It's outgoing connection if port == intro.Port, as the incoming
 	// connection's port is a random port, it's different from the port
 	// in introduction message.
 	if port == intro.Port {
-		if err := d.SetHasIncomingPort(mc.Addr); err != nil {
-			logger.Errorf("Failed to set peer has incoming port status, %v", err)
+		if err := d.SetHasIncomingPort(addr); err != nil {
+			logger.WithField("addr", addr).WithError(err).Error("SetHasIncomingPort failed")
 		}
 	} else {
 		if err := d.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port)); err != nil {
-			logger.Errorf("Failed to add peer: %v", err)
+			logger.WithField("addr", addr).WithError(err).Errorf("AddPeer failed")
 		}
 	}
 
-	d.ResetRetryTimes(mc.Addr)
-
-	// Add the remote peer with their chosen listening port
-	a := intro.c.Addr
-
 	// Record their listener, to avoid double connections
-	err := d.RecordConnectionMirror(a, intro.Mirror)
+	err := d.RecordConnectionMirror(addr, intro.Mirror)
 	if err != nil {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
-		logger.Errorf("Invalid port for connection %s", a)
-		if err := d.Disconnect(intro.c.Addr, ErrDisconnectIncomprehensibleError); err != nil {
-			logger.WithError(err).WithField("addr", intro.c.Addr).Warning("Disconnect")
+		logger.WithField("addr", addr).WithError(err).Errorf("Invalid port for connection")
+		d.IncreaseRetryTimes(addr)
+		if err := d.Disconnect(addr, ErrDisconnectIncomprehensibleError); err != nil {
+			logger.WithField("addr", addr).WithError(err).Warning("Disconnect")
 		}
 		return
 	}
 
+	logger.WithField("addr", addr).Infof("Peer verified for protocol version %d", intro.Version)
+
+	d.ResetRetryTimes(addr)
+
 	// Request blocks immediately after they're confirmed
-	err = d.RequestBlocksFromAddr(intro.c.Addr)
-	if err == nil {
-		logger.Debugf("Successfully requested blocks from %s", intro.c.Addr)
+	if err := d.RequestBlocksFromAddr(addr); err != nil {
+		logger.WithField("addr", addr).WithError(err).Warning("RequestBlocksFromAddr failed")
 	} else {
-		logger.Warning(err)
+		logger.WithField("addr", addr).Debug("Successfully requested blocks from peer")
 	}
 
 	// Announce unconfirmed txns
@@ -423,7 +406,7 @@ type DisconnectMessage struct {
 	reason gnet.DisconnectReason `enc:"-"`
 
 	// Error code
-	ReasonCode uint32
+	ReasonCode uint16
 
 	// Reserved for future use
 	Reserved []byte `enc:",omitempty"`
@@ -450,9 +433,8 @@ func (dm *DisconnectMessage) Process(d Daemoner) {
 		"addr":   dm.c.Addr,
 		"code":   dm.ReasonCode,
 		"reason": DisconnectCodeToReason(dm.ReasonCode),
-		"note":   dm.Note,
 	}).Infof("DisconnectMessage received")
-	if err := d.DisconnectNow(dm.c.Addr, gnet.DisconnectReason(errors.New("TODO - a reason"))); err != nil {
+	if err := d.DisconnectNow(dm.c.Addr, ErrDisconnectReceivedDisconnect); err != nil {
 		logger.WithError(err).WithField("addr", dm.c.Addr).Warning("DisconnectNow")
 	}
 }

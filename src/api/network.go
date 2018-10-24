@@ -64,6 +64,7 @@ func NewConnections(dconns []daemon.Connection) Connections {
 // connectionsHandler returns all outgoing connections
 // URI: /api/v1/network/connections
 // Method: GET
+// Args: type [optional] either outgoing or incoming
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -71,13 +72,28 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		dcnxs, err := gateway.GetOutgoingConnections()
+		var conns []daemon.Connection
+		var err error
+
+		typ := r.FormValue("type")
+		switch typ {
+		case "":
+			conns, err = gateway.GetConnections()
+		case "outgoing":
+			conns, err = gateway.GetOutgoingConnections()
+		case "incoming":
+			conns, err = gateway.GetIncomingConnections()
+		default:
+			wh.Error400(w, "invalid type")
+			return
+		}
+
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, NewConnections(dcnxs))
+		wh.SendJSONOr500(logger, w, NewConnections(conns))
 	}
 }
 

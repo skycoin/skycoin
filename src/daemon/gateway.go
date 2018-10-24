@@ -101,17 +101,43 @@ type Connection struct {
 	Height     uint64
 }
 
+// GetConnections returns all connections
+func (gw *Gateway) GetConnections() ([]Connection, error) {
+	var conns []Connection
+	var err error
+	gw.strand("GetConnections", func() {
+		conns, err = gw.getConnections(func(c gnet.Connection) bool {
+			return true
+		})
+	})
+	return conns, err
+}
+
 // GetOutgoingConnections returns solicited (outgoing) connections
 func (gw *Gateway) GetOutgoingConnections() ([]Connection, error) {
 	var conns []Connection
 	var err error
 	gw.strand("GetOutgoingConnections", func() {
-		conns, err = gw.getOutgoingConnections()
+		conns, err = gw.getConnections(func(c gnet.Connection) bool {
+			return c.Solicited
+		})
 	})
 	return conns, err
 }
 
-func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
+// GetIncomingConnections returns unsolicited (incoming) connections
+func (gw *Gateway) GetIncomingConnections() ([]Connection, error) {
+	var conns []Connection
+	var err error
+	gw.strand("GetIncomingConnections", func() {
+		conns, err = gw.getConnections(func(c gnet.Connection) bool {
+			return !c.Solicited
+		})
+	})
+	return conns, err
+}
+
+func (gw *Gateway) getConnections(flt func(c gnet.Connection) bool) ([]Connection, error) {
 	if gw.d.pool.Pool == nil {
 		return nil, nil
 	}
@@ -125,7 +151,7 @@ func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 	conns := make([]Connection, 0, len(cs))
 
 	for _, c := range cs {
-		if c.Solicited {
+		if flt(c) {
 			conn := gw.newConnection(&c)
 			if conn != nil {
 				conns = append(conns, *conn)
@@ -865,7 +891,9 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			return
 		}
 
-		conns, err := gw.getOutgoingConnections()
+		conns, err := gw.getConnections(func(c gnet.Connection) bool {
+			return true
+		})
 		if err != nil {
 			return
 		}

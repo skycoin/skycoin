@@ -80,6 +80,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `cli generateAddresses` renamed to `cli walletAddAddresses`
 - `run.sh` is now `run-client.sh` and a new `run-daemon.sh` script is added for running in server daemon mode.
 - Send new `DISC` disconnect packet to peer before disconnecting
+- `/api/v1/network/connections` now returns both outgoing and incoming connections by default. Previously it returned only outgoing connections. A `type` parameter is added to filter by outgoing or incoming connections.
 
 ### Removed
 

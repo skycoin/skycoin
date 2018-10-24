@@ -72,14 +72,6 @@ var (
 
 func init() {
 	disconnectCodeReasons = make(map[uint16]gnet.DisconnectReason, len(disconnectReasonCodes))
-
-	for r, c := range disconnectReasonCodes {
-		if c == 0 {
-			panic("disconnect code 0 is reserved")
-		}
-
-		disconnectCodeReasons[c] = r
-	}
 }
 
 // DisconnectReasonToCode maps a gnet.DisconnectReason to a 16-byte code

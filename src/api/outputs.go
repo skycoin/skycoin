@@ -12,7 +12,7 @@ import (
 
 // outputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
 // URI: /api/v1/outputs
-// Method: GET
+// Method: GET, POST
 // Args:
 //    addrs: comma-separated list of addresses
 //    hashes: comma-separated list of uxout hashes

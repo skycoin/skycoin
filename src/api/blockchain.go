@@ -197,7 +197,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 // or an explicit list of sequences.
 // If using start and end, the block sequences include both the start and end point.
 // Explicit sequences cannot be combined with start and end.
-// Method: GET
+// Method: GET, POST
 // URI: /api/v1/blocks
 // Args:
 //	start [int]

@@ -247,7 +247,7 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 }
 
 // Returns transactions that match the filters.
-// Method: GET
+// Method: GET, POST
 // URI: /api/v1/transactions
 // Args:
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]

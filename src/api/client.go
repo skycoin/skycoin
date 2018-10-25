@@ -338,7 +338,7 @@ func (c *Client) Outputs() (*readable.UnspentOutputsSummary, error) {
 	return &o, nil
 }
 
-// OutputsForAddresses makes a request to GET /api/v1/outputs?addrs=xxx
+// OutputsForAddresses makes a request to POST /api/v1/outputs?addrs=xxx
 func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
@@ -352,7 +352,7 @@ func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSu
 	return &o, nil
 }
 
-// OutputsForHashes makes a request to GET /api/v1/outputs?hashes=zzz
+// OutputsForHashes makes a request to POST /api/v1/outputs?hashes=zzz
 func (c *Client) OutputsForHashes(hashes []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
@@ -428,7 +428,7 @@ func (c *Client) BlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error) {
 	return &b, nil
 }
 
-// Blocks makes a request to GET /api/v1/blocks?seqs=
+// Blocks makes a request to POST /api/v1/blocks?seqs=
 func (c *Client) Blocks(seqs []uint64) (*readable.Blocks, error) {
 	sSeqs := make([]string, len(seqs))
 	for i, x := range seqs {
@@ -446,7 +446,7 @@ func (c *Client) Blocks(seqs []uint64) (*readable.Blocks, error) {
 	return &b, nil
 }
 
-// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1&start=&end=
+// BlocksVerbose makes a request to POST /api/v1/blocks?verbose=1&seqs=
 func (c *Client) BlocksVerbose(seqs []uint64) (*readable.BlocksVerbose, error) {
 	sSeqs := make([]string, len(seqs))
 	for i, x := range seqs {
@@ -539,7 +539,7 @@ func (c *Client) BlockchainProgress() (*readable.BlockchainProgress, error) {
 	return &b, nil
 }
 
-// Balance makes a request to GET /api/v1/balance?addrs=xxx
+// Balance makes a request to POST /api/v1/balance?addrs=xxx
 func (c *Client) Balance(addrs []string) (*BalanceResponse, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
@@ -920,7 +920,7 @@ func (c *Client) TransactionEncoded(txid string) (*TransactionEncodedResponse, e
 	return &r, nil
 }
 
-// Transactions makes a request to GET /api/v1/transactions
+// Transactions makes a request to POST /api/v1/transactions
 func (c *Client) Transactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
@@ -933,7 +933,7 @@ func (c *Client) Transactions(addrs []string) ([]readable.TransactionWithStatus,
 	return r, nil
 }
 
-// ConfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=true
+// ConfirmedTransactions makes a request to POST /api/v1/transactions?confirmed=true
 func (c *Client) ConfirmedTransactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
@@ -947,7 +947,7 @@ func (c *Client) ConfirmedTransactions(addrs []string) ([]readable.TransactionWi
 	return r, nil
 }
 
-// UnconfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=false
+// UnconfirmedTransactions makes a request to POST /api/v1/transactions?confirmed=false
 func (c *Client) UnconfirmedTransactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
@@ -961,7 +961,7 @@ func (c *Client) UnconfirmedTransactions(addrs []string) ([]readable.Transaction
 	return r, nil
 }
 
-// TransactionsVerbose makes a request to GET /api/v1/transactions?verbose=1
+// TransactionsVerbose makes a request to POST /api/v1/transactions?verbose=1
 func (c *Client) TransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
@@ -975,7 +975,7 @@ func (c *Client) TransactionsVerbose(addrs []string) ([]readable.TransactionWith
 	return r, nil
 }
 
-// ConfirmedTransactionsVerbose makes a request to GET /api/v1/transactions?confirmed=true&verbose=1
+// ConfirmedTransactionsVerbose makes a request to POST /api/v1/transactions?confirmed=true&verbose=1
 func (c *Client) ConfirmedTransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
@@ -990,7 +990,7 @@ func (c *Client) ConfirmedTransactionsVerbose(addrs []string) ([]readable.Transa
 	return r, nil
 }
 
-// UnconfirmedTransactionsVerbose makes a request to GET /api/v1/transactions?confirmed=false&verbose=1
+// UnconfirmedTransactionsVerbose makes a request to POST /api/v1/transactions?confirmed=false&verbose=1
 func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))

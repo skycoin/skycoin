@@ -17,13 +17,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	cli, err := cli.NewCLI(cfg)
+	skyCLI, err := cli.NewCLI(cfg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	if err := cli.Execute(); err != nil {
+	if err := skyCLI.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

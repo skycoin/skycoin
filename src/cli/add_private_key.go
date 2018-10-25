@@ -52,7 +52,6 @@ func addPrivateKeyCmd() *gcli.Command {
 			default:
 				return err
 			}
-			return nil
 		},
 	}
 

@@ -31,6 +31,14 @@ func (s *ExpectIntroductions) Add(addr string, tm time.Time) {
 	s.value[addr] = tm
 }
 
+// Get returns the time of specific address
+func (s *ExpectIntroductions) Get(addr string) (time.Time, bool) {
+	s.Lock()
+	defer s.Unlock()
+	t, ok := s.value[addr]
+	return t, ok
+}
+
 // Remove removes connection
 func (s *ExpectIntroductions) Remove(addr string) {
 	s.Lock()
@@ -60,14 +68,6 @@ func (s *ExpectIntroductions) CullInvalidConns(f CullMatchFunc) ([]string, error
 	}
 
 	return addrs, nil
-}
-
-// Get returns the time of speicific address
-func (s *ExpectIntroductions) Get(addr string) (time.Time, bool) {
-	s.Lock()
-	defer s.Unlock()
-	t, ok := s.value[addr]
-	return t, ok
 }
 
 // ConnectionMirrors records mirror for connection
@@ -105,35 +105,35 @@ func (s *ConnectionMirrors) Remove(addr string) {
 	delete(s.value, addr)
 }
 
-// OutgoingConnections records the outgoing connections
-type OutgoingConnections struct {
+// StringSet existence set for string values
+type StringSet struct {
 	value map[string]struct{}
 	sync.Mutex
 }
 
-// NewOutgoingConnections create OutgoingConnection instance
-func NewOutgoingConnections(max int) *OutgoingConnections {
-	return &OutgoingConnections{
-		value: make(map[string]struct{}, max),
+// NewStringSet create StringSet
+func NewStringSet(size int) *StringSet {
+	return &StringSet{
+		value: make(map[string]struct{}, size),
 	}
 }
 
 // Add records connection
-func (s *OutgoingConnections) Add(addr string) {
+func (s *StringSet) Add(addr string) {
 	s.Lock()
 	defer s.Unlock()
 	s.value[addr] = struct{}{}
 }
 
 // Remove remove connection
-func (s *OutgoingConnections) Remove(addr string) {
+func (s *StringSet) Remove(addr string) {
 	s.Lock()
 	defer s.Unlock()
 	delete(s.value, addr)
 }
 
 // Get returns if connection is outgoing
-func (s *OutgoingConnections) Get(addr string) bool {
+func (s *StringSet) Get(addr string) bool {
 	s.Lock()
 	defer s.Unlock()
 	_, ok := s.value[addr]
@@ -141,7 +141,7 @@ func (s *OutgoingConnections) Get(addr string) bool {
 }
 
 // Len returns the outgoing connections count
-func (s *OutgoingConnections) Len() int {
+func (s *StringSet) Len() int {
 	s.Lock()
 	defer s.Unlock()
 	return len(s.value)
@@ -154,9 +154,9 @@ type PendingConnections struct {
 }
 
 // NewPendingConnections creates new PendingConnections instance
-func NewPendingConnections(maxConn int) *PendingConnections {
+func NewPendingConnections(size int) *PendingConnections {
 	return &PendingConnections{
-		value: make(map[string]pex.Peer, maxConn),
+		value: make(map[string]pex.Peer, size),
 	}
 }
 

@@ -96,8 +96,8 @@ func TestConnectionMirrors(t *testing.T) {
 	require.False(t, ok)
 }
 
-func TestOutgoingConnections(t *testing.T) {
-	oc := NewOutgoingConnections(3)
+func TestStringSet(t *testing.T) {
+	oc := NewStringSet(3)
 
 	n := oc.Len()
 	require.Equal(t, 0, n)

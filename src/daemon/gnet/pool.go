@@ -37,7 +37,7 @@ const (
 var (
 	// ErrDisconnectReadFailed also includes a remote closed socket
 	ErrDisconnectReadFailed DisconnectReason = errors.New("Read failed")
-	// ErrDisconnectWriteFailed write faile
+	// ErrDisconnectWriteFailed write failed
 	ErrDisconnectWriteFailed DisconnectReason = errors.New("Write failed")
 	// ErrDisconnectSetReadDeadlineFailed set read deadline failed
 	ErrDisconnectSetReadDeadlineFailed DisconnectReason = errors.New("SetReadDeadline failed")
@@ -45,8 +45,10 @@ var (
 	ErrDisconnectInvalidMessageLength DisconnectReason = errors.New("Invalid message length")
 	// ErrDisconnectMalformedMessage malformed message
 	ErrDisconnectMalformedMessage DisconnectReason = errors.New("Malformed message body")
-	// ErrDisconnectUnknownMessage unknow message
+	// ErrDisconnectUnknownMessage unknown message
 	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
+	// ErrDisconnectShutdown shutting down the client
+	ErrDisconnectShutdown DisconnectReason = errors.New("Shutdown")
 	// ErrConnectionPoolClosed error message indicates the connection pool is closed
 	ErrConnectionPoolClosed = errors.New("Connection pool is closed")
 	// ErrWriteQueueFull write queue is full
@@ -54,8 +56,8 @@ var (
 	// ErrNoReachableConnections when broadcasting a message, no connections were available to send a message to
 	ErrNoReachableConnections = errors.New("All pool connections are unreachable at this time")
 	// ErrPoolEmpty when broadcasting a message, the connection pool was empty
-	ErrPoolEmpty = errors.New("Connection pool is empty")
-	// Logger
+	ErrPoolEmpty = errors.New("Connection pool is empty after filtering connections")
+
 	logger = logging.MustGetLogger("gnet")
 )
 
@@ -789,7 +791,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 			"reason": r,
 		}).Info("Disconnecting")
 
-		exist := pool.disconnect(addr)
+		exist := pool.disconnect(addr, r)
 
 		// checks if the address is default node address
 		if _, ok := pool.Config.defaultConnections[addr]; ok {
@@ -805,7 +807,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	})
 }
 
-func (pool *ConnectionPool) disconnect(addr string) bool {
+func (pool *ConnectionPool) disconnect(addr string, r DisconnectReason) bool {
 	conn, ok := pool.addresses[addr]
 	if !ok {
 		return false
@@ -817,7 +819,7 @@ func (pool *ConnectionPool) disconnect(addr string) bool {
 	if err := conn.Close(); err != nil {
 		logger.Errorf("conn.Close() error address=%s: %v", addr, err)
 	} else {
-		logger.Debugf("Disconnected from %s", addr)
+		logger.WithField("reason", r).Debugf("Disconnected from %s", addr)
 	}
 
 	return true
@@ -827,7 +829,7 @@ func (pool *ConnectionPool) disconnect(addr string) bool {
 func (pool *ConnectionPool) disconnectAll() {
 	for _, conn := range pool.pool {
 		addr := conn.Addr()
-		pool.disconnect(addr)
+		pool.disconnect(addr, ErrDisconnectShutdown)
 	}
 }
 
@@ -893,29 +895,43 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 	})
 }
 
-// BroadcastMessage sends a Message to all connections in the Pool.
-func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
+// BroadcastMessage sends a Message to all connections in the Pool, optionally filtered by `flt`
+func (pool *ConnectionPool) BroadcastMessage(msg Message, flt func(c *Connection) bool) error {
 	if pool.Config.DebugPrint {
 		logger.Debugf("Broadcast, Msg Type: %s", reflect.TypeOf(msg))
 	}
 
-	fullWriteQueue := []string{}
+	fullWriteQueue := 0
+	sent := 0
+	acceptable := 0
+
 	if err := pool.strand("BroadcastMessage", func() error {
 		if len(pool.pool) == 0 {
 			return ErrPoolEmpty
 		}
 
 		for _, conn := range pool.pool {
+			if flt != nil && !flt(conn) {
+				continue
+			}
+
+			acceptable++
+
 			select {
 			case conn.WriteQueue <- msg:
+				sent++
 			default:
-				logger.Critical().Infof("Write queue full for address %s", conn.Addr())
-				fullWriteQueue = append(fullWriteQueue, conn.Addr())
+				logger.Critical().WithField("addr", conn.Addr()).Info("Write queue full")
+				fullWriteQueue++
 			}
 		}
 
-		if len(fullWriteQueue) == len(pool.pool) {
+		if fullWriteQueue == acceptable {
 			return ErrNoReachableConnections
+		}
+
+		if sent == 0 {
+			return ErrPoolEmpty
 		}
 
 		return nil

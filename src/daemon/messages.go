@@ -261,7 +261,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 func (intro *IntroductionMessage) Process(d Daemoner) {
 	addr := intro.c.Addr
 
-	d.RemoveFromExpectingIntroductions(addr)
+	d.ConnectionIntroduced(addr)
 
 	ip, port, err := intro.verify(d)
 	if err != nil {
@@ -307,7 +307,7 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 	if err := d.RequestBlocksFromAddr(addr); err != nil {
 		logger.WithField("addr", addr).WithError(err).Warning("RequestBlocksFromAddr failed")
 	} else {
-		logger.WithField("addr", addr).Debug("Successfully requested blocks from peer")
+		logger.WithField("addr", addr).Debug("Requested blocks from peer")
 	}
 
 	// Announce unconfirmed txns

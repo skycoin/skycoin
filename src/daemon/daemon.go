@@ -26,6 +26,8 @@ import (
 var (
 	// ErrOutgoingConnectionsDisabled is returned if outgoing connections are disabled
 	ErrOutgoingConnectionsDisabled = errors.New("Outgoing connections are disabled")
+	// ErrNetworkingDisabled is returned if networking is disabled
+	ErrNetworkingDisabled = errors.New("Networking is disabled")
 
 	logger = logging.MustGetLogger("daemon")
 )
@@ -213,7 +215,7 @@ type Daemoner interface {
 	RecordMessageEvent(m AsyncMessage, c *gnet.MessageContext) error
 	RecordConnectionMirror(addr string, mirror uint32) error
 	GetMirrorPort(addr string, mirror uint32) (uint16, bool)
-	RemoveFromExpectingIntroductions(addr string)
+	ConnectionIntroduced(addr string)
 	RequestBlocksFromAddr(addr string) error
 	AnnounceAllTxns() error
 }
@@ -235,13 +237,14 @@ type Daemon struct {
 	// Cache of reported peer blockchain heights
 	Heights *peerBlockchainHeights
 
-	// Separate index of outgoing connections. The pool aggregates all
-	// connections.
-	outgoingConnections *OutgoingConnections
+	// Separate index of outgoing connections. The pool aggregates all connections
+	outgoingConnections *StringSet
 	// Number of connections waiting to be formed or timeout
 	pendingConnections *PendingConnections
-	// Keep track of unsolicited clients who should notify us of their version
+	// Keep track of connections that have not sent an introduction
 	expectingIntroductions *ExpectIntroductions
+	// Keep track of connections that have sent an introduction
+	introducedConnections *StringSet
 	// Keep track of a connection's mirror value, to avoid double
 	// connections (one to their listener, and one to our listener)
 	// Maps from addr to mirror value
@@ -293,20 +296,18 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 		Heights:       newPeerBlockchainHeights(),
 
 		expectingIntroductions: NewExpectIntroductions(),
+		introducedConnections:  NewStringSet(config.Pool.MaxConnections + 8),
 		connectionMirrors:      NewConnectionMirrors(),
 		mirrorConnections:      NewMirrorConnections(),
 		ipCounts:               NewIPCount(),
-		// TODO -- if there are performance problems from blocking chans,
-		// Its because we are connecting to more things than OutgoingMax
-		// if we have private peers
-		onConnectEvent:      make(chan ConnectEvent, config.Pool.MaxConnections*2),
-		onDisconnectEvent:   make(chan DisconnectEvent, config.Pool.MaxConnections*2),
-		connectionErrors:    make(chan ConnectionError, config.Pool.MaxConnections*2),
-		outgoingConnections: NewOutgoingConnections(config.Daemon.OutgoingMax),
-		pendingConnections:  NewPendingConnections(config.Daemon.PendingMax),
-		messageEvents:       make(chan MessageEvent, config.Pool.EventChannelSize),
-		quit:                make(chan struct{}),
-		done:                make(chan struct{}),
+		onConnectEvent:         make(chan ConnectEvent, config.Pool.MaxConnections*2),
+		onDisconnectEvent:      make(chan DisconnectEvent, config.Pool.MaxConnections*2),
+		connectionErrors:       make(chan ConnectionError, config.Pool.MaxConnections*2),
+		outgoingConnections:    NewStringSet(config.Daemon.OutgoingMax),
+		pendingConnections:     NewPendingConnections(config.Daemon.PendingMax),
+		messageEvents:          make(chan MessageEvent, config.Pool.EventChannelSize),
+		quit:                   make(chan struct{}),
+		done:                   make(chan struct{}),
 	}
 
 	d.Gateway = NewGateway(config.Gateway, d)
@@ -502,7 +503,7 @@ loop:
 			}
 
 			m := NewGetPeersMessage()
-			if err := dm.pool.Pool.BroadcastMessage(m); err != nil {
+			if err := dm.BroadcastMessage(m); err != nil {
 				logger.Error(err)
 			}
 
@@ -643,9 +644,9 @@ loop:
 
 		case <-blocksRequestTicker.C:
 			elapser.Register("blocksRequestTicker")
-			if err := dm.RequestBlocks(); err != nil {
-				logger.WithError(err).Warning("RequestBlocks failed")
-			}
+			// if err := dm.RequestBlocks(); err != nil {
+			// 	logger.WithError(err).Warning("RequestBlocks failed")
+			// }
 
 		case <-blocksAnnounceTicker.C:
 			elapser.Register("blocksAnnounceTicker")
@@ -880,8 +881,8 @@ func (dm *Daemon) processMessageEvent(e MessageEvent) {
 	// Introduction message does not update ExpectingIntroductions until its
 	// Process() is called
 	if dm.needsIntro(e.Context.Addr) {
-		_, isIntro := e.Message.(*IntroductionMessage)
-		if !isIntro {
+		if _, isIntro := e.Message.(*IntroductionMessage); !isIntro {
+			logger.WithField("addr", e.Context.Addr).Infof("First message should be IntroductionMessage but is %T", e.Message)
 			if err := dm.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
 				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
 			}
@@ -895,9 +896,9 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	a := e.Addr
 
 	if e.Solicited {
-		logger.Infof("Connected to peer: %s (outgoing)", a)
+		logger.WithField("addr", a).Info("Connected to peer (outgoing)")
 	} else {
-		logger.Infof("Connected to peer: %s (incoming)", a)
+		logger.WithField("addr", a).Info("Connected to peer (incoming)")
 	}
 
 	dm.pendingConnections.Remove(a)
@@ -914,7 +915,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	if dm.ipCountMaxed(a) {
-		logger.Infof("Max connections for %s reached, disconnecting", a)
+		logger.WithField("addr", a).Info("Max connections reached, disconnecting")
 		if err := dm.Disconnect(a, ErrDisconnectIPLimitReached); err != nil {
 			logger.WithError(err).WithField("addr", a).Error("Disconnect")
 		}
@@ -927,12 +928,12 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 		// Disconnect if the max outgoing connections is reached
 		n, err := dm.pool.Pool.OutgoingConnectionsNum()
 		if err != nil {
-			logger.WithError(err).Error("get outgoing connections number failed")
+			logger.WithError(err).Error("Pool.OutgoingConnectionsNum failed")
 			return
 		}
 
 		if n > dm.Config.OutgoingMax {
-			logger.Warningf("max outgoing connections is reached, disconnecting %v", a)
+			logger.WithField("addr", a).Warningf("Max outgoing connections is reached, disconnecting")
 			if err := dm.Disconnect(a, ErrDisconnectMaxOutgoingConnectionsReached); err != nil {
 				logger.WithError(err).WithField("addr", a).Error("Disconnect")
 			}
@@ -943,18 +944,25 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	dm.expectingIntroductions.Add(a, time.Now().UTC())
-	logger.Debugf("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
+	logger.WithFields(logrus.Fields{
+		"addr":   a,
+		"mirror": dm.Messages.Mirror,
+	}).Debug("Sending introduction message")
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey)
-	if err := dm.pool.Pool.SendMessage(a, m); err != nil {
-		logger.Errorf("Send IntroductionMessage to %s failed: %v", a, err)
+	if err := dm.SendMessage(a, m); err != nil {
+		logger.WithError(err).WithField("addr", a).Error("Send IntroductionMessage failed")
 	}
 }
 
 func (dm *Daemon) onDisconnect(e DisconnectEvent) {
-	logger.Infof("%s disconnected because: %v", e.Addr, e.Reason)
+	logger.WithFields(logrus.Fields{
+		"reason": e.Reason,
+		"addr":   e.Addr,
+	}).Info("daemon.onDisconnect")
 
 	dm.outgoingConnections.Remove(e.Addr)
 	dm.expectingIntroductions.Remove(e.Addr)
+	dm.introducedConnections.Remove(e.Addr)
 	dm.Heights.Remove(e.Addr)
 	dm.removeIPCount(e.Addr)
 	dm.removeConnectionMirror(e.Addr)
@@ -1051,7 +1059,7 @@ func (dm *Daemon) removeConnectionMirror(addr string) {
 func (dm *Daemon) GetMirrorPort(addr string, mirror uint32) (uint16, bool) {
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warningf("getMirrorPort called with invalid addr: %v", err)
+		logger.WithError(err).WithField("addr", addr).Warning("getMirrorPort called with invalid addr")
 		return 0, false
 	}
 	return dm.mirrorConnections.Get(mirror, ip)
@@ -1079,8 +1087,8 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 
 // RequestBlocks Sends a GetBlocksMessage to all connections
 func (dm *Daemon) RequestBlocks() error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	headSeq, ok, err := dm.HeadBkSeq()
@@ -1093,7 +1101,7 @@ func (dm *Daemon) RequestBlocks() error {
 
 	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
 
-	err = dm.pool.Pool.BroadcastMessage(m)
+	err = dm.BroadcastMessage(m)
 	if err != nil {
 		logger.Debugf("Broadcast GetBlocksMessage failed: %v", err)
 	}
@@ -1103,8 +1111,8 @@ func (dm *Daemon) RequestBlocks() error {
 
 // AnnounceBlocks sends an AnnounceBlocksMessage to all connections
 func (dm *Daemon) AnnounceBlocks() error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	headSeq, ok, err := dm.HeadBkSeq()
@@ -1117,7 +1125,7 @@ func (dm *Daemon) AnnounceBlocks() error {
 
 	m := NewAnnounceBlocksMessage(headSeq)
 
-	err = dm.pool.Pool.BroadcastMessage(m)
+	err = dm.BroadcastMessage(m)
 	if err != nil {
 		logger.Debugf("Broadcast AnnounceBlocksMessage failed: %v", err)
 	}
@@ -1127,8 +1135,8 @@ func (dm *Daemon) AnnounceBlocks() error {
 
 // AnnounceAllTxns announces local unconfirmed transactions
 func (dm *Daemon) AnnounceAllTxns() error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	// Get local unconfirmed transaction hashes.
@@ -1142,7 +1150,7 @@ func (dm *Daemon) AnnounceAllTxns() error {
 
 	for _, hs := range hashesSet {
 		m := NewAnnounceTxnsMessage(hs)
-		if err = dm.pool.Pool.BroadcastMessage(m); err != nil {
+		if err = dm.BroadcastMessage(m); err != nil {
 			break
 		}
 	}
@@ -1181,8 +1189,8 @@ func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
 
 // AnnounceTxns announces given transaction hashes.
 func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	if len(txns) == 0 {
@@ -1191,7 +1199,7 @@ func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
 
 	m := NewAnnounceTxnsMessage(txns)
 
-	err := dm.pool.Pool.BroadcastMessage(m)
+	err := dm.BroadcastMessage(m)
 	if err != nil {
 		logger.Debugf("Broadcast AnnounceTxnsMessage failed: %v", err)
 	}
@@ -1201,8 +1209,8 @@ func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
 
 // RequestBlocksFromAddr sends a GetBlocksMessage to one connected address
 func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
-	if dm.Config.DisableOutgoingConnections {
-		return errors.New("Outgoing connections disabled")
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	headSeq, ok, err := dm.visor.HeadBkSeq()
@@ -1214,15 +1222,14 @@ func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
 	}
 
 	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
-
-	return dm.pool.Pool.SendMessage(addr, m)
+	return dm.SendMessage(addr, m)
 }
 
 // ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast.
 // It does not return an error if broadcasting fails.
 func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
-	if dm.Config.DisableOutgoingConnections {
-		return nil, nil
+	if dm.Config.DisableNetworking {
+		return nil, ErrNetworkingDisabled
 	}
 
 	txns, err := dm.visor.GetAllUnconfirmedTransactions()
@@ -1243,8 +1250,8 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 // BroadcastTransaction broadcasts a single transaction to all peers.
 func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
-	if dm.Config.DisableOutgoingConnections {
-		return ErrOutgoingConnectionsDisabled
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	l, err := dm.pool.Pool.Size()
@@ -1255,8 +1262,8 @@ func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
 	logger.Debugf("BroadcastTransaction to %d conns", l)
 
 	m := NewGiveTxnsMessage(coin.Transactions{t})
-	if err := dm.pool.Pool.BroadcastMessage(m); err != nil {
-		logger.WithError(err).Error("BroadcastTransaction Pool.BroadcastMessage failed")
+	if err := dm.BroadcastMessage(m); err != nil {
+		logger.WithError(err).Error("BroadcastTransaction: BroadcastMessage failed")
 		return err
 	}
 
@@ -1271,8 +1278,8 @@ func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
 // TODO -- refactor this method -- it should either always create a block and maybe broadcast it,
 // or use a database transaction to rollback block publishing if broadcast failed (however, this will cause a slow DB write)
 func (dm *Daemon) CreateAndPublishBlock() (*coin.SignedBlock, error) {
-	if dm.Config.DisableOutgoingConnections {
-		return nil, errors.New("Outgoing connections disabled")
+	if dm.Config.DisableNetworking {
+		return nil, ErrNetworkingDisabled
 	}
 
 	sb, err := dm.visor.CreateAndExecuteBlock()
@@ -1287,12 +1294,12 @@ func (dm *Daemon) CreateAndPublishBlock() (*coin.SignedBlock, error) {
 
 // Sends a signed block to all connections.
 func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
-	return dm.pool.Pool.BroadcastMessage(m)
+	return dm.BroadcastMessage(m)
 }
 
 // Mirror returns the message mirror
@@ -1310,22 +1317,24 @@ func (dm *Daemon) BlockchainPubkey() cipher.PubKey {
 	return dm.Config.BlockchainPubkey
 }
 
-// RemoveFromExpectingIntroductions removes the peer from expect introduction pool
-func (dm *Daemon) RemoveFromExpectingIntroductions(addr string) {
+// ConnectionIntroduced moves the peer from expecting introduction status to introduced status
+func (dm *Daemon) ConnectionIntroduced(addr string) {
 	dm.expectingIntroductions.Remove(addr)
+	dm.introducedConnections.Add(addr)
 }
 
 // Implements pooler interface
 
-// SendMessage sends a Message to a Connection and pushes the result onto the
-// SendResults channel.
+// SendMessage sends a Message to a Connection and pushes the result onto the SendResults channel.
 func (dm *Daemon) SendMessage(addr string, msg gnet.Message) error {
 	return dm.pool.Pool.SendMessage(addr, msg)
 }
 
-// BroadcastMessage sends a Message to all connections in the Pool.
+// BroadcastMessage sends a Message to all introduced connections in the pool
 func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
-	return dm.pool.Pool.BroadcastMessage(msg)
+	return dm.pool.Pool.BroadcastMessage(msg, func(c *gnet.Connection) bool {
+		return dm.introducedConnections.Get(c.Addr())
+	})
 }
 
 // Disconnect sends a DisconnectMessage to a peer. After the DisconnectMessage is sent, the peer is disconnected.

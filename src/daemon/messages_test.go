@@ -272,7 +272,7 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("IncreaseRetryTimes", tc.addr)
-			d.On("RemoveFromExpectingIntroductions", tc.addr)
+			d.On("ConnectionIntroduced", tc.addr)
 			d.On("IsMaxDefaultConnectionsReached").Return(tc.mockValue.isMaxConnectionsReached, tc.mockValue.isMaxConnectionsReachedErr)
 			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
 

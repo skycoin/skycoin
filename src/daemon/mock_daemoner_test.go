@@ -407,8 +407,8 @@ func (_m *MockDaemoner) RecordPeerHeight(addr string, height uint64) {
 	_m.Called(addr, height)
 }
 
-// RemoveFromExpectingIntroductions provides a mock function with given fields: addr
-func (_m *MockDaemoner) RemoveFromExpectingIntroductions(addr string) {
+// ConnectionIntroduced provides a mock function with given fields: addr
+func (_m *MockDaemoner) ConnectionIntroduced(addr string) {
 	_m.Called(addr)
 }
 

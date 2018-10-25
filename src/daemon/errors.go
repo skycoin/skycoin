@@ -64,6 +64,7 @@ var (
 		gnet.ErrDisconnectInvalidMessageLength:  1004,
 		gnet.ErrDisconnectMalformedMessage:      1005,
 		gnet.ErrDisconnectUnknownMessage:        1006,
+		gnet.ErrDisconnectShutdown:              1007,
 	}
 
 	disconnectCodeReasons map[uint16]gnet.DisconnectReason

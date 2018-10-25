@@ -169,7 +169,8 @@
     "send-button": "Send",
     "back-button": "Back",
     "simple": "Simple",
-    "advanced": "Advanced"
+    "advanced": "Advanced",
+    "select-wallet": "Select Wallet"
   },
 
   "reset": {

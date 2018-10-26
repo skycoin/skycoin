@@ -1,38 +1,63 @@
 package daemon
 
 import (
+	"net"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
 
-func TestExpectIntroductions(t *testing.T) {
-	ei := NewExpectIntroductions()
+func TestGet(t *testing.T) {
+	conns := NewConnections()
 
-	_, ok := ei.Get("foo")
-	require.False(t, ok)
+	addr := "127.0.0.1:6060"
+	details := ConnectionDetails{
+		Mirror:      99,
+		State:       ConnectionStatePending,
+		ConnectedAt: time.Now().UTC(),
+		ListenPort:  10101,
+		Height:      1111,
+	}
 
-	tm := time.Now()
-	ei.Add("foo", tm)
-	tm2, ok := ei.Get("foo")
+	c, err := conns.Add(fakeGnetConn(addr), details)
+	require.NoError(t, err)
+	require.Equal(t, details, c.ConnectionDetails)
+	require.Equal(t, 111, c.GnetID)
+	require.NotEmpty(t, c.LastReceived)
+	require.NotEmpty(t, c.LastSent)
+
+	c2, ok := conns.Get(addr)
 	require.True(t, ok)
-	require.Equal(t, tm, tm2)
-
-	ei.Remove("foo")
-	_, ok = ei.Get("foo")
-	require.False(t, ok)
+	require.Equal(t, c, c2)
 }
 
-func TestExpectIntroductionsCullInvalidConnections(t *testing.T) {
-	ei := NewExpectIntroductions()
+func TestRemoveMatchedBy(t *testing.T) {
+	ei := NewConnections()
+
 	now := time.Now().UTC()
-	ei.Add("a", now)
-	ei.Add("b", now.Add(1))
-	ei.Add("c", now.Add(2))
+
+	addr1 := "127.0.0.1:6060"
+	addr2 := "127.0.1.1:6061"
+	addr3 := "127.1.1.1:6062"
+
+	_, err := ei.Add(fakeGnetConn(addr1), ConnectionDetails{
+		ConnectedAt: now,
+	})
+	require.NoError(t, err)
+
+	_, err = ei.Add(fakeGnetConn(addr2), ConnectionDetails{
+		ConnectedAt: now.Add(1),
+	})
+	require.NoError(t, err)
+
+	_, err = ei.Add(fakeGnetConn(addr3), ConnectionDetails{
+		ConnectedAt: now.Add(2),
+	})
+	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
 	vc := make(chan string, 3)
@@ -40,8 +65,8 @@ func TestExpectIntroductionsCullInvalidConnections(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		as, err := ei.CullInvalidConns(func(addr string, tm time.Time) (bool, error) {
-			if addr == "a" || addr == "b" {
+		as, err := ei.RemoveMatchedBy(func(c Connection) (bool, error) {
+			if c.Addr == addr1 || c.Addr == addr2 {
 				return true, nil
 			}
 			return false, nil
@@ -55,8 +80,8 @@ func TestExpectIntroductionsCullInvalidConnections(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		as, err := ei.CullInvalidConns(func(addr string, tm time.Time) (bool, error) {
-			if addr == "c" {
+		as, err := ei.RemoveMatchedBy(func(c Connection) (bool, error) {
+			if c.Addr == addr3 {
 				return true, nil
 			}
 			return false, nil
@@ -72,161 +97,245 @@ func TestExpectIntroductionsCullInvalidConnections(t *testing.T) {
 	wg.Wait()
 	require.Equal(t, 3, len(vc))
 
-	_, ok := ei.Get("a")
+	_, ok := ei.Get(addr1)
 	require.False(t, ok)
-	_, ok = ei.Get("b")
+	_, ok = ei.Get(addr2)
 	require.False(t, ok)
-	_, ok = ei.Get("c")
+	_, ok = ei.Get(addr3)
 	require.False(t, ok)
-}
-
-func TestConnectionMirrors(t *testing.T) {
-	cm := NewConnectionMirrors()
-
-	_, ok := cm.Get("foo")
-	require.False(t, ok)
-
-	cm.Add("foo", 10)
-	c, ok := cm.Get("foo")
-	require.True(t, ok)
-	require.Equal(t, uint32(10), c)
-
-	cm.Remove("foo")
-	_, ok = cm.Get("foo")
-	require.False(t, ok)
-}
-
-func TestOutgoingConnections(t *testing.T) {
-	oc := NewOutgoingConnections(3)
-
-	n := oc.Len()
-	require.Equal(t, 0, n)
-
-	ok := oc.Get("foo")
-	require.False(t, ok)
-
-	oc.Add("foo")
-	ok = oc.Get("foo")
-	require.True(t, ok)
-
-	n = oc.Len()
-	require.Equal(t, 1, n)
-
-	oc.Add("foo")
-	ok = oc.Get("foo")
-	require.True(t, ok)
-
-	n = oc.Len()
-	require.Equal(t, 1, n)
-
-	oc.Add("foo2")
-	ok = oc.Get("foo2")
-	require.True(t, ok)
-
-	n = oc.Len()
-	require.Equal(t, 2, n)
-
-	oc.Remove("foo")
-	ok = oc.Get("foo")
-	require.False(t, ok)
-
-	n = oc.Len()
-	require.Equal(t, 1, n)
-}
-
-func TestPendingConns(t *testing.T) {
-	pc := NewPendingConnections(3)
-
-	n := pc.Len()
-	require.Equal(t, 0, n)
-
-	_, ok := pc.Get("foo")
-	require.False(t, ok)
-
-	pc.Add(pex.Peer{Addr: "foo"})
-	p, ok := pc.Get("foo")
-	require.Equal(t, pex.Peer{Addr: "foo"}, p)
-	require.True(t, ok)
-
-	n = pc.Len()
-	require.Equal(t, 1, n)
-
-	pc.Add(pex.Peer{Addr: "foo"})
-	p, ok = pc.Get("foo")
-	require.Equal(t, pex.Peer{Addr: "foo"}, p)
-	require.True(t, ok)
-
-	n = pc.Len()
-	require.Equal(t, 1, n)
-
-	pc.Add(pex.Peer{Addr: "foo2"})
-	p, ok = pc.Get("foo2")
-	require.Equal(t, pex.Peer{Addr: "foo2"}, p)
-	require.True(t, ok)
-
-	n = pc.Len()
-	require.Equal(t, 2, n)
 }
 
 func TestMirrorConnections(t *testing.T) {
-	mc := NewMirrorConnections()
+	mc := NewConnections()
 
-	_, ok := mc.Get(99, "foo")
-	require.False(t, ok)
+	localhost := "127.0.0.1"
+	addr1 := "127.0.0.1:6060"
+	addr2 := "127.0.0.1:6061"
+	addr3 := "127.1.1.1:6060"
 
-	mc.Add(99, "foo", 10)
-	c, ok := mc.Get(99, "foo")
-	require.True(t, ok)
-	require.Equal(t, uint16(10), c)
+	c := mc.GetMirrorPort(localhost, 99)
+	require.Equal(t, uint16(0), c)
 
-	mc.Remove(99, "foo")
-	_, ok = mc.Get(99, "foo")
-	require.False(t, ok)
+	_, err := mc.Add(fakeGnetConn(addr1), ConnectionDetails{
+		Mirror: 99,
+	})
+	require.NoError(t, err)
 
-	mc.Add(99, "foo2", 10)
-	c, ok = mc.Get(99, "foo2")
-	require.True(t, ok)
-	require.Equal(t, uint16(10), c)
+	c = mc.GetMirrorPort(localhost, 99)
+	require.Equal(t, uint16(6060), c)
 
-	mc.Add(99, "foo", 10)
-	c, ok = mc.Get(99, "foo")
-	require.True(t, ok)
-	require.Equal(t, uint16(10), c)
+	err = mc.Remove(addr1)
+	require.NoError(t, err)
 
-	mc.Remove(99, "foo2")
-	_, ok = mc.Get(99, "foo2")
-	require.False(t, ok)
+	c = mc.GetMirrorPort(localhost, 99)
+	require.Equal(t, uint16(0), c)
 
-	_, ok = mc.Get(99, "foo")
-	require.True(t, ok)
+	_, err = mc.Add(fakeGnetConn(addr2), ConnectionDetails{
+		Mirror: 99,
+	})
+	require.NoError(t, err)
+
+	c = mc.GetMirrorPort(addr2, 99)
+	require.Equal(t, uint16(6061), c)
+
+	_, err = mc.Add(fakeGnetConn(addr1), ConnectionDetails{
+		Mirror: 99,
+	})
+	require.Equal(t, ErrConnectionIPMirrorAlreadyRegistered, err)
+
+	c = mc.GetMirrorPort(localhost, 99)
+	require.Equal(t, uint16(6061), c)
+
+	_, err = mc.Add(fakeGnetConn(addr1), ConnectionDetails{
+		Mirror: 999,
+	})
+
+	c = mc.GetMirrorPort(localhost, 99)
+	require.Equal(t, uint16(6061), c)
+	c = mc.GetMirrorPort(localhost, 999)
+	require.Equal(t, uint16(6060), c)
+
+	_, err = mc.Add(fakeGnetConn(addr3), ConnectionDetails{
+		Mirror: 99,
+	})
+	require.NoError(t, err)
+
+	c = mc.GetMirrorPort("127.1.1.1", 99)
+	require.Equal(t, uint16(6060), c)
+
+	err = mc.Remove(addr2)
+	require.NoError(t, err)
+
+	c = mc.GetMirrorPort(localhost, 99)
+	require.Equal(t, uint16(0), c)
+	c = mc.GetMirrorPort(localhost, 999)
+	require.Equal(t, uint16(6060), c)
+
+	err = mc.Remove(addr1)
+	require.NoError(t, err)
+
+	c = mc.GetMirrorPort(localhost, 999)
+	require.Equal(t, uint16(0), c)
+
+	err = mc.Remove(addr3)
+	require.NoError(t, err)
+
+	c = mc.GetMirrorPort("127.1.1.1", 99)
+	require.Equal(t, uint16(0), c)
 }
 
 func TestIPCount(t *testing.T) {
-	ic := NewIPCount()
+	ic := NewConnections()
 
-	_, ok := ic.Get("foo")
+	localhost := "127.0.0.1"
+	addr1 := "127.0.0.1:6060"
+	addr2 := "127.0.0.1:6061"
+
+	require.Equal(t, 0, ic.GetIPCount(localhost))
+	require.Equal(t, 0, ic.Len())
+
+	_, ok := ic.Get(addr1)
 	require.False(t, ok)
 
-	ic.Increase("foo")
-	n, ok := ic.Get("foo")
-	require.Equal(t, 1, n)
-	require.True(t, ok)
+	_, err := ic.Add(fakeGnetConn(addr1), ConnectionDetails{
+		Mirror: 1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, ic.GetIPCount(localhost))
 
-	for i := 0; i < 3; i++ {
-		ic.Decrease("foo")
-		n, ok = ic.Get("foo")
-		require.Equal(t, 0, n)
-		require.False(t, ok)
+	_, err = ic.Add(fakeGnetConn(addr2), ConnectionDetails{
+		Mirror: 2,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, ic.GetIPCount(localhost))
+
+	err = ic.Remove(addr1)
+	require.NoError(t, err)
+	require.Equal(t, 1, ic.GetIPCount(localhost))
+
+	err = ic.Remove(addr1)
+	require.NoError(t, err)
+	require.Equal(t, 1, ic.GetIPCount(localhost))
+
+	err = ic.Remove(addr2)
+	require.NoError(t, err)
+	require.Equal(t, 0, ic.GetIPCount(localhost))
+}
+
+func TestConnectionHeightsAll(t *testing.T) {
+	p := NewConnections()
+
+	addr1 := "127.0.0.1:1234"
+	addr2 := "127.0.0.1:5678"
+	addr3 := "127.0.0.1:9999"
+
+	require.Empty(t, p.conns)
+	err := p.Remove(addr1)
+	require.NoError(t, err)
+	require.Empty(t, p.conns)
+	require.Empty(t, p.mirrors)
+	require.Empty(t, p.ipCounts)
+
+	e := p.EstimateHeight(1)
+	require.Equal(t, uint64(1), e)
+
+	e = p.EstimateHeight(13)
+	require.Equal(t, uint64(13), e)
+
+	_, err = p.Add(fakeGnetConn(addr1), ConnectionDetails{
+		Height: 10,
+		Mirror: 1,
+	})
+	require.NoError(t, err)
+	require.Len(t, p.conns, 1)
+
+	records := p.All()
+	require.Len(t, records, 1)
+	require.Equal(t, addr1, records[0].Addr)
+	require.Equal(t, 10, records[0].Height)
+
+	err = p.Modify(addr1, func(c *ConnectionDetails) error {
+		c.Height = 11
+		return nil
+	})
+	require.NoError(t, err)
+	require.Len(t, p.conns, 1)
+
+	records = p.All()
+	require.Len(t, records, 1)
+	require.Equal(t, addr1, records[0].Addr)
+	require.Equal(t, 11, records[0].Height)
+
+	e = p.EstimateHeight(1)
+	require.Equal(t, uint64(11), e)
+
+	e = p.EstimateHeight(13)
+	require.Equal(t, uint64(13), e)
+
+	_, err = p.Add(fakeGnetConn(addr2), ConnectionDetails{
+		Height: 12,
+		Mirror: 2,
+	})
+	require.NoError(t, err)
+	_, err = p.Add(fakeGnetConn(addr3), ConnectionDetails{
+		Height: 12,
+		Mirror: 3,
+	})
+	require.NoError(t, err)
+	require.Len(t, p.conns, 3)
+	require.Equal(t, 3, p.Len())
+
+	records = p.All()
+	require.Len(t, records, 3)
+	require.Equal(t, addr1, records[0].Addr)
+	require.Equal(t, 11, records[0].Height)
+	require.Equal(t, addr2, records[1].Addr)
+	require.Equal(t, 12, records[1].Height)
+	require.Equal(t, addr3, records[2].Addr)
+	require.Equal(t, 12, records[2].Height)
+
+	e = p.EstimateHeight(1)
+	require.Equal(t, uint64(12), e)
+
+	e = p.EstimateHeight(13)
+	require.Equal(t, uint64(13), e)
+
+	_, err = p.Add(fakeGnetConn(addr3), ConnectionDetails{
+		Height: 24,
+		Mirror: 4,
+	})
+	require.NoError(t, err)
+	e = p.EstimateHeight(13)
+	require.Equal(t, uint64(24), e)
+}
+
+func fakeGnetConn(addr string) *gnet.Connection {
+	return &gnet.Connection{
+		ID:           111,
+		LastReceived: time.Now().UTC(),
+		LastSent:     time.Now().UTC(),
+		Conn: fakeNetConn{
+			remoteAddr: fakeNetAddr{
+				addr: addr,
+			},
+		},
 	}
+}
 
-	for i := 0; i < 5; i++ {
-		ic.Increase("foo")
-		n, ok := ic.Get("foo")
-		require.Equal(t, i+1, n)
-		require.True(t, ok)
-	}
+type fakeNetAddr struct {
+	net.Addr
+	addr string
+}
 
-	n, ok = ic.Get("foo")
-	require.Equal(t, 5, n)
-	require.True(t, ok)
+func (f fakeNetAddr) String() string {
+	return f.addr
+}
+
+type fakeNetConn struct {
+	net.Conn
+	remoteAddr fakeNetAddr
+}
+
+func (f fakeNetConn) RemoteAddr() net.Addr {
+	return f.remoteAddr
 }

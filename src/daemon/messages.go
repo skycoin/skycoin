@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
@@ -88,9 +90,15 @@ type Messages struct {
 
 // NewMessages creates Messages
 func NewMessages(c MessagesConfig) *Messages {
+	// mirror cannot be zero
+	var mirror uint32
+	for mirror == 0 {
+		mirror = rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32()
+	}
+
 	return &Messages{
 		Config: c,
-		Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
+		Mirror: mirror,
 	}
 }
 
@@ -274,7 +282,10 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			return ErrDisconnectVersionNotSupported
 		}
 
-		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)
+		logger.WithFields(logrus.Fields{
+			"addr":            mc.Addr,
+			"protocolVersion": intro.Version,
+		}).Info("Peer protocol version accepted")
 
 		// v25 Checks the blockchain pubkey, would accept message with no Pubkey
 		// v26 would check the blockchain pubkey and reject if not matched or not provided
@@ -325,8 +336,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		}
 
 		// Disconnect if connected twice to the same peer (judging by ip:mirror)
-		knownPort, exists := d.GetMirrorPort(mc.Addr, intro.Mirror)
-		if exists {
+		if knownPort := d.GetMirrorPort(mc.Addr, intro.Mirror); knownPort != 0 {
 			logger.Infof("%s is already connected on port %d", mc.Addr, knownPort)
 			if err := d.Disconnect(mc.Addr, ErrDisconnectConnectedTwice); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
@@ -341,7 +351,6 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 	if err != nil {
 		d.IncreaseRetryTimes(mc.Addr)
-		d.RemoveFromExpectingIntroductions(mc.Addr)
 		return err
 	}
 
@@ -352,31 +361,36 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 // Process an event queued by Handle()
 func (intro *IntroductionMessage) Process(d Daemoner) {
-	d.RemoveFromExpectingIntroductions(intro.c.Addr)
 	if !intro.valid {
 		return
 	}
-	// Add the remote peer with their chosen listening port
+
 	a := intro.c.Addr
 
-	// Record their listener, to avoid double connections
-	err := d.RecordConnectionMirror(a, intro.Mirror)
-	if err != nil {
-		// This should never happen, but the program should not allow itself
-		// to be corrupted in case it does
-		logger.Errorf("Invalid port for connection %s", a)
-		if err := d.Disconnect(intro.c.Addr, ErrDisconnectIncomprehensibleError); err != nil {
-			logger.WithError(err).WithField("addr", intro.c.Addr).Warning("Disconnect")
+	if err := d.ConnectionIntroduced(a, intro); err != nil {
+		logger.WithError(err).WithField("addr", a).Warning("ConnectionIntroduced failed")
+		var reason gnet.DisconnectReason
+		switch err {
+		case ErrMirrorZero:
+			reason = ErrDisconnectInvalidMirror
+		case ErrConnectionIPMirrorAlreadyRegistered:
+			reason = ErrDisconnectMirrorInUse
+		default:
+			reason = ErrDisconnectIncomprehensibleError
 		}
+
+		if err := d.Disconnect(a, reason); err != nil {
+			logger.WithError(err).WithField("addr", a).Warning("Disconnect")
+		}
+
 		return
 	}
 
 	// Request blocks immediately after they're confirmed
-	err = d.RequestBlocksFromAddr(intro.c.Addr)
-	if err == nil {
-		logger.Debugf("Successfully requested blocks from %s", intro.c.Addr)
+	if err := d.RequestBlocksFromAddr(intro.c.Addr); err != nil {
+		logger.WithError(err).Warning("RequestBlocksFromAddr")
 	} else {
-		logger.Warning(err)
+		logger.WithField("addr", intro.c.Addr).Debug("Requested blocks")
 	}
 
 	// Announce unconfirmed txns
@@ -399,10 +413,10 @@ func (ping *PingMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 // Process Sends a PongMessage to the sender of PingMessage
 func (ping *PingMessage) Process(d Daemoner) {
 	if d.DaemonConfig().LogPings {
-		logger.Debugf("Reply to ping from %s", ping.c.Addr)
+		logger.WithField("addr", ping.c.Addr).Debug("Replying to ping")
 	}
 	if err := d.SendMessage(ping.c.Addr, &PongMessage{}); err != nil {
-		logger.Errorf("Send PongMessage to %s failed: %v", ping.c.Addr, err)
+		logger.WithField("addr", ping.c.Addr).WithError(err).Error("Send PongMessage failed")
 	}
 }
 
@@ -415,7 +429,7 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 	// There is nothing to do; gnet updates Connection.LastMessage internally
 	// when this is received
 	if daemon.(*Daemon).Config.LogPings {
-		logger.Debugf("Received pong from %s", mc.Addr)
+		logger.WithField("addr", mc.Addr).Debug("Received pong")
 	}
 	return nil
 }
@@ -454,7 +468,7 @@ func (gbm *GetBlocksMessage) Process(d Daemoner) {
 	// Fetch and return signed blocks since LastBlock
 	blocks, err := d.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
 	if err != nil {
-		logger.Infof("Get signed blocks failed: %v", err)
+		logger.WithError(err).Error("Get signed blocks failed")
 		return
 	}
 
@@ -466,7 +480,7 @@ func (gbm *GetBlocksMessage) Process(d Daemoner) {
 
 	m := NewGiveBlocksMessage(blocks)
 	if err := d.SendMessage(gbm.c.Addr, m); err != nil {
-		logger.Errorf("Send GiveBlocksMessage to %s failed: %v", gbm.c.Addr, err)
+		logger.WithField("addr", gbm.c.Addr).WithError(err).Error("Send GiveBlocksMessage failed")
 	}
 }
 
@@ -650,7 +664,7 @@ func (atm *AnnounceTxnsMessage) Process(d Daemoner) {
 
 	unknown, err := d.GetUnconfirmedUnknown(atm.Transactions)
 	if err != nil {
-		logger.WithError(err).Error("AnnounceTxnsMessage Visor.GetUnconfirmedUnknown failed")
+		logger.WithField("addr", atm.c.Addr).WithError(err).Error("AnnounceTxnsMessage Visor.GetUnconfirmedUnknown failed")
 		return
 	}
 
@@ -660,7 +674,7 @@ func (atm *AnnounceTxnsMessage) Process(d Daemoner) {
 
 	m := NewGetTxnsMessage(unknown)
 	if err := d.SendMessage(atm.c.Addr, m); err != nil {
-		logger.Errorf("Send GetTxnsMessage to %s failed: %v", atm.c.Addr, err)
+		logger.WithField("addr", atm.c.Addr).WithError(err).Errorf("Send GetTxnsMessage failed")
 	}
 }
 

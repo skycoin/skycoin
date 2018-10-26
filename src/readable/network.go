@@ -6,29 +6,42 @@ import (
 
 // Connection a connection's state within the daemon
 type Connection struct {
-	ID           int    `json:"id"`
+	GnetID       int    `json:"id"`
 	Addr         string `json:"address"`
 	LastSent     int64  `json:"last_sent"`
 	LastReceived int64  `json:"last_received"`
-	// Whether the connection is from us to them (true, outgoing),
-	// or from them to us (false, incoming)
-	Outgoing bool `json:"outgoing"`
-	// Whether the client has identified their version, mirror etc
-	Introduced bool   `json:"introduced"`
-	Mirror     uint32 `json:"mirror"`
-	ListenPort uint16 `json:"listen_port"`
-	Height     uint64 `json:"height"`
+	ConnectedAt  int64  `json:"connected_at"`
+	Outgoing     bool   `json:"outgoing"`
+	State        string `json:"state"`
+	Mirror       uint32 `json:"mirror"`
+	ListenPort   uint16 `json:"listen_port"`
+	Height       uint64 `json:"height"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags
 func NewConnection(c *daemon.Connection) Connection {
+	var lastSent int64
+	var lastReceived int64
+	var connectedAt int64
+
+	if !c.LastSent.IsZero() {
+		lastSent = c.LastSent.Unix()
+	}
+	if !c.LastReceived.IsZero() {
+		lastReceived = c.LastReceived.Unix()
+	}
+	if !c.ConnectedAt.IsZero() {
+		connectedAt = c.ConnectedAt.Unix()
+	}
+
 	return Connection{
-		ID:           c.ID,
+		GnetID:       c.GnetID,
 		Addr:         c.Addr,
-		LastSent:     c.LastSent,
-		LastReceived: c.LastReceived,
+		LastSent:     lastSent,
+		LastReceived: lastReceived,
+		ConnectedAt:  connectedAt,
 		Outgoing:     c.Outgoing,
-		Introduced:   c.Introduced,
+		State:        string(c.State),
 		Mirror:       c.Mirror,
 		ListenPort:   c.ListenPort,
 		Height:       c.Height,

@@ -15,6 +15,8 @@ import (
 
 	"io"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/elapse"
@@ -177,7 +179,7 @@ func (conn *Connection) Close() error {
 type DisconnectCallback func(addr string, reason DisconnectReason)
 
 // ConnectCallback triggered on client connect
-type ConnectCallback func(addr string, solicited bool)
+type ConnectCallback func(c *Connection, solicited bool)
 
 // ConnectionPool connection pool
 type ConnectionPool struct {
@@ -277,7 +279,10 @@ loop:
 		go func() {
 			defer pool.wg.Done()
 			if err := pool.handleConnection(conn, false); err != nil {
-				logger.Errorf("pool.handleConnection error: %v", err)
+				logger.WithFields(logrus.Fields{
+					"addr":     conn.RemoteAddr(),
+					"outgoing": false,
+				}).WithError(err).Error("pool.handleConnection")
 			}
 		}()
 	}
@@ -301,7 +306,7 @@ func (pool *ConnectionPool) processStrand() {
 			return
 		case req := <-pool.reqC:
 			if err := req.Func(); err != nil {
-				logger.Errorf("req.Func %s failed: %v", req.Name, err)
+				logger.WithField("operation", req.Name).WithError(err).Errorf("strand req.Func failed")
 			}
 		}
 	}
@@ -401,14 +406,14 @@ func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
 
 // Creates a Connection and begins its read and write loop
 func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) error {
-	defer logger.Debugf("Connection %s closed", conn.RemoteAddr())
+	defer logger.WithField("addr", conn.RemoteAddr()).Debug("Connection closed")
 	addr := conn.RemoteAddr().String()
 
 	c, err := func() (c *Connection, err error) {
 		defer func() {
 			if err != nil {
 				if closeErr := conn.Close(); closeErr != nil {
-					logger.Errorf("conn.Close() %s error: %v", addr, closeErr)
+					logger.WithError(closeErr).WithField("addr", addr).Error("conn.Close")
 				}
 			}
 		}()
@@ -435,7 +440,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	}
 
 	if pool.Config.ConnectCallback != nil {
-		pool.Config.ConnectCallback(c.Addr(), solicited)
+		pool.Config.ConnectCallback(c, solicited)
 	}
 
 	msgC := make(chan []byte, 32)
@@ -478,13 +483,12 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	select {
 	case <-pool.quit:
 		if err := conn.Close(); err != nil {
-			logger.Errorf("conn.Close() %s error: %v", addr, err)
+			logger.WithError(err).WithField("addr", addr).Error("conn.Close")
 		}
 	case err = <-errC:
+		logger.WithError(err).WithField("addr", addr).Error("handleConnection failure")
 		if err := pool.Disconnect(c.Addr(), err); err != nil {
-			logger.Errorf("Disconnect %s failed: %v", addr, err)
-		} else {
-			logger.Debugf("Disconnected from %s", addr)
+			logger.WithError(err).WithField("addr", addr).Error("Disconnect")
 		}
 	}
 	close(qc)
@@ -507,7 +511,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 	defer sendInMsgChanElapser.CheckForDone()
 
 	for {
-		elapser.Register(fmt.Sprintf("readLoop address=%s", conn.Addr()))
+		elapser.Register(fmt.Sprintf("readLoop addr=%s", conn.Addr()))
 		deadline := time.Time{}
 		if pool.Config.ReadTimeout != 0 {
 			deadline = time.Now().Add(pool.Config.ReadTimeout)
@@ -764,7 +768,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 		return nil
 	}
 
-	logger.Debugf("Making TCP Connection to %s", address)
+	logger.WithField("addr", address).Debugf("Making TCP connection")
 	conn, err := net.DialTimeout("tcp", address, pool.Config.DialTimeout)
 	if err != nil {
 		return err
@@ -774,7 +778,10 @@ func (pool *ConnectionPool) Connect(address string) error {
 	go func() {
 		defer pool.wg.Done()
 		if err := pool.handleConnection(conn, true); err != nil {
-			logger.Errorf("pool.handleConnection error: %v", err)
+			logger.WithFields(logrus.Fields{
+				"addr":     conn.RemoteAddr(),
+				"outgoing": true,
+			}).WithError(err).Error("pool.handleConnection")
 		}
 	}()
 	return nil
@@ -784,6 +791,11 @@ func (pool *ConnectionPool) Connect(address string) error {
 // the DisconnectCallback
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	if err := pool.strand("Disconnect", func() error {
+		logger.WithFields(logrus.Fields{
+			"addr":   addr,
+			"reason": r,
+		}).Debug("Disconnecting")
+
 		exist := pool.disconnect(addr)
 
 		// checks if the address is default node address
@@ -816,10 +828,10 @@ func (pool *ConnectionPool) disconnect(addr string) bool {
 	delete(pool.addresses, addr)
 	delete(pool.defaultConnections, addr)
 	if err := conn.Close(); err != nil {
-		logger.Errorf("conn.Close() error address=%s: %v", addr, err)
-	} else {
-		logger.Debugf("Disconnected from %s", addr)
+		logger.WithError(err).WithField("addr", addr).Error("conn.Close")
 	}
+
+	logger.WithField("addr", addr).Debug("Closed connection and removed from pool")
 
 	return true
 }

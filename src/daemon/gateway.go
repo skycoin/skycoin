@@ -9,7 +9,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -85,22 +84,6 @@ func (gw *Gateway) strand(name string, f func()) {
 	}
 }
 
-// Connection a connection's state within the daemon
-type Connection struct {
-	ID           int
-	Addr         string
-	LastSent     int64
-	LastReceived int64
-	// Whether the connection is from us to them (true, outgoing),
-	// or from them to us (false, incoming)
-	Outgoing bool
-	// Whether the client has identified their version, mirror etc
-	Introduced bool
-	Mirror     uint32
-	ListenPort uint16
-	Height     uint64
-}
-
 // GetOutgoingConnections returns solicited (outgoing) connections
 func (gw *Gateway) GetOutgoingConnections() ([]Connection, error) {
 	var conns []Connection
@@ -116,20 +99,13 @@ func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 		return nil, nil
 	}
 
-	cs, err := gw.d.pool.Pool.GetConnections()
-	if err != nil {
-		logger.Error(err)
-		return nil, err
-	}
+	cs := gw.d.connections.All()
 
-	conns := make([]Connection, 0, len(cs))
+	conns := make([]Connection, 0)
 
 	for _, c := range cs {
-		if c.Solicited {
-			conn := gw.newConnection(&c)
-			if conn != nil {
-				conns = append(conns, *conn)
-			}
+		if c.Outgoing && c.State != ConnectionStatePending {
+			conns = append(conns, c)
 		}
 	}
 
@@ -153,50 +129,17 @@ func (gw *Gateway) GetDefaultConnections() []string {
 
 // GetConnection returns a *Connection of specific address
 func (gw *Gateway) GetConnection(addr string) (*Connection, error) {
-	var conn *Connection
-	var err error
+	var c Connection
+	var exists bool
 	gw.strand("GetConnection", func() {
-		if gw.d.pool.Pool == nil {
-			return
-		}
-
-		var c *gnet.Connection
-		c, err = gw.d.pool.Pool.GetConnection(addr)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-
-		conn = gw.newConnection(c)
+		c, exists = gw.d.connections.Get(addr)
 	})
-	return conn, err
-}
 
-func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
-	if c == nil {
-		return nil
+	if !exists {
+		return nil, nil
 	}
 
-	addr := c.Addr()
-
-	mirror, exist := gw.d.connectionMirrors.Get(addr)
-	if !exist {
-		return nil
-	}
-
-	height, _ := gw.d.Heights.Get(addr)
-
-	return &Connection{
-		ID:           c.ID,
-		Addr:         addr,
-		LastSent:     c.LastSent.Unix(),
-		LastReceived: c.LastReceived.Unix(),
-		Outgoing:     gw.d.outgoingConnections.Get(addr),
-		Introduced:   !gw.d.needsIntro(addr),
-		Mirror:       mirror,
-		ListenPort:   gw.d.GetListenPort(addr),
-		Height:       height,
-	}
+	return &c, nil
 }
 
 // GetTrustConnections returns all trusted connections
@@ -229,29 +172,67 @@ type BlockchainProgress struct {
 	Peers []PeerBlockchainHeight
 }
 
+// NewBlockchainProgress creates BlockchainProgress from the local head blockchain sequence number
+// and a list of remote peers
+func NewBlockchainProgress(headSeq uint64, conns []Connection) *BlockchainProgress {
+	peers := newPeerBlockchainHeights(conns)
+
+	return &BlockchainProgress{
+		Current: headSeq,
+		Highest: EstimateBlockchainHeight(headSeq, peers),
+		Peers:   peers,
+	}
+}
+
+// PeerBlockchainHeight records blockchain height for an address
+type PeerBlockchainHeight struct {
+	Address string
+	Height  uint64
+}
+
+func newPeerBlockchainHeights(conns []Connection) []PeerBlockchainHeight {
+	peers := make([]PeerBlockchainHeight, 0, len(conns))
+	for _, c := range conns {
+		if c.State != ConnectionStatePending {
+			peers = append(peers, PeerBlockchainHeight{
+				Address: c.Addr,
+				Height:  c.Height,
+			})
+		}
+	}
+	return peers
+}
+
+// EstimateBlockchainHeight estimates the blockchain sync height.
+// The highest height reported amongst all peers, and including the node itself, is returned.
+func EstimateBlockchainHeight(headSeq uint64, peers []PeerBlockchainHeight) uint64 {
+	for _, c := range peers {
+		if c.Height > headSeq {
+			headSeq = c.Height
+		}
+	}
+	return headSeq
+}
+
 // GetBlockchainProgress returns a *BlockchainProgress
 func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
-	var bcp *BlockchainProgress
+	var headSeq uint64
 	var err error
+	var conns []Connection
 	gw.strand("GetBlockchainProgress", func() {
-		var headSeq uint64
 		headSeq, _, err = gw.v.HeadBkSeq()
 		if err != nil {
 			return
 		}
 
-		bcp = &BlockchainProgress{
-			Current: headSeq,
-			Highest: gw.d.Heights.Estimate(headSeq),
-			Peers:   gw.d.Heights.All(),
-		}
+		conns = gw.d.connections.All()
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return bcp, nil
+	return NewBlockchainProgress(headSeq, conns), nil
 }
 
 // ResendUnconfirmedTxns resents all unconfirmed transactions, returning the txids

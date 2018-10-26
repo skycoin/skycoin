@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -123,13 +124,16 @@ func (peer *Peer) Seen() {
 // IncreaseRetryTimes adds the retry times
 func (peer *Peer) IncreaseRetryTimes() {
 	peer.RetryTimes++
-	logger.Debugf("Increase retry times of %v: %v", peer.Addr, peer.RetryTimes)
+	logger.WithFields(logrus.Fields{
+		"addr":       peer.Addr,
+		"retryTimes": peer.RetryTimes,
+	}).Debug("Increase retry times")
 }
 
 // ResetRetryTimes resets the retry time
 func (peer *Peer) ResetRetryTimes() {
 	peer.RetryTimes = 0
-	logger.Debugf("Reset retry times of %v", peer.Addr)
+	logger.WithField("addr", peer.Addr).Debug("Reset retry times")
 }
 
 // CanTry returns whether this peer is tryable base on the exponential backoff algorithm
@@ -626,22 +630,22 @@ func backoffDownloadText(url string) (string, error) {
 	b := backoff.NewExponentialBackOff()
 
 	notify := func(err error, wait time.Duration) {
-		logger.Errorf("waiting %v to retry downloadText, error: %v", wait, err)
+		logger.WithError(err).WithField("waitTime", wait).Error("waiting to retry downloadText")
 	}
 
 	operation := func() error {
-		logger.Infof("Trying to download peers list from %s", url)
+		logger.WithField("url", url).Info("Trying to download peers list")
 		var err error
 		body, err = downloadText(url)
 		return err
 	}
 
 	if err := backoff.RetryNotify(operation, b, notify); err != nil {
-		logger.Infof("Gave up dowloading peers list from %s: %v", url, err)
+		logger.WithField("url", url).WithError(err).Info("Gave up dowloading peers list")
 		return "", err
 	}
 
-	logger.Infof("Peers list downloaded from %s", url)
+	logger.WithField("url", url).Info("Peers list downloaded")
 
 	return body, nil
 }

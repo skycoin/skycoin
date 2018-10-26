@@ -924,7 +924,7 @@ func TestGetBlocks(t *testing.T) {
 			body: &httpBody{
 				Seqs: "1,2,3",
 			},
-			seqs:                   []uint64{1, 2, 3},
+			seqs: []uint64{1, 2, 3},
 			gatewayGetBlocksResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{

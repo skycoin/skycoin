@@ -1,94 +1,94 @@
-%rename(SKY_cipher_SumSHA256) CSharp_skycoin_SKY_cipher_SumSHA256;
+%rename(SKY_cipher_SumSHA256) Java_skycoin_libjava_skycoinJNI_SKY_cipher_SumSHA256;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_SumSHA256(GoSlice seed, cipher_SHA256* sha){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_SumSHA256(GoSlice seed, cipher_SHA256* sha){
 		GoUint32 result = SKY_cipher_SumSHA256(seed,  sha);
 		return result;
 	}
 }
 
-%rename(SKY_cipher_SignHash) CSharp_skycoin_SKY_cipher_SignHash;
+%rename(SKY_cipher_SignHash) Java_skycoin_libjava_skycoinJNI_SKY_cipher_SignHash;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_SignHash(cipher_SHA256 *sha,cipher__SecKey *sec,cipher_Sig *s){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_SignHash(cipher_SHA256 *sha,cipher_SecKey *sec,cipher_Sig *s){
 		GoUint32 result = SKY_cipher_SignHash(sha,sec,s);
 		return result;
 	}
 }
 
-%rename(SKY_cipher_ChkSig) CSharp_skycoin_SKY_cipher_ChkSig;
+%rename(SKY_cipher_ChkSig) Java_skycoin_libjava_skycoinJNI_SKY_cipher_ChkSig;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_ChkSig(cipher__Address *a,cipher_SHA256 *sha,cipher_Sig *s){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_ChkSig(cipher__Address *a,cipher_SHA256 *sha,cipher_Sig *s){
 		GoUint32 result = SKY_cipher_ChkSig(a,sha,s);
 		return result;
 	}
 }
 
-%rename(SKY_cipher_PubKeyFromSig) CSharp_skycoin_SKY_cipher_PubKeyFromSig;
+%rename(SKY_cipher_PubKeyFromSig) Java_skycoin_libjava_skycoinJNI_SKY_cipher_PubKeyFromSig;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_PubKeyFromSig(cipher_Sig *sig,cipher_SHA256 *h,cipher_PubKey *p){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_PubKeyFromSig(cipher_Sig *sig,cipher_SHA256 *h,cipher_PubKey *p){
 		GoUint32 result = SKY_cipher_PubKeyFromSig(sig,h,p);
 		return result;
 	}
 }
 
-%rename(SKY_cipher_VerifySignature) CSharp_skycoin_SKY_cipher_VerifySignature;
+%rename(SKY_cipher_VerifySignature) Java_skycoin_libjava_skycoinJNI_SKY_cipher_VerifySignature;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_VerifySignature(cipher_PubKey *p,cipher_Sig *sig,cipher_SHA256 *h){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_VerifySignature(cipher_PubKey *p,cipher_Sig *sig,cipher_SHA256 *h){
 		GoUint32 result = SKY_cipher_VerifySignature(p,sig,h);
 		return result;
 	}
 }
 
-// %rename(SKY_cipher_TestSecKeyHash) CSharp_skycoin_SKY_cipher_TestSecKeyHash;
+// %rename(SKY_cipher_TestSecKeyHash) Java_skycoin_libjava_skycoinJNI_SKY_cipher_TestSecKeyHash;
 // %inline {
-// 	GoUint32 CSharp_skycoin_SKY_cipher_TestSecKeyHash(cipher_SecKey *s,cipher_SHA256 *h){
+// 	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_TestSecKeyHash(cipher_SecKey *s,cipher_SHA256 *h){
 // 		GoUint32 result = SKY_cipher_TestSecKeyHash(s,h);
 // 		return result;
 // 	}
 // }
 
-%rename(SKY_cipher_SHA256_Set) CSharp_skycoin_SKY_cipher_SHA256_Set;
+%rename(SKY_cipher_SHA256_Set) Java_skycoin_libjava_skycoinJNI_SKY_cipher_SHA256_Set;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_SHA256_Set(cipher_SHA256 *h,GoSlice s){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_SHA256_Set(cipher_SHA256 *h,GoSlice s){
 		GoUint32 result = SKY_cipher_SHA256_Set(h,s);
 		return result;
 	}
 }
 
-%rename(SKY_cipher_SHA256_Hex) CSharp_skycoin_SKY_cipher_SHA256_Hex;
+%rename(SKY_cipher_SHA256_Hex) Java_skycoin_libjava_skycoinJNI_SKY_cipher_SHA256_Hex;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_SHA256_Hex(cipher_SHA256 *h,GoString_* s){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_SHA256_Hex(cipher_SHA256 *h,GoString_* s){
 		GoUint32 result = SKY_cipher_SHA256_Hex(h,s);
 		return result;
 	}
 }
 
-%rename(SKY_cipher_SHA256FromHex) CSharp_skycoin_SKY_cipher_SHA256FromHex;
+%rename(SKY_cipher_SHA256FromHex) Java_skycoin_libjava_skycoinJNI_SKY_cipher_SHA256FromHex;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_SHA256FromHex(GoString s,cipher_SHA256 *h){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_SHA256FromHex(GoString s,cipher_SHA256 *h){
 		GoUint32 result = SKY_cipher_SHA256FromHex(s,h);
 		return result;
 	}
 }
 
-%rename(SKY_coin_Transaction_HashInner) CSharp_skycoin_SKY_coin_Transaction_HashInner;
+%rename(SKY_coin_Transaction_HashInner) Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_HashInner;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_Transaction_HashInner(Transaction__Handle tx,cipher_SHA256 *h){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_HashInner(Transaction__Handle tx,cipher_SHA256 *h){
 		GoUint32 result = SKY_coin_Transaction_HashInner(tx,h);
 		return result;
 	}
 }
 
-%rename(SKY_coin_Transaction_Hash) CSharp_skycoin_SKY_coin_Transaction_Hash;
+%rename(SKY_coin_Transaction_Hash) Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_Hash;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_Transaction_Hash(Transaction__Handle tx,cipher_SHA256 *h){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_Hash(Transaction__Handle tx,cipher_SHA256 *h){
 		GoUint32 result = SKY_coin_Transaction_Hash(tx,h);
 		return result;
 	}
 }
 
-%rename(SKY_coin_Transaction_SetInputAt) CSharp_skycoin_SKY_coin_Transaction_SetInputAt;
+%rename(SKY_coin_Transaction_SetInputAt) Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_SetInputAt;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_Transaction_SetInputAt(Transaction__Handle tx,GoInt p1,cipher_SHA256 *h){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_SetInputAt(Transaction__Handle tx,GoInt p1,cipher_SHA256 *h){
 		GoUint32 result = SKY_coin_Transaction_SetInputAt(tx,p1,h);
 		return result;
 	}
@@ -96,25 +96,25 @@
 
 
 
-%rename(SKY_coin_Transaction_GetInputAt) CSharp_skycoin_SKY_coin_Transaction_GetInputAt;
+%rename(SKY_coin_Transaction_GetInputAt) Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_GetInputAt;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_Transaction_GetInputAt(Transaction__Handle tx, GoInt p1,cipher_SHA256 *h){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_GetInputAt(Transaction__Handle tx, GoInt p1,cipher_SHA256 *h){
 		GoUint32 result = SKY_coin_Transaction_GetInputAt(tx,p1,h);
 		return result;
 	}
 }
 
-%rename(SKY_coin_Transaction_PushInput) CSharp_skycoin_SKY_coin_Transaction_PushInput;
+%rename(SKY_coin_Transaction_PushInput) Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_PushInput;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_Transaction_PushInput(Transaction__Handle tx, cipher_SHA256* h, GoUint16* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_PushInput(Transaction__Handle tx, cipher_SHA256* h, GoUint16* p1){
 		GoUint32 result = SKY_coin_Transaction_PushInput(tx,h,p1);
 		return result;
 	}
 }
 
-%rename(SKY_coin_Transaction_SignInputs) CSharp_skycoin_SKY_coin_Transaction_SignInputs;
+%rename(SKY_coin_Transaction_SignInputs) Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_SignInputs;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_Transaction_SignInputs(Transaction__Handle handle, cipher_SecKeys* __in_pubKeys){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_SignInputs(Transaction__Handle handle, cipher_SecKeys* __in_pubKeys){
 		GoSlice data;
 		data.data = __in_pubKeys->data;
 		data.len = __in_pubKeys->count;
@@ -123,9 +123,9 @@
 	}
 }
 
-%rename(SKY_cipher_GenerateDeterministicKeyPairs) CSharp_skycoin_SKY_cipher_GenerateDeterministicKeyPairs;
+%rename(SKY_cipher_GenerateDeterministicKeyPairs) Java_skycoin_libjava_skycoinJNI_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* __out_secKeys){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* __out_secKeys){
 		__out_secKeys->data = NULL;
 		__out_secKeys->count = 0;
 		GoSlice_ data;
@@ -141,9 +141,9 @@
 	}
 }
 
-%rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) CSharp_skycoin_SKY_cipher_GenerateDeterministicKeyPairsSeed;
+%rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) Java_skycoin_libjava_skycoinJNI_SKY_cipher_GenerateDeterministicKeyPairsSeed;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
 		__out_secKeys->data = NULL;
 		__out_secKeys->count = 0;
 		GoSlice_ data;
@@ -160,9 +160,9 @@
 }
 
 
-// %rename(SKY_cipher_PubKeySlice_Swap) CSharp_skycoin_SKY_cipher_PubKeySlice_Swap;
+// %rename(SKY_cipher_PubKeySlice_Swap) Java_skycoin_libjava_skycoinJNI_SKY_cipher_PubKeySlice_Swap;
 // %inline {
-// 	GoUint32 CSharp_skycoin_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
+// 	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
 // 		GoSlice_ data;
 // 		data.data = __in_pubKeys->data;
 // 		data.len = __in_pubKeys->count;
@@ -172,9 +172,9 @@
 // 	}
 // }
 
-%rename(SKY_coin_VerifyTransactionCoinsSpending) CSharp_skycoin_SKY_coin_VerifyTransactionCoinsSpending;
+%rename(SKY_coin_VerifyTransactionCoinsSpending) Java_skycoin_libjava_skycoinJNI_SKY_coin_VerifyTransactionCoinsSpending;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_VerifyTransactionCoinsSpending(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxOut){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_VerifyTransactionCoinsSpending(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxOut){
 		GoSlice_ dataIn;
 		dataIn.data = __uxIn->data;
 		dataIn.len = __uxIn->count;
@@ -188,9 +188,9 @@
 	};
 }
 
-%rename(SKY_coin_VerifyTransactionHoursSpending) CSharp_skycoin_SKY_coin_VerifyTransactionHoursSpending;
+%rename(SKY_coin_VerifyTransactionHoursSpending) Java_skycoin_libjava_skycoinJNI_SKY_coin_VerifyTransactionHoursSpending;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_VerifyTransactionHoursSpending(GoUint64 _headTime , coin_UxOutArray* __uxIn, coin_UxOutArray* __uxOut){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_VerifyTransactionHoursSpending(GoUint64 _headTime , coin_UxOutArray* __uxIn, coin_UxOutArray* __uxOut){
 		GoSlice_ dataIn;
 		dataIn.data = __uxIn->data;
 		dataIn.len = __uxIn->count;
@@ -204,9 +204,9 @@
 	};
 }
 
-%rename(SKY_coin_CreateUnspents) CSharp_skycoin_SKY_coin_CreateUnspents;
+%rename(SKY_coin_CreateUnspents) Java_skycoin_libjava_skycoinJNI_SKY_coin_CreateUnspents;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_CreateUnspents(coin__BlockHeader* bh, Transaction__Handle t, coin_UxOutArray* __return_Ux){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_CreateUnspents(coin__BlockHeader* bh, Transaction__Handle t, coin_UxOutArray* __return_Ux){
 		__return_Ux->data = NULL;
 		__return_Ux->count = 0;
 		GoSlice_ data;
@@ -222,9 +222,9 @@
 	}
 }
 
-%rename(SKY_coin_Transaction_VerifyInput) CSharp_skycoin_SKY_coin_Transaction_VerifyInput;
+%rename(SKY_coin_Transaction_VerifyInput) Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_VerifyInput;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_Transaction_VerifyInput(Transaction__Handle handle, coin_UxOutArray* __uxIn){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Transaction_VerifyInput(Transaction__Handle handle, coin_UxOutArray* __uxIn){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -233,9 +233,9 @@
 	}
 }
 
-%rename(SKY_coin_UxArray_HasDupes) CSharp_skycoin_SKY_coin_UxArray_HasDupes;
+%rename(SKY_coin_UxArray_HasDupes) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_HasDupes;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxArray_HasDupes(coin_UxOutArray* __uxIn, GoUint8* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_HasDupes(coin_UxOutArray* __uxIn, GoUint8* p1){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -244,9 +244,9 @@
 	}
 }
 
-%rename(SKY_coin_UxArray_Coins) CSharp_skycoin_SKY_coin_UxArray_Coins;
+%rename(SKY_coin_UxArray_Coins) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Coins;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxArray_Coins(coin_UxOutArray* __uxIn, GoUint64* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Coins(coin_UxOutArray* __uxIn, GoUint64* p1){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -255,9 +255,9 @@
 	}
 }
 
-%rename(SKY_coin_UxArray_CoinHours) CSharp_skycoin_SKY_coin_UxArray_CoinHours;
+%rename(SKY_coin_UxArray_CoinHours) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_CoinHours;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxArray_CoinHours(coin_UxOutArray* __uxIn, GoUint64 p1, GoUint64* p2){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_CoinHours(coin_UxOutArray* __uxIn, GoUint64 p1, GoUint64* p2){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -266,9 +266,9 @@
 	}
 }
 
-%rename(SKY_coin_UxArray_Less) CSharp_skycoin_SKY_coin_UxArray_Less;
+%rename(SKY_coin_UxArray_Less) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Less;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxArray_Less(coin_UxOutArray* __uxIn, GoInt p1, GoInt p2, GoUint8* p3){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Less(coin_UxOutArray* __uxIn, GoInt p1, GoInt p2, GoUint8* p3){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -277,9 +277,9 @@
 	}
 }
 
-%rename(SKY_coin_UxArray_Swap) CSharp_skycoin_SKY_coin_UxArray_Swap;
+%rename(SKY_coin_UxArray_Swap) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Swap;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxArray_Swap(coin_UxOutArray* __uxIn, GoInt p1, GoInt p2){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Swap(coin_UxOutArray* __uxIn, GoInt p1, GoInt p2){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -288,9 +288,9 @@
 	}
 }
 
-%rename(SKY_coin_UxArray_Sub) CSharp_skycoin_SKY_coin_UxArray_Sub;
+%rename(SKY_coin_UxArray_Sub) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Sub;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxArray_Sub(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxIn2, coin_UxOutArray* __return_Ux){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Sub(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxIn2, coin_UxOutArray* __return_Ux){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -312,9 +312,9 @@
 	}
 }
 
-%rename(SKY_coin_UxArray_Add) CSharp_skycoin_SKY_coin_UxArray_Add;
+%rename(SKY_coin_UxArray_Add) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Add;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxArray_Add(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxIn2, coin_UxOutArray* __return_Ux){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Add(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxIn2, coin_UxOutArray* __return_Ux){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -336,9 +336,9 @@
 	}
 }
 
-%rename(SKY_coin_NewAddressUxOuts) CSharp_skycoin_SKY_coin_NewAddressUxOuts;
+%rename(SKY_coin_NewAddressUxOuts) Java_skycoin_libjava_skycoinJNI_SKY_coin_NewAddressUxOuts;
 %inline{ 
-	GoUint32 CSharp_skycoin_SKY_coin_NewAddressUxOuts(coin_UxOutArray* __uxIn,  AddressUxOuts_Handle* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_NewAddressUxOuts(coin_UxOutArray* __uxIn,  AddressUxOuts_Handle* p1){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -347,9 +347,9 @@
 	}
 }
 
-%rename(SKY_coin_UxArray_Hashes) CSharp_skycoin_SKY_coin_UxArray_Hashes;
+%rename(SKY_coin_UxArray_Hashes) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Hashes;
 %inline{ 
-	GoUint32 CSharp_skycoin_SKY_coin_UxArray_Hashes(coin_UxOutArray* __uxIn,  cipher_SHA256s* __out_hashes){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxArray_Hashes(coin_UxOutArray* __uxIn,  cipher_SHA256s* __out_hashes){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -367,9 +367,9 @@
 	}
 }
 
-%rename(SKY_coin_AddressUxOuts_Flatten) CSharp_skycoin_SKY_coin_AddressUxOuts_Flatten;
+%rename(SKY_coin_AddressUxOuts_Flatten) Java_skycoin_libjava_skycoinJNI_SKY_coin_AddressUxOuts_Flatten;
 %inline{ 
-	GoUint32 CSharp_skycoin_SKY_coin_AddressUxOuts_Flatten(AddressUxOuts_Handle p0, coin_UxOutArray* __return_Ux){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_AddressUxOuts_Flatten(AddressUxOuts_Handle p0, coin_UxOutArray* __return_Ux){
 		GoSlice_ data;
 		data.data = NULL;
 		data.len = 0;
@@ -383,9 +383,9 @@
 	}
 }
 
-%rename(SKY_coin_AddressUxOuts_Get) CSharp_skycoin_SKY_coin_AddressUxOuts_Get;
+%rename(SKY_coin_AddressUxOuts_Get) Java_skycoin_libjava_skycoinJNI_SKY_coin_AddressUxOuts_Get;
 %inline{ 
-	GoUint32 CSharp_skycoin_SKY_coin_AddressUxOuts_Get(AddressUxOuts_Handle p0, cipher__Address* p1, coin_UxOutArray* __return_Ux){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_AddressUxOuts_Get(AddressUxOuts_Handle p0, cipher__Address* p1, coin_UxOutArray* __return_Ux){
 		GoSlice_ data;
 		data.data = NULL;
 		data.len = 0;
@@ -399,9 +399,9 @@
 	}
 }
 
-%rename(SKY_coin_AddressUxOuts_Set) CSharp_skycoin_SKY_coin_AddressUxOuts_Set;
+%rename(SKY_coin_AddressUxOuts_Set) Java_skycoin_libjava_skycoinJNI_SKY_coin_AddressUxOuts_Set;
 %inline{ 
-	GoUint32 CSharp_skycoin_SKY_coin_AddressUxOuts_Set(AddressUxOuts_Handle p0, cipher__Address* p1, coin_UxOutArray* __uxIn){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_AddressUxOuts_Set(AddressUxOuts_Handle p0, cipher__Address* p1, coin_UxOutArray* __uxIn){
 		GoSlice_ data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
@@ -410,9 +410,9 @@
 	}
 }
 
-%rename(SKY_coin_AddressUxOuts_Keys) CSharp_skycoin_SKY_coin_AddressUxOuts_Keys;
+%rename(SKY_coin_AddressUxOuts_Keys) Java_skycoin_libjava_skycoinJNI_SKY_coin_AddressUxOuts_Keys;
 %inline{ 
-	GoUint32 CSharp_skycoin_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_Addresses* __out_addr){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_Addresses* __out_addr){
 		GoSlice_ data;
 		data.data = NULL;
 		data.len = 0;
@@ -426,9 +426,9 @@
 	}
 }
 
-%rename(SKY_coin_Transactions_Hashes) CSharp_skycoin_SKY_coin_Transactions_Hashes;
+%rename(SKY_coin_Transactions_Hashes) Java_skycoin_libjava_skycoinJNI_SKY_coin_Transactions_Hashes;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_Transactions_Hashes(Transactions__Handle p0, cipher_SHA256s* __out_hashes){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Transactions_Hashes(Transactions__Handle p0, cipher_SHA256s* __out_hashes){
 		GoSlice_ data;
 		data.data = NULL;
 		data.len = 0;
@@ -442,49 +442,49 @@
 	}
 }
 
-%rename(SKY_coin_UxOut_Hash) CSharp_skycoin_SKY_coin_UxOut_Hash;
+%rename(SKY_coin_UxOut_Hash) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxOut_Hash;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxOut_Hash(coin__UxOut* ux, cipher_SHA256* sha){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxOut_Hash(coin__UxOut* ux, cipher_SHA256* sha){
 		GoUint32 result = SKY_coin_UxOut_Hash(ux, sha);
 		return result;
 	}
 }
 
-%rename(SKY_cipher_AddSHA256) CSharp_skycoin_SKY_cipher_AddSHA256;
+%rename(SKY_cipher_AddSHA256) Java_skycoin_libjava_skycoinJNI_SKY_cipher_AddSHA256;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_cipher_AddSHA256(cipher_SHA256* p0, cipher_SHA256* p1, cipher_SHA256* p2){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_AddSHA256(cipher_SHA256* p0, cipher_SHA256* p1, cipher_SHA256* p2){
 		GoUint32 result = SKY_cipher_AddSHA256(p0,p1,p2);
 		return result;
 	}
 }
 
-%rename(SKY_coin_GetTransactionObject) CSharp_skycoin_SKY_coin_GetTransactionObject;
+%rename(SKY_coin_GetTransactionObject) Java_skycoin_libjava_skycoinJNI_SKY_coin_GetTransactionObject;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_GetTransactionObject(Transaction__Handle tx, coin__Transaction *p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_GetTransactionObject(Transaction__Handle tx, coin__Transaction *p1){
 		GoUint32 result = SKY_coin_GetTransactionObject(tx,&p1);
 		return result;
 	}
 }
 
-%rename(SKY_coin_UxBody_Hash) CSharp_skycoin_SKY_coin_UxBody_Hash;
+%rename(SKY_coin_UxBody_Hash) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxBody_Hash;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxBody_Hash(coin__UxBody* p0, cipher_SHA256* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxBody_Hash(coin__UxBody* p0, cipher_SHA256* p1){
 		GoUint32 result = SKY_coin_UxBody_Hash(p0,p1);
 		return result;
 	}
 }
 
-%rename(SKY_coin_UxOut_SnapshotHash) CSharp_skycoin_SKY_coin_UxOut_SnapshotHash;
+%rename(SKY_coin_UxOut_SnapshotHash) Java_skycoin_libjava_skycoinJNI_SKY_coin_UxOut_SnapshotHash;
 %inline{
-	GoUint32 CSharp_skycoin_SKY_coin_UxOut_SnapshotHash(coin__UxOut* p0, cipher_SHA256* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_UxOut_SnapshotHash(coin__UxOut* p0, cipher_SHA256* p1){
 		GoUint32 result = SKY_coin_UxOut_SnapshotHash(p0,p1);
 		return result;
 	}
 }
 
-%rename(SKY_fee_TransactionFee) CSharp_skycoin_SKY_fee_TransactionFee;
+%rename(SKY_fee_TransactionFee) Java_skycoin_libjava_skycoinJNI_SKY_fee_TransactionFee;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_fee_TransactionFee(Transaction__Handle handle , GoUint64 p1,coin_UxOutArray* __uxIn, GoUint64* p3){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_fee_TransactionFee(Transaction__Handle handle , GoUint64 p1,coin_UxOutArray* __uxIn, GoUint64* p3){
 		GoSlice_ dataIn;
 		dataIn.data = __uxIn->data;
 		dataIn.len = __uxIn->count;
@@ -495,57 +495,57 @@
 }
 
 
-%rename(SKY_cipher_CheckSecKeyHash) CSharp_skycoin_SKY_cipher_CheckSecKeyHash;
+%rename(SKY_cipher_CheckSecKeyHash) Java_skycoin_libjava_skycoinJNI_SKY_cipher_CheckSecKeyHash;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_cipher_CheckSecKeyHash(cipher_SecKey *s, cipher_SHA256* sha){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_cipher_CheckSecKeyHash(cipher_SecKey *s, cipher_SHA256* sha){
 		GoUint32 result = SKY_cipher_CheckSecKeyHash(s,  sha);
 		return result;
 	}
 }
 
-%rename(SKY_coin_NewBlock) CSharp_skycoin_SKY_coin_NewBlock;
+%rename(SKY_coin_NewBlock) Java_skycoin_libjava_skycoinJNI_SKY_coin_NewBlock;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_NewBlock(Block__Handle p0, GoUint64 p1, cipher_SHA256* p2, Transactions__Handle p3, FeeCalculator* p4, Block__Handle* p5){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_NewBlock(Block__Handle p0, GoUint64 p1, cipher_SHA256* p2, Transactions__Handle p3, FeeCalculator* p4, Block__Handle* p5){
 		GoUint32 result = SKY_coin_NewBlock(p0,  p1,p2,p3,p4,p5);
 		return result;
 	}
 }
 
-%rename(SKY_coin_Block_HashHeader) CSharp_skycoin_SKY_coin_Block_HashHeader;
+%rename(SKY_coin_Block_HashHeader) Java_skycoin_libjava_skycoinJNI_SKY_coin_Block_HashHeader;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_Block_HashHeader(Block__Handle p0, cipher_SHA256* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Block_HashHeader(Block__Handle p0, cipher_SHA256* p1){
 		GoUint32 result = SKY_coin_Block_HashHeader(p0,  p1);
 		return result;
 	}
 }
 
-%rename(SKY_coin_Block_PreHashHeader) CSharp_skycoin_SKY_coin_Block_PreHashHeader;
+%rename(SKY_coin_Block_PreHashHeader) Java_skycoin_libjava_skycoinJNI_SKY_coin_Block_PreHashHeader;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_Block_PreHashHeader(Block__Handle p0, cipher_SHA256* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Block_PreHashHeader(Block__Handle p0, cipher_SHA256* p1){
 		GoUint32 result = SKY_coin_Block_PreHashHeader(p0,  p1);
 		return result;
 	}
 }
 
-%rename(SKY_coin_BlockBody_Hash) CSharp_skycoin_SKY_coin_BlockBody_Hash;
+%rename(SKY_coin_BlockBody_Hash) Java_skycoin_libjava_skycoinJNI_SKY_coin_BlockBody_Hash;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_BlockBody_Hash(BlockBody__Handle p0, cipher_SHA256* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_BlockBody_Hash(BlockBody__Handle p0, cipher_SHA256* p1){
 		GoUint32 result = SKY_coin_BlockBody_Hash(p0,  p1);
 		return result;
 	}
 }
 
-%rename(SKY_coin_BlockHeader_Hash) CSharp_skycoin_SKY_coin_BlockHeader_Hash;
+%rename(SKY_coin_BlockHeader_Hash) Java_skycoin_libjava_skycoinJNI_SKY_coin_BlockHeader_Hash;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_BlockHeader_Hash(coin__BlockHeader* p0, cipher_SHA256* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_BlockHeader_Hash(coin__BlockHeader* p0, cipher_SHA256* p1){
 		GoUint32 result = SKY_coin_BlockHeader_Hash(p0,  p1);
 		return result;
 	}
 }
 
-%rename(SKY_coin_Block_HashBody) CSharp_skycoin_SKY_coin_Block_HashBody;
+%rename(SKY_coin_Block_HashBody) Java_skycoin_libjava_skycoinJNI_SKY_coin_Block_HashBody;
 %inline {
-	GoUint32 CSharp_skycoin_SKY_coin_Block_HashBody(Block__Handle p0, cipher_SHA256* p1){
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_coin_Block_HashBody(Block__Handle p0, cipher_SHA256* p1){
 		GoUint32 result = SKY_coin_Block_HashBody(p0,  p1);
 		return result;
 	}

@@ -1,25 +1,25 @@
 
 /* Handle not as pointer is input. */
 %typemap(in) Handle {
-	$input =  (long*)&$1;
+	$input =  (jlong*)&$1;
 } 
 %typemap(in) Handle* {
-	$input =  (long*)&$1;
+	$input =  (jlong*)&$1;
 } 
 %include "typemaps.i"
 %include cpointer.i
-%pointer_functions(GoSlice, GoSlicep);
+%pointer_functions(GoSlice, GoSlicePtr);
 %pointer_functions(GoUint8_, GoUint8Ptr);
-%pointer_functions(_GoString_, GoStringp);
-%pointer_functions(int, intp);
-%pointer_functions(coin__Transaction, coin__Transactionp);
+%pointer_functions(_GoString_, GoStringPtr);
+%pointer_functions(int, IntPtr);
+%pointer_functions(coin__Transaction, coin__TransactionPtr);
 %pointer_functions(AddressUxOuts_Handle, AddressUxOuts__HandlePtr);
-%pointer_functions(unsigned long long, GoUint64p);
-%pointer_functions(long long, Gointp);
-%pointer_functions(unsigned short, GoUint16p);
-%pointer_functions(cipher__Address, cipher__Addressp);
-%pointer_functions(Transactions__Handle, Transactions__Handlep);
-%pointer_functions(Transaction__Handle, Transaction__Handlep);
+%pointer_functions(unsigned long long, GoUint64Ptr);
+%pointer_functions(long long, GointPtr);
+%pointer_functions(unsigned short, GoUint16Ptr);
+%pointer_functions(cipher__Address, cipher__AddressPtr);
+%pointer_functions(Transactions__Handle, Transactions__HandlePtr);
+%pointer_functions(Transaction__Handle, Transaction__HandlePtr);
 %pointer_functions(Block__Handle,Block__HandlePtr);
 %pointer_functions(BlockBody__Handle,BlockBody__HandlePtr);
 %pointer_functions(Signature_Handle,Signature_HandlePtr);
@@ -41,43 +41,41 @@
 **/
 %include "typemaps.i"
 // Pubkey
-%typemap(ctype,pre="cipher_PubKey tmp$csinput = new_cipher_PubKeyp();") (GoUint8_ (*) [33])  "cipher__PubKey*"
-%typemap(jtype,pre="var tmp$csinput = cipher_PubKey.getCPtr ($csinput);") (GoUint8_ (*) [33])  "cipher_PubKey"
-%typemap(jstype,pre="var tmp$csinput = cipher_PubKey.getCPtr ($csinput);") (GoUint8_ (*) [33])  "cipher_PubKey"
-%typemap(jin,pre="var tmp$csinput = cipher_PubKey.getCPtr ($csinput);") (GoUint8_ (*) [33])  "tmp$csinput"
-
+%typemap(jni,pre="cipher_PubKey tmp$javainput = new_cipher_PubKeyPtr();") (GoUint8_ (*) [33])  "cipher__PubKey*"
+%typemap(jstype,pre="long tmp$javainput = cipher_PubKey.getCPtr ($javainput);") (GoUint8_ (*) [33])  "cipher_PubKey"
+%typemap(javain,pre="long tmp$javainput = cipher_PubKey.getCPtr ($javainput);") (GoUint8_ (*) [33])  "tmp$javainput"
 
 // Seckey
-%typemap(ctype,pre="cipher_SecKey tmp$csinput = new_cipher_SecKeyp();") (GoUint8_ (*) [32])  "cipher_SecKey*"
-%typemap(jtype,pre=" var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "cipher_SecKey"
-%typemap(jin,pre="var tmp$csinput = cipher_SecKey.getCPtr ($csinput);") (GoUint8_ (*) [32])  "tmp$csinput"
+%typemap(jni,pre="cipher_SecKey tmp$javainput = new_cipher_SecKeyPtr();") (GoUint8_ (*) [32])  "cipher_SecKey*"
+%typemap(jstype,pre=" long tmp$javainput = cipher_SecKey.getCPtr ($javainput);") (GoUint8_ (*) [32])  "cipher_SecKey"
+%typemap(javain,pre="long tmp$javainput = cipher_SecKey.getCPtr ($javainput);") (GoUint8_ (*) [32])  "tmp$javainput"
 
 // Sig
-%typemap(ctype,pre="cipher_Sig tmp$csinput = new cipher_Sig();") (GoUint8_ (*) [65])  "cipher_Sig*"
-%typemap(jtype,pre=" var tmp$csinput = cipher_Sig.getCPtr ($csinput);") (GoUint8_ (*) [65])  "cipher_Sig"
-%typemap(jin,pre="var tmp$csinput = cipher_Sig.getCPtr ($csinput);") (GoUint8_ (*) [65])  "tmp$csinput"
+%typemap(jni,pre="cipher_Sig tmp$javainput = new cipher_Sig();") (GoUint8_ (*) [65])  "cipher_Sig*"
+%typemap(jstype,pre=" long tmp$javainput = cipher_Sig.getCPtr ($javainput);") (GoUint8_ (*) [65])  "cipher_Sig"
+%typemap(javain,pre="long tmp$javainput = cipher_Sig.getCPtr ($javainput);") (GoUint8_ (*) [65])  "tmp$javainput"
 
 // cipher__Ripemd160
-%typemap(ctype,pre="cipher__Ripemd160 tmp$csinput = new_cipher_Ripemd160p();") (GoUint8_ (*) [20])  "cipher_Ripemd160*"
-%typemap(jtype,pre=" var tmp$csinput = cipher_Ripemd160.getCPtr ($csinput);") (GoUint8_ (*) [20])  "cipher_Ripemd160"
-%typemap(jin,pre="var tmp$csinput = cipher_Ripemd160.getCPtr ($csinput);") (GoUint8_ (*) [20])  "tmp$csinput"
-
+%typemap(jni,pre="cipher__Ripemd160 tmp$javainput = new_cipher_Ripemd160p();") (GoUint8_ (*) [20])  "cipher_Ripemd160*"
+%typemap(jstype,pre=" long tmp$javainput = cipher_Ripemd160.getCPtr ($javainput);") (GoUint8_ (*) [20])  "cipher_Ripemd160"
+%typemap(javain,pre="long tmp$javainput = cipher_Ripemd160.getCPtr ($javainput);") (GoUint8_ (*) [20])  "tmp$javainput"
 
 // GoString
-%typemap(jtype,pre=" var tmp$csinput = $csinput;") GoString "string"
-%typemap(jin,pre="var tmp$csinput = $csinput;") GoString  "tmp$csinput"
-%typemap(imtype,pre="var tmp$csinput  = $csinput;") GoString  "string"
-%typemap(ctype) GoString  "char*"
-%typemap(in) GoString  "$1.p=$input;$1.n=strlen($input);"
+// %typemap(jstype,pre=" string tmp$javainput = $javainput;") GoString "string"
+// %typemap(javain,pre="string tmp$javainput = $javainput;") GoString  "tmp$javainput"
+// %typemap(jtype,pre="string tmp$javainput  = $javainput;") GoString  "string"
+// %typemap(jni) GoString  "char*"
+// %typemap(in) GoString  "$1.p=$input;$1.n=strlen($input);"
 
-%typemap(ctype,pre="GoString_ tmp$csinput = new_GoStringp_();") GoString_*  "GoString*"
-%typemap(jtype,pre=" var tmp$csinput = _GoString_.getCPtr ($csinput);") GoString_*  "_GoString_"
-%typemap(jin,pre="var tmp$csinput = _GoString_.getCPtr ($csinput);") GoString_*  "tmp$csinput"
+%typemap(jni,pre="GoString_ tmp$javainput = new_GoStringp_();") GoString_*  "GoString*"
+%typemap(jstype,pre=" long tmp$javainput = _GoString_.getCPtr ($javainput);") GoString_*  "_GoString_"
+%typemap(javain,pre="long tmp$javainput = _GoString_.getCPtr ($javainput);") GoString_*  "tmp$javainput"
 
 // GoSlice
-%typemap(ctype) GoSlice_*  "GoSlice_ *"
-%typemap(jtype,pre=" var tmp$csinput = GoSlice.getCPtr ($csinput);") GoSlice_*  "GoSlice"
-%typemap(jin) GoSlice_*  "GoSlice.getCPtr ($csinput)"
+%typemap(jni) GoSlice_*  "GoSlice_ *"
+%typemap(jstype,pre=" long tmp$javainput = GoSlice.getCPtr ($javainput);") GoSlice_*  "GoSlice"
+%typemap(javain) GoSlice_*  "GoSlice.getCPtr ($javainput)"
+
 
 %apply unsigned short  {GoUint16, GoUint16_};
 %apply unsigned long  {GoUintptr, __SIZE_TYPE__};
@@ -99,7 +97,6 @@
 }
 
 // Array
-
 %include "arrays_java.i"
 %apply int[] {int *};
 %apply char[] {char *};

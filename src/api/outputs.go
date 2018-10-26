@@ -12,7 +12,7 @@ import (
 
 // outputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
 // URI: /api/v1/outputs
-// Method: GET
+// Method: GET, POST
 // Args:
 //    addrs: comma-separated list of addresses
 //    hashes: comma-separated list of uxout hashes
@@ -21,7 +21,7 @@ import (
 // Both filters cannot be specified.
 func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}

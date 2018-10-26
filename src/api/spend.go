@@ -476,7 +476,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if r.Header.Get("Content-Type") != "application/json" {
+		if r.Header.Get("Content-Type") != ContentTypeJSON {
 			wh.Error415(w)
 			return
 		}

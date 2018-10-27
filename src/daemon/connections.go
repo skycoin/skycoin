@@ -355,7 +355,7 @@ func (c *Connections) remove(addr string) error {
 	c.Lock()
 	defer c.Unlock()
 
-	ip, port, err := iputil.SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		return err
 	}

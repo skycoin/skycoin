@@ -16,7 +16,7 @@ On  of repo, run:
 
 ```sh
 $ cd docker/images/dev-gui
-$ docker build -t skycoin/skycoindev-cli:gui .
+$ docker build -t skycoin/skycoindev-cli:vscode .
 ```
 
 # How to use this image
@@ -32,7 +32,7 @@ $ docker build -t skycoin/skycoindev-cli:gui .
         -v $PWD:/go/src \
         -w /go/src \
         -e DISPLAY=$DISPLAY \
-        skycoin/skycoindev-cli:gui
+        skycoin/skycoindev-cli:vscode
 ```
 5. You should see vscode pop up.
 6. Have fun. Write some code. Close vscode when you're done, and ctrl+c to shut down the container. Your files will be in the path on the host where you started.
@@ -48,7 +48,7 @@ You must add VS_EXTENSIONS environment variable to command with extensions of yo
        -w /go/src \
        -e DISPLAY=$DISPLAY \
        -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
-       skycoin/skycoindev-cli:gui
+       skycoin/skycoindev-cli:vscode
 ```
 
 This downloads the skycoin source to src/skycoin/skycoin and changes the owner

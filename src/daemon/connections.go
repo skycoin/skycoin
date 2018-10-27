@@ -364,8 +364,8 @@ func (c *Connections) remove(addr string) error {
 	if conn != nil {
 		x, ok := c.mirrors[conn.Mirror]
 		if ok {
-			if x[ip] != port {
-				logger.Critical().WithField("addr", addr).Warning("Indexed IP+Mirror value found but the port doesn't match")
+			if x[ip] != conn.ListenPort {
+				logger.Critical().WithField("addr", addr).Warning("Indexed IP+Mirror value found but the ListenPort doesn't match")
 			}
 
 			delete(x, ip)

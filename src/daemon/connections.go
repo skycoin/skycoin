@@ -2,16 +2,24 @@ package daemon
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/util/iputil"
 )
 
 // ConnectionState connection state in the state machine
+// Connections have three states: "pending", "connected" and "introduced"
+// A connection in the "pending" state has been selected to establish a TCP connection,
+// but the connection has not been established yet.
+// Only outgoing connections will ever be in the "pending" state;
+// incoming connections begin at the "connected" state.
+// A connection in the "connected" state has established a TCP connection,
+// but has not completed the introduction handshake.
+// A connection in the "introduced" state has completed the introduction handshake.
 type ConnectionState string
 
 const (
@@ -30,20 +38,9 @@ var (
 	ErrConnectionAlreadyRegistered = errors.New("Connection already registered")
 	// ErrConnectionIPMirrorAlreadyRegistered connection already registered for a given base IP and mirror
 	ErrConnectionIPMirrorAlreadyRegistered = errors.New("Connection already registered with this base IP and mirror")
-	// ErrMirrorZero mirror value is 0
-	ErrMirrorZero = errors.New("Mirror cannot be 0")
 )
 
-// Connection a connection's state within the daemon
-type Connection struct {
-	GnetID       int
-	LastSent     time.Time
-	LastReceived time.Time
-	Addr         string
-	ConnectionDetails
-}
-
-// ConnectionDetails extra connection data
+// ConnectionDetails connection data managed by daemon
 type ConnectionDetails struct {
 	State           ConnectionState
 	Outgoing        bool
@@ -64,29 +61,24 @@ func (c ConnectionDetails) HasIntroduced() bool {
 	}
 }
 
-func newConnection(c *connection) Connection {
-	if c == nil {
-		return Connection{}
-	}
-
-	conn := Connection{
-		Addr:              c.addr,
-		ConnectionDetails: c.ConnectionDetails,
-	}
-
-	if c.gnetConnection != nil {
-		conn.GnetID = c.gnetConnection.ID
-		conn.LastSent = c.gnetConnection.LastSent
-		conn.LastReceived = c.gnetConnection.LastReceived
-	}
-
-	return conn
+type connection struct {
+	Addr string
+	ConnectionDetails
 }
 
-type connection struct {
-	gnetConnection *gnet.Connection
-	addr           string
-	ConnectionDetails
+// ListenAddr returns the addr that connection listens on, if available
+func (c *connection) ListenAddr() string {
+	if c.ListenPort == 0 {
+		return ""
+	}
+
+	ip, _, err := iputil.SplitAddr(c.Addr)
+	if err != nil {
+		logger.Critical().WithError(err).WithField("addr", c.Addr).Error("connection.ListenAddr addr could not be split")
+		return ""
+	}
+
+	return fmt.Sprintf("%s:%d", ip, c.ListenPort)
 }
 
 // Connections manages a collection of Connection
@@ -106,41 +98,44 @@ func NewConnections() *Connections {
 	}
 }
 
-// AddPendingOutgoing adds a new pending outgoing connection
-func (c *Connections) AddPendingOutgoing(addr string) (Connection, error) {
+// pending adds a new pending outgoing connection
+func (c *Connections) pending(addr string) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
 
-	ip, _, err := iputil.SplitAddr(addr)
+	ip, port, err := iputil.SplitAddr(addr)
 	if err != nil {
-		return Connection{}, err
+		return nil, err
+	}
+
+	if _, ok := c.conns[addr]; ok {
+		return nil, ErrConnectionAlreadyRegistered
 	}
 
 	c.ipCounts[ip]++
 
 	c.conns[addr] = &connection{
-		addr: addr,
+		Addr: addr,
 		ConnectionDetails: ConnectionDetails{
-			State:    ConnectionStatePending,
-			Outgoing: true,
+			State:      ConnectionStatePending,
+			Outgoing:   true,
+			ListenPort: port,
 		},
 	}
 
 	logger.WithField("addr", addr).Debug("AddPendingOutgoing")
 
-	return newConnection(c.conns[addr]), nil
+	return c.conns[addr], nil
 }
 
-// Connected the connection has connected
-func (c *Connections) Connected(gnetConn *gnet.Connection) (Connection, error) {
+// connected the connection has connected
+func (c *Connections) connected(addr string) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
 
-	addr := gnetConn.Addr()
-
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		return Connection{}, err
+		return nil, err
 	}
 
 	conn := c.conns[addr]
@@ -149,23 +144,22 @@ func (c *Connections) Connected(gnetConn *gnet.Connection) (Connection, error) {
 		c.ipCounts[ip]++
 
 		conn = &connection{
-			addr: addr,
+			Addr: addr,
 		}
 
 		c.conns[addr] = conn
 	} else {
-		if addr != conn.addr {
+		if addr != conn.Addr {
 			err := errors.New("gnet.Connection.Addr does not match recorded Connection address")
 			logger.Critical().WithError(err).Error()
-			return Connection{}, err
+			return nil, err
 		}
 
 		if conn.State != ConnectionStatePending {
-			logger.Critical().WithField("state", conn.State).Warning("Transitioning to State connected but State is not pending")
+			logger.Critical().WithField("state", conn.State).Warningf("Transitioning to State %q but State is not %q", ConnectionStateConnected, ConnectionStatePending)
 		}
 	}
 
-	conn.gnetConnection = gnetConn
 	conn.ConnectedAt = time.Now().UTC()
 	conn.State = ConnectionStateConnected
 
@@ -174,68 +168,92 @@ func (c *Connections) Connected(gnetConn *gnet.Connection) (Connection, error) {
 		"outgoing": conn.Outgoing,
 	}).Debug("Connected")
 
-	return newConnection(conn), nil
+	return conn, nil
 }
 
-// Introduced the connection has introduced itself
-func (c *Connections) Introduced(addr string, m *IntroductionMessage) (Connection, error) {
+// introduced the connection has introduced itself
+func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
 
-	ip, port, err := iputil.SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		return Connection{}, err
-	}
-
-	if err := c.canUpdateMirror(ip, port, m.Mirror); err != nil {
-		return Connection{}, err
+		return nil, err
 	}
 
 	conn := c.conns[addr]
 	if conn == nil {
-		return Connection{}, ErrConnectionNotExist
+		return nil, ErrConnectionNotExist
 	}
 
-	if err := c.updateMirror(ip, port, m.Mirror); err != nil {
+	listenPort := conn.ListenPort
+	if !conn.Outgoing {
+		listenPort = m.ListenPort
+	}
+
+	if conn.State != ConnectionStateConnected {
+		logger.Critical().WithFields(logrus.Fields{
+			"addr":  conn.Addr,
+			"state": conn.State,
+		}).Warningf("Transitioning to State %q but State is not %q", ConnectionStateIntroduced, ConnectionStateConnected)
+	}
+
+	if err := c.canUpdateMirror(ip, m.Mirror, listenPort); err != nil {
+		return nil, err
+	}
+
+	// For outgoing connections, which are created by pending,
+	// the listen port is set from the addr's port number.
+	// Since we are connecting to it, it is presumed to be that peer's open listening port.
+	// A misbehaving peer could report a different ListenPort in their IntroductionMessage,
+	// but it shouldn't affect our records.
+	if conn.Outgoing && conn.ListenPort != m.ListenPort {
+		logger.Critical().WithFields(logrus.Fields{
+			"addr":              conn.Addr,
+			"connListenPort":    listenPort,
+			"messageListenPort": m.ListenPort,
+		}).Warning("Outgoing connection's ListenPort does not match reported IntroductionMessage ListenPort")
+	}
+
+	if err := c.updateMirror(ip, m.Mirror, listenPort); err != nil {
 		logger.WithError(err).Panic("updateMirror failed, but shouldn't")
 	}
 
 	conn.State = ConnectionStateIntroduced
 	conn.Mirror = m.Mirror
-	conn.ListenPort = m.Port
-	conn.ProtocolVersion = m.Version
+	conn.ProtocolVersion = m.ProtocolVersion
+	conn.ListenPort = listenPort
 
 	logger.WithFields(logrus.Fields{
 		"addr":     addr,
 		"outgoing": conn.Outgoing,
 	}).Debug("Introduced")
 
-	return newConnection(conn), nil
+	return conn, nil
 }
 
-// Get returns a connection by address
-func (c *Connections) Get(addr string) (Connection, bool) {
+// get returns a connection by address
+func (c *Connections) get(addr string) *connection {
 	c.Lock()
 	defer c.Unlock()
 
-	conn, ok := c.conns[addr]
-	return newConnection(conn), ok
+	return c.conns[addr]
 }
 
 // modify modifies a connection.
 // It is unsafe to modify the Mirror value with this method
-func (c *Connections) modify(addr string, f func(c *ConnectionDetails) error) error {
+func (c *Connections) modify(addr string, f func(c *ConnectionDetails)) error {
 	conn := c.conns[addr]
 	if conn == nil {
 		return ErrConnectionNotExist
 	}
 
+	// copy and modify
 	cd := conn.ConnectionDetails
 
-	if err := f(&cd); err != nil {
-		return err
-	}
+	f(&cd)
 
+	// compare to original
 	if cd.Mirror != conn.ConnectionDetails.Mirror {
 		logger.Panic("Connections.modify connection mirror value was changed")
 	}
@@ -250,47 +268,32 @@ func (c *Connections) SetHeight(addr string, height uint64) error {
 	c.Lock()
 	defer c.Unlock()
 
-	return c.modify(addr, func(c *ConnectionDetails) error {
+	return c.modify(addr, func(c *ConnectionDetails) {
 		c.Height = height
-		return nil
 	})
 }
 
-// GetMirrorPort returns the port matching a given IP address (without port) and mirror value
-func (c *Connections) GetMirrorPort(ip string, mirror uint32) uint16 {
-	c.Lock()
-	defer c.Unlock()
-
-	x := c.mirrors[mirror]
-	if x == nil {
-		return 0
-	}
-
-	return x[ip]
-}
-
-func (c *Connections) updateMirror(ip string, port uint16, mirror uint32) error {
-	if mirror == 0 {
-		return ErrMirrorZero
-	}
+func (c *Connections) updateMirror(ip string, mirror uint32, port uint16) error {
+	logger.Debugf("updateMirror ip=%s mirror=%d port=%d", ip, mirror, port)
 
 	x := c.mirrors[mirror]
 	if x == nil {
 		x = make(map[string]uint16, 2)
 	}
+
 	if _, ok := x[ip]; ok {
 		return ErrConnectionIPMirrorAlreadyRegistered
 	}
+
 	x[ip] = port
+	c.mirrors[mirror] = x
 
 	return nil
 }
 
-func (c *Connections) canUpdateMirror(ip string, port uint16, mirror uint32) error {
-	if mirror == 0 {
-		return ErrMirrorZero
-	}
-
+// canUpdateMirror returns false if a connection already exists with the same base IP and mirror value.
+// This prevents duplicate connections to/from a single client.
+func (c *Connections) canUpdateMirror(ip string, mirror uint32, port uint16) error {
 	x := c.mirrors[mirror]
 	if x == nil {
 		return nil
@@ -303,8 +306,8 @@ func (c *Connections) canUpdateMirror(ip string, port uint16, mirror uint32) err
 	return nil
 }
 
-// GetIPCount returns the number of connections for a given base IP (without port)
-func (c *Connections) GetIPCount(ip string) int {
+// IPCount returns the number of connections for a given base IP (without port)
+func (c *Connections) IPCount(ip string) int {
 	c.Lock()
 	defer c.Unlock()
 	return c.ipCounts[ip]
@@ -343,15 +346,12 @@ func (c *Connections) PendingLen() int {
 	return n
 }
 
-// Remove removes connection. Returns an error if the addr is invalid.
+// remove removes connection. Returns an error if the addr is invalid.
 // If a connection with this address does not exist, nothing happens.
-func (c *Connections) Remove(addr string) error {
+func (c *Connections) remove(addr string) error {
 	c.Lock()
 	defer c.Unlock()
-	return c.remove(addr)
-}
 
-func (c *Connections) remove(addr string) error {
 	ip, port, err := iputil.SplitAddr(addr)
 	if err != nil {
 		return err
@@ -384,37 +384,14 @@ func (c *Connections) remove(addr string) error {
 	return nil
 }
 
-// RemoveMatchedBy remove connections that match the matchFunc and return them
-func (c *Connections) RemoveMatchedBy(f func(c Connection) (bool, error)) ([]string, error) {
+// all returns a copy of all connections
+func (c *Connections) all() []connection {
 	c.Lock()
 	defer c.Unlock()
 
-	var addrs []string
-	for addr, conn := range c.conns {
-		if ok, err := f(newConnection(conn)); err != nil {
-			return nil, err
-		} else if ok {
-			addrs = append(addrs, addr)
-		}
-	}
-
-	for _, a := range addrs {
-		if err := c.remove(a); err != nil {
-			logger.WithError(err).Panic("Invalid address stored inside Connections")
-		}
-	}
-
-	return addrs, nil
-}
-
-// All returns a copy of all connections
-func (c *Connections) All() []Connection {
-	c.Lock()
-	defer c.Unlock()
-
-	conns := make([]Connection, 0, len(c.conns))
+	conns := make([]connection, 0, len(c.conns))
 	for _, c := range c.conns {
-		conns = append(conns, newConnection(c))
+		conns = append(conns, *c)
 	}
 
 	return conns

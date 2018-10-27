@@ -90,15 +90,9 @@ type Messages struct {
 
 // NewMessages creates Messages
 func NewMessages(c MessagesConfig) *Messages {
-	// mirror cannot be zero
-	var mirror uint32
-	for mirror == 0 {
-		mirror = rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32()
-	}
-
 	return &Messages{
 		Config: c,
-		Mirror: mirror,
+		Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 	}
 }
 
@@ -192,8 +186,7 @@ func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 	for _, ps := range peers {
 		ipaddr, err := NewIPAddr(ps.Addr)
 		if err != nil {
-			logger.Warningf("GivePeersMessage skipping address %s", ps.Addr)
-			logger.Warning(err.Error())
+			logger.WithError(err).WithField("addr", ps.Addr).Warning("GivePeersMessage skipping invalid address")
 			continue
 		}
 		ipaddrs = append(ipaddrs, ipaddr)
@@ -234,11 +227,11 @@ type IntroductionMessage struct {
 	// Mirror is a random value generated on client startup that is used
 	// to identify self-connections
 	Mirror uint32
-	// Port is the port that this client is listening on
-	Port uint16
+	// ListenPort is the port that this client is listening on
+	ListenPort uint16
 	// Protocol version
-	Version int32
-	c       *gnet.MessageContext `enc:"-"`
+	ProtocolVersion int32
+	c               *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
 	valid bool `enc:"-"` // skip it during encoding
 	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
@@ -249,16 +242,15 @@ type IntroductionMessage struct {
 // NewIntroductionMessage creates introduction message
 func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey) *IntroductionMessage {
 	return &IntroductionMessage{
-		Mirror:  mirror,
-		Version: version,
-		Port:    port,
-		Extra:   pubkey[:],
+		Mirror:          mirror,
+		ProtocolVersion: version,
+		ListenPort:      port,
+		Extra:           pubkey[:],
 	}
 }
 
 // Handle Responds to an gnet.Pool event. We implement Handle() here because we
-// need to control the DisconnectReason sent back to gnet.  We still implement
-// Process(), where we do modifications that are not threadsafe
+// need to control the DisconnectReason sent back to gnet.
 func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	d := daemon.(Daemoner)
 
@@ -274,8 +266,8 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		// Disconnect if peer version is not within the supported range
 		dc := d.DaemonConfig()
-		if intro.Version < dc.MinProtocolVersion {
-			logger.Infof("%s protocol version %d below minimum supported protocol version %d. Disconnecting.", mc.Addr, intro.Version, dc.MinProtocolVersion)
+		if intro.ProtocolVersion < dc.MinProtocolVersion {
+			logger.Infof("%s protocol version %d below minimum supported protocol version %d. Disconnecting.", mc.Addr, intro.ProtocolVersion, dc.MinProtocolVersion)
 			if err := d.Disconnect(mc.Addr, ErrDisconnectVersionNotSupported); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
@@ -284,7 +276,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		logger.WithFields(logrus.Fields{
 			"addr":            mc.Addr,
-			"protocolVersion": intro.Version,
+			"protocolVersion": intro.ProtocolVersion,
 		}).Info("Peer protocol version accepted")
 
 		// v25 Checks the blockchain pubkey, would accept message with no Pubkey
@@ -322,27 +314,19 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		}
 
 		// Checks if the introduction message is from outgoing connection.
-		// It's outgoing connection if port == intro.Port, as the incoming
+		// It's outgoing connection if port == intro.ListenPort, as the incoming
 		// connection's port is a random port, it's different from the port
 		// in introduction message.
-		if port == intro.Port {
+		if port == intro.ListenPort {
 			if err := d.SetHasIncomingPort(mc.Addr); err != nil {
 				logger.Errorf("Failed to set peer has incoming port status, %v", err)
 			}
 		} else {
-			if err := d.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port)); err != nil {
+			if err := d.AddPeer(fmt.Sprintf("%s:%d", ip, intro.ListenPort)); err != nil {
 				logger.Errorf("Failed to add peer: %v", err)
 			}
 		}
 
-		// Disconnect if connected twice to the same peer (judging by ip:mirror)
-		if knownPort := d.GetMirrorPort(mc.Addr, intro.Mirror); knownPort != 0 {
-			logger.Infof("%s is already connected on port %d", mc.Addr, knownPort)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectConnectedTwice); err != nil {
-				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-			}
-			return ErrDisconnectConnectedTwice
-		}
 		return nil
 	}()
 
@@ -371,10 +355,8 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		logger.WithError(err).WithField("addr", a).Warning("ConnectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
-		case ErrMirrorZero:
-			reason = ErrDisconnectInvalidMirror
 		case ErrConnectionIPMirrorAlreadyRegistered:
-			reason = ErrDisconnectMirrorInUse
+			reason = ErrDisconnectConnectedTwice
 		default:
 			reason = ErrDisconnectIncomprehensibleError
 		}

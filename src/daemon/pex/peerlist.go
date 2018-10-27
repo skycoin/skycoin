@@ -220,8 +220,8 @@ func (pl *peerlist) len() int {
 	return len(pl.peers)
 }
 
-// getPeerByAddr returns peer of given address
-func (pl *peerlist) getPeerByAddr(addr string) (Peer, bool) {
+// getPeer returns peer for a given address
+func (pl *peerlist) getPeer(addr string) (Peer, bool) {
 	p, ok := pl.peers[addr]
 	if ok {
 		return *p, true

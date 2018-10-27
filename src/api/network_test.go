@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -48,24 +49,28 @@ func TestConnection(t *testing.T) {
 			err:    "",
 			addr:   "addr",
 			gatewayGetConnectionResult: &daemon.Connection{
-				ID:           1,
-				Addr:         "127.0.0.1",
-				LastSent:     99999,
-				LastReceived: 1111111,
-				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
-				ListenPort:   9877,
-				Height:       1234,
+				Addr: "127.0.0.1:6061",
+				GnetConnectionDetails: daemon.GnetConnectionDetails{
+					GnetID:       1,
+					LastSent:     time.Unix(99999, 0),
+					LastReceived: time.Unix(1111111, 0),
+				},
+				ConnectionDetails: daemon.ConnectionDetails{
+					Outgoing:   true,
+					State:      daemon.ConnectionStateIntroduced,
+					Mirror:     6789,
+					ListenPort: 9877,
+					Height:     1234,
+				},
 			},
 			result: &readable.Connection{
-				ID:           1,
-				Addr:         "127.0.0.1",
+				Addr:         "127.0.0.1:6061",
+				GnetID:       1,
 				LastSent:     99999,
 				LastReceived: 1111111,
 				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
+				State:        daemon.ConnectionStateIntroduced,
+				Mirror:       6789,
 				ListenPort:   9877,
 				Height:       1234,
 			},
@@ -147,26 +152,30 @@ func TestConnections(t *testing.T) {
 			err:    "",
 			gatewayGetSolicitedConnectionsResult: []daemon.Connection{
 				{
-					ID:           1,
-					Addr:         "127.0.0.1",
-					LastSent:     99999,
-					LastReceived: 1111111,
-					Outgoing:     true,
-					Introduced:   true,
-					Mirror:       9876,
-					ListenPort:   9877,
-					Height:       1234,
+					Addr: "127.0.0.1:6061",
+					GnetConnectionDetails: daemon.GnetConnectionDetails{
+						GnetID:       1,
+						LastSent:     time.Unix(99999, 0),
+						LastReceived: time.Unix(1111111, 0),
+					},
+					ConnectionDetails: daemon.ConnectionDetails{
+						Outgoing:   true,
+						State:      daemon.ConnectionStateIntroduced,
+						Mirror:     9876,
+						ListenPort: 9877,
+						Height:     1234,
+					},
 				},
 			},
 			result: Connections{
 				Connections: []readable.Connection{
 					{
-						ID:           1,
-						Addr:         "127.0.0.1",
+						Addr:         "127.0.0.1:6061",
+						GnetID:       1,
 						LastSent:     99999,
 						LastReceived: 1111111,
 						Outgoing:     true,
-						Introduced:   true,
+						State:        daemon.ConnectionStateIntroduced,
 						Mirror:       9876,
 						ListenPort:   9877,
 						Height:       1234,

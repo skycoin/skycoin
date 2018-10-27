@@ -6,16 +6,16 @@ import (
 
 // Connection a connection's state within the daemon
 type Connection struct {
-	GnetID       int    `json:"id"`
-	Addr         string `json:"address"`
-	LastSent     int64  `json:"last_sent"`
-	LastReceived int64  `json:"last_received"`
-	ConnectedAt  int64  `json:"connected_at"`
-	Outgoing     bool   `json:"outgoing"`
-	State        string `json:"state"`
-	Mirror       uint32 `json:"mirror"`
-	ListenPort   uint16 `json:"listen_port"`
-	Height       uint64 `json:"height"`
+	GnetID       int                    `json:"id"`
+	Addr         string                 `json:"address"`
+	LastSent     int64                  `json:"last_sent"`
+	LastReceived int64                  `json:"last_received"`
+	ConnectedAt  int64                  `json:"connected_at"`
+	Outgoing     bool                   `json:"outgoing"`
+	State        daemon.ConnectionState `json:"state"`
+	Mirror       uint32                 `json:"mirror"`
+	ListenPort   uint16                 `json:"listen_port"`
+	Height       uint64                 `json:"height"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags
@@ -41,7 +41,7 @@ func NewConnection(c *daemon.Connection) Connection {
 		LastReceived: lastReceived,
 		ConnectedAt:  connectedAt,
 		Outgoing:     c.Outgoing,
-		State:        string(c.State),
+		State:        c.State,
 		Mirror:       c.Mirror,
 		ListenPort:   c.ListenPort,
 		Height:       c.Height,

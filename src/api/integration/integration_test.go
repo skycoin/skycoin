@@ -27,6 +27,7 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -1829,19 +1830,43 @@ func TestLiveNetworkConnections(t *testing.T) {
 
 	require.NotEmpty(t, connections.Connections)
 
+	checked := false
+
 	for _, cc := range connections.Connections {
 		connection, err := c.NetworkConnection(cc.Addr)
+
+		// The connection may have disconnected by now
+		if err != nil {
+			assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
+			continue
+		}
+
 		require.NoError(t, err)
 		require.NotEmpty(t, cc.Addr)
 		require.Equal(t, cc.Addr, connection.Addr)
-		require.Equal(t, cc.ID, connection.ID)
+		require.Equal(t, cc.GnetID, connection.GnetID)
 		require.Equal(t, cc.ListenPort, connection.ListenPort)
 		require.Equal(t, cc.Mirror, connection.Mirror)
-		require.Equal(t, cc.Introduced, connection.Introduced)
+
+		switch cc.State {
+		// If the connection was introduced it should stay introduced
+		case daemon.ConnectionStateIntroduced:
+			require.Equal(t, daemon.ConnectionStateIntroduced, connection.State)
+			// If the connection was connected it should stay connected or have become introduced
+		case daemon.ConnectionStateConnected:
+			require.NotEqual(t, daemon.ConnectionStatePending, connection.State)
+		}
+
 		require.Equal(t, cc.Outgoing, connection.Outgoing)
 		require.True(t, cc.LastReceived <= connection.LastReceived)
 		require.True(t, cc.LastSent <= connection.LastSent)
+
+		checked = true
 	}
+
+	// This could unfortunately occur if a connection disappeared in between the two calls,
+	// which will require a test re-run.
+	require.True(t, checked, "Was not able to find any connection by address, despite finding connections when querying all")
 }
 
 func TestNetworkDefaultConnections(t *testing.T) {

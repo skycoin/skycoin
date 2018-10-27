@@ -21,11 +21,6 @@ func TestIntroductionMessage(t *testing.T) {
 	pubkey, _ := cipher.GenerateKeyPair()
 	pubkey2, _ := cipher.GenerateKeyPair()
 
-	type mirrorPortResult struct {
-		port  uint16
-		exist bool
-	}
-
 	type daemonMockValue struct {
 		protocolVersion            uint32
 		minProtocolVersion         uint32
@@ -34,18 +29,21 @@ func TestIntroductionMessage(t *testing.T) {
 		isMaxConnectionsReached    bool
 		isMaxConnectionsReachedErr error
 		setHasIncomingPortErr      error
-		getMirrorPortResult        mirrorPortResult
 		recordMessageEventErr      error
 		pubkey                     cipher.PubKey
 		disconnectReason           gnet.DisconnectReason
 		disconnectErr              error
 		addPeerArg                 string
 		addPeerErr                 error
+		connectionIntroducedErr    error
+		requestBlocksFromAddrErr   error
+		announceAllTxnsErr         error
 	}
 
 	tt := []struct {
 		name      string
 		addr      string
+		doProcess bool
 		mockValue daemonMockValue
 		intro     *IntroductionMessage
 		err       error
@@ -56,15 +54,12 @@ func TestIntroductionMessage(t *testing.T) {
 			mockValue: daemonMockValue{
 				mirror:          10000,
 				protocolVersion: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				valid:           true,
 			},
 			err: nil,
 		},
@@ -74,17 +69,14 @@ func TestIntroductionMessage(t *testing.T) {
 			mockValue: daemonMockValue{
 				mirror:          10000,
 				protocolVersion: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
-				pubkey: pubkey,
+				pubkey:          pubkey,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   pubkey[:],
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				valid:           true,
+				Extra:           pubkey[:],
 			},
 			err: nil,
 		},
@@ -94,17 +86,14 @@ func TestIntroductionMessage(t *testing.T) {
 			mockValue: daemonMockValue{
 				mirror:          10000,
 				protocolVersion: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
-				pubkey: pubkey,
+				pubkey:          pubkey,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   pubkey[:],
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				valid:           true,
+				Extra:           pubkey[:],
 			},
 			err: nil,
 		},
@@ -114,17 +103,14 @@ func TestIntroductionMessage(t *testing.T) {
 			mockValue: daemonMockValue{
 				mirror:          10000,
 				protocolVersion: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
-				pubkey: pubkey,
+				pubkey:          pubkey,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   append(pubkey[:], []byte("additional data")...),
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				valid:           true,
+				Extra:           append(pubkey[:], []byte("additional data")...),
 			},
 			err: nil,
 		},
@@ -132,20 +118,17 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message with different pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:          10000,
-				protocolVersion: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
+				mirror:           10000,
+				protocolVersion:  1,
 				pubkey:           pubkey,
 				disconnectReason: ErrDisconnectBlockchainPubkeyNotMatched,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   pubkey2[:],
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				valid:           true,
+				Extra:           pubkey2[:],
 			},
 			err: ErrDisconnectBlockchainPubkeyNotMatched,
 		},
@@ -153,20 +136,17 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message with invalid pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:          10000,
-				protocolVersion: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
+				mirror:           10000,
+				protocolVersion:  1,
 				pubkey:           pubkey,
 				disconnectReason: ErrDisconnectInvalidExtraData,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   []byte("invalid extra data"),
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				valid:           true,
+				Extra:           []byte("invalid extra data"),
 			},
 			err: ErrDisconnectInvalidExtraData,
 		},
@@ -182,7 +162,7 @@ func TestIntroductionMessage(t *testing.T) {
 			err: ErrDisconnectSelf,
 		},
 		{
-			name: "Version below minimum supported version",
+			name: "ProtocolVersion below minimum supported version",
 			mockValue: daemonMockValue{
 				mirror:             10000,
 				protocolVersion:    1,
@@ -190,8 +170,8 @@ func TestIntroductionMessage(t *testing.T) {
 				disconnectReason:   ErrDisconnectVersionNotSupported,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 0,
+				Mirror:          10001,
+				ProtocolVersion: 0,
 			},
 			err: ErrDisconnectVersionNotSupported,
 		},
@@ -205,9 +185,9 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey:           pubkey,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 1,
-				Port:    6000,
+				Mirror:          10001,
+				ProtocolVersion: 1,
+				ListenPort:      6000,
 			},
 			err: ErrDisconnectIncomprehensibleError,
 		},
@@ -219,41 +199,36 @@ func TestIntroductionMessage(t *testing.T) {
 				protocolVersion:         1,
 				isDefaultConnection:     true,
 				isMaxConnectionsReached: true,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
-				pubkey:     pubkey,
-				addPeerArg: "121.121.121.121:6000",
-				addPeerErr: nil,
+				pubkey:                  pubkey,
+				addPeerArg:              "121.121.121.121:6000",
+				addPeerErr:              nil,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 1,
-				Port:    6000,
-				valid:   true,
+				Mirror:          10001,
+				ProtocolVersion: 1,
+				ListenPort:      6000,
+				valid:           true,
 			},
 		},
 		{
-			name: "Connect twice",
-			addr: "121.121.121.121:6000",
+			name:      "Connect twice",
+			addr:      "121.121.121.121:6000",
+			doProcess: true,
 			mockValue: daemonMockValue{
-				mirror:              10000,
-				protocolVersion:     1,
-				isDefaultConnection: true,
-				getMirrorPortResult: mirrorPortResult{
-					exist: true,
-				},
-				pubkey:           pubkey,
-				addPeerArg:       "121.121.121.121:6000",
-				addPeerErr:       nil,
-				disconnectReason: ErrDisconnectConnectedTwice,
+				mirror:                  10000,
+				protocolVersion:         1,
+				isDefaultConnection:     true,
+				pubkey:                  pubkey,
+				addPeerArg:              "121.121.121.121:6000",
+				addPeerErr:              nil,
+				disconnectReason:        ErrDisconnectConnectedTwice,
+				connectionIntroducedErr: ErrConnectionIPMirrorAlreadyRegistered,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 1,
-				Port:    6000,
+				Mirror:          10001,
+				ProtocolVersion: 1,
+				ListenPort:      6000,
 			},
-			err: ErrDisconnectConnectedTwice,
 		},
 	}
 
@@ -270,7 +245,6 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("Mirror").Return(tc.mockValue.mirror)
 			d.On("IsDefaultConnection", tc.addr).Return(tc.mockValue.isDefaultConnection)
 			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
-			d.On("GetMirrorPort", tc.addr, tc.intro.Mirror).Return(tc.mockValue.getMirrorPortResult.port, tc.mockValue.getMirrorPortResult.exist)
 			d.On("RecordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("ResetRetryTimes", tc.addr)
 			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
@@ -279,9 +253,19 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("RemoveFromExpectingIntroductions", tc.addr)
 			d.On("IsMaxDefaultConnectionsReached").Return(tc.mockValue.isMaxConnectionsReached, tc.mockValue.isMaxConnectionsReachedErr)
 			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
+			d.On("ConnectionIntroduced", tc.addr, tc.intro).Return(tc.mockValue.connectionIntroducedErr)
+			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
+			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
 
 			err := tc.intro.Handle(mc, d)
-			require.Equal(t, tc.err, err)
+
+			if tc.doProcess {
+				require.NoError(t, err)
+				tc.intro.Process(d)
+				d.AssertCalled(t, "Disconnect", tc.addr, tc.mockValue.disconnectReason)
+			} else {
+				require.Equal(t, tc.err, err)
+			}
 		})
 	}
 }
@@ -300,19 +284,19 @@ func TestMessageEncodeDecode(t *testing.T) {
 			goldenFile: "intro-msg.golden",
 			obj:        &IntroductionMessage{},
 			msg: &IntroductionMessage{
-				Mirror:  99998888,
-				Port:    8888,
-				Version: 12341234,
+				Mirror:          99998888,
+				ListenPort:      8888,
+				ProtocolVersion: 12341234,
 			},
 		},
 		{
 			goldenFile: "intro-msg-pubkey.golden",
 			obj:        &IntroductionMessage{},
 			msg: &IntroductionMessage{
-				Mirror:  99998888,
-				Port:    8888,
-				Version: 12341234,
-				Extra:   introPubKey[:],
+				Mirror:          99998888,
+				ListenPort:      8888,
+				ProtocolVersion: 12341234,
+				Extra:           introPubKey[:],
 			},
 		},
 		{

@@ -94,7 +94,7 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 	p := NewConnectionPool(cfg, nil)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		require.False(t, solicited)
 		cc <- p.pool[1]
 	}
@@ -131,7 +131,7 @@ func TestAcceptConnections(t *testing.T) {
 
 	cc := make(chan *Connection, 1)
 	var wasSolicited *bool
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		wasSolicited = &solicited
 		require.False(t, solicited)
 		cc <- p.pool[1]
@@ -220,7 +220,7 @@ func TestHandleConnection(t *testing.T) {
 	// Unsolicited
 	cc := make(chan *Connection, 1)
 	var wasSolicited *bool
-	p.Config.ConnectCallback = func(address string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		wasSolicited = &solicited
 		cc <- p.pool[1]
 	}
@@ -250,7 +250,7 @@ func TestHandleConnection(t *testing.T) {
 	require.False(t, *wasSolicited)
 
 	// Solicited
-	p.Config.ConnectCallback = func(address string, s bool) {
+	p.Config.ConnectCallback = func(c *Connection, s bool) {
 		wasSolicited = &s
 		cc <- p.pool[2]
 	}
@@ -351,7 +351,7 @@ func TestDisconnect(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		cc <- p.pool[1]
 	}
 
@@ -494,7 +494,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	p := NewConnectionPool(cfg, nil)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -542,7 +542,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	p := NewConnectionPool(cfg, nil)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -585,7 +585,7 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	p := NewConnectionPool(cfg, nil)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -631,7 +631,7 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 	p := NewConnectionPool(cfg, nil)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -682,8 +682,8 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
-		cc <- p.addresses[addr]
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
+		cc <- p.addresses[c.Addr()]
 	}
 
 	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
@@ -817,7 +817,7 @@ func TestConnectionWriteLoop(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		cc <- p.pool[1]
 	}
 
@@ -917,7 +917,7 @@ func TestPoolSendMessageOK(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		cc <- p.pool[1]
 	}
 
@@ -955,7 +955,7 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		cc <- p.pool[1]
 	}
 
@@ -1013,7 +1013,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	ready := make(chan struct{})
 	var i int
 	var counterLock sync.Mutex
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
+	p.Config.ConnectCallback = func(c *Connection, solicited bool) {
 		counterLock.Lock()
 		defer counterLock.Unlock()
 		i++

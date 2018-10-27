@@ -52,10 +52,6 @@ var (
 	// ErrDisconnectInvalidExtraData is returned when extra field can't be parsed as specific data type.
 	// e.g. ExtraData length in IntroductionMessage is not the same as cipher.PubKey
 	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data")
-	// ErrDisconnectMirrorInUse mirror value is already in use by another connection with a matching base IP
-	ErrDisconnectMirrorInUse gnet.DisconnectReason = errors.New("Mirror value already in use")
-	// ErrDisconnectInvalidMirror mirror value is invalid
-	ErrDisconnectInvalidMirror gnet.DisconnectReason = errors.New("Mirror value is invalid")
 
 	// ErrOutgoingConnectionsDisabled is returned if outgoing connections are disabled
 	ErrOutgoingConnectionsDisabled = errors.New("Outgoing connections are disabled")
@@ -243,7 +239,6 @@ type Daemoner interface {
 	DaemonConfig() DaemonConfig
 	BlockchainPubkey() cipher.PubKey
 	RecordMessageEvent(m AsyncMessage, c *gnet.MessageContext) error
-	GetMirrorPort(addr string, mirror uint32) uint16
 	ConnectionIntroduced(addr string, m *IntroductionMessage) error
 	RequestBlocksFromAddr(addr string) error
 	AnnounceAllTxns() error
@@ -661,23 +656,6 @@ loop:
 	return nil
 }
 
-// GetListenPort returns the ListenPort for a given address.
-// If no port is found, 0 is returned.
-func (dm *Daemon) GetListenPort(addr string) uint16 {
-	c, ok := dm.connections.Get(addr)
-	if !ok {
-		return 0
-	}
-
-	ip, _, err := iputil.SplitAddr(addr)
-	if err != nil {
-		logger.Errorf("GetListenPort received invalid addr: %v", err)
-		return 0
-	}
-
-	return dm.connections.GetMirrorPort(ip, c.Mirror)
-}
-
 // Connects to a given peer. Returns an error if no connection attempt was
 // made. If the connection attempt itself fails, the error is sent to
 // the connectionErrors channel.
@@ -695,28 +673,18 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 		return errors.New("Not localhost")
 	}
 
-	conned, err := dm.pool.Pool.IsConnExist(p.Addr)
-	if err != nil {
-		return err
+	if c := dm.connections.get(p.Addr); c != nil {
+		return errors.New("Already connected to this peer")
 	}
 
-	if conned {
-		return errors.New("Already connected")
-	}
-
-	c, ok := dm.connections.Get(p.Addr)
-	if ok && c.State == ConnectionStatePending {
-		errors.New("Connection is pending")
-	}
-
-	cnt := dm.connections.GetIPCount(a)
+	cnt := dm.connections.IPCount(a)
 	if !dm.Config.LocalhostOnly && cnt != 0 {
 		return errors.New("Already connected to a peer with this base IP")
 	}
 
 	logger.WithField("addr", p.Addr).Debug("Establishing outgoing conneciton")
 
-	if _, err := dm.connections.AddPendingOutgoing(p.Addr); err != nil {
+	if _, err := dm.connections.pending(p.Addr); err != nil {
 		logger.Critical().WithError(err).WithField("addr", p.Addr).Error("AddPendingOutgoing failed")
 		return err
 	}
@@ -766,37 +734,24 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.pex.RandomPublic(dm.Config.OutgoingMax)
+	peers := dm.pex.RandomPublicUntrusted(dm.Config.OutgoingMax)
 	for _, p := range peers {
-		// Check if the peer has public port
-		if p.HasIncomingPort {
-			// Try to connect the peer if it's ip:mirror does not exist
-			if port := dm.GetMirrorPort(p.Addr, dm.Messages.Mirror); port == 0 {
-				if err := dm.connectToPeer(p); err != nil {
-					logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
-				}
-				continue
-			}
-		} else {
-			// Try to connect to the peer if we don't know whether the peer have public port
-			if err := dm.connectToPeer(p); err != nil {
-				logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
-			}
-			continue
+		if err := dm.connectToPeer(p); err != nil {
+			logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
 		}
 	}
 
 	if len(peers) == 0 {
-		// Reset the retry times of all peers,
 		dm.pex.ResetAllRetryTimes()
 	}
 }
 
-// We remove a peer from the Pex if we failed to connect
+// handleConnectionError removes the pending connection from connections and
+// updates the retry times in pex
 func (dm *Daemon) handleConnectionError(c ConnectionError) {
 	logger.WithField("addr", c.Addr).WithError(c.Error).Debug("handleConnectionError")
-	if err := dm.connections.Remove(c.Addr); err != nil {
-		logger.WithField("addr", c.Addr).WithError(err).Error("connections.Remove")
+	if err := dm.connections.remove(c.Addr); err != nil {
+		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
 	}
 
 	// TODO - On failure to connect, use exponential backoff, not peer list
@@ -806,36 +761,22 @@ func (dm *Daemon) handleConnectionError(c ConnectionError) {
 // Removes connections who haven't sent a version after connecting
 func (dm *Daemon) cullInvalidConnections() {
 	now := time.Now().UTC()
-	addrs, err := dm.connections.RemoveMatchedBy(func(c Connection) (bool, error) {
+	for _, c := range dm.connections.all() {
 		if c.State != ConnectionStateConnected {
-			return false, nil
+			continue
 		}
 
 		if c.ConnectedAt.Add(dm.Config.IntroductionWait).Before(now) {
-			return true, nil
-		}
-		return false, nil
-	})
-
-	if err != nil {
-		logger.WithError(err).Error("cullInvalidConnections failed")
-		return
-	}
-
-	for _, a := range addrs {
-		logger.WithField("addr", a).Infof("Disconnecting peer for not sending a version")
-		if err := dm.pool.Pool.Disconnect(a, ErrDisconnectIntroductionTimeout); err != nil {
-			logger.WithError(err).WithField("addr", a).Error("Disconnect")
-		}
-
-		if !dm.isTrustedPeer(a) {
-			dm.pex.RemovePeer(a)
+			logger.WithField("addr", c.Addr).Infof("Disconnecting peer for not sending a version")
+			if err := dm.Disconnect(c.Addr, ErrDisconnectIntroductionTimeout); err != nil {
+				logger.WithError(err).WithField("addr", c.Addr).Error("Disconnect")
+			}
 		}
 	}
 }
 
 func (dm *Daemon) isTrustedPeer(addr string) bool {
-	peer, ok := dm.pex.GetPeerByAddr(addr)
+	peer, ok := dm.pex.GetPeer(addr)
 	if !ok {
 		return false
 	}
@@ -852,11 +793,11 @@ func (dm *Daemon) RecordMessageEvent(m AsyncMessage, c *gnet.MessageContext) err
 
 // needsIntro check if the connection needs introduction message
 func (dm *Daemon) needsIntro(addr string) bool {
-	c, ok := dm.connections.Get(addr)
-	if !ok {
+	c := dm.connections.get(addr)
+	if c == nil {
 		logger.WithField("addr", addr).Warning("needsIntro did not find a matching connection")
 	}
-	return ok && !c.HasIntroduced()
+	return c != nil && !c.HasIntroduced()
 }
 
 // Processes a queued AsyncMessage.
@@ -932,9 +873,12 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	// Update the connections state machine
-	c, err := dm.connections.Connected(e.Conn)
+	c, err := dm.connections.connected(e.Conn.Addr())
 	if err != nil {
 		logger.Critical().WithError(err).WithField("addr", a).Error("connections.Connected failed")
+		if err := dm.pool.Pool.Disconnect(a, ErrDisconnectIncomprehensibleError); err != nil {
+			logger.WithError(err).WithField("addr", a).Error("Disconnect")
+		}
 		return
 	}
 
@@ -961,8 +905,15 @@ func (dm *Daemon) onDisconnect(e DisconnectEvent) {
 		"reason": e.Reason,
 	}).Info("onDisconnect")
 
-	if err := dm.connections.Remove(e.Addr); err != nil {
+	if err := dm.connections.remove(e.Addr); err != nil {
 		logger.WithError(err).WithField("addr", e.Addr).Error("connections.Remove failed")
+	}
+
+	// If the peer did not send an introduction in time, it is not a valid peer and remove it from the peer list
+	if e.Reason == ErrDisconnectIntroductionTimeout {
+		if !dm.isTrustedPeer(e.Addr) {
+			dm.pex.RemovePeer(e.Addr)
+		}
 	}
 }
 
@@ -995,17 +946,7 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 		return true
 	}
 
-	return dm.connections.GetIPCount(ip) >= dm.Config.IPCountsMax
-}
-
-// GetMirrorPort returns whether an addr+mirror's port. If port is 0 then it does not exist.
-func (dm *Daemon) GetMirrorPort(addr string, mirror uint32) uint16 {
-	ip, _, err := iputil.SplitAddr(addr)
-	if err != nil {
-		logger.WithError(err).WithField("addr", addr).Error("getMirrorPort called with invalid addr")
-		return 0
-	}
-	return dm.connections.GetMirrorPort(ip, mirror)
+	return dm.connections.IPCount(ip) >= dm.Config.IPCountsMax
 }
 
 // When an async message send finishes, its result is handled by this.
@@ -1258,7 +1199,7 @@ func (dm *Daemon) BlockchainPubkey() cipher.PubKey {
 
 // ConnectionIntroduced removes the peer from expect introduction pool
 func (dm *Daemon) ConnectionIntroduced(addr string, m *IntroductionMessage) error {
-	_, err := dm.connections.Introduced(addr, m)
+	_, err := dm.connections.introduced(addr, m)
 	return err
 }
 

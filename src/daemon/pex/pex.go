@@ -536,11 +536,11 @@ func (px *Pex) RemovePeer(addr string) {
 	px.peerlist.removePeer(addr)
 }
 
-// GetPeerByAddr returns peer of given address
-func (px *Pex) GetPeerByAddr(addr string) (Peer, bool) {
+// GetPeer returns peer of given address
+func (px *Pex) GetPeer(addr string) (Peer, bool) {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getPeerByAddr(addr)
+	return px.peerlist.getPeer(addr)
 }
 
 // Trusted returns trusted peers
@@ -564,11 +564,13 @@ func (px *Pex) TrustedPublic() Peers {
 	return px.peerlist.getCanTryPeers([]Filter{isPublic, isTrusted})
 }
 
-// RandomPublic returns N random public peers
-func (px *Pex) RandomPublic(n int) Peers {
+// RandomPublicUntrusted returns N random public untrusted peers
+func (px *Pex) RandomPublicUntrusted(n int) Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.random(n, []Filter{isPublic})
+	return px.peerlist.random(n, []Filter{func(p Peer) bool {
+		return !p.Private && !p.Trusted
+	}})
 }
 
 // RandomExchangeable returns N random exchangeable peers

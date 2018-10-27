@@ -86,6 +86,20 @@ func (_m *MockDaemoner) BroadcastMessage(msg gnet.Message) error {
 	return r0
 }
 
+// ConnectionIntroduced provides a mock function with given fields: addr, m
+func (_m *MockDaemoner) ConnectionIntroduced(addr string, m *IntroductionMessage) error {
+	ret := _m.Called(addr, m)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, *IntroductionMessage) error); ok {
+		r0 = rf(addr, m)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DaemonConfig provides a mock function with given fields:
 func (_m *MockDaemoner) DaemonConfig() DaemonConfig {
 	ret := _m.Called()
@@ -126,27 +140,6 @@ func (_m *MockDaemoner) ExecuteSignedBlock(b coin.SignedBlock) error {
 	}
 
 	return r0
-}
-
-// GetMirrorPort provides a mock function with given fields: addr, mirror
-func (_m *MockDaemoner) GetMirrorPort(addr string, mirror uint32) (uint16, bool) {
-	ret := _m.Called(addr, mirror)
-
-	var r0 uint16
-	if rf, ok := ret.Get(0).(func(string, uint32) uint16); ok {
-		r0 = rf(addr, mirror)
-	} else {
-		r0 = ret.Get(0).(uint16)
-	}
-
-	var r1 bool
-	if rf, ok := ret.Get(1).(func(string, uint32) bool); ok {
-		r1 = rf(addr, mirror)
-	} else {
-		r1 = ret.Get(1).(bool)
-	}
-
-	return r0, r1
 }
 
 // GetSignedBlocksSince provides a mock function with given fields: seq, count
@@ -360,20 +353,6 @@ func (_m *MockDaemoner) RandomExchangeable(n int) pex.Peers {
 	return r0
 }
 
-// RecordConnectionMirror provides a mock function with given fields: addr, mirror
-func (_m *MockDaemoner) RecordConnectionMirror(addr string, mirror uint32) error {
-	ret := _m.Called(addr, mirror)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, uint32) error); ok {
-		r0 = rf(addr, mirror)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // RecordMessageEvent provides a mock function with given fields: m, c
 func (_m *MockDaemoner) RecordMessageEvent(m AsyncMessage, c *gnet.MessageContext) error {
 	ret := _m.Called(m, c)
@@ -391,11 +370,6 @@ func (_m *MockDaemoner) RecordMessageEvent(m AsyncMessage, c *gnet.MessageContex
 // RecordPeerHeight provides a mock function with given fields: addr, height
 func (_m *MockDaemoner) RecordPeerHeight(addr string, height uint64) {
 	_m.Called(addr, height)
-}
-
-// RemoveFromExpectingIntroductions provides a mock function with given fields: addr
-func (_m *MockDaemoner) RemoveFromExpectingIntroductions(addr string) {
-	_m.Called(addr)
 }
 
 // RequestBlocksFromAddr provides a mock function with given fields: addr

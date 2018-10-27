@@ -277,14 +277,19 @@ type Daemon struct {
 	announcedTxns *announcedTxnsCache
 	// Cache of connection metadata
 	connections *Connections
-	// Client connection callbacks
-	onConnectEvent chan ConnectEvent
-	// Client disconnection callbacks
-	onDisconnectEvent chan DisconnectEvent
-	// Connection failure events
-	connectionErrors chan ConnectionError
-	// Message handling queue
-	messageEvents chan messageEvent
+
+	// // Client connection callbacks
+	// onConnectEvent chan ConnectEvent
+	// // Client disconnection callbacks
+	// onDisconnectEvent chan DisconnectEvent
+	// // Connection failure events
+	// connectionErrors chan ConnectionError
+	// // Message handling queue
+	// messageEvents chan messageEvent
+
+	// connect, disconnect, message, error events channel
+	events chan interface{}
+
 	// quit channel
 	quit chan struct{}
 	// done channel
@@ -317,15 +322,13 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 		announcedTxns: newAnnouncedTxnsCache(),
 		connections:   NewConnections(),
 
-		// TODO -- if there are performance problems from blocking chans,
-		// Its because we are connecting to more things than OutgoingMax
-		// if we have private peers
-		onConnectEvent:    make(chan ConnectEvent, config.Pool.MaxConnections*2),
-		onDisconnectEvent: make(chan DisconnectEvent, config.Pool.MaxConnections*2),
-		connectionErrors:  make(chan ConnectionError, config.Pool.MaxConnections*2),
-		messageEvents:     make(chan messageEvent, config.Pool.EventChannelSize),
-		quit:              make(chan struct{}),
-		done:              make(chan struct{}),
+		// onConnectEvent:    make(chan ConnectEvent, config.Pool.MaxConnections*2),
+		// onDisconnectEvent: make(chan DisconnectEvent, config.Pool.MaxConnections*2),
+		// connectionErrors:  make(chan ConnectionError, config.Pool.MaxConnections*2),
+		// messageEvents:     make(chan messageEvent, config.Pool.EventChannelSize),
+		events: make(chan interface{}, config.Pool.EventChannelSize),
+		quit:   make(chan struct{}),
+		done:   make(chan struct{}),
 	}
 
 	d.Gateway = NewGateway(config.Gateway, d)
@@ -524,7 +527,7 @@ loop:
 
 			m := NewGetPeersMessage()
 			if err := dm.pool.Pool.BroadcastMessage(m); err != nil {
-				logger.Error(err)
+				logger.WithError(err).Error("Broadcast GetPeersMessage failed")
 			}
 
 		case <-clearStaleConnectionsTicker.C:
@@ -559,33 +562,13 @@ loop:
 				dm.makePrivateConnections()
 			}
 
-		case r := <-dm.onConnectEvent:
-			// Process callbacks for when a client connects. No disconnect chan
-			// is needed because the callback is triggered by HandleDisconnectEvent
-			// which is already select{}ed here
-			elapser.Register("dm.onConnectEvent")
+		case r := <-dm.events:
+			elapser.Register("dm.event")
 			if dm.Config.DisableNetworking {
-				logger.Error("There should be no connect events")
+				logger.Error("There should be no events")
 				return nil
 			}
-			dm.onConnect(r)
-
-		case de := <-dm.onDisconnectEvent:
-			elapser.Register("dm.onDisconnectEvent")
-			if dm.Config.DisableNetworking {
-				logger.Error("There should be no disconnect events")
-				return nil
-			}
-			dm.onDisconnect(de)
-
-		case r := <-dm.connectionErrors:
-			// Handle connection errors
-			elapser.Register("dm.connectionErrors")
-			if dm.Config.DisableNetworking {
-				logger.Error("There should be no connection errors")
-				return nil
-			}
-			dm.handleConnectionError(r)
+			dm.handleEvent(r)
 
 		case <-flushAnnouncedTxnsTicker.C:
 			elapser.Register("flushAnnouncedTxnsTicker")
@@ -595,15 +578,6 @@ loop:
 				logger.WithError(err).Error("Failed to set unconfirmed txn announce time")
 				return err
 			}
-
-		case m := <-dm.messageEvents:
-			// Message handlers
-			elapser.Register("dm.messageEvents")
-			if dm.Config.DisableNetworking {
-				logger.Error("There should be no message events")
-				return nil
-			}
-			dm.processMessageEvent(m)
 
 		case req := <-dm.Gateway.requests:
 			// Process any pending RPC requests
@@ -705,7 +679,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 		return errors.New("Already connected to a peer with this base IP")
 	}
 
-	logger.WithField("addr", p.Addr).Debug("Establishing outgoing conneciton")
+	logger.WithField("addr", p.Addr).Debug("Establishing outgoing connection")
 
 	if _, err := dm.connections.pending(p.Addr); err != nil {
 		logger.Critical().WithError(err).WithField("addr", p.Addr).Error("dm.connections.pending failed")
@@ -714,7 +688,10 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 
 	go func() {
 		if err := dm.pool.Pool.Connect(p.Addr); err != nil {
-			dm.connectionErrors <- ConnectionError{p.Addr, err}
+			dm.events <- ConnectionError{
+				Addr:  p.Addr,
+				Error: err,
+			}
 		}
 	}()
 	return nil
@@ -769,18 +746,6 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 }
 
-// handleConnectionError removes the pending connection from connections and
-// updates the retry times in pex
-func (dm *Daemon) handleConnectionError(c ConnectionError) {
-	logger.WithField("addr", c.Addr).WithError(c.Error).Debug("handleConnectionError")
-	if err := dm.connections.remove(c.Addr); err != nil {
-		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
-	}
-
-	// TODO - On failure to connect, use exponential backoff, not peer list
-	dm.pex.IncreaseRetryTimes(c.Addr)
-}
-
 // Removes connections who haven't sent a version after connecting
 func (dm *Daemon) cullInvalidConnections() {
 	now := time.Now().UTC()
@@ -810,7 +775,10 @@ func (dm *Daemon) isTrustedPeer(addr string) bool {
 // recordMessageEvent records an asyncMessage to the messageEvent chan.  Do not access
 // messageEvent directly.
 func (dm *Daemon) recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error {
-	dm.messageEvents <- messageEvent{m, c}
+	dm.events <- messageEvent{
+		Message: m,
+		Context: c,
+	}
 	return nil
 }
 
@@ -823,8 +791,25 @@ func (dm *Daemon) needsIntro(addr string) bool {
 	return c != nil && !c.HasIntroduced()
 }
 
-// Processes a queued asyncMessage.
-func (dm *Daemon) processMessageEvent(e messageEvent) {
+func (dm *Daemon) handleEvent(e interface{}) {
+	switch x := e.(type) {
+	case messageEvent:
+		dm.onMessageEvent(x)
+	case ConnectEvent:
+		dm.onConnectEvent(x)
+	case DisconnectEvent:
+		dm.onDisconnectEvent(x)
+	case ConnectionError:
+		dm.onConnectionError(x)
+	default:
+		logger.WithFields(logrus.Fields{
+			"type":  fmt.Sprintf("%T", e),
+			"value": fmt.Sprintf("%+v", e),
+		}).Panic("Invalid object in events queue")
+	}
+}
+
+func (dm *Daemon) onMessageEvent(e messageEvent) {
 	// The first message received must be an Introduction
 	// We have to check at process time and not record time because
 	// Introduction message does not update ExpectingIntroductions until its
@@ -844,32 +829,28 @@ func (dm *Daemon) processMessageEvent(e messageEvent) {
 	e.Message.process(dm)
 }
 
-// Called when a ConnectEvent is processed off the onConnectEvent channel
-func (dm *Daemon) onConnect(e ConnectEvent) {
-	direction := "incoming"
-	if e.Solicited {
-		direction = "outgoing"
+func (dm *Daemon) onConnectEvent(e ConnectEvent) {
+	fields := logrus.Fields{
+		"addr":     e.Addr,
+		"outgoing": e.Solicited,
 	}
-	logger.WithFields(logrus.Fields{
-		"addr":      e.Addr,
-		"direction": direction,
-	}).Info("Connected to peer")
+	logger.WithFields(fields).Info("Connected to peer")
 
 	exist, err := dm.pool.Pool.IsConnExist(e.Addr)
 	if err != nil {
-		logger.Critical().WithError(err).Error("IsConnExist failed")
+		logger.Critical().WithFields(fields).WithError(err).Error("IsConnExist failed")
 		return
 	}
 
 	if !exist {
-		logger.Warning("While processing an onConnect event, no pool connection was found")
+		logger.WithFields(fields).Warning("While processing an onConnect event, no pool connection was found")
 		return
 	}
 
 	if dm.ipCountMaxed(e.Addr) {
-		logger.WithField("addr", e.Addr).Info("Max connections for this address reached, disconnecting")
+		logger.WithFields(fields).Info("Max connections for this address reached, disconnecting")
 		if err := dm.pool.Pool.Disconnect(e.Addr, ErrDisconnectIPLimitReached); err != nil {
-			logger.WithError(err).WithField("addr", e.Addr).Error("Disconnect")
+			logger.WithError(err).WithFields(fields).Error("Disconnect")
 		}
 		return
 	}
@@ -878,14 +859,14 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 		// Disconnect if the max outgoing connections is reached
 		n, err := dm.pool.Pool.OutgoingConnectionsNum()
 		if err != nil {
-			logger.Critical().WithError(err).Error("OutgoingConnectionsNum failed")
+			logger.Critical().WithError(err).WithFields(fields).Error("OutgoingConnectionsNum failed")
 			return
 		}
 
 		if n > dm.Config.OutgoingMax {
-			logger.WithField("addr", e.Addr).Warning("Max outgoing connections is reached, disconnecting")
+			logger.WithFields(fields).Warning("Max outgoing connections is reached, disconnecting")
 			if err := dm.pool.Pool.Disconnect(e.Addr, ErrDisconnectMaxOutgoingConnectionsReached); err != nil {
-				logger.WithError(err).WithField("addr", e.Addr).Error("Disconnect")
+				logger.WithError(err).WithFields(fields).Error("Disconnect")
 			}
 			return
 		}
@@ -894,9 +875,9 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	// Update the connections state machine
 	c, err := dm.connections.connected(e.Addr)
 	if err != nil {
-		logger.Critical().WithError(err).WithField("addr", e.Addr).Error("connections.Connected failed")
+		logger.Critical().WithError(err).WithFields(fields).Error("connections.Connected failed")
 		if err := dm.pool.Pool.Disconnect(e.Addr, ErrDisconnectIncomprehensibleError); err != nil {
-			logger.WithError(err).WithField("addr", e.Addr).Error("Disconnect")
+			logger.WithError(err).WithFields(fields).Error("Disconnect")
 		}
 		return
 	}
@@ -904,29 +885,27 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	// The connection should already be known as outgoing/solicited due to an earlier connections.pending call.
 	// If they do not match, there is e.Addr flaw in the concept or implementation of the state machine.
 	if c.Outgoing != e.Solicited {
-		logger.Critical().Warning("Connection.Outgoing does not match ConnectEvent.Solicited state")
+		logger.Critical().WithFields(fields).Warning("Connection.Outgoing does not match ConnectEvent.Solicited state")
 	}
 
-	logger.WithFields(logrus.Fields{
-		"addr":   e.Addr,
-		"mirror": dm.Messages.Mirror,
-	}).Debug("Sending introduction message")
+	logger.WithFields(fields).WithField("mirror", dm.Messages.Mirror).Debug("Sending introduction message")
 
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
 	if err := dm.pool.Pool.SendMessage(e.Addr, m); err != nil {
-		logger.WithField("addr", e.Addr).WithError(err).Error("Send IntroductionMessage failed")
+		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return
 	}
 }
 
-func (dm *Daemon) onDisconnect(e DisconnectEvent) {
-	logger.WithFields(logrus.Fields{
+func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
+	fields := logrus.Fields{
 		"addr":   e.Addr,
 		"reason": e.Reason,
-	}).Info("onDisconnect")
+	}
+	logger.WithFields(fields).Info("onDisconnect")
 
 	if err := dm.connections.remove(e.Addr); err != nil {
-		logger.WithError(err).WithField("addr", e.Addr).Error("connections.Remove failed")
+		logger.WithError(err).WithFields(fields).Error("connections.Remove failed")
 	}
 
 	// If the peer did not send an introduction in time, it is not a valid peer and remove it from the peer list
@@ -937,22 +916,29 @@ func (dm *Daemon) onDisconnect(e DisconnectEvent) {
 	}
 }
 
+func (dm *Daemon) onConnectionError(c ConnectionError) {
+	// Remove the pending connection from connections and update the retry times in pex
+	logger.WithField("addr", c.Addr).WithError(c.Error).Debug("onConnectionError")
+	if err := dm.connections.remove(c.Addr); err != nil {
+		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
+	}
+
+	// TODO - On failure to connect, use exponential backoff, not peer list
+	dm.pex.IncreaseRetryTimes(c.Addr)
+}
+
 // Triggered when an gnet.Connection terminates
 func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
 	e := DisconnectEvent{
 		Addr:   addr,
 		Reason: reason,
 	}
-	select {
-	case dm.onDisconnectEvent <- e:
-	default:
-		logger.Warning("onDisconnectEvent channel is full")
-	}
+	dm.events <- e
 }
 
 // Triggered when an gnet.Connection is connected
 func (dm *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
-	dm.onConnectEvent <- ConnectEvent{
+	dm.events <- ConnectEvent{
 		Addr:      c.Addr(),
 		Solicited: solicited,
 	}

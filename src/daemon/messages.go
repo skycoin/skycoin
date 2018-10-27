@@ -275,6 +275,8 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 	d := daemon.(daemoner)
 	var userAgentData useragent.Data
 
+	logger.WithField("addr", mc.Addr).Debug("IntroductionMessage.Handle")
+
 	err := func() error {
 		// Disconnect if this is a self connection (we have the same mirror value)
 		if intro.Mirror == d.Mirror() {
@@ -305,7 +307,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		logger.WithFields(logrus.Fields{
 			"addr":            mc.Addr,
 			"protocolVersion": intro.ProtocolVersion,
-		}).Info("Peer protocol version accepted")
+		}).Debug("Peer protocol version accepted")
 
 		// v24 does not send blockchain pubkey or user agent
 		// v25 sends blockchain pubkey and user agent
@@ -373,18 +375,22 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 // process an event queued by Handle()
 func (intro *IntroductionMessage) process(d daemoner) {
+	a := intro.c.Addr
+	logger.WithFields(logrus.Fields{
+		"addr":       a,
+		"listenPort": intro.ListenPort,
+	}).Debug("IntroductionMessage.process")
+
 	if !intro.valid {
 		return
 	}
-
-	a := intro.c.Addr
 
 	c, err := d.connectionIntroduced(a, intro)
 	if err != nil {
 		logger.WithError(err).WithField("addr", a).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
-		case ErrConnectionIPMirrorAlreadyRegistered:
+		case ErrConnectionIPMirrorExists:
 			reason = ErrDisconnectConnectedTwice
 		default:
 			reason = ErrDisconnectIncomprehensibleError

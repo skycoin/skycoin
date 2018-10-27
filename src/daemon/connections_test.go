@@ -61,7 +61,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	require.Equal(t, []connection{*c}, all)
 
 	_, err = conns.pending(addr)
-	require.Equal(t, ErrConnectionAlreadyRegistered, err)
+	require.Equal(t, ErrConnectionExists, err)
 	require.Equal(t, 1, conns.IPCount(ip))
 	require.Equal(t, 1, conns.OutgoingLen())
 	require.Equal(t, 1, conns.PendingLen())
@@ -256,7 +256,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		ListenPort:      6061,
 		ProtocolVersion: 2,
 	})
-	require.Equal(t, ErrConnectionIPMirrorAlreadyRegistered, err)
+	require.Equal(t, ErrConnectionIPMirrorExists, err)
 	require.Equal(t, 0, conns.PendingLen())
 
 	c := conns.get(addr2)

@@ -35,10 +35,10 @@ const (
 var (
 	// ErrConnectionNotExist connection does not exist when performing an operation that requires it to exist
 	ErrConnectionNotExist = errors.New("Connection does not exist")
-	// ErrConnectionAlreadyRegistered connection already registered in Connections
-	ErrConnectionAlreadyRegistered = errors.New("Connection already registered")
-	// ErrConnectionIPMirrorAlreadyRegistered connection already registered for a given base IP and mirror
-	ErrConnectionIPMirrorAlreadyRegistered = errors.New("Connection already registered with this base IP and mirror")
+	// ErrConnectionExists connection exists in Connections
+	ErrConnectionExists = errors.New("Connection exists")
+	// ErrConnectionIPMirrorExists connection exists for a given base IP and mirror
+	ErrConnectionIPMirrorExists = errors.New("Connection exists with this base IP and mirror")
 )
 
 // ConnectionDetails connection data managed by daemon
@@ -111,7 +111,7 @@ func (c *Connections) pending(addr string) (*connection, error) {
 	}
 
 	if _, ok := c.conns[addr]; ok {
-		return nil, ErrConnectionAlreadyRegistered
+		return nil, ErrConnectionExists
 	}
 
 	c.ipCounts[ip]++
@@ -134,6 +134,12 @@ func (c *Connections) pending(addr string) (*connection, error) {
 func (c *Connections) connected(addr string) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
+
+	// TODO -- we can have a pending outgoing connection,
+	// simulataneously the other client establishes an incoming connection,
+	// but we'll think it's an outgoing connection since it exists already
+	// Then one of them will fail and we'll remove it, ending up with no connection
+	// So we need to disambiguate the direction
 
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
@@ -158,7 +164,7 @@ func (c *Connections) connected(addr string) (*connection, error) {
 		}
 
 		if conn.State != ConnectionStatePending {
-			logger.Critical().WithField("state", conn.State).Warningf("Transitioning to State %q but State is not %q", ConnectionStateConnected, ConnectionStatePending)
+			logger.Critical().WithField("state", conn.State).Warningf("Transitioning to state %q but state is not %q", ConnectionStateConnected, ConnectionStatePending)
 		}
 	}
 
@@ -190,12 +196,17 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 
 	if conn.State != ConnectionStateConnected {
 		logger.Critical().WithFields(logrus.Fields{
-			"addr":  conn.Addr,
-			"state": conn.State,
-		}).Warningf("Transitioning to State %q but State is not %q", ConnectionStateIntroduced, ConnectionStateConnected)
+			"addr":     conn.Addr,
+			"state":    conn.State,
+			"outgoing": conn.Outgoing,
+		}).Warningf("Transitioning to state %q but state is not %q", ConnectionStateIntroduced, ConnectionStateConnected)
 	}
 
 	if err := c.canUpdateMirror(ip, m.Mirror); err != nil {
+		logger.WithFields(logrus.Fields{
+			"addr":     conn.Addr,
+			"outgoing": conn.Outgoing,
+		}).WithError(err).Debug("canUpdateMirror failed")
 		return nil, err
 	}
 
@@ -277,15 +288,13 @@ func (c *Connections) SetHeight(addr string, height uint64) error {
 }
 
 func (c *Connections) updateMirror(ip string, mirror uint32, port uint16) error {
-	logger.Debugf("updateMirror ip=%s mirror=%d port=%d", ip, mirror, port)
-
 	x := c.mirrors[mirror]
 	if x == nil {
 		x = make(map[string]uint16, 2)
 	}
 
 	if _, ok := x[ip]; ok {
-		return ErrConnectionIPMirrorAlreadyRegistered
+		return ErrConnectionIPMirrorExists
 	}
 
 	x[ip] = port
@@ -303,7 +312,7 @@ func (c *Connections) canUpdateMirror(ip string, mirror uint32) error {
 	}
 
 	if _, ok := x[ip]; ok {
-		return ErrConnectionIPMirrorAlreadyRegistered
+		return ErrConnectionIPMirrorExists
 	}
 
 	return nil

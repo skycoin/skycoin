@@ -245,7 +245,7 @@ func TestIntroductionMessage(t *testing.T) {
 				addPeerArg:              "121.121.121.121:6000",
 				addPeerErr:              nil,
 				disconnectReason:        ErrDisconnectConnectedTwice,
-				connectionIntroducedErr: ErrConnectionIPMirrorAlreadyRegistered,
+				connectionIntroducedErr: ErrConnectionIPMirrorExists,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,

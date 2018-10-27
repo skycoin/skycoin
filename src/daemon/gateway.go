@@ -90,13 +90,13 @@ func (gw *Gateway) strand(name string, f func()) {
 type Connection struct {
 	Addr string
 	Pex  pex.Peer
+	Gnet GnetConnectionDetails
 	ConnectionDetails
-	GnetConnectionDetails
 }
 
 // GnetConnectionDetails connection data from gnet
 type GnetConnectionDetails struct {
-	GnetID       int
+	ID           int
 	LastSent     time.Time
 	LastReceived time.Time
 }
@@ -110,8 +110,8 @@ func newConnection(dc *connection, gc *gnet.Connection, pp *pex.Peer) Connection
 	}
 
 	if gc != nil {
-		c.GnetConnectionDetails = GnetConnectionDetails{
-			GnetID:       gc.ID,
+		c.Gnet = GnetConnectionDetails{
+			ID:           gc.ID,
 			LastSent:     gc.LastSent,
 			LastReceived: gc.LastReceived,
 		}

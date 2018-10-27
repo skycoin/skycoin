@@ -413,15 +413,6 @@ func (intro *IntroductionMessage) process(d daemoner) {
 		}
 	}
 
-	// Record the user agent of the peer
-	// TODO -- remove and handle inside Connections
-	if err := d.RecordUserAgent(a, intro.userAgentData); err != nil {
-		logger.WithError(err).WithFields(logrus.Fields{
-			"addr":          a,
-			"userAgentData": fmt.Sprintf("%+v", intro.userAgentData),
-		}).Error("RecordUserAgent failed")
-	}
-
 	// Request blocks immediately after they're confirmed
 	if err := d.RequestBlocksFromAddr(intro.c.Addr); err != nil {
 		logger.WithError(err).Warning("RequestBlocksFromAddr")

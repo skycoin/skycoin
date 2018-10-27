@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/util/iputil"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 // ConnectionState connection state in the state machine
@@ -49,6 +50,7 @@ type ConnectionDetails struct {
 	ListenPort      uint16
 	ProtocolVersion int32
 	Height          uint64
+	UserAgent       useragent.Data
 }
 
 // HasIntroduced returns true if the connection has introduced
@@ -223,6 +225,7 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 	conn.Mirror = m.Mirror
 	conn.ProtocolVersion = m.ProtocolVersion
 	conn.ListenPort = listenPort
+	conn.UserAgent = m.userAgentData
 
 	logger.WithFields(logrus.Fields{
 		"addr":     addr,

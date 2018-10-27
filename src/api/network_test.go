@@ -14,6 +14,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 func TestConnection(t *testing.T) {
@@ -50,8 +51,8 @@ func TestConnection(t *testing.T) {
 			addr:   "addr",
 			gatewayGetConnectionResult: &daemon.Connection{
 				Addr: "127.0.0.1:6061",
-				GnetConnectionDetails: daemon.GnetConnectionDetails{
-					GnetID:       1,
+				Gnet: daemon.GnetConnectionDetails{
+					ID:           1,
 					LastSent:     time.Unix(99999, 0),
 					LastReceived: time.Unix(1111111, 0),
 				},
@@ -62,6 +63,7 @@ func TestConnection(t *testing.T) {
 					Mirror:      6789,
 					ListenPort:  9877,
 					Height:      1234,
+					UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
 				},
 			},
 			result: &readable.Connection{
@@ -75,6 +77,7 @@ func TestConnection(t *testing.T) {
 				Mirror:       6789,
 				ListenPort:   9877,
 				Height:       1234,
+				UserAgent:    useragent.MustParse("skycoin:0.25.1(foo)"),
 			},
 		},
 
@@ -155,8 +158,8 @@ func TestConnections(t *testing.T) {
 			gatewayGetSolicitedConnectionsResult: []daemon.Connection{
 				{
 					Addr: "127.0.0.1:6061",
-					GnetConnectionDetails: daemon.GnetConnectionDetails{
-						GnetID:       1,
+					Gnet: daemon.GnetConnectionDetails{
+						ID:           1,
 						LastSent:     time.Unix(99999, 0),
 						LastReceived: time.Unix(1111111, 0),
 					},
@@ -167,6 +170,7 @@ func TestConnections(t *testing.T) {
 						Mirror:      9876,
 						ListenPort:  9877,
 						Height:      1234,
+						UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
 					},
 				},
 			},
@@ -183,6 +187,7 @@ func TestConnections(t *testing.T) {
 						Mirror:       9876,
 						ListenPort:   9877,
 						Height:       1234,
+						UserAgent:    useragent.MustParse("skycoin:0.25.1(foo)"),
 					},
 				},
 			},

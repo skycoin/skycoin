@@ -26,18 +26,18 @@ func NewConnection(c *daemon.Connection) Connection {
 	var lastReceived int64
 	var connectedAt int64
 
-	if !c.LastSent.IsZero() {
-		lastSent = c.LastSent.Unix()
+	if !c.Gnet.LastSent.IsZero() {
+		lastSent = c.Gnet.LastSent.Unix()
 	}
-	if !c.LastReceived.IsZero() {
-		lastReceived = c.LastReceived.Unix()
+	if !c.Gnet.LastReceived.IsZero() {
+		lastReceived = c.Gnet.LastReceived.Unix()
 	}
 	if !c.ConnectedAt.IsZero() {
 		connectedAt = c.ConnectedAt.Unix()
 	}
 
 	return Connection{
-		GnetID:       c.GnetID,
+		GnetID:       c.Gnet.ID,
 		Addr:         c.Addr,
 		LastSent:     lastSent,
 		LastReceived: lastReceived,
@@ -47,6 +47,6 @@ func NewConnection(c *daemon.Connection) Connection {
 		Mirror:       c.Mirror,
 		ListenPort:   c.ListenPort,
 		Height:       c.Height,
-		UserAgent:    c.Pex.UserAgent,
+		UserAgent:    c.UserAgent,
 	}
 }

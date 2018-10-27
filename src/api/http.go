@@ -25,6 +25,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 var (
@@ -77,11 +78,18 @@ type Config struct {
 	ReadTimeout          time.Duration
 	WriteTimeout         time.Duration
 	IdleTimeout          time.Duration
-	BuildInfo            readable.BuildInfo
+	Health               HealthConfig
 	HostWhitelist        []string
 	EnabledAPISets       map[string]struct{}
 	Username             string
 	Password             string
+}
+
+// HealthConfig configuration data exposed in /health
+type HealthConfig struct {
+	BuildInfo       readable.BuildInfo
+	CoinName        string
+	DaemonUserAgent useragent.Data
 }
 
 type muxConfig struct {
@@ -91,11 +99,11 @@ type muxConfig struct {
 	enableJSON20RPC      bool
 	enableUnversionedAPI bool
 	disableCSP           bool
-	buildInfo            readable.BuildInfo
 	enabledAPISets       map[string]struct{}
 	hostWhitelist        []string
 	username             string
 	password             string
+	health               HealthConfig
 }
 
 // HTTPResponse represents the http response struct
@@ -131,7 +139,7 @@ func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Add("Content-Type", ContentTypeJSON)
 
 	if resp.Error == nil {
 		w.WriteHeader(http.StatusOK)
@@ -195,7 +203,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		enableJSON20RPC:      c.EnableJSON20RPC,
 		enableUnversionedAPI: c.EnableUnversionedAPI,
 		disableCSP:           c.DisableCSP,
-		buildInfo:            c.BuildInfo,
+		health:               c.Health,
 		enabledAPISets:       c.EnabledAPISets,
 		hostWhitelist:        c.HostWhitelist,
 		username:             c.Username,
@@ -208,6 +216,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		ReadTimeout:  c.ReadTimeout,
 		WriteTimeout: c.WriteTimeout,
 		IdleTimeout:  c.IdleTimeout,
+		// MaxHeaderBytes: http.DefaultMaxHeaderBytes, // adjust this to allow longer GET queries
 	}
 
 	return &Server{
@@ -427,7 +436,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	csrfHandlerV1("/csrf", getCSRFToken(csrfStore)) // csrf is always available, regardless of the API set
 
 	// Status endpoints
-	webHandlerV1("/version", versionHandler(c.buildInfo)) // version is always available, regardless of the API set
+	webHandlerV1("/version", versionHandler(c.health.BuildInfo)) // version is always available, regardless of the API set
 	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsRead, EndpointsStatus}))
 
 	// Wallet endpoints

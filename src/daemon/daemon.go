@@ -19,6 +19,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -52,6 +53,8 @@ var (
 	// ErrDisconnectInvalidExtraData is returned when extra field can't be parsed as specific data type.
 	// e.g. ExtraData length in IntroductionMessage is not the same as cipher.PubKey
 	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data")
+	// ErrDisconnectInvalidUserAgent is returned if the peer provides an invalid user agent
+	ErrDisconnectInvalidUserAgent gnet.DisconnectReason = errors.New("Invalid user agent")
 
 	// ErrOutgoingConnectionsDisabled is returned if outgoing connections are disabled
 	ErrOutgoingConnectionsDisabled = errors.New("Outgoing connections are disabled")
@@ -86,7 +89,7 @@ func NewConfig() Config {
 }
 
 // preprocess preprocess for config
-func (cfg *Config) preprocess() Config {
+func (cfg *Config) preprocess() (Config, error) {
 	config := *cfg
 	if config.Daemon.LocalhostOnly {
 		if config.Daemon.Address == "" {
@@ -119,7 +122,16 @@ func (cfg *Config) preprocess() Config {
 		}
 	}
 
-	return config
+	userAgent, err := config.Daemon.UserAgent.Build()
+	if err != nil {
+		return Config{}, err
+	}
+	if userAgent == "" {
+		return Config{}, errors.New("user agent is required")
+	}
+	config.Daemon.userAgent = userAgent
+
+	return config, nil
 }
 
 // DaemonConfig configuration for the Daemon
@@ -179,6 +191,9 @@ type DaemonConfig struct { // nolint: golint
 	UnconfirmedRemoveInvalidRate time.Duration
 	// Default "trusted" peers
 	DefaultConnections []string
+	// User agent (sent in introduction messages)
+	UserAgent useragent.Data
+	userAgent string // parsed from UserAgent in preprocess()
 }
 
 // NewDaemonConfig creates daemon config
@@ -240,6 +255,7 @@ type daemoner interface {
 	BlockchainPubkey() cipher.PubKey
 	RequestBlocksFromAddr(addr string) error
 	AnnounceAllTxns() error
+	RecordUserAgent(addr string, userAgent useragent.Data) error
 
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
 	connectionIntroduced(addr string, m *IntroductionMessage) (*connection, error)
@@ -277,7 +293,11 @@ type Daemon struct {
 
 // NewDaemon returns a Daemon with primitives allocated
 func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
-	config = config.preprocess()
+	config, err := config.preprocess()
+	if err != nil {
+		return nil, err
+	}
+
 	vs, err := visor.NewVisor(config.Visor, db)
 	if err != nil {
 		return nil, err
@@ -376,6 +396,8 @@ func (dm *Daemon) Init() error {
 func (dm *Daemon) Run() error {
 	defer logger.Info("Daemon closed")
 	defer close(dm.done)
+
+	logger.Infof("Daemon UserAgent is %s", dm.Config.userAgent)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -890,9 +912,10 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 		"mirror": dm.Messages.Mirror,
 	}).Debug("Sending introduction message")
 
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey)
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
 	if err := dm.pool.Pool.SendMessage(e.Addr, m); err != nil {
 		logger.WithField("addr", e.Addr).WithError(err).Error("Send IntroductionMessage failed")
+		return
 	}
 }
 
@@ -1254,6 +1277,11 @@ func (dm *Daemon) AddPeers(addrs []string) int {
 // SetHasIncomingPort sets the peer public peer
 func (dm *Daemon) SetHasIncomingPort(addr string) error {
 	return dm.pex.SetHasIncomingPort(addr, true)
+}
+
+// RecordUserAgent sets the peer's user agent
+func (dm *Daemon) RecordUserAgent(addr string, userAgent useragent.Data) error {
+	return dm.pex.SetUserAgent(addr, userAgent)
 }
 
 // IncreaseRetryTimes increases the retry times of given peer

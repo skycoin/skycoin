@@ -12,10 +12,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/iputil"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 // Message represent a packet to be serialized over the network by
@@ -219,30 +221,51 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 	d.AddPeers(peers)
 }
 
-// IntroductionMessage jan IntroductionMessage is sent on first connect by both parties
+// IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
-	// Mirror is a random value generated on client startup that is used
-	// to identify self-connections
+	c *gnet.MessageContext `enc:"-"`
+	// We validate the message in Handle() and cache the result for process()
+	valid         bool           `enc:"-"` // skip it during encoding
+	userAgentData useragent.Data `enc:"-"`
+
+	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
 	// ListenPort is the port that this client is listening on
 	ListenPort uint16
 	// Protocol version
 	ProtocolVersion int32
-	c               *gnet.MessageContext `enc:"-"`
-	// We validate the message in Handle() and cache the result for process()
-	valid bool `enc:"-"` // skip it during encoding
+
 	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
-	// Currently it contains the blockchain pubkey but will accept a client that does not provide it.
+	// Currently it contains the blockchain pubkey and user agent but will accept a client that does not provide it.
+	// If any of this data is provided, it must include a valid blockchain pubkey and a valid user agent string (maxlen=256).
+	// Contents of extra:
+	// ExtraByte uint32 // length prefix of []byte
+	// Pubkey    cipher.Pubkey // blockchain pubkey
+	// UserAgent string `enc:",maxlen=256"`
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string) *IntroductionMessage {
+	if len(userAgent) > useragent.MaxLen {
+		logger.Panicf("user agent %q exceeds max len %d", userAgent, useragent.MaxLen)
+	}
+	if userAgent == "" {
+		logger.Panic("user agent is required")
+	}
+
+	userAgentSerialized := encoder.SerializeString(userAgent)
+
+	extra := make([]byte, len(pubkey)+len(userAgentSerialized))
+
+	copy(extra[:len(pubkey)], pubkey[:])
+	copy(extra[len(pubkey):], userAgentSerialized)
+
 	return &IntroductionMessage{
 		Mirror:          mirror,
 		ProtocolVersion: version,
 		ListenPort:      port,
-		Extra:           pubkey[:],
+		Extra:           extra,
 	}
 }
 
@@ -250,6 +273,7 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 // need to control the DisconnectReason sent back to gnet.
 func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	d := daemon.(daemoner)
+	var userAgentData useragent.Data
 
 	err := func() error {
 		// Disconnect if this is a self connection (we have the same mirror value)
@@ -283,8 +307,10 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			"protocolVersion": intro.ProtocolVersion,
 		}).Info("Peer protocol version accepted")
 
-		// v25 Checks the blockchain pubkey, would accept message with no Pubkey
-		// v26 would check the blockchain pubkey and reject if not matched or not provided
+		// v24 does not send blockchain pubkey or user agent
+		// v25 sends blockchain pubkey and user agent
+		// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
+		// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
 		if len(intro.Extra) > 0 {
 			var bcPubKey cipher.PubKey
 			if len(intro.Extra) < len(bcPubKey) {
@@ -307,12 +333,32 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 				}
 				return ErrDisconnectBlockchainPubkeyNotMatched
 			}
+
+			userAgentSerialized := intro.Extra[len(bcPubKey):]
+			userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
+			if err != nil {
+				logger.WithError(err).Info("Extra data user agent string could not be deserialized")
+				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
+					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+				}
+				return ErrDisconnectInvalidExtraData
+			}
+
+			userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
+			if err != nil {
+				logger.WithError(err).WithField("userAgent", userAgent).Info("User agent is invalid")
+				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidUserAgent); err != nil {
+					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
+				}
+				return ErrDisconnectInvalidUserAgent
+			}
 		}
 
 		return nil
 	}()
 
 	intro.valid = (err == nil)
+	intro.userAgentData = userAgentData
 	intro.c = mc
 
 	if err != nil {
@@ -365,6 +411,15 @@ func (intro *IntroductionMessage) process(d daemoner) {
 				"listenAddr": c.ListenAddr(),
 			}).Error("AddPeer failed")
 		}
+	}
+
+	// Record the user agent of the peer
+	// TODO -- remove and handle inside Connections
+	if err := d.RecordUserAgent(a, intro.userAgentData); err != nil {
+		logger.WithError(err).WithFields(logrus.Fields{
+			"addr":          a,
+			"userAgentData": fmt.Sprintf("%+v", intro.userAgentData),
+		}).Error("RecordUserAgent failed")
 	}
 
 	// Request blocks immediately after they're confirmed

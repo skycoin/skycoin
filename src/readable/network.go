@@ -2,6 +2,7 @@ package readable
 
 import (
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 // Connection a connection's state within the daemon
@@ -16,6 +17,7 @@ type Connection struct {
 	Mirror       uint32                 `json:"mirror"`
 	ListenPort   uint16                 `json:"listen_port"`
 	Height       uint64                 `json:"height"`
+	UserAgent    useragent.Data         `json:"user_agent"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags
@@ -45,5 +47,6 @@ func NewConnection(c *daemon.Connection) Connection {
 		Mirror:       c.Mirror,
 		ListenPort:   c.ListenPort,
 		Height:       c.Height,
+		UserAgent:    c.Pex.UserAgent,
 	}
 }

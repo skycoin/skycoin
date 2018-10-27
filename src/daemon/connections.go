@@ -186,11 +186,6 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 		return nil, ErrConnectionNotExist
 	}
 
-	listenPort := conn.ListenPort
-	if !conn.Outgoing {
-		listenPort = m.ListenPort
-	}
-
 	if conn.State != ConnectionStateConnected {
 		logger.Critical().WithFields(logrus.Fields{
 			"addr":  conn.Addr,
@@ -198,7 +193,7 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 		}).Warningf("Transitioning to State %q but State is not %q", ConnectionStateIntroduced, ConnectionStateConnected)
 	}
 
-	if err := c.canUpdateMirror(ip, m.Mirror, listenPort); err != nil {
+	if err := c.canUpdateMirror(ip, m.Mirror); err != nil {
 		return nil, err
 	}
 
@@ -210,9 +205,14 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 	if conn.Outgoing && conn.ListenPort != m.ListenPort {
 		logger.Critical().WithFields(logrus.Fields{
 			"addr":              conn.Addr,
-			"connListenPort":    listenPort,
+			"connListenPort":    conn.ListenPort,
 			"messageListenPort": m.ListenPort,
 		}).Warning("Outgoing connection's ListenPort does not match reported IntroductionMessage ListenPort")
+	}
+
+	listenPort := conn.ListenPort
+	if !conn.Outgoing {
+		listenPort = m.ListenPort
 	}
 
 	if err := c.updateMirror(ip, m.Mirror, listenPort); err != nil {
@@ -293,7 +293,7 @@ func (c *Connections) updateMirror(ip string, mirror uint32, port uint16) error 
 
 // canUpdateMirror returns false if a connection already exists with the same base IP and mirror value.
 // This prevents duplicate connections to/from a single client.
-func (c *Connections) canUpdateMirror(ip string, mirror uint32, port uint16) error {
+func (c *Connections) canUpdateMirror(ip string, mirror uint32) error {
 	x := c.mirrors[mirror]
 	if x == nil {
 		return nil

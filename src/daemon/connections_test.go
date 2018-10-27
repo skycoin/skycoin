@@ -299,7 +299,9 @@ func TestConnectionsMultiple(t *testing.T) {
 	require.Equal(t, 1, conns.IPCount("127.1.1.1"))
 
 	err = conns.remove(addr1)
+	require.NoError(t, err)
 	err = conns.remove(addr2)
+	require.NoError(t, err)
 	err = conns.remove(addr3)
 	require.NoError(t, err)
 	require.Empty(t, conns.mirrors)
@@ -338,6 +340,7 @@ func TestConnectionsSetHeight(t *testing.T) {
 	require.Empty(t, c.Height)
 
 	err = conns.SetHeight(addr, height)
+	require.NoError(t, err)
 
 	c = conns.get(addr)
 	require.NotNil(t, c)
@@ -353,8 +356,8 @@ func TestConnectionsModifyMirrorPanics(t *testing.T) {
 
 	// modifying mirror value causes panic
 	require.Panics(t, func() {
-		conns.modify(addr, func(c *ConnectionDetails) {
+		conns.modify(addr, func(c *ConnectionDetails) { // nolint: errcheck
 			c.Mirror++
-		}) // nolint: errcheck
+		})
 	})
 }

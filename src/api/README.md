@@ -223,6 +223,8 @@ Response:
         "commit": "8798b5ee43c7ce43b9b75d57a1a6cd2c1295cd1e",
         "branch": "develop"
     },
+    "coin": "skycoin",
+    "user_agent": "skycoin:0.25.0-rc1",
     "open_connections": 8,
     "uptime": "6m30.629057248s",
     "csrf_enabled": true,
@@ -1528,9 +1530,9 @@ API sets: `INSECURE_WALLET_SEED`
 URI: /api/v2/wallet/recover
 Method: POST
 Args:
-	id: wallet id
-	seed: wallet seed
-	password: [optional] password to encrypt the recovered wallet with
+    id: wallet id
+    seed: wallet seed
+    password: [optional] password to encrypt the recovered wallet with
 ```
 
 Recovers an encrypted wallet by providing the wallet seed.
@@ -1547,28 +1549,28 @@ Result:
 
 ```json
 {
-	"data": {
-	    "meta": {
-	        "coin": "skycoin",
-	        "filename": "2017_11_25_e5fb.wlt",
-	        "label": "test",
-	        "type": "deterministic",
-	        "version": "0.2",
-	        "crypto_type": "",
-	        "timestamp": 1511640884,
-	        "encrypted": false
-	    },
-	    "entries": [
-	        {
-	            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-	            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
-	        },
-	        {
-	            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
-	            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
-	        }
-	    ]
-	}
+    "data": {
+        "meta": {
+            "coin": "skycoin",
+            "filename": "2017_11_25_e5fb.wlt",
+            "label": "test",
+            "type": "deterministic",
+            "version": "0.2",
+            "crypto_type": "",
+            "timestamp": 1511640884,
+            "encrypted": false
+        },
+        "entries": [
+            {
+                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+            },
+            {
+                "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
+            }
+        ]
+    }
 }
 ```
 
@@ -1854,9 +1856,9 @@ Method: POST
 Content-Type: application/json
 Body: {"rawtx": "hex-encoded serialized transaction string"}
 Errors:
-	400 - Bad input
-	500 - Other
-	503 - Network unavailable (transaction failed to broadcast)
+    400 - Bad input
+    500 - Other
+    503 - Network unavailable (transaction failed to broadcast)
 ```
 
 Broadcasts a hex-encoded, serialized transaction to the network.
@@ -3587,7 +3589,8 @@ Result:
     "introduced": true,
     "mirror": 719118746,
     "height": 181,
-    "listen_port": 6000
+    "listen_port": 6000,
+    "user_agent": "skycoin:0.25.0"
 }
 ```
 
@@ -3620,7 +3623,8 @@ Result:
             "introduced": true,
             "mirror": 1338939619,
             "height": 180,
-            "listen_port": 20002
+            "listen_port": 20002,
+            "user_agent": "skycoin:0.25.0"
         },
         {
             "id": 109548,
@@ -3631,7 +3635,8 @@ Result:
             "introduced": true,
             "mirror": 719118746,
             "height": 182,
-            "listen_port": 6000
+            "listen_port": 6000,
+            "user_agent": "skycoin:0.25.0"
         },
         {
             "id": 99115,
@@ -3642,7 +3647,8 @@ Result:
             "introduced": true,
             "mirror": 1931713869,
             "height": 180,
-            "listen_port": 6000
+            "listen_port": 6000,
+            "user_agent": ""
         }
     ]
 }
@@ -3789,19 +3795,19 @@ To replicate the same behavior as `/api/v1/spend`, use the following request bod
 
 ```json
 {
-	"hours_selection": {
-		"type": "auto",
-		"mode": "share",
-		"share_factor": "0.5",
-	},
-	"wallet": {
-		"id": "$wallet_id",
-		"password": "$password"
-	},
-	"to": [{
-		"address": "$dst",
-		"coins": "$coins"
-	}]
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5",
+    },
+    "wallet": {
+        "id": "$wallet_id",
+        "password": "$password"
+    },
+    "to": [{
+        "address": "$dst",
+        "coins": "$coins"
+    }]
 }
 ```
 

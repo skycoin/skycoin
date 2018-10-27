@@ -15,6 +15,7 @@ type Parameters struct {
 
 // NodeParameters records the node's configurable parameters
 type NodeParameters struct {
+	CoinName            string   `mapstructure:"coin_name"`
 	PeerListURL         string   `mapstructure:"peer_list_url"`
 	Port                int      `mapstructure:"port"`
 	WebInterfacePort    int      `mapstructure:"web_interface_port"`
@@ -26,8 +27,7 @@ type NodeParameters struct {
 	GenesisCoinVolume   uint64   `mapstructure:"genesis_coin_volume"`
 	DefaultConnections  []string `mapstructure:"default_connections"`
 
-	DataDirectory  string
-	ProfileCPUFile string
+	DataDirectory string
 }
 
 // VisorParameters are the parameters used to generate parameters.go in visor

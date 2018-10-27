@@ -28,7 +28,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
 - Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
 - Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
-- Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
+- Add `user_agent`, `coin`, `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
@@ -47,6 +47,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Coinhour burn factor can be configured at runtime with `COINHOUR_BURN_FACTOR` envvar
 - Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
 - `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
+- A user agent string is sent in the wire protocol's introduction packet
 
 ### Fixed
 

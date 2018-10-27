@@ -35,6 +35,7 @@ func TestIntroductionMessage(t *testing.T) {
 		disconnectErr              error
 		addPeerArg                 string
 		addPeerErr                 error
+		connectionIntroduced       *connection
 		connectionIntroducedErr    error
 		requestBlocksFromAddrErr   error
 		announceAllTxnsErr         error
@@ -176,23 +177,7 @@ func TestIntroductionMessage(t *testing.T) {
 			err: ErrDisconnectVersionNotSupported,
 		},
 		{
-			name: "Invalid address",
-			addr: "121.121.121.121",
-			mockValue: daemonMockValue{
-				mirror:           10000,
-				protocolVersion:  1,
-				disconnectReason: ErrDisconnectIncomprehensibleError,
-				pubkey:           pubkey,
-			},
-			intro: &IntroductionMessage{
-				Mirror:          10001,
-				ProtocolVersion: 1,
-				ListenPort:      6000,
-			},
-			err: ErrDisconnectIncomprehensibleError,
-		},
-		{
-			name: "incomming connection",
+			name: "incoming connection",
 			addr: "121.121.121.121:12345",
 			mockValue: daemonMockValue{
 				mirror:                  10000,
@@ -237,7 +222,7 @@ func TestIntroductionMessage(t *testing.T) {
 			mc := &gnet.MessageContext{Addr: tc.addr}
 			tc.intro.c = mc
 
-			d := &MockDaemoner{}
+			d := &mockDaemoner{}
 			d.On("DaemonConfig").Return(DaemonConfig{
 				ProtocolVersion:    int32(tc.mockValue.protocolVersion),
 				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion),
@@ -245,7 +230,7 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("Mirror").Return(tc.mockValue.mirror)
 			d.On("IsDefaultConnection", tc.addr).Return(tc.mockValue.isDefaultConnection)
 			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
-			d.On("RecordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
+			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("ResetRetryTimes", tc.addr)
 			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
@@ -253,7 +238,7 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("RemoveFromExpectingIntroductions", tc.addr)
 			d.On("IsMaxDefaultConnectionsReached").Return(tc.mockValue.isMaxConnectionsReached, tc.mockValue.isMaxConnectionsReachedErr)
 			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
-			d.On("ConnectionIntroduced", tc.addr, tc.intro).Return(tc.mockValue.connectionIntroducedErr)
+			d.On("connectionIntroduced", tc.addr, tc.intro).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
 			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
 			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
 
@@ -261,7 +246,7 @@ func TestIntroductionMessage(t *testing.T) {
 
 			if tc.doProcess {
 				require.NoError(t, err)
-				tc.intro.Process(d)
+				tc.intro.process(d)
 				d.AssertCalled(t, "Disconnect", tc.addr, tc.mockValue.disconnectReason)
 			} else {
 				require.Equal(t, tc.err, err)

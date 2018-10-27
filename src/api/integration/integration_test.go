@@ -1860,6 +1860,7 @@ func TestLiveNetworkConnections(t *testing.T) {
 		require.Equal(t, cc.Outgoing, connection.Outgoing)
 		require.True(t, cc.LastReceived <= connection.LastReceived)
 		require.True(t, cc.LastSent <= connection.LastSent)
+		require.Equal(t, cc.ConnectedAt, connection.ConnectedAt)
 
 		checked = true
 	}

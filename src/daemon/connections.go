@@ -123,7 +123,7 @@ func (c *Connections) pending(addr string) (*connection, error) {
 		},
 	}
 
-	logger.WithField("addr", addr).Debug("AddPendingOutgoing")
+	logger.WithField("addr", addr).Debug("Connections.pending")
 
 	return c.conns[addr], nil
 }
@@ -166,7 +166,7 @@ func (c *Connections) connected(addr string) (*connection, error) {
 	logger.WithFields(logrus.Fields{
 		"addr":     addr,
 		"outgoing": conn.Outgoing,
-	}).Debug("Connected")
+	}).Debug("Connections.connected")
 
 	return conn, nil
 }
@@ -227,7 +227,7 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 	logger.WithFields(logrus.Fields{
 		"addr":     addr,
 		"outgoing": conn.Outgoing,
-	}).Debug("Introduced")
+	}).Debug("Connections.introduced")
 
 	return conn, nil
 }

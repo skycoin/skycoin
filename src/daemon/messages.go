@@ -25,7 +25,7 @@ import (
 // DaemonLoop().
 // Message do this by caching the gnet.MessageContext received in Handle()
 // and placing itself on the messageEvent channel.
-// When the message is retrieved from the messageEvent channel, its Process()
+// When the message is retrieved from the messageEvent channel, its process()
 // method is called.
 
 // MessageConfig config contains a gnet.Message's 4byte prefix and a
@@ -129,18 +129,16 @@ func (ipa IPAddr) String() string {
 	return fmt.Sprintf("%s:%d", net.IP(ipb).String(), ipa.Port)
 }
 
-// AsyncMessage messages that perform an action when received must implement this interface.
-// Process() is called after the message is pulled off of messageEvent channel.
+// asyncMessage messages that perform an action when received must implement this interface.
+// process() is called after the message is pulled off of messageEvent channel.
 // Messages should place themselves on the messageEvent channel in their
 // Handle() method required by gnet.
-type AsyncMessage interface {
-	Process(d Daemoner)
+type asyncMessage interface {
+	process(d daemoner)
 }
 
 // GetPeersMessage sent to request peers
 type GetPeersMessage struct {
-	// c *gnet.MessageContext `enc:"-"`
-	// connID int    `enc:"-"`
 	addr string `enc:"-"`
 }
 
@@ -151,13 +149,12 @@ func NewGetPeersMessage() *GetPeersMessage {
 
 // Handle handles message
 func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
-	// self.connID = mc.ConnID
 	gpm.addr = mc.Addr
-	return daemon.(Daemoner).RecordMessageEvent(gpm, mc)
+	return daemon.(daemoner).recordMessageEvent(gpm, mc)
 }
 
-// Process Notifies the Pex instance that peers were requested
-func (gpm *GetPeersMessage) Process(d Daemoner) {
+// process Notifies the Pex instance that peers were requested
+func (gpm *GetPeersMessage) process(d daemoner) {
 	if d.PexConfig().Disabled {
 		return
 	}
@@ -170,7 +167,7 @@ func (gpm *GetPeersMessage) Process(d Daemoner) {
 
 	m := NewGivePeersMessage(peers)
 	if err := d.SendMessage(gpm.addr, m); err != nil {
-		logger.Errorf("Send GivePeersMessage to %s failed: %v", gpm.addr, err)
+		logger.WithField("addr", gpm.addr).WithError(err).Error("Send GivePeersMessage failed")
 	}
 }
 
@@ -208,11 +205,11 @@ func (gpm *GivePeersMessage) GetPeers() []string {
 // Handle handle message
 func (gpm *GivePeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gpm.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(gpm, mc)
+	return daemon.(daemoner).recordMessageEvent(gpm, mc)
 }
 
-// Process Notifies the Pex instance that peers were received
-func (gpm *GivePeersMessage) Process(d Daemoner) {
+// process Notifies the Pex instance that peers were received
+func (gpm *GivePeersMessage) process(d daemoner) {
 	if d.PexConfig().Disabled {
 		return
 	}
@@ -232,7 +229,7 @@ type IntroductionMessage struct {
 	// Protocol version
 	ProtocolVersion int32
 	c               *gnet.MessageContext `enc:"-"`
-	// We validate the message in Handle() and cache the result for Process()
+	// We validate the message in Handle() and cache the result for process()
 	valid bool `enc:"-"` // skip it during encoding
 	// Extra is extra bytes added to the struct to accommodate multiple versions of this packet.
 	// Currently it contains the blockchain pubkey but will accept a client that does not provide it.
@@ -252,12 +249,15 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 // Handle Responds to an gnet.Pool event. We implement Handle() here because we
 // need to control the DisconnectReason sent back to gnet.
 func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
-	d := daemon.(Daemoner)
+	d := daemon.(daemoner)
 
 	err := func() error {
 		// Disconnect if this is a self connection (we have the same mirror value)
 		if intro.Mirror == d.Mirror() {
-			logger.Infof("Remote mirror value %v matches ours", intro.Mirror)
+			logger.WithFields(logrus.Fields{
+				"addr":   mc.Addr,
+				"mirror": intro.Mirror,
+			}).Infof("Remote mirror value matches ours")
 			if err := d.Disconnect(mc.Addr, ErrDisconnectSelf); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
@@ -267,7 +267,11 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		// Disconnect if peer version is not within the supported range
 		dc := d.DaemonConfig()
 		if intro.ProtocolVersion < dc.MinProtocolVersion {
-			logger.Infof("%s protocol version %d below minimum supported protocol version %d. Disconnecting.", mc.Addr, intro.ProtocolVersion, dc.MinProtocolVersion)
+			logger.WithFields(logrus.Fields{
+				"addr":               mc.Addr,
+				"protocolVersion":    intro.ProtocolVersion,
+				"minProtocolVersion": dc.MinProtocolVersion,
+			}).Infof("protocol version below minimum supported protocol version")
 			if err := d.Disconnect(mc.Addr, ErrDisconnectVersionNotSupported); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
@@ -284,7 +288,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		if len(intro.Extra) > 0 {
 			var bcPubKey cipher.PubKey
 			if len(intro.Extra) < len(bcPubKey) {
-				logger.Infof("Extra data length does not meet the minimum requirement")
+				logger.WithField("addr", mc.Addr).Info("Extra data length does not meet the minimum requirement")
 				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
 					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 				}
@@ -293,37 +297,15 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
 			if d.BlockchainPubkey() != bcPubKey {
-				logger.Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())
+				logger.WithFields(logrus.Fields{
+					"addr":         mc.Addr,
+					"pubkey":       bcPubKey.Hex(),
+					"daemonPubkey": d.BlockchainPubkey().Hex(),
+				}).Info("Blockchain pubkey does not match")
 				if err := d.Disconnect(mc.Addr, ErrDisconnectBlockchainPubkeyNotMatched); err != nil {
 					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 				}
 				return ErrDisconnectBlockchainPubkeyNotMatched
-			}
-		}
-
-		// only solicited connection can be added to exchange peer list, because accepted
-		// connection may not have an incoming port
-		ip, port, err := iputil.SplitAddr(mc.Addr)
-		if err != nil {
-			// This should never happen, but the program should still work if it does
-			logger.Errorf("Invalid Addr() for connection: %s", mc.Addr)
-			if err := d.Disconnect(mc.Addr, ErrDisconnectIncomprehensibleError); err != nil {
-				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-			}
-			return ErrDisconnectIncomprehensibleError
-		}
-
-		// Checks if the introduction message is from outgoing connection.
-		// It's outgoing connection if port == intro.ListenPort, as the incoming
-		// connection's port is a random port, it's different from the port
-		// in introduction message.
-		if port == intro.ListenPort {
-			if err := d.SetHasIncomingPort(mc.Addr); err != nil {
-				logger.Errorf("Failed to set peer has incoming port status, %v", err)
-			}
-		} else {
-			if err := d.AddPeer(fmt.Sprintf("%s:%d", ip, intro.ListenPort)); err != nil {
-				logger.Errorf("Failed to add peer: %v", err)
 			}
 		}
 
@@ -338,21 +320,22 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		return err
 	}
 
-	err = d.RecordMessageEvent(intro, mc)
+	err = d.recordMessageEvent(intro, mc)
 	d.ResetRetryTimes(mc.Addr)
 	return err
 }
 
-// Process an event queued by Handle()
-func (intro *IntroductionMessage) Process(d Daemoner) {
+// process an event queued by Handle()
+func (intro *IntroductionMessage) process(d daemoner) {
 	if !intro.valid {
 		return
 	}
 
 	a := intro.c.Addr
 
-	if err := d.ConnectionIntroduced(a, intro); err != nil {
-		logger.WithError(err).WithField("addr", a).Warning("ConnectionIntroduced failed")
+	c, err := d.connectionIntroduced(a, intro)
+	if err != nil {
+		logger.WithError(err).WithField("addr", a).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
 		case ErrConnectionIPMirrorAlreadyRegistered:
@@ -366,6 +349,22 @@ func (intro *IntroductionMessage) Process(d Daemoner) {
 		}
 
 		return
+	}
+
+	if c.Outgoing {
+		// For successful outgoing connections, mark the peer as having an incoming port in the pex peerlist
+		// The peer should already be in the peerlist, since we use the peerlist to choose an outgoing connection to make
+		if err := d.SetHasIncomingPort(c.ListenAddr()); err != nil {
+			logger.WithField("addr", err).WithError(err).Error("SetHasIncomingPort failed")
+		}
+	} else {
+		// For successful incoming connections, add the peer to the peer list, with their self-reported listen port
+		if err := d.AddPeer(c.ListenAddr()); err != nil {
+			logger.WithError(err).WithFields(logrus.Fields{
+				"addr":       a,
+				"listenAddr": c.ListenAddr(),
+			}).Error("AddPeer failed")
+		}
 	}
 
 	// Request blocks immediately after they're confirmed
@@ -389,11 +388,11 @@ type PingMessage struct {
 // Handle implements the Messager interface
 func (ping *PingMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	ping.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(ping, mc)
+	return daemon.(daemoner).recordMessageEvent(ping, mc)
 }
 
-// Process Sends a PongMessage to the sender of PingMessage
-func (ping *PingMessage) Process(d Daemoner) {
+// process Sends a PongMessage to the sender of PingMessage
+func (ping *PingMessage) process(d daemoner) {
 	if d.DaemonConfig().LogPings {
 		logger.WithField("addr", ping.c.Addr).Debug("Replying to ping")
 	}
@@ -435,11 +434,11 @@ func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMes
 func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext,
 	daemon interface{}) error {
 	gbm.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(gbm, mc)
+	return daemon.(daemoner).recordMessageEvent(gbm, mc)
 }
 
-// Process should send number to be requested, with request
-func (gbm *GetBlocksMessage) Process(d Daemoner) {
+// process should send number to be requested, with request
+func (gbm *GetBlocksMessage) process(d daemoner) {
 	// TODO -- we need the sig to be sent with the block, but only the master
 	// can sign blocks.  Thus the sig needs to be stored with the block.
 	if d.DaemonConfig().DisableNetworking {
@@ -482,11 +481,11 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 // Handle handle message
 func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gbm.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(gbm, mc)
+	return daemon.(daemoner).recordMessageEvent(gbm, mc)
 }
 
-// Process process message
-func (gbm *GiveBlocksMessage) Process(d Daemoner) {
+// process process message
+func (gbm *GiveBlocksMessage) process(d daemoner) {
 	if d.DaemonConfig().DisableNetworking {
 		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
 		return
@@ -578,11 +577,11 @@ func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
 // Handle handles message
 func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	abm.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(abm, mc)
+	return daemon.(daemoner).recordMessageEvent(abm, mc)
 }
 
-// Process process message
-func (abm *AnnounceBlocksMessage) Process(d Daemoner) {
+// process process message
+func (abm *AnnounceBlocksMessage) process(d daemoner) {
 	if d.DaemonConfig().DisableNetworking {
 		return
 	}
@@ -635,11 +634,11 @@ func (atm *AnnounceTxnsMessage) GetFiltered() []cipher.SHA256 {
 // Handle handle message
 func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	atm.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(atm, mc)
+	return daemon.(daemoner).recordMessageEvent(atm, mc)
 }
 
-// Process process message
-func (atm *AnnounceTxnsMessage) Process(d Daemoner) {
+// process process message
+func (atm *AnnounceTxnsMessage) process(d daemoner) {
 	if d.DaemonConfig().DisableNetworking {
 		return
 	}
@@ -676,11 +675,11 @@ func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 // Handle handle message
 func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gtm.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(gtm, mc)
+	return daemon.(daemoner).recordMessageEvent(gtm, mc)
 }
 
-// Process process message
-func (gtm *GetTxnsMessage) Process(d Daemoner) {
+// process process message
+func (gtm *GetTxnsMessage) process(d daemoner) {
 	if d.DaemonConfig().DisableNetworking {
 		return
 	}
@@ -723,11 +722,11 @@ func (gtm *GiveTxnsMessage) GetFiltered() []cipher.SHA256 {
 // Handle handle message
 func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gtm.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(gtm, mc)
+	return daemon.(daemoner).recordMessageEvent(gtm, mc)
 }
 
-// Process process message
-func (gtm *GiveTxnsMessage) Process(d Daemoner) {
+// process process message
+func (gtm *GiveTxnsMessage) process(d daemoner) {
 	if d.DaemonConfig().DisableNetworking {
 		return
 	}

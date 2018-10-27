@@ -81,7 +81,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `cli generateAddresses` renamed to `cli walletAddAddresses`
 - `run.sh` is now `run-client.sh` and a new `run-daemon.sh` script is added for running in server daemon mode.
 - `/api/v1/explorer/address` is deprecated in favor of `/api/v1/transactions?verbose=1`
-- `/api/v1/network/connection*` connection object's field `"introduced"` replaced with field `"state"` which may have the values `"pending"`, `"introduced"`. Added `"connected_at"` field.
+- `/api/v1/network/connection*` connection object's field `"introduced"` replaced with field `"state"` which may have the values `"pending"`, `"connected"` or `"introduced"`. Added `"connected_at"` field.
 
 ### Removed
 

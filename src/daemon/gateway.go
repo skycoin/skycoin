@@ -144,9 +144,9 @@ func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 	conns := make([]Connection, 0)
 
 	for _, c := range cs {
-		// if !c.Outgoing || c.State != ConnectionStateIntroduced {
-		// 	continue
-		// }
+		if !c.Outgoing || c.State != ConnectionStateIntroduced {
+			continue
+		}
 
 		cc, err := gw.newConnection(&c)
 		if err != nil {

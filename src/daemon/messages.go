@@ -379,6 +379,7 @@ func (intro *IntroductionMessage) process(d daemoner) {
 	logger.WithFields(logrus.Fields{
 		"addr":       a,
 		"listenPort": intro.ListenPort,
+		"gnetID":     intro.c.ConnID,
 	}).Debug("IntroductionMessage.process")
 
 	if !intro.valid {
@@ -390,6 +391,13 @@ func (intro *IntroductionMessage) process(d daemoner) {
 		logger.WithError(err).WithField("addr", a).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
+		// It is hypothetically possible that a message would get processed after
+		// a disconnect event for a given connection.
+		// In this case, drop the packet.
+		// Do not perform a disconnect, since this would operate on the new connection.
+		case ErrConnectionGnetIDMismatch, ErrConnectionStateNotConnected, ErrConnectionAlreadyIntroduced:
+			logger.Critical().WithError(err).Warning("IntroductionMessage.process connection state out of order")
+			return
 		case ErrConnectionIPMirrorExists:
 			reason = ErrDisconnectConnectedTwice
 		default:
@@ -497,7 +505,7 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 		return
 	}
 	// Record this as this peer's highest block
-	d.RecordPeerHeight(gbm.c.Addr, gbm.LastBlock)
+	d.RecordPeerHeight(gbm.c.Addr, gbm.c.ConnID, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
 	blocks, err := d.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
 	if err != nil {

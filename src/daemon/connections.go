@@ -39,6 +39,14 @@ var (
 	ErrConnectionExists = errors.New("Connection exists")
 	// ErrConnectionIPMirrorExists connection exists for a given base IP and mirror
 	ErrConnectionIPMirrorExists = errors.New("Connection exists with this base IP and mirror")
+	// ErrConnectionStateNotConnected connect state is not "connected"
+	ErrConnectionStateNotConnected = errors.New("Connection state is not \"connected\"")
+	// ErrConnectionGnetIDMismatch gnet ID in argument does not match gnet ID on record
+	ErrConnectionGnetIDMismatch = errors.New("Connection gnet ID does not match")
+	// ErrConnectionAlreadyIntroduced attempted to make invalid state transition from introduced state
+	ErrConnectionAlreadyIntroduced = errors.New("Connection is already in introduced state")
+	// ErrConnectionAlreadyConnected attempted to make invalid state transition from connected state
+	ErrConnectionAlreadyConnected = errors.New("Connection is already in connected state")
 )
 
 // ConnectionDetails connection data managed by daemon
@@ -66,6 +74,7 @@ func (c ConnectionDetails) HasIntroduced() bool {
 type connection struct {
 	Addr string
 	ConnectionDetails
+	gnetID int
 }
 
 // ListenAddr returns the addr that connection listens on, if available
@@ -131,15 +140,9 @@ func (c *Connections) pending(addr string) (*connection, error) {
 }
 
 // connected the connection has connected
-func (c *Connections) connected(addr string) (*connection, error) {
+func (c *Connections) connected(addr string, gnetID int) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
-
-	// TODO -- we can have a pending outgoing connection,
-	// simulataneously the other client establishes an incoming connection,
-	// but we'll think it's an outgoing connection since it exists already
-	// Then one of them will fail and we'll remove it, ending up with no connection
-	// So we need to disambiguate the direction
 
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
@@ -163,17 +166,37 @@ func (c *Connections) connected(addr string) (*connection, error) {
 			return nil, err
 		}
 
-		if conn.State != ConnectionStatePending {
-			logger.Critical().WithField("state", conn.State).Warningf("Transitioning to state %q but state is not %q", ConnectionStateConnected, ConnectionStatePending)
+		switch conn.State {
+		case ConnectionStatePending:
+		case ConnectionStateConnected:
+			logger.Critical().WithFields(logrus.Fields{
+				"addr":     conn.Addr,
+				"state":    conn.State,
+				"outgoing": conn.Outgoing,
+				"gnetID":   gnetID,
+			}).Warningf("Connections.connected called on already connected connection")
+			return nil, ErrConnectionAlreadyConnected
+		case ConnectionStateIntroduced:
+			logger.Critical().WithFields(logrus.Fields{
+				"addr":     conn.Addr,
+				"state":    conn.State,
+				"outgoing": conn.Outgoing,
+				"gnetID":   gnetID,
+			}).Warning("Connections.connected called on already introduced connection")
+			return nil, ErrConnectionAlreadyIntroduced
+		default:
+			logger.Panic("Connection state invalid")
 		}
 	}
 
+	conn.gnetID = gnetID
 	conn.ConnectedAt = time.Now().UTC()
 	conn.State = ConnectionStateConnected
 
 	logger.WithFields(logrus.Fields{
 		"addr":     addr,
 		"outgoing": conn.Outgoing,
+		"gnetID":   gnetID,
 	}).Debug("Connections.connected")
 
 	return conn, nil
@@ -194,12 +217,38 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 		return nil, ErrConnectionNotExist
 	}
 
-	if conn.State != ConnectionStateConnected {
+	switch conn.State {
+	case ConnectionStatePending:
 		logger.Critical().WithFields(logrus.Fields{
-			"addr":     conn.Addr,
-			"state":    conn.State,
-			"outgoing": conn.Outgoing,
-		}).Warningf("Transitioning to state %q but state is not %q", ConnectionStateIntroduced, ConnectionStateConnected)
+			"addr":       conn.Addr,
+			"state":      conn.State,
+			"outgoing":   conn.Outgoing,
+			"connGnetID": conn.gnetID,
+			"gnetID":     m.c.ConnID,
+		}).Warningf("Connections.introduced called on pending connection")
+		return nil, ErrConnectionStateNotConnected
+	case ConnectionStateConnected:
+		if m.c.ConnID != conn.gnetID {
+			logger.Critical().WithFields(logrus.Fields{
+				"addr":       conn.Addr,
+				"state":      conn.State,
+				"outgoing":   conn.Outgoing,
+				"connGnetID": conn.gnetID,
+				"gnetID":     m.c.ConnID,
+			}).Warningf("Connections.introduced called with different gnet ID")
+			return nil, ErrConnectionGnetIDMismatch
+		}
+	case ConnectionStateIntroduced:
+		logger.Critical().WithFields(logrus.Fields{
+			"addr":       conn.Addr,
+			"state":      conn.State,
+			"outgoing":   conn.Outgoing,
+			"connGnetID": conn.gnetID,
+			"gnetID":     m.c.ConnID,
+		}).Warning("Connections.introduced called on already introduced connection")
+		return nil, ErrConnectionAlreadyIntroduced
+	default:
+		logger.Panic("invalid connection state")
 	}
 
 	if err := c.canUpdateMirror(ip, m.Mirror); err != nil {
@@ -256,10 +305,14 @@ func (c *Connections) get(addr string) *connection {
 
 // modify modifies a connection.
 // It is unsafe to modify the Mirror value with this method
-func (c *Connections) modify(addr string, f func(c *ConnectionDetails)) error {
+func (c *Connections) modify(addr string, gnetID int, f func(c *ConnectionDetails)) error {
 	conn := c.conns[addr]
 	if conn == nil {
 		return ErrConnectionNotExist
+	}
+
+	if conn.gnetID != gnetID {
+		return ErrConnectionGnetIDMismatch
 	}
 
 	// copy and modify
@@ -278,11 +331,11 @@ func (c *Connections) modify(addr string, f func(c *ConnectionDetails)) error {
 }
 
 // SetHeight sets the height for a connection
-func (c *Connections) SetHeight(addr string, height uint64) error {
+func (c *Connections) SetHeight(addr string, gnetID int, height uint64) error {
 	c.Lock()
 	defer c.Unlock()
 
-	return c.modify(addr, func(c *ConnectionDetails) {
+	return c.modify(addr, gnetID, func(c *ConnectionDetails) {
 		c.Height = height
 	})
 }

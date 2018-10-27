@@ -377,9 +377,9 @@ func (_m *mockDaemoner) RandomExchangeable(n int) pex.Peers {
 	return r0
 }
 
-// RecordPeerHeight provides a mock function with given fields: addr, height
-func (_m *mockDaemoner) RecordPeerHeight(addr string, height uint64) {
-	_m.Called(addr, height)
+// RecordPeerHeight provides a mock function with given fields: addr, gnetID, height
+func (_m *mockDaemoner) RecordPeerHeight(addr string, gnetID int, height uint64) {
+	_m.Called(addr, gnetID, height)
 }
 
 // RecordUserAgent provides a mock function with given fields: addr, userAgent

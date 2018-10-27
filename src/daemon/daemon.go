@@ -243,7 +243,7 @@ type daemoner interface {
 	SetHasIncomingPort(addr string) error
 	IncreaseRetryTimes(addr string)
 	ResetRetryTimes(addr string)
-	RecordPeerHeight(addr string, height uint64)
+	RecordPeerHeight(addr string, gnetID int, height uint64)
 	GetSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error)
 	HeadBkSeq() (uint64, bool, error)
 	ExecuteSignedBlock(b coin.SignedBlock) error
@@ -277,19 +277,8 @@ type Daemon struct {
 	announcedTxns *announcedTxnsCache
 	// Cache of connection metadata
 	connections *Connections
-
-	// // Client connection callbacks
-	// onConnectEvent chan ConnectEvent
-	// // Client disconnection callbacks
-	// onDisconnectEvent chan DisconnectEvent
-	// // Connection failure events
-	// connectionErrors chan ConnectionError
-	// // Message handling queue
-	// messageEvents chan messageEvent
-
 	// connect, disconnect, message, error events channel
 	events chan interface{}
-
 	// quit channel
 	quit chan struct{}
 	// done channel
@@ -321,14 +310,9 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 
 		announcedTxns: newAnnouncedTxnsCache(),
 		connections:   NewConnections(),
-
-		// onConnectEvent:    make(chan ConnectEvent, config.Pool.MaxConnections*2),
-		// onDisconnectEvent: make(chan DisconnectEvent, config.Pool.MaxConnections*2),
-		// connectionErrors:  make(chan ConnectionError, config.Pool.MaxConnections*2),
-		// messageEvents:     make(chan messageEvent, config.Pool.EventChannelSize),
-		events: make(chan interface{}, config.Pool.EventChannelSize),
-		quit:   make(chan struct{}),
-		done:   make(chan struct{}),
+		events:        make(chan interface{}, config.Pool.EventChannelSize),
+		quit:          make(chan struct{}),
+		done:          make(chan struct{}),
 	}
 
 	d.Gateway = NewGateway(config.Gateway, d)
@@ -340,6 +324,7 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 
 // ConnectEvent generated when a client connects
 type ConnectEvent struct {
+	GnetID    int
 	Addr      string
 	Solicited bool
 }
@@ -833,8 +818,9 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 	fields := logrus.Fields{
 		"addr":     e.Addr,
 		"outgoing": e.Solicited,
+		"gnetID":   e.GnetID,
 	}
-	logger.WithFields(fields).Info("Connected to peer")
+	logger.WithFields(fields).Info("onConnectEvent")
 
 	exist, err := dm.pool.Pool.IsConnExist(e.Addr)
 	if err != nil {
@@ -873,7 +859,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 	}
 
 	// Update the connections state machine
-	c, err := dm.connections.connected(e.Addr)
+	c, err := dm.connections.connected(e.Addr, e.GnetID)
 	if err != nil {
 		logger.Critical().WithError(err).WithFields(fields).Error("connections.Connected failed")
 		if err := dm.pool.Pool.Disconnect(e.Addr, ErrDisconnectIncomprehensibleError); err != nil {
@@ -902,7 +888,7 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 		"addr":   e.Addr,
 		"reason": e.Reason,
 	}
-	logger.WithFields(fields).Info("onDisconnect")
+	logger.WithFields(fields).Info("onDisconnectEvent")
 
 	if err := dm.connections.remove(e.Addr); err != nil {
 		logger.WithError(err).WithFields(fields).Error("connections.Remove failed")
@@ -939,6 +925,7 @@ func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
 // Triggered when an gnet.Connection is connected
 func (dm *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
 	dm.events <- ConnectEvent{
+		GnetID:    c.ID,
 		Addr:      c.Addr(),
 		Solicited: solicited,
 	}
@@ -1283,8 +1270,8 @@ func (dm *Daemon) ResetRetryTimes(addr string) {
 // Implements chain height store
 
 // RecordPeerHeight records the height of specific peer
-func (dm *Daemon) RecordPeerHeight(addr string, height uint64) {
-	if err := dm.connections.SetHeight(addr, height); err != nil {
+func (dm *Daemon) RecordPeerHeight(addr string, gnetID int, height uint64) {
+	if err := dm.connections.SetHeight(addr, gnetID, height); err != nil {
 		logger.Critical().WithError(err).WithField("addr", addr).Error("connections.SetHeight failed")
 	}
 }

@@ -379,18 +379,23 @@ func (pool *ConnectionPool) strand(name string, f func() error) error {
 // Returns nil, nil when max default connection limit hit
 func (pool *ConnectionPool) newConnection(conn net.Conn, solicited bool) (*Connection, error) {
 	a := conn.RemoteAddr().String()
-	if _, ok := pool.addresses[a]; ok {
+
+	if pool.isConnExist(a) {
 		return nil, fmt.Errorf("Already connected to %s", a)
 	}
 
+	if pool.isMaxConnectionsReached() {
+		return nil, errors.New("Max connections reached")
+	}
+
 	if _, ok := pool.Config.defaultConnections[a]; ok {
-		if pool.isMaxDefaultConnectionsReached() && solicited {
-			return nil, nil
+		if pool.isMaxDefaultOutgoingConnectionsReached() && solicited {
+			return nil, errors.New("Max default outgoing connections reached")
 		}
 
 		pool.defaultConnections[a] = struct{}{}
 		l := len(pool.defaultConnections)
-		logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
+		logger.WithField("addr", a).Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
 	}
 
 	pool.connID++
@@ -432,10 +437,6 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 		}()
 
 		err = pool.strand("handleConnection", func() error {
-			if pool.isConnExist(addr) {
-				return fmt.Errorf("Connection %s already exists", addr)
-			}
-
 			var err error
 			c, err = pool.newConnection(conn, solicited)
 			if err != nil {
@@ -700,8 +701,12 @@ func (pool *ConnectionPool) isConnExist(addr string) bool {
 	return ok
 }
 
-func (pool *ConnectionPool) isMaxDefaultConnectionsReached() bool {
+func (pool *ConnectionPool) isMaxDefaultOutgoingConnectionsReached() bool {
 	return len(pool.defaultConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections
+}
+
+func (pool *ConnectionPool) isMaxConnectionsReached() bool {
+	return len(pool.pool) >= pool.Config.MaxConnections
 }
 
 // DefaultConnectionsInUse returns the default connection in use
@@ -760,7 +765,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 		}
 
 		if _, ok := pool.Config.defaultConnections[address]; ok {
-			if pool.isMaxDefaultConnectionsReached() {
+			if pool.isMaxDefaultOutgoingConnectionsReached() {
 				return ErrMaxOutgoingConnectionsReached
 			}
 		}

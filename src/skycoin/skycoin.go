@@ -347,6 +347,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
+	dc.Pool.ConnectionsMax = c.config.Node.MaxConnections
 
 	dc.Pex.DataDirectory = c.config.Node.DataDirectory
 	dc.Pex.Disabled = c.config.Node.DisablePEX

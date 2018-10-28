@@ -532,9 +532,8 @@ loop:
 		case <-outgoingConnectionsTicker.C:
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
-			trustPeerNum := len(dm.pex.Trusted())
 			if !dm.Config.DisableOutgoingConnections &&
-				dm.connections.OutgoingLen() < (dm.Config.OutgoingMax+trustPeerNum) &&
+				dm.connections.OutgoingLen() < dm.Config.OutgoingMax &&
 				dm.connections.PendingLen() < dm.Config.PendingMax {
 				dm.connectToRandomPeer()
 			}
@@ -550,10 +549,10 @@ loop:
 		case r := <-dm.events:
 			elapser.Register("dm.event")
 			if dm.Config.DisableNetworking {
-				logger.Error("There should be no events")
-				return nil
+				logger.Critical().Error("Networking is disabled, there should be no events")
+			} else {
+				dm.handleEvent(r)
 			}
-			dm.handleEvent(r)
 
 		case <-flushAnnouncedTxnsTicker.C:
 			elapser.Register("flushAnnouncedTxnsTicker")
@@ -561,7 +560,6 @@ loop:
 
 			if err := dm.visor.SetTransactionsAnnounced(txns); err != nil {
 				logger.WithError(err).Error("Failed to set unconfirmed txn announce time")
-				return err
 			}
 
 		case req := <-dm.Gateway.requests:

@@ -64,6 +64,7 @@ func NewPool(cfg PoolConfig, d *Daemon) *Pool {
 	gnetCfg.Address = cfg.address
 	gnetCfg.ConnectCallback = d.onGnetConnect
 	gnetCfg.DisconnectCallback = d.onGnetDisconnect
+	gnetCfg.ConnectFailureCallback = d.onGnetConnectFailure
 	gnetCfg.MaxConnections = cfg.MaxConnections
 	gnetCfg.MaxDefaultPeerOutgoingConnections = cfg.MaxDefaultPeerOutgoingConnections
 	gnetCfg.DefaultConnections = cfg.DefaultConnections

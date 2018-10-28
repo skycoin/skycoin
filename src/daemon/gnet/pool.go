@@ -57,6 +57,11 @@ var (
 	ErrNoReachableConnections = errors.New("All pool connections are unreachable at this time")
 	// ErrPoolEmpty when broadcasting a message, the connection pool was empty
 	ErrPoolEmpty = errors.New("Connection pool is empty")
+	// ErrConnectionExists connection exists
+	ErrConnectionExists = errors.New("Connection exists")
+	// ErrMaxOutgoingConnectionsReached outgoing connections max reached
+	ErrMaxOutgoingConnectionsReached = errors.New("Outgoing connections max reached")
+
 	// Logger
 	logger = logging.MustGetLogger("gnet")
 )
@@ -91,6 +96,8 @@ type Config struct {
 	DisconnectCallback DisconnectCallback
 	// Triggered on client connect
 	ConnectCallback ConnectCallback
+	// Triggered on client connect failure
+	ConnectFailureCallback ConnectFailureCallback
 	// Print debug logs
 	DebugPrint bool
 	// Default "trusted" peers
@@ -180,6 +187,9 @@ type DisconnectCallback func(addr string, id uint64, reason DisconnectReason)
 
 // ConnectCallback triggered on client connect
 type ConnectCallback func(addr string, id uint64, solicited bool)
+
+// ConnectFailureCallback trigger on client connect failure
+type ConnectFailureCallback func(addr string, solicited bool, err error)
 
 // ConnectionPool connection pool
 type ConnectionPool struct {
@@ -360,40 +370,35 @@ func (pool *ConnectionPool) strand(name string, f func() error) error {
 	return strand.Strand(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
 }
 
-// NewConnection creates a new Connection around a net.Conn. Trying to make a connection
+// newConnection creates a new Connection around a net.Conn. Trying to make a connection
 // to an address that is already connected will failed.
 // Returns nil, nil when max default connection limit hit
-func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Connection, error) {
+func (pool *ConnectionPool) newConnection(conn net.Conn, solicited bool) (*Connection, error) {
 	a := conn.RemoteAddr().String()
-	var nc *Connection
-	if err := pool.strand("NewConnection", func() error {
-		if _, ok := pool.addresses[a]; ok {
-			return fmt.Errorf("Already connected to %s", a)
-		}
-
-		if _, ok := pool.Config.defaultConnections[a]; ok {
-			if pool.isMaxDefaultConnectionsReached() && solicited {
-				return nil
-			}
-
-			pool.defaultConnections[a] = struct{}{}
-			l := len(pool.defaultConnections)
-			logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
-		}
-
-		pool.connID++
-		// ID must start at 1; in case connID overflows back to 0, force it to 1
-		if pool.connID == 0 {
-			pool.connID = 1
-		}
-		nc = NewConnection(pool, pool.connID, conn, pool.Config.ConnectionWriteQueueSize, solicited)
-
-		pool.pool[nc.ID] = nc
-		pool.addresses[a] = nc
-		return nil
-	}); err != nil {
-		return nil, err
+	if _, ok := pool.addresses[a]; ok {
+		return nil, fmt.Errorf("Already connected to %s", a)
 	}
+
+	if _, ok := pool.Config.defaultConnections[a]; ok {
+		if pool.isMaxDefaultConnectionsReached() && solicited {
+			return nil, nil
+		}
+
+		pool.defaultConnections[a] = struct{}{}
+		l := len(pool.defaultConnections)
+		logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
+	}
+
+	pool.connID++
+	// ID must start at 1; in case connID overflows back to 0, force it to 1
+	if pool.connID == 0 {
+		pool.connID = 1
+	}
+
+	nc := NewConnection(pool, pool.connID, conn, pool.Config.ConnectionWriteQueueSize, solicited)
+
+	pool.pool[nc.ID] = nc
+	pool.addresses[a] = nc
 
 	return nc, nil
 }
@@ -417,34 +422,48 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 		defer func() {
 			if err != nil {
 				if closeErr := conn.Close(); closeErr != nil {
-					logger.WithError(closeErr).WithField("addr", addr).Error("conn.Close")
+					logger.WithError(closeErr).WithField("addr", addr).Error("handleConnection conn.Close")
 				}
 			}
 		}()
 
-		exist, err := pool.IsConnExist(addr)
-		if err != nil {
-			return
-		}
-		if exist {
-			err = fmt.Errorf("Connection %s already exists", addr)
-			return
-		}
+		err = pool.strand("handleConnection", func() error {
+			if pool.isConnExist(addr) {
+				return fmt.Errorf("Connection %s already exists", addr)
+			}
 
-		return pool.NewConnection(conn, solicited)
+			var err error
+			c, err = pool.newConnection(conn, solicited)
+			if err != nil {
+				return err
+			}
+
+			if c == nil {
+				return nil
+			}
+
+			if pool.Config.ConnectCallback != nil {
+				pool.Config.ConnectCallback(c.Addr(), c.ID, solicited)
+			}
+
+			return nil
+		})
+
+		return
 	}()
 
+	// TODO -- this error is not fully propagated back to a caller of Connect() so the daemon state
+	// can get stuck in pending
 	if err != nil {
+		if pool.Config.ConnectFailureCallback != nil {
+			pool.Config.ConnectFailureCallback(addr, solicited, err)
+		}
 		return err
 	}
 
-	// c is nil if max default connection limit is reached
+	// c may be nil if already connected to that connection or max outgoing connections reached
 	if c == nil {
 		return nil
-	}
-
-	if pool.Config.ConnectCallback != nil {
-		pool.Config.ConnectCallback(c.Addr(), c.ID, solicited)
 	}
 
 	msgC := make(chan []byte, 32)
@@ -664,15 +683,19 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 func (pool *ConnectionPool) IsConnExist(addr string) (bool, error) {
 	var exist bool
 	if err := pool.strand("IsConnExist", func() error {
-		if _, ok := pool.addresses[addr]; ok {
-			exist = true
-		}
+		exist = pool.isConnExist(addr)
 		return nil
 	}); err != nil {
 		return false, fmt.Errorf("Check connection existence failed: %v ", err)
 	}
 
 	return exist, nil
+}
+
+// isConnExist check if the connection of address does exist
+func (pool *ConnectionPool) isConnExist(addr string) bool {
+	_, ok := pool.addresses[addr]
+	return ok
 }
 
 // IsDefaultConnection returns if the addr is a default connection
@@ -748,13 +771,10 @@ func (pool *ConnectionPool) GetConnection(addr string) (*Connection, error) {
 
 // Connect to an address
 func (pool *ConnectionPool) Connect(address string) error {
-	exist, err := pool.IsConnExist(address)
-	if err != nil {
+	if exist, err := pool.IsConnExist(address); err != nil {
 		return err
-	}
-
-	if exist {
-		return nil
+	} else if exist {
+		return ErrConnectionExists
 	}
 
 	var hitMaxDefaultConnNum bool
@@ -769,7 +789,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 	}
 
 	if hitMaxDefaultConnNum {
-		return nil
+		return ErrMaxOutgoingConnectionsReached
 	}
 
 	logger.WithField("addr", address).Debugf("Making TCP connection")

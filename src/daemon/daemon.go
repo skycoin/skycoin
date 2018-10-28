@@ -336,10 +336,11 @@ type DisconnectEvent struct {
 	Reason gnet.DisconnectReason
 }
 
-// ConnectionError represent a failure to connect/dial a connection, with context
-type ConnectionError struct {
-	Addr  string
-	Error error
+// ConnectFailureEvent represent a failure to connect/dial a connection, with context
+type ConnectFailureEvent struct {
+	Addr      string
+	Solicited bool
+	Error     error
 }
 
 // messageEvent encapsulates a deserialized message from the network
@@ -674,9 +675,10 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 
 	go func() {
 		if err := dm.pool.Pool.Connect(p.Addr); err != nil {
-			dm.events <- ConnectionError{
-				Addr:  p.Addr,
-				Error: err,
+			dm.events <- ConnectFailureEvent{
+				Addr:      p.Addr,
+				Solicited: true,
+				Error:     err,
 			}
 		}
 	}()
@@ -785,8 +787,8 @@ func (dm *Daemon) handleEvent(e interface{}) {
 		dm.onConnectEvent(x)
 	case DisconnectEvent:
 		dm.onDisconnectEvent(x)
-	case ConnectionError:
-		dm.onConnectionError(x)
+	case ConnectFailureEvent:
+		dm.onConnectFailure(x)
 	default:
 		logger.WithFields(logrus.Fields{
 			"type":  fmt.Sprintf("%T", e),
@@ -905,9 +907,14 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 	}
 }
 
-func (dm *Daemon) onConnectionError(c ConnectionError) {
+func (dm *Daemon) onConnectFailure(c ConnectFailureEvent) {
 	// Remove the pending connection from connections and update the retry times in pex
-	logger.WithField("addr", c.Addr).WithError(c.Error).Debug("onConnectionError")
+	logger.WithField("addr", c.Addr).WithError(c.Error).Debug("onConnectFailure")
+	// onConnectFailure should only trigger for "pending" connections which have gnet ID 0;
+	// connections in any other state will have a nonzero gnet ID.
+	// if the connection is in a different state, the gnet ID will not match, the connection
+	// won't be removed and we'll receive an error.
+	// If this happens, it is a bug, and the connections state may be corrupted.
 	if err := dm.connections.remove(c.Addr, 0); err != nil {
 		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
 	}
@@ -916,22 +923,30 @@ func (dm *Daemon) onConnectionError(c ConnectionError) {
 	dm.pex.IncreaseRetryTimes(c.Addr)
 }
 
-// Triggered when an gnet.Connection terminates
+// onGnetDisconnect triggered when a gnet.Connection terminates
 func (dm *Daemon) onGnetDisconnect(addr string, gnetID uint64, reason gnet.DisconnectReason) {
-	e := DisconnectEvent{
+	dm.events <- DisconnectEvent{
 		GnetID: gnetID,
 		Addr:   addr,
 		Reason: reason,
 	}
-	dm.events <- e
 }
 
-// Triggered when an gnet.Connection is connected
+// onGnetConnect Triggered when a gnet.Connection connects
 func (dm *Daemon) onGnetConnect(addr string, gnetID uint64, solicited bool) {
 	dm.events <- ConnectEvent{
 		GnetID:    gnetID,
 		Addr:      addr,
 		Solicited: solicited,
+	}
+}
+
+// onGnetConnectFailure triggered when a gnet.Connection fails to connect
+func (dm *Daemon) onGnetConnectFailure(addr string, solicited bool, err error) {
+	dm.events <- ConnectFailureEvent{
+		Addr:      addr,
+		Solicited: solicited,
+		Error:     err,
 	}
 }
 

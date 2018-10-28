@@ -188,6 +188,8 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
 			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
+
+			require.Equal(t, uint64(0x2), r.BurnFactor)
 		})
 	}
 }

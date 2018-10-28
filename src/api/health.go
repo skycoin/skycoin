@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
@@ -29,6 +30,7 @@ type HealthResponse struct {
 	GUIEnabled            bool               `json:"gui_enabled"`
 	UnversionedAPIEnabled bool               `json:"unversioned_api_enabled"`
 	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
+	BurnFactor            uint64             `json:coinhours_burn_factor`
 }
 
 // healthHandler returns node health data
@@ -75,6 +77,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			GUIEnabled:            c.enableGUI,
 			JSON20RPCEnabled:      c.enableJSON20RPC,
 			WalletAPIEnabled:      walletAPIEnabled,
+			BurnFactor:            fee.BurnFactor,
 		})
 	}
 }

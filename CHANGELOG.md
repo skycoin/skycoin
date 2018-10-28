@@ -48,6 +48,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
 - `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
 - A user agent string is sent in the wire protocol's introduction packet
+- `-max-connections` option to control total max connections
 
 ### Fixed
 

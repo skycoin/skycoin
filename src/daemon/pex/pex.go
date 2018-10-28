@@ -260,7 +260,7 @@ func New(cfg Config) (*Pex, error) {
 	// Add custom peers
 	if cfg.CustomPeersFile != "" {
 		if err := pex.loadCustom(cfg.CustomPeersFile); err != nil {
-			logger.Critical().WithError(err).Errorf("Failed to load custom peers from %s", cfg.CustomPeersFile)
+			logger.Critical().WithError(err).WithField("file", cfg.CustomPeersFile).Error("Failed to load custom peers file")
 			return nil, err
 		}
 	}
@@ -274,7 +274,7 @@ func New(cfg Config) (*Pex, error) {
 	if pex.Config.DownloadPeerList {
 		go func() {
 			if err := pex.downloadPeers(); err != nil {
-				logger.Errorf("Failed to download peers list: %v", err)
+				logger.WithError(err).Error("Failed to download peers list")
 			}
 		}()
 	}
@@ -292,7 +292,7 @@ func (px *Pex) Run() error {
 		// Save the peerlist
 		logger.Info("Save peerlist")
 		if err := px.save(); err != nil {
-			logger.Errorf("Save peers failed: %v", err)
+			logger.WithError(err).Error("Save peerlist failed")
 		}
 	}()
 
@@ -324,15 +324,15 @@ func (px *Pex) Shutdown() {
 func (px *Pex) downloadPeers() error {
 	body, err := backoffDownloadText(px.Config.PeerListURL)
 	if err != nil {
-		logger.Errorf("Failed to download peers from %s. err: %s", px.Config.PeerListURL, err.Error())
+		logger.WithError(err).WithField("url", px.Config.PeerListURL).Error("Failed to download peers")
 		return err
 	}
 
 	peers := parseRemotePeerList(body)
-	logger.Infof("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
+	logger.WithField("url", px.Config.PeerListURL).Infof("Downloaded peers list, got %d peers", len(peers))
 
 	n := px.AddPeers(peers)
-	logger.Infof("Added %d/%d peers from downloaded peers list", n, len(peers))
+	logger.WithField("url", px.Config.PeerListURL).Infof("Added %d/%d peers from downloaded peers list", n, len(peers))
 
 	return nil
 }
@@ -368,7 +368,7 @@ func (px *Pex) loadCache() error {
 	var validPeers []Peer
 	for addr, p := range peers {
 		if _, err := validateAddress(addr, px.Config.AllowLocalhost); err != nil {
-			logger.Errorf("Invalid peer address: %v", err)
+			logger.WithError(err).Error("Invalid peer address")
 			continue
 		}
 
@@ -426,7 +426,7 @@ func (px *Pex) AddPeer(addr string) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 
@@ -458,7 +458,7 @@ func (px *Pex) AddPeers(addrs []string) int {
 	for _, addr := range addrs {
 		a, err := validateAddress(addr, px.Config.AllowLocalhost)
 		if err != nil {
-			logger.Infof("Add peers sees an invalid address %s: %v", addr, err)
+			logger.WithField("addr", addr).WithError(err).Info("Add peers sees an invalid address")
 			continue
 		}
 		validAddrs = append(validAddrs, a)
@@ -488,7 +488,7 @@ func (px *Pex) SetPrivate(addr string, private bool) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 
@@ -502,7 +502,7 @@ func (px *Pex) SetTrusted(addr string) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 
@@ -524,7 +524,7 @@ func (px *Pex) SetHasIncomingPort(addr string, hasPublicPort bool) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 
@@ -538,7 +538,7 @@ func (px *Pex) SetUserAgent(addr string, userAgent useragent.Data) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 

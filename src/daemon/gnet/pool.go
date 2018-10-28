@@ -316,7 +316,7 @@ func (pool *ConnectionPool) processStrand() {
 			return
 		case req := <-pool.reqC:
 			if err := req.Func(); err != nil {
-				logger.WithField("operation", req.Name).WithError(err).Errorf("strand req.Func failed")
+				logger.WithField("operation", req.Name).WithError(err).Error("strand req.Func failed")
 			}
 		}
 	}
@@ -601,7 +601,7 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 			// since no further action in this block will happen after the write.
 			if err == nil {
 				if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
-					logger.Warningf("updateLastSent(%s) failed", conn.Addr())
+					logger.WithField("addr", conn.Addr()).WithError(err).Warning("updateLastSent failed")
 				}
 			}
 
@@ -611,7 +611,7 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 				return nil
 			case pool.SendResults <- sr:
 			default:
-				logger.Warningf("SendResults queue full address=%s", conn.Addr())
+				logger.WithField("addr", conn.Addr()).Warning("SendResults queue full")
 			}
 
 			if err != nil {
@@ -642,7 +642,6 @@ func readData(reader io.Reader, buf []byte) ([]byte, error) {
 func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 	dataArray := [][]byte{}
 	for buf.Len() > messageLengthSize {
-		//logger.Debug("There is data in the buffer, extracting")
 		prefix := buf.Bytes()[:messageLengthSize]
 		// decode message length
 		tmpLength := uint32(0)
@@ -656,14 +655,13 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		}
 
 		length := int(tmpLength)
-		// logger.Debugf("Length is %d", length)
+
 		// Disconnect if we received an invalid length.
 		if length < messagePrefixLength || length > maxMsgLength {
 			return [][]byte{}, ErrDisconnectInvalidMessageLength
 		}
 
 		if buf.Len()-messageLengthSize < length {
-			// logger.Debug("Skipping, not enough data to read this")
 			return [][]byte{}, nil
 		}
 
@@ -771,25 +769,20 @@ func (pool *ConnectionPool) GetConnection(addr string) (*Connection, error) {
 
 // Connect to an address
 func (pool *ConnectionPool) Connect(address string) error {
-	if exist, err := pool.IsConnExist(address); err != nil {
-		return err
-	} else if exist {
-		return ErrConnectionExists
-	}
-
-	var hitMaxDefaultConnNum bool
-	// Checks if it's one of the default connection
-	if err := pool.strand("Check default connection", func() error {
-		if _, ok := pool.Config.defaultConnections[address]; ok {
-			hitMaxDefaultConnNum = pool.isMaxDefaultConnectionsReached()
+	if err := pool.strand("Connect", func() error {
+		if pool.isConnExist(address) {
+			return ErrConnectionExists
 		}
+
+		if _, ok := pool.Config.defaultConnections[address]; ok {
+			if pool.isMaxDefaultConnectionsReached() {
+				return ErrMaxOutgoingConnectionsReached
+			}
+		}
+
 		return nil
 	}); err != nil {
 		return err
-	}
-
-	if hitMaxDefaultConnNum {
-		return ErrMaxOutgoingConnectionsReached
 	}
 
 	logger.WithField("addr", address).Debugf("Making TCP connection")
@@ -918,7 +911,7 @@ func (pool *ConnectionPool) OutgoingConnectionsNum() (int, error) {
 // SendResults channel.
 func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 	if pool.Config.DebugPrint {
-		logger.Debugf("Send, Msg Type: %s", reflect.TypeOf(msg))
+		logger.WithField("msgType", reflect.TypeOf(msg)).Debug("SendMessage")
 	}
 
 	return pool.strand("SendMessage", func() error {
@@ -926,7 +919,7 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 			select {
 			case conn.WriteQueue <- msg:
 			default:
-				logger.Critical().Infof("Write queue full for address %s", addr)
+				logger.Critical().WithField("addr", addr).Info("Write queue full")
 				return ErrWriteQueueFull
 			}
 		} else {
@@ -939,7 +932,7 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 // BroadcastMessage sends a Message to all connections in the Pool.
 func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 	if pool.Config.DebugPrint {
-		logger.Debugf("Broadcast, Msg Type: %s", reflect.TypeOf(msg))
+		logger.WithField("msgType", reflect.TypeOf(msg)).Debug("BroadcastMessage")
 	}
 
 	fullWriteQueue := []string{}
@@ -952,7 +945,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 			select {
 			case conn.WriteQueue <- msg:
 			default:
-				logger.Critical().Infof("Write queue full for address %s", conn.Addr())
+				logger.Critical().WithField("addr", conn.Addr()).Info("Write queue full")
 				fullWriteQueue = append(fullWriteQueue, conn.Addr())
 			}
 		}

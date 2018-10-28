@@ -99,8 +99,7 @@ func EncodeMessage(msg Message) []byte {
 	t := reflect.ValueOf(msg).Elem().Type()
 	msgID, succ := MessageIDMap[t]
 	if !succ {
-		txt := "Attempted to serialize message struct not in MessageIdMap: %v"
-		logger.Panicf(txt, msg)
+		logger.Panicf("Attempted to serialize message struct not in MessageIdMap: %v", msg)
 	}
 	bMsg := encoder.Serialize(msg)
 

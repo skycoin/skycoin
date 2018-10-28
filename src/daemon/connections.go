@@ -234,38 +234,29 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 
 	fields["outgoing"] = conn.Outgoing
 
-	if err := func() error {
-		fields := logrus.Fields{
-			"addr":       addr,
-			"outgoing":   conn.Outgoing,
-			"state":      conn.State,
-			"gnetID":     gnetID,
-			"connGnetID": conn.gnetID,
-		}
+	errorFields := logrus.Fields{
+		"state":      conn.State,
+		"connGnetID": conn.gnetID,
+	}
 
-		switch conn.State {
-		case ConnectionStatePending:
-			logger.Critical().WithFields(fields).Error("Connections.introduced called on pending connection")
-			return ErrConnectionStateNotConnected
-		case ConnectionStateConnected:
-			if gnetID != conn.gnetID {
-				logger.Critical().WithFields(fields).Error("Connections.introduced called with different gnet ID")
-				return ErrConnectionGnetIDMismatch
-			}
-		case ConnectionStateIntroduced:
-			logger.Critical().WithFields(fields).Error("Connections.introduced called on already introduced connection")
-			return ErrConnectionAlreadyIntroduced
-		default:
-			logger.WithFields(fields).Panic("invalid connection state")
+	switch conn.State {
+	case ConnectionStatePending:
+		logger.Critical().WithFields(fields).WithFields(errorFields).Error("Connections.introduced called on pending connection")
+		return nil, ErrConnectionStateNotConnected
+	case ConnectionStateConnected:
+		if gnetID != conn.gnetID {
+			logger.Critical().WithFields(fields).WithFields(errorFields).Error("Connections.introduced called with different gnet ID")
+			return nil, ErrConnectionGnetIDMismatch
 		}
+	case ConnectionStateIntroduced:
+		logger.Critical().WithFields(fields).WithFields(errorFields).Error("Connections.introduced called on already introduced connection")
+		return nil, ErrConnectionAlreadyIntroduced
+	default:
+		logger.WithFields(fields).WithFields(errorFields).Panic("invalid connection state")
+	}
 
-		if err := c.canUpdateMirror(ip, m.Mirror); err != nil {
-			logger.WithFields(fields).WithError(err).Debug("canUpdateMirror failed")
-			return err
-		}
-
-		return nil
-	}(); err != nil {
+	if err := c.canUpdateMirror(ip, m.Mirror); err != nil {
+		logger.WithFields(fields).WithFields(errorFields).WithField("mirror", m.Mirror).WithError(err).Debug("canUpdateMirror failed")
 		return nil, err
 	}
 
@@ -275,9 +266,10 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 	// A misbehaving peer could report a different ListenPort in their IntroductionMessage,
 	// but it shouldn't affect our records.
 	if conn.Outgoing && conn.ListenPort != m.ListenPort {
-		fields["connListenPort"] = conn.ListenPort
-		fields["introListenPort"] = m.ListenPort
-		logger.Critical().WithFields(fields).Warning("Outgoing connection's ListenPort does not match reported IntroductionMessage ListenPort")
+		logger.Critical().WithFields(fields).WithFields(logrus.Fields{
+			"connListenPort":  conn.ListenPort,
+			"introListenPort": m.ListenPort,
+		}).Warning("Outgoing connection's ListenPort does not match reported IntroductionMessage ListenPort")
 	}
 
 	listenPort := conn.ListenPort
@@ -286,8 +278,7 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 	}
 
 	if err := c.updateMirror(ip, m.Mirror, listenPort); err != nil {
-		fields["mirror"] = m.Mirror
-		logger.WithFields(fields).WithError(err).Panic("updateMirror failed, but shouldn't")
+		logger.WithFields(fields).WithField("mirror", m.Mirror).WithError(err).Panic("updateMirror failed, but shouldn't")
 	}
 
 	conn.State = ConnectionStateIntroduced
@@ -328,7 +319,10 @@ func (c *Connections) modify(addr string, gnetID uint64, f func(c *ConnectionDet
 
 	// compare to original
 	if cd.Mirror != conn.ConnectionDetails.Mirror {
-		logger.Panic("Connections.modify connection mirror value was changed")
+		logger.WithFields(logrus.Fields{
+			"addr":   addr,
+			"gnetID": gnetID,
+		}).Panic("Connections.modify connection mirror value was changed")
 	}
 
 	conn.ConnectionDetails = cd

@@ -40,7 +40,7 @@ type Request struct {
 // channel closes.
 func Strand(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
 	if Debug {
-		logger.WithField("operation", name).Debugf("Strand precall")
+		logger.WithField("operation", name).Debug("Strand precall")
 	}
 
 	done := make(chan struct{})

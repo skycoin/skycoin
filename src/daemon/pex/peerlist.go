@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -58,21 +60,27 @@ func loadCachedPeersFile(path string) (map[string]*Peer, error) {
 
 	peers := make(map[string]*Peer, len(peersJSON))
 	for addr, peerJSON := range peersJSON {
+		fields := logrus.Fields{
+			"addr": addr,
+			"path": path,
+		}
+
 		a, err := validateAddress(addr, true)
 
 		if err != nil {
-			logger.Errorf("Invalid address in peers JSON file %s: %v", addr, err)
+			logger.WithError(err).WithFields(fields).Error("Invalid address in peers JSON file")
 			continue
 		}
 
 		peer, err := newPeerFromJSON(peerJSON)
 		if err != nil {
-			logger.Errorf("newPeerFromJSON failed: %v", err)
+			logger.WithError(err).WithFields(fields).Error("newPeerFromJSON failed")
 			continue
 		}
 
 		if a != peer.Addr {
-			logger.Errorf("Address key %s does not match Peer.Addr %s", a, peer.Addr)
+			fields["peerAddr"] = peer.Addr
+			logger.WithFields(fields).Error("Address key does not match Peer.Addr")
 			continue
 		}
 

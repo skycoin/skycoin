@@ -13,8 +13,6 @@ func getMirrorPort(c *Connections, ip string, mirror uint32) uint16 {
 	c.Lock()
 	defer c.Unlock()
 
-	logger.Debugf("getMirrorPort ip=%s mirror=%d", ip, mirror)
-
 	x := c.mirrors[mirror]
 	if x == nil {
 		return 0

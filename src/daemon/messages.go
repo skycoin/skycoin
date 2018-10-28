@@ -216,7 +216,7 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 		return
 	}
 	peers := gpm.GetPeers()
-	logger.Debugf("Got these peers via PEX: %s", strings.Join(peers, ", "))
+	logger.Debugf("Got %d peers via PEX: %s", len(peers), strings.Join(peers, ", "))
 
 	d.AddPeers(peers)
 }
@@ -248,7 +248,10 @@ type IntroductionMessage struct {
 // NewIntroductionMessage creates introduction message
 func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string) *IntroductionMessage {
 	if len(userAgent) > useragent.MaxLen {
-		logger.Panicf("user agent %q exceeds max len %d", userAgent, useragent.MaxLen)
+		logger.WithFields(logrus.Fields{
+			"userAgent": userAgent,
+			"maxLen":    useragent.MaxLen,
+		}).Panic("user agent exceeds max len")
 	}
 	if userAgent == "" {
 		logger.Panic("user agent is required")
@@ -283,7 +286,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			logger.WithFields(logrus.Fields{
 				"addr":   mc.Addr,
 				"mirror": intro.Mirror,
-			}).Infof("Remote mirror value matches ours")
+			}).Info("Remote mirror value matches ours")
 			if err := d.Disconnect(mc.Addr, ErrDisconnectSelf); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
@@ -297,7 +300,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 				"addr":               mc.Addr,
 				"protocolVersion":    intro.ProtocolVersion,
 				"minProtocolVersion": dc.MinProtocolVersion,
-			}).Infof("protocol version below minimum supported protocol version")
+			}).Info("protocol version below minimum supported protocol version")
 			if err := d.Disconnect(mc.Addr, ErrDisconnectVersionNotSupported); err != nil {
 				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
 			}
@@ -397,6 +400,8 @@ func (intro *IntroductionMessage) process(d daemoner) {
 		// Do not perform a disconnect, since this would operate on the new connection.
 		case ErrConnectionGnetIDMismatch, ErrConnectionStateNotConnected, ErrConnectionAlreadyIntroduced:
 			logger.Critical().WithError(err).Warning("IntroductionMessage.process connection state out of order")
+			return
+		case ErrConnectionNotExist:
 			return
 		case ErrConnectionIPMirrorExists:
 			reason = ErrDisconnectConnectedTwice
@@ -578,10 +583,10 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 
 		err := d.ExecuteSignedBlock(b)
 		if err == nil {
-			logger.Critical().Infof("Added new block %d", b.Block.Head.BkSeq)
+			logger.Critical().WithField("seq", b.Block.Head.BkSeq).Info("Added new block")
 			processed++
 		} else {
-			logger.Critical().Errorf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
+			logger.Critical().WithError(err).WithField("seq", b.Block.Head.BkSeq).Error("Failed to execute received block")
 			// Blocks must be received in order, so if one fails its assumed
 			// the rest are failing
 			break
@@ -664,7 +669,7 @@ func (abm *AnnounceBlocksMessage) process(d daemoner) {
 	// If client is not caught up, won't attempt to get block
 	m := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().BlocksResponseCount)
 	if err := d.SendMessage(abm.c.Addr, m); err != nil {
-		logger.Errorf("Send GetBlocksMessage to %s failed: %v", abm.c.Addr, err)
+		logger.WithError(err).WithField("addr", abm.c.Addr).Error("Send GetBlocksMessage")
 	}
 }
 
@@ -715,7 +720,7 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 
 	m := NewGetTxnsMessage(unknown)
 	if err := d.SendMessage(atm.c.Addr, m); err != nil {
-		logger.WithField("addr", atm.c.Addr).WithError(err).Errorf("Send GetTxnsMessage failed")
+		logger.WithField("addr", atm.c.Addr).WithError(err).Error("Send GetTxnsMessage failed")
 	}
 }
 
@@ -757,7 +762,7 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 	// Reply to sender with GiveTxnsMessage
 	m := NewGiveTxnsMessage(known)
 	if err := d.SendMessage(gtm.c.Addr, m); err != nil {
-		logger.Errorf("Send GiveTxnsMessage to %s failed: %v", gtm.c.Addr, err)
+		logger.WithError(err).WithField("addr", gtm.c.Addr).Error("Send GiveTxnsMessage")
 	}
 }
 
@@ -799,13 +804,13 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 		// since each is independent
 		known, softErr, err := d.InjectTransaction(txn)
 		if err != nil {
-			logger.Warningf("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
+			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Failed to record transaction")
 			continue
 		} else if softErr != nil {
-			logger.Warningf("Transaction soft violation: %v", err)
+			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
 			continue
 		} else if known {
-			logger.Warningf("Duplicate Transaction: %s", txn.Hash().Hex())
+			logger.WithField("txid", txn.Hash().Hex()).Warning("Duplicate transaction")
 			continue
 		}
 

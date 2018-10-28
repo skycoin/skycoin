@@ -95,12 +95,12 @@ func (cfg *Config) preprocess() (Config, error) {
 		if config.Daemon.Address == "" {
 			local, err := iputil.LocalhostIP()
 			if err != nil {
-				logger.Panicf("Failed to obtain localhost IP: %v", err)
+				logger.WithError(err).Panic("Failed to obtain localhost IP")
 			}
 			config.Daemon.Address = local
 		} else {
 			if !iputil.IsLocalhost(config.Daemon.Address) {
-				logger.Panicf("Invalid address for localhost-only: %s", config.Daemon.Address)
+				logger.WithField("addr", config.Daemon.Address).Panic("Invalid address for localhost-only")
 			}
 		}
 		config.Pex.AllowLocalhost = true
@@ -579,13 +579,17 @@ loop:
 			if dm.visor.Config.IsMaster {
 				sb, err := dm.CreateAndPublishBlock()
 				if err != nil {
-					logger.Errorf("Failed to create and publish block: %v", err)
+					logger.WithError(err).Error("Failed to create and publish block")
 					continue
 				}
 
 				// Not a critical error, but we want it visible in logs
 				head := sb.Block.Head
-				logger.Critical().Infof("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
+				logger.Critical().WithFields(logrus.Fields{
+					"version": head.Version,
+					"seq":     head.BkSeq,
+					"time":    head.Time,
+				}).Info("Created and published a new block")
 			}
 
 		case <-unconfirmedRefreshTicker.C:
@@ -593,7 +597,7 @@ loop:
 			// Get the transactions that turn to valid
 			validTxns, err := dm.visor.RefreshUnconfirmed()
 			if err != nil {
-				logger.Errorf("dm.Visor.RefreshUnconfirmed failed: %v", err)
+				logger.WithError(err).Error("dm.Visor.RefreshUnconfirmed failed")
 				continue
 			}
 			// Announce these transactions
@@ -606,7 +610,7 @@ loop:
 			// Remove transactions that become invalid (violating hard constraints)
 			removedTxns, err := dm.visor.RemoveInvalidUnconfirmed()
 			if err != nil {
-				logger.Errorf("dm.Visor.RemoveInvalidUnconfirmed failed: %v", err)
+				logger.WithError(err).Error("dm.Visor.RemoveInvalidUnconfirmed failed")
 				continue
 			}
 			if len(removedTxns) > 0 {
@@ -650,7 +654,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 
 	a, _, err := iputil.SplitAddr(p.Addr)
 	if err != nil {
-		logger.Warningf("PEX gave us an invalid peer: %v", err)
+		logger.WithField("addr", p.Addr).WithError(err).Warning("PEX gave us an invalid peer")
 		return errors.New("Invalid peer")
 	}
 	if dm.Config.LocalhostOnly && !iputil.IsLocalhost(a) {
@@ -693,9 +697,9 @@ func (dm *Daemon) makePrivateConnections() {
 
 	peers := dm.pex.Private()
 	for _, p := range peers {
-		logger.Infof("Private peer attempt: %s", p.Addr)
+		logger.WithField("addr", p.Addr).Info("Private peer attempt")
 		if err := dm.connectToPeer(p); err != nil {
-			logger.Debugf("Did not connect to private peer: %v", err)
+			logger.WithField("addr", p.Addr).WithError(err).Debug("Did not connect to private peer")
 		}
 	}
 }
@@ -743,7 +747,7 @@ func (dm *Daemon) cullInvalidConnections() {
 		}
 
 		if c.ConnectedAt.Add(dm.Config.IntroductionWait).Before(now) {
-			logger.WithField("addr", c.Addr).Infof("Disconnecting peer for not sending a version")
+			logger.WithField("addr", c.Addr).Info("Disconnecting peer for not sending a version")
 			if err := dm.Disconnect(c.Addr, ErrDisconnectIntroductionTimeout); err != nil {
 				logger.WithError(err).WithField("addr", c.Addr).Error("Disconnect")
 			}
@@ -770,15 +774,6 @@ func (dm *Daemon) recordMessageEvent(m asyncMessage, c *gnet.MessageContext) err
 	return nil
 }
 
-// needsIntro check if the connection needs introduction message
-func (dm *Daemon) needsIntro(addr string) bool {
-	c := dm.connections.get(addr)
-	if c == nil {
-		logger.WithField("addr", addr).Warning("needsIntro did not find a matching connection")
-	}
-	return c != nil && !c.HasIntroduced()
-}
-
 func (dm *Daemon) handleEvent(e interface{}) {
 	switch x := e.(type) {
 	case messageEvent:
@@ -798,11 +793,15 @@ func (dm *Daemon) handleEvent(e interface{}) {
 }
 
 func (dm *Daemon) onMessageEvent(e messageEvent) {
-	// The first message received must be an Introduction
-	// We have to check at process time and not record time because
-	// Introduction message does not update ExpectingIntroductions until its
-	// process() is called
-	if dm.needsIntro(e.Context.Addr) {
+	// If the connection does not exist, abort message processing
+	c := dm.connections.get(e.Context.Addr)
+	if c == nil {
+		logger.WithField("addr", e.Context.Addr).Info("onMessageEvent no connection found")
+		return
+	}
+
+	// The first message received must be an IntroductionMessage
+	if !c.HasIntroduced() {
 		_, isIntro := e.Message.(*IntroductionMessage)
 		if !isIntro {
 			logger.WithFields(logrus.Fields{
@@ -877,7 +876,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 		logger.Critical().WithFields(fields).Warning("Connection.Outgoing does not match ConnectEvent.Solicited state")
 	}
 
-	logger.WithFields(fields).WithField("mirror", dm.Messages.Mirror).Debug("Sending introduction message")
+	logger.WithFields(fields).Debug("Sending introduction message")
 
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
 	if err := dm.pool.Pool.SendMessage(e.Addr, m); err != nil {
@@ -967,9 +966,13 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 // outside of the daemon run loop
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
-		logger.Warningf("Failed to send %s to %s: %v", reflect.TypeOf(r.Message), r.Addr, r.Error)
+		logger.WithError(r.Error).WithFields(logrus.Fields{
+			"addr":    r.Addr,
+			"msgType": reflect.TypeOf(r.Message),
+		}).Warning("Failed to send message")
 		return
 	}
+
 	switch r.Message.(type) {
 	case SendingTxnsMessage:
 		dm.announcedTxns.add(r.Message.(SendingTxnsMessage).GetFiltered())
@@ -995,7 +998,7 @@ func (dm *Daemon) RequestBlocks() error {
 
 	err = dm.pool.Pool.BroadcastMessage(m)
 	if err != nil {
-		logger.Debugf("Broadcast GetBlocksMessage failed: %v", err)
+		logger.WithError(err).Debug("Broadcast GetBlocksMessage failed")
 	}
 
 	return err
@@ -1019,7 +1022,7 @@ func (dm *Daemon) AnnounceBlocks() error {
 
 	err = dm.pool.Pool.BroadcastMessage(m)
 	if err != nil {
-		logger.Debugf("Broadcast AnnounceBlocksMessage failed: %v", err)
+		logger.WithError(err).Debug("Broadcast AnnounceBlocksMessage failed")
 	}
 
 	return err
@@ -1048,7 +1051,7 @@ func (dm *Daemon) AnnounceAllTxns() error {
 	}
 
 	if err != nil {
-		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err: %v", err)
+		logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
 	}
 
 	return err
@@ -1093,7 +1096,7 @@ func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
 
 	err := dm.pool.Pool.BroadcastMessage(m)
 	if err != nil {
-		logger.Debugf("Broadcast AnnounceTxnsMessage failed: %v", err)
+		logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
 	}
 
 	return err
@@ -1132,7 +1135,7 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 	var txids []cipher.SHA256
 	for i := range txns {
-		logger.Debugf("Rebroadcast txn %s", txns[i].Hash().Hex())
+		logger.WithField("txid", txns[i].Hash().Hex()).Debug("Rebroadcast transaction")
 		if err := dm.BroadcastTransaction(txns[i].Transaction); err == nil {
 			txids = append(txids, txns[i].Transaction.Hash())
 		}

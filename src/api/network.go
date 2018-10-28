@@ -71,7 +71,7 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		dcnxs, err := gateway.GetOutgoingConnections()
+		dcnxs, err := gateway.GetConnections()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return

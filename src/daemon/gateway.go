@@ -124,17 +124,17 @@ func newConnection(dc *connection, gc *gnet.Connection, pp *pex.Peer) Connection
 	return c
 }
 
-// GetOutgoingConnections returns solicited (outgoing) connections
-func (gw *Gateway) GetOutgoingConnections() ([]Connection, error) {
+// GetConnections returns solicited (outgoing) connections
+func (gw *Gateway) GetConnections() ([]Connection, error) {
 	var conns []Connection
 	var err error
-	gw.strand("GetOutgoingConnections", func() {
-		conns, err = gw.getOutgoingConnections()
+	gw.strand("GetConnections", func() {
+		conns, err = gw.getConnections()
 	})
 	return conns, err
 }
 
-func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
+func (gw *Gateway) getConnections() ([]Connection, error) {
 	if gw.d.pool.Pool == nil {
 		return nil, nil
 	}
@@ -144,10 +144,6 @@ func (gw *Gateway) getOutgoingConnections() ([]Connection, error) {
 	conns := make([]Connection, 0)
 
 	for _, c := range cs {
-		if !c.Outgoing || c.State != ConnectionStateIntroduced {
-			continue
-		}
-
 		cc, err := gw.newConnection(&c)
 		if err != nil {
 			return nil, err
@@ -916,7 +912,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			return
 		}
 
-		conns, err := gw.getOutgoingConnections()
+		conns, err := gw.getConnections()
 		if err != nil {
 			return
 		}

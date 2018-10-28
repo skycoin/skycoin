@@ -504,8 +504,8 @@ func (_m *MockGatewayer) GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [
 	return r0, r1, r2
 }
 
-// GetOutgoingConnections provides a mock function with given fields:
-func (_m *MockGatewayer) GetOutgoingConnections() ([]daemon.Connection, error) {
+// GetConnections provides a mock function with given fields:
+func (_m *MockGatewayer) GetConnections() ([]daemon.Connection, error) {
 	ret := _m.Called()
 
 	var r0 []daemon.Connection

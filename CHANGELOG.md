@@ -84,6 +84,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `/api/v1/balance`, `/api/v1/transactions`, `/api/v1/outputs` and `/api/v1/blocks` accept the `POST` method so that large request bodies can be sent to the server, which would not fit in a `GET` query string
 - `/api/v1/explorer/address` is deprecated in favor of `/api/v1/transactions?verbose=1`
 - `/api/v1/network/connection*` connection object's field `"introduced"` replaced with field `"state"` which may have the values `"pending"`, `"connected"` or `"introduced"`. Added `"connected_at"` field.
+- `/api/v1/network/connections` now includes incoming connections
 
 ### Removed
 

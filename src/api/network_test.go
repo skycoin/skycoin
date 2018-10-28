@@ -194,18 +194,18 @@ func TestConnections(t *testing.T) {
 		},
 
 		{
-			name:                                "500 - GetOutgoingConnections failed",
+			name:                                "500 - GetConnections failed",
 			method:                              http.MethodGet,
 			status:                              http.StatusInternalServerError,
-			err:                                 "500 Internal Server Error - GetOutgoingConnections failed",
-			gatewayGetSolicitedConnectionsError: errors.New("GetOutgoingConnections failed"),
+			err:                                 "500 Internal Server Error - GetConnections failed",
+			gatewayGetSolicitedConnectionsError: errors.New("GetConnections failed"),
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections"
 			gateway := &MockGatewayer{}
-			gateway.On("GetOutgoingConnections").Return(tc.gatewayGetSolicitedConnectionsResult, tc.gatewayGetSolicitedConnectionsError)
+			gateway.On("GetConnections").Return(tc.gatewayGetSolicitedConnectionsResult, tc.gatewayGetSolicitedConnectionsError)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

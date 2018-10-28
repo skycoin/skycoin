@@ -122,6 +122,17 @@ func (cfg *Config) preprocess() (Config, error) {
 		}
 	}
 
+	if config.Daemon.MaxConnections < config.Daemon.MaxOutgoingConnections {
+		return Config{}, errors.New("MaxOutgoingConnections cannot be more than MaxConnections")
+	}
+
+	if config.Daemon.MaxPendingConnections > config.Daemon.MaxOutgoingConnections {
+		config.Daemon.MaxPendingConnections = config.Daemon.MaxOutgoingConnections
+	}
+
+	config.Pool.MaxConnections = config.Daemon.MaxConnections
+	config.Pool.MaxOutgoingConnections = config.Daemon.MaxOutgoingConnections
+
 	userAgent, err := config.Daemon.UserAgent.Build()
 	if err != nil {
 		return Config{}, err
@@ -150,13 +161,14 @@ type DaemonConfig struct { // nolint: golint
 	DataDirectory string
 	// How often to check and initiate an outgoing connection if needed
 	OutgoingRate time.Duration
-	// How often to re-attempt to fill any missing private (aka required)
-	// connections
+	// How often to re-attempt to fill any missing private (aka required)  connections
 	PrivateRate time.Duration
+	// Maximum number of connections
+	MaxConnections int
 	// Number of outgoing connections to maintain
-	OutgoingMax int
+	MaxOutgoingConnections int
 	// Maximum number of connections to try at once
-	PendingMax int
+	MaxPendingConnections int
 	// How long to wait for a version packet
 	IntroductionWait time.Duration
 	// How often to check for peers that have decided to stop communicating
@@ -205,8 +217,9 @@ func NewDaemonConfig() DaemonConfig {
 		Port:                         6677,
 		OutgoingRate:                 time.Second * 5,
 		PrivateRate:                  time.Second * 5,
-		OutgoingMax:                  8,
-		PendingMax:                   8,
+		MaxConnections:               128,
+		MaxOutgoingConnections:       8,
+		MaxPendingConnections:        8,
 		IntroductionWait:             time.Second * 30,
 		CullInvalidRate:              time.Second * 3,
 		FlushAnnouncedTxnsRate:       time.Second * 3,
@@ -533,8 +546,9 @@ loop:
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
 			if !dm.Config.DisableOutgoingConnections &&
-				dm.connections.OutgoingLen() < dm.Config.OutgoingMax &&
-				dm.connections.PendingLen() < dm.Config.PendingMax {
+				dm.connections.OutgoingLen() < dm.Config.MaxOutgoingConnections &&
+				dm.connections.PendingLen() < dm.Config.MaxPendingConnections &&
+				dm.connections.Len() < dm.Config.MaxConnections {
 				dm.connectToRandomPeer()
 			}
 
@@ -722,7 +736,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.pex.RandomPublicUntrusted(dm.Config.OutgoingMax)
+	peers := dm.pex.RandomPublicUntrusted(dm.Config.MaxOutgoingConnections)
 	for _, p := range peers {
 		if err := dm.connectToPeer(p); err != nil {
 			logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
@@ -837,23 +851,6 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 			logger.WithError(err).WithFields(fields).Error("Disconnect")
 		}
 		return
-	}
-
-	if e.Solicited {
-		// Disconnect if the max outgoing connections is reached
-		n, err := dm.pool.Pool.OutgoingConnectionsNum()
-		if err != nil {
-			logger.Critical().WithError(err).WithFields(fields).Error("OutgoingConnectionsNum failed")
-			return
-		}
-
-		if n > dm.Config.OutgoingMax {
-			logger.WithFields(fields).Warning("Max outgoing connections is reached, disconnecting")
-			if err := dm.Disconnect(e.Addr, ErrDisconnectMaxOutgoingConnectionsReached); err != nil {
-				logger.WithError(err).WithFields(fields).Error("Disconnect")
-			}
-			return
-		}
 	}
 
 	// Update the connections state machine

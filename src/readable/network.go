@@ -7,7 +7,7 @@ import (
 
 // Connection a connection's state within the daemon
 type Connection struct {
-	GnetID       int                    `json:"id"`
+	GnetID       uint64                 `json:"id"`
 	Addr         string                 `json:"address"`
 	LastSent     int64                  `json:"last_sent"`
 	LastReceived int64                  `json:"last_received"`

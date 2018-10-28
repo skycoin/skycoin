@@ -243,7 +243,7 @@ type daemoner interface {
 	SetHasIncomingPort(addr string) error
 	IncreaseRetryTimes(addr string)
 	ResetRetryTimes(addr string)
-	RecordPeerHeight(addr string, gnetID int, height uint64)
+	RecordPeerHeight(addr string, gnetID, height uint64)
 	GetSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error)
 	HeadBkSeq() (uint64, bool, error)
 	ExecuteSignedBlock(b coin.SignedBlock) error
@@ -324,13 +324,14 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 
 // ConnectEvent generated when a client connects
 type ConnectEvent struct {
-	GnetID    int
+	GnetID    uint64
 	Addr      string
 	Solicited bool
 }
 
 // DisconnectEvent generated when a connection terminated
 type DisconnectEvent struct {
+	GnetID uint64
 	Addr   string
 	Reason gnet.DisconnectReason
 }
@@ -806,7 +807,7 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 				"addr":        e.Context.Addr,
 				"messageType": fmt.Sprintf("%T", e.Message),
 			}).Info("needsIntro but message is not IntroductionMessage")
-			if err := dm.pool.Pool.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
+			if err := dm.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
 				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
 			}
 		}
@@ -835,7 +836,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 
 	if dm.ipCountMaxed(e.Addr) {
 		logger.WithFields(fields).Info("Max connections for this address reached, disconnecting")
-		if err := dm.pool.Pool.Disconnect(e.Addr, ErrDisconnectIPLimitReached); err != nil {
+		if err := dm.Disconnect(e.Addr, ErrDisconnectIPLimitReached); err != nil {
 			logger.WithError(err).WithFields(fields).Error("Disconnect")
 		}
 		return
@@ -851,7 +852,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 
 		if n > dm.Config.OutgoingMax {
 			logger.WithFields(fields).Warning("Max outgoing connections is reached, disconnecting")
-			if err := dm.pool.Pool.Disconnect(e.Addr, ErrDisconnectMaxOutgoingConnectionsReached); err != nil {
+			if err := dm.Disconnect(e.Addr, ErrDisconnectMaxOutgoingConnectionsReached); err != nil {
 				logger.WithError(err).WithFields(fields).Error("Disconnect")
 			}
 			return
@@ -862,7 +863,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 	c, err := dm.connections.connected(e.Addr, e.GnetID)
 	if err != nil {
 		logger.Critical().WithError(err).WithFields(fields).Error("connections.Connected failed")
-		if err := dm.pool.Pool.Disconnect(e.Addr, ErrDisconnectIncomprehensibleError); err != nil {
+		if err := dm.Disconnect(e.Addr, ErrDisconnectIncomprehensibleError); err != nil {
 			logger.WithError(err).WithFields(fields).Error("Disconnect")
 		}
 		return
@@ -887,11 +888,13 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 	fields := logrus.Fields{
 		"addr":   e.Addr,
 		"reason": e.Reason,
+		"gnetID": e.GnetID,
 	}
 	logger.WithFields(fields).Info("onDisconnectEvent")
 
-	if err := dm.connections.remove(e.Addr); err != nil {
+	if err := dm.connections.remove(e.Addr, e.GnetID); err != nil {
 		logger.WithError(err).WithFields(fields).Error("connections.Remove failed")
+		return
 	}
 
 	// If the peer did not send an introduction in time, it is not a valid peer and remove it from the peer list
@@ -905,7 +908,7 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 func (dm *Daemon) onConnectionError(c ConnectionError) {
 	// Remove the pending connection from connections and update the retry times in pex
 	logger.WithField("addr", c.Addr).WithError(c.Error).Debug("onConnectionError")
-	if err := dm.connections.remove(c.Addr); err != nil {
+	if err := dm.connections.remove(c.Addr, 0); err != nil {
 		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
 	}
 
@@ -914,8 +917,9 @@ func (dm *Daemon) onConnectionError(c ConnectionError) {
 }
 
 // Triggered when an gnet.Connection terminates
-func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
+func (dm *Daemon) onGnetDisconnect(addr string, gnetID uint64, reason gnet.DisconnectReason) {
 	e := DisconnectEvent{
+		GnetID: gnetID,
 		Addr:   addr,
 		Reason: reason,
 	}
@@ -923,10 +927,10 @@ func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
 }
 
 // Triggered when an gnet.Connection is connected
-func (dm *Daemon) onGnetConnect(c *gnet.Connection, solicited bool) {
+func (dm *Daemon) onGnetConnect(addr string, gnetID uint64, solicited bool) {
 	dm.events <- ConnectEvent{
-		GnetID:    c.ID,
-		Addr:      c.Addr(),
+		GnetID:    gnetID,
+		Addr:      addr,
 		Solicited: solicited,
 	}
 }
@@ -1209,8 +1213,7 @@ func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
 	return dm.pool.Pool.BroadcastMessage(msg)
 }
 
-// Disconnect removes a connection from the pool by address, and passes a Disconnection to
-// the DisconnectCallback
+// Disconnect removes a connection from the pool by address, and invokes DisconnectCallback
 func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
 	return dm.pool.Pool.Disconnect(addr, r)
 }
@@ -1270,7 +1273,7 @@ func (dm *Daemon) ResetRetryTimes(addr string) {
 // Implements chain height store
 
 // RecordPeerHeight records the height of specific peer
-func (dm *Daemon) RecordPeerHeight(addr string, gnetID int, height uint64) {
+func (dm *Daemon) RecordPeerHeight(addr string, gnetID, height uint64) {
 	if err := dm.connections.SetHeight(addr, gnetID, height); err != nil {
 		logger.Critical().WithError(err).WithField("addr", addr).Error("connections.SetHeight failed")
 	}

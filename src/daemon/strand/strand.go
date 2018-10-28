@@ -89,11 +89,6 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error,
 
 			err = f()
 
-			// Log the error here so that the Request channel consumer doesn't need to
-			if err != nil {
-				logger.WithError(err).WithField("operation", name).Error()
-			}
-
 			// Notify us if the function call took too long
 			elapsed := time.Since(t)
 			if elapsed > logDurationThreshold {

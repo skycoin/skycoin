@@ -96,7 +96,7 @@ type Connection struct {
 
 // GnetConnectionDetails connection data from gnet
 type GnetConnectionDetails struct {
-	ID           int
+	ID           uint64
 	LastSent     time.Time
 	LastReceived time.Time
 }

@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
@@ -32,7 +34,7 @@ func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
 }
 
 // Event handler that is called after a Connection sends a complete message
-func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
+func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 	msgID := [4]byte{}
 	if len(msg) < len(msgID) {
 		return nil, errors.New("Not enough data to read msg id")
@@ -45,12 +47,14 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 	}
 
 	if debugPrint {
-		logger.Debugf("convertToMessage for connection %d, message type %v", id, t)
+		logger.WithFields(logrus.Fields{
+			"connID":      id,
+			"messageType": fmt.Sprintf("%v", t),
+		}).Debugf("convertToMessage")
 	}
 
 	var m Message
 	v := reflect.New(t)
-	//logger.Debugf("Giving %d bytes to the decoder", len(msg))
 	used, err := deserializeMessage(msg, v)
 	if err != nil {
 		return nil, err

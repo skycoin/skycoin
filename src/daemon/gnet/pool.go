@@ -127,7 +127,7 @@ const (
 // Connection is stored by the ConnectionPool
 type Connection struct {
 	// Key in ConnectionPool.Pool
-	ID int
+	ID uint64
 	// TCP connection
 	Conn net.Conn
 	// Message buffer
@@ -144,7 +144,7 @@ type Connection struct {
 }
 
 // NewConnection creates a new Connection tied to a ConnectionPool
-func NewConnection(pool *ConnectionPool, id int, conn net.Conn, writeQueueSize int, solicited bool) *Connection {
+func NewConnection(pool *ConnectionPool, id uint64, conn net.Conn, writeQueueSize int, solicited bool) *Connection {
 	return &Connection{
 		ID:             id,
 		Conn:           conn,
@@ -176,10 +176,10 @@ func (conn *Connection) Close() error {
 }
 
 // DisconnectCallback triggered on client disconnect
-type DisconnectCallback func(addr string, reason DisconnectReason)
+type DisconnectCallback func(addr string, id uint64, reason DisconnectReason)
 
 // ConnectCallback triggered on client connect
-type ConnectCallback func(c *Connection, solicited bool)
+type ConnectCallback func(addr string, id uint64, solicited bool)
 
 // ConnectionPool connection pool
 type ConnectionPool struct {
@@ -188,7 +188,7 @@ type ConnectionPool struct {
 	// Channel for async message sending
 	SendResults chan SendResult
 	// All connections, indexed by ConnId
-	pool map[int]*Connection
+	pool map[uint64]*Connection
 	// All connections, indexed by address
 	addresses map[string]*Connection
 	// connected default peer connections
@@ -196,7 +196,7 @@ type ConnectionPool struct {
 	// User-defined state to be passed into message handlers
 	messageState interface{}
 	// Connection ID counter
-	connID int
+	connID uint64
 	// Listening connection
 	listener     net.Listener
 	listenerLock sync.Mutex
@@ -219,7 +219,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 
 	pool := &ConnectionPool{
 		Config:             c,
-		pool:               make(map[int]*Connection),
+		pool:               make(map[uint64]*Connection),
 		addresses:          make(map[string]*Connection),
 		defaultConnections: make(map[string]struct{}),
 		SendResults:        make(chan SendResult, c.SendResultsSize),
@@ -382,6 +382,10 @@ func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Conne
 		}
 
 		pool.connID++
+		// ID must start at 1; in case connID overflows back to 0, force it to 1
+		if pool.connID == 0 {
+			pool.connID = 1
+		}
 		nc = NewConnection(pool, pool.connID, conn, pool.Config.ConnectionWriteQueueSize, solicited)
 
 		pool.pool[nc.ID] = nc
@@ -440,7 +444,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	}
 
 	if pool.Config.ConnectCallback != nil {
-		pool.Config.ConnectCallback(c, solicited)
+		pool.Config.ConnectCallback(c.Addr(), c.ID, solicited)
 	}
 
 	msgC := make(chan []byte, 32)
@@ -787,8 +791,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 	return nil
 }
 
-// Disconnect removes a connection from the pool by address, and passes a Disconnection to
-// the DisconnectCallback
+// Disconnect removes a connection from the pool by address and invokes DisconnectCallback
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	if err := pool.strand("Disconnect", func() error {
 		logger.WithFields(logrus.Fields{
@@ -796,7 +799,11 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 			"reason": r,
 		}).Debug("Disconnecting")
 
-		exist := pool.disconnect(addr)
+		conn := pool.disconnect(addr)
+
+		if conn == nil {
+			return errors.New("Disconnect: connection does not exist")
+		}
 
 		// checks if the address is default node address
 		if _, ok := pool.Config.defaultConnections[addr]; ok {
@@ -804,8 +811,8 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 			logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
 		}
 
-		if pool.Config.DisconnectCallback != nil && exist {
-			pool.Config.DisconnectCallback(addr, r)
+		if pool.Config.DisconnectCallback != nil {
+			pool.Config.DisconnectCallback(addr, conn.ID, r)
 		}
 
 		return nil
@@ -816,24 +823,27 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	return nil
 }
 
-func (pool *ConnectionPool) disconnect(addr string) bool {
+func (pool *ConnectionPool) disconnect(addr string) *Connection {
 	conn, ok := pool.addresses[addr]
 	if !ok {
-		return false
+		return nil
 	}
 
-	// TODO -- send disconnect reason packet
+	fields := logrus.Fields{
+		"addr": addr,
+		"id":   conn.ID,
+	}
 
 	delete(pool.pool, conn.ID)
 	delete(pool.addresses, addr)
 	delete(pool.defaultConnections, addr)
 	if err := conn.Close(); err != nil {
-		logger.WithError(err).WithField("addr", addr).Error("conn.Close")
+		logger.WithError(err).WithFields(fields).Error("conn.Close")
 	}
 
-	logger.WithField("addr", addr).Debug("Closed connection and removed from pool")
+	logger.WithFields(fields).Debug("Closed connection and removed from pool")
 
-	return true
+	return conn
 }
 
 // disconnectAll disconnects all connections. Only safe to call in Shutdown()
@@ -944,7 +954,6 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 // first return value.  Otherwise, error will be nil and DisconnectReason will
 // be the value returned from the message handler.
 func (pool *ConnectionPool) receiveMessage(c *Connection, msg []byte) error {
-
 	m, err := convertToMessage(c.ID, msg, pool.Config.DebugPrint)
 	if err != nil {
 		return err

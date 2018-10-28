@@ -74,7 +74,7 @@ func (c ConnectionDetails) HasIntroduced() bool {
 type connection struct {
 	Addr string
 	ConnectionDetails
-	gnetID int
+	gnetID uint64
 }
 
 // ListenAddr returns the addr that connection listens on, if available
@@ -140,7 +140,7 @@ func (c *Connections) pending(addr string) (*connection, error) {
 }
 
 // connected the connection has connected
-func (c *Connections) connected(addr string, gnetID int) (*connection, error) {
+func (c *Connections) connected(addr string, gnetID uint64) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -170,18 +170,20 @@ func (c *Connections) connected(addr string, gnetID int) (*connection, error) {
 		case ConnectionStatePending:
 		case ConnectionStateConnected:
 			logger.Critical().WithFields(logrus.Fields{
-				"addr":     conn.Addr,
-				"state":    conn.State,
-				"outgoing": conn.Outgoing,
-				"gnetID":   gnetID,
+				"addr":       conn.Addr,
+				"state":      conn.State,
+				"outgoing":   conn.Outgoing,
+				"connGnetID": conn.gnetID,
+				"gnetID":     gnetID,
 			}).Warningf("Connections.connected called on already connected connection")
 			return nil, ErrConnectionAlreadyConnected
 		case ConnectionStateIntroduced:
 			logger.Critical().WithFields(logrus.Fields{
-				"addr":     conn.Addr,
-				"state":    conn.State,
-				"outgoing": conn.Outgoing,
-				"gnetID":   gnetID,
+				"addr":       conn.Addr,
+				"state":      conn.State,
+				"outgoing":   conn.Outgoing,
+				"connGnetID": conn.gnetID,
+				"gnetID":     gnetID,
 			}).Warning("Connections.connected called on already introduced connection")
 			return nil, ErrConnectionAlreadyIntroduced
 		default:
@@ -305,7 +307,7 @@ func (c *Connections) get(addr string) *connection {
 
 // modify modifies a connection.
 // It is unsafe to modify the Mirror value with this method
-func (c *Connections) modify(addr string, gnetID int, f func(c *ConnectionDetails)) error {
+func (c *Connections) modify(addr string, gnetID uint64, f func(c *ConnectionDetails)) error {
 	conn := c.conns[addr]
 	if conn == nil {
 		return ErrConnectionNotExist
@@ -331,7 +333,7 @@ func (c *Connections) modify(addr string, gnetID int, f func(c *ConnectionDetail
 }
 
 // SetHeight sets the height for a connection
-func (c *Connections) SetHeight(addr string, gnetID int, height uint64) error {
+func (c *Connections) SetHeight(addr string, gnetID uint64, height uint64) error {
 	c.Lock()
 	defer c.Unlock()
 
@@ -413,7 +415,7 @@ func (c *Connections) PendingLen() int {
 
 // remove removes connection. Returns an error if the addr is invalid.
 // If a connection with this address does not exist, nothing happens.
-func (c *Connections) remove(addr string) error {
+func (c *Connections) remove(addr string, gnetID uint64) error {
 	c.Lock()
 	defer c.Unlock()
 
@@ -423,25 +425,38 @@ func (c *Connections) remove(addr string) error {
 	}
 
 	conn := c.conns[addr]
-	if conn != nil {
-		x, ok := c.mirrors[conn.Mirror]
-		if ok {
-			if x[ip] != conn.ListenPort {
-				logger.Critical().WithField("addr", addr).Warning("Indexed IP+Mirror value found but the ListenPort doesn't match")
-			}
+	if conn == nil {
+		return ErrConnectionNotExist
+	}
 
-			delete(x, ip)
+	fields := logrus.Fields{
+		"addr":       addr,
+		"connGnetID": conn.gnetID,
+		"gnetID":     gnetID,
+	}
+
+	if conn.gnetID != gnetID {
+		logger.Critical().WithFields(fields).Warning("Connections.remove gnetID does not match")
+		return ErrConnectionGnetIDMismatch
+	}
+
+	x, ok := c.mirrors[conn.Mirror]
+	if ok {
+		if x[ip] != conn.ListenPort {
+			logger.Critical().WithFields(fields).Warning("Indexed IP+Mirror value found but the ListenPort doesn't match")
 		}
 
-		if len(x) == 0 {
-			delete(c.mirrors, conn.Mirror)
-		}
+		delete(x, ip)
+	}
 
-		if c.ipCounts[ip] > 0 {
-			c.ipCounts[ip]--
-		} else {
-			logger.Critical().WithField("addr", addr).Warning("ipCount was already 0 when removing existing address")
-		}
+	if len(x) == 0 {
+		delete(c.mirrors, conn.Mirror)
+	}
+
+	if c.ipCounts[ip] > 0 {
+		c.ipCounts[ip]--
+	} else {
+		logger.Critical().WithFields(fields).Warning("ipCount was already 0 when removing existing address")
 	}
 
 	delete(c.conns, addr)

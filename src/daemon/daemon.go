@@ -234,8 +234,6 @@ type daemoner interface {
 	SendMessage(addr string, msg gnet.Message) error
 	BroadcastMessage(msg gnet.Message) error
 	Disconnect(addr string, r gnet.DisconnectReason) error
-	IsDefaultConnection(addr string) bool
-	IsMaxDefaultConnectionsReached() (bool, error)
 	PexConfig() pex.Config
 	RandomExchangeable(n int) pex.Peers
 	AddPeer(addr string) error
@@ -513,7 +511,7 @@ loop:
 			}
 
 			m := NewGetPeersMessage()
-			if err := dm.pool.Pool.BroadcastMessage(m); err != nil {
+			if err := dm.BroadcastMessage(m); err != nil {
 				logger.WithError(err).Error("Broadcast GetPeersMessage failed")
 			}
 
@@ -879,7 +877,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 	logger.WithFields(fields).Debug("Sending introduction message")
 
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
-	if err := dm.pool.Pool.SendMessage(e.Addr, m); err != nil {
+	if err := dm.SendMessage(e.Addr, m); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return
 	}
@@ -996,7 +994,7 @@ func (dm *Daemon) RequestBlocks() error {
 
 	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
 
-	err = dm.pool.Pool.BroadcastMessage(m)
+	err = dm.BroadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Debug("Broadcast GetBlocksMessage failed")
 	}
@@ -1020,7 +1018,7 @@ func (dm *Daemon) AnnounceBlocks() error {
 
 	m := NewAnnounceBlocksMessage(headSeq)
 
-	err = dm.pool.Pool.BroadcastMessage(m)
+	err = dm.BroadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Debug("Broadcast AnnounceBlocksMessage failed")
 	}
@@ -1045,7 +1043,7 @@ func (dm *Daemon) AnnounceAllTxns() error {
 
 	for _, hs := range hashesSet {
 		m := NewAnnounceTxnsMessage(hs)
-		if err = dm.pool.Pool.BroadcastMessage(m); err != nil {
+		if err = dm.BroadcastMessage(m); err != nil {
 			break
 		}
 	}
@@ -1094,7 +1092,7 @@ func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
 
 	m := NewAnnounceTxnsMessage(txns)
 
-	err := dm.pool.Pool.BroadcastMessage(m)
+	err := dm.BroadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
 	}
@@ -1118,7 +1116,7 @@ func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
 
 	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
 
-	return dm.pool.Pool.SendMessage(addr, m)
+	return dm.SendMessage(addr, m)
 }
 
 // ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast.
@@ -1158,8 +1156,8 @@ func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
 	logger.Debugf("BroadcastTransaction to %d conns", l)
 
 	m := NewGiveTxnsMessage(coin.Transactions{t})
-	if err := dm.pool.Pool.BroadcastMessage(m); err != nil {
-		logger.WithError(err).Error("BroadcastTransaction Pool.BroadcastMessage failed")
+	if err := dm.BroadcastMessage(m); err != nil {
+		logger.WithError(err).Error("Broadcast GiveTxnsMessage failed")
 		return err
 	}
 
@@ -1195,7 +1193,7 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 	}
 
 	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
-	return dm.pool.Pool.BroadcastMessage(m)
+	return dm.BroadcastMessage(m)
 }
 
 // Mirror returns the message mirror
@@ -1226,24 +1224,22 @@ func (dm *Daemon) SendMessage(addr string, msg gnet.Message) error {
 	return dm.pool.Pool.SendMessage(addr, msg)
 }
 
-// BroadcastMessage sends a Message to all connections in the Pool.
+// BroadcastMessage sends a Message to all introduced connections in the Pool
 func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
-	return dm.pool.Pool.BroadcastMessage(msg)
+	conns := dm.connections.all()
+	var addrs []string
+	for _, c := range conns {
+		if c.HasIntroduced() {
+			addrs = append(addrs, c.Addr)
+		}
+	}
+
+	return dm.pool.Pool.BroadcastMessage(msg, addrs)
 }
 
 // Disconnect removes a connection from the pool by address, and invokes DisconnectCallback
 func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
 	return dm.pool.Pool.Disconnect(addr, r)
-}
-
-// IsDefaultConnection returns if the addr is a default connection
-func (dm *Daemon) IsDefaultConnection(addr string) bool {
-	return dm.pool.Pool.IsDefaultConnection(addr)
-}
-
-// IsMaxDefaultConnectionsReached returns whether the max default connection number was reached.
-func (dm *Daemon) IsMaxDefaultConnectionsReached() (bool, error) {
-	return dm.pool.Pool.IsMaxDefaultConnectionsReached()
 }
 
 // Implements pexer interface

@@ -55,12 +55,16 @@ var (
 	ErrWriteQueueFull = errors.New("Write queue full")
 	// ErrNoReachableConnections when broadcasting a message, no connections were available to send a message to
 	ErrNoReachableConnections = errors.New("All pool connections are unreachable at this time")
+	// ErrNoMatchingConnections when broadcasting a message, no connections were found for the provided addresses
+	ErrNoMatchingConnections = errors.New("No connections found for broadcast addresses")
 	// ErrPoolEmpty when broadcasting a message, the connection pool was empty
 	ErrPoolEmpty = errors.New("Connection pool is empty")
 	// ErrConnectionExists connection exists
 	ErrConnectionExists = errors.New("Connection exists")
 	// ErrMaxOutgoingConnectionsReached outgoing connections max reached
 	ErrMaxOutgoingConnectionsReached = errors.New("Outgoing connections max reached")
+	// ErrNoAddresses no addresses were provided to BroadcastMessage
+	ErrNoAddresses = errors.New("No addresses provided")
 
 	// Logger
 	logger = logging.MustGetLogger("gnet")
@@ -696,25 +700,6 @@ func (pool *ConnectionPool) isConnExist(addr string) bool {
 	return ok
 }
 
-// IsDefaultConnection returns if the addr is a default connection
-func (pool *ConnectionPool) IsDefaultConnection(addr string) bool {
-	_, ok := pool.Config.defaultConnections[addr]
-	return ok
-}
-
-// IsMaxDefaultConnectionsReached returns whether the max default connection number was reached.
-func (pool *ConnectionPool) IsMaxDefaultConnectionsReached() (bool, error) {
-	var reached bool
-	if err := pool.strand("IsMaxDefaultConnectionsReached", func() error {
-		reached = pool.isMaxDefaultConnectionsReached()
-		return nil
-	}); err != nil {
-		return false, err
-	}
-
-	return reached, nil
-}
-
 func (pool *ConnectionPool) isMaxDefaultConnectionsReached() bool {
 	return len(pool.defaultConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections
 }
@@ -907,8 +892,7 @@ func (pool *ConnectionPool) OutgoingConnectionsNum() (int, error) {
 	return n, nil
 }
 
-// SendMessage sends a Message to a Connection and pushes the result onto the
-// SendResults channel.
+// SendMessage sends a Message to a Connection
 func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 	if pool.Config.DebugPrint {
 		logger.WithField("msgType", reflect.TypeOf(msg)).Debug("SendMessage")
@@ -929,10 +913,16 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 	})
 }
 
-// BroadcastMessage sends a Message to all connections in the Pool.
-func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
+// BroadcastMessage sends a Message to all connections specified in addrs.
+// If a connection does not exist for a given address, it is skipped.
+// If no messages were written to any connection, an error is returned.
+func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error {
 	if pool.Config.DebugPrint {
 		logger.WithField("msgType", reflect.TypeOf(msg)).Debug("BroadcastMessage")
+	}
+
+	if len(addrs) == 0 {
+		return ErrNoAddresses
 	}
 
 	fullWriteQueue := []string{}
@@ -941,16 +931,25 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 			return ErrPoolEmpty
 		}
 
-		for _, conn := range pool.pool {
-			select {
-			case conn.WriteQueue <- msg:
-			default:
-				logger.Critical().WithField("addr", conn.Addr()).Info("Write queue full")
-				fullWriteQueue = append(fullWriteQueue, conn.Addr())
+		foundConns := 0
+
+		for _, addr := range addrs {
+			if conn, ok := pool.addresses[addr]; ok {
+				foundConns++
+				select {
+				case conn.WriteQueue <- msg:
+				default:
+					logger.Critical().WithField("addr", conn.Addr()).Info("Write queue full")
+					fullWriteQueue = append(fullWriteQueue, conn.Addr())
+				}
 			}
 		}
 
-		if len(fullWriteQueue) == len(pool.pool) {
+		if foundConns == 0 {
+			return ErrNoMatchingConnections
+		}
+
+		if len(fullWriteQueue) == foundConns {
 			return ErrNoReachableConnections
 		}
 

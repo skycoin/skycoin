@@ -23,23 +23,20 @@ func TestIntroductionMessage(t *testing.T) {
 	pubkey2, _ := cipher.GenerateKeyPair()
 
 	type daemonMockValue struct {
-		protocolVersion            uint32
-		minProtocolVersion         uint32
-		mirror                     uint32
-		isDefaultConnection        bool
-		isMaxConnectionsReached    bool
-		isMaxConnectionsReachedErr error
-		setHasIncomingPortErr      error
-		recordMessageEventErr      error
-		pubkey                     cipher.PubKey
-		disconnectReason           gnet.DisconnectReason
-		disconnectErr              error
-		addPeerArg                 string
-		addPeerErr                 error
-		connectionIntroduced       *connection
-		connectionIntroducedErr    error
-		requestBlocksFromAddrErr   error
-		announceAllTxnsErr         error
+		protocolVersion          uint32
+		minProtocolVersion       uint32
+		mirror                   uint32
+		setHasIncomingPortErr    error
+		recordMessageEventErr    error
+		pubkey                   cipher.PubKey
+		disconnectReason         gnet.DisconnectReason
+		disconnectErr            error
+		addPeerArg               string
+		addPeerErr               error
+		connectionIntroduced     *connection
+		connectionIntroducedErr  error
+		requestBlocksFromAddrErr error
+		announceAllTxnsErr       error
 	}
 
 	tt := []struct {
@@ -219,13 +216,11 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "incoming connection",
 			addr: "121.121.121.121:12345",
 			mockValue: daemonMockValue{
-				mirror:                  10000,
-				protocolVersion:         1,
-				isDefaultConnection:     true,
-				isMaxConnectionsReached: true,
-				pubkey:                  pubkey,
-				addPeerArg:              "121.121.121.121:6000",
-				addPeerErr:              nil,
+				mirror:          10000,
+				protocolVersion: 1,
+				pubkey:          pubkey,
+				addPeerArg:      "121.121.121.121:6000",
+				addPeerErr:      nil,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -242,7 +237,6 @@ func TestIntroductionMessage(t *testing.T) {
 			mockValue: daemonMockValue{
 				mirror:                  10000,
 				protocolVersion:         1,
-				isDefaultConnection:     true,
 				pubkey:                  pubkey,
 				addPeerArg:              "121.121.121.121:6000",
 				addPeerErr:              nil,
@@ -275,7 +269,6 @@ func TestIntroductionMessage(t *testing.T) {
 				},
 			})
 			d.On("Mirror").Return(tc.mockValue.mirror)
-			d.On("IsDefaultConnection", tc.addr).Return(tc.mockValue.isDefaultConnection)
 			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("ResetRetryTimes", tc.addr)
@@ -283,7 +276,6 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("IncreaseRetryTimes", tc.addr)
 			d.On("RemoveFromExpectingIntroductions", tc.addr)
-			d.On("IsMaxDefaultConnectionsReached").Return(tc.mockValue.isMaxConnectionsReached, tc.mockValue.isMaxConnectionsReachedErr)
 			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, tc.intro).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
 			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)

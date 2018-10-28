@@ -1048,8 +1048,18 @@ func TestPoolBroadcastMessage(t *testing.T) {
 
 	<-ready
 
+	var addrs []string
+	err = p.strand("addresses", func() error {
+		for a := range p.addresses {
+			addrs = append(addrs, a)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, addrs)
+
 	m := NewByteMessage(88)
-	err = p.BroadcastMessage(m)
+	err = p.BroadcastMessage(m, addrs)
 	require.NoError(t, err)
 
 	// Spam the connections with so much data that their write queue overflows,
@@ -1062,7 +1072,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	for i := 0; i < attempts; i++ {
 		go func() {
 			defer wg.Done()
-			err := p.BroadcastMessage(m)
+			err := p.BroadcastMessage(m, addrs)
 			if err == ErrNoReachableConnections {
 				once.Do(func() {
 					gotErr = true

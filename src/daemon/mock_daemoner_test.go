@@ -298,41 +298,6 @@ func (_m *mockDaemoner) InjectTransaction(txn coin.Transaction) (bool, *visor.Er
 	return r0, r1, r2
 }
 
-// IsDefaultConnection provides a mock function with given fields: addr
-func (_m *mockDaemoner) IsDefaultConnection(addr string) bool {
-	ret := _m.Called(addr)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(addr)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
-// IsMaxDefaultConnectionsReached provides a mock function with given fields:
-func (_m *mockDaemoner) IsMaxDefaultConnectionsReached() (bool, error) {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // Mirror provides a mock function with given fields:
 func (_m *mockDaemoner) Mirror() uint32 {
 	ret := _m.Called()

@@ -896,8 +896,11 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 		return
 	}
 
-	// If the peer did not send an introduction in time, it is not a valid peer and remove it from the peer list
-	if e.Reason == ErrDisconnectIntroductionTimeout {
+	switch e.Reason {
+	case ErrDisconnectIntroductionTimeout,
+		ErrDisconnectBlockchainPubkeyNotMatched,
+		ErrDisconnectInvalidExtraData,
+		ErrDisconnectInvalidUserAgent:
 		if !dm.isTrustedPeer(e.Addr) {
 			dm.pex.RemovePeer(e.Addr)
 		}

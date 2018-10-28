@@ -810,7 +810,7 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
 			continue
 		} else if known {
-			logger.WithField("txid", txn.Hash().Hex()).Warning("Duplicate transaction")
+			logger.WithField("txid", txn.Hash().Hex()).Debug("Duplicate transaction")
 			continue
 		}
 

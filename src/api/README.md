@@ -3572,9 +3572,10 @@ Args:
 ```
 
 Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
-The `"pending"` state is prior to connection establishment.
-The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
-The `"introduced"` state is after the introduction handshake has completed.
+
+* The `"pending"` state is prior to connection establishment.
+* The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
+* The `"introduced"` state is after the introduction handshake has completed.
 
 Example:
 
@@ -3610,9 +3611,10 @@ Method: GET
 ```
 
 Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
-The `"pending"` state is prior to connection establishment.
-The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
-The `"introduced"` state is after the introduction handshake has completed.
+
+* The `"pending"` state is prior to connection establishment.
+* The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
+* The `"introduced"` state is after the introduction handshake has completed.
 
 Example:
 

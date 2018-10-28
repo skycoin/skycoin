@@ -144,6 +144,11 @@ func (gw *Gateway) getConnections() ([]Connection, error) {
 	conns := make([]Connection, 0)
 
 	for _, c := range cs {
+		// Skip pending connections since they're not really connected
+		if c.State == ConnectionStatePending {
+			continue
+		}
+
 		cc, err := gw.newConnection(&c)
 		if err != nil {
 			return nil, err

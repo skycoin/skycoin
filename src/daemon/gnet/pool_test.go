@@ -117,7 +117,7 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 	require.NotNil(t, ac)
 	require.Equal(t, c.ID, ac.ID)
 
-	_, err = p.NewConnection(c.Conn, true)
+	_, err = p.newConnection(c.Conn, true)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(), "Already connected to"))
 
@@ -300,7 +300,7 @@ func TestConnect(t *testing.T) {
 
 	// If already connected, should return same connection
 	err = p.Connect(addr)
-	require.NoError(t, err)
+	require.Equal(t, ErrConnectionExists, err)
 	wait()
 
 	delete(p.addresses, addr)

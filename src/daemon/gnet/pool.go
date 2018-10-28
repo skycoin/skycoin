@@ -509,7 +509,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 			logger.WithError(err).WithField("addr", addr).Error("conn.Close")
 		}
 	case err = <-errC:
-		logger.WithError(err).WithField("addr", addr).Error("handleConnection failure")
+		logger.WithError(err).WithField("addr", addr).Error("handleConnection readLoop/sendLoop/receiveMessage failure")
 		if err := pool.Disconnect(c.Addr(), err); err != nil {
 			logger.WithError(err).WithField("addr", addr).Error("Disconnect")
 		}

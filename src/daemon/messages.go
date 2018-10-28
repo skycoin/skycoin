@@ -386,7 +386,7 @@ func (intro *IntroductionMessage) process(d daemoner) {
 		return
 	}
 
-	c, err := d.connectionIntroduced(a, intro)
+	c, err := d.connectionIntroduced(a, intro.c.ConnID, intro)
 	if err != nil {
 		logger.WithError(err).WithField("addr", a).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason

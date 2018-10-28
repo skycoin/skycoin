@@ -47,6 +47,8 @@ var (
 	ErrConnectionAlreadyIntroduced = errors.New("Connection is already in introduced state")
 	// ErrConnectionAlreadyConnected attempted to make invalid state transition from connected state
 	ErrConnectionAlreadyConnected = errors.New("Connection is already in connected state")
+	// ErrInvalidGnetID invalid gnet ID value used as argument
+	ErrInvalidGnetID = errors.New("Invalid gnet ID")
 )
 
 // ConnectionDetails connection data managed by daemon
@@ -116,6 +118,7 @@ func (c *Connections) pending(addr string) (*connection, error) {
 
 	ip, port, err := iputil.SplitAddr(addr)
 	if err != nil {
+		logger.Critical().WithError(err).Error("Connections.pending called with invalid addr")
 		return nil, err
 	}
 
@@ -144,8 +147,19 @@ func (c *Connections) connected(addr string, gnetID uint64) (*connection, error)
 	c.Lock()
 	defer c.Unlock()
 
+	fields := logrus.Fields{
+		"addr":   addr,
+		"gnetID": gnetID,
+	}
+
+	if gnetID == 0 {
+		logger.Critical().WithError(ErrInvalidGnetID).Error("Connections.connected called with invalid gnetID")
+		return nil, ErrInvalidGnetID
+	}
+
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
+		logger.Critical().WithError(err).Error("Connections.connected called with invalid addr")
 		return nil, err
 	}
 
@@ -160,31 +174,21 @@ func (c *Connections) connected(addr string, gnetID uint64) (*connection, error)
 
 		c.conns[addr] = conn
 	} else {
-		if addr != conn.Addr {
-			err := errors.New("gnet.Connection.Addr does not match recorded Connection address")
-			logger.Critical().WithError(err).Error()
-			return nil, err
+		fields := logrus.Fields{
+			"addr":       addr,
+			"gnetID":     gnetID,
+			"state":      conn.State,
+			"outgoing":   conn.Outgoing,
+			"connGnetID": conn.gnetID,
 		}
 
 		switch conn.State {
 		case ConnectionStatePending:
 		case ConnectionStateConnected:
-			logger.Critical().WithFields(logrus.Fields{
-				"addr":       conn.Addr,
-				"state":      conn.State,
-				"outgoing":   conn.Outgoing,
-				"connGnetID": conn.gnetID,
-				"gnetID":     gnetID,
-			}).Warningf("Connections.connected called on already connected connection")
+			logger.Critical().WithFields(fields).Warningf("Connections.connected called on already connected connection")
 			return nil, ErrConnectionAlreadyConnected
 		case ConnectionStateIntroduced:
-			logger.Critical().WithFields(logrus.Fields{
-				"addr":       conn.Addr,
-				"state":      conn.State,
-				"outgoing":   conn.Outgoing,
-				"connGnetID": conn.gnetID,
-				"gnetID":     gnetID,
-			}).Warning("Connections.connected called on already introduced connection")
+			logger.Critical().WithFields(fields).Warning("Connections.connected called on already introduced connection")
 			return nil, ErrConnectionAlreadyIntroduced
 		default:
 			logger.Panic("Connection state invalid")
@@ -195,22 +199,26 @@ func (c *Connections) connected(addr string, gnetID uint64) (*connection, error)
 	conn.ConnectedAt = time.Now().UTC()
 	conn.State = ConnectionStateConnected
 
-	logger.WithFields(logrus.Fields{
-		"addr":     addr,
-		"outgoing": conn.Outgoing,
-		"gnetID":   gnetID,
-	}).Debug("Connections.connected")
+	fields["outgoing"] = conn.Outgoing
+
+	logger.WithFields(fields).Debug("Connections.connected")
 
 	return conn, nil
 }
 
 // introduced the connection has introduced itself
-func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connection, error) {
+func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
 
+	if gnetID == 0 {
+		logger.Critical().WithError(ErrInvalidGnetID).Error("Connections.introduced called with invalid gnetID")
+		return nil, ErrInvalidGnetID
+	}
+
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
+		logger.Critical().WithError(err).Error("Connections.introduced called with invalid addr")
 		return nil, err
 	}
 
@@ -226,17 +234,17 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 			"state":      conn.State,
 			"outgoing":   conn.Outgoing,
 			"connGnetID": conn.gnetID,
-			"gnetID":     m.c.ConnID,
+			"gnetID":     gnetID,
 		}).Warningf("Connections.introduced called on pending connection")
 		return nil, ErrConnectionStateNotConnected
 	case ConnectionStateConnected:
-		if m.c.ConnID != conn.gnetID {
+		if gnetID != conn.gnetID {
 			logger.Critical().WithFields(logrus.Fields{
 				"addr":       conn.Addr,
 				"state":      conn.State,
 				"outgoing":   conn.Outgoing,
 				"connGnetID": conn.gnetID,
-				"gnetID":     m.c.ConnID,
+				"gnetID":     gnetID,
 			}).Warningf("Connections.introduced called with different gnet ID")
 			return nil, ErrConnectionGnetIDMismatch
 		}
@@ -246,7 +254,7 @@ func (c *Connections) introduced(addr string, m *IntroductionMessage) (*connecti
 			"state":      conn.State,
 			"outgoing":   conn.Outgoing,
 			"connGnetID": conn.gnetID,
-			"gnetID":     m.c.ConnID,
+			"gnetID":     gnetID,
 		}).Warning("Connections.introduced called on already introduced connection")
 		return nil, ErrConnectionAlreadyIntroduced
 	default:
@@ -421,6 +429,7 @@ func (c *Connections) remove(addr string, gnetID uint64) error {
 
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
+		logger.Critical().WithError(err).Error("Connections.remove called with invalid addr")
 		return err
 	}
 

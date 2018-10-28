@@ -45,6 +45,7 @@ func TestIntroductionMessage(t *testing.T) {
 	tt := []struct {
 		name      string
 		addr      string
+		gnetID    uint64
 		doProcess bool
 		mockValue daemonMockValue
 		intro     *IntroductionMessage
@@ -236,6 +237,7 @@ func TestIntroductionMessage(t *testing.T) {
 		{
 			name:      "Connect twice",
 			addr:      "121.121.121.121:6000",
+			gnetID:    2,
 			doProcess: true,
 			mockValue: daemonMockValue{
 				mirror:                  10000,
@@ -257,7 +259,10 @@ func TestIntroductionMessage(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			mc := &gnet.MessageContext{Addr: tc.addr}
+			mc := &gnet.MessageContext{
+				Addr:   tc.addr,
+				ConnID: tc.gnetID,
+			}
 			tc.intro.c = mc
 
 			d := &mockDaemoner{}
@@ -280,7 +285,7 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("RemoveFromExpectingIntroductions", tc.addr)
 			d.On("IsMaxDefaultConnectionsReached").Return(tc.mockValue.isMaxConnectionsReached, tc.mockValue.isMaxConnectionsReachedErr)
 			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
-			d.On("connectionIntroduced", tc.addr, tc.intro).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
+			d.On("connectionIntroduced", tc.addr, tc.gnetID, tc.intro).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
 			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
 			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
 

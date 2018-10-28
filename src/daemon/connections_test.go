@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
@@ -74,15 +73,11 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)
 
-	_, err = conns.introduced(addr, &IntroductionMessage{
-		c: &gnet.MessageContext{
-			ConnID: 0,
-		},
-	})
+	_, err = conns.introduced(addr, 1, &IntroductionMessage{})
 	require.Equal(t, ErrConnectionStateNotConnected, err)
 	require.Equal(t, 1, conns.PendingLen())
 
-	c, err = conns.connected(addr, 0)
+	c, err = conns.connected(addr, 1)
 	require.NoError(t, err)
 
 	require.True(t, c.Outgoing)
@@ -106,12 +101,9 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 		ListenPort:      port + 1,
 		Mirror:          1111,
 		ProtocolVersion: 2,
-		c: &gnet.MessageContext{
-			ConnID: 0,
-		},
 	}
 
-	c, err = conns.introduced(addr, m)
+	c, err = conns.introduced(addr, 1, m)
 	require.NoError(t, err)
 
 	require.True(t, c.Outgoing)
@@ -132,7 +124,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)
 
-	err = conns.remove(addr)
+	err = conns.remove(addr, 1)
 	require.NoError(t, err)
 
 	require.Equal(t, 0, conns.IPCount(ip))
@@ -166,7 +158,7 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 
 	// Flow: connected, introduced
 
-	c, err := conns.connected(addr, 0)
+	c, err := conns.connected(addr, 1)
 	require.NoError(t, err)
 
 	require.False(t, c.Outgoing)
@@ -190,12 +182,9 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 		ListenPort:      port + 1,
 		Mirror:          1111,
 		ProtocolVersion: 2,
-		c: &gnet.MessageContext{
-			ConnID: 0,
-		},
 	}
 
-	c, err = conns.introduced(addr, m)
+	c, err = conns.introduced(addr, 1, m)
 	require.NoError(t, err)
 
 	require.False(t, c.Outgoing)
@@ -216,7 +205,7 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)
 
-	err = conns.remove(addr)
+	err = conns.remove(addr, 1)
 	require.NoError(t, err)
 
 	require.Equal(t, 0, conns.IPCount(ip))
@@ -248,34 +237,28 @@ func TestConnectionsMultiple(t *testing.T) {
 	require.Equal(t, 2, conns.PendingLen())
 	require.Equal(t, 2, conns.IPCount("127.0.0.1"))
 
-	_, err = conns.connected(addr1, 0)
+	_, err = conns.connected(addr1, 1)
 	require.NoError(t, err)
 	require.Equal(t, 1, conns.PendingLen())
 
-	_, err = conns.connected(addr2, 0)
+	_, err = conns.connected(addr2, 2)
 	require.NoError(t, err)
 	require.Equal(t, 0, conns.PendingLen())
 
-	_, err = conns.introduced(addr1, &IntroductionMessage{
+	_, err = conns.introduced(addr1, 1, &IntroductionMessage{
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-		c: &gnet.MessageContext{
-			ConnID: 0,
-		},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 0, conns.PendingLen())
 	require.Equal(t, 1, len(conns.mirrors))
 
 	// introduction fails if a base IP + mirror is already in use
-	_, err = conns.introduced(addr2, &IntroductionMessage{
+	_, err = conns.introduced(addr2, 2, &IntroductionMessage{
 		Mirror:          6,
 		ListenPort:      6061,
 		ProtocolVersion: 2,
-		c: &gnet.MessageContext{
-			ConnID: 0,
-		},
 	})
 	require.Equal(t, ErrConnectionIPMirrorExists, err)
 	require.Equal(t, 0, conns.PendingLen())
@@ -283,13 +266,10 @@ func TestConnectionsMultiple(t *testing.T) {
 	c := conns.get(addr2)
 	require.Equal(t, ConnectionStateConnected, c.State)
 
-	_, err = conns.introduced(addr2, &IntroductionMessage{
+	_, err = conns.introduced(addr2, 2, &IntroductionMessage{
 		Mirror:          7,
 		ListenPort:      6061,
 		ProtocolVersion: 2,
-		c: &gnet.MessageContext{
-			ConnID: 0,
-		},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(conns.mirrors))
@@ -300,16 +280,13 @@ func TestConnectionsMultiple(t *testing.T) {
 
 	// Add another connection with a different base IP but same mirror value
 	addr3 := "127.1.1.1:12345"
-	_, err = conns.connected(addr3, 0)
+	_, err = conns.connected(addr3, 3)
 	require.NoError(t, err)
 
-	_, err = conns.introduced(addr3, &IntroductionMessage{
+	_, err = conns.introduced(addr3, 3, &IntroductionMessage{
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-		c: &gnet.MessageContext{
-			ConnID: 0,
-		},
 	})
 	require.NoError(t, err)
 
@@ -325,14 +302,21 @@ func TestConnectionsMultiple(t *testing.T) {
 	require.Equal(t, 2, conns.IPCount("127.0.0.1"))
 	require.Equal(t, 1, conns.IPCount("127.1.1.1"))
 
-	err = conns.remove(addr1)
+	err = conns.remove(addr1, 2)
+	require.Equal(t, ErrConnectionGnetIDMismatch, err)
+	require.Equal(t, 3, conns.Len())
+
+	err = conns.remove(addr1, 1)
 	require.NoError(t, err)
-	err = conns.remove(addr2)
+	err = conns.remove(addr2, 2)
 	require.NoError(t, err)
-	err = conns.remove(addr3)
+	err = conns.remove(addr3, 3)
 	require.NoError(t, err)
 	require.Empty(t, conns.mirrors)
 	require.Equal(t, 0, conns.Len())
+
+	err = conns.remove(addr1, 1)
+	require.Equal(t, ErrConnectionNotExist, err)
 }
 
 func TestConnectionsErrors(t *testing.T) {
@@ -341,17 +325,23 @@ func TestConnectionsErrors(t *testing.T) {
 	_, err := conns.pending("foo")
 	testutil.RequireError(t, err, "address foo: missing port in address")
 
-	_, err = conns.connected("foo", 0)
+	_, err = conns.connected("foo", 1)
 	testutil.RequireError(t, err, "address foo: missing port in address")
 
-	_, err = conns.introduced("foo", nil)
+	_, err = conns.introduced("foo", 1, &IntroductionMessage{})
 	testutil.RequireError(t, err, "address foo: missing port in address")
 
-	err = conns.remove("foo")
+	err = conns.remove("foo", 0)
 	testutil.RequireError(t, err, "address foo: missing port in address")
 
-	_, err = conns.introduced("127.0.0.1:6060", &IntroductionMessage{})
+	_, err = conns.introduced("127.0.0.1:6060", 1, &IntroductionMessage{})
 	require.Equal(t, ErrConnectionNotExist, err)
+
+	_, err = conns.connected("127.0.0.1:6060", 0)
+	require.Equal(t, ErrInvalidGnetID, err)
+
+	_, err = conns.introduced("127.0.0.1:6060", 0, &IntroductionMessage{})
+	require.Equal(t, ErrInvalidGnetID, err)
 }
 
 func TestConnectionsSetHeight(t *testing.T) {
@@ -359,15 +349,18 @@ func TestConnectionsSetHeight(t *testing.T) {
 	addr := "127.0.0.1:6060"
 	height := uint64(1010)
 
-	err := conns.SetHeight(addr, 0, height)
+	err := conns.SetHeight(addr, 1, height)
 	require.Equal(t, ErrConnectionNotExist, err)
 
-	c, err := conns.connected(addr, 0)
+	c, err := conns.connected(addr, 1)
 	require.NoError(t, err)
 	require.Empty(t, c.Height)
 
-	err = conns.SetHeight(addr, 0, height)
+	err = conns.SetHeight(addr, 1, height)
 	require.NoError(t, err)
+
+	err = conns.SetHeight(addr, 2, height)
+	require.Equal(t, ErrConnectionGnetIDMismatch, err)
 
 	c = conns.get(addr)
 	require.NotNil(t, c)
@@ -378,13 +371,55 @@ func TestConnectionsModifyMirrorPanics(t *testing.T) {
 	conns := NewConnections()
 	addr := "127.0.0.1:6060"
 
-	_, err := conns.connected(addr, 0)
+	_, err := conns.connected(addr, 1)
 	require.NoError(t, err)
 
 	// modifying mirror value causes panic
 	require.Panics(t, func() {
-		conns.modify(addr, 0, func(c *ConnectionDetails) { // nolint: errcheck
+		conns.modify(addr, 1, func(c *ConnectionDetails) { // nolint: errcheck
 			c.Mirror++
 		})
 	})
+}
+
+func TestConnectionsStateTransitionErrors(t *testing.T) {
+	conns := NewConnections()
+	addr := "127.0.0.1:6060"
+
+	_, err := conns.pending(addr)
+	require.NoError(t, err)
+
+	// pending -> pending fails
+	_, err = conns.pending(addr)
+	require.Equal(t, ErrConnectionExists, err)
+
+	// pending -> introduced fails
+	_, err = conns.introduced(addr, 1, &IntroductionMessage{})
+	require.Equal(t, ErrConnectionStateNotConnected, err)
+
+	_, err = conns.connected(addr, 1)
+	require.NoError(t, err)
+
+	// connected -> connected fails
+	_, err = conns.connected(addr, 1)
+	require.Equal(t, ErrConnectionAlreadyConnected, err)
+
+	// connected -> introduced fails if gnet ID does not match
+	_, err = conns.introduced(addr, 2, &IntroductionMessage{})
+	require.Equal(t, ErrConnectionGnetIDMismatch, err)
+
+	_, err = conns.introduced(addr, 1, &IntroductionMessage{})
+	require.NoError(t, err)
+
+	// introduced -> connected fails
+	_, err = conns.connected(addr, 1)
+	require.Equal(t, ErrConnectionAlreadyIntroduced, err)
+
+	// introduced -> pending fails
+	_, err = conns.pending(addr)
+	require.Equal(t, ErrConnectionExists, err)
+
+	// introduced -> introduced fails
+	_, err = conns.introduced(addr, 1, &IntroductionMessage{})
+	require.Equal(t, ErrConnectionAlreadyIntroduced, err)
 }

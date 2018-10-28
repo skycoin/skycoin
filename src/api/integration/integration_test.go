@@ -1850,12 +1850,19 @@ func TestLiveNetworkConnections(t *testing.T) {
 		require.Equal(t, cc.Mirror, connection.Mirror)
 
 		switch cc.State {
-		// If the connection was introduced it should stay introduced
 		case daemon.ConnectionStateIntroduced:
+			// If the connection was introduced it should stay introduced
 			require.Equal(t, daemon.ConnectionStateIntroduced, connection.State)
-			// If the connection was connected it should stay connected or have become introduced
 		case daemon.ConnectionStateConnected:
+			// If the connection was connected it should stay connected or have become introduced
 			require.NotEqual(t, daemon.ConnectionStatePending, connection.State)
+		}
+
+		// The GnetID should be 0 if pending, otherwise it should not be 0
+		if cc.State == daemon.ConnectionStatePending {
+			require.Equal(t, uint64(0), cc.GnetID)
+		} else {
+			require.NotEmpty(t, uint64(0), cc.GnetID)
 		}
 
 		require.Equal(t, cc.Outgoing, connection.Outgoing)

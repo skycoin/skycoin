@@ -15,13 +15,13 @@ type mockDaemoner struct {
 	mock.Mock
 }
 
-// connectionIntroduced provides a mock function with given fields: addr, m
-func (_m *mockDaemoner) connectionIntroduced(addr string, m *IntroductionMessage) (*connection, error) {
-	ret := _m.Called(addr, m)
+// connectionIntroduced provides a mock function with given fields: addr, gnetID, m
+func (_m *mockDaemoner) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
+	ret := _m.Called(addr, gnetID, m)
 
 	var r0 *connection
-	if rf, ok := ret.Get(0).(func(string, *IntroductionMessage) *connection); ok {
-		r0 = rf(addr, m)
+	if rf, ok := ret.Get(0).(func(string, uint64, *IntroductionMessage) *connection); ok {
+		r0 = rf(addr, gnetID, m)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*connection)
@@ -29,8 +29,8 @@ func (_m *mockDaemoner) connectionIntroduced(addr string, m *IntroductionMessage
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, *IntroductionMessage) error); ok {
-		r1 = rf(addr, m)
+	if rf, ok := ret.Get(1).(func(string, uint64, *IntroductionMessage) error); ok {
+		r1 = rf(addr, gnetID, m)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -378,7 +378,7 @@ func (_m *mockDaemoner) RandomExchangeable(n int) pex.Peers {
 }
 
 // RecordPeerHeight provides a mock function with given fields: addr, gnetID, height
-func (_m *mockDaemoner) RecordPeerHeight(addr string, gnetID int, height uint64) {
+func (_m *mockDaemoner) RecordPeerHeight(addr string, gnetID uint64, height uint64) {
 	_m.Called(addr, gnetID, height)
 }
 

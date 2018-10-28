@@ -258,7 +258,7 @@ type daemoner interface {
 	RecordUserAgent(addr string, userAgent useragent.Data) error
 
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
-	connectionIntroduced(addr string, m *IntroductionMessage) (*connection, error)
+	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error)
 }
 
 // Daemon stateful properties of the daemon
@@ -1196,8 +1196,8 @@ func (dm *Daemon) BlockchainPubkey() cipher.PubKey {
 }
 
 // connectionIntroduced removes the peer from expect introduction pool
-func (dm *Daemon) connectionIntroduced(addr string, m *IntroductionMessage) (*connection, error) {
-	return dm.connections.introduced(addr, m)
+func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
+	return dm.connections.introduced(addr, gnetID, m)
 }
 
 // Implements pooler interface

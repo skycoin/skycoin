@@ -803,13 +803,23 @@ func (dm *Daemon) handleEvent(e interface{}) {
 }
 
 func (dm *Daemon) onMessageEvent(e messageEvent) {
-	// If the connection does not exist, abort message processing
+	// If the connection does not exist or the gnet ID is different, abort message processing
 	c := dm.connections.get(e.Context.Addr)
 	if c == nil {
 		logger.WithFields(logrus.Fields{
 			"addr":        e.Context.Addr,
 			"messageType": fmt.Sprintf("%T", e.Message),
 		}).Info("onMessageEvent no connection found")
+		return
+	}
+
+	if c.gnetID != e.Context.ConnID {
+		logger.WithFields(logrus.Fields{
+			"addr":          e.Context.Addr,
+			"connGnetID":    c.gnetID,
+			"contextGnetID": e.Context.ConnID,
+			"messageType":   fmt.Sprintf("%T", e.Message),
+		}).Info("onMessageEvent connection gnetID does not match")
 		return
 	}
 
@@ -824,6 +834,7 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 			if err := dm.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
 				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
 			}
+			return
 		}
 	}
 	e.Message.process(dm)
@@ -897,6 +908,7 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 func (dm *Daemon) onConnectFailure(c ConnectFailureEvent) {
 	// Remove the pending connection from connections and update the retry times in pex
 	logger.WithField("addr", c.Addr).WithError(c.Error).Debug("onConnectFailure")
+
 	// onConnectFailure should only trigger for "pending" connections which have gnet ID 0;
 	// connections in any other state will have a nonzero gnet ID.
 	// if the connection is in a different state, the gnet ID will not match, the connection

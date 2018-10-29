@@ -806,7 +806,10 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 	// If the connection does not exist, abort message processing
 	c := dm.connections.get(e.Context.Addr)
 	if c == nil {
-		logger.WithField("addr", e.Context.Addr).Info("onMessageEvent no connection found")
+		logger.WithFields(logrus.Fields{
+			"addr":        e.Context.Addr,
+			"messageType": fmt.Sprintf("%T", e.Message),
+		}).Info("onMessageEvent no connection found")
 		return
 	}
 

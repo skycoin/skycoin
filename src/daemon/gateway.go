@@ -919,10 +919,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 		}
 
 		conns, err := gw.getConnections(func(c Connection) bool {
-			if c.State == ConnectionStatePending {
-				return false
-			}
-			return true
+			return c.State != ConnectionStatePending
 		})
 		if err != nil {
 			return

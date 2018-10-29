@@ -804,6 +804,8 @@ func (dm *Daemon) handleEvent(e interface{}) {
 
 func (dm *Daemon) onMessageEvent(e messageEvent) {
 	// If the connection does not exist or the gnet ID is different, abort message processing
+	// This can occur because messageEvents for a given connection may occur
+	// after that connection has disconnected.
 	c := dm.connections.get(e.Context.Addr)
 	if c == nil {
 		logger.WithFields(logrus.Fields{

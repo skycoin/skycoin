@@ -125,16 +125,16 @@ func newConnection(dc *connection, gc *gnet.Connection, pp *pex.Peer) Connection
 }
 
 // GetConnections returns solicited (outgoing) connections
-func (gw *Gateway) GetConnections() ([]Connection, error) {
+func (gw *Gateway) GetConnections(f func(c Connection) bool) ([]Connection, error) {
 	var conns []Connection
 	var err error
 	gw.strand("GetConnections", func() {
-		conns, err = gw.getConnections()
+		conns, err = gw.getConnections(f)
 	})
 	return conns, err
 }
 
-func (gw *Gateway) getConnections() ([]Connection, error) {
+func (gw *Gateway) getConnections(f func(c Connection) bool) ([]Connection, error) {
 	if gw.d.pool.Pool == nil {
 		return nil, nil
 	}
@@ -144,17 +144,18 @@ func (gw *Gateway) getConnections() ([]Connection, error) {
 	conns := make([]Connection, 0)
 
 	for _, c := range cs {
-		// Skip pending connections since they're not really connected
-		if c.State == ConnectionStatePending {
-			continue
-		}
-
 		cc, err := gw.newConnection(&c)
 		if err != nil {
 			return nil, err
 		}
 
-		conns = append(conns, *cc)
+		ccc := *cc
+
+		if !f(ccc) {
+			continue
+		}
+
+		conns = append(conns, ccc)
 	}
 
 	// Sort connnections by IP address
@@ -917,7 +918,12 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			return
 		}
 
-		conns, err := gw.getConnections()
+		conns, err := gw.getConnections(func(c Connection) bool {
+			if c.State == ConnectionStatePending {
+				return false
+			}
+			return true
+		})
 		if err != nil {
 			return
 		}

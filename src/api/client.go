@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 )
 
@@ -825,10 +826,33 @@ func (c *Client) NetworkConnection(addr string) (*readable.Connection, error) {
 	return &dc, nil
 }
 
-// NetworkConnections makes a request to GET /api/v1/network/connections
-func (c *Client) NetworkConnections() (*Connections, error) {
+// NetworkConnectionsFilter filters for network connections
+type NetworkConnectionsFilter struct {
+	States    []daemon.ConnectionState // "pending", "connected" and "introduced"
+	Direction string                   // "incoming" or "outgoing"
+}
+
+// NetworkConnections makes a request to GET /api/v1/network/connections.
+// Connections can be filtered by state and direction. By default, "connected" and "introduced" connections
+// of both directions are returned.
+func (c *Client) NetworkConnections(filters *NetworkConnectionsFilter) (*Connections, error) {
+	v := url.Values{}
+	if filters != nil {
+		if len(filters.States) != 0 {
+			states := make([]string, len(filters.States))
+			for i, s := range filters.States {
+				states[i] = string(s)
+			}
+			v.Add("states", strings.Join(states, ","))
+		}
+		if filters.Direction != "" {
+			v.Add("direction", filters.Direction)
+		}
+	}
+	endpoint := "/api/v1/network/connections?" + v.Encode()
+
 	var dc Connections
-	if err := c.Get("/api/v1/network/connections", &dc); err != nil {
+	if err := c.Get(endpoint, &dc); err != nil {
 		return nil, err
 	}
 	return &dc, nil

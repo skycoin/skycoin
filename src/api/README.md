@@ -3608,6 +3608,9 @@ API sets: `STATUS`, `READ`
 ```
 URI: /api/v1/network/connections
 Method: GET
+Args:
+	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
+	direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 ```
 
 Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
@@ -3615,6 +3618,8 @@ Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
 * The `"pending"` state is prior to connection establishment.
 * The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
 * The `"introduced"` state is after the introduction handshake has completed.
+
+By default, both incoming and outgoing connections in the `"connected"` or `"introduced"` state are returned.
 
 Example:
 

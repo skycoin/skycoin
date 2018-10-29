@@ -545,12 +545,12 @@ loop:
 		case <-outgoingConnectionsTicker.C:
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
-			if !dm.Config.DisableOutgoingConnections &&
-				dm.connections.OutgoingLen() < dm.Config.MaxOutgoingConnections &&
-				dm.connections.PendingLen() < dm.Config.MaxPendingConnections &&
-				dm.connections.Len() < dm.Config.MaxConnections {
-				dm.connectToRandomPeer()
-			}
+			// if !dm.Config.DisableOutgoingConnections &&
+			// 	dm.connections.OutgoingLen() < dm.Config.MaxOutgoingConnections &&
+			// 	dm.connections.PendingLen() < dm.Config.MaxPendingConnections &&
+			// 	dm.connections.Len() < dm.Config.MaxConnections {
+			dm.connectToRandomPeer()
+			// }
 
 		case <-privateConnectionsTicker.C:
 			// Always try to stay connected to our private peers

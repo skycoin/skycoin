@@ -1806,7 +1806,7 @@ func TestStableNetworkConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkConnections()
+	connections, err := c.NetworkConnections(nil)
 	require.NoError(t, err)
 	require.Empty(t, connections.Connections)
 
@@ -1821,7 +1821,7 @@ func TestLiveNetworkConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkConnections()
+	connections, err := c.NetworkConnections(nil)
 	require.NoError(t, err)
 
 	if liveDisableNetworking(t) {
@@ -1876,6 +1876,24 @@ func TestLiveNetworkConnections(t *testing.T) {
 	// This could unfortunately occur if a connection disappeared in between the two calls,
 	// which will require a test re-run.
 	require.True(t, checked, "Was not able to find any connection by address, despite finding connections when querying all")
+
+	connections, err = c.NetworkConnections(&api.NetworkConnectionsFilter{
+		States: []daemon.ConnectionState{daemon.ConnectionStatePending},
+	})
+	require.NoError(t, err)
+
+	for _, cc := range connections.Connections {
+		require.Equal(t, daemon.ConnectionStatePending, cc.State)
+	}
+
+	connections, err = c.NetworkConnections(&api.NetworkConnectionsFilter{
+		Direction: "incoming",
+	})
+	require.NoError(t, err)
+
+	for _, cc := range connections.Connections {
+		require.False(t, cc.Outgoing)
+	}
 }
 
 func TestNetworkDefaultConnections(t *testing.T) {

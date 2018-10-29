@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/daemon"
@@ -135,10 +136,79 @@ func TestConnection(t *testing.T) {
 }
 
 func TestConnections(t *testing.T) {
+	intrOut := daemon.Connection{
+		Addr: "127.0.0.1:6061",
+		Gnet: daemon.GnetConnectionDetails{
+			ID:           1,
+			LastSent:     time.Unix(99999, 0),
+			LastReceived: time.Unix(1111111, 0),
+		},
+		ConnectionDetails: daemon.ConnectionDetails{
+			Outgoing:    true,
+			State:       daemon.ConnectionStateIntroduced,
+			ConnectedAt: time.Unix(222222, 0),
+			Mirror:      9876,
+			ListenPort:  9877,
+			Height:      1234,
+			UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
+		},
+	}
+
+	intrIn := daemon.Connection{
+		Addr: "127.0.0.2:6062",
+		Gnet: daemon.GnetConnectionDetails{
+			ID:           2,
+			LastSent:     time.Unix(99999, 0),
+			LastReceived: time.Unix(1111111, 0),
+		},
+		ConnectionDetails: daemon.ConnectionDetails{
+			Outgoing:    false,
+			State:       daemon.ConnectionStateIntroduced,
+			ConnectedAt: time.Unix(222222, 0),
+			Mirror:      9877,
+			ListenPort:  9879,
+			Height:      1234,
+			UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
+		},
+	}
+
+	readIntrOut := readable.Connection{
+		Addr:         "127.0.0.1:6061",
+		GnetID:       1,
+		LastSent:     99999,
+		LastReceived: 1111111,
+		ConnectedAt:  222222,
+		Outgoing:     true,
+		State:        daemon.ConnectionStateIntroduced,
+		Mirror:       9876,
+		ListenPort:   9877,
+		Height:       1234,
+		UserAgent:    useragent.MustParse("skycoin:0.25.1(foo)"),
+	}
+
+	readIntrIn := readable.Connection{
+		Addr:         "127.0.0.2:6062",
+		GnetID:       2,
+		LastSent:     99999,
+		LastReceived: 1111111,
+		ConnectedAt:  222222,
+		Outgoing:     false,
+		State:        daemon.ConnectionStateIntroduced,
+		Mirror:       9877,
+		ListenPort:   9879,
+		Height:       1234,
+		UserAgent:    useragent.MustParse("skycoin:0.25.1(foo)"),
+	}
+
+	conns := []daemon.Connection{intrOut, intrIn}
+	readConns := []readable.Connection{readIntrOut, readIntrIn}
+
 	tt := []struct {
 		name                                 string
 		method                               string
 		status                               int
+		states                               string
+		direction                            string
 		err                                  string
 		gatewayGetSolicitedConnectionsResult []daemon.Connection
 		gatewayGetSolicitedConnectionsError  error
@@ -150,47 +220,93 @@ func TestConnections(t *testing.T) {
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
+
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
-			gatewayGetSolicitedConnectionsResult: []daemon.Connection{
-				{
-					Addr: "127.0.0.1:6061",
-					Gnet: daemon.GnetConnectionDetails{
-						ID:           1,
-						LastSent:     time.Unix(99999, 0),
-						LastReceived: time.Unix(1111111, 0),
-					},
-					ConnectionDetails: daemon.ConnectionDetails{
-						Outgoing:    true,
-						State:       daemon.ConnectionStateIntroduced,
-						ConnectedAt: time.Unix(222222, 0),
-						Mirror:      9876,
-						ListenPort:  9877,
-						Height:      1234,
-						UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
-					},
-				},
-			},
+			name:                                 "200 defaults",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
 			result: Connections{
-				Connections: []readable.Connection{
-					{
-						Addr:         "127.0.0.1:6061",
-						GnetID:       1,
-						LastSent:     99999,
-						LastReceived: 1111111,
-						ConnectedAt:  222222,
-						Outgoing:     true,
-						State:        daemon.ConnectionStateIntroduced,
-						Mirror:       9876,
-						ListenPort:   9877,
-						Height:       1234,
-						UserAgent:    useragent.MustParse("skycoin:0.25.1(foo)"),
-					},
-				},
+				Connections: readConns,
 			},
+		},
+
+		{
+			name:                                 "200 incoming",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			direction:                            "incoming",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 outgoing",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			direction:                            "outgoing",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 pending,connected",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			states:                               "pending,connected",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 pending,connected outgoing",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			states:                               "pending,connected",
+			direction:                            "outgoing",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 pending,introduced,connected",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			states:                               "pending,introduced,connected",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:   "400 - bad state",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			states: "pending,foo",
+			err:    "400 Bad Request - Invalid state in states. Valid states are \"pending\", \"connected\" or \"introduced\"",
+		},
+
+		{
+			name:      "400 - bad direction",
+			method:    http.MethodGet,
+			status:    http.StatusBadRequest,
+			direction: "foo",
+			err:       "400 Bad Request - Invalid direction. Valid directions are \"outgoing\" or \"incoming\"",
 		},
 
 		{
@@ -205,7 +321,17 @@ func TestConnections(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections"
 			gateway := &MockGatewayer{}
-			gateway.On("GetConnections").Return(tc.gatewayGetSolicitedConnectionsResult, tc.gatewayGetSolicitedConnectionsError)
+			gateway.On("GetConnections", mock.Anything).Return(tc.gatewayGetSolicitedConnectionsResult, tc.gatewayGetSolicitedConnectionsError)
+
+			v := url.Values{}
+			if tc.states != "" {
+				v.Add("states", tc.states)
+			}
+			if tc.direction != "" {
+				v.Add("direction", tc.direction)
+			}
+
+			endpoint += "?" + v.Encode()
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

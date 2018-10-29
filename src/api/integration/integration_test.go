@@ -31,6 +31,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -5719,7 +5720,7 @@ func TestDisableWalletAPI(t *testing.T) {
 			name:        "create transaction",
 			method:      http.MethodPost,
 			endpoint:    "/api/v1/wallet/transaction",
-			contentType: "application/json",
+			contentType: api.ContentTypeJSON,
 			json: func() interface{} {
 				return api.CreateTransactionRequest{
 					HoursSelection: api.HoursSelection{
@@ -5753,7 +5754,7 @@ func TestDisableWalletAPI(t *testing.T) {
 					err = c.Get(tc.endpoint, nil)
 				case http.MethodPost:
 					switch tc.contentType {
-					case "application/json":
+					case api.ContentTypeJSON:
 						err = c.PostJSON(tc.endpoint, tc.json(), nil)
 					default:
 						err = c.PostForm(tc.endpoint, tc.body(), nil)
@@ -5788,6 +5789,11 @@ func checkHealthResponse(t *testing.T, r *api.HealthResponse) {
 	require.NotEmpty(t, r.BlockchainMetadata.Head.Time)
 	require.NotEmpty(t, r.Version.Version)
 	require.True(t, r.Uptime.Duration > time.Duration(0))
+	require.NotEmpty(t, r.CoinName)
+	require.NotEmpty(t, r.DaemonUserAgent)
+
+	_, err := useragent.Parse(r.DaemonUserAgent)
+	require.NoError(t, err)
 }
 
 func TestStableHealth(t *testing.T) {
@@ -5809,6 +5815,13 @@ func TestStableHealth(t *testing.T) {
 	// The stable node is always run with the commit and branch ldflags, so they should appear
 	require.NotEmpty(t, r.Version.Commit)
 	require.NotEmpty(t, r.Version.Branch)
+
+	coinName := os.Getenv("COIN")
+	require.Equal(t, coinName, r.CoinName)
+	require.Equal(t, fmt.Sprintf("%s:%s", coinName, r.Version.Version), r.DaemonUserAgent)
+
+	_, err = useragent.Parse(r.DaemonUserAgent)
+	require.NoError(t, err)
 
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
 	require.True(t, r.CSPEnabled)

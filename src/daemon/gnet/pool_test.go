@@ -34,6 +34,9 @@ func newTestConfig() Config {
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
+	cfg.MaxOutgoingConnections = 8
+	cfg.MaxConnections = 8
+	cfg.MaxDefaultPeerOutgoingConnections = 8
 	return cfg
 }
 
@@ -119,7 +122,7 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 
 	_, err = p.newConnection(c.Conn, true)
 	require.Error(t, err)
-	require.True(t, strings.HasPrefix(err.Error(), "Already connected to"))
+	require.Equal(t, ErrConnectionExists, err)
 
 	p.Shutdown()
 	<-q
@@ -236,20 +239,31 @@ func TestHandleConnection(t *testing.T) {
 	conn, err := net.Dial("tcp", addr)
 	require.NoError(t, err)
 
-	c := <-cc
+	var c *Connection
+	waitTimeout := time.Second * 3
+	select {
+	case c = <-cc:
+	case <-time.After(waitTimeout):
+		t.Fatal("Timed out waiting for connection")
+	}
 	require.NotNil(t, c)
 
-	exist, err := p.IsConnExist(conn.LocalAddr().String())
+	var exist bool
+	err = p.strand("isConnExist", func() error {
+		exist = p.isConnExist(conn.LocalAddr().String())
+		return nil
+	})
 	require.NoError(t, err)
 	require.True(t, exist)
 
-	delete(p.addresses, conn.LocalAddr().String())
-	delete(p.pool, 1)
+	dc := p.disconnect(conn.LocalAddr().String())
+	require.NotNil(t, dc)
 
 	require.NotNil(t, wasSolicited)
 	require.False(t, *wasSolicited)
 
 	// Solicited
+	wasSolicited = nil
 	p.Config.ConnectCallback = func(addr string, id uint64, s bool) {
 		wasSolicited = &s
 		cc <- p.pool[2]
@@ -258,28 +272,35 @@ func TestHandleConnection(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		p.handleConnection(conn, true) // nolint: errcheck
+		err = p.handleConnection(conn, true)
+		require.NotEqual(t, ErrConnectionExists, err)
+		require.NotEqual(t, ErrMaxConnectionsReached, err)
+		require.NotEqual(t, ErrMaxOutgoingConnectionsReached, err)
+		require.NotEqual(t, ErrMaxOutgoingDefaultConnectionsReached, err)
 	}()
 
-	c = <-cc
+	c = nil
+	select {
+	case c = <-cc:
+	case <-time.After(waitTimeout):
+		t.Fatal("Timed out waiting for connection")
+	}
 	require.NotNil(t, c)
 	require.Equal(t, addr, c.Addr())
 
-	require.NotNil(t, wasSolicited)
-	require.True(t, *wasSolicited)
-
-	exist, err = p.IsConnExist(conn.RemoteAddr().String())
-	require.NoError(t, err)
-	require.True(t, exist)
-
-	require.Equal(t, len(p.addresses), 1)
-	require.Equal(t, len(p.pool), 1)
-
 	p.Shutdown()
 
-	<-done
+	select {
+	case <-done:
+	case <-time.After(waitTimeout):
+		t.Fatal("Timed out waiting for done")
+	}
 
-	<-q
+	select {
+	case <-q:
+	case <-time.After(waitTimeout):
+		t.Fatal("Timed out waiting for quit")
+	}
 }
 
 func TestConnect(t *testing.T) {

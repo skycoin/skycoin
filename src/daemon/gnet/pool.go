@@ -717,19 +717,6 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 	return dataArray, nil
 }
 
-// IsConnExist check if the connection of address does exist
-func (pool *ConnectionPool) IsConnExist(addr string) (bool, error) {
-	var exist bool
-	if err := pool.strand("IsConnExist", func() error {
-		exist = pool.isConnExist(addr)
-		return nil
-	}); err != nil {
-		return false, fmt.Errorf("Check connection existence failed: %v ", err)
-	}
-
-	return exist, nil
-}
-
 // isConnExist check if the connection of address does exist
 func (pool *ConnectionPool) isConnExist(addr string) bool {
 	_, ok := pool.addresses[addr]

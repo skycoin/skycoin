@@ -837,26 +837,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 	}
 	logger.WithFields(fields).Info("onConnectEvent")
 
-	exist, err := dm.pool.Pool.IsConnExist(e.Addr)
-	if err != nil {
-		logger.Critical().WithFields(fields).WithError(err).Error("IsConnExist failed")
-		return
-	}
-
-	if !exist {
-		logger.WithFields(fields).Warning("While processing an onConnect event, no pool connection was found")
-		return
-	}
-
-	if dm.ipCountMaxed(e.Addr) {
-		logger.WithFields(fields).Info("Max connections for this address reached, disconnecting")
-		if err := dm.Disconnect(e.Addr, ErrDisconnectIPLimitReached); err != nil {
-			logger.WithError(err).WithFields(fields).Error("Disconnect")
-		}
-		return
-	}
-
-	// Update the connections state machine
+	// Update the connections state machine first
 	c, err := dm.connections.connected(e.Addr, e.GnetID)
 	if err != nil {
 		logger.Critical().WithError(err).WithFields(fields).Error("connections.Connected failed")
@@ -870,6 +851,14 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 	// If they do not match, there is e.Addr flaw in the concept or implementation of the state machine.
 	if c.Outgoing != e.Solicited {
 		logger.Critical().WithFields(fields).Warning("Connection.Outgoing does not match ConnectEvent.Solicited state")
+	}
+
+	if dm.ipCountMaxed(e.Addr) {
+		logger.WithFields(fields).Info("Max connections for this IP address reached, disconnecting")
+		if err := dm.Disconnect(e.Addr, ErrDisconnectIPLimitReached); err != nil {
+			logger.WithError(err).WithFields(fields).Error("Disconnect")
+		}
+		return
 	}
 
 	logger.WithFields(fields).Debug("Sending introduction message")

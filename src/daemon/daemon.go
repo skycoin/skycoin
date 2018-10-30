@@ -906,6 +906,11 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 			dm.pex.RemovePeer(e.Addr)
 		}
 	}
+
+	switch e.Reason.Error() {
+	case "read failed: EOF":
+		dm.IncreaseRetryTimes(e.Addr)
+	}
 }
 
 func (dm *Daemon) onConnectFailure(c ConnectFailureEvent) {
@@ -921,8 +926,8 @@ func (dm *Daemon) onConnectFailure(c ConnectFailureEvent) {
 		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
 	}
 
-	// TODO - On failure to connect, use exponential backoff, not peer list
-	dm.pex.IncreaseRetryTimes(c.Addr)
+	// TODO - On failure to connect, use exponential backoff, need to use pex.canTry peers
+	dm.IncreaseRetryTimes(c.Addr)
 }
 
 // onGnetDisconnect triggered when a gnet.Connection terminates

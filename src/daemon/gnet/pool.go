@@ -34,10 +34,6 @@ const (
 )
 
 var (
-	// ErrDisconnectReadFailed also includes a remote closed socket
-	ErrDisconnectReadFailed DisconnectReason = errors.New("Read failed")
-	// ErrDisconnectWriteFailed write faile
-	ErrDisconnectWriteFailed DisconnectReason = errors.New("Write failed")
 	// ErrDisconnectSetReadDeadlineFailed set read deadline failed
 	ErrDisconnectSetReadDeadlineFailed = errors.New("SetReadDeadline failed")
 	// ErrDisconnectInvalidMessageLength invalid message length
@@ -46,8 +42,13 @@ var (
 	ErrDisconnectMalformedMessage DisconnectReason = errors.New("Malformed message body")
 	// ErrDisconnectUnknownMessage unknow message
 	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
-	// ErrDisconnectUnexpectedError  unexpected error
+	// ErrDisconnectUnexpectedError unexpected error
 	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
+	// ErrDisconnectMessageDecodeUnderflow message data did not fully decode to a message object
+	ErrDisconnectMessageDecodeUnderflow DisconnectReason = errors.New("Message data did not fully decode to a message object")
+	// ErrDisconnectTruncatedMessageID message data was too short to contain a message ID
+	ErrDisconnectTruncatedMessageID DisconnectReason = errors.New("Message data was too short to contain a message ID")
+
 	// ErrConnectionPoolClosed error message indicates the connection pool is closed
 	ErrConnectionPoolClosed = errors.New("Connection pool is closed")
 	// ErrWriteQueueFull write queue is full
@@ -72,6 +73,24 @@ var (
 	// Logger
 	logger = logging.MustGetLogger("gnet")
 )
+
+// ReadError connection read error
+type ReadError struct {
+	Err error
+}
+
+func (e ReadError) Error() string {
+	return fmt.Sprintf("read failed: %v", e.Err)
+}
+
+// WriteError connection read error
+type WriteError struct {
+	Err error
+}
+
+func (e WriteError) Error() string {
+	return fmt.Sprintf("write failed: %v", e.Err)
+}
 
 // Config gnet config
 type Config struct {
@@ -498,7 +517,12 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	}
 
 	msgC := make(chan []byte, 32)
-	errC := make(chan error, 3)
+
+	type methodErr struct {
+		method string
+		err    error
+	}
+	errC := make(chan methodErr, 3)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -506,7 +530,10 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	go func() {
 		defer wg.Done()
 		if err := pool.readLoop(c, msgC, qc); err != nil {
-			errC <- err
+			errC <- methodErr{
+				method: "readLoop",
+				err:    err,
+			}
 		}
 	}()
 
@@ -514,7 +541,10 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	go func() {
 		defer wg.Done()
 		if err := pool.sendLoop(c, pool.Config.WriteTimeout, qc); err != nil {
-			errC <- err
+			errC <- methodErr{
+				method: "sendLoop",
+				err:    err,
+			}
 		}
 	}()
 
@@ -527,7 +557,10 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 		for msg := range msgC {
 			elapser.Register(fmt.Sprintf("pool.receiveMessage address=%s", addr))
 			if err := pool.receiveMessage(c, msg); err != nil {
-				errC <- err
+				errC <- methodErr{
+					method: "receiveMessage",
+					err:    err,
+				}
 				return
 			}
 			elapser.CheckForDone()
@@ -539,9 +572,13 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 		if err := conn.Close(); err != nil {
 			logger.WithError(err).WithField("addr", addr).Error("conn.Close")
 		}
-	case err = <-errC:
-		logger.WithError(err).WithField("addr", addr).Error("handleConnection readLoop/sendLoop/receiveMessage failure")
-		if err := pool.Disconnect(c.Addr(), err); err != nil {
+	case mErr := <-errC:
+		err = mErr.err
+		logger.WithError(mErr.err).WithFields(logrus.Fields{
+			"addr":   addr,
+			"method": mErr.method,
+		}).Error("handleConnection failure")
+		if err := pool.Disconnect(c.Addr(), mErr.err); err != nil {
 			logger.WithError(err).WithField("addr", addr).Error("Disconnect")
 		}
 	}
@@ -655,17 +692,15 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 func readData(reader io.Reader, buf []byte) ([]byte, error) {
 	c, err := reader.Read(buf)
 	if err != nil {
-		return nil, fmt.Errorf("read data failed: %v", err)
+		return nil, &ReadError{
+			Err: err,
+		}
 	}
 	if c == 0 {
 		return nil, nil
 	}
 	data := make([]byte, c)
-	n := copy(data, buf)
-	if n != c {
-		// I don't believe this can ever occur
-		return nil, errors.New("Failed to copy all the bytes")
-	}
+	copy(data, buf)
 	return data, nil
 }
 

@@ -528,12 +528,12 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 
 	wait()
 
-	readDataErr := errors.New("read data failed: failed")
+	readDataErr := "read failed: failed"
 
 	disconnectCalled := make(chan struct{})
 	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
-		require.Equal(t, readDataErr, reason)
-		close(disconnectCalled)
+		defer close(disconnectCalled)
+		require.Equal(t, readDataErr, reason.Error())
 	}
 
 	// 1:
@@ -542,7 +542,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	reconn := NewReadErrorConn()
 	go func() {
 		err := p.handleConnection(reconn, false)
-		require.Equal(t, readDataErr, err)
+		require.Equal(t, readDataErr, err.Error())
 	}()
 
 	<-cc
@@ -552,7 +552,11 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	require.True(t, reconn.(*ReadErrorConn).GetReadDeadlineSet() != time.Time{})
 	reconn.Close()
 
-	<-disconnectCalled
+	select {
+	case <-disconnectCalled:
+	case <-time.After(time.Second * 10):
+		t.Fatal("wait for disconnectCalled timed out")
+	}
 
 	p.Shutdown()
 	<-q
@@ -580,8 +584,8 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	// Use a mock net.Conn that fails on SetReadDeadline
 	disconnectCalled := make(chan struct{})
 	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectSetReadDeadlineFailed, reason)
-		close(disconnectCalled)
 	}
 
 	rdfconn := &ReadDeadlineFailedConn{}
@@ -624,8 +628,8 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	// Look for these bytes copied into the eventChannel
 	disconnectCalled := make(chan struct{})
 	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
-		close(disconnectCalled)
 	}
 
 	raconn := newReadAlwaysConn()
@@ -665,18 +669,18 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 
 	wait()
 
-	readDataErr := errors.New("read data failed: done")
+	readDataErr := "read failed: done"
 
 	// 4: Use a mock net.Conn that successfully returns 0 bytes when read
 	rnconn := newReadNothingConn()
 	disconnectCalled := make(chan struct{})
 	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
-		require.Equal(t, readDataErr, reason)
-		close(disconnectCalled)
+		defer close(disconnectCalled)
+		require.Equal(t, readDataErr, reason.Error())
 	}
 	go func() {
 		err := p.handleConnection(rnconn, false)
-		require.Equal(t, readDataErr, err)
+		require.Equal(t, readDataErr, err.Error())
 	}()
 
 	<-cc
@@ -745,8 +749,8 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	disconnectCalled := make(chan struct{})
 	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+		defer close(disconnectCalled)
 		require.Equal(t, reason, ErrErrorMessageHandler)
-		close(disconnectCalled)
 	}
 
 	_, err = conn.Write([]byte{4, 0, 0, 0, 'E', 'R', 'R', 0x00})
@@ -776,11 +780,11 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	disconnectCalled = make(chan struct{})
 	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+		defer close(disconnectCalled)
 		require.Equal(t, c.Addr(), addr)
 		require.Equal(t, reason, ErrDisconnectInvalidMessageLength)
 		require.Nil(t, p.pool[1])
 		require.Nil(t, p.pool[2])
-		close(disconnectCalled)
 	}
 
 	// Sending a length of < messagePrefixLength should cause a disconnect
@@ -806,8 +810,8 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	p.Config.MaxMessageLength = 4
 	disconnectCalled = make(chan struct{})
 	p.Config.DisconnectCallback = func(addr string, id uint64, r DisconnectReason) {
+		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectInvalidMessageLength, r)
-		close(disconnectCalled)
 	}
 
 	_, err = conn.Write([]byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E'})

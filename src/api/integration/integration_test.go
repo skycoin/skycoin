@@ -1902,13 +1902,13 @@ func TestNetworkDefaultConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkDefaultConnections()
+	connections, err := c.NetworkDefaultPeers()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
 	sort.Strings(connections)
 
 	var expected []string
-	checkGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
+	checkGoldenFile(t, "network-default-peers.golden", TestData{connections, &expected})
 }
 
 func TestNetworkTrustedConnections(t *testing.T) {
@@ -1917,13 +1917,13 @@ func TestNetworkTrustedConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkTrustedConnections()
+	connections, err := c.NetworkTrustedPeers()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
 	sort.Strings(connections)
 
 	var expected []string
-	checkGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
+	checkGoldenFile(t, "network-trusted-peers.golden", TestData{connections, &expected})
 }
 
 func TestStableNetworkExchangeableConnections(t *testing.T) {
@@ -1932,11 +1932,11 @@ func TestStableNetworkExchangeableConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkExchangeableConnections()
+	connections, err := c.NetworkExchangedPeers()
 	require.NoError(t, err)
 
 	var expected []string
-	checkGoldenFile(t, "network-exchangeable-connections.golden", TestData{connections, &expected})
+	checkGoldenFile(t, "network-exchanged-peers.golden", TestData{connections, &expected})
 }
 
 func TestLiveNetworkExchangeableConnections(t *testing.T) {
@@ -1945,7 +1945,7 @@ func TestLiveNetworkExchangeableConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	_, err := c.NetworkExchangeableConnections()
+	_, err := c.NetworkExchangedPeers()
 	require.NoError(t, err)
 }
 

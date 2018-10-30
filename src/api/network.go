@@ -3,8 +3,10 @@ package api
 // APIs for network-related information
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
@@ -64,7 +66,9 @@ func NewConnections(dconns []daemon.Connection) Connections {
 // connectionsHandler returns all outgoing connections
 // URI: /api/v1/network/connections
 // Method: GET
-// Args: type [optional] either outgoing or incoming
+// Args:
+//	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
+//  direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -72,21 +76,55 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var conns []daemon.Connection
-		var err error
+		formStates := r.FormValue("states")
+		statesMap := make(map[daemon.ConnectionState]struct{}, 3)
+		if formStates != "" {
+			states := strings.Split(formStates, ",")
+			for _, s := range states {
+				switch daemon.ConnectionState(s) {
+				case daemon.ConnectionStatePending,
+					daemon.ConnectionStateConnected,
+					daemon.ConnectionStateIntroduced:
+					statesMap[daemon.ConnectionState(s)] = struct{}{}
+				default:
+					wh.Error400(w, fmt.Sprintf("Invalid state in states. Valid states are %q, %q or %q", daemon.ConnectionStatePending, daemon.ConnectionStateConnected, daemon.ConnectionStateIntroduced))
+					return
+				}
+			}
+		}
 
-		typ := r.FormValue("type")
-		switch typ {
-		case "":
-			conns, err = gateway.GetConnections()
-		case "outgoing":
-			conns, err = gateway.GetOutgoingConnections()
-		case "incoming":
-			conns, err = gateway.GetIncomingConnections()
+		// "connected" and "introduced" are the defaults, if not specified
+		if len(statesMap) == 0 {
+			statesMap[daemon.ConnectionStateConnected] = struct{}{}
+			statesMap[daemon.ConnectionStateIntroduced] = struct{}{}
+		}
+
+		direction := r.FormValue("direction")
+		switch direction {
+		case "incoming", "outgoing", "":
 		default:
-			wh.Error400(w, "invalid type")
+			wh.Error400(w, "Invalid direction. Valid directions are \"outgoing\" or \"incoming\"")
 			return
 		}
+
+		conns, err := gateway.GetConnections(func(c daemon.Connection) bool {
+			switch direction {
+			case "outgoing":
+				if !c.Outgoing {
+					return false
+				}
+			case "incoming":
+				if c.Outgoing {
+					return false
+				}
+			}
+
+			if _, ok := statesMap[c.State]; !ok {
+				return false
+			}
+
+			return true
+		})
 
 		if err != nil {
 			wh.Error500(w, err.Error())

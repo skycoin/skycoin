@@ -364,10 +364,12 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.Port = c.config.Node.Port
 	dc.Daemon.Address = c.config.Node.Address
 	dc.Daemon.LocalhostOnly = c.config.Node.LocalhostOnly
-	dc.Daemon.OutgoingMax = c.config.Node.MaxOutgoingConnections
+	dc.Daemon.MaxConnections = c.config.Node.MaxConnections
+	dc.Daemon.MaxOutgoingConnections = c.config.Node.MaxOutgoingConnections
 	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
+	dc.Daemon.UserAgent = c.config.Node.userAgent
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
@@ -410,15 +412,19 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		EnableJSON20RPC:      c.config.Node.RPCInterface,
 		EnableGUI:            c.config.Node.EnableGUI,
 		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,
-		ReadTimeout:          c.config.Node.ReadTimeout,
-		WriteTimeout:         c.config.Node.WriteTimeout,
-		IdleTimeout:          c.config.Node.IdleTimeout,
+		ReadTimeout:          c.config.Node.HTTPReadTimeout,
+		WriteTimeout:         c.config.Node.HTTPWriteTimeout,
+		IdleTimeout:          c.config.Node.HTTPIdleTimeout,
 		EnabledAPISets:       c.config.Node.enabledAPISets,
 		HostWhitelist:        c.config.Node.hostWhitelist,
-		BuildInfo: readable.BuildInfo{
-			Version: c.config.Build.Version,
-			Commit:  c.config.Build.Commit,
-			Branch:  c.config.Build.Branch,
+		Health: api.HealthConfig{
+			BuildInfo: readable.BuildInfo{
+				Version: c.config.Build.Version,
+				Commit:  c.config.Build.Commit,
+				Branch:  c.config.Build.Branch,
+			},
+			CoinName:        c.config.Node.CoinName,
+			DaemonUserAgent: c.config.Node.userAgent,
 		},
 		Username: c.config.Node.WebInterfaceUsername,
 		Password: c.config.Node.WebInterfacePassword,

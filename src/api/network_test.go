@@ -8,11 +8,15 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 func TestConnection(t *testing.T) {
@@ -48,26 +52,38 @@ func TestConnection(t *testing.T) {
 			err:    "",
 			addr:   "addr",
 			gatewayGetConnectionResult: &daemon.Connection{
-				ID:           1,
-				Addr:         "127.0.0.1",
-				LastSent:     99999,
-				LastReceived: 1111111,
-				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
-				ListenPort:   9877,
-				Height:       1234,
+				Addr: "127.0.0.1:6061",
+				Gnet: daemon.GnetConnectionDetails{
+					ID:           1,
+					LastSent:     time.Unix(99999, 0),
+					LastReceived: time.Unix(1111111, 0),
+				},
+				ConnectionDetails: daemon.ConnectionDetails{
+					Outgoing:    true,
+					ConnectedAt: time.Unix(222222, 0),
+					State:       daemon.ConnectionStateIntroduced,
+					Mirror:      6789,
+					ListenPort:  9877,
+					Height:      1234,
+					UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
+				},
+				Pex: pex.Peer{
+					Trusted: false,
+				},
 			},
 			result: &readable.Connection{
-				ID:           1,
-				Addr:         "127.0.0.1",
-				LastSent:     99999,
-				LastReceived: 1111111,
-				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
-				ListenPort:   9877,
-				Height:       1234,
+				Addr:          "127.0.0.1:6061",
+				GnetID:        1,
+				LastSent:      99999,
+				LastReceived:  1111111,
+				ConnectedAt:   222222,
+				Outgoing:      true,
+				State:         daemon.ConnectionStateIntroduced,
+				Mirror:        6789,
+				ListenPort:    9877,
+				Height:        1234,
+				UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
+				IsTrustedPeer: false,
 			},
 		},
 
@@ -125,19 +141,88 @@ func TestConnection(t *testing.T) {
 }
 
 func TestConnections(t *testing.T) {
+	intrOut := daemon.Connection{
+		Addr: "127.0.0.1:6061",
+		Gnet: daemon.GnetConnectionDetails{
+			ID:           1,
+			LastSent:     time.Unix(99999, 0),
+			LastReceived: time.Unix(1111111, 0),
+		},
+		ConnectionDetails: daemon.ConnectionDetails{
+			Outgoing:    true,
+			State:       daemon.ConnectionStateIntroduced,
+			ConnectedAt: time.Unix(222222, 0),
+			Mirror:      9876,
+			ListenPort:  9877,
+			Height:      1234,
+			UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
+		},
+		Pex: pex.Peer{
+			Trusted: true,
+		},
+	}
+
+	intrIn := daemon.Connection{
+		Addr: "127.0.0.2:6062",
+		Gnet: daemon.GnetConnectionDetails{
+			ID:           2,
+			LastSent:     time.Unix(99999, 0),
+			LastReceived: time.Unix(1111111, 0),
+		},
+		ConnectionDetails: daemon.ConnectionDetails{
+			Outgoing:    false,
+			State:       daemon.ConnectionStateIntroduced,
+			ConnectedAt: time.Unix(222222, 0),
+			Mirror:      9877,
+			ListenPort:  9879,
+			Height:      1234,
+			UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
+		},
+	}
+
+	readIntrOut := readable.Connection{
+		Addr:          "127.0.0.1:6061",
+		GnetID:        1,
+		LastSent:      99999,
+		LastReceived:  1111111,
+		ConnectedAt:   222222,
+		Outgoing:      true,
+		State:         daemon.ConnectionStateIntroduced,
+		Mirror:        9876,
+		ListenPort:    9877,
+		Height:        1234,
+		UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
+		IsTrustedPeer: true,
+	}
+
+	readIntrIn := readable.Connection{
+		Addr:          "127.0.0.2:6062",
+		GnetID:        2,
+		LastSent:      99999,
+		LastReceived:  1111111,
+		ConnectedAt:   222222,
+		Outgoing:      false,
+		State:         daemon.ConnectionStateIntroduced,
+		Mirror:        9877,
+		ListenPort:    9879,
+		Height:        1234,
+		UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
+		IsTrustedPeer: false,
+	}
+
+	conns := []daemon.Connection{intrOut, intrIn}
+	readConns := []readable.Connection{readIntrOut, readIntrIn}
+
 	tt := []struct {
-		name                                string
-		method                              string
-		typ                                 string
-		status                              int
-		err                                 string
-		gatewayGetConnectionsResult         []daemon.Connection
-		gatewayGetConnectionsError          error
-		gatewayGetOutgoingConnectionsResult []daemon.Connection
-		gatewayGetOutgoingConnectionsError  error
-		gatewayGetIncomingConnectionsResult []daemon.Connection
-		gatewayGetIncomingConnectionsError  error
-		result                              Connections
+		name                                 string
+		method                               string
+		status                               int
+		states                               string
+		direction                            string
+		err                                  string
+		gatewayGetSolicitedConnectionsResult []daemon.Connection
+		gatewayGetSolicitedConnectionsError  error
+		result                               Connections
 	}{
 		{
 			name:   "405",
@@ -147,166 +232,99 @@ func TestConnections(t *testing.T) {
 		},
 
 		{
-			name:   "400 bad type",
+			name:                                 "200 defaults",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 incoming",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			direction:                            "incoming",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 outgoing",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			direction:                            "outgoing",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 pending,connected",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			states:                               "pending,connected",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 pending,connected outgoing",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			states:                               "pending,connected",
+			direction:                            "outgoing",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:                                 "200 pending,introduced,connected",
+			method:                               http.MethodGet,
+			status:                               http.StatusOK,
+			states:                               "pending,introduced,connected",
+			err:                                  "",
+			gatewayGetSolicitedConnectionsResult: conns,
+			result: Connections{
+				Connections: readConns,
+			},
+		},
+
+		{
+			name:   "400 - bad state",
 			method: http.MethodGet,
-			typ:    "foo",
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - invalid type",
+			states: "pending,foo",
+			err:    "400 Bad Request - Invalid state in states. Valid states are \"pending\", \"connected\" or \"introduced\"",
 		},
 
 		{
-			name:   "200 all connections",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
-			gatewayGetConnectionsResult: []daemon.Connection{
-				{
-					ID:           1,
-					Addr:         "127.0.0.1",
-					LastSent:     99999,
-					LastReceived: 1111111,
-					Outgoing:     true,
-					Introduced:   true,
-					Mirror:       9876,
-					ListenPort:   9877,
-					Height:       1234,
-				},
-				{
-					ID:           3,
-					Addr:         "127.1.1.1",
-					LastSent:     88888,
-					LastReceived: 9999999,
-					Outgoing:     false,
-					Introduced:   true,
-					Mirror:       9877,
-					ListenPort:   9877,
-					Height:       1235,
-				},
-			},
-			result: Connections{
-				Connections: []readable.Connection{
-					{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-						Height:       1234,
-					},
-					{
-						ID:           3,
-						Addr:         "127.1.1.1",
-						LastSent:     88888,
-						LastReceived: 9999999,
-						Outgoing:     false,
-						Introduced:   true,
-						Mirror:       9877,
-						ListenPort:   9877,
-						Height:       1235,
-					},
-				},
-			},
+			name:      "400 - bad direction",
+			method:    http.MethodGet,
+			status:    http.StatusBadRequest,
+			direction: "foo",
+			err:       "400 Bad Request - Invalid direction. Valid directions are \"outgoing\" or \"incoming\"",
 		},
 
 		{
-			name:   "200 outgoing connections",
-			method: http.MethodGet,
-			typ:    "outgoing",
-			status: http.StatusOK,
-			err:    "",
-			gatewayGetOutgoingConnectionsResult: []daemon.Connection{
-				{
-					ID:           1,
-					Addr:         "127.0.0.1",
-					LastSent:     99999,
-					LastReceived: 1111111,
-					Outgoing:     true,
-					Introduced:   true,
-					Mirror:       9876,
-					ListenPort:   9877,
-					Height:       1234,
-				},
-			},
-			result: Connections{
-				Connections: []readable.Connection{
-					{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-						Height:       1234,
-					},
-				},
-			},
-		},
-
-		{
-			name:   "200 incoming connections",
-			method: http.MethodGet,
-			typ:    "incoming",
-			status: http.StatusOK,
-			err:    "",
-			gatewayGetIncomingConnectionsResult: []daemon.Connection{
-				{
-					ID:           1,
-					Addr:         "127.0.0.1",
-					LastSent:     99999,
-					LastReceived: 1111111,
-					Outgoing:     false,
-					Introduced:   true,
-					Mirror:       9876,
-					ListenPort:   9877,
-					Height:       1234,
-				},
-			},
-			result: Connections{
-				Connections: []readable.Connection{
-					{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     false,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-						Height:       1234,
-					},
-				},
-			},
-		},
-
-		{
-			name:                       "500 - GetConnections failed",
-			method:                     http.MethodGet,
-			status:                     http.StatusInternalServerError,
-			err:                        "500 Internal Server Error - GetConnections failed",
-			gatewayGetConnectionsError: errors.New("GetConnections failed"),
-		},
-
-		{
-			name:                               "500 - GetOutgoingConnections failed",
-			method:                             http.MethodGet,
-			typ:                                "outgoing",
-			status:                             http.StatusInternalServerError,
-			err:                                "500 Internal Server Error - GetOutgoingConnections failed",
-			gatewayGetOutgoingConnectionsError: errors.New("GetOutgoingConnections failed"),
-		},
-
-		{
-			name:                               "500 - GetIncomingConnections failed",
-			method:                             http.MethodGet,
-			typ:                                "incoming",
-			status:                             http.StatusInternalServerError,
-			err:                                "500 Internal Server Error - GetIncomingConnections failed",
-			gatewayGetIncomingConnectionsError: errors.New("GetIncomingConnections failed"),
+			name:                                "500 - GetConnections failed",
+			method:                              http.MethodGet,
+			status:                              http.StatusInternalServerError,
+			err:                                 "500 Internal Server Error - GetConnections failed",
+			gatewayGetSolicitedConnectionsError: errors.New("GetConnections failed"),
 		},
 	}
 
@@ -314,19 +332,17 @@ func TestConnections(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections"
 			gateway := &MockGatewayer{}
-			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult, tc.gatewayGetConnectionsError)
-			gateway.On("GetOutgoingConnections").Return(tc.gatewayGetOutgoingConnectionsResult, tc.gatewayGetOutgoingConnectionsError)
-			gateway.On("GetIncomingConnections").Return(tc.gatewayGetIncomingConnectionsResult, tc.gatewayGetIncomingConnectionsError)
+			gateway.On("GetConnections", mock.Anything).Return(tc.gatewayGetSolicitedConnectionsResult, tc.gatewayGetSolicitedConnectionsError)
 
 			v := url.Values{}
-			if tc.typ != "" {
-				v.Add("type", tc.typ)
+			if tc.states != "" {
+				v.Add("states", tc.states)
+			}
+			if tc.direction != "" {
+				v.Add("direction", tc.direction)
 			}
 
-			ve := v.Encode()
-			if ve != "" {
-				endpoint += "?" + ve
-			}
+			endpoint += "?" + v.Encode()
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

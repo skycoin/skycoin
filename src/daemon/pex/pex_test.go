@@ -735,7 +735,7 @@ func TestPeerRandomPublic(t *testing.T) {
 
 			pex.peerlist.setPeers(tc.peers)
 
-			peers := pex.RandomPublic(tc.n)
+			peers := pex.RandomPublicUntrusted(tc.n)
 			require.Len(t, peers, tc.expectN)
 		})
 	}
@@ -848,7 +848,7 @@ func TestPexRandomPublic(t *testing.T) {
 			pex.peerlist.setPeers(tc.peers)
 
 			// get N random public
-			peers := pex.RandomPublic(tc.n)
+			peers := pex.RandomPublicUntrusted(tc.n)
 
 			require.Len(t, peers, tc.expectN)
 
@@ -1368,7 +1368,7 @@ func TestPexGetPeerByAddr(t *testing.T) {
 
 			pex.peerlist.setPeers(tc.initPeers)
 
-			p, ok := pex.GetPeerByAddr(tc.addr)
+			p, ok := pex.GetPeer(tc.addr)
 			require.Equal(t, tc.find, ok)
 			if ok {
 				require.Equal(t, tc.peer, p)

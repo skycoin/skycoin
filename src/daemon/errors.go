@@ -23,20 +23,19 @@ var (
 	ErrDisconnectNoIntroduction gnet.DisconnectReason = errors.New("First message was not an Introduction")
 	// ErrDisconnectIPLimitReached ip limit reached
 	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
-	// ErrDisconnectUnexpectedError this is returned when a seemingly impossible error is encountered
-	// e.g. net.Conn.Addr() returns an invalid ip:port
+	// ErrDisconnectUnexpectedError this is returned when a seemingly impossible error is encountered, e.g. net.Conn.Addr() returns an invalid ip:port
 	ErrDisconnectUnexpectedError gnet.DisconnectReason = errors.New("Unexpected error")
 	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
 	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
 	ErrDisconnectBlockchainPubkeyNotMatched gnet.DisconnectReason = errors.New("Blockchain pubkey does not match")
-	// ErrDisconnectInvalidExtraData is returned when extra field can't be parsed as specific data type.
-	// e.g. ExtraData length in IntroductionMessage is not the same as cipher.PubKey
+	// ErrDisconnectInvalidExtraData is returned when extra field can't be parsed
 	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data in message")
-	// ErrDisconnectPeerlistFull no space in peers pool
-	ErrDisconnectPeerlistFull gnet.DisconnectReason = errors.New("Peerlist is full")
 	// ErrDisconnectReceivedDisconnect received a DisconnectMessage
 	ErrDisconnectReceivedDisconnect gnet.DisconnectReason = errors.New("Received DisconnectMessage")
+	// ErrDisconnectInvalidUserAgent is returned if the peer provides an invalid user agent
+	ErrDisconnectInvalidUserAgent gnet.DisconnectReason = errors.New("Invalid user agent")
+
 	// ErrDisconnectUnknownReason used when mapping an unknown reason code to an error. Is not sent over the network.
 	ErrDisconnectUnknownReason gnet.DisconnectReason = errors.New("Unknown DisconnectReason")
 
@@ -55,11 +54,9 @@ var (
 		ErrDisconnectMaxOutgoingConnectionsReached: 11,
 		ErrDisconnectBlockchainPubkeyNotMatched:    12,
 		ErrDisconnectInvalidExtraData:              13,
-		ErrDisconnectPeerlistFull:                  14,
-		ErrDisconnectReceivedDisconnect:            15,
+		ErrDisconnectReceivedDisconnect:            14,
+		ErrDisconnectInvalidUserAgent:              15,
 
-		gnet.ErrDisconnectReadFailed:            1001,
-		gnet.ErrDisconnectWriteFailed:           1002,
 		gnet.ErrDisconnectSetReadDeadlineFailed: 1003,
 		gnet.ErrDisconnectInvalidMessageLength:  1004,
 		gnet.ErrDisconnectMalformedMessage:      1005,

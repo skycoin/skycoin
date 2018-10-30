@@ -382,6 +382,16 @@ func (pool *ConnectionPool) strand(name string, f func() error) error {
 	return strand.Strand(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
 }
 
+// ListeningAddress returns address, on which the ConnectionPool
+// listening on. It returns nil, and error if the ConnectionPool
+// is not listening
+func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
+	if pool.listener == nil {
+		return nil, errors.New("Not listening, call StartListen first")
+	}
+	return pool.listener.Addr(), nil
+}
+
 func (pool *ConnectionPool) canConnect(a string, solicited bool) error {
 	if pool.isConnExist(a) {
 		return ErrConnectionExists
@@ -408,7 +418,6 @@ func (pool *ConnectionPool) canConnect(a string, solicited bool) error {
 
 // newConnection creates a new Connection around a net.Conn. Trying to make a connection
 // to an address that is already connected will failed.
-// Returns nil, nil when max default connection limit hit
 func (pool *ConnectionPool) newConnection(conn net.Conn, solicited bool) (*Connection, error) {
 	a := conn.RemoteAddr().String()
 
@@ -440,16 +449,6 @@ func (pool *ConnectionPool) newConnection(conn net.Conn, solicited bool) (*Conne
 	return nc, nil
 }
 
-// ListeningAddress returns address, on which the ConnectionPool
-// listening on. It returns nil, and error if the ConnectionPool
-// is not listening
-func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
-	if pool.listener == nil {
-		return nil, errors.New("Not listening, call StartListen first")
-	}
-	return pool.listener.Addr(), nil
-}
-
 // Creates a Connection and begins its read and write loop
 func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) error {
 	defer logger.WithField("addr", conn.RemoteAddr()).Debug("Connection closed")
@@ -478,10 +477,6 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 				return err
 			}
 
-			if c == nil {
-				return nil
-			}
-
 			if pool.Config.ConnectCallback != nil {
 				pool.Config.ConnectCallback(c.Addr(), c.ID, solicited)
 			}
@@ -495,15 +490,11 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	// TODO -- this error is not fully propagated back to a caller of Connect() so the daemon state
 	// can get stuck in pending
 	if err != nil {
+		logger.WithError(err).WithField("addr", conn.RemoteAddr()).Debug("handleConnection: newConnection failed")
 		if pool.Config.ConnectFailureCallback != nil {
 			pool.Config.ConnectFailureCallback(addr, solicited, err)
 		}
 		return err
-	}
-
-	// c may be nil if already connected to that connection or max outgoing connections reached
-	if c == nil {
-		return nil
 	}
 
 	msgC := make(chan []byte, 32)

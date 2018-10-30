@@ -896,6 +896,7 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 		return
 	}
 
+	// TODO -- blacklist peer for certain reasons, not just remove
 	switch e.Reason {
 	case ErrDisconnectIntroductionTimeout,
 		ErrDisconnectBlockchainPubkeyNotMatched,

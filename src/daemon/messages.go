@@ -371,9 +371,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		return err
 	}
 
-	err = d.recordMessageEvent(intro, mc)
-	d.ResetRetryTimes(mc.Addr)
-	return err
+	return d.recordMessageEvent(intro, mc)
 }
 
 // process an event queued by Handle()
@@ -415,6 +413,8 @@ func (intro *IntroductionMessage) process(d daemoner) {
 
 		return
 	}
+
+	d.ResetRetryTimes(a)
 
 	if c.Outgoing {
 		// For successful outgoing connections, mark the peer as having an incoming port in the pex peerlist

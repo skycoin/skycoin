@@ -1,6 +1,7 @@
 package api
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -553,7 +554,7 @@ func TestGetBlock(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: true,
@@ -622,7 +623,7 @@ func TestGetBlocks(t *testing.T) {
 	}{
 		{
 			name:   "405",
-			method: http.MethodPost,
+			method: http.MethodDelete,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
@@ -915,6 +916,32 @@ func TestGetBlocks(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name:   "200 seqs POST",
+			method: http.MethodPost,
+			status: http.StatusOK,
+			body: &httpBody{
+				Seqs: "1,2,3",
+			},
+			seqs:                   []uint64{1, 2, 3},
+			gatewayGetBlocksResult: []coin.SignedBlock{{}},
+			response: &readable.Blocks{
+				Blocks: []readable.Block{
+					readable.Block{
+						Head: readable.BlockHeader{
+							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+							BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+							UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
+						},
+						Body: readable.BlockBody{
+							Transactions: []readable.Transaction{},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -944,12 +971,22 @@ func TestGetBlocks(t *testing.T) {
 					v.Add("seqs", tc.body.Seqs)
 				}
 			}
+
+			var reqBody io.Reader
 			if len(v) > 0 {
-				endpoint += "?" + v.Encode()
+				if tc.method == http.MethodPost {
+					reqBody = strings.NewReader(v.Encode())
+				} else {
+					endpoint += "?" + v.Encode()
+				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, nil)
+			req, err := http.NewRequest(tc.method, endpoint, reqBody)
 			require.NoError(t, err)
+
+			if tc.method == http.MethodPost {
+				req.Header.Set("Content-Type", ContentTypeForm)
+			}
 
 			csrfStore := &CSRFStore{
 				Enabled: true,

@@ -22,6 +22,11 @@ const (
 	dialTimeout         = 60 * time.Second
 	httpClientTimeout   = 120 * time.Second
 	tlsHandshakeTimeout = 60 * time.Second
+
+	// ContentTypeJSON json content type header
+	ContentTypeJSON = "application/json"
+	// ContentTypeForm form data content type header
+	ContentTypeForm = "application/x-www-form-urlencoded"
 )
 
 // ClientError is used for non-200 API responses
@@ -136,9 +141,9 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 	return c.HTTPClient.Do(req)
 }
 
-// PostForm makes a POST request to an endpoint with body of "application/x-www-form-urlencoded" formated data.
+// PostForm makes a POST request to an endpoint with body of ContentTypeForm formated data.
 func (c *Client) PostForm(endpoint string, body io.Reader, obj interface{}) error {
-	return c.post(endpoint, "application/x-www-form-urlencoded", body, obj)
+	return c.Post(endpoint, ContentTypeForm, body, obj)
 }
 
 // PostJSON makes a POST request to an endpoint with body of json data.
@@ -148,11 +153,11 @@ func (c *Client) PostJSON(endpoint string, reqObj, respObj interface{}) error {
 		return err
 	}
 
-	return c.post(endpoint, "application/json", bytes.NewReader(body), respObj)
+	return c.Post(endpoint, ContentTypeJSON, bytes.NewReader(body), respObj)
 }
 
-// post makes a POST request to an endpoint.
-func (c *Client) post(endpoint string, contentType string, body io.Reader, obj interface{}) error {
+// Post makes a POST request to an endpoint.
+func (c *Client) Post(endpoint string, contentType string, body io.Reader, obj interface{}) error {
 	csrf, err := c.CSRF()
 	if err != nil {
 		return err
@@ -227,8 +232,8 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		req.Header.Set(CSRFHeaderName, csrf)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", ContentTypeJSON)
+	req.Header.Set("Accept", ContentTypeJSON)
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -267,7 +272,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, rspErr
 	}
 
-	if respObj != nil {
+	if respObj != struct{}{} {
 		decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
 		decoder.DisallowUnknownFields()
 
@@ -336,27 +341,28 @@ func (c *Client) Outputs() (*readable.UnspentOutputsSummary, error) {
 	return &o, nil
 }
 
-// OutputsForAddresses makes a request to GET /api/v1/outputs?addrs=xxx
+// OutputsForAddresses makes a request to POST /api/v1/outputs?addrs=xxx
 func (c *Client) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/api/v1/outputs?" + v.Encode()
+
+	endpoint := "/api/v1/outputs"
 
 	var o readable.UnspentOutputsSummary
-	if err := c.Get(endpoint, &o); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &o); err != nil {
 		return nil, err
 	}
 	return &o, nil
 }
 
-// OutputsForHashes makes a request to GET /api/v1/outputs?hashes=zzz
+// OutputsForHashes makes a request to POST /api/v1/outputs?hashes=zzz
 func (c *Client) OutputsForHashes(hashes []string) (*readable.UnspentOutputsSummary, error) {
 	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
-	endpoint := "/api/v1/outputs?" + v.Encode()
+	endpoint := "/api/v1/outputs"
 
 	var o readable.UnspentOutputsSummary
-	if err := c.Get(endpoint, &o); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &o); err != nil {
 		return nil, err
 	}
 	return &o, nil
@@ -425,7 +431,7 @@ func (c *Client) BlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error) {
 	return &b, nil
 }
 
-// Blocks makes a request to GET /api/v1/blocks?seqs=
+// Blocks makes a request to POST /api/v1/blocks?seqs=
 func (c *Client) Blocks(seqs []uint64) (*readable.Blocks, error) {
 	sSeqs := make([]string, len(seqs))
 	for i, x := range seqs {
@@ -434,16 +440,16 @@ func (c *Client) Blocks(seqs []uint64) (*readable.Blocks, error) {
 
 	v := url.Values{}
 	v.Add("seqs", strings.Join(sSeqs, ","))
-	endpoint := "/api/v1/blocks?" + v.Encode()
+	endpoint := "/api/v1/blocks"
 
 	var b readable.Blocks
-	if err := c.Get(endpoint, &b); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1&start=&end=
+// BlocksVerbose makes a request to POST /api/v1/blocks?verbose=1&seqs=
 func (c *Client) BlocksVerbose(seqs []uint64) (*readable.BlocksVerbose, error) {
 	sSeqs := make([]string, len(seqs))
 	for i, x := range seqs {
@@ -453,10 +459,10 @@ func (c *Client) BlocksVerbose(seqs []uint64) (*readable.BlocksVerbose, error) {
 	v := url.Values{}
 	v.Add("seqs", strings.Join(sSeqs, ","))
 	v.Add("verbose", "1")
-	endpoint := "/api/v1/blocks?" + v.Encode()
+	endpoint := "/api/v1/blocks"
 
 	var b readable.BlocksVerbose
-	if err := c.Get(endpoint, &b); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
@@ -536,14 +542,14 @@ func (c *Client) BlockchainProgress() (*readable.BlockchainProgress, error) {
 	return &b, nil
 }
 
-// Balance makes a request to GET /api/v1/balance?addrs=xxx
+// Balance makes a request to POST /api/v1/balance?addrs=xxx
 func (c *Client) Balance(addrs []string) (*BalanceResponse, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/api/v1/balance?" + v.Encode()
+	endpoint := "/api/v1/balance"
 
 	var b BalanceResponse
-	if err := c.Get(endpoint, &b); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
@@ -795,7 +801,7 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 
 // VerifySeed verifies whether the given seed is a valid bip39 mnemonic or not
 func (c *Client) VerifySeed(seed SeedVerificationReq) (bool, error) {
-	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", seed, nil)
+	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", seed, struct{}{})
 	if err != nil {
 		return false, err
 	}
@@ -927,86 +933,86 @@ func (c *Client) TransactionEncoded(txid string) (*TransactionEncodedResponse, e
 	return &r, nil
 }
 
-// Transactions makes a request to GET /api/v1/transactions
+// Transactions makes a request to POST /api/v1/transactions
 func (c *Client) Transactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatus
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-// ConfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=true
+// ConfirmedTransactions makes a request to POST /api/v1/transactions?confirmed=true
 func (c *Client) ConfirmedTransactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatus
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-// UnconfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=false
+// UnconfirmedTransactions makes a request to POST /api/v1/transactions?confirmed=false
 func (c *Client) UnconfirmedTransactions(addrs []string) ([]readable.TransactionWithStatus, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatus
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-// TransactionsVerbose makes a request to GET /api/v1/transactions?verbose=1
+// TransactionsVerbose makes a request to POST /api/v1/transactions?verbose=1
 func (c *Client) TransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("verbose", "1")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatusVerbose
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-// ConfirmedTransactionsVerbose makes a request to GET /api/v1/transactions?confirmed=true&verbose=1
+// ConfirmedTransactionsVerbose makes a request to POST /api/v1/transactions?confirmed=true&verbose=1
 func (c *Client) ConfirmedTransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
 	v.Add("verbose", "1")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatusVerbose
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-// UnconfirmedTransactionsVerbose makes a request to GET /api/v1/transactions?confirmed=false&verbose=1
+// UnconfirmedTransactionsVerbose makes a request to POST /api/v1/transactions?confirmed=false&verbose=1
 func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
 	v.Add("verbose", "1")
-	endpoint := "/api/v1/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions"
 
 	var r []readable.TransactionWithStatusVerbose
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 	return r, nil

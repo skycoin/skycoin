@@ -50,7 +50,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get transaction info by id](#get-transaction-info-by-id)
 	- [Get raw transaction by id](#get-raw-transaction-by-id)
 	- [Inject raw transaction](#inject-raw-transaction)
-	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+	- [Get transactions for addresses](#get-transactions-for-addresses)
 	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
 	- [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
@@ -77,6 +77,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 - [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
 - [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 - [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
+- [Migration from /api/v1/explorer/address](#migration-from-apiv1exploreraddress)
 
 <!-- /MarkdownTOC -->
 
@@ -223,6 +224,8 @@ Response:
         "commit": "8798b5ee43c7ce43b9b75d57a1a6cd2c1295cd1e",
         "branch": "develop"
     },
+    "coin": "skycoin",
+    "user_agent": "skycoin:0.25.0-rc1",
     "open_connections": 8,
     "uptime": "6m30.629057248s",
     "csrf_enabled": true,
@@ -387,10 +390,13 @@ API sets: `READ`
 
 ```
 URI: /api/v1/balance
-Method: GET
+Method: GET, POST
 Args:
     addrs: comma-separated list of addresses. must contain at least one address
 ```
+
+Returns the cumulative and individual balances of one or more addresses.
+The `POST` method can be used if many addresses need to be queried.
 
 Example:
 
@@ -451,7 +457,7 @@ API sets: `READ`
 
 ```
 URI: /api/v1/outputs
-Method: GET
+Method: GET, POST
 Args:
     addrs: address list, joined with ","
     hashes: hash list, joined with ","
@@ -464,6 +470,8 @@ In the response, `"head_outputs"` are outputs in the current unspent output set,
 and `"incoming_outputs"` are outputs that will be created by an unconfirmed transaction.
 
 The current head block header is returned as `"head"`.
+
+The `POST` method can be used if many addresses or hashes need to be queried.
 
 Example:
 
@@ -1517,7 +1525,7 @@ Result:
 
 ### Verify wallet Seed
 
-API sets: `READ`
+API sets: `WALLET`
 
 ```
 URI: /api/v2/wallet/seed/verify
@@ -1542,6 +1550,25 @@ Result:
 }
 ```
 
+Example (wrong bip39 seed):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/seed/verify \
+ -H 'Content-type: application/json' \
+ -d '{ "seed": "wrong seed" }'
+```
+
+Result:
+
+```json
+{
+    "error": {
+        "message": "seed is not a valid bip39 seed",
+        "code": 422
+    }
+}
+```
+
 ### Recover encrypted wallet by seed
 
 API sets: `INSECURE_WALLET_SEED`
@@ -1550,9 +1577,9 @@ API sets: `INSECURE_WALLET_SEED`
 URI: /api/v2/wallet/recover
 Method: POST
 Args:
-	id: wallet id
-	seed: wallet seed
-	password: [optional] password to encrypt the recovered wallet with
+    id: wallet id
+    seed: wallet seed
+    password: [optional] password to encrypt the recovered wallet with
 ```
 
 Recovers an encrypted wallet by providing the wallet seed.
@@ -1569,28 +1596,28 @@ Result:
 
 ```json
 {
-	"data": {
-	    "meta": {
-	        "coin": "skycoin",
-	        "filename": "2017_11_25_e5fb.wlt",
-	        "label": "test",
-	        "type": "deterministic",
-	        "version": "0.2",
-	        "crypto_type": "",
-	        "timestamp": 1511640884,
-	        "encrypted": false
-	    },
-	    "entries": [
-	        {
-	            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-	            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
-	        },
-	        {
-	            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
-	            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
-	        }
-	    ]
-	}
+    "data": {
+        "meta": {
+            "coin": "skycoin",
+            "filename": "2017_11_25_e5fb.wlt",
+            "label": "test",
+            "type": "deterministic",
+            "version": "0.2",
+            "crypto_type": "",
+            "timestamp": 1511640884,
+            "encrypted": false
+        },
+        "entries": [
+            {
+                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+            },
+            {
+                "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
+            }
+        ]
+    }
 }
 ```
 
@@ -1876,9 +1903,9 @@ Method: POST
 Content-Type: application/json
 Body: {"rawtx": "hex-encoded serialized transaction string"}
 Errors:
-	400 - Bad input
-	500 - Other
-	503 - Network unavailable (transaction failed to broadcast)
+    400 - Bad input
+    500 - Other
+    503 - Network unavailable (transaction failed to broadcast)
 ```
 
 Broadcasts a hex-encoded, serialized transaction to the network.
@@ -1917,13 +1944,13 @@ Result:
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
 ```
 
-### Get transactions that are addresses related
+### Get transactions for addresses
 
 API sets: `READ`
 
 ```
 URI: /api/v1/transactions
-Method: GET
+Method: GET, POST
 Args:
     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
@@ -1936,18 +1963,24 @@ If the transaction is confirmed, the calculated hours are the hours the transact
 If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
 equal to the hours the output would have if it become confirmed immediately.
 
-To get address related confirmed transactions:
+The `"time"` field at the top level of each object in the response array indicates either the confirmed timestamp of a confirmed
+transaction or the last received timestamp of an unconfirmed transaction.
+
+The `POST` method can be used if many addresses need to be queried.
+
+To get confirmed transactions for one or more addresses:
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
 ```
 
-To get address related unconfirmed transactions:
+To get unconfirmed transactions for one or more addresses:
+
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
 ```
 
-To get all addresses related transactions:
+To get both confirmed and unconfirmed transactions for one or more addresses:
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
@@ -3248,6 +3281,8 @@ Args:
     address
 ```
 
+**Deprecated** Use `/api/v1/transactions?verbose=1&addrs=` instead.
+
 Example:
 
 ```sh
@@ -3601,7 +3636,8 @@ Result:
     "introduced": true,
     "mirror": 719118746,
     "height": 181,
-    "listen_port": 6000
+    "listen_port": 6000,
+    "user_agent": "skycoin:0.25.0"
 }
 ```
 
@@ -3634,7 +3670,8 @@ Result:
             "introduced": true,
             "mirror": 1338939619,
             "height": 180,
-            "listen_port": 20002
+            "listen_port": 20002,
+            "user_agent": "skycoin:0.25.0"
         },
         {
             "id": 109548,
@@ -3645,7 +3682,8 @@ Result:
             "introduced": true,
             "mirror": 719118746,
             "height": 182,
-            "listen_port": 6000
+            "listen_port": 6000,
+            "user_agent": "skycoin:0.25.0"
         },
         {
             "id": 99115,
@@ -3656,7 +3694,8 @@ Result:
             "introduced": true,
             "mirror": 1931713869,
             "height": 180,
-            "listen_port": 6000
+            "listen_port": 6000,
+            "user_agent": ""
         }
     ]
 }
@@ -3803,19 +3842,19 @@ To replicate the same behavior as `/api/v1/spend`, use the following request bod
 
 ```json
 {
-	"hours_selection": {
-		"type": "auto",
-		"mode": "share",
-		"share_factor": "0.5",
-	},
-	"wallet": {
-		"id": "$wallet_id",
-		"password": "$password"
-	},
-	"to": [{
-		"address": "$dst",
-		"coins": "$coins"
-	}]
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5",
+    },
+    "wallet": {
+        "id": "$wallet_id",
+        "password": "$password"
+    },
+    "to": [{
+        "address": "$dst",
+        "coins": "$coins"
+    }]
 }
 ```
 
@@ -3839,3 +3878,108 @@ The request header `Content-Type` must be `application/json`.
 The response to `POST /api/v1/wallet/transaction` will include a verbose decoded transaction with details
 and the hex-encoded binary transaction in the `"encoded_transaction"` field.
 Use the value of `"encoded_transaction"` as the `"rawtx"` value in the request to `/api/v1/injectTransaction`.
+
+## Migration from /api/v1/explorer/address
+
+The `GET /api/v1/explorer/address` endpoint is deprecated and will be removed in v0.26.0.
+
+To migrate from it, use [`GET /api/v1/transactions?verbose=1`](#get-transactions-for-addresses).
+
+`/api/v1/explorer/address` accepted a single `address` query parameter. `/api/v1/transactions` uses an `addrs` query parameter and
+accepts multiple addresses at once.
+
+The response data is the same but the structure is slightly different. Compare the follow two example responses:
+
+`/api/v1/explorer/address?address=WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC`:
+
+```json
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 38076,
+            "block_seq": 15493
+        },
+        "timestamp": 1518878675,
+        "length": 183,
+        "type": 0,
+        "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
+        "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
+        "fee": 126249,
+        "sigs": [
+            "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
+        ],
+        "inputs": [
+            {
+                "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
+                "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
+                "coins": "125.000000",
+                "hours": 34596,
+                "calculated_hours": 178174
+            }
+        ],
+        "outputs": [
+            {
+                "uxid": "5b4a79c7de2e9099e083bbc8096619ae76ba6fbe34875c61bbe2d3bfa6b18b99",
+                "dst": "2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg",
+                "coins": "125.000000",
+                "hours": 51925
+            }
+        ]
+    }
+]
+```
+
+`/api/v1/transactions?verbose=1&addrs=WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC`:
+
+```json
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 57564,
+            "block_seq": 7498
+        },
+        "time": 1514743602,
+        "txn": {
+            "timestamp": 1514743602,
+            "length": 220,
+            "type": 0,
+            "txid": "df5bcef198fe6e96d496c30482730f895cabc1d55b338afe5633b0c2889d02f9",
+            "inner_hash": "4677ff9b9b56485495a45693cc09f8496199929fccb52091d32f2d3cf2ee8a41",
+            "fee": 69193,
+            "sigs": [
+                "8e1f6f621a11f737ac2031be975d4b2fc17bf9f17a0da0a2fe219ee018011ab506e2ad0367be302a8d859cc355c552313389cd0aa9fa98dc7d2085a52f11ef5a00"
+            ],
+            "inputs": [
+                {
+                    "uxid": "2374201ff29f1c024ccfc6c53160e741d06720562853ad3613c121acd8389031",
+                    "owner": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                    "coins": "162768.000000",
+                    "hours": 485,
+                    "calculated_hours": 138385
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "63f299fc85fe6fc34d392718eee55909837c7231b6ffd93e5a9a844c4375b313",
+                    "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                    "coins": "162643.000000",
+                    "hours": 34596
+                },
+                {
+                    "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
+                    "dst": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
+                    "coins": "125.000000",
+                    "hours": 34596
+                }
+            ]
+        }
+    }
+]
+```
+
+The transaction data is wrapped in a `"txn"` field.  A `"time"` field is present at the top level. This `"time"` field
+is either the confirmation timestamp of a confirmed transaction or the last received time of an unconfirmed transaction.

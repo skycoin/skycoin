@@ -39,8 +39,7 @@ var (
 	// ErrPubKeyFromNullSecKey Attempt to load null seckey, unsafe
 	ErrPubKeyFromNullSecKey = errors.New("Attempt to load null seckey, unsafe")
 	// ErrPubKeyFromBadSecKey  PubKeyFromSecKey, pubkey recovery failed. Function
-	ErrPubKeyFromBadSecKey = errors.New("PubKeyFromSecKey, pubkey recovery failed. Function " +
-		"assumes seckey is valid. Check seckey")
+	ErrPubKeyFromBadSecKey = errors.New("PubKeyFromSecKey, pubkey recovery failed. Function assumes seckey is valid. Check seckey")
 	// ErrInvalidLengthSecKey Invalid secret key length
 	ErrInvalidLengthSecKey = errors.New("Invalid secret key length")
 	// ErrECHDInvalidPubKey   ECDH invalid pubkey input
@@ -55,18 +54,18 @@ var (
 	ErrInvalidSecKey = errors.New("Invalid secret key")
 	// ErrInvalidSig          Invalid signature
 	ErrInvalidSig = errors.New("Invalid signature")
-	// ErrInvalidSigForPubKey Invalid sig: PubKey recovery failed
-	ErrInvalidSigForPubKey = errors.New("Invalid sig: PubKey recovery failed")
-	// ErrInvalidAddressForSig Invalid sig: address does not match output address
-	ErrInvalidAddressForSig = errors.New("Invalid sig: address does not match output address")
+	// ErrInvalidSigPubKeyRecovery could not recover pubkey from sig
+	ErrInvalidSigPubKeyRecovery = errors.New("Failed to recover pubkey from signature")
+	// ErrInvalidAddressForSig the address derived from the pubkey recovered from the signature does not match a provided address
+	ErrInvalidAddressForSig = errors.New("Address does not match recovered signing address")
 	// ErrInvalidHashForSig   Signature invalid for hash
-	ErrInvalidHashForSig = errors.New("Invalid sig: invalid for hash")
+	ErrInvalidHashForSig = errors.New("Signature not valid for hash")
 	// ErrPubKeyRecoverMismatch Recovered pubkey does not match pubkey
 	ErrPubKeyRecoverMismatch = errors.New("Recovered pubkey does not match pubkey")
-	// ErrInvalidSigInvalidPubKey VerifySignature, secp256k1.VerifyPubkey failed
-	ErrInvalidSigInvalidPubKey = errors.New("VerifySignature, secp256k1.VerifyPubkey failed")
-	// ErrInvalidSigValidity  VerifySignature, VerifySignatureValidity failed
-	ErrInvalidSigValidity = errors.New("VerifySignature, VerifySignatureValidity failed")
+	// ErrInvalidSigInvalidPubKey VerifySignedHash, secp256k1.VerifyPubkey failed
+	ErrInvalidSigInvalidPubKey = errors.New("VerifySignedHash, secp256k1.VerifyPubkey failed")
+	// ErrInvalidSigValidity  VerifySignedHash, VerifySignatureValidity failed
+	ErrInvalidSigValidity = errors.New("VerifySignedHash, VerifySignatureValidity failed")
 	// ErrInvalidSigForMessage Invalid signature for this message
 	ErrInvalidSigForMessage = errors.New("Invalid signature for this message")
 	// ErrInvalidSecKyVerification Seckey secp256k1 verification failed
@@ -160,7 +159,7 @@ func MustPubKeyFromSecKey(seckey SecKey) PubKey {
 func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
-		return PubKey{}, ErrInvalidSigForPubKey
+		return PubKey{}, ErrInvalidSigPubKeyRecovery
 	}
 	return NewPubKey(rawPubKey)
 }
@@ -369,13 +368,13 @@ func SignHash(hash SHA256, sec SecKey) (Sig, error) {
 		// make sure that the signature is valid
 		pubkey, err := PubKeyFromSig(sig, hash)
 		if err != nil {
-			log.Panic("MustSignHash error: pubkey from sig recovery failure")
+			log.Panic("SignHash error: pubkey from sig recovery failure")
 		}
-		if VerifySignature(pubkey, sig, hash) != nil {
-			log.Panic("MustSignHash error: secp256k1.Sign returned non-null invalid non-null signature")
+		if VerifyPubKeySignedHash(pubkey, sig, hash) != nil {
+			log.Panic("SignHash error: secp256k1.Sign returned non-null invalid non-null signature")
 		}
-		if ChkSig(AddressFromPubKey(pubkey), hash, sig) != nil {
-			log.Panic("MustSignHash error: ChkSig failed for signature")
+		if VerifyAddressSignedHash(AddressFromPubKey(pubkey), sig, hash) != nil {
+			log.Panic("SignHash error: VerifyAddressSignedHash failed for signature")
 		}
 	}
 
@@ -391,16 +390,16 @@ func MustSignHash(hash SHA256, sec SecKey) Sig {
 	return sig
 }
 
-// ChkSig checks whether PubKey corresponding to address hash signed hash
+// VerifyAddressSignedHash checks whether PubKey corresponding to address hash signed hash
 // - recovers the PubKey from sig and hash
 // - fail if PubKey cannot be be recovered
 // - computes the address from the PubKey
 // - fail if recovered address does not match PubKey hash
 // - verify that signature is valid for hash for PubKey
-func ChkSig(address Address, hash SHA256, sig Sig) error {
+func VerifyAddressSignedHash(address Address, sig Sig, hash SHA256) error {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
-		return ErrInvalidSigForPubKey
+		return ErrInvalidSigPubKeyRecovery
 	}
 
 	pubKey, err := NewPubKey(rawPubKey)
@@ -419,27 +418,11 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 	return nil
 }
 
-// VerifySignedHash this only checks that the signature can be converted to a public key
-// Since there is no pubkey or address argument, it cannot check that the
-// signature is valid in that context.
-func VerifySignedHash(sig Sig, hash SHA256) error {
-	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
-	if rawPubKey == nil {
-		return ErrInvalidSigForPubKey
-	}
-	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
-		// If this occurs, secp256k1 is bugged
-		log.Printf("Recovered public key is not valid for signed hash")
-		return ErrInvalidHashForSig
-	}
-	return nil
-}
-
-// VerifySignature verifies that hash was signed by PubKey
-func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
-	pubkeyRec, err := PubKeyFromSig(sig, hash) //recovered pubkey
+// VerifyPubKeySignedHash verifies that hash was signed by PubKey
+func VerifyPubKeySignedHash(pubkey PubKey, sig Sig, hash SHA256) error {
+	pubkeyRec, err := PubKeyFromSig(sig, hash) // recovered pubkey
 	if err != nil {
-		return ErrInvalidSigForPubKey
+		return ErrInvalidSigPubKeyRecovery
 	}
 	if pubkeyRec != pubkey {
 		return ErrPubKeyRecoverMismatch
@@ -447,7 +430,7 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
 		if DebugLevel2 {
 			if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) == 1 {
-				log.Panic("VerifySignature warning, ")
+				log.Panic("VerifyPubKeySignedHash warning, invalid pubkey is valid for signature")
 			}
 		}
 		return ErrInvalidSigInvalidPubKey
@@ -457,6 +440,20 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 	}
 	if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) != 1 {
 		return ErrInvalidSigForMessage
+	}
+	return nil
+}
+
+// VerifySignedHash this only checks that the signature can be converted to a public key
+// Since there is no pubkey or address argument, it cannot check that the
+// signature is valid in that context.
+func VerifySignedHash(sig Sig, hash SHA256) error {
+	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
+	if rawPubKey == nil {
+		return ErrInvalidSigPubKeyRecovery
+	}
+	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
+		return ErrInvalidHashForSig
 	}
 	return nil
 }
@@ -649,23 +646,23 @@ func CheckSecKeyHash(seckey SecKey, hash SHA256) error {
 	// check pubkey recovered from sig
 	recoveredPubkey, err := PubKeyFromSig(sig, hash)
 	if err != nil {
-		return fmt.Errorf("impossible error, CheckSecKey, pubkey recovery from signature failed: %v", err)
+		return fmt.Errorf("impossible error, CheckSecKeyHash, pubkey recovery from signature failed: %v", err)
 	}
 	if pubkey != recoveredPubkey {
 		return ErrPubKeyFromSecKeyMismatch
 	}
 
 	// verify produced signature
-	err = VerifySignature(pubkey, sig, hash)
+	err = VerifyPubKeySignedHash(pubkey, sig, hash)
 	if err != nil {
-		return fmt.Errorf("impossible error, CheckSecKey, verify signature failed for sig: %v", err)
+		return fmt.Errorf("impossible error, CheckSecKeyHash, VerifyPubKeySignedHash failed for sig: %v", err)
 	}
 
-	// verify ChkSig
+	// verify VerifyAddressSignedHash
 	addr := AddressFromPubKey(pubkey)
-	err = ChkSig(addr, hash, sig)
+	err = VerifyAddressSignedHash(addr, sig, hash)
 	if err != nil {
-		return fmt.Errorf("impossible error CheckSecKey, ChkSig Failed, should not get this far: %v", err)
+		return fmt.Errorf("impossible error CheckSecKeyHash, VerifyAddressSignedHash Failed, should not get this far: %v", err)
 	}
 
 	// verify VerifySignedHash

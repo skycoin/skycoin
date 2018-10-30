@@ -99,6 +99,7 @@ type Connection struct {
 	Mirror     uint32
 	ListenPort uint16
 	Height     uint64
+	UserAgent  string
 }
 
 // GetOutgoingConnections returns solicited (outgoing) connections
@@ -186,6 +187,16 @@ func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
 
 	height, _ := gw.d.Heights.Get(addr)
 
+	var userAgent string
+	pexPeer, exist := gw.d.pex.GetPeerByAddr(addr)
+	if exist && !pexPeer.UserAgent.Empty() {
+		var err error
+		userAgent, err = pexPeer.UserAgent.Build()
+		if err != nil {
+			logger.Critical().WithError(err).WithField("addr", addr).Error("pex peer's user agent data cannot be built to string")
+		}
+	}
+
 	return &Connection{
 		ID:           c.ID,
 		Addr:         addr,
@@ -196,6 +207,7 @@ func (gw *Gateway) newConnection(c *gnet.Connection) *Connection {
 		Mirror:       mirror,
 		ListenPort:   gw.d.GetListenPort(addr),
 		Height:       height,
+		UserAgent:    userAgent,
 	}
 }
 

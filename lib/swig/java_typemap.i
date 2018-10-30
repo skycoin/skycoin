@@ -61,12 +61,6 @@
 %typemap(javain,pre="long tmp$javainput = cipher_Ripemd160.getCPtr ($javainput);") (GoUint8_ (*) [20])  "tmp$javainput"
 
 // GoString
-// %typemap(jstype,pre=" String tmp$javainput = $javainput;") GoString "String"
-// %typemap(javain,pre="String tmp$javainput = $javainput;") GoString  "tmp$javainput"
-// %typemap(jtype,pre="String tmp$javainput  = $javainput;") GoString  "String"
-// %typemap(jni) GoString  "char*"
-// %typemap(in) GoString  "$1.p=$input;$1.n=strlen($input);"
-
 %typemap(jni,pre="GoString_ tmp$javainput = new_GoStringp_();") GoString_*  "GoString*"
 %typemap(jstype,pre=" long tmp$javainput = _GoString_.getCPtr ($javainput);") GoString_*  "_GoString_"
 %typemap(javain,pre="long tmp$javainput = _GoString_.getCPtr ($javainput);") GoString_*  "tmp$javainput"

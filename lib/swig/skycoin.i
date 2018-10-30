@@ -37,6 +37,7 @@
 %include "java_structs_typemaps.i"
 %include "java_basic.i"
 %include "java_skycoin.mem.i"
+%include "java_mem_string.i"
 %include "java_callback.i"
 #endif
 

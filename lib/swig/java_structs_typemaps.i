@@ -18,7 +18,7 @@
 		$self->cap = $self->len;
 	}
 
-	void setAtChar(char p,unsigned long long i){
+	void setAtChar(char p,long long i){
 		((char *) $self->data)[i] = p;
 	}
 

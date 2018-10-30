@@ -534,11 +534,10 @@ func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // process should send number to be requested, with request
 func (gbm *GetBlocksMessage) process(d daemoner) {
-	// TODO -- we need the sig to be sent with the block, but only the master
-	// can sign blocks.  Thus the sig needs to be stored with the block.
 	if d.DaemonConfig().DisableNetworking {
 		return
 	}
+
 	// Record this as this peer's highest block
 	d.RecordPeerHeight(gbm.c.Addr, gbm.c.ConnID, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock

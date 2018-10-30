@@ -858,8 +858,8 @@ func (c *Client) NetworkConnections(filters *NetworkConnectionsFilter) (*Connect
 	return &dc, nil
 }
 
-// NetworkDefaultConnections makes a request to GET /api/v1/network/defaultConnections
-func (c *Client) NetworkDefaultConnections() ([]string, error) {
+// NetworkDefaultPeers makes a request to GET /api/v1/network/defaultConnections
+func (c *Client) NetworkDefaultPeers() ([]string, error) {
 	var dc []string
 	if err := c.Get("/api/v1/network/defaultConnections", &dc); err != nil {
 		return nil, err
@@ -867,8 +867,8 @@ func (c *Client) NetworkDefaultConnections() ([]string, error) {
 	return dc, nil
 }
 
-// NetworkTrustedConnections makes a request to GET /api/v1/network/connections/trust
-func (c *Client) NetworkTrustedConnections() ([]string, error) {
+// NetworkTrustedPeers makes a request to GET /api/v1/network/connections/trust
+func (c *Client) NetworkTrustedPeers() ([]string, error) {
 	var dc []string
 	if err := c.Get("/api/v1/network/connections/trust", &dc); err != nil {
 		return nil, err
@@ -876,8 +876,8 @@ func (c *Client) NetworkTrustedConnections() ([]string, error) {
 	return dc, nil
 }
 
-// NetworkExchangeableConnections makes a request to GET /api/v1/network/connections/exchange
-func (c *Client) NetworkExchangeableConnections() ([]string, error) {
+// NetworkExchangedPeers makes a request to GET /api/v1/network/connections/exchange
+func (c *Client) NetworkExchangedPeers() ([]string, error) {
 	var dc []string
 	if err := c.Get("/api/v1/network/connections/exchange", &dc); err != nil {
 		return nil, err

@@ -3597,7 +3597,8 @@ Result:
     "mirror": 719118746,
     "height": 181,
     "listen_port": 6000,
-    "user_agent": "skycoin:0.25.0"
+    "user_agent": "skycoin:0.25.0",
+    "is_default_peer": true
 }
 ```
 
@@ -3643,7 +3644,8 @@ Result:
             "mirror": 1338939619,
             "listen_port": 20002,
             "height": 180,
-            "user_agent": "skycoin:0.25.0"
+            "user_agent": "skycoin:0.25.0",
+		    "is_default_peer": true
         },
         {
             "id": 109548,
@@ -3656,7 +3658,8 @@ Result:
             "mirror": 0,
             "listen_port": 6000,
             "height": 0,
-            "user_agent": ""
+            "user_agent": "",
+		    "is_default_peer": false
         },
         {
             "id": 99115,
@@ -3669,7 +3672,8 @@ Result:
             "mirror": 1931713869,
             "listen_port": 6000,
             "height": 180,
-            "user_agent": ""
+            "user_agent": "",
+		    "is_default_peer": false
         }
     ]
 }
@@ -3684,6 +3688,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/defaultConnections
 Method: GET
 ```
+
+Returns addresses in the default hardcoded list of peers.
 
 Example:
 
@@ -3714,6 +3720,9 @@ URI: /api/v1/network/connections/trust
 Method: GET
 ```
 
+Returns addresses marked as trusted in the peerlist.
+This is typically equal to the list of addresses in the default hardcoded list of peers.
+
 Example:
 
 ```sh
@@ -3742,6 +3751,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/connections/exchange
 Method: GET
 ```
+
+Returns addresses from the peerlist that are known to have an open port.
 
 Example:
 

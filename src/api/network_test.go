@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -66,19 +67,23 @@ func TestConnection(t *testing.T) {
 					Height:      1234,
 					UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
 				},
+				Pex: pex.Peer{
+					Trusted: false,
+				},
 			},
 			result: &readable.Connection{
-				Addr:         "127.0.0.1:6061",
-				GnetID:       1,
-				LastSent:     99999,
-				LastReceived: 1111111,
-				ConnectedAt:  222222,
-				Outgoing:     true,
-				State:        daemon.ConnectionStateIntroduced,
-				Mirror:       6789,
-				ListenPort:   9877,
-				Height:       1234,
-				UserAgent:    useragent.MustParse("skycoin:0.25.1(foo)"),
+				Addr:          "127.0.0.1:6061",
+				GnetID:        1,
+				LastSent:      99999,
+				LastReceived:  1111111,
+				ConnectedAt:   222222,
+				Outgoing:      true,
+				State:         daemon.ConnectionStateIntroduced,
+				Mirror:        6789,
+				ListenPort:    9877,
+				Height:        1234,
+				UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
+				IsDefaultPeer: false,
 			},
 		},
 
@@ -152,6 +157,9 @@ func TestConnections(t *testing.T) {
 			Height:      1234,
 			UserAgent:   useragent.MustParse("skycoin:0.25.1(foo)"),
 		},
+		Pex: pex.Peer{
+			Trusted: true,
+		},
 	}
 
 	intrIn := daemon.Connection{
@@ -173,31 +181,33 @@ func TestConnections(t *testing.T) {
 	}
 
 	readIntrOut := readable.Connection{
-		Addr:         "127.0.0.1:6061",
-		GnetID:       1,
-		LastSent:     99999,
-		LastReceived: 1111111,
-		ConnectedAt:  222222,
-		Outgoing:     true,
-		State:        daemon.ConnectionStateIntroduced,
-		Mirror:       9876,
-		ListenPort:   9877,
-		Height:       1234,
-		UserAgent:    useragent.MustParse("skycoin:0.25.1(foo)"),
+		Addr:          "127.0.0.1:6061",
+		GnetID:        1,
+		LastSent:      99999,
+		LastReceived:  1111111,
+		ConnectedAt:   222222,
+		Outgoing:      true,
+		State:         daemon.ConnectionStateIntroduced,
+		Mirror:        9876,
+		ListenPort:    9877,
+		Height:        1234,
+		UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
+		IsDefaultPeer: true,
 	}
 
 	readIntrIn := readable.Connection{
-		Addr:         "127.0.0.2:6062",
-		GnetID:       2,
-		LastSent:     99999,
-		LastReceived: 1111111,
-		ConnectedAt:  222222,
-		Outgoing:     false,
-		State:        daemon.ConnectionStateIntroduced,
-		Mirror:       9877,
-		ListenPort:   9879,
-		Height:       1234,
-		UserAgent:    useragent.MustParse("skycoin:0.25.1(foo)"),
+		Addr:          "127.0.0.2:6062",
+		GnetID:        2,
+		LastSent:      99999,
+		LastReceived:  1111111,
+		ConnectedAt:   222222,
+		Outgoing:      false,
+		State:         daemon.ConnectionStateIntroduced,
+		Mirror:        9877,
+		ListenPort:    9879,
+		Height:        1234,
+		UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
+		IsDefaultPeer: false,
 	}
 
 	conns := []daemon.Connection{intrOut, intrIn}

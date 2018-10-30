@@ -712,13 +712,13 @@ func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	if dm.connections.OutgoingLen() < dm.Config.MaxOutgoingConnections {
+	if dm.connections.OutgoingLen() > dm.Config.MaxOutgoingConnections {
 		return
 	}
-	if dm.connections.PendingLen() < dm.Config.MaxPendingConnections {
+	if dm.connections.PendingLen() > dm.Config.MaxPendingConnections {
 		return
 	}
-	if dm.connections.Len() < dm.Config.MaxConnections {
+	if dm.connections.Len() > dm.Config.MaxConnections {
 		return
 	}
 

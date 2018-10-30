@@ -225,7 +225,7 @@ For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor
 The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar. It cannot be configured through the command line.
 
 ```sh
-COINHOUR_BURN_FACTOR=999 ./run.sh
+COINHOUR_BURN_FACTOR=999 ./run-client.sh
 ```
 
 ## URI Specification

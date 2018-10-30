@@ -816,17 +816,19 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 	// The first message received must be an IntroductionMessage
 	if !c.HasIntroduced() {
 		_, isIntro := e.Message.(*IntroductionMessage)
-		if !isIntro {
+		_, isDisc := e.Message.(*DisconnectMessage)
+		if !isIntro && !isDisc {
 			logger.WithFields(logrus.Fields{
 				"addr":        e.Context.Addr,
 				"messageType": fmt.Sprintf("%T", e.Message),
-			}).Info("needsIntro but message is not IntroductionMessage")
+			}).Info("needsIntro but first message is not INTR or DISC")
 			if err := dm.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
 				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
 			}
 			return
 		}
 	}
+
 	e.Message.process(dm)
 }
 

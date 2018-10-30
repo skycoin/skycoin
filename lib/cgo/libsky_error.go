@@ -238,8 +238,6 @@ const (
 	SKY_ErrDisconnectNoIntroduction
 	// SKY_ErrDisconnectIPLimitReached ip limit reached
 	SKY_ErrDisconnectIPLimitReached
-	// SKY_ErrDisconnectUnexpectedError this is returned when a seemingly impossible error is encountered
-	SKY_ErrDisconnectUnexpectedError
 	// SKY_ErrDisconnectMaxDefaultConnectionReached Maximum number of default connections was reached
 	SKY_ErrDisconnectMaxDefaultConnectionReached // nolint megacheck
 	// SKY_ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
@@ -464,7 +462,6 @@ var (
 		gnet.ErrDisconnectInvalidMessageLength:  SKY_ErrDisconnectInvalidMessageLength,
 		gnet.ErrDisconnectMalformedMessage:      SKY_ErrDisconnectMalformedMessage,
 		gnet.ErrDisconnectUnknownMessage:        SKY_ErrDisconnectUnknownMessage,
-		gnet.ErrDisconnectUnexpectedError:       SKY_ErrDisconnectUnexpectedError,
 		gnet.ErrConnectionPoolClosed:            SKY_ErrConnectionPoolClosed,
 		gnet.ErrWriteQueueFull:                  SKY_ErrWriteQueueFull,
 		gnet.ErrNoReachableConnections:          SKY_ErrNoReachableConnections,

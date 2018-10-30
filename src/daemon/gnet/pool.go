@@ -44,8 +44,6 @@ var (
 	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
 	// ErrDisconnectShutdown shutting down the client
 	ErrDisconnectShutdown DisconnectReason = errors.New("Shutdown")
-	// ErrDisconnectUnexpectedError unexpected error
-	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
 	// ErrDisconnectMessageDecodeUnderflow message data did not fully decode to a message object
 	ErrDisconnectMessageDecodeUnderflow DisconnectReason = errors.New("Message data did not fully decode to a message object")
 	// ErrDisconnectTruncatedMessageID message data was too short to contain a message ID

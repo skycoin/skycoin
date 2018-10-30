@@ -57,11 +57,13 @@ var (
 		ErrDisconnectReceivedDisconnect:            14,
 		ErrDisconnectInvalidUserAgent:              15,
 
-		gnet.ErrDisconnectSetReadDeadlineFailed: 1003,
-		gnet.ErrDisconnectInvalidMessageLength:  1004,
-		gnet.ErrDisconnectMalformedMessage:      1005,
-		gnet.ErrDisconnectUnknownMessage:        1006,
-		gnet.ErrDisconnectShutdown:              1007,
+		gnet.ErrDisconnectSetReadDeadlineFailed:  1001,
+		gnet.ErrDisconnectInvalidMessageLength:   1002,
+		gnet.ErrDisconnectMalformedMessage:       1003,
+		gnet.ErrDisconnectUnknownMessage:         1004,
+		gnet.ErrDisconnectShutdown:               1005,
+		gnet.ErrDisconnectMessageDecodeUnderflow: 1006,
+		gnet.ErrDisconnectTruncatedMessageID:     1007,
 	}
 
 	disconnectCodeReasons map[uint16]gnet.DisconnectReason

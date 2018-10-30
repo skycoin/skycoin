@@ -536,6 +536,12 @@ func (px *Pex) SetUserAgent(addr string, userAgent useragent.Data) error {
 	px.Lock()
 	defer px.Unlock()
 
+	if !userAgent.Empty() {
+		if _, err := userAgent.Build(); err != nil {
+			return err
+		}
+	}
+
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
 		logger.WithError(err).WithField("addr", addr).Error("Invalid address")

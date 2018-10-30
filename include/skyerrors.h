@@ -98,7 +98,6 @@
 #define SKY_ErrDisconnectInvalidMessageLength             0x06000009
 #define SKY_ErrDisconnectMalformedMessage                 0x0600000A
 #define SKY_ErrDisconnectUnknownMessage                   0x0600000B
-#define SKY_ErrDisconnectUnexpectedError                  0x0600000C
 #define SKY_ErrConnectionPoolClosed                       0x0600000D
 #define SKY_ErrWriteQueueFull                             0x0600000E
 #define SKY_ErrNoReachableConnections                     0x0600000F
@@ -111,7 +110,6 @@
 #define SKY_ErrDisconnectIdle                             0x06000017
 #define SKY_ErrDisconnectNoIntroduction                   0x06000018
 #define SKY_ErrDisconnectIPLimitReached                   0x06000019
-#define SKY_ErrDisconnectUnexpectedError            0x0600001A
 #define SKY_ErrDisconnectMaxDefaultConnectionReached      0x0600001B
 #define SKY_ErrDisconnectMaxOutgoingConnectionsReached    0x0600001C
 #define SKY_ConnectionError                               0x0600001D

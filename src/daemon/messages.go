@@ -279,23 +279,26 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 // process an event queued by Handle()
 func (intro *IntroductionMessage) process(d daemoner) {
 	addr := intro.c.Addr
-	logger.WithFields(logrus.Fields{
+
+	fields := logrus.Fields{
 		"addr":       addr,
-		"listenPort": intro.ListenPort,
 		"gnetID":     intro.c.ConnID,
-	}).Debug("IntroductionMessage.process")
+		"listenPort": intro.ListenPort,
+	}
+
+	logger.WithFields(fields).Debug("IntroductionMessage.process")
 
 	userAgent, err := intro.verify(d)
 	if err != nil {
 		if err := d.Disconnect(addr, err); err != nil {
-			logger.WithField("addr", addr).WithError(err).Warning("Disconnect")
+			logger.WithError(err).WithFields(fields).Warning("Disconnect")
 		}
 		return
 	}
 
 	c, err := d.connectionIntroduced(addr, intro.c.ConnID, intro, userAgent)
 	if err != nil {
-		logger.WithError(err).WithField("addr", addr).Warning("connectionIntroduced failed")
+		logger.WithError(err).WithFields(fields).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
 		// It is hypothetically possible that a message would get processed after
@@ -304,7 +307,7 @@ func (intro *IntroductionMessage) process(d daemoner) {
 		// Do not perform a disconnect, since this would operate on the new connection.
 		// This should be prevented by an earlier check in daemon.onMessageEvent()
 		case ErrConnectionGnetIDMismatch, ErrConnectionStateNotConnected, ErrConnectionAlreadyIntroduced:
-			logger.Critical().WithError(err).Warning("IntroductionMessage.process connection state out of order")
+			logger.Critical().WithError(err).WithFields(fields).Warning("IntroductionMessage.process connection state out of order")
 			return
 		case ErrConnectionNotExist:
 			return
@@ -315,7 +318,7 @@ func (intro *IntroductionMessage) process(d daemoner) {
 		}
 
 		if err := d.Disconnect(addr, reason); err != nil {
-			logger.WithError(err).WithField("addr", addr).Warning("Disconnect")
+			logger.WithError(err).WithFields(fields).Warning("Disconnect")
 		}
 
 		return
@@ -323,27 +326,30 @@ func (intro *IntroductionMessage) process(d daemoner) {
 
 	d.ResetRetryTimes(addr)
 
+	listenAddr := c.ListenAddr()
+
 	if c.Outgoing {
 		// For successful outgoing connections, mark the peer as having an incoming port in the pex peerlist
 		// The peer should already be in the peerlist, since we use the peerlist to choose an outgoing connection to make
-		if err := d.SetHasIncomingPort(c.ListenAddr()); err != nil {
-			logger.WithField("addr", addr).WithError(err).Error("SetHasIncomingPort failed")
+		if err := d.SetHasIncomingPort(listenAddr); err != nil {
+			logger.WithError(err).WithFields(fields).WithField("listenAddr", listenAddr).Error("SetHasIncomingPort failed")
 		}
 	} else {
 		// For successful incoming connections, add the peer to the peer list, with their self-reported listen port
-		if err := d.AddPeer(c.ListenAddr()); err != nil {
-			logger.WithError(err).WithFields(logrus.Fields{
-				"addr":       addr,
-				"listenAddr": c.ListenAddr(),
-			}).Error("AddPeer failed")
+		if err := d.AddPeer(listenAddr); err != nil {
+			logger.WithError(err).WithFields(fields).WithField("listenAddr", listenAddr).Error("AddPeer failed")
 		}
+	}
+
+	if err := d.RecordUserAgent(listenAddr, c.UserAgent); err != nil {
+		logger.WithError(err).WithFields(fields).WithField("listenAddr", listenAddr).Error("RecordUserAgent failed")
 	}
 
 	// Request blocks immediately after they're confirmed
 	if err := d.RequestBlocksFromAddr(addr); err != nil {
-		logger.WithField("addr", addr).WithError(err).Warning("RequestBlocksFromAddr")
+		logger.WithError(err).WithFields(fields).Warning("RequestBlocksFromAddr")
 	} else {
-		logger.WithField("addr", addr).Debug("Requested blocks")
+		logger.WithFields(fields).Debug("Requested blocks")
 	}
 
 	// Announce unconfirmed txns
@@ -501,7 +507,7 @@ func (dm *DisconnectMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // process disconnect message by reflexively disconnecting
 func (dm *DisconnectMessage) process(d daemoner) {
-	logger.Critical().WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"addr":   dm.c.Addr,
 		"code":   dm.ReasonCode,
 		"reason": DisconnectCodeToReason(dm.ReasonCode),

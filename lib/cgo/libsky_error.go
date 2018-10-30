@@ -205,7 +205,7 @@ const (
 	// // SKY_ErrDisconnectReadFailed also includes a remote closed socket
 	// SKY_ErrDisconnectReadFailed
 	// SKY_ErrDisconnectWriteFailed write faile
-	SKY_ErrDisconnectWriteFailed
+	// SKY_ErrDisconnectWriteFailed
 	// SKY_ErrDisconnectSetReadDeadlineFailed set read deadline failed
 	SKY_ErrDisconnectSetReadDeadlineFailed
 	// SKY_ErrDisconnectInvalidMessageLength invalid message length

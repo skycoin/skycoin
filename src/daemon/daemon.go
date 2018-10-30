@@ -545,12 +545,7 @@ loop:
 		case <-outgoingConnectionsTicker.C:
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
-			// if !dm.Config.DisableOutgoingConnections &&
-			// 	dm.connections.OutgoingLen() < dm.Config.MaxOutgoingConnections &&
-			// 	dm.connections.PendingLen() < dm.Config.MaxPendingConnections &&
-			// 	dm.connections.Len() < dm.Config.MaxConnections {
 			dm.connectToRandomPeer()
-			// }
 
 		case <-privateConnectionsTicker.C:
 			// Always try to stay connected to our private peers
@@ -664,9 +659,10 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 
 	a, _, err := iputil.SplitAddr(p.Addr)
 	if err != nil {
-		logger.WithField("addr", p.Addr).WithError(err).Warning("PEX gave us an invalid peer")
+		logger.Critical().WithField("addr", p.Addr).WithError(err).Warning("PEX gave us an invalid peer")
 		return errors.New("Invalid peer")
 	}
+
 	if dm.Config.LocalhostOnly && !iputil.IsLocalhost(a) {
 		return errors.New("Not localhost")
 	}
@@ -734,6 +730,15 @@ func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
+	if dm.connections.OutgoingLen() < dm.Config.MaxOutgoingConnections {
+		return
+	}
+	if dm.connections.PendingLen() < dm.Config.MaxPendingConnections {
+		return
+	}
+	if dm.connections.Len() < dm.Config.MaxConnections {
+		return
+	}
 
 	// Make a connection to a random (public) peer
 	peers := dm.pex.RandomPublicUntrusted(dm.Config.MaxOutgoingConnections)
@@ -743,6 +748,7 @@ func (dm *Daemon) connectToRandomPeer() {
 		}
 	}
 
+	// TODO -- don't reset if not needed?
 	if len(peers) == 0 {
 		dm.pex.ResetAllRetryTimes()
 	}
@@ -925,9 +931,6 @@ func (dm *Daemon) onConnectFailure(c ConnectFailureEvent) {
 	if err := dm.connections.remove(c.Addr, 0); err != nil {
 		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
 	}
-
-	// TODO - On failure to connect, use exponential backoff, need to use pex.canTry peers
-	dm.IncreaseRetryTimes(c.Addr)
 }
 
 // onGnetDisconnect triggered when a gnet.Connection terminates

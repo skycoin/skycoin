@@ -9,6 +9,8 @@ package strand
 import (
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
@@ -38,7 +40,7 @@ type Request struct {
 // channel closes.
 func Strand(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
 	if Debug {
-		logger.Debugf("Strand precall %s", name)
+		logger.WithField("operation", name).Debug("Strand precall")
 	}
 
 	done := make(chan struct{})
@@ -69,32 +71,36 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error,
 					case <-done:
 						return
 					case <-t.C:
-						logger.Warningf("%s is taking longer than %s", name, threshold)
+						logger.WithFields(logrus.Fields{
+							"operation": name,
+							"threshold": threshold,
+						}).Warning("Strand operation exceeded threshold")
 						threshold *= 10
 						t.Reset(threshold)
 					}
 					t1 := time.Now()
-					logger.Infof("ELAPSED: %s", t1.Sub(t0))
+					logger.WithField("elapsed", t1.Sub(t0)).Info()
 				}
 			}()
 
 			if Debug {
-				logger.Debugf("Stranding %s", name)
+				logger.WithField("operation", name).Debug("Stranding")
 			}
 
 			err = f()
 
-			// Log the error here so that the Request channel consumer doesn't need to
-			if err != nil {
-				logger.Errorf("%s error: %v", name, err)
-			}
-
 			// Notify us if the function call took too long
 			elapsed := time.Since(t)
 			if elapsed > logDurationThreshold {
-				logger.Warningf("%s took %s", name, elapsed)
+				logger.WithFields(logrus.Fields{
+					"operation": name,
+					"elapsed":   elapsed,
+				}).Warning()
 			} else if Debug {
-				logger.Debugf("%s took %s", name, elapsed)
+				logger.WithFields(logrus.Fields{
+					"operation": name,
+					"elapsed":   elapsed,
+				}).Debug()
 			}
 
 			return err

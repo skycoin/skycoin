@@ -18,7 +18,7 @@ type Connection struct {
 	ListenPort    uint16                 `json:"listen_port"`
 	Height        uint64                 `json:"height"`
 	UserAgent     useragent.Data         `json:"user_agent"`
-	IsDefaultPeer bool                   `json:"is_default_peer"`
+	IsTrustedPeer bool                   `json:"is_trusted_peer"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags
@@ -49,6 +49,6 @@ func NewConnection(c *daemon.Connection) Connection {
 		ListenPort:    c.ListenPort,
 		Height:        c.Height,
 		UserAgent:     c.UserAgent,
-		IsDefaultPeer: c.Pex.Trusted,
+		IsTrustedPeer: c.Pex.Trusted,
 	}
 }

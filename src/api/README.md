@@ -3598,7 +3598,7 @@ Result:
     "height": 181,
     "listen_port": 6000,
     "user_agent": "skycoin:0.25.0",
-    "is_default_peer": true
+    "is_trusted_peer": true
 }
 ```
 
@@ -3645,7 +3645,7 @@ Result:
             "listen_port": 20002,
             "height": 180,
             "user_agent": "skycoin:0.25.0",
-		    "is_default_peer": true
+		    "is_trusted_peer": true
         },
         {
             "id": 109548,
@@ -3659,7 +3659,7 @@ Result:
             "listen_port": 6000,
             "height": 0,
             "user_agent": "",
-		    "is_default_peer": false
+		    "is_trusted_peer": false
         },
         {
             "id": 99115,
@@ -3673,7 +3673,7 @@ Result:
             "listen_port": 6000,
             "height": 180,
             "user_agent": "",
-		    "is_default_peer": false
+		    "is_trusted_peer": false
         }
     ]
 }

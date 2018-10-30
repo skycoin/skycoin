@@ -83,7 +83,7 @@ func TestConnection(t *testing.T) {
 				ListenPort:    9877,
 				Height:        1234,
 				UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
-				IsDefaultPeer: false,
+				IsTrustedPeer: false,
 			},
 		},
 
@@ -192,7 +192,7 @@ func TestConnections(t *testing.T) {
 		ListenPort:    9877,
 		Height:        1234,
 		UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
-		IsDefaultPeer: true,
+		IsTrustedPeer: true,
 	}
 
 	readIntrIn := readable.Connection{
@@ -207,7 +207,7 @@ func TestConnections(t *testing.T) {
 		ListenPort:    9879,
 		Height:        1234,
 		UserAgent:     useragent.MustParse("skycoin:0.25.1(foo)"),
-		IsDefaultPeer: false,
+		IsTrustedPeer: false,
 	}
 
 	conns := []daemon.Connection{intrOut, intrIn}

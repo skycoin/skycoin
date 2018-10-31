@@ -367,9 +367,6 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 			"addr":   addr,
 			"mirror": intro.Mirror,
 		}).Info("Remote mirror value matches ours")
-		if err := d.Disconnect(addr, ErrDisconnectSelf); err != nil {
-			logger.WithError(err).WithField("addr", addr).Warning("Disconnect")
-		}
 		return nil, ErrDisconnectSelf
 	}
 
@@ -381,9 +378,6 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 			"protocolVersion":    intro.ProtocolVersion,
 			"minProtocolVersion": dc.MinProtocolVersion,
 		}).Info("protocol version below minimum supported protocol version")
-		if err := d.Disconnect(addr, ErrDisconnectVersionNotSupported); err != nil {
-			logger.WithError(err).WithField("addr", addr).Warning("Disconnect")
-		}
 		return nil, ErrDisconnectVersionNotSupported
 	}
 
@@ -401,9 +395,6 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 		var bcPubKey cipher.PubKey
 		if len(intro.Extra) < len(bcPubKey) {
 			logger.WithField("addr", addr).Info("Extra data length does not meet the minimum requirement")
-			if err := d.Disconnect(addr, ErrDisconnectInvalidExtraData); err != nil {
-				logger.WithError(err).WithField("addr", addr).Warning("Disconnect")
-			}
 			return nil, ErrDisconnectInvalidExtraData
 		}
 		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
@@ -414,9 +405,6 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 				"pubkey":       bcPubKey.Hex(),
 				"daemonPubkey": d.BlockchainPubkey().Hex(),
 			}).Info("Blockchain pubkey does not match")
-			if err := d.Disconnect(addr, ErrDisconnectBlockchainPubkeyNotMatched); err != nil {
-				logger.WithError(err).WithField("addr", addr).Warning("Disconnect")
-			}
 			return nil, ErrDisconnectBlockchainPubkeyNotMatched
 		}
 
@@ -424,18 +412,12 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 		if err != nil {
 			logger.WithError(err).Info("Extra data user agent string could not be deserialized")
-			if err := d.Disconnect(addr, ErrDisconnectInvalidExtraData); err != nil {
-				logger.WithError(err).WithField("addr", addr).Warning("Disconnect")
-			}
 			return nil, ErrDisconnectInvalidExtraData
 		}
 
 		userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
 			logger.WithError(err).WithField("userAgent", userAgent).Info("User agent is invalid")
-			if err := d.Disconnect(addr, ErrDisconnectInvalidUserAgent); err != nil {
-				logger.WithError(err).WithField("addr", addr).Warning("Disconnect")
-			}
 			return nil, ErrDisconnectInvalidUserAgent
 		}
 	}

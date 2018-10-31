@@ -33,14 +33,10 @@ func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
 	return sendByteMessage(conn, m, timeout)
 }
 
+// msgIDStringSafe formats msgID bytes to a string that is safe for logging (e.g. not impacted by ascii control chars)
 func msgIDStringSafe(msgID [4]byte) string {
-	for _, c := range msgID {
-		if c < ' ' || c > '~' {
-			return "<unprintable message ID>"
-		}
-	}
-
-	return string(msgID[:])
+	x := fmt.Sprintf("%q", msgID)
+	return x[1 : len(x)-1] // trim quotes that are added by %q formatting
 }
 
 // Event handler that is called after a Connection sends a complete message
@@ -54,14 +50,14 @@ func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 	copy(msgID[:], msg[:len(msgID)])
 
 	if debugPrint {
-		logger.Debugf("Received %s message", msgIDStringSafe(msgID))
+		logger.WithField("msgID", msgIDStringSafe(msgID)).Debug("Received message")
 	}
 
 	msg = msg[len(msgID):]
 	t, ok := MessageIDReverseMap[msgID]
 	if !ok {
 		logger.WithError(ErrDisconnectUnknownMessage).WithFields(logrus.Fields{
-			"msgID":  fmt.Sprintf("%q", msgID),
+			"msgID":  msgIDStringSafe(msgID),
 			"connID": id,
 		}).Warning()
 		return nil, ErrDisconnectUnknownMessage

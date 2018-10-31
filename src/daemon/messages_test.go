@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -39,6 +38,7 @@ func TestIntroductionMessage(t *testing.T) {
 		connectionIntroducedErr  error
 		requestBlocksFromAddrErr error
 		announceAllTxnsErr       error
+		recordUserAgentErr       error
 	}
 
 	tt := []struct {
@@ -98,6 +98,10 @@ func TestIntroductionMessage(t *testing.T) {
 					Addr: "121.121.121.121:6000",
 					ConnectionDetails: ConnectionDetails{
 						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.24.1",
+						},
 					},
 				},
 				addPeerArg: "121.121.121.121:6000",
@@ -121,6 +125,10 @@ func TestIntroductionMessage(t *testing.T) {
 					Addr: "121.121.121.121:6000",
 					ConnectionDetails: ConnectionDetails{
 						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.24.1",
+						},
 					},
 				},
 				addPeerArg: "121.121.121.121:6000",
@@ -234,6 +242,11 @@ func TestIntroductionMessage(t *testing.T) {
 					Addr: "121.121.121.121:12345",
 					ConnectionDetails: ConnectionDetails{
 						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.24.1",
+							Remark:  "foo",
+						},
 					},
 				},
 			},
@@ -265,7 +278,6 @@ func TestIntroductionMessage(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		fmt.Println("TEST NAME", tc.name)
 		t.Run(tc.name, func(t *testing.T) {
 			mc := &gnet.MessageContext{
 				Addr:   tc.addr,
@@ -295,14 +307,14 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
 			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
 
+			var userAgent useragent.Data
+			if tc.mockValue.connectionIntroduced != nil {
+				userAgent = tc.mockValue.connectionIntroduced.UserAgent
+			}
+			d.On("RecordUserAgent", tc.mockValue.addPeerArg, userAgent).Return(tc.mockValue.recordUserAgentErr)
+
 			err := tc.intro.Handle(mc, d)
 			require.NoError(t, err)
-
-			// ip, port, err := tc.intro.verify(d)
-			// require.Equal(t, tc.err, err)
-			// if err == nil {
-			// 	require.Equal(t, tc.addr, fmt.Sprintf("%s:%d", ip, port))
-			// }
 
 			tc.intro.process(d)
 

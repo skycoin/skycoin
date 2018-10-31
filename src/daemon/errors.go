@@ -60,6 +60,9 @@ var (
 		ErrDisconnectInvalidUserAgent:              14,
 		ErrDisconnectRequestedByOperator:           15,
 
+		// gnet codes are registered here, but they are not sent in a DISC
+		// message by gnet. Only daemon sends a DISC packet.
+		// If gnet chooses to disconnect it will not send a DISC packet.
 		gnet.ErrDisconnectSetReadDeadlineFailed:  1001,
 		gnet.ErrDisconnectInvalidMessageLength:   1002,
 		gnet.ErrDisconnectMalformedMessage:       1003,

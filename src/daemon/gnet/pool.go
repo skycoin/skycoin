@@ -578,6 +578,12 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 			"addr":   addr,
 			"method": mErr.method,
 		}).Error("handleConnection failure")
+
+		// This Disconnect does not send a DISC packet because it is inside gnet.
+		// A DISC packet is not useful at this point, because the error is most likely
+		// that the connection is unreachable.
+		// However, it may also be that the connection sent data that could not be deserialized
+		// to a message.
 		if err := pool.Disconnect(c.Addr(), mErr.err); err != nil {
 			logger.WithError(err).WithField("addr", addr).Error("Disconnect")
 		}

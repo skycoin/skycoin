@@ -610,9 +610,9 @@ loop:
 
 		case <-blocksRequestTicker.C:
 			elapser.Register("blocksRequestTicker")
-			// if err := dm.RequestBlocks(); err != nil {
-			// 	logger.WithError(err).Warning("RequestBlocks failed")
-			// }
+			if err := dm.RequestBlocks(); err != nil {
+				logger.WithError(err).Warning("RequestBlocks failed")
+			}
 
 		case <-blocksAnnounceTicker.C:
 			elapser.Register("blocksAnnounceTicker")
@@ -819,9 +819,9 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 
 	// The first message received must be an IntroductionMessage
 	if !c.HasIntroduced() {
-		_, isIntro := e.Message.(*IntroductionMessage)
-		_, isDisc := e.Message.(*DisconnectMessage)
-		if !isIntro && !isDisc {
+		switch e.Message.(type) {
+		case *IntroductionMessage, *DisconnectMessage:
+		default:
 			logger.WithFields(logrus.Fields{
 				"addr":        e.Context.Addr,
 				"messageType": fmt.Sprintf("%T", e.Message),
@@ -981,7 +981,7 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 
 	if m, ok := r.Message.(*DisconnectMessage); ok {
-		if err := dm.DisconnectNow(r.Addr, gnet.DisconnectReason(m.reason)); err != nil {
+		if err := dm.DisconnectNow(r.Addr, m.reason); err != nil {
 			logger.WithError(err).WithField("addr", r.Addr).Warning("DisconnectNow")
 		}
 	}
@@ -1246,7 +1246,7 @@ func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
 
 // Disconnect sends a DisconnectMessage to a peer. After the DisconnectMessage is sent, the peer is disconnected.
 // This allows all pending messages to be sent. Any message queued after a DisconnectMessage is unlikely to be sent
-// the peer (but possible).
+// to the peer (but possible).
 func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
 	logger.WithFields(logrus.Fields{
 		"addr":   addr,

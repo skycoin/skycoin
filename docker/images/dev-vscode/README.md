@@ -2,7 +2,7 @@
 
 ## Simple Tags
 
--	[`latest` (*docker/images/dev-gui/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-gui/Dockerfile)
+-	[`latest` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
 
 # Skycoin development *vscode* image
 
@@ -14,7 +14,7 @@ to ease go development and version control with git.
 
 ```sh
 $ cd docker/images/dev-vscode/hoook
-$ ./build
+$ ./build.sh
 ```
 
 When it finish you will have two new images:
@@ -22,7 +22,7 @@ When it finish you will have two new images:
 `skycoin/skycoindev-vscode:develop` based on [skycoin/skycoindev-cli:develop](skycoin/docker/images/dev-cli) 
 `skycoin/skycoindev-vscode:dind` based on [skycoin/skycoindev-cli:dind](skycoin/docker/images/dev-docker)
 
-# How to use this image
+# How use this image
 
 ## Initialize your development environment.
 
@@ -43,7 +43,7 @@ When it finish you will have two new images:
 
 ## Add more VS Code extensions
 
-If you want add VS_EXTENSIONS environment variable to command with extensions of you prefer. 
+You must pass VS_EXTENSIONS environment variable to command-line with extensions of you prefer.
 
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 

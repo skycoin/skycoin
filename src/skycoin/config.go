@@ -238,7 +238,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    api.EndpointsRead + "," + api.EndpointsTransaction,
+		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
 
@@ -420,6 +420,8 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsStatus,
 		api.EndpointsWallet,
 		api.EndpointsTransaction,
+		api.EndpointsPrometheus,
+		api.EndpointsNetCtrl,
 		// Do not include insecure or deprecated API sets, they must always
 		// be explicitly enabled through -enable-api-sets
 	}

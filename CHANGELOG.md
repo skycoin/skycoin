@@ -49,6 +49,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
 - A user agent string is sent in the wire protocol's introduction packet
 - `-max-connections` option to control total max connections
+- `/api/v1/network/disconnect` to disconnect a peer
 
 ### Fixed
 

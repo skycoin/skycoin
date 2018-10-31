@@ -302,6 +302,23 @@ func (c *Connections) get(addr string) *connection {
 	return c.conns[addr]
 }
 
+func (c *Connections) getByGnetID(gnetID uint64) *connection {
+	c.Lock()
+	defer c.Unlock()
+
+	if gnetID == 0 {
+		return nil
+	}
+
+	for _, c := range c.conns {
+		if c.gnetID == gnetID {
+			return c
+		}
+	}
+
+	return nil
+}
+
 // modify modifies a connection.
 // It is unsafe to modify the Mirror value with this method
 func (c *Connections) modify(addr string, gnetID uint64, f func(c *ConnectionDetails)) error {

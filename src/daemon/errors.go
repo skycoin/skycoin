@@ -35,6 +35,8 @@ var (
 	ErrDisconnectReceivedDisconnect gnet.DisconnectReason = errors.New("Received DisconnectMessage")
 	// ErrDisconnectInvalidUserAgent is returned if the peer provides an invalid user agent
 	ErrDisconnectInvalidUserAgent gnet.DisconnectReason = errors.New("Invalid user agent")
+	// ErrDisconnectRequestedByOperator the operator of the node requested a disconnect
+	ErrDisconnectRequestedByOperator gnet.DisconnectReason = errors.New("Disconnect requested by the node operator")
 
 	// ErrDisconnectUnknownReason used when mapping an unknown reason code to an error. Is not sent over the network.
 	ErrDisconnectUnknownReason gnet.DisconnectReason = errors.New("Unknown DisconnectReason")
@@ -51,11 +53,12 @@ var (
 		ErrDisconnectNoIntroduction:                7,
 		ErrDisconnectIPLimitReached:                8,
 		ErrDisconnectUnexpectedError:               9,
-		ErrDisconnectMaxOutgoingConnectionsReached: 11,
-		ErrDisconnectBlockchainPubkeyNotMatched:    12,
-		ErrDisconnectInvalidExtraData:              13,
-		ErrDisconnectReceivedDisconnect:            14,
-		ErrDisconnectInvalidUserAgent:              15,
+		ErrDisconnectMaxOutgoingConnectionsReached: 10,
+		ErrDisconnectBlockchainPubkeyNotMatched:    11,
+		ErrDisconnectInvalidExtraData:              12,
+		ErrDisconnectReceivedDisconnect:            13,
+		ErrDisconnectInvalidUserAgent:              14,
+		ErrDisconnectRequestedByOperator:           15,
 
 		gnet.ErrDisconnectSetReadDeadlineFailed:  1001,
 		gnet.ErrDisconnectInvalidMessageLength:   1002,

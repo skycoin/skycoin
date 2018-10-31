@@ -214,6 +214,22 @@ func (gw *Gateway) newConnection(c *connection) (*Connection, error) {
 	return &cc, nil
 }
 
+// Disconnect disconnects a connection by gnet ID
+func (gw *Gateway) Disconnect(gnetID uint64) error {
+	var err error
+	gw.strand("Disconnect", func() {
+		var c *connection
+		c = gw.d.connections.getByGnetID(gnetID)
+		if c == nil {
+			err = ErrConnectionNotExist
+			return
+		}
+
+		err = gw.d.Disconnect(c.Addr, ErrDisconnectRequestedByOperator)
+	})
+	return err
+}
+
 // GetTrustConnections returns all trusted connections
 func (gw *Gateway) GetTrustConnections() []string {
 	var conn []string

@@ -525,3 +525,108 @@ func TestGetExchgConnection(t *testing.T) {
 		})
 	}
 }
+
+func TestDisconnect(t *testing.T) {
+	tt := []struct {
+		name          string
+		method        string
+		status        int
+		err           string
+		disconnectErr error
+		result        []string
+		id            string
+		gnetID        uint64
+	}{
+		{
+			name:   "405",
+			method: http.MethodGet,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+
+		{
+			name:   "400 missing ID",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - id is required",
+		},
+
+		{
+			name:   "400 invalid ID 0",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - invalid id",
+			id:     "0",
+		},
+
+		{
+			name:   "400 invalid ID negative",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - invalid id",
+			id:     "-100",
+		},
+
+		{
+			name:          "404 Disconnect connection not found",
+			method:        http.MethodPost,
+			status:        http.StatusNotFound,
+			err:           "404 Not Found",
+			disconnectErr: daemon.ErrConnectionNotExist,
+			id:            "100",
+			gnetID:        100,
+		},
+
+		{
+			name:          "500 Disconnect error",
+			method:        http.MethodPost,
+			status:        http.StatusInternalServerError,
+			err:           "500 Internal Server Error - foo",
+			disconnectErr: errors.New("foo"),
+			id:            "100",
+			gnetID:        100,
+		},
+
+		{
+			name:   "200",
+			method: http.MethodPost,
+			status: http.StatusOK,
+			id:     "100",
+			gnetID: 100,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			gateway.On("Disconnect", tc.gnetID).Return(tc.disconnectErr)
+
+			endpoint := "/api/v1/network/connection/disconnect"
+			v := url.Values{}
+			if tc.id != "" {
+				v.Add("id", tc.id)
+			}
+
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var obj struct{}
+				err = json.Unmarshal(rr.Body.Bytes(), &obj)
+				require.NoError(t, err)
+			}
+		})
+	}
+
+}

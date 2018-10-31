@@ -1216,3 +1216,12 @@ func (c *Client) RecoverWallet(id, seed, password string) (*WalletResponse, erro
 
 	return nil, err
 }
+
+// Disconnect disconnect a connections by ID
+func (c *Client) Disconnect(id uint64) error {
+	v := url.Values{}
+	v.Add("id", fmt.Sprint(id))
+
+	var obj struct{}
+	return c.PostForm("/api/v1/network/connection/disconnect", strings.NewReader(v.Encode()), &obj)
+}

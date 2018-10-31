@@ -73,6 +73,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
 	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
 	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+	- [Disconnect a peer](#disconnect-a-peer)
 - [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
 - [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 - [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
@@ -3790,6 +3791,33 @@ Result:
     "35.201.160.163:6000",
     "47.88.33.156:6000"
 ]
+```
+
+### Disconnect a peer
+
+API sets: `NET_CTRL`
+
+```
+URI: /api/v1/network/connection/disconnect
+Method: POST
+Args:
+	id: ID of the connection
+
+Returns 404 if the connection is not found.
+```
+
+Disconnects a peer by ID.
+
+Example:
+
+```sh
+curl -X POST 'http://127.0.0.1:6420/api/v1/network/connection/disconnect?id=999'
+```
+
+Result:
+
+```json
+{}
 ```
 
 ## Migrating from the unversioned API

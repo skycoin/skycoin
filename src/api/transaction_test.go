@@ -740,7 +740,7 @@ func TestInjectTransaction(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{
@@ -824,7 +824,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{
@@ -1478,7 +1478,7 @@ func TestVerifyTransaction(t *testing.T) {
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", tc.contentType)
 

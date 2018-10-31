@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"unsafe"
 
 	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
@@ -52,7 +51,6 @@ func SKY_secp256k1go_Field_SetBytes(_fd *C.secp256k1go__Field, _a []byte) (____e
 func SKY_secp256k1go_Field_SetHex(_fd *C.secp256k1go__Field, _s string) (____error_code uint32) {
 	fd := (*secp256k1go2.Field)(unsafe.Pointer(_fd))
 	s := _s
-	log.Print("El string es " + s)
 	fd.SetHex(s)
 	return
 }

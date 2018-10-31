@@ -184,6 +184,16 @@ func Parse(userAgent string) (Data, error) {
 	}, nil
 }
 
+// MustParse parses and panics on error
+func MustParse(userAgent string) Data {
+	d, err := Parse(userAgent)
+	if err != nil {
+		panic(err)
+	}
+
+	return d
+}
+
 // validate validates a user agent string. The user agent must not contain illegal characters.
 func validate(userAgent string) error {
 	if len(userAgent) > MaxLen {

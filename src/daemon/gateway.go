@@ -218,8 +218,7 @@ func (gw *Gateway) newConnection(c *connection) (*Connection, error) {
 func (gw *Gateway) Disconnect(gnetID uint64) error {
 	var err error
 	gw.strand("Disconnect", func() {
-		var c *connection
-		c = gw.d.connections.getByGnetID(gnetID)
+		c := gw.d.connections.getByGnetID(gnetID)
 		if c == nil {
 			err = ErrConnectionNotExist
 			return

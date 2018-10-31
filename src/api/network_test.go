@@ -533,7 +533,6 @@ func TestDisconnect(t *testing.T) {
 		status        int
 		err           string
 		disconnectErr error
-		result        []string
 		id            string
 		gnetID        uint64
 	}{

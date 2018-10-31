@@ -20,6 +20,8 @@
 			"commit": "",
 			"branch": ""
 		},
+		"coin": "skycoin",
+		"user_agent": "skycoin:0.25.0-rc1",
 		"open_connections": 0,
 		"uptime": "0s",
 		"csrf_enabled": false,

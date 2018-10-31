@@ -12,6 +12,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
@@ -245,7 +247,7 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 }
 
 // Returns transactions that match the filters.
-// Method: GET
+// Method: GET, POST
 // URI: /api/v1/transactions
 // Args:
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
@@ -253,7 +255,7 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 //	   verbose: [bool] include verbose transaction input data
 func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
@@ -344,9 +346,10 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 // Content-Type: application/json
 // Body: {"rawtx": "<hex encoded transaction>"}
 // Response:
-//      400 - bad transaction
-//      503 - network unavailable for broadcasting transaction
 //      200 - ok, returns the transaction hash in hex as string
+//      400 - bad transaction
+//		500 - other error
+//      503 - network unavailable for broadcasting transaction
 func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -376,8 +379,12 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			err = fmt.Errorf("inject tx failed: %v", err)
-			wh.Error503(w, err.Error())
+			switch err {
+			case daemon.ErrOutgoingConnectionsDisabled, gnet.ErrPoolEmpty, gnet.ErrNoReachableConnections:
+				wh.Error503(w, err.Error())
+			default:
+				wh.Error500(w, err.Error())
+			}
 			return
 		}
 
@@ -473,31 +480,6 @@ type VerifyTxnResponse struct {
 	Transaction CreatedTransaction `json:"transaction"`
 }
 
-func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
-	out, err := json.MarshalIndent(resp, "", "    ")
-	if err != nil {
-		wh.Error500(w, "json.MarshalIndent failed")
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-
-	if resp.Error == nil {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		if resp.Error.Code < 400 || resp.Error.Code >= 600 {
-			logger.Critical().Errorf("writeHTTPResponse invalid error status code: %d", resp.Error.Code)
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(resp.Error.Code)
-		}
-	}
-
-	if _, err := w.Write(out); err != nil {
-		logger.WithError(err).Error("http Write failed")
-	}
-}
-
 // Decode and verify an encoded transaction
 // Method: POST
 // URI: /api/v2/transaction/verify
@@ -509,7 +491,7 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if r.Header.Get("Content-Type") != "application/json" {
+		if r.Header.Get("Content-Type") != ContentTypeJSON {
 			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
 			writeHTTPResponse(w, resp)
 			return

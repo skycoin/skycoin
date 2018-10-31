@@ -1,7 +1,6 @@
 package iputil
 
 import (
-	"fmt"
 	"net"
 	"testing"
 
@@ -73,15 +72,15 @@ func TestSplitAddr(t *testing.T) {
 		},
 		{
 			input: "0.0.0.0:",
-			err:   fmt.Errorf("Invalid port in %s", "0.0.0.0:"),
+			err:   ErrInvalidPort,
 		},
 		{
 			input: "0.0.0.0:x",
-			err:   fmt.Errorf("Invalid port in %s", "0.0.0.0:x"),
+			err:   ErrInvalidPort,
 		},
 		{
 			input: ":9999",
-			err:   fmt.Errorf("IP missing from %s", ":9999"),
+			err:   ErrMissingIP,
 		},
 		{
 			input: "127.0.0.1",
@@ -102,7 +101,7 @@ func TestSplitAddr(t *testing.T) {
 		},
 		{
 			input: "[::]:x",
-			err:   fmt.Errorf("Invalid port in %s", "[::]:x"),
+			err:   ErrInvalidPort,
 		},
 	}
 

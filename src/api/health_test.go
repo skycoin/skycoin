@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -113,7 +114,14 @@ func TestHealthHandler(t *testing.T) {
 				Commit:  "abcdef",
 				Branch:  "develop",
 			}
-			tc.cfg.buildInfo = buildInfo
+			tc.cfg.health.BuildInfo = buildInfo
+
+			tc.cfg.health.CoinName = "skycoin"
+			tc.cfg.health.DaemonUserAgent = useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.25.0",
+				Remark:  "test",
+			}
 
 			health := &daemon.Health{
 				BlockchainMetadata: metadata,
@@ -156,6 +164,9 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, buildInfo.Commit, r.Version.Commit)
 			require.Equal(t, buildInfo.Branch, r.Version.Branch)
 			require.Equal(t, health.Uptime, r.Uptime.Duration)
+
+			require.Equal(t, "skycoin", r.CoinName)
+			require.Equal(t, "skycoin:0.25.0(test)", r.DaemonUserAgent)
 
 			require.Equal(t, health.OpenConnections, r.OpenConnections)
 

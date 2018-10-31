@@ -5,7 +5,7 @@
 #---------------------------------------------------------------------------
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = libskycoin
-PROJECT_NUMBER         = 0.24.1-develop
+PROJECT_NUMBER         = 0.25.0-rc1-develop
 PROJECT_BRIEF          = "Skycoin C client library"
 PROJECT_LOGO           = ./docs/assets/sky.libc.jpg
 OUTPUT_DIRECTORY       = ./docs/libc

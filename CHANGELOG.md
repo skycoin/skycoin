@@ -11,20 +11,30 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 In the v0.26.0 these features and functions will be removed.  If you have a need for any of these features, let us know.
 
 - JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-jsonrpc-api
-- `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead)
-- The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`)
+- `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-spend
+- The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-unversioned-api
+- `/api/v1/explorer/address` endpoint (use `GET /api/v1/transactions?verbose=1` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-explorer-address
+
+### Notice
+
+Nodes v0.23.0 and earlier will not be able to connect to v0.25.0 due to a change in the introduction packet message.
+
+Nodes v0.24.1 and earlier will not be able to connect to v0.26.0 due to a similar change.
+
+Make sure to upgrade to v0.25.0 so that your node will continue to connect once v0.26.0 is released.
 
 ### Added
 
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
 - Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
 - Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
-- Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
+- Add `user_agent`, `coin`, `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
 - Add `-http-prof-host` option to choose the HTTP profiler's bind hostname (defaults to `localhost:6060`)
 - Add `-enable-api-sets`, `-disable-api-sets`, `-enable-all-api-sets` options to choose which sets of API endpoints to enable. Options are `READ`, `STATUS`, `TXN`, `WALLET`, `PROMETHEUS`, `INSECURE_WALLET_SEED`, `DEPRECATED_WALLET_SPEND`. Multiple values must be comma separated.
 - `/api/v1/wallet/spend` is deprecated and requires `-enable-api-set=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
+- Add `-host-whitelist` option to specify alternate allowed hosts when communicating with the API bound to a localhost interface
 - Add the head block header to the response of `GET /api/v1/outputs`
 - Add `"ux_hash"` to block headers in API responses
 - Database verification will only be performed once when upgrading to the next version. Verification will not be performed on subsequent upgrades unless necessary. To force verification, use `-verify-db=true`. Note that it is unsafe to downgrade the skycoin node without erasing the database first.
@@ -33,6 +43,12 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - Add HTTP Basic Auth options `-web-interface-username` and `-web-interface-password`. Auth is only available when using `-web-interface-https` unless `-web-interface-plaintext-auth` is also used.
 - Go application metrics exported at `/api/v2/metrics` (API set `PROMETHEUS`) in Prometheus format
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
+- Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
+- Coinhour burn factor can be configured at runtime with `COINHOUR_BURN_FACTOR` envvar
+- Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
+- `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
+- A user agent string is sent in the wire protocol's introduction packet
+- `-max-connections` option to control total max connections
 
 ### Fixed
 
@@ -44,10 +60,12 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
 - Fix unspent output hashes in the `cli decodeRawTransaction` result
 - `POST /api/v1/wallet/newAddress` and `POST /api/v1/wallet/spend` will correctly fail if the wallet is not encrypted but a password is provided
+- Return `503` error for `/api/v1/injectTransaction` for all message broadcast failures (note that it is still possible for broadcast to fail but no error to be returned, in certain conditions)
 - Fixed autogenerated HTTPS certs. Certs are now self-signed ECDSA certs, valid for 10 years, valid for localhost and all public interfaces found on the machine. The default cert and key are renamed from cert.pem, key.pem to skycoind.cert, skycoind.key
 
 ### Changed
 
+- Add blockchain pubkey in introduction message, it would close the connection if the pubkey is not matched, but would accept it if pubkey is not provided.
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
 - `/api/v1/network/` endpoints will return an empty array for array values instead of `null`
@@ -59,11 +77,24 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - `cli decodeRawTransaction` output format changed, see the [CLI README](./src/cli/README.md)
 - `/api/v1/wallet/spend` is deprecated, disabled by default and requires `-enable-api-sets=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 - Invalid password in `/api/v1/wallet` requests now return `400` instead of `401`
+- Replace `cmd/address_gen/` and `cmd/address_gen2` with `go run cmd/cli/cli.go addressGen`
+- `cli addressGen` arguments have changed
+- `cli generateWallet` renamed to `cli walletCreate`
+- `cli generateAddresses` renamed to `cli walletAddAddresses`
+- `run.sh` is now `run-client.sh` and a new `run-daemon.sh` script is added for running in server daemon mode
+- `/api/v1/balance`, `/api/v1/transactions`, `/api/v1/outputs` and `/api/v1/blocks` accept the `POST` method so that large request bodies can be sent to the server, which would not fit in a `GET` query string
+- `/api/v1/explorer/address` is deprecated in favor of `/api/v1/transactions?verbose=1`
+- `/api/v1/network/connection*` connection object's field `"introduced"` replaced with field `"state"` which may have the values `"pending"`, `"connected"` or `"introduced"`
+- `/api/v1/network/connection*` field `"is_trusted_peer"` added to connection object to indicate if the peer is in the hardcoded list of default peers
+- `/api/v1/network/connection*` field `"connected_at"` added to connection object
+- `/api/v1/network/connections` now includes incoming connections. Filters are added to query connections by state and direction
+
 
 ### Removed
 
 - Remove `USE_CSRF` envvar from the CLI tool. It uses the REST API client now, which will automatically detect CSRF as needed, so no additional configuration is necessary.  Operators may still wish to disable CSRF on their remote node to reduce request overhead.
 - Remove `-enable-wallet-api` and `-enable-seed-api` in place of including `WALLET` and `INSECURE_WALLET_SEED` in `-enable-api-sets`.
+- Copies of the source code removed from release builds due to build artifact size
 
 ## [0.24.1] - 2018-07-30
 

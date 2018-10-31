@@ -149,7 +149,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 
 	require.Equal(t, len(txn.Sigs), 1)
 
-	err = cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(txn.HashInner(), txn.In[0]), txn.Sigs[0])
+	err = cipher.VerifyAddressSignedHash(ux.Body.Address, txn.Sigs[0], cipher.AddSHA256(txn.HashInner(), txn.In[0]))
 	require.NoError(t, err)
 
 	txn.UpdateHeader()

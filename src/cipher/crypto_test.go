@@ -403,7 +403,7 @@ func TestSigHex(t *testing.T) {
 	require.Equal(t, p2.Hex(), h)
 }
 
-func TestChkSig(t *testing.T) {
+func TestVerifyAddressSignedHash(t *testing.T) {
 	p, s := GenerateKeyPair()
 	require.NoError(t, p.Verify())
 	require.NoError(t, s.Verify())
@@ -412,19 +412,19 @@ func TestChkSig(t *testing.T) {
 	b := randBytes(t, 256)
 	h := SumSHA256(b)
 	sig := MustSignHash(h, s)
-	require.NoError(t, ChkSig(a, h, sig))
+	require.NoError(t, VerifyAddressSignedHash(a, sig, h))
 	// Empty sig should be invalid
-	require.Error(t, ChkSig(a, h, Sig{}))
+	require.Error(t, VerifyAddressSignedHash(a, Sig{}, h))
 	// Random sigs should not pass
 	for i := 0; i < 100; i++ {
-		require.Error(t, ChkSig(a, h, MustNewSig(randBytes(t, 65))))
+		require.Error(t, VerifyAddressSignedHash(a, MustNewSig(randBytes(t, 65)), h))
 	}
 	// Sig for one hash does not work for another hash
 	h2 := SumSHA256(randBytes(t, 256))
 	sig2 := MustSignHash(h2, s)
-	require.NoError(t, ChkSig(a, h2, sig2))
-	require.Error(t, ChkSig(a, h, sig2))
-	require.Error(t, ChkSig(a, h2, sig))
+	require.NoError(t, VerifyAddressSignedHash(a, sig2, h2))
+	require.Error(t, VerifyAddressSignedHash(a, sig2, h))
+	require.Error(t, VerifyAddressSignedHash(a, sig, h2))
 
 	// Different secret keys should not create same sig
 	p2, s2 := GenerateKeyPair()
@@ -432,19 +432,19 @@ func TestChkSig(t *testing.T) {
 	h = SHA256{}
 	sig = MustSignHash(h, s)
 	sig2 = MustSignHash(h, s2)
-	require.NoError(t, ChkSig(a, h, sig))
-	require.NoError(t, ChkSig(a2, h, sig2))
+	require.NoError(t, VerifyAddressSignedHash(a, sig, h))
+	require.NoError(t, VerifyAddressSignedHash(a2, sig2, h))
 	require.NotEqual(t, sig, sig2)
 	h = SumSHA256(randBytes(t, 256))
 	sig = MustSignHash(h, s)
 	sig2 = MustSignHash(h, s2)
-	require.NoError(t, ChkSig(a, h, sig))
-	require.NoError(t, ChkSig(a2, h, sig2))
+	require.NoError(t, VerifyAddressSignedHash(a, sig, h))
+	require.NoError(t, VerifyAddressSignedHash(a2, sig2, h))
 	require.NotEqual(t, sig, sig2)
 
 	// Bad address should be invalid
-	require.Error(t, ChkSig(a, h, sig2))
-	require.Error(t, ChkSig(a2, h, sig))
+	require.Error(t, VerifyAddressSignedHash(a, sig2, h))
+	require.Error(t, VerifyAddressSignedHash(a2, sig, h))
 }
 
 func TestSignHash(t *testing.T) {
@@ -454,8 +454,8 @@ func TestSignHash(t *testing.T) {
 	sig, err := SignHash(h, s)
 	require.NoError(t, err)
 	require.NotEqual(t, sig, Sig{})
-	require.NoError(t, ChkSig(a, h, sig))
-	require.NoError(t, VerifySignature(p, sig, h))
+	require.NoError(t, VerifyAddressSignedHash(a, sig, h))
+	require.NoError(t, VerifyPubKeySignedHash(p, sig, h))
 
 	p2, err := PubKeyFromSig(sig, h)
 	require.NoError(t, err)
@@ -471,7 +471,7 @@ func TestMustSignHash(t *testing.T) {
 	h := SumSHA256(randBytes(t, 256))
 	sig := MustSignHash(h, s)
 	require.NotEqual(t, sig, Sig{})
-	require.NoError(t, ChkSig(a, h, sig))
+	require.NoError(t, VerifyAddressSignedHash(a, sig, h))
 
 	require.Panics(t, func() {
 		MustSignHash(h, SecKey{})
@@ -485,7 +485,7 @@ func TestPubKeyFromSecKey(t *testing.T) {
 	require.Equal(t, p2, p)
 
 	_, err = PubKeyFromSecKey(SecKey{})
-	require.Equal(t, errors.New("Cannot convert null SecKey to PubKey"), err)
+	require.Equal(t, errors.New("Attempt to load null seckey, unsafe"), err)
 }
 
 func TestMustPubKeyFromSecKey(t *testing.T) {
@@ -517,17 +517,17 @@ func TestMustPubKeyFromSig(t *testing.T) {
 	})
 }
 
-func TestVerifySignature(t *testing.T) {
+func TestVerifyPubKeySignedHash(t *testing.T) {
 	p, s := GenerateKeyPair()
 	h := SumSHA256(randBytes(t, 256))
 	h2 := SumSHA256(randBytes(t, 256))
 	sig := MustSignHash(h, s)
-	require.NoError(t, VerifySignature(p, sig, h))
-	require.Error(t, VerifySignature(p, Sig{}, h))
-	require.Error(t, VerifySignature(p, sig, h2))
+	require.NoError(t, VerifyPubKeySignedHash(p, sig, h))
+	require.Error(t, VerifyPubKeySignedHash(p, Sig{}, h))
+	require.Error(t, VerifyPubKeySignedHash(p, sig, h2))
 	p2, _ := GenerateKeyPair()
-	require.Error(t, VerifySignature(p2, sig, h))
-	require.Error(t, VerifySignature(PubKey{}, sig, h))
+	require.Error(t, VerifyPubKeySignedHash(p2, sig, h))
+	require.Error(t, VerifyPubKeySignedHash(PubKey{}, sig, h))
 }
 
 func TestGenerateKeyPair(t *testing.T) {
@@ -552,7 +552,7 @@ func TestGenerateDeterministicKeyPair(t *testing.T) {
 	require.NoError(t, s.Verify())
 
 	_, _, err := GenerateDeterministicKeyPair(nil)
-	require.Equal(t, errors.New("seed input is empty"), err)
+	require.Equal(t, errors.New("Seed input is empty"), err)
 
 	require.Panics(t, func() {
 		MustGenerateDeterministicKeyPair(nil)
@@ -572,7 +572,7 @@ func TestGenerateDeterministicKeyPairs(t *testing.T) {
 	require.Equal(t, keys, keys2)
 
 	_, err = GenerateDeterministicKeyPairs(nil, 1)
-	require.Equal(t, errors.New("seed input is empty"), err)
+	require.Equal(t, errors.New("Seed input is empty"), err)
 
 	require.Panics(t, func() {
 		MustGenerateDeterministicKeyPairs(nil, 1)
@@ -595,7 +595,7 @@ func TestGenerateDeterministicKeyPairsSeed(t *testing.T) {
 	require.Equal(t, keys, keys2)
 
 	_, _, err = GenerateDeterministicKeyPairsSeed(nil, 4)
-	require.Equal(t, errors.New("seed input is empty"), err)
+	require.Equal(t, errors.New("Seed input is empty"), err)
 
 	require.Panics(t, func() {
 		MustGenerateDeterministicKeyPairsSeed(nil, 4)
@@ -617,7 +617,7 @@ func TestDeterministicKeyPairIterator(t *testing.T) {
 	require.Equal(t, s, s2)
 
 	_, _, _, err = DeterministicKeyPairIterator(nil)
-	require.Equal(t, errors.New("seed input is empty"), err)
+	require.Equal(t, errors.New("Seed input is empty"), err)
 
 	require.Panics(t, func() {
 		MustDeterministicKeyPairIterator(nil)
@@ -681,4 +681,42 @@ func TestSecKey1(t *testing.T) {
 	hash := SumSHA256(test)
 	err = CheckSecKeyHash(seckey, hash)
 	require.NoError(t, err)
+}
+
+func TestSecKeyPubKeyNull(t *testing.T) {
+	var pk PubKey
+	require.True(t, pk.Null())
+	pk[0] = 1
+	require.False(t, pk.Null())
+
+	var sk SecKey
+	require.True(t, sk.Null())
+	sk[0] = 1
+	require.False(t, sk.Null())
+
+	sk, err := NewSecKey(randBytes(t, 32))
+	require.NoError(t, err)
+	pk = MustPubKeyFromSecKey(sk)
+
+	require.False(t, sk.Null())
+	require.False(t, pk.Null())
+}
+
+func TestVerifySignedHash(t *testing.T) {
+	h := MustSHA256FromHex("127e9b0d6b71cecd0363b366413f0f19fcd924ae033513498e7486570ff2a1c8")
+	sig := MustSigFromHex("63c035b0c95d0c5744fc1c0bdf38af02cef2d2f65a8f923732ab44e436f8a491216d9ab5ff795e3144f4daee37077b8b9db54d2ba3a3df8d4992f06bb21f724401")
+
+	err := VerifySignedHash(sig, h)
+	require.NoError(t, err)
+
+	// Fails with ErrInvalidHashForSig
+	badSigHex := "71f2c01516fe696328e79bcf464eb0db374b63d494f7a307d1e77114f18581d7a81eed5275a9e04a336292dd2fd16977d9bef2a54ea3161d0876603d00c53bc9dd"
+	badSig := MustSigFromHex(badSigHex)
+	err = VerifySignedHash(badSig, h)
+	require.Equal(t, ErrInvalidHashForSig, err)
+
+	// Fails with ErrInvalidSigPubKeyRecovery
+	badSig = MustSigFromHex("63c035b0c95d0c5744fc1c0bdf39af02cef2d2f65a8f923732ab44e436f8a491216d9ab5ff795e3144f4daee37077b8b9db54d2ba3a3df8d4992f06bb21f724401")
+	err = VerifySignedHash(badSig, h)
+	require.Equal(t, ErrInvalidSigPubKeyRecovery, err)
 }

@@ -61,8 +61,11 @@ else
   LDFLAGS=$(LIBC_FLAGS)
 endif
 
-run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
-	./run.sh ${ARGS}
+run-client:  ## Run skycoin with desktop client configuration. To add arguments, do 'make ARGS="--foo" run'.
+	./run-client.sh ${ARGS}
+
+run-daemon:  ## Run skycoin with server daemon configuration. To add arguments, do 'make ARGS="--foo" run'.
+	./run-daemon.sh ${ARGS}
 
 run-help: ## Show skycoin node help
 	@go run cmd/$(COIN)/$(COIN).go --help
@@ -155,6 +158,9 @@ integration-test-live-wallet: ## Run live integration tests with wallet
 integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
+integration-test-live-disable-networking: ## Run live integration tests against a node with networking disabled (requires wallet)
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
+
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
 
@@ -206,23 +212,36 @@ build-ui:  ## Builds the UI
 build-ui-travis:  ## Builds the UI for travis
 	cd $(GUI_STATIC_DIR) && npm run build-travis
 
-release: ## Build electron and standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
+release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-release-bin: ## Build standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release-bin osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+release-standalone: ## Build standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release-standalone osarch=darwin/amd64' Supported architectures are the same as 'release' command.
 	cd $(ELECTRON_DIR) && ./build-standalone-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-release-gui: ## Build electron apps. Use osarch=${osarch} to specify the platform. Example: 'make release-gui osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+release-electron: ## Build electron apps. Use osarch=${osarch} to specify the platform. Example: 'make release-electron osarch=darwin/amd64' Supported architectures are the same as 'release' command.
 	cd $(ELECTRON_DIR) && ./build-electron-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-clean-release: ## Clean dist files and delete all builds in electron/release
-	rm $(ELECTRON_DIR)/release/*
+release-daemon: ## Build daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release-daemon osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-daemon-release.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
+release-cli: ## Build CLI apps. Use osarch=${osarch} to specify the platform. Example: 'make release-cli osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-cli-release.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
+clean-release: ## Remove all electron build artifacts
+	rm -rf $(ELECTRON_DIR)/release
+	rm -rf $(ELECTRON_DIR)/.gox_output
+	rm -rf $(ELECTRON_DIR)/.daemon_output
+	rm -rf $(ELECTRON_DIR)/.cli_output
+	rm -rf $(ELECTRON_DIR)/.standalone_output
+	rm -rf $(ELECTRON_DIR)/.electron_output
 
 clean-coverage: ## Remove coverage output files
-	rm -r ./coverage/
+	rm -rf ./coverage/
 
 newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
 	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)

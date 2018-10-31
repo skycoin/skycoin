@@ -233,7 +233,7 @@ Response:
     "gui_enabled": true,
     "unversioned_api_enabled": false,
     "json_rpc_enabled": false,
-    "coinhours_burn_factor": 2
+    "coinhour_burn_factor": 2
 }
 ```
 

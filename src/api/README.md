@@ -139,9 +139,10 @@ These API sets are:
 * `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
 * `TXN` - Enables `/api/v1/injectTransaction` without enabling wallet endpoints
 * `WALLET` - These endpoints operate on local wallet files
-* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
-* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
 * `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
+* `NET_CTRL` - The `/api/v1/network/connection/disconnect` method, intended for network administration endpoints
+* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
+* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed in v0.26.0
 
 ## Authentication
 

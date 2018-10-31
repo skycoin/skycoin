@@ -15,3 +15,12 @@
 		return result;
 	}
 }
+
+%rename(SKY_base58_String2Hex) Java_skycoin_libjava_skycoinJNI_SKY_base58_String2Hex;
+%inline {
+	GoUint32 Java_skycoin_libjava_skycoinJNI_SKY_base58_String2Hex(char * p1,GoSlice_ * p2){
+        GoString str = { p1,strlen(p1) };
+		GoUint32 result = SKY_base58_String2Hex(str,  p2);
+		return result;
+	}
+}

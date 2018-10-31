@@ -74,6 +74,8 @@ type NodeConfig struct {
 	Address string
 	// gnet uses this for TCP incoming and outgoing
 	Port int
+	// MaxConnections is the maximum number of total connections allowed
+	MaxConnections int
 	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
 	// Maximum default outgoing connections
@@ -216,9 +218,11 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		Address: "",
 		//gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
-		// MaxOutgoingConnections is the maximum outgoing connections allowed.
+		// MaxConnections is the maximum number of total connections allowed
+		MaxConnections: 128,
+		// MaxOutgoingConnections is the maximum outgoing connections allowed
 		MaxOutgoingConnections: 8,
-		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed
 		MaxDefaultPeerOutgoingConnections: 1,
 		DownloadPeerList:                  true,
 		PeerListURL:                       node.PeerListURL,
@@ -387,6 +391,10 @@ func (c *Config) postProcess() error {
 		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
 	}
 
+	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
+		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
+	}
+
 	return nil
 }
 
@@ -520,7 +528,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")

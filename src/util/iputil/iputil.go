@@ -5,9 +5,17 @@ package iputil
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"strconv"
+)
+
+var (
+	// ErrMissingIP IP missing from ip:port string
+	ErrMissingIP = errors.New("IP missing from ip:port address")
+	// ErrInvalidPort port invalid in ip:port string
+	ErrInvalidPort = errors.New("Port invalid in ip:port address")
+	// ErrNoLocalIP no localhost IP found in system net interfaces
+	ErrNoLocalIP = errors.New("No local IP found")
 )
 
 // LocalhostIP returns the address for localhost on the machine
@@ -27,7 +35,7 @@ func LocalhostIP() (string, error) {
 			}
 		}
 	}
-	return "", errors.New("No local IP found")
+	return "", ErrNoLocalIP
 }
 
 // IsLocalhost returns true if addr is a localhost address
@@ -46,12 +54,12 @@ func SplitAddr(addr string) (string, uint16, error) {
 	}
 
 	if ip == "" {
-		return "", 0, fmt.Errorf("IP missing from %s", addr)
+		return "", 0, ErrMissingIP
 	}
 
 	port64, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
-		return "", 0, fmt.Errorf("Invalid port in %s", addr)
+		return "", 0, ErrInvalidPort
 	}
 
 	return ip, uint16(port64), nil

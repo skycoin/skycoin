@@ -227,3 +227,15 @@ func TestEmpty(t *testing.T) {
 	d.Version = "0.24.1"
 	require.False(t, d.Empty())
 }
+
+func TestMustParse(t *testing.T) {
+	d := MustParse("skycoin:0.25.0")
+	require.Equal(t, Data{
+		Coin:    "skycoin",
+		Version: "0.25.0",
+	}, d)
+
+	require.Panics(t, func() {
+		MustParse("foo") // nolint: errcheck
+	})
+}

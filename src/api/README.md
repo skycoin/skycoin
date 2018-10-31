@@ -137,7 +137,7 @@ These API sets are:
 
 * `READ` - All query-related endpoints, they do not modify the state of the program
 * `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
-* `TXN` - Enables `/api/v1/injectTransaction` without enabling wallet endpoints
+* `TXN` - Enables `/api/v1/injectTransaction` and `/api/v1/resendUnconfirmedTxns` without enabling wallet endpoints
 * `WALLET` - These endpoints operate on local wallet files
 * `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
 * `NET_CTRL` - The `/api/v1/network/connection/disconnect` method, intended for network administration endpoints
@@ -2243,17 +2243,17 @@ Result:
 
 ### Resend unconfirmed transactions
 
-API sets: `READ`
+API sets: `TXN`
 
 ```
 URI: /api/v1/resendUnconfirmedTxns
-Method: GET
+Method: POST
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns
+curl -X POST 'http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns'
 ```
 
 Result:

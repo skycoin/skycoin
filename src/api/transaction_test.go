@@ -680,13 +680,13 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody: string(invalidTxnBodyJSON),
 		},
 		{
-			name:                   "503 - daemon.ErrOutgoingConnectionsDisabled",
+			name:                   "503 - daemon.ErrNetworkingDisabled",
 			method:                 http.MethodPost,
 			status:                 http.StatusServiceUnavailable,
-			err:                    "503 Service Unavailable - Outgoing connections are disabled",
+			err:                    "503 Service Unavailable - Networking is disabled",
 			httpBody:               string(validTxnBodyJSON),
 			injectTransactionArg:   validTransaction,
-			injectTransactionError: daemon.ErrOutgoingConnectionsDisabled,
+			injectTransactionError: daemon.ErrNetworkingDisabled,
 		},
 		{
 			name:                   "503 - gnet.ErrNoReachableConnections",
@@ -787,29 +787,40 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 	}{
 		{
 			name:   "405",
-			method: http.MethodPost,
+			method: http.MethodGet,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
+
 		{
-			name:                     "500 resend failed",
-			method:                   http.MethodGet,
+			name:                     "500 resend failed network error",
+			method:                   http.MethodPost,
+			status:                   http.StatusServiceUnavailable,
+			err:                      "503 Service Unavailable - All pool connections are unreachable at this time",
+			resendUnconfirmedTxnsErr: gnet.ErrNoReachableConnections,
+		},
+
+		{
+			name:                     "500 resend failed unknown error",
+			method:                   http.MethodPost,
 			status:                   http.StatusInternalServerError,
 			err:                      "500 Internal Server Error - ResendUnconfirmedTxns failed",
 			resendUnconfirmedTxnsErr: errors.New("ResendUnconfirmedTxns failed"),
 		},
+
 		{
 			name:                          "200",
-			method:                        http.MethodGet,
+			method:                        http.MethodPost,
 			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: nil,
 			httpResponse: ResendResult{
 				Txids: []string{},
 			},
 		},
+
 		{
 			name:                          "200 with hashes",
-			method:                        http.MethodGet,
+			method:                        http.MethodPost,
 			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: []cipher.SHA256{validHash1, validHash2},
 			httpResponse: ResendResult{

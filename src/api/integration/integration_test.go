@@ -2954,9 +2954,11 @@ func TestStableResendUnconfirmedTransactions(t *testing.T) {
 		return
 	}
 	c := newClient()
-	res, err := c.ResendUnconfirmedTransactions()
-	require.NoError(t, err)
-	require.True(t, len(res.Txids) == 0)
+	_, err := c.ResendUnconfirmedTransactions()
+	respErr, ok := err.(api.ClientError)
+	require.True(t, ok)
+	require.Equal(t, fmt.Sprintf("503 Service Unavailable - %s", daemon.ErrNetworkingDisabled), respErr.Message)
+	require.Equal(t, http.StatusServiceUnavailable, respErr.StatusCode)
 }
 
 func TestLiveResendUnconfirmedTransactions(t *testing.T) {

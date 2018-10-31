@@ -1052,10 +1052,11 @@ func (c *Client) InjectEncodedTransaction(rawTxn string) (string, error) {
 	return txid, nil
 }
 
-// ResendUnconfirmedTransactions makes a request to GET /api/v1/resendUnconfirmedTxns
+// ResendUnconfirmedTransactions makes a request to POST /api/v1/resendUnconfirmedTxns
 func (c *Client) ResendUnconfirmedTransactions() (*ResendResult, error) {
+	endpoint := "/api/v1/resendUnconfirmedTxns"
 	var r ResendResult
-	if err := c.Get("/api/v1/resendUnconfirmedTxns", &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(""), &r); err != nil {
 		return nil, err
 	}
 	return &r, nil

@@ -25,13 +25,25 @@ import (
 )
 
 var (
-	// ErrOutgoingConnectionsDisabled is returned if outgoing connections are disabled
-	ErrOutgoingConnectionsDisabled = errors.New("Outgoing connections are disabled")
 	// ErrNetworkingDisabled is returned if networking is disabled
 	ErrNetworkingDisabled = errors.New("Networking is disabled")
 
 	logger = logging.MustGetLogger("daemon")
 )
+
+// IsBroadcastFailure returns true if an error indicates that a broadcast operation failed
+func IsBroadcastFailure(err error) bool {
+	switch err {
+	case ErrNetworkingDisabled,
+		gnet.ErrPoolEmpty,
+		gnet.ErrNoMatchingConnections,
+		gnet.ErrNoReachableConnections,
+		gnet.ErrNoAddresses:
+		return true
+	default:
+		return false
+	}
+}
 
 const (
 	daemonRunDurationThreshold = time.Millisecond * 200
@@ -1233,6 +1245,10 @@ func (dm *Daemon) SendMessage(addr string, msg gnet.Message) error {
 
 // BroadcastMessage sends a Message to all introduced connections in the Pool
 func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
+	}
+
 	conns := dm.connections.all()
 	var addrs []string
 	for _, c := range conns {

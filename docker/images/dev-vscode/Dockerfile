@@ -1,10 +1,13 @@
-FROM skycoin/skycoindev-cli:develop
+ARG IMAGE_FROM=skycoin/skycoindev-cli:develop
+
+FROM $IMAGE_FROM
 
 # Tell debconf to run in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies for vs code
-RUN apt-get update && apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y \
 	    apt-transport-https \
 	    ca-certificates \
 	    curl \
@@ -47,12 +50,6 @@ RUN apt-get update && apt-get -y install code \
 ENV HOME /home/user
 RUN useradd --create-home --home-dir $HOME user \
 	&& chown -R user:user $HOME
-
-# Uncoment if you are behind a proxy
-#ENV http_proxy=http://127.0.0.1:3128 \
-#    https_proxy=http://127.0.0.1:3128 \
-#    ftp_proxy=http://127.0.0.1:3128 \
-#    no_proxy="localhost, 127.0.0.1, .uci.cu, 10.0.0.0/8"
 
 # Install and list vscode extensions
 ENV VS_EXTENSIONS ms-vscode.Go windmilleng.vscode-go-autotest defaltd.go-coverage-viewer

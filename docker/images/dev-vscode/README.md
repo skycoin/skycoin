@@ -4,7 +4,7 @@
 
 -	[`latest` (*docker/images/dev-gui/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-gui/Dockerfile)
 
-# Skycoin development *gui* image
+# Skycoin development *vscode* image
 
 This image has the necessary tools to build, test, edit, lint and version the Skycoin
 source code. It comes with Visual Studio Code installed, along with some plugins
@@ -12,12 +12,15 @@ to ease go development and version control with git.
 
 # Build
 
-On  of repo, run:
-
 ```sh
-$ cd docker/images/dev-gui
-$ docker build -t skycoin/skycoindev-cli:vscode .
+$ cd docker/images/dev-vscode/hoook
+$ ./build
 ```
+
+When it finish you will have two new images:
+
+`skycoin/skycoindev-vscode:develop` based on [skycoin/skycoindev-cli:develop](skycoin/docker/images/dev-cli) 
+`skycoin/skycoindev-vscode:dind` based on [skycoin/skycoindev-cli:dind](skycoin/docker/images/dev-docker)
 
 # How to use this image
 
@@ -32,7 +35,7 @@ $ docker build -t skycoin/skycoindev-cli:vscode .
         -v $PWD:/go/src \
         -w /go/src \
         -e DISPLAY=$DISPLAY \
-        skycoin/skycoindev-cli:vscode
+        skycoin/skycoindev-vscode:develop
 ```
 5. You should see vscode pop up.
 6. Have fun. Write some code. Close vscode when you're done, and ctrl+c to shut down the container. Your files will be in the path on the host where you started.
@@ -40,7 +43,7 @@ $ docker build -t skycoin/skycoindev-cli:vscode .
 
 ## Add more VS Code extensions
 
-You must add VS_EXTENSIONS environment variable to command with extensions of you prefer. 
+If you want add VS_EXTENSIONS environment variable to command with extensions of you prefer. 
 
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 
@@ -48,7 +51,7 @@ You must add VS_EXTENSIONS environment variable to command with extensions of yo
        -w /go/src \
        -e DISPLAY=$DISPLAY \
        -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
-       skycoin/skycoindev-cli:vscode
+       skycoin/skycoindev-vscode:dind
 ```
 
 This downloads the skycoin source to src/skycoin/skycoin and changes the owner

@@ -8,7 +8,7 @@ fi
 if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
   brew update
   echo 'Available versions (gcc)' && brew list --versions gcc
-  brew list gcc@6 &>/dev/null || (echo "Install gcc6 deps" && (brew deps -n gcc@6 | xargs -I NAME bash -c 'brew list NAME &> /dev/null || brew install NAME') && echo "Install gcc@6 from sources" && HOMEBREW_BUILD_FROM_SOURCE=1 brew install gcc@6 )
+  brew list gcc@6 &>/dev/null || brew install gcc@6
 fi
 
 cd $TRAVIS_BUILD_DIR

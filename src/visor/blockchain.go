@@ -633,7 +633,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 					// amongst different txns. Duplicate transactions are
 					// caught earlier, when duplicate expected outputs are
 					// checked for, and will not trigger this.
-					return nil, errors.New("Duplicate transaction")
+					return nil, errors.New("Unexpected duplicate transaction")
 				}
 			}
 			for a := range s.In {
@@ -683,9 +683,9 @@ func (bc Blockchain) TransactionFee(tx *dbutil.Tx, headTime uint64) coin.FeeCalc
 // VerifySignature checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
 func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {
-	err := cipher.VerifySignature(bc.cfg.Pubkey, block.Sig, block.HashHeader())
+	err := block.VerifySignature(bc.cfg.Pubkey)
 	if err != nil {
-		logger.Errorf("Signature verification failed: %v", err)
+		logger.Errorf("Blockchain signature verification failed for block %d: %v", block.Head.BkSeq, err)
 	}
 	return err
 }
@@ -711,7 +711,7 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 			if err := bc.db.View("WalkChain verify blocks", func(tx *dbutil.Tx) error {
 				for b := range signedBlockC {
 					if err := f(tx, b); err != nil {
-						// if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
+						// if err := cipher.VerifyPubKeySignedHash(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
 						// logger.Errorf("Signature verification failed: %v", err)
 						select {
 						case errC <- err:

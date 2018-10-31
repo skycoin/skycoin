@@ -27,10 +27,12 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -428,7 +430,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 			txn:     badSignatureTxn,
 			golden:  "verify-transaction-invalid-bad-sig.golden",
 			errCode: http.StatusUnprocessableEntity,
-			errMsg:  "Transaction violates hard constraint: Invalid sig: invalid for hash",
+			errMsg:  "Transaction violates hard constraint: Signature not valid for hash",
 		},
 	}
 
@@ -1804,7 +1806,7 @@ func TestStableNetworkConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkConnections()
+	connections, err := c.NetworkConnections(nil)
 	require.NoError(t, err)
 	require.Empty(t, connections.Connections)
 
@@ -1819,7 +1821,7 @@ func TestLiveNetworkConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkConnections()
+	connections, err := c.NetworkConnections(nil)
 	require.NoError(t, err)
 
 	if liveDisableNetworking(t) {
@@ -1829,18 +1831,68 @@ func TestLiveNetworkConnections(t *testing.T) {
 
 	require.NotEmpty(t, connections.Connections)
 
+	checked := false
+
 	for _, cc := range connections.Connections {
 		connection, err := c.NetworkConnection(cc.Addr)
+
+		// The connection may have disconnected by now
+		if err != nil {
+			assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
+			continue
+		}
+
 		require.NoError(t, err)
 		require.NotEmpty(t, cc.Addr)
 		require.Equal(t, cc.Addr, connection.Addr)
-		require.Equal(t, cc.ID, connection.ID)
+		require.Equal(t, cc.GnetID, connection.GnetID)
 		require.Equal(t, cc.ListenPort, connection.ListenPort)
 		require.Equal(t, cc.Mirror, connection.Mirror)
-		require.Equal(t, cc.Introduced, connection.Introduced)
+
+		switch cc.State {
+		case daemon.ConnectionStateIntroduced:
+			// If the connection was introduced it should stay introduced
+			require.Equal(t, daemon.ConnectionStateIntroduced, connection.State)
+		case daemon.ConnectionStateConnected:
+			// If the connection was connected it should stay connected or have become introduced
+			require.NotEqual(t, daemon.ConnectionStatePending, connection.State)
+		}
+
+		// The GnetID should be 0 if pending, otherwise it should not be 0
+		if cc.State == daemon.ConnectionStatePending {
+			require.Equal(t, uint64(0), cc.GnetID)
+		} else {
+			require.NotEmpty(t, uint64(0), cc.GnetID)
+		}
+
 		require.Equal(t, cc.Outgoing, connection.Outgoing)
 		require.True(t, cc.LastReceived <= connection.LastReceived)
 		require.True(t, cc.LastSent <= connection.LastSent)
+		require.Equal(t, cc.ConnectedAt, connection.ConnectedAt)
+
+		checked = true
+	}
+
+	// This could unfortunately occur if a connection disappeared in between the two calls,
+	// which will require a test re-run.
+	require.True(t, checked, "Was not able to find any connection by address, despite finding connections when querying all")
+
+	connections, err = c.NetworkConnections(&api.NetworkConnectionsFilter{
+		States: []daemon.ConnectionState{daemon.ConnectionStatePending},
+	})
+	require.NoError(t, err)
+
+	for _, cc := range connections.Connections {
+		require.Equal(t, daemon.ConnectionStatePending, cc.State)
+	}
+
+	connections, err = c.NetworkConnections(&api.NetworkConnectionsFilter{
+		Direction: "incoming",
+	})
+	require.NoError(t, err)
+
+	for _, cc := range connections.Connections {
+		require.False(t, cc.Outgoing)
 	}
 }
 
@@ -1850,13 +1902,13 @@ func TestNetworkDefaultConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkDefaultConnections()
+	connections, err := c.NetworkDefaultPeers()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
 	sort.Strings(connections)
 
 	var expected []string
-	checkGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
+	checkGoldenFile(t, "network-default-peers.golden", TestData{connections, &expected})
 }
 
 func TestNetworkTrustedConnections(t *testing.T) {
@@ -1865,13 +1917,13 @@ func TestNetworkTrustedConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkTrustedConnections()
+	connections, err := c.NetworkTrustedPeers()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
 	sort.Strings(connections)
 
 	var expected []string
-	checkGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
+	checkGoldenFile(t, "network-trusted-peers.golden", TestData{connections, &expected})
 }
 
 func TestStableNetworkExchangeableConnections(t *testing.T) {
@@ -1880,11 +1932,11 @@ func TestStableNetworkExchangeableConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	connections, err := c.NetworkExchangeableConnections()
+	connections, err := c.NetworkExchangedPeers()
 	require.NoError(t, err)
 
 	var expected []string
-	checkGoldenFile(t, "network-exchangeable-connections.golden", TestData{connections, &expected})
+	checkGoldenFile(t, "network-exchanged-peers.golden", TestData{connections, &expected})
 }
 
 func TestLiveNetworkExchangeableConnections(t *testing.T) {
@@ -1893,7 +1945,7 @@ func TestLiveNetworkExchangeableConnections(t *testing.T) {
 	}
 
 	c := newClient()
-	_, err := c.NetworkExchangeableConnections()
+	_, err := c.NetworkExchangedPeers()
 	require.NoError(t, err)
 }
 
@@ -5719,7 +5771,7 @@ func TestDisableWalletAPI(t *testing.T) {
 			name:        "create transaction",
 			method:      http.MethodPost,
 			endpoint:    "/api/v1/wallet/transaction",
-			contentType: "application/json",
+			contentType: api.ContentTypeJSON,
 			json: func() interface{} {
 				return api.CreateTransactionRequest{
 					HoursSelection: api.HoursSelection{
@@ -5753,7 +5805,7 @@ func TestDisableWalletAPI(t *testing.T) {
 					err = c.Get(tc.endpoint, nil)
 				case http.MethodPost:
 					switch tc.contentType {
-					case "application/json":
+					case api.ContentTypeJSON:
 						err = c.PostJSON(tc.endpoint, tc.json(), nil)
 					default:
 						err = c.PostForm(tc.endpoint, tc.body(), nil)
@@ -5788,6 +5840,11 @@ func checkHealthResponse(t *testing.T, r *api.HealthResponse) {
 	require.NotEmpty(t, r.BlockchainMetadata.Head.Time)
 	require.NotEmpty(t, r.Version.Version)
 	require.True(t, r.Uptime.Duration > time.Duration(0))
+	require.NotEmpty(t, r.CoinName)
+	require.NotEmpty(t, r.DaemonUserAgent)
+
+	_, err := useragent.Parse(r.DaemonUserAgent)
+	require.NoError(t, err)
 }
 
 func TestStableHealth(t *testing.T) {
@@ -5809,6 +5866,13 @@ func TestStableHealth(t *testing.T) {
 	// The stable node is always run with the commit and branch ldflags, so they should appear
 	require.NotEmpty(t, r.Version.Commit)
 	require.NotEmpty(t, r.Version.Branch)
+
+	coinName := os.Getenv("COIN")
+	require.Equal(t, coinName, r.CoinName)
+	require.Equal(t, fmt.Sprintf("%s:%s", coinName, r.Version.Version), r.DaemonUserAgent)
+
+	_, err = useragent.Parse(r.DaemonUserAgent)
+	require.NoError(t, err)
 
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
 	require.True(t, r.CSPEnabled)

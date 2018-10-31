@@ -19,6 +19,8 @@ type BlockchainMetadata struct {
 type HealthResponse struct {
 	BlockchainMetadata    BlockchainMetadata `json:"blockchain"`
 	Version               readable.BuildInfo `json:"version"`
+	CoinName              string             `json:"coin"`
+	DaemonUserAgent       string             `json:"user_agent"`
 	OpenConnections       int                `json:"open_connections"`
 	Uptime                wh.Duration        `json:"uptime"`
 	CSRFEnabled           bool               `json:"csrf_enabled"`
@@ -51,12 +53,20 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 
 		_, walletAPIEnabled := c.enabledAPISets[EndpointsWallet]
 
+		userAgent, err := c.health.DaemonUserAgent.Build()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
 				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
-			Version:               c.buildInfo,
+			Version:               c.health.BuildInfo,
+			CoinName:              c.health.CoinName,
+			DaemonUserAgent:       userAgent,
 			OpenConnections:       health.OpenConnections,
 			Uptime:                wh.FromDuration(health.Uptime),
 			CSRFEnabled:           csrfStore.Enabled,

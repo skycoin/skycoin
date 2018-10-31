@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -31,6 +32,9 @@ type Config struct {
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {
+	// Name of the coin
+	CoinName string
+
 	// Disable peer exchange
 	DisablePEX bool
 	// Download peer list
@@ -70,6 +74,8 @@ type NodeConfig struct {
 	Address string
 	// gnet uses this for TCP incoming and outgoing
 	Port int
+	// MaxConnections is the maximum number of total connections allowed
+	MaxConnections int
 	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
 	// Maximum default outgoing connections
@@ -112,9 +118,14 @@ type NodeConfig struct {
 	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
 
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	// Timeouts for the HTTP listener
+	HTTPReadTimeout  time.Duration
+	HTTPWriteTimeout time.Duration
+	HTTPIdleTimeout  time.Duration
+
+	// Remark to include in user agent sent in the wire protocol introduction
+	UserAgentRemark string
+	userAgent       useragent.Data
 
 	// Logging
 	ColorLog bool
@@ -176,6 +187,7 @@ type NodeConfig struct {
 // NewNodeConfig returns a new node config instance
 func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	nodeConfig := NodeConfig{
+		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
@@ -206,9 +218,11 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		Address: "",
 		//gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
-		// MaxOutgoingConnections is the maximum outgoing connections allowed.
+		// MaxConnections is the maximum number of total connections allowed
+		MaxConnections: 128,
+		// MaxOutgoingConnections is the maximum outgoing connections allowed
 		MaxOutgoingConnections: 8,
-		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed
 		MaxDefaultPeerOutgoingConnections: 1,
 		DownloadPeerList:                  true,
 		PeerListURL:                       node.PeerListURL,
@@ -250,9 +264,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 
 		// Timeout settings for http.Server
 		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 60,
-		IdleTimeout:  time.Second * 120,
+		HTTPReadTimeout:  time.Second * 10,
+		HTTPWriteTimeout: time.Second * 60,
+		HTTPIdleTimeout:  time.Second * 120,
 
 		// Centralized network configuration
 		RunMaster: false,
@@ -336,6 +350,18 @@ func (c *Config) postProcess() error {
 		c.Node.Arbitrating = true
 	}
 
+	userAgentData := useragent.Data{
+		Coin:    c.Node.CoinName,
+		Version: c.Build.Version,
+		Remark:  c.Node.UserAgentRemark,
+	}
+
+	if _, err := userAgentData.Build(); err != nil {
+		return err
+	}
+
+	c.Node.userAgent = userAgentData
+
 	apiSets, err := buildAPISets(c.Node)
 	if err != nil {
 		return err
@@ -363,6 +389,10 @@ func (c *Config) postProcess() error {
 	httpAuthEnabled := c.Node.WebInterfaceUsername != "" || c.Node.WebInterfacePassword != ""
 	if httpAuthEnabled && !c.Node.WebInterfaceHTTPS && !c.Node.WebInterfacePlaintextAuth {
 		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
+	}
+
+	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
+		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
 	}
 
 	return nil
@@ -485,6 +515,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableDefaultPeers, "disable-default-peers", c.DisableDefaultPeers, "disable the hardcoded default peers")
 	flag.StringVar(&c.CustomPeersFile, "custom-peers-file", c.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
 
+	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
+
 	// Key Configuration Data
 	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
 
@@ -496,7 +528,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")

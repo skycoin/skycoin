@@ -131,7 +131,7 @@ func TestCreateTransaction(t *testing.T) {
 			name:        "415",
 			method:      http.MethodPost,
 			status:      http.StatusUnsupportedMediaType,
-			contentType: "application/x-www-form-urlencoded",
+			contentType: ContentTypeForm,
 			err:         "415 Unsupported Media Type",
 		},
 
@@ -862,7 +862,7 @@ func TestCreateTransaction(t *testing.T) {
 
 			contentType := tc.contentType
 			if contentType == "" {
-				contentType = "application/json"
+				contentType = ContentTypeJSON
 			}
 
 			req.Header.Add("Content-Type", contentType)

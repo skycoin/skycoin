@@ -431,12 +431,16 @@ func (dm *Daemon) Run() error {
 	flushAnnouncedTxnsTicker := time.NewTicker(dm.Config.FlushAnnouncedTxnsRate)
 	defer flushAnnouncedTxnsTicker.Stop()
 
-	// Connect to trusted peers
+	// Connect to all trusted peers on startup to try to ensure a connection
+	// establishes quickly.
+	// The number of connections to default peers is restricted;
+	// if multiple connections succeed, extra connections beyond the limit will
+	// be disconnected.
 	if !dm.Config.DisableOutgoingConnections {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dm.connectToTrustPeer()
+			dm.connectToTrustedPeers()
 		}()
 	}
 
@@ -692,7 +696,7 @@ func (dm *Daemon) makePrivateConnections() {
 	}
 }
 
-func (dm *Daemon) connectToTrustPeer() {
+func (dm *Daemon) connectToTrustedPeers() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
@@ -723,7 +727,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.pex.RandomPublicUntrusted(dm.Config.MaxOutgoingConnections)
+	peers := dm.pex.RandomPublic(dm.Config.MaxOutgoingConnections)
 	for _, p := range peers {
 		if err := dm.connectToPeer(p); err != nil {
 			logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")

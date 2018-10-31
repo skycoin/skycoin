@@ -633,7 +633,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 					// amongst different txns. Duplicate transactions are
 					// caught earlier, when duplicate expected outputs are
 					// checked for, and will not trigger this.
-					return nil, errors.New("Duplicate transaction")
+					return nil, errors.New("Unexpected duplicate transaction")
 				}
 			}
 			for a := range s.In {

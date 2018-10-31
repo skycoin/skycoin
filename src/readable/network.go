@@ -2,37 +2,53 @@ package readable
 
 import (
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 // Connection a connection's state within the daemon
 type Connection struct {
-	ID           int    `json:"id"`
-	Addr         string `json:"address"`
-	LastSent     int64  `json:"last_sent"`
-	LastReceived int64  `json:"last_received"`
-	// Whether the connection is from us to them (true, outgoing),
-	// or from them to us (false, incoming)
-	Outgoing bool `json:"outgoing"`
-	// Whether the client has identified their version, mirror etc
-	Introduced bool   `json:"introduced"`
-	Mirror     uint32 `json:"mirror"`
-	ListenPort uint16 `json:"listen_port"`
-	Height     uint64 `json:"height"`
-	UserAgent  string `json:"user_agent"`
+	GnetID        uint64                 `json:"id"`
+	Addr          string                 `json:"address"`
+	LastSent      int64                  `json:"last_sent"`
+	LastReceived  int64                  `json:"last_received"`
+	ConnectedAt   int64                  `json:"connected_at"`
+	Outgoing      bool                   `json:"outgoing"`
+	State         daemon.ConnectionState `json:"state"`
+	Mirror        uint32                 `json:"mirror"`
+	ListenPort    uint16                 `json:"listen_port"`
+	Height        uint64                 `json:"height"`
+	UserAgent     useragent.Data         `json:"user_agent"`
+	IsTrustedPeer bool                   `json:"is_trusted_peer"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags
 func NewConnection(c *daemon.Connection) Connection {
+	var lastSent int64
+	var lastReceived int64
+	var connectedAt int64
+
+	if !c.Gnet.LastSent.IsZero() {
+		lastSent = c.Gnet.LastSent.Unix()
+	}
+	if !c.Gnet.LastReceived.IsZero() {
+		lastReceived = c.Gnet.LastReceived.Unix()
+	}
+	if !c.ConnectedAt.IsZero() {
+		connectedAt = c.ConnectedAt.Unix()
+	}
+
 	return Connection{
-		ID:           c.ID,
-		Addr:         c.Addr,
-		LastSent:     c.LastSent,
-		LastReceived: c.LastReceived,
-		Outgoing:     c.Outgoing,
-		Introduced:   c.Introduced,
-		Mirror:       c.Mirror,
-		ListenPort:   c.ListenPort,
-		Height:       c.Height,
-		UserAgent:    c.UserAgent,
+		GnetID:        c.Gnet.ID,
+		Addr:          c.Addr,
+		LastSent:      lastSent,
+		LastReceived:  lastReceived,
+		ConnectedAt:   connectedAt,
+		Outgoing:      c.Outgoing,
+		State:         c.State,
+		Mirror:        c.Mirror,
+		ListenPort:    c.ListenPort,
+		Height:        c.Height,
+		UserAgent:     c.UserAgent,
+		IsTrustedPeer: c.Pex.Trusted,
 	}
 }

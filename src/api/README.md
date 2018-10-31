@@ -3571,6 +3571,12 @@ Args:
     addr: ip:port address of a known connection
 ```
 
+Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
+
+* The `"pending"` state is prior to connection establishment.
+* The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
+* The `"introduced"` state is after the introduction handshake has completed.
+
 Example:
 
 ```sh
@@ -3585,12 +3591,14 @@ Result:
     "address": "176.9.84.75:6000",
     "last_sent": 1520675817,
     "last_received": 1520675817,
+    "connected_at": 1520675700,
     "outgoing": false,
-    "introduced": true,
+    "state": "introduced",
     "mirror": 719118746,
     "height": 181,
     "listen_port": 6000,
-    "user_agent": "skycoin:0.25.0"
+    "user_agent": "skycoin:0.25.0",
+    "is_trusted_peer": true
 }
 ```
 
@@ -3601,7 +3609,18 @@ API sets: `STATUS`, `READ`
 ```
 URI: /api/v1/network/connections
 Method: GET
+Args:
+	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
+	direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 ```
+
+Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
+
+* The `"pending"` state is prior to connection establishment.
+* The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
+* The `"introduced"` state is after the introduction handshake has completed.
+
+By default, both incoming and outgoing connections in the `"connected"` or `"introduced"` state are returned.
 
 Example:
 
@@ -3619,36 +3638,42 @@ Result:
             "address": "139.162.161.41:20002",
             "last_sent": 1520675750,
             "last_received": 1520675750,
+            "connected_at": 1520675500,
             "outgoing": false,
-            "introduced": true,
+            "state": "introduced",
             "mirror": 1338939619,
-            "height": 180,
             "listen_port": 20002,
-            "user_agent": "skycoin:0.25.0"
+            "height": 180,
+            "user_agent": "skycoin:0.25.0",
+		    "is_trusted_peer": true
         },
         {
             "id": 109548,
             "address": "176.9.84.75:6000",
             "last_sent": 1520675751,
             "last_received": 1520675751,
-            "outgoing": false,
-            "introduced": true,
-            "mirror": 719118746,
-            "height": 182,
+            "connected_at": 1520675751,
+            "state": "connected",
+            "outgoing": true,
+            "mirror": 0,
             "listen_port": 6000,
-            "user_agent": "skycoin:0.25.0"
+            "height": 0,
+            "user_agent": "",
+		    "is_trusted_peer": false
         },
         {
             "id": 99115,
             "address": "185.120.34.60:6000",
             "last_sent": 1520675754,
             "last_received": 1520675754,
+            "connected_at": 1520673013,
             "outgoing": false,
-            "introduced": true,
+            "state": "introduced",
             "mirror": 1931713869,
-            "height": 180,
             "listen_port": 6000,
-            "user_agent": ""
+            "height": 180,
+            "user_agent": "",
+		    "is_trusted_peer": false
         }
     ]
 }
@@ -3663,6 +3688,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/defaultConnections
 Method: GET
 ```
+
+Returns addresses in the default hardcoded list of peers.
 
 Example:
 
@@ -3693,6 +3720,9 @@ URI: /api/v1/network/connections/trust
 Method: GET
 ```
 
+Returns addresses marked as trusted in the peerlist.
+This is typically equal to the list of addresses in the default hardcoded list of peers.
+
 Example:
 
 ```sh
@@ -3721,6 +3751,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/connections/exchange
 Method: GET
 ```
+
+Returns addresses from the peerlist that are known to have an open port.
 
 Example:
 

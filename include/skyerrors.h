@@ -118,7 +118,7 @@
 #define SKY_ErrNotExternalIP                              0x06000003
 #define SKY_ErrPortTooLow                                 0x06000004
 #define SKY_ErrBlacklistedAddress                         0x06000005
-#define SKY_ErrDisconnectReadFailed                       0x06000006
+// #define SKY_ErrDisconnectReadFailed                       0x06000006
 #define SKY_ErrDisconnectWriteFailed                      0x06000007
 #define SKY_ErrDisconnectSetReadDeadlineFailed            0x06000008
 #define SKY_ErrDisconnectInvalidMessageLength             0x06000009

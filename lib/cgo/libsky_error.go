@@ -231,10 +231,10 @@ const (
 	SKY_ErrPortTooLow
 	// SKY_ErrBlacklistedAddress returned when attempting to add a blacklisted peer
 	SKY_ErrBlacklistedAddress
-	// SKY_ErrDisconnectReadFailed also includes a remote closed socket
-	SKY_ErrDisconnectReadFailed
+	// // SKY_ErrDisconnectReadFailed also includes a remote closed socket
+	// SKY_ErrDisconnectReadFailed
 	// SKY_ErrDisconnectWriteFailed write faile
-	SKY_ErrDisconnectWriteFailed
+	// SKY_ErrDisconnectWriteFailed
 	// SKY_ErrDisconnectSetReadDeadlineFailed set read deadline failed
 	SKY_ErrDisconnectSetReadDeadlineFailed
 	// SKY_ErrDisconnectInvalidMessageLength invalid message length
@@ -510,14 +510,14 @@ var (
 		// daemon
 		// Removed in 34ad39ddb350
 		// gnet.ErrMaxDefaultConnectionsReached:           SKY_ErrMaxDefaultConnectionsReached,
-		pex.ErrPeerlistFull:                       SKY_ErrPeerlistFull,
-		pex.ErrInvalidAddress:                     SKY_ErrInvalidAddress,
-		pex.ErrNoLocalhost:                        SKY_ErrNoLocalhost,
-		pex.ErrNotExternalIP:                      SKY_ErrNotExternalIP,
-		pex.ErrPortTooLow:                         SKY_ErrPortTooLow,
-		pex.ErrBlacklistedAddress:                 SKY_ErrBlacklistedAddress,
-		gnet.ErrDisconnectReadFailed:              SKY_ErrDisconnectReadFailed,
-		gnet.ErrDisconnectWriteFailed:             SKY_ErrDisconnectWriteFailed,
+		pex.ErrPeerlistFull:       SKY_ErrPeerlistFull,
+		pex.ErrInvalidAddress:     SKY_ErrInvalidAddress,
+		pex.ErrNoLocalhost:        SKY_ErrNoLocalhost,
+		pex.ErrNotExternalIP:      SKY_ErrNotExternalIP,
+		pex.ErrPortTooLow:         SKY_ErrPortTooLow,
+		pex.ErrBlacklistedAddress: SKY_ErrBlacklistedAddress,
+		// gnet.ErrDisconnectReadFailed:              SKY_ErrDisconnectReadFailed,
+		// gnet.ErrDisconnectWriteFailed:             SKY_ErrDisconnectWriteFailed,
 		gnet.ErrDisconnectSetReadDeadlineFailed:   SKY_ErrDisconnectSetReadDeadlineFailed,
 		gnet.ErrDisconnectInvalidMessageLength:    SKY_ErrDisconnectInvalidMessageLength,
 		gnet.ErrDisconnectMalformedMessage:        SKY_ErrDisconnectMalformedMessage,

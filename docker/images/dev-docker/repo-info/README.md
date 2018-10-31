@@ -1,6 +1,6 @@
-# `skycoin/skycoindev-cli:develop` repo-info
+# `skycoin/skycoindev-cli:dind` repo-info
 
-This directory contains additional information about the published artifacts of [the `skycoin/skycoindev-cli:develop` image](https://hub.docker.com/r/skycoin/skycoindev-cli).
+This directory contains additional information about the published artifacts of [the `skycoin/skycoindev-cli:dind` image](https://hub.docker.com/r/skycoin/skycoindev-cli).
 
 -   [the `remote` directory](remote/):
 

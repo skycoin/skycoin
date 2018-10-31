@@ -716,18 +716,18 @@ func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	if dm.connections.OutgoingLen() > dm.Config.MaxOutgoingConnections {
+	if dm.connections.OutgoingLen() >= dm.Config.MaxOutgoingConnections {
 		return
 	}
-	if dm.connections.PendingLen() > dm.Config.MaxPendingConnections {
+	if dm.connections.PendingLen() >= dm.Config.MaxPendingConnections {
 		return
 	}
-	if dm.connections.Len() > dm.Config.MaxConnections {
+	if dm.connections.Len() >= dm.Config.MaxConnections {
 		return
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.pex.RandomPublic(dm.Config.MaxOutgoingConnections)
+	peers := dm.pex.RandomPublic(dm.Config.MaxOutgoingConnections - dm.connections.OutgoingLen())
 	for _, p := range peers {
 		if err := dm.connectToPeer(p); err != nil {
 			logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")

@@ -477,65 +477,65 @@ func SKY_api_Client_NetworkConnection(_c C.Client__Handle, _addr string, _arg1 *
 	return
 }
 
-//export SKY_api_Client_NetworkConnections
-func SKY_api_Client_NetworkConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
-	c, okc := lookupClientHandle(_c)
-	if !okc {
-		____error_code = SKY_BAD_HANDLE
-		return
-	}
-	__arg0, ____return_err := c.NetworkConnections()
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
-	}
-	return
-}
+// //export SKY_api_Client_NetworkConnections
+// func SKY_api_Client_NetworkConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
+// 	c, okc := lookupClientHandle(_c)
+// 	if !okc {
+// 		____error_code = SKY_BAD_HANDLE
+// 		return
+// 	}
+// 	__arg0, ____return_err := c.NetworkConnections()
+// 	____error_code = libErrorCode(____return_err)
+// 	if ____return_err == nil {
+// 		*_arg0 = registerHandle(__arg0)
+// 	}
+// 	return
+// }
 
-//export SKY_api_Client_NetworkDefaultConnections
-func SKY_api_Client_NetworkDefaultConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
-	c, okc := lookupClientHandle(_c)
-	if !okc {
-		____error_code = SKY_BAD_HANDLE
-		return
-	}
-	__arg0, ____return_err := c.NetworkDefaultConnections()
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
-	}
-	return
-}
+// //export SKY_api_Client_NetworkDefaultConnections
+// func SKY_api_Client_NetworkDefaultConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
+// 	c, okc := lookupClientHandle(_c)
+// 	if !okc {
+// 		____error_code = SKY_BAD_HANDLE
+// 		return
+// 	}
+// 	__arg0, ____return_err := c.NetworkDefaultConnections()
+// 	____error_code = libErrorCode(____return_err)
+// 	if ____return_err == nil {
+// 		*_arg0 = registerHandle(__arg0)
+// 	}
+// 	return
+// }
 
-//export SKY_api_Client_NetworkTrustedConnections
-func SKY_api_Client_NetworkTrustedConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
-	c, okc := lookupClientHandle(_c)
-	if !okc {
-		____error_code = SKY_BAD_HANDLE
-		return
-	}
-	__arg0, ____return_err := c.NetworkTrustedConnections()
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
-	}
-	return
-}
+// //export SKY_api_Client_NetworkTrustedConnections
+// func SKY_api_Client_NetworkTrustedConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
+// 	c, okc := lookupClientHandle(_c)
+// 	if !okc {
+// 		____error_code = SKY_BAD_HANDLE
+// 		return
+// 	}
+// 	__arg0, ____return_err := c.NetworkTrustedConnections()
+// 	____error_code = libErrorCode(____return_err)
+// 	if ____return_err == nil {
+// 		*_arg0 = registerHandle(__arg0)
+// 	}
+// 	return
+// }
 
-//export SKY_api_Client_NetworkExchangeableConnections
-func SKY_api_Client_NetworkExchangeableConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
-	c, okc := lookupClientHandle(_c)
-	if !okc {
-		____error_code = SKY_BAD_HANDLE
-		return
-	}
-	__arg0, ____return_err := c.NetworkExchangeableConnections()
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
-	}
-	return
-}
+// //export SKY_api_Client_NetworkExchangeableConnections
+// func SKY_api_Client_NetworkExchangeableConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
+// 	c, okc := lookupClientHandle(_c)
+// 	if !okc {
+// 		____error_code = SKY_BAD_HANDLE
+// 		return
+// 	}
+// 	__arg0, ____return_err := c.NetworkExchangeableConnections()
+// 	____error_code = libErrorCode(____return_err)
+// 	if ____return_err == nil {
+// 		*_arg0 = registerHandle(__arg0)
+// 	}
+// 	return
+// }
 
 //export SKY_api_Client_PendingTransactions
 func SKY_api_Client_PendingTransactions(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {

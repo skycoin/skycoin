@@ -162,15 +162,8 @@ func (gpm *GetPeersMessage) process(d daemoner) {
 		return
 	}
 
-	peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
-	if len(peers) == 0 {
-		logger.Debug("We have no peers to send in reply")
-		return
-	}
-
-	m := NewGivePeersMessage(peers)
-	if err := d.SendMessage(gpm.addr, m); err != nil {
-		logger.WithField("addr", gpm.addr).WithError(err).Error("Send GivePeersMessage failed")
+	if err := d.sendRandomPeers(gpm.addr); err != nil {
+		logger.WithField("addr", gpm.addr).WithError(err).Error("SendRandomPeers failed")
 	}
 }
 
@@ -296,8 +289,7 @@ func (intro *IntroductionMessage) process(d daemoner) {
 		return
 	}
 
-	c, err := d.connectionIntroduced(addr, intro.c.ConnID, intro, userAgent)
-	if err != nil {
+	if _, err := d.connectionIntroduced(addr, intro.c.ConnID, intro, userAgent); err != nil {
 		logger.WithError(err).WithFields(fields).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
@@ -313,6 +305,12 @@ func (intro *IntroductionMessage) process(d daemoner) {
 			return
 		case ErrConnectionIPMirrorExists:
 			reason = ErrDisconnectConnectedTwice
+		case pex.ErrPeerlistFull:
+			reason = ErrDisconnectPeerlistFull
+			// Send more peers before disconnecting
+			if err := d.sendRandomPeers(addr); err != nil {
+				logger.WithError(err).WithFields(fields).Warning("sendRandomPeers failed")
+			}
 		default:
 			reason = ErrDisconnectUnexpectedError
 		}
@@ -322,27 +320,6 @@ func (intro *IntroductionMessage) process(d daemoner) {
 		}
 
 		return
-	}
-
-	d.ResetRetryTimes(addr)
-
-	listenAddr := c.ListenAddr()
-
-	if c.Outgoing {
-		// For successful outgoing connections, mark the peer as having an incoming port in the pex peerlist
-		// The peer should already be in the peerlist, since we use the peerlist to choose an outgoing connection to make
-		if err := d.SetHasIncomingPort(listenAddr); err != nil {
-			logger.WithError(err).WithFields(fields).WithField("listenAddr", listenAddr).Error("SetHasIncomingPort failed")
-		}
-	} else {
-		// For successful incoming connections, add the peer to the peer list, with their self-reported listen port
-		if err := d.AddPeer(listenAddr); err != nil {
-			logger.WithError(err).WithFields(fields).WithField("listenAddr", listenAddr).Error("AddPeer failed")
-		}
-	}
-
-	if err := d.RecordUserAgent(listenAddr, c.UserAgent); err != nil {
-		logger.WithError(err).WithFields(fields).WithField("listenAddr", listenAddr).Error("RecordUserAgent failed")
 	}
 
 	// Request blocks immediately after they're confirmed

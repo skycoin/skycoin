@@ -135,7 +135,6 @@ func (peer *Peer) IncreaseRetryTimes() {
 // ResetRetryTimes resets the retry time
 func (peer *Peer) ResetRetryTimes() {
 	peer.RetryTimes = 0
-	logger.WithField("addr", peer.Addr).Debug("Reset retry times")
 }
 
 // CanTry returns whether this peer is tryable base on the exponential backoff algorithm
@@ -197,7 +196,7 @@ type Config struct {
 func NewConfig() Config {
 	return Config{
 		DataDirectory:       "./",
-		Max:                 1000,
+		Max:                 65535,
 		Expiration:          time.Hour * 24 * 7,
 		CullRate:            time.Minute * 10,
 		ClearOldRate:        time.Minute * 10,
@@ -303,14 +302,18 @@ func (px *Pex) Run() error {
 		case <-clearOldTicker.C:
 			// Remove peers we haven't seen in a while
 			if !px.Config.Disabled && !px.Config.NetworkDisabled {
-				px.Lock()
 				px.peerlist.clearOld(px.Config.Expiration)
-				px.Unlock()
 			}
 		case <-px.quit:
 			return nil
 		}
 	}
+}
+
+func (px *Pex) clearOld(since time.Duration) {
+	px.Lock()
+	defer px.Unlock()
+	px.peerlist.clearOld(since)
 }
 
 // Shutdown notifies the pex service to exist
@@ -419,7 +422,8 @@ func (px *Pex) save() error {
 }
 
 // AddPeer adds a peer to the peer list, given an address. If the peer list is
-// full, PeerlistFullError is returned
+// full, it will try to remove an old or unreachable peer to make room.
+// If no room can be made, ErrPeerlistFull is returned
 func (px *Pex) AddPeer(addr string) error {
 	px.Lock()
 	defer px.Unlock()
@@ -430,14 +434,28 @@ func (px *Pex) AddPeer(addr string) error {
 		return ErrInvalidAddress
 	}
 
-	if !px.peerlist.hasPeer(cleanAddr) {
-		if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
+	if px.peerlist.hasPeer(cleanAddr) {
+		px.peerlist.seen(cleanAddr)
+		return nil
+	}
+
+	if px.isFull() {
+		worstPeer := px.peerlist.findWorstPeer()
+		if worstPeer == nil {
 			return ErrPeerlistFull
 		}
 
-		px.peerlist.addPeer(cleanAddr)
+		px.peerlist.removePeer(worstPeer.Addr)
+
+		if px.isFull() {
+			// This should never happen, but if it does, don't return an error
+			// The max is a soft limit; exceeding the max will not crash the program.
+			// If this did occur, it is a bug that should be fixed
+			logger.Critical().Error("AddPeer: after removing the worst peer, the peerlist was still full")
+		}
 	}
 
+	px.peerlist.addPeer(cleanAddr)
 	return nil
 }
 
@@ -627,6 +645,10 @@ func (px *Pex) ResetAllRetryTimes() {
 func (px *Pex) IsFull() bool {
 	px.RLock()
 	defer px.RUnlock()
+	return px.isFull()
+}
+
+func (px *Pex) isFull() bool {
 	return px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max
 }
 

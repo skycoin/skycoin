@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
@@ -39,6 +40,7 @@ func TestIntroductionMessage(t *testing.T) {
 		requestBlocksFromAddrErr error
 		announceAllTxnsErr       error
 		recordUserAgentErr       error
+		sendRandomPeersErr       error
 	}
 
 	tt := []struct {
@@ -257,6 +259,34 @@ func TestIntroductionMessage(t *testing.T) {
 			},
 		},
 		{
+			name: "incoming connection peer list full",
+			addr: "121.121.121.121:12345",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				addPeerArg:       "121.121.121.121:6000",
+				addPeerErr:       pex.ErrPeerlistFull,
+				disconnectReason: ErrDisconnectPeerlistFull,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:12345",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.24.1",
+							Remark:  "foo",
+						},
+					},
+				},
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ProtocolVersion: 1,
+				ListenPort:      6000,
+			},
+		},
+		{
 			name:      "Connect twice",
 			addr:      "121.121.121.121:6000",
 			gnetID:    2,
@@ -297,7 +327,7 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("Mirror").Return(tc.mockValue.mirror)
 			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
-			d.On("ResetRetryTimes", tc.addr)
+			d.On("ResetRetryTimes", tc.mockValue.addPeerArg)
 			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("IncreaseRetryTimes", tc.addr)
@@ -306,6 +336,7 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, tc.intro, mock.Anything).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
 			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
 			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
+			d.On("SendRandomPeers", tc.addr).Return(tc.mockValue.sendRandomPeersErr)
 
 			var userAgent useragent.Data
 			if tc.mockValue.connectionIntroduced != nil {

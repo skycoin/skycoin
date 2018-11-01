@@ -377,40 +377,119 @@ func TestPexLoadPeers(t *testing.T) {
 }
 
 func TestPexAddPeer(t *testing.T) {
+	now := time.Now().UTC().Unix()
+
 	tt := []struct {
-		name  string
-		peers []string
-		max   int
-		peer  string
-		err   error
+		name        string
+		peers       []Peer
+		max         int
+		finalLen    int
+		peer        string
+		err         error
+		removedPeer string
+		check       func(px *Pex)
 	}{
 		{
-			"ok",
-			testPeers[:1],
-			2,
-			testPeers[1],
-			nil,
+			name: "ok",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+			},
+			max:      2,
+			peer:     testPeers[1],
+			err:      nil,
+			finalLen: 2,
 		},
 		{
-			"invalid peer",
-			testPeers[:1],
-			2,
-			wrongPortPeer,
-			ErrInvalidAddress,
+			name: "invalid peer",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+			},
+			max:      2,
+			peer:     wrongPortPeer,
+			err:      ErrInvalidAddress,
+			finalLen: 1,
 		},
 		{
-			"reach max",
-			testPeers[:2],
-			2,
-			testPeers[3],
-			ErrPeerlistFull,
+			name: "peer known",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+				{
+					Addr:       testPeers[1],
+					LastSeen:   now,
+					RetryTimes: 1,
+				},
+			},
+			max:      2,
+			peer:     testPeers[1],
+			err:      nil,
+			finalLen: 2,
+			check: func(px *Pex) {
+				p := px.peerlist.peers[testPeers[1]]
+				require.NotNil(t, p)
+				require.Equal(t, 0, p.RetryTimes)
+				require.True(t, p.LastSeen >= now)
+			},
 		},
 		{
-			"no max",
-			testPeers[:2],
-			0,
-			testPeers[3],
-			nil,
+			name: "reach max",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+				{
+					Addr:     testPeers[1],
+					LastSeen: now,
+				},
+			},
+			max:      2,
+			peer:     testPeers[3],
+			err:      ErrPeerlistFull,
+			finalLen: 2,
+		},
+		{
+			name: "reach max but kicked old peer",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+				{
+					Addr:     testPeers[1],
+					LastSeen: now - 60*60*24*2,
+				},
+			},
+			max:         2,
+			peer:        testPeers[3],
+			err:         nil,
+			finalLen:    2,
+			removedPeer: testPeers[1],
+		},
+		{
+			name: "no max",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+				{
+					Addr:     testPeers[1],
+					LastSeen: now,
+				},
+			},
+			max:      0,
+			peer:     testPeers[3],
+			err:      nil,
+			finalLen: 3,
 		},
 	}
 
@@ -424,14 +503,22 @@ func TestPexAddPeer(t *testing.T) {
 			cfg := NewConfig()
 			cfg.Max = tc.max
 			cfg.DataDirectory = dir
-			cfg.DefaultConnections = tc.peers
+			cfg.DefaultConnections = []string{}
 
 			// create px instance and load peers
 			px, err := New(cfg)
 			require.NoError(t, err)
 
+			px.peerlist.setPeers(tc.peers)
+
 			err = px.AddPeer(tc.peer)
 			require.Equal(t, tc.err, err)
+			require.Equal(t, tc.finalLen, len(px.peerlist.peers))
+
+			if tc.check != nil {
+				tc.check(px)
+			}
+
 			if err != nil {
 				return
 			}
@@ -439,6 +526,11 @@ func TestPexAddPeer(t *testing.T) {
 			// check if the peer is in the peer list
 			_, ok := px.peerlist.peers[tc.peer]
 			require.True(t, ok)
+
+			if tc.removedPeer != "" {
+				_, ok := px.peerlist.peers[tc.removedPeer]
+				require.False(t, ok)
+			}
 		})
 	}
 }

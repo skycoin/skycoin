@@ -37,6 +37,8 @@ var (
 	ErrDisconnectInvalidUserAgent gnet.DisconnectReason = errors.New("Invalid user agent")
 	// ErrDisconnectRequestedByOperator the operator of the node requested a disconnect
 	ErrDisconnectRequestedByOperator gnet.DisconnectReason = errors.New("Disconnect requested by the node operator")
+	// ErrDisconnectPeerlistFull the peerlist is full
+	ErrDisconnectPeerlistFull gnet.DisconnectReason = errors.New("Peerlist is full")
 
 	// ErrDisconnectUnknownReason used when mapping an unknown reason code to an error. Is not sent over the network.
 	ErrDisconnectUnknownReason gnet.DisconnectReason = errors.New("Unknown DisconnectReason")
@@ -59,6 +61,7 @@ var (
 		ErrDisconnectReceivedDisconnect:            13,
 		ErrDisconnectInvalidUserAgent:              14,
 		ErrDisconnectRequestedByOperator:           15,
+		ErrDisconnectPeerlistFull:                  16,
 
 		// gnet codes are registered here, but they are not sent in a DISC
 		// message by gnet. Only daemon sends a DISC packet.

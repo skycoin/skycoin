@@ -330,6 +330,70 @@ func TestPeerListSetTrusted(t *testing.T) {
 	}
 }
 
+func TestPeerlistFindWorstPeer(t *testing.T) {
+	notOldPeer := Peer{
+		Addr:       "3.3.3.3:6060",
+		LastSeen:   time.Now().UTC().Unix() - 60,
+		RetryTimes: 0,
+	}
+	oldPeer := Peer{
+		Addr:       "1.1.1.1:6060",
+		LastSeen:   time.Now().UTC().Unix() - 60*60*24*2,
+		RetryTimes: 0,
+	}
+	retriedPeer := Peer{
+		Addr:       "2.2.2.2:6060",
+		LastSeen:   time.Now().UTC().Unix() - 60,
+		RetryTimes: 1,
+	}
+
+	cases := []struct {
+		name      string
+		initPeers []Peer
+		expect    *Peer
+	}{
+		{
+			name:      "empty peerlist",
+			initPeers: []Peer{},
+			expect:    nil,
+		},
+
+		{
+			name: "no worst peer",
+			initPeers: []Peer{
+				notOldPeer,
+			},
+			expect: nil,
+		},
+
+		{
+			name: "old peer",
+			initPeers: []Peer{
+				oldPeer,
+				retriedPeer,
+			},
+			expect: &oldPeer,
+		},
+
+		{
+			name: "retried peer",
+			initPeers: []Peer{
+				notOldPeer,
+				retriedPeer,
+			},
+			expect: &retriedPeer,
+		},
+	}
+
+	for _, tc := range cases {
+		pl := newPeerlist()
+		pl.setPeers(tc.initPeers)
+
+		p := pl.findWorstPeer()
+		require.Equal(t, tc.expect, p)
+	}
+}
+
 func TestPeerlistClearOld(t *testing.T) {
 	tt := []struct {
 		name        string

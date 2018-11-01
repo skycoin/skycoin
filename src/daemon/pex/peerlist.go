@@ -118,6 +118,13 @@ func (pl *peerlist) addPeers(addrs []string) {
 	}
 }
 
+func (pl *peerlist) seen(addr string) {
+	if p, ok := pl.peers[addr]; ok && p != nil {
+		p.Seen()
+		p.ResetRetryTimes()
+	}
+}
+
 // getCanTryPeers returns all peers that are triable(retried times blew exponential backoff times)
 // and are able to pass the filters.
 func (pl *peerlist) getCanTryPeers(flts []Filter) Peers {
@@ -250,12 +257,12 @@ func (pl *peerlist) getPeer(addr string) (Peer, bool) {
 	return Peer{}, false
 }
 
-// ClearOld removes public peers that haven't been seen in timeAgo seconds
+// clearOld removes public, untrusted peers that haven't been seen in timeAgo seconds
 func (pl *peerlist) clearOld(timeAgo time.Duration) {
 	t := time.Now().UTC()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
-		if !peer.Private && t.Sub(lastSeen) > timeAgo {
+		if !peer.Private && !peer.Trusted && t.Sub(lastSeen) > timeAgo {
 			delete(pl.peers, addr)
 		}
 	}
@@ -321,6 +328,49 @@ func (pl *peerlist) resetAllRetryTimes() {
 	for _, p := range pl.peers {
 		p.ResetRetryTimes()
 	}
+}
+
+// findWorstPeer returns the a peer not seen in the longest time, if that time is over 1 day,
+// else it returns a peer with the highest retry times, if the retry times are more than 0,
+// else it returns nil
+func (pl *peerlist) findWorstPeer() *Peer {
+	now := time.Now().UTC().Unix()
+	lastSeen := now
+	retries := 0
+	var oldest *Peer
+	var mostRetries *Peer
+
+	for _, p := range pl.peers {
+		if p.Trusted || p.Private {
+			continue
+		}
+
+		if p.LastSeen < lastSeen {
+			lastSeen = p.LastSeen
+			oldest = p
+		}
+
+		if p.RetryTimes > retries {
+			retries = p.RetryTimes
+			mostRetries = p
+		}
+	}
+
+	if oldest == nil && mostRetries == nil {
+		return nil
+	}
+
+	if oldest != nil && now-oldest.LastSeen > 60*60*24 {
+		p := *oldest
+		return &p
+	}
+
+	if mostRetries != nil && mostRetries.RetryTimes > 0 {
+		p := *mostRetries
+		return &p
+	}
+
+	return nil
 }
 
 // PeerJSON is for saving and loading peers to disk. Some fields are strange,

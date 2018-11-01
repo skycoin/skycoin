@@ -697,7 +697,7 @@ type SendingTxnsMessage interface {
 
 // AnnounceTxnsMessage tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
-	Transactions []cipher.SHA256      `enc:",maxlen=256`
+	Transactions []cipher.SHA256      `enc:",maxlen=256"`
 	c            *gnet.MessageContext `enc:"-"`
 }
 

@@ -29,7 +29,8 @@
 		"wallet_api_enabled": true,
 		"gui_enabled": false,
 		"unversioned_api_enabled": false,
-		"json_rpc_enabled": false
+		"json_rpc_enabled": false,
+		"coinhour_burn_factor": 2
 	},
 	"cli_config": {
 		"webrpc_address": "http://127.0.0.1:1024"

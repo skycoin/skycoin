@@ -13,7 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
@@ -28,19 +27,14 @@ func TestIntroductionMessage(t *testing.T) {
 		protocolVersion          uint32
 		minProtocolVersion       uint32
 		mirror                   uint32
-		setHasIncomingPortErr    error
 		recordMessageEventErr    error
 		pubkey                   cipher.PubKey
 		disconnectReason         gnet.DisconnectReason
 		disconnectErr            error
-		addPeerArg               string
-		addPeerErr               error
 		connectionIntroduced     *connection
 		connectionIntroducedErr  error
 		requestBlocksFromAddrErr error
 		announceAllTxnsErr       error
-		recordUserAgentErr       error
-		sendRandomPeersErr       error
 	}
 
 	tt := []struct {
@@ -64,8 +58,6 @@ func TestIntroductionMessage(t *testing.T) {
 						Outgoing:   true,
 					},
 				},
-				addPeerArg: "121.121.121.121:6000",
-				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -106,8 +98,6 @@ func TestIntroductionMessage(t *testing.T) {
 						},
 					},
 				},
-				addPeerArg: "121.121.121.121:6000",
-				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -133,8 +123,6 @@ func TestIntroductionMessage(t *testing.T) {
 						},
 					},
 				},
-				addPeerArg: "121.121.121.121:6000",
-				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -238,36 +226,6 @@ func TestIntroductionMessage(t *testing.T) {
 				mirror:          10000,
 				protocolVersion: 1,
 				pubkey:          pubkey,
-				addPeerArg:      "121.121.121.121:6000",
-				addPeerErr:      nil,
-				connectionIntroduced: &connection{
-					Addr: "121.121.121.121:12345",
-					ConnectionDetails: ConnectionDetails{
-						ListenPort: 6000,
-						UserAgent: useragent.Data{
-							Coin:    "skycoin",
-							Version: "0.24.1",
-							Remark:  "foo",
-						},
-					},
-				},
-			},
-			intro: &IntroductionMessage{
-				Mirror:          10001,
-				ProtocolVersion: 1,
-				ListenPort:      6000,
-			},
-		},
-		{
-			name: "incoming connection peer list full",
-			addr: "121.121.121.121:12345",
-			mockValue: daemonMockValue{
-				mirror:           10000,
-				protocolVersion:  1,
-				pubkey:           pubkey,
-				addPeerArg:       "121.121.121.121:6000",
-				addPeerErr:       pex.ErrPeerlistFull,
-				disconnectReason: ErrDisconnectPeerlistFull,
 				connectionIntroduced: &connection{
 					Addr: "121.121.121.121:12345",
 					ConnectionDetails: ConnectionDetails{
@@ -325,24 +283,12 @@ func TestIntroductionMessage(t *testing.T) {
 				},
 			})
 			d.On("Mirror").Return(tc.mockValue.mirror)
-			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
-			d.On("ResetRetryTimes", tc.mockValue.addPeerArg)
 			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
-			d.On("IncreaseRetryTimes", tc.addr)
-			d.On("RemoveFromExpectingIntroductions", tc.addr)
-			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, tc.intro, mock.Anything).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
 			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
 			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
-			d.On("SendRandomPeers", tc.addr).Return(tc.mockValue.sendRandomPeersErr)
-
-			var userAgent useragent.Data
-			if tc.mockValue.connectionIntroduced != nil {
-				userAgent = tc.mockValue.connectionIntroduced.UserAgent
-			}
-			d.On("RecordUserAgent", tc.mockValue.addPeerArg, userAgent).Return(tc.mockValue.recordUserAgentErr)
 
 			err := tc.intro.Handle(mc, d)
 			require.NoError(t, err)

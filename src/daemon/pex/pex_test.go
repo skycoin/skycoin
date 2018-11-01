@@ -424,7 +424,7 @@ func TestPexAddPeer(t *testing.T) {
 				},
 				{
 					Addr:       testPeers[1],
-					LastSeen:   now,
+					LastSeen:   now - 60,
 					RetryTimes: 1,
 				},
 			},
@@ -436,7 +436,7 @@ func TestPexAddPeer(t *testing.T) {
 				p := px.peerlist.peers[testPeers[1]]
 				require.NotNil(t, p)
 				require.Equal(t, 0, p.RetryTimes)
-				require.True(t, p.LastSeen >= now)
+				require.True(t, p.LastSeen > now-60)
 			},
 		},
 		{
@@ -680,92 +680,79 @@ func TestPexRandomExchangeable(t *testing.T) {
 		expectPeers []Peer
 	}{
 		{
-			"n=0 exchangeable=0",
-			[]Peer{
+			name: "n=0 exchangeable=0",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			0,
-			0,
-			[]Peer{},
+			n:           0,
+			expectN:     0,
+			expectPeers: []Peer{},
 		},
 		{
-			"n=0 exchangeable=1",
-			[]Peer{
+			name: "n=0 exchangeable=1",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			0,
-			1,
-			[]Peer{
+			n:       0,
+			expectN: 1,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 			},
 		},
 		{
-			"n=0 exchangeable=2",
-			[]Peer{
+			name: "n=0 exchangeable=2",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			0,
-			2,
-			[]Peer{
+			n:       0,
+			expectN: 2,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
 			},
 		},
 		{
-			"n=1 exchangeable=0",
-			[]Peer{
+			name: "n=1 exchangeable=0",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			1,
-			0,
-			[]Peer{},
+			n:           1,
+			expectN:     0,
+			expectPeers: []Peer{},
 		},
 		{
-			"n=1 exchangeable=1",
-			[]Peer{
+			name: "n=1 exchangeable=1",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: false},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			1,
-			1,
-			[]Peer{
+			n:       1,
+			expectN: 1,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 			},
 		},
 		{
-			"n=1 exchangeable=2",
-			[]Peer{
+			name: "n=1 exchangeable=2",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			1,
-			1,
-			[]Peer{
+			n:       1,
+			expectN: 1,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
-			},
-		},
-		{
-			"n=2 exchangeable=1",
-			[]Peer{
-				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
-				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true, RetryTimes: 1},
-				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
-			},
-			2,
-			1,
-			[]Peer{
-				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 			},
 		},
 	}

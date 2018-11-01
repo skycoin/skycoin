@@ -233,7 +233,6 @@ type daemoner interface {
 	DisconnectNow(addr string, r gnet.DisconnectReason) error
 	PexConfig() pex.Config
 	AddPeers(addrs []string) int
-	IncreaseRetryTimes(addr string)
 	RecordPeerHeight(addr string, gnetID, height uint64)
 	GetSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error)
 	HeadBkSeq() (uint64, bool, error)
@@ -910,12 +909,12 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 	case ErrDisconnectNoIntroduction,
 		ErrDisconnectVersionNotSupported,
 		ErrDisconnectSelf:
-		dm.IncreaseRetryTimes(e.Addr)
-	}
-
-	switch e.Reason.Error() {
-	case "read failed: EOF":
-		dm.IncreaseRetryTimes(e.Addr)
+		dm.pex.IncreaseRetryTimes(e.Addr)
+	default:
+		switch e.Reason.Error() {
+		case "read failed: EOF":
+			dm.pex.IncreaseRetryTimes(e.Addr)
+		}
 	}
 }
 
@@ -1333,11 +1332,6 @@ func (dm *Daemon) PexConfig() pex.Config {
 // AddPeers adds peers to the pex
 func (dm *Daemon) AddPeers(addrs []string) int {
 	return dm.pex.AddPeers(addrs)
-}
-
-// IncreaseRetryTimes increases the retry times of given peer
-func (dm *Daemon) IncreaseRetryTimes(addr string) {
-	dm.pex.IncreaseRetryTimes(addr)
 }
 
 // ResetRetryTimes reset the retry times of given peer

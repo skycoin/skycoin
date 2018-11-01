@@ -330,21 +330,28 @@ func TestPeerListSetTrusted(t *testing.T) {
 	}
 }
 
-func TestPeerlistFindWorstPeer(t *testing.T) {
-	notOldPeer := Peer{
-		Addr:       "3.3.3.3:6060",
-		LastSeen:   time.Now().UTC().Unix() - 60,
-		RetryTimes: 0,
+func TestPeerlistFindOldestUntrustedPeer(t *testing.T) {
+	peer1 := Peer{
+		Addr:     "1.1.1.1:6060",
+		LastSeen: time.Now().UTC().Unix() - 60*60*24*2,
 	}
-	oldPeer := Peer{
-		Addr:       "1.1.1.1:6060",
-		LastSeen:   time.Now().UTC().Unix() - 60*60*24*2,
-		RetryTimes: 0,
+	peer2 := Peer{
+		Addr:     "2.2.2.2:6060",
+		LastSeen: time.Now().UTC().Unix() - 60*60*24*7,
 	}
-	retriedPeer := Peer{
-		Addr:       "2.2.2.2:6060",
-		LastSeen:   time.Now().UTC().Unix() - 60,
-		RetryTimes: 1,
+	peer3 := Peer{
+		Addr:     "3.3.3.3:6060",
+		LastSeen: time.Now().UTC().Unix() - 60,
+	}
+	trustedPeer := Peer{
+		Addr:     "4.4.4.4:6060",
+		LastSeen: time.Now().UTC().Unix() - 60*60*24*30,
+		Trusted:  true,
+	}
+	privatePeer := Peer{
+		Addr:     "5.5.5.5:6060",
+		LastSeen: time.Now().UTC().Unix() - 60*60*24*30,
+		Private:  true,
 	}
 
 	cases := []struct {
@@ -359,38 +366,53 @@ func TestPeerlistFindWorstPeer(t *testing.T) {
 		},
 
 		{
-			name: "no worst peer",
+			name: "no untrusted public peers",
 			initPeers: []Peer{
-				notOldPeer,
+				trustedPeer,
+				privatePeer,
 			},
 			expect: nil,
 		},
 
 		{
-			name: "old peer",
+			name: "one peer",
 			initPeers: []Peer{
-				oldPeer,
-				retriedPeer,
+				peer1,
 			},
-			expect: &oldPeer,
+			expect: &peer1,
 		},
 
 		{
-			name: "retried peer",
+			name: "3 peers ignore trusted",
 			initPeers: []Peer{
-				notOldPeer,
-				retriedPeer,
+				peer1,
+				trustedPeer,
+				peer2,
+				peer3,
 			},
-			expect: &retriedPeer,
+			expect: &peer2,
+		},
+
+		{
+			name: "3 peers ignore private",
+			initPeers: []Peer{
+				peer1,
+				privatePeer,
+				peer2,
+				peer3,
+			},
+			expect: &peer2,
 		},
 	}
 
 	for _, tc := range cases {
-		pl := newPeerlist()
-		pl.setPeers(tc.initPeers)
+		t.Run(tc.name, func(t *testing.T) {
+			pl := newPeerlist()
+			pl.setPeers(tc.initPeers)
 
-		p := pl.findWorstPeer()
-		require.Equal(t, tc.expect, p)
+			p := pl.findOldestUntrustedPeer()
+			require.Equal(t, tc.expect, p)
+		})
 	}
 }
 

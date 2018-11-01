@@ -440,12 +440,12 @@ func (px *Pex) AddPeer(addr string) error {
 	}
 
 	if px.isFull() {
-		worstPeer := px.peerlist.findWorstPeer()
-		if worstPeer == nil {
+		oldestPeer := px.peerlist.findOldestUntrustedPeer()
+		if oldestPeer == nil || time.Now().UTC().Unix()-oldestPeer.LastSeen < 60*60*24 {
 			return ErrPeerlistFull
 		}
 
-		px.peerlist.removePeer(worstPeer.Addr)
+		px.peerlist.removePeer(oldestPeer.Addr)
 
 		if px.isFull() {
 			// This should never happen, but if it does, don't return an error

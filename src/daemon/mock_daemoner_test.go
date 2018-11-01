@@ -277,11 +277,6 @@ func (_m *mockDaemoner) HeadBkSeq() (uint64, bool, error) {
 	return r0, r1, r2
 }
 
-// IncreaseRetryTimes provides a mock function with given fields: addr
-func (_m *mockDaemoner) IncreaseRetryTimes(addr string) {
-	_m.Called(addr)
-}
-
 // InjectTransaction provides a mock function with given fields: txn
 func (_m *mockDaemoner) InjectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
 	ret := _m.Called(txn)

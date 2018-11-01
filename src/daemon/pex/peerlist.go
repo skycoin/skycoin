@@ -187,7 +187,7 @@ func zeroRetryTimes(p Peer) bool {
 }
 
 // isExchangeable filters exchangeable peers
-var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
+var isExchangeable = []Filter{hasIncomingPort, isPublic}
 
 // removePeer removes peer
 func (pl *peerlist) removePeer(addr string) {
@@ -330,43 +330,21 @@ func (pl *peerlist) resetAllRetryTimes() {
 	}
 }
 
-// findWorstPeer returns the a peer not seen in the longest time, if that time is over 1 day,
-// else it returns a peer with the highest retry times, if the retry times are more than 0,
-// else it returns nil
-func (pl *peerlist) findWorstPeer() *Peer {
-	now := time.Now().UTC().Unix()
-	lastSeen := now
-	retries := 0
+func (pl *peerlist) findOldestUntrustedPeer() *Peer {
 	var oldest *Peer
-	var mostRetries *Peer
 
 	for _, p := range pl.peers {
 		if p.Trusted || p.Private {
 			continue
 		}
 
-		if p.LastSeen < lastSeen {
-			lastSeen = p.LastSeen
+		if oldest == nil || p.LastSeen < oldest.LastSeen {
 			oldest = p
 		}
-
-		if p.RetryTimes > retries {
-			retries = p.RetryTimes
-			mostRetries = p
-		}
 	}
 
-	if oldest == nil && mostRetries == nil {
-		return nil
-	}
-
-	if oldest != nil && now-oldest.LastSeen > 60*60*24 {
+	if oldest != nil {
 		p := *oldest
-		return &p
-	}
-
-	if mostRetries != nil && mostRetries.RetryTimes > 0 {
-		p := *mostRetries
 		return &p
 	}
 

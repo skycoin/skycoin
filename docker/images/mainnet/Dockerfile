@@ -6,6 +6,12 @@ ARG ARCH=amd64
 ARG GOARM
 ARG SKYCOIN_VERSION
 
+# Image labels
+LABEL "org.label-schema.name"="Skycoin" \
+      "org.label-schema.description"="Skycoin core docker image" \
+      "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin/tree/develop/docker/images/mainnet" \
+      "org.label-schema.vendor"="www.skycoin.net"
+
 COPY . $GOPATH/src/github.com/skycoin/skycoin
 
 # This code checks if SKYCOIN_VERSION is set and checkouts to that version if

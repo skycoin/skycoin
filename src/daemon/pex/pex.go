@@ -302,18 +302,16 @@ func (px *Pex) Run() error {
 		case <-clearOldTicker.C:
 			// Remove peers we haven't seen in a while
 			if !px.Config.Disabled && !px.Config.NetworkDisabled {
-				px.peerlist.clearOld(px.Config.Expiration)
+				func() {
+					px.Lock()
+					defer px.Unlock()
+					px.peerlist.clearOld(px.Config.Expiration)
+				}()
 			}
 		case <-px.quit:
 			return nil
 		}
 	}
-}
-
-func (px *Pex) clearOld(since time.Duration) {
-	px.Lock()
-	defer px.Unlock()
-	px.peerlist.clearOld(since)
 }
 
 // Shutdown notifies the pex service to exist
@@ -422,7 +420,7 @@ func (px *Pex) save() error {
 }
 
 // AddPeer adds a peer to the peer list, given an address. If the peer list is
-// full, it will try to remove an old or unreachable peer to make room.
+// full, it will try to remove an old peer to make room.
 // If no room can be made, ErrPeerlistFull is returned
 func (px *Pex) AddPeer(addr string) error {
 	px.Lock()
@@ -448,9 +446,10 @@ func (px *Pex) AddPeer(addr string) error {
 		px.peerlist.removePeer(oldestPeer.Addr)
 
 		if px.isFull() {
-			// This should never happen, but if it does, don't return an error
+			// This can happen if the node is run with a peers.json file that has more peers
+			// than the max peerlist size, then the peers.json file isn't truncated to the max peerlist size.
+			// It is not an error.
 			// The max is a soft limit; exceeding the max will not crash the program.
-			// If this did occur, it is a bug that should be fixed
 			logger.Critical().Error("AddPeer: after removing the worst peer, the peerlist was still full")
 		}
 	}

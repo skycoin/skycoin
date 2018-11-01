@@ -1,5 +1,10 @@
-# Creates an image for skycoin development
+# Creates an image for skycoin development with docker in docker
 FROM skycoin/skycoindev-cli:develop
+
+# Image labels
+LABEL "org.label-schema.name"="skycoin/skycoindev-cli:dind" \
+      "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-docker" \
+      "org.label-schema.vendor"="www.skycoin.net"
 
 # Install docker
 
@@ -10,7 +15,8 @@ RUN set -ex; \
     apt-get install -y --no-install-recommends \
     lsb-release \
     software-properties-common \
-    apt-transport-https
+    apt-transport-https ;\
+    apt clean
 
 RUN add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/debian \

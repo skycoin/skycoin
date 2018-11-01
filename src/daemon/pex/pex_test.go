@@ -423,9 +423,8 @@ func TestPexAddPeer(t *testing.T) {
 					LastSeen: now,
 				},
 				{
-					Addr:       testPeers[1],
-					LastSeen:   now - 60,
-					RetryTimes: 1,
+					Addr:     testPeers[1],
+					LastSeen: now - 60,
 				},
 			},
 			max:      2,
@@ -435,7 +434,7 @@ func TestPexAddPeer(t *testing.T) {
 			check: func(px *Pex) {
 				p := px.peerlist.peers[testPeers[1]]
 				require.NotNil(t, p)
-				require.Equal(t, 0, p.RetryTimes)
+				// Peer should have been marked as seen
 				require.True(t, p.LastSeen > now-60)
 			},
 		},

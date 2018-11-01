@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -930,6 +931,10 @@ func (dm *Daemon) onConnectFailure(c ConnectFailureEvent) {
 	if err := dm.connections.remove(c.Addr, 0); err != nil {
 		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
 	}
+
+	if strings.HasSuffix(c.Error.Error(), "connect: connection refused") {
+		dm.pex.IncreaseRetryTimes(c.Addr)
+	}
 }
 
 // onGnetDisconnect triggered when a gnet.Connection terminates
@@ -1259,12 +1264,12 @@ func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *Introducti
 		}
 	}
 
-	dm.pex.ResetRetryTimes(listenAddr)
-
 	if err := dm.pex.SetUserAgent(listenAddr, c.UserAgent); err != nil {
 		logger.Critical().WithError(err).WithFields(fields).Error("pex.SetUserAgent failed")
 		return nil, err
 	}
+
+	dm.pex.ResetRetryTimes(listenAddr)
 
 	return c, nil
 }

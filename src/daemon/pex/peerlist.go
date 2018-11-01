@@ -121,7 +121,6 @@ func (pl *peerlist) addPeers(addrs []string) {
 func (pl *peerlist) seen(addr string) {
 	if p, ok := pl.peers[addr]; ok && p != nil {
 		p.Seen()
-		p.ResetRetryTimes()
 	}
 }
 

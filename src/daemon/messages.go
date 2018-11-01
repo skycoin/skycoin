@@ -218,8 +218,8 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 
 	// Cap the number of peers printed in the log to prevent log spam abuse
 	peersToFmt := peers
-	if len(peersToFmt) > 1 {
-		peersToFmt = peersToFmt[:1]
+	if len(peersToFmt) > 30 {
+		peersToFmt = peersToFmt[:30]
 	}
 	peersStr := strings.Join(peersToFmt, ", ")
 	if len(peers) != len(peersToFmt) {

@@ -181,10 +181,6 @@ func canTry(p Peer) bool {
 	return p.CanTry()
 }
 
-func zeroRetryTimes(p Peer) bool {
-	return p.RetryTimes == 0
-}
-
 // isExchangeable filters exchangeable peers
 var isExchangeable = []Filter{hasIncomingPort, isPublic}
 

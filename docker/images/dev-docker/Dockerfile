@@ -2,7 +2,8 @@
 FROM skycoin/skycoindev-cli:develop
 
 # Image labels
-LABEL "org.label-schema.name"="skycoin/skycoindev-cli:dind" \
+LABEL "org.label-schema.name"="skycoindev-cli:dind" \
+      "org.label-schema.description"="Skycoin cli develop image with docker in docker support" \
       "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-docker" \
       "org.label-schema.vendor"="www.skycoin.net"
 

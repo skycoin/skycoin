@@ -25,42 +25,25 @@ import (
 )
 
 var (
-	// ErrDisconnectVersionNotSupported version is below minimum supported version
-	ErrDisconnectVersionNotSupported gnet.DisconnectReason = errors.New("Version is below minimum supported version")
-	// ErrDisconnectIntroductionTimeout timeout
-	ErrDisconnectIntroductionTimeout gnet.DisconnectReason = errors.New("Version timeout")
-	// ErrDisconnectVersionSendFailed version send failed
-	ErrDisconnectVersionSendFailed gnet.DisconnectReason = errors.New("Version send failed")
-	// ErrDisconnectIsBlacklisted is blacklisted
-	ErrDisconnectIsBlacklisted gnet.DisconnectReason = errors.New("Blacklisted")
-	// ErrDisconnectSelf self connnect
-	ErrDisconnectSelf gnet.DisconnectReason = errors.New("Self connect")
-	// ErrDisconnectConnectedTwice connect twice
-	ErrDisconnectConnectedTwice gnet.DisconnectReason = errors.New("Already connected")
-	// ErrDisconnectIdle idle
-	ErrDisconnectIdle gnet.DisconnectReason = errors.New("Idle")
-	// ErrDisconnectNoIntroduction no introduction
-	ErrDisconnectNoIntroduction gnet.DisconnectReason = errors.New("First message was not an Introduction")
-	// ErrDisconnectIPLimitReached ip limit reached
-	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
-	// ErrDisconnectIncomprehensibleError this is returned when a seemingly impossible error is encountered
-	// e.g. net.Conn.Addr() returns an invalid ip:port
-	ErrDisconnectIncomprehensibleError gnet.DisconnectReason = errors.New("Incomprehensible error")
-	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
-	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
-	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
-	ErrDisconnectBlockchainPubkeyNotMatched gnet.DisconnectReason = errors.New("Blockchain pubkey in Introduction message is not matched ")
-	// ErrDisconnectInvalidExtraData is returned when extra field can't be parsed as specific data type.
-	// e.g. ExtraData length in IntroductionMessage is not the same as cipher.PubKey
-	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data")
-	// ErrDisconnectInvalidUserAgent is returned if the peer provides an invalid user agent
-	ErrDisconnectInvalidUserAgent gnet.DisconnectReason = errors.New("Invalid user agent")
-
-	// ErrOutgoingConnectionsDisabled is returned if outgoing connections are disabled
-	ErrOutgoingConnectionsDisabled = errors.New("Outgoing connections are disabled")
+	// ErrNetworkingDisabled is returned if networking is disabled
+	ErrNetworkingDisabled = errors.New("Networking is disabled")
 
 	logger = logging.MustGetLogger("daemon")
 )
+
+// IsBroadcastFailure returns true if an error indicates that a broadcast operation failed
+func IsBroadcastFailure(err error) bool {
+	switch err {
+	case ErrNetworkingDisabled,
+		gnet.ErrPoolEmpty,
+		gnet.ErrNoMatchingConnections,
+		gnet.ErrNoReachableConnections,
+		gnet.ErrNoAddresses:
+		return true
+	default:
+		return false
+	}
+}
 
 const (
 	daemonRunDurationThreshold = time.Millisecond * 200
@@ -247,6 +230,7 @@ type daemoner interface {
 	SendMessage(addr string, msg gnet.Message) error
 	BroadcastMessage(msg gnet.Message) error
 	Disconnect(addr string, r gnet.DisconnectReason) error
+	DisconnectNow(addr string, r gnet.DisconnectReason) error
 	PexConfig() pex.Config
 	RandomExchangeable(n int) pex.Peers
 	AddPeer(addr string) error
@@ -269,7 +253,7 @@ type daemoner interface {
 	RecordUserAgent(addr string, userAgent useragent.Data) error
 
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
-	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error)
+	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error)
 }
 
 // Daemon stateful properties of the daemon
@@ -459,12 +443,16 @@ func (dm *Daemon) Run() error {
 	flushAnnouncedTxnsTicker := time.NewTicker(dm.Config.FlushAnnouncedTxnsRate)
 	defer flushAnnouncedTxnsTicker.Stop()
 
-	// Connect to trusted peers
+	// Connect to all trusted peers on startup to try to ensure a connection
+	// establishes quickly.
+	// The number of connections to default peers is restricted;
+	// if multiple connections succeed, extra connections beyond the limit will
+	// be disconnected.
 	if !dm.Config.DisableOutgoingConnections {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dm.connectToTrustPeer()
+			dm.connectToTrustedPeers()
 		}()
 	}
 
@@ -532,7 +520,17 @@ loop:
 			// Remove connections that haven't said anything in a while
 			elapser.Register("clearStaleConnectionsTicker")
 			if !dm.Config.DisableNetworking {
-				dm.pool.clearStaleConnections()
+				conns, err := dm.pool.getStaleConnections()
+				if err != nil {
+					logger.WithError(err).Error("getStaleConnections failed")
+					continue
+				}
+
+				for _, addr := range conns {
+					if err := dm.Disconnect(addr, ErrDisconnectIdle); err != nil {
+						logger.WithError(err).WithField("addr", addr).Error("Disconnect")
+					}
+				}
 			}
 
 		case <-idleCheckTicker.C:
@@ -710,7 +708,7 @@ func (dm *Daemon) makePrivateConnections() {
 	}
 }
 
-func (dm *Daemon) connectToTrustPeer() {
+func (dm *Daemon) connectToTrustedPeers() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
@@ -730,18 +728,18 @@ func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	if dm.connections.OutgoingLen() < dm.Config.MaxOutgoingConnections {
+	if dm.connections.OutgoingLen() >= dm.Config.MaxOutgoingConnections {
 		return
 	}
-	if dm.connections.PendingLen() < dm.Config.MaxPendingConnections {
+	if dm.connections.PendingLen() >= dm.Config.MaxPendingConnections {
 		return
 	}
-	if dm.connections.Len() < dm.Config.MaxConnections {
+	if dm.connections.Len() >= dm.Config.MaxConnections {
 		return
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.pex.RandomPublicUntrusted(dm.Config.MaxOutgoingConnections)
+	peers := dm.pex.RandomPublic(dm.Config.MaxOutgoingConnections - dm.connections.OutgoingLen())
 	for _, p := range peers {
 		if err := dm.connectToPeer(p); err != nil {
 			logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
@@ -833,18 +831,20 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 
 	// The first message received must be an IntroductionMessage
 	if !c.HasIntroduced() {
-		_, isIntro := e.Message.(*IntroductionMessage)
-		if !isIntro {
+		switch e.Message.(type) {
+		case *IntroductionMessage, *DisconnectMessage:
+		default:
 			logger.WithFields(logrus.Fields{
 				"addr":        e.Context.Addr,
 				"messageType": fmt.Sprintf("%T", e.Message),
-			}).Info("needsIntro but message is not IntroductionMessage")
+			}).Info("needsIntro but first message is not INTR or DISC")
 			if err := dm.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
 				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
 			}
 			return
 		}
 	}
+
 	e.Message.process(dm)
 }
 
@@ -860,7 +860,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 	c, err := dm.connections.connected(e.Addr, e.GnetID)
 	if err != nil {
 		logger.Critical().WithError(err).WithFields(fields).Error("connections.Connected failed")
-		if err := dm.Disconnect(e.Addr, ErrDisconnectIncomprehensibleError); err != nil {
+		if err := dm.Disconnect(e.Addr, ErrDisconnectUnexpectedError); err != nil {
 			logger.WithError(err).WithFields(fields).Error("Disconnect")
 		}
 		return
@@ -911,6 +911,10 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 		if !dm.isTrustedPeer(e.Addr) {
 			dm.pex.RemovePeer(e.Addr)
 		}
+	case ErrDisconnectNoIntroduction,
+		ErrDisconnectVersionNotSupported,
+		ErrDisconnectSelf:
+		dm.IncreaseRetryTimes(e.Addr)
 	}
 
 	switch e.Reason.Error() {
@@ -984,17 +988,21 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 		return
 	}
 
-	switch r.Message.(type) {
-	case SendingTxnsMessage:
-		dm.announcedTxns.add(r.Message.(SendingTxnsMessage).GetFiltered())
-	default:
+	if m, ok := r.Message.(SendingTxnsMessage); ok {
+		dm.announcedTxns.add(m.GetFiltered())
+	}
+
+	if m, ok := r.Message.(*DisconnectMessage); ok {
+		if err := dm.DisconnectNow(r.Addr, m.reason); err != nil {
+			logger.WithError(err).WithField("addr", r.Addr).Warning("DisconnectNow")
+		}
 	}
 }
 
 // RequestBlocks Sends a GetBlocksMessage to all connections
 func (dm *Daemon) RequestBlocks() error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	headSeq, ok, err := dm.HeadBkSeq()
@@ -1017,8 +1025,8 @@ func (dm *Daemon) RequestBlocks() error {
 
 // AnnounceBlocks sends an AnnounceBlocksMessage to all connections
 func (dm *Daemon) AnnounceBlocks() error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	headSeq, ok, err := dm.HeadBkSeq()
@@ -1041,8 +1049,8 @@ func (dm *Daemon) AnnounceBlocks() error {
 
 // AnnounceAllTxns announces local unconfirmed transactions
 func (dm *Daemon) AnnounceAllTxns() error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	// Get local unconfirmed transaction hashes.
@@ -1095,8 +1103,8 @@ func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
 
 // AnnounceTxns announces given transaction hashes.
 func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	if len(txns) == 0 {
@@ -1115,8 +1123,8 @@ func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
 
 // RequestBlocksFromAddr sends a GetBlocksMessage to one connected address
 func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
-	if dm.Config.DisableOutgoingConnections {
-		return errors.New("Outgoing connections disabled")
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	headSeq, ok, err := dm.visor.HeadBkSeq()
@@ -1128,15 +1136,14 @@ func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
 	}
 
 	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
-
 	return dm.SendMessage(addr, m)
 }
 
 // ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast.
 // It does not return an error if broadcasting fails.
 func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
-	if dm.Config.DisableOutgoingConnections {
-		return nil, nil
+	if dm.Config.DisableNetworking {
+		return nil, ErrNetworkingDisabled
 	}
 
 	txns, err := dm.visor.GetAllUnconfirmedTransactions()
@@ -1157,8 +1164,8 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 // BroadcastTransaction broadcasts a single transaction to all peers.
 func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
-	if dm.Config.DisableOutgoingConnections {
-		return ErrOutgoingConnectionsDisabled
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	l, err := dm.pool.Pool.Size()
@@ -1185,8 +1192,8 @@ func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
 // TODO -- refactor this method -- it should either always create a block and maybe broadcast it,
 // or use a database transaction to rollback block publishing if broadcast failed (however, this will cause a slow DB write)
 func (dm *Daemon) CreateAndPublishBlock() (*coin.SignedBlock, error) {
-	if dm.Config.DisableOutgoingConnections {
-		return nil, errors.New("Outgoing connections disabled")
+	if dm.Config.DisableNetworking {
+		return nil, ErrNetworkingDisabled
 	}
 
 	sb, err := dm.visor.CreateAndExecuteBlock()
@@ -1201,8 +1208,8 @@ func (dm *Daemon) CreateAndPublishBlock() (*coin.SignedBlock, error) {
 
 // Sends a signed block to all connections.
 func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
-	if dm.Config.DisableOutgoingConnections {
-		return nil
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
 	}
 
 	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
@@ -1224,21 +1231,24 @@ func (dm *Daemon) BlockchainPubkey() cipher.PubKey {
 	return dm.Config.BlockchainPubkey
 }
 
-// connectionIntroduced removes the peer from expect introduction pool
-func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
-	return dm.connections.introduced(addr, gnetID, m)
+// connectionIntroduced transfers a connection to the "introduced" state in the connections state machine
+func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
+	return dm.connections.introduced(addr, gnetID, m, userAgent)
 }
 
 // Implements pooler interface
 
-// SendMessage sends a Message to a Connection and pushes the result onto the
-// SendResults channel.
+// SendMessage sends a Message to a Connection and pushes the result onto the SendResults channel.
 func (dm *Daemon) SendMessage(addr string, msg gnet.Message) error {
 	return dm.pool.Pool.SendMessage(addr, msg)
 }
 
 // BroadcastMessage sends a Message to all introduced connections in the Pool
 func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
+	}
+
 	conns := dm.connections.all()
 	var addrs []string
 	for _, c := range conns {
@@ -1250,8 +1260,20 @@ func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
 	return dm.pool.Pool.BroadcastMessage(msg, addrs)
 }
 
-// Disconnect removes a connection from the pool by address, and invokes DisconnectCallback
+// Disconnect sends a DisconnectMessage to a peer. After the DisconnectMessage is sent, the peer is disconnected.
+// This allows all pending messages to be sent. Any message queued after a DisconnectMessage is unlikely to be sent
+// to the peer (but possible).
 func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
+	logger.WithFields(logrus.Fields{
+		"addr":   addr,
+		"reason": r,
+	}).Debug("Sending DisconnectMessage")
+	return dm.SendMessage(addr, NewDisconnectMessage(r))
+}
+
+// DisconnectNow disconnects from a peer immediately without sending a DisconnectMessage. Any pending messages
+// will not be sent to the peer.
+func (dm *Daemon) DisconnectNow(addr string, r gnet.DisconnectReason) error {
 	return dm.pool.Pool.Disconnect(addr, r)
 }
 

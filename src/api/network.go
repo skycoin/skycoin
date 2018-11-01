@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/daemon"
@@ -107,7 +108,7 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		dcnxs, err := gateway.GetConnections(func(c daemon.Connection) bool {
+		conns, err := gateway.GetConnections(func(c daemon.Connection) bool {
 			switch direction {
 			case "outgoing":
 				if !c.Outgoing {
@@ -131,7 +132,7 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, NewConnections(dcnxs))
+		wh.SendJSONOr500(logger, w, NewConnections(conns))
 	}
 }
 
@@ -185,5 +186,43 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 		sort.Strings(conns)
 
 		wh.SendJSONOr500(logger, w, conns)
+	}
+}
+
+// disconnectHandler disconnects a connection by ID or address
+// URI: /api/v1/network/connection/disconnect
+// Method: POST
+// Args:
+//	id: ID of the connection
+func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		formID := r.FormValue("id")
+		if formID == "" {
+			wh.Error400(w, "id is required")
+			return
+		}
+
+		id, err := strconv.ParseUint(formID, 10, 64)
+		if err != nil || id == 0 { // gnet IDs are non-zero
+			wh.Error400(w, "invalid id")
+			return
+		}
+
+		if err := gateway.Disconnect(uint64(id)); err != nil {
+			switch err {
+			case daemon.ErrConnectionNotExist:
+				wh.Error404(w, "")
+			default:
+				wh.Error500(w, err.Error())
+			}
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, struct{}{})
 	}
 }

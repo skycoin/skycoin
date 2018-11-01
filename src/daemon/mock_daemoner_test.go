@@ -15,13 +15,13 @@ type mockDaemoner struct {
 	mock.Mock
 }
 
-// connectionIntroduced provides a mock function with given fields: addr, gnetID, m
-func (_m *mockDaemoner) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
-	ret := _m.Called(addr, gnetID, m)
+// connectionIntroduced provides a mock function with given fields: addr, gnetID, m, userAgent
+func (_m *mockDaemoner) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
+	ret := _m.Called(addr, gnetID, m, userAgent)
 
 	var r0 *connection
-	if rf, ok := ret.Get(0).(func(string, uint64, *IntroductionMessage) *connection); ok {
-		r0 = rf(addr, gnetID, m)
+	if rf, ok := ret.Get(0).(func(string, uint64, *IntroductionMessage, *useragent.Data) *connection); ok {
+		r0 = rf(addr, gnetID, m, userAgent)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*connection)
@@ -29,8 +29,8 @@ func (_m *mockDaemoner) connectionIntroduced(addr string, gnetID uint64, m *Intr
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, uint64, *IntroductionMessage) error); ok {
-		r1 = rf(addr, gnetID, m)
+	if rf, ok := ret.Get(1).(func(string, uint64, *IntroductionMessage, *useragent.Data) error); ok {
+		r1 = rf(addr, gnetID, m, userAgent)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -140,6 +140,20 @@ func (_m *mockDaemoner) DaemonConfig() DaemonConfig {
 
 // Disconnect provides a mock function with given fields: addr, r
 func (_m *mockDaemoner) Disconnect(addr string, r gnet.DisconnectReason) error {
+	ret := _m.Called(addr, r)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, gnet.DisconnectReason) error); ok {
+		r0 = rf(addr, r)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DisconnectNow provides a mock function with given fields: addr, r
+func (_m *mockDaemoner) DisconnectNow(addr string, r gnet.DisconnectReason) error {
 	ret := _m.Called(addr, r)
 
 	var r0 error

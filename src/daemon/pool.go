@@ -98,16 +98,14 @@ func (pool *Pool) RunOffline() error {
 	return pool.Pool.RunOffline()
 }
 
-// Send a ping if our last message sent was over pingRate ago
+// sendPings send a ping if our last message sent was over pingRate ago
 func (pool *Pool) sendPings() {
 	if err := pool.Pool.SendPings(pool.Config.PingRate, &PingMessage{}); err != nil {
 		logger.WithError(err).Error("sendPings failed")
 	}
 }
 
-// Removes connections that have not sent a message in too long
-func (pool *Pool) clearStaleConnections() {
-	if err := pool.Pool.ClearStaleConnections(pool.Config.IdleLimit, ErrDisconnectIdle); err != nil {
-		logger.WithError(err).Error("clearStaleConnections failed")
-	}
+// getStaleConnections returns connections that have been idle for longer than idleLimit
+func (pool *Pool) getStaleConnections() ([]string, error) {
+	return pool.Pool.GetStaleConnections(pool.Config.IdleLimit)
 }

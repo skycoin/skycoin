@@ -105,6 +105,15 @@ func (d Data) Build() (string, error) {
 	return s, nil
 }
 
+// MustBuild calls Build and panics on error
+func (d Data) MustBuild() string {
+	s, err := d.Build()
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
 func (d Data) build() string {
 	if d.Coin == "" || d.Version == "" {
 		return ""

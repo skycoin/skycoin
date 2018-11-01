@@ -1,6 +1,12 @@
 # Creates an image for skycoin development
 FROM golang:1.11-stretch
 
+# Image labels
+LABEL "org.label-schema.name"="skycoindev-cli develop" \
+      "org.label-schema.description"="Skycoin cli develop image" \
+      "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-cli" \
+      "org.label-schema.vendor"="www.skycoin.net"
+
 # Installs nodejs and npm. Needed for moxygen.
 
 # Packages installed in buildpack-deps:stretch

@@ -16,6 +16,10 @@ func init() {
 }
 
 func sanityCheck() {
+	if CoinHourBurnFactor <= 1 {
+		panic("CoinHourBurnFactor must be > 1")
+	}
+
 	if InitialUnlockedCount > DistributionAddressesTotal {
 		panic("unlocked addresses > total distribution addresses")
 	}
@@ -45,7 +49,7 @@ func loadCoinHourBurnFactor() {
 	}
 
 	if x <= 1 {
-		panic(fmt.Sprintf("CoinHourBurnFactor must be > 1"))
+		panic("COINHOUR_BURN_FACTOR must be > 1")
 	}
 
 	CoinHourBurnFactor = x

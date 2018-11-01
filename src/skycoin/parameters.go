@@ -15,17 +15,19 @@ type Parameters struct {
 
 // NodeParameters records the node's configurable parameters
 type NodeParameters struct {
-	CoinName            string   `mapstructure:"coin_name"`
-	PeerListURL         string   `mapstructure:"peer_list_url"`
-	Port                int      `mapstructure:"port"`
-	WebInterfacePort    int      `mapstructure:"web_interface_port"`
-	GenesisSignatureStr string   `mapstructure:"genesis_signature_str"`
-	GenesisAddressStr   string   `mapstructure:"genesis_address_str"`
-	BlockchainPubkeyStr string   `mapstructure:"blockchain_pubkey_str"`
-	BlockchainSeckeyStr string   `mapstructure:"blockchain_seckey_str"`
-	GenesisTimestamp    uint64   `mapstructure:"genesis_timestamp"`
-	GenesisCoinVolume   uint64   `mapstructure:"genesis_coin_volume"`
-	DefaultConnections  []string `mapstructure:"default_connections"`
+	CoinName              string   `mapstructure:"coin_name"`
+	PeerListURL           string   `mapstructure:"peer_list_url"`
+	Port                  int      `mapstructure:"port"`
+	WebInterfacePort      int      `mapstructure:"web_interface_port"`
+	GenesisSignatureStr   string   `mapstructure:"genesis_signature_str"`
+	GenesisAddressStr     string   `mapstructure:"genesis_address_str"`
+	BlockchainPubkeyStr   string   `mapstructure:"blockchain_pubkey_str"`
+	BlockchainSeckeyStr   string   `mapstructure:"blockchain_seckey_str"`
+	GenesisTimestamp      uint64   `mapstructure:"genesis_timestamp"`
+	GenesisCoinVolume     uint64   `mapstructure:"genesis_coin_volume"`
+	DefaultConnections    []string `mapstructure:"default_connections"`
+	UnconfirmedBurnFactor uint64   `mapstructure:"unconfirmed_burn_factor"`
+	CreateBlockBurnFactor uint64   `mapstructure:"create_block_burn_factor"`
 
 	DataDirectory string
 }
@@ -62,7 +64,7 @@ type ParamsParameters struct {
 	// used to calculate current and max supply and do distribution timelocking
 	DistributionAddresses []string `mapstructure:"distribution_addresses"`
 
-	// BurnFactor inverse fraction of coinhours that must be burned (can be overridden with COINHOUR_BURN_FACTOR env var)
+	// CoinHourBurnFactor inverse fraction of coinhours that must be burned, this value is used when creating transactions
 	CoinHourBurnFactor uint64 `mapstructure:"coinhour_burn_factor"`
 }
 
@@ -122,4 +124,6 @@ func setDefaults() {
 	viper.SetDefault("params.max_droplet_precision", 3)
 	viper.SetDefault("params.default_max_block_size", 32*1024)
 	viper.SetDefault("params.coinhour_burn_factor", 2)
+	viper.SetDefault("params.unconfirmed_burn_factor", 2)
+	viper.SetDefault("params.create_block_burn_factor", 2)
 }

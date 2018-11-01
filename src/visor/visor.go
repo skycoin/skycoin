@@ -39,14 +39,19 @@ type Config struct {
 	// Is this the master blockchain
 	IsMaster bool
 
-	//Public key of blockchain authority
+	// Public key of blockchain authority
 	BlockchainPubkey cipher.PubKey
 
-	//Secret key of blockchain authority (if master)
+	// Secret key of blockchain authority (if master)
 	BlockchainSeckey cipher.SecKey
 
 	// Maximum size of a block, in bytes.
 	MaxBlockSize int
+
+	// Burn factor to apply to unconfirmed transactions (received over the network, or when refreshing the pool)
+	UnconfirmedBurnFactor uint64
+	// Burn factor to apply when creating blocks
+	CreateBlockBurnFactor uint64
 
 	// Where the blockchain is saved
 	BlockchainFile string
@@ -75,17 +80,17 @@ type Config struct {
 	WalletCryptoType wallet.CryptoType
 }
 
-// NewVisorConfig put cap on block size, not on transactions/block
-//Skycoin transactions are smaller than Bitcoin transactions so skycoin has
-//a higher transactions per second for the same block size
-func NewVisorConfig() Config {
+// NewConfig creates Config
+func NewConfig() Config {
 	c := Config{
 		IsMaster: false,
 
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		MaxBlockSize: params.DefaultMaxBlockSize,
+		MaxBlockSize:          params.DefaultMaxBlockSize,
+		UnconfirmedBurnFactor: params.CoinHourBurnFactor,
+		CreateBlockBurnFactor: params.CoinHourBurnFactor,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -104,13 +109,25 @@ func (c Config) Verify() error {
 		}
 	}
 
+	if c.UnconfirmedBurnFactor < params.CoinHourBurnFactor {
+		return fmt.Errorf("UnconfirmedBurnFactor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
+	}
+
+	if c.CreateBlockBurnFactor < params.CoinHourBurnFactor {
+		return fmt.Errorf("CreateBlockBurnFactor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
+	}
+
+	if c.MaxBlockSize <= 0 {
+		return errors.New("MaxBlockSize must be > 0")
+	}
+
 	return nil
 }
 
 //go:generate go install
 //go:generate mockery -name Historyer -case underscore -inpkg -testonly
 //go:generate mockery -name Blockchainer -case underscore -inpkg -testonly
-//go:generate mockery -name UnconfirmedTxnPooler -case underscore -inpkg -testonly
+//go:generate mockery -name UnconfirmedTransactionPooler -case underscore -inpkg -testonly
 
 // Historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
 type Historyer interface {
@@ -142,20 +159,20 @@ type Blockchainer interface {
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
 	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int, burnFactor uint64) error
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
-// UnconfirmedTxnPooler is the interface that provides methods for
+// UnconfirmedTransactionPooler is the interface that provides methods for
 // accessing the unconfirmed transaction pool
-type UnconfirmedTxnPooler interface {
+type UnconfirmedTransactionPooler interface {
 	SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error
-	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
+	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize int, burnFactor uint64) (bool, *ErrTxnViolatesSoftConstraint, error)
 	AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error)
 	RemoveTransactions(tx *dbutil.Tx, txns []cipher.SHA256) error
-	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error)
+	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize int, burnFactor uint64) ([]cipher.SHA256, error)
 	RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error)
-	GetUnknown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
+	FilterKnown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
 	GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error)
 	RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
 	GetIncomingOutputs(tx *dbutil.Tx, bh coin.BlockHeader) (coin.UxArray, error)
@@ -171,7 +188,7 @@ type UnconfirmedTxnPooler interface {
 type Visor struct {
 	Config      Config
 	DB          *dbutil.DB
-	Unconfirmed UnconfirmedTxnPooler
+	Unconfirmed UnconfirmedTransactionPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
 	StartedAt   time.Time
@@ -189,6 +206,10 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	if err := c.Verify(); err != nil {
 		return nil, err
 	}
+
+	logger.Infof("Max block size is %d", c.MaxBlockSize)
+	logger.Infof("Coinhour burn factor for verifying unconfirmed transactions is %d", c.UnconfirmedBurnFactor)
+	logger.Infof("Coinhour burn factor for transactions when creating blocks is %d", c.CreateBlockBurnFactor)
 
 	// Loads wallet
 	wltServConfig := wallet.Config{
@@ -384,7 +405,7 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 	if err := vs.DB.Update("RefreshUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.MaxBlockSize)
+		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.MaxBlockSize, vs.Config.UnconfirmedBurnFactor)
 		return err
 	}); err != nil {
 		return nil, err
@@ -430,7 +451,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize); err != nil {
+		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize, vs.Config.CreateBlockBurnFactor); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
@@ -861,18 +882,19 @@ func (vs *Visor) getBlocksVerbose(tx *dbutil.Tx, getBlocks func(*dbutil.Tx) ([]c
 	return blocks, inputs, nil
 }
 
-// InjectTransaction records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
+// InjectForeignTransaction records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard constraints, it is rejected, and error will not be nil.
 // If the transaction only violates soft constraints, it is still injected, and the soft constraint violation is returned.
-func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesSoftConstraint, error) {
+// This method is intended for transactions received over the network.
+func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesSoftConstraint, error) {
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
 
-	if err := vs.DB.Update("InjectTransaction", func(tx *dbutil.Tx) error {
+	if err := vs.DB.Update("InjectForeignTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
+		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize, vs.Config.UnconfirmedBurnFactor)
 		return err
 	}); err != nil {
 		return false, nil, err
@@ -881,14 +903,14 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesS
 	return known, softErr, nil
 }
 
-// InjectTransactionStrict records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
+// InjectUserTransaction records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
-func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
+func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, error) {
 	var known bool
 
-	if err := vs.DB.Update("InjectTransactionStrict", func(tx *dbutil.Tx) error {
+	if err := vs.DB.Update("InjectUserTransaction", func(tx *dbutil.Tx) error {
 		var err error
 		known, err = vs.InjectTransactionStrictTx(tx, txn)
 		return err
@@ -909,13 +931,13 @@ func (vs *Visor) InjectTransactionStrictTx(tx *dbutil.Tx, txn coin.Transaction) 
 		return false, err
 	}
 
-	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize); err != nil {
+	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize, params.CoinHourBurnFactor); err != nil {
 		return false, err
 	}
 
-	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
+	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize, params.CoinHourBurnFactor)
 	if softErr != nil {
-		logger.WithError(softErr).Warning("InjectTransactionStrict vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
+		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
 
 	return known, err
@@ -1870,13 +1892,13 @@ func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTransaction,
 	return txn, nil
 }
 
-// GetUnconfirmedUnknown returns unconfirmed txn hashes with known ones removed
-func (vs *Visor) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+// FilterUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
+func (vs *Visor) FilterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 
-	if err := vs.DB.View("GetUnconfirmedUnknown", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("FilterUnconfirmedKnown", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.GetUnknown(tx, txns)
+		hashes, err = vs.Unconfirmed.FilterKnown(tx, txns)
 		return err
 	}); err != nil {
 		return nil, err
@@ -2176,7 +2198,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, vs.Config.MaxBlockSize); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, vs.Config.MaxBlockSize, params.CoinHourBurnFactor); err != nil {
 			return err
 		}
 

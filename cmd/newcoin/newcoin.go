@@ -23,23 +23,6 @@ const (
 	Version = "0.1"
 )
 
-// CoinTemplateParameters represents parameters used to generate the new coin files.
-type CoinTemplateParameters struct {
-	CoinName            string
-	Version             string
-	PeerListURL         string
-	Port                int
-	WebInterfacePort    int
-	DataDirectory       string
-	GenesisSignatureStr string
-	GenesisAddressStr   string
-	BlockchainPubkeyStr string
-	BlockchainSeckeyStr string
-	GenesisTimestamp    uint64
-	GenesisCoinVolume   uint64
-	DefaultConnections  []string
-}
-
 var (
 	app = cli.NewApp()
 	log = logging.MustGetLogger("newcoin")
@@ -207,19 +190,21 @@ func createCoinCommand() cli.Command {
 				return err
 			}
 
-			err = t.ExecuteTemplate(coinFile, coinTemplateFile, CoinTemplateParameters{
-				CoinName:            coinName,
-				PeerListURL:         config.Node.PeerListURL,
-				Port:                config.Node.Port,
-				WebInterfacePort:    config.Node.WebInterfacePort,
-				DataDirectory:       "$HOME/." + coinName,
-				GenesisSignatureStr: config.Node.GenesisSignatureStr,
-				GenesisAddressStr:   config.Node.GenesisAddressStr,
-				BlockchainPubkeyStr: config.Node.BlockchainPubkeyStr,
-				BlockchainSeckeyStr: config.Node.BlockchainSeckeyStr,
-				GenesisTimestamp:    config.Node.GenesisTimestamp,
-				GenesisCoinVolume:   config.Node.GenesisCoinVolume,
-				DefaultConnections:  config.Node.DefaultConnections,
+			err = t.ExecuteTemplate(coinFile, coinTemplateFile, skycoin.NodeParameters{
+				CoinName:              coinName,
+				PeerListURL:           config.Node.PeerListURL,
+				Port:                  config.Node.Port,
+				WebInterfacePort:      config.Node.WebInterfacePort,
+				DataDirectory:         "$HOME/." + coinName,
+				GenesisSignatureStr:   config.Node.GenesisSignatureStr,
+				GenesisAddressStr:     config.Node.GenesisAddressStr,
+				BlockchainPubkeyStr:   config.Node.BlockchainPubkeyStr,
+				BlockchainSeckeyStr:   config.Node.BlockchainSeckeyStr,
+				GenesisTimestamp:      config.Node.GenesisTimestamp,
+				GenesisCoinVolume:     config.Node.GenesisCoinVolume,
+				DefaultConnections:    config.Node.DefaultConnections,
+				UnconfirmedBurnFactor: config.Node.UnconfirmedBurnFactor,
+				CreateBlockBurnFactor: config.Node.CreateBlockBurnFactor,
 			})
 			if err != nil {
 				log.Error("failed to parse coin template variables")

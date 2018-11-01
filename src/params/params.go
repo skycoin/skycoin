@@ -25,8 +25,10 @@ const (
 )
 
 var (
-	// CoinHourBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `COINHOUR_BURN_FACTOR` env var)
+	// CoinHourBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `COINHOUR_BURN_FACTOR` env var),
+	// used when creating a transaction
 	CoinHourBurnFactor uint64 = 2
+
 	// MaxDropletPrecision represents the decimal precision of droplets
 	MaxDropletPrecision uint64 = 3
 )

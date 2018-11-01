@@ -14,6 +14,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/useragent"
@@ -139,6 +140,13 @@ type NodeConfig struct {
 	// Reset the database if integrity checks fail, and continue running
 	ResetCorruptDB bool
 
+	// Maximum size of blocks in bytes
+	MaxBlockSize int
+	// Coin hour burn factor to apply to unconfirmed txns (received over the network, or when refreshing the pool)
+	UnconfirmedBurnFactor uint64
+	// Coin hour burn factor to apply when creating blocks
+	CreateBlockBurnFactor uint64
+
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
@@ -257,6 +265,11 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 
 		VerifyDB:       false,
 		ResetCorruptDB: false,
+
+		// Blockchain/transaction validation
+		MaxBlockSize:          params.DefaultMaxBlockSize,
+		UnconfirmedBurnFactor: params.CoinHourBurnFactor,
+		CreateBlockBurnFactor: params.CoinHourBurnFactor,
 
 		// Wallets
 		WalletDirectory:  "",
@@ -393,6 +406,24 @@ func (c *Config) postProcess() error {
 
 	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
 		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
+	}
+
+	if c.Node.MaxBlockSize <= 0 {
+		return errors.New("-max-block-size must be > 0")
+	}
+
+	if c.Node.UnconfirmedBurnFactor < 2 {
+		return errors.New("-unconfirmed-burn-factor must be >= 2")
+	}
+	if c.Node.UnconfirmedBurnFactor < params.CoinHourBurnFactor {
+		return fmt.Errorf("-unconfirmed-burn-factor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
+	}
+
+	if c.Node.CreateBlockBurnFactor < 2 {
+		return errors.New("-create-block-burn-factor must be >= 2")
+	}
+	if c.Node.CreateBlockBurnFactor < params.CoinHourBurnFactor {
+		return fmt.Errorf("-create-block-burn-factor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
 	}
 
 	return nil
@@ -533,6 +564,10 @@ func (c *NodeConfig) RegisterFlags() {
 
 	// Key Configuration Data
 	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
+
+	flag.IntVar(&c.MaxBlockSize, "max-block-size", c.MaxBlockSize, "maximum size of blocks")
+	flag.Uint64Var(&c.UnconfirmedBurnFactor, "burn-factor-unconfirmed", c.UnconfirmedBurnFactor, "coinhour burn factor to apply when verifying unconfirmed transactions")
+	flag.Uint64Var(&c.CreateBlockBurnFactor, "burn-factor-create-block", c.CreateBlockBurnFactor, "coinhour burn factor to apply to transactions when creating blocks")
 
 	flag.StringVar(&c.BlockchainPubkeyStr, "master-public-key", c.BlockchainPubkeyStr, "public key of the master chain")
 	flag.StringVar(&c.BlockchainSeckeyStr, "master-secret-key", c.BlockchainSeckeyStr, "secret key, set for master")

@@ -1277,7 +1277,7 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 				require.Equal(t, outputHours, totalHours)
 
 				if tc.inputHours != 0 {
-					err := fee.VerifyTransactionFeeForHours(outputHours, tc.inputHours-outputHours)
+					err := fee.VerifyTransactionFeeForHours(outputHours, tc.inputHours-outputHours, params.CoinHourBurnFactor)
 					require.NoError(t, err)
 				}
 			})
@@ -1304,13 +1304,13 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 							}
 
 							if haveChange {
-								remainingHours := (inputHours - fee.RequiredFee(inputHours))
+								remainingHours := (inputHours - fee.RequiredFee(inputHours, params.CoinHourBurnFactor))
 								splitRemainingHours := remainingHours / 2
 								require.True(t, changeHours == splitRemainingHours || changeHours == splitRemainingHours+1)
 								require.Equal(t, splitRemainingHours, sumAddrHours)
 							} else {
 								require.Equal(t, uint64(0), changeHours)
-								require.Equal(t, inputHours-fee.RequiredFee(inputHours), sumAddrHours)
+								require.Equal(t, inputHours-fee.RequiredFee(inputHours, params.CoinHourBurnFactor), sumAddrHours)
 							}
 
 							outputHours := sumAddrHours + changeHours
@@ -1318,7 +1318,7 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 							require.Equal(t, outputHours, totalHours)
 
 							if inputHours != 0 {
-								err := fee.VerifyTransactionFeeForHours(outputHours, inputHours-outputHours)
+								err := fee.VerifyTransactionFeeForHours(outputHours, inputHours-outputHours, params.CoinHourBurnFactor)
 								require.NoError(t, err)
 							}
 

@@ -549,7 +549,7 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 
 // GiveBlocksMessage sent in response to GetBlocksMessage, or unsolicited
 type GiveBlocksMessage struct {
-	Blocks []coin.SignedBlock
+	Blocks []coin.SignedBlock   `enc:",maxlen=128"`
 	c      *gnet.MessageContext `enc:"-"`
 }
 
@@ -697,7 +697,7 @@ type SendingTxnsMessage interface {
 
 // AnnounceTxnsMessage tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
-	Transactions []cipher.SHA256
+	Transactions []cipher.SHA256      `enc:",maxlen=256`
 	c            *gnet.MessageContext `enc:"-"`
 }
 
@@ -725,9 +725,9 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 		return
 	}
 
-	unknown, err := d.GetUnconfirmedUnknown(atm.Transactions)
+	unknown, err := d.FilterUnconfirmedKnown(atm.Transactions)
 	if err != nil {
-		logger.WithField("addr", atm.c.Addr).WithError(err).Error("AnnounceTxnsMessage Visor.GetUnconfirmedUnknown failed")
+		logger.WithField("addr", atm.c.Addr).WithError(err).Error("AnnounceTxnsMessage Visor.FilterUnconfirmedKnown failed")
 		return
 	}
 
@@ -785,12 +785,12 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 
 // GiveTxnsMessage tells the transaction of given hashes
 type GiveTxnsMessage struct {
-	Transactions coin.Transactions
+	Transactions []coin.Transaction   `enc:",maxlen=256"`
 	c            *gnet.MessageContext `enc:"-"`
 }
 
 // NewGiveTxnsMessage creates GiveTxnsMessage
-func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
+func NewGiveTxnsMessage(txns []coin.Transaction) *GiveTxnsMessage {
 	return &GiveTxnsMessage{
 		Transactions: txns,
 	}
@@ -798,7 +798,7 @@ func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
 
 // GetFiltered returns transactions hashes
 func (gtm *GiveTxnsMessage) GetFiltered() []cipher.SHA256 {
-	return gtm.Transactions.Hashes()
+	return coin.Transactions(gtm.Transactions).Hashes()
 }
 
 // Handle handle message
@@ -819,13 +819,13 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 		// Only announce transactions that are new to us, so that peers can't spam relays
 		// It is not necessary to inject all of the transactions inside a database transaction,
 		// since each is independent
-		known, softErr, err := d.InjectTransaction(txn)
+		known, softErr, err := d.injectTransaction(txn)
 		if err != nil {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Failed to record transaction")
 			continue
 		} else if softErr != nil {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
-			continue
+			// Allow soft txn violations to rebroadcast
 		} else if known {
 			logger.WithField("txid", txn.Hash().Hex()).Debug("Duplicate transaction")
 			continue

@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
 )
 
 var (
@@ -25,18 +24,18 @@ var (
 // This checks tunable params that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
-func VerifyTransactionFee(t *coin.Transaction, fee uint64) error {
+func VerifyTransactionFee(t *coin.Transaction, fee, burnFactor uint64) error {
 	hours, err := t.OutputHours()
 	if err != nil {
 		return err
 	}
-	return VerifyTransactionFeeForHours(hours, fee)
+	return VerifyTransactionFeeForHours(hours, fee, burnFactor)
 }
 
 // VerifyTransactionFeeForHours verifies the fee given fee and hours,
 // where hours is the number of hours in a transaction's outputs,
 // and hours+fee is the number of hours in a transaction's inputs
-func VerifyTransactionFeeForHours(hours, fee uint64) error {
+func VerifyTransactionFeeForHours(hours, fee, burnFactor uint64) error {
 	// Require non-zero coinhour fee
 	if fee == 0 {
 		return ErrTxnNoFee
@@ -49,7 +48,7 @@ func VerifyTransactionFeeForHours(hours, fee uint64) error {
 	}
 
 	// Calculate the required fee
-	requiredFee := RequiredFee(total)
+	requiredFee := RequiredFee(total, burnFactor)
 
 	// Ensure that the required fee is met
 	if fee < requiredFee {
@@ -60,10 +59,10 @@ func VerifyTransactionFeeForHours(hours, fee uint64) error {
 }
 
 // RequiredFee returns the coinhours fee required for an amount of hours
-// The required fee is calculated as hours/CoinHourBurnFactor, rounded up.
-func RequiredFee(hours uint64) uint64 {
-	feeHours := hours / params.CoinHourBurnFactor
-	if hours%params.CoinHourBurnFactor != 0 {
+// The required fee is calculated as hours/burnFact, rounded up.
+func RequiredFee(hours, burnFactor uint64) uint64 {
+	feeHours := hours / burnFactor
+	if hours%burnFactor != 0 {
 		feeHours++
 	}
 
@@ -71,8 +70,8 @@ func RequiredFee(hours uint64) uint64 {
 }
 
 // RemainingHours returns the amount of coinhours leftover after paying the fee for the input.
-func RemainingHours(hours uint64) uint64 {
-	fee := RequiredFee(hours)
+func RemainingHours(hours, burnFactor uint64) uint64 {
+	fee := RequiredFee(hours, burnFactor)
 	return hours - fee
 }
 

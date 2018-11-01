@@ -487,14 +487,14 @@ func (gw *Gateway) GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction
 // InjectBroadcastTransaction injects transaction to the unconfirmed pool and broadcasts it.
 // If the transaction violates either hard or soft constraints, it is not broadcast.
 // This method is to be used by user-initiated transaction injections.
-// For transactions received over the network, use daemon.InjectTransaction and check the result to
+// For transactions received over the network, use daemon.injectTransaction and check the result to
 // decide on repropagation.
 func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
 		err = gw.v.WithUpdateTx("gateway.InjectBroadcastTransaction", func(tx *dbutil.Tx) error {
 			if _, err := gw.v.InjectTransactionStrictTx(tx, txn); err != nil {
-				logger.WithError(err).Error("InjectTransactionStrict failed")
+				logger.WithError(err).Error("InjectUserTransaction failed")
 				return err
 			}
 
@@ -617,9 +617,9 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 		}
 
 		// WARNING: This is not safe from races once we remove strand
-		_, err = gw.v.InjectTransactionStrict(*txn)
+		_, err = gw.v.InjectUserTransaction(*txn)
 		if err != nil {
-			logger.WithError(err).Error("InjectTransactionStrict failed")
+			logger.WithError(err).Error("InjectUserTransaction failed")
 			return
 		}
 

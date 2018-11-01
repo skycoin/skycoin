@@ -20,6 +20,8 @@ default_connections = [
 peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 #port = 6000
 #web_interface_port = 6420
+unconfirmed_burn_factor = 10
+create_block_burn_factor = 10
 
 [params]
 #max_coin_supply = 1e8

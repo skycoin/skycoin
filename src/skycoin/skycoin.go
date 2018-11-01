@@ -201,7 +201,7 @@ func (c *Coin) Run() error {
 		}
 	}
 
-	c.logger.Infof("Coinhour burn factor is %d", params.CoinHourBurnFactor)
+	c.logger.Infof("Coinhour burn factor for creating transactions is %d", params.CoinHourBurnFactor)
 
 	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {
@@ -379,6 +379,10 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 	dc.Visor.BlockchainPubkey = c.config.Node.blockchainPubkey
 	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey
+
+	dc.Visor.MaxBlockSize = c.config.Node.MaxBlockSize
+	dc.Visor.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
+	dc.Visor.CreateBlockBurnFactor = c.config.Node.CreateBlockBurnFactor
 
 	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
 	dc.Visor.GenesisSignature = c.config.Node.genesisSignature

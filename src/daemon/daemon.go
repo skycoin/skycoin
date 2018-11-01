@@ -67,7 +67,7 @@ func NewConfig() Config {
 		Pex:      pex.NewConfig(),
 		Gateway:  NewGatewayConfig(),
 		Messages: NewMessagesConfig(),
-		Visor:    visor.NewVisorConfig(),
+		Visor:    visor.NewConfig(),
 	}
 }
 
@@ -242,9 +242,8 @@ type daemoner interface {
 	GetSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error)
 	HeadBkSeq() (uint64, bool, error)
 	ExecuteSignedBlock(b coin.SignedBlock) error
-	GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error)
+	FilterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, error)
 	GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error)
-	InjectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
 	Mirror() uint32
 	DaemonConfig() DaemonConfig
 	BlockchainPubkey() cipher.PubKey
@@ -252,6 +251,7 @@ type daemoner interface {
 	AnnounceAllTxns() error
 	RecordUserAgent(addr string, userAgent useragent.Data) error
 
+	injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
 	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error)
 }
@@ -1345,9 +1345,9 @@ func (dm *Daemon) ExecuteSignedBlock(b coin.SignedBlock) error {
 	return dm.visor.ExecuteSignedBlock(b)
 }
 
-// GetUnconfirmedUnknown returns unconfirmed txn hashes with known ones removed
-func (dm *Daemon) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
-	return dm.visor.GetUnconfirmedUnknown(txns)
+// FilterUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
+func (dm *Daemon) FilterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+	return dm.visor.FilterUnconfirmedKnown(txns)
 }
 
 // GetUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
@@ -1355,11 +1355,11 @@ func (dm *Daemon) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, 
 	return dm.visor.GetUnconfirmedKnown(txns)
 }
 
-// InjectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
+// injectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard constraints, it is rejected, and error will not be nil.
 // If the transaction only violates soft constraints, it is still injected, and the soft constraint violation is returned.
-func (dm *Daemon) InjectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
-	return dm.visor.InjectTransaction(txn)
+func (dm *Daemon) injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
+	return dm.visor.InjectForeignTransaction(txn)
 }

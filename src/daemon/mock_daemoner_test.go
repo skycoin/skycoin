@@ -180,6 +180,29 @@ func (_m *mockDaemoner) ExecuteSignedBlock(b coin.SignedBlock) error {
 	return r0
 }
 
+// FilterUnconfirmedKnown provides a mock function with given fields: txns
+func (_m *mockDaemoner) FilterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+	ret := _m.Called(txns)
+
+	var r0 []cipher.SHA256
+	if rf, ok := ret.Get(0).(func([]cipher.SHA256) []cipher.SHA256); ok {
+		r0 = rf(txns)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]cipher.SHA256)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]cipher.SHA256) error); ok {
+		r1 = rf(txns)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetSignedBlocksSince provides a mock function with given fields: seq, count
 func (_m *mockDaemoner) GetSignedBlocksSince(seq uint64, count uint64) ([]coin.SignedBlock, error) {
 	ret := _m.Called(seq, count)
@@ -226,29 +249,6 @@ func (_m *mockDaemoner) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transact
 	return r0, r1
 }
 
-// GetUnconfirmedUnknown provides a mock function with given fields: txns
-func (_m *mockDaemoner) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
-	ret := _m.Called(txns)
-
-	var r0 []cipher.SHA256
-	if rf, ok := ret.Get(0).(func([]cipher.SHA256) []cipher.SHA256); ok {
-		r0 = rf(txns)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]cipher.SHA256)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func([]cipher.SHA256) error); ok {
-		r1 = rf(txns)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // HeadBkSeq provides a mock function with given fields:
 func (_m *mockDaemoner) HeadBkSeq() (uint64, bool, error) {
 	ret := _m.Called()
@@ -282,8 +282,8 @@ func (_m *mockDaemoner) IncreaseRetryTimes(addr string) {
 	_m.Called(addr)
 }
 
-// InjectTransaction provides a mock function with given fields: txn
-func (_m *mockDaemoner) InjectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
+// injectTransaction provides a mock function with given fields: txn
+func (_m *mockDaemoner) injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
 	ret := _m.Called(txn)
 
 	var r0 bool

@@ -100,19 +100,17 @@ var burnFactor10VerifyTxnFeeTestCases = []verifyTxnFeeTestCase{
 }
 
 func TestVerifyTransactionFee(t *testing.T) {
-	originalBurnFactor := params.CoinHourBurnFactor
-
 	emptyTxn := &coin.Transaction{}
 	hours, err := emptyTxn.OutputHours()
 	require.NoError(t, err)
 	require.Equal(t, uint64(0), hours)
 
 	// A txn with no outputs hours and no coinhours burn fee is valid
-	err = VerifyTransactionFee(emptyTxn, 0)
+	err = VerifyTransactionFee(emptyTxn, 0, 2)
 	testutil.RequireError(t, err, ErrTxnNoFee.Error())
 
 	// A txn with no outputs hours but with a coinhours burn fee is valid
-	err = VerifyTransactionFee(emptyTxn, 100)
+	err = VerifyTransactionFee(emptyTxn, 100, 2)
 	require.NoError(t, err)
 
 	txn := &coin.Transaction{}
@@ -128,31 +126,31 @@ func TestVerifyTransactionFee(t *testing.T) {
 	require.Equal(t, uint64(4e6), hours)
 
 	// A txn with insufficient net coinhours burn fee is invalid
-	err = VerifyTransactionFee(txn, 0)
+	err = VerifyTransactionFee(txn, 0, 2)
 	testutil.RequireError(t, err, ErrTxnNoFee.Error())
 
-	err = VerifyTransactionFee(txn, 1)
+	err = VerifyTransactionFee(txn, 1, 2)
 	testutil.RequireError(t, err, ErrTxnInsufficientFee.Error())
 
 	// A txn with sufficient net coinhours burn fee is valid
 	hours, err = txn.OutputHours()
 	require.NoError(t, err)
-	err = VerifyTransactionFee(txn, hours)
+	err = VerifyTransactionFee(txn, hours, 2)
 	require.NoError(t, err)
 	hours, err = txn.OutputHours()
 	require.NoError(t, err)
-	err = VerifyTransactionFee(txn, hours*10)
+	err = VerifyTransactionFee(txn, hours*10, 2)
 	require.NoError(t, err)
 
 	// fee + hours overflows
-	err = VerifyTransactionFee(txn, math.MaxUint64-3e6)
+	err = VerifyTransactionFee(txn, math.MaxUint64-3e6, 2)
 	testutil.RequireError(t, err, "Hours and fee overflow")
 
 	// txn has overflowing output hours
 	txn.Out = append(txn.Out, coin.TransactionOutput{
 		Hours: math.MaxUint64 - 1e6 - 3e6 + 1,
 	})
-	err = VerifyTransactionFee(txn, 10)
+	err = VerifyTransactionFee(txn, 10, 2)
 	testutil.RequireError(t, err, "Transaction output hours overflow")
 
 	cases := []struct {
@@ -173,18 +171,13 @@ func TestVerifyTransactionFee(t *testing.T) {
 		for _, tc := range tcc.cases {
 			name := fmt.Sprintf("burnFactor=%d input=%d output=%d", tcc.burnFactor, tc.inputHours, tc.outputHours)
 			t.Run(name, func(t *testing.T) {
-				params.CoinHourBurnFactor = tcc.burnFactor
-				defer func() {
-					params.CoinHourBurnFactor = originalBurnFactor
-				}()
-
 				txn := &coin.Transaction{}
 				txn.Out = append(txn.Out, coin.TransactionOutput{
 					Hours: tc.outputHours,
 				})
 
 				require.True(t, tc.inputHours >= tc.outputHours)
-				err := VerifyTransactionFee(txn, tc.inputHours-tc.outputHours)
+				err := VerifyTransactionFee(txn, tc.inputHours-tc.outputHours, tcc.burnFactor)
 				require.Equal(t, tc.err, err)
 			})
 		}
@@ -253,8 +246,6 @@ var burnFactor10RequiredFeeTestCases = []requiredFeeTestCase{
 }
 
 func TestRequiredFee(t *testing.T) {
-	originalBurnFactor := params.CoinHourBurnFactor
-
 	cases := []struct {
 		burnFactor uint64
 		cases      []requiredFeeTestCase
@@ -273,15 +264,10 @@ func TestRequiredFee(t *testing.T) {
 		for _, tc := range tcc.cases {
 			name := fmt.Sprintf("burnFactor=%d hours=%d fee=%d", tcc.burnFactor, tc.hours, tc.fee)
 			t.Run(name, func(t *testing.T) {
-				params.CoinHourBurnFactor = tcc.burnFactor
-				defer func() {
-					params.CoinHourBurnFactor = originalBurnFactor
-				}()
-
-				fee := RequiredFee(tc.hours)
+				fee := RequiredFee(tc.hours, tcc.burnFactor)
 				require.Equal(t, tc.fee, fee)
 
-				remainingHours := RemainingHours(tc.hours)
+				remainingHours := RemainingHours(tc.hours, tcc.burnFactor)
 				require.Equal(t, tc.hours-fee, remainingHours)
 			})
 		}

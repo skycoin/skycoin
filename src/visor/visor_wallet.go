@@ -5,6 +5,7 @@ package visor
 import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -102,16 +103,16 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 }
 
 // CreateTransaction creates a transaction based upon the parameters in wallet.CreateTransactionParams
-func (vs *Visor) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
-	if err := params.Validate(); err != nil {
+func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
+	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
 
 	var txn *coin.Transaction
 	var inputs []wallet.UxBalance
 
-	if err := vs.Wallets.ViewSecrets(params.Wallet.ID, params.Wallet.Password, func(w *wallet.Wallet) error {
-		// Get all addresses from the wallet for checking params against
+	if err := vs.Wallets.ViewSecrets(p.Wallet.ID, p.Wallet.Password, func(w *wallet.Wallet) error {
+		// Get all addresses from the wallet for checking p against
 		allAddrs, err := w.GetSkycoinAddresses()
 		if err != nil {
 			return err
@@ -124,13 +125,13 @@ func (vs *Visor) CreateTransaction(params wallet.CreateTransactionParams) (*coin
 				return err
 			}
 
-			auxs, err := vs.getCreateTransactionAuxs(tx, params, allAddrs)
+			auxs, err := vs.getCreateTransactionAuxs(tx, p, allAddrs)
 			if err != nil {
 				return err
 			}
 
 			// Create and sign transaction
-			txn, inputs, err = w.CreateAndSignTransactionAdvanced(params, auxs, head.Time())
+			txn, inputs, err = w.CreateAndSignTransactionAdvanced(p, auxs, head.Time())
 			if err != nil {
 				logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
 				return err
@@ -144,7 +145,7 @@ func (vs *Visor) CreateTransaction(params wallet.CreateTransactionParams) (*coin
 				return err
 			}
 
-			if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize); err != nil {
+			if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize, params.CoinHourBurnFactor); err != nil {
 				logger.WithError(err).Error("Created transaction violates transaction constraints")
 				return err
 			}
@@ -201,7 +202,7 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 				return err
 			}
 
-			if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize); err != nil {
+			if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize, params.CoinHourBurnFactor); err != nil {
 				logger.WithError(err).Error("Created transaction violates transaction constraints")
 				return err
 			}

@@ -18,6 +18,8 @@ default_connections = [
 ]
 launch_browser = true
 peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
+unconfirmed_burn_factor = 10
+create_block_burn_factor = 9
 
 [params]
 coinhour_burn_factor = 3

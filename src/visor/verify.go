@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/fee"
 )
 
@@ -166,7 +167,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 
 	// Reject transactions that do not conform to decimal restrictions
 	for _, o := range txn.Out {
-		if err := DropletPrecisionCheck(o.Coins); err != nil {
+		if err := params.DropletPrecisionCheck(o.Coins); err != nil {
 			return err
 		}
 	}

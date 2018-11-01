@@ -31,7 +31,7 @@ func TestNewParameters(t *testing.T) {
 			PeerListURL:      "https://downloads.skycoin.net/blockchain/peers.txt",
 			WebInterfacePort: 6420,
 		},
-		Visor: VisorParameters{
+		Params: ParamsParameters{
 			MaxCoinSupply:              1e8,
 			DistributionAddressesTotal: 100,
 			InitialUnlockedCount:       25,
@@ -39,6 +39,7 @@ func TestNewParameters(t *testing.T) {
 			UnlockTimeInterval:         60 * 60 * 24 * 365,
 			MaxDropletPrecision:        3,
 			DefaultMaxBlockSize:        32 * 1024,
+			CoinHourBurnFactor:         3,
 		},
 	}, coinConfig)
 }

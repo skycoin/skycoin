@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
@@ -539,7 +540,7 @@ func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr s
 		return nil, err
 	}
 
-	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, visor.DefaultMaxBlockSize); err != nil {
+	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, params.DefaultMaxBlockSize); err != nil {
 		return nil, err
 	}
 	if err := visor.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered); err != nil {

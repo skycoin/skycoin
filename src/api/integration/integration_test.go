@@ -28,6 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -4653,9 +4654,9 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		tLog(t, "spendableHours", spendableHours)
 
 		coins := rand.Intn(int(totalCoins)) + 1
-		coins -= coins % int(visor.MaxDropletDivisor())
+		coins -= coins % int(params.MaxDropletDivisor())
 		if coins == 0 {
-			coins = int(visor.MaxDropletDivisor())
+			coins = int(params.MaxDropletDivisor())
 		}
 		hours := rand.Intn(int(spendableHours + 1))
 		nOutputs := rand.Intn(maxOutputs) + 1
@@ -4690,9 +4691,9 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 				remainingHours = 0
 			} else {
 				receiverCoins := rand.Intn(remainingCoins) + 1
-				receiverCoins -= receiverCoins % int(visor.MaxDropletDivisor())
+				receiverCoins -= receiverCoins % int(params.MaxDropletDivisor())
 				if receiverCoins == 0 {
-					receiverCoins = int(visor.MaxDropletDivisor())
+					receiverCoins = int(params.MaxDropletDivisor())
 				}
 
 				var err error

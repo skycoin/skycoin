@@ -5,35 +5,10 @@ package fee
 
 import (
 	"errors"
-	"fmt"
-	"os"
-	"strconv"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 )
-
-var (
-	// BurnFactor inverse fraction of coinhours that must be burned (can be overridden with COINHOUR_BURN_FACTOR env var)
-	BurnFactor uint64 = 2
-)
-
-func init() {
-	xs := os.Getenv("COINHOUR_BURN_FACTOR")
-	if xs == "" {
-		return
-	}
-
-	x, err := strconv.ParseUint(xs, 10, 64)
-	if err != nil {
-		panic(fmt.Sprintf("Invalid COINHOUR_BURN_FACTOR %q: %v", xs, err))
-	}
-
-	if x <= 1 {
-		panic(fmt.Sprintf("BurnFactor must be > 1"))
-	}
-
-	BurnFactor = x
-}
 
 var (
 	// ErrTxnNoFee is returned if a transaction has no coinhour fee
@@ -47,7 +22,7 @@ var (
 )
 
 // VerifyTransactionFee performs additional transaction verification at the unconfirmed pool level.
-// This checks tunable parameters that should prevent the transaction from
+// This checks tunable params that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
 func VerifyTransactionFee(t *coin.Transaction, fee uint64) error {
@@ -85,10 +60,10 @@ func VerifyTransactionFeeForHours(hours, fee uint64) error {
 }
 
 // RequiredFee returns the coinhours fee required for an amount of hours
-// The required fee is calculated as hours/BurnFactor, rounded up.
+// The required fee is calculated as hours/CoinHourBurnFactor, rounded up.
 func RequiredFee(hours uint64) uint64 {
-	feeHours := hours / BurnFactor
-	if hours%BurnFactor != 0 {
+	feeHours := hours / params.CoinHourBurnFactor
+	if hours%params.CoinHourBurnFactor != 0 {
 		feeHours++
 	}
 

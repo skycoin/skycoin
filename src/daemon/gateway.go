@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/daemon/strand"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -881,7 +882,7 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 		}
 	}
 
-	lockedAddrs := visor.GetLockedDistributionAddresses()
+	lockedAddrs := params.GetLockedDistributionAddresses()
 	addrsMap := make(map[string]struct{}, len(lockedAddrs))
 	for _, a := range lockedAddrs {
 		addrsMap[a] = struct{}{}
@@ -893,7 +894,7 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	}
 
 	if !includeDistribution {
-		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+		unlockedAddrs := params.GetUnlockedDistributionAddresses()
 		for _, a := range unlockedAddrs {
 			addrsMap[a] = struct{}{}
 		}

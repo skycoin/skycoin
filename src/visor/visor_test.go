@@ -19,6 +19,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
@@ -323,7 +324,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
-	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, maxDropletDivisor)
+	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.MaxDropletDivisor())
 
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
@@ -399,7 +400,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	foundInvalidCoins := false
 	for _, txn := range txns {
 		for _, o := range txn.Out {
-			if err := DropletPrecisionCheck(o.Coins); err != nil {
+			if err := params.DropletPrecisionCheck(o.Coins); err != nil {
 				foundInvalidCoins = true
 				break
 			}
@@ -474,7 +475,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Check that decimal rules are enforced
 	for i, txn := range blockTxns {
 		for j, o := range txn.Out {
-			err := DropletPrecisionCheck(o.Coins)
+			err := params.DropletPrecisionCheck(o.Coins)
 			require.NoError(t, err, "txout %d.%d coins=%d", i, j, o.Coins)
 		}
 	}
@@ -607,11 +608,11 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
-	invalidCoins := coins + (maxDropletDivisor / 10)
+	invalidCoins := coins + (params.MaxDropletDivisor() / 10)
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectTransaction(txn)
 	require.NoError(t, err)
-	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
+	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -671,33 +672,6 @@ func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cip
 	spendTx.SignInputs(keys)
 	spendTx.UpdateHeader()
 	return spendTx
-}
-
-func TestVisorCalculatePrecision(t *testing.T) {
-	cases := []struct {
-		precision uint64
-		divisor   uint64
-	}{
-		{0, 1e6},
-		{1, 1e5},
-		{2, 1e4},
-		{3, 1e3},
-		{4, 1e2},
-		{5, 1e1},
-		{6, 1},
-	}
-
-	for _, tc := range cases {
-		name := fmt.Sprintf("calculateDivisor(%d)=%d", tc.precision, tc.divisor)
-		t.Run(name, func(t *testing.T) {
-			divisor := calculateDivisor(tc.precision)
-			require.Equal(t, tc.divisor, divisor, "%d != %d", tc.divisor, divisor)
-		})
-	}
-
-	_require.PanicsWithLogMessage(t, "precision must be <= droplet.Exponent", func() {
-		calculateDivisor(7)
-	})
 }
 
 func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { // nolint: unparam
@@ -1994,11 +1968,11 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
 	// This transaction will stay invalid on refresh
-	invalidCoins := coins + (maxDropletDivisor / 10)
+	invalidCoins := coins + (params.MaxDropletDivisor() / 10)
 	alwaysInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectTransaction(alwaysInvalidTxn)
 	require.NoError(t, err)
-	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
+	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -2028,7 +2002,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn remains valid,
 	// the second txn remains invalid,
 	// the third txn becomes valid
-	v.Config.MaxBlockSize = DefaultMaxBlockSize
+	v.Config.MaxBlockSize = params.DefaultMaxBlockSize
 	hashes, err := v.RefreshUnconfirmed()
 	require.NoError(t, err)
 	require.Equal(t, []cipher.SHA256{sometimesInvalidTxn.Hash()}, hashes)
@@ -2046,7 +2020,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn was valid, became invalid, and is now valid again
 	// The second txn was always invalid
 	// The third txn was invalid, became valid, became invalid, and is now valid again
-	v.Config.MaxBlockSize = DefaultMaxBlockSize
+	v.Config.MaxBlockSize = params.DefaultMaxBlockSize
 	hashes, err = v.RefreshUnconfirmed()
 	require.NoError(t, err)
 
@@ -3058,7 +3032,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			}
 
 			if v.Config.MaxBlockSize == 0 {
-				v.Config.MaxBlockSize = DefaultMaxBlockSize
+				v.Config.MaxBlockSize = params.DefaultMaxBlockSize
 			}
 
 			var isConfirmed bool

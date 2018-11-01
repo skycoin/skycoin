@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
@@ -81,7 +81,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			GUIEnabled:            c.enableGUI,
 			JSON20RPCEnabled:      c.enableJSON20RPC,
 			WalletAPIEnabled:      walletAPIEnabled,
-			BurnFactor:            fee.BurnFactor,
+			BurnFactor:            params.CoinHourBurnFactor,
 		})
 	}
 }

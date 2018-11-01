@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
@@ -99,7 +100,7 @@ var burnFactor10VerifyTxnFeeTestCases = []verifyTxnFeeTestCase{
 }
 
 func TestVerifyTransactionFee(t *testing.T) {
-	originalBurnFactor := BurnFactor
+	originalBurnFactor := params.CoinHourBurnFactor
 
 	emptyTxn := &coin.Transaction{}
 	hours, err := emptyTxn.OutputHours()
@@ -165,16 +166,16 @@ func TestVerifyTransactionFee(t *testing.T) {
 
 	tested := false
 	for _, tcc := range cases {
-		if tcc.burnFactor == BurnFactor {
+		if tcc.burnFactor == params.CoinHourBurnFactor {
 			tested = true
 		}
 
 		for _, tc := range tcc.cases {
 			name := fmt.Sprintf("burnFactor=%d input=%d output=%d", tcc.burnFactor, tc.inputHours, tc.outputHours)
 			t.Run(name, func(t *testing.T) {
-				BurnFactor = tcc.burnFactor
+				params.CoinHourBurnFactor = tcc.burnFactor
 				defer func() {
-					BurnFactor = originalBurnFactor
+					params.CoinHourBurnFactor = originalBurnFactor
 				}()
 
 				txn := &coin.Transaction{}
@@ -189,7 +190,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 		}
 	}
 
-	require.True(t, tested, "configured BurnFactor=%d has not been tested", BurnFactor)
+	require.True(t, tested, "configured params.CoinHourBurnFactor=%d has not been tested", params.CoinHourBurnFactor)
 }
 
 type requiredFeeTestCase struct {
@@ -252,7 +253,7 @@ var burnFactor10RequiredFeeTestCases = []requiredFeeTestCase{
 }
 
 func TestRequiredFee(t *testing.T) {
-	originalBurnFactor := BurnFactor
+	originalBurnFactor := params.CoinHourBurnFactor
 
 	cases := []struct {
 		burnFactor uint64
@@ -265,16 +266,16 @@ func TestRequiredFee(t *testing.T) {
 
 	tested := false
 	for _, tcc := range cases {
-		if tcc.burnFactor == BurnFactor {
+		if tcc.burnFactor == params.CoinHourBurnFactor {
 			tested = true
 		}
 
 		for _, tc := range tcc.cases {
 			name := fmt.Sprintf("burnFactor=%d hours=%d fee=%d", tcc.burnFactor, tc.hours, tc.fee)
 			t.Run(name, func(t *testing.T) {
-				BurnFactor = tcc.burnFactor
+				params.CoinHourBurnFactor = tcc.burnFactor
 				defer func() {
-					BurnFactor = originalBurnFactor
+					params.CoinHourBurnFactor = originalBurnFactor
 				}()
 
 				fee := RequiredFee(tc.hours)
@@ -286,7 +287,7 @@ func TestRequiredFee(t *testing.T) {
 		}
 	}
 
-	require.True(t, tested, "configured BurnFactor=%d has not been tested", BurnFactor)
+	require.True(t, tested, "configured params.CoinHourBurnFactor=%d has not been tested", params.CoinHourBurnFactor)
 }
 
 func TestTransactionFee(t *testing.T) {

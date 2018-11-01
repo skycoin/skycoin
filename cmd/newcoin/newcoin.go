@@ -93,9 +93,9 @@ func createCoinCommand() cli.Command {
 				Value: "coin_test.template",
 			},
 			cli.StringFlag{
-				Name:  "visor-template-file, vt",
-				Usage: "visor template file",
-				Value: "visor.template",
+				Name:  "params-template-file, pt",
+				Usage: "params template file",
+				Value: "params.template",
 			},
 			cli.StringFlag{
 				Name:  "config-dir, cd",
@@ -121,7 +121,7 @@ func createCoinCommand() cli.Command {
 
 			coinTemplateFile := c.String("coin-template-file")
 			coinTestTemplateFile := c.String("coin-test-template-file")
-			visorTemplateFile := c.String("visor-template-file")
+			paramsTemplateFile := c.String("params-template-file")
 
 			// check that the coin template file exists
 			if _, err := os.Stat(filepath.Join(templateDir, coinTemplateFile)); os.IsNotExist(err) {
@@ -131,8 +131,8 @@ func createCoinCommand() cli.Command {
 			if _, err := os.Stat(filepath.Join(templateDir, coinTestTemplateFile)); os.IsNotExist(err) {
 				return err
 			}
-			// check that the visor template file exists
-			if _, err := os.Stat(filepath.Join(templateDir, visorTemplateFile)); os.IsNotExist(err) {
+			// check that the params template file exists
+			if _, err := os.Stat(filepath.Join(templateDir, paramsTemplateFile)); os.IsNotExist(err) {
 				return err
 			}
 
@@ -145,7 +145,7 @@ func createCoinCommand() cli.Command {
 				return err
 			}
 
-			// -- parse template and create new coin.go and visor parameters.go -- //
+			// -- parse template and create new coin.go and config blockchain.go -- //
 
 			config, err := skycoin.NewParameters(configFile, configDir)
 			if err != nil {
@@ -179,12 +179,13 @@ func createCoinCommand() cli.Command {
 			}
 			defer coinTestFile.Close()
 
-			visorParamsFile, err := os.Create("./src/visor/parameters.go")
+			paramsFilePath := "./src/params/params.go"
+			paramsFile, err := os.Create(paramsFilePath)
 			if err != nil {
-				log.Errorf("failed to create new visor parameters.go")
+				log.Errorf("failed to create new file %s", paramsFilePath)
 				return err
 			}
-			defer visorParamsFile.Close()
+			defer paramsFile.Close()
 
 			// change dir so that text/template can parse the file
 			err = os.Chdir(templateDir)
@@ -196,7 +197,7 @@ func createCoinCommand() cli.Command {
 			templateFiles := []string{
 				coinTemplateFile,
 				coinTestTemplateFile,
-				visorTemplateFile,
+				paramsTemplateFile,
 			}
 
 			t := template.New(coinTemplateFile)
@@ -231,9 +232,9 @@ func createCoinCommand() cli.Command {
 				return err
 			}
 
-			err = t.ExecuteTemplate(visorParamsFile, visorTemplateFile, config.Visor)
+			err = t.ExecuteTemplate(paramsFile, paramsTemplateFile, config.Params)
 			if err != nil {
-				log.Error("failed to parse visor params template variables")
+				log.Error("failed to parse params template variables")
 				return err
 			}
 

@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -1239,7 +1240,7 @@ var burnFactor10TestCases = []distributeSpendHoursTestCase{
 }
 
 func TestWalletDistributeSpendHours(t *testing.T) {
-	originalBurnFactor := fee.BurnFactor
+	originalBurnFactor := params.CoinHourBurnFactor
 
 	cases := []struct {
 		burnFactor uint64
@@ -1252,15 +1253,15 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 
 	tested := false
 	for _, tcc := range cases {
-		if tcc.burnFactor == fee.BurnFactor {
+		if tcc.burnFactor == params.CoinHourBurnFactor {
 			tested = true
 		}
 
 		for _, tc := range tcc.cases {
 			t.Run(tc.name, func(t *testing.T) {
-				fee.BurnFactor = tcc.burnFactor
+				params.CoinHourBurnFactor = tcc.burnFactor
 				defer func() {
-					fee.BurnFactor = originalBurnFactor
+					params.CoinHourBurnFactor = originalBurnFactor
 				}()
 
 				changeHours, addrHours, totalHours := DistributeSpendHours(tc.inputHours, tc.nAddrs, tc.haveChange)
@@ -1283,9 +1284,9 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf("burn-factor-%d-range", tcc.burnFactor), func(t *testing.T) {
-			fee.BurnFactor = tcc.burnFactor
+			params.CoinHourBurnFactor = tcc.burnFactor
 			defer func() {
-				fee.BurnFactor = originalBurnFactor
+				params.CoinHourBurnFactor = originalBurnFactor
 			}()
 
 			// Tests over range of values
@@ -1332,7 +1333,7 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 		})
 	}
 
-	require.True(t, tested, "configured BurnFactor=%d has not been tested", fee.BurnFactor)
+	require.True(t, tested, "configured BurnFactor=%d has not been tested", params.CoinHourBurnFactor)
 }
 
 func uxBalancesEqual(a, b []UxBalance) bool {

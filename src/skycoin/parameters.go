@@ -9,8 +9,8 @@ import (
 
 // Parameters records fiber coin parameters
 type Parameters struct {
-	Node  NodeParameters  `mapstructure:"node"`
-	Visor VisorParameters `mapstructure:"visor"`
+	Node   NodeParameters   `mapstructure:"node"`
+	Params ParamsParameters `mapstructure:"params"`
 }
 
 // NodeParameters records the node's configurable parameters
@@ -30,8 +30,8 @@ type NodeParameters struct {
 	DataDirectory string
 }
 
-// VisorParameters are the parameters used to generate parameters.go in visor
-type VisorParameters struct {
+// ParamsParameters are the parameters used to generate config/blockchain.go
+type ParamsParameters struct {
 	// MaxCoinSupply is the maximum supply of coins
 	MaxCoinSupply uint64 `mapstructure:"max_coin_supply"`
 
@@ -58,7 +58,12 @@ type VisorParameters struct {
 	//DefaultMaxBlockSize is max block size
 	DefaultMaxBlockSize int `mapstructure:"default_max_block_size"`
 
+	// Addresses that received coins from the genesis address in the first block,
+	// used to calculate current and max supply and do distribution timelocking
 	DistributionAddresses []string `mapstructure:"distribution_addresses"`
+
+	// BurnFactor inverse fraction of coinhours that must be burned (can be overridden with COINHOUR_BURN_FACTOR env var)
+	CoinHourBurnFactor uint64 `mapstructure:"coinhour_burn_factor"`
 }
 
 // NewParameters loads blockchain config parameters from a config file
@@ -108,12 +113,13 @@ func setDefaults() {
 	viper.SetDefault("build.commit", "")
 	viper.SetDefault("build.branch", "")
 
-	// visor parameter defaults
-	viper.SetDefault("visor.max_coin_supply", 1e8)
-	viper.SetDefault("visor.distribution_addresses_total", 100)
-	viper.SetDefault("visor.initial_unlocked_count", 25)
-	viper.SetDefault("visor.unlock_address_rate", 5)
-	viper.SetDefault("visor.unlock_time_interval", 60*60*24*365)
-	viper.SetDefault("visor.max_droplet_precision", 3)
-	viper.SetDefault("visor.default_max_block_size", 32*1024)
+	// params defaults
+	viper.SetDefault("params.max_coin_supply", 1e8)
+	viper.SetDefault("params.distribution_addresses_total", 100)
+	viper.SetDefault("params.initial_unlocked_count", 25)
+	viper.SetDefault("params.unlock_address_rate", 5)
+	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)
+	viper.SetDefault("params.max_droplet_precision", 3)
+	viper.SetDefault("params.default_max_block_size", 32*1024)
+	viper.SetDefault("params.coinhour_burn_factor", 2)
 }

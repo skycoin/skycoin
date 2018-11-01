@@ -1,4 +1,4 @@
-package visor
+package params
 
 /*
 CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
@@ -20,12 +20,19 @@ const (
 	// Once the InitialUnlockedCount is exhausted,
 	// UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
 	UnlockTimeInterval uint64 = {{.UnlockTimeInterval}} // in seconds
-	// MaxDropletPrecision represents the decimal precision of droplets
-	MaxDropletPrecision uint64 = {{.MaxDropletPrecision}}
 	//DefaultMaxBlockSize is max block size
 	DefaultMaxBlockSize int = {{.DefaultMaxBlockSize}} // in bytes
 )
 
+var (
+	// CoinHourBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `COINHOUR_BURN_FACTOR` env var)
+	CoinHourBurnFactor uint64 = 2
+	// MaxDropletPrecision represents the decimal precision of droplets
+	MaxDropletPrecision uint64 = {{.MaxDropletPrecision}}
+)
+
+// distributionAddresses are addresses that received coins from the genesis address in the first block,
+// used to calculate current and max supply and do distribution timelocking
 var distributionAddresses = [DistributionAddressesTotal]string{
 {{- range $index, $address := .DistributionAddresses}}
 	"{{$address -}}",

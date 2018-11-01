@@ -22,10 +22,10 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/certutil"
-	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -201,7 +201,7 @@ func (c *Coin) Run() error {
 		}
 	}
 
-	c.logger.Infof("Coinhour burn factor is %d", fee.BurnFactor)
+	c.logger.Infof("Coinhour burn factor is %d", params.CoinHourBurnFactor)
 
 	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {
@@ -536,20 +536,20 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 	output := cipher.MustSHA256FromHex(UxID)
 	tx.PushInput(output)
 
-	addrs := visor.GetDistributionAddresses()
+	addrs := params.GetDistributionAddresses()
 
 	if len(addrs) != 100 {
 		log.Panic("Should have 100 distribution addresses")
 	}
 
 	// 1 million per address, measured in droplets
-	if visor.DistributionAddressInitialBalance != 1e6 {
-		log.Panic("visor.DistributionAddressInitialBalance expected to be 1e6*1e6")
+	if params.DistributionAddressInitialBalance != 1e6 {
+		log.Panic("params.DistributionAddressInitialBalance expected to be 1e6*1e6")
 	}
 
 	for i := range addrs {
 		addr := cipher.MustDecodeBase58Address(addrs[i])
-		tx.PushOutput(addr, visor.DistributionAddressInitialBalance*1e6, 1)
+		tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1)
 	}
 
 	seckeys := make([]cipher.SecKey, 1)

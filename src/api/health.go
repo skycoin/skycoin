@@ -23,6 +23,8 @@ type HealthResponse struct {
 	CoinName              string             `json:"coin"`
 	DaemonUserAgent       string             `json:"user_agent"`
 	OpenConnections       int                `json:"open_connections"`
+	OutgoingConnections   int                `json:"outgoing_connections"`
+	IncomingConnections   int                `json:"incoming_connections"`
 	Uptime                wh.Duration        `json:"uptime"`
 	CSRFEnabled           bool               `json:"csrf_enabled"`
 	CSPEnabled            bool               `json:"csp_enabled"`
@@ -69,7 +71,9 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			Version:               c.health.BuildInfo,
 			CoinName:              c.health.CoinName,
 			DaemonUserAgent:       userAgent,
-			OpenConnections:       health.OpenConnections,
+			OpenConnections:       health.OutgoingConnections + health.IncomingConnections,
+			OutgoingConnections:   health.OutgoingConnections,
+			IncomingConnections:   health.IncomingConnections,
 			Uptime:                wh.FromDuration(health.Uptime),
 			CSRFEnabled:           csrfStore.Enabled,
 			CSPEnabled:            !c.disableCSP,

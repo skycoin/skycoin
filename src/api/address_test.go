@@ -1,10 +1,10 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -101,7 +101,7 @@ func TestVerifyAddress(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
 			gateway := &MockGatewayer{}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			contentType := tc.contentType

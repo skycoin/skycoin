@@ -256,7 +256,7 @@ func TestHandleConnection(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, exist)
 
-	dc := p.disconnect(conn.LocalAddr().String())
+	dc := p.disconnect(conn.LocalAddr().String(), ErrDisconnectUnknownMessage)
 	require.NotNil(t, dc)
 
 	require.NotNil(t, wasSolicited)
@@ -1086,6 +1086,12 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	m := NewByteMessage(88)
 	err = p.BroadcastMessage(m, addrs)
 	require.NoError(t, err)
+
+	err = p.BroadcastMessage(m, []string{})
+	require.Equal(t, ErrNoAddresses, err)
+
+	err = p.BroadcastMessage(m, []string{"1.1.1.1"})
+	require.Equal(t, ErrNoMatchingConnections, err)
 
 	// Spam the connections with so much data that their write queue overflows,
 	// which will cause ErrNoReachableConnections

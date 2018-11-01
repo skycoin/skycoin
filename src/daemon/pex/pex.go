@@ -536,6 +536,12 @@ func (px *Pex) SetUserAgent(addr string, userAgent useragent.Data) error {
 	px.Lock()
 	defer px.Unlock()
 
+	if !userAgent.Empty() {
+		if _, err := userAgent.Build(); err != nil {
+			return err
+		}
+	}
+
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
 		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
@@ -580,12 +586,12 @@ func (px *Pex) TrustedPublic() Peers {
 	return px.peerlist.getCanTryPeers([]Filter{isPublic, isTrusted})
 }
 
-// RandomPublicUntrusted returns N random public untrusted peers
-func (px *Pex) RandomPublicUntrusted(n int) Peers {
+// RandomPublic returns N random public untrusted peers
+func (px *Pex) RandomPublic(n int) Peers {
 	px.RLock()
 	defer px.RUnlock()
 	return px.peerlist.random(n, []Filter{func(p Peer) bool {
-		return !p.Private && !p.Trusted
+		return !p.Private
 	}})
 }
 

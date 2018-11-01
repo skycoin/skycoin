@@ -93,6 +93,20 @@ func (_m *MockGatewayer) DecryptWallet(wltID string, password []byte) (*wallet.W
 	return r0, r1
 }
 
+// Disconnect provides a mock function with given fields: id
+func (_m *MockGatewayer) Disconnect(id uint64) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // EncryptWallet provides a mock function with given fields: wltID, password
 func (_m *MockGatewayer) EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
 	ret := _m.Called(wltID, password)

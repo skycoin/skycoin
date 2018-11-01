@@ -35,15 +35,15 @@ const (
 
 var (
 	// ErrDisconnectSetReadDeadlineFailed set read deadline failed
-	ErrDisconnectSetReadDeadlineFailed = errors.New("SetReadDeadline failed")
+	ErrDisconnectSetReadDeadlineFailed DisconnectReason = errors.New("SetReadDeadline failed")
 	// ErrDisconnectInvalidMessageLength invalid message length
 	ErrDisconnectInvalidMessageLength DisconnectReason = errors.New("Invalid message length")
 	// ErrDisconnectMalformedMessage malformed message
 	ErrDisconnectMalformedMessage DisconnectReason = errors.New("Malformed message body")
-	// ErrDisconnectUnknownMessage unknow message
+	// ErrDisconnectUnknownMessage unknown message
 	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
-	// ErrDisconnectUnexpectedError unexpected error
-	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
+	// ErrDisconnectShutdown shutting down the client
+	ErrDisconnectShutdown DisconnectReason = errors.New("Shutdown")
 	// ErrDisconnectMessageDecodeUnderflow message data did not fully decode to a message object
 	ErrDisconnectMessageDecodeUnderflow DisconnectReason = errors.New("Message data did not fully decode to a message object")
 	// ErrDisconnectTruncatedMessageID message data was too short to contain a message ID
@@ -58,7 +58,7 @@ var (
 	// ErrNoMatchingConnections when broadcasting a message, no connections were found for the provided addresses
 	ErrNoMatchingConnections = errors.New("No connections found for broadcast addresses")
 	// ErrPoolEmpty when broadcasting a message, the connection pool was empty
-	ErrPoolEmpty = errors.New("Connection pool is empty")
+	ErrPoolEmpty = errors.New("Connection pool is empty after filtering connections")
 	// ErrConnectionExists connection exists
 	ErrConnectionExists = errors.New("Connection exists")
 	// ErrMaxConnectionsReached max connection reached
@@ -578,6 +578,12 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 			"addr":   addr,
 			"method": mErr.method,
 		}).Error("handleConnection failure")
+
+		// This Disconnect does not send a DISC packet because it is inside gnet.
+		// A DISC packet is not useful at this point, because the error is most likely
+		// that the connection is unreachable.
+		// However, it may also be that the connection sent data that could not be deserialized
+		// to a message.
 		if err := pool.Disconnect(c.Addr(), mErr.err); err != nil {
 			logger.WithError(err).WithField("addr", addr).Error("Disconnect")
 		}
@@ -825,7 +831,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 
 // Disconnect removes a connection from the pool by address and invokes DisconnectCallback
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
-	if err := pool.strand("Disconnect", func() error {
+	return pool.strand("Disconnect", func() error {
 		logger.WithFields(logrus.Fields{
 			"addr":   addr,
 			"reason": r,
@@ -839,7 +845,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 			}
 		}
 
-		conn := pool.disconnect(addr)
+		conn := pool.disconnect(addr, r)
 
 		if conn == nil {
 			return errors.New("Disconnect: connection does not exist")
@@ -855,14 +861,10 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 		}
 
 		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	})
 }
 
-func (pool *ConnectionPool) disconnect(addr string) *Connection {
+func (pool *ConnectionPool) disconnect(addr string, r DisconnectReason) *Connection {
 	conn, ok := pool.addresses[addr]
 	if !ok {
 		return nil
@@ -881,7 +883,7 @@ func (pool *ConnectionPool) disconnect(addr string) *Connection {
 		logger.WithError(err).WithFields(fields).Error("conn.Close")
 	}
 
-	logger.WithFields(fields).Debug("Closed connection and removed from pool")
+	logger.WithFields(fields).WithField("reason", r).Debug("Closed connection and removed from pool")
 
 	return conn
 }
@@ -890,7 +892,7 @@ func (pool *ConnectionPool) disconnect(addr string) *Connection {
 func (pool *ConnectionPool) disconnectAll() {
 	for _, conn := range pool.pool {
 		addr := conn.Addr()
-		pool.disconnect(addr)
+		pool.disconnect(addr, ErrDisconnectShutdown)
 	}
 }
 
@@ -950,7 +952,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error 
 		return ErrNoAddresses
 	}
 
-	fullWriteQueue := []string{}
+	fullWriteQueue := 0
 	if err := pool.strand("BroadcastMessage", func() error {
 		if len(pool.pool) == 0 {
 			return ErrPoolEmpty
@@ -965,7 +967,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error 
 				case conn.WriteQueue <- msg:
 				default:
 					logger.Critical().WithField("addr", conn.Addr()).Info("Write queue full")
-					fullWriteQueue = append(fullWriteQueue, conn.Addr())
+					fullWriteQueue++
 				}
 			}
 		}
@@ -974,7 +976,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error 
 			return ErrNoMatchingConnections
 		}
 
-		if len(fullWriteQueue) == foundConns {
+		if fullWriteQueue == foundConns {
 			return ErrNoReachableConnections
 		}
 
@@ -1025,11 +1027,11 @@ func (pool *ConnectionPool) SendPings(rate time.Duration, msg Message) error {
 	return nil
 }
 
-// ClearStaleConnections removes connections that have not sent a message in too long
-func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reason DisconnectReason) error {
+// GetStaleConnections returns connections that have been idle for longer than idleLimit
+func (pool *ConnectionPool) GetStaleConnections(idleLimit time.Duration) ([]string, error) {
 	now := Now()
-	idleConns := []string{}
-	if err := pool.strand("ClearStaleConnections", func() error {
+	var idleConns []string
+	if err := pool.strand("GetStaleConnections", func() error {
 		for _, conn := range pool.pool {
 			if conn.LastReceived.Add(idleLimit).Before(now) {
 				idleConns = append(idleConns, conn.Addr())
@@ -1037,15 +1039,10 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 		}
 		return nil
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, a := range idleConns {
-		if err := pool.Disconnect(a, reason); err != nil {
-			logger.WithError(err).WithField("addr", a).Warning("Error in disconnecting from stale connection")
-		}
-	}
-	return nil
+	return idleConns, nil
 }
 
 // Now returns the current UTC time

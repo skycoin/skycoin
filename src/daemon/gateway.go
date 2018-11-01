@@ -214,6 +214,21 @@ func (gw *Gateway) newConnection(c *connection) (*Connection, error) {
 	return &cc, nil
 }
 
+// Disconnect disconnects a connection by gnet ID
+func (gw *Gateway) Disconnect(gnetID uint64) error {
+	var err error
+	gw.strand("Disconnect", func() {
+		c := gw.d.connections.getByGnetID(gnetID)
+		if c == nil {
+			err = ErrConnectionNotExist
+			return
+		}
+
+		err = gw.d.Disconnect(c.Addr, ErrDisconnectRequestedByOperator)
+	})
+	return err
+}
+
 // GetTrustConnections returns all trusted connections
 func (gw *Gateway) GetTrustConnections() []string {
 	var conn []string
@@ -902,9 +917,10 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 
 // Health is returned by the /health endpoint
 type Health struct {
-	BlockchainMetadata visor.BlockchainMetadata
-	OpenConnections    int
-	Uptime             time.Duration
+	BlockchainMetadata  visor.BlockchainMetadata
+	OutgoingConnections int
+	IncomingConnections int
+	Uptime              time.Duration
 }
 
 // GetHealth returns statistics about the running node
@@ -925,10 +941,21 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			return
 		}
 
+		outgoingConns := 0
+		incomingConns := 0
+		for _, c := range conns {
+			if c.Outgoing {
+				outgoingConns++
+			} else {
+				incomingConns++
+			}
+		}
+
 		health = &Health{
-			BlockchainMetadata: *metadata,
-			OpenConnections:    len(conns),
-			Uptime:             time.Since(gw.v.StartedAt),
+			BlockchainMetadata:  *metadata,
+			OutgoingConnections: outgoingConns,
+			IncomingConnections: incomingConns,
+			Uptime:              time.Since(gw.v.StartedAt),
 		}
 	})
 

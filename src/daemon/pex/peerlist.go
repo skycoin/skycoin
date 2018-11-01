@@ -268,15 +268,16 @@ func (pl *peerlist) random(count int, flts []Filter) Peers {
 	if len(keys) == 0 {
 		return Peers{}
 	}
+
 	max := count
-	if count == 0 || count > len(keys) {
+	if max == 0 || max > len(keys) {
 		max = len(keys)
 	}
 
-	ps := make(Peers, 0)
+	ps := make(Peers, max)
 	perm := rand.Perm(len(keys))
-	for _, i := range perm[:max] {
-		ps = append(ps, *pl.peers[keys[i]])
+	for i, j := range perm[:max] {
+		ps[i] = *pl.peers[keys[j]]
 	}
 	return ps
 }

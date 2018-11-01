@@ -124,7 +124,7 @@ GoUint32 InputTestDataFromJSON(InputTestDataJSON* json_data, InputTestData* inpu
   for (i = 0; i < hexstrings->len && err == SKY_OK; i++, s++, hash++) {
     err = SKY_cipher_SHA256FromHex(*s, hash);
   }
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     free(hashes->data);
   return err;
 }
@@ -221,13 +221,13 @@ void KeysTestDataToJson(KeysTestData* input_data, KeysTestDataJSON* json_data) {
 // - json_data.Signatures.len * sizeof(cipher__Sig) bytes for sigs slice data
 GoUint32 KeysTestDataFromJSON(KeysTestDataJSON* json_data, KeysTestData* input_data) {
   GoUint32 err = SKY_cipher_DecodeBase58Address(json_data->Address, &input_data->Address);
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     return err;
   err = SKY_cipher_SecKeyFromHex(json_data->Secret, &input_data->Secret);
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     return err;
   err = SKY_cipher_PubKeyFromHex(json_data->Public, &input_data->Public);
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     return err;
 
   input_data->Signatures.len = input_data->Signatures.cap = json_data->Signatures.len;
@@ -241,7 +241,7 @@ GoUint32 KeysTestDataFromJSON(KeysTestDataJSON* json_data, KeysTestData* input_d
   for (i = 0; i < json_data->Signatures.len && err == SKY_OK; i++, sig++, s++) {
     SKY_cipher_SigFromHex(*s, sig);
   }
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     free(input_data->Signatures.data);
   return err;
 }
@@ -356,7 +356,7 @@ GoUint32 SeedTestDataFromJSON(SeedTestDataJSON* json_data, SeedTestData* input_d
   for (i = 0; i < json_data->Keys.len && err == SKY_OK; i++, k++, kj++) {
     err = KeysTestDataFromJSON(kj, k);
   }
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     free(input_data->Keys.data);
   return err;
 }
@@ -460,11 +460,11 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
         mem_actual.size = mem_expect.size = sizeof(cipher__Sig);
         cr_assert(ne(mem, mem_actual, mem_expect),
             "%d-th provided signature for %d-th data set must not be null", j, i);
-        GoUint32 err = SKY_cipher_VerifySignature(&p, sig, h);
+        GoUint32 err = SKY_cipher_VerifyPubKeySignedHash(&p, sig, h);
         cr_assert(err == SKY_OK,
-            "SKY_cipher_VerifySignature failed: error=%d dataset=%d hashidx=%d", err, i, j);
-        err = SKY_cipher_ChkSig(&addr1, h, sig);
-        cr_assert(err == SKY_OK, "SKY_cipher_ChkSig failed: error=%d dataset=%d hashidx=%d", err, i, j);
+            "SKY_cipher_VerifyPubKeySignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);
+        err = SKY_cipher_VerifyAddressSignedHash(&addr1, sig, h);
+        cr_assert(err == SKY_OK, "SKY_cipher_VerifyAddressSignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);
         err = SKY_cipher_VerifySignedHash(sig, h);
         cr_assert(err == SKY_OK,
             "SKY_cipher_VerifySignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);

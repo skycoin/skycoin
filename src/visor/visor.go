@@ -153,7 +153,7 @@ func NewVisorConfig() Config {
 // Verify verifies the configuration
 func (c Config) Verify() error {
 	if c.IsMaster {
-		if c.BlockchainPubkey != cipher.PubKeyFromSecKey(c.BlockchainSeckey) {
+		if c.BlockchainPubkey != cipher.MustPubKeyFromSecKey(c.BlockchainSeckey) {
 			return errors.New("Cannot run in master: invalid seckey for pubkey")
 		}
 	}
@@ -182,6 +182,7 @@ type Historyer interface {
 // Blockchainer is the interface that provides methods for accessing the blockchain data
 type Blockchainer interface {
 	GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error)
+	GetBlocks(tx *dbutil.Tx, seqs []uint64) ([]coin.SignedBlock, error)
 	GetBlocksInRange(tx *dbutil.Tx, start, end uint64) ([]coin.SignedBlock, error)
 	GetLastBlocks(tx *dbutil.Tx, n uint64) ([]coin.SignedBlock, error)
 	GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error)
@@ -222,9 +223,8 @@ type UnconfirmedTxnPooler interface {
 
 // Visor manages the Blockchain as both a Master and a Normal
 type Visor struct {
-	Config Config
-	DB     *dbutil.DB
-	// Unconfirmed transactions, held for relay until we get block confirmation
+	Config      Config
+	DB          *dbutil.DB
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
@@ -426,7 +426,7 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 // GenesisPreconditions panics if conditions for genesis block are not met
 func (vs *Visor) GenesisPreconditions() {
 	if vs.Config.BlockchainSeckey != (cipher.SecKey{}) {
-		if vs.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey) {
+		if vs.Config.BlockchainPubkey != cipher.MustPubKeyFromSecKey(vs.Config.BlockchainSeckey) {
 			logger.Panic("Cannot create genesis block. Invalid secret key for pubkey")
 		}
 	}
@@ -590,7 +590,7 @@ func (vs *Visor) signBlock(b coin.Block) coin.SignedBlock {
 		logger.Panic("Only master chain can sign blocks")
 	}
 
-	sig := cipher.SignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
+	sig := cipher.MustSignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
 
 	return coin.SignedBlock{
 		Block: b,
@@ -791,29 +791,37 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 	return b, nil
 }
 
-// GetBlocks returns blocks corresponding to an array of block sequences
+// GetBlocks returns blocks matches seqs
 func (vs *Visor) GetBlocks(seqs []uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 
 	if err := vs.DB.View("GetBlocks", func(tx *dbutil.Tx) error {
-		for _, n := range seqs {
-			b, err := vs.Blockchain.GetSignedBlockBySeq(tx, n)
-			if err != nil {
-				return err
-			}
-
-			if b == nil {
-				return fmt.Errorf("block seq=%d not found", n)
-			}
-
-			blocks = append(blocks, *b)
-		}
-		return nil
+		var err error
+		blocks, err = vs.Blockchain.GetBlocks(tx, seqs)
+		return err
 	}); err != nil {
 		return nil, err
 	}
 
 	return blocks, nil
+}
+
+// GetBlocksVerbose returns blocks matches seqs along with verbose transaction input data
+func (vs *Visor) GetBlocksVerbose(seqs []uint64) ([]coin.SignedBlock, [][][]TransactionInput, error) {
+	var blocks []coin.SignedBlock
+	var inputs [][][]TransactionInput
+
+	if err := vs.DB.View("GetBlocksVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		blocks, inputs, err = vs.getBlocksVerbose(tx, func(tx *dbutil.Tx) ([]coin.SignedBlock, error) {
+			return vs.Blockchain.GetBlocks(tx, seqs)
+		})
+		return err
+	}); err != nil {
+		return nil, nil, err
+	}
+
+	return blocks, inputs, nil
 }
 
 // GetBlocksInRange returns multiple blocks between start and end, including both start and end.
@@ -936,7 +944,7 @@ func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 
 	if err := vs.DB.Update("InjectTransactionStrict", func(tx *dbutil.Tx) error {
 		var err error
-		known, err = vs.injectTransactionStrict(tx, txn)
+		known, err = vs.InjectTransactionStrictTx(tx, txn)
 		return err
 	}); err != nil {
 		return false, err
@@ -945,7 +953,12 @@ func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 	return known, nil
 }
 
-func (vs *Visor) injectTransactionStrict(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
+// InjectTransactionStrictTx records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
+// already in the blockchain.
+// The bool return value is whether or not the transaction was already in the pool.
+// If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
+// This method is only exported for use by the daemon gateway's InjectBroadcastTransaction method.
+func (vs *Visor) InjectTransactionStrictTx(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
 	if err := VerifySingleTxnUserConstraints(txn); err != nil {
 		return false, err
 	}
@@ -2221,7 +2234,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		return VerifySingleTxnHardConstraints(*txn, head, uxa)
+		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa)
 	})
 
 	// If we were able to query the inputs, return the verbose inputs to the caller
@@ -2507,13 +2520,13 @@ func (vs *Visor) GetUnspentOutputsSummary(filters []OutputsFilter) (*UnspentOutp
 	var confirmedOutputs []coin.UxOut
 	var outgoingOutputs coin.UxArray
 	var incomingOutputs coin.UxArray
-	var headTime uint64
+	var head *coin.SignedBlock
 
 	if err := vs.DB.View("GetUnspentOutputsSummary", func(tx *dbutil.Tx) error {
 		var err error
-		headTime, err = vs.Blockchain.Time(tx)
+		head, err = vs.Blockchain.Head(tx)
 		if err != nil {
-			return fmt.Errorf("vs.Blockchain.Time failed: %v", err)
+			return fmt.Errorf("vs.Blockchain.Head failed: %v", err)
 		}
 
 		confirmedOutputs, err = vs.Blockchain.Unspent().GetAll(tx)
@@ -2542,24 +2555,34 @@ func (vs *Visor) GetUnspentOutputsSummary(filters []OutputsFilter) (*UnspentOutp
 		incomingOutputs = flt(incomingOutputs)
 	}
 
-	confirmed, err := NewUnspentOutputs(confirmedOutputs, headTime)
+	confirmed, err := NewUnspentOutputs(confirmedOutputs, head.Time())
 	if err != nil {
 		return nil, err
 	}
 
-	outgoing, err := NewUnspentOutputs(outgoingOutputs, headTime)
+	outgoing, err := NewUnspentOutputs(outgoingOutputs, head.Time())
 	if err != nil {
 		return nil, err
 	}
 
-	incoming, err := NewUnspentOutputs(incomingOutputs, headTime)
+	incoming, err := NewUnspentOutputs(incomingOutputs, head.Time())
 	if err != nil {
 		return nil, err
 	}
 
 	return &UnspentOutputsSummary{
+		HeadBlock: head,
 		Confirmed: confirmed,
 		Outgoing:  outgoing,
 		Incoming:  incoming,
 	}, nil
+}
+
+// WithUpdateTx executes a function inside of a db.Update transaction.
+// This is exported for use by the daemon gateway's InjectBroadcastTransaction method.
+// Do not use it for other purposes.
+func (vs *Visor) WithUpdateTx(name string, f func(tx *dbutil.Tx) error) error {
+	return vs.DB.Update(name, func(tx *dbutil.Tx) error {
+		return f(tx)
+	})
 }

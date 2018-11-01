@@ -163,6 +163,8 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 //	address [string]
 func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Critical().Warning("Call to deprecated /api/v1/explorer/address endpoint")
+
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return

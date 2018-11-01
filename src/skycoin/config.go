@@ -1,6 +1,7 @@
 package skycoin
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -30,6 +32,9 @@ type Config struct {
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {
+	// Name of the coin
+	CoinName string
+
 	// Disable peer exchange
 	DisablePEX bool
 	// Download peer list
@@ -58,6 +63,9 @@ type NodeConfig struct {
 	EnableAllAPISets bool
 
 	enabledAPISets map[string]struct{}
+	// Comma separate list of hostnames to accept in the Host header, used to bypass the Host header check which only applies to localhost addresses
+	HostWhitelist string
+	hostWhitelist []string
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -66,6 +74,8 @@ type NodeConfig struct {
 	Address string
 	// gnet uses this for TCP incoming and outgoing
 	Port int
+	// MaxConnections is the maximum number of total connections allowed
+	MaxConnections int
 	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
 	// Maximum default outgoing connections
@@ -88,6 +98,11 @@ type NodeConfig struct {
 	WebInterfaceKey string
 	// Remote web interface HTTPS support
 	WebInterfaceHTTPS bool
+	// Remote web interface username and password
+	WebInterfaceUsername string
+	WebInterfacePassword string
+	// Allow web interface auth without HTTPS
+	WebInterfacePlaintextAuth bool
 
 	// Enable the deprecated JSON 2.0 RPC interface
 	RPCInterface bool
@@ -103,9 +118,14 @@ type NodeConfig struct {
 	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
 
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	// Timeouts for the HTTP listener
+	HTTPReadTimeout  time.Duration
+	HTTPWriteTimeout time.Duration
+	HTTPIdleTimeout  time.Duration
+
+	// Remark to include in user agent sent in the wire protocol introduction
+	UserAgentRemark string
+	userAgent       useragent.Data
 
 	// Logging
 	ColorLog bool
@@ -167,6 +187,7 @@ type NodeConfig struct {
 // NewNodeConfig returns a new node config instance
 func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	nodeConfig := NodeConfig{
+		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
@@ -197,9 +218,11 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		Address: "",
 		//gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
-		// MaxOutgoingConnections is the maximum outgoing connections allowed.
+		// MaxConnections is the maximum number of total connections allowed
+		MaxConnections: 128,
+		// MaxOutgoingConnections is the maximum outgoing connections allowed
 		MaxOutgoingConnections: 8,
-		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed
 		MaxDefaultPeerOutgoingConnections: 1,
 		DownloadPeerList:                  true,
 		PeerListURL:                       node.PeerListURL,
@@ -215,7 +238,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    api.EndpointsRead + "," + api.EndpointsTransaction,
+		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
 
@@ -232,7 +255,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		LogToFile:       false,
 		DisablePingPong: false,
 
-		VerifyDB:       true,
+		VerifyDB:       false,
 		ResetCorruptDB: false,
 
 		// Wallets
@@ -241,9 +264,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 
 		// Timeout settings for http.Server
 		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 60,
-		IdleTimeout:  time.Second * 120,
+		HTTPReadTimeout:  time.Second * 10,
+		HTTPWriteTimeout: time.Second * 60,
+		HTTPIdleTimeout:  time.Second * 120,
 
 		// Centralized network configuration
 		RunMaster: false,
@@ -266,6 +289,8 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
+		fmt.Println("Additional environment variables:")
+		fmt.Println("* COINHOUR_BURN_FACTOR - Set the coin hour burn factor required for transactions. Must be > 1.")
 		os.Exit(0)
 	}
 
@@ -297,13 +322,13 @@ func (c *Config) postProcess() error {
 	panicIfError(err, "Invalid DataDirectory")
 
 	if c.Node.WebInterfaceCert == "" {
-		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "cert.pem")
+		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "skycoind.cert")
 	} else {
 		c.Node.WebInterfaceCert = replaceHome(c.Node.WebInterfaceCert, home)
 	}
 
 	if c.Node.WebInterfaceKey == "" {
-		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "key.pem")
+		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "skycoind.key")
 	} else {
 		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
 	}
@@ -325,6 +350,18 @@ func (c *Config) postProcess() error {
 		c.Node.Arbitrating = true
 	}
 
+	userAgentData := useragent.Data{
+		Coin:    c.Node.CoinName,
+		Version: c.Build.Version,
+		Remark:  c.Node.UserAgentRemark,
+	}
+
+	if _, err := userAgentData.Build(); err != nil {
+		return err
+	}
+
+	c.Node.userAgent = userAgentData
+
 	apiSets, err := buildAPISets(c.Node)
 	if err != nil {
 		return err
@@ -343,6 +380,19 @@ func (c *Config) postProcess() error {
 
 	if c.Node.DisableDefaultPeers {
 		c.Node.DefaultConnections = nil
+	}
+
+	if c.Node.HostWhitelist != "" {
+		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
+	}
+
+	httpAuthEnabled := c.Node.WebInterfaceUsername != "" || c.Node.WebInterfacePassword != ""
+	if httpAuthEnabled && !c.Node.WebInterfaceHTTPS && !c.Node.WebInterfacePlaintextAuth {
+		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
+	}
+
+	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
+		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
 	}
 
 	return nil
@@ -370,6 +420,8 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsStatus,
 		api.EndpointsWallet,
 		api.EndpointsTransaction,
+		api.EndpointsPrometheus,
+		api.EndpointsNetCtrl,
 		// Do not include insecure or deprecated API sets, they must always
 		// be explicitly enabled through -enable-api-sets
 	}
@@ -431,12 +483,28 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
 	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "cert.pem file for web interface HTTPS. If not provided, will use cert.pem in -data-directory")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in -data-directory")
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, "enable API set. Options are ALL, READ, STATUS, WALLET, WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
-	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, "disable API set. Options are ALL, READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
+
+	allAPISets := []string{
+		api.EndpointsRead,
+		api.EndpointsStatus,
+		api.EndpointsWallet,
+		api.EndpointsTransaction,
+		api.EndpointsPrometheus,
+		api.EndpointsNetCtrl,
+		api.EndpointsInsecureWalletSeed,
+		api.EndpointsDeprecatedWalletSpend,
+	}
+	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
+	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
+
+	flag.StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
+	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
+	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 
@@ -461,6 +529,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableDefaultPeers, "disable-default-peers", c.DisableDefaultPeers, "disable the hardcoded default peers")
 	flag.StringVar(&c.CustomPeersFile, "custom-peers-file", c.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
 
+	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
+
 	// Key Configuration Data
 	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
 
@@ -472,7 +542,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
@@ -490,7 +561,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	case "":
 	case "STANDALONE_CLIENT":
 		c.EnableAllAPISets = true
-		c.EnabledAPISets = "INSECURE_WALLET_SEED"
+		c.EnabledAPISets = api.EndpointsInsecureWalletSeed
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false

@@ -5,14 +5,35 @@ package fee
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-const (
-	// BurnFactor inverse fraction of coinhours that must be burned
+var (
+	// BurnFactor inverse fraction of coinhours that must be burned (can be overridden with COINHOUR_BURN_FACTOR env var)
 	BurnFactor uint64 = 2
 )
+
+func init() {
+	xs := os.Getenv("COINHOUR_BURN_FACTOR")
+	if xs == "" {
+		return
+	}
+
+	x, err := strconv.ParseUint(xs, 10, 64)
+	if err != nil {
+		panic(fmt.Sprintf("Invalid COINHOUR_BURN_FACTOR %q: %v", xs, err))
+	}
+
+	if x <= 1 {
+		panic(fmt.Sprintf("BurnFactor must be > 1"))
+	}
+
+	BurnFactor = x
+}
 
 var (
 	// ErrTxnNoFee is returned if a transaction has no coinhour fee

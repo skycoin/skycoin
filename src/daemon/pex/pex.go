@@ -18,8 +18,10 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 //TODO:
@@ -96,12 +98,13 @@ func validateAddress(ipPort string, allowLocalhost bool) (string, error) {
 
 // Peer represents a known peer
 type Peer struct {
-	Addr            string // An address of the form ip:port
-	LastSeen        int64  // Unix timestamp when this peer was last seen
-	Private         bool   // Whether it should omitted from public requests
-	Trusted         bool   // Whether this peer is trusted
-	HasIncomingPort bool   // Whether this peer has accessible public port
-	RetryTimes      int    `json:"-"` // records the retry times
+	Addr            string         // An address of the form ip:port
+	LastSeen        int64          // Unix timestamp when this peer was last seen
+	Private         bool           // Whether it should omitted from public requests
+	Trusted         bool           // Whether this peer is trusted
+	HasIncomingPort bool           // Whether this peer has accessible public port
+	UserAgent       useragent.Data // Peer's last reported user agent
+	RetryTimes      int            `json:"-"` // records the retry times
 }
 
 // NewPeer returns a *Peer initialized by an address string of the form ip:port
@@ -123,13 +126,16 @@ func (peer *Peer) Seen() {
 // IncreaseRetryTimes adds the retry times
 func (peer *Peer) IncreaseRetryTimes() {
 	peer.RetryTimes++
-	logger.Debugf("Increase retry times of %v: %v", peer.Addr, peer.RetryTimes)
+	logger.WithFields(logrus.Fields{
+		"addr":       peer.Addr,
+		"retryTimes": peer.RetryTimes,
+	}).Debug("Increase retry times")
 }
 
 // ResetRetryTimes resets the retry time
 func (peer *Peer) ResetRetryTimes() {
 	peer.RetryTimes = 0
-	logger.Debugf("Reset retry times of %v", peer.Addr)
+	logger.WithField("addr", peer.Addr).Debug("Reset retry times")
 }
 
 // CanTry returns whether this peer is tryable base on the exponential backoff algorithm
@@ -254,7 +260,7 @@ func New(cfg Config) (*Pex, error) {
 	// Add custom peers
 	if cfg.CustomPeersFile != "" {
 		if err := pex.loadCustom(cfg.CustomPeersFile); err != nil {
-			logger.Critical().WithError(err).Errorf("Failed to load custom peers from %s", cfg.CustomPeersFile)
+			logger.Critical().WithError(err).WithField("file", cfg.CustomPeersFile).Error("Failed to load custom peers file")
 			return nil, err
 		}
 	}
@@ -268,7 +274,7 @@ func New(cfg Config) (*Pex, error) {
 	if pex.Config.DownloadPeerList {
 		go func() {
 			if err := pex.downloadPeers(); err != nil {
-				logger.Errorf("Failed to download peers list: %v", err)
+				logger.WithError(err).Error("Failed to download peers list")
 			}
 		}()
 	}
@@ -286,7 +292,7 @@ func (px *Pex) Run() error {
 		// Save the peerlist
 		logger.Info("Save peerlist")
 		if err := px.save(); err != nil {
-			logger.Errorf("Save peers failed: %v", err)
+			logger.WithError(err).Error("Save peerlist failed")
 		}
 	}()
 
@@ -318,15 +324,15 @@ func (px *Pex) Shutdown() {
 func (px *Pex) downloadPeers() error {
 	body, err := backoffDownloadText(px.Config.PeerListURL)
 	if err != nil {
-		logger.Errorf("Failed to download peers from %s. err: %s", px.Config.PeerListURL, err.Error())
+		logger.WithError(err).WithField("url", px.Config.PeerListURL).Error("Failed to download peers")
 		return err
 	}
 
 	peers := parseRemotePeerList(body)
-	logger.Infof("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
+	logger.WithField("url", px.Config.PeerListURL).Infof("Downloaded peers list, got %d peers", len(peers))
 
 	n := px.AddPeers(peers)
-	logger.Infof("Added %d/%d peers from downloaded peers list", n, len(peers))
+	logger.WithField("url", px.Config.PeerListURL).Infof("Added %d/%d peers from downloaded peers list", n, len(peers))
 
 	return nil
 }
@@ -362,7 +368,7 @@ func (px *Pex) loadCache() error {
 	var validPeers []Peer
 	for addr, p := range peers {
 		if _, err := validateAddress(addr, px.Config.AllowLocalhost); err != nil {
-			logger.Errorf("Invalid peer address: %v", err)
+			logger.WithError(err).Error("Invalid peer address")
 			continue
 		}
 
@@ -420,7 +426,7 @@ func (px *Pex) AddPeer(addr string) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 
@@ -452,7 +458,7 @@ func (px *Pex) AddPeers(addrs []string) int {
 	for _, addr := range addrs {
 		a, err := validateAddress(addr, px.Config.AllowLocalhost)
 		if err != nil {
-			logger.Infof("Add peers sees an invalid address %s: %v", addr, err)
+			logger.WithField("addr", addr).WithError(err).Info("Add peers sees an invalid address")
 			continue
 		}
 		validAddrs = append(validAddrs, a)
@@ -482,7 +488,7 @@ func (px *Pex) SetPrivate(addr string, private bool) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 
@@ -496,7 +502,7 @@ func (px *Pex) SetTrusted(addr string) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 
@@ -518,11 +524,31 @@ func (px *Pex) SetHasIncomingPort(addr string, hasPublicPort bool) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Errorf("Invalid address %s: %v", addr, err)
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
 		return ErrInvalidAddress
 	}
 
 	return px.peerlist.setHasIncomingPort(cleanAddr, hasPublicPort)
+}
+
+// SetUserAgent sets the peer's user agent
+func (px *Pex) SetUserAgent(addr string, userAgent useragent.Data) error {
+	px.Lock()
+	defer px.Unlock()
+
+	if !userAgent.Empty() {
+		if _, err := userAgent.Build(); err != nil {
+			return err
+		}
+	}
+
+	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
+	if err != nil {
+		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
+		return ErrInvalidAddress
+	}
+
+	return px.peerlist.setUserAgent(cleanAddr, userAgent)
 }
 
 // RemovePeer removes peer
@@ -532,11 +558,11 @@ func (px *Pex) RemovePeer(addr string) {
 	px.peerlist.removePeer(addr)
 }
 
-// GetPeerByAddr returns peer of given address
-func (px *Pex) GetPeerByAddr(addr string) (Peer, bool) {
+// GetPeer returns peer of given address
+func (px *Pex) GetPeer(addr string) (Peer, bool) {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getPeerByAddr(addr)
+	return px.peerlist.getPeer(addr)
 }
 
 // Trusted returns trusted peers
@@ -560,11 +586,13 @@ func (px *Pex) TrustedPublic() Peers {
 	return px.peerlist.getCanTryPeers([]Filter{isPublic, isTrusted})
 }
 
-// RandomPublic returns N random public peers
+// RandomPublic returns N random public untrusted peers
 func (px *Pex) RandomPublic(n int) Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.random(n, []Filter{isPublic})
+	return px.peerlist.random(n, []Filter{func(p Peer) bool {
+		return !p.Private
+	}})
 }
 
 // RandomExchangeable returns N random exchangeable peers
@@ -626,22 +654,22 @@ func backoffDownloadText(url string) (string, error) {
 	b := backoff.NewExponentialBackOff()
 
 	notify := func(err error, wait time.Duration) {
-		logger.Errorf("waiting %v to retry downloadText, error: %v", wait, err)
+		logger.WithError(err).WithField("waitTime", wait).Error("waiting to retry downloadText")
 	}
 
 	operation := func() error {
-		logger.Infof("Trying to download peers list from %s", url)
+		logger.WithField("url", url).Info("Trying to download peers list")
 		var err error
 		body, err = downloadText(url)
 		return err
 	}
 
 	if err := backoff.RetryNotify(operation, b, notify); err != nil {
-		logger.Infof("Gave up dowloading peers list from %s: %v", url, err)
+		logger.WithField("url", url).WithError(err).Info("Gave up dowloading peers list")
 		return "", err
 	}
 
-	logger.Infof("Peers list downloaded from %s", url)
+	logger.WithField("url", url).Info("Peers list downloaded")
 
 	return body, nil
 }

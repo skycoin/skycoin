@@ -1368,7 +1368,7 @@ func TestPexGetPeerByAddr(t *testing.T) {
 
 			pex.peerlist.setPeers(tc.initPeers)
 
-			p, ok := pex.GetPeerByAddr(tc.addr)
+			p, ok := pex.GetPeer(tc.addr)
 			require.Equal(t, tc.find, ok)
 			if ok {
 				require.Equal(t, tc.peer, p)

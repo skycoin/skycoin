@@ -93,6 +93,20 @@ func (_m *MockGatewayer) DecryptWallet(wltID string, password []byte) (*wallet.W
 	return r0, r1
 }
 
+// Disconnect provides a mock function with given fields: id
+func (_m *MockGatewayer) Disconnect(id uint64) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // EncryptWallet provides a mock function with given fields: wltID, password
 func (_m *MockGatewayer) EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
 	ret := _m.Called(wltID, password)
@@ -261,6 +275,29 @@ func (_m *MockGatewayer) GetBlockchainProgress() (*daemon.BlockchainProgress, er
 	return r0, r1
 }
 
+// GetBlocks provides a mock function with given fields: seqs
+func (_m *MockGatewayer) GetBlocks(seqs []uint64) ([]coin.SignedBlock, error) {
+	ret := _m.Called(seqs)
+
+	var r0 []coin.SignedBlock
+	if rf, ok := ret.Get(0).(func([]uint64) []coin.SignedBlock); ok {
+		r0 = rf(seqs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]coin.SignedBlock)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]uint64) error); ok {
+		r1 = rf(seqs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBlocksInRange provides a mock function with given fields: start, end
 func (_m *MockGatewayer) GetBlocksInRange(start uint64, end uint64) ([]coin.SignedBlock, error) {
 	ret := _m.Called(start, end)
@@ -316,6 +353,38 @@ func (_m *MockGatewayer) GetBlocksInRangeVerbose(start uint64, end uint64) ([]co
 	return r0, r1, r2
 }
 
+// GetBlocksVerbose provides a mock function with given fields: seqs
+func (_m *MockGatewayer) GetBlocksVerbose(seqs []uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error) {
+	ret := _m.Called(seqs)
+
+	var r0 []coin.SignedBlock
+	if rf, ok := ret.Get(0).(func([]uint64) []coin.SignedBlock); ok {
+		r0 = rf(seqs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]coin.SignedBlock)
+		}
+	}
+
+	var r1 [][][]visor.TransactionInput
+	if rf, ok := ret.Get(1).(func([]uint64) [][][]visor.TransactionInput); ok {
+		r1 = rf(seqs)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([][][]visor.TransactionInput)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func([]uint64) error); ok {
+		r2 = rf(seqs)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // GetConnection provides a mock function with given fields: addr
 func (_m *MockGatewayer) GetConnection(addr string) (*daemon.Connection, error) {
 	ret := _m.Called(addr)
@@ -332,6 +401,29 @@ func (_m *MockGatewayer) GetConnection(addr string) (*daemon.Connection, error) 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(addr)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetConnections provides a mock function with given fields: f
+func (_m *MockGatewayer) GetConnections(f func(daemon.Connection) bool) ([]daemon.Connection, error) {
+	ret := _m.Called(f)
+
+	var r0 []daemon.Connection
+	if rf, ok := ret.Get(0).(func(func(daemon.Connection) bool) []daemon.Connection); ok {
+		r0 = rf(f)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]daemon.Connection)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(func(daemon.Connection) bool) error); ok {
+		r1 = rf(f)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -447,29 +539,6 @@ func (_m *MockGatewayer) GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [
 	}
 
 	return r0, r1, r2
-}
-
-// GetOutgoingConnections provides a mock function with given fields:
-func (_m *MockGatewayer) GetOutgoingConnections() ([]daemon.Connection, error) {
-	ret := _m.Called()
-
-	var r0 []daemon.Connection
-	if rf, ok := ret.Get(0).(func() []daemon.Connection); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]daemon.Connection)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // GetRichlist provides a mock function with given fields: includeDistribution

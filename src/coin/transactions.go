@@ -165,7 +165,7 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 	// Check signatures against unspent address
 	for i := range txn.In {
 		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
-		err := cipher.ChkSig(uxIn[i].Body.Address, hash, txn.Sigs[i])
+		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")
 		}
@@ -225,7 +225,7 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	innerHash := txn.HashInner()
 	for i, k := range keys {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
-		sigs[i] = cipher.SignHash(h, k)
+		sigs[i] = cipher.MustSignHash(h, k)
 	}
 	txn.Sigs = sigs
 }

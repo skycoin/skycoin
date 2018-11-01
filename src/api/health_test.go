@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -113,12 +114,20 @@ func TestHealthHandler(t *testing.T) {
 				Commit:  "abcdef",
 				Branch:  "develop",
 			}
-			tc.cfg.buildInfo = buildInfo
+			tc.cfg.health.BuildInfo = buildInfo
+
+			tc.cfg.health.CoinName = "skycoin"
+			tc.cfg.health.DaemonUserAgent = useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.25.0",
+				Remark:  "test",
+			}
 
 			health := &daemon.Health{
-				BlockchainMetadata: metadata,
-				OpenConnections:    3,
-				Uptime:             time.Second * 4,
+				BlockchainMetadata:  metadata,
+				OutgoingConnections: 3,
+				IncomingConnections: 2,
+				Uptime:              time.Second * 4,
 			}
 
 			gateway := &MockGatewayer{}
@@ -157,7 +166,11 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, buildInfo.Branch, r.Version.Branch)
 			require.Equal(t, health.Uptime, r.Uptime.Duration)
 
-			require.Equal(t, health.OpenConnections, r.OpenConnections)
+			require.Equal(t, health.OutgoingConnections, r.OutgoingConnections)
+			require.Equal(t, health.IncomingConnections, r.IncomingConnections)
+			require.Equal(t, health.OutgoingConnections+health.IncomingConnections, r.OpenConnections)
+			require.Equal(t, "skycoin", r.CoinName)
+			require.Equal(t, "skycoin:0.25.0(test)", r.DaemonUserAgent)
 
 			require.Equal(t, unconfirmed, r.BlockchainMetadata.Unconfirmed)
 			require.Equal(t, unspents, r.BlockchainMetadata.Unspents)
@@ -167,8 +180,8 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, metadata.HeadBlock.Block.Head.Time, r.BlockchainMetadata.Head.Time)
 			require.Equal(t, metadata.HeadBlock.Block.Head.Fee, r.BlockchainMetadata.Head.Fee)
 			require.Equal(t, metadata.HeadBlock.Block.Head.Version, r.BlockchainMetadata.Head.Version)
-			require.Equal(t, metadata.HeadBlock.Block.Head.PrevHash.Hex(), r.BlockchainMetadata.Head.PreviousBlockHash)
-			require.Equal(t, metadata.HeadBlock.Block.Head.Hash().Hex(), r.BlockchainMetadata.Head.BlockHash)
+			require.Equal(t, metadata.HeadBlock.Block.Head.PrevHash.Hex(), r.BlockchainMetadata.Head.PreviousHash)
+			require.Equal(t, metadata.HeadBlock.Block.Head.Hash().Hex(), r.BlockchainMetadata.Head.Hash)
 			require.Equal(t, metadata.HeadBlock.Block.Head.BodyHash.Hex(), r.BlockchainMetadata.Head.BodyHash)
 
 			require.Equal(t, tc.csrfEnabled, r.CSRFEnabled)
@@ -177,6 +190,8 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
 			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
+
+			require.Equal(t, uint64(0x2), r.BurnFactor)
 		})
 	}
 }

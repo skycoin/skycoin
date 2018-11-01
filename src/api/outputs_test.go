@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -37,7 +39,7 @@ func TestGetOutputsHandler(t *testing.T) {
 	}{
 		{
 			name:   "405",
-			method: http.MethodPost,
+			method: http.MethodDelete,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
@@ -69,11 +71,38 @@ func TestGetOutputsHandler(t *testing.T) {
 			getUnspentOutputsError:    errors.New("getUnspentOutputsError"),
 		},
 		{
-			name:                      "200 - OK",
-			method:                    http.MethodGet,
-			status:                    http.StatusOK,
-			getUnspentOutputsResponse: &visor.UnspentOutputsSummary{},
+			name:   "200 - OK",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			getUnspentOutputsResponse: &visor.UnspentOutputsSummary{
+				HeadBlock: &coin.SignedBlock{},
+			},
 			httpResponse: &readable.UnspentOutputsSummary{
+				Head: readable.BlockHeader{
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				HeadOutputs:     readable.UnspentOutputs{},
+				OutgoingOutputs: readable.UnspentOutputs{},
+				IncomingOutputs: readable.UnspentOutputs{},
+			},
+		},
+		{
+			name:   "200 - OK POST",
+			method: http.MethodPost,
+			status: http.StatusOK,
+			getUnspentOutputsResponse: &visor.UnspentOutputsSummary{
+				HeadBlock: &coin.SignedBlock{},
+			},
+			httpResponse: &readable.UnspentOutputsSummary{
+				Head: readable.BlockHeader{
+					Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					BodyHash:     "0000000000000000000000000000000000000000000000000000000000000000",
+					UxHash:       "0000000000000000000000000000000000000000000000000000000000000000",
+				},
 				HeadOutputs:     readable.UnspentOutputs{},
 				OutgoingOutputs: readable.UnspentOutputs{},
 				IncomingOutputs: readable.UnspentOutputs{},
@@ -97,12 +126,21 @@ func TestGetOutputsHandler(t *testing.T) {
 				}
 			}
 
+			var reqBody io.Reader
 			if len(v) > 0 {
-				endpoint += "?" + v.Encode()
+				if tc.method == http.MethodPost {
+					reqBody = strings.NewReader(v.Encode())
+				} else {
+					endpoint += "?" + v.Encode()
+				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, nil)
+			req, err := http.NewRequest(tc.method, endpoint, reqBody)
 			require.NoError(t, err)
+
+			if tc.method == http.MethodPost {
+				req.Header.Set("Content-Type", ContentTypeForm)
+			}
 
 			rr := httptest.NewRecorder()
 			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)

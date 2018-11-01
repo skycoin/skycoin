@@ -116,12 +116,12 @@ func (serv *Service) loadWallet(wltName string, options Options, bg BalanceGette
 }
 
 func (serv *Service) generateUniqueWalletFilename() string {
-	wltName := newWalletFilename()
+	wltName := NewWalletFilename()
 	for {
 		if _, ok := serv.wallets.get(wltName); !ok {
 			break
 		}
-		wltName = newWalletFilename()
+		wltName = NewWalletFilename()
 	}
 
 	return wltName
@@ -211,7 +211,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	var addrs []cipher.Address
 	f := func(wlt *Wallet) error {
 		var err error
-		addrs, err = wlt.GenerateAddresses(num)
+		addrs, err = wlt.GenerateSkycoinAddresses(num)
 		return err
 	}
 
@@ -239,8 +239,8 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	return addrs, nil
 }
 
-// GetAddresses returns all addresses in given wallet
-func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
+// GetSkycoinAddresses returns all addresses in given wallet
+func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	if !serv.enableWalletAPI {
@@ -252,7 +252,7 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 		return nil, err
 	}
 
-	return w.GetAddresses(), nil
+	return w.GetSkycoinAddresses()
 }
 
 // GetWallet returns wallet by id
@@ -288,23 +288,6 @@ func (serv *Service) GetWallets() (Wallets, error) {
 		wlts[k] = w.clone()
 	}
 	return wlts, nil
-}
-
-// ReloadWallets reload wallets
-func (serv *Service) ReloadWallets() error {
-	serv.Lock()
-	defer serv.Unlock()
-	if !serv.enableWalletAPI {
-		return ErrWalletAPIDisabled
-	}
-	wallets, err := LoadWallets(serv.walletDirectory)
-	if err != nil {
-		return err
-	}
-
-	serv.firstAddrIDMap = make(map[string]string)
-	serv.wallets = serv.removeDup(wallets)
-	return nil
 }
 
 // CreateAndSignTransaction creates and signs a transaction from wallet.
@@ -619,13 +602,17 @@ func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wall
 		return nil, ErrWalletNotEncrypted
 	}
 
-	if w.Type() != "deterministic" {
+	if w.Type() != WalletTypeDeterministic {
 		return nil, ErrWalletNotDeterministic
 	}
 
 	// Generate the first address from the seed
-	pk, _ := cipher.GenerateDeterministicKeyPair([]byte(seed))
-	addr := cipher.AddressFromPubKey(pk)
+	var pk cipher.PubKey
+	pk, _, err = cipher.GenerateDeterministicKeyPair([]byte(seed))
+	if err != nil {
+		return nil, err
+	}
+	addr := w.addressConstructor()(pk)
 
 	// Compare to the wallet's first address
 	if addr != w.Entries[0].Address {

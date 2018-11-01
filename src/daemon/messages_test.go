@@ -6,12 +6,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 func TestIntroductionMessage(t *testing.T) {
@@ -21,156 +23,191 @@ func TestIntroductionMessage(t *testing.T) {
 	pubkey, _ := cipher.GenerateKeyPair()
 	pubkey2, _ := cipher.GenerateKeyPair()
 
-	type mirrorPortResult struct {
-		port  uint16
-		exist bool
-	}
-
 	type daemonMockValue struct {
-		version                    uint32
-		mirror                     uint32
-		isDefaultConnection        bool
-		isMaxConnectionsReached    bool
-		isMaxConnectionsReachedErr error
-		setHasIncomingPortErr      error
-		getMirrorPortResult        mirrorPortResult
-		recordMessageEventErr      error
-		pubkey                     cipher.PubKey
-		disconnectReason           gnet.DisconnectReason
-		disconnectErr              error
-		addPeerArg                 string
-		addPeerErr                 error
+		protocolVersion          uint32
+		minProtocolVersion       uint32
+		mirror                   uint32
+		setHasIncomingPortErr    error
+		recordMessageEventErr    error
+		pubkey                   cipher.PubKey
+		disconnectReason         gnet.DisconnectReason
+		disconnectErr            error
+		addPeerArg               string
+		addPeerErr               error
+		connectionIntroduced     *connection
+		connectionIntroducedErr  error
+		requestBlocksFromAddrErr error
+		announceAllTxnsErr       error
+		recordUserAgentErr       error
 	}
 
 	tt := []struct {
 		name      string
 		addr      string
+		gnetID    uint64
+		doProcess bool
 		mockValue daemonMockValue
 		intro     *IntroductionMessage
-		err       error
 	}{
 		{
 			name: "INTR message without extra bytes",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
+				mirror:          10000,
+				protocolVersion: 1,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:6000",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						Outgoing:   true,
+					},
 				},
+				addPeerArg: "121.121.121.121:6000",
+				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
 			},
-			err: nil,
 		},
 		{
-			name: "INTR message with pubkey",
+			name: "INTR message with pubkey but empty user agent",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
-				pubkey: pubkey,
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidUserAgent,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   pubkey[:],
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(pubkey[:], []byte{0, 0, 0, 0}...),
 			},
-			err: nil,
 		},
 		{
-			name: "INTR message with pubkey",
+			name: "INTR message with pubkey and user agent",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
+				mirror:          10000,
+				protocolVersion: 1,
+				pubkey:          pubkey,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:6000",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.24.1",
+						},
+					},
 				},
-				pubkey: pubkey,
+				addPeerArg: "121.121.121.121:6000",
+				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   pubkey[:],
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(pubkey[:], encoder.SerializeString("skycoin:0.24.1")...),
 			},
-			err: nil,
 		},
 		{
-			name: "INTR message with pubkey and additional data",
+			name: "INTR message with pubkey, user agent and additional data",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
+				mirror:          10000,
+				protocolVersion: 1,
+				pubkey:          pubkey,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:6000",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.24.1",
+						},
+					},
 				},
-				pubkey: pubkey,
+				addPeerArg: "121.121.121.121:6000",
+				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   append(pubkey[:], []byte("additional data")...),
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(append(pubkey[:], encoder.SerializeString("skycoin:0.24.1")...), []byte("additional data")...),
 			},
-			err: nil,
 		},
 		{
 			name: "INTR message with different pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
+				mirror:           10000,
+				protocolVersion:  1,
 				pubkey:           pubkey,
 				disconnectReason: ErrDisconnectBlockchainPubkeyNotMatched,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   pubkey2[:],
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(pubkey2[:], encoder.SerializeString("skycoin:0.24.1")...),
 			},
-			err: ErrDisconnectBlockchainPubkeyNotMatched,
 		},
 		{
 			name: "INTR message with invalid pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:  10000,
-				version: 1,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
+				mirror:           10000,
+				protocolVersion:  1,
 				pubkey:           pubkey,
 				disconnectReason: ErrDisconnectInvalidExtraData,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Port:    6000,
-				Version: 1,
-				valid:   true,
-				Extra:   []byte("invalid extra data"),
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           []byte("invalid extra data"),
 			},
-			err: ErrDisconnectInvalidExtraData,
+		},
+		{
+			name: "INTR message with pubkey, malformed user agent bytes",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidExtraData,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(pubkey[:], []byte{1, 2, 3}...),
+			},
+		},
+		{
+			name: "INTR message with pubkey, invalid user agent after parsing",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidUserAgent,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(pubkey[:], encoder.SerializeString("skycoin:0241")...),
+			},
 		},
 		{
 			name: "Disconnect self connection",
+			addr: "12.12.12.12:6000",
 			mockValue: daemonMockValue{
 				mirror:           10000,
 				disconnectReason: ErrDisconnectSelf,
@@ -178,111 +215,120 @@ func TestIntroductionMessage(t *testing.T) {
 			intro: &IntroductionMessage{
 				Mirror: 10000,
 			},
-			err: ErrDisconnectSelf,
 		},
 		{
-			name: "Invalid version",
+			name: "ProtocolVersion below minimum supported version",
 			mockValue: daemonMockValue{
-				mirror:           10000,
-				version:          1,
-				disconnectReason: ErrDisconnectInvalidVersion,
+				mirror:             10000,
+				protocolVersion:    1,
+				minProtocolVersion: 2,
+				disconnectReason:   ErrDisconnectVersionNotSupported,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 0,
+				Mirror:          10001,
+				ProtocolVersion: 0,
 			},
-			err: ErrDisconnectInvalidVersion,
 		},
 		{
-			name: "Invalid address",
-			addr: "121.121.121.121",
-			mockValue: daemonMockValue{
-				mirror:           10000,
-				version:          1,
-				disconnectReason: ErrDisconnectOtherError,
-				pubkey:           pubkey,
-			},
-			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 1,
-				Port:    6000,
-			},
-			err: ErrDisconnectOtherError,
-		},
-		{
-			name: "incomming connection",
+			name: "incoming connection",
 			addr: "121.121.121.121:12345",
 			mockValue: daemonMockValue{
-				mirror:                  10000,
-				version:                 1,
-				isDefaultConnection:     true,
-				isMaxConnectionsReached: true,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
+				mirror:          10000,
+				protocolVersion: 1,
+				pubkey:          pubkey,
+				addPeerArg:      "121.121.121.121:6000",
+				addPeerErr:      nil,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:12345",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.24.1",
+							Remark:  "foo",
+						},
+					},
 				},
-				pubkey:     pubkey,
-				addPeerArg: "121.121.121.121:6000",
-				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 1,
-				Port:    6000,
-				valid:   true,
+				Mirror:          10001,
+				ProtocolVersion: 1,
+				ListenPort:      6000,
 			},
 		},
 		{
-			name: "Connect twice",
-			addr: "121.121.121.121:6000",
+			name:      "Connect twice",
+			addr:      "121.121.121.121:6000",
+			gnetID:    2,
+			doProcess: true,
 			mockValue: daemonMockValue{
-				mirror:              10000,
-				version:             1,
-				isDefaultConnection: true,
-				getMirrorPortResult: mirrorPortResult{
-					exist: true,
-				},
-				pubkey:           pubkey,
-				addPeerArg:       "121.121.121.121:6000",
-				addPeerErr:       nil,
-				disconnectReason: ErrDisconnectConnectedTwice,
+				mirror:                  10000,
+				protocolVersion:         1,
+				pubkey:                  pubkey,
+				disconnectReason:        ErrDisconnectConnectedTwice,
+				connectionIntroducedErr: ErrConnectionIPMirrorExists,
+				connectionIntroduced:    &connection{},
 			},
 			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 1,
-				Port:    6000,
+				Mirror:          10001,
+				ProtocolVersion: 1,
+				ListenPort:      6000,
 			},
-			err: ErrDisconnectConnectedTwice,
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			mc := &gnet.MessageContext{Addr: tc.addr}
+			mc := &gnet.MessageContext{
+				Addr:   tc.addr,
+				ConnID: tc.gnetID,
+			}
 			tc.intro.c = mc
 
-			d := &MockDaemoner{}
-			d.On("DaemonConfig").Return(DaemonConfig{Version: int32(tc.mockValue.version)})
+			d := &mockDaemoner{}
+			d.On("DaemonConfig").Return(DaemonConfig{
+				ProtocolVersion:    int32(tc.mockValue.protocolVersion),
+				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion),
+				UserAgent: useragent.Data{
+					Coin:    "skycoin",
+					Version: "0.24.1",
+				},
+			})
 			d.On("Mirror").Return(tc.mockValue.mirror)
-			d.On("IsDefaultConnection", tc.addr).Return(tc.mockValue.isDefaultConnection)
 			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
-			d.On("GetMirrorPort", tc.addr, tc.intro.Mirror).Return(tc.mockValue.getMirrorPortResult.port, tc.mockValue.getMirrorPortResult.exist)
-			d.On("RecordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
+			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("ResetRetryTimes", tc.addr)
 			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("IncreaseRetryTimes", tc.addr)
 			d.On("RemoveFromExpectingIntroductions", tc.addr)
-			d.On("IsMaxDefaultConnectionsReached").Return(tc.mockValue.isMaxConnectionsReached, tc.mockValue.isMaxConnectionsReachedErr)
 			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
+			d.On("connectionIntroduced", tc.addr, tc.gnetID, tc.intro, mock.Anything).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
+			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
+			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
+
+			var userAgent useragent.Data
+			if tc.mockValue.connectionIntroduced != nil {
+				userAgent = tc.mockValue.connectionIntroduced.UserAgent
+			}
+			d.On("RecordUserAgent", tc.mockValue.addPeerArg, userAgent).Return(tc.mockValue.recordUserAgentErr)
 
 			err := tc.intro.Handle(mc, d)
-			require.Equal(t, tc.err, err)
+			require.NoError(t, err)
+
+			tc.intro.process(d)
+
+			if tc.mockValue.disconnectReason != nil {
+				d.AssertCalled(t, "Disconnect", tc.addr, tc.mockValue.disconnectReason)
+			}
 		})
 	}
 }
 
 func TestMessageEncodeDecode(t *testing.T) {
 	update := false
+
+	introPubKey := cipher.MustPubKeyFromHex("03cd7dfcd8c3452d1bb5d9d9e34dd95d6848cb9f66c2aad127b60578f4be7498f2")
 
 	cases := []struct {
 		goldenFile string
@@ -293,19 +339,19 @@ func TestMessageEncodeDecode(t *testing.T) {
 			goldenFile: "intro-msg.golden",
 			obj:        &IntroductionMessage{},
 			msg: &IntroductionMessage{
-				Mirror:  99998888,
-				Port:    8888,
-				Version: 12341234,
+				Mirror:          99998888,
+				ListenPort:      8888,
+				ProtocolVersion: 12341234,
 			},
 		},
 		{
-			goldenFile: "intro-msg-extra.golden",
+			goldenFile: "intro-msg-pubkey.golden",
 			obj:        &IntroductionMessage{},
 			msg: &IntroductionMessage{
-				Mirror:  99998888,
-				Port:    8888,
-				Version: 12341234,
-				Extra:   []byte("abcdef"),
+				Mirror:          99998888,
+				ListenPort:      8888,
+				ProtocolVersion: 12341234,
+				Extra:           introPubKey[:],
 			},
 		},
 		{

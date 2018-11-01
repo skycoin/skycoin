@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
@@ -19,7 +20,11 @@ type BlockchainMetadata struct {
 type HealthResponse struct {
 	BlockchainMetadata    BlockchainMetadata `json:"blockchain"`
 	Version               readable.BuildInfo `json:"version"`
+	CoinName              string             `json:"coin"`
+	DaemonUserAgent       string             `json:"user_agent"`
 	OpenConnections       int                `json:"open_connections"`
+	OutgoingConnections   int                `json:"outgoing_connections"`
+	IncomingConnections   int                `json:"incoming_connections"`
 	Uptime                wh.Duration        `json:"uptime"`
 	CSRFEnabled           bool               `json:"csrf_enabled"`
 	CSPEnabled            bool               `json:"csp_enabled"`
@@ -27,6 +32,7 @@ type HealthResponse struct {
 	GUIEnabled            bool               `json:"gui_enabled"`
 	UnversionedAPIEnabled bool               `json:"unversioned_api_enabled"`
 	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
+	BurnFactor            uint64             `json:"coinhour_burn_factor"`
 }
 
 // healthHandler returns node health data
@@ -51,13 +57,23 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 
 		_, walletAPIEnabled := c.enabledAPISets[EndpointsWallet]
 
+		userAgent, err := c.health.DaemonUserAgent.Build()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
 				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
-			Version:               c.buildInfo,
-			OpenConnections:       health.OpenConnections,
+			Version:               c.health.BuildInfo,
+			CoinName:              c.health.CoinName,
+			DaemonUserAgent:       userAgent,
+			OpenConnections:       health.OutgoingConnections + health.IncomingConnections,
+			OutgoingConnections:   health.OutgoingConnections,
+			IncomingConnections:   health.IncomingConnections,
 			Uptime:                wh.FromDuration(health.Uptime),
 			CSRFEnabled:           csrfStore.Enabled,
 			CSPEnabled:            !c.disableCSP,
@@ -65,6 +81,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			GUIEnabled:            c.enableGUI,
 			JSON20RPCEnabled:      c.enableJSON20RPC,
 			WalletAPIEnabled:      walletAPIEnabled,
+			BurnFactor:            fee.BurnFactor,
 		})
 	}
 }

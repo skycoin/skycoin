@@ -46,49 +46,52 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-    - [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
-    - [Go get skycoin](#go-get-skycoin)
-    - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
-    - [Show Skycoin node options](#show-skycoin-node-options)
-    - [Run Skycoin with options](#run-skycoin-with-options)
-    - [Docker image](#docker-image)
-    - [Building your own images](#building-your-own-images)
-    - [Development image](#development-image)
+	- [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
+	- [Go get skycoin](#go-get-skycoin)
+	- [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
+	- [Show Skycoin node options](#show-skycoin-node-options)
+	- [Run Skycoin with options](#run-skycoin-with-options)
+	- [Docker image](#docker-image)
+	- [Building your own images](#building-your-own-images)
+	- [Development image](#development-image)
 - [API Documentation](#api-documentation)
-    - [REST API](#rest-api)
-    - [JSON-RPC 2.0 API](#json-rpc-20-api)
-    - [Skycoin command line interface](#skycoin-command-line-interface)
+	- [REST API](#rest-api)
+	- [JSON-RPC 2.0 API](#json-rpc-20-api)
+	- [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
+- [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
 - [URI Specification](#uri-specification)
+- [Wire protocol user agent](#wire-protocol-user-agent)
 - [Development](#development)
-    - [Modules](#modules)
-    - [Client libraries](#client-libraries)
-    - [Running Tests](#running-tests)
-    - [Running Integration Tests](#running-integration-tests)
-        - [Stable Integration Tests](#stable-integration-tests)
-        - [Live Integration Tests](#live-integration-tests)
-        - [Debugging Integration Tests](#debugging-integration-tests)
-        - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
-    - [Test coverage](#test-coverage)
-        - [Test coverage for the live node](#test-coverage-for-the-live-node)
-    - [Formatting](#formatting)
-    - [Code Linting](#code-linting)
-    - [Profiling](#profiling)
-    - [Dependencies](#dependencies)
-        - [Rules](#rules)
-        - [Management](#management)
-    - [Configuration Modes](#configuration-modes)
-        - [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
-        - [Server Daemon Mode](#server-daemon-mode)
-        - [Electron Desktop Client Mode](#electron-desktop-client-mode)
-        - [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
-    - [Wallet GUI Development](#wallet-gui-development)
-    - [Releases](#releases)
-        - [Pre-release testing](#pre-release-testing)
-        - [Creating release builds](#creating-release-builds)
-        - [Release signing](#release-signing)
+	- [Modules](#modules)
+	- [Client libraries](#client-libraries)
+	- [Running Tests](#running-tests)
+	- [Running Integration Tests](#running-integration-tests)
+		- [Stable Integration Tests](#stable-integration-tests)
+		- [Live Integration Tests](#live-integration-tests)
+		- [Debugging Integration Tests](#debugging-integration-tests)
+		- [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
+	- [Test coverage](#test-coverage)
+		- [Test coverage for the live node](#test-coverage-for-the-live-node)
+	- [Formatting](#formatting)
+	- [Code Linting](#code-linting)
+	- [Profiling](#profiling)
+	- [Dependencies](#dependencies)
+		- [Rules](#rules)
+		- [Management](#management)
+	- [Configuration Modes](#configuration-modes)
+		- [Development Desktop Client Mode](#development-desktop-client-mode)
+		- [Server Daemon Mode](#server-daemon-mode)
+		- [Electron Desktop Client Mode](#electron-desktop-client-mode)
+		- [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
+	- [Wallet GUI Development](#wallet-gui-development)
+	- [Releases](#releases)
+		- [Update the version](#update-the-version)
+		- [Pre-release testing](#pre-release-testing)
+		- [Creating release builds](#creating-release-builds)
+		- [Release signing](#release-signing)
 - [Responsible Disclosure](#responsible-disclosure)
 
 <!-- /MarkdownTOC -->
@@ -214,6 +217,17 @@ Only add Skycoin nodes with high uptime and a static IP address (such as a Skyco
 
 See the [newcoin tool README](./cmd/newcoin/README.md)
 
+## Running with a custom coin hour burn factor
+
+The coin hour burn factor is the denominator in the ratio of coinhours that must be burned by a transaction.
+For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor of 10 means 1/10 of coin hours must be burned.
+
+The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar. It cannot be configured through the command line.
+
+```sh
+COINHOUR_BURN_FACTOR=999 ./run-client.sh
+```
+
 ## URI Specification
 
 Skycoin URIs obey the same rules as specified in Bitcoin's [BIP21](https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki).
@@ -224,6 +238,10 @@ Example Skycoin URIs:
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70&label=friend&message=Birthday%20Gift`
+
+## Wire protocol user agent
+
+[Wire protocol user agent description](https://github.com/skycoin/skycoin/wiki/Wire-protocol-user-agent)
 
 ## Development
 
@@ -296,7 +314,7 @@ The live integration tests run against a live runnning skycoin node, so before r
 need to start a skycoin node:
 
 ```sh
-./run.sh -launch-browser=false
+./run-daemon.sh
 ```
 
 After the skycoin node is up, run the following command to start the live tests:
@@ -506,17 +524,24 @@ There are 4 configuration modes in which you can run a skycoin node:
 - Electron Desktop Client
 - Standalone Desktop Client
 
-#### Development Desktop Daemon Mode
-This mode is configured via `run.sh`
+#### Development Desktop Client Mode
+This mode is configured via `run-client.sh`
 ```bash
-$ ./run.sh
+$ ./run-client.sh
 ```
 
 #### Server Daemon Mode
 The default settings for a skycoin node are chosen for `Server Daemon`, which is typically run from source.
 This mode is usually preferred to be run with security options, though `-disable-csrf` is normal for server daemon mode, it is left enabled by default.
+
 ```bash
-$ go run cmd/skycoin/skycoin.go
+$ ./run-daemon.sh
+```
+
+To disable CSRF:
+
+```bash
+$ ./run-daemon.sh -disable-csrf
 ```
 
 #### Electron Desktop Client Mode
@@ -536,20 +561,23 @@ Instructions for doing this:
 
 ### Releases
 
+#### Update the version
+
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
-1. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
-2. Update all version strings in the repo (grep for them) to the new version
-3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-4. Update files in `docker/images/mainnet/repo-info/remote/`, adding a new file for the new version and adjusting any configuration text that may have changed
-5. Merge these changes to `develop`
-6. Follow the steps in [pre-release testing](#pre-release-testing)
-7. Make a PR merging `develop` into `master`
-8. Review the PR and merge it
-9. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
+0. Update all version strings in the repo (grep for them) to the new version
+0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `dbVerifyCheckpointVersion`	value
+0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
+0. Update files in `docker/images/mainnet/repo-info/remote/`, adding a new file for the new version and adjusting any configuration text that may have changed
+0. Merge these changes to `develop`
+0. Follow the steps in [pre-release testing](#pre-release-testing)
+0. Make a PR merging `develop` into `master`
+0. Review the PR and merge it
+0. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
     Sign the tag. If you have your GPG key in github, creating a release on the Github website will automatically tag the release.
     It can be tagged from the command line with `git tag -as v0.20.0 $COMMIT_ID`, but Github will not recognize it as a "release".
-10. Make sure that the client runs properly from the `master` branch
-11. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
+0. Make sure that the client runs properly from the `master` branch
+0. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
 
 If there are problems discovered after merging to master, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
@@ -559,9 +587,9 @@ For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 Performs these actions before releasing:
 
 * `make check`
-* `make integration-test-live` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet.
+* `make integration-test-live` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet, and once with `-networking-disabled`
 * `go run cmd/cli/cli.go checkdb` against a synced node
-* On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
+* On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
     * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works

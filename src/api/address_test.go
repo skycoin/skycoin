@@ -1,10 +1,10 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,7 +36,7 @@ func TestVerifyAddress(t *testing.T) {
 		{
 			name:         "415 - Unsupported Media Type",
 			method:       http.MethodPost,
-			contentType:  "application/x-www-form-urlencoded",
+			contentType:  ContentTypeForm,
 			status:       http.StatusUnsupportedMediaType,
 			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
 		},
@@ -44,7 +44,7 @@ func TestVerifyAddress(t *testing.T) {
 		{
 			name:         "400 - EOF",
 			method:       http.MethodPost,
-			contentType:  "application/json",
+			contentType:  ContentTypeJSON,
 			status:       http.StatusBadRequest,
 			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "EOF"),
 		},
@@ -52,7 +52,7 @@ func TestVerifyAddress(t *testing.T) {
 		{
 			name:         "400 - Missing address",
 			method:       http.MethodPost,
-			contentType:  "application/json",
+			contentType:  ContentTypeJSON,
 			status:       http.StatusBadRequest,
 			httpBody:     "{}",
 			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "address is required"),
@@ -101,12 +101,12 @@ func TestVerifyAddress(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
 			gateway := &MockGatewayer{}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			contentType := tc.contentType
 			if contentType == "" {
-				contentType = "application/json"
+				contentType = ContentTypeJSON
 			}
 
 			req.Header.Set("Content-Type", contentType)

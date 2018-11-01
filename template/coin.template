@@ -20,7 +20,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.24.1"
+	Version = "0.25.0-rc1"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -31,6 +31,9 @@ var (
 	ConfigMode = ""
 
 	logger = logging.MustGetLogger("main")
+
+	// CoinName name of coin
+	CoinName = "{{.CoinName}}"
 
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "{{.GenesisSignatureStr}}"
@@ -54,6 +57,7 @@ var (
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+		CoinName:            CoinName,
 		GenesisSignatureStr: GenesisSignatureStr,
 		GenesisAddressStr:   GenesisAddressStr,
 		GenesisCoinVolume:   GenesisCoinVolume,

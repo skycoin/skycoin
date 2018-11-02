@@ -94,6 +94,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `/api/v1/network/connections` now includes incoming connections. Filters are added to query connections by state and direction
 - `/api/v1/resendUnconfirmedTxns` is now a `POST` method, previously was a `GET` method
 - Transactions that violation soft constraints will propagate through the network
+- Node will send more peers before disconnecting due to a full peer list
 
 ### Removed
 

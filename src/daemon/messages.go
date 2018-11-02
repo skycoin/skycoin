@@ -394,7 +394,7 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 	if len(intro.Extra) > 0 {
 		var bcPubKey cipher.PubKey
 		if len(intro.Extra) < len(bcPubKey) {
-			logger.WithField("addr", addr).Info("Extra data length does not meet the minimum requirement")
+			logger.WithField("addr", addr).Warning("Extra data length does not meet the minimum requirement")
 			return nil, ErrDisconnectInvalidExtraData
 		}
 		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
@@ -411,13 +411,13 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 		userAgentSerialized := intro.Extra[len(bcPubKey):]
 		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 		if err != nil {
-			logger.WithError(err).Info("Extra data user agent string could not be deserialized")
+			logger.WithError(err).Warning("Extra data user agent string could not be deserialized")
 			return nil, ErrDisconnectInvalidExtraData
 		}
 
 		userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
-			logger.WithError(err).WithField("userAgent", userAgent).Info("User agent is invalid")
+			logger.WithError(err).WithField("userAgent", userAgent).Warning("User agent is invalid")
 			return nil, ErrDisconnectInvalidUserAgent
 		}
 	}

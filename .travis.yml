@@ -11,7 +11,7 @@ matrix:
     - os: osx
       # Do not start osx build for PR
       if: type != pull_request
-      osx_image: xcode8.3
+      osx_image: xcode8
       env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=30s
 
 before_install:

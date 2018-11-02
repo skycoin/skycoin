@@ -96,6 +96,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `/api/v1/network/connection*` field `"connected_at"` added to connection object
 - `/api/v1/network/connections` now includes incoming connections. Filters are added to query connections by state and direction
 - `/api/v1/resendUnconfirmedTxns` is now a `POST` method, previously was a `GET` method
+- Node will send more peers before disconnecting due to a full peer list
 
 ### Removed
 

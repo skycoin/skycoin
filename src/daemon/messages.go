@@ -391,7 +391,7 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 	if len(intro.Extra) > 0 {
 		var bcPubKey cipher.PubKey
 		if len(intro.Extra) < len(bcPubKey) {
-			logger.WithFields(fields).Info("Extra data length does not meet the minimum requirement")
+			logger.WithFields(fields).Warning("Extra data length does not meet the minimum requirement")
 			return nil, ErrDisconnectInvalidExtraData
 		}
 		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
@@ -400,20 +400,20 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 			logger.WithFields(fields).WithFields(logrus.Fields{
 				"pubkey":       bcPubKey.Hex(),
 				"daemonPubkey": d.BlockchainPubkey().Hex(),
-			}).Info("Blockchain pubkey does not match")
+			}).Warning("Blockchain pubkey does not match")
 			return nil, ErrDisconnectBlockchainPubkeyNotMatched
 		}
 
 		userAgentSerialized := intro.Extra[len(bcPubKey):]
 		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 		if err != nil {
-			logger.WithError(err).WithFields(fields).Info("Extra data user agent string could not be deserialized")
+			logger.WithError(err).WithFields(fields).Warning("Extra data user agent string could not be deserialized")
 			return nil, ErrDisconnectInvalidExtraData
 		}
 
 		userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
-			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Info("User agent is invalid")
+			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Warning("User agent is invalid")
 			return nil, ErrDisconnectInvalidUserAgent
 		}
 	}

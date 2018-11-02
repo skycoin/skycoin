@@ -190,22 +190,10 @@ func createCoinCommand() cli.Command {
 				return err
 			}
 
-			err = t.ExecuteTemplate(coinFile, coinTemplateFile, skycoin.NodeParameters{
-				CoinName:              coinName,
-				PeerListURL:           config.Node.PeerListURL,
-				Port:                  config.Node.Port,
-				WebInterfacePort:      config.Node.WebInterfacePort,
-				DataDirectory:         "$HOME/." + coinName,
-				GenesisSignatureStr:   config.Node.GenesisSignatureStr,
-				GenesisAddressStr:     config.Node.GenesisAddressStr,
-				BlockchainPubkeyStr:   config.Node.BlockchainPubkeyStr,
-				BlockchainSeckeyStr:   config.Node.BlockchainSeckeyStr,
-				GenesisTimestamp:      config.Node.GenesisTimestamp,
-				GenesisCoinVolume:     config.Node.GenesisCoinVolume,
-				DefaultConnections:    config.Node.DefaultConnections,
-				UnconfirmedBurnFactor: config.Node.UnconfirmedBurnFactor,
-				CreateBlockBurnFactor: config.Node.CreateBlockBurnFactor,
-			})
+			config.Node.CoinName = coinName
+			config.Node.DataDirectory = "$HOME/." + coinName
+
+			err = t.ExecuteTemplate(coinFile, coinTemplateFile, config.Node)
 			if err != nil {
 				log.Error("failed to parse coin template variables")
 				return err

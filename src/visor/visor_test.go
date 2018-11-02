@@ -1982,13 +1982,15 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Create a transaction that exceeds MaxBlockSize
+	// Create a transaction that exceeds MaxUnconfirmedTransactionSize
 	// It's still injected, because this is considered a soft error
-	// This transaction will become valid on refresh (by increasing MaxBlockSize)
-	v.Config.MaxBlockSize = 1
+	// This transaction will become valid on refresh (by increasing MaxUnconfirmedTransactionSize)
+	originalMaxUnconfirmedTxnSize := v.Config.MaxUnconfirmedTransactionSize
+	v.Config.MaxUnconfirmedTransactionSize = 1
 	sometimesInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 	_, softErr, err = v.InjectForeignTransaction(sometimesInvalidTxn)
 	require.NoError(t, err)
+	require.NotNil(t, softErr)
 	testutil.RequireError(t, softErr.Err, errTxnExceedsMaxBlockSize.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
@@ -2002,7 +2004,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn remains valid,
 	// the second txn remains invalid,
 	// the third txn becomes valid
-	v.Config.MaxBlockSize = params.DefaultMaxBlockSize
+	v.Config.MaxUnconfirmedTransactionSize = originalMaxUnconfirmedTxnSize
 	hashes, err := v.RefreshUnconfirmed()
 	require.NoError(t, err)
 	require.Equal(t, []cipher.SHA256{sometimesInvalidTxn.Hash()}, hashes)
@@ -2011,7 +2013,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn becomes invalid,
 	// the second txn remains invalid,
 	// the third txn becomes invalid again
-	v.Config.MaxBlockSize = 1
+	v.Config.MaxUnconfirmedTransactionSize = 1
 	hashes, err = v.RefreshUnconfirmed()
 	require.NoError(t, err)
 	require.Nil(t, hashes)
@@ -2020,7 +2022,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn was valid, became invalid, and is now valid again
 	// The second txn was always invalid
 	// The third txn was invalid, became valid, became invalid, and is now valid again
-	v.Config.MaxBlockSize = params.DefaultMaxBlockSize
+	v.Config.MaxUnconfirmedTransactionSize = originalMaxUnconfirmedTxnSize
 	hashes, err = v.RefreshUnconfirmed()
 	require.NoError(t, err)
 
@@ -2864,7 +2866,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		balances    []wallet.UxBalance
 		err         error
 
-		maxBlockSize int
+		maxUserTransactionSize int
 
 		getArrayRet coin.UxArray
 		getArrayErr error
@@ -2947,10 +2949,10 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			getArrayRet: inputs[:1],
 		},
 		{
-			name:         "transaction violate soft constraints, transaction size bigger than max block size",
-			maxBlockSize: 1,
-			txn:          txn,
-			err:          ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
+			name:                   "transaction violate soft constraints, transaction size bigger than max block size",
+			maxUserTransactionSize: 1,
+			txn:                    txn,
+			err:                    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
 
 			getArrayRet: inputs[:1],
 		},
@@ -3027,12 +3029,12 @@ func TestVerifyTxnVerbose(t *testing.T) {
 				DB:         db,
 				history:    history,
 				Config: Config{
-					MaxBlockSize: tc.maxBlockSize,
+					MaxUserTransactionSize: tc.maxUserTransactionSize,
 				},
 			}
 
-			if v.Config.MaxBlockSize == 0 {
-				v.Config.MaxBlockSize = params.DefaultMaxBlockSize
+			if v.Config.MaxUserTransactionSize == 0 {
+				v.Config.MaxUserTransactionSize = NewConfig().MaxUserTransactionSize
 			}
 
 			var isConfirmed bool

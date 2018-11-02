@@ -20,8 +20,8 @@ const (
 	// Once the InitialUnlockedCount is exhausted,
 	// UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
 	UnlockTimeInterval uint64 = 31536000 // in seconds
-	//DefaultMaxBlockSize is max block size
-	DefaultMaxBlockSize int = 32768 // in bytes
+	// MaxUserTransactionSize is the maximum size of a user-created transaction
+	MaxUserTransactionSize int = 32768 // in bytes
 )
 
 var (

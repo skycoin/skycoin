@@ -140,8 +140,10 @@ type NodeConfig struct {
 	// Reset the database if integrity checks fail, and continue running
 	ResetCorruptDB bool
 
-	// Maximum size of blocks in bytes
+	// Maximum size of blocks in bytes to apply when creating blocks
 	MaxBlockSize int
+	// Maximum size of a transaction in bytes to apply to unconfirmed txns (received over the network, or when refreshing the pool)
+	MaxUnconfirmedTransactionSize int
 	// Coin hour burn factor to apply to unconfirmed txns (received over the network, or when refreshing the pool)
 	UnconfirmedBurnFactor uint64
 	// Coin hour burn factor to apply when creating blocks
@@ -267,9 +269,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		ResetCorruptDB: false,
 
 		// Blockchain/transaction validation
-		MaxBlockSize:          params.DefaultMaxBlockSize,
-		UnconfirmedBurnFactor: params.CoinHourBurnFactor,
-		CreateBlockBurnFactor: params.CoinHourBurnFactor,
+		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
+		MaxBlockSize:                  32 * 1024,
+		UnconfirmedBurnFactor:         params.CoinHourBurnFactor,
+		CreateBlockBurnFactor:         params.CoinHourBurnFactor,
 
 		// Wallets
 		WalletDirectory:  "",
@@ -409,7 +412,11 @@ func (c *Config) postProcess() error {
 	}
 
 	if c.Node.MaxBlockSize <= 0 {
-		return errors.New("-max-block-size must be > 0")
+		return errors.New("-block-size must be > 0")
+	}
+
+	if c.Node.MaxUnconfirmedTransactionSize <= 0 {
+		return errors.New("-unconfirmed-txn-size must be > 0")
 	}
 
 	if c.Node.UnconfirmedBurnFactor < 2 {
@@ -562,13 +569,12 @@ func (c *NodeConfig) RegisterFlags() {
 
 	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
 
-	// Key Configuration Data
-	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
-
-	flag.IntVar(&c.MaxBlockSize, "max-block-size", c.MaxBlockSize, "maximum size of blocks")
+	flag.IntVar(&c.MaxUnconfirmedTransactionSize, "unconfirmed-txn-size", c.MaxUnconfirmedTransactionSize, "maximum size of an unconfirmed transaction")
+	flag.IntVar(&c.MaxBlockSize, "block-size", c.MaxBlockSize, "maximum size of a block")
 	flag.Uint64Var(&c.UnconfirmedBurnFactor, "burn-factor-unconfirmed", c.UnconfirmedBurnFactor, "coinhour burn factor to apply when verifying unconfirmed transactions")
 	flag.Uint64Var(&c.CreateBlockBurnFactor, "burn-factor-create-block", c.CreateBlockBurnFactor, "coinhour burn factor to apply to transactions when creating blocks")
 
+	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
 	flag.StringVar(&c.BlockchainSeckeyStr, "blockchain-secret-key", c.BlockchainSeckeyStr, "secret key of the blockchain")
 

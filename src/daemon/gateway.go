@@ -493,7 +493,7 @@ func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
 		err = gw.v.WithUpdateTx("gateway.InjectBroadcastTransaction", func(tx *dbutil.Tx) error {
-			if _, err := gw.v.InjectTransactionStrictTx(tx, txn); err != nil {
+			if _, err := gw.v.InjectTransactionUserTx(tx, txn); err != nil {
 				logger.WithError(err).Error("InjectUserTransaction failed")
 				return err
 			}

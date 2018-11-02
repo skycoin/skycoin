@@ -381,6 +381,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey
 
 	dc.Visor.MaxBlockSize = c.config.Node.MaxBlockSize
+	dc.Visor.MaxUnconfirmedTransactionSize = c.config.Node.MaxUnconfirmedTransactionSize
 	dc.Visor.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
 	dc.Visor.CreateBlockBurnFactor = c.config.Node.CreateBlockBurnFactor
 

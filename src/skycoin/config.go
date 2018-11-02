@@ -426,6 +426,10 @@ func (c *Config) postProcess() error {
 		return fmt.Errorf("-unconfirmed-burn-factor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
 	}
 
+	if c.Node.MaxBlockSize < params.MaxUserTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
+	}
+
 	if c.Node.CreateBlockBurnFactor < 2 {
 		return errors.New("-create-block-burn-factor must be >= 2")
 	}

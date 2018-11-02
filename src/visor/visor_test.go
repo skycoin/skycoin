@@ -3028,13 +3028,16 @@ func TestVerifyTxnVerbose(t *testing.T) {
 				Blockchain: bc,
 				DB:         db,
 				history:    history,
-				Config: Config{
-					MaxUserTransactionSize: tc.maxUserTransactionSize,
-				},
+				Config:     Config{},
 			}
 
-			if v.Config.MaxUserTransactionSize == 0 {
-				v.Config.MaxUserTransactionSize = NewConfig().MaxUserTransactionSize
+			originalMaxUnconfirmedTxnSize := params.MaxUserTransactionSize
+			defer func() {
+				params.MaxUserTransactionSize = originalMaxUnconfirmedTxnSize
+			}()
+
+			if tc.maxUserTransactionSize != 0 {
+				params.MaxUserTransactionSize = tc.maxUserTransactionSize
 			}
 
 			var isConfirmed bool

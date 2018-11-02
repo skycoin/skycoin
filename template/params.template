@@ -20,14 +20,15 @@ const (
 	// Once the InitialUnlockedCount is exhausted,
 	// UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
 	UnlockTimeInterval uint64 = {{.UnlockTimeInterval}} // in seconds
-	// MaxUserTransactionSize is the maximum size of a user-created transaction
-	MaxUserTransactionSize int = {{.MaxUserTransactionSize}} // in bytes
 )
 
 var (
 	// CoinHourBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `COINHOUR_BURN_FACTOR` env var),
 	// used when creating a transaction
 	CoinHourBurnFactor uint64 = {{.CoinHourBurnFactor}}
+
+	// MaxUserTransactionSize is the maximum size of a user-created transaction
+	MaxUserTransactionSize = {{.MaxUserTransactionSize}} // in bytes
 
 	// MaxDropletPrecision represents the decimal precision of droplets
 	MaxDropletPrecision uint64 = {{.MaxDropletPrecision}}

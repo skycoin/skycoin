@@ -8,6 +8,7 @@ import (
 
 func init() {
 	loadCoinHourBurnFactor()
+	loadMaxUserTransactionSize()
 
 	// Compute maxDropletDivisor from precision
 	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
@@ -18,6 +19,10 @@ func init() {
 func sanityCheck() {
 	if CoinHourBurnFactor <= 1 {
 		panic("CoinHourBurnFactor must be > 1")
+	}
+
+	if MaxUserTransactionSize <= 0 {
+		panic("MaxUserTransactionSize must be > 0")
 	}
 
 	if InitialUnlockedCount > DistributionAddressesTotal {
@@ -53,4 +58,22 @@ func loadCoinHourBurnFactor() {
 	}
 
 	CoinHourBurnFactor = x
+}
+
+func loadMaxUserTransactionSize() {
+	xs := os.Getenv("MAX_USER_TXN_SIZE")
+	if xs == "" {
+		return
+	}
+
+	x, err := strconv.ParseInt(xs, 10, 32)
+	if err != nil {
+		panic(fmt.Sprintf("Invalid MAX_USER_TXN_SIZE %q: %v", xs, err))
+	}
+
+	if x <= 0 {
+		panic("MAX_USER_TXN_SIZE must be > 0")
+	}
+
+	MaxUserTransactionSize = int(x)
 }

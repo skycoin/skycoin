@@ -20,14 +20,15 @@ const (
 	// Once the InitialUnlockedCount is exhausted,
 	// UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
 	UnlockTimeInterval uint64 = 31536000 // in seconds
-	// MaxUserTransactionSize is the maximum size of a user-created transaction
-	MaxUserTransactionSize int = 32768 // in bytes
 )
 
 var (
 	// CoinHourBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `COINHOUR_BURN_FACTOR` env var),
 	// used when creating a transaction
 	CoinHourBurnFactor uint64 = 2
+
+	// MaxUserTransactionSize is the maximum size of a user-created transaction
+	MaxUserTransactionSize = 32768 // in bytes
 
 	// MaxDropletPrecision represents the decimal precision of droplets
 	MaxDropletPrecision uint64 = 3

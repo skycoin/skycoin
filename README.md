@@ -62,6 +62,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
 - [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
+- [Running with a custom max transaction size](#running-with-a-custom-max-transaction-size)
 - [URI Specification](#uri-specification)
 - [Wire protocol user agent](#wire-protocol-user-agent)
 - [Development](#development)
@@ -227,6 +228,24 @@ The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar
 ```sh
 COINHOUR_BURN_FACTOR=999 ./run-client.sh
 ```
+
+This burn factor applies to user-created transactions.
+
+To control the burn factor in other scenarios, use `-burn-factor-unconfirmed` and `-burn-factor-create-block`.
+
+## Running with a custom max transaction size
+
+```sh
+MAX_USER_TXN_SIZE=1024 ./run-client.sh
+```
+
+This maximum transaction size applies to user-created transactions.
+
+To control the transaction size for unconfirmed transactions, use `-unconfirmed-txn-size`.
+
+To control the max block size, use `-block-size`.
+
+Transaction and block size are measured in bytes.
 
 ## URI Specification
 

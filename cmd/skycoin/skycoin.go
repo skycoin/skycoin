@@ -73,8 +73,8 @@ var (
 		Port:                  6000,
 		WebInterfacePort:      6420,
 		DataDirectory:         "$HOME/.skycoin",
-		UnconfirmedBurnFactor: 10,
-		CreateBlockBurnFactor: 10,
+		UnconfirmedBurnFactor: 2,
+		CreateBlockBurnFactor: 2,
 	})
 
 	parseFlags = true

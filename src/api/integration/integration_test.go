@@ -2954,9 +2954,11 @@ func TestStableResendUnconfirmedTransactions(t *testing.T) {
 		return
 	}
 	c := newClient()
-	res, err := c.ResendUnconfirmedTransactions()
-	require.NoError(t, err)
-	require.True(t, len(res.Txids) == 0)
+	_, err := c.ResendUnconfirmedTransactions()
+	respErr, ok := err.(api.ClientError)
+	require.True(t, ok)
+	require.Equal(t, fmt.Sprintf("503 Service Unavailable - %s", daemon.ErrNetworkingDisabled), respErr.Message)
+	require.Equal(t, http.StatusServiceUnavailable, respErr.StatusCode)
 }
 
 func TestLiveResendUnconfirmedTransactions(t *testing.T) {
@@ -5860,6 +5862,8 @@ func TestStableHealth(t *testing.T) {
 	checkHealthResponse(t, r)
 
 	require.Equal(t, 0, r.OpenConnections)
+	require.Equal(t, 0, r.IncomingConnections)
+	require.Equal(t, 0, r.OutgoingConnections)
 
 	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration > time.Duration(0))
 
@@ -5896,9 +5900,13 @@ func TestLiveHealth(t *testing.T) {
 
 	if liveDisableNetworking(t) {
 		require.Equal(t, 0, r.OpenConnections)
+		require.Equal(t, 0, r.OutgoingConnections)
+		require.Equal(t, 0, r.IncomingConnections)
 	} else {
 		require.NotEqual(t, 0, r.OpenConnections)
 	}
+
+	require.Equal(t, r.OutgoingConnections+r.IncomingConnections, r.OpenConnections)
 
 	// The TimeSinceLastBlock can be any value, including negative values, due to clock skew
 	// The live node is not necessarily run with the commit and branch ldflags, so don't check them

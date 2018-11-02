@@ -19,6 +19,23 @@ func resetHandler() {
 	sendByteMessage = _sendByteMessage
 }
 
+func TestMsgIDStringSafe(t *testing.T) {
+	var id [4]byte
+	require.Equal(t, "\\x00\\x00\\x00\\x00", msgIDStringSafe(id))
+
+	id = [4]byte{'F', 'O', 'O', 'B'}
+
+	require.Equal(t, "FOOB", msgIDStringSafe(id))
+
+	id = [4]byte{200, 2, '\n', '\t'}
+
+	require.Equal(t, "\\xc8\\x02\\n\\t", msgIDStringSafe(id))
+
+	id = [4]byte{'\'', '\\', ' ', '"'}
+
+	require.Equal(t, "'\\\\ \\\"", msgIDStringSafe(id))
+}
+
 func TestConvertToMessage(t *testing.T) {
 	EraseMessages()
 	resetHandler()

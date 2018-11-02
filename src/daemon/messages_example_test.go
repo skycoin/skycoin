@@ -812,3 +812,28 @@ func ExampleAnnounceTxnsMessage() {
 	// 0x003c | 5c bf 72 f9 8c c6 a6 2c 72 97 23 cb c0 75 0d 3b ... Transactions[1]
 	// 0x004c |
 }
+
+func ExampleDisconnectMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+
+	message := NewDisconnectMessage(ErrDisconnectIdle)
+	fmt.Println("DisconnectMessage:")
+	var mai = NewMessagesAnnotationsIterator(message)
+	w := bufio.NewWriter(os.Stdout)
+	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	if err != nil {
+		fmt.Println(err)
+	}
+	// DisconnectMessage:
+	// 0x0000 | 31 00 00 00 ....................................... Length
+	// 0x0004 | 52 4a 43 54 ....................................... Prefix
+	// 0x0008 | 49 4e 54 52 ....................................... TargetPrefix
+	// 0x000c | 13 00 00 00 ....................................... ErrorCode
+	// 0x0010 | 1d 00 00 00 45 78 61 6d 70 6c 65 52 65 6a 65 63
+	// 0x0020 | 74 57 69 74 68 50 65 65 72 73 4d 65 73 73 61 67
+	// 0x0030 | 65 ................................................ Reason
+	// 0x0031 | 00 00 00 00 ....................................... Reserved length
+	// 0x0035 |
+
+}

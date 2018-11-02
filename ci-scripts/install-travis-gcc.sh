@@ -8,7 +8,7 @@ fi
 if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
   brew update
   echo 'Available versions (gcc)' && brew list --versions gcc
-  brew list gcc@6 &>/dev/null || brew install gcc@6 || brew link --overwrite gcc@6
+  brew list gcc@7 &>/dev/null || brew install gcc@6 || brew link --overwrite gcc@6
 fi
 
 cd $TRAVIS_BUILD_DIR

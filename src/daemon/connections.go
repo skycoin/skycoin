@@ -207,7 +207,7 @@ func (c *Connections) connected(addr string, gnetID uint64) (*connection, error)
 }
 
 // introduced the connection has introduced itself
-func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
+func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -285,7 +285,9 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 	conn.Mirror = m.Mirror
 	conn.ProtocolVersion = m.ProtocolVersion
 	conn.ListenPort = listenPort
-	conn.UserAgent = m.userAgentData
+	if userAgent != nil {
+		conn.UserAgent = *userAgent
+	}
 
 	logger.WithFields(fields).Debug("Connections.introduced")
 
@@ -298,6 +300,23 @@ func (c *Connections) get(addr string) *connection {
 	defer c.Unlock()
 
 	return c.conns[addr]
+}
+
+func (c *Connections) getByGnetID(gnetID uint64) *connection {
+	c.Lock()
+	defer c.Unlock()
+
+	if gnetID == 0 {
+		return nil
+	}
+
+	for _, c := range c.conns {
+		if c.gnetID == gnetID {
+			return c
+		}
+	}
+
+	return nil
 }
 
 // modify modifies a connection.

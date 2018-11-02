@@ -118,6 +118,12 @@ func (pl *peerlist) addPeers(addrs []string) {
 	}
 }
 
+func (pl *peerlist) seen(addr string) {
+	if p, ok := pl.peers[addr]; ok && p != nil {
+		p.Seen()
+	}
+}
+
 // getCanTryPeers returns all peers that are triable(retried times blew exponential backoff times)
 // and are able to pass the filters.
 func (pl *peerlist) getCanTryPeers(flts []Filter) Peers {
@@ -175,12 +181,8 @@ func canTry(p Peer) bool {
 	return p.CanTry()
 }
 
-func zeroRetryTimes(p Peer) bool {
-	return p.RetryTimes == 0
-}
-
 // isExchangeable filters exchangeable peers
-var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
+var isExchangeable = []Filter{hasIncomingPort, isPublic}
 
 // removePeer removes peer
 func (pl *peerlist) removePeer(addr string) {
@@ -250,12 +252,12 @@ func (pl *peerlist) getPeer(addr string) (Peer, bool) {
 	return Peer{}, false
 }
 
-// ClearOld removes public peers that haven't been seen in timeAgo seconds
+// clearOld removes public, untrusted peers that haven't been seen in timeAgo seconds
 func (pl *peerlist) clearOld(timeAgo time.Duration) {
 	t := time.Now().UTC()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
-		if !peer.Private && t.Sub(lastSeen) > timeAgo {
+		if !peer.Private && !peer.Trusted && t.Sub(lastSeen) > timeAgo {
 			delete(pl.peers, addr)
 		}
 	}
@@ -268,15 +270,16 @@ func (pl *peerlist) random(count int, flts []Filter) Peers {
 	if len(keys) == 0 {
 		return Peers{}
 	}
+
 	max := count
-	if count == 0 || count > len(keys) {
+	if max == 0 || max > len(keys) {
 		max = len(keys)
 	}
 
-	ps := make(Peers, 0)
+	ps := make(Peers, max)
 	perm := rand.Perm(len(keys))
-	for _, i := range perm[:max] {
-		ps = append(ps, *pl.peers[keys[i]])
+	for i, j := range perm[:max] {
+		ps[i] = *pl.peers[keys[j]]
 	}
 	return ps
 }
@@ -320,6 +323,27 @@ func (pl *peerlist) resetAllRetryTimes() {
 	for _, p := range pl.peers {
 		p.ResetRetryTimes()
 	}
+}
+
+func (pl *peerlist) findOldestUntrustedPeer() *Peer {
+	var oldest *Peer
+
+	for _, p := range pl.peers {
+		if p.Trusted || p.Private {
+			continue
+		}
+
+		if oldest == nil || p.LastSeen < oldest.LastSeen {
+			oldest = p
+		}
+	}
+
+	if oldest != nil {
+		p := *oldest
+		return &p
+	}
+
+	return nil
 }
 
 // PeerJSON is for saving and loading peers to disk. Some fields are strange,

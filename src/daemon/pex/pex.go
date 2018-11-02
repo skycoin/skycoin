@@ -135,7 +135,6 @@ func (peer *Peer) IncreaseRetryTimes() {
 // ResetRetryTimes resets the retry time
 func (peer *Peer) ResetRetryTimes() {
 	peer.RetryTimes = 0
-	logger.WithField("addr", peer.Addr).Debug("Reset retry times")
 }
 
 // CanTry returns whether this peer is tryable base on the exponential backoff algorithm
@@ -197,7 +196,7 @@ type Config struct {
 func NewConfig() Config {
 	return Config{
 		DataDirectory:       "./",
-		Max:                 1000,
+		Max:                 65535,
 		Expiration:          time.Hour * 24 * 7,
 		CullRate:            time.Minute * 10,
 		ClearOldRate:        time.Minute * 10,
@@ -303,9 +302,11 @@ func (px *Pex) Run() error {
 		case <-clearOldTicker.C:
 			// Remove peers we haven't seen in a while
 			if !px.Config.Disabled && !px.Config.NetworkDisabled {
-				px.Lock()
-				px.peerlist.clearOld(px.Config.Expiration)
-				px.Unlock()
+				func() {
+					px.Lock()
+					defer px.Unlock()
+					px.peerlist.clearOld(px.Config.Expiration)
+				}()
 			}
 		case <-px.quit:
 			return nil
@@ -419,7 +420,8 @@ func (px *Pex) save() error {
 }
 
 // AddPeer adds a peer to the peer list, given an address. If the peer list is
-// full, PeerlistFullError is returned
+// full, it will try to remove an old peer to make room.
+// If no room can be made, ErrPeerlistFull is returned
 func (px *Pex) AddPeer(addr string) error {
 	px.Lock()
 	defer px.Unlock()
@@ -430,14 +432,29 @@ func (px *Pex) AddPeer(addr string) error {
 		return ErrInvalidAddress
 	}
 
-	if !px.peerlist.hasPeer(cleanAddr) {
-		if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
+	if px.peerlist.hasPeer(cleanAddr) {
+		px.peerlist.seen(cleanAddr)
+		return nil
+	}
+
+	if px.isFull() {
+		oldestPeer := px.peerlist.findOldestUntrustedPeer()
+		if oldestPeer == nil || time.Now().UTC().Unix()-oldestPeer.LastSeen < 60*60*24 {
 			return ErrPeerlistFull
 		}
 
-		px.peerlist.addPeer(cleanAddr)
+		px.peerlist.removePeer(oldestPeer.Addr)
+
+		if px.isFull() {
+			// This can happen if the node is run with a peers.json file that has more peers
+			// than the max peerlist size, then the peers.json file isn't truncated to the max peerlist size.
+			// It is not an error.
+			// The max is a soft limit; exceeding the max will not crash the program.
+			logger.Critical().Error("AddPeer: after removing the worst peer, the peerlist was still full")
+		}
 	}
 
+	px.peerlist.addPeer(cleanAddr)
 	return nil
 }
 
@@ -536,6 +553,12 @@ func (px *Pex) SetUserAgent(addr string, userAgent useragent.Data) error {
 	px.Lock()
 	defer px.Unlock()
 
+	if !userAgent.Empty() {
+		if _, err := userAgent.Build(); err != nil {
+			return err
+		}
+	}
+
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
 		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
@@ -580,12 +603,12 @@ func (px *Pex) TrustedPublic() Peers {
 	return px.peerlist.getCanTryPeers([]Filter{isPublic, isTrusted})
 }
 
-// RandomPublicUntrusted returns N random public untrusted peers
-func (px *Pex) RandomPublicUntrusted(n int) Peers {
+// RandomPublic returns N random public untrusted peers
+func (px *Pex) RandomPublic(n int) Peers {
 	px.RLock()
 	defer px.RUnlock()
 	return px.peerlist.random(n, []Filter{func(p Peer) bool {
-		return !p.Private && !p.Trusted
+		return !p.Private
 	}})
 }
 
@@ -621,6 +644,10 @@ func (px *Pex) ResetAllRetryTimes() {
 func (px *Pex) IsFull() bool {
 	px.RLock()
 	defer px.RUnlock()
+	return px.isFull()
+}
+
+func (px *Pex) isFull() bool {
 	return px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max
 }
 

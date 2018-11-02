@@ -1052,10 +1052,11 @@ func (c *Client) InjectEncodedTransaction(rawTxn string) (string, error) {
 	return txid, nil
 }
 
-// ResendUnconfirmedTransactions makes a request to GET /api/v1/resendUnconfirmedTxns
+// ResendUnconfirmedTransactions makes a request to POST /api/v1/resendUnconfirmedTxns
 func (c *Client) ResendUnconfirmedTransactions() (*ResendResult, error) {
+	endpoint := "/api/v1/resendUnconfirmedTxns"
 	var r ResendResult
-	if err := c.Get("/api/v1/resendUnconfirmedTxns", &r); err != nil {
+	if err := c.PostForm(endpoint, strings.NewReader(""), &r); err != nil {
 		return nil, err
 	}
 	return &r, nil
@@ -1215,4 +1216,13 @@ func (c *Client) RecoverWallet(id, seed, password string) (*WalletResponse, erro
 	}
 
 	return nil, err
+}
+
+// Disconnect disconnect a connections by ID
+func (c *Client) Disconnect(id uint64) error {
+	v := url.Values{}
+	v.Add("id", fmt.Sprint(id))
+
+	var obj struct{}
+	return c.PostForm("/api/v1/network/connection/disconnect", strings.NewReader(v.Encode()), &obj)
 }

@@ -239,3 +239,12 @@ func TestMustParse(t *testing.T) {
 		MustParse("foo") // nolint: errcheck
 	})
 }
+
+func TestMustBuild(t *testing.T) {
+	d := Data{
+		Version: "0",
+	}
+	require.Panics(t, func() {
+		d.MustBuild() // nolint: errcheck
+	})
+}

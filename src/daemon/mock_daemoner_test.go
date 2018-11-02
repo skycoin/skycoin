@@ -15,13 +15,13 @@ type mockDaemoner struct {
 	mock.Mock
 }
 
-// connectionIntroduced provides a mock function with given fields: addr, gnetID, m
-func (_m *mockDaemoner) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
-	ret := _m.Called(addr, gnetID, m)
+// connectionIntroduced provides a mock function with given fields: addr, gnetID, m, userAgent
+func (_m *mockDaemoner) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
+	ret := _m.Called(addr, gnetID, m, userAgent)
 
 	var r0 *connection
-	if rf, ok := ret.Get(0).(func(string, uint64, *IntroductionMessage) *connection); ok {
-		r0 = rf(addr, gnetID, m)
+	if rf, ok := ret.Get(0).(func(string, uint64, *IntroductionMessage, *useragent.Data) *connection); ok {
+		r0 = rf(addr, gnetID, m, userAgent)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*connection)
@@ -29,8 +29,8 @@ func (_m *mockDaemoner) connectionIntroduced(addr string, gnetID uint64, m *Intr
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, uint64, *IntroductionMessage) error); ok {
-		r1 = rf(addr, gnetID, m)
+	if rf, ok := ret.Get(1).(func(string, uint64, *IntroductionMessage, *useragent.Data) error); ok {
+		r1 = rf(addr, gnetID, m, userAgent)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -52,8 +52,8 @@ func (_m *mockDaemoner) recordMessageEvent(m asyncMessage, c *gnet.MessageContex
 	return r0
 }
 
-// AddPeer provides a mock function with given fields: addr
-func (_m *mockDaemoner) AddPeer(addr string) error {
+// sendRandomPeers provides a mock function with given fields: addr
+func (_m *mockDaemoner) sendRandomPeers(addr string) error {
 	ret := _m.Called(addr)
 
 	var r0 error
@@ -140,6 +140,20 @@ func (_m *mockDaemoner) DaemonConfig() DaemonConfig {
 
 // Disconnect provides a mock function with given fields: addr, r
 func (_m *mockDaemoner) Disconnect(addr string, r gnet.DisconnectReason) error {
+	ret := _m.Called(addr, r)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, gnet.DisconnectReason) error); ok {
+		r0 = rf(addr, r)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DisconnectNow provides a mock function with given fields: addr, r
+func (_m *mockDaemoner) DisconnectNow(addr string, r gnet.DisconnectReason) error {
 	ret := _m.Called(addr, r)
 
 	var r0 error
@@ -263,11 +277,6 @@ func (_m *mockDaemoner) HeadBkSeq() (uint64, bool, error) {
 	return r0, r1, r2
 }
 
-// IncreaseRetryTimes provides a mock function with given fields: addr
-func (_m *mockDaemoner) IncreaseRetryTimes(addr string) {
-	_m.Called(addr)
-}
-
 // InjectTransaction provides a mock function with given fields: txn
 func (_m *mockDaemoner) InjectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
 	ret := _m.Called(txn)
@@ -326,39 +335,9 @@ func (_m *mockDaemoner) PexConfig() pex.Config {
 	return r0
 }
 
-// RandomExchangeable provides a mock function with given fields: n
-func (_m *mockDaemoner) RandomExchangeable(n int) pex.Peers {
-	ret := _m.Called(n)
-
-	var r0 pex.Peers
-	if rf, ok := ret.Get(0).(func(int) pex.Peers); ok {
-		r0 = rf(n)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(pex.Peers)
-		}
-	}
-
-	return r0
-}
-
 // RecordPeerHeight provides a mock function with given fields: addr, gnetID, height
 func (_m *mockDaemoner) RecordPeerHeight(addr string, gnetID uint64, height uint64) {
 	_m.Called(addr, gnetID, height)
-}
-
-// RecordUserAgent provides a mock function with given fields: addr, userAgent
-func (_m *mockDaemoner) RecordUserAgent(addr string, userAgent useragent.Data) error {
-	ret := _m.Called(addr, userAgent)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, useragent.Data) error); ok {
-		r0 = rf(addr, userAgent)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
 }
 
 // RequestBlocksFromAddr provides a mock function with given fields: addr
@@ -375,11 +354,6 @@ func (_m *mockDaemoner) RequestBlocksFromAddr(addr string) error {
 	return r0
 }
 
-// ResetRetryTimes provides a mock function with given fields: addr
-func (_m *mockDaemoner) ResetRetryTimes(addr string) {
-	_m.Called(addr)
-}
-
 // SendMessage provides a mock function with given fields: addr, msg
 func (_m *mockDaemoner) SendMessage(addr string, msg gnet.Message) error {
 	ret := _m.Called(addr, msg)
@@ -387,20 +361,6 @@ func (_m *mockDaemoner) SendMessage(addr string, msg gnet.Message) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, gnet.Message) error); ok {
 		r0 = rf(addr, msg)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// SetHasIncomingPort provides a mock function with given fields: addr
-func (_m *mockDaemoner) SetHasIncomingPort(addr string) error {
-	ret := _m.Called(addr)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(addr)
 	} else {
 		r0 = ret.Error(0)
 	}

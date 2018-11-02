@@ -4,10 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -87,15 +85,12 @@ func (msc *MessagesConfig) Register() {
 // Messages messages struct
 type Messages struct {
 	Config MessagesConfig
-	// Magic value for detecting self-connection
-	Mirror uint32
 }
 
 // NewMessages creates Messages
 func NewMessages(c MessagesConfig) *Messages {
 	return &Messages{
 		Config: c,
-		Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 	}
 }
 
@@ -158,7 +153,7 @@ func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) 
 
 // process Notifies the Pex instance that peers were requested
 func (gpm *GetPeersMessage) process(d daemoner) {
-	if d.PexConfig().Disabled {
+	if d.pexConfig().Disabled {
 		return
 	}
 
@@ -206,7 +201,7 @@ func (gpm *GivePeersMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // process Notifies the Pex instance that peers were received
 func (gpm *GivePeersMessage) process(d daemoner) {
-	if d.PexConfig().Disabled {
+	if d.pexConfig().Disabled {
 		return
 	}
 
@@ -233,7 +228,7 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 		"count":  len(peers),
 	}).Debug("Received peers via PEX")
 
-	d.AddPeers(peers)
+	d.addPeers(peers)
 }
 
 // IntroductionMessage is sent on first connect by both parties
@@ -345,15 +340,15 @@ func (intro *IntroductionMessage) process(d daemoner) {
 	}
 
 	// Request blocks immediately after they're confirmed
-	if err := d.RequestBlocksFromAddr(addr); err != nil {
-		logger.WithError(err).WithFields(fields).Warning("RequestBlocksFromAddr")
+	if err := d.requestBlocksFromAddr(addr); err != nil {
+		logger.WithError(err).WithFields(fields).Warning("requestBlocksFromAddr")
 	} else {
 		logger.WithFields(fields).Debug("Requested blocks")
 	}
 
 	// Announce unconfirmed txns
-	if err := d.AnnounceAllTxns(); err != nil {
-		logger.WithError(err).Warning("AnnounceAllTxns failed")
+	if err := d.announceAllTxns(); err != nil {
+		logger.WithError(err).Warning("announceAllTxns failed")
 	}
 }
 
@@ -365,14 +360,15 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 		"gnetID": intro.c.ConnID,
 	}
 
+	dc := d.daemonConfig()
+
 	// Disconnect if this is a self connection (we have the same mirror value)
-	if intro.Mirror == d.Mirror() {
+	if intro.Mirror == dc.Mirror {
 		logger.WithFields(fields).WithField("mirror", intro.Mirror).Info("Remote mirror value matches ours")
 		return nil, ErrDisconnectSelf
 	}
 
 	// Disconnect if peer version is not within the supported range
-	dc := d.DaemonConfig()
 	if intro.ProtocolVersion < dc.MinProtocolVersion {
 		logger.WithFields(fields).WithFields(logrus.Fields{
 			"protocolVersion":    intro.ProtocolVersion,
@@ -396,10 +392,10 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 		}
 		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
-		if d.BlockchainPubkey() != bcPubKey {
+		if dc.BlockchainPubkey != bcPubKey {
 			logger.WithFields(fields).WithFields(logrus.Fields{
 				"pubkey":       bcPubKey.Hex(),
-				"daemonPubkey": d.BlockchainPubkey().Hex(),
+				"daemonPubkey": dc.BlockchainPubkey.Hex(),
 			}).Warning("Blockchain pubkey does not match")
 			return nil, ErrDisconnectBlockchainPubkeyNotMatched
 		}
@@ -439,10 +435,10 @@ func (ping *PingMessage) process(d daemoner) {
 		"gnetID": ping.c.ConnID,
 	}
 
-	if d.DaemonConfig().LogPings {
+	if d.daemonConfig().LogPings {
 		logger.WithFields(fields).Debug("Replying to ping")
 	}
-	if err := d.SendMessage(ping.c.Addr, &PongMessage{}); err != nil {
+	if err := d.sendMessage(ping.c.Addr, &PongMessage{}); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send PongMessage failed")
 	}
 }
@@ -500,8 +496,8 @@ func (dm *DisconnectMessage) process(d daemoner) {
 		"reason": DisconnectCodeToReason(dm.ReasonCode),
 	}).Infof("DisconnectMessage received")
 
-	if err := d.DisconnectNow(dm.c.Addr, ErrDisconnectReceivedDisconnect); err != nil {
-		logger.WithError(err).WithField("addr", dm.c.Addr).Warning("DisconnectNow")
+	if err := d.disconnectNow(dm.c.Addr, ErrDisconnectReceivedDisconnect); err != nil {
+		logger.WithError(err).WithField("addr", dm.c.Addr).Warning("disconnectNow")
 	}
 }
 
@@ -528,7 +524,7 @@ func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // process should send number to be requested, with request
 func (gbm *GetBlocksMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
@@ -538,9 +534,9 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 	}
 
 	// Record this as this peer's highest block
-	d.RecordPeerHeight(gbm.c.Addr, gbm.c.ConnID, gbm.LastBlock)
+	d.recordPeerHeight(gbm.c.Addr, gbm.c.ConnID, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
-	blocks, err := d.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	blocks, err := d.getSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
 	if err != nil {
 		logger.WithError(err).Error("Get signed blocks failed")
 		return
@@ -553,7 +549,7 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 	logger.WithFields(fields).Debugf("Got %d blocks since %d", len(blocks), gbm.LastBlock)
 
 	m := NewGiveBlocksMessage(blocks)
-	if err := d.SendMessage(gbm.c.Addr, m); err != nil {
+	if err := d.sendMessage(gbm.c.Addr, m); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send GiveBlocksMessage failed")
 	}
 }
@@ -572,14 +568,14 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 }
 
 // Handle handle message
-func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
-	gbm.c = mc
-	return daemon.(daemoner).recordMessageEvent(gbm, mc)
+func (m *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	m.c = mc
+	return daemon.(daemoner).recordMessageEvent(m, mc)
 }
 
 // process process message
-func (gbm *GiveBlocksMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+func (m *GiveBlocksMessage) process(d daemoner) {
+	if d.daemonConfig().DisableNetworking {
 		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
@@ -588,9 +584,9 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 	// It is not necessary that the blocks be executed together in a single transaction.
 
 	processed := 0
-	maxSeq, ok, err := d.HeadBkSeq()
+	maxSeq, ok, err := d.headBkSeq()
 	if err != nil {
-		logger.WithError(err).Error("visor.HeadBkSeq failed")
+		logger.WithError(err).Error("d.headBkSeq failed")
 		return
 	}
 	if !ok {
@@ -598,7 +594,7 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 		return
 	}
 
-	for _, b := range gbm.Blocks {
+	for _, b := range m.Blocks {
 		// To minimize waste when receiving multiple responses from peers
 		// we only break out of the loop if the block itself is invalid.
 		// E.g. if we request 20 blocks since 0 from 2 peers, and one peer
@@ -609,7 +605,7 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 			continue
 		}
 
-		err := d.ExecuteSignedBlock(b)
+		err := d.executeSignedBlock(b)
 		if err == nil {
 			logger.Critical().WithField("seq", b.Block.Head.BkSeq).Info("Added new block")
 			processed++
@@ -624,9 +620,9 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 		return
 	}
 
-	headBkSeq, ok, err := d.HeadBkSeq()
+	headBkSeq, ok, err := d.headBkSeq()
 	if err != nil {
-		logger.WithError(err).Error("visor.HeadBkSeq failed")
+		logger.WithError(err).Error("d.headBkSeq failed")
 		return
 	}
 	if !ok {
@@ -641,14 +637,14 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 	}
 
 	// Announce our new blocks to peers
-	m1 := NewAnnounceBlocksMessage(headBkSeq)
-	if err := d.BroadcastMessage(m1); err != nil {
+	abm := NewAnnounceBlocksMessage(headBkSeq)
+	if _, err := d.broadcastMessage(abm); err != nil {
 		logger.WithError(err).Warning("Broadcast AnnounceBlocksMessage failed")
 	}
 
 	// Request more blocks
-	m2 := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().BlocksResponseCount)
-	if err := d.BroadcastMessage(m2); err != nil {
+	gbm := NewGetBlocksMessage(headBkSeq, d.daemonConfig().BlocksResponseCount)
+	if _, err := d.broadcastMessage(gbm); err != nil {
 		logger.WithError(err).Warning("Broadcast GetBlocksMessage failed")
 	}
 }
@@ -675,7 +671,7 @@ func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 // process process message
 func (abm *AnnounceBlocksMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
@@ -684,9 +680,9 @@ func (abm *AnnounceBlocksMessage) process(d daemoner) {
 		"gnetID": abm.c.ConnID,
 	}
 
-	headBkSeq, ok, err := d.HeadBkSeq()
+	headBkSeq, ok, err := d.headBkSeq()
 	if err != nil {
-		logger.WithError(err).Error("AnnounceBlocksMessage Visor.HeadBkSeq failed")
+		logger.WithError(err).Error("AnnounceBlocksMessage d.headBkSeq failed")
 		return
 	}
 	if !ok {
@@ -700,8 +696,8 @@ func (abm *AnnounceBlocksMessage) process(d daemoner) {
 
 	// TODO: Should this be block get request for current sequence?
 	// If client is not caught up, won't attempt to get block
-	m := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().BlocksResponseCount)
-	if err := d.SendMessage(abm.c.Addr, m); err != nil {
+	m := NewGetBlocksMessage(headBkSeq, d.daemonConfig().BlocksResponseCount)
+	if err := d.sendMessage(abm.c.Addr, m); err != nil {
 		logger.WithError(err).WithFields(fields).Error("Send GetBlocksMessage")
 	}
 }
@@ -737,7 +733,7 @@ func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface
 
 // process process message
 func (atm *AnnounceTxnsMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
@@ -746,9 +742,9 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 		"gnetID": atm.c.ConnID,
 	}
 
-	unknown, err := d.FilterUnconfirmedKnown(atm.Transactions)
+	unknown, err := d.filterUnconfirmedKnown(atm.Transactions)
 	if err != nil {
-		logger.WithError(err).Error("AnnounceTxnsMessage Visor.FilterUnconfirmedKnown failed")
+		logger.WithError(err).Error("AnnounceTxnsMessage d.filterUnconfirmedKnown failed")
 		return
 	}
 
@@ -757,7 +753,7 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 	}
 
 	m := NewGetTxnsMessage(unknown)
-	if err := d.SendMessage(atm.c.Addr, m); err != nil {
+	if err := d.sendMessage(atm.c.Addr, m); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send GetTxnsMessage failed")
 	}
 }
@@ -783,7 +779,7 @@ func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) e
 
 // process process message
 func (gtm *GetTxnsMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
@@ -793,9 +789,9 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 	}
 
 	// Locate all txns from the unconfirmed pool
-	known, err := d.GetUnconfirmedKnown(gtm.Transactions)
+	known, err := d.getUnconfirmedKnown(gtm.Transactions)
 	if err != nil {
-		logger.WithError(err).Error("GetTxnsMessage Visor.GetUnconfirmedKnown failed")
+		logger.WithError(err).Error("GetTxnsMessage d.getUnconfirmedKnown failed")
 		return
 	}
 	if len(known) == 0 {
@@ -804,7 +800,7 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 
 	// Reply to sender with GiveTxnsMessage
 	m := NewGiveTxnsMessage(known)
-	if err := d.SendMessage(gtm.c.Addr, m); err != nil {
+	if err := d.sendMessage(gtm.c.Addr, m); err != nil {
 		logger.WithError(err).WithFields(fields).Error("Send GiveTxnsMessage")
 	}
 }
@@ -835,7 +831,7 @@ func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) 
 
 // process process message
 func (gtm *GiveTxnsMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
@@ -860,12 +856,15 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 		hashes = append(hashes, txn.Hash())
 	}
 
+	if len(hashes) == 0 {
+		return
+	}
+
 	// Announce these transactions to peers
-	if len(hashes) != 0 {
-		logger.Debugf("Announce %d transactions", len(hashes))
-		m := NewAnnounceTxnsMessage(hashes)
-		if err := d.BroadcastMessage(m); err != nil {
-			logger.WithError(err).Warning("Broadcast AnnounceTxnsMessage failed")
-		}
+	m := NewAnnounceTxnsMessage(hashes)
+	if n, err := d.broadcastMessage(m); err != nil {
+		logger.WithError(err).Warning("Broadcast AnnounceTxnsMessage failed")
+	} else {
+		logger.Debugf("Announced %d transactions to %d peers", len(hashes), n)
 	}
 }

@@ -125,6 +125,30 @@ func newConnection(dc *connection, gc *gnet.Connection, pp *pex.Peer) Connection
 	return c
 }
 
+// newConnection creates a Connection from daemon.connection, gnet.Connection and pex.Peer
+func (gw *Gateway) newConnection(c *connection) (*Connection, error) {
+	if c == nil {
+		return nil, nil
+	}
+
+	gc, err := gw.d.pool.Pool.GetConnection(c.Addr)
+	if err != nil {
+		return nil, err
+	}
+
+	var pp *pex.Peer
+	listenAddr := c.ListenAddr()
+	if listenAddr != "" {
+		p, ok := gw.d.pex.GetPeer(listenAddr)
+		if ok {
+			pp = &p
+		}
+	}
+
+	cc := newConnection(c, gc, pp)
+	return &cc, nil
+}
+
 // GetConnections returns solicited (outgoing) connections
 func (gw *Gateway) GetConnections(f func(c Connection) bool) ([]Connection, error) {
 	var conns []Connection
@@ -189,30 +213,6 @@ func (gw *Gateway) GetConnection(addr string) (*Connection, error) {
 	}
 
 	return gw.newConnection(c)
-}
-
-// newConnection creates a Connection from daemon.connection, gnet.Connection and pex.Peer
-func (gw *Gateway) newConnection(c *connection) (*Connection, error) {
-	if c == nil {
-		return nil, nil
-	}
-
-	gc, err := gw.d.pool.Pool.GetConnection(c.Addr)
-	if err != nil {
-		return nil, err
-	}
-
-	var pp *pex.Peer
-	listenAddr := c.ListenAddr()
-	if listenAddr != "" {
-		p, ok := gw.d.pex.GetPeer(listenAddr)
-		if ok {
-			pp = &p
-		}
-	}
-
-	cc := newConnection(c, gc, pp)
-	return &cc, nil
 }
 
 // Disconnect disconnects a connection by gnet ID

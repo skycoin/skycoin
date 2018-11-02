@@ -274,21 +274,21 @@ func TestIntroductionMessage(t *testing.T) {
 			tc.intro.c = mc
 
 			d := &mockDaemoner{}
-			d.On("DaemonConfig").Return(DaemonConfig{
+			d.On("daemonConfig").Return(DaemonConfig{
 				ProtocolVersion:    int32(tc.mockValue.protocolVersion),
 				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion),
 				UserAgent: useragent.Data{
 					Coin:    "skycoin",
 					Version: "0.24.1",
 				},
+				Mirror:           tc.mockValue.mirror,
+				BlockchainPubkey: tc.mockValue.pubkey,
 			})
-			d.On("Mirror").Return(tc.mockValue.mirror)
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
-			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, tc.intro, mock.Anything).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
-			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
-			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
+			d.On("requestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
+			d.On("announceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
 
 			err := tc.intro.Handle(mc, d)
 			require.NoError(t, err)

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -232,12 +233,7 @@ type daemoner interface {
 	Disconnect(addr string, r gnet.DisconnectReason) error
 	DisconnectNow(addr string, r gnet.DisconnectReason) error
 	PexConfig() pex.Config
-	RandomExchangeable(n int) pex.Peers
-	AddPeer(addr string) error
 	AddPeers(addrs []string) int
-	SetHasIncomingPort(addr string) error
-	IncreaseRetryTimes(addr string)
-	ResetRetryTimes(addr string)
 	RecordPeerHeight(addr string, gnetID, height uint64)
 	GetSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error)
 	HeadBkSeq() (uint64, bool, error)
@@ -250,10 +246,10 @@ type daemoner interface {
 	BlockchainPubkey() cipher.PubKey
 	RequestBlocksFromAddr(addr string) error
 	AnnounceAllTxns() error
-	RecordUserAgent(addr string, userAgent useragent.Data) error
 
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
 	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error)
+	sendRandomPeers(addr string) error
 }
 
 // Daemon stateful properties of the daemon
@@ -829,15 +825,15 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 		return
 	}
 
-	// The first message received must be an IntroductionMessage
+	// The first message received must be INTR, DISC or GIVP
 	if !c.HasIntroduced() {
 		switch e.Message.(type) {
-		case *IntroductionMessage, *DisconnectMessage:
+		case *IntroductionMessage, *DisconnectMessage, *GivePeersMessage:
 		default:
 			logger.WithFields(logrus.Fields{
 				"addr":        e.Context.Addr,
 				"messageType": fmt.Sprintf("%T", e.Message),
-			}).Info("needsIntro but first message is not INTR or DISC")
+			}).Info("needsIntro but first message is not INTR, DISC or GIVP")
 			if err := dm.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
 				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
 			}
@@ -914,12 +910,12 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 	case ErrDisconnectNoIntroduction,
 		ErrDisconnectVersionNotSupported,
 		ErrDisconnectSelf:
-		dm.IncreaseRetryTimes(e.Addr)
-	}
-
-	switch e.Reason.Error() {
-	case "read failed: EOF":
-		dm.IncreaseRetryTimes(e.Addr)
+		dm.pex.IncreaseRetryTimes(e.Addr)
+	default:
+		switch e.Reason.Error() {
+		case "read failed: EOF":
+			dm.pex.IncreaseRetryTimes(e.Addr)
+		}
 	}
 }
 
@@ -934,6 +930,10 @@ func (dm *Daemon) onConnectFailure(c ConnectFailureEvent) {
 	// If this happens, it is a bug, and the connections state may be corrupted.
 	if err := dm.connections.remove(c.Addr, 0); err != nil {
 		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
+	}
+
+	if strings.HasSuffix(c.Error.Error(), "connect: connection refused") {
+		dm.pex.IncreaseRetryTimes(c.Addr)
 	}
 }
 
@@ -1232,8 +1232,58 @@ func (dm *Daemon) BlockchainPubkey() cipher.PubKey {
 }
 
 // connectionIntroduced transfers a connection to the "introduced" state in the connections state machine
+// and updates other state
 func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
-	return dm.connections.introduced(addr, gnetID, m, userAgent)
+	c, err := dm.connections.introduced(addr, gnetID, m, userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	listenAddr := c.ListenAddr()
+
+	fields := logrus.Fields{
+		"addr":       addr,
+		"gnetID":     m.c.ConnID,
+		"connGnetID": c.gnetID,
+		"listenPort": m.ListenPort,
+		"listenAddr": listenAddr,
+	}
+
+	if c.Outgoing {
+		// For successful outgoing connections, mark the peer as having an incoming port in the pex peerlist
+		// The peer should already be in the peerlist, since we use the peerlist to choose an outgoing connection to make
+		if err := dm.pex.SetHasIncomingPort(listenAddr, true); err != nil {
+			logger.Critical().WithError(err).WithFields(fields).Error("pex.SetHasIncomingPort failed")
+			return nil, err
+		}
+	} else {
+		// For successful incoming connections, add the peer to the peer list, with their self-reported listen port
+		if err := dm.pex.AddPeer(listenAddr); err != nil {
+			logger.Critical().WithError(err).WithFields(fields).Error("pex.AddPeer failed")
+			return nil, err
+		}
+	}
+
+	if err := dm.pex.SetUserAgent(listenAddr, c.UserAgent); err != nil {
+		logger.Critical().WithError(err).WithFields(fields).Error("pex.SetUserAgent failed")
+		return nil, err
+	}
+
+	dm.pex.ResetRetryTimes(listenAddr)
+
+	return c, nil
+}
+
+// sendRandomPeers sends a random sample of peers to another peer
+func (dm *Daemon) sendRandomPeers(addr string) error {
+	peers := dm.pex.RandomExchangeable(dm.pex.Config.ReplyCount)
+	if len(peers) == 0 {
+		logger.Debug("sendRandomPeers: no peers to send in reply")
+		return errors.New("No peers available")
+	}
+
+	m := NewGivePeersMessage(peers)
+	return dm.SendMessage(addr, m)
 }
 
 // Implements pooler interface
@@ -1279,39 +1329,14 @@ func (dm *Daemon) DisconnectNow(addr string, r gnet.DisconnectReason) error {
 
 // Implements pexer interface
 
-// RandomExchangeable returns N random exchangeable peers
-func (dm *Daemon) RandomExchangeable(n int) pex.Peers {
-	return dm.pex.RandomExchangeable(n)
-}
-
 // PexConfig returns the pex config
 func (dm *Daemon) PexConfig() pex.Config {
 	return dm.pex.Config
 }
 
-// AddPeer adds peer to the pex
-func (dm *Daemon) AddPeer(addr string) error {
-	return dm.pex.AddPeer(addr)
-}
-
 // AddPeers adds peers to the pex
 func (dm *Daemon) AddPeers(addrs []string) int {
 	return dm.pex.AddPeers(addrs)
-}
-
-// SetHasIncomingPort sets the peer public peer
-func (dm *Daemon) SetHasIncomingPort(addr string) error {
-	return dm.pex.SetHasIncomingPort(addr, true)
-}
-
-// RecordUserAgent sets the peer's user agent
-func (dm *Daemon) RecordUserAgent(addr string, userAgent useragent.Data) error {
-	return dm.pex.SetUserAgent(addr, userAgent)
-}
-
-// IncreaseRetryTimes increases the retry times of given peer
-func (dm *Daemon) IncreaseRetryTimes(addr string) {
-	dm.pex.IncreaseRetryTimes(addr)
 }
 
 // ResetRetryTimes reset the retry times of given peer

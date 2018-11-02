@@ -27,18 +27,14 @@ func TestIntroductionMessage(t *testing.T) {
 		protocolVersion          uint32
 		minProtocolVersion       uint32
 		mirror                   uint32
-		setHasIncomingPortErr    error
 		recordMessageEventErr    error
 		pubkey                   cipher.PubKey
 		disconnectReason         gnet.DisconnectReason
 		disconnectErr            error
-		addPeerArg               string
-		addPeerErr               error
 		connectionIntroduced     *connection
 		connectionIntroducedErr  error
 		requestBlocksFromAddrErr error
 		announceAllTxnsErr       error
-		recordUserAgentErr       error
 	}
 
 	tt := []struct {
@@ -62,8 +58,6 @@ func TestIntroductionMessage(t *testing.T) {
 						Outgoing:   true,
 					},
 				},
-				addPeerArg: "121.121.121.121:6000",
-				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -104,8 +98,6 @@ func TestIntroductionMessage(t *testing.T) {
 						},
 					},
 				},
-				addPeerArg: "121.121.121.121:6000",
-				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -131,8 +123,6 @@ func TestIntroductionMessage(t *testing.T) {
 						},
 					},
 				},
-				addPeerArg: "121.121.121.121:6000",
-				addPeerErr: nil,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -236,8 +226,6 @@ func TestIntroductionMessage(t *testing.T) {
 				mirror:          10000,
 				protocolVersion: 1,
 				pubkey:          pubkey,
-				addPeerArg:      "121.121.121.121:6000",
-				addPeerErr:      nil,
 				connectionIntroduced: &connection{
 					Addr: "121.121.121.121:12345",
 					ConnectionDetails: ConnectionDetails{
@@ -295,23 +283,12 @@ func TestIntroductionMessage(t *testing.T) {
 				},
 			})
 			d.On("Mirror").Return(tc.mockValue.mirror)
-			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
-			d.On("ResetRetryTimes", tc.addr)
 			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
-			d.On("IncreaseRetryTimes", tc.addr)
-			d.On("RemoveFromExpectingIntroductions", tc.addr)
-			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, tc.intro, mock.Anything).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
 			d.On("RequestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
 			d.On("AnnounceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
-
-			var userAgent useragent.Data
-			if tc.mockValue.connectionIntroduced != nil {
-				userAgent = tc.mockValue.connectionIntroduced.UserAgent
-			}
-			d.On("RecordUserAgent", tc.mockValue.addPeerArg, userAgent).Return(tc.mockValue.recordUserAgentErr)
 
 			err := tc.intro.Handle(mc, d)
 			require.NoError(t, err)

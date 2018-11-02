@@ -113,7 +113,7 @@ Test(coin_transaction, TestTransactionVerify)
   ptx = makeTransaction(&handle);
   memset(ptx->Sigs.data, 0, sizeof(cipher__Sig));
   result = SKY_coin_Transaction_Verify(handle);
-  cr_assert(result == SKY_ErrInvalidSigForPubKey);
+  cr_assert(result == SKY_ErrInvalidSigPubKeyRecovery);
 
   // Output coins are 0
   ptx = makeTransaction(&handle);
@@ -482,14 +482,14 @@ Test(coin_transactions, TestTransactionSignInputs, SKY_ABORT)
   result = SKY_cipher_AddSHA256(&hash, ((cipher__SHA256 *)ptx->In.data) + 1,
                                 &addHash2);
   cr_assert(result == SKY_OK);
-  result = SKY_cipher_ChkSig(&addr, &addHash, (cipher__Sig *)ptx->Sigs.data);
+  result = SKY_cipher_VerifyAddressSignedHash(&addr, &addHash, (cipher__Sig *)ptx->Sigs.data);
   cr_assert(result == SKY_OK);
   result =
-      SKY_cipher_ChkSig(&addr2, &addHash2, ((cipher__Sig *)ptx->Sigs.data) + 1);
+      SKY_cipher_VerifyAddressSignedHash(&addr2, &addHash2, ((cipher__Sig *)ptx->Sigs.data) + 1);
   cr_assert(result == SKY_OK);
-  result = SKY_cipher_ChkSig(&addr, &hash, ((cipher__Sig *)ptx->Sigs.data) + 1);
+  result = SKY_cipher_VerifyAddressSignedHash(&addr, &hash, ((cipher__Sig *)ptx->Sigs.data) + 1);
   cr_assert(result == SKY_ERROR);
-  result = SKY_cipher_ChkSig(&addr2, &hash, (cipher__Sig *)ptx->Sigs.data);
+  result = SKY_cipher_VerifyAddressSignedHash(&addr2, &hash, (cipher__Sig *)ptx->Sigs.data);
   cr_assert(result == SKY_ERROR);
 }
 

@@ -411,7 +411,7 @@ func (dm *Daemon) Run() error {
 
 	blockInterval := time.Duration(dm.Config.BlockCreationInterval)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	if !dm.visor.Config.IsMaster {
+	if !dm.visor.Config.IsBlockPublisher {
 		blockCreationTicker.Stop()
 	}
 
@@ -575,9 +575,9 @@ loop:
 			}
 
 		case <-blockCreationTicker.C:
-			// Create blocks, if master chain
+			// Create blocks, if block publisher
 			elapser.Register("blockCreationTicker.C")
-			if dm.visor.Config.IsMaster {
+			if dm.visor.Config.IsBlockPublisher {
 				sb, err := dm.createAndPublishBlock()
 				if err != nil {
 					logger.WithError(err).Error("Failed to create and publish block")
@@ -1070,7 +1070,7 @@ func (dm *Daemon) announceTxns(txns []cipher.SHA256) error {
 }
 
 // createAndPublishBlock creates a block from unconfirmed transactions and sends it to the network.
-// Will panic if not running as a master chain.
+// Will panic if not running as a block publisher.
 // Will not create a block if outgoing connections are disabled.
 // If the block was created but the broadcast failed, the error will be non-nil but the
 // SignedBlock value will not be empty.

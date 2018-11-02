@@ -375,7 +375,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.config.Node.OutgoingConnectionsRate
-	dc.Visor.IsMaster = c.config.Node.RunMaster
+	dc.Visor.IsBlockPublisher = c.config.Node.RunBlockPublisher
 
 	dc.Visor.BlockchainPubkey = c.config.Node.blockchainPubkey
 	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey

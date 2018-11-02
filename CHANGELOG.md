@@ -410,7 +410,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - #383 Error during installation from skycoin source code
 - #375 Node can't recovery from zero connections
 - #376 Explorer api `/explorer/address` does not return spend transactions
-- #373 Master node will be closed if there're no transactions need to execute
+- #373 Block publisher node will be closed if there're no transactions need to execute
 - #360 Node will crash when do ctrl+c while downloading blocks
 - #350 Wallet name always 'undefined' after loading wallet from seed
 

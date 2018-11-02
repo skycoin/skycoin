@@ -158,7 +158,7 @@ type NodeConfig struct {
 	// Load custom peers from disk
 	CustomPeersFile string
 
-	RunMaster bool
+	RunBlockPublisher bool
 
 	/* Developer options */
 
@@ -282,7 +282,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		HTTPIdleTimeout:  time.Second * 120,
 
 		// Centralized network configuration
-		RunMaster: false,
+		RunBlockPublisher: false,
 		/* Developer options */
 
 		// Enable cpu profiling
@@ -358,8 +358,8 @@ func (c *Config) postProcess() error {
 		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
 	}
 
-	if c.Node.RunMaster {
-		// Run in arbitrating mode if the node is master
+	if c.Node.RunBlockPublisher {
+		// Run in arbitrating mode if the node is block publisher
 		c.Node.Arbitrating = true
 	}
 
@@ -563,14 +563,14 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
 
 	// Key Configuration Data
-	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
+	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 
 	flag.IntVar(&c.MaxBlockSize, "max-block-size", c.MaxBlockSize, "maximum size of blocks")
 	flag.Uint64Var(&c.UnconfirmedBurnFactor, "burn-factor-unconfirmed", c.UnconfirmedBurnFactor, "coinhour burn factor to apply when verifying unconfirmed transactions")
 	flag.Uint64Var(&c.CreateBlockBurnFactor, "burn-factor-create-block", c.CreateBlockBurnFactor, "coinhour burn factor to apply to transactions when creating blocks")
 
-	flag.StringVar(&c.BlockchainPubkeyStr, "master-public-key", c.BlockchainPubkeyStr, "public key of the master chain")
-	flag.StringVar(&c.BlockchainSeckeyStr, "master-secret-key", c.BlockchainSeckeyStr, "secret key, set for master")
+	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
+	flag.StringVar(&c.BlockchainSeckeyStr, "blockchain-secret-key", c.BlockchainSeckeyStr, "secret key of the blockchain")
 
 	flag.StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
 	flag.StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")

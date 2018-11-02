@@ -103,7 +103,7 @@ func CreateBuckets(db *dbutil.DB) error {
 
 // BlockchainConfig configures Blockchain options
 type BlockchainConfig struct {
-	// Arbitrating mode: if in arbitrating mode, when master node execute blocks,
+	// Arbitrating mode: if in arbitrating mode, when block publishing node execute blocks,
 	// the invalid transaction will be skipped and continue the next; otherwise,
 	// node will throw the error and return.
 	Arbitrating bool

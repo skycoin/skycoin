@@ -278,7 +278,7 @@ func TestVisorCreateBlock(t *testing.T) {
 
 	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = false
+	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
@@ -290,8 +290,8 @@ func TestVisorCreateBlock(t *testing.T) {
 		history:     his,
 	}
 
-	// CreateBlock panics if called when not master
-	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
+	// CreateBlock panics if called when not a block publisher
+	_require.PanicsWithLogMessage(t, "Only a block publisher node can create blocks", func() {
 		err := db.Update("", func(tx *dbutil.Tx) error {
 			_, err := v.createBlock(tx, when)
 			return err
@@ -299,7 +299,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	v.Config.IsMaster = true
+	v.Config.IsBlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
 
 	addGenesisBlockToVisor(t, v)
@@ -499,7 +499,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = false
+	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
@@ -511,8 +511,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 		history:     his,
 	}
 
-	// CreateBlock panics if called when not master
-	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
+	// CreateBlock panics if called when not a block publisher
+	_require.PanicsWithLogMessage(t, "Only a block publisher node can create blocks", func() {
 		err := db.Update("", func(tx *dbutil.Tx) error {
 			_, err := v.createBlock(tx, when)
 			return err
@@ -520,7 +520,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	v.Config.IsMaster = true
+	v.Config.IsBlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
 
 	addGenesisBlockToVisor(t, v)
@@ -1922,7 +1922,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 
 	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = true
+	cfg.IsBlockPublisher = true
 	cfg.BlockchainSeckey = genSecret
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
@@ -2052,7 +2052,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = true
+	cfg.IsBlockPublisher = true
 	cfg.Arbitrating = true
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress

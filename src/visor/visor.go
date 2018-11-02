@@ -36,13 +36,13 @@ var (
 
 // Config configuration parameters for the Visor
 type Config struct {
-	// Is this the master blockchain
-	IsMaster bool
+	// Is this a block publishing node
+	IsBlockPublisher bool
 
-	// Public key of blockchain authority
+	// Public key of the blockchain
 	BlockchainPubkey cipher.PubKey
 
-	// Secret key of blockchain authority (if master)
+	// Secret key of the blockchain (required if block publisher)
 	BlockchainSeckey cipher.SecKey
 
 	// Maximum size of a block, in bytes.
@@ -83,7 +83,7 @@ type Config struct {
 // NewConfig creates Config
 func NewConfig() Config {
 	c := Config{
-		IsMaster: false,
+		IsBlockPublisher: false,
 
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
@@ -103,9 +103,9 @@ func NewConfig() Config {
 
 // Verify verifies the configuration
 func (c Config) Verify() error {
-	if c.IsMaster {
+	if c.IsBlockPublisher {
 		if c.BlockchainPubkey != cipher.MustPubKeyFromSecKey(c.BlockchainSeckey) {
-			return errors.New("Cannot run in master: invalid seckey for pubkey")
+			return errors.New("Cannot run as block publisher: invalid seckey for pubkey")
 		}
 	}
 
@@ -184,7 +184,7 @@ type UnconfirmedTransactionPooler interface {
 	Len(tx *dbutil.Tx) (uint64, error)
 }
 
-// Visor manages the Blockchain as both a Master and a Normal
+// Visor manages the blockchain
 type Visor struct {
 	Config      Config
 	DB          *dbutil.DB
@@ -199,8 +199,8 @@ type Visor struct {
 // NewVisor creates a Visor for managing the blockchain database
 func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	logger.Info("Creating new visor")
-	if c.IsMaster {
-		logger.Info("Visor is master")
+	if c.IsBlockPublisher {
+		logger.Info("Visor running in block publisher mode")
 	}
 
 	if err := c.Verify(); err != nil {
@@ -377,7 +377,7 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 
 	var sb coin.SignedBlock
 	// record the signature of genesis block
-	if vs.Config.IsMaster {
+	if vs.Config.IsBlockPublisher {
 		sb = vs.signBlock(*b)
 		logger.Infof("Genesis block signature=%s", sb.Sig.Hex())
 	} else {
@@ -432,8 +432,8 @@ func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
 
 // CreateBlock creates a SignedBlock from pending transactions
 func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, error) {
-	if !vs.Config.IsMaster {
-		logger.Panic("Only master chain can create blocks")
+	if !vs.Config.IsBlockPublisher {
+		logger.Panic("Only a block publisher node can create blocks")
 	}
 
 	// Gather all unconfirmed transactions
@@ -519,7 +519,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 }
 
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
-// Blocks must be executed in sequence, and be signed by the master server
+// Blocks must be executed in sequence, and be signed by a block publisher node
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	return vs.DB.Update("ExecuteSignedBlock", func(tx *dbutil.Tx) error {
 		return vs.executeSignedBlock(tx, b)
@@ -527,7 +527,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 }
 
 // executeSignedBlock adds a block to the blockchain, or returns error.
-// Blocks must be executed in sequence, and be signed by the master server
+// Blocks must be executed in sequence, and be signed by a block publisher node
 func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 		return err
@@ -551,10 +551,10 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	return vs.history.ParseBlock(tx, b.Block)
 }
 
-// signBlock signs a block for master.  Will panic if anything is invalid
+// signBlock signs a block for a block publisher node. Will panic if anything is invalid
 func (vs *Visor) signBlock(b coin.Block) coin.SignedBlock {
-	if !vs.Config.IsMaster {
-		logger.Panic("Only master chain can sign blocks")
+	if !vs.Config.IsBlockPublisher {
+		logger.Panic("Only a block publisher node can sign blocks")
 	}
 
 	sig := cipher.MustSignHash(b.HashHeader(), vs.Config.BlockchainSeckey)

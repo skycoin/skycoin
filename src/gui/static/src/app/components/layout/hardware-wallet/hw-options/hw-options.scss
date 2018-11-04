@@ -1,0 +1,21 @@
+@import '../../../../../theme/variables';
+
+.buttons-container {
+  
+  button {
+    width: 100%;
+    text-align: left;
+    padding: 10px 10px;
+    border-bottom: 1px solid #eff0f0;
+
+    &:first-child {
+      border-top: 1px solid #eff0f0;
+    }
+
+    .label {
+      font-size: 13px;
+      line-height: 22px;
+      color: $black;
+    }
+  }
+}

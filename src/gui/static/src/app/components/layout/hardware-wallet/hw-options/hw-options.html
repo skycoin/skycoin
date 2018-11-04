@@ -1,0 +1,19 @@
+<app-modal [headline]="'Hardware Wallet'" [dialog]="dialogRef">
+  <div *ngIf="currentState === states.Disconnected">No hardware wallet connected</div>
+  <div *ngIf="currentState === states.Processing">Please wait...</div>
+
+  <div *ngIf="currentState === states.NewConnected || currentState === states.ConfiguredConnected">
+    <div *ngIf="currentState === states.NewConnected">An unconfigured wallet has been detected. Please, give it a seed.</div>
+    <div *ngIf="currentState === states.ConfiguredConnected">Hardware wallet detected. The first address of the wallet is: {{ walletAddress }}. Use the following options to configure your hardware wallet.</div>
+
+    <div class="buttons-container select-address-theme">
+      <button mat-button color="primary" (click)="setMnemonic()">
+        <div class="label" *ngIf="currentState === states.NewConnected">Set seed</div>
+        <div class="label" *ngIf="currentState === states.ConfiguredConnected">Change seed</div>
+      </button>
+      <button mat-button color="primary" (click)="wipe()" *ngIf="currentState === states.ConfiguredConnected">
+        <div class="label">Wipe</div>
+      </button>
+    </div>
+  </div>
+</app-modal>

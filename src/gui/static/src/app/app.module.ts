@@ -75,6 +75,10 @@ import { NumberOfAddressesComponent } from './components/pages/wallets/number-of
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
+import { HwWalletService } from './services/hw-wallet.service';
+import { HwWalletOptionsComponent } from './components/layout/hardware-wallet/hw-options/hw-options';
+import { HwWipeDialogComponent } from './components/layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog';
+import { HwSeedDialogComponent } from './components/layout/hardware-wallet/hw-seed-dialog/hw-seed-dialog';
 
 
 const ROUTES = [
@@ -182,6 +186,9 @@ const ROUTES = [
     SelectAddressComponent,
     CreateWalletFormComponent,
     ResetPasswordComponent,
+    HwWalletOptionsComponent,
+    HwWipeDialogComponent,
+    HwSeedDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -195,6 +202,9 @@ const ROUTES = [
     SeedModalComponent,
     NumberOfAddressesComponent,
     SelectAddressComponent,
+    HwWalletOptionsComponent,
+    HwWipeDialogComponent,
+    HwSeedDialogComponent,
   ],
   imports: [
     BrowserModule,
@@ -238,6 +248,7 @@ const ROUTES = [
     PurchaseService,
     WalletService,
     WizardGuardService,
+    HwWalletService,
   ],
   bootstrap: [AppComponent],
 })

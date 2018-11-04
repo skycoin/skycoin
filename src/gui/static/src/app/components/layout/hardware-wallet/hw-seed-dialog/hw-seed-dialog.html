@@ -1,0 +1,22 @@
+<app-modal [headline]="'Dialog'" [dialog]="dialogRef">
+  <div *ngIf="currentState === states.Initial">
+    <div [formGroup]="form">
+      <div class="form-field">
+        <label for="seed">{{ 'seed' }}</label>
+        <textarea formControlName="seed" id="seed" row="2"></textarea>
+      </div>
+    </div>
+    <div class="-buttons">
+      <app-button (action)="closePopup()">
+        {{ 'cancel' }}
+      </app-button>
+      <app-button (action)="setSeed()" class="primary" [disabled]="!form.valid" #button>
+        {{ 'continue' }}
+      </app-button>
+    </div>
+  </div>
+
+  <div *ngIf="currentState === states.Processing">Please, confirm the operation in the hardware wallet</div>
+  <div *ngIf="currentState === states.Finalized">Operation completed</div>
+  <div *ngIf="currentState === states.Failed">Error</div>
+</app-modal>

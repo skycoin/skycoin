@@ -368,10 +368,35 @@ app.on('web-contents-created', (event, contents) => {
   });
 });
 
+deviceWallet.setDeviceType(deviceWallet.DeviceTypeEnum.USB);
 ipcMain.on('hwCompatibilityActivated', (event) => {
   event.returnValue = hw;
 });
 
 ipcMain.on('hwGetDevice', (event) => {
   event.returnValue = deviceWallet.getDevice();
+});
+
+ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex) => {
+  const promise = deviceWallet.devAddressGenPinCode(addressN, startIndex);
+  promise.then(
+    addresses => { console.log("Addresses promise resolved", addresses); event.sender.send('hwGetAddressesResponse', requestId, addresses); },
+    error => { console.log("Addresses promise errored: ", error); event.sender.send('hwGetAddressesResponse', requestId, { error: error.toString() }); }
+  );
+});
+
+ipcMain.on('hwSetMnemonic', (event, requestId, mnemonic) => {
+  const promise = deviceWallet.devSetMnemonic(mnemonic);
+  promise.then(
+    result => { console.log("Mnemonic promise resolved", result); event.sender.send('hwSetMnemonicResponse', requestId, result); },
+    error => { console.log("Mnemonic promise errored: ", error); event.sender.send('hwSetMnemonicResponse', requestId, { error: error.toString() }); }
+  );
+});
+
+ipcMain.on('hwWipe', (event, requestId) => {
+  const promise = deviceWallet.devWipeDevice();
+  promise.then(
+    result => { console.log("Wipe promise resolved", result); event.sender.send('hwWipeResponse', requestId, result); },
+    error => { console.log("Wipe promise errored: ", error); event.sender.send('hwWipeResponse', requestId, { error: error.toString() }); }
+  );
 });

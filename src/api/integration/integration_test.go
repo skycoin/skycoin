@@ -3863,7 +3863,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
-	remainingHours := fee.RemainingHours(totalHours, params.CoinHourBurnFactor)
+	remainingHours := fee.RemainingHours(totalHours, params.UserBurnFactor)
 	require.True(t, remainingHours > 1)
 
 	addresses := make([]string, len(w.Entries))
@@ -4619,7 +4619,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		return
 	}
 
-	remainingHours := fee.RemainingHours(totalHours, params.CoinHourBurnFactor)
+	remainingHours := fee.RemainingHours(totalHours, params.UserBurnFactor)
 	require.True(t, remainingHours > 1)
 
 	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *api.CreateTransactionResponse) {
@@ -4650,7 +4650,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		tLog(t, "totalCoins", totalCoins)
 		tLog(t, "totalHours", totalHours)
 
-		spendableHours := fee.RemainingHours(totalHours, params.CoinHourBurnFactor)
+		spendableHours := fee.RemainingHours(totalHours, params.UserBurnFactor)
 		tLog(t, "spendableHours", spendableHours)
 
 		coins := rand.Intn(int(totalCoins)) + 1

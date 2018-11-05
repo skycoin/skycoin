@@ -91,9 +91,9 @@ func NewConfig() Config {
 		BlockchainSeckey: cipher.SecKey{},
 
 		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
-		MaxBlockSize:                  32 * 1024,
-		UnconfirmedBurnFactor:         params.CoinHourBurnFactor,
-		CreateBlockBurnFactor:         params.CoinHourBurnFactor,
+		MaxBlockSize:                  params.MaxUserTransactionSize,
+		UnconfirmedBurnFactor:         params.UserBurnFactor,
+		CreateBlockBurnFactor:         params.UserBurnFactor,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -112,12 +112,12 @@ func (c Config) Verify() error {
 		}
 	}
 
-	if c.UnconfirmedBurnFactor < params.CoinHourBurnFactor {
-		return fmt.Errorf("UnconfirmedBurnFactor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
+	if c.UnconfirmedBurnFactor < params.UserBurnFactor {
+		return fmt.Errorf("UnconfirmedBurnFactor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
 	}
 
-	if c.CreateBlockBurnFactor < params.CoinHourBurnFactor {
-		return fmt.Errorf("CreateBlockBurnFactor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
+	if c.CreateBlockBurnFactor < params.UserBurnFactor {
+		return fmt.Errorf("CreateBlockBurnFactor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
 	}
 
 	if c.MaxBlockSize <= 0 {
@@ -923,7 +923,7 @@ func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, error) {
 
 	if err := vs.DB.Update("InjectUserTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, err = vs.InjectTransactionUserTx(tx, txn)
+		known, err = vs.InjectUserTransactionTx(tx, txn)
 		return err
 	}); err != nil {
 		return false, err
@@ -932,21 +932,21 @@ func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, error) {
 	return known, nil
 }
 
-// InjectTransactionUserTx records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
+// InjectUserTransactionTx records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
 // This method is only exported for use by the daemon gateway's InjectBroadcastTransaction method.
-func (vs *Visor) InjectTransactionUserTx(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
+func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
 	if err := VerifySingleTxnUserConstraints(txn); err != nil {
 		return false, err
 	}
 
-	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.MaxUserTransactionSize, params.CoinHourBurnFactor); err != nil {
+	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
 		return false, err
 	}
 
-	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.MaxUserTransactionSize, params.CoinHourBurnFactor)
+	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.MaxUserTransactionSize, params.UserBurnFactor)
 	if softErr != nil {
 		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
@@ -1903,11 +1903,11 @@ func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTransaction,
 	return txn, nil
 }
 
-// FilterUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
-func (vs *Visor) FilterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+// FilterKnownUnconfirmed returns unconfirmed txn hashes with known ones removed
+func (vs *Visor) FilterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 
-	if err := vs.DB.View("FilterUnconfirmedKnown", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("FilterKnownUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
 		hashes, err = vs.Unconfirmed.FilterKnown(tx, txns)
 		return err
@@ -1918,11 +1918,11 @@ func (vs *Visor) FilterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, 
 	return hashes, nil
 }
 
-// GetUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
-func (vs *Visor) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error) {
+// GetKnownUnconfirmed returns unconfirmed txn hashes with known ones removed
+func (vs *Visor) GetKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error) {
 	var hashes coin.Transactions
 
-	if err := vs.DB.View("GetUnconfirmedKnown", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("GetKnownUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
 		hashes, err = vs.Unconfirmed.GetKnown(tx, txns)
 		return err
@@ -2209,7 +2209,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.MaxUserTransactionSize, params.CoinHourBurnFactor); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
 			return err
 		}
 

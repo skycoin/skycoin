@@ -164,7 +164,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 
 	tested := false
 	for _, tcc := range cases {
-		if tcc.burnFactor == params.CoinHourBurnFactor {
+		if tcc.burnFactor == params.UserBurnFactor {
 			tested = true
 		}
 
@@ -183,7 +183,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 		}
 	}
 
-	require.True(t, tested, "configured params.CoinHourBurnFactor=%d has not been tested", params.CoinHourBurnFactor)
+	require.True(t, tested, "configured params.UserBurnFactor=%d has not been tested", params.UserBurnFactor)
 }
 
 type requiredFeeTestCase struct {
@@ -257,7 +257,7 @@ func TestRequiredFee(t *testing.T) {
 
 	tested := false
 	for _, tcc := range cases {
-		if tcc.burnFactor == params.CoinHourBurnFactor {
+		if tcc.burnFactor == params.UserBurnFactor {
 			tested = true
 		}
 
@@ -273,7 +273,7 @@ func TestRequiredFee(t *testing.T) {
 		}
 	}
 
-	require.True(t, tested, "configured params.CoinHourBurnFactor=%d has not been tested", params.CoinHourBurnFactor)
+	require.True(t, tested, "configured params.UserBurnFactor=%d has not been tested", params.UserBurnFactor)
 }
 
 func TestTransactionFee(t *testing.T) {

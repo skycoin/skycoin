@@ -270,9 +270,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 
 		// Blockchain/transaction validation
 		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
-		MaxBlockSize:                  32 * 1024,
-		UnconfirmedBurnFactor:         params.CoinHourBurnFactor,
-		CreateBlockBurnFactor:         params.CoinHourBurnFactor,
+		MaxBlockSize:                  params.MaxUserTransactionSize,
+		UnconfirmedBurnFactor:         params.UserBurnFactor,
+		CreateBlockBurnFactor:         params.UserBurnFactor,
 
 		// Wallets
 		WalletDirectory:  "",
@@ -284,9 +284,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		HTTPWriteTimeout: time.Second * 60,
 		HTTPIdleTimeout:  time.Second * 120,
 
-		// Centralized network configuration
 		RunBlockPublisher: false,
-		/* Developer options */
 
 		// Enable cpu profiling
 		ProfileCPU: false,
@@ -306,7 +304,8 @@ func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
 		fmt.Println("Additional environment variables:")
-		fmt.Println("* COINHOUR_BURN_FACTOR - Set the coin hour burn factor required for transactions. Must be > 1.")
+		fmt.Println("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be > 1.")
+		fmt.Println("* MAX_USER_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be > 183.")
 		os.Exit(0)
 	}
 
@@ -414,27 +413,29 @@ func (c *Config) postProcess() error {
 	if c.Node.MaxBlockSize <= 0 {
 		return errors.New("-block-size must be > 0")
 	}
+	if c.Node.MaxBlockSize < params.MaxUserTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
+	}
 
 	if c.Node.MaxUnconfirmedTransactionSize <= 0 {
 		return errors.New("-unconfirmed-txn-size must be > 0")
+	}
+	if c.Node.MaxUnconfirmedTransactionSize < params.MaxUserTransactionSize {
+		return fmt.Errorf("-unconfirmed-txn-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
 	}
 
 	if c.Node.UnconfirmedBurnFactor < 2 {
 		return errors.New("-unconfirmed-burn-factor must be >= 2")
 	}
-	if c.Node.UnconfirmedBurnFactor < params.CoinHourBurnFactor {
-		return fmt.Errorf("-unconfirmed-burn-factor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
-	}
-
-	if c.Node.MaxBlockSize < params.MaxUserTransactionSize {
-		return fmt.Errorf("-max-block-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
+	if c.Node.UnconfirmedBurnFactor < params.UserBurnFactor {
+		return fmt.Errorf("-unconfirmed-burn-factor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
 	}
 
 	if c.Node.CreateBlockBurnFactor < 2 {
 		return errors.New("-create-block-burn-factor must be >= 2")
 	}
-	if c.Node.CreateBlockBurnFactor < params.CoinHourBurnFactor {
-		return fmt.Errorf("-create-block-burn-factor must be >= params.CoinHourBurnFactor (%d)", params.CoinHourBurnFactor)
+	if c.Node.CreateBlockBurnFactor < params.UserBurnFactor {
+		return fmt.Errorf("-create-block-burn-factor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
 	}
 
 	return nil
@@ -575,8 +576,8 @@ func (c *NodeConfig) RegisterFlags() {
 
 	flag.IntVar(&c.MaxUnconfirmedTransactionSize, "unconfirmed-txn-size", c.MaxUnconfirmedTransactionSize, "maximum size of an unconfirmed transaction")
 	flag.IntVar(&c.MaxBlockSize, "block-size", c.MaxBlockSize, "maximum size of a block")
-	flag.Uint64Var(&c.UnconfirmedBurnFactor, "burn-factor-unconfirmed", c.UnconfirmedBurnFactor, "coinhour burn factor to apply when verifying unconfirmed transactions")
-	flag.Uint64Var(&c.CreateBlockBurnFactor, "burn-factor-create-block", c.CreateBlockBurnFactor, "coinhour burn factor to apply to transactions when creating blocks")
+	flag.Uint64Var(&c.UnconfirmedBurnFactor, "burn-factor-unconfirmed", c.UnconfirmedBurnFactor, "coinhour burn factor applied to unconfirmed transactions")
+	flag.Uint64Var(&c.CreateBlockBurnFactor, "burn-factor-create-block", c.CreateBlockBurnFactor, "coinhour burn factor applied when creating blocks")
 
 	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")

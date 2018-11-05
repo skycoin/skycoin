@@ -42,7 +42,7 @@ func TestNewParameters(t *testing.T) {
 			UnlockAddressRate:          5,
 			UnlockTimeInterval:         60 * 60 * 24 * 365,
 			MaxDropletPrecision:        3,
-			CoinHourBurnFactor:         3,
+			UserBurnFactor:             3,
 			MaxUserTransactionSize:     999,
 		},
 	}, coinConfig)

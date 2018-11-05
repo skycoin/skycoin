@@ -44,7 +44,8 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Go application metrics exported at `/api/v2/metrics` (API set `PROMETHEUS`) in Prometheus format
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 - Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
-- Coinhour burn factor can be configured at runtime with `COINHOUR_BURN_FACTOR` envvar
+- Coinhour burn factor when creating transactions can be configured at runtime with `USER_BURN_FACTOR` envvar
+- Max transaction size when creating transactions can be configured at runtime with `MAX_USER_TXN_SIZE` envvar
 - Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
 - `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
 - A user agent string is sent in the wire protocol's introduction packet

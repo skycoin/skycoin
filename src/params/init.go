@@ -17,8 +17,8 @@ func init() {
 }
 
 func sanityCheck() {
-	if CoinHourBurnFactor <= 1 {
-		panic("CoinHourBurnFactor must be > 1")
+	if UserBurnFactor <= 1 {
+		panic("UserBurnFactor must be > 1")
 	}
 
 	if MaxUserTransactionSize <= 0 {
@@ -43,21 +43,21 @@ func sanityCheck() {
 }
 
 func loadCoinHourBurnFactor() {
-	xs := os.Getenv("COINHOUR_BURN_FACTOR")
+	xs := os.Getenv("USER_BURN_FACTOR")
 	if xs == "" {
 		return
 	}
 
 	x, err := strconv.ParseUint(xs, 10, 64)
 	if err != nil {
-		panic(fmt.Sprintf("Invalid COINHOUR_BURN_FACTOR %q: %v", xs, err))
+		panic(fmt.Sprintf("Invalid USER_BURN_FACTOR %q: %v", xs, err))
 	}
 
 	if x <= 1 {
-		panic("COINHOUR_BURN_FACTOR must be > 1")
+		panic("USER_BURN_FACTOR must be > 1")
 	}
 
-	CoinHourBurnFactor = x
+	UserBurnFactor = x
 }
 
 func loadMaxUserTransactionSize() {

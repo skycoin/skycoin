@@ -241,8 +241,8 @@ type daemoner interface {
 	getSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error)
 	headBkSeq() (uint64, bool, error)
 	executeSignedBlock(b coin.SignedBlock) error
-	filterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, error)
-	getUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error)
+	filterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error)
+	getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error)
 	requestBlocksFromAddr(addr string) error
 	announceAllTxns() error
 	daemonConfig() DaemonConfig
@@ -1345,14 +1345,14 @@ func (dm *Daemon) executeSignedBlock(b coin.SignedBlock) error {
 	return dm.visor.ExecuteSignedBlock(b)
 }
 
-// filterUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
-func (dm *Daemon) filterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
-	return dm.visor.FilterUnconfirmedKnown(txns)
+// filterKnownUnconfirmed returns unconfirmed txn hashes with known ones removed
+func (dm *Daemon) filterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+	return dm.visor.FilterKnownUnconfirmed(txns)
 }
 
-// getUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
-func (dm *Daemon) getUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error) {
-	return dm.visor.GetUnconfirmedKnown(txns)
+// getKnownUnconfirmed returns unconfirmed txn hashes with known ones removed
+func (dm *Daemon) getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error) {
+	return dm.visor.GetKnownUnconfirmed(txns)
 }
 
 // injectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not

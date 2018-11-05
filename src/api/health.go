@@ -81,7 +81,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			GUIEnabled:            c.enableGUI,
 			JSON20RPCEnabled:      c.enableJSON20RPC,
 			WalletAPIEnabled:      walletAPIEnabled,
-			BurnFactor:            params.CoinHourBurnFactor,
+			BurnFactor:            params.UserBurnFactor,
 		})
 	}
 }

@@ -1197,8 +1197,8 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 	haveChange := changeCoins > 0
 	changeHours, addrHours, outputHours := DistributeSpendHours(spending.Hours, 1, haveChange)
 
-	logger.Infof("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d, %d)", spending.Hours, outputHours, spending.Hours-outputHours, params.CoinHourBurnFactor)
-	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours, params.CoinHourBurnFactor); err != nil {
+	logger.Infof("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d, %d)", spending.Hours, outputHours, spending.Hours-outputHours, params.UserBurnFactor)
+	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours, params.UserBurnFactor); err != nil {
 		logger.Warningf("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed: %v", err)
 		return nil, err
 	}
@@ -1318,7 +1318,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 		txn.PushInput(spend.Hash)
 	}
 
-	feeHours := fee.RequiredFee(totalInputHours, params.CoinHourBurnFactor)
+	feeHours := fee.RequiredFee(totalInputHours, params.UserBurnFactor)
 	if feeHours == 0 {
 		return nil, nil, fee.ErrTxnNoFee
 	}
@@ -1409,7 +1409,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			}
 
 			// Calculate the new fee for this new amount of hours
-			newFee := fee.RequiredFee(newTotalHours, params.CoinHourBurnFactor)
+			newFee := fee.RequiredFee(newTotalHours, params.UserBurnFactor)
 			if newFee < feeHours {
 				err := errors.New("updated fee after adding extra input for change is unexpectedly less than it was initially")
 				logger.WithError(err).Error()
@@ -1599,7 +1599,7 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 		return errors.New("Total input hours is less than the output hours")
 	}
 
-	if inputHours-outputHours < fee.RequiredFee(inputHours, params.CoinHourBurnFactor) {
+	if inputHours-outputHours < fee.RequiredFee(inputHours, params.UserBurnFactor) {
 		return errors.New("Transaction will not satisy required fee")
 	}
 
@@ -1618,7 +1618,7 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 // an array of length nAddrs with the hours to give to each destination address,
 // and a sum of these values.
 func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, []uint64, uint64) {
-	feeHours := fee.RequiredFee(inputHours, params.CoinHourBurnFactor)
+	feeHours := fee.RequiredFee(inputHours, params.UserBurnFactor)
 	remainingHours := inputHours - feeHours
 
 	var changeHours uint64
@@ -1972,7 +1972,7 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 	have.Coins += firstNonzero.Coins
 	have.Hours += firstNonzero.Hours
 
-	if have.Coins >= coins && fee.RemainingHours(have.Hours, params.CoinHourBurnFactor) >= hours {
+	if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserBurnFactor) >= hours {
 		return spending, nil
 	}
 
@@ -1990,7 +1990,7 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 		}
 	}
 
-	if have.Coins >= coins && fee.RemainingHours(have.Hours, params.CoinHourBurnFactor) >= hours {
+	if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserBurnFactor) >= hours {
 		return spending, nil
 	}
 
@@ -2003,7 +2003,7 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 		have.Coins += ux.Coins
 		have.Hours += ux.Hours
 
-		if have.Coins >= coins && fee.RemainingHours(have.Hours, params.CoinHourBurnFactor) >= hours {
+		if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserBurnFactor) >= hours {
 			return spending, nil
 		}
 	}

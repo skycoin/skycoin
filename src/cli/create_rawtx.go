@@ -540,7 +540,7 @@ func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr s
 		return nil, err
 	}
 
-	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, params.MaxUserTransactionSize, params.CoinHourBurnFactor); err != nil {
+	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
 		return nil, err
 	}
 	if err := visor.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered); err != nil {
@@ -667,7 +667,7 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 	nAddrs := uint64(len(toAddrs))
 	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
 
-	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours, params.CoinHourBurnFactor); err != nil {
+	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours, params.UserBurnFactor); err != nil {
 		return nil, err
 	}
 

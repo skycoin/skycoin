@@ -59,7 +59,7 @@ func VerifyTransactionFeeForHours(hours, fee, burnFactor uint64) error {
 }
 
 // RequiredFee returns the coinhours fee required for an amount of hours
-// The required fee is calculated as hours/burnFact, rounded up.
+// The required fee is calculated as hours/burnFactor, rounded up.
 func RequiredFee(hours, burnFactor uint64) uint64 {
 	feeHours := hours / burnFactor
 	if hours%burnFactor != 0 {

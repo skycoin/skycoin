@@ -13,7 +13,8 @@ type Parameters struct {
 	Params ParamsParameters `mapstructure:"params"`
 }
 
-// NodeParameters records the node's configurable parameters
+// NodeParameters configures the default CLI options for the skycoin node.
+// These parameters are loaded via cmd/skycoin/skycoin.go into src/skycoin/skycoin.go.
 type NodeParameters struct {
 	// Port is the default port that the wire protocol communicates over
 	Port int `mapstructure:"port"`
@@ -50,7 +51,9 @@ type NodeParameters struct {
 	DataDirectory string
 }
 
-// ParamsParameters are the parameters used to generate config/blockchain.go
+// ParamsParameters are the parameters used to generate params/params.go.
+// These parameters are exposed in an importable package `params` because they
+// may need to be imported by libraries that would not know the node's configured CLI options.
 type ParamsParameters struct {
 	// MaxCoinSupply is the maximum supply of coins
 	MaxCoinSupply uint64 `mapstructure:"max_coin_supply"`
@@ -72,8 +75,8 @@ type ParamsParameters struct {
 	// DistributionAddresses are addresses that received coins from the genesis address in the first block,
 	// used to calculate current and max supply and do distribution timelocking
 	DistributionAddresses []string `mapstructure:"distribution_addresses"`
-	// CoinHourBurnFactor inverse fraction of coinhours that must be burned, this value is used when creating transactions
-	CoinHourBurnFactor uint64 `mapstructure:"coinhour_burn_factor"`
+	// UserBurnFactor inverse fraction of coinhours that must be burned, this value is used when creating transactions
+	UserBurnFactor uint64 `mapstructure:"user_burn_factor"`
 }
 
 // NewParameters loads blockchain config parameters from a config file
@@ -134,6 +137,6 @@ func setDefaults() {
 	viper.SetDefault("params.unlock_address_rate", 5)
 	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)
 	viper.SetDefault("params.max_droplet_precision", 3)
-	viper.SetDefault("params.coinhour_burn_factor", 2)
+	viper.SetDefault("params.user_burn_factor", 2)
 	viper.SetDefault("params.max_user_transaction_size", 32*1024)
 }

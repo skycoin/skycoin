@@ -129,8 +129,8 @@ func (_m *mockDaemoner) executeSignedBlock(b coin.SignedBlock) error {
 	return r0
 }
 
-// filterUnconfirmedKnown provides a mock function with given fields: txns
-func (_m *mockDaemoner) filterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+// filterKnownUnconfirmed provides a mock function with given fields: txns
+func (_m *mockDaemoner) filterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error) {
 	ret := _m.Called(txns)
 
 	var r0 []cipher.SHA256
@@ -139,6 +139,29 @@ func (_m *mockDaemoner) filterUnconfirmedKnown(txns []cipher.SHA256) ([]cipher.S
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]cipher.SHA256)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]cipher.SHA256) error); ok {
+		r1 = rf(txns)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// getKnownUnconfirmed provides a mock function with given fields: txns
+func (_m *mockDaemoner) getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error) {
+	ret := _m.Called(txns)
+
+	var r0 coin.Transactions
+	if rf, ok := ret.Get(0).(func([]cipher.SHA256) coin.Transactions); ok {
+		r0 = rf(txns)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(coin.Transactions)
 		}
 	}
 
@@ -168,29 +191,6 @@ func (_m *mockDaemoner) getSignedBlocksSince(seq uint64, count uint64) ([]coin.S
 	var r1 error
 	if rf, ok := ret.Get(1).(func(uint64, uint64) error); ok {
 		r1 = rf(seq, count)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// getUnconfirmedKnown provides a mock function with given fields: txns
-func (_m *mockDaemoner) getUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error) {
-	ret := _m.Called(txns)
-
-	var r0 coin.Transactions
-	if rf, ok := ret.Get(0).(func([]cipher.SHA256) coin.Transactions); ok {
-		r0 = rf(txns)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(coin.Transactions)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func([]cipher.SHA256) error); ok {
-		r1 = rf(txns)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -201,7 +201,7 @@ func (c *Coin) Run() error {
 		}
 	}
 
-	c.logger.Infof("Coinhour burn factor for creating transactions is %d", params.CoinHourBurnFactor)
+	c.logger.Infof("Coinhour burn factor for creating transactions is %d", params.UserBurnFactor)
 	c.logger.Infof("Max user transaction size is %d", params.MaxUserTransactionSize)
 
 	d, err = daemon.NewDaemon(dconf, db)

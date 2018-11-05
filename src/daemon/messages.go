@@ -742,9 +742,9 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 		"gnetID": atm.c.ConnID,
 	}
 
-	unknown, err := d.filterUnconfirmedKnown(atm.Transactions)
+	unknown, err := d.filterKnownUnconfirmed(atm.Transactions)
 	if err != nil {
-		logger.WithError(err).Error("AnnounceTxnsMessage d.filterUnconfirmedKnown failed")
+		logger.WithError(err).Error("AnnounceTxnsMessage d.filterKnownUnconfirmed failed")
 		return
 	}
 
@@ -789,9 +789,9 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 	}
 
 	// Locate all txns from the unconfirmed pool
-	known, err := d.getUnconfirmedKnown(gtm.Transactions)
+	known, err := d.getKnownUnconfirmed(gtm.Transactions)
 	if err != nil {
-		logger.WithError(err).Error("GetTxnsMessage d.getUnconfirmedKnown failed")
+		logger.WithError(err).Error("GetTxnsMessage d.getKnownUnconfirmed failed")
 		return
 	}
 	if len(known) == 0 {

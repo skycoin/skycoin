@@ -23,9 +23,9 @@ const (
 )
 
 var (
-	// CoinHourBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `COINHOUR_BURN_FACTOR` env var),
+	// UserBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `USER_BURN_FACTOR` env var),
 	// used when creating a transaction
-	CoinHourBurnFactor uint64 = 2
+	UserBurnFactor uint64 = 2
 
 	// MaxUserTransactionSize is the maximum size of a user-created transaction
 	MaxUserTransactionSize = 32768 // in bytes

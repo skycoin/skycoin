@@ -431,12 +431,23 @@ func (dm *Daemon) Run() error {
 	blocksAnnounceTicker := time.NewTicker(dm.Config.BlocksAnnounceRate)
 	defer blocksAnnounceTicker.Stop()
 
+	// outgoingTrustedConnectionsTicker is used to maintain at least one connection to a trusted peer.
+	// This may be configured at a very frequent rate, so if no trusted connections could be reached,
+	// there could be a lot of churn.
+	// The additional outgoingTrustedConnectionsTicker parameters are used to
+	// skip ticks of the outgoingTrustedConnectionsTicker in the event of total failure.
+	// outgoingTrustedConnectionsTickerSkipDuration is the minimum time to wait between
+	// ticks in the event of total failure.
+	outgoingTrustedConnectionsTicker := time.NewTicker(dm.Config.OutgoingTrustedRate)
+	defer outgoingTrustedConnectionsTicker.Stop()
+	outgoingTrustedConnectionsTickerSkipDuration := time.Second * 5
+	outgoingTrustedConnectionsTickerSkip := false
+	var outgoingTrustedConnectionsTickerSkipStart time.Time
+
 	privateConnectionsTicker := time.NewTicker(dm.Config.PrivateRate)
 	defer privateConnectionsTicker.Stop()
 	cullInvalidTicker := time.NewTicker(dm.Config.CullInvalidRate)
 	defer cullInvalidTicker.Stop()
-	outgoingTrustedConnectionsTicker := time.NewTicker(dm.Config.OutgoingTrustedRate)
-	defer outgoingTrustedConnectionsTicker.Stop()
 	outgoingConnectionsTicker := time.NewTicker(dm.Config.OutgoingRate)
 	defer outgoingConnectionsTicker.Stop()
 	requestPeersTicker := time.NewTicker(dm.pex.Config.RequestRate)
@@ -553,8 +564,20 @@ loop:
 		case <-outgoingTrustedConnectionsTicker.C:
 			// Try to maintain at least one trusted connection
 			elapser.Register("outgoingTrustedConnectionsTicker")
+			// If connecting to a trusted peer totally fails, make sure to wait longer between further attempts
+			if outgoingTrustedConnectionsTickerSkip {
+				delta := time.Now().Sub(outgoingTrustedConnectionsTickerSkipStart)
+				if delta < outgoingTrustedConnectionsTickerSkipDuration {
+					continue
+				}
+			}
+
 			if err := dm.maybeConnectToTrustedPeer(); err != nil && err != ErrNetworkingDisabled {
 				logger.Critical().WithError(err).Error("maybeConnectToTrustedPeer")
+				outgoingTrustedConnectionsTickerSkip = true
+				outgoingTrustedConnectionsTickerSkipStart = time.Now()
+			} else {
+				outgoingTrustedConnectionsTickerSkip = false
 			}
 
 		case <-privateConnectionsTicker.C:

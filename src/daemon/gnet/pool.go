@@ -943,21 +943,25 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 // BroadcastMessage sends a Message to all connections specified in addrs.
 // If a connection does not exist for a given address, it is skipped.
 // If no messages were written to any connection, an error is returned.
-func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error {
+// Returns the number of connections that the message was queued for sending to.
+// Note that actual sending can still fail later, if the connection drops before the message is sent.
+func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) (int, error) {
 	if pool.Config.DebugPrint {
 		logger.WithField("msgType", reflect.TypeOf(msg)).Debug("BroadcastMessage")
 	}
 
 	if len(addrs) == 0 {
-		return ErrNoAddresses
+		return 0, ErrNoAddresses
 	}
 
-	fullWriteQueue := 0
+	sentTo := 0
+
 	if err := pool.strand("BroadcastMessage", func() error {
 		if len(pool.pool) == 0 {
 			return ErrPoolEmpty
 		}
 
+		fullWriteQueue := 0
 		foundConns := 0
 
 		for _, addr := range addrs {
@@ -980,12 +984,14 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error 
 			return ErrNoReachableConnections
 		}
 
+		sentTo = foundConns - fullWriteQueue
+
 		return nil
 	}); err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return sentTo, nil
 }
 
 // Unpacks incoming bytes to a Message and calls the message handler.  If

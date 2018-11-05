@@ -1084,13 +1084,14 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	require.NotEmpty(t, addrs)
 
 	m := NewByteMessage(88)
-	err = p.BroadcastMessage(m, addrs)
+	n, err := p.BroadcastMessage(m, addrs)
 	require.NoError(t, err)
+	require.Equal(t, 2, n)
 
-	err = p.BroadcastMessage(m, []string{})
+	_, err = p.BroadcastMessage(m, []string{})
 	require.Equal(t, ErrNoAddresses, err)
 
-	err = p.BroadcastMessage(m, []string{"1.1.1.1"})
+	_, err = p.BroadcastMessage(m, []string{"1.1.1.1"})
 	require.Equal(t, ErrNoMatchingConnections, err)
 
 	// Spam the connections with so much data that their write queue overflows,
@@ -1103,7 +1104,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	for i := 0; i < attempts; i++ {
 		go func() {
 			defer wg.Done()
-			err := p.BroadcastMessage(m, addrs)
+			_, err := p.BroadcastMessage(m, addrs)
 			if err == ErrNoReachableConnections {
 				once.Do(func() {
 					gotErr = true

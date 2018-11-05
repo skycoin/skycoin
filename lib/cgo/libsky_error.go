@@ -118,8 +118,8 @@ const (
 	SKY_ErrInvalidPubKey
 	// SKY_ErrInvalidSecKey       Invalid public key
 	SKY_ErrInvalidSecKey
-	// SKY_ErrInvalidSigForPubKey Invalig sig: PubKey recovery failed
-	SKY_ErrInvalidSigForPubKey
+	// SKY_ErrInvalidSigPubKeyRecovery Invalig sig: PubKey recovery failed
+	SKY_ErrInvalidSigPubKeyRecovery
 	// SKY_ErrInvalidSecKeyHex    Invalid SecKey: not valid hex
 	SKY_ErrInvalidSecKeyHex // nolint megacheck
 	// SKY_ErrInvalidAddressForSig Invalid sig: address does not match output address
@@ -128,9 +128,9 @@ const (
 	SKY_ErrInvalidHashForSig
 	// SKY_ErrPubKeyRecoverMismatch Recovered pubkey does not match pubkey
 	SKY_ErrPubKeyRecoverMismatch
-	// SKY_ErrInvalidSigInvalidPubKey VerifySignature, secp256k1.VerifyPubkey failed
+	// SKY_ErrInvalidSigInvalidPubKey VerifySignedHash, secp256k1.VerifyPubkey failed
 	SKY_ErrInvalidSigInvalidPubKey
-	// SKY_ErrInvalidSigValidity  VerifySignature, VerifySignatureValidity failed
+	// SKY_ErrInvalidSigValidity  VerifySignedHash, VerifySignatureValidity failed
 	SKY_ErrInvalidSigValidity
 	// SKY_ErrInvalidSigForMessage Invalid signature for this message
 	SKY_ErrInvalidSigForMessage
@@ -232,10 +232,10 @@ const (
 	SKY_ErrPortTooLow
 	// SKY_ErrBlacklistedAddress returned when attempting to add a blacklisted peer
 	SKY_ErrBlacklistedAddress
-	// SKY_ErrDisconnectReadFailed also includes a remote closed socket
-	SKY_ErrDisconnectReadFailed
+	// // SKY_ErrDisconnectReadFailed also includes a remote closed socket
+	// SKY_ErrDisconnectReadFailed
 	// SKY_ErrDisconnectWriteFailed write faile
-	SKY_ErrDisconnectWriteFailed
+	// SKY_ErrDisconnectWriteFailed
 	// SKY_ErrDisconnectSetReadDeadlineFailed set read deadline failed
 	SKY_ErrDisconnectSetReadDeadlineFailed
 	// SKY_ErrDisconnectInvalidMessageLength invalid message length
@@ -244,8 +244,6 @@ const (
 	SKY_ErrDisconnectMalformedMessage
 	// SKY_ErrDisconnectUnknownMessage unknow message
 	SKY_ErrDisconnectUnknownMessage
-	// SKY_ErrDisconnectUnexpectedError  unexpected error
-	SKY_ErrDisconnectUnexpectedError
 	// SKY_ErrConnectionPoolClosed error message indicates the connection pool is closed
 	SKY_ErrConnectionPoolClosed
 	// SKY_ErrWriteQueueFull write queue is full
@@ -255,11 +253,9 @@ const (
 	// SKY_ErrMaxDefaultConnectionsReached returns when maximum number of default connections is reached
 	SKY_ErrMaxDefaultConnectionsReached // nolint megacheck
 	// SKY_ErrDisconnectReasons invalid version
-	SKY_ErrDisconnectInvalidVersion
+	SKY_ErrDisconnectVersionNotSupported
 	// SKY_ErrDisconnectIntroductionTimeout timeout
 	SKY_ErrDisconnectIntroductionTimeout
-	// SKY_ErrDisconnectVersionSendFailed version send failed
-	SKY_ErrDisconnectVersionSendFailed
 	// SKY_ErrDisconnectIsBlacklisted is blacklisted
 	SKY_ErrDisconnectIsBlacklisted
 	// SKY_ErrDisconnectSelf self connnect
@@ -272,8 +268,6 @@ const (
 	SKY_ErrDisconnectNoIntroduction
 	// SKY_ErrDisconnectIPLimitReached ip limit reached
 	SKY_ErrDisconnectIPLimitReached
-	// SKY_ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
-	SKY_ErrDisconnectOtherError
 	// SKY_ErrDisconnectMaxDefaultConnectionReached Maximum number of default connections was reached
 	SKY_ErrDisconnectMaxDefaultConnectionReached // nolint megacheck
 	// SKY_ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
@@ -441,31 +435,31 @@ var (
 		ErrorUnknown:           SKY_ERROR,
 		ErrorInvalidTimeString: SKY_INVALID_TIMESTRING,
 		// cipher
-		cipher.ErrAddressInvalidLength:    SKY_ErrAddressInvalidLength,
-		cipher.ErrAddressInvalidChecksum:  SKY_ErrAddressInvalidChecksum,
-		cipher.ErrAddressInvalidVersion:   SKY_ErrAddressInvalidVersion,
-		cipher.ErrAddressInvalidPubKey:    SKY_ErrAddressInvalidPubKey,
-		cipher.ErrAddressInvalidFirstByte: SKY_ErrAddressInvalidFirstByte,
-		cipher.ErrAddressInvalidLastByte:  SKY_ErrAddressInvalidLastByte,
-		encoder.ErrBufferUnderflow:        SKY_ErrBufferUnderflow,
-		encoder.ErrInvalidOmitEmpty:       SKY_ErrInvalidOmitEmpty,
-		cipher.ErrInvalidLengthPubKey:     SKY_ErrInvalidLengthPubKey,
-		cipher.ErrPubKeyFromNullSecKey:    SKY_ErrPubKeyFromNullSecKey,
-		cipher.ErrPubKeyFromBadSecKey:     SKY_ErrPubKeyFromBadSecKey,
-		cipher.ErrInvalidLengthSecKey:     SKY_ErrInvalidLengthSecKey,
-		cipher.ErrECHDInvalidPubKey:       SKY_ErrECHDInvalidPubKey,
-		cipher.ErrECHDInvalidSecKey:       SKY_ErrECHDInvalidSecKey,
-		cipher.ErrInvalidLengthSig:        SKY_ErrInvalidLengthSig,
-		cipher.ErrInvalidLengthRipemd160:  SKY_ErrInvalidLengthRipemd160,
-		cipher.ErrInvalidLengthSHA256:     SKY_ErrInvalidLengthSHA256,
-		base58.ErrInvalidBase58Char:       SKY_ErrInvalidBase58Char,
-		base58.ErrInvalidBase58String:     SKY_ErrInvalidBase58String,
-		base58.ErrInvalidBase58Length:     SKY_ErrInvalidBase58Length,
-		cipher.ErrInvalidHexLength:        SKY_ErrInvalidHexLength,
-		cipher.ErrInvalidBytesLength:      SKY_ErrInvalidBytesLength,
-		cipher.ErrInvalidPubKey:           SKY_ErrInvalidPubKey,
-		cipher.ErrInvalidSecKey:           SKY_ErrInvalidSecKey,
-		cipher.ErrInvalidSigForPubKey:     SKY_ErrInvalidSigForPubKey,
+		cipher.ErrAddressInvalidLength:     SKY_ErrAddressInvalidLength,
+		cipher.ErrAddressInvalidChecksum:   SKY_ErrAddressInvalidChecksum,
+		cipher.ErrAddressInvalidVersion:    SKY_ErrAddressInvalidVersion,
+		cipher.ErrAddressInvalidPubKey:     SKY_ErrAddressInvalidPubKey,
+		cipher.ErrAddressInvalidFirstByte:  SKY_ErrAddressInvalidFirstByte,
+		cipher.ErrAddressInvalidLastByte:   SKY_ErrAddressInvalidLastByte,
+		encoder.ErrBufferUnderflow:         SKY_ErrBufferUnderflow,
+		encoder.ErrInvalidOmitEmpty:        SKY_ErrInvalidOmitEmpty,
+		cipher.ErrInvalidLengthPubKey:      SKY_ErrInvalidLengthPubKey,
+		cipher.ErrPubKeyFromNullSecKey:     SKY_ErrPubKeyFromNullSecKey,
+		cipher.ErrPubKeyFromBadSecKey:      SKY_ErrPubKeyFromBadSecKey,
+		cipher.ErrInvalidLengthSecKey:      SKY_ErrInvalidLengthSecKey,
+		cipher.ErrECHDInvalidPubKey:        SKY_ErrECHDInvalidPubKey,
+		cipher.ErrECHDInvalidSecKey:        SKY_ErrECHDInvalidSecKey,
+		cipher.ErrInvalidLengthSig:         SKY_ErrInvalidLengthSig,
+		cipher.ErrInvalidLengthRipemd160:   SKY_ErrInvalidLengthRipemd160,
+		cipher.ErrInvalidLengthSHA256:      SKY_ErrInvalidLengthSHA256,
+		base58.ErrInvalidBase58Char:        SKY_ErrInvalidBase58Char,
+		base58.ErrInvalidBase58String:      SKY_ErrInvalidBase58String,
+		base58.ErrInvalidBase58Length:      SKY_ErrInvalidBase58Length,
+		cipher.ErrInvalidHexLength:         SKY_ErrInvalidHexLength,
+		cipher.ErrInvalidBytesLength:       SKY_ErrInvalidBytesLength,
+		cipher.ErrInvalidPubKey:            SKY_ErrInvalidPubKey,
+		cipher.ErrInvalidSecKey:            SKY_ErrInvalidSecKey,
+		cipher.ErrInvalidSigPubKeyRecovery: SKY_ErrInvalidSigPubKeyRecovery,
 		// Removed in ea0aafbffb76
 		// cipher.ErrInvalidSecKeyHex:               SKY_ErrInvalidSecKeyHex,
 		cipher.ErrInvalidAddressForSig:             SKY_ErrInvalidAddressForSig,
@@ -511,32 +505,29 @@ var (
 		// daemon
 		// Removed in 34ad39ddb350
 		// gnet.ErrMaxDefaultConnectionsReached:           SKY_ErrMaxDefaultConnectionsReached,
-		pex.ErrPeerlistFull:                     SKY_ErrPeerlistFull,
-		pex.ErrInvalidAddress:                   SKY_ErrInvalidAddress,
-		pex.ErrNoLocalhost:                      SKY_ErrNoLocalhost,
-		pex.ErrNotExternalIP:                    SKY_ErrNotExternalIP,
-		pex.ErrPortTooLow:                       SKY_ErrPortTooLow,
-		pex.ErrBlacklistedAddress:               SKY_ErrBlacklistedAddress,
-		gnet.ErrDisconnectReadFailed:            SKY_ErrDisconnectReadFailed,
-		gnet.ErrDisconnectWriteFailed:           SKY_ErrDisconnectWriteFailed,
+		pex.ErrPeerlistFull:       SKY_ErrPeerlistFull,
+		pex.ErrInvalidAddress:     SKY_ErrInvalidAddress,
+		pex.ErrNoLocalhost:        SKY_ErrNoLocalhost,
+		pex.ErrNotExternalIP:      SKY_ErrNotExternalIP,
+		pex.ErrPortTooLow:         SKY_ErrPortTooLow,
+		pex.ErrBlacklistedAddress: SKY_ErrBlacklistedAddress,
+		// gnet.ErrDisconnectReadFailed:              SKY_ErrDisconnectReadFailed,
+		// gnet.ErrDisconnectWriteFailed:             SKY_ErrDisconnectWriteFailed,
 		gnet.ErrDisconnectSetReadDeadlineFailed: SKY_ErrDisconnectSetReadDeadlineFailed,
 		gnet.ErrDisconnectInvalidMessageLength:  SKY_ErrDisconnectInvalidMessageLength,
 		gnet.ErrDisconnectMalformedMessage:      SKY_ErrDisconnectMalformedMessage,
 		gnet.ErrDisconnectUnknownMessage:        SKY_ErrDisconnectUnknownMessage,
-		gnet.ErrDisconnectUnexpectedError:       SKY_ErrDisconnectUnexpectedError,
 		gnet.ErrConnectionPoolClosed:            SKY_ErrConnectionPoolClosed,
 		gnet.ErrWriteQueueFull:                  SKY_ErrWriteQueueFull,
 		gnet.ErrNoReachableConnections:          SKY_ErrNoReachableConnections,
-		daemon.ErrDisconnectInvalidVersion:      SKY_ErrDisconnectInvalidVersion,
+		daemon.ErrDisconnectVersionNotSupported: SKY_ErrDisconnectVersionNotSupported,
 		daemon.ErrDisconnectIntroductionTimeout: SKY_ErrDisconnectIntroductionTimeout,
-		daemon.ErrDisconnectVersionSendFailed:   SKY_ErrDisconnectVersionSendFailed,
 		daemon.ErrDisconnectIsBlacklisted:       SKY_ErrDisconnectIsBlacklisted,
 		daemon.ErrDisconnectSelf:                SKY_ErrDisconnectSelf,
 		daemon.ErrDisconnectConnectedTwice:      SKY_ErrDisconnectConnectedTwice,
 		daemon.ErrDisconnectIdle:                SKY_ErrDisconnectIdle,
 		daemon.ErrDisconnectNoIntroduction:      SKY_ErrDisconnectNoIntroduction,
 		daemon.ErrDisconnectIPLimitReached:      SKY_ErrDisconnectIPLimitReached,
-		daemon.ErrDisconnectOtherError:          SKY_ErrDisconnectOtherError,
 		// Removed
 		//		daemon.ErrDisconnectMaxDefaultConnectionReached:   SKY_ErrDisconnectMaxDefaultConnectionReached,
 		daemon.ErrDisconnectMaxOutgoingConnectionsReached: SKY_ErrDisconnectMaxOutgoingConnectionsReached,

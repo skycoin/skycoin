@@ -65,7 +65,7 @@
 #define SKY_ErrInvalidBytesLength                   0x02000015
 #define SKY_ErrInvalidPubKey                        0x02000016
 #define SKY_ErrInvalidSecKey                        0x02000017
-#define SKY_ErrInvalidSigForPubKey                  0x02000018
+#define SKY_ErrInvalidSigPubKeyRecovery                  0x02000018
 #define SKY_ErrInvalidSecKeyHex                     0x02000019
 #define SKY_ErrInvalidAddressForSig                 0x0200001A
 #define SKY_ErrInvalidHashForSig                    0x0200001B
@@ -118,40 +118,37 @@
 #define SKY_ErrNotExternalIP                              0x06000003
 #define SKY_ErrPortTooLow                                 0x06000004
 #define SKY_ErrBlacklistedAddress                         0x06000005
-#define SKY_ErrDisconnectReadFailed                       0x06000006
+// #define SKY_ErrDisconnectReadFailed                       0x06000006
 #define SKY_ErrDisconnectWriteFailed                      0x06000007
 #define SKY_ErrDisconnectSetReadDeadlineFailed            0x06000008
 #define SKY_ErrDisconnectInvalidMessageLength             0x06000009
 #define SKY_ErrDisconnectMalformedMessage                 0x0600000A
 #define SKY_ErrDisconnectUnknownMessage                   0x0600000B
-#define SKY_ErrDisconnectUnexpectedError                  0x0600000C
 #define SKY_ErrConnectionPoolClosed                       0x0600000D
 #define SKY_ErrWriteQueueFull                             0x0600000E
 #define SKY_ErrNoReachableConnections                     0x0600000F
 #define SKY_ErrMaxDefaultConnectionsReached               0x06000010
-#define SKY_ErrDisconnectInvalidVersion                   0x06000011
+#define SKY_ErrDisconnectVersionNotSupported              0x06000011
 #define SKY_ErrDisconnectIntroductionTimeout              0x06000012
-#define SKY_ErrDisconnectVersionSendFailed                0x06000013
 #define SKY_ErrDisconnectIsBlacklisted                    0x06000014
 #define SKY_ErrDisconnectSelf                             0x06000015
 #define SKY_ErrDisconnectConnectedTwice                   0x06000016
 #define SKY_ErrDisconnectIdle                             0x06000017
 #define SKY_ErrDisconnectNoIntroduction                   0x06000018
 #define SKY_ErrDisconnectIPLimitReached                   0x06000019
-#define SKY_ErrDisconnectOtherError                       0x0600001A
 #define SKY_ErrDisconnectMaxDefaultConnectionReached      0x0600001B
 #define SKY_ErrDisconnectMaxOutgoingConnectionsReached    0x0600001C
 #define SKY_ConnectionError                               0x0600001D
 
 // util error codes
-#define SKY_ErrTxnNoFee                   0x09000000 
-#define SKY_ErrTxnInsufficientFee         0x09000001 
-#define SKY_ErrTxnInsufficientCoinHours   0x09000002 
-#define SKY_ErrNegativeValue              0x09000003 
-#define SKY_ErrTooManyDecimals            0x09000004 
-#define SKY_ErrTooLarge                   0x09000005 
-#define SKY_ErrEmptyDirectoryName         0x09000006 
-#define SKY_ErrDotDirectoryName           0x09000007 
+#define SKY_ErrTxnNoFee                   0x09000000
+#define SKY_ErrTxnInsufficientFee         0x09000001
+#define SKY_ErrTxnInsufficientCoinHours   0x09000002
+#define SKY_ErrNegativeValue              0x09000003
+#define SKY_ErrTooManyDecimals            0x09000004
+#define SKY_ErrTooLarge                   0x09000005
+#define SKY_ErrEmptyDirectoryName         0x09000006
+#define SKY_ErrDotDirectoryName           0x09000007
 
 // visor error codes
 #define SKY_ErrHistoryDBCorrupted         0x0A000000

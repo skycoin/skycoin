@@ -8,7 +8,78 @@ The API has two versions, `/api/v1` and `/api/v2`.
 Previously, there was no `/api/vx` prefix.
 Starting in application version v0.24.0, the existing endpoints from v0.23.0
 are now prefixed with `/api/v1`. To retain the old endpoints, run the application
-with `-enable-unversioned-api`.
+with `-enable-unversioned-api`.  This option will be removed in v0.26.0
+and the `/api/v1` prefix will be required for previously unversioned endpoints.
+
+<!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
+
+- [API Version 1](#api-version-1)
+- [API Version 2](#api-version-2)
+- [API Sets](#api-sets)
+- [Authentication](#authentication)
+- [CSRF](#csrf)
+	- [Get current csrf token](#get-current-csrf-token)
+- [General system checks](#general-system-checks)
+	- [Health check](#health-check)
+	- [Version info](#version-info)
+	- [Prometheus metrics](#prometheus-metrics)
+- [Simple query APIs](#simple-query-apis)
+	- [Get balance of addresses](#get-balance-of-addresses)
+	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+	- [Verify an address](#verify-an-address)
+- [Wallet APIs](#wallet-apis)
+	- [Get wallet](#get-wallet)
+	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
+	- [Get wallets](#get-wallets)
+	- [Get wallet folder name](#get-wallet-folder-name)
+	- [Generate wallet seed](#generate-wallet-seed)
+	- [Create a wallet from seed](#create-a-wallet-from-seed)
+	- [Generate new address in wallet](#generate-new-address-in-wallet)
+	- [Updates wallet label](#updates-wallet-label)
+	- [Get wallet balance](#get-wallet-balance)
+	- [Spend coins from wallet](#spend-coins-from-wallet)
+	- [Create transaction](#create-transaction)
+	- [Unload wallet](#unload-wallet)
+	- [Encrypt wallet](#encrypt-wallet)
+	- [Decrypt wallet](#decrypt-wallet)
+	- [Get wallet seed](#get-wallet-seed)
+	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
+- [Transaction APIs](#transaction-apis)
+	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
+	- [Get transaction info by id](#get-transaction-info-by-id)
+	- [Get raw transaction by id](#get-raw-transaction-by-id)
+	- [Inject raw transaction](#inject-raw-transaction)
+	- [Get transactions for addresses](#get-transactions-for-addresses)
+	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+	- [Verify encoded transaction](#verify-encoded-transaction)
+- [Block APIs](#block-apis)
+	- [Get blockchain metadata](#get-blockchain-metadata)
+	- [Get blockchain progress](#get-blockchain-progress)
+	- [Get block by hash or seq](#get-block-by-hash-or-seq)
+	- [Get blocks in specific range](#get-blocks-in-specific-range)
+	- [Get last N blocks](#get-last-n-blocks)
+- [Explorer APIs](#explorer-apis)
+	- [Get address affected transactions](#get-address-affected-transactions)
+- [Uxout APIs](#uxout-apis)
+	- [Get uxout](#get-uxout)
+	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+- [Coin supply related information](#coin-supply-related-information)
+	- [Coin supply](#coin-supply)
+	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+	- [Count unique addresses](#count-unique-addresses)
+- [Network status](#network-status)
+	- [Get information for a specific connection](#get-information-for-a-specific-connection)
+	- [Get a list of all connections](#get-a-list-of-all-connections)
+	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
+	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+	- [Disconnect a peer](#disconnect-a-peer)
+- [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
+- [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
+- [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
+- [Migration from /api/v1/explorer/address](#migration-from-apiv1exploreraddress)
+
+<!-- /MarkdownTOC -->
 
 ## API Version 1
 
@@ -66,11 +137,12 @@ These API sets are:
 
 * `READ` - All query-related endpoints, they do not modify the state of the program
 * `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
-* `TXN` - Enables `/api/v1/injectTransaction` without enabling wallet endpoints
+* `TXN` - Enables `/api/v1/injectTransaction` and `/api/v1/resendUnconfirmedTxns` without enabling wallet endpoints
 * `WALLET` - These endpoints operate on local wallet files
-* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
-* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
 * `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
+* `NET_CTRL` - The `/api/v1/network/connection/disconnect` method, intended for network administration endpoints
+* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
+* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed in v0.26.0
 
 ## Authentication
 
@@ -78,68 +150,6 @@ Authentication can be enabled with the `-web-interface-username` and `-web-inter
 The username and password should be provided in an `Authorization: Basic` header.
 
 Authentication can only be enabled when using HTTPS with `-web-interface-https`, unless `-web-interface-plaintext-auth` is enabled.
-
-<!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
-
-- [CSRF](#csrf)
-	- [Get current csrf token](#get-current-csrf-token)
-- [General system checks](#general-system-checks)
-	- [Health check](#health-check)
-	- [Version info](#version-info)
-	- [Prometheus metrics](#prometheus-metrics)
-- [Simple query APIs](#simple-query-apis)
-	- [Get balance of addresses](#get-balance-of-addresses)
-	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-	- [Verify an address](#verify-an-address)
-- [Wallet APIs](#wallet-apis)
-	- [Get wallet](#get-wallet)
-	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
-	- [Get wallets](#get-wallets)
-	- [Get wallet folder name](#get-wallet-folder-name)
-	- [Generate wallet seed](#generate-wallet-seed)
-	- [Create a wallet from seed](#create-a-wallet-from-seed)
-	- [Generate new address in wallet](#generate-new-address-in-wallet)
-	- [Updates wallet label](#updates-wallet-label)
-	- [Get wallet balance](#get-wallet-balance)
-	- [Spend coins from wallet](#spend-coins-from-wallet)
-	- [Create transaction](#create-transaction)
-	- [Unload wallet](#unload-wallet)
-	- [Encrypt wallet](#encrypt-wallet)
-	- [Decrypt wallet](#decrypt-wallet)
-	- [Get wallet seed](#get-wallet-seed)
-	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
-- [Transaction APIs](#transaction-apis)
-	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
-	- [Get transaction info by id](#get-transaction-info-by-id)
-	- [Get raw transaction by id](#get-raw-transaction-by-id)
-	- [Inject raw transaction](#inject-raw-transaction)
-	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
-	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-	- [Verify encoded transaction](#verify-encoded-transaction)
-- [Block APIs](#block-apis)
-	- [Get blockchain metadata](#get-blockchain-metadata)
-	- [Get blockchain progress](#get-blockchain-progress)
-	- [Get block by hash or seq](#get-block-by-hash-or-seq)
-	- [Get blocks in specific range](#get-blocks-in-specific-range)
-	- [Get last N blocks](#get-last-n-blocks)
-- [Explorer APIs](#explorer-apis)
-	- [Get address affected transactions](#get-address-affected-transactions)
-- [Uxout APIs](#uxout-apis)
-	- [Get uxout](#get-uxout)
-	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
-- [Coin supply related information](#coin-supply-related-information)
-	- [Coin supply](#coin-supply)
-	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-	- [Count unique addresses](#count-unique-addresses)
-- [Network status](#network-status)
-	- [Get information for a specific connection](#get-information-for-a-specific-connection)
-	- [Get a list of all connections](#get-a-list-of-all-connections)
-	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
-	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
-- [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
-
-<!-- /MarkdownTOC -->
 
 ## CSRF
 
@@ -215,14 +225,19 @@ Response:
         "commit": "8798b5ee43c7ce43b9b75d57a1a6cd2c1295cd1e",
         "branch": "develop"
     },
+    "coin": "skycoin",
+    "user_agent": "skycoin:0.25.0-rc1",
     "open_connections": 8,
+    "outgoing_connections": 5,
+    "incoming_connections": 3,
     "uptime": "6m30.629057248s",
     "csrf_enabled": true,
     "csp_enabled": true,
     "wallet_api_enabled": true,
     "gui_enabled": true,
     "unversioned_api_enabled": false,
-    "json_rpc_enabled": false
+    "json_rpc_enabled": false,
+    "coinhour_burn_factor": 2
 }
 ```
 
@@ -379,10 +394,13 @@ API sets: `READ`
 
 ```
 URI: /api/v1/balance
-Method: GET
+Method: GET, POST
 Args:
     addrs: comma-separated list of addresses. must contain at least one address
 ```
+
+Returns the cumulative and individual balances of one or more addresses.
+The `POST` method can be used if many addresses need to be queried.
 
 Example:
 
@@ -443,7 +461,7 @@ API sets: `READ`
 
 ```
 URI: /api/v1/outputs
-Method: GET
+Method: GET, POST
 Args:
     addrs: address list, joined with ","
     hashes: hash list, joined with ","
@@ -456,6 +474,8 @@ In the response, `"head_outputs"` are outputs in the current unspent output set,
 and `"incoming_outputs"` are outputs that will be created by an unconfirmed transaction.
 
 The current head block header is returned as `"head"`.
+
+The `POST` method can be used if many addresses or hashes need to be queried.
 
 Example:
 
@@ -1515,9 +1535,9 @@ API sets: `INSECURE_WALLET_SEED`
 URI: /api/v2/wallet/recover
 Method: POST
 Args:
-	id: wallet id
-	seed: wallet seed
-	password: [optional] password to encrypt the recovered wallet with
+    id: wallet id
+    seed: wallet seed
+    password: [optional] password to encrypt the recovered wallet with
 ```
 
 Recovers an encrypted wallet by providing the wallet seed.
@@ -1534,28 +1554,28 @@ Result:
 
 ```json
 {
-	"data": {
-	    "meta": {
-	        "coin": "skycoin",
-	        "filename": "2017_11_25_e5fb.wlt",
-	        "label": "test",
-	        "type": "deterministic",
-	        "version": "0.2",
-	        "crypto_type": "",
-	        "timestamp": 1511640884,
-	        "encrypted": false
-	    },
-	    "entries": [
-	        {
-	            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-	            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
-	        },
-	        {
-	            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
-	            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
-	        }
-	    ]
-	}
+    "data": {
+        "meta": {
+            "coin": "skycoin",
+            "filename": "2017_11_25_e5fb.wlt",
+            "label": "test",
+            "type": "deterministic",
+            "version": "0.2",
+            "crypto_type": "",
+            "timestamp": 1511640884,
+            "encrypted": false
+        },
+        "entries": [
+            {
+                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+            },
+            {
+                "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
+            }
+        ]
+    }
 }
 ```
 
@@ -1841,9 +1861,9 @@ Method: POST
 Content-Type: application/json
 Body: {"rawtx": "hex-encoded serialized transaction string"}
 Errors:
-	400 - Bad input
-	500 - Other
-	503 - Network unavailable (transaction failed to broadcast)
+    400 - Bad input
+    500 - Other
+    503 - Network unavailable (transaction failed to broadcast)
 ```
 
 Broadcasts a hex-encoded, serialized transaction to the network.
@@ -1882,13 +1902,13 @@ Result:
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
 ```
 
-### Get transactions that are addresses related
+### Get transactions for addresses
 
 API sets: `READ`
 
 ```
 URI: /api/v1/transactions
-Method: GET
+Method: GET, POST
 Args:
     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
@@ -1901,18 +1921,24 @@ If the transaction is confirmed, the calculated hours are the hours the transact
 If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
 equal to the hours the output would have if it become confirmed immediately.
 
-To get address related confirmed transactions:
+The `"time"` field at the top level of each object in the response array indicates either the confirmed timestamp of a confirmed
+transaction or the last received timestamp of an unconfirmed transaction.
+
+The `POST` method can be used if many addresses need to be queried.
+
+To get confirmed transactions for one or more addresses:
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
 ```
 
-To get address related unconfirmed transactions:
+To get unconfirmed transactions for one or more addresses:
+
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
 ```
 
-To get all addresses related transactions:
+To get both confirmed and unconfirmed transactions for one or more addresses:
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
@@ -2218,17 +2244,17 @@ Result:
 
 ### Resend unconfirmed transactions
 
-API sets: `READ`
+API sets: `TXN`
 
 ```
 URI: /api/v1/resendUnconfirmedTxns
-Method: GET
+Method: POST
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns
+curl -X POST 'http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns'
 ```
 
 Result:
@@ -3213,6 +3239,8 @@ Args:
     address
 ```
 
+**Deprecated** Use `/api/v1/transactions?verbose=1&addrs=` instead.
+
 Example:
 
 ```sh
@@ -3548,6 +3576,12 @@ Args:
     addr: ip:port address of a known connection
 ```
 
+Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
+
+* The `"pending"` state is prior to connection establishment.
+* The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
+* The `"introduced"` state is after the introduction handshake has completed.
+
 Example:
 
 ```sh
@@ -3562,11 +3596,14 @@ Result:
     "address": "176.9.84.75:6000",
     "last_sent": 1520675817,
     "last_received": 1520675817,
+    "connected_at": 1520675700,
     "outgoing": false,
-    "introduced": true,
+    "state": "introduced",
     "mirror": 719118746,
     "height": 181,
-    "listen_port": 6000
+    "listen_port": 6000,
+    "user_agent": "skycoin:0.25.0",
+    "is_trusted_peer": true
 }
 ```
 
@@ -3577,7 +3614,18 @@ API sets: `STATUS`, `READ`
 ```
 URI: /api/v1/network/connections
 Method: GET
+Args:
+	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
+	direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 ```
+
+Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
+
+* The `"pending"` state is prior to connection establishment.
+* The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
+* The `"introduced"` state is after the introduction handshake has completed.
+
+By default, both incoming and outgoing connections in the `"connected"` or `"introduced"` state are returned.
 
 Example:
 
@@ -3595,33 +3643,42 @@ Result:
             "address": "139.162.161.41:20002",
             "last_sent": 1520675750,
             "last_received": 1520675750,
+            "connected_at": 1520675500,
             "outgoing": false,
-            "introduced": true,
+            "state": "introduced",
             "mirror": 1338939619,
+            "listen_port": 20002,
             "height": 180,
-            "listen_port": 20002
+            "user_agent": "skycoin:0.25.0",
+		    "is_trusted_peer": true
         },
         {
             "id": 109548,
             "address": "176.9.84.75:6000",
             "last_sent": 1520675751,
             "last_received": 1520675751,
-            "outgoing": false,
-            "introduced": true,
-            "mirror": 719118746,
-            "height": 182,
-            "listen_port": 6000
+            "connected_at": 1520675751,
+            "state": "connected",
+            "outgoing": true,
+            "mirror": 0,
+            "listen_port": 6000,
+            "height": 0,
+            "user_agent": "",
+		    "is_trusted_peer": false
         },
         {
             "id": 99115,
             "address": "185.120.34.60:6000",
             "last_sent": 1520675754,
             "last_received": 1520675754,
+            "connected_at": 1520673013,
             "outgoing": false,
-            "introduced": true,
+            "state": "introduced",
             "mirror": 1931713869,
+            "listen_port": 6000,
             "height": 180,
-            "listen_port": 6000
+            "user_agent": "",
+		    "is_trusted_peer": false
         }
     ]
 }
@@ -3636,6 +3693,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/defaultConnections
 Method: GET
 ```
+
+Returns addresses in the default hardcoded list of peers.
 
 Example:
 
@@ -3666,6 +3725,9 @@ URI: /api/v1/network/connections/trust
 Method: GET
 ```
 
+Returns addresses marked as trusted in the peerlist.
+This is typically equal to the list of addresses in the default hardcoded list of peers.
+
 Example:
 
 ```sh
@@ -3694,6 +3756,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/connections/exchange
 Method: GET
 ```
+
+Returns addresses from the peerlist that are known to have an open port.
 
 Example:
 
@@ -3731,9 +3795,49 @@ Result:
 ]
 ```
 
+### Disconnect a peer
+
+API sets: `NET_CTRL`
+
+```
+URI: /api/v1/network/connection/disconnect
+Method: POST
+Args:
+	id: ID of the connection
+
+Returns 404 if the connection is not found.
+```
+
+Disconnects a peer by ID.
+
+Example:
+
+```sh
+curl -X POST 'http://127.0.0.1:6420/api/v1/network/connection/disconnect?id=999'
+```
+
+Result:
+
+```json
+{}
+```
+
+## Migrating from the unversioned API
+
+The unversioned API are the API endpoints without an `/api` prefix.
+These endpoints are all prefixed with `/api/v1` now.
+
+`-enable-unversioned-api` was added as an option to assist migration to `/api/v1`
+but this option will be removed in v0.26.0.
+
+To migrate from the unversioned API, add `/api/v1` to all endpoints that you call
+that do not have an `/api` prefix already.
+
+For example, `/block` would become `/api/v1/block`.
+
 ## Migrating from the JSONRPC API
 
-The JSONRPC-2.0 RPC API will be removed as of version `0.26.0`.
+The JSONRPC-2.0 RPC API will be removed in v0.26.0.
 Anyone still using this can follow this guide to migrate to the REST API:
 
 * `get_status` is replaced by `/api/v1/blockchain/metadata` and `/api/v1/health`
@@ -3742,3 +3846,157 @@ Anyone still using this can follow this guide to migrate to the REST API:
 * `get_outputs` is replaced by `/api/v1/outputs`
 * `inject_transaction` is replaced by `/api/v1/injectTransaction`
 * `get_transaction` is replaced by `/api/v1/transaction`
+
+## Migrating from /api/v1/spend
+
+The `POST /api/v1/spend` endpoint is deprecated and will be removed in v0.26.0.
+
+To migrate from it, use [`POST /api/v1/wallet/transaction`](#create-transaction) followed by [`POST /api/v1/injectTransaction`](#inject-raw-transaction).
+Do not create another transaction before injecting the created transaction, otherwise you might create two conflicting transactions.
+
+`POST /api/v1/wallet/transaction` has more options for creating the transaction than the `/api/v1/spend` endpoint.
+To replicate the same behavior as `/api/v1/spend`, use the following request body template:
+
+```json
+{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5",
+    },
+    "wallet": {
+        "id": "$wallet_id",
+        "password": "$password"
+    },
+    "to": [{
+        "address": "$dst",
+        "coins": "$coins"
+    }]
+}
+```
+
+You must use a string for `"coins"` instead of an integer measured in "droplets" (the smallest unit of currency in Skycoin, 1/1000000 of a skycoin).
+For example, if you sent 1 Skycoin with `/api/v1/spend` you would have specified the `coins` field as `1000000`.
+Now, you would specify it as `"1"`.
+
+Some examples:
+
+* 123.456 coins: before `123456000`, now `"123.456"`
+* 0.1 coins: before `100000`, now `"0.1"`
+* 1 coin: before `1000000`, now `"1"`
+
+Extra zeros on the `"coins"` string are ok, for example `"1"` is the same as `"1.0"` or `"1.000000"`.
+
+Only provide `"password"` if the wallet is encrypted.  Note that decryption can take a few seconds, and this can impact
+throughput.
+
+The request header `Content-Type` must be `application/json`.
+
+The response to `POST /api/v1/wallet/transaction` will include a verbose decoded transaction with details
+and the hex-encoded binary transaction in the `"encoded_transaction"` field.
+Use the value of `"encoded_transaction"` as the `"rawtx"` value in the request to `/api/v1/injectTransaction`.
+
+## Migration from /api/v1/explorer/address
+
+The `GET /api/v1/explorer/address` endpoint is deprecated and will be removed in v0.26.0.
+
+To migrate from it, use [`GET /api/v1/transactions?verbose=1`](#get-transactions-for-addresses).
+
+`/api/v1/explorer/address` accepted a single `address` query parameter. `/api/v1/transactions` uses an `addrs` query parameter and
+accepts multiple addresses at once.
+
+The response data is the same but the structure is slightly different. Compare the follow two example responses:
+
+`/api/v1/explorer/address?address=WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC`:
+
+```json
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 38076,
+            "block_seq": 15493
+        },
+        "timestamp": 1518878675,
+        "length": 183,
+        "type": 0,
+        "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
+        "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
+        "fee": 126249,
+        "sigs": [
+            "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
+        ],
+        "inputs": [
+            {
+                "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
+                "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
+                "coins": "125.000000",
+                "hours": 34596,
+                "calculated_hours": 178174
+            }
+        ],
+        "outputs": [
+            {
+                "uxid": "5b4a79c7de2e9099e083bbc8096619ae76ba6fbe34875c61bbe2d3bfa6b18b99",
+                "dst": "2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg",
+                "coins": "125.000000",
+                "hours": 51925
+            }
+        ]
+    }
+]
+```
+
+`/api/v1/transactions?verbose=1&addrs=WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC`:
+
+```json
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 57564,
+            "block_seq": 7498
+        },
+        "time": 1514743602,
+        "txn": {
+            "timestamp": 1514743602,
+            "length": 220,
+            "type": 0,
+            "txid": "df5bcef198fe6e96d496c30482730f895cabc1d55b338afe5633b0c2889d02f9",
+            "inner_hash": "4677ff9b9b56485495a45693cc09f8496199929fccb52091d32f2d3cf2ee8a41",
+            "fee": 69193,
+            "sigs": [
+                "8e1f6f621a11f737ac2031be975d4b2fc17bf9f17a0da0a2fe219ee018011ab506e2ad0367be302a8d859cc355c552313389cd0aa9fa98dc7d2085a52f11ef5a00"
+            ],
+            "inputs": [
+                {
+                    "uxid": "2374201ff29f1c024ccfc6c53160e741d06720562853ad3613c121acd8389031",
+                    "owner": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                    "coins": "162768.000000",
+                    "hours": 485,
+                    "calculated_hours": 138385
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "63f299fc85fe6fc34d392718eee55909837c7231b6ffd93e5a9a844c4375b313",
+                    "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                    "coins": "162643.000000",
+                    "hours": 34596
+                },
+                {
+                    "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
+                    "dst": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
+                    "coins": "125.000000",
+                    "hours": 34596
+                }
+            ]
+        }
+    }
+]
+```
+
+The transaction data is wrapped in a `"txn"` field.  A `"time"` field is present at the top level. This `"time"` field
+is either the confirmation timestamp of a confirmed transaction or the last received time of an unconfirmed transaction.

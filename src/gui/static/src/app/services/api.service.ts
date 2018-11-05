@@ -7,6 +7,7 @@ import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import {
   Address, GetWalletsResponseEntry, GetWalletsResponseWallet, NormalTransaction,
@@ -16,23 +17,26 @@ import {
 @Injectable()
 export class ApiService {
   private url = environment.nodeUrl;
+  private gettingCsrf: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(
     private http: Http,
     private translate: TranslateService,
   ) { }
 
-  getExplorerAddress(address: Address): Observable<NormalTransaction[]> {
-    return this.get('explorer/address', {address: address.address})
+  getTransactions(addresses: Address[]): Observable<NormalTransaction[]> {
+    const formattedAddresses = addresses.map(a => a.address).join(',');
+
+    return this.post('transactions', {addrs: formattedAddresses, verbose: true})
       .map(transactions => transactions.map(transaction => ({
         addresses: [],
         balance: new BigNumber(0),
         block: transaction.status.block_seq,
         confirmed: transaction.status.confirmed,
-        timestamp: transaction.timestamp,
-        txid: transaction.txid,
-        inputs: transaction.inputs,
-        outputs: transaction.outputs,
+        timestamp: transaction.txn.timestamp,
+        txid: transaction.txn.txid,
+        inputs: transaction.txn.inputs,
+        outputs: transaction.txn.outputs,
       })));
   }
 
@@ -123,7 +127,21 @@ export class ApiService {
   }
 
   getCsrf() {
-    return this.get('csrf').map(response => response.csrf_token);
+    return this.gettingCsrf.filter(response => !response).first().flatMap(() => {
+      this.gettingCsrf.next(true);
+
+      return this.get('csrf')
+        .map(response => {
+          setTimeout(() => this.gettingCsrf.next(false));
+
+          return response.csrf_token;
+        })
+        .catch((error: any) => {
+          setTimeout(() => this.gettingCsrf.next(false));
+
+          return error;
+        });
+    });
   }
 
   post(url, params = {}, options: any = {}, useV2 = false) {

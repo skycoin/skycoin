@@ -15,7 +15,7 @@ PDT_NAME=`grep productName package.json | sed 's/[,\", ]//g' | awk '{split($0,s,
 
 ELN_VERSION="v1.4.13"
 ELN_OUTPUT_BASE=".electron_output"
-ELN_OUTPUT="${ELN_OUTPUT_BASE}/${ELN_VERSION}"
+ELN_OUTPUT_DIR="${ELN_OUTPUT_BASE}/${ELN_VERSION}"
 
 
 if [ -n "$1" ]; then
@@ -24,15 +24,17 @@ else
     GOX_OSARCH="linux/amd64 linux/arm windows/amd64 windows/386 darwin/amd64"
 fi
 
-GOX_OUTPUT=".gox_output"
-GOX_GUI_OUTPUT="${GOX_OUTPUT}/gui"
-GOX_DMN_OUTPUT="${GOX_OUTPUT}/daemon"
+GOX_OUTPUT_DIR=".gox_output"
+GOX_GUI_OUTPUT_DIR="${GOX_OUTPUT_DIR}/gui"
+GOX_DMN_OUTPUT_DIR="${GOX_OUTPUT_DIR}/daemon"
+GOX_CLI_OUTPUT_DIR="${GOX_OUTPUT_DIR}/cli"
+GOX_CLI_OUTPUT_NAME="${PKG_NAME}-cli"
 
-STL_OUTPUT=".standalone_output"
+STL_OUTPUT_DIR=".standalone_output"
+DMN_OUTPUT_DIR=".daemon_output"
+CLI_OUTPUT_DIR=".cli_output"
 
-DMN_OUTPUT=".daemon_output"
-
-FINAL_OUTPUT="release"
+FINAL_OUTPUT_DIR="release"
 
 GUI_DIST_DIR="../src/gui/static/dist"  # Do not append "/" to this path
 
@@ -45,6 +47,8 @@ GUI_DIST_DIR="../src/gui/static/dist"  # Do not append "/" to this path
 # _STL_ZIP -- our compressed name for standalone gui releases
 # _DMN -- our name for daemon releases
 # _DMN_ZIP -- our compressed name for daemon releases
+# _CLI -- our name for cli releases
+# _CLI_ZIP -- our compressed name for cli releases
 
 if [[ $GOX_OSARCH == *"darwin/amd64"* ]]; then
     OSX64_APP="${PDT_NAME}.app"
@@ -55,6 +59,8 @@ if [[ $GOX_OSARCH == *"darwin/amd64"* ]]; then
     OSX64_STL_ZIP="${OSX64_STL}.zip"
     OSX64_DMN="${PKG_NAME}-${APP_VERSION}-daemon-osx-darwin-x64"
     OSX64_DMN_ZIP="${OSX64_DMN}.zip"
+    OSX64_CLI="${PKG_NAME}-${APP_VERSION}-cli-osx-darwin-x64"
+    OSX64_CLI_ZIP="${OSX64_CLI}.zip"
     OSX64_OUT="mac_x64"
 fi
 
@@ -66,6 +72,8 @@ if [[ $GOX_OSARCH == *"linux/amd64"* ]]; then
     LNX64_STL_ZIP="${LNX64_STL}.tar.gz"
     LNX64_DMN="${PKG_NAME}-${APP_VERSION}-daemon-linux-x64"
     LNX64_DMN_ZIP="${LNX64_DMN}.tar.gz"
+    LNX64_CLI="${PKG_NAME}-${APP_VERSION}-cli-linux-x64"
+    LNX64_CLI_ZIP="${LNX64_CLI}.tar.gz"
     LNX64_OUT="linux_x64"
 fi
 
@@ -75,6 +83,10 @@ if [[ $GOX_OSARCH == *"windows/amd64"* ]]; then
     WIN64_ELN_ZIP="${WIN64_ELN}.zip"
     WIN64_STL="${PKG_NAME}-${APP_VERSION}-gui-standalone-win-x64"
     WIN64_STL_ZIP="${WIN64_STL}.zip"
+    WIN64_DMN="${PKG_NAME}-${APP_VERSION}-daemon-win-x64"
+    WIN64_DMN_ZIP="${WIN64_DMN}.zip"
+    WIN64_CLI="${PKG_NAME}-${APP_VERSION}-cli-win-x64"
+    WIN64_CLI_ZIP="${WIN64_CLI}.zip"
     WIN64_OUT="win_x64"
 fi
 
@@ -86,6 +98,8 @@ if [[ $GOX_OSARCH == *"windows/386"* ]]; then
     WIN32_STL_ZIP="${WIN32_STL}.zip"
     WIN32_DMN="${PKG_NAME}-${APP_VERSION}-daemon-win-x86"
     WIN32_DMN_ZIP="${WIN32_DMN}.zip"
+    WIN32_CLI="${PKG_NAME}-${APP_VERSION}-cli-win-x86"
+    WIN32_CLI_ZIP="${WIN32_CLI}.zip"
     WIN32_OUT="win_ia32"
 fi
 
@@ -94,5 +108,7 @@ if [[ $GOX_OSARCH == *"linux/arm"* ]]; then
     LNX_ARM_STL_ZIP="${LNX_ARM_STL}.tar.gz"
     LNX_ARM_DMN="${PKG_NAME}-${APP_VERSION}-daemon-linux-arm"
     LNX_ARM_DMN_ZIP="${LNX_ARM_DMN}.tar.gz"
+    LNX_ARM_CLI="${PKG_NAME}-${APP_VERSION}-cli-linux-arm"
+    LNX_ARM_CLI_ZIP="${LNX_ARM_CLI}.tar.gz"
     LNX_ARM_OUT="linux_arm"
 fi

@@ -93,6 +93,20 @@ func (_m *MockGatewayer) DecryptWallet(wltID string, password []byte) (*wallet.W
 	return r0, r1
 }
 
+// Disconnect provides a mock function with given fields: id
+func (_m *MockGatewayer) Disconnect(id uint64) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // EncryptWallet provides a mock function with given fields: wltID, password
 func (_m *MockGatewayer) EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
 	ret := _m.Called(wltID, password)
@@ -394,6 +408,29 @@ func (_m *MockGatewayer) GetConnection(addr string) (*daemon.Connection, error) 
 	return r0, r1
 }
 
+// GetConnections provides a mock function with given fields: f
+func (_m *MockGatewayer) GetConnections(f func(daemon.Connection) bool) ([]daemon.Connection, error) {
+	ret := _m.Called(f)
+
+	var r0 []daemon.Connection
+	if rf, ok := ret.Get(0).(func(func(daemon.Connection) bool) []daemon.Connection); ok {
+		r0 = rf(f)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]daemon.Connection)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(func(daemon.Connection) bool) error); ok {
+		r1 = rf(f)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetDefaultConnections provides a mock function with given fields:
 func (_m *MockGatewayer) GetDefaultConnections() []string {
 	ret := _m.Called()
@@ -502,29 +539,6 @@ func (_m *MockGatewayer) GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [
 	}
 
 	return r0, r1, r2
-}
-
-// GetOutgoingConnections provides a mock function with given fields:
-func (_m *MockGatewayer) GetOutgoingConnections() ([]daemon.Connection, error) {
-	ret := _m.Called()
-
-	var r0 []daemon.Connection
-	if rf, ok := ret.Get(0).(func() []daemon.Connection); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]daemon.Connection)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // GetRichlist provides a mock function with given fields: includeDistribution

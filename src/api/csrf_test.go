@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -109,9 +108,9 @@ func TestCSRF(t *testing.T) {
 		v.Add("id", "fooid")
 		v.Add("label", "foolabel")
 
-		req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBufferString(v.Encode()))
+		req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(v.Encode()))
 		require.NoError(t, err)
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Content-Type", ContentTypeForm)
 
 		if csrfToken != "" {
 			req.Header.Set("X-CSRF-Token", csrfToken)

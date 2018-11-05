@@ -62,7 +62,9 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
 - [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
+- [Running with a custom max transaction size](#running-with-a-custom-max-transaction-size)
 - [URI Specification](#uri-specification)
+- [Wire protocol user agent](#wire-protocol-user-agent)
 - [Development](#development)
 	- [Modules](#modules)
 	- [Client libraries](#client-libraries)
@@ -221,11 +223,29 @@ See the [newcoin tool README](./cmd/newcoin/README.md)
 The coin hour burn factor is the denominator in the ratio of coinhours that must be burned by a transaction.
 For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor of 10 means 1/10 of coin hours must be burned.
 
-The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar. It cannot be configured through the command line.
+The coin hour burn factor can be configured with a `USER_BURN_FACTOR` envvar. It cannot be configured through the command line.
 
 ```sh
-COINHOUR_BURN_FACTOR=999 ./run.sh
+USER_BURN_FACTOR=999 ./run-client.sh
 ```
+
+This burn factor applies to user-created transactions.
+
+To control the burn factor in other scenarios, use `-burn-factor-unconfirmed` and `-burn-factor-create-block`.
+
+## Running with a custom max transaction size
+
+```sh
+MAX_USER_TXN_SIZE=1024 ./run-client.sh
+```
+
+This maximum transaction size applies to user-created transactions.
+
+To control the transaction size for unconfirmed transactions, use `-unconfirmed-txn-size`.
+
+To control the max block size, use `-block-size`.
+
+Transaction and block size are measured in bytes.
 
 ## URI Specification
 
@@ -237,6 +257,10 @@ Example Skycoin URIs:
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70&label=friend&message=Birthday%20Gift`
+
+## Wire protocol user agent
+
+[Wire protocol user agent description](https://github.com/skycoin/skycoin/wiki/Wire-protocol-user-agent)
 
 ## Development
 
@@ -568,13 +592,13 @@ Instructions for doing this:
 0. Follow the steps in [pre-release testing](#pre-release-testing)
 0. Make a PR merging `develop` into `master`
 0. Review the PR and merge it
-0. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+0. Tag the `master` branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
     Sign the tag. If you have your GPG key in github, creating a release on the Github website will automatically tag the release.
     It can be tagged from the command line with `git tag -as v0.20.0 $COMMIT_ID`, but Github will not recognize it as a "release".
 0. Make sure that the client runs properly from the `master` branch
 0. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
 
-If there are problems discovered after merging to master, start over, and increment the 3rd version number.
+If there are problems discovered after merging to `master`, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 
 #### Pre-release testing

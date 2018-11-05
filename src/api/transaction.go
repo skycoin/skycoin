@@ -13,7 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
@@ -247,7 +246,7 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 }
 
 // Returns transactions that match the filters.
-// Method: GET
+// Method: GET, POST
 // URI: /api/v1/transactions
 // Args:
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
@@ -255,7 +254,7 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 //	   verbose: [bool] include verbose transaction input data
 func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
@@ -379,10 +378,9 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			switch err {
-			case daemon.ErrOutgoingConnectionsDisabled, gnet.ErrPoolEmpty, gnet.ErrNoReachableConnections:
+			if daemon.IsBroadcastFailure(err) {
 				wh.Error503(w, err.Error())
-			default:
+			} else {
 				wh.Error500(w, err.Error())
 			}
 			return
@@ -409,18 +407,27 @@ func NewResendResult(hashes []cipher.SHA256) ResendResult {
 }
 
 // URI: /api/v1/resendUnconfirmedTxns
-// Method: GET
+// Method: POST
 // Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
+// Response:
+//      200 - ok, returns the transaction hashes that were resent
+//      405 - method not POST
+//		500 - other error
+//      503 - network unavailable for broadcasting transaction
 func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
 
 		hashes, err := gateway.ResendUnconfirmedTxns()
 		if err != nil {
-			wh.Error500(w, err.Error())
+			if daemon.IsBroadcastFailure(err) {
+				wh.Error503(w, err.Error())
+			} else {
+				wh.Error500(w, err.Error())
+			}
 			return
 		}
 
@@ -491,7 +498,7 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if r.Header.Get("Content-Type") != "application/json" {
+		if r.Header.Get("Content-Type") != ContentTypeJSON {
 			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
 			writeHTTPResponse(w, resp)
 			return

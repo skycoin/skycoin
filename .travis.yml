@@ -7,12 +7,12 @@ go:
 matrix:
   include:
     - os: linux
-      env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=30s
+      env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=45s
     - os: osx
       # Do not start osx build for PR
       if: type != pull_request
       osx_image: xcode8
-      env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=30s
+      env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=60s
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq; fi
@@ -48,8 +48,9 @@ install:
   - cd $GOPATH/src/github.com/skycoin/skycoin
   - go get -t ./...
   - make install-linters
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 && sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update ; echo 'Available versions (gcc)' && brew list --versions gcc ; brew list gcc@6 &>/dev/null || brew install gcc@6 ; fi
+  # Install pinned golangci-lint, overriding the latest version install by make install-linters
+  - VERSION=1.10.2 ./ci-scripts/install-golangci-lint.sh
+  - ./ci-scripts/install-travis-gcc.sh
   - make install-deps-libc
   - nvm install 8.11.0
   - nvm use 8.11.0

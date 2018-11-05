@@ -64,10 +64,10 @@ func BenchmarkSerializeGivePeersMessage(b *testing.B) {
 var introPubKey = cipher.MustPubKeyFromHex("03cd7dfcd8c3452d1bb5d9d9e34dd95d6848cb9f66c2aad127b60578f4be7498f2")
 
 var introMessageObj = IntroductionMessage{
-	Mirror:  1234,
-	Port:    5678,
-	Version: 1,
-	Pubkey:  introPubKey[:],
+	Mirror:          1234,
+	ListenPort:      5678,
+	ProtocolVersion: 1,
+	Extra:           introPubKey[:],
 }
 
 func BenchmarkDeserializeRawIntroductionMessage(b *testing.B) {

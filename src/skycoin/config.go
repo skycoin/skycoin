@@ -14,8 +14,10 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -31,6 +33,9 @@ type Config struct {
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {
+	// Name of the coin
+	CoinName string
+
 	// Disable peer exchange
 	DisablePEX bool
 	// Download peer list
@@ -70,6 +75,8 @@ type NodeConfig struct {
 	Address string
 	// gnet uses this for TCP incoming and outgoing
 	Port int
+	// MaxConnections is the maximum number of total connections allowed
+	MaxConnections int
 	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
 	// Maximum default outgoing connections
@@ -112,9 +119,14 @@ type NodeConfig struct {
 	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
 
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	// Timeouts for the HTTP listener
+	HTTPReadTimeout  time.Duration
+	HTTPWriteTimeout time.Duration
+	HTTPIdleTimeout  time.Duration
+
+	// Remark to include in user agent sent in the wire protocol introduction
+	UserAgentRemark string
+	userAgent       useragent.Data
 
 	// Logging
 	ColorLog bool
@@ -128,6 +140,15 @@ type NodeConfig struct {
 	// Reset the database if integrity checks fail, and continue running
 	ResetCorruptDB bool
 
+	// Maximum size of blocks in bytes to apply when creating blocks
+	MaxBlockSize int
+	// Maximum size of a transaction in bytes to apply to unconfirmed txns (received over the network, or when refreshing the pool)
+	MaxUnconfirmedTransactionSize int
+	// Coin hour burn factor to apply to unconfirmed txns (received over the network, or when refreshing the pool)
+	UnconfirmedBurnFactor uint64
+	// Coin hour burn factor to apply when creating blocks
+	CreateBlockBurnFactor uint64
+
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
@@ -139,7 +160,7 @@ type NodeConfig struct {
 	// Load custom peers from disk
 	CustomPeersFile string
 
-	RunMaster bool
+	RunBlockPublisher bool
 
 	/* Developer options */
 
@@ -176,6 +197,7 @@ type NodeConfig struct {
 // NewNodeConfig returns a new node config instance
 func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	nodeConfig := NodeConfig{
+		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
@@ -206,9 +228,11 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		Address: "",
 		//gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
-		// MaxOutgoingConnections is the maximum outgoing connections allowed.
+		// MaxConnections is the maximum number of total connections allowed
+		MaxConnections: 128,
+		// MaxOutgoingConnections is the maximum outgoing connections allowed
 		MaxOutgoingConnections: 8,
-		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed
 		MaxDefaultPeerOutgoingConnections: 1,
 		DownloadPeerList:                  true,
 		PeerListURL:                       node.PeerListURL,
@@ -224,7 +248,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    api.EndpointsRead + "," + api.EndpointsTransaction,
+		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
 
@@ -244,19 +268,23 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		VerifyDB:       false,
 		ResetCorruptDB: false,
 
+		// Blockchain/transaction validation
+		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
+		MaxBlockSize:                  params.MaxUserTransactionSize,
+		UnconfirmedBurnFactor:         params.UserBurnFactor,
+		CreateBlockBurnFactor:         params.UserBurnFactor,
+
 		// Wallets
 		WalletDirectory:  "",
 		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
 
 		// Timeout settings for http.Server
 		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 60,
-		IdleTimeout:  time.Second * 120,
+		HTTPReadTimeout:  time.Second * 10,
+		HTTPWriteTimeout: time.Second * 60,
+		HTTPIdleTimeout:  time.Second * 120,
 
-		// Centralized network configuration
-		RunMaster: false,
-		/* Developer options */
+		RunBlockPublisher: false,
 
 		// Enable cpu profiling
 		ProfileCPU: false,
@@ -276,7 +304,8 @@ func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
 		fmt.Println("Additional environment variables:")
-		fmt.Println("* COINHOUR_BURN_FACTOR - Set the coin hour burn factor required for transactions. Must be > 1.")
+		fmt.Println("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be > 1.")
+		fmt.Println("* MAX_USER_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be > 183.")
 		os.Exit(0)
 	}
 
@@ -331,10 +360,22 @@ func (c *Config) postProcess() error {
 		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
 	}
 
-	if c.Node.RunMaster {
-		// Run in arbitrating mode if the node is master
+	if c.Node.RunBlockPublisher {
+		// Run in arbitrating mode if the node is block publisher
 		c.Node.Arbitrating = true
 	}
+
+	userAgentData := useragent.Data{
+		Coin:    c.Node.CoinName,
+		Version: c.Build.Version,
+		Remark:  c.Node.UserAgentRemark,
+	}
+
+	if _, err := userAgentData.Build(); err != nil {
+		return err
+	}
+
+	c.Node.userAgent = userAgentData
 
 	apiSets, err := buildAPISets(c.Node)
 	if err != nil {
@@ -365,6 +406,38 @@ func (c *Config) postProcess() error {
 		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
 	}
 
+	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
+		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
+	}
+
+	if c.Node.MaxBlockSize <= 0 {
+		return errors.New("-block-size must be > 0")
+	}
+	if c.Node.MaxBlockSize < params.MaxUserTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
+	}
+
+	if c.Node.MaxUnconfirmedTransactionSize <= 0 {
+		return errors.New("-unconfirmed-txn-size must be > 0")
+	}
+	if c.Node.MaxUnconfirmedTransactionSize < params.MaxUserTransactionSize {
+		return fmt.Errorf("-unconfirmed-txn-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
+	}
+
+	if c.Node.UnconfirmedBurnFactor < 2 {
+		return errors.New("-unconfirmed-burn-factor must be >= 2")
+	}
+	if c.Node.UnconfirmedBurnFactor < params.UserBurnFactor {
+		return fmt.Errorf("-unconfirmed-burn-factor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
+	}
+
+	if c.Node.CreateBlockBurnFactor < 2 {
+		return errors.New("-create-block-burn-factor must be >= 2")
+	}
+	if c.Node.CreateBlockBurnFactor < params.UserBurnFactor {
+		return fmt.Errorf("-create-block-burn-factor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
+	}
+
 	return nil
 }
 
@@ -390,6 +463,8 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsStatus,
 		api.EndpointsWallet,
 		api.EndpointsTransaction,
+		api.EndpointsPrometheus,
+		api.EndpointsNetCtrl,
 		// Do not include insecure or deprecated API sets, they must always
 		// be explicitly enabled through -enable-api-sets
 	}
@@ -455,9 +530,21 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
-	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, "enable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
-	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, "disable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+
+	allAPISets := []string{
+		api.EndpointsRead,
+		api.EndpointsStatus,
+		api.EndpointsWallet,
+		api.EndpointsTransaction,
+		api.EndpointsPrometheus,
+		api.EndpointsNetCtrl,
+		api.EndpointsInsecureWalletSeed,
+		api.EndpointsDeprecatedWalletSpend,
+	}
+	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
+	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
+
 	flag.StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
 	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
 	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
@@ -485,20 +572,26 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableDefaultPeers, "disable-default-peers", c.DisableDefaultPeers, "disable the hardcoded default peers")
 	flag.StringVar(&c.CustomPeersFile, "custom-peers-file", c.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
 
-	// Key Configuration Data
-	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
+	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
 
-	flag.StringVar(&c.BlockchainPubkeyStr, "master-public-key", c.BlockchainPubkeyStr, "public key of the master chain")
-	flag.StringVar(&c.BlockchainSeckeyStr, "master-secret-key", c.BlockchainSeckeyStr, "secret key, set for master")
+	flag.IntVar(&c.MaxUnconfirmedTransactionSize, "unconfirmed-txn-size", c.MaxUnconfirmedTransactionSize, "maximum size of an unconfirmed transaction")
+	flag.IntVar(&c.MaxBlockSize, "block-size", c.MaxBlockSize, "maximum size of a block")
+	flag.Uint64Var(&c.UnconfirmedBurnFactor, "burn-factor-unconfirmed", c.UnconfirmedBurnFactor, "coinhour burn factor applied to unconfirmed transactions")
+	flag.Uint64Var(&c.CreateBlockBurnFactor, "burn-factor-create-block", c.CreateBlockBurnFactor, "coinhour burn factor applied when creating blocks")
+
+	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
+	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
+	flag.StringVar(&c.BlockchainSeckeyStr, "blockchain-secret-key", c.BlockchainSeckeyStr, "secret key of the blockchain")
 
 	flag.StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
 	flag.StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
-	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
+	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "Max number of peers to track in peerlist")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
@@ -514,7 +607,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	case "":
 	case "STANDALONE_CLIENT":
 		c.EnableAllAPISets = true
-		c.EnabledAPISets = "INSECURE_WALLET_SEED"
+		c.EnabledAPISets = api.EndpointsInsecureWalletSeed
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false

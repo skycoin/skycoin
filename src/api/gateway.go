@@ -44,7 +44,8 @@ type Gatewayer interface {
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() (*daemon.BlockchainProgress, error)
 	GetConnection(addr string) (*daemon.Connection, error)
-	GetOutgoingConnections() ([]daemon.Connection, error)
+	GetConnections(f func(c daemon.Connection) bool) ([]daemon.Connection, error)
+	Disconnect(id uint64) error
 	GetDefaultConnections() []string
 	GetTrustConnections() []string
 	GetExchgConnection() []string

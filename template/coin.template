@@ -32,6 +32,9 @@ var (
 
 	logger = logging.MustGetLogger("main")
 
+	// CoinName name of coin
+	CoinName = "{{.CoinName}}"
+
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "{{.GenesisSignatureStr}}"
 	// GenesisAddressStr genesis address string
@@ -54,17 +57,22 @@ var (
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-		GenesisSignatureStr: GenesisSignatureStr,
-		GenesisAddressStr:   GenesisAddressStr,
-		GenesisCoinVolume:   GenesisCoinVolume,
-		GenesisTimestamp:    GenesisTimestamp,
-		BlockchainPubkeyStr: BlockchainPubkeyStr,
-		BlockchainSeckeyStr: BlockchainSeckeyStr,
-		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "{{.PeerListURL}}",
-		Port:                {{.Port}},
-		WebInterfacePort:    {{.WebInterfacePort}},
-		DataDirectory:       "{{.DataDirectory}}",
+		CoinName:                      CoinName,
+		GenesisSignatureStr:           GenesisSignatureStr,
+		GenesisAddressStr:             GenesisAddressStr,
+		GenesisCoinVolume:             GenesisCoinVolume,
+		GenesisTimestamp:              GenesisTimestamp,
+		BlockchainPubkeyStr:           BlockchainPubkeyStr,
+		BlockchainSeckeyStr:           BlockchainSeckeyStr,
+		DefaultConnections:            DefaultConnections,
+		PeerListURL:                   "{{.PeerListURL}}",
+		Port:                          {{.Port}},
+		WebInterfacePort:              {{.WebInterfacePort}},
+		DataDirectory:                 "{{.DataDirectory}}",
+		UnconfirmedBurnFactor:         {{.UnconfirmedBurnFactor}},
+		CreateBlockBurnFactor:         {{.CreateBlockBurnFactor}},
+		MaxBlockSize:                  {{.MaxBlockSize}},
+		MaxUnconfirmedTransactionSize: {{.MaxUnconfirmedTransactionSize}},
 	})
 
 	parseFlags = true

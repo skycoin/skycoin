@@ -57,18 +57,22 @@ var (
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-		CoinName:            CoinName,
-		GenesisSignatureStr: GenesisSignatureStr,
-		GenesisAddressStr:   GenesisAddressStr,
-		GenesisCoinVolume:   GenesisCoinVolume,
-		GenesisTimestamp:    GenesisTimestamp,
-		BlockchainPubkeyStr: BlockchainPubkeyStr,
-		BlockchainSeckeyStr: BlockchainSeckeyStr,
-		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "{{.PeerListURL}}",
-		Port:                {{.Port}},
-		WebInterfacePort:    {{.WebInterfacePort}},
-		DataDirectory:       "{{.DataDirectory}}",
+		CoinName:                      CoinName,
+		GenesisSignatureStr:           GenesisSignatureStr,
+		GenesisAddressStr:             GenesisAddressStr,
+		GenesisCoinVolume:             GenesisCoinVolume,
+		GenesisTimestamp:              GenesisTimestamp,
+		BlockchainPubkeyStr:           BlockchainPubkeyStr,
+		BlockchainSeckeyStr:           BlockchainSeckeyStr,
+		DefaultConnections:            DefaultConnections,
+		PeerListURL:                   "{{.PeerListURL}}",
+		Port:                          {{.Port}},
+		WebInterfacePort:              {{.WebInterfacePort}},
+		DataDirectory:                 "{{.DataDirectory}}",
+		UnconfirmedBurnFactor:         {{.UnconfirmedBurnFactor}},
+		CreateBlockBurnFactor:         {{.CreateBlockBurnFactor}},
+		MaxBlockSize:                  {{.MaxBlockSize}},
+		MaxUnconfirmedTransactionSize: {{.MaxUnconfirmedTransactionSize}},
 	})
 
 	parseFlags = true

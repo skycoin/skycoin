@@ -6,7 +6,9 @@ package daemon
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -67,7 +69,7 @@ func NewConfig() Config {
 		Pex:      pex.NewConfig(),
 		Gateway:  NewGatewayConfig(),
 		Messages: NewMessagesConfig(),
-		Visor:    visor.NewVisorConfig(),
+		Visor:    visor.NewConfig(),
 	}
 }
 
@@ -189,6 +191,8 @@ type DaemonConfig struct { // nolint: golint
 	// User agent (sent in introduction messages)
 	UserAgent useragent.Data
 	userAgent string // parsed from UserAgent in preprocess()
+	// Random nonce value for detecting self-connection in introduction messages
+	Mirror uint32
 }
 
 // NewDaemonConfig creates daemon config
@@ -219,6 +223,7 @@ func NewDaemonConfig() DaemonConfig {
 		BlockCreationInterval:        10,
 		UnconfirmedRefreshRate:       time.Minute,
 		UnconfirmedRemoveInvalidRate: time.Minute,
+		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 	}
 }
 
@@ -227,33 +232,25 @@ func NewDaemonConfig() DaemonConfig {
 
 // daemoner Daemon interface
 type daemoner interface {
-	SendMessage(addr string, msg gnet.Message) error
-	BroadcastMessage(msg gnet.Message) error
 	Disconnect(addr string, r gnet.DisconnectReason) error
-	DisconnectNow(addr string, r gnet.DisconnectReason) error
-	PexConfig() pex.Config
-	RandomExchangeable(n int) pex.Peers
-	AddPeer(addr string) error
-	AddPeers(addrs []string) int
-	SetHasIncomingPort(addr string) error
-	IncreaseRetryTimes(addr string)
-	ResetRetryTimes(addr string)
-	RecordPeerHeight(addr string, gnetID, height uint64)
-	GetSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error)
-	HeadBkSeq() (uint64, bool, error)
-	ExecuteSignedBlock(b coin.SignedBlock) error
-	GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error)
-	GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error)
-	InjectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
-	Mirror() uint32
-	DaemonConfig() DaemonConfig
-	BlockchainPubkey() cipher.PubKey
-	RequestBlocksFromAddr(addr string) error
-	AnnounceAllTxns() error
-	RecordUserAgent(addr string, userAgent useragent.Data) error
-
+	sendMessage(addr string, msg gnet.Message) error
+	broadcastMessage(msg gnet.Message) (int, error)
+	disconnectNow(addr string, r gnet.DisconnectReason) error
+	addPeers(addrs []string) int
+	recordPeerHeight(addr string, gnetID, height uint64)
+	getSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error)
+	headBkSeq() (uint64, bool, error)
+	executeSignedBlock(b coin.SignedBlock) error
+	filterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error)
+	getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error)
+	requestBlocksFromAddr(addr string) error
+	announceAllTxns() error
+	daemonConfig() DaemonConfig
+	pexConfig() pex.Config
+	injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
 	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error)
+	sendRandomPeers(addr string) error
 }
 
 // Daemon stateful properties of the daemon
@@ -414,7 +411,7 @@ func (dm *Daemon) Run() error {
 
 	blockInterval := time.Duration(dm.Config.BlockCreationInterval)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	if !dm.visor.Config.IsMaster {
+	if !dm.visor.Config.IsBlockPublisher {
 		blockCreationTicker.Stop()
 	}
 
@@ -512,8 +509,9 @@ loop:
 			}
 
 			m := NewGetPeersMessage()
-			if err := dm.BroadcastMessage(m); err != nil {
+			if _, err := dm.broadcastMessage(m); err != nil {
 				logger.WithError(err).Error("Broadcast GetPeersMessage failed")
+				continue
 			}
 
 		case <-clearStaleConnectionsTicker.C:
@@ -577,10 +575,10 @@ loop:
 			}
 
 		case <-blockCreationTicker.C:
-			// Create blocks, if master chain
+			// Create blocks, if block publisher
 			elapser.Register("blockCreationTicker.C")
-			if dm.visor.Config.IsMaster {
-				sb, err := dm.CreateAndPublishBlock()
+			if dm.visor.Config.IsBlockPublisher {
+				sb, err := dm.createAndPublishBlock()
 				if err != nil {
 					logger.WithError(err).Error("Failed to create and publish block")
 					continue
@@ -604,8 +602,8 @@ loop:
 				continue
 			}
 			// Announce these transactions
-			if err := dm.AnnounceTxns(validTxns); err != nil {
-				logger.WithError(err).Warning("AnnounceTxns failed")
+			if err := dm.announceTxns(validTxns); err != nil {
+				logger.WithError(err).Warning("announceTxns failed")
 			}
 
 		case <-unconfirmedRemoveInvalidTicker.C:
@@ -622,14 +620,14 @@ loop:
 
 		case <-blocksRequestTicker.C:
 			elapser.Register("blocksRequestTicker")
-			if err := dm.RequestBlocks(); err != nil {
-				logger.WithError(err).Warning("RequestBlocks failed")
+			if err := dm.requestBlocks(); err != nil {
+				logger.WithError(err).Warning("requestBlocks failed")
 			}
 
 		case <-blocksAnnounceTicker.C:
 			elapser.Register("blocksAnnounceTicker")
-			if err := dm.AnnounceBlocks(); err != nil {
-				logger.WithError(err).Warning("AnnounceBlocks failed")
+			if err := dm.announceBlocks(); err != nil {
+				logger.WithError(err).Warning("announceBlocks failed")
 			}
 
 		case setupErr = <-errC:
@@ -829,15 +827,15 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 		return
 	}
 
-	// The first message received must be an IntroductionMessage
+	// The first message received must be INTR, DISC or GIVP
 	if !c.HasIntroduced() {
 		switch e.Message.(type) {
-		case *IntroductionMessage, *DisconnectMessage:
+		case *IntroductionMessage, *DisconnectMessage, *GivePeersMessage:
 		default:
 			logger.WithFields(logrus.Fields{
 				"addr":        e.Context.Addr,
 				"messageType": fmt.Sprintf("%T", e.Message),
-			}).Info("needsIntro but first message is not INTR or DISC")
+			}).Info("needsIntro but first message is not INTR, DISC or GIVP")
 			if err := dm.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
 				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
 			}
@@ -882,8 +880,8 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 
 	logger.WithFields(fields).Debug("Sending introduction message")
 
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
-	if err := dm.SendMessage(e.Addr, m); err != nil {
+	m := NewIntroductionMessage(dm.Config.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
+	if err := dm.sendMessage(e.Addr, m); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return
 	}
@@ -914,12 +912,12 @@ func (dm *Daemon) onDisconnectEvent(e DisconnectEvent) {
 	case ErrDisconnectNoIntroduction,
 		ErrDisconnectVersionNotSupported,
 		ErrDisconnectSelf:
-		dm.IncreaseRetryTimes(e.Addr)
-	}
-
-	switch e.Reason.Error() {
-	case "read failed: EOF":
-		dm.IncreaseRetryTimes(e.Addr)
+		dm.pex.IncreaseRetryTimes(e.Addr)
+	default:
+		switch e.Reason.Error() {
+		case "read failed: EOF":
+			dm.pex.IncreaseRetryTimes(e.Addr)
+		}
 	}
 }
 
@@ -934,6 +932,10 @@ func (dm *Daemon) onConnectFailure(c ConnectFailureEvent) {
 	// If this happens, it is a bug, and the connections state may be corrupted.
 	if err := dm.connections.remove(c.Addr, 0); err != nil {
 		logger.Critical().WithField("addr", c.Addr).WithError(err).Error("connections.remove")
+	}
+
+	if strings.HasSuffix(c.Error.Error(), "connect: connection refused") {
+		dm.pex.IncreaseRetryTimes(c.Addr)
 	}
 }
 
@@ -993,19 +995,19 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 
 	if m, ok := r.Message.(*DisconnectMessage); ok {
-		if err := dm.DisconnectNow(r.Addr, m.reason); err != nil {
-			logger.WithError(err).WithField("addr", r.Addr).Warning("DisconnectNow")
+		if err := dm.disconnectNow(r.Addr, m.reason); err != nil {
+			logger.WithError(err).WithField("addr", r.Addr).Warning("disconnectNow")
 		}
 	}
 }
 
-// RequestBlocks Sends a GetBlocksMessage to all connections
-func (dm *Daemon) RequestBlocks() error {
+// requestBlocks sends a GetBlocksMessage to all connections
+func (dm *Daemon) requestBlocks() error {
 	if dm.Config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
-	headSeq, ok, err := dm.HeadBkSeq()
+	headSeq, ok, err := dm.visor.HeadBkSeq()
 	if err != nil {
 		return err
 	}
@@ -1015,21 +1017,21 @@ func (dm *Daemon) RequestBlocks() error {
 
 	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
 
-	err = dm.BroadcastMessage(m)
-	if err != nil {
+	if _, err := dm.broadcastMessage(m); err != nil {
 		logger.WithError(err).Debug("Broadcast GetBlocksMessage failed")
+		return err
 	}
 
-	return err
+	return nil
 }
 
-// AnnounceBlocks sends an AnnounceBlocksMessage to all connections
-func (dm *Daemon) AnnounceBlocks() error {
+// announceBlocks sends an AnnounceBlocksMessage to all connections
+func (dm *Daemon) announceBlocks() error {
 	if dm.Config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
-	headSeq, ok, err := dm.HeadBkSeq()
+	headSeq, ok, err := dm.visor.HeadBkSeq()
 	if err != nil {
 		return err
 	}
@@ -1039,70 +1041,16 @@ func (dm *Daemon) AnnounceBlocks() error {
 
 	m := NewAnnounceBlocksMessage(headSeq)
 
-	err = dm.BroadcastMessage(m)
-	if err != nil {
+	if _, err := dm.broadcastMessage(m); err != nil {
 		logger.WithError(err).Debug("Broadcast AnnounceBlocksMessage failed")
-	}
-
-	return err
-}
-
-// AnnounceAllTxns announces local unconfirmed transactions
-func (dm *Daemon) AnnounceAllTxns() error {
-	if dm.Config.DisableNetworking {
-		return ErrNetworkingDisabled
-	}
-
-	// Get local unconfirmed transaction hashes.
-	hashes, err := dm.visor.GetAllValidUnconfirmedTxHashes()
-	if err != nil {
 		return err
 	}
 
-	// Divide hashes into multiple sets of max size
-	hashesSet := divideHashes(hashes, dm.Config.MaxTxnAnnounceNum)
-
-	for _, hs := range hashesSet {
-		m := NewAnnounceTxnsMessage(hs)
-		if err = dm.BroadcastMessage(m); err != nil {
-			break
-		}
-	}
-
-	if err != nil {
-		logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
-	}
-
-	return err
+	return nil
 }
 
-func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
-	if len(hashes) == 0 {
-		return [][]cipher.SHA256{}
-	}
-
-	var j int
-	var hashesArray [][]cipher.SHA256
-
-	if len(hashes) > n {
-		for i := range hashes {
-			if len(hashes[j:i]) == n {
-				hs := make([]cipher.SHA256, n)
-				copy(hs, hashes[j:i])
-				hashesArray = append(hashesArray, hs)
-				j = i
-			}
-		}
-	}
-
-	hs := make([]cipher.SHA256, len(hashes)-j)
-	copy(hs, hashes[j:])
-	hashesArray = append(hashesArray, hs)
-	return hashesArray
-}
-
-// AnnounceTxns announces given transaction hashes.
-func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
+// announceTxns announces given transaction hashes
+func (dm *Daemon) announceTxns(txns []cipher.SHA256) error {
 	if dm.Config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
@@ -1113,30 +1061,34 @@ func (dm *Daemon) AnnounceTxns(txns []cipher.SHA256) error {
 
 	m := NewAnnounceTxnsMessage(txns)
 
-	err := dm.BroadcastMessage(m)
-	if err != nil {
+	if _, err := dm.broadcastMessage(m); err != nil {
 		logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
-	}
-
-	return err
-}
-
-// RequestBlocksFromAddr sends a GetBlocksMessage to one connected address
-func (dm *Daemon) RequestBlocksFromAddr(addr string) error {
-	if dm.Config.DisableNetworking {
-		return ErrNetworkingDisabled
-	}
-
-	headSeq, ok, err := dm.visor.HeadBkSeq()
-	if err != nil {
 		return err
 	}
-	if !ok {
-		return errors.New("Cannot request blocks from addr, there is no head block")
+
+	return nil
+}
+
+// createAndPublishBlock creates a block from unconfirmed transactions and sends it to the network.
+// Will panic if not running as a block publisher.
+// Will not create a block if outgoing connections are disabled.
+// If the block was created but the broadcast failed, the error will be non-nil but the
+// SignedBlock value will not be empty.
+// TODO -- refactor this method -- it should either always create a block and maybe broadcast it,
+// or use a database transaction to rollback block publishing if broadcast failed (however, this will cause a slow DB write)
+func (dm *Daemon) createAndPublishBlock() (*coin.SignedBlock, error) {
+	if dm.Config.DisableNetworking {
+		return nil, ErrNetworkingDisabled
 	}
 
-	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
-	return dm.SendMessage(addr, m)
+	sb, err := dm.visor.CreateAndExecuteBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	err = dm.broadcastBlock(sb)
+
+	return &sb, err
 }
 
 // ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast.
@@ -1168,85 +1120,180 @@ func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
 		return ErrNetworkingDisabled
 	}
 
-	l, err := dm.pool.Pool.Size()
-	if err != nil {
-		return err
-	}
-
-	logger.Debugf("BroadcastTransaction to %d conns", l)
-
 	m := NewGiveTxnsMessage(coin.Transactions{t})
-	if err := dm.BroadcastMessage(m); err != nil {
+	n, err := dm.broadcastMessage(m)
+	if err != nil {
 		logger.WithError(err).Error("Broadcast GiveTxnsMessage failed")
 		return err
 	}
 
+	logger.Debugf("BroadcastTransaction to %d conns", n)
+
 	return nil
 }
 
-// CreateAndPublishBlock creates a block from unconfirmed transactions and sends it to the network.
-// Will panic if not running as a master chain.
-// Will not create a block if outgoing connections are disabled.
-// If the block was created but the broadcast failed, the error will be non-nil but the
-// SignedBlock value will not be empty.
-// TODO -- refactor this method -- it should either always create a block and maybe broadcast it,
-// or use a database transaction to rollback block publishing if broadcast failed (however, this will cause a slow DB write)
-func (dm *Daemon) CreateAndPublishBlock() (*coin.SignedBlock, error) {
-	if dm.Config.DisableNetworking {
-		return nil, ErrNetworkingDisabled
-	}
-
-	sb, err := dm.visor.CreateAndExecuteBlock()
-	if err != nil {
-		return nil, err
-	}
-
-	err = dm.broadcastBlock(sb)
-
-	return &sb, err
+// Disconnect sends a DisconnectMessage to a peer. After the DisconnectMessage is sent, the peer is disconnected.
+// This allows all pending messages to be sent. Any message queued after a DisconnectMessage is unlikely to be sent
+// to the peer (but possible).
+func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
+	logger.WithFields(logrus.Fields{
+		"addr":   addr,
+		"reason": r,
+	}).Debug("Sending DisconnectMessage")
+	return dm.sendMessage(addr, NewDisconnectMessage(r))
 }
 
-// Sends a signed block to all connections.
+// Implements private daemoner interface methods:
+
+// requestBlocksFromAddr sends a GetBlocksMessage to one connected address
+func (dm *Daemon) requestBlocksFromAddr(addr string) error {
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
+	}
+
+	headSeq, ok, err := dm.visor.HeadBkSeq()
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("Cannot request blocks from addr, there is no head block")
+	}
+
+	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
+	return dm.sendMessage(addr, m)
+}
+
+// broadcastBlock sends a signed block to all connections
 func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 	if dm.Config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
 	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
-	return dm.BroadcastMessage(m)
+	_, err := dm.broadcastMessage(m)
+	return err
 }
 
-// Mirror returns the message mirror
-func (dm *Daemon) Mirror() uint32 {
-	return dm.Messages.Mirror
-}
-
-// DaemonConfig returns the daemon config
-func (dm *Daemon) DaemonConfig() DaemonConfig {
+// daemonConfig returns the daemon config
+func (dm *Daemon) daemonConfig() DaemonConfig {
 	return dm.Config
 }
 
-// BlockchainPubkey returns the blockchain pubkey
-func (dm *Daemon) BlockchainPubkey() cipher.PubKey {
-	return dm.Config.BlockchainPubkey
-}
-
 // connectionIntroduced transfers a connection to the "introduced" state in the connections state machine
+// and updates other state
 func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
-	return dm.connections.introduced(addr, gnetID, m, userAgent)
+	c, err := dm.connections.introduced(addr, gnetID, m, userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	listenAddr := c.ListenAddr()
+
+	fields := logrus.Fields{
+		"addr":       addr,
+		"gnetID":     m.c.ConnID,
+		"connGnetID": c.gnetID,
+		"listenPort": m.ListenPort,
+		"listenAddr": listenAddr,
+	}
+
+	if c.Outgoing {
+		// For successful outgoing connections, mark the peer as having an incoming port in the pex peerlist
+		// The peer should already be in the peerlist, since we use the peerlist to choose an outgoing connection to make
+		if err := dm.pex.SetHasIncomingPort(listenAddr, true); err != nil {
+			logger.Critical().WithError(err).WithFields(fields).Error("pex.SetHasIncomingPort failed")
+			return nil, err
+		}
+	} else {
+		// For successful incoming connections, add the peer to the peer list, with their self-reported listen port
+		if err := dm.pex.AddPeer(listenAddr); err != nil {
+			logger.Critical().WithError(err).WithFields(fields).Error("pex.AddPeer failed")
+			return nil, err
+		}
+	}
+
+	if err := dm.pex.SetUserAgent(listenAddr, c.UserAgent); err != nil {
+		logger.Critical().WithError(err).WithFields(fields).Error("pex.SetUserAgent failed")
+		return nil, err
+	}
+
+	dm.pex.ResetRetryTimes(listenAddr)
+
+	return c, nil
 }
 
-// Implements pooler interface
+// sendRandomPeers sends a random sample of peers to another peer
+func (dm *Daemon) sendRandomPeers(addr string) error {
+	peers := dm.pex.RandomExchangeable(dm.pex.Config.ReplyCount)
+	if len(peers) == 0 {
+		logger.Debug("sendRandomPeers: no peers to send in reply")
+		return errors.New("No peers available")
+	}
 
-// SendMessage sends a Message to a Connection and pushes the result onto the SendResults channel.
-func (dm *Daemon) SendMessage(addr string, msg gnet.Message) error {
+	m := NewGivePeersMessage(peers)
+	return dm.sendMessage(addr, m)
+}
+
+// announceAllTxns announces local unconfirmed transactions
+func (dm *Daemon) announceAllTxns() error {
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
+	}
+
+	// Get local unconfirmed transaction hashes.
+	hashes, err := dm.visor.GetAllValidUnconfirmedTxHashes()
+	if err != nil {
+		return err
+	}
+
+	// Divide hashes into multiple sets of max size
+	hashesSet := divideHashes(hashes, dm.Config.MaxTxnAnnounceNum)
+
+	for _, hs := range hashesSet {
+		m := NewAnnounceTxnsMessage(hs)
+		if _, err := dm.broadcastMessage(m); err != nil {
+			logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
+			return err
+		}
+	}
+
+	return nil
+}
+
+func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
+	if len(hashes) == 0 {
+		return [][]cipher.SHA256{}
+	}
+
+	var j int
+	var hashesArray [][]cipher.SHA256
+
+	if len(hashes) > n {
+		for i := range hashes {
+			if len(hashes[j:i]) == n {
+				hs := make([]cipher.SHA256, n)
+				copy(hs, hashes[j:i])
+				hashesArray = append(hashesArray, hs)
+				j = i
+			}
+		}
+	}
+
+	hs := make([]cipher.SHA256, len(hashes)-j)
+	copy(hs, hashes[j:])
+	hashesArray = append(hashesArray, hs)
+	return hashesArray
+}
+
+// sendMessage sends a Message to a Connection and pushes the result onto the SendResults channel.
+func (dm *Daemon) sendMessage(addr string, msg gnet.Message) error {
 	return dm.pool.Pool.SendMessage(addr, msg)
 }
 
-// BroadcastMessage sends a Message to all introduced connections in the Pool
-func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
+// broadcastMessage sends a Message to all introduced connections in the Pool
+func (dm *Daemon) broadcastMessage(msg gnet.Message) (int, error) {
 	if dm.Config.DisableNetworking {
-		return ErrNetworkingDisabled
+		return 0, ErrNetworkingDisabled
 	}
 
 	conns := dm.connections.all()
@@ -1260,106 +1307,59 @@ func (dm *Daemon) BroadcastMessage(msg gnet.Message) error {
 	return dm.pool.Pool.BroadcastMessage(msg, addrs)
 }
 
-// Disconnect sends a DisconnectMessage to a peer. After the DisconnectMessage is sent, the peer is disconnected.
-// This allows all pending messages to be sent. Any message queued after a DisconnectMessage is unlikely to be sent
-// to the peer (but possible).
-func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
-	logger.WithFields(logrus.Fields{
-		"addr":   addr,
-		"reason": r,
-	}).Debug("Sending DisconnectMessage")
-	return dm.SendMessage(addr, NewDisconnectMessage(r))
-}
-
-// DisconnectNow disconnects from a peer immediately without sending a DisconnectMessage. Any pending messages
+// disconnectNow disconnects from a peer immediately without sending a DisconnectMessage. Any pending messages
 // will not be sent to the peer.
-func (dm *Daemon) DisconnectNow(addr string, r gnet.DisconnectReason) error {
+func (dm *Daemon) disconnectNow(addr string, r gnet.DisconnectReason) error {
 	return dm.pool.Pool.Disconnect(addr, r)
 }
 
-// Implements pexer interface
-
-// RandomExchangeable returns N random exchangeable peers
-func (dm *Daemon) RandomExchangeable(n int) pex.Peers {
-	return dm.pex.RandomExchangeable(n)
-}
-
-// PexConfig returns the pex config
-func (dm *Daemon) PexConfig() pex.Config {
+// pexConfig returns the pex config
+func (dm *Daemon) pexConfig() pex.Config {
 	return dm.pex.Config
 }
 
-// AddPeer adds peer to the pex
-func (dm *Daemon) AddPeer(addr string) error {
-	return dm.pex.AddPeer(addr)
-}
-
-// AddPeers adds peers to the pex
-func (dm *Daemon) AddPeers(addrs []string) int {
+// addPeers adds peers to the pex
+func (dm *Daemon) addPeers(addrs []string) int {
 	return dm.pex.AddPeers(addrs)
 }
 
-// SetHasIncomingPort sets the peer public peer
-func (dm *Daemon) SetHasIncomingPort(addr string) error {
-	return dm.pex.SetHasIncomingPort(addr, true)
-}
-
-// RecordUserAgent sets the peer's user agent
-func (dm *Daemon) RecordUserAgent(addr string, userAgent useragent.Data) error {
-	return dm.pex.SetUserAgent(addr, userAgent)
-}
-
-// IncreaseRetryTimes increases the retry times of given peer
-func (dm *Daemon) IncreaseRetryTimes(addr string) {
-	dm.pex.IncreaseRetryTimes(addr)
-}
-
-// ResetRetryTimes reset the retry times of given peer
-func (dm *Daemon) ResetRetryTimes(addr string) {
-	dm.pex.ResetRetryTimes(addr)
-}
-
-// Implements chain height store
-
-// RecordPeerHeight records the height of specific peer
-func (dm *Daemon) RecordPeerHeight(addr string, gnetID, height uint64) {
+// recordPeerHeight records the height of specific peer
+func (dm *Daemon) recordPeerHeight(addr string, gnetID, height uint64) {
 	if err := dm.connections.SetHeight(addr, gnetID, height); err != nil {
 		logger.Critical().WithError(err).WithField("addr", addr).Error("connections.SetHeight failed")
 	}
 }
 
-// Implements visorer interface
-
-// GetSignedBlocksSince returns N signed blocks since given seq
-func (dm *Daemon) GetSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error) {
+// getSignedBlocksSince returns N signed blocks since given seq
+func (dm *Daemon) getSignedBlocksSince(seq, count uint64) ([]coin.SignedBlock, error) {
 	return dm.visor.GetSignedBlocksSince(seq, count)
 }
 
-// HeadBkSeq returns the head block sequence
-func (dm *Daemon) HeadBkSeq() (uint64, bool, error) {
+// headBkSeq returns the head block sequence
+func (dm *Daemon) headBkSeq() (uint64, bool, error) {
 	return dm.visor.HeadBkSeq()
 }
 
-// ExecuteSignedBlock executes the signed block
-func (dm *Daemon) ExecuteSignedBlock(b coin.SignedBlock) error {
+// executeSignedBlock executes the signed block
+func (dm *Daemon) executeSignedBlock(b coin.SignedBlock) error {
 	return dm.visor.ExecuteSignedBlock(b)
 }
 
-// GetUnconfirmedUnknown returns unconfirmed txn hashes with known ones removed
-func (dm *Daemon) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
-	return dm.visor.GetUnconfirmedUnknown(txns)
+// filterKnownUnconfirmed returns unconfirmed txn hashes with known ones removed
+func (dm *Daemon) filterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+	return dm.visor.FilterKnownUnconfirmed(txns)
 }
 
-// GetUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
-func (dm *Daemon) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error) {
-	return dm.visor.GetUnconfirmedKnown(txns)
+// getKnownUnconfirmed returns unconfirmed txn hashes with known ones removed
+func (dm *Daemon) getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error) {
+	return dm.visor.GetKnownUnconfirmed(txns)
 }
 
-// InjectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
+// injectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard constraints, it is rejected, and error will not be nil.
 // If the transaction only violates soft constraints, it is still injected, and the soft constraint violation is returned.
-func (dm *Daemon) InjectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
-	return dm.visor.InjectTransaction(txn)
+func (dm *Daemon) injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
+	return dm.visor.InjectForeignTransaction(txn)
 }

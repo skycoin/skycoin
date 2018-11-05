@@ -566,8 +566,7 @@ loop:
 			elapser.Register("outgoingTrustedConnectionsTicker")
 			// If connecting to a trusted peer totally fails, make sure to wait longer between further attempts
 			if outgoingTrustedConnectionsTickerSkip {
-				delta := time.Now().Sub(outgoingTrustedConnectionsTickerSkipStart)
-				if delta < outgoingTrustedConnectionsTickerSkipDuration {
+				if time.Since(outgoingTrustedConnectionsTickerSkipStart) < outgoingTrustedConnectionsTickerSkipDuration {
 					continue
 				}
 			}

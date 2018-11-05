@@ -44,7 +44,8 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Go application metrics exported at `/api/v2/metrics` (API set `PROMETHEUS`) in Prometheus format
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 - Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
-- Coinhour burn factor can be configured at runtime with `COINHOUR_BURN_FACTOR` envvar
+- Coinhour burn factor when creating transactions can be configured at runtime with `USER_BURN_FACTOR` envvar
+- Max transaction size when creating transactions can be configured at runtime with `MAX_USER_TXN_SIZE` envvar
 - Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
 - `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
 - A user agent string is sent in the wire protocol's introduction packet
@@ -93,6 +94,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `/api/v1/network/connection*` field `"connected_at"` added to connection object
 - `/api/v1/network/connections` now includes incoming connections. Filters are added to query connections by state and direction
 - `/api/v1/resendUnconfirmedTxns` is now a `POST` method, previously was a `GET` method
+- Transactions that violation soft constraints will propagate through the network
 - Node will send more peers before disconnecting due to a full peer list
 
 ### Removed
@@ -409,7 +411,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - #383 Error during installation from skycoin source code
 - #375 Node can't recovery from zero connections
 - #376 Explorer api `/explorer/address` does not return spend transactions
-- #373 Master node will be closed if there're no transactions need to execute
+- #373 Block publisher node will be closed if there're no transactions need to execute
 - #360 Node will crash when do ctrl+c while downloading blocks
 - #350 Wallet name always 'undefined' after loading wallet from seed
 

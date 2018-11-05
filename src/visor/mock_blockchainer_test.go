@@ -341,13 +341,13 @@ func (_m *MockBlockchainer) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn co
 	return r0
 }
 
-// VerifySingleTxnSoftHardConstraints provides a mock function with given fields: tx, txn, maxSize
-func (_m *MockBlockchainer) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error {
-	ret := _m.Called(tx, txn, maxSize)
+// VerifySingleTxnSoftHardConstraints provides a mock function with given fields: tx, txn, maxSize, burnFactor
+func (_m *MockBlockchainer) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int, burnFactor uint64) error {
+	ret := _m.Called(tx, txn, maxSize, burnFactor)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, coin.Transaction, int) error); ok {
-		r0 = rf(tx, txn, maxSize)
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, coin.Transaction, int, uint64) error); ok {
+		r0 = rf(tx, txn, maxSize, burnFactor)
 	} else {
 		r0 = ret.Error(0)
 	}

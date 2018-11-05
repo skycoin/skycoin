@@ -7,10 +7,10 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 // CoinSupply records the coin supply info
@@ -57,7 +57,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+		unlockedAddrs := params.GetUnlockedDistributionAddresses()
 		// Search map of unlocked addresses
 		// used to filter unspents
 		unlockedAddrSet := newStringSet(unlockedAddrs)
@@ -78,8 +78,8 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// "total supply" is the number of coins unlocked.
-		// Each distribution address was allocated visor.DistributionAddressInitialBalance coins.
-		totalSupply := uint64(len(unlockedAddrs)) * visor.DistributionAddressInitialBalance
+		// Each distribution address was allocated params.DistributionAddressInitialBalance coins.
+		totalSupply := uint64(len(unlockedAddrs)) * params.DistributionAddressInitialBalance
 		totalSupply *= droplet.Multiplier
 
 		// "current supply" is the number of coins distributed from the unlocked pool
@@ -99,7 +99,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		maxSupplyStr, err := droplet.ToString(visor.MaxCoinSupply * droplet.Multiplier)
+		maxSupplyStr, err := droplet.ToString(params.MaxCoinSupply * droplet.Multiplier)
 		if err != nil {
 			err = fmt.Errorf("Failed to convert coins to string: %v", err)
 			wh.Error500(w, err.Error())
@@ -107,7 +107,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// locked distribution addresses
-		lockedAddrs := visor.GetLockedDistributionAddresses()
+		lockedAddrs := params.GetLockedDistributionAddresses()
 		lockedAddrSet := newStringSet(lockedAddrs)
 
 		// get total coins hours which excludes locked distribution addresses
@@ -149,7 +149,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 			TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
 			UnlockedAddresses:     unlockedAddrs,
-			LockedAddresses:       visor.GetLockedDistributionAddresses(),
+			LockedAddresses:       params.GetLockedDistributionAddresses(),
 		}
 
 		wh.SendJSONOr500(logger, w, cs)

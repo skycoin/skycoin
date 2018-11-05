@@ -554,7 +554,9 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 		// signature indices and duplicate spends within itself
 		if err := bc.VerifyBlockTxnConstraints(tx, txn); err != nil {
 			switch err.(type) {
-			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
+			case ErrTxnViolatesSoftConstraint:
+				logger.WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
+			case ErrTxnViolatesHardConstraint:
 				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}
 					continue

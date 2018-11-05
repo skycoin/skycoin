@@ -159,16 +159,6 @@ char *cr_user_GoSlice__tostr(GoSlice_ *slice1)
   return out;
 }
 
-int cr_user_secp256k1go__Field_eq(secp256k1go__Field *f1, secp256k1go__Field *f2)
-{
-  for (int i = 0; i < 10; i++)
-  {
-    if (f1->n[i] != f2->n[i])
-      return 0;
-  }
-  return 1;
-}
-
 int cr_user_coin__Transactions_eq(coin__Transactions *x1, coin__Transactions *x2)
 {
   return equalTransactions(x1, x2);

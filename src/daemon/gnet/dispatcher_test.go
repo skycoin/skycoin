@@ -8,9 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -19,6 +17,23 @@ var (
 
 func resetHandler() {
 	sendByteMessage = _sendByteMessage
+}
+
+func TestMsgIDStringSafe(t *testing.T) {
+	var id [4]byte
+	require.Equal(t, "\\x00\\x00\\x00\\x00", msgIDStringSafe(id))
+
+	id = [4]byte{'F', 'O', 'O', 'B'}
+
+	require.Equal(t, "FOOB", msgIDStringSafe(id))
+
+	id = [4]byte{200, 2, '\n', '\t'}
+
+	require.Equal(t, "\\xc8\\x02\\n\\t", msgIDStringSafe(id))
+
+	id = [4]byte{'\'', '\\', ' ', '"'}
+
+	require.Equal(t, "'\\\\ \\\"", msgIDStringSafe(id))
 }
 
 func TestConvertToMessage(t *testing.T) {
@@ -31,24 +46,24 @@ func TestConvertToMessage(t *testing.T) {
 	b = append(b, BytePrefix[:]...)
 	b = append(b, byte(7))
 	m, err := convertToMessage(c.ID, b, testing.Verbose())
-	assert.Nil(t, err)
-	assert.NotNil(t, m)
+	require.NoError(t, err)
+	require.NotNil(t, m)
 	if m == nil {
 		t.Fatalf("ConvertToMessage failed")
 	}
 	bm := m.(*ByteMessage)
-	assert.Equal(t, bm.X, byte(7))
+	require.Equal(t, bm.X, byte(7))
 }
 
-func TestConvertToMessageNoMessageId(t *testing.T) {
+func TestConvertToMessageNoMessageID(t *testing.T) {
 	EraseMessages()
 	resetHandler()
 	c := &Connection{}
 	b := []byte{}
 	m, err := convertToMessage(c.ID, b, testing.Verbose())
-	assert.Nil(t, m)
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Not enough data to read msg id")
+	require.Nil(t, m)
+	require.Error(t, err)
+	require.Equal(t, ErrDisconnectTruncatedMessageID, err)
 }
 
 func TestConvertToMessageUnknownMessage(t *testing.T) {
@@ -57,9 +72,9 @@ func TestConvertToMessageUnknownMessage(t *testing.T) {
 	c := &Connection{}
 	b := MessagePrefix{'C', 'C', 'C', 'C'}
 	m, err := convertToMessage(c.ID, b[:], testing.Verbose())
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Unknown message CCCC received")
-	assert.Nil(t, m)
+	require.Error(t, err)
+	require.Equal(t, ErrDisconnectUnknownMessage, err)
+	require.Nil(t, m)
 }
 
 func TestConvertToMessageBadDeserialize(t *testing.T) {
@@ -72,15 +87,15 @@ func TestConvertToMessageBadDeserialize(t *testing.T) {
 	// Test with too many bytes
 	b := append(DummyPrefix[:], []byte{0, 1, 1, 1}...)
 	m, err := convertToMessage(c.ID, b, testing.Verbose())
-	assert.NotNil(t, err)
-	assert.Nil(t, m)
+	require.Error(t, err)
+	require.Nil(t, m)
 
 	// Test with not enough bytes
 	b = append([]byte{}, BytePrefix[:]...)
 	m, err = convertToMessage(c.ID, b, testing.Verbose())
-	assert.NotNil(t, err)
-	assert.Equal(t, encoder.ErrBufferUnderflow, err)
-	assert.Nil(t, m)
+	require.Error(t, err)
+	require.Equal(t, ErrDisconnectMalformedMessage, err)
+	require.Nil(t, m)
 }
 
 func TestConvertToMessageNotMessage(t *testing.T) {
@@ -89,7 +104,7 @@ func TestConvertToMessageNotMessage(t *testing.T) {
 	RegisterMessage(NothingPrefix, Nothing{})
 	// don't verify messages
 	c := &Connection{}
-	assert.Panics(t, func() {
+	require.Panics(t, func() {
 		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) // nolint: errcheck
 	})
 }
@@ -101,8 +116,8 @@ func TestDeserializeMessageTrapsPanic(t *testing.T) {
 	m := PointerMessage{Ptr: &p}
 	b := []byte{4, 4, 4, 4, 4, 4, 4, 4}
 	_, err := deserializeMessage(b, reflect.ValueOf(m))
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "DeserializeRawToValue value must be a ptr, is struct")
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "DeserializeRawToValue value must be a ptr, is struct")
 }
 
 func TestEncodeMessage(t *testing.T) {
@@ -112,13 +127,13 @@ func TestEncodeMessage(t *testing.T) {
 	VerifyMessages()
 	m := NewByteMessage(7)
 	b := EncodeMessage(m)
-	assert.True(t, bytes.Equal(b, []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}))
+	require.True(t, bytes.Equal(b, []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}))
 }
 
 func TestEncodeMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	assert.Panics(t, func() { EncodeMessage(&DummyMessage{}) })
+	require.Panics(t, func() { EncodeMessage(&DummyMessage{}) })
 }
 
 func TestSendByteMessage(t *testing.T) {
@@ -126,9 +141,9 @@ func TestSendByteMessage(t *testing.T) {
 	b := []byte{1}
 	c := NewCaptureConn()
 	err := sendByteMessage(c, b, 0)
-	assert.Nil(t, err)
-	assert.True(t, bytes.Equal(c.(*CaptureConn).Wrote, b))
-	assert.True(t, c.(*CaptureConn).WriteDeadlineSet)
+	require.NoError(t, err)
+	require.True(t, bytes.Equal(c.(*CaptureConn).Wrote, b))
+	require.True(t, c.(*CaptureConn).WriteDeadlineSet)
 }
 
 func TestSendByteMessageWithTimeout(t *testing.T) {
@@ -136,23 +151,23 @@ func TestSendByteMessageWithTimeout(t *testing.T) {
 	b := []byte{1}
 	c := NewCaptureConn()
 	err := sendByteMessage(c, b, time.Minute)
-	assert.Nil(t, err)
-	assert.True(t, bytes.Equal(c.(*CaptureConn).Wrote, b))
-	assert.True(t, c.(*CaptureConn).WriteDeadlineSet)
+	require.NoError(t, err)
+	require.True(t, bytes.Equal(c.(*CaptureConn).Wrote, b))
+	require.True(t, c.(*CaptureConn).WriteDeadlineSet)
 }
 
 func TestSendByteMessageWriteFailed(t *testing.T) {
 	resetHandler()
 	c := &FailingWriteConn{}
 	err := sendByteMessage(c, nil, 0)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestSendByteMessageWriteDeadlineFailed(t *testing.T) {
 	resetHandler()
 	c := &FailingWriteDeadlineConn{}
 	err := sendByteMessage(c, nil, 0)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestSendMessage(t *testing.T) {
@@ -163,11 +178,11 @@ func TestSendMessage(t *testing.T) {
 	m := NewByteMessage(7)
 	sendByteMessage = func(conn net.Conn, msg []byte, tm time.Duration) error {
 		expect := []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}
-		assert.True(t, bytes.Equal(msg, expect))
+		require.True(t, bytes.Equal(msg, expect))
 		return nil
 	}
 	err := sendMessage(nil, m, 0)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 /* Helpers */

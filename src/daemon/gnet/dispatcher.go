@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
@@ -31,37 +33,63 @@ func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
 	return sendByteMessage(conn, m, timeout)
 }
 
+// msgIDStringSafe formats msgID bytes to a string that is safe for logging (e.g. not impacted by ascii control chars)
+func msgIDStringSafe(msgID [4]byte) string {
+	x := fmt.Sprintf("%q", msgID)
+	return x[1 : len(x)-1] // trim quotes that are added by %q formatting
+}
+
 // Event handler that is called after a Connection sends a complete message
-func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
+func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 	msgID := [4]byte{}
 	if len(msg) < len(msgID) {
-		return nil, errors.New("Not enough data to read msg id")
+		logger.WithError(ErrDisconnectTruncatedMessageID).WithField("connID", id).Warning()
+		return nil, ErrDisconnectTruncatedMessageID
 	}
+
 	copy(msgID[:], msg[:len(msgID)])
+
+	if debugPrint {
+		logger.WithField("msgID", msgIDStringSafe(msgID)).Debug("Received message")
+	}
+
 	msg = msg[len(msgID):]
-	t, succ := MessageIDReverseMap[msgID]
-	if !succ {
-		return nil, fmt.Errorf("Unknown message %s received", string(msgID[:]))
+	t, ok := MessageIDReverseMap[msgID]
+	if !ok {
+		logger.WithError(ErrDisconnectUnknownMessage).WithFields(logrus.Fields{
+			"msgID":  msgIDStringSafe(msgID),
+			"connID": id,
+		}).Warning()
+		return nil, ErrDisconnectUnknownMessage
 	}
 
 	if debugPrint {
-		logger.Debugf("convertToMessage for connection %d, message type %v", id, t)
+		logger.WithFields(logrus.Fields{
+			"connID":      id,
+			"messageType": fmt.Sprintf("%v", t),
+		}).Debugf("convertToMessage")
 	}
 
-	var m Message
 	v := reflect.New(t)
-	//logger.Debugf("Giving %d bytes to the decoder", len(msg))
 	used, err := deserializeMessage(msg, v)
 	if err != nil {
-		return nil, err
+		logger.Critical().WithError(err).WithFields(logrus.Fields{
+			"connID":      id,
+			"messageType": fmt.Sprintf("%v", t),
+		}).Warning("deserializeMessage failed")
+		return nil, ErrDisconnectMalformedMessage
 	}
 
 	if used != len(msg) {
-		return nil, errors.New("Data buffer was not completely decoded")
+		logger.WithError(ErrDisconnectMessageDecodeUnderflow).WithFields(logrus.Fields{
+			"connID":      id,
+			"messageType": fmt.Sprintf("%v", t),
+		}).Warning()
+		return nil, ErrDisconnectMessageDecodeUnderflow
 	}
 
-	m, succ = (v.Interface()).(Message)
-	if !succ {
+	m, ok := (v.Interface()).(Message)
+	if !ok {
 		// This occurs only when the user registers an interface that does not
 		// match the Message interface.  They should have known about this
 		// earlier via a call to VerifyMessages
@@ -95,8 +123,7 @@ func EncodeMessage(msg Message) []byte {
 	t := reflect.ValueOf(msg).Elem().Type()
 	msgID, succ := MessageIDMap[t]
 	if !succ {
-		txt := "Attempted to serialize message struct not in MessageIdMap: %v"
-		logger.Panicf(txt, msg)
+		logger.Panicf("Attempted to serialize message struct not in MessageIdMap: %v", msg)
 	}
 	bMsg := encoder.Serialize(msg)
 
@@ -110,8 +137,7 @@ func EncodeMessage(msg Message) []byte {
 }
 
 // Sends []byte over a net.Conn
-var sendByteMessage = func(conn net.Conn, msg []byte,
-	timeout time.Duration) error {
+var sendByteMessage = func(conn net.Conn, msg []byte, timeout time.Duration) error {
 	deadline := time.Time{}
 	if timeout != 0 {
 		deadline = time.Now().Add(timeout)
@@ -120,7 +146,9 @@ var sendByteMessage = func(conn net.Conn, msg []byte,
 		return err
 	}
 	if _, err := conn.Write(msg); err != nil {
-		return err
+		return &WriteError{
+			Err: err,
+		}
 	}
 	return nil
 }

@@ -1,8 +1,8 @@
 package api
 
 import (
-	"bytes"
 	"errors"
+	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -45,7 +45,7 @@ func TestGetBalanceHandler(t *testing.T) {
 	}{
 		{
 			name:   "405",
-			method: http.MethodPost,
+			method: http.MethodDelete,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
@@ -137,6 +137,27 @@ func TestGetBalanceHandler(t *testing.T) {
 			},
 			httpResponse: readable.BalancePair{},
 		},
+		{
+			name:   "200 - OK POST",
+			method: http.MethodPost,
+			status: http.StatusOK,
+			err:    "200 - OK",
+			httpBody: &httpBody{
+				addrs: validAddr,
+			},
+			getBalanceOfAddrsArg: []cipher.Address{address},
+			getBalanceOfAddrsResponse: []wallet.BalancePair{
+				{
+					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+					Predicted: wallet.Balance{Coins: 0, Hours: 0},
+				},
+				{
+					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+					Predicted: wallet.Balance{Coins: 0, Hours: 0},
+				},
+			},
+			httpResponse: readable.BalancePair{},
+		},
 	}
 
 	for _, tc := range tt {
@@ -152,12 +173,21 @@ func TestGetBalanceHandler(t *testing.T) {
 				}
 			}
 
+			var reqBody io.Reader
 			if len(v) > 0 {
-				endpoint += "?" + v.Encode()
+				if tc.method == http.MethodPost {
+					reqBody = strings.NewReader(v.Encode())
+				} else {
+					endpoint += "?" + v.Encode()
+				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, nil)
+			req, err := http.NewRequest(tc.method, endpoint, reqBody)
 			require.NoError(t, err)
+
+			if tc.method == http.MethodPost {
+				req.Header.Set("Content-Type", ContentTypeForm)
+			}
 
 			rr := httptest.NewRecorder()
 			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
@@ -599,9 +629,9 @@ func TestWalletSpendHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: !tc.csrfDisabled,
@@ -867,9 +897,9 @@ func TestWalletBalanceHandler(t *testing.T) {
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
 			}
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: true,
@@ -1012,9 +1042,9 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: true,
@@ -1533,8 +1563,8 @@ func TestWalletCreateHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
+			req.Header.Add("Content-Type", ContentTypeForm)
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{
@@ -1655,9 +1685,9 @@ func TestWalletNewSeed(t *testing.T) {
 				endpoint += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: true,
@@ -1809,9 +1839,9 @@ func TestGetWalletSeed(t *testing.T) {
 				v.Add("password", tc.password)
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: !tc.csrfDisabled,
@@ -2023,9 +2053,9 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: !tc.csrfDisabled,
@@ -2408,7 +2438,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: !tc.csrfDisabled,
@@ -2561,7 +2591,7 @@ func TestEncryptWallet(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: true,
@@ -2744,7 +2774,7 @@ func TestDecryptWallet(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", ContentTypeForm)
 
 			csrfStore := &CSRFStore{
 				Enabled: !tc.csrfDisabled,
@@ -2843,7 +2873,7 @@ func TestWalletRecover(t *testing.T) {
 			name:         "method not allowed",
 			method:       http.MethodGet,
 			status:       http.StatusMethodNotAllowed,
-			contentType:  "application/json",
+			contentType:  ContentTypeJSON,
 			httpBody:     toJSON(t, WalletRecoverRequest{}),
 			httpResponse: NewHTTPErrorResponse(http.StatusMethodNotAllowed, "Method Not Allowed"),
 		},
@@ -2851,7 +2881,7 @@ func TestWalletRecover(t *testing.T) {
 			name:         "wrong content-type",
 			method:       http.MethodPost,
 			status:       http.StatusUnsupportedMediaType,
-			contentType:  "application/x-www-form-urlencoded",
+			contentType:  ContentTypeForm,
 			httpBody:     toJSON(t, WalletRecoverRequest{}),
 			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "Unsupported Media Type"),
 		},
@@ -2859,7 +2889,7 @@ func TestWalletRecover(t *testing.T) {
 			name:         "empty json body",
 			method:       http.MethodPost,
 			status:       http.StatusBadRequest,
-			contentType:  "application/json",
+			contentType:  ContentTypeJSON,
 			httpBody:     "",
 			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "EOF"),
 		},
@@ -2867,7 +2897,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "id missing",
 			method:      http.MethodPost,
 			status:      http.StatusBadRequest,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				Seed: "fooseed",
 			},
@@ -2877,7 +2907,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "seed missing",
 			method:      http.MethodPost,
 			status:      http.StatusBadRequest,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				ID: "foo",
 			},
@@ -2887,7 +2917,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "wallet not encrypted",
 			method:      http.MethodPost,
 			status:      http.StatusBadRequest,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				ID:   "foo",
 				Seed: "fooseed",
@@ -2901,7 +2931,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "wallet seed wrong",
 			method:      http.MethodPost,
 			status:      http.StatusBadRequest,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				ID:   "foo",
 				Seed: "fooseed",
@@ -2915,7 +2945,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "wallet does not exist",
 			method:      http.MethodPost,
 			status:      http.StatusNotFound,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				ID:   "foo",
 				Seed: "fooseed",
@@ -2929,7 +2959,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "wallet api disabled",
 			method:      http.MethodPost,
 			status:      http.StatusForbidden,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				ID:   "foo",
 				Seed: "fooseed",
@@ -2943,7 +2973,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "wallet other error",
 			method:      http.MethodPost,
 			status:      http.StatusInternalServerError,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				ID:   "foo",
 				Seed: "fooseed",
@@ -2957,7 +2987,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "ok, no password",
 			method:      http.MethodPost,
 			status:      http.StatusOK,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				ID:   "foo",
 				Seed: "fooseed",
@@ -2973,7 +3003,7 @@ func TestWalletRecover(t *testing.T) {
 			name:        "ok, password",
 			method:      http.MethodPost,
 			status:      http.StatusOK,
-			contentType: "application/json",
+			contentType: ContentTypeJSON,
 			req: &WalletRecoverRequest{
 				ID:       "foo",
 				Seed:     "fooseed",
@@ -3004,12 +3034,12 @@ func TestWalletRecover(t *testing.T) {
 			}
 
 			endpoint := "/api/v2/wallet/recover"
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			contentType := tc.contentType
 			if contentType == "" {
-				contentType = "application/json"
+				contentType = ContentTypeJSON
 			}
 
 			req.Header.Set("Content-Type", contentType)

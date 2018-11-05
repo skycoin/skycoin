@@ -75,7 +75,7 @@ export class WalletService {
     return this.addressesAsString()
       .first()
       .filter(addresses => !!addresses)
-      .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
+      .flatMap(addresses => this.apiService.post('outputs', {addrs: addresses}));
   }
 
   outputsWithWallets(): Observable<any> {
@@ -198,17 +198,9 @@ export class WalletService {
     return this.allAddresses().first().flatMap(addresses => {
       this.addresses = addresses;
 
-      return Observable.forkJoin(addresses.map(address => this.apiService.getExplorerAddress(address)));
+      return this.apiService.getTransactions(addresses);
     }).map(transactions => {
-      return []
-        .concat.apply([], transactions)
-        .reduce((array, item) => {
-          if (!array.find(trans => trans.txid === item.txid)) {
-            array.push(item);
-          }
-
-          return array;
-        }, [])
+      return transactions
         .sort((a, b) =>  b.timestamp - a.timestamp)
         .map(transaction => {
           const outgoing = this.addresses.some(address => {

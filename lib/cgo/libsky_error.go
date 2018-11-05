@@ -7,7 +7,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
-	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -66,7 +65,6 @@ const (
 	SKY_PKG_WALLET
 )
 
-//nolint megacheck
 // Error codes defined in cipher package
 //nolint megacheck
 const (
@@ -156,22 +154,22 @@ const (
 	SKY_ErrEmptySeed
 	// SKY_ErrInvalidSig Invalid signature
 	SKY_ErrInvalidSig
-	// SKY_ErrSHA256orMissingPassword missing password
-	SKY_ErrSHA256orMissingPassword
-	// SKY_ErrSHA256LenghtDataOverflowMaxUint32 data length overflowed, it must <= math.MaxUint32(4294967295)
-	SKY_ErrLenghtDataOverflowMaxUint32
+	// SKY_ErrMissingPassword missing password
+	SKY_ErrMissingPassword
+	// SKY_SKY_ErrDataTooLarge data length overflowed, it must <= math.MaxUint32(4294967295)
+	SKY_ErrDataTooLarge
 	// SKY_ErrInvalidChecksumLength invalid checksum length
 	SKY_ErrInvalidChecksumLength
-	// SKY_ErrInvalidDataChecksumNotMatched invalid data, checksum is not matched
-	SKY_ErrInvalidDataChecksumNotMatched
+	// SKY_ErrInvalidChecksum invalid data, checksum is not matched
+	SKY_ErrInvalidChecksum
 	// SKY_ErrInvalidNonceLength invalid nonce length
 	SKY_ErrInvalidNonceLength
-	// SKY_ErrInvalidBlockSizeMultiple32Bytes invalid block size, must be multiple of 32 bytes
-	SKY_ErrInvalidBlockSizeMultiple32Bytes
-	// SKY_ErrReadDataHashFailedLength read data hash failed: read length != 32
-	SKY_ErrReadDataHashFailedLength
-	// SKY_ErrSHA256orInvalidPassword invalid password SHA256or
-	SKY_ErrSHA256orInvalidPassword
+	// SKY_ErrInvalidBlockSize invalid block size, must be multiple of 32 bytes
+	SKY_ErrInvalidBlockSize
+	// SKY_ErrReadDataHashFailed read data hash failed: read length != 32
+	SKY_ErrReadDataHashFailed
+	// SKY_ErrInvalidPassword invalid password SHA256or
+	SKY_ErrInvalidPassword
 	// SKY_ErrReadDataLengthFailed read data length failed
 	SKY_ErrReadDataLengthFailed
 	// SKY_ErrInvalidDataLength invalid data length
@@ -232,10 +230,10 @@ const (
 	SKY_ErrPortTooLow
 	// SKY_ErrBlacklistedAddress returned when attempting to add a blacklisted peer
 	SKY_ErrBlacklistedAddress
-	// SKY_ErrDisconnectReadFailed also includes a remote closed socket
-	SKY_ErrDisconnectReadFailed
+	// // SKY_ErrDisconnectReadFailed also includes a remote closed socket
+	// SKY_ErrDisconnectReadFailed
 	// SKY_ErrDisconnectWriteFailed write faile
-	SKY_ErrDisconnectWriteFailed
+	// SKY_ErrDisconnectWriteFailed
 	// SKY_ErrDisconnectSetReadDeadlineFailed set read deadline failed
 	SKY_ErrDisconnectSetReadDeadlineFailed
 	// SKY_ErrDisconnectInvalidMessageLength invalid message length
@@ -244,8 +242,6 @@ const (
 	SKY_ErrDisconnectMalformedMessage
 	// SKY_ErrDisconnectUnknownMessage unknow message
 	SKY_ErrDisconnectUnknownMessage
-	// SKY_ErrDisconnectUnexpectedError  unexpected error
-	SKY_ErrDisconnectUnexpectedError
 	// SKY_ErrConnectionPoolClosed error message indicates the connection pool is closed
 	SKY_ErrConnectionPoolClosed
 	// SKY_ErrWriteQueueFull write queue is full
@@ -258,8 +254,6 @@ const (
 	SKY_ErrDisconnectVersionNotSupported
 	// SKY_ErrDisconnectIntroductionTimeout timeout
 	SKY_ErrDisconnectIntroductionTimeout
-	// SKY_ErrDisconnectVersionSendFailed version send failed
-	SKY_ErrDisconnectVersionSendFailed
 	// SKY_ErrDisconnectIsBlacklisted is blacklisted
 	SKY_ErrDisconnectIsBlacklisted
 	// SKY_ErrDisconnectSelf self connnect
@@ -272,8 +266,6 @@ const (
 	SKY_ErrDisconnectNoIntroduction
 	// SKY_ErrDisconnectIPLimitReached ip limit reached
 	SKY_ErrDisconnectIPLimitReached
-	// SKY_ErrDisconnectIncomprehensibleError this is returned when a seemingly impossible error is encountered
-	SKY_ErrDisconnectIncomprehensibleError
 	// SKY_ErrDisconnectMaxDefaultConnectionReached Maximum number of default connections was reached
 	SKY_ErrDisconnectMaxDefaultConnectionReached // nolint megacheck
 	// SKY_ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
@@ -347,12 +339,12 @@ const (
 	SKY_ErrWalletEncrypted
 	// SKY_ErrWalletNotEncrypted is returned when trying to decrypt unencrypted wallet
 	SKY_ErrWalletNotEncrypted
-	// SKY_ErrMissingPassword is returned when trying to create wallet with encryption, but password is not provided.
-	SKY_ErrMissingPassword
+	// SKY_ErrWalletMissingPassword is returned when trying to create wallet with encryption, but password is not provided.
+	SKY_ErrWalletMissingPassword
 	// SKY_ErrMissingEncrypt is returned when trying to create wallet with password, but options.Encrypt is not set.
 	SKY_ErrMissingEncrypt
-	// SKY_ErrInvalidPassword is returned if decrypts secrets failed
-	SKY_ErrInvalidPassword
+	// SKY_ErrWalletInvalidPassword is returned if decrypts secrets failed
+	SKY_ErrWalletInvalidPassword
 	// SKY_ErrMissingSeed is returned when trying to create wallet without a seed
 	SKY_ErrMissingSeed
 	// SKY_ErrMissingAuthenticated is returned if try to decrypt a scrypt chacha20poly1305 encrypted wallet, and find no authenticated metadata.
@@ -468,33 +460,33 @@ var (
 		cipher.ErrInvalidSigPubKeyRecovery: SKY_ErrInvalidSigPubKeyRecovery,
 		// Removed in ea0aafbffb76
 		// cipher.ErrInvalidSecKeyHex:               SKY_ErrInvalidSecKeyHex,
-		cipher.ErrInvalidAddressForSig:             SKY_ErrInvalidAddressForSig,
-		cipher.ErrInvalidHashForSig:                SKY_ErrInvalidHashForSig,
-		cipher.ErrPubKeyRecoverMismatch:            SKY_ErrPubKeyRecoverMismatch,
-		cipher.ErrInvalidSigInvalidPubKey:          SKY_ErrInvalidSigInvalidPubKey,
-		cipher.ErrInvalidSigValidity:               SKY_ErrInvalidSigValidity,
-		cipher.ErrInvalidSigForMessage:             SKY_ErrInvalidSigForMessage,
-		cipher.ErrInvalidSecKyVerification:         SKY_ErrInvalidSecKyVerification,
-		cipher.ErrNullPubKeyFromSecKey:             SKY_ErrNullPubKeyFromSecKey,
-		cipher.ErrInvalidDerivedPubKeyFromSecKey:   SKY_ErrInvalidDerivedPubKeyFromSecKey,
-		cipher.ErrInvalidPubKeyFromHash:            SKY_ErrInvalidPubKeyFromHash,
-		cipher.ErrPubKeyFromSecKeyMismatch:         SKY_ErrPubKeyFromSecKeyMismatch,
-		cipher.ErrInvalidLength:                    SKY_ErrInvalidLength,
-		cipher.ErrBitcoinWIFInvalidFirstByte:       SKY_ErrBitcoinWIFInvalidFirstByte,
-		cipher.ErrBitcoinWIFInvalidSuffix:          SKY_ErrBitcoinWIFInvalidSuffix,
-		cipher.ErrBitcoinWIFInvalidChecksum:        SKY_ErrBitcoinWIFInvalidChecksum,
-		cipher.ErrEmptySeed:                        SKY_ErrEmptySeed,
-		cipher.ErrInvalidSig:                       SKY_ErrInvalidSig,
-		encrypt.ErrSHA256orMissingPassword:         SKY_ErrSHA256orMissingPassword,
-		encrypt.ErrLenghtDataOverflowMaxUint32:     SKY_ErrLenghtDataOverflowMaxUint32,
-		encrypt.ErrInvalidChecksumLength:           SKY_ErrInvalidChecksumLength,
-		encrypt.ErrInvalidDataChecksumNotMatched:   SKY_ErrInvalidDataChecksumNotMatched,
-		encrypt.ErrInvalidNonceLength:              SKY_ErrInvalidNonceLength,
-		encrypt.ErrInvalidBlockSizeMultiple32Bytes: SKY_ErrInvalidBlockSizeMultiple32Bytes,
-		encrypt.ErrReadDataHashFailedLength:        SKY_ErrReadDataHashFailedLength,
-		encrypt.ErrSHA256orInvalidPassword:         SKY_ErrSHA256orInvalidPassword,
-		encrypt.ErrReadDataLengthFailed:            SKY_ErrReadDataLengthFailed,
-		encrypt.ErrInvalidDataLength:               SKY_ErrInvalidDataLength,
+		cipher.ErrInvalidAddressForSig:           SKY_ErrInvalidAddressForSig,
+		cipher.ErrInvalidHashForSig:              SKY_ErrInvalidHashForSig,
+		cipher.ErrPubKeyRecoverMismatch:          SKY_ErrPubKeyRecoverMismatch,
+		cipher.ErrInvalidSigInvalidPubKey:        SKY_ErrInvalidSigInvalidPubKey,
+		cipher.ErrInvalidSigValidity:             SKY_ErrInvalidSigValidity,
+		cipher.ErrInvalidSigForMessage:           SKY_ErrInvalidSigForMessage,
+		cipher.ErrInvalidSecKyVerification:       SKY_ErrInvalidSecKyVerification,
+		cipher.ErrNullPubKeyFromSecKey:           SKY_ErrNullPubKeyFromSecKey,
+		cipher.ErrInvalidDerivedPubKeyFromSecKey: SKY_ErrInvalidDerivedPubKeyFromSecKey,
+		cipher.ErrInvalidPubKeyFromHash:          SKY_ErrInvalidPubKeyFromHash,
+		cipher.ErrPubKeyFromSecKeyMismatch:       SKY_ErrPubKeyFromSecKeyMismatch,
+		cipher.ErrInvalidLength:                  SKY_ErrInvalidLength,
+		cipher.ErrBitcoinWIFInvalidFirstByte:     SKY_ErrBitcoinWIFInvalidFirstByte,
+		cipher.ErrBitcoinWIFInvalidSuffix:        SKY_ErrBitcoinWIFInvalidSuffix,
+		cipher.ErrBitcoinWIFInvalidChecksum:      SKY_ErrBitcoinWIFInvalidChecksum,
+		cipher.ErrEmptySeed:                      SKY_ErrEmptySeed,
+		cipher.ErrInvalidSig:                     SKY_ErrInvalidSig,
+		encrypt.ErrMissingPassword:               SKY_ErrMissingPassword,
+		encrypt.ErrDataTooLarge:                  SKY_ErrDataTooLarge,
+		encrypt.ErrInvalidChecksumLength:         SKY_ErrInvalidChecksumLength,
+		encrypt.ErrInvalidChecksum:               SKY_ErrInvalidChecksum,
+		encrypt.ErrInvalidNonceLength:            SKY_ErrInvalidNonceLength,
+		encrypt.ErrInvalidBlockSize:              SKY_ErrInvalidBlockSize,
+		encrypt.ErrReadDataHashFailed:            SKY_ErrReadDataHashFailed,
+		encrypt.ErrInvalidPassword:               SKY_ErrInvalidPassword,
+		encrypt.ErrReadDataLengthFailed:          SKY_ErrReadDataLengthFailed,
+		encrypt.ErrInvalidDataLength:             SKY_ErrInvalidDataLength,
 
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
@@ -511,32 +503,29 @@ var (
 		// daemon
 		// Removed in 34ad39ddb350
 		// gnet.ErrMaxDefaultConnectionsReached:           SKY_ErrMaxDefaultConnectionsReached,
-		pex.ErrPeerlistFull:                       SKY_ErrPeerlistFull,
-		pex.ErrInvalidAddress:                     SKY_ErrInvalidAddress,
-		pex.ErrNoLocalhost:                        SKY_ErrNoLocalhost,
-		pex.ErrNotExternalIP:                      SKY_ErrNotExternalIP,
-		pex.ErrPortTooLow:                         SKY_ErrPortTooLow,
-		pex.ErrBlacklistedAddress:                 SKY_ErrBlacklistedAddress,
-		gnet.ErrDisconnectReadFailed:              SKY_ErrDisconnectReadFailed,
-		gnet.ErrDisconnectWriteFailed:             SKY_ErrDisconnectWriteFailed,
-		gnet.ErrDisconnectSetReadDeadlineFailed:   SKY_ErrDisconnectSetReadDeadlineFailed,
-		gnet.ErrDisconnectInvalidMessageLength:    SKY_ErrDisconnectInvalidMessageLength,
-		gnet.ErrDisconnectMalformedMessage:        SKY_ErrDisconnectMalformedMessage,
-		gnet.ErrDisconnectUnknownMessage:          SKY_ErrDisconnectUnknownMessage,
-		gnet.ErrDisconnectUnexpectedError:         SKY_ErrDisconnectUnexpectedError,
-		gnet.ErrConnectionPoolClosed:              SKY_ErrConnectionPoolClosed,
-		gnet.ErrWriteQueueFull:                    SKY_ErrWriteQueueFull,
-		gnet.ErrNoReachableConnections:            SKY_ErrNoReachableConnections,
-		daemon.ErrDisconnectVersionNotSupported:   SKY_ErrDisconnectVersionNotSupported,
-		daemon.ErrDisconnectIntroductionTimeout:   SKY_ErrDisconnectIntroductionTimeout,
-		daemon.ErrDisconnectVersionSendFailed:     SKY_ErrDisconnectVersionSendFailed,
-		daemon.ErrDisconnectIsBlacklisted:         SKY_ErrDisconnectIsBlacklisted,
-		daemon.ErrDisconnectSelf:                  SKY_ErrDisconnectSelf,
-		daemon.ErrDisconnectConnectedTwice:        SKY_ErrDisconnectConnectedTwice,
-		daemon.ErrDisconnectIdle:                  SKY_ErrDisconnectIdle,
-		daemon.ErrDisconnectNoIntroduction:        SKY_ErrDisconnectNoIntroduction,
-		daemon.ErrDisconnectIPLimitReached:        SKY_ErrDisconnectIPLimitReached,
-		daemon.ErrDisconnectIncomprehensibleError: SKY_ErrDisconnectIncomprehensibleError,
+		pex.ErrPeerlistFull:       SKY_ErrPeerlistFull,
+		pex.ErrInvalidAddress:     SKY_ErrInvalidAddress,
+		pex.ErrNoLocalhost:        SKY_ErrNoLocalhost,
+		pex.ErrNotExternalIP:      SKY_ErrNotExternalIP,
+		pex.ErrPortTooLow:         SKY_ErrPortTooLow,
+		pex.ErrBlacklistedAddress: SKY_ErrBlacklistedAddress,
+		// gnet.ErrDisconnectReadFailed:              SKY_ErrDisconnectReadFailed,
+		// gnet.ErrDisconnectWriteFailed:             SKY_ErrDisconnectWriteFailed,
+		gnet.ErrDisconnectSetReadDeadlineFailed: SKY_ErrDisconnectSetReadDeadlineFailed,
+		gnet.ErrDisconnectInvalidMessageLength:  SKY_ErrDisconnectInvalidMessageLength,
+		gnet.ErrDisconnectMalformedMessage:      SKY_ErrDisconnectMalformedMessage,
+		gnet.ErrDisconnectUnknownMessage:        SKY_ErrDisconnectUnknownMessage,
+		gnet.ErrConnectionPoolClosed:            SKY_ErrConnectionPoolClosed,
+		gnet.ErrWriteQueueFull:                  SKY_ErrWriteQueueFull,
+		gnet.ErrNoReachableConnections:          SKY_ErrNoReachableConnections,
+		daemon.ErrDisconnectVersionNotSupported: SKY_ErrDisconnectVersionNotSupported,
+		daemon.ErrDisconnectIntroductionTimeout: SKY_ErrDisconnectIntroductionTimeout,
+		daemon.ErrDisconnectIsBlacklisted:       SKY_ErrDisconnectIsBlacklisted,
+		daemon.ErrDisconnectSelf:                SKY_ErrDisconnectSelf,
+		daemon.ErrDisconnectConnectedTwice:      SKY_ErrDisconnectConnectedTwice,
+		daemon.ErrDisconnectIdle:                SKY_ErrDisconnectIdle,
+		daemon.ErrDisconnectNoIntroduction:      SKY_ErrDisconnectNoIntroduction,
+		daemon.ErrDisconnectIPLimitReached:      SKY_ErrDisconnectIPLimitReached,
 		// Removed
 		//		daemon.ErrDisconnectMaxDefaultConnectionReached:   SKY_ErrDisconnectMaxDefaultConnectionReached,
 		daemon.ErrDisconnectMaxOutgoingConnectionsReached: SKY_ErrDisconnectMaxOutgoingConnectionsReached,
@@ -560,9 +549,9 @@ var (
 		wallet.ErrInvalidEncryptedField:     SKY_ErrInvalidEncryptedField,
 		wallet.ErrWalletEncrypted:           SKY_ErrWalletEncrypted,
 		wallet.ErrWalletNotEncrypted:        SKY_ErrWalletNotEncrypted,
-		wallet.ErrMissingPassword:           SKY_ErrMissingPassword,
+		wallet.ErrMissingPassword:           SKY_ErrWalletMissingPassword,
 		wallet.ErrMissingEncrypt:            SKY_ErrMissingEncrypt,
-		wallet.ErrInvalidPassword:           SKY_ErrInvalidPassword,
+		wallet.ErrInvalidPassword:           SKY_ErrWalletInvalidPassword,
 		wallet.ErrMissingSeed:               SKY_ErrMissingSeed,
 		wallet.ErrMissingAuthenticated:      SKY_ErrMissingAuthenticated,
 		wallet.ErrWrongCryptoType:           SKY_ErrWrongCryptoType,
@@ -595,10 +584,6 @@ var (
 		wallet.ErrWalletParamsConflict:      SKY_ErrWalletParamsConflict,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
-
-		secp256k1.ErrVerifySignatureInvalidInputsNils:    SKY_ErrVerifySignatureInvalidInputsNils,
-		secp256k1.ErrVerifySignatureInvalidSigLength:     SKY_ErrVerifySignatureInvalidSigLength,
-		secp256k1.ErrVerifySignatureInvalidPubkeysLength: SKY_ErrVerifySignatureInvalidPubkeysLength,
 	}
 )
 
@@ -636,6 +621,49 @@ func libErrorCode(err error) uint32 {
 		return SKY_ErrTxnViolatesUserConstraint
 	}
 	return SKY_ERROR
+}
+
+func errorFromLibCode(errcode uint32) error {
+	if err, exists := codeToErrorMap[errcode]; exists {
+		return err
+	}
+
+	// FIXME: Be more specific and encode type, sub-error in error code
+	err := errors.New("libskycoin error")
+	if errcode == SKY_WalletLoadError {
+		return cli.WalletLoadError{}
+	}
+	if errcode == SKY_WalletSaveError {
+		return cli.WalletSaveError{}
+	}
+	if errcode == SKY_ErrHistoryDBCorrupted {
+		return historydb.NewErrHistoryDBCorrupted(err)
+	}
+	if errcode == SKY_ErrUxOutNotExist {
+		return historydb.ErrUxOutNotExist{UxID: ""}
+	}
+	if errcode == SKY_ErrUnspentNotExist {
+		return blockdb.ErrUnspentNotExist{UxID: ""}
+	}
+	if errcode == SKY_ErrMissingSignature {
+		return blockdb.NewErrMissingSignature(nil)
+	}
+	if errcode == SKY_ErrCreateBucketFailed {
+		return dbutil.ErrCreateBucketFailed{Bucket: "", Err: nil}
+	}
+	if errcode == SKY_ErrBucketNotExist {
+		return dbutil.ErrBucketNotExist{Bucket: ""}
+	}
+	if errcode == SKY_ErrTxnViolatesHardConstraint {
+		return visor.ErrTxnViolatesHardConstraint{Err: err}
+	}
+	if errcode == SKY_ErrTxnViolatesSoftConstraint {
+		return visor.ErrTxnViolatesSoftConstraint{Err: err}
+	}
+	if errcode == SKY_ErrTxnViolatesUserConstraint {
+		return visor.ErrTxnViolatesUserConstraint{Err: err}
+	}
+	return nil
 }
 
 func init() {

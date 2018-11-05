@@ -377,40 +377,118 @@ func TestPexLoadPeers(t *testing.T) {
 }
 
 func TestPexAddPeer(t *testing.T) {
+	now := time.Now().UTC().Unix()
+
 	tt := []struct {
-		name  string
-		peers []string
-		max   int
-		peer  string
-		err   error
+		name        string
+		peers       []Peer
+		max         int
+		finalLen    int
+		peer        string
+		err         error
+		removedPeer string
+		check       func(px *Pex)
 	}{
 		{
-			"ok",
-			testPeers[:1],
-			2,
-			testPeers[1],
-			nil,
+			name: "ok",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+			},
+			max:      2,
+			peer:     testPeers[1],
+			err:      nil,
+			finalLen: 2,
 		},
 		{
-			"invalid peer",
-			testPeers[:1],
-			2,
-			wrongPortPeer,
-			ErrInvalidAddress,
+			name: "invalid peer",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+			},
+			max:      2,
+			peer:     wrongPortPeer,
+			err:      ErrInvalidAddress,
+			finalLen: 1,
 		},
 		{
-			"reach max",
-			testPeers[:2],
-			2,
-			testPeers[3],
-			ErrPeerlistFull,
+			name: "peer known",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+				{
+					Addr:     testPeers[1],
+					LastSeen: now - 60,
+				},
+			},
+			max:      2,
+			peer:     testPeers[1],
+			err:      nil,
+			finalLen: 2,
+			check: func(px *Pex) {
+				p := px.peerlist.peers[testPeers[1]]
+				require.NotNil(t, p)
+				// Peer should have been marked as seen
+				require.True(t, p.LastSeen > now-60)
+			},
 		},
 		{
-			"no max",
-			testPeers[:2],
-			0,
-			testPeers[3],
-			nil,
+			name: "reach max",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+				{
+					Addr:     testPeers[1],
+					LastSeen: now,
+				},
+			},
+			max:      2,
+			peer:     testPeers[3],
+			err:      ErrPeerlistFull,
+			finalLen: 2,
+		},
+		{
+			name: "reach max but kicked old peer",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+				{
+					Addr:     testPeers[1],
+					LastSeen: now - 60*60*24*2,
+				},
+			},
+			max:         2,
+			peer:        testPeers[3],
+			err:         nil,
+			finalLen:    2,
+			removedPeer: testPeers[1],
+		},
+		{
+			name: "no max",
+			peers: []Peer{
+				{
+					Addr:     testPeers[0],
+					LastSeen: now,
+				},
+				{
+					Addr:     testPeers[1],
+					LastSeen: now,
+				},
+			},
+			max:      0,
+			peer:     testPeers[3],
+			err:      nil,
+			finalLen: 3,
 		},
 	}
 
@@ -424,14 +502,22 @@ func TestPexAddPeer(t *testing.T) {
 			cfg := NewConfig()
 			cfg.Max = tc.max
 			cfg.DataDirectory = dir
-			cfg.DefaultConnections = tc.peers
+			cfg.DefaultConnections = []string{}
 
 			// create px instance and load peers
 			px, err := New(cfg)
 			require.NoError(t, err)
 
+			px.peerlist.setPeers(tc.peers)
+
 			err = px.AddPeer(tc.peer)
 			require.Equal(t, tc.err, err)
+			require.Equal(t, tc.finalLen, len(px.peerlist.peers))
+
+			if tc.check != nil {
+				tc.check(px)
+			}
+
 			if err != nil {
 				return
 			}
@@ -439,6 +525,11 @@ func TestPexAddPeer(t *testing.T) {
 			// check if the peer is in the peer list
 			_, ok := px.peerlist.peers[tc.peer]
 			require.True(t, ok)
+
+			if tc.removedPeer != "" {
+				_, ok := px.peerlist.peers[tc.removedPeer]
+				require.False(t, ok)
+			}
 		})
 	}
 }
@@ -588,92 +679,79 @@ func TestPexRandomExchangeable(t *testing.T) {
 		expectPeers []Peer
 	}{
 		{
-			"n=0 exchangeable=0",
-			[]Peer{
+			name: "n=0 exchangeable=0",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			0,
-			0,
-			[]Peer{},
+			n:           0,
+			expectN:     0,
+			expectPeers: []Peer{},
 		},
 		{
-			"n=0 exchangeable=1",
-			[]Peer{
+			name: "n=0 exchangeable=1",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			0,
-			1,
-			[]Peer{
+			n:       0,
+			expectN: 1,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 			},
 		},
 		{
-			"n=0 exchangeable=2",
-			[]Peer{
+			name: "n=0 exchangeable=2",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			0,
-			2,
-			[]Peer{
+			n:       0,
+			expectN: 2,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
 			},
 		},
 		{
-			"n=1 exchangeable=0",
-			[]Peer{
+			name: "n=1 exchangeable=0",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: true, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			1,
-			0,
-			[]Peer{},
+			n:           1,
+			expectN:     0,
+			expectPeers: []Peer{},
 		},
 		{
-			"n=1 exchangeable=1",
-			[]Peer{
+			name: "n=1 exchangeable=1",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: false},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			1,
-			1,
-			[]Peer{
+			n:       1,
+			expectN: 1,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 			},
 		},
 		{
-			"n=1 exchangeable=2",
-			[]Peer{
+			name: "n=1 exchangeable=2",
+			peers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
 			},
-			1,
-			1,
-			[]Peer{
+			n:       1,
+			expectN: 1,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true},
-			},
-		},
-		{
-			"n=2 exchangeable=1",
-			[]Peer{
-				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
-				Peer{Addr: testPeers[1], Private: false, HasIncomingPort: true, RetryTimes: 1},
-				Peer{Addr: testPeers[2], Private: true, HasIncomingPort: true},
-			},
-			2,
-			1,
-			[]Peer{
-				Peer{Addr: testPeers[0], Private: false, HasIncomingPort: true},
 			},
 		},
 	}
@@ -1368,7 +1446,7 @@ func TestPexGetPeerByAddr(t *testing.T) {
 
 			pex.peerlist.setPeers(tc.initPeers)
 
-			p, ok := pex.GetPeerByAddr(tc.addr)
+			p, ok := pex.GetPeer(tc.addr)
 			require.Equal(t, tc.find, ok)
 			if ok {
 				require.Equal(t, tc.peer, p)

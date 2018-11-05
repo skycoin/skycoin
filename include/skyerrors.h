@@ -16,10 +16,10 @@
 #define SKY_ERRORS_H
 
 // Generic error conditions
-#define SKY_OK            0
-#define SKY_ERROR         0x7FFFFFFF
-#define SKY_BAD_HANDLE    0x7F000001
-#define SKY_API_LOCKED    0x7F000002
+#define SKY_OK                    0
+#define SKY_ERROR                 0x7FFFFFFF
+#define SKY_BAD_HANDLE            0x7F000001
+#define SKY_INVALID_TIMESTRING    0x7F000002
 
 // Package error code prefix list
 #define SKY_PKG_API       0x01000000
@@ -65,7 +65,7 @@
 #define SKY_ErrInvalidBytesLength                   0x02000015
 #define SKY_ErrInvalidPubKey                        0x02000016
 #define SKY_ErrInvalidSecKey                        0x02000017
-#define SKY_ErrInvalidSigPubKeyRecovery                  0x02000018
+#define SKY_ErrInvalidSigPubKeyRecovery             0x02000018
 #define SKY_ErrInvalidSecKeyHex                     0x02000019
 #define SKY_ErrInvalidAddressForSig                 0x0200001A
 #define SKY_ErrInvalidHashForSig                    0x0200001B
@@ -84,14 +84,14 @@
 #define SKY_ErrBitcoinWIFInvalidChecksum            0x02000028
 #define SKY_ErrEmptySeed                            0x02000029
 #define SKY_ErrInvalidSig                           0x0200002A
-#define SKY_ErrSHA256orMissingPassword              0x0200002B
-#define SKY_ErrLenghtDataOverflowMaxUint32          0x0200002C
+#define SKY_ErrMissingPassword                      0x0200002B
+#define SKY_ErrDataTooLarge                         0x0200002C
 #define SKY_ErrInvalidChecksumLength                0x0200002D
-#define SKY_ErrInvalidDataChecksumNotMatched        0x0200002E
+#define SKY_ErrInvalidChecksum                      0x0200002E
 #define SKY_ErrInvalidNonceLength                   0x0200002F
-#define SKY_ErrInvalidBlockSizeMultiple32Bytes      0x02000030
-#define SKY_ErrReadDataHashFailedLength             0x02000031
-#define SKY_ErrSHA256orInvalidPassword              0x02000032
+#define SKY_ErrInvalidBlockSize                     0x02000030
+#define SKY_ErrReadDataHashFailed                   0x02000031
+#define SKY_ErrInvalidPassword                      0x02000032
 #define SKY_ErrReadDataLengthFailed                 0x02000033
 #define SKY_ErrInvalidDataLength                    0x02000034
 
@@ -118,27 +118,24 @@
 #define SKY_ErrNotExternalIP                              0x06000003
 #define SKY_ErrPortTooLow                                 0x06000004
 #define SKY_ErrBlacklistedAddress                         0x06000005
-#define SKY_ErrDisconnectReadFailed                       0x06000006
+// #define SKY_ErrDisconnectReadFailed                       0x06000006
 #define SKY_ErrDisconnectWriteFailed                      0x06000007
 #define SKY_ErrDisconnectSetReadDeadlineFailed            0x06000008
 #define SKY_ErrDisconnectInvalidMessageLength             0x06000009
 #define SKY_ErrDisconnectMalformedMessage                 0x0600000A
 #define SKY_ErrDisconnectUnknownMessage                   0x0600000B
-#define SKY_ErrDisconnectUnexpectedError                  0x0600000C
 #define SKY_ErrConnectionPoolClosed                       0x0600000D
 #define SKY_ErrWriteQueueFull                             0x0600000E
 #define SKY_ErrNoReachableConnections                     0x0600000F
 #define SKY_ErrMaxDefaultConnectionsReached               0x06000010
 #define SKY_ErrDisconnectVersionNotSupported              0x06000011
 #define SKY_ErrDisconnectIntroductionTimeout              0x06000012
-#define SKY_ErrDisconnectVersionSendFailed                0x06000013
 #define SKY_ErrDisconnectIsBlacklisted                    0x06000014
 #define SKY_ErrDisconnectSelf                             0x06000015
 #define SKY_ErrDisconnectConnectedTwice                   0x06000016
 #define SKY_ErrDisconnectIdle                             0x06000017
 #define SKY_ErrDisconnectNoIntroduction                   0x06000018
 #define SKY_ErrDisconnectIPLimitReached                   0x06000019
-#define SKY_ErrDisconnectIncomprehensibleError            0x0600001A
 #define SKY_ErrDisconnectMaxDefaultConnectionReached      0x0600001B
 #define SKY_ErrDisconnectMaxOutgoingConnectionsReached    0x0600001C
 #define SKY_ConnectionError                               0x0600001D
@@ -174,9 +171,9 @@
 #define SKY_ErrInvalidEncryptedField                  0x0B000004
 #define SKY_ErrWalletEncrypted                        0x0B000005
 #define SKY_ErrWalletNotEncrypted                     0x0B000006
-#define SKY_ErrMissingPassword                        0x0B000007
+#define SKY_ErrWalletMissingPassword                  0x0B000007
 #define SKY_ErrMissingEncrypt                         0x0B000008
-#define SKY_ErrInvalidPassword                        0x0B000009
+#define SKY_ErrWalletInvalidPassword                  0x0B000009
 #define SKY_ErrMissingSeed                            0x0B00000A
 #define SKY_ErrMissingAuthenticated                   0x0B00000B
 #define SKY_ErrWrongCryptoType                        0x0B00000C

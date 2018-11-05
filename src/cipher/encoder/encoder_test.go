@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
@@ -881,50 +882,36 @@ func TestOmitEmptyFinalFieldOnly(t *testing.T) {
 	})
 }
 
-func TestParseTag(t *testing.T) {
+func TestTagOmitempty(t *testing.T) {
 	cases := []struct {
 		tag       string
-		name      string
 		omitempty bool
 	}{
 		{
-			tag:  "foo",
-			name: "foo",
-		},
-		{
-			tag:  "foo,",
-			name: "foo",
-		},
-		{
-			tag:  "foo,asdasd",
-			name: "foo",
-		},
-		{
 			tag:       "foo,omitempty",
-			name:      "foo",
 			omitempty: true,
 		},
 		{
-			tag:  "omitempty",
-			name: "omitempty",
+			tag:       "omitempty",
+			omitempty: false,
 		},
 		{
 			tag:       ",omitempty",
 			omitempty: true,
 		},
 		{
-			tag: "",
+			tag:       "",
+			omitempty: false,
 		},
 		{
-			tag:  "-",
-			name: "-",
+			tag:       "-",
+			omitempty: false,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.tag, func(t *testing.T) {
-			name, omitempty := ParseTag(tc.tag)
-			require.Equal(t, tc.name, name)
+			omitempty := TagOmitempty(tc.tag)
 			require.Equal(t, tc.omitempty, omitempty)
 		})
 	}
@@ -1190,4 +1177,176 @@ func TestDeserializeRawNotPointer(t *testing.T) {
 	m := map[string]int64{"foo": 32, "bar": 64}
 	b = Serialize(m)
 	require.NotEmpty(t, b)
+}
+
+func TestDeserializeMaxLenExceeded(t *testing.T) {
+	// maxlen for strings
+	type Foo struct {
+		X string `enc:",maxlen=2"`
+	}
+
+	b := Serialize(Foo{X: "foo"})
+	require.NotEmpty(t, b)
+
+	var f Foo
+	err := DeserializeRaw(b, &f)
+	require.Equal(t, ErrMaxLenExceeded, err)
+
+	g := Foo{X: "fo"}
+	b = Serialize(g)
+	require.NotEmpty(t, b)
+
+	f = Foo{}
+	err = DeserializeRaw(b, &f)
+	require.NoError(t, err)
+	require.Equal(t, g, f)
+
+	// maxlen for slices
+	type Bar struct {
+		X []string `enc:",maxlen=2"`
+	}
+
+	b = Serialize(Bar{X: []string{"f", "o", "o"}})
+	require.NotEmpty(t, b)
+
+	var k Bar
+	err = DeserializeRaw(b, &k)
+	require.Equal(t, ErrMaxLenExceeded, err)
+
+	c := Bar{X: []string{"f", "o"}}
+	b = Serialize(c)
+	require.NotEmpty(t, b)
+
+	k = Bar{}
+	err = DeserializeRaw(b, &k)
+	require.NoError(t, err)
+	require.Equal(t, c, k)
+
+	// Invalid maxlen value panics
+	type Baz struct {
+		X string `enc:",maxlen=foo"`
+	}
+
+	b = Serialize(Baz{X: "foo"})
+	require.NotEmpty(t, b)
+
+	var z Baz
+	require.Panics(t, func() {
+		_ = DeserializeRaw(b, &z) // nolint: errcheck
+	})
+
+	// maxlen for final omitempty byte array
+	type Car struct {
+		X string
+		Y []byte `enc:",omitempty,maxlen=2"`
+	}
+
+	b = Serialize(Car{
+		X: "foo",
+		Y: []byte("foo"),
+	})
+	require.NotEmpty(t, b)
+
+	var w Car
+	err = DeserializeRaw(b, &w)
+	require.Equal(t, ErrMaxLenExceeded, err)
+
+	v := Car{
+		X: "foo",
+		Y: []byte("fo"),
+	}
+	b = Serialize(v)
+	require.NotEmpty(t, b)
+
+	w = Car{}
+	err = DeserializeRaw(b, &w)
+	require.NoError(t, err)
+	require.Equal(t, v, w)
+}
+
+func TestSerializeString(t *testing.T) {
+	cases := []struct {
+		s string
+		x []byte
+	}{
+		{
+			s: "",
+			x: []byte{0, 0, 0, 0},
+		},
+		{
+			s: "foo",
+			x: []byte{3, 0, 0, 0, 'f', 'o', 'o'},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.s, func(t *testing.T) {
+			require.Equal(t, tc.x, SerializeString(tc.s))
+		})
+	}
+}
+
+func TestDeserializeString(t *testing.T) {
+	cases := []struct {
+		s      string
+		x      []byte
+		n      int
+		maxLen int
+		err    error
+	}{
+		{
+			s: "",
+			x: []byte{0, 0, 0, 0},
+			n: 4,
+		},
+		{
+			s: "foo",
+			x: []byte{3, 0, 0, 0, 'f', 'o', 'o'},
+			n: 7,
+		},
+		{
+			x:   []byte{3, 0, 0},
+			err: ErrBufferUnderflow,
+		},
+		{
+			x:   nil,
+			err: ErrBufferUnderflow,
+		},
+		{
+			x:   []byte{3, 0, 0, 0, 'f'},
+			err: ErrBufferUnderflow,
+		},
+		{
+			s: "foo",
+			x: []byte{3, 0, 0, 0, 'f', 'o', 'o', 'x'},
+			n: 7,
+		},
+		{
+			s:      "foo",
+			x:      []byte{3, 0, 0, 0, 'f', 'o', 'o', 'x'},
+			maxLen: 2,
+			err:    ErrMaxLenExceeded,
+		},
+		{
+			s:      "foo",
+			x:      []byte{3, 0, 0, 0, 'f', 'o', 'o', 'x'},
+			maxLen: 3,
+			n:      7,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("s=%s err=%s", tc.s, tc.err), func(t *testing.T) {
+			s, n, err := DeserializeString(tc.x, tc.maxLen)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				require.Equal(t, tc.n, n)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.s, s)
+			require.Equal(t, tc.n, n)
+		})
+	}
 }

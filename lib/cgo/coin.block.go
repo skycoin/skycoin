@@ -30,7 +30,11 @@ func SKY_coin_NewBlock(_b C.Block__Handle, _currentTime uint64, _hash *C.cipher_
 		if result == SKY_OK {
 			return uint64(fee), nil
 		} else {
-			return 0, errors.New("Error calculating fee")
+			err := errorFromLibCode(uint32(result))
+			if err == nil {
+				err = errors.New("Error in libskycoin fee calculator")
+			}
+			return 0, err
 		}
 	}
 

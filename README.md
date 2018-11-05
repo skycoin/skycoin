@@ -63,6 +63,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Creating a new coin](#creating-a-new-coin)
 - [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
 - [URI Specification](#uri-specification)
+- [Wire protocol user agent](#wire-protocol-user-agent)
 - [Development](#development)
 	- [Modules](#modules)
 	- [Client libraries](#client-libraries)
@@ -224,7 +225,7 @@ For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor
 The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar. It cannot be configured through the command line.
 
 ```sh
-COINHOUR_BURN_FACTOR=999 ./run.sh
+COINHOUR_BURN_FACTOR=999 ./run-client.sh
 ```
 
 ## URI Specification
@@ -237,6 +238,10 @@ Example Skycoin URIs:
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70&label=friend&message=Birthday%20Gift`
+
+## Wire protocol user agent
+
+[Wire protocol user agent description](https://github.com/skycoin/skycoin/wiki/Wire-protocol-user-agent)
 
 ## Development
 

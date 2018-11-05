@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -679,13 +680,13 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody: string(invalidTxnBodyJSON),
 		},
 		{
-			name:                   "503 - daemon.ErrOutgoingConnectionsDisabled",
+			name:                   "503 - daemon.ErrNetworkingDisabled",
 			method:                 http.MethodPost,
 			status:                 http.StatusServiceUnavailable,
-			err:                    "503 Service Unavailable - Outgoing connections are disabled",
+			err:                    "503 Service Unavailable - Networking is disabled",
 			httpBody:               string(validTxnBodyJSON),
 			injectTransactionArg:   validTransaction,
-			injectTransactionError: daemon.ErrOutgoingConnectionsDisabled,
+			injectTransactionError: daemon.ErrNetworkingDisabled,
 		},
 		{
 			name:                   "503 - gnet.ErrNoReachableConnections",
@@ -700,7 +701,7 @@ func TestInjectTransaction(t *testing.T) {
 			name:                   "503 - gnet.ErrPoolEmpty",
 			method:                 http.MethodPost,
 			status:                 http.StatusServiceUnavailable,
-			err:                    "503 Service Unavailable - Connection pool is empty",
+			err:                    "503 Service Unavailable - Connection pool is empty after filtering connections",
 			httpBody:               string(validTxnBodyJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: gnet.ErrPoolEmpty,
@@ -739,7 +740,7 @@ func TestInjectTransaction(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{
@@ -786,29 +787,40 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 	}{
 		{
 			name:   "405",
-			method: http.MethodPost,
+			method: http.MethodGet,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
+
 		{
-			name:                     "500 resend failed",
-			method:                   http.MethodGet,
+			name:                     "500 resend failed network error",
+			method:                   http.MethodPost,
+			status:                   http.StatusServiceUnavailable,
+			err:                      "503 Service Unavailable - All pool connections are unreachable at this time",
+			resendUnconfirmedTxnsErr: gnet.ErrNoReachableConnections,
+		},
+
+		{
+			name:                     "500 resend failed unknown error",
+			method:                   http.MethodPost,
 			status:                   http.StatusInternalServerError,
 			err:                      "500 Internal Server Error - ResendUnconfirmedTxns failed",
 			resendUnconfirmedTxnsErr: errors.New("ResendUnconfirmedTxns failed"),
 		},
+
 		{
 			name:                          "200",
-			method:                        http.MethodGet,
+			method:                        http.MethodPost,
 			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: nil,
 			httpResponse: ResendResult{
 				Txids: []string{},
 			},
 		},
+
 		{
 			name:                          "200 with hashes",
-			method:                        http.MethodGet,
+			method:                        http.MethodPost,
 			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: []cipher.SHA256{validHash1, validHash2},
 			httpResponse: ResendResult{
@@ -823,7 +835,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{
@@ -1019,7 +1031,7 @@ func TestGetTransactions(t *testing.T) {
 	}{
 		{
 			name:   "405",
-			method: http.MethodPost,
+			method: http.MethodDelete,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
@@ -1135,11 +1147,27 @@ func TestGetTransactions(t *testing.T) {
 			},
 			httpResponse: []readable.TransactionWithStatusVerbose{},
 		},
+
+		{
+			name:   "200 POST",
+			method: http.MethodPost,
+			status: http.StatusOK,
+			httpBody: &httpBody{
+				addrs:     addrsStr,
+				confirmed: "true",
+			},
+			getTransactionsArg: []visor.TxFilter{
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
+			},
+			getTransactionsResponse: []visor.Transaction{},
+			httpResponse:            []readable.TransactionWithStatus{},
+		},
 	}
 
 	for _, tc := range tt {
-		endpoint := "/api/v1/transactions"
 		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/api/v1/transactions"
 			gateway := &MockGatewayer{}
 
 			// Custom argument matching function for matching TxFilter args
@@ -1209,12 +1237,22 @@ func TestGetTransactions(t *testing.T) {
 					v.Add("verbose", tc.httpBody.verbose)
 				}
 			}
+
+			var reqBody io.Reader
 			if len(v) > 0 {
-				endpoint += "?" + v.Encode()
+				if tc.method == http.MethodPost {
+					reqBody = strings.NewReader(v.Encode())
+				} else {
+					endpoint += "?" + v.Encode()
+				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, nil)
+			req, err := http.NewRequest(tc.method, endpoint, reqBody)
 			require.NoError(t, err)
+
+			if tc.method == http.MethodPost {
+				req.Header.Set("Content-Type", ContentTypeForm)
+			}
 
 			csrfStore := &CSRFStore{
 				Enabled: true,
@@ -1343,7 +1381,7 @@ func TestVerifyTransaction(t *testing.T) {
 		{
 			name:         "400 - EOF",
 			method:       http.MethodPost,
-			contentType:  "application/json",
+			contentType:  ContentTypeJSON,
 			status:       http.StatusBadRequest,
 			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "EOF"),
 		},
@@ -1357,7 +1395,7 @@ func TestVerifyTransaction(t *testing.T) {
 		{
 			name:         "400 - Invalid transaction: Not enough buffer data to deserialize",
 			method:       http.MethodPost,
-			contentType:  "application/json",
+			contentType:  ContentTypeJSON,
 			status:       http.StatusBadRequest,
 			httpBody:     `{"wrongKey":"wrongValue"}`,
 			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Not enough buffer data to deserialize"),
@@ -1365,7 +1403,7 @@ func TestVerifyTransaction(t *testing.T) {
 		{
 			name:         "400 - encoding/hex: odd length hex string",
 			method:       http.MethodPost,
-			contentType:  "application/json",
+			contentType:  ContentTypeJSON,
 			status:       http.StatusBadRequest,
 			httpBody:     `{"encoded_transaction":"aab"}`,
 			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: encoding/hex: odd length hex string"),
@@ -1373,7 +1411,7 @@ func TestVerifyTransaction(t *testing.T) {
 		{
 			name:         "400 - deserialization error",
 			method:       http.MethodPost,
-			contentType:  "application/json",
+			contentType:  ContentTypeJSON,
 			status:       http.StatusBadRequest,
 			httpBody:     string(invalidTxnBodyJSON),
 			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Not enough buffer data to deserialize"),
@@ -1381,7 +1419,7 @@ func TestVerifyTransaction(t *testing.T) {
 		{
 			name:                       "422 - txn sends to empty address",
 			method:                     http.MethodPost,
-			contentType:                "application/json",
+			contentType:                ContentTypeJSON,
 			status:                     http.StatusUnprocessableEntity,
 			httpBody:                   string(invalidTxnEmptyAddressBodyJSON),
 			gatewayVerifyTxnVerboseArg: invalidTxnEmptyAddress.txn,
@@ -1400,7 +1438,7 @@ func TestVerifyTransaction(t *testing.T) {
 		{
 			name:                       "500 - internal server error",
 			method:                     http.MethodPost,
-			contentType:                "application/json",
+			contentType:                ContentTypeJSON,
 			status:                     http.StatusInternalServerError,
 			httpBody:                   string(validTxnBodyJSON),
 			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
@@ -1412,7 +1450,7 @@ func TestVerifyTransaction(t *testing.T) {
 		{
 			name:                       "422 - txn is confirmed",
 			method:                     http.MethodPost,
-			contentType:                "application/json",
+			contentType:                ContentTypeJSON,
 			status:                     http.StatusUnprocessableEntity,
 			httpBody:                   string(validTxnBodyJSON),
 			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
@@ -1431,7 +1469,7 @@ func TestVerifyTransaction(t *testing.T) {
 		{
 			name:                       "200",
 			method:                     http.MethodPost,
-			contentType:                "application/json",
+			contentType:                ContentTypeJSON,
 			status:                     http.StatusOK,
 			httpBody:                   string(validTxnBodyJSON),
 			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
@@ -1451,7 +1489,7 @@ func TestVerifyTransaction(t *testing.T) {
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", tc.contentType)
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/fee"
 )
 
@@ -138,15 +139,15 @@ func (e ErrTxnViolatesUserConstraint) Error() string {
 //      * That the transaction burn enough coin hours (the fee)
 //      * That if that transaction does not spend from a locked distribution address
 //      * That the transaction does not create outputs with a higher decimal precision than is allowed
-func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, maxSize int) error {
-	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, maxSize); err != nil {
+func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, maxSize int, burnFactor uint64) error {
+	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, maxSize, burnFactor); err != nil {
 		return NewErrTxnViolatesSoftConstraint(err)
 	}
 
 	return nil
 }
 
-func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, maxSize int) error {
+func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, maxSize int, burnFactor uint64) error {
 	if txn.Size() > maxSize {
 		return errTxnExceedsMaxBlockSize
 	}
@@ -156,7 +157,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 		return err
 	}
 
-	if err := fee.VerifyTransactionFee(&txn, f); err != nil {
+	if err := fee.VerifyTransactionFee(&txn, f, burnFactor); err != nil {
 		return err
 	}
 
@@ -166,7 +167,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 
 	// Reject transactions that do not conform to decimal restrictions
 	for _, o := range txn.Out {
-		if err := DropletPrecisionCheck(o.Coins); err != nil {
+		if err := params.DropletPrecisionCheck(o.Coins); err != nil {
 			return err
 		}
 	}

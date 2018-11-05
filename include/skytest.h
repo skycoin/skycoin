@@ -7,9 +7,6 @@
 #ifndef LIBSKY_TESTING_H
 #define LIBSKY_TESTING_H
 
-#define MaxUint64 0xFFFFFFFFFFFFFFFF
-#define MaxUint16  0xFFFF
-
 /*----------------------------------------------------------------------
  * I/O
  *----------------------------------------------------------------------

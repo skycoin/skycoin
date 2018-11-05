@@ -12,10 +12,10 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -369,7 +369,7 @@ func (r createTransactionRequest) Validate() error {
 			return fmt.Errorf("to[%d].coins must not be zero", i)
 		}
 
-		if to.Coins.Value()%visor.MaxDropletDivisor() != 0 {
+		if to.Coins.Value()%params.MaxDropletDivisor() != 0 {
 			return fmt.Errorf("to[%d].coins has too many decimal places", i)
 		}
 	}

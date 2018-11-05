@@ -10,11 +10,13 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
-#include "skytxn.h"
 
 TestSuite(util_fee, .init = setup, .fini = teardown);
 #define BUFFER_SIZE 1024
 #define BurnFactor 2
+
+unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
+unsigned int MaxUint16  = 0xFFFF;
 typedef struct {
   GoInt64 inputHours;
   GoInt64 outputHours;
@@ -62,11 +64,11 @@ Test(util_fee, TestVerifyTransactionFee) {
   cr_assert(hours == 0);
 
   // A txn with no outputs hours and no coinhours burn fee is valid
-  err = SKY_fee_VerifyTransactionFee(emptyTxn, 0);
+  err = SKY_fee_VerifyTransactionFee(emptyTxn, 0,2);
   cr_assert(err == SKY_ErrTxnNoFee);
 
   // A txn with no outputs hours but with a coinhours burn fee is valid
-  err = SKY_fee_VerifyTransactionFee(emptyTxn, 100);
+  err = SKY_fee_VerifyTransactionFee(emptyTxn, 100,2);
   cr_assert(err == SKY_OK);
 
   Transaction__Handle txn;
@@ -84,30 +86,30 @@ Test(util_fee, TestVerifyTransactionFee) {
   cr_assert(hours == 4000000);
 
   // A txn with insufficient net coinhours burn fee is invalid
-  err = SKY_fee_VerifyTransactionFee(txn, 0);
+  err = SKY_fee_VerifyTransactionFee(txn, 0,2);
   cr_assert(err == SKY_ErrTxnNoFee);
-  err = SKY_fee_VerifyTransactionFee(txn, 1);
+  err = SKY_fee_VerifyTransactionFee(txn, 1,2);
   cr_assert(err == SKY_ErrTxnInsufficientFee);
 
   // A txn with sufficient net coinhours burn fee is valid
   err = SKY_coin_Transaction_OutputHours(txn, &hours);
   cr_assert(err == SKY_OK);
-  err = SKY_fee_VerifyTransactionFee(txn, hours);
+  err = SKY_fee_VerifyTransactionFee(txn, hours,2);
   cr_assert(err == SKY_OK);
   err = SKY_coin_Transaction_OutputHours(txn, &hours);
   cr_assert(err == SKY_OK);
-  err = SKY_fee_VerifyTransactionFee(txn, (hours * 10));
+  err = SKY_fee_VerifyTransactionFee(txn, (hours * 10),2);
   cr_assert(err == SKY_OK);
 
   // fee + hours overflows
-  err = SKY_fee_VerifyTransactionFee(txn, (MaxUint64 - 3000000));
+  err = SKY_fee_VerifyTransactionFee(txn, (MaxUint64 - 3000000),2);
   cr_assert(err == SKY_ERROR);
 
   // txn has overflowing output hours
   err = SKY_coin_Transaction_PushOutput(txn, &addr, 0,
                                         (MaxUint64 - 1000000 - 3000000 + 1));
   cr_assert(err == SKY_OK);
-  err = SKY_fee_VerifyTransactionFee(txn, 10);
+  err = SKY_fee_VerifyTransactionFee(txn, 10,2);
   cr_assert(err == SKY_ERROR);
 
   int len = (sizeof(cases) / sizeof(verifyTxFeeTestCase));
@@ -118,7 +120,7 @@ Test(util_fee, TestVerifyTransactionFee) {
     err = SKY_coin_Transaction_PushOutput(txn, &addr, 0, tc.outputHours);
     cr_assert(err == SKY_OK);
     cr_assert(tc.inputHours >= tc.outputHours);
-    err = SKY_fee_VerifyTransactionFee(txn, (tc.inputHours - tc.outputHours));
+    err = SKY_fee_VerifyTransactionFee(txn, (tc.inputHours - tc.outputHours),2);
     cr_assert(tc.err == err, "Iter %d is %x != %x", i, tc.err, err);
   }
 }
@@ -138,12 +140,12 @@ Test(util_fee, TestRequiredFee) {
   for (int i = 0; i < len; i++) {
     requiredFeeTestCase tc = cases1[i];
     GoUint64 fee;
-    GoUint64 err = SKY_fee_RequiredFee(tc.hours, &fee);
+    GoUint64 err = SKY_fee_RequiredFee(tc.hours,2, &fee);
     cr_assert(err == SKY_OK);
     cr_assert(tc.fee == fee);
 
     GoUint64 remainingHours;
-    err = SKY_fee_RemainingHours(tc.hours, &remainingHours);
+    err = SKY_fee_RemainingHours(tc.hours,2, &remainingHours);
     cr_assert(err == SKY_OK);
     cr_assert(eq(ullong, (tc.hours - fee), remainingHours));
   }

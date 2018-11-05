@@ -180,6 +180,10 @@ typedef Handle ReadableOutputSet__Handle;
  * */
 typedef Handle ReadableOutputSet_Handle;
 /**
+ *  ReadableOutputSet Handle
+ * */
+typedef Handle ReadableOutputSet_Handle;
+/**
  * Instances of Go interface types.
  */
 typedef struct {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -22,7 +23,7 @@ import (
 )
 
 func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutputsSummary) *CoinSupply {
-	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+	unlockedAddrs := params.GetUnlockedDistributionAddresses()
 	var unlockedSupply uint64
 	// check confirmed unspents only
 	// Search map of unlocked addresses
@@ -37,8 +38,8 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 		}
 	}
 	// "total supply" is the number of coins unlocked.
-	// Each distribution address was allocated visor.DistributionAddressInitialBalance coins.
-	totalSupply := uint64(len(unlockedAddrs)) * visor.DistributionAddressInitialBalance
+	// Each distribution address was allocated params.DistributionAddressInitialBalance coins.
+	totalSupply := uint64(len(unlockedAddrs)) * params.DistributionAddressInitialBalance
 	totalSupply *= droplet.Multiplier
 
 	// "current supply" is the number of coins distribution from the unlocked pool
@@ -50,11 +51,11 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 	totalSupplyStr, err := droplet.ToString(totalSupply)
 	require.NoError(t, err)
 
-	maxSupplyStr, err := droplet.ToString(visor.MaxCoinSupply * droplet.Multiplier)
+	maxSupplyStr, err := droplet.ToString(params.MaxCoinSupply * droplet.Multiplier)
 	require.NoError(t, err)
 
 	// locked distribution addresses
-	lockedAddrs := visor.GetLockedDistributionAddresses()
+	lockedAddrs := params.GetLockedDistributionAddresses()
 	lockedAddrSet := newStringSet(lockedAddrs)
 
 	// get total coins hours which excludes locked distribution addresses
@@ -84,7 +85,7 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 		CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 		TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
 		UnlockedAddresses:     unlockedAddrs,
-		LockedAddresses:       visor.GetLockedDistributionAddresses(),
+		LockedAddresses:       params.GetLockedDistributionAddresses(),
 	}
 	return &cs
 }
@@ -247,7 +248,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 }
 
 func TestCoinSupply(t *testing.T) {
-	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+	unlockedAddrs := params.GetUnlockedDistributionAddresses()
 	successGatewayGetUnspentOutputsResult := readable.UnspentOutputsSummary{
 		HeadOutputs: readable.UnspentOutputs{
 			readable.UnspentOutput{

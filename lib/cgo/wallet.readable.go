@@ -16,44 +16,11 @@ import (
 import "C"
 
 //export SKY_wallet_NewReadableEntry
-func SKY_wallet_NewReadableEntry(_w *C.wallet__Entry, _arg1 *C.ReadableEntry__Handle) (____error_code uint32) {
+func SKY_wallet_NewReadableEntry(_coinType string, _w *C.wallet__Entry, _arg1 *C.ReadableEntry__Handle) (____error_code uint32) {
+	coinType := wallet.CoinType(_coinType)
 	w := *(*wallet.Entry)(unsafe.Pointer(_w))
-	__arg1 := wallet.NewReadableEntry(w)
+	__arg1 := wallet.NewReadableEntry(coinType, w)
 	*_arg1 = registerReadableEntryHandle(&__arg1)
-	return
-}
-
-//export SKY_wallet_LoadReadableEntry
-func SKY_wallet_LoadReadableEntry(_filename string, _arg1 *C.ReadableEntry__Handle) (____error_code uint32) {
-	filename := _filename
-	__arg1, ____return_err := wallet.LoadReadableEntry(filename)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg1 = registerReadableEntryHandle(&__arg1)
-	}
-	return
-}
-
-//export SKY_wallet_NewReadableEntryFromPubkey
-func SKY_wallet_NewReadableEntryFromPubkey(_pub string, _arg1 *C.ReadableEntry__Handle) (____error_code uint32) {
-	pub := _pub
-	__arg1 := wallet.NewReadableEntryFromPubkey(pub)
-	*_arg1 = registerReadableEntryHandle(&__arg1)
-	return
-}
-
-//export SKY_wallet_ReadableEntry_Save
-func SKY_wallet_ReadableEntry_Save(_re C.ReadableEntry__Handle, _filename string) (____error_code uint32) {
-	re, okre := lookupReadableEntryHandle(_re)
-	if !okre {
-		____error_code = SKY_BAD_HANDLE
-		return
-	}
-	filename := _filename
-	____return_err := re.Save(filename)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-	}
 	return
 }
 

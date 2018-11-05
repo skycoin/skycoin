@@ -1,9 +1,12 @@
 package main
 
 import (
+	"reflect"
+	"strings"
 	"unsafe"
 
 	api "github.com/skycoin/skycoin/src/api"
+	daemon "github.com/skycoin/skycoin/src/daemon"
 )
 
 /*
@@ -477,14 +480,31 @@ func SKY_api_Client_NetworkConnection(_c C.Client__Handle, _addr string, _arg1 *
 	return
 }
 
+type _networkConnectionsFilter struct {
+	States    string
+	Direction string
+}
+
+func parseNetworkConnectionsFilter(_filter *C.api__NetworkConnectionsFilter, filter *api.NetworkConnectionsFilter) {
+	__filter := (*_networkConnectionsFilter)(unsafe.Pointer(_filter))
+	states := strings.Split(string(__filter.States), ",")
+	filter.States = make([]daemon.ConnectionState, len(states))
+	for i, state := range states {
+		filter.States[i] = daemon.ConnectionState(state)
+	}
+	filter.Direction = string(__filter.Direction)
+}
+
 //export SKY_api_Client_NetworkConnections
-func SKY_api_Client_NetworkConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
+func SKY_api_Client_NetworkConnections(_c C.Client__Handle, _filters *C.api__NetworkConnectionsFilter, _arg0 *C.Handle) (____error_code uint32) {
 	c, okc := lookupClientHandle(_c)
 	if !okc {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0, ____return_err := c.NetworkConnections()
+	var filters api.NetworkConnectionsFilter
+	parseNetworkConnectionsFilter(_filters, &filters)
+	__arg0, ____return_err := c.NetworkConnections(&filters)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg0 = registerHandle(__arg0)
@@ -492,47 +512,47 @@ func SKY_api_Client_NetworkConnections(_c C.Client__Handle, _arg0 *C.Handle) (__
 	return
 }
 
-//export SKY_api_Client_NetworkDefaultConnections
-func SKY_api_Client_NetworkDefaultConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
+//export SKY_api_Client_NetworkDefaultPeers
+func SKY_api_Client_NetworkDefaultPeers(_c C.Client__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
 	c, okc := lookupClientHandle(_c)
 	if !okc {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0, ____return_err := c.NetworkDefaultConnections()
+	__arg0, ____return_err := c.NetworkDefaultPeers()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
+		copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
 	}
 	return
 }
 
-//export SKY_api_Client_NetworkTrustedConnections
-func SKY_api_Client_NetworkTrustedConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
+//export SKY_api_Client_NetworkTrustedPeers
+func SKY_api_Client_NetworkTrustedPeers(_c C.Client__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
 	c, okc := lookupClientHandle(_c)
 	if !okc {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0, ____return_err := c.NetworkTrustedConnections()
+	__arg0, ____return_err := c.NetworkTrustedPeers()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
+		copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
 	}
 	return
 }
 
-//export SKY_api_Client_NetworkExchangeableConnections
-func SKY_api_Client_NetworkExchangeableConnections(_c C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
+//export SKY_api_Client_NetworkExchangedPeers
+func SKY_api_Client_NetworkExchangedPeers(_c C.Client__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
 	c, okc := lookupClientHandle(_c)
 	if !okc {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0, ____return_err := c.NetworkExchangeableConnections()
+	__arg0, ____return_err := c.NetworkExchangedPeers()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
+		copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
 	}
 	return
 }

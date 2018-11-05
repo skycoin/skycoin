@@ -7,21 +7,9 @@ package secp256k1
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"log"
 
 	secp "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
-)
-
-var (
-	ErrVerifySignatureInvalidInputsNils    = errors.New("VerifySignature, ERROR: invalid input, nils")
-	ErrVerifySignatureInvalidSigLength     = errors.New("VerifySignature, invalid signature length")
-	ErrVerifySignatureInvalidPubkeysLength = errors.New("VerifySignature, invalid pubkey length")
-	ErrSignInvalidSeckeyLength             = errors.New("Sign, Invalid seckey length")
-	ErrSignInvalidSeckey                   = errors.New("Attempting to sign with invalid seckey")
-	ErrSignMessageNil                      = errors.New("Sign, message nil")
-	ErrSecp25k1SignSignatureFailed         = errors.New("Secp25k1-go, Sign, signature operation failed")
-	ErrSecp256k1InvalidLengthPubKey        = errors.New("pubkey length wrong")
 )
 
 // DebugPrint enable debug print statements
@@ -36,6 +24,7 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 
 	if secp.SeckeyIsValid(seckey) != 1 {
 		log.Panic("always ensure seckey is valid")
+		return nil
 	}
 
 	var pubkey = secp.GeneratePublicKey(seckey) //always returns true
@@ -240,13 +229,13 @@ func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
 // Sign sign hash
 func Sign(msg []byte, seckey []byte) []byte {
 	if len(seckey) != 32 {
-		log.Panic(ErrSignInvalidSeckeyLength)
+		log.Panic("Sign, Invalid seckey length")
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
-		log.Panic(ErrSignInvalidSeckey)
+		log.Panic("Attempting to sign with invalid seckey")
 	}
 	if len(msg) == 0 {
-		log.Panic(ErrSignMessageNil)
+		log.Panic("Sign, message nil")
 	}
 	var nonce = RandByte(32)
 	var sig = make([]byte, 65)
@@ -265,7 +254,7 @@ func Sign(msg []byte, seckey []byte) []byte {
 	ret := cSig.Sign(&seckey1, &msg1, &nonce1, &recid)
 
 	if ret != 1 {
-		log.Panic(ErrSecp25k1SignSignatureFailed)
+		log.Panic("Secp25k1-go, Sign, signature operation failed")
 	}
 
 	sigBytes := cSig.Bytes()

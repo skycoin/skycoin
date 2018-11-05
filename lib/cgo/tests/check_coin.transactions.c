@@ -12,12 +12,15 @@
 #include "skycriterion.h"
 #include "skytxn.h"
 
+
 TestSuite(coin_transaction, .init = setup, .fini = teardown);
 
 GoUint64 Million = 1000000;
 
 Test(coin_transaction, TestTransactionVerify)
 {
+  unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
+unsigned int MaxUint16 = 0xFFFF;
   int result;
   coin__Transaction *ptx;
   Transaction__Handle handle;
@@ -169,6 +172,8 @@ Test(coin_transaction, TestTransactionVerify)
 
 Test(coin_transaction, TestTransactionPushInput, SKY_ABORT)
 {
+  unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
+unsigned int MaxUint16 = 0xFFFF;
   int result;
   Transaction__Handle handle;
   coin__Transaction *ptx;
@@ -731,7 +736,8 @@ int makeTestCaseArrays(test_ux *elems, int size, coin__UxArray *pArray)
 
 Test(coin_transactions, TestVerifyTransactionCoinsSpending)
 {
-
+unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
+unsigned int MaxUint16 = 0xFFFF;
   // Input coins overflow
   test_ux in1[] = {{MaxUint64 - Million + 1, 10}, {Million, 0}};
 
@@ -785,6 +791,8 @@ Test(coin_transactions, TestVerifyTransactionHoursSpending)
 {
  
   GoUint64 Million = 1000000;
+  unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
+unsigned int MaxUint16 = 0xFFFF;
 
   // Input hours overflow
   test_ux in1[] = {{3 * Million, MaxUint64 - Million + 1}, {Million, Million}};
@@ -979,6 +987,8 @@ void testTransactionSorting(Transactions__Handle hTrans,
 
 GoUint32_ feeCalculator3(Transaction__Handle handle, GoUint64_ * pFee, void *context)
 {
+  unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
+unsigned int MaxUint16 = 0xFFFF;
   cipher__SHA256 *thirdHash = (cipher__SHA256 *) context;
   cipher__SHA256 hash;
 

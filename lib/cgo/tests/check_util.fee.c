@@ -15,6 +15,8 @@
 TestSuite(util_fee, .init = setup, .fini = teardown);
 #define BUFFER_SIZE 1024
 #define BurnFactor 2
+unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
+unsigned int MaxUint16 = 0xFFFF;
 typedef struct {
   GoInt64 inputHours;
   GoInt64 outputHours;

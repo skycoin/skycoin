@@ -44,10 +44,15 @@
   $1 = PyInt_Check($input) ? 1 : 0;
 }
 
+%typecheck(SWIG_TYPECHECK_INTEGER) AddressUxOuts_Handle {
+  $1 = PyInt_Check($input) ? 1 : 0;
+}
+
 #if defined(SWIGPYTHON)
 	%include "python_seckeys.i"
 	%include "python_pubkeys.i"
 	%include "python_uxarray.i"
+	%include "python_addresses.i"
 #endif
 
 %rename(SKY_coin_Transaction_SignInputs) wrap_SKY_coin_Transaction_SignInputs;
@@ -363,7 +368,7 @@
 %rename(SKY_coin_AddressUxOuts_Set) wrap_SKY_coin_AddressUxOuts_Set;
 %inline{ 
 	GoUint32 wrap_SKY_coin_AddressUxOuts_Set(AddressUxOuts_Handle p0, cipher__Address* p1, coin_UxOutArray* __uxIn){
-		GoSlice_ data;
+		coin__UxArray data;
 		data.data = __uxIn->data;
 		data.len = __uxIn->count;
 		data.cap = __uxIn->count;
@@ -403,3 +408,13 @@
 	}
 }
 
+%rename(SKY_fee_TransactionFee) wrap_SKY_fee_TransactionFee;
+%inline{
+	GoUint32 wrap_SKY_fee_TransactionFee(Transaction__Handle __txn, GoUint64 __p1, coin_UxOutArray*  __uxIn, GoUint64  *__return_fee ){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_fee_TransactionFee(__txn,__p1, &data,__return_fee);
+	}
+}

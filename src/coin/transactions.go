@@ -371,7 +371,6 @@ func (txns Transactions) Size() (uint32, error) {
 
 // TruncateBytesTo returns the first n transactions whose total size is less than or equal to size
 func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
-	fmt.Println("TruncateBytesTo", size, len(txns))
 	var total uint32
 	for i := range txns {
 		pending, err := txns[i].Size()
@@ -381,7 +380,6 @@ func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
 
 		pendingTotal, err := AddUint32(total, pending)
 		if err != nil {
-			fmt.Println("TruncateBytesTo AddUint32 err:", err)
 			return txns[:i], nil
 		}
 

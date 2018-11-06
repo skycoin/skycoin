@@ -369,6 +369,8 @@ func TestVisorCreateBlock(t *testing.T) {
 		tx := makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f)
 		txns = append(txns, tx)
 		i++
+		truncatedTxns, err = txns.TruncateBytesTo(v.Config.MaxBlockSize)
+		require.NoError(t, err)
 	}
 	require.NotEqual(t, 0, len(txns))
 
@@ -441,7 +443,6 @@ func TestVisorCreateBlock(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, len(txns), len(allInjectedTxns))
-	fmt.Println("len(allInjectedTxns)", len(allInjectedTxns))
 
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error

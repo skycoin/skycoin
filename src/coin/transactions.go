@@ -369,9 +369,9 @@ func (txns Transactions) Size() (uint32, error) {
 	return size, nil
 }
 
-// TruncateBytesTo returns the first n transactions whose total size is less than or equal to
-// size.
+// TruncateBytesTo returns the first n transactions whose total size is less than or equal to size
 func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
+	fmt.Println("TruncateBytesTo", size, len(txns))
 	var total uint32
 	for i := range txns {
 		pending, err := txns[i].Size()
@@ -381,6 +381,7 @@ func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
 
 		pendingTotal, err := AddUint32(total, pending)
 		if err != nil {
+			fmt.Println("TruncateBytesTo AddUint32 err:", err)
 			return txns[:i], nil
 		}
 
@@ -401,21 +402,19 @@ type SortableTransactions struct {
 	Hashes       []cipher.SHA256
 }
 
-// FeeCalculator given a transaction, return its fee or an error if the fee cannot be
-// calculated
+// FeeCalculator given a transaction, return its fee or an error if the fee cannot be calculated
 type FeeCalculator func(*Transaction) (uint64, error)
 
-// SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if
-// tied.  Transactions that fail in fee computation are excluded.
+// SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if tied.
+// Transactions that fail in fee computation are excluded
 func SortTransactions(txns Transactions, feeCalc FeeCalculator) Transactions {
 	sorted := NewSortableTransactions(txns, feeCalc)
 	sorted.Sort()
 	return sorted.Transactions
 }
 
-// NewSortableTransactions returns an array of txns that can be sorted by fee.  On creation, fees are
-// calculated, and if any txns have invalid fee, there are removed from
-// consideration
+// NewSortableTransactions returns an array of txns that can be sorted by fee.
+// On creation, fees are calculated, and if any txns have invalid fee, there are removed from consideration
 func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableTransactions {
 	newTxns := make(Transactions, len(txns))
 	fees := make([]uint64, len(txns))

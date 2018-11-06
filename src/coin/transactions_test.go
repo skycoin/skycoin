@@ -354,12 +354,18 @@ func TestTransactionOutputHours(t *testing.T) {
 
 func TestTransactionsSize(t *testing.T) {
 	txns := makeTransactions(t, 10)
-	size := 0
+	var size uint32
 	for _, tx := range txns {
-		size += len(encoder.Serialize(&tx))
+		encodedLen, err := IntToUint32(len(encoder.Serialize(&tx)))
+		require.NoError(t, err)
+		size, err = AddUint32(size, encodedLen)
+		require.NoError(t, err)
 	}
+
 	require.NotEqual(t, size, 0)
-	require.Equal(t, txns.Size(), size)
+	s, err := txns.Size()
+	require.NoError(t, err)
+	require.Equal(t, s, size)
 }
 
 func TestTransactionsHashes(t *testing.T) {
@@ -376,50 +382,83 @@ func TestTransactionsHashes(t *testing.T) {
 
 func TestTransactionsTruncateBytesTo(t *testing.T) {
 	txns := makeTransactions(t, 10)
-	trunc := 0
+	var trunc uint32
 	for i := 0; i < len(txns)/2; i++ {
-		trunc += txns[i].Size()
+		size, err := txns[i].Size()
+		require.NoError(t, err)
+		trunc, err = AddUint32(trunc, size)
+		require.NoError(t, err)
 	}
+
 	// Truncating halfway
-	txns2 := txns.TruncateBytesTo(trunc)
+	txns2, err := txns.TruncateBytesTo(trunc)
+	require.NoError(t, err)
 	require.Equal(t, len(txns2), len(txns)/2)
-	require.Equal(t, txns2.Size(), trunc)
+	totalSize, err := txns2.Size()
+	require.NoError(t, err)
+	require.Equal(t, totalSize, trunc)
 
 	// Stepping into next boundary has same cutoff, must exceed
 	trunc++
-	txns2 = txns.TruncateBytesTo(trunc)
+	txns2, err = txns.TruncateBytesTo(trunc)
+	require.NoError(t, err)
 	require.Equal(t, len(txns2), len(txns)/2)
-	require.Equal(t, txns2.Size(), trunc-1)
+	totalSize, err = txns2.Size()
+	require.NoError(t, err)
+	require.Equal(t, totalSize, trunc-1)
 
 	// Moving to 1 before next level
-	trunc += txns[5].Size() - 2
-	txns2 = txns.TruncateBytesTo(trunc)
+	size5, err := txns[5].Size()
+	require.NoError(t, err)
+	require.True(t, size5 >= 2)
+	trunc, err = AddUint32(trunc, size5-2)
+	require.NoError(t, err)
+	txns2, err = txns.TruncateBytesTo(trunc)
+	require.NoError(t, err)
 	require.Equal(t, len(txns2), len(txns)/2)
-	require.Equal(t, txns2.Size(), trunc-txns[5].Size()+1)
+
+	totalSize, err = txns2.Size()
+	require.NoError(t, err)
+	size5, err = txns[5].Size()
+	require.NoError(t, err)
+	require.Equal(t, totalSize, trunc-size5+1)
 
 	// Moving to next level
 	trunc++
-	txns2 = txns.TruncateBytesTo(trunc)
+	txns2, err = txns.TruncateBytesTo(trunc)
+	require.NoError(t, err)
 	require.Equal(t, len(txns2), len(txns)/2+1)
-	require.Equal(t, txns2.Size(), trunc)
+	size, err := txns2.Size()
+	require.NoError(t, err)
+	require.Equal(t, size, trunc)
 
 	// Truncating to full available amt
-	trunc = txns.Size()
-	txns2 = txns.TruncateBytesTo(trunc)
+	trunc, err = txns.Size()
+	require.NoError(t, err)
+	txns2, err = txns.TruncateBytesTo(trunc)
+	require.NoError(t, err)
 	require.Equal(t, txns, txns2)
-	require.Equal(t, txns2.Size(), trunc)
+	size, err = txns2.Size()
+	require.NoError(t, err)
+	require.Equal(t, size, trunc)
 
 	// Truncating over amount
 	trunc++
-	txns2 = txns.TruncateBytesTo(trunc)
+	txns2, err = txns.TruncateBytesTo(trunc)
+	require.NoError(t, err)
 	require.Equal(t, txns, txns2)
-	require.Equal(t, txns2.Size(), trunc-1)
+	size, err = txns2.Size()
+	require.NoError(t, err)
+	require.Equal(t, size, trunc-1)
 
 	// Truncating to 0
 	trunc = 0
-	txns2 = txns.TruncateBytesTo(0)
+	txns2, err = txns.TruncateBytesTo(0)
+	require.NoError(t, err)
 	require.Equal(t, len(txns2), 0)
-	require.Equal(t, txns2.Size(), trunc)
+	size, err = txns2.Size()
+	require.NoError(t, err)
+	require.Equal(t, size, trunc)
 }
 
 func TestVerifyTransactionCoinsSpending(t *testing.T) {

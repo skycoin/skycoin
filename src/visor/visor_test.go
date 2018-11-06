@@ -330,14 +330,15 @@ func TestVisorCreateBlock(t *testing.T) {
 	var softErr *ErrTxnViolatesSoftConstraint
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize, v.Config.CreateBlockBurnFactor)
+		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxUnconfirmedTransactionSize, v.Config.UnconfirmedBurnFactor)
 		return err
 	})
 	require.NoError(t, err)
 	require.False(t, known)
 	require.Nil(t, softErr)
 
-	v.Config.MaxBlockSize = txn.Size()
+	v.Config.MaxBlockSize, err = txn.Size()
+	require.NoError(t, err)
 	sb, err := v.CreateAndExecuteBlock()
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb.Body.Transactions))
@@ -362,7 +363,9 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Add more transactions than is allowed in a block, to verify truncation
 	var txns coin.Transactions
 	var i int
-	for len(txns) == len(txns.TruncateBytesTo(v.Config.MaxBlockSize)) {
+	truncatedTxns, err := txns.TruncateBytesTo(v.Config.MaxBlockSize)
+	require.NoError(t, err)
+	for len(txns) == len(truncatedTxns) {
 		tx := makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f)
 		txns = append(txns, tx)
 		i++
@@ -414,7 +417,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		var softErr *ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
-			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize, v.Config.CreateBlockBurnFactor)
+			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxUnconfirmedTransactionSize, v.Config.UnconfirmedBurnFactor)
 			return err
 		})
 		require.False(t, known)
@@ -438,6 +441,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, len(txns), len(allInjectedTxns))
+	fmt.Println("len(allInjectedTxns)", len(allInjectedTxns))
 
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
@@ -2866,7 +2870,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		balances    []wallet.UxBalance
 		err         error
 
-		maxUserTransactionSize int
+		maxUserTransactionSize uint32
 
 		getArrayRet coin.UxArray
 		getArrayErr error

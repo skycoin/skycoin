@@ -338,7 +338,7 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	toAddr := testutil.MakeAddress()
 	coins := uint64(10e6)
 
-	verifySingleTxnSoftHardConstraints := func(txn coin.Transaction, maxBlockSize int, burnFactor uint64) error {
+	verifySingleTxnSoftHardConstraints := func(txn coin.Transaction, maxBlockSize, burnFactor uint32) error {
 		return db.View("", func(tx *dbutil.Tx) error {
 			return bc.VerifySingleTxnSoftHardConstraints(tx, txn, maxBlockSize, burnFactor)
 		})
@@ -351,7 +351,9 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	require.NoError(t, err)
 
 	// Transaction size exceeds maxSize
-	err = verifySingleTxnSoftHardConstraints(txn, txn.Size()-1, params.UserBurnFactor)
+	txnSize, err := txn.Size()
+	require.NoError(t, err)
+	err = verifySingleTxnSoftHardConstraints(txn, txnSize-1, params.UserBurnFactor)
 	requireSoftViolation(t, "Transaction size bigger than max block size", err)
 
 	// Invalid transaction fee

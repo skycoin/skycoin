@@ -20,7 +20,7 @@
 
 %extend coin__UxOut {
 	int __eq__(coin__UxOut* u){
-		return memcmp(&$self, u, sizeof(coin__UxOut)) == 0;
+		return memcmp($self, u, sizeof(coin__UxOut)) == 0;
 	}
 }
 

@@ -769,7 +769,7 @@ func (dm *Daemon) maybeConnectToTrustedPeer() error {
 	peers := dm.pex.TrustedPublic()
 	for _, p := range peers {
 		// Don't make a connection if we have a trusted peer connection
-		if dm.connections.get(p.Addr) != nil {
+		if len(dm.connections.getByListenAddr(p.Addr)) != 0 {
 			return nil
 		}
 	}

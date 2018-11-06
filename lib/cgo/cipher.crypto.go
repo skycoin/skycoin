@@ -1,10 +1,10 @@
 package main
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-
 	"reflect"
 	"unsafe"
+
+	cipher "github.com/skycoin/skycoin/src/cipher"
 )
 
 /*
@@ -67,6 +67,7 @@ func SKY_cipher_PubKeyFromSig(_sig *C.cipher__Sig, _hash *C.cipher__SHA256, _arg
 	errcode := libErrorCode(err)
 	if err == nil {
 		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg2), uint(SizeofPubKey))
+
 	}
 	____error_code = errcode
 	return
@@ -87,7 +88,7 @@ func SKY_cipher_PubKey_Hex(_pk *C.cipher__PubKey, _arg1 *C.GoString_) (____error
 	pk := (*cipher.PubKey)(unsafe.Pointer(_pk))
 	s := pk.Hex()
 	copyString(s, _arg1)
-	return
+	return SKY_OK
 }
 
 //export SKY_cipher_PubKeyRipemd160
@@ -154,7 +155,6 @@ func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) (____error_code uint32) 
 	if err == nil {
 		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSig))
 	}
-
 	____error_code = libErrorCode(err)
 	return
 }

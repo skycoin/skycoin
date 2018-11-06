@@ -1,7 +1,6 @@
 
 #include <stdio.h>
 #include <string.h>
-
 #include <criterion/criterion.h>
 #include <criterion/new/assert.h>
 
@@ -73,7 +72,6 @@ Test(cipher_address, TestDecodeBase58Address) {
       errorcode == SKY_ErrInvalidBase58Char,
       "trailing zeroes suffix are invalid"
   );
-
 }
 
 Test(cipher_address, TestAddressFromBytes){
@@ -117,13 +115,13 @@ Test(cipher_address, TestAddressVerify){
   cipher__SecKey seckey2;
   cipher__Address addr;
 
-  SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
-  SKY_cipher_AddressFromPubKey(&pubkey,&addr);
+  SKY_cipher_GenerateKeyPair(&pubkey, &seckey);
+  SKY_cipher_AddressFromPubKey(&pubkey, &addr);
 
   // Valid pubkey+address
   cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_OK ,"Valid pubkey + address");
 
-  SKY_cipher_GenerateKeyPair(&pubkey,&seckey2);
+  SKY_cipher_GenerateKeyPair(&pubkey, &seckey2);
   //   // Invalid pubkey
   cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ErrAddressInvalidPubKey," Invalid pubkey");
 
@@ -152,31 +150,51 @@ Test(cipher_address,TestAddressString){
   cr_assert(eq(type(cipher__Address), addr, addr2));
 }
 
-Test(cipher_address, TestAddressBulk){
+Test(cipher_address, TestAddressBulk) {
 
   unsigned char buff[50];
-  GoSlice slice = { buff, 0, 50 };
+  GoSlice slice = {buff, 0, 50};
 
-  for (int i = 0; i < 1024; ++i)
-  {
-    randBytes(&slice,32);
+  for (int i = 0; i < 1024; ++i) {
+    randBytes(&slice, 32);
     cipher__PubKey pubkey;
     cipher__SecKey seckey;
-    SKY_cipher_GenerateDeterministicKeyPair( slice,&pubkey,&seckey);
+    SKY_cipher_GenerateDeterministicKeyPair(slice, &pubkey, &seckey);
     cipher__Address addr;
-    SKY_cipher_AddressFromPubKey(&pubkey,&addr);
+    SKY_cipher_AddressFromPubKey(&pubkey, &addr);
     unsigned int err;
-    err = SKY_cipher_Address_Verify(&addr,&pubkey);
+    err = SKY_cipher_Address_Verify(&addr, &pubkey);
     cr_assert(err == SKY_OK);
     GoString strAddr;
     SKY_cipher_Address_String(&addr, (GoString_ *)&strAddr);
     registerMemCleanup((void *) strAddr.p);
     cipher__Address addr2;
 
-    err = SKY_cipher_DecodeBase58Address(strAddr,&addr2);
+    err = SKY_cipher_DecodeBase58Address(strAddr, &addr2);
     cr_assert(err == SKY_OK);
-    cr_assert(eq(type(cipher__Address),addr,addr2));
+    cr_assert(eq(type(cipher__Address), addr, addr2));
   }
 
 }
 
+Test(cipher_address, TestAddressNull) {
+  cipher__Address a;
+  memset(&a, 0, sizeof(cipher__Address));
+  GoUint32 result;
+  GoUint8 isNull;
+  result = SKY_cipher_Address_Null(&a, &isNull);
+  cr_assert(result == SKY_OK, "SKY_cipher_Address_Null");
+  cr_assert(isNull == 1);
+
+  cipher__PubKey p;
+  cipher__SecKey s;
+
+  result = SKY_cipher_GenerateKeyPair(&p, &s);
+  cr_assert(result == SKY_OK, "SKY_cipher_GenerateKeyPair failed");
+
+  result = SKY_cipher_AddressFromPubKey(&p, &a);
+  cr_assert(result == SKY_OK, "SKY_cipher_AddressFromPubKey failed");
+  result = SKY_cipher_Address_Null(&a, &isNull);
+  cr_assert(result == SKY_OK, "SKY_cipher_Address_Null");
+  cr_assert(isNull == 0);
+}

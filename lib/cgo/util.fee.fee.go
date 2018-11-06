@@ -43,8 +43,7 @@ func SKY_fee_VerifyTransactionFeeForHours(_hours, _fee uint64, _burnFactor uint6
 //export SKY_fee_RequiredFee
 func SKY_fee_RequiredFee(_hours uint64, _burnFactor uint64, _arg1 *uint64) (____error_code uint32) {
 	hours := _hours
-	burnFactor := _burnFactor
-	__arg1 := fee.RequiredFee(hours, burnFactor)
+	__arg1 := fee.RequiredFee(hours, _burnFactor)
 	*_arg1 = __arg1
 	return
 }
@@ -52,8 +51,7 @@ func SKY_fee_RequiredFee(_hours uint64, _burnFactor uint64, _arg1 *uint64) (____
 //export SKY_fee_RemainingHours
 func SKY_fee_RemainingHours(_hours uint64, _burnFactor uint64, _arg1 *uint64) (____error_code uint32) {
 	hours := _hours
-	burnFactor := _burnFactor
-	__arg1 := fee.RemainingHours(hours, burnFactor)
+	__arg1 := fee.RemainingHours(hours, _burnFactor)
 	*_arg1 = __arg1
 	return
 }

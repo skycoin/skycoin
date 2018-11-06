@@ -126,6 +126,10 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)
 
+	require.Equal(t, c, conns.get(c.Addr))
+	require.Equal(t, c, conns.getByGnetID(c.gnetID))
+	require.Equal(t, []*connection{c}, conns.getByListenAddr(c.ListenAddr()))
+
 	err = conns.remove(addr, 1)
 	require.NoError(t, err)
 
@@ -138,8 +142,9 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	all = conns.all()
 	require.Empty(t, all)
 
-	c = conns.get(addr)
-	require.Nil(t, c)
+	require.Nil(t, conns.getByGnetID(c.gnetID))
+	require.Nil(t, conns.getByListenAddr(c.ListenAddr()))
+	require.Nil(t, conns.get(c.Addr))
 }
 
 func TestConnectionsIncomingFlow(t *testing.T) {
@@ -175,6 +180,7 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	require.Empty(t, conns.mirrors)
 	require.False(t, c.HasIntroduced())
 	require.Empty(t, c.ListenAddr())
+	require.Empty(t, conns.listenAddrs)
 
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)
@@ -220,8 +226,9 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	all = conns.all()
 	require.Empty(t, all)
 
-	c = conns.get(addr)
-	require.Nil(t, c)
+	require.Nil(t, conns.getByGnetID(c.gnetID))
+	require.Nil(t, conns.getByListenAddr(c.ListenAddr()))
+	require.Nil(t, conns.get(c.Addr))
 }
 
 func TestConnectionsMultiple(t *testing.T) {
@@ -268,6 +275,8 @@ func TestConnectionsMultiple(t *testing.T) {
 
 	c := conns.get(addr2)
 	require.Equal(t, ConnectionStateConnected, c.State)
+	require.Equal(t, c, conns.getByGnetID(2))
+	require.Equal(t, []*connection{c}, conns.getByListenAddr("127.0.0.1:6061"))
 
 	_, err = conns.introduced(addr2, 2, &IntroductionMessage{
 		Mirror:          7,
@@ -280,6 +289,10 @@ func TestConnectionsMultiple(t *testing.T) {
 	require.Equal(t, 0, conns.PendingLen())
 	require.Equal(t, 2, conns.Len())
 	require.Equal(t, 2, conns.IPCount("127.0.0.1"))
+	c = conns.get(addr2)
+	require.Equal(t, ConnectionStateIntroduced, c.State)
+	require.Equal(t, c, conns.getByGnetID(2))
+	require.Equal(t, []*connection{c}, conns.getByListenAddr("127.0.0.1:6061"))
 
 	// Add another connection with a different base IP but same mirror value
 	addr3 := "127.1.1.1:12345"
@@ -320,6 +333,53 @@ func TestConnectionsMultiple(t *testing.T) {
 
 	err = conns.remove(addr1, 1)
 	require.Equal(t, ErrConnectionNotExist, err)
+}
+
+func TestConnectionsMultipleSameListenPort(t *testing.T) {
+	conns := NewConnections()
+
+	addr1 := "127.0.0.1:6060"
+	addr2 := "127.0.0.1:51414"
+
+	c, err := conns.pending(addr1)
+	require.NoError(t, err)
+	require.Equal(t, []*connection{c}, conns.getByListenAddr(addr1))
+
+	c2, err := conns.connected(addr2, 2)
+	require.NoError(t, err)
+	require.Equal(t, []*connection{c}, conns.getByListenAddr(addr1))
+
+	_, err = conns.introduced(addr2, 2, &IntroductionMessage{
+		Mirror:          6,
+		ListenPort:      6060,
+		ProtocolVersion: 2,
+	}, &userAgent)
+	require.NoError(t, err)
+
+	listenAddrConns := conns.getByListenAddr(addr1)
+	require.Len(t, listenAddrConns, 2)
+	require.True(t, *listenAddrConns[0] == *c || *listenAddrConns[0] == *c2)
+	if *listenAddrConns[0] == *c {
+		require.Equal(t, c2, listenAddrConns[1])
+	} else if *listenAddrConns[0] == *c2 {
+		require.Equal(t, c, listenAddrConns[1])
+	}
+
+	err = conns.remove(addr1, 0)
+	require.NoError(t, err)
+
+	listenAddrConns = conns.getByListenAddr(addr1)
+	require.Len(t, listenAddrConns, 1)
+	require.Equal(t, c2, listenAddrConns[0])
+
+	err = conns.remove(addr2, 2)
+	require.NoError(t, err)
+	require.Len(t, conns.getByListenAddr(addr1), 0)
+
+	err = conns.remove(addr2, 2)
+	require.Equal(t, ErrConnectionNotExist, err)
+
+	require.Len(t, conns.listenAddrs, 0)
 }
 
 func TestConnectionsErrors(t *testing.T) {
@@ -381,6 +441,13 @@ func TestConnectionsModifyMirrorPanics(t *testing.T) {
 	require.Panics(t, func() {
 		conns.modify(addr, 1, func(c *ConnectionDetails) { // nolint: errcheck
 			c.Mirror++
+		})
+	})
+
+	// modifying ListenPort causes panic
+	require.Panics(t, func() {
+		conns.modify(addr, 1, func(c *ConnectionDetails) { // nolint: errcheck
+			c.ListenPort = 999
 		})
 	})
 }

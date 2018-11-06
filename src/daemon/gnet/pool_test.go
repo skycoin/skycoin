@@ -34,8 +34,8 @@ func newTestConfig() Config {
 	cfg := NewConfig()
 	cfg.Port = uint16(port)
 	cfg.Address = address
+	cfg.MaxConnections = 24
 	cfg.MaxOutgoingConnections = 8
-	cfg.MaxConnections = 8
 	cfg.MaxDefaultPeerOutgoingConnections = 8
 	return cfg
 }
@@ -45,7 +45,8 @@ func TestNewConnectionPool(t *testing.T) {
 	cfg.MaxConnections = 108
 	cfg.DialTimeout = time.Duration(777)
 
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 	require.Equal(t, cfg, p.Config)
 	require.Equal(t, cfg.Port, p.Config.Port)
 	require.Equal(t, cfg.Address, p.Config.Address)
@@ -59,7 +60,8 @@ func TestNewConnectionPool(t *testing.T) {
 func TestNewConnection(t *testing.T) {
 	cfg := newTestConfig()
 	cfg.ConnectionWriteQueueSize = 101
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	q := make(chan struct{})
 	go func() {
@@ -94,7 +96,8 @@ func TestNewConnection(t *testing.T) {
 
 func TestNewConnectionAlreadyConnected(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
 	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
@@ -130,7 +133,8 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 
 func TestAcceptConnections(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
 	var wasSolicited *bool
@@ -169,7 +173,8 @@ func TestAcceptConnections(t *testing.T) {
 
 func TestStartListenFailed(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
@@ -178,8 +183,9 @@ func TestStartListenFailed(t *testing.T) {
 	}()
 	wait()
 
-	pp := NewConnectionPool(cfg, nil)
-	err := pp.Run()
+	pp, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
+	err = pp.Run()
 	require.Error(t, err)
 	require.True(t, strings.HasSuffix(err.Error(), "bind: address already in use"))
 
@@ -189,7 +195,8 @@ func TestStartListenFailed(t *testing.T) {
 
 func TestStopListen(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	q := make(chan struct{})
 	go func() {
@@ -199,7 +206,7 @@ func TestStopListen(t *testing.T) {
 	}()
 	wait()
 
-	_, err := net.Dial("tcp", addr)
+	_, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 	wait()
 
@@ -218,7 +225,8 @@ func TestStopListen(t *testing.T) {
 func TestHandleConnection(t *testing.T) {
 	cfg := newTestConfig()
 
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	// Unsolicited
 	cc := make(chan *Connection, 1)
@@ -274,7 +282,7 @@ func TestHandleConnection(t *testing.T) {
 		defer close(done)
 		err = p.handleConnection(conn, true)
 		require.NotEqual(t, ErrConnectionExists, err)
-		require.NotEqual(t, ErrMaxConnectionsReached, err)
+		require.NotEqual(t, ErrMaxIncomingConnectionsReached, err)
 		require.NotEqual(t, ErrMaxOutgoingConnectionsReached, err)
 		require.NotEqual(t, ErrMaxOutgoingDefaultConnectionsReached, err)
 	}()
@@ -305,7 +313,8 @@ func TestHandleConnection(t *testing.T) {
 
 func TestConnect(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	q := make(chan struct{})
 	go func() {
@@ -315,7 +324,7 @@ func TestConnect(t *testing.T) {
 	}()
 	wait()
 
-	err := p.Connect(addr)
+	err = p.Connect(addr)
 	require.NoError(t, err)
 	wait()
 
@@ -347,7 +356,8 @@ func TestConnectNoTimeout(t *testing.T) {
 	cfg.DialTimeout = 0
 	cfg.Port++
 
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	q := make(chan struct{})
 	go func() {
@@ -360,7 +370,7 @@ func TestConnectNoTimeout(t *testing.T) {
 	p.Shutdown()
 	<-q
 
-	err := p.Connect(addr)
+	err = p.Connect(addr)
 	wait()
 
 	require.Error(t, err)
@@ -368,7 +378,8 @@ func TestConnectNoTimeout(t *testing.T) {
 
 func TestDisconnect(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
@@ -384,7 +395,7 @@ func TestDisconnect(t *testing.T) {
 	}()
 	wait()
 
-	_, err := net.Dial("tcp", addr)
+	_, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
 	c := <-cc
@@ -465,7 +476,8 @@ func (f fakeAddr) String() string {
 
 func TestGetConnections(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	c := &Connection{
 		ID:   1,
@@ -512,7 +524,8 @@ func TestGetConnections(t *testing.T) {
 
 func TestConnectionReadLoopReadError(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
 	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
@@ -564,7 +577,8 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 
 func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
 	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
@@ -607,7 +621,8 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	cfg := newTestConfig()
 	cfg.MaxMessageLength = 1
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
 	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
@@ -653,7 +668,8 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 
 func TestConnectionReadLoopTerminates(t *testing.T) {
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
 	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
@@ -703,7 +719,8 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
@@ -838,7 +855,8 @@ func TestConnectionWriteLoop(t *testing.T) {
 	VerifyMessages()
 
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
@@ -938,7 +956,8 @@ func TestPoolSendMessageOK(t *testing.T) {
 	cfg.WriteTimeout = time.Second
 	cfg.SendResultsSize = 1
 	cfg.ConnectionWriteQueueSize = 8
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
@@ -954,7 +973,7 @@ func TestPoolSendMessageOK(t *testing.T) {
 	}()
 	wait()
 
-	_, err := net.Dial("tcp", addr)
+	_, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
 	c := <-cc
@@ -976,7 +995,8 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 	cfg.WriteTimeout = time.Second
 	cfg.SendResultsSize = 1
 	cfg.ConnectionWriteQueueSize = 0
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
@@ -992,7 +1012,7 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 	}()
 	wait()
 
-	_, err := net.Dial("tcp", addr)
+	_, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
 	c := <-cc
@@ -1033,7 +1053,8 @@ func TestPoolBroadcastMessage(t *testing.T) {
 
 	cfg := newTestConfig()
 	cfg.ConnectionWriteQueueSize = 1
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	ready := make(chan struct{})
 	var i int
@@ -1130,7 +1151,8 @@ func TestPoolReceiveMessage(t *testing.T) {
 	VerifyMessages()
 
 	cfg := newTestConfig()
-	p := NewConnectionPool(cfg, nil)
+	p, err := NewConnectionPool(cfg, nil)
+	require.NoError(t, err)
 
 	q := make(chan struct{})
 	go func() {
@@ -1146,7 +1168,7 @@ func TestPoolReceiveMessage(t *testing.T) {
 	b := make([]byte, 0)
 	b = append(b, BytePrefix[:]...)
 	b = append(b, byte(7))
-	err := p.receiveMessage(c, b)
+	err = p.receiveMessage(c, b)
 	require.NoError(t, err)
 	require.False(t, c.LastReceived.IsZero())
 

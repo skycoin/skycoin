@@ -406,6 +406,10 @@ func (c *Config) postProcess() error {
 		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
 	}
 
+	if c.Node.MaxConnections < c.Node.MaxOutgoingConnections+c.Node.MaxDefaultPeerOutgoingConnections {
+		return errors.New("-max-connections must be >= -max-outgoing-connections + -max-default-peer-outgoing-connections")
+	}
+
 	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
 		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
 	}
@@ -514,7 +518,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
 	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
+	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")

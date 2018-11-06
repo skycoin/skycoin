@@ -6,8 +6,10 @@ import { ChangeNameComponent } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatSnackBar } from '@angular/material';
-import { showSnackbarError } from '../../../../utils/errors';
+import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
+import { TranslateService } from '@ngx-translate/core';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -23,6 +25,8 @@ export class WalletDetailComponent implements OnDestroy {
     private dialog: MatDialog,
     private walletService: WalletService,
     private snackbar: MatSnackBar,
+    private hwWalletService: HwWalletService,
+    private translateService: TranslateService,
   ) { }
 
   ngOnDestroy() {
@@ -52,6 +56,10 @@ export class WalletDetailComponent implements OnDestroy {
 
   toggleEmpty() {
     this.wallet.hideEmpty = !this.wallet.hideEmpty;
+  }
+
+  deleteWallet() {
+    this.walletService.deleteHardwareWallet(this.wallet);
   }
 
   toggleEncryption() {
@@ -115,7 +123,7 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   private continueNewAddress() {
-    if (this.wallet.encrypted) {
+    if (!this.wallet.isHardware && this.wallet.encrypted) {
       const config = new MatDialogConfig();
       config.data = {
         wallet: this.wallet,
@@ -127,7 +135,15 @@ export class WalletDetailComponent implements OnDestroy {
             .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
         });
     } else {
-      this.walletService.addAddress(this.wallet, this.HowManyAddresses).subscribe(null, err => showSnackbarError(this.snackbar, err));
+      this.walletService.addAddress(this.wallet, this.HowManyAddresses).subscribe(null,
+        err => {
+          if (!this.wallet.isHardware ) {
+            showSnackbarError(this.snackbar, err);
+          } else {
+            showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService));
+          }
+        },
+      );
     }
   }
 }

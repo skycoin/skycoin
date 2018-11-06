@@ -4,6 +4,8 @@ import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog';
 import { HwSeedDialogComponent } from '../hw-seed-dialog/hw-seed-dialog';
 import { ISubscription } from 'rxjs/Subscription';
+import { WalletService } from '../../../../services/wallet.service';
+import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog';
 
 export enum States {
   Disconnected,
@@ -30,12 +32,15 @@ export class HwWalletOptionsComponent implements OnDestroy {
     public dialogRef: MatDialogRef<HwWalletOptionsComponent>,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
+    private walletService: WalletService,
   ) {
     this.checkWallet();
   }
 
   ngOnDestroy() {
-    this.operationSubscription.unsubscribe();
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
+    }
     this.removeDialogSubscription();
   }
 
@@ -47,12 +52,16 @@ export class HwWalletOptionsComponent implements OnDestroy {
     this.openDialog(HwWipeDialogComponent);
   }
 
-  private openDialog(dialogType) {
+  private openDialog(dialogType, recheckAfterClosed = true) {
     this.removeDialogSubscription();
     const config = new MatDialogConfig();
     config.width = '450px';
-    this.dialog.open(dialogType, config)
-      .afterClosed().subscribe(() => this.checkWallet());
+    this.dialogSubscription = this.dialog.open(dialogType, config)
+      .afterClosed().subscribe(() => {
+        if (recheckAfterClosed) {
+          this.checkWallet();
+        }
+      });
   }
 
   private removeDialogSubscription() {
@@ -70,7 +79,14 @@ export class HwWalletOptionsComponent implements OnDestroy {
       this. operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
         arg => {
           this.walletAddress = arg[0];
-          this.currentState = States.ConfiguredConnected;
+          this.walletService.wallets.first().subscribe(wallets => {
+            const alreadySaved = wallets.some(wallet => wallet.addresses[0].address === this.walletAddress && wallet.isHardware);
+            if (!alreadySaved) {
+              this.walletService.createHardwareWallet(this.walletAddress);
+              this.openDialog(HwAddedDialogComponent, false);
+            }
+            this.currentState = States.ConfiguredConnected;
+          });
         },
         () => {
           this.currentState = States.NewConnected;

@@ -15,9 +15,13 @@ import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { BigNumber } from 'bignumber.js';
+import { HwWalletService } from './hw-wallet.service';
 
 @Injectable()
 export class WalletService {
+
+  private readonly hardwareWalletsStorageKey = 'wallets';
+
   addresses: Address[];
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
   pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
@@ -27,6 +31,7 @@ export class WalletService {
 
   constructor(
     private apiService: ApiService,
+    private hwWalletService: HwWalletService,
     private ngZone: NgZone,
   ) {
     this.loadData();
@@ -38,11 +43,23 @@ export class WalletService {
   }
 
   addAddress(wallet: Wallet, num: number, password?: string) {
-    return this.apiService.postWalletNewAddress(wallet, num, password)
-      .do(addresses => {
-        addresses.forEach(value => wallet.addresses.push(value));
+    if (!wallet.isHardware) {
+      return this.apiService.postWalletNewAddress(wallet, num, password)
+        .do(addresses => {
+          addresses.forEach(value => wallet.addresses.push(value));
+          this.refreshBalances();
+        });
+    } else {
+      return this.hwWalletService.getAddresses(num, wallet.addresses.length).do(addresses => {
+        (addresses as any[]).forEach(value => wallet.addresses.push({
+          address: value,
+          coins: null,
+          hours: null,
+        }));
+        this.saveHardwareWallets();
         this.refreshBalances();
       });
+    }
   }
 
   all(): Observable<Wallet[]> {
@@ -65,6 +82,28 @@ export class WalletService {
           this.refreshBalances();
         });
       });
+  }
+
+  createHardwareWallet(address) {
+    this.wallets.first().subscribe(wallets => {
+      wallets.push(this.crearteHardwareWalletData('Hardware wallet', [address]));
+      this.saveHardwareWallets();
+      this.refreshBalances();
+    });
+  }
+
+  deleteHardwareWallet(wallet: Wallet) {
+    if (wallet.isHardware) {
+      this.wallets.first().subscribe(wallets => {
+        const index = wallets.indexOf(wallet);
+        if (index !== -1) {
+          wallets.splice(index, 1);
+
+          this.saveHardwareWallets();
+          this.refreshBalances();
+        }
+      });
+    }
   }
 
   folder(): Observable<string> {
@@ -259,11 +298,61 @@ export class WalletService {
     });
   }
 
+  saveHardwareWallets() {
+    this.wallets.first().subscribe(wallets => {
+      const hardwareWallets: Wallet[] = [];
+
+      wallets.map(wallet => {
+        if (wallet.isHardware) {
+          hardwareWallets.push(this.crearteHardwareWalletData(
+            wallet.label,
+            wallet.addresses.map(address => address.address),
+          ));
+        }
+      });
+
+      localStorage.setItem(this.hardwareWalletsStorageKey, JSON.stringify(hardwareWallets));
+
+      this.wallets.next(wallets);
+    });
+  }
+
+  private crearteHardwareWalletData(label: string, addresses: string[]): Wallet {
+    return {
+      label: label,
+      filename: '',
+      coins: null,
+      hours: null,
+      addresses: addresses.map(address => {
+        return {
+          address: address,
+          coins: null,
+          hours: null,
+        };
+      }),
+      encrypted: false,
+      isHardware: true,
+    };
+  }
+
   private loadData(): void {
     this.apiService.getWallets().first().subscribe(
-      wallets => this.wallets.next(wallets),
+      wallets => {
+        if (window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated')) {
+          this.loadHardwareWallets(wallets);
+        }
+        this.wallets.next(wallets);
+      },
       () => this.initialLoadFailed.next(true),
     );
+  }
+
+  private loadHardwareWallets(wallets: Wallet[]) {
+    const storedWallets: string = localStorage.getItem(this.hardwareWalletsStorageKey);
+    if (storedWallets) {
+      const loadedWallets: Wallet[] = JSON.parse(storedWallets);
+      loadedWallets.map(wallet => wallets.push(wallet));
+    }
   }
 
   private retrieveInputAddress(input: string) {
@@ -271,7 +360,15 @@ export class WalletService {
   }
 
   private retrieveWalletBalance(wallet: Wallet): Observable<any> {
-    return this.apiService.get('wallet/balance', { id: wallet.filename }).map(balance => {
+    let query: Observable<any>;
+    if (!wallet.isHardware) {
+      query = this.apiService.get('wallet/balance', { id: wallet.filename });
+    } else {
+      const formattedAddresses = wallet.addresses.map(a => a.address).join(',');
+      query = this.apiService.get('balance', { addrs: formattedAddresses });
+    }
+
+    return query.map(balance => {
       return {
         coins: new BigNumber(balance.confirmed.coins).dividedBy(1000000),
         hours: new BigNumber(balance.confirmed.hours),
@@ -294,7 +391,7 @@ export class WalletService {
 
   private refreshPendingTransactions() {
     this.wallets.first().subscribe(wallets => {
-      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename, verbose: 1 })))
+      Observable.forkJoin(wallets.filter(wallet => !wallet.isHardware).map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename, verbose: 1 })))
         .subscribe(pending => {
           this.pendingTxs.next([].concat.apply(
             [],

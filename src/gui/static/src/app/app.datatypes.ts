@@ -59,6 +59,7 @@ export class Wallet {
   encrypted: boolean;
   hideEmpty?: boolean;
   opened?: boolean;
+  isHardware?: boolean;
 }
 
 export class Connection {

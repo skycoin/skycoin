@@ -79,6 +79,7 @@ import { HwWalletService } from './services/hw-wallet.service';
 import { HwWalletOptionsComponent } from './components/layout/hardware-wallet/hw-options/hw-options';
 import { HwWipeDialogComponent } from './components/layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog';
 import { HwSeedDialogComponent } from './components/layout/hardware-wallet/hw-seed-dialog/hw-seed-dialog';
+import { HwAddedDialogComponent } from './components/layout/hardware-wallet/hw-added-dialog/hw-added-dialog';
 
 
 const ROUTES = [
@@ -189,6 +190,7 @@ const ROUTES = [
     HwWalletOptionsComponent,
     HwWipeDialogComponent,
     HwSeedDialogComponent,
+    HwAddedDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -205,6 +207,7 @@ const ROUTES = [
     HwWalletOptionsComponent,
     HwWipeDialogComponent,
     HwSeedDialogComponent,
+    HwAddedDialogComponent,
   ],
   imports: [
     BrowserModule,

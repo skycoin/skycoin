@@ -1,4 +1,6 @@
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { HwWalletService } from '../services/hw-wallet.service';
+import { TranslateService } from '@ngx-translate/core';
 
 export function parseResponseMessage(body: string): string {
   if (typeof body === 'object') {
@@ -25,4 +27,12 @@ export function showSnackbarError(snackbar: MatSnackBar, body: string, duration 
   config.duration = duration;
 
   snackbar.open(parseResponseMessage(body), null, config);
+}
+
+export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, translateService: TranslateService): string {
+  if (!hwWalletService.getDevice()) {
+    return translateService.instant('hardware-wallet.general.error-disconnected');
+  } else {
+    return translateService.instant('hardware-wallet.general.generic-error');
+  }
 }

@@ -8,10 +8,13 @@
     </span>
   </div>
   <div class="flex-fill"></div>
-  <div class="-button" (click)="toggleEncryption()">
+  <div *ngIf="!wallet.isHardware" class="-button" (click)="toggleEncryption()">
     <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
       {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') | translate }}
     </span>
+  </div>
+  <div *ngIf="wallet.isHardware" class="-button btn-delete-wallet" (click)="deleteWallet()">
+    <span class="-img -btn-delete -enabled-span">{{ 'wallet.delete' | translate }}</span>
   </div>
   <div class="-button" (click)="editWallet()">
     <span class="-img -edit-wallet">{{ 'wallet.edit' | translate }}</span>

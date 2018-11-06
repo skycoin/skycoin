@@ -97,6 +97,7 @@
     "encrypt": "Encrypt Wallet",
     "decrypt": "Decrypt Wallet",
     "decrypt-warning": "Warning: for security reasons, it is not recommended to keep the wallets unencrypted. Caution is advised.",
+    "delete": "Delete Wallet",
     "edit": "Edit Wallet",
     "add": "Add Wallet",
     "load": "Load Wallet",
@@ -272,6 +273,13 @@
   "service": {
     "api" : {
       "server-error": "Server error"
+    }
+  },
+
+  "hardware-wallet": {
+    "general" : {
+      "error-disconnected": "Impossible to perform the operation. The hardware wallet is not connected.",
+      "generic-error": "Impossible to perform the operation. Make sure you have connected the correct hardware wallet and that it is not waiting for input."
     }
   }
 }

@@ -48,7 +48,7 @@ func loadCoinHourBurnFactor() {
 		return
 	}
 
-	x, err := strconv.ParseUint(xs, 10, 64)
+	x, err := strconv.ParseUint(xs, 10, 32)
 	if err != nil {
 		panic(fmt.Sprintf("Invalid USER_BURN_FACTOR %q: %v", xs, err))
 	}
@@ -57,7 +57,7 @@ func loadCoinHourBurnFactor() {
 		panic("USER_BURN_FACTOR must be > 1")
 	}
 
-	UserBurnFactor = x
+	UserBurnFactor = uint32(x)
 }
 
 func loadMaxUserTransactionSize() {
@@ -66,7 +66,7 @@ func loadMaxUserTransactionSize() {
 		return
 	}
 
-	x, err := strconv.ParseInt(xs, 10, 32)
+	x, err := strconv.ParseUint(xs, 10, 32)
 	if err != nil {
 		panic(fmt.Sprintf("Invalid MAX_USER_TXN_SIZE %q: %v", xs, err))
 	}
@@ -75,5 +75,5 @@ func loadMaxUserTransactionSize() {
 		panic("MAX_USER_TXN_SIZE must be > 0")
 	}
 
-	MaxUserTransactionSize = int(x)
+	MaxUserTransactionSize = uint32(x)
 }

@@ -25,10 +25,10 @@ const (
 var (
 	// UserBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `USER_BURN_FACTOR` env var),
 	// used when creating a transaction
-	UserBurnFactor uint64 = 2
+	UserBurnFactor uint32 = 2
 
 	// MaxUserTransactionSize is the maximum size of a user-created transaction
-	MaxUserTransactionSize = 32768 // in bytes
+	MaxUserTransactionSize uint32 = 32768 // in bytes
 
 	// MaxDropletPrecision represents the decimal precision of droplets
 	MaxDropletPrecision uint64 = 3

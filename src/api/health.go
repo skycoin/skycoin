@@ -32,7 +32,7 @@ type HealthResponse struct {
 	GUIEnabled            bool               `json:"gui_enabled"`
 	UnversionedAPIEnabled bool               `json:"unversioned_api_enabled"`
 	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
-	BurnFactor            uint64             `json:"coinhour_burn_factor"`
+	BurnFactor            uint32             `json:"coinhour_burn_factor"`
 }
 
 // healthHandler returns node health data

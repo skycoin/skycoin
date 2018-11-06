@@ -249,6 +249,8 @@ type IntroductionMessage struct {
 	// ExtraByte uint32 // length prefix of []byte
 	// Pubkey    cipher.Pubkey // blockchain pubkey
 	// UserAgent string `enc:",maxlen=256"`
+	// BurnFactor uint64 // burn factor for announced txns
+	// MaxTxnSize uint32 // max txn size for announced txns
 	Extra []byte `enc:",omitempty"`
 }
 

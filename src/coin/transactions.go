@@ -95,7 +95,12 @@ func (txn *Transaction) Verify() error {
 		return errors.New("transaction type invalid")
 	}
 
-	if txn.Length != uint32(txn.Size()) {
+	txnSize, err := txn.Size()
+	if err != nil {
+		return err
+	}
+
+	if txn.Length != txnSize {
 		return errors.New("transaction size prefix invalid")
 	}
 
@@ -231,8 +236,8 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 }
 
 // Size returns the encoded byte size of the transaction
-func (txn *Transaction) Size() int {
-	return len(txn.Serialize())
+func (txn *Transaction) Size() (uint32, error) {
+	return IntToUint32(len(txn.Serialize()))
 }
 
 // Hash an entire Transaction struct, including the TransactionHeader
@@ -259,11 +264,15 @@ func (txn *Transaction) TxIDHex() string {
 }
 
 // UpdateHeader saves the txn body hash to TransactionHeader.Hash
-func (txn *Transaction) UpdateHeader() {
-	s := txn.Size()
+func (txn *Transaction) UpdateHeader() error {
+	s, err := txn.Size()
+	if err != nil {
+		return err
+	}
 	txn.Length = uint32(s)
 	txn.Type = byte(0x00)
 	txn.InnerHash = txn.HashInner()
+	return nil
 }
 
 // HashInner hashes only the Transaction Inputs & Outputs
@@ -343,28 +352,46 @@ func (txns Transactions) Hashes() []cipher.SHA256 {
 
 // Size returns the sum of contained Transactions' sizes.  It is not the size if
 // serialized, since that would have a length prefix.
-func (txns Transactions) Size() int {
-	size := 0
+func (txns Transactions) Size() (uint32, error) {
+	var size uint32
 	for i := range txns {
-		size += txns[i].Size()
+		s, err := txns[i].Size()
+		if err != nil {
+			return 0, err
+		}
+
+		size, err = AddUint32(size, s)
+		if err != nil {
+			return 0, err
+		}
 	}
-	return size
+
+	return size, nil
 }
 
 // TruncateBytesTo returns the first n transactions whose total size is less than or equal to
 // size.
-func (txns Transactions) TruncateBytesTo(size int) Transactions {
-	total := 0
+func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
+	var total uint32
 	for i := range txns {
-		pending := txns[i].Size()
-
-		if pending+total > size {
-			return txns[:i]
+		pending, err := txns[i].Size()
+		if err != nil {
+			return nil, err
 		}
 
-		total += pending
+		pendingTotal, err := AddUint32(total, pending)
+		if err != nil {
+			return txns[:i], nil
+		}
+
+		if pendingTotal > size {
+			return txns[:i], nil
+		}
+
+		total = pendingTotal
 	}
-	return txns
+
+	return txns, nil
 }
 
 // SortableTransactions allows sorting transactions by fee & hash

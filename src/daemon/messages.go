@@ -251,14 +251,23 @@ type IntroductionMessage struct {
 	// Contents of extra:
 	// ExtraByte  uint32 // length prefix of []byte
 	// Pubkey     cipher.Pubkey // blockchain pubkey
-	// UserAgent  string `enc:",maxlen=256"`
 	// BurnFactor uint32 // burn factor for announced txns
 	// MaxTxnSize uint32 // max txn size for announced txns
+	// UserAgent  string `enc:",maxlen=256"`
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
 func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, burnFactor, maxTxnSize uint32) *IntroductionMessage {
+	return &IntroductionMessage{
+		Mirror:          mirror,
+		ProtocolVersion: version,
+		ListenPort:      port,
+		Extra:           newIntroductionMessageExtra(pubkey, userAgent, burnFactor, maxTxnSize),
+	}
+}
+
+func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, burnFactor, maxTxnSize uint32) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
 			"userAgent": userAgent,
@@ -268,6 +277,7 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 	if userAgent == "" {
 		logger.Panic("user agent is required")
 	}
+	useragent.MustParse(userAgent)
 
 	userAgentSerialized := encoder.SerializeString(userAgent)
 	burnFactorSerialized := encoder.SerializeAtomic(burnFactor)
@@ -277,18 +287,13 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 
 	copy(extra[:len(pubkey)], pubkey[:])
 	i := len(pubkey)
-	copy(extra[i:i+len(userAgentSerialized)], userAgentSerialized)
-	i += len(userAgentSerialized)
 	copy(extra[i:i+len(burnFactorSerialized)], burnFactorSerialized)
 	i += len(burnFactorSerialized)
 	copy(extra[i:i+len(maxTxnSizeSerialized)], maxTxnSizeSerialized)
+	i += len(maxTxnSizeSerialized)
+	copy(extra[i:i+len(userAgentSerialized)], userAgentSerialized)
 
-	return &IntroductionMessage{
-		Mirror:          mirror,
-		ProtocolVersion: version,
-		ListenPort:      port,
-		Extra:           extra,
-	}
+	return extra
 }
 
 // Handle records message event in daemon
@@ -410,8 +415,33 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 			return ErrDisconnectBlockchainPubkeyNotMatched
 		}
 
-		userAgentSerialized := intro.Extra[len(bcPubKey):]
-		userAgent, n, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
+		i := len(bcPubKey)
+		if len(intro.Extra) < i+8 {
+			logger.WithFields(fields).Warning("BurnFactor and MaxTransactionSize could not be deserialized: not enough data")
+			return ErrDisconnectInvalidExtraData
+		}
+		if _, err := encoder.DeserializeAtomic(intro.Extra[i:i+4], &intro.burnFactor); err != nil {
+			// This should not occur due to the previous length check
+			logger.Critical().WithError(err).WithFields(fields).Warning("BurnFactor could not be deserialized")
+			return ErrDisconnectInvalidExtraData
+		}
+		if intro.burnFactor < 2 {
+			logger.WithFields(fields).WithField("burnFactor", intro.burnFactor).Warning("Invalid intro.burnFactor")
+			return ErrDisconnectInvalidBurnFactor
+		}
+
+		if _, err := encoder.DeserializeAtomic(intro.Extra[i+4:i+8], &intro.maxTransactionSize); err != nil {
+			// This should not occur due to the previous length check
+			logger.Critical().WithError(err).WithFields(fields).Warning("MaxTransactionSize could not be deserialized")
+			return ErrDisconnectInvalidExtraData
+		}
+		if intro.maxTransactionSize < 1024 {
+			logger.WithFields(fields).WithField("maxTransactionSize", intro.maxTransactionSize).Warning("Invalid intro.maxTransactionSize")
+			return ErrDisconnectInvalidMaxTransactionSize
+		}
+
+		userAgentSerialized := intro.Extra[len(bcPubKey)+8:]
+		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 		if err != nil {
 			logger.WithError(err).WithFields(fields).Warning("Extra data user agent string could not be deserialized")
 			return ErrDisconnectInvalidExtraData
@@ -421,25 +451,6 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 		if err != nil {
 			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Warning("User agent is invalid")
 			return ErrDisconnectInvalidUserAgent
-		}
-
-		i := len(bcPubKey) + n
-		if len(intro.Extra) < i+4 {
-			logger.WithFields(fields).Warning("BurnFactor could not be deserialized: not enough data")
-			return ErrDisconnectInvalidExtraData
-		}
-		if _, err := encoder.DeserializeAtomic(intro.Extra[i:i+4], &intro.burnFactor); err != nil {
-			logger.WithError(err).WithFields(fields).Warning("BurnFactor could not be deserialized")
-			return ErrDisconnectInvalidExtraData
-		}
-
-		if len(intro.Extra) < i+8 {
-			logger.WithFields(fields).Warning("MaxTransactionSize could not be deserialized: not enough data")
-			return ErrDisconnectInvalidExtraData
-		}
-		if _, err := encoder.DeserializeAtomic(intro.Extra[i+4:i+8], &intro.maxTransactionSize); err != nil {
-			logger.WithError(err).WithFields(fields).Warning("MaxTransactionSize could not be deserialized")
-			return ErrDisconnectInvalidExtraData
 		}
 	}
 

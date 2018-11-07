@@ -420,15 +420,15 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
 	}
 
-	if c.Node.MaxBlockSize <= 0 {
-		return errors.New("-block-size must be > 0")
+	if c.Node.MaxBlockSize < 1024 {
+		return errors.New("-block-size must be >= 1024")
 	}
 	if c.Node.MaxBlockSize < params.MaxUserTransactionSize {
 		return fmt.Errorf("-max-block-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
 	}
 
-	if c.Node.MaxUnconfirmedTransactionSize <= 0 {
-		return errors.New("-unconfirmed-txn-size must be > 0")
+	if c.Node.MaxUnconfirmedTransactionSize < 1024 {
+		return errors.New("-unconfirmed-txn-size must be >= 1024")
 	}
 	if c.Node.MaxUnconfirmedTransactionSize < params.MaxUserTransactionSize {
 		return fmt.Errorf("-unconfirmed-txn-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)

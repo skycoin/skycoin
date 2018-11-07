@@ -82,7 +82,7 @@ func TestIntroductionMessage(t *testing.T) {
 			},
 		},
 		{
-			name: "INTR message with pubkey and user agent",
+			name: "INTR message with pubkey and user agent but not txn params",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
 				mirror:          10000,
@@ -98,6 +98,7 @@ func TestIntroductionMessage(t *testing.T) {
 						},
 					},
 				},
+				disconnectReason: ErrDisconnectInvalidExtraData,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -297,6 +298,8 @@ func TestIntroductionMessage(t *testing.T) {
 
 			if tc.mockValue.disconnectReason != nil {
 				d.AssertCalled(t, "Disconnect", tc.addr, tc.mockValue.disconnectReason)
+			} else {
+				d.AssertNotCalled(t, "Disconnect", mock.Anything, mock.Anything)
 			}
 		})
 	}

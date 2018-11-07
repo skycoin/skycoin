@@ -371,6 +371,8 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
 	dc.Daemon.UserAgent = c.config.Node.userAgent
+	dc.Daemon.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
+	dc.Daemon.MaxUnconfirmedTransactionSize = c.config.Node.MaxUnconfirmedTransactionSize
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond

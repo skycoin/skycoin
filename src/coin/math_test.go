@@ -114,3 +114,35 @@ func TestInt64ToUint64(t *testing.T) {
 		})
 	}
 }
+
+func TestIntToUint32(t *testing.T) {
+	cases := []struct {
+		a   int
+		b   uint32
+		err error
+	}{
+		{
+			a: 0,
+			b: 0,
+		},
+		{
+			a:   -1,
+			err: ErrIntUnderflowsUint32,
+		},
+		{
+			a:   math.MaxUint32 + 1,
+			err: ErrIntOverflowsUint32,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf(tc.a), func(t *testing.T) {
+			x, err := IntToUint32(tc.a)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+			} else {
+				require.Equal(t, tc.b, x)
+			}
+		})
+	}
+}

@@ -233,7 +233,10 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 
 // IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
-	c *gnet.MessageContext `enc:"-"`
+	c                  *gnet.MessageContext `enc:"-"`
+	userAgentData      useragent.Data       `enc:"-"`
+	burnFactor         uint32               `enc:"-"`
+	maxTransactionSize uint32               `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -246,16 +249,16 @@ type IntroductionMessage struct {
 	// Currently it contains the blockchain pubkey and user agent but will accept a client that does not provide it.
 	// If any of this data is provided, it must include a valid blockchain pubkey and a valid user agent string (maxlen=256).
 	// Contents of extra:
-	// ExtraByte uint32 // length prefix of []byte
-	// Pubkey    cipher.Pubkey // blockchain pubkey
-	// UserAgent string `enc:",maxlen=256"`
-	// BurnFactor uint64 // burn factor for announced txns
+	// ExtraByte  uint32 // length prefix of []byte
+	// Pubkey     cipher.Pubkey // blockchain pubkey
+	// UserAgent  string `enc:",maxlen=256"`
+	// BurnFactor uint32 // burn factor for announced txns
 	// MaxTxnSize uint32 // max txn size for announced txns
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, burnFactor, maxTxnSize uint32) *IntroductionMessage {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
 			"userAgent": userAgent,
@@ -267,11 +270,18 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 	}
 
 	userAgentSerialized := encoder.SerializeString(userAgent)
+	burnFactorSerialized := encoder.SerializeAtomic(burnFactor)
+	maxTxnSizeSerialized := encoder.SerializeAtomic(maxTxnSize)
 
-	extra := make([]byte, len(pubkey)+len(userAgentSerialized))
+	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(burnFactorSerialized)+len(maxTxnSizeSerialized))
 
 	copy(extra[:len(pubkey)], pubkey[:])
-	copy(extra[len(pubkey):], userAgentSerialized)
+	i := len(pubkey)
+	copy(extra[i:i+len(userAgentSerialized)], userAgentSerialized)
+	i += len(userAgentSerialized)
+	copy(extra[i:i+len(burnFactorSerialized)], burnFactorSerialized)
+	i += len(burnFactorSerialized)
+	copy(extra[i:i+len(maxTxnSizeSerialized)], maxTxnSizeSerialized)
 
 	return &IntroductionMessage{
 		Mirror:          mirror,
@@ -299,15 +309,14 @@ func (intro *IntroductionMessage) process(d daemoner) {
 
 	logger.WithFields(fields).Debug("IntroductionMessage.process")
 
-	userAgent, err := intro.verify(d)
-	if err != nil {
+	if err := intro.verify(d); err != nil {
 		if err := d.Disconnect(addr, err); err != nil {
 			logger.WithError(err).WithFields(fields).Warning("Disconnect")
 		}
 		return
 	}
 
-	if _, err := d.connectionIntroduced(addr, intro.c.ConnID, intro, userAgent); err != nil {
+	if _, err := d.connectionIntroduced(addr, intro.c.ConnID, intro); err != nil {
 		logger.WithError(err).WithFields(fields).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
@@ -354,7 +363,7 @@ func (intro *IntroductionMessage) process(d daemoner) {
 	}
 }
 
-func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
+func (intro *IntroductionMessage) verify(d daemoner) error {
 	addr := intro.c.Addr
 
 	fields := logrus.Fields{
@@ -367,7 +376,7 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 	// Disconnect if this is a self connection (we have the same mirror value)
 	if intro.Mirror == dc.Mirror {
 		logger.WithFields(fields).WithField("mirror", intro.Mirror).Info("Remote mirror value matches ours")
-		return nil, ErrDisconnectSelf
+		return ErrDisconnectSelf
 	}
 
 	// Disconnect if peer version is not within the supported range
@@ -376,7 +385,7 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 			"protocolVersion":    intro.ProtocolVersion,
 			"minProtocolVersion": dc.MinProtocolVersion,
 		}).Info("protocol version below minimum supported protocol version")
-		return nil, ErrDisconnectVersionNotSupported
+		return ErrDisconnectVersionNotSupported
 	}
 
 	logger.WithFields(fields).WithField("protocolVersion", intro.ProtocolVersion).Debug("Peer protocol version accepted")
@@ -385,12 +394,11 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 	// v25 sends blockchain pubkey and user agent
 	// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
 	// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
-	var userAgentData useragent.Data
 	if len(intro.Extra) > 0 {
 		var bcPubKey cipher.PubKey
 		if len(intro.Extra) < len(bcPubKey) {
 			logger.WithFields(fields).Warning("Extra data length does not meet the minimum requirement")
-			return nil, ErrDisconnectInvalidExtraData
+			return ErrDisconnectInvalidExtraData
 		}
 		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
@@ -399,24 +407,43 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 				"pubkey":       bcPubKey.Hex(),
 				"daemonPubkey": dc.BlockchainPubkey.Hex(),
 			}).Warning("Blockchain pubkey does not match")
-			return nil, ErrDisconnectBlockchainPubkeyNotMatched
+			return ErrDisconnectBlockchainPubkeyNotMatched
 		}
 
 		userAgentSerialized := intro.Extra[len(bcPubKey):]
-		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
+		userAgent, n, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 		if err != nil {
 			logger.WithError(err).WithFields(fields).Warning("Extra data user agent string could not be deserialized")
-			return nil, ErrDisconnectInvalidExtraData
+			return ErrDisconnectInvalidExtraData
 		}
 
-		userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
+		intro.userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
 			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Warning("User agent is invalid")
-			return nil, ErrDisconnectInvalidUserAgent
+			return ErrDisconnectInvalidUserAgent
+		}
+
+		i := len(bcPubKey) + n
+		if len(intro.Extra) < i+4 {
+			logger.WithFields(fields).Warning("BurnFactor could not be deserialized: not enough data")
+			return ErrDisconnectInvalidExtraData
+		}
+		if _, err := encoder.DeserializeAtomic(intro.Extra[i:i+4], &intro.burnFactor); err != nil {
+			logger.WithError(err).WithFields(fields).Warning("BurnFactor could not be deserialized")
+			return ErrDisconnectInvalidExtraData
+		}
+
+		if len(intro.Extra) < i+8 {
+			logger.WithFields(fields).Warning("MaxTransactionSize could not be deserialized: not enough data")
+			return ErrDisconnectInvalidExtraData
+		}
+		if _, err := encoder.DeserializeAtomic(intro.Extra[i+4:i+8], &intro.maxTransactionSize); err != nil {
+			logger.WithError(err).WithFields(fields).Warning("MaxTransactionSize could not be deserialized")
+			return ErrDisconnectInvalidExtraData
 		}
 	}
 
-	return &userAgentData, nil
+	return nil
 }
 
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.

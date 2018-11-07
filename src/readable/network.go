@@ -7,18 +7,20 @@ import (
 
 // Connection a connection's state within the daemon
 type Connection struct {
-	GnetID        uint64                 `json:"id"`
-	Addr          string                 `json:"address"`
-	LastSent      int64                  `json:"last_sent"`
-	LastReceived  int64                  `json:"last_received"`
-	ConnectedAt   int64                  `json:"connected_at"`
-	Outgoing      bool                   `json:"outgoing"`
-	State         daemon.ConnectionState `json:"state"`
-	Mirror        uint32                 `json:"mirror"`
-	ListenPort    uint16                 `json:"listen_port"`
-	Height        uint64                 `json:"height"`
-	UserAgent     useragent.Data         `json:"user_agent"`
-	IsTrustedPeer bool                   `json:"is_trusted_peer"`
+	GnetID             uint64                 `json:"id"`
+	Addr               string                 `json:"address"`
+	LastSent           int64                  `json:"last_sent"`
+	LastReceived       int64                  `json:"last_received"`
+	ConnectedAt        int64                  `json:"connected_at"`
+	Outgoing           bool                   `json:"outgoing"`
+	State              daemon.ConnectionState `json:"state"`
+	Mirror             uint32                 `json:"mirror"`
+	ListenPort         uint16                 `json:"listen_port"`
+	Height             uint64                 `json:"height"`
+	UserAgent          useragent.Data         `json:"user_agent"`
+	IsTrustedPeer      bool                   `json:"is_trusted_peer"`
+	BurnFactor         uint32                 `json:"burn_factor"`
+	MaxTransactionSize uint32                 `json:"max_txn_size"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags
@@ -38,17 +40,19 @@ func NewConnection(c *daemon.Connection) Connection {
 	}
 
 	return Connection{
-		GnetID:        c.Gnet.ID,
-		Addr:          c.Addr,
-		LastSent:      lastSent,
-		LastReceived:  lastReceived,
-		ConnectedAt:   connectedAt,
-		Outgoing:      c.Outgoing,
-		State:         c.State,
-		Mirror:        c.Mirror,
-		ListenPort:    c.ListenPort,
-		Height:        c.Height,
-		UserAgent:     c.UserAgent,
-		IsTrustedPeer: c.Pex.Trusted,
+		GnetID:             c.Gnet.ID,
+		Addr:               c.Addr,
+		LastSent:           lastSent,
+		LastReceived:       lastReceived,
+		ConnectedAt:        connectedAt,
+		Outgoing:           c.Outgoing,
+		State:              c.State,
+		Mirror:             c.Mirror,
+		ListenPort:         c.ListenPort,
+		Height:             c.Height,
+		UserAgent:          c.UserAgent,
+		IsTrustedPeer:      c.Pex.Trusted,
+		BurnFactor:         c.BurnFactor,
+		MaxTransactionSize: c.MaxTransactionSize,
 	}
 }

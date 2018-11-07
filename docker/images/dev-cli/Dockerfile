@@ -1,9 +1,9 @@
 # Creates an image for skycoin development
 FROM golang:1.11-stretch
 
-ARG BDATE
-ARG SHEAD
-ARG SCOMMIT
+ARG BDATE="test_build"
+ARG SHEAD="test_build"
+ARG SCOMMIT="develop"
 
 # Image labels (see ./hooks/build for ARGS)
 LABEL "org.label-schema.name"="skycoindev-cli" \

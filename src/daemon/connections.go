@@ -96,18 +96,22 @@ func (c *connection) ListenAddr() string {
 
 // Connections manages a collection of Connection
 type Connections struct {
-	conns    map[string]*connection
-	mirrors  map[uint32]map[string]uint16
-	ipCounts map[string]int
+	conns       map[string]*connection
+	mirrors     map[uint32]map[string]uint16
+	ipCounts    map[string]int
+	gnetIDs     map[uint64]string
+	listenAddrs map[string][]string
 	sync.Mutex
 }
 
 // NewConnections creates Connections
 func NewConnections() *Connections {
 	return &Connections{
-		conns:    make(map[string]*connection, 32),
-		mirrors:  make(map[uint32]map[string]uint16, 32),
-		ipCounts: make(map[string]int, 32),
+		conns:       make(map[string]*connection, 32),
+		mirrors:     make(map[uint32]map[string]uint16, 32),
+		ipCounts:    make(map[string]int, 32),
+		gnetIDs:     make(map[uint64]string, 32),
+		listenAddrs: make(map[string][]string, 32),
 	}
 }
 
@@ -128,7 +132,7 @@ func (c *Connections) pending(addr string) (*connection, error) {
 
 	c.ipCounts[ip]++
 
-	c.conns[addr] = &connection{
+	conn := &connection{
 		Addr: addr,
 		ConnectionDetails: ConnectionDetails{
 			State:      ConnectionStatePending,
@@ -136,6 +140,9 @@ func (c *Connections) pending(addr string) (*connection, error) {
 			ListenPort: port,
 		},
 	}
+
+	c.conns[addr] = conn
+	c.listenAddrs[addr] = append(c.listenAddrs[addr], addr)
 
 	logger.WithField("addr", addr).Debug("Connections.pending")
 
@@ -195,6 +202,7 @@ func (c *Connections) connected(addr string, gnetID uint64) (*connection, error)
 		}
 	}
 
+	c.gnetIDs[gnetID] = addr
 	conn.gnetID = gnetID
 	conn.ConnectedAt = time.Now().UTC()
 	conn.State = ConnectionStateConnected
@@ -289,6 +297,11 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 		conn.UserAgent = *userAgent
 	}
 
+	if !conn.Outgoing {
+		listenAddr := conn.ListenAddr()
+		c.listenAddrs[listenAddr] = append(c.listenAddrs[listenAddr], addr)
+	}
+
 	logger.WithFields(fields).Debug("Connections.introduced")
 
 	return conn, nil
@@ -302,6 +315,23 @@ func (c *Connections) get(addr string) *connection {
 	return c.conns[addr]
 }
 
+func (c *Connections) getByListenAddr(listenAddr string) []*connection {
+	c.Lock()
+	defer c.Unlock()
+
+	addrs := c.listenAddrs[listenAddr]
+	if len(addrs) == 0 {
+		return nil
+	}
+
+	conns := make([]*connection, len(addrs))
+	for i, a := range addrs {
+		conns[i] = c.conns[a]
+	}
+
+	return conns
+}
+
 func (c *Connections) getByGnetID(gnetID uint64) *connection {
 	c.Lock()
 	defer c.Unlock()
@@ -310,13 +340,12 @@ func (c *Connections) getByGnetID(gnetID uint64) *connection {
 		return nil
 	}
 
-	for _, c := range c.conns {
-		if c.gnetID == gnetID {
-			return c
-		}
+	addr := c.gnetIDs[gnetID]
+	if addr == "" {
+		return nil
 	}
 
-	return nil
+	return c.conns[addr]
 }
 
 // modify modifies a connection.
@@ -341,7 +370,14 @@ func (c *Connections) modify(addr string, gnetID uint64, f func(c *ConnectionDet
 		logger.WithFields(logrus.Fields{
 			"addr":   addr,
 			"gnetID": gnetID,
-		}).Panic("Connections.modify connection mirror value was changed")
+		}).Panic("Connections.modify connection Mirror was changed")
+	}
+
+	if cd.ListenPort != conn.ConnectionDetails.ListenPort {
+		logger.WithFields(logrus.Fields{
+			"addr":   addr,
+			"gnetID": gnetID,
+		}).Panic("Connections.modify connection ListenPort was changed")
 	}
 
 	conn.ConnectionDetails = cd
@@ -451,6 +487,7 @@ func (c *Connections) remove(addr string, gnetID uint64) error {
 		"addr":       addr,
 		"connGnetID": conn.gnetID,
 		"gnetID":     gnetID,
+		"listenPort": conn.ListenPort,
 	}
 
 	if conn.gnetID != gnetID {
@@ -477,6 +514,23 @@ func (c *Connections) remove(addr string, gnetID uint64) error {
 		logger.Critical().WithFields(fields).Warning("ipCount was already 0 when removing existing address")
 	}
 
+	listenAddr := conn.ListenAddr()
+	if listenAddr != "" {
+		addrs := c.listenAddrs[listenAddr]
+		for i, a := range addrs {
+			if a == conn.Addr {
+				addrs = append(addrs[:i], addrs[i+1:]...)
+				break
+			}
+		}
+		if len(addrs) == 0 {
+			delete(c.listenAddrs, listenAddr)
+		} else {
+			c.listenAddrs[listenAddr] = addrs
+		}
+	}
+
+	delete(c.gnetIDs, conn.gnetID)
 	delete(c.conns, addr)
 
 	return nil

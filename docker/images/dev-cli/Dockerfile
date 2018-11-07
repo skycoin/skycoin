@@ -1,11 +1,22 @@
 # Creates an image for skycoin development
 FROM golang:1.11-stretch
 
-# Image labels
-LABEL "org.label-schema.name"="skycoindev-cli develop" \
-      "org.label-schema.description"="Skycoin cli develop image" \
-      "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-cli" \
-      "org.label-schema.vendor"="www.skycoin.net"
+ARG BDATE
+ARG SHEAD
+ARG SCOMMIT
+
+# Image labels (see ./hooks/build for ARGS)
+LABEL "org.label-schema.name"="skycoindev-cli" \
+      "org.label-schema.description"="Docker image with go, node and command line tools for Skycoin developers" \
+      "org.label-schema.vendor"="Skycoin project" \
+      "org.label-schema.url"="skycoin.net" \
+      "org.label-schema.schema-version"="1.0.0-rc.1" \
+      "org.label-schema.build-date"=$BDATE \
+      "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin.git" \
+      "org.label-schema.vcs-ref"=$SHEAD \
+      "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/dev-cli/README.md" \
+      "org.label-schema.version"=$SHEAD \
+      "org.label-schema.docker.cmd"="mkdir src; docker run --rm -v src:/go/src skycoin/skycoindev-cli ; go get github.com/skycoin/skycoin ; sudo chown -R `whoami` src" \
 
 # Installs nodejs and npm. Needed for moxygen.
 

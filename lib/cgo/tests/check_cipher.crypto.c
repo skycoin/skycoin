@@ -1,5 +1,3 @@
-
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,13 +9,10 @@
 #include "skystring.h"
 #include "skytest.h"
 
-#if __APPLE__
-  #include "TargetConditionals.h"
-#endif
-
 TestSuite(cipher_crypto, .init = setup, .fini = teardown);
 
-Test(cipher_crypto, TestNewPubKey) {
+Test(cipher_crypto, TestNewPubKey)
+{
   unsigned char buff[101];
   GoSlice slice;
   cipher__PubKey pk, pk2;
@@ -59,13 +54,14 @@ Test(cipher_crypto, TestNewPubKey) {
   cr_assert(eq(u8[33], pk, pk2));
 }
 
-Test(cipher_crypto, TestPubKeyFromHex) {
+Test(cipher_crypto, TestPubKeyFromHex)
+{
   cipher__PubKey p, p1;
   cipher__SecKey sk;
   GoString s;
   unsigned char buff[51];
   char sbuff[101];
-  GoSlice slice = { (void *)buff, 0, 51 };
+  GoSlice slice = {(void *)buff, 0, 51};
   unsigned int errorcode;
 
   // Invalid hex
@@ -97,37 +93,40 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   cr_assert(eq(u8[33], p, p1));
 }
 
-Test(cipher_crypto, TestPubKeyHex) {
+Test(cipher_crypto, TestPubKeyHex)
+{
   cipher__PubKey p, p2;
   cipher__SecKey sk;
   GoString s3, s4;
   unsigned char buff[50];
-  GoSlice slice = { buff, 0, 50};
+  GoSlice slice = {buff, 0, 50};
   unsigned int errorcode;
 
   SKY_cipher_GenerateKeyPair(&p, &sk);
-  SKY_cipher_PubKey_Hex(&p, (GoString_ *) &s3);
-  registerMemCleanup((void *) s3.p);
+  SKY_cipher_PubKey_Hex(&p, (GoString_ *)&s3);
+  registerMemCleanup((void *)s3.p);
   errorcode = SKY_cipher_PubKeyFromHex(s3, &p2);
   cr_assert(errorcode == SKY_OK);
   cr_assert(eq(u8[33], p, p2));
 
   SKY_cipher_PubKey_Hex(&p2, (GoString_ *)&s4);
-  registerMemCleanup((void *) s4.p);
+  registerMemCleanup((void *)s4.p);
   // TODO: Translate into cr_assert(eq(type(GoString), s3, s4));
   cr_assert(s3.n == s4.n);
-  cr_assert(eq(str, ((char *) s3.p), ((char *) s4.p)));
+  cr_assert(eq(str, ((char *)s3.p), ((char *)s4.p)));
 }
 
-Test(cipher_crypto, TestPubKeyVerify) {
+Test(cipher_crypto, TestPubKeyVerify)
+{
   cipher__PubKey p;
   unsigned char buff[50];
-  GoSlice slice = { buff, 0, 50 };
+  GoSlice slice = {buff, 0, 50};
   unsigned int errorcode;
   bool failed = false;
 
   int i = 0;
-  for (; i < 10; i++) {
+  for (; i < 10; i++)
+  {
     randBytes(&slice, 33);
     memcpy((void *) &p, slice.data, 33);
     failed = failed || (errorcode = SKY_cipher_PubKey_Verify(&p));
@@ -135,20 +134,21 @@ Test(cipher_crypto, TestPubKeyVerify) {
   cr_assert(failed);
 }
 
-Test(cipher_crypto, TestPubKeyVerifyNil) {
+Test(cipher_crypto, TestPubKeyVerifyNil)
+{
   cipher__PubKey p = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0
-  };
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0};
   unsigned int errorcode;
 
   errorcode = SKY_cipher_PubKey_Verify(&p);
   cr_assert(errorcode == SKY_ErrInvalidPubKey);
 }
 
-Test(cipher_crypto, TestPubKeyVerifyDefault1) {
+Test(cipher_crypto, TestPubKeyVerifyDefault1)
+{
   cipher__PubKey p;
   cipher__SecKey s;
 
@@ -157,12 +157,14 @@ Test(cipher_crypto, TestPubKeyVerifyDefault1) {
   cr_assert(errorcode == SKY_OK);
 }
 
-Test(cipher_crypto, TestPubKeyVerifyDefault2) {
+Test(cipher_crypto, TestPubKeyVerifyDefault2)
+{
   cipher__PubKey p;
   cipher__SecKey s;
   int i;
 
-  for (i = 0; i < 1024; ++i) {
+  for (i = 0; i < 1024; ++i)
+  {
     SKY_cipher_GenerateKeyPair(&p, &s);
     unsigned int errorcode = SKY_cipher_PubKey_Verify(&p);
     cr_assert(errorcode == SKY_OK);
@@ -315,7 +317,7 @@ Test(cipher_crypto, TestSecKeyHex) {
   randBytes(&b, 32);
   SKY_cipher_NewSecKey(b, &sk);
   SKY_cipher_SecKey_Hex(&sk, (GoString_ *)&str);
-  registerMemCleanup((void *) str.p);
+  registerMemCleanup((void *)str.p);
 
   // Copy early to ensure memory is released
   strncpy((char *) h.p, str.p, str.n);
@@ -468,7 +470,7 @@ Test(cipher_crypto, TestSigHex) {
   unsigned char buff[66];
   GoSlice b = {buff, 0, 66};
   char strBuff[150],
-  strBuff2[150];
+      strBuff2[150];
   GoString str = {NULL, 0},
            str2 = {NULL, 0};
   cipher__Sig s, s2;
@@ -784,7 +786,6 @@ Test(cipher_crypto, TestSecKeyHashTest) {
   SKY_cipher_SumSHA256(b, &h);
   errorcode = SKY_cipher_CheckSecKeyHash(&sk, &h);
   cr_assert(errorcode == SKY_OK);
-
 
   memset(&sk, 0, sizeof(sk));
   errorcode = SKY_cipher_CheckSecKeyHash(&sk, &h);

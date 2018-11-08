@@ -72,7 +72,7 @@ func IntToUint32(a int) (uint32, error) {
 		return 0, ErrIntUnderflowsUint32
 	}
 
-	if a > math.MaxUint32 {
+	if uint64(a) > math.MaxUint32 {
 		return 0, ErrIntOverflowsUint32
 	}
 

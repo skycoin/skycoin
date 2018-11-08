@@ -129,14 +129,11 @@ func TestIntToUint32(t *testing.T) {
 			a:   -1,
 			err: ErrIntUnderflowsUint32,
 		},
-		{
-			a:   math.MaxUint32 + 1,
-			err: ErrIntOverflowsUint32,
-		},
+		// 64bit test defined in Test64BitIntToUint32
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf(tc.a), func(t *testing.T) {
+		t.Run(fmt.Sprint(tc.a), func(t *testing.T) {
 			x, err := IntToUint32(tc.a)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)

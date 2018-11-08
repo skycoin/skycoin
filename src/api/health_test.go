@@ -198,6 +198,8 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, uint32(32*1024), r.UserMaxTransactionSize)
 			require.Equal(t, health.UnconfirmedBurnFactor, r.UnconfirmedBurnFactor)
 			require.Equal(t, health.UnconfirmedMaxTransactionSize, r.UnconfirmedMaxTransactionSize)
+
+			require.Equal(t, uint32(3), r.MaxDropletPrecision)
 		})
 	}
 }

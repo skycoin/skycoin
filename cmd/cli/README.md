@@ -1645,7 +1645,8 @@ $ skycoin-cli status
         "user_burn_factor": 2,
         "unconfirmed_burn_factor": 2,
         "user_max_transaction_size": 32768,
-        "unconfirmed_max_transaction_size": 32768
+        "unconfirmed_max_transaction_size": 32768,
+        "user_max_droplet_precision": 3
     },
     "cli_config": {
         "webrpc_address": "http://127.0.0.1:6420"

@@ -240,7 +240,8 @@ Response:
     "user_burn_factor": 2,
     "unconfirmed_burn_factor": 2,
     "user_max_transaction_size": 32768,
-    "unconfirmed_max_transaction_size": 32768
+    "unconfirmed_max_transaction_size": 32768,
+    "user_max_droplet_precision": 3
 }
 ```
 

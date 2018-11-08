@@ -36,6 +36,7 @@ type HealthResponse struct {
 	UnconfirmedBurnFactor         uint32             `json:"unconfirmed_burn_factor"`
 	UserMaxTransactionSize        uint32             `json:"user_max_transaction_size"`
 	UnconfirmedMaxTransactionSize uint32             `json:"unconfirmed_max_transaction_size"`
+	MaxDropletPrecision           uint64             `json:"user_max_droplet_precision"`
 }
 
 // healthHandler returns node health data
@@ -88,6 +89,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			UserMaxTransactionSize:        params.UserMaxTransactionSize,
 			UnconfirmedBurnFactor:         health.UnconfirmedBurnFactor,
 			UnconfirmedMaxTransactionSize: health.UnconfirmedMaxTransactionSize,
+			MaxDropletPrecision:           params.MaxDropletPrecision,
 		})
 	}
 }

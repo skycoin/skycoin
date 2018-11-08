@@ -33,6 +33,7 @@
 #define SKY_PKG_UTIL      0x09000000
 #define SKY_PKG_VISOR     0x0A000000
 #define SKY_PKG_WALLET    0x0B000000
+#define SKY_PKG_PARAMS    0x0C000000
 #define SKY_PKG_LIBCGO    0x7F000000
 
 #define SKY_PKG_LIBCGO    0x7F000000
@@ -211,5 +212,8 @@
 #define SKY_ErrVerifySignatureInvalidInputsNils       0x0B000033
 #define SKY_ErrVerifySignatureInvalidSigLength        0x0B000034
 #define SKY_ErrVerifySignatureInvalidPubkeysLength    0x0B000035
+
+// daemon error codes
+#define SKY_ErrInvalidDecimals                        0x0C000000
 
 #endif

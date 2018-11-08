@@ -144,7 +144,7 @@ type NodeConfig struct {
 	// Maximum size of blocks in bytes to apply when creating blocks
 	MaxBlockSize uint32
 	// Maximum size of a transaction in bytes to apply to unconfirmed txns (received over the network, or when refreshing the pool)
-	MaxUnconfirmedTransactionSize uint32
+	UnconfirmedMaxTransactionSize uint32
 	// Coin hour burn factor to apply to unconfirmed txns (received over the network, or when refreshing the pool)
 	UnconfirmedBurnFactor uint32
 	// Coin hour burn factor to apply when creating blocks
@@ -275,8 +275,8 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		ResetCorruptDB: false,
 
 		// Blockchain/transaction validation
-		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
-		MaxBlockSize:                  params.MaxUserTransactionSize,
+		UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize,
+		MaxBlockSize:                  params.UserMaxTransactionSize,
 		UnconfirmedBurnFactor:         params.UserBurnFactor,
 		CreateBlockBurnFactor:         params.UserBurnFactor,
 
@@ -423,15 +423,15 @@ func (c *Config) postProcess() error {
 	if c.Node.MaxBlockSize < 1024 {
 		return errors.New("-block-size must be >= 1024")
 	}
-	if c.Node.MaxBlockSize < params.MaxUserTransactionSize {
-		return fmt.Errorf("-max-block-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
+	if c.Node.MaxBlockSize < params.UserMaxTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.UserMaxTransactionSize (%d)", params.UserMaxTransactionSize)
 	}
 
-	if c.Node.MaxUnconfirmedTransactionSize < 1024 {
+	if c.Node.UnconfirmedMaxTransactionSize < 1024 {
 		return errors.New("-unconfirmed-txn-size must be >= 1024")
 	}
-	if c.Node.MaxUnconfirmedTransactionSize < params.MaxUserTransactionSize {
-		return fmt.Errorf("-unconfirmed-txn-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
+	if c.Node.UnconfirmedMaxTransactionSize < params.UserMaxTransactionSize {
+		return fmt.Errorf("-unconfirmed-txn-size must be >= params.UserMaxTransactionSize (%d)", params.UserMaxTransactionSize)
 	}
 
 	if c.Node.UnconfirmedBurnFactor < 2 {
@@ -462,7 +462,7 @@ func (c *Config) postProcess() error {
 	}
 
 	c.Node.MaxBlockSize = uint32(c.Node.maxBlockSize)
-	c.Node.MaxUnconfirmedTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
+	c.Node.UnconfirmedMaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
 	c.Node.UnconfirmedBurnFactor = uint32(c.Node.unconfirmedBurnFactor)
 	c.Node.CreateBlockBurnFactor = uint32(c.Node.createBlockBurnFactor)
 
@@ -602,7 +602,7 @@ func (c *NodeConfig) RegisterFlags() {
 
 	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
 
-	flag.Uint64Var(&c.maxUnconfirmedTransactionSize, "unconfirmed-txn-size", uint64(c.MaxUnconfirmedTransactionSize), "maximum size of an unconfirmed transaction")
+	flag.Uint64Var(&c.maxUnconfirmedTransactionSize, "unconfirmed-txn-size", uint64(c.UnconfirmedMaxTransactionSize), "maximum size of an unconfirmed transaction")
 	flag.Uint64Var(&c.maxBlockSize, "block-size", uint64(c.MaxBlockSize), "maximum size of a block")
 	flag.Uint64Var(&c.unconfirmedBurnFactor, "burn-factor-unconfirmed", uint64(c.UnconfirmedBurnFactor), "coinhour burn factor applied to unconfirmed transactions")
 	flag.Uint64Var(&c.createBlockBurnFactor, "burn-factor-create-block", uint64(c.CreateBlockBurnFactor), "coinhour burn factor applied when creating blocks")

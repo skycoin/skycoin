@@ -21,6 +21,10 @@ func Test64BitIntToUint32(t *testing.T) {
 			a:   math.MaxUint32 + 1,
 			err: ErrIntOverflowsUint32,
 		},
+		{
+			a: math.MaxUint32,
+			b: math.MaxUint32,
+		},
 	}
 
 	for _, tc := range cases {

@@ -21,8 +21,8 @@ func sanityCheck() {
 		panic("UserBurnFactor must be > 1")
 	}
 
-	if MaxUserTransactionSize < 1024 {
-		panic("MaxUserTransactionSize must be >= 1024")
+	if UserMaxTransactionSize < 1024 {
+		panic("UserMaxTransactionSize must be >= 1024")
 	}
 
 	if InitialUnlockedCount > DistributionAddressesTotal {
@@ -75,5 +75,5 @@ func loadMaxUserTransactionSize() {
 		panic("MAX_USER_TXN_SIZE must be >= 1024")
 	}
 
-	MaxUserTransactionSize = uint32(x)
+	UserMaxTransactionSize = uint32(x)
 }

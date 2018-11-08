@@ -202,7 +202,7 @@ func (c *Coin) Run() error {
 	}
 
 	c.logger.Infof("Coinhour burn factor for creating transactions is %d", params.UserBurnFactor)
-	c.logger.Infof("Max user transaction size is %d", params.MaxUserTransactionSize)
+	c.logger.Infof("Max user transaction size is %d", params.UserMaxTransactionSize)
 
 	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {
@@ -372,7 +372,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
 	dc.Daemon.UserAgent = c.config.Node.userAgent
 	dc.Daemon.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
-	dc.Daemon.MaxUnconfirmedTransactionSize = c.config.Node.MaxUnconfirmedTransactionSize
+	dc.Daemon.UnconfirmedMaxTransactionSize = c.config.Node.UnconfirmedMaxTransactionSize
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
@@ -384,7 +384,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey
 
 	dc.Visor.MaxBlockSize = c.config.Node.MaxBlockSize
-	dc.Visor.MaxUnconfirmedTransactionSize = c.config.Node.MaxUnconfirmedTransactionSize
+	dc.Visor.UnconfirmedMaxTransactionSize = c.config.Node.UnconfirmedMaxTransactionSize
 	dc.Visor.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
 	dc.Visor.CreateBlockBurnFactor = c.config.Node.CreateBlockBurnFactor
 

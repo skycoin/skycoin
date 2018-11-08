@@ -43,8 +43,8 @@ type NodeParameters struct {
 	CreateBlockBurnFactor uint64 `mapstructure:"create_block_burn_factor"`
 	// MaxBlockSize is the maximum size of blocks when publishing blocks
 	MaxBlockSize int `mapstructure:"max_block_size"`
-	// MaxUnconfirmedTransactionSize is the maximum size of an unconfirmed transaction
-	MaxUnconfirmedTransactionSize int `mapstructure:"max_unconfirmed_transaction_size"`
+	// UnconfirmedMaxTransactionSize is the maximum size of an unconfirmed transaction
+	UnconfirmedMaxTransactionSize int `mapstructure:"unconfirmed_max_transaction_size"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
 	CoinName      string
@@ -70,8 +70,8 @@ type ParamsParameters struct {
 	UnlockTimeInterval uint64 `mapstructure:"unlock_time_interval"`
 	// MaxDropletPrecision represents the decimal precision of droplets
 	MaxDropletPrecision uint64 `mapstructure:"max_droplet_precision"`
-	// MaxUserTransactionSize is max size of a user-created transaction (typically equal to the max size of a block)
-	MaxUserTransactionSize int `mapstructure:"max_user_transaction_size"`
+	// UserMaxTransactionSize is max size of a user-created transaction (typically equal to the max size of a block)
+	UserMaxTransactionSize int `mapstructure:"user_max_transaction_size"`
 	// DistributionAddresses are addresses that received coins from the genesis address in the first block,
 	// used to calculate current and max supply and do distribution timelocking
 	DistributionAddresses []string `mapstructure:"distribution_addresses"`
@@ -122,7 +122,7 @@ func setDefaults() {
 	viper.SetDefault("node.port", 6000)
 	viper.SetDefault("node.web_interface_port", 6420)
 	viper.SetDefault("node.max_block_size", 32*1024)
-	viper.SetDefault("node.max_unconfirmed_transaction_size", 32*1024)
+	viper.SetDefault("node.unconfirmed_max_transaction_size", 32*1024)
 	viper.SetDefault("node.unconfirmed_burn_factor", 2)
 	viper.SetDefault("node.create_block_burn_factor", 2)
 
@@ -138,5 +138,5 @@ func setDefaults() {
 	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)
 	viper.SetDefault("params.max_droplet_precision", 3)
 	viper.SetDefault("params.user_burn_factor", 2)
-	viper.SetDefault("params.max_user_transaction_size", 32*1024)
+	viper.SetDefault("params.user_max_transaction_size", 32*1024)
 }

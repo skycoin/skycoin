@@ -918,10 +918,12 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 
 // Health is returned by the /health endpoint
 type Health struct {
-	BlockchainMetadata  visor.BlockchainMetadata
-	OutgoingConnections int
-	IncomingConnections int
-	Uptime              time.Duration
+	BlockchainMetadata            visor.BlockchainMetadata
+	OutgoingConnections           int
+	IncomingConnections           int
+	Uptime                        time.Duration
+	UnconfirmedBurnFactor         uint32
+	UnconfirmedMaxTransactionSize uint32
 }
 
 // GetHealth returns statistics about the running node
@@ -953,10 +955,12 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 		}
 
 		health = &Health{
-			BlockchainMetadata:  *metadata,
-			OutgoingConnections: outgoingConns,
-			IncomingConnections: incomingConns,
-			Uptime:              time.Since(gw.v.StartedAt),
+			BlockchainMetadata:            *metadata,
+			OutgoingConnections:           outgoingConns,
+			IncomingConnections:           incomingConns,
+			Uptime:                        time.Since(gw.v.StartedAt),
+			UnconfirmedBurnFactor:         gw.d.Config.UnconfirmedBurnFactor,
+			UnconfirmedMaxTransactionSize: gw.d.Config.UnconfirmedMaxTransactionSize,
 		}
 	})
 

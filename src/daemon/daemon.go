@@ -197,7 +197,7 @@ type DaemonConfig struct { // nolint: golint
 	// Burn factor applied to unconfirmed txns
 	UnconfirmedBurnFactor uint32
 	// Max transaction size applied to unconfirmed txns
-	MaxUnconfirmedTransactionSize uint32
+	UnconfirmedMaxTransactionSize uint32
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
 }
@@ -233,7 +233,7 @@ func NewDaemonConfig() DaemonConfig {
 		UnconfirmedRemoveInvalidRate:  time.Minute,
 		Mirror:                        rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 		UnconfirmedBurnFactor:         params.UserBurnFactor,
-		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
+		UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize,
 	}
 }
 
@@ -395,7 +395,7 @@ func (dm *Daemon) Run() error {
 
 	logger.Infof("Daemon UserAgent is %s", dm.Config.userAgent)
 	logger.Info("Daemon UnconfirmedBurnFactor is %d", dm.Config.UnconfirmedBurnFactor)
-	logger.Info("Daemon MaxUnconfirmedTransactionSize is %d", dm.Config.MaxUnconfirmedTransactionSize)
+	logger.Info("Daemon UnconfirmedMaxTransactionSize is %d", dm.Config.UnconfirmedMaxTransactionSize)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -966,7 +966,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 		dm.Config.BlockchainPubkey,
 		dm.Config.userAgent,
 		dm.Config.UnconfirmedBurnFactor,
-		dm.Config.MaxUnconfirmedTransactionSize,
+		dm.Config.UnconfirmedMaxTransactionSize,
 	)); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return

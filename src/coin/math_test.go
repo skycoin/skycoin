@@ -129,6 +129,14 @@ func TestIntToUint32(t *testing.T) {
 			a:   -1,
 			err: ErrIntUnderflowsUint32,
 		},
+		{
+			a: math.MaxInt32,
+			b: math.MaxInt32,
+		},
+		{
+			a: 999,
+			b: 999,
+		},
 		// 64bit test defined in Test64BitIntToUint32
 	}
 

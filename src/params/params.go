@@ -27,8 +27,8 @@ var (
 	// used when creating a transaction
 	UserBurnFactor uint32 = 2
 
-	// MaxUserTransactionSize is the maximum size of a user-created transaction
-	MaxUserTransactionSize uint32 = 32768 // in bytes
+	// UserMaxTransactionSize is the maximum size of a user-created transaction
+	UserMaxTransactionSize uint32 = 32768 // in bytes
 
 	// MaxDropletPrecision represents the decimal precision of droplets
 	MaxDropletPrecision uint64 = 3

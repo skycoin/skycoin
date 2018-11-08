@@ -20,7 +20,7 @@ type Connection struct {
 	UserAgent          useragent.Data         `json:"user_agent"`
 	IsTrustedPeer      bool                   `json:"is_trusted_peer"`
 	BurnFactor         uint32                 `json:"burn_factor"`
-	MaxTransactionSize uint32                 `json:"max_txn_size"`
+	MaxTransactionSize uint32                 `json:"max_transaction_size"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags

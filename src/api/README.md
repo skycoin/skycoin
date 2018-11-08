@@ -237,7 +237,10 @@ Response:
     "gui_enabled": true,
     "unversioned_api_enabled": false,
     "json_rpc_enabled": false,
-    "coinhour_burn_factor": 2
+    "user_burn_factor": 2,
+    "unconfirmed_burn_factor": 2,
+    "user_max_transaction_size": 32768,
+    "unconfirmed_max_transaction_size": 32768
 }
 ```
 

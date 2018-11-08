@@ -46,7 +46,7 @@ type Config struct {
 	BlockchainSeckey cipher.SecKey
 
 	// Maximum size of a txn, in bytes for unconfirmed transactions
-	MaxUnconfirmedTransactionSize uint32
+	UnconfirmedMaxTransactionSize uint32
 	// Maximum size of a block, in bytes for creating blocks
 	MaxBlockSize uint32
 
@@ -90,8 +90,8 @@ func NewConfig() Config {
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
-		MaxBlockSize:                  params.MaxUserTransactionSize,
+		UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize,
+		MaxBlockSize:                  params.UserMaxTransactionSize,
 		UnconfirmedBurnFactor:         params.UserBurnFactor,
 		CreateBlockBurnFactor:         params.UserBurnFactor,
 
@@ -124,11 +124,11 @@ func (c Config) Verify() error {
 		return errors.New("MaxBlockSize must be > 0")
 	}
 
-	if c.MaxUnconfirmedTransactionSize <= 0 {
+	if c.UnconfirmedMaxTransactionSize <= 0 {
 		return errors.New("UnconfirmedBlockMaxBlockSize must be > 0")
 	}
-	if params.MaxUserTransactionSize > c.MaxBlockSize {
-		return fmt.Errorf("params.MaxUserTransactionSize must be < MaxBlockSize (%d)", c.MaxBlockSize)
+	if params.UserMaxTransactionSize > c.MaxBlockSize {
+		return fmt.Errorf("params.UserMaxTransactionSize must be < MaxBlockSize (%d)", c.MaxBlockSize)
 	}
 
 	return nil
@@ -218,7 +218,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	}
 
 	logger.Infof("Max block size is %d", c.MaxBlockSize)
-	logger.Infof("Max unconfirmed transaction size is %d", c.MaxUnconfirmedTransactionSize)
+	logger.Infof("Max unconfirmed transaction size is %d", c.UnconfirmedMaxTransactionSize)
 	logger.Infof("Coinhour burn factor for verifying unconfirmed transactions is %d", c.UnconfirmedBurnFactor)
 	logger.Infof("Coinhour burn factor for transactions when creating blocks is %d", c.CreateBlockBurnFactor)
 
@@ -416,7 +416,7 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 	if err := vs.DB.Update("RefreshUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.MaxUnconfirmedTransactionSize, vs.Config.UnconfirmedBurnFactor)
+		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor)
 		return err
 	}); err != nil {
 		return nil, err
@@ -913,7 +913,7 @@ func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnVi
 
 	if err := vs.DB.Update("InjectForeignTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxUnconfirmedTransactionSize, vs.Config.UnconfirmedBurnFactor)
+		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor)
 		return err
 	}); err != nil {
 		return false, nil, err
@@ -950,11 +950,11 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 		return false, err
 	}
 
-	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
+	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
 		return false, err
 	}
 
-	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.MaxUserTransactionSize, params.UserBurnFactor)
+	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	if softErr != nil {
 		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
@@ -2217,7 +2217,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
 			return err
 		}
 

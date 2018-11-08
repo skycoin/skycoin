@@ -540,7 +540,7 @@ func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr s
 		return nil, err
 	}
 
-	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
+	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
 		return nil, err
 	}
 	if err := visor.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered); err != nil {

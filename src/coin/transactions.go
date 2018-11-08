@@ -279,7 +279,7 @@ func (txn *Transaction) UpdateHeader() error {
 	if err != nil {
 		return err
 	}
-	txn.Length = uint32(s)
+	txn.Length = s
 	txn.Type = byte(0x00)
 	txn.InnerHash = txn.HashInner()
 	return nil

@@ -76,7 +76,7 @@ var (
 		UnconfirmedBurnFactor:         2,
 		CreateBlockBurnFactor:         2,
 		MaxBlockSize:                  32768,
-		MaxUnconfirmedTransactionSize: 32768,
+		UnconfirmedMaxTransactionSize: 32768,
 	})
 
 	parseFlags = true

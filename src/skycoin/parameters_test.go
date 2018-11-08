@@ -33,7 +33,7 @@ func TestNewParameters(t *testing.T) {
 			UnconfirmedBurnFactor:         10,
 			CreateBlockBurnFactor:         9,
 			MaxBlockSize:                  1111,
-			MaxUnconfirmedTransactionSize: 777,
+			UnconfirmedMaxTransactionSize: 777,
 		},
 		Params: ParamsParameters{
 			MaxCoinSupply:              1e8,
@@ -43,7 +43,7 @@ func TestNewParameters(t *testing.T) {
 			UnlockTimeInterval:         60 * 60 * 24 * 365,
 			MaxDropletPrecision:        3,
 			UserBurnFactor:             3,
-			MaxUserTransactionSize:     999,
+			UserMaxTransactionSize:     999,
 		},
 	}, coinConfig)
 }

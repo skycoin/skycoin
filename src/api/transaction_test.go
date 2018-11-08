@@ -72,7 +72,8 @@ func makeTransaction(t *testing.T) coin.Transaction {
 	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(makeAddress(), 5e6, 50)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 	return txn
 }
 
@@ -1309,12 +1310,16 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(makeAddress(), 5e6, 50)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 
 	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
 	require.NoError(t, err)
 
-	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
+	return transactionAndInputs{
+		txn:    txn,
+		inputs: []wallet.UxBalance{input},
+	}
 }
 
 func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
@@ -1325,12 +1330,16 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(cipher.Address{}, 5e6, 50)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 
 	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
 	require.NoError(t, err)
 
-	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
+	return transactionAndInputs{
+		txn:    txn,
+		inputs: []wallet.UxBalance{input},
+	}
 }
 
 func TestVerifyTransaction(t *testing.T) {

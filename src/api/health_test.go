@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
@@ -124,10 +125,12 @@ func TestHealthHandler(t *testing.T) {
 			}
 
 			health := &daemon.Health{
-				BlockchainMetadata:  metadata,
-				OutgoingConnections: 3,
-				IncomingConnections: 2,
-				Uptime:              time.Second * 4,
+				BlockchainMetadata:            metadata,
+				OutgoingConnections:           3,
+				IncomingConnections:           2,
+				Uptime:                        time.Second * 4,
+				UnconfirmedBurnFactor:         params.UserBurnFactor * 2,
+				UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize * 2,
 			}
 
 			gateway := &MockGatewayer{}
@@ -191,7 +194,10 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
-			require.Equal(t, uint64(0x2), r.BurnFactor)
+			require.Equal(t, uint32(2), r.UserBurnFactor)
+			require.Equal(t, uint32(32*1024), r.UserMaxTransactionSize)
+			require.Equal(t, health.UnconfirmedBurnFactor, r.UnconfirmedBurnFactor)
+			require.Equal(t, health.UnconfirmedMaxTransactionSize, r.UnconfirmedMaxTransactionSize)
 		})
 	}
 }

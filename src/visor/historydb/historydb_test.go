@@ -404,7 +404,9 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 
 	sigKey := cipher.MustSecKeyFromHex(td.Vin.SigKey)
 	txn.SignInputs([]cipher.SecKey{sigKey})
-	txn.UpdateHeader()
+	if err := txn.UpdateHeader(); err != nil {
+		return nil, nil, err
+	}
 	if err := bc.VerifyTransaction(txn); err != nil {
 		return nil, nil, err
 	}

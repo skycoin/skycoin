@@ -46,14 +46,14 @@ type Config struct {
 	BlockchainSeckey cipher.SecKey
 
 	// Maximum size of a txn, in bytes for unconfirmed transactions
-	MaxUnconfirmedTransactionSize int
+	UnconfirmedMaxTransactionSize uint32
 	// Maximum size of a block, in bytes for creating blocks
-	MaxBlockSize int
+	MaxBlockSize uint32
 
 	// Burn factor to apply to unconfirmed transactions (received over the network, or when refreshing the pool)
-	UnconfirmedBurnFactor uint64
+	UnconfirmedBurnFactor uint32
 	// Burn factor to apply when creating blocks
-	CreateBlockBurnFactor uint64
+	CreateBlockBurnFactor uint32
 
 	// Where the blockchain is saved
 	BlockchainFile string
@@ -90,8 +90,8 @@ func NewConfig() Config {
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
-		MaxBlockSize:                  params.MaxUserTransactionSize,
+		UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize,
+		MaxBlockSize:                  params.UserMaxTransactionSize,
 		UnconfirmedBurnFactor:         params.UserBurnFactor,
 		CreateBlockBurnFactor:         params.UserBurnFactor,
 
@@ -124,11 +124,11 @@ func (c Config) Verify() error {
 		return errors.New("MaxBlockSize must be > 0")
 	}
 
-	if c.MaxUnconfirmedTransactionSize <= 0 {
+	if c.UnconfirmedMaxTransactionSize <= 0 {
 		return errors.New("UnconfirmedBlockMaxBlockSize must be > 0")
 	}
-	if params.MaxUserTransactionSize > c.MaxBlockSize {
-		return fmt.Errorf("params.MaxUserTransactionSize must be < MaxBlockSize (%d)", c.MaxBlockSize)
+	if params.UserMaxTransactionSize > c.MaxBlockSize {
+		return fmt.Errorf("params.UserMaxTransactionSize must be < MaxBlockSize (%d)", c.MaxBlockSize)
 	}
 
 	return nil
@@ -169,7 +169,7 @@ type Blockchainer interface {
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
 	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int, burnFactor uint64) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize, burnFactor uint32) error
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
@@ -177,10 +177,10 @@ type Blockchainer interface {
 // accessing the unconfirmed transaction pool
 type UnconfirmedTransactionPooler interface {
 	SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error
-	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize int, burnFactor uint64) (bool, *ErrTxnViolatesSoftConstraint, error)
+	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize, burnFactor uint32) (bool, *ErrTxnViolatesSoftConstraint, error)
 	AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error)
 	RemoveTransactions(tx *dbutil.Tx, txns []cipher.SHA256) error
-	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize int, burnFactor uint64) ([]cipher.SHA256, error)
+	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize, burnFactor uint32) ([]cipher.SHA256, error)
 	RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error)
 	FilterKnown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
 	GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error)
@@ -218,7 +218,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	}
 
 	logger.Infof("Max block size is %d", c.MaxBlockSize)
-	logger.Infof("Max unconfirmed transaction size is %d", c.MaxUnconfirmedTransactionSize)
+	logger.Infof("Max unconfirmed transaction size is %d", c.UnconfirmedMaxTransactionSize)
 	logger.Infof("Coinhour burn factor for verifying unconfirmed transactions is %d", c.UnconfirmedBurnFactor)
 	logger.Infof("Coinhour burn factor for transactions when creating blocks is %d", c.CreateBlockBurnFactor)
 
@@ -416,7 +416,7 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 	if err := vs.DB.Update("RefreshUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.MaxUnconfirmedTransactionSize, vs.Config.UnconfirmedBurnFactor)
+		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor)
 		return err
 	}); err != nil {
 		return nil, err
@@ -492,10 +492,18 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	}
 
 	// Sort them by highest fee per kilobyte
-	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee(tx, head.Time()))
+	txns, err = coin.SortTransactions(txns, vs.Blockchain.TransactionFee(tx, head.Time()))
+	if err != nil {
+		logger.Critical().WithError(err).Error("SortTransactions failed, no block can be made until the offending transaction is removed")
+		return coin.SignedBlock{}, err
+	}
 
 	// Apply block size transaction limit
-	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+	txns, err = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+	if err != nil {
+		logger.Critical().WithError(err).Error("TruncateBytesTo failed, no block can be made until the offending transaction is removed")
+		return coin.SignedBlock{}, err
+	}
 
 	if len(txns) == 0 {
 		logger.Panic("TruncateBytesTo removed all transactions")
@@ -905,7 +913,7 @@ func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnVi
 
 	if err := vs.DB.Update("InjectForeignTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxUnconfirmedTransactionSize, vs.Config.UnconfirmedBurnFactor)
+		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor)
 		return err
 	}); err != nil {
 		return false, nil, err
@@ -942,11 +950,11 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 		return false, err
 	}
 
-	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
+	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
 		return false, err
 	}
 
-	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.MaxUserTransactionSize, params.UserBurnFactor)
+	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	if softErr != nil {
 		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
@@ -2209,7 +2217,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
 			return err
 		}
 

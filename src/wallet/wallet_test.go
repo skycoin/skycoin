@@ -1243,7 +1243,7 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 	originalBurnFactor := params.UserBurnFactor
 
 	cases := []struct {
-		burnFactor uint64
+		burnFactor uint32
 		cases      []distributeSpendHoursTestCase
 	}{
 		{2, burnFactor2TestCases},

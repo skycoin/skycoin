@@ -237,7 +237,10 @@ Response:
     "gui_enabled": true,
     "unversioned_api_enabled": false,
     "json_rpc_enabled": false,
-    "coinhour_burn_factor": 2
+    "user_burn_factor": 2,
+    "unconfirmed_burn_factor": 2,
+    "user_max_transaction_size": 32768,
+    "unconfirmed_max_transaction_size": 32768
 }
 ```
 
@@ -3603,7 +3606,9 @@ Result:
     "height": 181,
     "listen_port": 6000,
     "user_agent": "skycoin:0.25.0",
-    "is_trusted_peer": true
+    "is_trusted_peer": true,
+    "unconfirmed_burn_factor": 2,
+    "unconfirmed_max_transaction_size": 32768
 }
 ```
 
@@ -3650,7 +3655,9 @@ Result:
             "listen_port": 20002,
             "height": 180,
             "user_agent": "skycoin:0.25.0",
-		    "is_trusted_peer": true
+		    "is_trusted_peer": true,
+		    "unconfirmed_burn_factor": 2,
+		    "unconfirmed_max_transaction_size": 32768
         },
         {
             "id": 109548,
@@ -3664,7 +3671,9 @@ Result:
             "listen_port": 6000,
             "height": 0,
             "user_agent": "",
-		    "is_trusted_peer": false
+		    "is_trusted_peer": true,
+		    "unconfirmed_burn_factor": 0,
+		    "unconfirmed_max_transaction_size": 0
         },
         {
             "id": 99115,
@@ -3678,7 +3687,9 @@ Result:
             "listen_port": 6000,
             "height": 180,
             "user_agent": "",
-		    "is_trusted_peer": false
+		    "is_trusted_peer": true,
+		    "unconfirmed_burn_factor": 0,
+		    "unconfirmed_max_transaction_size": 0
         }
     ]
 }

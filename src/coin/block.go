@@ -123,7 +123,7 @@ func (b Block) HashBody() cipher.SHA256 {
 }
 
 // Size returns the size of the Block's Transactions, in bytes
-func (b Block) Size() int {
+func (b Block) Size() (uint32, error) {
 	return b.Body.Size()
 }
 
@@ -193,7 +193,7 @@ func (bb BlockBody) Hash() cipher.SHA256 {
 }
 
 // Size returns the size of Transactions, in bytes
-func (bb BlockBody) Size() int {
+func (bb BlockBody) Size() (uint32, error) {
 	// We can't use length of self.Bytes() because it has a length prefix
 	// Need only the sum of transaction sizes
 	return bb.Transactions.Size()

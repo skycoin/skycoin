@@ -125,12 +125,13 @@ func TestHealthHandler(t *testing.T) {
 			}
 
 			health := &daemon.Health{
-				BlockchainMetadata:            metadata,
-				OutgoingConnections:           3,
-				IncomingConnections:           2,
-				Uptime:                        time.Second * 4,
-				UnconfirmedBurnFactor:         params.UserBurnFactor * 2,
-				UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize * 2,
+				BlockchainMetadata:             metadata,
+				OutgoingConnections:            3,
+				IncomingConnections:            2,
+				Uptime:                         time.Second * 4,
+				UnconfirmedBurnFactor:          params.UserBurnFactor * 2,
+				UnconfirmedMaxTransactionSize:  params.UserMaxTransactionSize * 2,
+				UnconfirmedMaxDropletPrecision: params.UserMaxDropletPrecision - 1,
 			}
 
 			gateway := &MockGatewayer{}
@@ -198,8 +199,9 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, uint32(32*1024), r.UserMaxTransactionSize)
 			require.Equal(t, health.UnconfirmedBurnFactor, r.UnconfirmedBurnFactor)
 			require.Equal(t, health.UnconfirmedMaxTransactionSize, r.UnconfirmedMaxTransactionSize)
+			require.Equal(t, health.UnconfirmedMaxDropletPrecision, r.UnconfirmedMaxDropletPrecision)
 
-			require.Equal(t, uint32(3), r.MaxDropletPrecision)
+			require.Equal(t, uint8(3), r.UserMaxDropletPrecision)
 		})
 	}
 }

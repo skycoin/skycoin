@@ -373,6 +373,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.UserAgent = c.config.Node.userAgent
 	dc.Daemon.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
 	dc.Daemon.UnconfirmedMaxTransactionSize = c.config.Node.UnconfirmedMaxTransactionSize
+	dc.Daemon.UnconfirmedMaxDropletPrecision = c.config.Node.UnconfirmedMaxDropletPrecision
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
@@ -387,6 +388,8 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.UnconfirmedMaxTransactionSize = c.config.Node.UnconfirmedMaxTransactionSize
 	dc.Visor.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
 	dc.Visor.CreateBlockBurnFactor = c.config.Node.CreateBlockBurnFactor
+	dc.Visor.UnconfirmedMaxDropletPrecision = c.config.Node.UnconfirmedMaxDropletPrecision
+	dc.Visor.CreateBlockMaxDropletPrecision = c.config.Node.CreateBlockMaxDropletPrecision
 
 	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
 	dc.Visor.GenesisSignature = c.config.Node.genesisSignature

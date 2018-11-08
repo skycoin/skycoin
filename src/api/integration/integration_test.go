@@ -4655,9 +4655,9 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		tLog(t, "spendableHours", spendableHours)
 
 		coins := rand.Intn(int(totalCoins)) + 1
-		coins -= coins % int(params.MaxDropletDivisor())
+		coins -= coins % int(params.UserMaxDropletDivisor())
 		if coins == 0 {
-			coins = int(params.MaxDropletDivisor())
+			coins = int(params.UserMaxDropletDivisor())
 		}
 		hours := rand.Intn(int(spendableHours + 1))
 		nOutputs := rand.Intn(maxOutputs) + 1
@@ -4692,9 +4692,9 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 				remainingHours = 0
 			} else {
 				receiverCoins := rand.Intn(remainingCoins) + 1
-				receiverCoins -= receiverCoins % int(params.MaxDropletDivisor())
+				receiverCoins -= receiverCoins % int(params.UserMaxDropletDivisor())
 				if receiverCoins == 0 {
-					receiverCoins = int(params.MaxDropletDivisor())
+					receiverCoins = int(params.UserMaxDropletDivisor())
 				}
 
 				var err error

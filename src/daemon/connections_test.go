@@ -190,12 +190,13 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 
 	m := &IntroductionMessage{
 		// use a different port to make sure that we use the self-reported listen port for incoming connections
-		ListenPort:                    port + 1,
-		Mirror:                        1111,
-		ProtocolVersion:               2,
-		userAgent:                     userAgent,
-		unconfirmedBurnFactor:         4,
-		unconfirmedMaxTransactionSize: 1111,
+		ListenPort:                     port + 1,
+		Mirror:                         1111,
+		ProtocolVersion:                2,
+		userAgent:                      userAgent,
+		unconfirmedBurnFactor:          4,
+		unconfirmedMaxTransactionSize:  1111,
+		unconfirmedMaxDropletPrecision: 2,
 	}
 
 	c, err = conns.introduced(addr, 1, m)
@@ -218,6 +219,7 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	require.Equal(t, userAgent, c.UserAgent)
 	require.Equal(t, uint32(4), c.UnconfirmedBurnFactor)
 	require.Equal(t, uint32(1111), c.UnconfirmedMaxTransactionSize)
+	require.Equal(t, uint8(2), c.UnconfirmedMaxDropletPrecision)
 
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)

@@ -55,6 +55,11 @@ type Config struct {
 	// Burn factor to apply when creating blocks
 	CreateBlockBurnFactor uint32
 
+	// Max droplet precision to apply to unconfirmed transactions
+	UnconfirmedMaxDropletPrecision uint8
+	// Max droplet precision to apply when creating blocks
+	CreateBlockMaxDropletPrecision uint8
+
 	// Where the blockchain is saved
 	BlockchainFile string
 	// Where the block signatures are saved
@@ -90,10 +95,12 @@ func NewConfig() Config {
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize,
-		MaxBlockSize:                  params.UserMaxTransactionSize,
-		UnconfirmedBurnFactor:         params.UserBurnFactor,
-		CreateBlockBurnFactor:         params.UserBurnFactor,
+		UnconfirmedMaxTransactionSize:  params.UserMaxTransactionSize,
+		MaxBlockSize:                   params.UserMaxTransactionSize,
+		UnconfirmedBurnFactor:          params.UserBurnFactor,
+		CreateBlockBurnFactor:          params.UserBurnFactor,
+		UnconfirmedMaxDropletPrecision: params.UserMaxDropletPrecision,
+		CreateBlockMaxDropletPrecision: params.UserMaxDropletPrecision,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -169,7 +176,7 @@ type Blockchainer interface {
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
 	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize, burnFactor uint32) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize, burnFactor uint32, maxDropletPrecision uint8) error
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
@@ -177,10 +184,10 @@ type Blockchainer interface {
 // accessing the unconfirmed transaction pool
 type UnconfirmedTransactionPooler interface {
 	SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error
-	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize, burnFactor uint32) (bool, *ErrTxnViolatesSoftConstraint, error)
+	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize, burnFactor uint32, maxDropletPrecision uint8) (bool, *ErrTxnViolatesSoftConstraint, error)
 	AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error)
 	RemoveTransactions(tx *dbutil.Tx, txns []cipher.SHA256) error
-	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize, burnFactor uint32) ([]cipher.SHA256, error)
+	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize, burnFactor uint32, maxDropletPrecision uint8) ([]cipher.SHA256, error)
 	RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error)
 	FilterKnown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
 	GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error)
@@ -416,7 +423,7 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 	if err := vs.DB.Update("RefreshUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor)
+		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor, vs.Config.UnconfirmedMaxDropletPrecision)
 		return err
 	}); err != nil {
 		return nil, err
@@ -462,7 +469,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize, vs.Config.CreateBlockBurnFactor); err != nil {
+		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize, vs.Config.CreateBlockBurnFactor, vs.Config.CreateBlockMaxDropletPrecision); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
@@ -913,7 +920,7 @@ func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnVi
 
 	if err := vs.DB.Update("InjectForeignTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor)
+		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor, vs.Config.UnconfirmedMaxDropletPrecision)
 		return err
 	}); err != nil {
 		return false, nil, err
@@ -950,11 +957,11 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 		return false, err
 	}
 
-	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
+	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision); err != nil {
 		return false, err
 	}
 
-	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.UserMaxTransactionSize, params.UserBurnFactor)
+	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
 	if softErr != nil {
 		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
@@ -2217,7 +2224,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision); err != nil {
 			return err
 		}
 

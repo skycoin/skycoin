@@ -14,8 +14,8 @@ import (
 import "C"
 
 //export
-func SKY_params_MaxDropletDivisor() uint64 {
-	return params.MaxDropletDivisor()
+func SKY_params_UserMaxDropletDivisor() uint64 {
+	return params.UserMaxDropletDivisor()
 }
 
 //export

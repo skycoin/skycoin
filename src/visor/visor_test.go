@@ -324,13 +324,13 @@ func TestVisorCreateBlock(t *testing.T) {
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
-	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.MaxDropletDivisor())
+	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserMaxDropletPrecision)
 
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedMaxTransactionSize, v.Config.UnconfirmedBurnFactor)
+		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedMaxTransactionSize, v.Config.UnconfirmedBurnFactor, v.Config.UnconfirmedMaxDropletPrecision)
 		return err
 	})
 	require.NoError(t, err)
@@ -405,7 +405,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	foundInvalidCoins := false
 	for _, txn := range txns {
 		for _, o := range txn.Out {
-			if err := params.DropletPrecisionCheck(o.Coins); err != nil {
+			if err := params.DropletPrecisionCheck(v.Config.UnconfirmedMaxDropletPrecision, o.Coins); err != nil {
 				foundInvalidCoins = true
 				break
 			}
@@ -419,7 +419,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		var softErr *ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
-			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedMaxTransactionSize, v.Config.UnconfirmedBurnFactor)
+			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedMaxTransactionSize, v.Config.UnconfirmedBurnFactor, v.Config.UnconfirmedMaxDropletPrecision)
 			return err
 		})
 		require.False(t, known)
@@ -480,7 +480,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Check that decimal rules are enforced
 	for i, txn := range blockTxns {
 		for j, o := range txn.Out {
-			err := params.DropletPrecisionCheck(o.Coins)
+			err := params.DropletPrecisionCheck(v.Config.CreateBlockMaxDropletPrecision, o.Coins)
 			require.NoError(t, err, "txout %d.%d coins=%d", i, j, o.Coins)
 		}
 	}
@@ -613,7 +613,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
-	invalidCoins := coins + (params.MaxDropletDivisor() / 10)
+	invalidCoins := coins + (params.UserMaxDropletDivisor() / 10)
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
@@ -1975,7 +1975,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
 	// This transaction will stay invalid on refresh
-	invalidCoins := coins + (params.MaxDropletDivisor() / 10)
+	invalidCoins := coins + (params.UserMaxDropletDivisor() / 10)
 	alwaysInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectForeignTransaction(alwaysInvalidTxn)
 	require.NoError(t, err)

@@ -210,20 +210,20 @@ func (_m *MockUnconfirmedTransactionPooler) GetUnspentsOfAddr(tx *dbutil.Tx, add
 	return r0, r1
 }
 
-// InjectTransaction provides a mock function with given fields: tx, bc, t, maxSize, burnFactor
-func (_m *MockUnconfirmedTransactionPooler) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize uint32, burnFactor uint32) (bool, *ErrTxnViolatesSoftConstraint, error) {
-	ret := _m.Called(tx, bc, t, maxSize, burnFactor)
+// InjectTransaction provides a mock function with given fields: tx, bc, t, maxSize, burnFactor, maxDropletPrecision
+func (_m *MockUnconfirmedTransactionPooler) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize uint32, burnFactor uint32, maxDropletPrecision uint8) (bool, *ErrTxnViolatesSoftConstraint, error) {
+	ret := _m.Called(tx, bc, t, maxSize, burnFactor, maxDropletPrecision)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, Blockchainer, coin.Transaction, uint32, uint32) bool); ok {
-		r0 = rf(tx, bc, t, maxSize, burnFactor)
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, Blockchainer, coin.Transaction, uint32, uint32, uint8) bool); ok {
+		r0 = rf(tx, bc, t, maxSize, burnFactor, maxDropletPrecision)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 *ErrTxnViolatesSoftConstraint
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx, Blockchainer, coin.Transaction, uint32, uint32) *ErrTxnViolatesSoftConstraint); ok {
-		r1 = rf(tx, bc, t, maxSize, burnFactor)
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, Blockchainer, coin.Transaction, uint32, uint32, uint8) *ErrTxnViolatesSoftConstraint); ok {
+		r1 = rf(tx, bc, t, maxSize, burnFactor, maxDropletPrecision)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*ErrTxnViolatesSoftConstraint)
@@ -231,8 +231,8 @@ func (_m *MockUnconfirmedTransactionPooler) InjectTransaction(tx *dbutil.Tx, bc 
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func(*dbutil.Tx, Blockchainer, coin.Transaction, uint32, uint32) error); ok {
-		r2 = rf(tx, bc, t, maxSize, burnFactor)
+	if rf, ok := ret.Get(2).(func(*dbutil.Tx, Blockchainer, coin.Transaction, uint32, uint32, uint8) error); ok {
+		r2 = rf(tx, bc, t, maxSize, burnFactor, maxDropletPrecision)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -284,13 +284,13 @@ func (_m *MockUnconfirmedTransactionPooler) RecvOfAddresses(tx *dbutil.Tx, bh co
 	return r0, r1
 }
 
-// Refresh provides a mock function with given fields: tx, bc, maxBlockSize, burnFactor
-func (_m *MockUnconfirmedTransactionPooler) Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize uint32, burnFactor uint32) ([]cipher.SHA256, error) {
-	ret := _m.Called(tx, bc, maxBlockSize, burnFactor)
+// Refresh provides a mock function with given fields: tx, bc, maxBlockSize, burnFactor, maxDropletPrecision
+func (_m *MockUnconfirmedTransactionPooler) Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize uint32, burnFactor uint32, maxDropletPrecision uint8) ([]cipher.SHA256, error) {
+	ret := _m.Called(tx, bc, maxBlockSize, burnFactor, maxDropletPrecision)
 
 	var r0 []cipher.SHA256
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, Blockchainer, uint32, uint32) []cipher.SHA256); ok {
-		r0 = rf(tx, bc, maxBlockSize, burnFactor)
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, Blockchainer, uint32, uint32, uint8) []cipher.SHA256); ok {
+		r0 = rf(tx, bc, maxBlockSize, burnFactor, maxDropletPrecision)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]cipher.SHA256)
@@ -298,8 +298,8 @@ func (_m *MockUnconfirmedTransactionPooler) Refresh(tx *dbutil.Tx, bc Blockchain
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx, Blockchainer, uint32, uint32) error); ok {
-		r1 = rf(tx, bc, maxBlockSize, burnFactor)
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, Blockchainer, uint32, uint32, uint8) error); ok {
+		r1 = rf(tx, bc, maxBlockSize, burnFactor, maxDropletPrecision)
 	} else {
 		r1 = ret.Error(1)
 	}

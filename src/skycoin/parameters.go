@@ -45,6 +45,10 @@ type NodeParameters struct {
 	MaxBlockSize int `mapstructure:"max_block_size"`
 	// UnconfirmedMaxTransactionSize is the maximum size of an unconfirmed transaction
 	UnconfirmedMaxTransactionSize int `mapstructure:"unconfirmed_max_transaction_size"`
+	// UnconfirmedMaxDropletPrecision is the maximum number of decimals allowed in an unconfirmed transaction
+	UnconfirmedMaxDropletPrecision uint8 `mapstructure:"unconfirmed_max_decimals"`
+	// CreateBlockMaxDropletPrecision is the maximum number of decimals allowed in a transaction when publishing blocks
+	CreateBlockMaxDropletPrecision uint8 `mapstructure:"create_block_max_decimals"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
 	CoinName      string
@@ -68,8 +72,8 @@ type ParamsParameters struct {
 	// UnlockTimeInterval is the distribution address unlock time interval, measured in seconds.
 	// Once the InitialUnlockedCount is exhausted, UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
 	UnlockTimeInterval uint64 `mapstructure:"unlock_time_interval"`
-	// MaxDropletPrecision represents the decimal precision of droplets
-	MaxDropletPrecision uint64 `mapstructure:"max_droplet_precision"`
+	// UserMaxDropletPrecision represents the decimal precision of droplets
+	UserMaxDropletPrecision uint64 `mapstructure:"user_max_decimals"`
 	// UserMaxTransactionSize is max size of a user-created transaction (typically equal to the max size of a block)
 	UserMaxTransactionSize int `mapstructure:"user_max_transaction_size"`
 	// DistributionAddresses are addresses that received coins from the genesis address in the first block,
@@ -125,6 +129,8 @@ func setDefaults() {
 	viper.SetDefault("node.unconfirmed_max_transaction_size", 32*1024)
 	viper.SetDefault("node.unconfirmed_burn_factor", 2)
 	viper.SetDefault("node.create_block_burn_factor", 2)
+	viper.SetDefault("node.unconfirmed_max_decimals", 3)
+	viper.SetDefault("node.create_block_max_decimals", 3)
 
 	// build defaults
 	viper.SetDefault("build.commit", "")
@@ -136,7 +142,7 @@ func setDefaults() {
 	viper.SetDefault("params.initial_unlocked_count", 25)
 	viper.SetDefault("params.unlock_address_rate", 5)
 	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)
-	viper.SetDefault("params.max_droplet_precision", 3)
+	viper.SetDefault("params.user_max_decimals", 3)
 	viper.SetDefault("params.user_burn_factor", 2)
 	viper.SetDefault("params.user_max_transaction_size", 32*1024)
 }

@@ -198,6 +198,8 @@ type DaemonConfig struct { // nolint: golint
 	UnconfirmedBurnFactor uint32
 	// Max transaction size applied to unconfirmed txns
 	UnconfirmedMaxTransactionSize uint32
+	// Max number of decimals applied to unconfirmed txns
+	UnconfirmedMaxDropletPrecision uint8
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
 }
@@ -205,35 +207,36 @@ type DaemonConfig struct { // nolint: golint
 // NewDaemonConfig creates daemon config
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		ProtocolVersion:               2,
-		MinProtocolVersion:            2,
-		Address:                       "",
-		Port:                          6677,
-		OutgoingRate:                  time.Second * 5,
-		OutgoingTrustedRate:           time.Millisecond * 100,
-		PrivateRate:                   time.Second * 5,
-		MaxConnections:                128,
-		MaxOutgoingConnections:        8,
-		MaxPendingConnections:         8,
-		IntroductionWait:              time.Second * 30,
-		CullInvalidRate:               time.Second * 3,
-		FlushAnnouncedTxnsRate:        time.Second * 3,
-		IPCountsMax:                   3,
-		DisableNetworking:             false,
-		DisableOutgoingConnections:    false,
-		DisableIncomingConnections:    false,
-		LocalhostOnly:                 false,
-		LogPings:                      true,
-		BlocksRequestRate:             time.Second * 60,
-		BlocksAnnounceRate:            time.Second * 60,
-		BlocksResponseCount:           20,
-		MaxTxnAnnounceNum:             16,
-		BlockCreationInterval:         10,
-		UnconfirmedRefreshRate:        time.Minute,
-		UnconfirmedRemoveInvalidRate:  time.Minute,
-		Mirror:                        rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
-		UnconfirmedBurnFactor:         params.UserBurnFactor,
-		UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize,
+		ProtocolVersion:                2,
+		MinProtocolVersion:             2,
+		Address:                        "",
+		Port:                           6677,
+		OutgoingRate:                   time.Second * 5,
+		OutgoingTrustedRate:            time.Millisecond * 100,
+		PrivateRate:                    time.Second * 5,
+		MaxConnections:                 128,
+		MaxOutgoingConnections:         8,
+		MaxPendingConnections:          8,
+		IntroductionWait:               time.Second * 30,
+		CullInvalidRate:                time.Second * 3,
+		FlushAnnouncedTxnsRate:         time.Second * 3,
+		IPCountsMax:                    3,
+		DisableNetworking:              false,
+		DisableOutgoingConnections:     false,
+		DisableIncomingConnections:     false,
+		LocalhostOnly:                  false,
+		LogPings:                       true,
+		BlocksRequestRate:              time.Second * 60,
+		BlocksAnnounceRate:             time.Second * 60,
+		BlocksResponseCount:            20,
+		MaxTxnAnnounceNum:              16,
+		BlockCreationInterval:          10,
+		UnconfirmedRefreshRate:         time.Minute,
+		UnconfirmedRemoveInvalidRate:   time.Minute,
+		Mirror:                         rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
+		UnconfirmedBurnFactor:          params.UserBurnFactor,
+		UnconfirmedMaxTransactionSize:  params.UserMaxTransactionSize,
+		UnconfirmedMaxDropletPrecision: params.UserMaxDropletPrecision,
 	}
 }
 
@@ -967,6 +970,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 		dm.Config.userAgent,
 		dm.Config.UnconfirmedBurnFactor,
 		dm.Config.UnconfirmedMaxTransactionSize,
+		dm.Config.UnconfirmedMaxDropletPrecision,
 	)); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return

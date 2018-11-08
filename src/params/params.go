@@ -6,6 +6,8 @@ AVOID EDITING THIS MANUALLY
 */
 
 const (
+	// Distribution locking parameteres
+
 	// MaxCoinSupply is the maximum supply of coins
 	MaxCoinSupply uint64 = 100000000
 	// DistributionAddressesTotal is the number of distribution addresses
@@ -23,15 +25,15 @@ const (
 )
 
 var (
+	// Transaction verification parameters
+
 	// UserBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `USER_BURN_FACTOR` env var),
 	// used when creating a transaction
 	UserBurnFactor uint32 = 2
-
 	// UserMaxTransactionSize is the maximum size of a user-created transaction
 	UserMaxTransactionSize uint32 = 32768 // in bytes
-
-	// MaxDropletPrecision represents the decimal precision of droplets
-	MaxDropletPrecision uint64 = 3
+	// UserMaxDropletPrecision represents the decimal precision of droplets
+	UserMaxDropletPrecision uint8 = 3
 )
 
 // distributionAddresses are addresses that received coins from the genesis address in the first block,

@@ -199,10 +199,10 @@ func (utp *UnconfirmedTransactionPool) SetTransactionsAnnounced(tx *dbutil.Tx, h
 // existed in the pool.
 // If the transaction violates hard constraints, it is rejected.
 // Soft constraints violations mark a txn as invalid, but the txn is inserted. The soft violation is returned.
-func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, maxSize, burnFactor uint32) (bool, *ErrTxnViolatesSoftConstraint, error) {
+func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, maxSize, burnFactor uint32, maxDroplets uint8) (bool, *ErrTxnViolatesSoftConstraint, error) {
 	var isValid int8 = 1
 	var softErr *ErrTxnViolatesSoftConstraint
-	if err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, maxSize, burnFactor); err != nil {
+	if err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, maxSize, burnFactor, maxDroplets); err != nil {
 		logger.Warningf("bc.VerifySingleTxnSoftHardConstraints failed for txn %s: %v", txn.TxIDHex(), err)
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint:
@@ -301,7 +301,7 @@ func (utp *UnconfirmedTransactionPool) RemoveTransactions(tx *dbutil.Tx, txHashe
 // Refresh checks all unconfirmed txns against the blockchain.
 // If the transaction becomes invalid it is marked invalid.
 // If the transaction becomes valid it is marked valid and is returned to the caller.
-func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize, burnFactor uint32) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize, burnFactor uint32, maxDroplets uint8) ([]cipher.SHA256, error) {
 	utxns, err := utp.txns.getAll(tx)
 	if err != nil {
 		return nil, err
@@ -313,7 +313,7 @@ func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, m
 	for _, utxn := range utxns {
 		utxn.Checked = now.UnixNano()
 
-		err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, maxBlockSize, burnFactor)
+		err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, maxBlockSize, burnFactor, maxDroplets)
 
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint, ErrTxnViolatesHardConstraint:

@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/skycoin/skycoin/src/util/droplet"
 )
 
 func init() {
 	loadCoinHourBurnFactor()
 	loadMaxUserTransactionSize()
-
-	// Compute maxDropletDivisor from precision
-	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
-
 	sanityCheck()
 }
 
@@ -39,6 +37,10 @@ func sanityCheck() {
 
 	if MaxCoinSupply%DistributionAddressesTotal != 0 {
 		panic("MaxCoinSupply should be perfectly divisible by DistributionAddressesTotal")
+	}
+
+	if UserMaxDropletPrecision > droplet.Exponent {
+		panic("UserMaxDropletPrecision must be <= droplet.Exponent")
 	}
 }
 

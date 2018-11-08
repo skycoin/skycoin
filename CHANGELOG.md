@@ -51,6 +51,8 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - A user agent string is sent in the wire protocol's introduction packet
 - `-max-connections` option to control total max connections
 - `/api/v1/network/disconnect` to disconnect a peer
+- Complete support for `cipher` package in `libskycoin` C API.
+- Add `coin`, `wallet`, `util/droplet` and `util/fee` methods as part of `libskycoin` C API
 
 ### Fixed
 

@@ -16,14 +16,14 @@ Test(params_distribution, TestDistributionAddressArrays) {
   GoSlice unlocked = {NULL, 0, 0};
   GoSlice locked = {NULL, 0, 0};
 
-  SKY_params_GetDistributionAddresses(&all);
+  SKY_params_GetDistributionAddresses((GoSlice_ *) &all);
   cr_assert(all.len == 100);
 
   // At the time of this writing, there should be 25 addresses in the
   // unlocked pool and 75 in the locked pool.
-  SKY_params_GetUnlockedDistributionAddresses(&unlocked);
+  SKY_params_GetUnlockedDistributionAddresses((GoSlice_ *) &unlocked);
   cr_assert(unlocked.len == 25);
-  SKY_params_GetLockedDistributionAddresses(&locked);
+  SKY_params_GetLockedDistributionAddresses((GoSlice_ *) &locked);
   cr_assert(locked.len == 75);
 
   int i, j, k;
@@ -45,7 +45,7 @@ Test(params_distribution, TestDistributionAddressArrays) {
 
     // Check unlocked address in set of all addresses
     for (k = 0, notfound = true, kStr = (GoString *) all.data; notfound && (k < all.len); ++k, ++kStr) {
-      notfound = !cr_user_GoString__eq((GoString *) iStr, (GoString *) kStr);
+      notfound = !cr_user_GoString__eq((GoString_ *) iStr, (GoString_ *) kStr);
     }
     cr_assert(not(notfound));
   }
@@ -58,7 +58,7 @@ Test(params_distribution, TestDistributionAddressArrays) {
 
     // Check locked address in set of all addresses
     for (k = 0, notfound = true, kStr = (GoString *) all.data; notfound && k < all.len; ++k, ++kStr) {
-      notfound = !cr_user_GoString__eq((GoString *) iStr, (GoString *) kStr);
+      notfound = !cr_user_GoString__eq((GoString_ *) iStr, (GoString_ *) kStr);
     }
     cr_assert(not(notfound));
 

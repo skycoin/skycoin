@@ -15,8 +15,8 @@ TestSuite(util_droplet, .init = setup, .fini = teardown);
 typedef struct
 {
     GoString s;
-    GoInt64 n;
-    GoInt64 e;
+    GoUint64 n;
+    GoUint64 e;
 } tmpstruct;
 Test(util_droplet, TestFromString)
 {
@@ -218,7 +218,7 @@ Test(util_droplet, TestToString)
     {
         tmpstruct tc = cases[i];
 
-        int err = SKY_droplet_ToString(tc.n, &s);
+        int err = SKY_droplet_ToString(tc.n, (GoString_ *) &s);
 
         if (tc.e == SKY_OK)
         {

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"reflect"
-
 	params "github.com/skycoin/skycoin/src/params"
 )
 

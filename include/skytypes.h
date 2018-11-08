@@ -173,8 +173,6 @@ typedef Handle GoStringMap_;
 */
 typedef Handle Wallets__Handle;
 
-typedef Handle ReadableOutputSet__Handle;
-
 /**
  *  ReadableOutputSet Handle
  * */

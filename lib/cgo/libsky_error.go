@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -63,6 +64,8 @@ const (
 	SKY_PKG_VISOR
 	// Error code prefix for wallet package
 	SKY_PKG_WALLET
+	// Error code prefix for params package
+	SKY_PKG_PARAMS
 )
 
 // Error codes defined in cipher package
@@ -417,6 +420,13 @@ const (
 	SKY_ErrVerifySignatureInvalidPubkeysLength
 )
 
+// Error codes defined in params package
+// nolint megacheck
+const (
+	// SKY_ErrInvalidDecimals is returned by DropletPrecisionCheck if a coin amount has an invalid number of decimal places
+	SKY_ErrInvalidDecimals = SKY_PKG_PARAMS + iota
+)
+
 var (
 	// ErrorBadHandle invalid handle value
 	ErrorBadHandle = errors.New("Invalid or unknown handle value")
@@ -584,6 +594,8 @@ var (
 		wallet.ErrWalletParamsConflict:      SKY_ErrWalletParamsConflict,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
+		// params
+		params.ErrInvalidDecimals: SKY_ErrInvalidDecimals,
 	}
 )
 

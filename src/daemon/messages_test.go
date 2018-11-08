@@ -41,14 +41,14 @@ func TestIntroductionMessage(t *testing.T) {
 	}
 
 	tt := []struct {
-		name               string
-		addr               string
-		gnetID             uint64
-		mockValue          daemonMockValue
-		userAgent          useragent.Data
-		burnFactor         uint32
-		maxTransactionSize uint32
-		intro              *IntroductionMessage
+		name                          string
+		addr                          string
+		gnetID                        uint64
+		mockValue                     daemonMockValue
+		userAgent                     useragent.Data
+		unconfirmedBurnFactor         uint32
+		unconfirmedMaxTransactionSize uint32
+		intro                         *IntroductionMessage
 	}{
 		{
 			name: "INTR message without extra bytes",
@@ -117,8 +117,8 @@ func TestIntroductionMessage(t *testing.T) {
 							Coin:    "skycoin",
 							Version: "0.24.1",
 						},
-						BurnFactor:         4,
-						MaxTransactionSize: 32768,
+						UnconfirmedBurnFactor:         4,
+						UnconfirmedMaxTransactionSize: 32768,
 					},
 				},
 			},
@@ -126,8 +126,8 @@ func TestIntroductionMessage(t *testing.T) {
 				Coin:    "skycoin",
 				Version: "0.24.1",
 			},
-			burnFactor:         4,
-			maxTransactionSize: 32768,
+			unconfirmedBurnFactor:         4,
+			unconfirmedMaxTransactionSize: 32768,
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ListenPort:      6000,
@@ -150,8 +150,8 @@ func TestIntroductionMessage(t *testing.T) {
 							Coin:    "skycoin",
 							Version: "0.24.1",
 						},
-						BurnFactor:         4,
-						MaxTransactionSize: 32768,
+						UnconfirmedBurnFactor:         4,
+						UnconfirmedMaxTransactionSize: 32768,
 					},
 				},
 			},
@@ -159,8 +159,8 @@ func TestIntroductionMessage(t *testing.T) {
 				Coin:    "skycoin",
 				Version: "0.24.1",
 			},
-			burnFactor:         4,
-			maxTransactionSize: 32768,
+			unconfirmedBurnFactor:         4,
+			unconfirmedMaxTransactionSize: 32768,
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ListenPort:      6000,
@@ -312,8 +312,8 @@ func TestIntroductionMessage(t *testing.T) {
 				Version: "0.24.1",
 				Remark:  "foo",
 			},
-			burnFactor:         4,
-			maxTransactionSize: 32768,
+			unconfirmedBurnFactor:         4,
+			unconfirmedMaxTransactionSize: 32768,
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
@@ -381,18 +381,18 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, mock.MatchedBy(func(m *IntroductionMessage) bool {
-				t.Logf("connectionIntroduced mock.MatchedBy burnFactor=%d", m.burnFactor)
+				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.unconfirmedBurnFactor)
 				if m == nil {
 					return false
 				}
 
-				if tc.userAgent != m.userAgentData {
+				if tc.userAgent != m.userAgent {
 					return false
 				}
-				if tc.burnFactor != m.burnFactor {
+				if tc.unconfirmedBurnFactor != m.unconfirmedBurnFactor {
 					return false
 				}
-				if tc.maxTransactionSize != m.maxTransactionSize {
+				if tc.unconfirmedMaxTransactionSize != m.unconfirmedMaxTransactionSize {
 					return false
 				}
 

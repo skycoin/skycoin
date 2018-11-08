@@ -93,7 +93,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `run.sh` is now `run-client.sh` and a new `run-daemon.sh` script is added for running in server daemon mode
 - `/api/v1/network/connection*` connection object's field `"introduced"` replaced with field `"state"` which may have the values `"pending"`, `"connected"` or `"introduced"`
 - `/api/v1/network/connection*` field `"is_trusted_peer"` added to connection object to indicate if the peer is in the hardcoded list of default peers
-- `/api/v1/network/connection*` field `"connected_at"`, `"burn_factor"` and `"max_transaction_size"` added to connection object
+- `/api/v1/network/connection*` field `"connected_at"`, `"unconfirmed_burn_factor"` and `"unconfirmed_max_transaction_size"` added to connection object
 - `/api/v1/network/connections` now includes incoming connections. Filters are added to query connections by state and direction
 - `/api/v1/resendUnconfirmedTxns` is now a `POST` method, previously was a `GET` method
 - Transactions that violation soft constraints will propagate through the network

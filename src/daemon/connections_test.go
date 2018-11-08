@@ -75,7 +75,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	require.Equal(t, []connection{*c}, all)
 
 	_, err = conns.introduced(addr, 1, &IntroductionMessage{
-		userAgentData: userAgent,
+		userAgent: userAgent,
 	})
 	require.Equal(t, ErrConnectionStateNotConnected, err)
 	require.Equal(t, 1, conns.PendingLen())
@@ -104,7 +104,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 		ListenPort:      port + 1,
 		Mirror:          1111,
 		ProtocolVersion: 2,
-		userAgentData:   userAgent,
+		userAgent:       userAgent,
 	}
 
 	c, err = conns.introduced(addr, 1, m)
@@ -190,12 +190,12 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 
 	m := &IntroductionMessage{
 		// use a different port to make sure that we use the self-reported listen port for incoming connections
-		ListenPort:         port + 1,
-		Mirror:             1111,
-		ProtocolVersion:    2,
-		userAgentData:      userAgent,
-		burnFactor:         4,
-		maxTransactionSize: 1111,
+		ListenPort:                    port + 1,
+		Mirror:                        1111,
+		ProtocolVersion:               2,
+		userAgent:                     userAgent,
+		unconfirmedBurnFactor:         4,
+		unconfirmedMaxTransactionSize: 1111,
 	}
 
 	c, err = conns.introduced(addr, 1, m)
@@ -216,8 +216,8 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	require.True(t, c.HasIntroduced())
 	require.Equal(t, fmt.Sprintf("%s:%d", ip, m.ListenPort), c.ListenAddr())
 	require.Equal(t, userAgent, c.UserAgent)
-	require.Equal(t, uint32(4), c.BurnFactor)
-	require.Equal(t, uint32(1111), c.MaxTransactionSize)
+	require.Equal(t, uint32(4), c.UnconfirmedBurnFactor)
+	require.Equal(t, uint32(1111), c.UnconfirmedMaxTransactionSize)
 
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)
@@ -267,7 +267,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-		userAgentData:   userAgent,
+		userAgent:       userAgent,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 0, conns.PendingLen())
@@ -278,7 +278,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6061,
 		ProtocolVersion: 2,
-		userAgentData:   userAgent,
+		userAgent:       userAgent,
 	})
 	require.Equal(t, ErrConnectionIPMirrorExists, err)
 	require.Equal(t, 0, conns.PendingLen())
@@ -292,7 +292,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          7,
 		ListenPort:      6061,
 		ProtocolVersion: 2,
-		userAgentData:   userAgent,
+		userAgent:       userAgent,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(conns.mirrors))
@@ -314,7 +314,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-		userAgentData:   userAgent,
+		userAgent:       userAgent,
 	})
 	require.NoError(t, err)
 
@@ -365,7 +365,7 @@ func TestConnectionsMultipleSameListenPort(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-		userAgentData:   userAgent,
+		userAgent:       userAgent,
 	})
 	require.NoError(t, err)
 

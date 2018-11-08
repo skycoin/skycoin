@@ -233,10 +233,10 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 
 // IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
-	c                  *gnet.MessageContext `enc:"-"`
-	userAgentData      useragent.Data       `enc:"-"`
-	burnFactor         uint32               `enc:"-"`
-	maxTransactionSize uint32               `enc:"-"`
+	c                             *gnet.MessageContext `enc:"-"`
+	userAgent                     useragent.Data       `enc:"-"`
+	unconfirmedBurnFactor         uint32               `enc:"-"`
+	unconfirmedMaxTransactionSize uint32               `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -258,16 +258,16 @@ type IntroductionMessage struct {
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, burnFactor, maxTxnSize uint32) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, unconfirmedBurnFactor, unconfirmedMaxTxnSize uint32) *IntroductionMessage {
 	return &IntroductionMessage{
 		Mirror:          mirror,
 		ProtocolVersion: version,
 		ListenPort:      port,
-		Extra:           newIntroductionMessageExtra(pubkey, userAgent, burnFactor, maxTxnSize),
+		Extra:           newIntroductionMessageExtra(pubkey, userAgent, unconfirmedBurnFactor, unconfirmedMaxTxnSize),
 	}
 }
 
-func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, burnFactor, maxTxnSize uint32) []byte {
+func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, unconfirmedBurnFactor, unconfirmedMaxTxnSize uint32) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
 			"userAgent": userAgent,
@@ -280,8 +280,8 @@ func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, burnFac
 	useragent.MustParse(userAgent)
 
 	userAgentSerialized := encoder.SerializeString(userAgent)
-	burnFactorSerialized := encoder.SerializeAtomic(burnFactor)
-	maxTxnSizeSerialized := encoder.SerializeAtomic(maxTxnSize)
+	burnFactorSerialized := encoder.SerializeAtomic(unconfirmedBurnFactor)
+	maxTxnSizeSerialized := encoder.SerializeAtomic(unconfirmedMaxTxnSize)
 
 	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(burnFactorSerialized)+len(maxTxnSizeSerialized))
 
@@ -417,26 +417,26 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 
 		i := len(bcPubKey)
 		if len(intro.Extra) < i+8 {
-			logger.WithFields(fields).Warning("BurnFactor and MaxTransactionSize could not be deserialized: not enough data")
+			logger.WithFields(fields).Warning("UnconfirmedBurnFactor and UnconfirmedMaxTransactionSize could not be deserialized: not enough data")
 			return ErrDisconnectInvalidExtraData
 		}
-		if _, err := encoder.DeserializeAtomic(intro.Extra[i:i+4], &intro.burnFactor); err != nil {
+		if _, err := encoder.DeserializeAtomic(intro.Extra[i:i+4], &intro.unconfirmedBurnFactor); err != nil {
 			// This should not occur due to the previous length check
-			logger.Critical().WithError(err).WithFields(fields).Warning("BurnFactor could not be deserialized")
+			logger.Critical().WithError(err).WithFields(fields).Warning("UnconfirmedBurnFactor could not be deserialized")
 			return ErrDisconnectInvalidExtraData
 		}
-		if intro.burnFactor < 2 {
-			logger.WithFields(fields).WithField("burnFactor", intro.burnFactor).Warning("Invalid intro.burnFactor")
+		if intro.unconfirmedBurnFactor < 2 {
+			logger.WithFields(fields).WithField("unconfirmedBurnFactor", intro.unconfirmedBurnFactor).Warning("Invalid intro.unconfirmedBurnFactor")
 			return ErrDisconnectInvalidBurnFactor
 		}
 
-		if _, err := encoder.DeserializeAtomic(intro.Extra[i+4:i+8], &intro.maxTransactionSize); err != nil {
+		if _, err := encoder.DeserializeAtomic(intro.Extra[i+4:i+8], &intro.unconfirmedMaxTransactionSize); err != nil {
 			// This should not occur due to the previous length check
 			logger.Critical().WithError(err).WithFields(fields).Warning("MaxTransactionSize could not be deserialized")
 			return ErrDisconnectInvalidExtraData
 		}
-		if intro.maxTransactionSize < 1024 {
-			logger.WithFields(fields).WithField("maxTransactionSize", intro.maxTransactionSize).Warning("Invalid intro.maxTransactionSize")
+		if intro.unconfirmedMaxTransactionSize < 1024 {
+			logger.WithFields(fields).WithField("unconfirmedMaxTransactionSize", intro.unconfirmedMaxTransactionSize).Warning("Invalid intro.unconfirmedMaxTransactionSize")
 			return ErrDisconnectInvalidMaxTransactionSize
 		}
 
@@ -447,7 +447,7 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 			return ErrDisconnectInvalidExtraData
 		}
 
-		intro.userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
+		intro.userAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
 			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Warning("User agent is invalid")
 			return ErrDisconnectInvalidUserAgent

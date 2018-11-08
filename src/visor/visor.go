@@ -492,7 +492,11 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	}
 
 	// Sort them by highest fee per kilobyte
-	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee(tx, head.Time()))
+	txns, err = coin.SortTransactions(txns, vs.Blockchain.TransactionFee(tx, head.Time()))
+	if err != nil {
+		logger.Critical().WithError(err).Error("SortTransactions failed, no block can be made until the offending transaction is removed")
+		return coin.SignedBlock{}, err
+	}
 
 	// Apply block size transaction limit
 	txns, err = txns.TruncateBytesTo(vs.Config.MaxBlockSize)

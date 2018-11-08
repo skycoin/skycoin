@@ -305,14 +305,17 @@ func SKY_coin_Transaction_SignInputs(handle C.Transaction__Handle, _keys []C.cip
 }
 
 //export SKY_coin_Transaction_Size
-func SKY_coin_Transaction_Size(handle C.Transaction__Handle, _arg0 *int) (____error_code uint32) {
+func SKY_coin_Transaction_Size(handle C.Transaction__Handle, _arg0 *uint32) (____error_code uint32) {
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0 := txn.Size()
-	*_arg0 = __arg0
+	__arg0, ____return_err := txn.Size()
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg0 = __arg0
+	}
 	return
 }
 
@@ -329,15 +332,18 @@ func SKY_coin_Transaction_Hash(handle C.Transaction__Handle, _arg0 *C.cipher__SH
 }
 
 //export SKY_coin_Transaction_SizeHash
-func SKY_coin_Transaction_SizeHash(handle C.Transaction__Handle, _arg0 *int, _arg1 *C.cipher__SHA256) (____error_code uint32) {
+func SKY_coin_Transaction_SizeHash(handle C.Transaction__Handle, _arg0 *uint32, _arg1 *C.cipher__SHA256) (____error_code uint32) {
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0, __arg1 := txn.SizeHash()
-	*_arg0 = __arg0
-	*_arg1 = *(*C.cipher__SHA256)(unsafe.Pointer(&__arg1))
+	__arg0, __arg1, ____return_err := txn.SizeHash()
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg0 = __arg0
+		*_arg1 = *(*C.cipher__SHA256)(unsafe.Pointer(&__arg1))
+	}
 	return
 }
 
@@ -372,7 +378,8 @@ func SKY_coin_Transaction_UpdateHeader(handle C.Transaction__Handle) (____error_
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	txn.UpdateHeader()
+	____return_err := txn.UpdateHeader()
+	____error_code = libErrorCode(____return_err)
 	return
 }
 
@@ -531,27 +538,33 @@ func SKY_coin_Transactions_Hashes(tsh C.Transactions__Handle, _arg0 *C.GoSlice_)
 }
 
 //export SKY_coin_Transactions_Size
-func SKY_coin_Transactions_Size(tsh C.Transactions__Handle, _arg0 *int) (____error_code uint32) {
+func SKY_coin_Transactions_Size(tsh C.Transactions__Handle, _arg0 *uint32) (____error_code uint32) {
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0 := txns.Size()
-	*_arg0 = __arg0
+	__arg0, ____return_err := txns.Size()
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg0 = __arg0
+	}
 	return
 }
 
 //export SKY_coin_Transactions_TruncateBytesTo
-func SKY_coin_Transactions_TruncateBytesTo(tsh C.Transactions__Handle, _size int, _arg1 *C.Transactions__Handle) (____error_code uint32) {
+func SKY_coin_Transactions_TruncateBytesTo(tsh C.Transactions__Handle, _size uint32, _arg1 *C.Transactions__Handle) (____error_code uint32) {
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	size := _size
-	__arg1 := txns.TruncateBytesTo(size)
-	*_arg1 = registerTransactionsHandle(&__arg1)
+	__arg1, ____return_err := txns.TruncateBytesTo(size)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg1 = registerTransactionsHandle(&__arg1)
+	}
 	return
 }
 
@@ -575,8 +588,11 @@ func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc *C.FeeCalcul
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	sorted := coin.SortTransactions(*txns, feeCalc)
-	*ptsh = registerTransactionsHandle(&sorted)
+	sorted, ____return_err := coin.SortTransactions(*txns, feeCalc)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*ptsh = registerTransactionsHandle(&sorted)
+	}
 	return
 }
 
@@ -598,9 +614,12 @@ func SKY_coin_NewSortableTransactions(tsh C.Transactions__Handle, pFeeCalc *C.Fe
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	sorted := coin.NewSortableTransactions(*txns, feeCalc)
-	*ptsh = registerSortableTransactiontHandle(&sorted)
-	return SKY_OK
+	sorted, ____return_err := coin.NewSortableTransactions(*txns, feeCalc)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*ptsh = registerSortableTransactiontHandle(sorted)
+	}
+	return
 }
 
 //export SKY_coin_SortableTransactions_Sort

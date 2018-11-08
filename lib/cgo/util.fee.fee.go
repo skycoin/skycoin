@@ -17,7 +17,7 @@ import (
 import "C"
 
 //export SKY_fee_VerifyTransactionFee
-func SKY_fee_VerifyTransactionFee(_t C.Transaction__Handle, _fee uint64, _burnFactor uint64) (____error_code uint32) {
+func SKY_fee_VerifyTransactionFee(_t C.Transaction__Handle, _fee uint64, _burnFactor uint32) (____error_code uint32) {
 	t, ok := lookupTransactionHandle(_t)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -31,7 +31,7 @@ func SKY_fee_VerifyTransactionFee(_t C.Transaction__Handle, _fee uint64, _burnFa
 }
 
 //export SKY_fee_VerifyTransactionFeeForHours
-func SKY_fee_VerifyTransactionFeeForHours(_hours, _fee uint64, _burnFactor uint64) (____error_code uint32) {
+func SKY_fee_VerifyTransactionFeeForHours(_hours, _fee uint64, _burnFactor uint32) (____error_code uint32) {
 	hours := _hours
 	____return_err := fee.VerifyTransactionFeeForHours(hours, _fee, _burnFactor)
 	____error_code = libErrorCode(____return_err)
@@ -41,7 +41,7 @@ func SKY_fee_VerifyTransactionFeeForHours(_hours, _fee uint64, _burnFactor uint6
 }
 
 //export SKY_fee_RequiredFee
-func SKY_fee_RequiredFee(_hours uint64, _burnFactor uint64, _arg1 *uint64) (____error_code uint32) {
+func SKY_fee_RequiredFee(_hours uint64, _burnFactor uint32, _arg1 *uint64) (____error_code uint32) {
 	hours := _hours
 	__arg1 := fee.RequiredFee(hours, _burnFactor)
 	*_arg1 = __arg1
@@ -49,7 +49,7 @@ func SKY_fee_RequiredFee(_hours uint64, _burnFactor uint64, _arg1 *uint64) (____
 }
 
 //export SKY_fee_RemainingHours
-func SKY_fee_RemainingHours(_hours uint64, _burnFactor uint64, _arg1 *uint64) (____error_code uint32) {
+func SKY_fee_RemainingHours(_hours uint64, _burnFactor uint32, _arg1 *uint64) (____error_code uint32) {
 	hours := _hours
 	__arg1 := fee.RemainingHours(hours, _burnFactor)
 	*_arg1 = __arg1

@@ -150,21 +150,27 @@ func (txn *Transaction) Verify() error {
 
 // VerifyInput verifies the input
 func (txn Transaction) VerifyInput(uxIn UxArray) error {
-	if DebugLevel2 {
+	if err := func() error {
 		if len(txn.In) != len(uxIn) {
-			log.Panic("tx.In != uxIn")
+			return errors.New("txn.In != uxIn")
 		}
 		if len(txn.In) != len(txn.Sigs) {
-			log.Panic("tx.In != tx.Sigs")
+			return errors.New("txn.In != txn.Sigs")
 		}
 		if txn.InnerHash != txn.HashInner() {
-			log.Panic("Invalid Tx Inner Hash")
+			return errors.New("Invalid Tx Inner Hash")
 		}
 		for i := range txn.In {
 			if txn.In[i] != uxIn[i].Hash() {
-				log.Panic("Ux hash mismatch")
+				return errors.New("Ux hash mismatch")
 			}
 		}
+		return nil
+	}(); err != nil {
+		if DebugLevel2 {
+			log.Panic(err)
+		}
+		return err
 	}
 
 	// Check signatures against unspent address
@@ -247,9 +253,13 @@ func (txn *Transaction) Hash() cipher.SHA256 {
 }
 
 // SizeHash returns the encoded size and the hash of it (avoids duplicate encoding)
-func (txn *Transaction) SizeHash() (int, cipher.SHA256) {
+func (txn *Transaction) SizeHash() (uint32, cipher.SHA256, error) {
 	b := txn.Serialize()
-	return len(b), cipher.SumSHA256(b)
+	s, err := IntToUint32(len(b))
+	if err != nil {
+		return 0, cipher.SHA256{}, err
+	}
+	return s, cipher.SumSHA256(b), nil
 }
 
 // TxID returns transaction ID as byte string
@@ -405,15 +415,18 @@ type FeeCalculator func(*Transaction) (uint64, error)
 
 // SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if tied.
 // Transactions that fail in fee computation are excluded
-func SortTransactions(txns Transactions, feeCalc FeeCalculator) Transactions {
-	sorted := NewSortableTransactions(txns, feeCalc)
+func SortTransactions(txns Transactions, feeCalc FeeCalculator) (Transactions, error) {
+	sorted, err := NewSortableTransactions(txns, feeCalc)
+	if err != nil {
+		return nil, err
+	}
 	sorted.Sort()
-	return sorted.Transactions
+	return sorted.Transactions, nil
 }
 
 // NewSortableTransactions returns an array of txns that can be sorted by fee.
 // On creation, fees are calculated, and if any txns have invalid fee, there are removed from consideration
-func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableTransactions {
+func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) (*SortableTransactions, error) {
 	newTxns := make(Transactions, len(txns))
 	fees := make([]uint64, len(txns))
 	hashes := make([]cipher.SHA256, len(txns))
@@ -424,7 +437,10 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableT
 			continue
 		}
 
-		size, hash := txns[i].SizeHash()
+		size, hash, err := txns[i].SizeHash()
+		if err != nil {
+			return nil, err
+		}
 
 		// Calculate fee priority based on fee per kb
 		feeKB, err := MultUint64(fee, 1024)
@@ -440,11 +456,12 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableT
 		fees[j] = feeKB / uint64(size)
 		j++
 	}
-	return SortableTransactions{
+
+	return &SortableTransactions{
 		Transactions: newTxns[:j],
 		Fees:         fees[:j],
 		Hashes:       hashes[:j],
-	}
+	}, nil
 }
 
 // Sort sorts by tx fee, and then by hash if fee equal

@@ -580,7 +580,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
 	// Check transactions with overflowing output coins fail
-	txn = makeOverflowCoinsSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	txn = makeOverflowCoinsSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
@@ -597,7 +597,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Check transactions with overflowing output hours fail
 	// It should not be injected; when injecting a txn, the overflowing output hours is treated
 	// as a hard constraint. It is only a soft constraint when the txn is included in a signed block.
-	txn = makeOverflowHoursSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	txn = makeOverflowHoursSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
@@ -637,7 +637,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
 }
 
-func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -654,11 +654,12 @@ func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cip
 	spendTx.PushOutput(toAddr, totalCoins, hours)
 
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
-func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -675,7 +676,8 @@ func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cip
 	spendTx.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
 
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
@@ -2747,7 +2749,8 @@ func makeTxn(t *testing.T, headTime uint64, in, out []coin.UxOut, keys []cipher.
 	}
 
 	txn.SignInputs(keys)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 
 	inbalances, err := wallet.NewUxBalances(headTime, in)
 	require.NoError(t, err)

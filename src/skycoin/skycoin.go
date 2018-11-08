@@ -565,11 +565,11 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 	seckeys[0] = cipher.MustSecKeyFromHex(seckey)
 	tx.SignInputs(seckeys)
 
-	tx.UpdateHeader()
+	if err := tx.UpdateHeader(); err != nil {
+		log.Panic(err)
+	}
 
-	err := tx.Verify()
-
-	if err != nil {
+	if err := tx.Verify(); err != nil {
 		log.Panic(err)
 	}
 

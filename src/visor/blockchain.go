@@ -534,7 +534,11 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if bc.cfg.Arbitrating {
-		txns = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
+		txns, err = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
+		if err != nil {
+			logger.Critical().WithError(err).Error("processTransactions: coin.SortTransactions failed")
+			return nil, err
+		}
 	}
 
 	//TODO: audit
@@ -555,7 +559,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 		if err := bc.VerifyBlockTxnConstraints(tx, txn); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesSoftConstraint:
-				logger.WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
+				logger.Critical().WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
 			case ErrTxnViolatesHardConstraint:
 				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}

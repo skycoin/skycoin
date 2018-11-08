@@ -153,7 +153,8 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	err = cipher.VerifyAddressSignedHash(ux.Body.Address, txn.Sigs[0], cipher.AddSHA256(txn.HashInner(), txn.In[0]))
 	require.NoError(t, err)
 
-	txn.UpdateHeader()
+	err = txn.UpdateHeader()
+	require.NoError(t, err)
 
 	err = txn.Verify()
 	require.NoError(t, err)
@@ -164,7 +165,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	return txn
 }
 
-func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeLostCoinTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -182,11 +183,12 @@ func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Addres
 	}
 
 	txn.SignInputs(keys)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 	return txn
 }
 
-func makeDuplicateUxOutTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeDuplicateUxOutTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -205,7 +207,8 @@ func makeDuplicateUxOutTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.
 	}
 
 	txn.SignInputs(keys)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 	return txn
 }
 
@@ -255,7 +258,8 @@ func makeUnspentsTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr
 
 	// Sign the transaction
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 
 	return spendTx
 }
@@ -281,7 +285,8 @@ func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, to
 		spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
 	}
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
@@ -306,7 +311,8 @@ func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.Se
 		spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
 	}
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
@@ -418,14 +424,14 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	// Create lost coin transaction
 	uxs2 := coin.CreateUnspents(b.Head, txn)
 	toAddr3 := testutil.MakeAddress()
-	lostCoinTx := makeLostCoinTx(coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
+	lostCoinTx := makeLostCoinTx(t, coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
 	err = verifySingleTxnSoftHardConstraints(lostCoinTx, params.MaxUserTransactionSize, params.UserBurnFactor)
 	requireHardViolation(t, "Transactions may not destroy coins", err)
 
 	// Create transaction with duplicate UxOuts
 	uxs = coin.CreateUnspents(b.Head, txn)
 	toAddr4 := testutil.MakeAddress()
-	dupUxOutTx := makeDuplicateUxOutTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
+	dupUxOutTx := makeDuplicateUxOutTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
 	err = verifySingleTxnSoftHardConstraints(dupUxOutTx, params.MaxUserTransactionSize, params.UserBurnFactor)
 	requireHardViolation(t, "Duplicate output in transaction", err)
 }

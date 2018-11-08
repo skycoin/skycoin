@@ -110,6 +110,8 @@
 #define SKY_ErrUint32AddOverflow                  0x04000003
 #define SKY_ErrUint64OverflowsInt64               0x04000004
 #define SKY_ErrInt64UnderflowsUint64              0x04000005
+#define SKY_ErrIntUnderflowsUint32                0x04000006
+#define SKY_ErrIntOverflowsUint32                 0x04000007
 
 // daemon error codes
 #define SKY_ErrPeerlistFull                               0x06000000

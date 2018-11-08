@@ -1199,7 +1199,7 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 
 	logger.Infof("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d, %d)", spending.Hours, outputHours, spending.Hours-outputHours, params.UserBurnFactor)
 	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours, params.UserBurnFactor); err != nil {
-		logger.Warningf("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed: %v", err)
+		logger.WithError(err).Warning("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed")
 		return nil, err
 	}
 
@@ -1211,7 +1211,10 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 	txn.PushOutput(dest, coins, addrHours[0])
 
 	txn.SignInputs(toSign)
-	txn.UpdateHeader()
+	if err := txn.UpdateHeader(); err != nil {
+		logger.Critical().WithError(err).Error("txn.UpdateHeader failed")
+		return nil, err
+	}
 
 	return &txn, nil
 }
@@ -1480,7 +1483,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			var err error
 			changeAddress, err = cipher.AddressFromBytes(addressBytes[0])
 			if err != nil {
-				logger.Critical().Errorf("cipher.AddressFromBytes failed for change address converted to bytes: %v", err)
+				logger.Critical().WithError(err).Error("cipher.AddressFromBytes failed for change address converted to bytes")
 				return nil, nil, err
 			}
 		}
@@ -1489,7 +1492,10 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 	}
 
 	txn.SignInputs(toSign)
-	txn.UpdateHeader()
+	if err := txn.UpdateHeader(); err != nil {
+		logger.Critical().WithError(err).Error("txn.UpdateHeader failed")
+		return nil, nil, err
+	}
 
 	inputs := make([]UxBalance, len(txn.In))
 	for i, h := range txn.In {
@@ -1501,7 +1507,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 	}
 
 	if err := verifyCreatedTransactionInvariants(p, txn, inputs); err != nil {
-		logger.Critical().Errorf("CreateAndSignTransactionAdvanced created transaction that violates invariants, aborting: %v", err)
+		logger.Critical().WithError(err).Error("CreateAndSignTransactionAdvanced created transaction that violates invariants, aborting")
 		return nil, nil, fmt.Errorf("Created transaction that violates invariants, this is a bug: %v", err)
 	}
 

@@ -203,16 +203,20 @@ const (
 	// Callers may choose to ignore this errors and use 0 as the coinhours value instead.
 	// This affects one existing spent output, spent in block 13277.
 	SKY_ErrAddEarnedCoinHoursAdditionOverflow = SKY_PKG_COIN + iota
-	// ErrUint64MultOverflow is returned when multiplying uint64 values would overflow uint64
+	// SKY_ErrUint64MultOverflow is returned when multiplying uint64 values would overflow uint64
 	SKY_ErrUint64MultOverflow
-	// ErrUint64AddOverflow is returned when adding uint64 values would overflow uint64
+	// SKY_ErrUint64AddOverflow is returned when adding uint64 values would overflow uint64
 	SKY_ErrUint64AddOverflow
-	// ErrUint32AddOverflow is returned when adding uint32 values would overflow uint32
+	// SKY_ErrUint32AddOverflow is returned when adding uint32 values would overflow uint32
 	SKY_ErrUint32AddOverflow
-	// ErrUint64OverflowsInt64 is returned when converting a uint64 to an int64 would overflow int64
+	// SKY_ErrUint64OverflowsInt64 is returned when converting a uint64 to an int64 would overflow int64
 	SKY_ErrUint64OverflowsInt64
-	// ErrInt64UnderflowsUint64 is returned when converting an int64 to a uint64 would underflow uint64
+	// SKY_ErrInt64UnderflowsUint64 is returned when converting an int64 to a uint64 would underflow uint64
 	SKY_ErrInt64UnderflowsUint64
+	// SKY_ErrIntUnderflowsUint32 is returned if when converting an int to a uint32 would underflow uint32
+	SKY_ErrIntUnderflowsUint32
+	// SKY_ErrIntOverflowsUint32 is returned if when converting an int to a uint32 would overflow uint32
+	SKY_ErrIntOverflowsUint32
 )
 
 // Error codes defined in daemon package
@@ -500,6 +504,8 @@ var (
 		coin.ErrUint32AddOverflow:                  SKY_ErrUint32AddOverflow,
 		coin.ErrUint64OverflowsInt64:               SKY_ErrUint64OverflowsInt64,
 		coin.ErrInt64UnderflowsUint64:              SKY_ErrInt64UnderflowsUint64,
+		coin.ErrIntUnderflowsUint32:                SKY_ErrIntUnderflowsUint32,
+		coin.ErrIntOverflowsUint32:                 SKY_ErrIntOverflowsUint32,
 		// daemon
 		// Removed in 34ad39ddb350
 		// gnet.ErrMaxDefaultConnectionsReached:           SKY_ErrMaxDefaultConnectionsReached,

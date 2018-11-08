@@ -580,7 +580,7 @@ func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chg
 			return nil, err
 		}
 
-		return NewTransaction(spendOutputs, keys, txOuts), nil
+		return NewTransaction(spendOutputs, keys, txOuts)
 	}
 
 	makeTx := func() (*coin.Transaction, error) {
@@ -725,18 +725,22 @@ func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, erro
 }
 
 // NewTransaction creates a transaction. The transaction should be validated against hard and soft constraints before transmission.
-func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) *coin.Transaction {
-	tx := coin.Transaction{}
+func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
+	txn := coin.Transaction{}
 	for _, u := range utxos {
-		tx.PushInput(u.Hash)
+		txn.PushInput(u.Hash)
 	}
 
 	for _, o := range outs {
-		tx.PushOutput(o.Address, o.Coins, o.Hours)
+		txn.PushOutput(o.Address, o.Coins, o.Hours)
 	}
 
-	tx.SignInputs(keys)
+	txn.SignInputs(keys)
 
-	tx.UpdateHeader()
-	return &tx
+	err := txn.UpdateHeader()
+	if err != nil {
+		return nil, err
+	}
+
+	return &txn, nil
 }

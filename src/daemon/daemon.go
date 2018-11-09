@@ -194,12 +194,8 @@ type DaemonConfig struct { // nolint: golint
 	// User agent (sent in introduction messages)
 	UserAgent useragent.Data
 	userAgent string // parsed from UserAgent in preprocess()
-	// Burn factor applied to unconfirmed txns
-	UnconfirmedBurnFactor uint32
-	// Max transaction size applied to unconfirmed txns
-	UnconfirmedMaxTransactionSize uint32
-	// Max number of decimals applied to unconfirmed txns
-	UnconfirmedMaxDropletPrecision uint8
+	// Transaction verification parameters for unconfirmed transactions
+	UnconfirmedVerifyTxn params.VerifyTxn
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
 }
@@ -207,36 +203,34 @@ type DaemonConfig struct { // nolint: golint
 // NewDaemonConfig creates daemon config
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		ProtocolVersion:                2,
-		MinProtocolVersion:             2,
-		Address:                        "",
-		Port:                           6677,
-		OutgoingRate:                   time.Second * 5,
-		OutgoingTrustedRate:            time.Millisecond * 100,
-		PrivateRate:                    time.Second * 5,
-		MaxConnections:                 128,
-		MaxOutgoingConnections:         8,
-		MaxPendingConnections:          8,
-		IntroductionWait:               time.Second * 30,
-		CullInvalidRate:                time.Second * 3,
-		FlushAnnouncedTxnsRate:         time.Second * 3,
-		IPCountsMax:                    3,
-		DisableNetworking:              false,
-		DisableOutgoingConnections:     false,
-		DisableIncomingConnections:     false,
-		LocalhostOnly:                  false,
-		LogPings:                       true,
-		BlocksRequestRate:              time.Second * 60,
-		BlocksAnnounceRate:             time.Second * 60,
-		BlocksResponseCount:            20,
-		MaxTxnAnnounceNum:              16,
-		BlockCreationInterval:          10,
-		UnconfirmedRefreshRate:         time.Minute,
-		UnconfirmedRemoveInvalidRate:   time.Minute,
-		Mirror:                         rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
-		UnconfirmedBurnFactor:          params.UserBurnFactor,
-		UnconfirmedMaxTransactionSize:  params.UserMaxTransactionSize,
-		UnconfirmedMaxDropletPrecision: params.UserMaxDropletPrecision,
+		ProtocolVersion:              2,
+		MinProtocolVersion:           2,
+		Address:                      "",
+		Port:                         6677,
+		OutgoingRate:                 time.Second * 5,
+		OutgoingTrustedRate:          time.Millisecond * 100,
+		PrivateRate:                  time.Second * 5,
+		MaxConnections:               128,
+		MaxOutgoingConnections:       8,
+		MaxPendingConnections:        8,
+		IntroductionWait:             time.Second * 30,
+		CullInvalidRate:              time.Second * 3,
+		FlushAnnouncedTxnsRate:       time.Second * 3,
+		IPCountsMax:                  3,
+		DisableNetworking:            false,
+		DisableOutgoingConnections:   false,
+		DisableIncomingConnections:   false,
+		LocalhostOnly:                false,
+		LogPings:                     true,
+		BlocksRequestRate:            time.Second * 60,
+		BlocksAnnounceRate:           time.Second * 60,
+		BlocksResponseCount:          20,
+		MaxTxnAnnounceNum:            16,
+		BlockCreationInterval:        10,
+		UnconfirmedRefreshRate:       time.Minute,
+		UnconfirmedRemoveInvalidRate: time.Minute,
+		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
+		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
 	}
 }
 
@@ -397,8 +391,9 @@ func (dm *Daemon) Run() error {
 	defer close(dm.done)
 
 	logger.Infof("Daemon UserAgent is %s", dm.Config.userAgent)
-	logger.Info("Daemon UnconfirmedBurnFactor is %d", dm.Config.UnconfirmedBurnFactor)
-	logger.Info("Daemon UnconfirmedMaxTransactionSize is %d", dm.Config.UnconfirmedMaxTransactionSize)
+	logger.Info("Daemon unconfirmed BurnFactor is %d", dm.Config.UnconfirmedVerifyTxn.BurnFactor)
+	logger.Info("Daemon unconfirmed MaxTransactionSize is %d", dm.Config.UnconfirmedVerifyTxn.MaxTransactionSize)
+	logger.Info("Daemon unconfirmed MaxDropletPrecision is %d", dm.Config.UnconfirmedVerifyTxn.MaxDropletPrecision)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -968,9 +963,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 		dm.pool.Pool.Config.Port,
 		dm.Config.BlockchainPubkey,
 		dm.Config.userAgent,
-		dm.Config.UnconfirmedBurnFactor,
-		dm.Config.UnconfirmedMaxTransactionSize,
-		dm.Config.UnconfirmedMaxDropletPrecision,
+		dm.Config.UnconfirmedVerifyTxn,
 	)); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return

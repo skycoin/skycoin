@@ -346,22 +346,26 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	toAddr := testutil.MakeAddress()
 	coins := uint64(10e6)
 
-	verifySingleTxnSoftHardConstraints := func(txn coin.Transaction, maxBlockSize, burnFactor uint32, maxDroplets uint8) error {
+	verifySingleTxnSoftHardConstraints := func(txn coin.Transaction, verifyParams params.VerifyTxn) error {
 		return db.View("", func(tx *dbutil.Tx) error {
-			return bc.VerifySingleTxnSoftHardConstraints(tx, txn, maxBlockSize, burnFactor, maxDroplets)
+			return bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams)
 		})
 	}
 
 	// create normal spending txn
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
-	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserVerifyTxn)
 	require.NoError(t, err)
 
 	// Transaction size exceeds maxSize
 	txnSize, err := txn.Size()
 	require.NoError(t, err)
-	err = verifySingleTxnSoftHardConstraints(txn, txnSize-1, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(txn, params.VerifyTxn{
+		BurnFactor:          params.UserVerifyTxn.BurnFactor,
+		MaxTransactionSize:  txnSize - 1,
+		MaxDropletPrecision: params.UserVerifyTxn.MaxDropletPrecision,
+	})
 	requireSoftViolation(t, "Transaction size bigger than max block size", err)
 
 	// Invalid transaction fee
@@ -371,12 +375,12 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 		hours += ux.Body.Hours
 	}
 	txn = makeSpendTxWithHoursBurned(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins, 0)
-	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserVerifyTxn)
 	requireSoftViolation(t, "Transaction has zero coinhour fee", err)
 
 	// Invalid transaction fee, part 2
 	txn = makeSpendTxWithHoursBurned(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins, 1)
-	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserVerifyTxn)
 	requireSoftViolation(t, "Transaction coinhour fee minimum not met", err)
 
 	// Transaction locking is tested by TestVerifyTransactionIsLocked
@@ -384,7 +388,7 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	// Test invalid header hash
 	originInnerHash := txn.InnerHash
 	txn.InnerHash = cipher.SHA256{}
-	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserVerifyTxn)
 	requireHardViolation(t, "InnerHash does not match computed hash", err)
 
 	// Set back the originInnerHash
@@ -411,7 +415,7 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	require.NoError(t, err)
 
 	// A UxOut does not exist, it was already spent
-	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserVerifyTxn)
 	expectedErr := NewErrTxnViolatesHardConstraint(blockdb.NewErrUnspentNotExist(txn.In[0].Hex()))
 	require.Equal(t, expectedErr, err)
 
@@ -420,21 +424,21 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	_, key := cipher.GenerateKeyPair()
 	toAddr2 := testutil.MakeAddress()
 	tx2 := makeSpendTx(t, uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
-	err = verifySingleTxnSoftHardConstraints(tx2, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(tx2, params.UserVerifyTxn)
 	requireHardViolation(t, "Signature not valid for output being spent", err)
 
 	// Create lost coin transaction
 	uxs2 := coin.CreateUnspents(b.Head, txn)
 	toAddr3 := testutil.MakeAddress()
 	lostCoinTx := makeLostCoinTx(t, coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
-	err = verifySingleTxnSoftHardConstraints(lostCoinTx, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(lostCoinTx, params.UserVerifyTxn)
 	requireHardViolation(t, "Transactions may not destroy coins", err)
 
 	// Create transaction with duplicate UxOuts
 	uxs = coin.CreateUnspents(b.Head, txn)
 	toAddr4 := testutil.MakeAddress()
 	dupUxOutTx := makeDuplicateUxOutTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
-	err = verifySingleTxnSoftHardConstraints(dupUxOutTx, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = verifySingleTxnSoftHardConstraints(dupUxOutTx, params.UserVerifyTxn)
 	requireHardViolation(t, "Duplicate output in transaction", err)
 }
 
@@ -485,7 +489,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	testutil.RequireError(t, coinHoursErr, "UxOut.CoinHours addition of earned coin hours overflow")
 
 	// VerifySingleTxnSoftConstraints should fail on this, when trying to calculate the TransactionFee
-	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, params.UserVerifyTxn)
 	testutil.RequireError(t, err, NewErrTxnViolatesSoftConstraint(coinHoursErr).Error())
 
 	// VerifySingleTxnHardConstraints should fail on this, when performing the extra check of
@@ -563,7 +567,7 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 	})
 	require.NoError(t, err)
 
-	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, params.UserVerifyTxn)
 	if expectedErr == nil {
 		require.NoError(t, err)
 	} else {

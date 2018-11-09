@@ -201,8 +201,9 @@ func (c *Coin) Run() error {
 		}
 	}
 
-	c.logger.Infof("Coinhour burn factor for creating transactions is %d", params.UserBurnFactor)
-	c.logger.Infof("Max user transaction size is %d", params.UserMaxTransactionSize)
+	c.logger.Infof("Coinhour burn factor for user transactions is %d", params.UserVerifyTxn.BurnFactor)
+	c.logger.Infof("Max transaction size for user transactions is %d", params.UserVerifyTxn.MaxTransactionSize)
+	c.logger.Infof("Max decimals for user transactions is %d", params.UserVerifyTxn.MaxDropletPrecision)
 
 	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {
@@ -371,9 +372,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
 	dc.Daemon.UserAgent = c.config.Node.userAgent
-	dc.Daemon.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
-	dc.Daemon.UnconfirmedMaxTransactionSize = c.config.Node.UnconfirmedMaxTransactionSize
-	dc.Daemon.UnconfirmedMaxDropletPrecision = c.config.Node.UnconfirmedMaxDropletPrecision
+	dc.Daemon.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
@@ -384,12 +383,9 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.BlockchainPubkey = c.config.Node.blockchainPubkey
 	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey
 
+	dc.Visor.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
+	dc.Visor.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
 	dc.Visor.MaxBlockSize = c.config.Node.MaxBlockSize
-	dc.Visor.UnconfirmedMaxTransactionSize = c.config.Node.UnconfirmedMaxTransactionSize
-	dc.Visor.UnconfirmedBurnFactor = c.config.Node.UnconfirmedBurnFactor
-	dc.Visor.CreateBlockBurnFactor = c.config.Node.CreateBlockBurnFactor
-	dc.Visor.UnconfirmedMaxDropletPrecision = c.config.Node.UnconfirmedMaxDropletPrecision
-	dc.Visor.CreateBlockMaxDropletPrecision = c.config.Node.CreateBlockMaxDropletPrecision
 
 	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
 	dc.Visor.GenesisSignature = c.config.Node.genesisSignature

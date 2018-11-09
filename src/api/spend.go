@@ -369,7 +369,7 @@ func (r createTransactionRequest) Validate() error {
 			return fmt.Errorf("to[%d].coins must not be zero", i)
 		}
 
-		if to.Coins.Value()%params.UserMaxDropletDivisor() != 0 {
+		if to.Coins.Value()%params.UserVerifyTxn.MaxDropletDivisor() != 0 {
 			return fmt.Errorf("to[%d].coins has too many decimal places", i)
 		}
 	}

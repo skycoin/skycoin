@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
@@ -41,15 +42,13 @@ func TestIntroductionMessage(t *testing.T) {
 	}
 
 	tt := []struct {
-		name                           string
-		addr                           string
-		gnetID                         uint64
-		mockValue                      daemonMockValue
-		userAgent                      useragent.Data
-		unconfirmedBurnFactor          uint32
-		unconfirmedMaxTransactionSize  uint32
-		unconfirmedMaxDropletPrecision uint8
-		intro                          *IntroductionMessage
+		name                 string
+		addr                 string
+		gnetID               uint64
+		mockValue            daemonMockValue
+		userAgent            useragent.Data
+		unconfirmedVerifyTxn params.VerifyTxn
+		intro                *IntroductionMessage
 	}{
 		{
 			name: "INTR message without extra bytes",
@@ -118,9 +117,11 @@ func TestIntroductionMessage(t *testing.T) {
 							Coin:    "skycoin",
 							Version: "0.24.1",
 						},
-						UnconfirmedBurnFactor:          4,
-						UnconfirmedMaxTransactionSize:  32768,
-						UnconfirmedMaxDropletPrecision: 3,
+						UnconfirmedVerifyTxn: params.VerifyTxn{
+							BurnFactor:          4,
+							MaxTransactionSize:  32768,
+							MaxDropletPrecision: 3,
+						},
 					},
 				},
 			},
@@ -128,14 +129,20 @@ func TestIntroductionMessage(t *testing.T) {
 				Coin:    "skycoin",
 				Version: "0.24.1",
 			},
-			unconfirmedBurnFactor:          4,
-			unconfirmedMaxTransactionSize:  32768,
-			unconfirmedMaxDropletPrecision: 3,
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
+			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", 4, 32768, 3),
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 		{
@@ -153,9 +160,11 @@ func TestIntroductionMessage(t *testing.T) {
 							Coin:    "skycoin",
 							Version: "0.24.1",
 						},
-						UnconfirmedBurnFactor:          4,
-						UnconfirmedMaxTransactionSize:  32768,
-						UnconfirmedMaxDropletPrecision: 3,
+						UnconfirmedVerifyTxn: params.VerifyTxn{
+							BurnFactor:          4,
+							MaxTransactionSize:  32768,
+							MaxDropletPrecision: 3,
+						},
 					},
 				},
 			},
@@ -163,14 +172,20 @@ func TestIntroductionMessage(t *testing.T) {
 				Coin:    "skycoin",
 				Version: "0.24.1",
 			},
-			unconfirmedBurnFactor:          4,
-			unconfirmedMaxTransactionSize:  32768,
-			unconfirmedMaxDropletPrecision: 3,
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
+			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           append(newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", 4, 32768, 3), []byte("additonal data")...),
+				Extra: append(newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}), []byte("additonal data")...),
 			},
 		},
 		{
@@ -186,7 +201,11 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           newIntroductionMessageExtra(pubkey2, "skycoin:0.24.1", 4, 32768, 3),
+				Extra: newIntroductionMessageExtra(pubkey2, "skycoin:0.24.1", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 		{
@@ -333,14 +352,20 @@ func TestIntroductionMessage(t *testing.T) {
 				Version: "0.24.1",
 				Remark:  "foo",
 			},
-			unconfirmedBurnFactor:          4,
-			unconfirmedMaxTransactionSize:  32768,
-			unconfirmedMaxDropletPrecision: 3,
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
+			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
-				Extra:           newIntroductionMessageExtra(pubkey, "skycoin:0.24.1(foo)", 4, 32768, 3),
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.24.1(foo)", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 		{
@@ -403,7 +428,7 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, mock.MatchedBy(func(m *IntroductionMessage) bool {
-				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.unconfirmedBurnFactor)
+				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.unconfirmedVerifyTxn.BurnFactor)
 				if m == nil {
 					return false
 				}
@@ -411,10 +436,7 @@ func TestIntroductionMessage(t *testing.T) {
 				if tc.userAgent != m.userAgent {
 					return false
 				}
-				if tc.unconfirmedBurnFactor != m.unconfirmedBurnFactor {
-					return false
-				}
-				if tc.unconfirmedMaxTransactionSize != m.unconfirmedMaxTransactionSize {
+				if tc.unconfirmedVerifyTxn != m.unconfirmedVerifyTxn {
 					return false
 				}
 

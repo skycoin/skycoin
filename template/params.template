@@ -27,13 +27,15 @@ const (
 var (
 	// Transaction verification parameters
 
-	// UserBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `USER_BURN_FACTOR` env var),
-	// used when creating a transaction
-	UserBurnFactor uint32 = {{.UserBurnFactor}}
-	// UserMaxTransactionSize is the maximum size of a user-created transaction
-	UserMaxTransactionSize uint32 = {{.UserMaxTransactionSize}} // in bytes
-	// UserMaxDropletPrecision represents the decimal precision of droplets
-	UserMaxDropletPrecision uint8 = {{.UserMaxDropletPrecision}}
+	// UserVerifyTxn transaction verification parameters for user-created transactions
+	UserVerifyTxn = VerifyTxn{
+		// BurnFactor can be overriden with `USER_BURN_FACTOR` env var
+		BurnFactor: {{.UserBurnFactor}},
+		// MaxTransactionSize can be overriden with `USER_MAX_TXN_SIZE` env var
+		MaxTransactionSize: {{.UserMaxTransactionSize}}, // in bytes
+		// MaxDropletPrecision can be overriden with `USER_MAX_DECIMALS` env var
+		MaxDropletPrecision: {{.UserMaxDropletPrecision}},
+	}
 )
 
 // distributionAddresses are addresses that received coins from the genesis address in the first block,

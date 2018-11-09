@@ -9,18 +9,15 @@ import (
 )
 
 func init() {
-	loadCoinHourBurnFactor()
-	loadMaxUserTransactionSize()
+	loadUserBurnFactor()
+	loadUserMaxTransactionSize()
+	loadUserMaxDecimals()
 	sanityCheck()
 }
 
 func sanityCheck() {
-	if UserBurnFactor <= 1 {
-		panic("UserBurnFactor must be > 1")
-	}
-
-	if UserMaxTransactionSize < 1024 {
-		panic("UserMaxTransactionSize must be >= 1024")
+	if err := UserVerifyTxn.Validate(); err != nil {
+		panic(err)
 	}
 
 	if InitialUnlockedCount > DistributionAddressesTotal {
@@ -38,13 +35,9 @@ func sanityCheck() {
 	if MaxCoinSupply%DistributionAddressesTotal != 0 {
 		panic("MaxCoinSupply should be perfectly divisible by DistributionAddressesTotal")
 	}
-
-	if UserMaxDropletPrecision > droplet.Exponent {
-		panic("UserMaxDropletPrecision must be <= droplet.Exponent")
-	}
 }
 
-func loadCoinHourBurnFactor() {
+func loadUserBurnFactor() {
 	xs := os.Getenv("USER_BURN_FACTOR")
 	if xs == "" {
 		return
@@ -59,23 +52,41 @@ func loadCoinHourBurnFactor() {
 		panic("USER_BURN_FACTOR must be > 1")
 	}
 
-	UserBurnFactor = uint32(x)
+	UserVerifyTxn.BurnFactor = uint32(x)
 }
 
-func loadMaxUserTransactionSize() {
-	xs := os.Getenv("MAX_USER_TXN_SIZE")
+func loadUserMaxTransactionSize() {
+	xs := os.Getenv("USER_MAX_TXN_SIZE")
 	if xs == "" {
 		return
 	}
 
 	x, err := strconv.ParseUint(xs, 10, 32)
 	if err != nil {
-		panic(fmt.Sprintf("Invalid MAX_USER_TXN_SIZE %q: %v", xs, err))
+		panic(fmt.Sprintf("Invalid USER_MAX_TXN_SIZE %q: %v", xs, err))
 	}
 
 	if x < 1024 {
-		panic("MAX_USER_TXN_SIZE must be >= 1024")
+		panic("USER_MAX_TXN_SIZE must be >= 1024")
 	}
 
-	UserMaxTransactionSize = uint32(x)
+	UserVerifyTxn.MaxTransactionSize = uint32(x)
+}
+
+func loadUserMaxDecimals() {
+	xs := os.Getenv("USER_MAX_DECIMALS")
+	if xs == "" {
+		return
+	}
+
+	x, err := strconv.ParseUint(xs, 10, 8)
+	if err != nil {
+		panic(fmt.Sprintf("Invalid USER_MAX_DECIMALS %q: %v", xs, err))
+	}
+
+	if x > droplet.Exponent {
+		panic("USER_MAX_DECIMALS must be >= droplet.Exponent")
+	}
+
+	UserVerifyTxn.MaxDropletPrecision = uint8(x)
 }

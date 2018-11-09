@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -190,13 +191,15 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 
 	m := &IntroductionMessage{
 		// use a different port to make sure that we use the self-reported listen port for incoming connections
-		ListenPort:                     port + 1,
-		Mirror:                         1111,
-		ProtocolVersion:                2,
-		userAgent:                      userAgent,
-		unconfirmedBurnFactor:          4,
-		unconfirmedMaxTransactionSize:  1111,
-		unconfirmedMaxDropletPrecision: 2,
+		ListenPort:      port + 1,
+		Mirror:          1111,
+		ProtocolVersion: 2,
+		userAgent:       userAgent,
+		unconfirmedVerifyTxn: params.VerifyTxn{
+			BurnFactor:          4,
+			MaxTransactionSize:  1111,
+			MaxDropletPrecision: 2,
+		},
 	}
 
 	c, err = conns.introduced(addr, 1, m)
@@ -217,9 +220,9 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	require.True(t, c.HasIntroduced())
 	require.Equal(t, fmt.Sprintf("%s:%d", ip, m.ListenPort), c.ListenAddr())
 	require.Equal(t, userAgent, c.UserAgent)
-	require.Equal(t, uint32(4), c.UnconfirmedBurnFactor)
-	require.Equal(t, uint32(1111), c.UnconfirmedMaxTransactionSize)
-	require.Equal(t, uint8(2), c.UnconfirmedMaxDropletPrecision)
+	require.Equal(t, uint32(4), c.UnconfirmedVerifyTxn.BurnFactor)
+	require.Equal(t, uint32(1111), c.UnconfirmedVerifyTxn.MaxTransactionSize)
+	require.Equal(t, uint8(2), c.UnconfirmedVerifyTxn.MaxDropletPrecision)
 
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)

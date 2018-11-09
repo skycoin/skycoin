@@ -45,20 +45,12 @@ type Config struct {
 	// Secret key of the blockchain (required if block publisher)
 	BlockchainSeckey cipher.SecKey
 
-	// Maximum size of a txn, in bytes for unconfirmed transactions
-	UnconfirmedMaxTransactionSize uint32
+	// Transaction verification parameters used for unconfirmed transactions
+	UnconfirmedVerifyTxn params.VerifyTxn
+	// Transaction verification parameters used when creating a block
+	CreateBlockVerifyTxn params.VerifyTxn
 	// Maximum size of a block, in bytes for creating blocks
 	MaxBlockSize uint32
-
-	// Burn factor to apply to unconfirmed transactions (received over the network, or when refreshing the pool)
-	UnconfirmedBurnFactor uint32
-	// Burn factor to apply when creating blocks
-	CreateBlockBurnFactor uint32
-
-	// Max droplet precision to apply to unconfirmed transactions
-	UnconfirmedMaxDropletPrecision uint8
-	// Max droplet precision to apply when creating blocks
-	CreateBlockMaxDropletPrecision uint8
 
 	// Where the blockchain is saved
 	BlockchainFile string
@@ -95,12 +87,9 @@ func NewConfig() Config {
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		UnconfirmedMaxTransactionSize:  params.UserMaxTransactionSize,
-		MaxBlockSize:                   params.UserMaxTransactionSize,
-		UnconfirmedBurnFactor:          params.UserBurnFactor,
-		CreateBlockBurnFactor:          params.UserBurnFactor,
-		UnconfirmedMaxDropletPrecision: params.UserMaxDropletPrecision,
-		CreateBlockMaxDropletPrecision: params.UserMaxDropletPrecision,
+		UnconfirmedVerifyTxn: params.UserVerifyTxn,
+		CreateBlockVerifyTxn: params.UserVerifyTxn,
+		MaxBlockSize:         params.UserVerifyTxn.MaxTransactionSize,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -119,23 +108,40 @@ func (c Config) Verify() error {
 		}
 	}
 
-	if c.UnconfirmedBurnFactor < params.UserBurnFactor {
-		return fmt.Errorf("UnconfirmedBurnFactor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
+	if err := c.UnconfirmedVerifyTxn.Validate(); err != nil {
+		return err
 	}
 
-	if c.CreateBlockBurnFactor < params.UserBurnFactor {
-		return fmt.Errorf("CreateBlockBurnFactor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
+	if err := c.CreateBlockVerifyTxn.Validate(); err != nil {
+		return err
 	}
 
-	if c.MaxBlockSize <= 0 {
-		return errors.New("MaxBlockSize must be > 0")
+	if c.UnconfirmedVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return fmt.Errorf("UnconfirmedVerifyTxn.BurnFactor must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
 	}
 
-	if c.UnconfirmedMaxTransactionSize <= 0 {
-		return errors.New("UnconfirmedBlockMaxBlockSize must be > 0")
+	if c.CreateBlockVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return fmt.Errorf("CreateBlockVerifyTxn.BurnFactor must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
 	}
-	if params.UserMaxTransactionSize > c.MaxBlockSize {
-		return fmt.Errorf("params.UserMaxTransactionSize must be < MaxBlockSize (%d)", c.MaxBlockSize)
+
+	if c.UnconfirmedVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("UnconfirmedVerifyTxn.MaxTransactionSize must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+
+	if c.CreateBlockVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("CreateBlockVerifyTxn.MaxTransactionSize must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+
+	if c.UnconfirmedVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("UnconfirmedVerifyTxn.MaxDropletPrecision must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
+	}
+
+	if c.CreateBlockVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("CreateBlockVerifyTxn.MaxDropletPrecision must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
+	}
+
+	if c.MaxBlockSize < c.CreateBlockVerifyTxn.MaxTransactionSize {
+		return errors.New("MaxBlockSize must be >= CreateBlockVerifyTxn.MaxTransactionSize")
 	}
 
 	return nil
@@ -176,7 +182,7 @@ type Blockchainer interface {
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
 	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize, burnFactor uint32, maxDropletPrecision uint8) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) error
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
@@ -184,10 +190,10 @@ type Blockchainer interface {
 // accessing the unconfirmed transaction pool
 type UnconfirmedTransactionPooler interface {
 	SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error
-	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize, burnFactor uint32, maxDropletPrecision uint8) (bool, *ErrTxnViolatesSoftConstraint, error)
+	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error)
 	AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error)
 	RemoveTransactions(tx *dbutil.Tx, txns []cipher.SHA256) error
-	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize, burnFactor uint32, maxDropletPrecision uint8) ([]cipher.SHA256, error)
+	Refresh(tx *dbutil.Tx, bc Blockchainer, verifyParams params.VerifyTxn) ([]cipher.SHA256, error)
 	RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error)
 	FilterKnown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
 	GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error)
@@ -224,10 +230,13 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		return nil, err
 	}
 
+	logger.Infof("Coinhour burn factor for unconfirmed transactions is %d", c.UnconfirmedVerifyTxn.BurnFactor)
+	logger.Infof("Max transaction size for unconfirmed transactions is %d", c.UnconfirmedVerifyTxn.MaxTransactionSize)
+	logger.Infof("Max decimals for unconfirmed transactions is %d", c.UnconfirmedVerifyTxn.MaxDropletPrecision)
+	logger.Infof("Coinhour burn factor for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.BurnFactor)
+	logger.Infof("Max transaction size for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxTransactionSize)
+	logger.Infof("Max decimals for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxDropletPrecision)
 	logger.Infof("Max block size is %d", c.MaxBlockSize)
-	logger.Infof("Max unconfirmed transaction size is %d", c.UnconfirmedMaxTransactionSize)
-	logger.Infof("Coinhour burn factor for verifying unconfirmed transactions is %d", c.UnconfirmedBurnFactor)
-	logger.Infof("Coinhour burn factor for transactions when creating blocks is %d", c.CreateBlockBurnFactor)
 
 	// Loads wallet
 	wltServConfig := wallet.Config{
@@ -423,7 +432,7 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 	if err := vs.DB.Update("RefreshUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor, vs.Config.UnconfirmedMaxDropletPrecision)
+		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.UnconfirmedVerifyTxn)
 		return err
 	}); err != nil {
 		return nil, err
@@ -469,7 +478,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize, vs.Config.CreateBlockBurnFactor, vs.Config.CreateBlockMaxDropletPrecision); err != nil {
+		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
@@ -920,7 +929,7 @@ func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnVi
 
 	if err := vs.DB.Update("InjectForeignTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.UnconfirmedMaxTransactionSize, vs.Config.UnconfirmedBurnFactor, vs.Config.UnconfirmedMaxDropletPrecision)
+		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.UnconfirmedVerifyTxn)
 		return err
 	}); err != nil {
 		return false, nil, err
@@ -957,11 +966,11 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 		return false, err
 	}
 
-	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision); err != nil {
+	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn); err != nil {
 		return false, err
 	}
 
-	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision)
+	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.UserVerifyTxn)
 	if softErr != nil {
 		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
@@ -2224,7 +2233,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.UserMaxTransactionSize, params.UserBurnFactor, params.UserMaxDropletPrecision); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.UserVerifyTxn); err != nil {
 			return err
 		}
 

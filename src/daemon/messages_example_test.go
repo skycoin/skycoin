@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 )
 
 const (
@@ -419,7 +420,11 @@ func ExampleIntroductionMessage() {
 
 	pk := cipher.MustPubKeyFromHex("0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a")
 
-	var message = NewIntroductionMessage(1234, 5, 7890, pk, "skycoin:0.24.1", 2, 32768, 3)
+	var message = NewIntroductionMessage(1234, 5, 7890, pk, "skycoin:0.24.1", params.VerifyTxn{
+		BurnFactor:          2,
+		MaxTransactionSize:  32768,
+		MaxDropletPrecision: 3,
+	})
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)

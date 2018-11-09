@@ -11,11 +11,6 @@ var (
 	ErrInvalidDecimals = errors.New("invalid amount, too many decimal places")
 )
 
-// UserMaxDropletDivisor return the modulus divisor used when checking droplet precision rules for user-created transactions
-func UserMaxDropletDivisor() uint64 {
-	return DropletPrecisionToDivisor(UserMaxDropletPrecision)
-}
-
 // DropletPrecisionToDivisor converts number of allowed decimal places to the modulus divisor used when checking droplet precision rules
 func DropletPrecisionToDivisor(precision uint8) uint64 {
 	if precision > droplet.Exponent {

@@ -32,8 +32,8 @@ type HealthResponse struct {
 	GUIEnabled            bool               `json:"gui_enabled"`
 	UnversionedAPIEnabled bool               `json:"unversioned_api_enabled"`
 	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
-	UserVerifyTxn         readable.VerifyTxn `json:"user_verify_txn"`
-	UnconfirmedVerifyTxn  readable.VerifyTxn `json:"unconfirmed_verify_txn"`
+	UserVerifyTxn         readable.VerifyTxn `json:"user_verify_transaction"`
+	UnconfirmedVerifyTxn  readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
 }
 
 // healthHandler returns node health data

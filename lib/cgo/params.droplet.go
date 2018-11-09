@@ -14,11 +14,11 @@ import (
 import "C"
 
 //export
-func SKY_params_UserMaxDropletDivisor() uint64 {
-	return params.UserMaxDropletDivisor()
+func SKY_params_DropletPrecisionToDivisor(precision uint8) uint64 {
+	return params.DropletPrecisionToDivisor(precision)
 }
 
 //export
-func SKY_params_DropletPrecisionCheck(amount uint64) uint32 {
-	return libErrorCode(params.DropletPrecisionCheck(amount))
+func SKY_params_DropletPrecisionCheck(precision uint8, amount uint64) uint32 {
+	return libErrorCode(params.DropletPrecisionCheck(precision, amount))
 }

@@ -43,7 +43,7 @@ var (
 	ErrDisconnectInvalidBurnFactor gnet.DisconnectReason = errors.New("Invalid burn factor in introduction message")
 	// ErrDisconnectInvalidMaxTransactionSize invalid max transaction size in introduction message
 	ErrDisconnectInvalidMaxTransactionSize gnet.DisconnectReason = errors.New("Invalid max transaction size in introduction message")
-	// ErrDisconnectInvalidMaxDropletPrecision
+	// ErrDisconnectInvalidMaxDropletPrecision invalid max droplet precision in introduction message
 	ErrDisconnectInvalidMaxDropletPrecision gnet.DisconnectReason = errors.New("Invalid max droplet precision in introduction message")
 
 	// ErrDisconnectUnknownReason used when mapping an unknown reason code to an error. Is not sent over the network.

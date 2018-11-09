@@ -10,6 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -152,7 +153,8 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	err = cipher.VerifyAddressSignedHash(ux.Body.Address, txn.Sigs[0], cipher.AddSHA256(txn.HashInner(), txn.In[0]))
 	require.NoError(t, err)
 
-	txn.UpdateHeader()
+	err = txn.UpdateHeader()
+	require.NoError(t, err)
 
 	err = txn.Verify()
 	require.NoError(t, err)
@@ -163,7 +165,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	return txn
 }
 
-func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeLostCoinTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -181,11 +183,12 @@ func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Addres
 	}
 
 	txn.SignInputs(keys)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 	return txn
 }
 
-func makeDuplicateUxOutTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeDuplicateUxOutTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -204,7 +207,8 @@ func makeDuplicateUxOutTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.
 	}
 
 	txn.SignInputs(keys)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 	return txn
 }
 
@@ -254,7 +258,8 @@ func makeUnspentsTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr
 
 	// Sign the transaction
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 
 	return spendTx
 }
@@ -280,7 +285,8 @@ func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, to
 		spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
 	}
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
@@ -305,7 +311,8 @@ func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.Se
 		spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
 	}
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
@@ -337,20 +344,22 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	toAddr := testutil.MakeAddress()
 	coins := uint64(10e6)
 
-	verifySingleTxnSoftHardConstraints := func(txn coin.Transaction, maxBlockSize int) error {
+	verifySingleTxnSoftHardConstraints := func(txn coin.Transaction, maxBlockSize, burnFactor uint32) error {
 		return db.View("", func(tx *dbutil.Tx) error {
-			return bc.VerifySingleTxnSoftHardConstraints(tx, txn, maxBlockSize)
+			return bc.VerifySingleTxnSoftHardConstraints(tx, txn, maxBlockSize, burnFactor)
 		})
 	}
 
 	// create normal spending txn
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
-	err = verifySingleTxnSoftHardConstraints(txn, DefaultMaxBlockSize)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	require.NoError(t, err)
 
 	// Transaction size exceeds maxSize
-	err = verifySingleTxnSoftHardConstraints(txn, txn.Size()-1)
+	txnSize, err := txn.Size()
+	require.NoError(t, err)
+	err = verifySingleTxnSoftHardConstraints(txn, txnSize-1, params.UserBurnFactor)
 	requireSoftViolation(t, "Transaction size bigger than max block size", err)
 
 	// Invalid transaction fee
@@ -360,12 +369,12 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 		hours += ux.Body.Hours
 	}
 	txn = makeSpendTxWithHoursBurned(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins, 0)
-	err = verifySingleTxnSoftHardConstraints(txn, DefaultMaxBlockSize)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	requireSoftViolation(t, "Transaction has zero coinhour fee", err)
 
 	// Invalid transaction fee, part 2
 	txn = makeSpendTxWithHoursBurned(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins, 1)
-	err = verifySingleTxnSoftHardConstraints(txn, DefaultMaxBlockSize)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	requireSoftViolation(t, "Transaction coinhour fee minimum not met", err)
 
 	// Transaction locking is tested by TestVerifyTransactionIsLocked
@@ -373,7 +382,7 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	// Test invalid header hash
 	originInnerHash := txn.InnerHash
 	txn.InnerHash = cipher.SHA256{}
-	err = verifySingleTxnSoftHardConstraints(txn, DefaultMaxBlockSize)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	requireHardViolation(t, "InnerHash does not match computed hash", err)
 
 	// Set back the originInnerHash
@@ -400,7 +409,7 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	require.NoError(t, err)
 
 	// A UxOut does not exist, it was already spent
-	err = verifySingleTxnSoftHardConstraints(txn, DefaultMaxBlockSize)
+	err = verifySingleTxnSoftHardConstraints(txn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	expectedErr := NewErrTxnViolatesHardConstraint(blockdb.NewErrUnspentNotExist(txn.In[0].Hex()))
 	require.Equal(t, expectedErr, err)
 
@@ -409,21 +418,21 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	_, key := cipher.GenerateKeyPair()
 	toAddr2 := testutil.MakeAddress()
 	tx2 := makeSpendTx(t, uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
-	err = verifySingleTxnSoftHardConstraints(tx2, DefaultMaxBlockSize)
+	err = verifySingleTxnSoftHardConstraints(tx2, params.UserMaxTransactionSize, params.UserBurnFactor)
 	requireHardViolation(t, "Signature not valid for output being spent", err)
 
 	// Create lost coin transaction
 	uxs2 := coin.CreateUnspents(b.Head, txn)
 	toAddr3 := testutil.MakeAddress()
-	lostCoinTx := makeLostCoinTx(coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
-	err = verifySingleTxnSoftHardConstraints(lostCoinTx, DefaultMaxBlockSize)
+	lostCoinTx := makeLostCoinTx(t, coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
+	err = verifySingleTxnSoftHardConstraints(lostCoinTx, params.UserMaxTransactionSize, params.UserBurnFactor)
 	requireHardViolation(t, "Transactions may not destroy coins", err)
 
 	// Create transaction with duplicate UxOuts
 	uxs = coin.CreateUnspents(b.Head, txn)
 	toAddr4 := testutil.MakeAddress()
-	dupUxOutTx := makeDuplicateUxOutTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
-	err = verifySingleTxnSoftHardConstraints(dupUxOutTx, DefaultMaxBlockSize)
+	dupUxOutTx := makeDuplicateUxOutTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
+	err = verifySingleTxnSoftHardConstraints(dupUxOutTx, params.UserMaxTransactionSize, params.UserBurnFactor)
 	requireHardViolation(t, "Duplicate output in transaction", err)
 }
 
@@ -474,7 +483,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	testutil.RequireError(t, coinHoursErr, "UxOut.CoinHours addition of earned coin hours overflow")
 
 	// VerifySingleTxnSoftConstraints should fail on this, when trying to calculate the TransactionFee
-	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, DefaultMaxBlockSize)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	testutil.RequireError(t, err, NewErrTxnViolatesSoftConstraint(coinHoursErr).Error())
 
 	// VerifySingleTxnHardConstraints should fail on this, when performing the extra check of
@@ -486,7 +495,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 }
 
 func TestVerifyTransactionIsLocked(t *testing.T) {
-	for _, addr := range GetLockedDistributionAddresses() {
+	for _, addr := range params.GetLockedDistributionAddresses() {
 		t.Run(fmt.Sprintf("IsLocked: %s", addr), func(t *testing.T) {
 			testVerifyTransactionAddressLocking(t, addr, errors.New("Transaction has locked address inputs"))
 		})
@@ -494,7 +503,7 @@ func TestVerifyTransactionIsLocked(t *testing.T) {
 }
 
 func TestVerifyTransactionIsUnlocked(t *testing.T) {
-	for _, addr := range GetUnlockedDistributionAddresses() {
+	for _, addr := range params.GetUnlockedDistributionAddresses() {
 		t.Run(fmt.Sprintf("IsUnlocked: %s", addr), func(t *testing.T) {
 			testVerifyTransactionAddressLocking(t, addr, nil)
 		})
@@ -552,7 +561,7 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 	})
 	require.NoError(t, err)
 
-	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, DefaultMaxBlockSize)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, params.UserMaxTransactionSize, params.UserBurnFactor)
 	if expectedErr == nil {
 		require.NoError(t, err)
 	} else {

@@ -21,6 +21,8 @@ var allAPISetsEnabled = map[string]struct{}{
 	EndpointsWallet:                struct{}{},
 	EndpointsInsecureWalletSeed:    struct{}{},
 	EndpointsDeprecatedWalletSpend: struct{}{},
+	EndpointsPrometheus:            struct{}{},
+	EndpointsNetCtrl:               struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {
@@ -47,6 +49,7 @@ var endpoints = []string{
 	"/last_blocks",
 	"/version",
 	"/network/connection",
+	"/network/connection/disconnect",
 	"/network/connections",
 	"/network/connections/exchange",
 	"/network/connections/trust",

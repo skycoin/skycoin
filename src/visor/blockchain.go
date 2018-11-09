@@ -103,7 +103,7 @@ func CreateBuckets(db *dbutil.DB) error {
 
 // BlockchainConfig configures Blockchain options
 type BlockchainConfig struct {
-	// Arbitrating mode: if in arbitrating mode, when master node execute blocks,
+	// Arbitrating mode: if in arbitrating mode, when block publishing node execute blocks,
 	// the invalid transaction will be skipped and continue the next; otherwise,
 	// node will throw the error and return.
 	Arbitrating bool
@@ -397,7 +397,7 @@ func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 // VerifySingleTxnSoftHardConstraints checks that the transaction does not violate hard or soft constraints,
 // for transactions that are not included in a block.
 // Hard constraints are checked before soft constraints.
-func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error {
+func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize, burnFactor uint32) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
@@ -415,7 +415,7 @@ func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.
 		return err
 	}
 
-	return VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, maxSize)
+	return VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, maxSize, burnFactor)
 }
 
 func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
@@ -534,7 +534,11 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if bc.cfg.Arbitrating {
-		txns = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
+		txns, err = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
+		if err != nil {
+			logger.Critical().WithError(err).Error("processTransactions: coin.SortTransactions failed")
+			return nil, err
+		}
 	}
 
 	//TODO: audit
@@ -554,7 +558,9 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 		// signature indices and duplicate spends within itself
 		if err := bc.VerifyBlockTxnConstraints(tx, txn); err != nil {
 			switch err.(type) {
-			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
+			case ErrTxnViolatesSoftConstraint:
+				logger.Critical().WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
+			case ErrTxnViolatesHardConstraint:
 				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}
 					continue

@@ -68,7 +68,7 @@ func getCoinName() string {
 func versionUpgradeWaitTimeout(t *testing.T) time.Duration {
 	x := os.Getenv("VERSION_UPGRADE_TEST_WAIT_TIMEOUT")
 	if x == "" {
-		return time.Second * 3
+		return time.Second * 5
 	}
 
 	d, err := time.ParseDuration(x)

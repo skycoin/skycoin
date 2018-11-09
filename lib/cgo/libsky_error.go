@@ -6,11 +6,13 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -33,9 +35,12 @@ const (
 const (
 	// SKY_BAD_HANDLE invalid handle argument
 	SKY_BAD_HANDLE = SKY_PKG_LIBCGO + iota + 1
+	// SKY_INVALID_TIMESTRING invalid time value
+	SKY_INVALID_TIMESTRING
 )
 
 // Package prefixes for error codes
+//nolint megacheck
 const (
 	// Error code prefix for api package
 	SKY_PKG_API = (1 + iota) << 24 // nolint megacheck
@@ -59,9 +64,12 @@ const (
 	SKY_PKG_VISOR
 	// Error code prefix for wallet package
 	SKY_PKG_WALLET
+	// Error code prefix for params package
+	SKY_PKG_PARAMS
 )
 
 // Error codes defined in cipher package
+//nolint megacheck
 const (
 	// SKY_ErrAddressInvalidLength Unexpected size of address bytes buffer
 	SKY_ErrAddressInvalidLength = SKY_PKG_CIPHER + iota
@@ -149,9 +157,30 @@ const (
 	SKY_ErrEmptySeed
 	// SKY_ErrInvalidSig Invalid signature
 	SKY_ErrInvalidSig
+	// SKY_ErrMissingPassword missing password
+	SKY_ErrMissingPassword
+	// SKY_SKY_ErrDataTooLarge data length overflowed, it must <= math.MaxUint32(4294967295)
+	SKY_ErrDataTooLarge
+	// SKY_ErrInvalidChecksumLength invalid checksum length
+	SKY_ErrInvalidChecksumLength
+	// SKY_ErrInvalidChecksum invalid data, checksum is not matched
+	SKY_ErrInvalidChecksum
+	// SKY_ErrInvalidNonceLength invalid nonce length
+	SKY_ErrInvalidNonceLength
+	// SKY_ErrInvalidBlockSize invalid block size, must be multiple of 32 bytes
+	SKY_ErrInvalidBlockSize
+	// SKY_ErrReadDataHashFailed read data hash failed: read length != 32
+	SKY_ErrReadDataHashFailed
+	// SKY_ErrInvalidPassword invalid password SHA256or
+	SKY_ErrInvalidPassword
+	// SKY_ErrReadDataLengthFailed read data length failed
+	SKY_ErrReadDataLengthFailed
+	// SKY_ErrInvalidDataLength invalid data length
+	SKY_ErrInvalidDataLength
 )
 
 // Error codes defined in cli package
+// nolint megacheck
 const (
 	// SKY_ErrTemporaryInsufficientBalance is returned if a wallet does not have
 	// enough balance for a spend, but will have enough after unconfirmed transactions confirm
@@ -169,6 +198,7 @@ const (
 )
 
 // Error codes defined in coin package
+// nolint megacheck
 const (
 	// ErrAddEarnedCoinHoursAdditionOverflow is returned by UxOut.CoinHours()
 	// if during the addition of base coin
@@ -176,19 +206,24 @@ const (
 	// Callers may choose to ignore this errors and use 0 as the coinhours value instead.
 	// This affects one existing spent output, spent in block 13277.
 	SKY_ErrAddEarnedCoinHoursAdditionOverflow = SKY_PKG_COIN + iota
-	// ErrUint64MultOverflow is returned when multiplying uint64 values would overflow uint64
+	// SKY_ErrUint64MultOverflow is returned when multiplying uint64 values would overflow uint64
 	SKY_ErrUint64MultOverflow
-	// ErrUint64AddOverflow is returned when adding uint64 values would overflow uint64
+	// SKY_ErrUint64AddOverflow is returned when adding uint64 values would overflow uint64
 	SKY_ErrUint64AddOverflow
-	// ErrUint32AddOverflow is returned when adding uint32 values would overflow uint32
+	// SKY_ErrUint32AddOverflow is returned when adding uint32 values would overflow uint32
 	SKY_ErrUint32AddOverflow
-	// ErrUint64OverflowsInt64 is returned when converting a uint64 to an int64 would overflow int64
+	// SKY_ErrUint64OverflowsInt64 is returned when converting a uint64 to an int64 would overflow int64
 	SKY_ErrUint64OverflowsInt64
-	// ErrInt64UnderflowsUint64 is returned when converting an int64 to a uint64 would underflow uint64
+	// SKY_ErrInt64UnderflowsUint64 is returned when converting an int64 to a uint64 would underflow uint64
 	SKY_ErrInt64UnderflowsUint64
+	// SKY_ErrIntUnderflowsUint32 is returned if when converting an int to a uint32 would underflow uint32
+	SKY_ErrIntUnderflowsUint32
+	// SKY_ErrIntOverflowsUint32 is returned if when converting an int to a uint32 would overflow uint32
+	SKY_ErrIntOverflowsUint32
 )
 
 // Error codes defined in daemon package
+// nolint megacheck
 const (
 	// SKY_ErrPeerlistFull is returned when the Pex is at a maximum
 	SKY_ErrPeerlistFull = SKY_PKG_DAEMON + iota
@@ -214,8 +249,6 @@ const (
 	SKY_ErrDisconnectMalformedMessage
 	// SKY_ErrDisconnectUnknownMessage unknow message
 	SKY_ErrDisconnectUnknownMessage
-	// SKY_ErrDisconnectUnexpectedError  unexpected error
-	SKY_ErrDisconnectUnexpectedError
 	// SKY_ErrConnectionPoolClosed error message indicates the connection pool is closed
 	SKY_ErrConnectionPoolClosed
 	// SKY_ErrWriteQueueFull write queue is full
@@ -228,8 +261,6 @@ const (
 	SKY_ErrDisconnectVersionNotSupported
 	// SKY_ErrDisconnectIntroductionTimeout timeout
 	SKY_ErrDisconnectIntroductionTimeout
-	// SKY_ErrDisconnectVersionSendFailed version send failed
-	SKY_ErrDisconnectVersionSendFailed
 	// SKY_ErrDisconnectIsBlacklisted is blacklisted
 	SKY_ErrDisconnectIsBlacklisted
 	// SKY_ErrDisconnectSelf self connnect
@@ -242,8 +273,6 @@ const (
 	SKY_ErrDisconnectNoIntroduction
 	// SKY_ErrDisconnectIPLimitReached ip limit reached
 	SKY_ErrDisconnectIPLimitReached
-	// SKY_ErrDisconnectIncomprehensibleError this is returned when a seemingly impossible error is encountered
-	SKY_ErrDisconnectIncomprehensibleError
 	// SKY_ErrDisconnectMaxDefaultConnectionReached Maximum number of default connections was reached
 	SKY_ErrDisconnectMaxDefaultConnectionReached // nolint megacheck
 	// SKY_ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
@@ -253,6 +282,7 @@ const (
 )
 
 // Error codes defined in util package
+// nolint megacheck
 const (
 	// ErrTxnNoFee is returned if a transaction has no coinhour fee
 	SKY_ErrTxnNoFee = SKY_PKG_UTIL + iota
@@ -273,6 +303,7 @@ const (
 )
 
 // Error codes defined in visor package
+// nolint megacheck
 const (
 	// SKY_ErrHistoryDBCorrupted Internal format error in HistoryDB database
 	SKY_ErrHistoryDBCorrupted = SKY_PKG_VISOR + iota
@@ -299,6 +330,7 @@ const (
 )
 
 // Error codes defined in wallet package
+// nolint megacheck
 const (
 	// SKY_ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
 	SKY_ErrInsufficientBalance = SKY_PKG_WALLET + iota
@@ -314,12 +346,12 @@ const (
 	SKY_ErrWalletEncrypted
 	// SKY_ErrWalletNotEncrypted is returned when trying to decrypt unencrypted wallet
 	SKY_ErrWalletNotEncrypted
-	// SKY_ErrMissingPassword is returned when trying to create wallet with encryption, but password is not provided.
-	SKY_ErrMissingPassword
+	// SKY_ErrWalletMissingPassword is returned when trying to create wallet with encryption, but password is not provided.
+	SKY_ErrWalletMissingPassword
 	// SKY_ErrMissingEncrypt is returned when trying to create wallet with password, but options.Encrypt is not set.
 	SKY_ErrMissingEncrypt
-	// SKY_ErrInvalidPassword is returned if decrypts secrets failed
-	SKY_ErrInvalidPassword
+	// SKY_ErrWalletInvalidPassword is returned if decrypts secrets failed
+	SKY_ErrWalletInvalidPassword
 	// SKY_ErrMissingSeed is returned when trying to create wallet without a seed
 	SKY_ErrMissingSeed
 	// SKY_ErrMissingAuthenticated is returned if try to decrypt a scrypt chacha20poly1305 encrypted wallet, and find no authenticated metadata.
@@ -384,6 +416,19 @@ const (
 	SKY_ErrDuplicateUxOuts
 	// SKY_ErrUnknownWalletID params.Wallet.ID does not match wallet
 	SKY_ErrUnknownWalletID
+	// SKY_ErrVerifySignatureInvalidInputsNils VerifySignature, ERROR: invalid input, nils
+	SKY_ErrVerifySignatureInvalidInputsNils
+	// SKY_ErrVerifySignatureInvalidSigLength
+	SKY_ErrVerifySignatureInvalidSigLength
+	// SKY_ErrVerifySignatureInvalidPubkeysLength
+	SKY_ErrVerifySignatureInvalidPubkeysLength
+)
+
+// Error codes defined in params package
+// nolint megacheck
+const (
+	// SKY_ErrInvalidDecimals is returned by DropletPrecisionCheck if a coin amount has an invalid number of decimal places
+	SKY_ErrInvalidDecimals = SKY_PKG_PARAMS + iota
 )
 
 var (
@@ -391,11 +436,16 @@ var (
 	ErrorBadHandle = errors.New("Invalid or unknown handle value")
 	// ErrorUnknown unexpected error
 	ErrorUnknown = errors.New("Unexpected error")
+	// ErrorInvalidTimeString time string does not match expected time format
+	// More precise errors conditions can be found in the logs
+	ErrorInvalidTimeString = errors.New("Invalid time value")
 
+	codeToErrorMap = make(map[uint32]error)
 	errorToCodeMap = map[error]uint32{
 		// libcgo
-		ErrorBadHandle: SKY_BAD_HANDLE,
-		ErrorUnknown:   SKY_ERROR,
+		ErrorBadHandle:         SKY_BAD_HANDLE,
+		ErrorUnknown:           SKY_ERROR,
+		ErrorInvalidTimeString: SKY_INVALID_TIMESTRING,
 		// cipher
 		cipher.ErrAddressInvalidLength:     SKY_ErrAddressInvalidLength,
 		cipher.ErrAddressInvalidChecksum:   SKY_ErrAddressInvalidChecksum,
@@ -441,6 +491,17 @@ var (
 		cipher.ErrBitcoinWIFInvalidChecksum:      SKY_ErrBitcoinWIFInvalidChecksum,
 		cipher.ErrEmptySeed:                      SKY_ErrEmptySeed,
 		cipher.ErrInvalidSig:                     SKY_ErrInvalidSig,
+		encrypt.ErrMissingPassword:               SKY_ErrMissingPassword,
+		encrypt.ErrDataTooLarge:                  SKY_ErrDataTooLarge,
+		encrypt.ErrInvalidChecksumLength:         SKY_ErrInvalidChecksumLength,
+		encrypt.ErrInvalidChecksum:               SKY_ErrInvalidChecksum,
+		encrypt.ErrInvalidNonceLength:            SKY_ErrInvalidNonceLength,
+		encrypt.ErrInvalidBlockSize:              SKY_ErrInvalidBlockSize,
+		encrypt.ErrReadDataHashFailed:            SKY_ErrReadDataHashFailed,
+		encrypt.ErrInvalidPassword:               SKY_ErrInvalidPassword,
+		encrypt.ErrReadDataLengthFailed:          SKY_ErrReadDataLengthFailed,
+		encrypt.ErrInvalidDataLength:             SKY_ErrInvalidDataLength,
+
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,
@@ -453,6 +514,8 @@ var (
 		coin.ErrUint32AddOverflow:                  SKY_ErrUint32AddOverflow,
 		coin.ErrUint64OverflowsInt64:               SKY_ErrUint64OverflowsInt64,
 		coin.ErrInt64UnderflowsUint64:              SKY_ErrInt64UnderflowsUint64,
+		coin.ErrIntUnderflowsUint32:                SKY_ErrIntUnderflowsUint32,
+		coin.ErrIntOverflowsUint32:                 SKY_ErrIntOverflowsUint32,
 		// daemon
 		// Removed in 34ad39ddb350
 		// gnet.ErrMaxDefaultConnectionsReached:           SKY_ErrMaxDefaultConnectionsReached,
@@ -464,24 +527,21 @@ var (
 		pex.ErrBlacklistedAddress: SKY_ErrBlacklistedAddress,
 		// gnet.ErrDisconnectReadFailed:              SKY_ErrDisconnectReadFailed,
 		// gnet.ErrDisconnectWriteFailed:             SKY_ErrDisconnectWriteFailed,
-		gnet.ErrDisconnectSetReadDeadlineFailed:   SKY_ErrDisconnectSetReadDeadlineFailed,
-		gnet.ErrDisconnectInvalidMessageLength:    SKY_ErrDisconnectInvalidMessageLength,
-		gnet.ErrDisconnectMalformedMessage:        SKY_ErrDisconnectMalformedMessage,
-		gnet.ErrDisconnectUnknownMessage:          SKY_ErrDisconnectUnknownMessage,
-		gnet.ErrDisconnectUnexpectedError:         SKY_ErrDisconnectUnexpectedError,
-		gnet.ErrConnectionPoolClosed:              SKY_ErrConnectionPoolClosed,
-		gnet.ErrWriteQueueFull:                    SKY_ErrWriteQueueFull,
-		gnet.ErrNoReachableConnections:            SKY_ErrNoReachableConnections,
-		daemon.ErrDisconnectVersionNotSupported:   SKY_ErrDisconnectVersionNotSupported,
-		daemon.ErrDisconnectIntroductionTimeout:   SKY_ErrDisconnectIntroductionTimeout,
-		daemon.ErrDisconnectVersionSendFailed:     SKY_ErrDisconnectVersionSendFailed,
-		daemon.ErrDisconnectIsBlacklisted:         SKY_ErrDisconnectIsBlacklisted,
-		daemon.ErrDisconnectSelf:                  SKY_ErrDisconnectSelf,
-		daemon.ErrDisconnectConnectedTwice:        SKY_ErrDisconnectConnectedTwice,
-		daemon.ErrDisconnectIdle:                  SKY_ErrDisconnectIdle,
-		daemon.ErrDisconnectNoIntroduction:        SKY_ErrDisconnectNoIntroduction,
-		daemon.ErrDisconnectIPLimitReached:        SKY_ErrDisconnectIPLimitReached,
-		daemon.ErrDisconnectIncomprehensibleError: SKY_ErrDisconnectIncomprehensibleError,
+		gnet.ErrDisconnectSetReadDeadlineFailed: SKY_ErrDisconnectSetReadDeadlineFailed,
+		gnet.ErrDisconnectInvalidMessageLength:  SKY_ErrDisconnectInvalidMessageLength,
+		gnet.ErrDisconnectMalformedMessage:      SKY_ErrDisconnectMalformedMessage,
+		gnet.ErrDisconnectUnknownMessage:        SKY_ErrDisconnectUnknownMessage,
+		gnet.ErrConnectionPoolClosed:            SKY_ErrConnectionPoolClosed,
+		gnet.ErrWriteQueueFull:                  SKY_ErrWriteQueueFull,
+		gnet.ErrNoReachableConnections:          SKY_ErrNoReachableConnections,
+		daemon.ErrDisconnectVersionNotSupported: SKY_ErrDisconnectVersionNotSupported,
+		daemon.ErrDisconnectIntroductionTimeout: SKY_ErrDisconnectIntroductionTimeout,
+		daemon.ErrDisconnectIsBlacklisted:       SKY_ErrDisconnectIsBlacklisted,
+		daemon.ErrDisconnectSelf:                SKY_ErrDisconnectSelf,
+		daemon.ErrDisconnectConnectedTwice:      SKY_ErrDisconnectConnectedTwice,
+		daemon.ErrDisconnectIdle:                SKY_ErrDisconnectIdle,
+		daemon.ErrDisconnectNoIntroduction:      SKY_ErrDisconnectNoIntroduction,
+		daemon.ErrDisconnectIPLimitReached:      SKY_ErrDisconnectIPLimitReached,
 		// Removed
 		//		daemon.ErrDisconnectMaxDefaultConnectionReached:   SKY_ErrDisconnectMaxDefaultConnectionReached,
 		daemon.ErrDisconnectMaxOutgoingConnectionsReached: SKY_ErrDisconnectMaxOutgoingConnectionsReached,
@@ -505,9 +565,9 @@ var (
 		wallet.ErrInvalidEncryptedField:     SKY_ErrInvalidEncryptedField,
 		wallet.ErrWalletEncrypted:           SKY_ErrWalletEncrypted,
 		wallet.ErrWalletNotEncrypted:        SKY_ErrWalletNotEncrypted,
-		wallet.ErrMissingPassword:           SKY_ErrMissingPassword,
+		wallet.ErrMissingPassword:           SKY_ErrWalletMissingPassword,
 		wallet.ErrMissingEncrypt:            SKY_ErrMissingEncrypt,
-		wallet.ErrInvalidPassword:           SKY_ErrInvalidPassword,
+		wallet.ErrInvalidPassword:           SKY_ErrWalletInvalidPassword,
 		wallet.ErrMissingSeed:               SKY_ErrMissingSeed,
 		wallet.ErrMissingAuthenticated:      SKY_ErrMissingAuthenticated,
 		wallet.ErrWrongCryptoType:           SKY_ErrWrongCryptoType,
@@ -540,6 +600,8 @@ var (
 		wallet.ErrWalletParamsConflict:      SKY_ErrWalletParamsConflict,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
+		// params
+		params.ErrInvalidDecimals: SKY_ErrInvalidDecimals,
 	}
 )
 
@@ -577,4 +639,54 @@ func libErrorCode(err error) uint32 {
 		return SKY_ErrTxnViolatesUserConstraint
 	}
 	return SKY_ERROR
+}
+
+func errorFromLibCode(errcode uint32) error {
+	if err, exists := codeToErrorMap[errcode]; exists {
+		return err
+	}
+
+	// FIXME: Be more specific and encode type, sub-error in error code
+	err := errors.New("libskycoin error")
+	if errcode == SKY_WalletLoadError {
+		return cli.WalletLoadError{}
+	}
+	if errcode == SKY_WalletSaveError {
+		return cli.WalletSaveError{}
+	}
+	if errcode == SKY_ErrHistoryDBCorrupted {
+		return historydb.NewErrHistoryDBCorrupted(err)
+	}
+	if errcode == SKY_ErrUxOutNotExist {
+		return historydb.ErrUxOutNotExist{UxID: ""}
+	}
+	if errcode == SKY_ErrUnspentNotExist {
+		return blockdb.ErrUnspentNotExist{UxID: ""}
+	}
+	if errcode == SKY_ErrMissingSignature {
+		return blockdb.NewErrMissingSignature(nil)
+	}
+	if errcode == SKY_ErrCreateBucketFailed {
+		return dbutil.ErrCreateBucketFailed{Bucket: "", Err: nil}
+	}
+	if errcode == SKY_ErrBucketNotExist {
+		return dbutil.ErrBucketNotExist{Bucket: ""}
+	}
+	if errcode == SKY_ErrTxnViolatesHardConstraint {
+		return visor.ErrTxnViolatesHardConstraint{Err: err}
+	}
+	if errcode == SKY_ErrTxnViolatesSoftConstraint {
+		return visor.ErrTxnViolatesSoftConstraint{Err: err}
+	}
+	if errcode == SKY_ErrTxnViolatesUserConstraint {
+		return visor.ErrTxnViolatesUserConstraint{Err: err}
+	}
+	return nil
+}
+
+func init() {
+	// Init reverse error code map
+	for _err := range errorToCodeMap {
+		codeToErrorMap[errorToCodeMap[_err]] = _err
+	}
 }

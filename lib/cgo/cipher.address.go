@@ -1,24 +1,19 @@
 package main
 
-/*
-#include <string.h>
-#include <stdlib.h>
-
-#include "skytypes.h"
-
-*/
-import "C"
-
 import (
 	"reflect"
 	"unsafe"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	cipher "github.com/skycoin/skycoin/src/cipher"
 )
 
-/**
- * Functions in github.com/skycoin/skycoin/src/cipher/address.go
- */
+/*
+
+#include <string.h>
+#include <stdlib.h>
+#include "skytypes.h"
+*/
+import "C"
 
 //export SKY_cipher_DecodeBase58Address
 func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.cipher__Address) (____error_code uint32) {
@@ -58,6 +53,15 @@ func SKY_cipher_AddressFromSecKey(_secKey *C.cipher__SecKey, _arg1 *C.cipher__Ad
 	if err == nil {
 		*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))
 	}
+	return
+}
+
+//export SKY_cipher_Address_Null
+func SKY_cipher_Address_Null(_addr *C.cipher__Address, _arg0 *bool) (____error_code uint32) {
+
+	addr := *inplaceAddress(_addr)
+	__arg0 := addr.Null()
+	*_arg0 = __arg0
 	return
 }
 

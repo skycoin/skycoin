@@ -4,10 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -59,6 +57,7 @@ func getMessageConfigs() []MessageConfig {
 		NewMessageConfig("GETT", GetTxnsMessage{}),
 		NewMessageConfig("GIVT", GiveTxnsMessage{}),
 		NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
+		NewMessageConfig("DISC", DisconnectMessage{}),
 	}
 }
 
@@ -86,15 +85,12 @@ func (msc *MessagesConfig) Register() {
 // Messages messages struct
 type Messages struct {
 	Config MessagesConfig
-	// Magic value for detecting self-connection
-	Mirror uint32
 }
 
 // NewMessages creates Messages
 func NewMessages(c MessagesConfig) *Messages {
 	return &Messages{
 		Config: c,
-		Mirror: rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 	}
 }
 
@@ -157,19 +153,12 @@ func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) 
 
 // process Notifies the Pex instance that peers were requested
 func (gpm *GetPeersMessage) process(d daemoner) {
-	if d.PexConfig().Disabled {
+	if d.pexConfig().Disabled {
 		return
 	}
 
-	peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
-	if len(peers) == 0 {
-		logger.Debug("We have no peers to send in reply")
-		return
-	}
-
-	m := NewGivePeersMessage(peers)
-	if err := d.SendMessage(gpm.addr, m); err != nil {
-		logger.WithField("addr", gpm.addr).WithError(err).Error("Send GivePeersMessage failed")
+	if err := d.sendRandomPeers(gpm.addr); err != nil {
+		logger.WithField("addr", gpm.addr).WithError(err).Error("SendRandomPeers failed")
 	}
 }
 
@@ -212,21 +201,42 @@ func (gpm *GivePeersMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // process Notifies the Pex instance that peers were received
 func (gpm *GivePeersMessage) process(d daemoner) {
-	if d.PexConfig().Disabled {
+	if d.pexConfig().Disabled {
 		return
 	}
-	peers := gpm.GetPeers()
-	logger.Debugf("Got %d peers via PEX: %s", len(peers), strings.Join(peers, ", "))
 
-	d.AddPeers(peers)
+	peers := gpm.GetPeers()
+
+	if len(peers) == 0 {
+		return
+	}
+
+	// Cap the number of peers printed in the log to prevent log spam abuse
+	peersToFmt := peers
+	if len(peersToFmt) > 30 {
+		peersToFmt = peersToFmt[:30]
+	}
+	peersStr := strings.Join(peersToFmt, ", ")
+	if len(peers) != len(peersToFmt) {
+		peersStr += fmt.Sprintf(" and %d more", len(peers)-len(peersToFmt))
+	}
+
+	logger.WithFields(logrus.Fields{
+		"addr":   gpm.c.Addr,
+		"gnetID": gpm.c.ConnID,
+		"peers":  peersStr,
+		"count":  len(peers),
+	}).Debug("Received peers via PEX")
+
+	d.addPeers(peers)
 }
 
 // IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
-	c *gnet.MessageContext `enc:"-"`
-	// We validate the message in Handle() and cache the result for process()
-	valid         bool           `enc:"-"` // skip it during encoding
-	userAgentData useragent.Data `enc:"-"`
+	c                             *gnet.MessageContext `enc:"-"`
+	userAgent                     useragent.Data       `enc:"-"`
+	unconfirmedBurnFactor         uint32               `enc:"-"`
+	unconfirmedMaxTransactionSize uint32               `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -239,14 +249,25 @@ type IntroductionMessage struct {
 	// Currently it contains the blockchain pubkey and user agent but will accept a client that does not provide it.
 	// If any of this data is provided, it must include a valid blockchain pubkey and a valid user agent string (maxlen=256).
 	// Contents of extra:
-	// ExtraByte uint32 // length prefix of []byte
-	// Pubkey    cipher.Pubkey // blockchain pubkey
-	// UserAgent string `enc:",maxlen=256"`
+	// ExtraByte  uint32 // length prefix of []byte
+	// Pubkey     cipher.Pubkey // blockchain pubkey
+	// BurnFactor uint32 // burn factor for announced txns
+	// MaxTxnSize uint32 // max txn size for announced txns
+	// UserAgent  string `enc:",maxlen=256"`
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, unconfirmedBurnFactor, unconfirmedMaxTxnSize uint32) *IntroductionMessage {
+	return &IntroductionMessage{
+		Mirror:          mirror,
+		ProtocolVersion: version,
+		ListenPort:      port,
+		Extra:           newIntroductionMessageExtra(pubkey, userAgent, unconfirmedBurnFactor, unconfirmedMaxTxnSize),
+	}
+}
+
+func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, unconfirmedBurnFactor, unconfirmedMaxTxnSize uint32) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
 			"userAgent": userAgent,
@@ -256,193 +277,184 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 	if userAgent == "" {
 		logger.Panic("user agent is required")
 	}
+	useragent.MustParse(userAgent)
 
 	userAgentSerialized := encoder.SerializeString(userAgent)
+	burnFactorSerialized := encoder.SerializeAtomic(unconfirmedBurnFactor)
+	maxTxnSizeSerialized := encoder.SerializeAtomic(unconfirmedMaxTxnSize)
 
-	extra := make([]byte, len(pubkey)+len(userAgentSerialized))
+	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(burnFactorSerialized)+len(maxTxnSizeSerialized))
 
 	copy(extra[:len(pubkey)], pubkey[:])
-	copy(extra[len(pubkey):], userAgentSerialized)
+	i := len(pubkey)
+	copy(extra[i:i+len(burnFactorSerialized)], burnFactorSerialized)
+	i += len(burnFactorSerialized)
+	copy(extra[i:i+len(maxTxnSizeSerialized)], maxTxnSizeSerialized)
+	i += len(maxTxnSizeSerialized)
+	copy(extra[i:i+len(userAgentSerialized)], userAgentSerialized)
 
-	return &IntroductionMessage{
-		Mirror:          mirror,
-		ProtocolVersion: version,
-		ListenPort:      port,
-		Extra:           extra,
-	}
+	return extra
 }
 
-// Handle Responds to an gnet.Pool event. We implement Handle() here because we
-// need to control the DisconnectReason sent back to gnet.
+// Handle records message event in daemon
 func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
-	d := daemon.(daemoner)
-	var userAgentData useragent.Data
-
-	logger.WithField("addr", mc.Addr).Debug("IntroductionMessage.Handle")
-
-	err := func() error {
-		// Disconnect if this is a self connection (we have the same mirror value)
-		if intro.Mirror == d.Mirror() {
-			logger.WithFields(logrus.Fields{
-				"addr":   mc.Addr,
-				"mirror": intro.Mirror,
-			}).Info("Remote mirror value matches ours")
-			if err := d.Disconnect(mc.Addr, ErrDisconnectSelf); err != nil {
-				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-			}
-			return ErrDisconnectSelf
-		}
-
-		// Disconnect if peer version is not within the supported range
-		dc := d.DaemonConfig()
-		if intro.ProtocolVersion < dc.MinProtocolVersion {
-			logger.WithFields(logrus.Fields{
-				"addr":               mc.Addr,
-				"protocolVersion":    intro.ProtocolVersion,
-				"minProtocolVersion": dc.MinProtocolVersion,
-			}).Info("protocol version below minimum supported protocol version")
-			if err := d.Disconnect(mc.Addr, ErrDisconnectVersionNotSupported); err != nil {
-				logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-			}
-			return ErrDisconnectVersionNotSupported
-		}
-
-		logger.WithFields(logrus.Fields{
-			"addr":            mc.Addr,
-			"protocolVersion": intro.ProtocolVersion,
-		}).Debug("Peer protocol version accepted")
-
-		// v24 does not send blockchain pubkey or user agent
-		// v25 sends blockchain pubkey and user agent
-		// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
-		// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
-		if len(intro.Extra) > 0 {
-			var bcPubKey cipher.PubKey
-			if len(intro.Extra) < len(bcPubKey) {
-				logger.WithField("addr", mc.Addr).Info("Extra data length does not meet the minimum requirement")
-				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
-					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-				}
-				return ErrDisconnectInvalidExtraData
-			}
-			copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
-
-			if d.BlockchainPubkey() != bcPubKey {
-				logger.WithFields(logrus.Fields{
-					"addr":         mc.Addr,
-					"pubkey":       bcPubKey.Hex(),
-					"daemonPubkey": d.BlockchainPubkey().Hex(),
-				}).Info("Blockchain pubkey does not match")
-				if err := d.Disconnect(mc.Addr, ErrDisconnectBlockchainPubkeyNotMatched); err != nil {
-					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-				}
-				return ErrDisconnectBlockchainPubkeyNotMatched
-			}
-
-			userAgentSerialized := intro.Extra[len(bcPubKey):]
-			userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
-			if err != nil {
-				logger.WithError(err).Info("Extra data user agent string could not be deserialized")
-				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData); err != nil {
-					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-				}
-				return ErrDisconnectInvalidExtraData
-			}
-
-			userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
-			if err != nil {
-				logger.WithError(err).WithField("userAgent", userAgent).Info("User agent is invalid")
-				if err := d.Disconnect(mc.Addr, ErrDisconnectInvalidUserAgent); err != nil {
-					logger.WithError(err).WithField("addr", mc.Addr).Warning("Disconnect")
-				}
-				return ErrDisconnectInvalidUserAgent
-			}
-		}
-
-		return nil
-	}()
-
-	intro.valid = (err == nil)
-	intro.userAgentData = userAgentData
 	intro.c = mc
-
-	if err != nil {
-		d.IncreaseRetryTimes(mc.Addr)
-		return err
-	}
-
-	return d.recordMessageEvent(intro, mc)
+	return daemon.(daemoner).recordMessageEvent(intro, mc)
 }
 
 // process an event queued by Handle()
 func (intro *IntroductionMessage) process(d daemoner) {
-	a := intro.c.Addr
-	logger.WithFields(logrus.Fields{
-		"addr":       a,
-		"listenPort": intro.ListenPort,
-		"gnetID":     intro.c.ConnID,
-	}).Debug("IntroductionMessage.process")
+	addr := intro.c.Addr
 
-	if !intro.valid {
+	fields := logrus.Fields{
+		"addr":       addr,
+		"gnetID":     intro.c.ConnID,
+		"listenPort": intro.ListenPort,
+	}
+
+	logger.WithFields(fields).Debug("IntroductionMessage.process")
+
+	if err := intro.verify(d); err != nil {
+		if err := d.Disconnect(addr, err); err != nil {
+			logger.WithError(err).WithFields(fields).Warning("Disconnect")
+		}
 		return
 	}
 
-	c, err := d.connectionIntroduced(a, intro.c.ConnID, intro)
-	if err != nil {
-		logger.WithError(err).WithField("addr", a).Warning("connectionIntroduced failed")
+	if _, err := d.connectionIntroduced(addr, intro.c.ConnID, intro); err != nil {
+		logger.WithError(err).WithFields(fields).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
 		// It is hypothetically possible that a message would get processed after
 		// a disconnect event for a given connection.
 		// In this case, drop the packet.
 		// Do not perform a disconnect, since this would operate on the new connection.
+		// This should be prevented by an earlier check in daemon.onMessageEvent()
 		case ErrConnectionGnetIDMismatch, ErrConnectionStateNotConnected, ErrConnectionAlreadyIntroduced:
-			logger.Critical().WithError(err).Warning("IntroductionMessage.process connection state out of order")
+			logger.Critical().WithError(err).WithFields(fields).Warning("IntroductionMessage.process connection state out of order")
 			return
 		case ErrConnectionNotExist:
 			return
 		case ErrConnectionIPMirrorExists:
 			reason = ErrDisconnectConnectedTwice
+		case pex.ErrPeerlistFull:
+			reason = ErrDisconnectPeerlistFull
+			// Send more peers before disconnecting
+			logger.WithFields(fields).Debug("Sending peers before disconnecting due to peer list full")
+			if err := d.sendRandomPeers(addr); err != nil {
+				logger.WithError(err).WithFields(fields).Warning("sendRandomPeers failed")
+			}
 		default:
-			reason = ErrDisconnectIncomprehensibleError
+			reason = ErrDisconnectUnexpectedError
 		}
 
-		if err := d.Disconnect(a, reason); err != nil {
-			logger.WithError(err).WithField("addr", a).Warning("Disconnect")
+		if err := d.Disconnect(addr, reason); err != nil {
+			logger.WithError(err).WithFields(fields).Warning("Disconnect")
 		}
 
 		return
 	}
 
-	d.ResetRetryTimes(a)
-
-	if c.Outgoing {
-		// For successful outgoing connections, mark the peer as having an incoming port in the pex peerlist
-		// The peer should already be in the peerlist, since we use the peerlist to choose an outgoing connection to make
-		if err := d.SetHasIncomingPort(c.ListenAddr()); err != nil {
-			logger.WithField("addr", err).WithError(err).Error("SetHasIncomingPort failed")
-		}
-	} else {
-		// For successful incoming connections, add the peer to the peer list, with their self-reported listen port
-		if err := d.AddPeer(c.ListenAddr()); err != nil {
-			logger.WithError(err).WithFields(logrus.Fields{
-				"addr":       a,
-				"listenAddr": c.ListenAddr(),
-			}).Error("AddPeer failed")
-		}
-	}
-
 	// Request blocks immediately after they're confirmed
-	if err := d.RequestBlocksFromAddr(intro.c.Addr); err != nil {
-		logger.WithError(err).Warning("RequestBlocksFromAddr")
+	if err := d.requestBlocksFromAddr(addr); err != nil {
+		logger.WithError(err).WithFields(fields).Warning("requestBlocksFromAddr")
 	} else {
-		logger.WithField("addr", intro.c.Addr).Debug("Requested blocks")
+		logger.WithFields(fields).Debug("Requested blocks")
 	}
 
 	// Announce unconfirmed txns
-	if err := d.AnnounceAllTxns(); err != nil {
-		logger.WithError(err).Warning("AnnounceAllTxns failed")
+	if err := d.announceAllTxns(); err != nil {
+		logger.WithError(err).Warning("announceAllTxns failed")
 	}
+}
+
+func (intro *IntroductionMessage) verify(d daemoner) error {
+	addr := intro.c.Addr
+
+	fields := logrus.Fields{
+		"addr":   addr,
+		"gnetID": intro.c.ConnID,
+	}
+
+	dc := d.daemonConfig()
+
+	// Disconnect if this is a self connection (we have the same mirror value)
+	if intro.Mirror == dc.Mirror {
+		logger.WithFields(fields).WithField("mirror", intro.Mirror).Info("Remote mirror value matches ours")
+		return ErrDisconnectSelf
+	}
+
+	// Disconnect if peer version is not within the supported range
+	if intro.ProtocolVersion < dc.MinProtocolVersion {
+		logger.WithFields(fields).WithFields(logrus.Fields{
+			"protocolVersion":    intro.ProtocolVersion,
+			"minProtocolVersion": dc.MinProtocolVersion,
+		}).Info("protocol version below minimum supported protocol version")
+		return ErrDisconnectVersionNotSupported
+	}
+
+	logger.WithFields(fields).WithField("protocolVersion", intro.ProtocolVersion).Debug("Peer protocol version accepted")
+
+	// v24 does not send blockchain pubkey or user agent
+	// v25 sends blockchain pubkey and user agent
+	// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
+	// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
+	if len(intro.Extra) > 0 {
+		var bcPubKey cipher.PubKey
+		if len(intro.Extra) < len(bcPubKey) {
+			logger.WithFields(fields).Warning("Extra data length does not meet the minimum requirement")
+			return ErrDisconnectInvalidExtraData
+		}
+		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
+
+		if dc.BlockchainPubkey != bcPubKey {
+			logger.WithFields(fields).WithFields(logrus.Fields{
+				"pubkey":       bcPubKey.Hex(),
+				"daemonPubkey": dc.BlockchainPubkey.Hex(),
+			}).Warning("Blockchain pubkey does not match")
+			return ErrDisconnectBlockchainPubkeyNotMatched
+		}
+
+		i := len(bcPubKey)
+		if len(intro.Extra) < i+8 {
+			logger.WithFields(fields).Warning("UnconfirmedBurnFactor and UnconfirmedMaxTransactionSize could not be deserialized: not enough data")
+			return ErrDisconnectInvalidExtraData
+		}
+		if _, err := encoder.DeserializeAtomic(intro.Extra[i:i+4], &intro.unconfirmedBurnFactor); err != nil {
+			// This should not occur due to the previous length check
+			logger.Critical().WithError(err).WithFields(fields).Warning("UnconfirmedBurnFactor could not be deserialized")
+			return ErrDisconnectInvalidExtraData
+		}
+		if intro.unconfirmedBurnFactor < 2 {
+			logger.WithFields(fields).WithField("unconfirmedBurnFactor", intro.unconfirmedBurnFactor).Warning("Invalid intro.unconfirmedBurnFactor")
+			return ErrDisconnectInvalidBurnFactor
+		}
+
+		if _, err := encoder.DeserializeAtomic(intro.Extra[i+4:i+8], &intro.unconfirmedMaxTransactionSize); err != nil {
+			// This should not occur due to the previous length check
+			logger.Critical().WithError(err).WithFields(fields).Warning("MaxTransactionSize could not be deserialized")
+			return ErrDisconnectInvalidExtraData
+		}
+		if intro.unconfirmedMaxTransactionSize < 1024 {
+			logger.WithFields(fields).WithField("unconfirmedMaxTransactionSize", intro.unconfirmedMaxTransactionSize).Warning("Invalid intro.unconfirmedMaxTransactionSize")
+			return ErrDisconnectInvalidMaxTransactionSize
+		}
+
+		userAgentSerialized := intro.Extra[len(bcPubKey)+8:]
+		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
+		if err != nil {
+			logger.WithError(err).WithFields(fields).Warning("Extra data user agent string could not be deserialized")
+			return ErrDisconnectInvalidExtraData
+		}
+
+		intro.userAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
+		if err != nil {
+			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Warning("User agent is invalid")
+			return ErrDisconnectInvalidUserAgent
+		}
+	}
+
+	return nil
 }
 
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.
@@ -458,11 +470,16 @@ func (ping *PingMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 
 // process Sends a PongMessage to the sender of PingMessage
 func (ping *PingMessage) process(d daemoner) {
-	if d.DaemonConfig().LogPings {
-		logger.WithField("addr", ping.c.Addr).Debug("Replying to ping")
+	fields := logrus.Fields{
+		"addr":   ping.c.Addr,
+		"gnetID": ping.c.ConnID,
 	}
-	if err := d.SendMessage(ping.c.Addr, &PongMessage{}); err != nil {
-		logger.WithField("addr", ping.c.Addr).WithError(err).Error("Send PongMessage failed")
+
+	if d.daemonConfig().LogPings {
+		logger.WithFields(fields).Debug("Replying to ping")
+	}
+	if err := d.sendMessage(ping.c.Addr, &PongMessage{}); err != nil {
+		logger.WithFields(fields).WithError(err).Error("Send PongMessage failed")
 	}
 }
 
@@ -475,9 +492,53 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 	// There is nothing to do; gnet updates Connection.LastMessage internally
 	// when this is received
 	if daemon.(*Daemon).Config.LogPings {
-		logger.WithField("addr", mc.Addr).Debug("Received pong")
+		logger.WithFields(logrus.Fields{
+			"addr":   mc.Addr,
+			"gnetID": mc.ConnID,
+		}).Debug("Received pong")
 	}
 	return nil
+}
+
+// DisconnectMessage sent to a peer before disconnecting, indicating the reason for disconnect
+type DisconnectMessage struct {
+	c      *gnet.MessageContext  `enc:"-"`
+	reason gnet.DisconnectReason `enc:"-"`
+
+	// Error code
+	ReasonCode uint16
+
+	// Reserved for future use
+	Reserved []byte
+}
+
+// NewDisconnectMessage creates message sent to reject previously received message
+func NewDisconnectMessage(reason gnet.DisconnectReason) *DisconnectMessage {
+	return &DisconnectMessage{
+		reason:     reason,
+		ReasonCode: DisconnectReasonToCode(reason),
+		Reserved:   nil,
+	}
+}
+
+// Handle an event queued by Handle()
+func (dm *DisconnectMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	dm.c = mc
+	return daemon.(daemoner).recordMessageEvent(dm, mc)
+}
+
+// process disconnect message by reflexively disconnecting
+func (dm *DisconnectMessage) process(d daemoner) {
+	logger.WithFields(logrus.Fields{
+		"addr":   dm.c.Addr,
+		"gnetID": dm.c.ConnID,
+		"code":   dm.ReasonCode,
+		"reason": DisconnectCodeToReason(dm.ReasonCode),
+	}).Infof("DisconnectMessage received")
+
+	if err := d.disconnectNow(dm.c.Addr, ErrDisconnectReceivedDisconnect); err != nil {
+		logger.WithError(err).WithField("addr", dm.c.Addr).Warning("disconnectNow")
+	}
 }
 
 // GetBlocksMessage sent to request blocks since LastBlock
@@ -496,23 +557,26 @@ func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMes
 }
 
 // Handle handles message
-func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext,
-	daemon interface{}) error {
+func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gbm.c = mc
 	return daemon.(daemoner).recordMessageEvent(gbm, mc)
 }
 
 // process should send number to be requested, with request
 func (gbm *GetBlocksMessage) process(d daemoner) {
-	// TODO -- we need the sig to be sent with the block, but only the master
-	// can sign blocks.  Thus the sig needs to be stored with the block.
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
+
+	fields := logrus.Fields{
+		"addr":   gbm.c.Addr,
+		"gnetID": gbm.c.ConnID,
+	}
+
 	// Record this as this peer's highest block
-	d.RecordPeerHeight(gbm.c.Addr, gbm.c.ConnID, gbm.LastBlock)
+	d.recordPeerHeight(gbm.c.Addr, gbm.c.ConnID, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
-	blocks, err := d.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	blocks, err := d.getSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
 	if err != nil {
 		logger.WithError(err).Error("Get signed blocks failed")
 		return
@@ -522,17 +586,17 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 		return
 	}
 
-	logger.Debugf("Got %d blocks since %d", len(blocks), gbm.LastBlock)
+	logger.WithFields(fields).Debugf("Got %d blocks since %d", len(blocks), gbm.LastBlock)
 
 	m := NewGiveBlocksMessage(blocks)
-	if err := d.SendMessage(gbm.c.Addr, m); err != nil {
-		logger.WithField("addr", gbm.c.Addr).WithError(err).Error("Send GiveBlocksMessage failed")
+	if err := d.sendMessage(gbm.c.Addr, m); err != nil {
+		logger.WithFields(fields).WithError(err).Error("Send GiveBlocksMessage failed")
 	}
 }
 
 // GiveBlocksMessage sent in response to GetBlocksMessage, or unsolicited
 type GiveBlocksMessage struct {
-	Blocks []coin.SignedBlock
+	Blocks []coin.SignedBlock   `enc:",maxlen=128"`
 	c      *gnet.MessageContext `enc:"-"`
 }
 
@@ -544,14 +608,14 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 }
 
 // Handle handle message
-func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
-	gbm.c = mc
-	return daemon.(daemoner).recordMessageEvent(gbm, mc)
+func (m *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	m.c = mc
+	return daemon.(daemoner).recordMessageEvent(m, mc)
 }
 
 // process process message
-func (gbm *GiveBlocksMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+func (m *GiveBlocksMessage) process(d daemoner) {
+	if d.daemonConfig().DisableNetworking {
 		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
@@ -560,9 +624,9 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 	// It is not necessary that the blocks be executed together in a single transaction.
 
 	processed := 0
-	maxSeq, ok, err := d.HeadBkSeq()
+	maxSeq, ok, err := d.headBkSeq()
 	if err != nil {
-		logger.WithError(err).Error("visor.HeadBkSeq failed")
+		logger.WithError(err).Error("d.headBkSeq failed")
 		return
 	}
 	if !ok {
@@ -570,7 +634,7 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 		return
 	}
 
-	for _, b := range gbm.Blocks {
+	for _, b := range m.Blocks {
 		// To minimize waste when receiving multiple responses from peers
 		// we only break out of the loop if the block itself is invalid.
 		// E.g. if we request 20 blocks since 0 from 2 peers, and one peer
@@ -581,7 +645,7 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 			continue
 		}
 
-		err := d.ExecuteSignedBlock(b)
+		err := d.executeSignedBlock(b)
 		if err == nil {
 			logger.Critical().WithField("seq", b.Block.Head.BkSeq).Info("Added new block")
 			processed++
@@ -596,9 +660,9 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 		return
 	}
 
-	headBkSeq, ok, err := d.HeadBkSeq()
+	headBkSeq, ok, err := d.headBkSeq()
 	if err != nil {
-		logger.WithError(err).Error("visor.HeadBkSeq failed")
+		logger.WithError(err).Error("d.headBkSeq failed")
 		return
 	}
 	if !ok {
@@ -613,14 +677,14 @@ func (gbm *GiveBlocksMessage) process(d daemoner) {
 	}
 
 	// Announce our new blocks to peers
-	m1 := NewAnnounceBlocksMessage(headBkSeq)
-	if err := d.BroadcastMessage(m1); err != nil {
+	abm := NewAnnounceBlocksMessage(headBkSeq)
+	if _, err := d.broadcastMessage(abm); err != nil {
 		logger.WithError(err).Warning("Broadcast AnnounceBlocksMessage failed")
 	}
 
 	// Request more blocks
-	m2 := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().BlocksResponseCount)
-	if err := d.BroadcastMessage(m2); err != nil {
+	gbm := NewGetBlocksMessage(headBkSeq, d.daemonConfig().BlocksResponseCount)
+	if _, err := d.broadcastMessage(gbm); err != nil {
 		logger.WithError(err).Warning("Broadcast GetBlocksMessage failed")
 	}
 }
@@ -647,13 +711,18 @@ func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 // process process message
 func (abm *AnnounceBlocksMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
-	headBkSeq, ok, err := d.HeadBkSeq()
+	fields := logrus.Fields{
+		"addr":   abm.c.Addr,
+		"gnetID": abm.c.ConnID,
+	}
+
+	headBkSeq, ok, err := d.headBkSeq()
 	if err != nil {
-		logger.WithError(err).Error("AnnounceBlocksMessage Visor.HeadBkSeq failed")
+		logger.WithError(err).Error("AnnounceBlocksMessage d.headBkSeq failed")
 		return
 	}
 	if !ok {
@@ -667,9 +736,9 @@ func (abm *AnnounceBlocksMessage) process(d daemoner) {
 
 	// TODO: Should this be block get request for current sequence?
 	// If client is not caught up, won't attempt to get block
-	m := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().BlocksResponseCount)
-	if err := d.SendMessage(abm.c.Addr, m); err != nil {
-		logger.WithError(err).WithField("addr", abm.c.Addr).Error("Send GetBlocksMessage")
+	m := NewGetBlocksMessage(headBkSeq, d.daemonConfig().BlocksResponseCount)
+	if err := d.sendMessage(abm.c.Addr, m); err != nil {
+		logger.WithError(err).WithFields(fields).Error("Send GetBlocksMessage")
 	}
 }
 
@@ -680,7 +749,7 @@ type SendingTxnsMessage interface {
 
 // AnnounceTxnsMessage tells a peer that we have these transactions
 type AnnounceTxnsMessage struct {
-	Transactions []cipher.SHA256
+	Transactions []cipher.SHA256      `enc:",maxlen=256"`
 	c            *gnet.MessageContext `enc:"-"`
 }
 
@@ -704,13 +773,18 @@ func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface
 
 // process process message
 func (atm *AnnounceTxnsMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
-	unknown, err := d.GetUnconfirmedUnknown(atm.Transactions)
+	fields := logrus.Fields{
+		"addr":   atm.c.Addr,
+		"gnetID": atm.c.ConnID,
+	}
+
+	unknown, err := d.filterKnownUnconfirmed(atm.Transactions)
 	if err != nil {
-		logger.WithField("addr", atm.c.Addr).WithError(err).Error("AnnounceTxnsMessage Visor.GetUnconfirmedUnknown failed")
+		logger.WithError(err).Error("AnnounceTxnsMessage d.filterKnownUnconfirmed failed")
 		return
 	}
 
@@ -719,8 +793,8 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 	}
 
 	m := NewGetTxnsMessage(unknown)
-	if err := d.SendMessage(atm.c.Addr, m); err != nil {
-		logger.WithField("addr", atm.c.Addr).WithError(err).Error("Send GetTxnsMessage failed")
+	if err := d.sendMessage(atm.c.Addr, m); err != nil {
+		logger.WithFields(fields).WithError(err).Error("Send GetTxnsMessage failed")
 	}
 }
 
@@ -745,14 +819,19 @@ func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) e
 
 // process process message
 func (gtm *GetTxnsMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
+	fields := logrus.Fields{
+		"addr":   gtm.c.Addr,
+		"gnetID": gtm.c.ConnID,
+	}
+
 	// Locate all txns from the unconfirmed pool
-	known, err := d.GetUnconfirmedKnown(gtm.Transactions)
+	known, err := d.getKnownUnconfirmed(gtm.Transactions)
 	if err != nil {
-		logger.WithError(err).Error("GetTxnsMessage Visor.GetUnconfirmedKnown failed")
+		logger.WithError(err).Error("GetTxnsMessage d.getKnownUnconfirmed failed")
 		return
 	}
 	if len(known) == 0 {
@@ -761,19 +840,19 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 
 	// Reply to sender with GiveTxnsMessage
 	m := NewGiveTxnsMessage(known)
-	if err := d.SendMessage(gtm.c.Addr, m); err != nil {
-		logger.WithError(err).WithField("addr", gtm.c.Addr).Error("Send GiveTxnsMessage")
+	if err := d.sendMessage(gtm.c.Addr, m); err != nil {
+		logger.WithError(err).WithFields(fields).Error("Send GiveTxnsMessage")
 	}
 }
 
 // GiveTxnsMessage tells the transaction of given hashes
 type GiveTxnsMessage struct {
-	Transactions coin.Transactions
+	Transactions []coin.Transaction   `enc:",maxlen=256"`
 	c            *gnet.MessageContext `enc:"-"`
 }
 
 // NewGiveTxnsMessage creates GiveTxnsMessage
-func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
+func NewGiveTxnsMessage(txns []coin.Transaction) *GiveTxnsMessage {
 	return &GiveTxnsMessage{
 		Transactions: txns,
 	}
@@ -781,7 +860,7 @@ func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
 
 // GetFiltered returns transactions hashes
 func (gtm *GiveTxnsMessage) GetFiltered() []cipher.SHA256 {
-	return gtm.Transactions.Hashes()
+	return coin.Transactions(gtm.Transactions).Hashes()
 }
 
 // Handle handle message
@@ -792,7 +871,7 @@ func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) 
 
 // process process message
 func (gtm *GiveTxnsMessage) process(d daemoner) {
-	if d.DaemonConfig().DisableNetworking {
+	if d.daemonConfig().DisableNetworking {
 		return
 	}
 
@@ -802,13 +881,13 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 		// Only announce transactions that are new to us, so that peers can't spam relays
 		// It is not necessary to inject all of the transactions inside a database transaction,
 		// since each is independent
-		known, softErr, err := d.InjectTransaction(txn)
+		known, softErr, err := d.injectTransaction(txn)
 		if err != nil {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Failed to record transaction")
 			continue
 		} else if softErr != nil {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
-			continue
+			// Allow soft txn violations to rebroadcast
 		} else if known {
 			logger.WithField("txid", txn.Hash().Hex()).Debug("Duplicate transaction")
 			continue
@@ -817,12 +896,15 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 		hashes = append(hashes, txn.Hash())
 	}
 
+	if len(hashes) == 0 {
+		return
+	}
+
 	// Announce these transactions to peers
-	if len(hashes) != 0 {
-		logger.Debugf("Announce %d transactions", len(hashes))
-		m := NewAnnounceTxnsMessage(hashes)
-		if err := d.BroadcastMessage(m); err != nil {
-			logger.WithError(err).Warning("Broadcast AnnounceTxnsMessage failed")
-		}
+	m := NewAnnounceTxnsMessage(hashes)
+	if n, err := d.broadcastMessage(m); err != nil {
+		logger.WithError(err).Warning("Broadcast AnnounceTxnsMessage failed")
+	} else {
+		logger.Debugf("Announced %d transactions to %d peers", len(hashes), n)
 	}
 }

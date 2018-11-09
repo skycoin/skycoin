@@ -35,15 +35,15 @@ const (
 
 var (
 	// ErrDisconnectSetReadDeadlineFailed set read deadline failed
-	ErrDisconnectSetReadDeadlineFailed = errors.New("SetReadDeadline failed")
+	ErrDisconnectSetReadDeadlineFailed DisconnectReason = errors.New("SetReadDeadline failed")
 	// ErrDisconnectInvalidMessageLength invalid message length
 	ErrDisconnectInvalidMessageLength DisconnectReason = errors.New("Invalid message length")
 	// ErrDisconnectMalformedMessage malformed message
 	ErrDisconnectMalformedMessage DisconnectReason = errors.New("Malformed message body")
-	// ErrDisconnectUnknownMessage unknow message
+	// ErrDisconnectUnknownMessage unknown message
 	ErrDisconnectUnknownMessage DisconnectReason = errors.New("Unknown message ID")
-	// ErrDisconnectUnexpectedError unexpected error
-	ErrDisconnectUnexpectedError DisconnectReason = errors.New("Unexpected error encountered")
+	// ErrDisconnectShutdown shutting down the client
+	ErrDisconnectShutdown DisconnectReason = errors.New("Shutdown")
 	// ErrDisconnectMessageDecodeUnderflow message data did not fully decode to a message object
 	ErrDisconnectMessageDecodeUnderflow DisconnectReason = errors.New("Message data did not fully decode to a message object")
 	// ErrDisconnectTruncatedMessageID message data was too short to contain a message ID
@@ -58,11 +58,11 @@ var (
 	// ErrNoMatchingConnections when broadcasting a message, no connections were found for the provided addresses
 	ErrNoMatchingConnections = errors.New("No connections found for broadcast addresses")
 	// ErrPoolEmpty when broadcasting a message, the connection pool was empty
-	ErrPoolEmpty = errors.New("Connection pool is empty")
+	ErrPoolEmpty = errors.New("Connection pool is empty after filtering connections")
 	// ErrConnectionExists connection exists
 	ErrConnectionExists = errors.New("Connection exists")
-	// ErrMaxConnectionsReached max connection reached
-	ErrMaxConnectionsReached = errors.New("Max connections reached")
+	// ErrMaxIncomingConnectionsReached max incoming connections reached
+	ErrMaxIncomingConnectionsReached = errors.New("Max incoming connections reached")
 	// ErrMaxOutgoingConnectionsReached max outgoing connections reached
 	ErrMaxOutgoingConnectionsReached = errors.New("Max outgoing connections reached")
 	// ErrMaxOutgoingDefaultConnectionsReached max outgoing default connections reached
@@ -98,7 +98,7 @@ type Config struct {
 	Address string
 	// Port to listen on. Set to 0 for arbitrary assignment
 	Port uint16
-	// Maximum total connections
+	// Maximum total connections. Must be >= MaxOutgoingConnections + MaxDefaultPeerOutgoingConnections.
 	MaxConnections int
 	// Maximum outgoing connections
 	MaxOutgoingConnections int
@@ -252,12 +252,16 @@ type ConnectionPool struct {
 // NewConnectionPool creates a new ConnectionPool that will listen on
 // Config.Port upon StartListen. State is an application defined object that
 // will be passed to a Message's Handle().
-func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
+func NewConnectionPool(c Config, state interface{}) (*ConnectionPool, error) {
 	for _, p := range c.DefaultConnections {
 		c.defaultConnections[p] = struct{}{}
 	}
 
-	pool := &ConnectionPool{
+	if c.MaxConnections < c.MaxOutgoingConnections+c.MaxDefaultPeerOutgoingConnections {
+		return nil, errors.New("MaxConnections must be >= MaxOutgoingConnections + MaxDefaultPeerOutgoingConnections")
+	}
+
+	return &ConnectionPool{
 		Config:                     c,
 		pool:                       make(map[uint64]*Connection),
 		addresses:                  make(map[string]*Connection),
@@ -269,9 +273,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		done:                       make(chan struct{}),
 		strandDone:                 make(chan struct{}),
 		reqC:                       make(chan strand.Request),
-	}
-
-	return pool
+	}, nil
 }
 
 // Run starts the connection pool
@@ -395,15 +397,13 @@ func (pool *ConnectionPool) Shutdown() {
 	<-pool.done
 }
 
-// strand ensures all read and write action of pool's member variable are in one thread.
+// strand ensures all read and write action of pool's member variable are in one thread
 func (pool *ConnectionPool) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.gnet.ConnectionPool.%s", name)
 	return strand.Strand(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
 }
 
-// ListeningAddress returns address, on which the ConnectionPool
-// listening on. It returns nil, and error if the ConnectionPool
-// is not listening
+// ListeningAddress returns the address on which the ConnectionPool listens on
 func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
 	if pool.listener == nil {
 		return nil, errors.New("Not listening, call StartListen first")
@@ -416,20 +416,14 @@ func (pool *ConnectionPool) canConnect(a string, solicited bool) error {
 		return ErrConnectionExists
 	}
 
-	if pool.isMaxConnectionsReached() {
-		return ErrMaxConnectionsReached
-	}
-
 	if solicited {
-		if pool.isMaxOutgoingConnectionsReached() {
+		if _, ok := pool.Config.defaultConnections[a]; ok && pool.isMaxOutgoingDefaultConnectionsReached() {
+			return ErrMaxOutgoingDefaultConnectionsReached
+		} else if pool.isMaxOutgoingConnectionsReached() {
 			return ErrMaxOutgoingConnectionsReached
 		}
-
-		if _, ok := pool.Config.defaultConnections[a]; ok {
-			if pool.isMaxOutgoingDefaultConnectionsReached() {
-				return ErrMaxOutgoingDefaultConnectionsReached
-			}
-		}
+	} else if pool.isMaxIncomingConnectionsReached() {
+		return ErrMaxIncomingConnectionsReached
 	}
 
 	return nil
@@ -578,6 +572,12 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 			"addr":   addr,
 			"method": mErr.method,
 		}).Error("handleConnection failure")
+
+		// This Disconnect does not send a DISC packet because it is inside gnet.
+		// A DISC packet is not useful at this point, because the error is most likely
+		// that the connection is unreachable.
+		// However, it may also be that the connection sent data that could not be deserialized
+		// to a message.
 		if err := pool.Disconnect(c.Addr(), mErr.err); err != nil {
 			logger.WithError(err).WithField("addr", addr).Error("Disconnect")
 		}
@@ -749,8 +749,8 @@ func (pool *ConnectionPool) isConnExist(addr string) bool {
 	return ok
 }
 
-func (pool *ConnectionPool) isMaxConnectionsReached() bool {
-	return len(pool.pool) >= pool.Config.MaxConnections
+func (pool *ConnectionPool) isMaxIncomingConnectionsReached() bool {
+	return len(pool.pool) >= (pool.Config.MaxConnections - pool.Config.MaxOutgoingConnections - pool.Config.MaxDefaultPeerOutgoingConnections)
 }
 
 func (pool *ConnectionPool) isMaxOutgoingConnectionsReached() bool {
@@ -825,7 +825,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 
 // Disconnect removes a connection from the pool by address and invokes DisconnectCallback
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
-	if err := pool.strand("Disconnect", func() error {
+	return pool.strand("Disconnect", func() error {
 		logger.WithFields(logrus.Fields{
 			"addr":   addr,
 			"reason": r,
@@ -839,7 +839,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 			}
 		}
 
-		conn := pool.disconnect(addr)
+		conn := pool.disconnect(addr, r)
 
 		if conn == nil {
 			return errors.New("Disconnect: connection does not exist")
@@ -855,14 +855,10 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 		}
 
 		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	})
 }
 
-func (pool *ConnectionPool) disconnect(addr string) *Connection {
+func (pool *ConnectionPool) disconnect(addr string, r DisconnectReason) *Connection {
 	conn, ok := pool.addresses[addr]
 	if !ok {
 		return nil
@@ -881,7 +877,7 @@ func (pool *ConnectionPool) disconnect(addr string) *Connection {
 		logger.WithError(err).WithFields(fields).Error("conn.Close")
 	}
 
-	logger.WithFields(fields).Debug("Closed connection and removed from pool")
+	logger.WithFields(fields).WithField("reason", r).Debug("Closed connection and removed from pool")
 
 	return conn
 }
@@ -890,7 +886,7 @@ func (pool *ConnectionPool) disconnect(addr string) *Connection {
 func (pool *ConnectionPool) disconnectAll() {
 	for _, conn := range pool.pool {
 		addr := conn.Addr()
-		pool.disconnect(addr)
+		pool.disconnect(addr, ErrDisconnectShutdown)
 	}
 }
 
@@ -941,21 +937,25 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 // BroadcastMessage sends a Message to all connections specified in addrs.
 // If a connection does not exist for a given address, it is skipped.
 // If no messages were written to any connection, an error is returned.
-func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error {
+// Returns the number of connections that the message was queued for sending to.
+// Note that actual sending can still fail later, if the connection drops before the message is sent.
+func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) (int, error) {
 	if pool.Config.DebugPrint {
 		logger.WithField("msgType", reflect.TypeOf(msg)).Debug("BroadcastMessage")
 	}
 
 	if len(addrs) == 0 {
-		return ErrNoAddresses
+		return 0, ErrNoAddresses
 	}
 
-	fullWriteQueue := []string{}
+	sentTo := 0
+
 	if err := pool.strand("BroadcastMessage", func() error {
 		if len(pool.pool) == 0 {
 			return ErrPoolEmpty
 		}
 
+		fullWriteQueue := 0
 		foundConns := 0
 
 		for _, addr := range addrs {
@@ -965,7 +965,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error 
 				case conn.WriteQueue <- msg:
 				default:
 					logger.Critical().WithField("addr", conn.Addr()).Info("Write queue full")
-					fullWriteQueue = append(fullWriteQueue, conn.Addr())
+					fullWriteQueue++
 				}
 			}
 		}
@@ -974,16 +974,18 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) error 
 			return ErrNoMatchingConnections
 		}
 
-		if len(fullWriteQueue) == foundConns {
+		if fullWriteQueue == foundConns {
 			return ErrNoReachableConnections
 		}
 
+		sentTo = foundConns - fullWriteQueue
+
 		return nil
 	}); err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return sentTo, nil
 }
 
 // Unpacks incoming bytes to a Message and calls the message handler.  If
@@ -1025,11 +1027,11 @@ func (pool *ConnectionPool) SendPings(rate time.Duration, msg Message) error {
 	return nil
 }
 
-// ClearStaleConnections removes connections that have not sent a message in too long
-func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reason DisconnectReason) error {
+// GetStaleConnections returns connections that have been idle for longer than idleLimit
+func (pool *ConnectionPool) GetStaleConnections(idleLimit time.Duration) ([]string, error) {
 	now := Now()
-	idleConns := []string{}
-	if err := pool.strand("ClearStaleConnections", func() error {
+	var idleConns []string
+	if err := pool.strand("GetStaleConnections", func() error {
 		for _, conn := range pool.pool {
 			if conn.LastReceived.Add(idleLimit).Before(now) {
 				idleConns = append(idleConns, conn.Addr())
@@ -1037,15 +1039,10 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 		}
 		return nil
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, a := range idleConns {
-		if err := pool.Disconnect(a, reason); err != nil {
-			logger.WithError(err).WithField("addr", a).Warning("Error in disconnecting from stale connection")
-		}
-	}
-	return nil
+	return idleConns, nil
 }
 
 // Now returns the current UTC time

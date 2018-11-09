@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"math"
@@ -630,7 +629,7 @@ func TestWalletSpendHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
@@ -898,7 +897,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
 			}
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
@@ -1043,7 +1042,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
@@ -1564,7 +1563,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			req.Header.Add("Content-Type", ContentTypeForm)
 			require.NoError(t, err)
 
@@ -1686,7 +1685,7 @@ func TestWalletNewSeed(t *testing.T) {
 				endpoint += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
@@ -1840,7 +1839,7 @@ func TestGetWalletSeed(t *testing.T) {
 				v.Add("password", tc.password)
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
@@ -2054,7 +2053,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
@@ -3035,7 +3034,7 @@ func TestWalletRecover(t *testing.T) {
 			}
 
 			endpoint := "/api/v2/wallet/recover"
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			contentType := tc.contentType

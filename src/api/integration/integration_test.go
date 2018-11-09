@@ -28,6 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -408,7 +409,8 @@ func TestStableVerifyTransaction(t *testing.T) {
 			},
 		},
 	}
-	badSignatureTxn.UpdateHeader()
+	err = badSignatureTxn.UpdateHeader()
+	require.NoError(t, err)
 
 	cases := []struct {
 		name    string
@@ -2954,9 +2956,11 @@ func TestStableResendUnconfirmedTransactions(t *testing.T) {
 		return
 	}
 	c := newClient()
-	res, err := c.ResendUnconfirmedTransactions()
-	require.NoError(t, err)
-	require.True(t, len(res.Txids) == 0)
+	_, err := c.ResendUnconfirmedTransactions()
+	respErr, ok := err.(api.ClientError)
+	require.True(t, ok)
+	require.Equal(t, fmt.Sprintf("503 Service Unavailable - %s", daemon.ErrNetworkingDisabled), respErr.Message)
+	require.Equal(t, http.StatusServiceUnavailable, respErr.StatusCode)
 }
 
 func TestLiveResendUnconfirmedTransactions(t *testing.T) {
@@ -3860,7 +3864,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
-	remainingHours := fee.RemainingHours(totalHours)
+	remainingHours := fee.RemainingHours(totalHours, params.UserBurnFactor)
 	require.True(t, remainingHours > 1)
 
 	addresses := make([]string, len(w.Entries))
@@ -4616,7 +4620,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		return
 	}
 
-	remainingHours := fee.RemainingHours(totalHours)
+	remainingHours := fee.RemainingHours(totalHours, params.UserBurnFactor)
 	require.True(t, remainingHours > 1)
 
 	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *api.CreateTransactionResponse) {
@@ -4647,13 +4651,13 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		tLog(t, "totalCoins", totalCoins)
 		tLog(t, "totalHours", totalHours)
 
-		spendableHours := fee.RemainingHours(totalHours)
+		spendableHours := fee.RemainingHours(totalHours, params.UserBurnFactor)
 		tLog(t, "spendableHours", spendableHours)
 
 		coins := rand.Intn(int(totalCoins)) + 1
-		coins -= coins % int(visor.MaxDropletDivisor())
+		coins -= coins % int(params.MaxDropletDivisor())
 		if coins == 0 {
-			coins = int(visor.MaxDropletDivisor())
+			coins = int(params.MaxDropletDivisor())
 		}
 		hours := rand.Intn(int(spendableHours + 1))
 		nOutputs := rand.Intn(maxOutputs) + 1
@@ -4688,9 +4692,9 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 				remainingHours = 0
 			} else {
 				receiverCoins := rand.Intn(remainingCoins) + 1
-				receiverCoins -= receiverCoins % int(visor.MaxDropletDivisor())
+				receiverCoins -= receiverCoins % int(params.MaxDropletDivisor())
 				if receiverCoins == 0 {
-					receiverCoins = int(visor.MaxDropletDivisor())
+					receiverCoins = int(params.MaxDropletDivisor())
 				}
 
 				var err error
@@ -5860,6 +5864,8 @@ func TestStableHealth(t *testing.T) {
 	checkHealthResponse(t, r)
 
 	require.Equal(t, 0, r.OpenConnections)
+	require.Equal(t, 0, r.IncomingConnections)
+	require.Equal(t, 0, r.OutgoingConnections)
 
 	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration > time.Duration(0))
 
@@ -5896,9 +5902,13 @@ func TestLiveHealth(t *testing.T) {
 
 	if liveDisableNetworking(t) {
 		require.Equal(t, 0, r.OpenConnections)
+		require.Equal(t, 0, r.OutgoingConnections)
+		require.Equal(t, 0, r.IncomingConnections)
 	} else {
 		require.NotEqual(t, 0, r.OpenConnections)
 	}
+
+	require.Equal(t, r.OutgoingConnections+r.IncomingConnections, r.OpenConnections)
 
 	// The TimeSinceLastBlock can be any value, including negative values, due to clock skew
 	// The live node is not necessarily run with the commit and branch ldflags, so don't check them

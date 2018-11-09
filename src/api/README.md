@@ -73,6 +73,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
 	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
 	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+	- [Disconnect a peer](#disconnect-a-peer)
 - [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
 - [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 - [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
@@ -136,11 +137,12 @@ These API sets are:
 
 * `READ` - All query-related endpoints, they do not modify the state of the program
 * `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
-* `TXN` - Enables `/api/v1/injectTransaction` without enabling wallet endpoints
+* `TXN` - Enables `/api/v1/injectTransaction` and `/api/v1/resendUnconfirmedTxns` without enabling wallet endpoints
 * `WALLET` - These endpoints operate on local wallet files
-* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
-* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
 * `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
+* `NET_CTRL` - The `/api/v1/network/connection/disconnect` method, intended for network administration endpoints
+* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
+* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed in v0.26.0
 
 ## Authentication
 
@@ -226,13 +228,19 @@ Response:
     "coin": "skycoin",
     "user_agent": "skycoin:0.25.0-rc1",
     "open_connections": 8,
+    "outgoing_connections": 5,
+    "incoming_connections": 3,
     "uptime": "6m30.629057248s",
     "csrf_enabled": true,
     "csp_enabled": true,
     "wallet_api_enabled": true,
     "gui_enabled": true,
     "unversioned_api_enabled": false,
-    "json_rpc_enabled": false
+    "json_rpc_enabled": false,
+    "user_burn_factor": 2,
+    "unconfirmed_burn_factor": 2,
+    "user_max_transaction_size": 32768,
+    "unconfirmed_max_transaction_size": 32768
 }
 ```
 
@@ -2239,17 +2247,17 @@ Result:
 
 ### Resend unconfirmed transactions
 
-API sets: `READ`
+API sets: `TXN`
 
 ```
 URI: /api/v1/resendUnconfirmedTxns
-Method: GET
+Method: POST
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns
+curl -X POST 'http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns'
 ```
 
 Result:
@@ -3598,7 +3606,9 @@ Result:
     "height": 181,
     "listen_port": 6000,
     "user_agent": "skycoin:0.25.0",
-    "is_trusted_peer": true
+    "is_trusted_peer": true,
+    "unconfirmed_burn_factor": 2,
+    "unconfirmed_max_transaction_size": 32768
 }
 ```
 
@@ -3645,7 +3655,9 @@ Result:
             "listen_port": 20002,
             "height": 180,
             "user_agent": "skycoin:0.25.0",
-		    "is_trusted_peer": true
+		    "is_trusted_peer": true,
+		    "unconfirmed_burn_factor": 2,
+		    "unconfirmed_max_transaction_size": 32768
         },
         {
             "id": 109548,
@@ -3659,7 +3671,9 @@ Result:
             "listen_port": 6000,
             "height": 0,
             "user_agent": "",
-		    "is_trusted_peer": false
+		    "is_trusted_peer": true,
+		    "unconfirmed_burn_factor": 0,
+		    "unconfirmed_max_transaction_size": 0
         },
         {
             "id": 99115,
@@ -3673,7 +3687,9 @@ Result:
             "listen_port": 6000,
             "height": 180,
             "user_agent": "",
-		    "is_trusted_peer": false
+		    "is_trusted_peer": true,
+		    "unconfirmed_burn_factor": 0,
+		    "unconfirmed_max_transaction_size": 0
         }
     ]
 }
@@ -3788,6 +3804,33 @@ Result:
     "35.201.160.163:6000",
     "47.88.33.156:6000"
 ]
+```
+
+### Disconnect a peer
+
+API sets: `NET_CTRL`
+
+```
+URI: /api/v1/network/connection/disconnect
+Method: POST
+Args:
+	id: ID of the connection
+
+Returns 404 if the connection is not found.
+```
+
+Disconnects a peer by ID.
+
+Example:
+
+```sh
+curl -X POST 'http://127.0.0.1:6420/api/v1/network/connection/disconnect?id=999'
+```
+
+Result:
+
+```json
+{}
 ```
 
 ## Migrating from the unversioned API

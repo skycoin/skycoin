@@ -1633,13 +1633,19 @@ $ skycoin-cli status
 	    "coin": "skycoin",
 	    "user_agent": "skycoin:0.25.0-rc1",
         "open_connections": 8,
+        "outgoing_connections": 5,
+        "incoming_connections": 3,
         "uptime": "4h1m23.697072461s",
         "csrf_enabled": true,
         "csp_enabled": true,
         "wallet_api_enabled": true,
         "gui_enabled": true,
         "unversioned_api_enabled": false,
-        "json_rpc_enabled": false
+        "json_rpc_enabled": false,
+        "user_burn_factor": 2,
+        "unconfirmed_burn_factor": 2,
+        "user_max_transaction_size": 32768,
+        "unconfirmed_max_transaction_size": 32768
     },
     "cli_config": {
         "webrpc_address": "http://127.0.0.1:6420"

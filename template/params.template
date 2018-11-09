@@ -1,0 +1,43 @@
+package params
+
+/*
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
+*/
+
+const (
+	// MaxCoinSupply is the maximum supply of coins
+	MaxCoinSupply uint64 = {{.MaxCoinSupply}}
+	// DistributionAddressesTotal is the number of distribution addresses
+	DistributionAddressesTotal uint64 = {{.DistributionAddressesTotal}}
+	// DistributionAddressInitialBalance is the initial balance of each distribution address
+	DistributionAddressInitialBalance uint64 = MaxCoinSupply / DistributionAddressesTotal
+	// InitialUnlockedCount is the initial number of unlocked addresses
+	InitialUnlockedCount uint64 = {{.InitialUnlockedCount}}
+	// UnlockAddressRate is the number of addresses to unlock per unlock time interval
+	UnlockAddressRate uint64 = {{.UnlockAddressRate}}
+	// UnlockTimeInterval is the distribution address unlock time interval, measured in seconds
+	// Once the InitialUnlockedCount is exhausted,
+	// UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
+	UnlockTimeInterval uint64 = {{.UnlockTimeInterval}} // in seconds
+)
+
+var (
+	// UserBurnFactor inverse fraction of coinhours that must be burned (can be overridden with `USER_BURN_FACTOR` env var),
+	// used when creating a transaction
+	UserBurnFactor uint32 = {{.UserBurnFactor}}
+
+	// UserMaxTransactionSize is the maximum size of a user-created transaction
+	UserMaxTransactionSize uint32 = {{.UserMaxTransactionSize}} // in bytes
+
+	// MaxDropletPrecision represents the decimal precision of droplets
+	MaxDropletPrecision uint64 = {{.MaxDropletPrecision}}
+)
+
+// distributionAddresses are addresses that received coins from the genesis address in the first block,
+// used to calculate current and max supply and do distribution timelocking
+var distributionAddresses = [DistributionAddressesTotal]string{
+{{- range $index, $address := .DistributionAddresses}}
+	"{{$address -}}",
+{{- end}}
+}

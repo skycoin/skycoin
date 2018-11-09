@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -1239,10 +1240,10 @@ var burnFactor10TestCases = []distributeSpendHoursTestCase{
 }
 
 func TestWalletDistributeSpendHours(t *testing.T) {
-	originalBurnFactor := fee.BurnFactor
+	originalBurnFactor := params.UserBurnFactor
 
 	cases := []struct {
-		burnFactor uint64
+		burnFactor uint32
 		cases      []distributeSpendHoursTestCase
 	}{
 		{2, burnFactor2TestCases},
@@ -1252,15 +1253,15 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 
 	tested := false
 	for _, tcc := range cases {
-		if tcc.burnFactor == fee.BurnFactor {
+		if tcc.burnFactor == params.UserBurnFactor {
 			tested = true
 		}
 
 		for _, tc := range tcc.cases {
 			t.Run(tc.name, func(t *testing.T) {
-				fee.BurnFactor = tcc.burnFactor
+				params.UserBurnFactor = tcc.burnFactor
 				defer func() {
-					fee.BurnFactor = originalBurnFactor
+					params.UserBurnFactor = originalBurnFactor
 				}()
 
 				changeHours, addrHours, totalHours := DistributeSpendHours(tc.inputHours, tc.nAddrs, tc.haveChange)
@@ -1276,16 +1277,16 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 				require.Equal(t, outputHours, totalHours)
 
 				if tc.inputHours != 0 {
-					err := fee.VerifyTransactionFeeForHours(outputHours, tc.inputHours-outputHours)
+					err := fee.VerifyTransactionFeeForHours(outputHours, tc.inputHours-outputHours, params.UserBurnFactor)
 					require.NoError(t, err)
 				}
 			})
 		}
 
 		t.Run(fmt.Sprintf("burn-factor-%d-range", tcc.burnFactor), func(t *testing.T) {
-			fee.BurnFactor = tcc.burnFactor
+			params.UserBurnFactor = tcc.burnFactor
 			defer func() {
-				fee.BurnFactor = originalBurnFactor
+				params.UserBurnFactor = originalBurnFactor
 			}()
 
 			// Tests over range of values
@@ -1303,13 +1304,13 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 							}
 
 							if haveChange {
-								remainingHours := (inputHours - fee.RequiredFee(inputHours))
+								remainingHours := (inputHours - fee.RequiredFee(inputHours, params.UserBurnFactor))
 								splitRemainingHours := remainingHours / 2
 								require.True(t, changeHours == splitRemainingHours || changeHours == splitRemainingHours+1)
 								require.Equal(t, splitRemainingHours, sumAddrHours)
 							} else {
 								require.Equal(t, uint64(0), changeHours)
-								require.Equal(t, inputHours-fee.RequiredFee(inputHours), sumAddrHours)
+								require.Equal(t, inputHours-fee.RequiredFee(inputHours, params.UserBurnFactor), sumAddrHours)
 							}
 
 							outputHours := sumAddrHours + changeHours
@@ -1317,7 +1318,7 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 							require.Equal(t, outputHours, totalHours)
 
 							if inputHours != 0 {
-								err := fee.VerifyTransactionFeeForHours(outputHours, inputHours-outputHours)
+								err := fee.VerifyTransactionFeeForHours(outputHours, inputHours-outputHours, params.UserBurnFactor)
 								require.NoError(t, err)
 							}
 
@@ -1332,7 +1333,7 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 		})
 	}
 
-	require.True(t, tested, "configured BurnFactor=%d has not been tested", fee.BurnFactor)
+	require.True(t, tested, "configured BurnFactor=%d has not been tested", params.UserBurnFactor)
 }
 
 func uxBalancesEqual(a, b []UxBalance) bool {

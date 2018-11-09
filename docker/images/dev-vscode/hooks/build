@@ -12,24 +12,19 @@
 # IMAGE_NAME: the name and tag of the Docker repository being built.
 #             (This variable is a combination of DOCKER_REPO:CACHE_TAG.)
 
-DOCKERFILE_PATH='Dockerfile'
-IMAGE_NAME='skycoin/skycoindev-vscode'
-
 echo "Build hook running"
 
-cd ../
+cd ../../../
 
-# Build skycoin/skycoindev-vscode:develop
+# Build :develop tag
 docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
-             --build-arg SHEAD=`git rev-parse HEAD` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
              -f $DOCKERFILE_PATH \
-             -t $IMAGE_NAME:develop .
+             -t $IMAGE_NAME .
 
-# Build skycoin/skycoindev-vscode:dind
+# Build :dind tag
 docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \
              --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
-             --build-arg SHEAD=`git rev-parse HEAD` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
              -f $DOCKERFILE_PATH \
-             -t $IMAGE_NAME:dind .
+             -t "$DOCKER_REPO:dind" .

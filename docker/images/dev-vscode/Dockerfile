@@ -1,7 +1,7 @@
 ARG IMAGE_FROM=skycoin/skycoindev-cli:develop
 ARG BDATE
-ARG SHEAD
 ARG SCOMMIT
+ARG VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest defaltd.go-coverage-viewer"
 
 FROM $IMAGE_FROM
 
@@ -13,9 +13,8 @@ LABEL "org.label-schema.name"="skycoindev-cli" \
       "org.label-schema.schema-version"="1.0.0-rc.1" \
       "org.label-schema.build-date"=$BDATE \
       "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin.git" \
-      "org.label-schema.vcs-ref"=$SHEAD \
+      "org.label-schema.vcs-ref"=$COMMIT \
       "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/dev-vscode/README.md" \
-      "org.label-schema.version"=$SHEAD \
       "org.label-schema.docker.cmd"="xhost +; cd src; docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
                                     -v $PWD:/go/src \
                                     -w /go/src \
@@ -72,7 +71,6 @@ RUN useradd --create-home --home-dir $HOME user \
 	&& chown -R user:user $HOME
 
 # Install and list vscode extensions
-ENV VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest defaltd.go-coverage-viewer"
 RUN for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done
 RUN code --user-data-dir $HOME --list-extensions
 ENV VS_EXTENSIONS=""

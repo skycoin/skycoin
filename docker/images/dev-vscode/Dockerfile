@@ -1,6 +1,26 @@
 ARG IMAGE_FROM=skycoin/skycoindev-cli:develop
+ARG BDATE
+ARG SHEAD
+ARG SCOMMIT
 
 FROM $IMAGE_FROM
+
+# Image labels (see ./hooks/build for ARGS)
+LABEL "org.label-schema.name"="skycoindev-cli" \
+      "org.label-schema.description"="Docker image with go, node, dev tools and Visual Studio Code for Skycoin developers" \
+      "org.label-schema.vendor"="Skycoin project" \
+      "org.label-schema.url"="skycoin.net" \
+      "org.label-schema.schema-version"="1.0.0-rc.1" \
+      "org.label-schema.build-date"=$BDATE \
+      "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin.git" \
+      "org.label-schema.vcs-ref"=$SHEAD \
+      "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/dev-vscode/README.md" \
+      "org.label-schema.version"=$SHEAD \
+      "org.label-schema.docker.cmd"="xhost +; cd src; docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
+                                    -v $PWD:/go/src \
+                                    -w /go/src \
+                                    -e DISPLAY=$DISPLAY \
+                                    skycoin/skycoindev-vscode:develop"
 
 # Tell debconf to run in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
@@ -52,10 +72,10 @@ RUN useradd --create-home --home-dir $HOME user \
 	&& chown -R user:user $HOME
 
 # Install and list vscode extensions
-ENV VS_EXTENSIONS ms-vscode.Go windmilleng.vscode-go-autotest defaltd.go-coverage-viewer
+ENV VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest defaltd.go-coverage-viewer"
 RUN for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done
 RUN code --user-data-dir $HOME --list-extensions
-ENV VS_EXTENSIONS ""
+ENV VS_EXTENSIONS=""
 
 COPY start.sh /usr/local/bin/start.sh
 RUN ln -s usr/local/bin/start.sh / # backwards compat

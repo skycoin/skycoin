@@ -109,3 +109,11 @@ $ docker run --rm \
 - [Go](https://marketplace.visualstudio.com/items?itemName=ms-vscode.Go)
 - [Go Autotest](https://marketplace.visualstudio.com/items?itemName=windmilleng.vscode-go-autotest)
 - [Go Coverage Viewer](https://marketplace.visualstudio.com/items?itemName=defaltd.go-coverage-viewer)
+
+## Automated builds
+
+Docker Cloud is configured to build images from `develop` branch on every push.
+The same process is triggered for all feature branches matching the pattern
+`/^([^_]+)_t([0-9]+)_.*vscode/`. The tag generated for those images will be of the form
+`feature-{\1}-{\2}-vscode`.
+

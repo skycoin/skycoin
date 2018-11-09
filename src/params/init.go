@@ -21,8 +21,8 @@ func sanityCheck() {
 		panic("UserBurnFactor must be > 1")
 	}
 
-	if MaxUserTransactionSize <= 0 {
-		panic("MaxUserTransactionSize must be > 0")
+	if UserMaxTransactionSize < 1024 {
+		panic("UserMaxTransactionSize must be >= 1024")
 	}
 
 	if InitialUnlockedCount > DistributionAddressesTotal {
@@ -48,7 +48,7 @@ func loadCoinHourBurnFactor() {
 		return
 	}
 
-	x, err := strconv.ParseUint(xs, 10, 64)
+	x, err := strconv.ParseUint(xs, 10, 32)
 	if err != nil {
 		panic(fmt.Sprintf("Invalid USER_BURN_FACTOR %q: %v", xs, err))
 	}
@@ -57,7 +57,7 @@ func loadCoinHourBurnFactor() {
 		panic("USER_BURN_FACTOR must be > 1")
 	}
 
-	UserBurnFactor = x
+	UserBurnFactor = uint32(x)
 }
 
 func loadMaxUserTransactionSize() {
@@ -66,14 +66,14 @@ func loadMaxUserTransactionSize() {
 		return
 	}
 
-	x, err := strconv.ParseInt(xs, 10, 32)
+	x, err := strconv.ParseUint(xs, 10, 32)
 	if err != nil {
 		panic(fmt.Sprintf("Invalid MAX_USER_TXN_SIZE %q: %v", xs, err))
 	}
 
-	if x <= 0 {
-		panic("MAX_USER_TXN_SIZE must be > 0")
+	if x < 1024 {
+		panic("MAX_USER_TXN_SIZE must be >= 1024")
 	}
 
-	MaxUserTransactionSize = int(x)
+	UserMaxTransactionSize = uint32(x)
 }

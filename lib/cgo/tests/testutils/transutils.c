@@ -128,9 +128,7 @@ coin__Transaction* makeTransaction(Transaction__Handle* handle){
 
   result = makeUxOutWithSecret( &uxOut, &seckey );
   cr_assert(result == SKY_OK, "makeUxOutWithSecret failed");
-  ptransaction = makeTransactionFromUxOut( &uxOut, &seckey, handle );
-  cr_assert(result == SKY_OK, "makeTransactionFromUxOut failed");
-  return ptransaction;
+  return makeTransactionFromUxOut( &uxOut, &seckey, handle );
 }
 
 coin__Transaction* makeEmptyTransaction(Transaction__Handle* handle){

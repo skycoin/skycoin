@@ -72,7 +72,7 @@ var (
 		UnconfirmedBurnFactor:         {{.UnconfirmedBurnFactor}},
 		CreateBlockBurnFactor:         {{.CreateBlockBurnFactor}},
 		MaxBlockSize:                  {{.MaxBlockSize}},
-		MaxUnconfirmedTransactionSize: {{.MaxUnconfirmedTransactionSize}},
+		UnconfirmedMaxTransactionSize: {{.UnconfirmedMaxTransactionSize}},
 	})
 
 	parseFlags = true

@@ -23,7 +23,7 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 # unconfirmed_burn_factor = 2
 # create_block_burn_factor = 2
 # max_block_size = 32 * 1024
-# max_unconfirmed_transaction_size = 32 * 1024
+# unconfirmed_max_transaction_size = 32 * 1024
 
 [params]
 # max_coin_supply = 1e8
@@ -32,7 +32,7 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 # unlock_addresss_rate = 5
 # unlocked_time_internal = 60 * 60 * 24 * 365
 # max_droplet_precision = 3
-# max_user_transaction_size = 32 * 1024
+# user_max_transaction_size = 32 * 1024
 # user_burn_factor = 2
 distribution_addresses = [
     "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",

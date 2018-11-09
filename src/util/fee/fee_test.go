@@ -154,7 +154,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 	testutil.RequireError(t, err, "Transaction output hours overflow")
 
 	cases := []struct {
-		burnFactor uint64
+		burnFactor uint32
 		cases      []verifyTxnFeeTestCase
 	}{
 		{2, burnFactor2VerifyTxnFeeTestCases},
@@ -247,7 +247,7 @@ var burnFactor10RequiredFeeTestCases = []requiredFeeTestCase{
 
 func TestRequiredFee(t *testing.T) {
 	cases := []struct {
-		burnFactor uint64
+		burnFactor uint32
 		cases      []requiredFeeTestCase
 	}{
 		{2, burnFactor2RequiredFeeTestCases},

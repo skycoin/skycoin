@@ -409,7 +409,8 @@ func TestStableVerifyTransaction(t *testing.T) {
 			},
 		},
 	}
-	badSignatureTxn.UpdateHeader()
+	err = badSignatureTxn.UpdateHeader()
+	require.NoError(t, err)
 
 	cases := []struct {
 		name    string

@@ -287,7 +287,7 @@ Test(coin_transaction, TestTransactionsSize) {
     size += p1.len;
     cr_assert(result == SKY_OK, "SKY_coin_Transaction_Size");
   }
-  GoInt sizeTransactions;
+  GoUint32 sizeTransactions;
   result = SKY_coin_Transactions_Size(txns, &sizeTransactions);
   cr_assert(size != 0);
   cr_assert(sizeTransactions == size);
@@ -472,11 +472,9 @@ Test(coin_transactions, TestTransactionSignInputs, SKY_ABORT) {
   cr_assert(result == SKY_OK);
 
   cipher__SHA256 addHash, addHash2;
-  result =
-      SKY_cipher_AddSHA256(&hash, (cipher__SHA256 *)ptx->In.data, &addHash);
+  result = SKY_cipher_AddSHA256(&hash, (cipher__SHA256 *)ptx->In.data, &addHash);
   cr_assert(result == SKY_OK);
-  result = SKY_cipher_AddSHA256(&hash, ((cipher__SHA256 *)ptx->In.data) + 1,
-                                &addHash2);
+  result = SKY_cipher_AddSHA256(&hash, ((cipher__SHA256 *)ptx->In.data) + 1, &addHash2);
   cr_assert(result == SKY_OK);
   result = SKY_cipher_VerifyAddressSignedHash(&addr, (cipher__Sig *)ptx->Sigs.data, &addHash);
   cr_assert(result == SKY_OK);
@@ -636,8 +634,9 @@ Test(coin_transactions, TestTransactionsTruncateBytesTo) {
   result = SKY_coin_Transactions_Length(h1, &length);
   cr_assert(result == SKY_OK);
   int trunc = 0;
-  GoInt size;
-  for (int i = 0; i < length / 2; i++) {
+  GoUint32 size;
+  for (int i = 0; i < length / 2; i++)
+  {
     Transaction__Handle handle;
     result = SKY_coin_Transactions_GetAt(h1, i, &handle);
     registerHandleClose(handle);

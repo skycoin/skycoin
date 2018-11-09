@@ -1,10 +1,12 @@
 import { TransactionsPage } from './transactions.po';
+import { browser } from 'protractor';
 
 describe('Transactions', () => {
   const page = new TransactionsPage();
 
   it('should display title', () => {
     page.navigateTo();
+    browser.sleep(1000);
     expect<any>(page.getHeaderText()).toEqual('Transactions');
   });
 

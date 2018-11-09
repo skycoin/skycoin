@@ -1,10 +1,12 @@
 import { OnboardingCreatePage } from './onboarding.po';
+import { browser } from 'protractor';
 
 describe('Onboarding', () => {
   const page = new OnboardingCreatePage();
 
   it('should display title', () => {
     page.navigateTo();
+    browser.sleep(1000);
     expect<any>(page.getHeaderText()).toEqual('Create Wallet');
   });
 

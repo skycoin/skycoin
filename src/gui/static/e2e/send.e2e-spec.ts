@@ -1,10 +1,12 @@
 import { SendPage } from './send.po';
+import { browser } from 'protractor';
 
 describe('Send', () => {
   const page = new SendPage();
 
   it('should display title', () => {
     page.navigateTo();
+    browser.sleep(1000);
     expect<any>(page.getHeaderText()).toEqual('Wallets');
   });
 

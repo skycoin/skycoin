@@ -1,10 +1,12 @@
 import { WalletsPage } from './wallets.po';
+import { browser } from 'protractor';
 
 describe('Wallets', () => {
   const page = new WalletsPage();
 
   it('should display title', () => {
     page.navigateTo();
+    browser.sleep(1000);
     expect<any>(page.getHeaderText()).toEqual('Wallets');
   });
 

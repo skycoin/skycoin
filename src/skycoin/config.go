@@ -311,8 +311,8 @@ func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
 		fmt.Println("Additional environment variables:")
-		fmt.Println("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be >= 2.")
-		fmt.Println("* USER_MAX_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be >= 1024.")
+		fmt.Printf("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be >= %d.\n", params.MinBurnFactor)
+		fmt.Printf("* USER_MAX_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be >= %d.\n", params.MinTransactionSize)
 		fmt.Printf("* USER_MAX_DECIMALS - Set the maximum decimals allowed for user-created transactions. Must be <= %d.\n", droplet.Exponent)
 		os.Exit(0)
 	}
@@ -422,9 +422,6 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
 	}
 
-	if c.Node.maxBlockSize < 1024 {
-		return errors.New("-max-block-size must be >= 1024")
-	}
 	if c.Node.maxBlockSize > math.MaxUint32 {
 		return errors.New("-max-block-size exceeds MaxUint32")
 	}
@@ -441,20 +438,8 @@ func (c *Config) postProcess() error {
 	if c.Node.unconfirmedMaxDropletPrecision > math.MaxUint8 {
 		return errors.New("-max-decimals-unconfirmed exceeds MaxUint8")
 	}
-	if c.Node.unconfirmedMaxDropletPrecision > droplet.Exponent {
-		return errors.New("-max-decimals-unconfirmed exceeds droplet.Exponent")
-	}
-	if c.Node.unconfirmedMaxDropletPrecision < uint64(params.UserVerifyTxn.MaxDropletPrecision) {
-		return fmt.Errorf("-max-decimals-unconfirmed must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
-	}
 	if c.Node.createBlockMaxDropletPrecision > math.MaxUint8 {
 		return errors.New("-max-decimals-create-block exceeds MaxUint8")
-	}
-	if c.Node.createBlockMaxDropletPrecision > droplet.Exponent {
-		return errors.New("-max-decimals-create-block exceeds droplet.Exponent")
-	}
-	if c.Node.createBlockMaxDropletPrecision < uint64(params.UserVerifyTxn.MaxDropletPrecision) {
-		return fmt.Errorf("-max-decimals-create-block must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
 	}
 
 	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)
@@ -465,21 +450,21 @@ func (c *Config) postProcess() error {
 	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision)
 	c.Node.MaxBlockSize = uint32(c.Node.maxBlockSize)
 
-	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < 1024 {
-		return errors.New("-max-txn-size-unconfirmed must be >= 1024")
+	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
 	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
 		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
 	}
-	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < 1024 {
-		return errors.New("-max-txn-size-create-block must be >= 1024")
+	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-txn-size-create-block must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
 	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
 		return fmt.Errorf("-max-txn-size-create-block must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
 	}
 
-	if c.Node.MaxBlockSize < 1024 {
-		return errors.New("-max-block-size must be >= 1024")
+	if c.Node.MaxBlockSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
 	if c.Node.MaxBlockSize < params.UserVerifyTxn.MaxTransactionSize {
 		return fmt.Errorf("-max-block-size must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
@@ -491,18 +476,32 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-block-size must be >= -max-txn-size-create-block")
 	}
 
-	if c.Node.UnconfirmedVerifyTxn.BurnFactor < 2 {
-		return errors.New("-burn-factor-unconfirmed must be >= 2")
+	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.MinBurnFactor {
+		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
 	}
 	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
 		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
 	}
 
-	if c.Node.CreateBlockVerifyTxn.BurnFactor < 2 {
-		return errors.New("-burn-factor-create-block must be >= 2")
+	if c.Node.CreateBlockVerifyTxn.BurnFactor < params.MinBurnFactor {
+		return fmt.Errorf("-burn-factor-create-block must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
 	}
 	if c.Node.CreateBlockVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
 		return fmt.Errorf("-burn-factor-create-block must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
+	}
+
+	if c.Node.UnconfirmedMaxDropletPrecision > droplet.Exponent {
+		return fmt.Errorf("-max-decimals-unconfirmed must be <= droplet.Exponent (%d)", droplet.Exponent)
+	}
+	if c.Node.UnconfirmedMaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("-max-decimals-unconfirmed must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
+	}
+
+	if c.Node.CreateBlockMaxDropletPrecision > droplet.Exponent {
+		return fmt.Errorf("-max-decimals-create-block must be <= droplet.Exponent (%d)", droplet.Exponent)
+	}
+	if c.Node.CreateBlockMaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("-max-decimals-create-block must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
 	}
 
 	return nil

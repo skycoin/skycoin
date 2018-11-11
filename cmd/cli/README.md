@@ -1645,12 +1645,12 @@ $ skycoin-cli status
         "user_verify_transaction": {
             "burn_factor": 2,
             "max_transaction_size": 32768,
-            "max_droplet_precision": 3
+            "max_decimals": 3
         },
         "unconfirmed_verify_transaction": {
             "burn_factor": 2,
             "max_transaction_size": 32768,
-            "max_droplet_precision": 3
+            "max_decimals": 3
         }
     },
     "cli_config": {

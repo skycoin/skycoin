@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/droplet"
 )
 
@@ -48,8 +49,8 @@ func loadUserBurnFactor() {
 		panic(fmt.Sprintf("Invalid USER_BURN_FACTOR %q: %v", xs, err))
 	}
 
-	if x <= 1 {
-		panic("USER_BURN_FACTOR must be > 1")
+	if x < MinBurnFactor {
+		panic(fmt.Sprintf("USER_BURN_FACTOR must be >= %d", params.MinBurnFactor))
 	}
 
 	UserVerifyTxn.BurnFactor = uint32(x)
@@ -66,8 +67,8 @@ func loadUserMaxTransactionSize() {
 		panic(fmt.Sprintf("Invalid USER_MAX_TXN_SIZE %q: %v", xs, err))
 	}
 
-	if x < 1024 {
-		panic("USER_MAX_TXN_SIZE must be >= 1024")
+	if x < params.MinTransactionSize {
+		panic(fmt.Sprintf("USER_MAX_TXN_SIZE must be >= %d", params.MinTransactionSize))
 	}
 
 	UserVerifyTxn.MaxTransactionSize = uint32(x)
@@ -85,7 +86,7 @@ func loadUserMaxDecimals() {
 	}
 
 	if x > droplet.Exponent {
-		panic("USER_MAX_DECIMALS must be >= droplet.Exponent")
+		panic(fmt.Sprintf("USER_MAX_DECIMALS must be <= %d", droplet.Exponent))
 	}
 
 	UserVerifyTxn.MaxDropletPrecision = uint8(x)

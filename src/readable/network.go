@@ -60,7 +60,7 @@ func NewConnection(c *daemon.Connection) Connection {
 type VerifyTxn struct {
 	BurnFactor          uint32 `json:"burn_factor"`
 	MaxTransactionSize  uint32 `json:"max_transaction_size"`
-	MaxDropletPrecision uint8  `json:"max_droplet_precision"`
+	MaxDropletPrecision uint8  `json:"max_decimals"`
 }
 
 // NewVerifyTxn converts params.VerifyTxn to VerifyTxn

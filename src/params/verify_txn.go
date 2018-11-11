@@ -6,6 +6,13 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 )
 
+const (
+	// MinBurnFactor minimum value for BurnFactor
+	MinBurnFactor uint32 = 2
+	// MinTransactionSize minimum value for MaxTransactionSize
+	MinTransactionSize uint32 = 1024
+)
+
 var (
 	// ErrInvalidBurnFactor BurnFactor value is out of range
 	ErrInvalidBurnFactor = errors.New("BurnFactor value is out of range")
@@ -32,11 +39,11 @@ func (v VerifyTxn) MaxDropletDivisor() uint64 {
 
 // Validate validates the configured parameters
 func (v VerifyTxn) Validate() error {
-	if v.BurnFactor < 2 {
+	if v.BurnFactor < MinBurnFactor {
 		return ErrInvalidBurnFactor
 	}
 
-	if v.MaxTransactionSize < 1024 {
+	if v.MaxTransactionSize < MinTransactionSize {
 		return ErrInvalidMaxTransactionSize
 	}
 

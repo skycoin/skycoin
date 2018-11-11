@@ -6,7 +6,7 @@ set -o pipefail
 if [[ -n "$VS_EXTENSIONS" ]]; then
     for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done
 fi
-echo A
+
 # Check if skycoindev-vscode:dind image has been started
 if [[ -n "$DIND_COMMIT" ]]; then
     # no arguments passed

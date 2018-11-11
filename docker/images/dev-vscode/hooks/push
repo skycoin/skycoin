@@ -1,5 +1,5 @@
 #!/bin/bash
-IMAGE_NAME='skycoin/skycoindev-vscode'
+
 docker push $IMAGE_NAME
-docker push $IMAGE_NAME-dind
+docker push $DOCKER_REPO:dind
 

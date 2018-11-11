@@ -2,25 +2,14 @@
 
 ## Simple Tags
 
--	[`latest` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
+-	[`develop` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
+-	[`vscode` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
 
 # Skycoin development *vscode* image
 
 This image has the necessary tools to build, test, edit, lint and version the Skycoin
 source code. It comes with Visual Studio Code installed, along with some plugins
 to ease go development and version control with git.
-
-# Build
-
-```sh
-$ cd docker/images/dev-vscode/hoook
-$ ./build.sh
-```
-
-When it finish you will have two new images:
-
-`skycoin/skycoindev-vscode:develop` based on [skycoin/skycoindev-cli:develop](skycoin/docker/images/dev-cli) 
-`skycoin/skycoindev-vscode:dind` based on [skycoin/skycoindev-cli:dind](skycoin/docker/images/dev-docker)
 
 # How use this image
 
@@ -32,10 +21,10 @@ When it finish you will have two new images:
 3. Run docker image
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
-        -v $PWD:/go/src \
-        -w /go/src \
-        -e DISPLAY=$DISPLAY \
-        skycoin/skycoindev-vscode:develop
+            -v $PWD:/go/src \
+            -w /go/src \
+            -e DISPLAY=$DISPLAY \
+            skycoin/skycoindev-vscode:develop
 ```
 5. You should see vscode pop up.
 6. Have fun. Write some code. Close vscode when you're done, and ctrl+c to shut down the container. Your files will be in the path on the host where you started.
@@ -47,11 +36,11 @@ You must pass VS_EXTENSIONS environment variable to command-line with extensions
 
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 
-    -v $PWD:/go/src \
-       -w /go/src \
-       -e DISPLAY=$DISPLAY \
-       -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
-       skycoin/skycoindev-vscode:dind
+            -v $PWD:/go/src \
+            -w /go/src \
+            -e DISPLAY=$DISPLAY \
+            -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
+            skycoin/skycoindev-vscode:dind
 ```
 
 This downloads the skycoin source to src/skycoin/skycoin and changes the owner
@@ -60,7 +49,54 @@ as root and the files created by it are therefore owned by root.
 
 If you already have a Go development environment installed, you just need to
 mount the src directory from your $GOPATH in the /go/src volume of the
-container. 
+container.
+
+# Build your own images
+
+`SOURCE_COMMIT`: the SHA1 hash of the commit being tested.
+
+`IMAGE_NAME`: the name and tag of the Docker repository being built.
+
+`DOCKERFILE_PATH`: the dockerfile currently being built.
+
+`VS_EXTENSIONS`: VS Code extensions that you would add to docker image.
+
+Build image from `skycoindev-cli:develop`.
+
+```sh
+$ git clone https://github.com/skycoin/skycoin
+$ cd skycoin
+$ SOURCE_COMMIT=352c8705eb776baf79da96216308b6d164e0ae13
+$ IMAGE_NAME=skycoin/skycoindev-vscode:develop
+$ DOCKERFILE_PATH=docker/images/dev-vscode/Dockerfile
+$ VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest"
+$ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+               --build-arg SCOMMIT=$SOURCE_COMMIT \
+               -f $DOCKERFILE_PATH \
+               -t $IMAGE_NAME .
+```
+
+Or, if you prefer use `skycoindev-cli:dind`. Run:
+
+```sh
+$ git clone https://github.com/skycoin/skycoin
+$ cd skycoin
+$ SOURCE_COMMIT=352c8705eb776baf79da96216308b6d164e0ae13
+$ IMAGE_NAME=skycoin/skycoindev-vscode:dind
+$ DOCKERFILE_PATH=docker/images/dev-vscode/Dockerfile
+$ VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest"
+$ docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \
+               --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+               --build-arg SCOMMIT=$SOURCE_COMMIT \
+               --build-arg VS_EXTENSIONS="ms-python.python rebornix.Ruby"
+               -f $DOCKERFILE_PATH \
+               -t IMAGE_NAME .
+```
+
+When it finish, you will have two new images:
+
+`skycoin/skycoindev-vscode:develop` based on [skycoin/skycoindev-cli:develop](skycoin/docker/images/dev-cli) 
+`skycoin/skycoindev-vscode:dind` based on [skycoin/skycoindev-cli:dind](skycoin/docker/images/dev-docker)
 
 ## Running commands inside the container
 

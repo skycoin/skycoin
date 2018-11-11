@@ -490,17 +490,17 @@ func (c *Config) postProcess() error {
 		return fmt.Errorf("-burn-factor-create-block must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
 	}
 
-	if c.Node.UnconfirmedMaxDropletPrecision > droplet.Exponent {
+	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision > droplet.Exponent {
 		return fmt.Errorf("-max-decimals-unconfirmed must be <= droplet.Exponent (%d)", droplet.Exponent)
 	}
-	if c.Node.UnconfirmedMaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
 		return fmt.Errorf("-max-decimals-unconfirmed must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
 	}
 
-	if c.Node.CreateBlockMaxDropletPrecision > droplet.Exponent {
+	if c.Node.CreateBlockVerifyTxn.MaxDropletPrecision > droplet.Exponent {
 		return fmt.Errorf("-max-decimals-create-block must be <= droplet.Exponent (%d)", droplet.Exponent)
 	}
-	if c.Node.CreateBlockMaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+	if c.Node.CreateBlockVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
 		return fmt.Errorf("-max-decimals-create-block must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
 	}
 

@@ -498,8 +498,8 @@ func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 				return err
 			}
 
-			if err := gw.d.BroadcastTransaction(txn); err != nil {
-				logger.WithError(err).Error("BroadcastTransaction failed")
+			if err := gw.d.BroadcastUserTransaction(txn); err != nil {
+				logger.WithError(err).Error("BroadcastUserTransaction failed")
 				return err
 			}
 
@@ -623,7 +623,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 			return
 		}
 
-		err = gw.d.BroadcastTransaction(*txn)
+		err = gw.d.BroadcastUserTransaction(*txn)
 		if err != nil {
 			logger.WithError(err).Error("BroadcastTransaction failed")
 			return

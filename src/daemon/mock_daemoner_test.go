@@ -28,8 +28,8 @@ func (_m *mockDaemoner) addPeers(addrs []string) int {
 	return r0
 }
 
-// announceAllTxns provides a mock function with given fields:
-func (_m *mockDaemoner) announceAllTxns() error {
+// announceAllValidTxns provides a mock function with given fields:
+func (_m *mockDaemoner) announceAllValidTxns() error {
 	ret := _m.Called()
 
 	var r0 error
@@ -43,14 +43,16 @@ func (_m *mockDaemoner) announceAllTxns() error {
 }
 
 // broadcastMessage provides a mock function with given fields: msg
-func (_m *mockDaemoner) broadcastMessage(msg gnet.Message) (int, error) {
+func (_m *mockDaemoner) broadcastMessage(msg gnet.Message) ([]uint64, error) {
 	ret := _m.Called(msg)
 
-	var r0 int
-	if rf, ok := ret.Get(0).(func(gnet.Message) int); ok {
+	var r0 []uint64
+	if rf, ok := ret.Get(0).(func(gnet.Message) []uint64); ok {
 		r0 = rf(msg)
 	} else {
-		r0 = ret.Get(0).(int)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]uint64)
+		}
 	}
 
 	var r1 error

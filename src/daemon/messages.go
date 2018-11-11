@@ -365,8 +365,8 @@ func (intro *IntroductionMessage) process(d daemoner) {
 	}
 
 	// Announce unconfirmed txns
-	if err := d.announceAllTxns(); err != nil {
-		logger.WithError(err).Warning("announceAllTxns failed")
+	if err := d.announceAllValidTxns(); err != nil {
+		logger.WithError(err).Warning("announceAllValidTxns failed")
 	}
 }
 

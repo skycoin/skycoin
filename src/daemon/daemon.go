@@ -241,7 +241,7 @@ func NewDaemonConfig() DaemonConfig {
 type daemoner interface {
 	Disconnect(addr string, r gnet.DisconnectReason) error
 	sendMessage(addr string, msg gnet.Message) error
-	broadcastMessage(msg gnet.Message) (int, error)
+	broadcastMessage(msg gnet.Message) ([]uint64, error)
 	disconnectNow(addr string, r gnet.DisconnectReason) error
 	addPeers(addrs []string) int
 	recordPeerHeight(addr string, gnetID, height uint64)
@@ -251,7 +251,7 @@ type daemoner interface {
 	filterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error)
 	getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error)
 	requestBlocksFromAddr(addr string) error
-	announceAllTxns() error
+	announceAllValidTxns() error
 	daemonConfig() DaemonConfig
 	pexConfig() pex.Config
 	injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
@@ -1189,7 +1189,7 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	var txids []cipher.SHA256
 	for i := range txns {
 		logger.WithField("txid", txns[i].Hash().Hex()).Debug("Rebroadcast transaction")
-		if err := dm.BroadcastTransaction(txns[i].Transaction); err == nil {
+		if _, err := dm.BroadcastTransaction(txns[i].Transaction); err == nil {
 			txids = append(txids, txns[i].Transaction.Hash())
 		}
 	}
@@ -1198,19 +1198,103 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 }
 
 // BroadcastTransaction broadcasts a single transaction to all peers.
-func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
+func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
 	if dm.Config.DisableNetworking {
-		return ErrNetworkingDisabled
+		return nil, ErrNetworkingDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{t})
-	n, err := dm.broadcastMessage(m)
+	m := NewGiveTxnsMessage(coin.Transactions{txn})
+	ids, err := dm.broadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Error("Broadcast GiveTxnsMessage failed")
+		return nil, err
+	}
+
+	logger.Debugf("BroadcastTransaction to %d conns", len(ids))
+
+	return ids, nil
+}
+
+// BroadcastUserTransaction broadcasts a single transaction to all peers.
+// Returns an error if no peers that would propagate the transaction could be reached.
+func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction) error {
+	ids, err := dm.BroadcastTransaction(txn)
+	if err != nil {
 		return err
 	}
 
-	logger.Debugf("BroadcastTransaction to %d conns", n)
+	// Check if the connections will accept our transaction as valid.
+	// Clients v24 and earlier do not propagate soft-invalid transactions.
+	// Clients v24 and earlier do not advertise a user agent.
+	// Clients v24 and earlier do not advertise their transaction verification parameters,
+	// but will use defaults of BurnFactor=2, MaxTransactionSize=32768, MaxDropletPrecision=3.
+	// If none of the connections will propagate our transaction, return an error.
+
+	accepts := 0
+
+	for _, id := range ids {
+		c := dm.connections.getByGnetID(id)
+		if c == nil {
+			continue
+		}
+
+		if !c.HasIntroduced() {
+			continue
+		}
+
+		// If the peer has not set their user agent, they are v24 or earlier.
+		// v24 and earlier will not propagate a transaction that does not pass soft-validation.
+		// Check if our transaction would pass their soft-validation, using the hardcoded defaults
+		// that are used by v24 and earlier.
+		if c.UserAgent.Empty() {
+			if err := verifyUserTxnAgainstPeer(txn, params.VerifyTxn{
+				BurnFactor:          2,
+				MaxTransactionSize:  32 * 1024,
+				MaxDropletPrecision: 3,
+			}); err != nil {
+				continue
+			}
+		}
+
+		accepts++
+	}
+
+	if accepts == 0 {
+		err := errors.New("No peer will propagate this transaction")
+		logger.WithError(err).Error("BroadcastUserTransaction")
+		return err
+	}
+
+	logger.Debugf("BroadcastUserTransaction transaction propagated by %d/%d conns", accepts, len(ids))
+
+	return nil
+}
+
+// verifyUserTxnAgainstPeer returns an error if a user-created transaction would not pass soft-validation
+// according to a peer's reported verification parameters
+func verifyUserTxnAgainstPeer(txn coin.Transaction, verifyParams params.VerifyTxn) error {
+	for _, o := range txn.Out {
+		if err := params.DropletPrecisionCheck(verifyParams.MaxDropletPrecision, o.Coins); err != nil {
+			return err
+		}
+	}
+
+	txnSize, err := txn.Size()
+	if err != nil {
+		logger.Critical().WithError(err).Error("txn.Size failed unexpectedly")
+		return err
+	}
+
+	if txnSize > verifyParams.MaxTransactionSize {
+		return errors.New("Transaction size would exceed MaxTransactionSize")
+	}
+
+	// Assume that our user transaction's fee was computed to the limit of params.UserVerifyTxn.BurnFactor
+	// Otherwise we would need the transaction inputs to fully verify.
+	// TODO -- pass in inputs if they're easy to obtain
+	if verifyParams.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return errors.New("Transaction fee would not pass remote BurnFactor")
+	}
 
 	return nil
 }
@@ -1317,13 +1401,13 @@ func (dm *Daemon) sendRandomPeers(addr string) error {
 	return dm.sendMessage(addr, m)
 }
 
-// announceAllTxns announces local unconfirmed transactions
-func (dm *Daemon) announceAllTxns() error {
+// announceAllValidTxns broadcasts valid unconfirmed transactions
+func (dm *Daemon) announceAllValidTxns() error {
 	if dm.Config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
-	// Get local unconfirmed transaction hashes.
+	// Get valid unconfirmed transaction hashes
 	hashes, err := dm.visor.GetAllValidUnconfirmedTxHashes()
 	if err != nil {
 		return err
@@ -1373,10 +1457,13 @@ func (dm *Daemon) sendMessage(addr string, msg gnet.Message) error {
 	return dm.pool.Pool.SendMessage(addr, msg)
 }
 
-// broadcastMessage sends a Message to all introduced connections in the Pool
-func (dm *Daemon) broadcastMessage(msg gnet.Message) (int, error) {
+// broadcastMessage sends a Message to all introduced connections in the Pool.
+// Returns the gnet IDs of connections that broadcast succeeded for.
+// Note that a connection could still fail to receive the message under certain network conditions,
+// there is no guarantee that a message was broadcast.
+func (dm *Daemon) broadcastMessage(msg gnet.Message) ([]uint64, error) {
 	if dm.Config.DisableNetworking {
-		return 0, ErrNetworkingDisabled
+		return nil, ErrNetworkingDisabled
 	}
 
 	conns := dm.connections.all()

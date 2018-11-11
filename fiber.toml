@@ -21,11 +21,12 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 # port = 6000
 # web_interface_port = 6420
 # unconfirmed_burn_factor = 2
-# create_block_burn_factor = 2
-# max_block_size = 32 * 1024
 # unconfirmed_max_transaction_size = 32 * 1024
 # unconfirmed_max_decimals = 3
+# create_block_burn_factor = 2
+# create_block_max_transaction_size = 32 * 1024
 # create_block_max_decimals = 3
+# max_block_size = 32 * 1024
 
 [params]
 # max_coin_supply = 1e8

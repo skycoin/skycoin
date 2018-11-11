@@ -185,7 +185,7 @@ func TestIntroductionMessage(t *testing.T) {
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}), []byte("additonal data")...),
+				}), []byte("additional data")...),
 			},
 		},
 		{
@@ -480,13 +480,17 @@ func TestMessageEncodeDecode(t *testing.T) {
 			},
 		},
 		{
-			goldenFile: "intro-msg-pubkey.golden",
+			goldenFile: "intro-msg-extra.golden",
 			obj:        &IntroductionMessage{},
 			msg: &IntroductionMessage{
 				Mirror:          99998888,
 				ListenPort:      8888,
 				ProtocolVersion: 12341234,
-				Extra:           introPubKey[:],
+				Extra: newIntroductionMessageExtra(introPubKey, "skycoin:0.25.0(foo)", params.VerifyTxn{
+					BurnFactor:          2,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 		{

@@ -1642,12 +1642,16 @@ $ skycoin-cli status
         "gui_enabled": true,
         "unversioned_api_enabled": false,
         "json_rpc_enabled": false,
-        "user_burn_factor": 2,
-        "unconfirmed_burn_factor": 2,
-        "user_max_transaction_size": 32768,
-        "unconfirmed_max_transaction_size": 32768,
-        "user_max_decimals": 3,
-        "unconfirmed_max_decimals": 3,
+        "user_verify_transaction": {
+            "burn_factor": 2,
+            "max_transaction_size": 32768,
+            "max_droplet_precision": 3
+        },
+        "unconfirmed_verify_transaction": {
+            "burn_factor": 2,
+            "max_transaction_size": 32768,
+            "max_droplet_precision": 3
+        }
     },
     "cli_config": {
         "webrpc_address": "http://127.0.0.1:6420"

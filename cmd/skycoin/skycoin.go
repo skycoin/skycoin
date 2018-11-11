@@ -74,10 +74,12 @@ var (
 		WebInterfacePort:               6420,
 		DataDirectory:                  "$HOME/.skycoin",
 		UnconfirmedBurnFactor:          2,
-		CreateBlockBurnFactor:          2,
-		MaxBlockSize:                   32768,
 		UnconfirmedMaxTransactionSize:  32768,
 		UnconfirmedMaxDropletPrecision: 3,
+		CreateBlockBurnFactor:          2,
+		CreateBlockMaxTransactionSize:  32768,
+		CreateBlockMaxDropletPrecision: 3,
+		MaxBlockSize:                   32768,
 	})
 
 	parseFlags = true

@@ -39,16 +39,18 @@ type NodeParameters struct {
 	PeerListURL string `mapstructure:"peer_list_url"`
 	// UnconfirmedBurnFactor is the burn factor to apply when verifying unconfirmed transactions
 	UnconfirmedBurnFactor uint64 `mapstructure:"unconfirmed_burn_factor"`
-	// CreateBlockBurnFactor is the burn factor to apply to transactions when publishing blocks
-	CreateBlockBurnFactor uint64 `mapstructure:"create_block_burn_factor"`
-	// MaxBlockSize is the maximum size of blocks when publishing blocks
-	MaxBlockSize int `mapstructure:"max_block_size"`
 	// UnconfirmedMaxTransactionSize is the maximum size of an unconfirmed transaction
 	UnconfirmedMaxTransactionSize int `mapstructure:"unconfirmed_max_transaction_size"`
 	// UnconfirmedMaxDropletPrecision is the maximum number of decimals allowed in an unconfirmed transaction
 	UnconfirmedMaxDropletPrecision uint8 `mapstructure:"unconfirmed_max_decimals"`
+	// CreateBlockBurnFactor is the burn factor to apply to transactions when publishing blocks
+	CreateBlockBurnFactor uint64 `mapstructure:"create_block_burn_factor"`
+	// CreateBlockMaxTransactionSize is the maximum size of an transaction when publishing blocks
+	CreateBlockMaxTransactionSize int `mapstructure:"create_block_max_transaction_size"`
 	// CreateBlockMaxDropletPrecision is the maximum number of decimals allowed in a transaction when publishing blocks
 	CreateBlockMaxDropletPrecision uint8 `mapstructure:"create_block_max_decimals"`
+	// MaxBlockSize is the maximum size of blocks when publishing blocks
+	MaxBlockSize int `mapstructure:"max_block_size"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
 	CoinName      string
@@ -125,12 +127,13 @@ func setDefaults() {
 	viper.SetDefault("node.genesis_coin_volume", 100e12)
 	viper.SetDefault("node.port", 6000)
 	viper.SetDefault("node.web_interface_port", 6420)
-	viper.SetDefault("node.max_block_size", 32*1024)
-	viper.SetDefault("node.unconfirmed_max_transaction_size", 32*1024)
 	viper.SetDefault("node.unconfirmed_burn_factor", 2)
-	viper.SetDefault("node.create_block_burn_factor", 2)
+	viper.SetDefault("node.unconfirmed_max_transaction_size", 32*1024)
 	viper.SetDefault("node.unconfirmed_max_decimals", 3)
+	viper.SetDefault("node.create_block_burn_factor", 2)
+	viper.SetDefault("node.create_block_max_transaction_size", 32*1024)
 	viper.SetDefault("node.create_block_max_decimals", 3)
+	viper.SetDefault("node.max_block_size", 32*1024)
 
 	// build defaults
 	viper.SetDefault("build.commit", "")

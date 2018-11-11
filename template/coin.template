@@ -70,12 +70,13 @@ var (
 		WebInterfacePort:               {{.WebInterfacePort}},
 		DataDirectory:                  "{{.DataDirectory}}",
 		UnconfirmedBurnFactor:          {{.UnconfirmedBurnFactor}},
-		CreateBlockBurnFactor:          {{.CreateBlockBurnFactor}},
-		MaxBlockSize:                   {{.MaxBlockSize}},
 		UnconfirmedMaxTransactionSize:  {{.UnconfirmedMaxTransactionSize}},
 		UnconfirmedMaxDropletPrecision: {{.UnconfirmedMaxDropletPrecision}},
+		CreateBlockBurnFactor:          {{.CreateBlockBurnFactor}},
+		CreateBlockMaxTransactionSize:  {{.CreateBlockMaxTransactionSize}},
+		CreateBlockMaxDropletPrecision: {{.CreateBlockMaxDropletPrecision}},
+		MaxBlockSize:                   {{.MaxBlockSize}},
 	})
-
 
 	parseFlags = true
 )

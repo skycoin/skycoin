@@ -69,9 +69,9 @@ $ cd skycoin
 $ SOURCE_COMMIT=352c8705eb776baf79da96216308b6d164e0ae13
 $ IMAGE_NAME=skycoin/skycoindev-vscode:develop
 $ DOCKERFILE_PATH=docker/images/dev-vscode/Dockerfile
-$ VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest"
 $ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                --build-arg SCOMMIT=$SOURCE_COMMIT \
+               --build-arg VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest defaltd.go-coverage-viewer" \
                -f $DOCKERFILE_PATH \
                -t $IMAGE_NAME .
 ```
@@ -84,7 +84,6 @@ $ cd skycoin
 $ SOURCE_COMMIT=352c8705eb776baf79da96216308b6d164e0ae13
 $ IMAGE_NAME=skycoin/skycoindev-vscode:dind
 $ DOCKERFILE_PATH=docker/images/dev-vscode/Dockerfile
-$ VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest"
 $ docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \
                --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                --build-arg SCOMMIT=$SOURCE_COMMIT \
@@ -145,6 +144,8 @@ $ docker run --rm \
 - [Go](https://marketplace.visualstudio.com/items?itemName=ms-vscode.Go)
 - [Go Autotest](https://marketplace.visualstudio.com/items?itemName=windmilleng.vscode-go-autotest)
 - [Go Coverage Viewer](https://marketplace.visualstudio.com/items?itemName=defaltd.go-coverage-viewer)
+- [TSLint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint)
+- [GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens)
 
 ## Automated builds
 

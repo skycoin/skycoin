@@ -11,7 +11,7 @@ fi
 if [[ -n "$DIND_COMMIT" ]]; then
     # no arguments passed
     # or first arg is `-f` or `--some-option`
-    if [[ "$#" -eq 0 -o "${1#-}" != "$1" ]]; then
+    if [ "$#" -eq 0 -o "${1#-}" != "$1" ]; then
         # add our default arguments
         set -- dockerd \
             --host=unix:///var/run/docker.sock \
@@ -19,19 +19,17 @@ if [[ -n "$DIND_COMMIT" ]]; then
             "$@"
     fi
 
-    if [[ "$1" = 'dockerd' ]]; then
+    if [ "$1" = 'dockerd' ]; then
         # if we're running Docker, let's pipe through dind
         # (and we'll run dind explicitly with "sh" since its shebang is /bin/bash)
         set -- sh "$(which dind)" "$@"
     fi
 fi
 
-
-
-# If user no pass a command when run docker image VS Code will run
-# else, run user command
+# If user pass a command when run docker image VS Code it will be executed,
+# else, we run VS Code
 if [[ -n "$@" ]]; then
-    su user -p -c /usr/share/code/code
-else
     exec "$@"
+else
+    su user -p -c /usr/share/code/code
 fi

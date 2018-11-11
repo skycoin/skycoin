@@ -63,39 +63,42 @@ RUN apt-get update \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Add the vscode debian repo
-RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key add -
-RUN echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list
-
-# Install Visual Studio Code
-RUN apt-get update && apt-get -y install code \
-	&& apt clean \
-	&& rm -rf /var/lib/apt/lists/*
+RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key add - \
+    && echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list \
+    && apt-get update && apt-get -y install code \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create a diferent user to run VS Code
 ENV HOME /home/user
 RUN useradd --create-home --home-dir $HOME user \
 	&& chown -R user:user $HOME
 
-# Generte default user folders to avoid .config problems in future
-USER user
-RUN xdg-user-dirs-update --force
-
+# Change to `user` and generate default user folders to avoid config problems in future
 # Install VS Code extensions passed on build arg VS_EXTENSIONS
-RUN for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done
-RUN code --user-data-dir $HOME --list-extensions
+USER user
+RUN xdg-user-dirs-update --force \
+    && for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done \
+    code --user-data-dir $HOME --list-extensions
 
 # Back to root user
 USER root
 
-# Install golang necessaries dependencies to VS Code extensions
-RUN go get -v github.com/ramya-rao-a/go-outline \
+# Create and assign permissions to `user` folders
+# Install golang and npm necessaries dependencies to VS Code extensions
+RUN mkdir -p $HOME/.cache/dconf \
+    && mkdir -p $HOME/.config/dconf \
+    && chown user:user -R $HOME/.config \
+    && chown user:user -R $HOME/.cache \
+    && go get -v github.com/ramya-rao-a/go-outline \
     && go get -v github.com/uudashr/gopkgs/cmd/gopkgs \
     && go get -v github.com/acroca/go-symbols \
     && go get -v github.com/stamblerre/gocode \
     && go get -v github.com/ianthehat/godef \
     && go get -v github.com/sqs/goreturns \
     && ln -s /go/bin/gocode /go/bin/gocode-gomod \
-    && ln -s /go/bin/godef /go/bin/godef-gomod
+    && ln -s /go/bin/godef /go/bin/godef-gomod \
+    && npm install -g tslint typescript
 
 COPY docker/images/dev-vscode/start.sh /usr/local/bin/start.sh
 RUN ln -s usr/local/bin/start.sh / # backwards compat

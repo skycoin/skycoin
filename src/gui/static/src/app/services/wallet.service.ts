@@ -10,12 +10,15 @@ import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/observable/timer';
 import 'rxjs/add/observable/zip';
-import { Address, NormalTransaction, PreviewTransaction, Wallet } from '../app.datatypes';
+import { Address, NormalTransaction, PreviewTransaction, Wallet, Output } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { BigNumber } from 'bignumber.js';
 import { HwWalletService } from './hw-wallet.service';
+import { TranslateService } from '@ngx-translate/core';
+
+declare var Cipher: any;
 
 @Injectable()
 export class WalletService {
@@ -32,6 +35,7 @@ export class WalletService {
   constructor(
     private apiService: ApiService,
     private hwWalletService: HwWalletService,
+    private translate: TranslateService,
     private ngZone: NgZone,
   ) {
     this.loadData();
@@ -213,6 +217,85 @@ export class WalletService {
     });
   }
 
+  createHwTransaction(wallet: Wallet, address: string, amount: BigNumber): Observable<PreviewTransaction> {
+    const allocationRatio = 0.25;
+    const unburnedHoursRatio = 0.5;
+
+    const addresses = wallet.addresses.map(a => a.address).join(',');
+
+    let totalHours = new BigNumber('0');
+    let hoursToSend = new BigNumber('0');
+    let calculatedHours = new BigNumber('0');
+
+    const txOutputs = [];
+    const txInputs = [];
+    const txSignatures = [];
+
+    return this.getOutputs(addresses)
+      .flatMap((outputs: Output[]) => {
+        const minRequiredOutputs =  this.getMinRequiredOutputs(amount, outputs);
+        let totalCoins = new BigNumber('0');
+        minRequiredOutputs.map(output => totalCoins = totalCoins.plus(output.coins));
+
+        if (totalCoins.isLessThan(amount)) {
+          throw new Error(this.translate.instant('service.wallet.not-enough-hours'));
+        }
+
+        minRequiredOutputs.map(output => totalHours = totalHours.plus(output.calculated_hours));
+        hoursToSend = totalHours.multipliedBy(allocationRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
+
+        calculatedHours = totalHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
+
+        const changeCoins = totalCoins.minus(amount).decimalPlaces(6);
+
+        if (changeCoins.isGreaterThan(0)) {
+          txOutputs.push({
+            address: wallet.addresses[0].address,
+            coins: changeCoins.toNumber(),
+            hours: calculatedHours.minus(hoursToSend).toNumber(),
+          });
+        } else {
+          hoursToSend = calculatedHours;
+        }
+
+        txOutputs.push({ address: address, coins: amount.toNumber(), hours: hoursToSend.toNumber() });
+
+        if (address === wallet.addresses[0].address) {
+          hoursToSend = calculatedHours;
+        }
+
+        minRequiredOutputs.forEach(input => {
+          txInputs.push({
+            hash: input.hash,
+            secret: '',
+            address: input.address,
+            address_index: wallet.addresses.findIndex(a => a.address === input.address),
+            calculated_hours: input.calculated_hours.toNumber(),
+            coins: input.coins.toNumber(),
+          });
+        });
+
+        // Request signatures and add them to txSignatures sequentially.
+        return this.addSignatures(txInputs.length - 1, txInputs, txSignatures);
+
+      }).flatMap(() => {
+        return this.generateRawTransaction(txInputs, txOutputs, txSignatures)
+          .flatMap((rawTransaction: string) => {
+            return Observable.of({
+              balance: amount,
+              inputs: txInputs,
+              outputs: txOutputs,
+              txid: null,
+              from: '',
+              to: [],
+              hoursSent: hoursToSend,
+              hoursBurned: totalHours.minus(calculatedHours),
+              encoded: rawTransaction,
+            });
+          });
+      });
+  }
+
   injectTransaction(encodedTx: string) {
     return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true });
   }
@@ -317,6 +400,39 @@ export class WalletService {
     });
   }
 
+  private addSignatures(index: number, txInputs: any[], txSignatures: string[]): Observable<any> {
+    let chain: Observable<any>;
+    if (index > 0) {
+      chain = this.addSignatures(index - 1, txInputs, txSignatures).first();
+    } else {
+      chain = Observable.of(1);
+    }
+
+    chain = chain.flatMap(() => {
+      return this.hwWalletService.signMessage(txInputs[index].address_index, txInputs[index].hash)
+      .map(response => {
+        // TODO: use real signatures obtained from the hardware wallet. This signature is here temporarily while
+        // the signatures returned by the hardware wallet do not work correctly.
+        txSignatures.push('a55155ca15f73f0762f79c15917949a936658cff668647daf82a174eed95703a02622881f9cf6c7495536676f931b2d91d389a9e7b034232b3a1519c8da6fb8800');
+      });
+    });
+
+    return chain;
+  }
+
+  private generateRawTransaction(txInputs: any[], txOutputs: any[], txSignatures: string[]): Observable<string> {
+    const coinsMultiplier = 1000000;
+
+    const convertedOutputs: any[] = txOutputs.map(output => {
+      return {
+        ...output,
+        coins: parseInt((output.coins * coinsMultiplier) + '', 10),
+      };
+    });
+
+    return Observable.of(Cipher.PrepareTransactionWithSignatures(JSON.stringify(txInputs), JSON.stringify(convertedOutputs), JSON.stringify(txSignatures)));
+  }
+
   private crearteHardwareWalletData(label: string, addresses: string[]): Wallet {
     return {
       label: label,
@@ -407,5 +523,41 @@ export class WalletService {
           }, []));
         });
     });
+  }
+
+  private getOutputs(addresses): Observable<Output[]> {
+    if (!addresses) {
+      return Observable.of([]);
+    } else {
+      return this.apiService.get('outputs', { addrs: addresses }).map((response) => {
+        const outputs = [];
+        response.head_outputs.forEach(output => outputs.push({
+          address: output.address,
+          coins: new BigNumber(output.coins),
+          hash: output.hash,
+          calculated_hours: new BigNumber(output.calculated_hours),
+        }));
+
+        return outputs;
+      });
+    }
+  }
+
+  private getMinRequiredOutputs(transactionAmount: BigNumber, outputs: Output[]): Output[] {
+    outputs.sort( function(a, b) {
+      return b.coins.minus(a.coins).toNumber();
+    });
+
+    const minRequiredOutputs: Output[] = [];
+    let sumCoins: BigNumber = new BigNumber('0');
+
+    outputs.forEach(output => {
+      if (sumCoins.isLessThan(transactionAmount) && output.calculated_hours.isGreaterThan(0)) {
+        minRequiredOutputs.push(output);
+        sumCoins = sumCoins.plus(output.coins);
+      }
+    });
+
+    return minRequiredOutputs;
   }
 }

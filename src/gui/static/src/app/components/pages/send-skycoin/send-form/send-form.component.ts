@@ -10,6 +10,8 @@ import { showSnackbarError } from '../../../../utils/errors';
 import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
+import { Observable } from 'rxjs/Observable';
+import { PreviewTransaction } from '../../../../app.datatypes';
 
 @Component({
   selector: 'app-send-form',
@@ -66,7 +68,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.previewButton.resetState();
     this.sendButton.resetState();
 
-    if (this.form.value.wallet.encrypted) {
+    if (this.form.value.wallet.encrypted && !this.form.value.wallet.isHardware) {
       const config = new MatDialogConfig();
       config.data = {
         wallet: this.form.value.wallet,
@@ -94,22 +96,33 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.previewButton.setDisabled();
     }
 
-    this.walletService.createTransaction(
-      this.form.value.wallet,
-      null,
-      [{
-        address: this.form.value.address,
-        coins: this.form.value.amount,
-      }],
-      {
-        type: 'auto',
-        mode: 'share',
-        share_factor: '0.5',
-      },
-      null,
-      passwordDialog ? passwordDialog.password : null,
-    )
-      .toPromise()
+    let createTxRequest: Observable<PreviewTransaction>;
+
+    if (!this.form.value.wallet.isHardware) {
+      createTxRequest = this.walletService.createTransaction(
+        this.form.value.wallet,
+        null,
+        [{
+          address: this.form.value.address,
+          coins: this.form.value.amount,
+        }],
+        {
+          type: 'auto',
+          mode: 'share',
+          share_factor: '0.5',
+        },
+        null,
+        passwordDialog ? passwordDialog.password : null,
+      );
+    } else {
+      createTxRequest = this.walletService.createHwTransaction(
+        this.form.value.wallet,
+        this.form.value.address,
+        new BigNumber(this.form.value.amount),
+      );
+    }
+
+    createTxRequest.toPromise()
       .then(transaction => {
         if (!this.previewTx) {
           return this.walletService.injectTransaction(transaction.encoded).toPromise();

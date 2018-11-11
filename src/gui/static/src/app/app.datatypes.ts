@@ -69,6 +69,13 @@ export class Connection {
   source?: string;
 }
 
+export interface Output {
+  address: string;
+  coins: BigNumber;
+  hash: string;
+  calculated_hours: BigNumber;
+}
+
 /**
  * Response Objects
  */

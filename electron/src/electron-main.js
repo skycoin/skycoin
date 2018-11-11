@@ -400,3 +400,11 @@ ipcMain.on('hwWipe', (event, requestId) => {
     error => { console.log("Wipe promise errored: ", error); event.sender.send('hwWipeResponse', requestId, { error: error.toString() }); }
   );
 });
+
+ipcMain.on('hwSignMessage', (event, requestId, addressIndex, message) => {
+  const promise = deviceWallet.devSkycoinSignMessagePinCode(addressIndex, message);
+  promise.then(
+    result => { console.log("Signature promise resolved", result); event.sender.send('hwSignMessageResponse', requestId, result); },
+    error => { console.log("Signature promise errored: ", error); event.sender.send('hwSignMessageResponse', requestId, { error: error.toString() }); }
+  );
+});

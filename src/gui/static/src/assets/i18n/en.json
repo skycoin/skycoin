@@ -273,6 +273,9 @@
   "service": {
     "api" : {
       "server-error": "Server error"
+    },
+    "wallet": {
+      "not-enough-hours": "Not enough available Coin Hours to perform the transaction!"
     }
   },
 

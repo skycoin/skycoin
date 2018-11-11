@@ -18,9 +18,8 @@ export class HwWalletService {
       window['ipcRenderer'].on('hwWipeResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result);
       });
-
-      window['ipcRenderer'].on('hwConnectionEvent', (event, params) => {
-        alert(JSON.stringify(params));
+      window['ipcRenderer'].on('hwSignMessageResponse', (event, requestId, result) => {
+        this.dispatchEvent(requestId, result);
       });
     }
   }
@@ -50,6 +49,15 @@ export class HwWalletService {
   wipe(): Observable<any> {
     const requestId = this.createRandomID();
     window['ipcRenderer'].send('hwWipe', requestId);
+
+    return new Observable(observer => {
+      this.eventsObservers.set(requestId, observer);
+    });
+  }
+
+  signMessage(addressIndex, message): Observable<any> {
+    const requestId = this.createRandomID();
+    window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
 
     return new Observable(observer => {
       this.eventsObservers.set(requestId, observer);

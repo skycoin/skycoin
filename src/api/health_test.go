@@ -125,12 +125,15 @@ func TestHealthHandler(t *testing.T) {
 			}
 
 			health := &daemon.Health{
-				BlockchainMetadata:            metadata,
-				OutgoingConnections:           3,
-				IncomingConnections:           2,
-				Uptime:                        time.Second * 4,
-				UnconfirmedBurnFactor:         params.UserBurnFactor * 2,
-				UnconfirmedMaxTransactionSize: params.UserMaxTransactionSize * 2,
+				BlockchainMetadata:  metadata,
+				OutgoingConnections: 3,
+				IncomingConnections: 2,
+				Uptime:              time.Second * 4,
+				UnconfirmedVerifyTxn: params.VerifyTxn{
+					BurnFactor:          params.UserVerifyTxn.BurnFactor * 2,
+					MaxTransactionSize:  params.UserVerifyTxn.MaxTransactionSize * 2,
+					MaxDropletPrecision: params.UserVerifyTxn.MaxDropletPrecision - 1,
+				},
 			}
 
 			gateway := &MockGatewayer{}
@@ -194,10 +197,14 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
-			require.Equal(t, uint32(2), r.UserBurnFactor)
-			require.Equal(t, uint32(32*1024), r.UserMaxTransactionSize)
-			require.Equal(t, health.UnconfirmedBurnFactor, r.UnconfirmedBurnFactor)
-			require.Equal(t, health.UnconfirmedMaxTransactionSize, r.UnconfirmedMaxTransactionSize)
+			require.Equal(t, uint32(2), r.UserVerifyTxn.BurnFactor)
+			require.Equal(t, uint32(32*1024), r.UserVerifyTxn.MaxTransactionSize)
+			require.Equal(t, uint8(3), r.UserVerifyTxn.MaxDropletPrecision)
+
+			require.Equal(t, health.UnconfirmedVerifyTxn.BurnFactor, r.UnconfirmedVerifyTxn.BurnFactor)
+			require.Equal(t, health.UnconfirmedVerifyTxn.MaxTransactionSize, r.UnconfirmedVerifyTxn.MaxTransactionSize)
+			require.Equal(t, health.UnconfirmedVerifyTxn.MaxDropletPrecision, r.UnconfirmedVerifyTxn.MaxDropletPrecision)
+
 		})
 	}
 }

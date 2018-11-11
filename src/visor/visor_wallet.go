@@ -145,7 +145,7 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 				return err
 			}
 
-			if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
+			if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn); err != nil {
 				logger.WithError(err).Error("Created transaction violates transaction constraints")
 				return err
 			}
@@ -202,7 +202,7 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 				return err
 			}
 
-			if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserMaxTransactionSize, params.UserBurnFactor); err != nil {
+			if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn); err != nil {
 				logger.WithError(err).Error("Created transaction violates transaction constraints")
 				return err
 			}

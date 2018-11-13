@@ -45,7 +45,8 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 - Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
 - Coinhour burn factor when creating transactions can be configured at runtime with `USER_BURN_FACTOR` envvar
-- Max transaction size when creating transactions can be configured at runtime with `MAX_USER_TXN_SIZE` envvar
+- Max transaction size when creating transactions can be configured at runtime with `USER_MAX_TXN_SIZE` envvar
+- Max decimals allowed when creating transactions can be configured at runtime with `USER_MAX_DECIMALS` envvar
 - Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
 - `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
 - A user agent string is sent in the wire protocol's introduction packet

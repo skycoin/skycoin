@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -53,16 +54,15 @@ var (
 
 // ConnectionDetails connection data managed by daemon
 type ConnectionDetails struct {
-	State                         ConnectionState
-	Outgoing                      bool
-	ConnectedAt                   time.Time
-	Mirror                        uint32
-	ListenPort                    uint16
-	ProtocolVersion               int32
-	Height                        uint64
-	UserAgent                     useragent.Data
-	UnconfirmedBurnFactor         uint32
-	UnconfirmedMaxTransactionSize uint32
+	State                ConnectionState
+	Outgoing             bool
+	ConnectedAt          time.Time
+	Mirror               uint32
+	ListenPort           uint16
+	ProtocolVersion      int32
+	Height               uint64
+	UserAgent            useragent.Data
+	UnconfirmedVerifyTxn params.VerifyTxn
 }
 
 // HasIntroduced returns true if the connection has introduced
@@ -296,8 +296,7 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 	conn.ProtocolVersion = m.ProtocolVersion
 	conn.ListenPort = listenPort
 	conn.UserAgent = m.userAgent
-	conn.UnconfirmedBurnFactor = m.unconfirmedBurnFactor
-	conn.UnconfirmedMaxTransactionSize = m.unconfirmedMaxTransactionSize
+	conn.UnconfirmedVerifyTxn = m.unconfirmedVerifyTxn
 
 	if !conn.Outgoing {
 		listenAddr := conn.ListenAddr()

@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -233,10 +234,9 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 
 // IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
-	c                             *gnet.MessageContext `enc:"-"`
-	userAgent                     useragent.Data       `enc:"-"`
-	unconfirmedBurnFactor         uint32               `enc:"-"`
-	unconfirmedMaxTransactionSize uint32               `enc:"-"`
+	c                    *gnet.MessageContext `enc:"-"`
+	userAgent            useragent.Data       `enc:"-"`
+	unconfirmedVerifyTxn params.VerifyTxn     `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -249,25 +249,26 @@ type IntroductionMessage struct {
 	// Currently it contains the blockchain pubkey and user agent but will accept a client that does not provide it.
 	// If any of this data is provided, it must include a valid blockchain pubkey and a valid user agent string (maxlen=256).
 	// Contents of extra:
-	// ExtraByte  uint32 // length prefix of []byte
-	// Pubkey     cipher.Pubkey // blockchain pubkey
-	// BurnFactor uint32 // burn factor for announced txns
-	// MaxTxnSize uint32 // max txn size for announced txns
-	// UserAgent  string `enc:",maxlen=256"`
+	// ExtraByte           uint32 // length prefix of []byte
+	// Pubkey              cipher.Pubkey // blockchain pubkey
+	// BurnFactor          uint32 // burn factor for announced txns
+	// MaxTxnSize          uint32 // max txn size for announced txns
+	// MaxDropletPrecision uint8 // maximum number of decimal places for announced txns
+	// UserAgent           string `enc:",maxlen=256"`
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, unconfirmedBurnFactor, unconfirmedMaxTxnSize uint32) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) *IntroductionMessage {
 	return &IntroductionMessage{
 		Mirror:          mirror,
 		ProtocolVersion: version,
 		ListenPort:      port,
-		Extra:           newIntroductionMessageExtra(pubkey, userAgent, unconfirmedBurnFactor, unconfirmedMaxTxnSize),
+		Extra:           newIntroductionMessageExtra(pubkey, userAgent, verifyParams),
 	}
 }
 
-func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, unconfirmedBurnFactor, unconfirmedMaxTxnSize uint32) []byte {
+func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
 			"userAgent": userAgent,
@@ -279,19 +280,20 @@ func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, unconfi
 	}
 	useragent.MustParse(userAgent)
 
-	userAgentSerialized := encoder.SerializeString(userAgent)
-	burnFactorSerialized := encoder.SerializeAtomic(unconfirmedBurnFactor)
-	maxTxnSizeSerialized := encoder.SerializeAtomic(unconfirmedMaxTxnSize)
+	if err := verifyParams.Validate(); err != nil {
+		logger.Panic(err)
+	}
 
-	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(burnFactorSerialized)+len(maxTxnSizeSerialized))
+	userAgentSerialized := encoder.SerializeString(userAgent)
+	verifyParamsSerialized := encoder.Serialize(verifyParams)
+
+	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(verifyParamsSerialized))
 
 	copy(extra[:len(pubkey)], pubkey[:])
 	i := len(pubkey)
-	copy(extra[i:i+len(burnFactorSerialized)], burnFactorSerialized)
-	i += len(burnFactorSerialized)
-	copy(extra[i:i+len(maxTxnSizeSerialized)], maxTxnSizeSerialized)
-	i += len(maxTxnSizeSerialized)
-	copy(extra[i:i+len(userAgentSerialized)], userAgentSerialized)
+	copy(extra[i:], verifyParamsSerialized)
+	i += len(verifyParamsSerialized)
+	copy(extra[i:], userAgentSerialized)
 
 	return extra
 }
@@ -416,31 +418,35 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 		}
 
 		i := len(bcPubKey)
-		if len(intro.Extra) < i+8 {
-			logger.WithFields(fields).Warning("UnconfirmedBurnFactor and UnconfirmedMaxTransactionSize could not be deserialized: not enough data")
+		if len(intro.Extra) < i+9 {
+			logger.WithFields(fields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
 			return ErrDisconnectInvalidExtraData
 		}
-		if _, err := encoder.DeserializeAtomic(intro.Extra[i:i+4], &intro.unconfirmedBurnFactor); err != nil {
+		if err := encoder.DeserializeRaw(intro.Extra[i:i+9], &intro.unconfirmedVerifyTxn); err != nil {
 			// This should not occur due to the previous length check
-			logger.Critical().WithError(err).WithFields(fields).Warning("UnconfirmedBurnFactor could not be deserialized")
+			logger.Critical().WithError(err).WithFields(fields).Warning("unconfirmedVerifyTxn params could not be deserialized")
 			return ErrDisconnectInvalidExtraData
-		}
-		if intro.unconfirmedBurnFactor < 2 {
-			logger.WithFields(fields).WithField("unconfirmedBurnFactor", intro.unconfirmedBurnFactor).Warning("Invalid intro.unconfirmedBurnFactor")
-			return ErrDisconnectInvalidBurnFactor
 		}
 
-		if _, err := encoder.DeserializeAtomic(intro.Extra[i+4:i+8], &intro.unconfirmedMaxTransactionSize); err != nil {
-			// This should not occur due to the previous length check
-			logger.Critical().WithError(err).WithFields(fields).Warning("MaxTransactionSize could not be deserialized")
-			return ErrDisconnectInvalidExtraData
-		}
-		if intro.unconfirmedMaxTransactionSize < 1024 {
-			logger.WithFields(fields).WithField("unconfirmedMaxTransactionSize", intro.unconfirmedMaxTransactionSize).Warning("Invalid intro.unconfirmedMaxTransactionSize")
-			return ErrDisconnectInvalidMaxTransactionSize
+		if err := intro.unconfirmedVerifyTxn.Validate(); err != nil {
+			logger.WithError(err).WithFields(fields).WithFields(logrus.Fields{
+				"burnFactor":          intro.unconfirmedVerifyTxn.BurnFactor,
+				"maxTransactionSize":  intro.unconfirmedVerifyTxn.MaxTransactionSize,
+				"maxDropletPrecision": intro.unconfirmedVerifyTxn.MaxDropletPrecision,
+			}).Warning("Invalid unconfirmedVerifyTxn params")
+			switch err {
+			case params.ErrInvalidBurnFactor:
+				return ErrDisconnectInvalidBurnFactor
+			case params.ErrInvalidMaxTransactionSize:
+				return ErrDisconnectInvalidMaxTransactionSize
+			case params.ErrInvalidMaxDropletPrecision:
+				return ErrDisconnectInvalidMaxDropletPrecision
+			default:
+				return ErrDisconnectUnexpectedError
+			}
 		}
 
-		userAgentSerialized := intro.Extra[len(bcPubKey)+8:]
+		userAgentSerialized := intro.Extra[len(bcPubKey)+9:]
 		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 		if err != nil {
 			logger.WithError(err).WithFields(fields).Warning("Extra data user agent string could not be deserialized")

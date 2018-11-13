@@ -237,10 +237,16 @@ Response:
     "gui_enabled": true,
     "unversioned_api_enabled": false,
     "json_rpc_enabled": false,
-    "user_burn_factor": 2,
-    "unconfirmed_burn_factor": 2,
-    "user_max_transaction_size": 32768,
-    "unconfirmed_max_transaction_size": 32768
+    "user_verify_transaction": {
+        "burn_factor": 2,
+        "max_transaction_size": 32768,
+        "max_decimals": 3
+    },
+    "unconfirmed_verify_transaction": {
+        "burn_factor": 2,
+        "max_transaction_size": 32768,
+        "max_decimals": 3
+    }
 }
 ```
 
@@ -3607,8 +3613,11 @@ Result:
     "listen_port": 6000,
     "user_agent": "skycoin:0.25.0",
     "is_trusted_peer": true,
-    "unconfirmed_burn_factor": 2,
-    "unconfirmed_max_transaction_size": 32768
+    "unconfirmed_verify_transaction": {
+        "burn_factor": 2,
+        "max_transaction_size": 32768,
+        "max_decimals": 3
+    }
 }
 ```
 
@@ -3656,8 +3665,11 @@ Result:
             "height": 180,
             "user_agent": "skycoin:0.25.0",
 		    "is_trusted_peer": true,
-		    "unconfirmed_burn_factor": 2,
-		    "unconfirmed_max_transaction_size": 32768
+		    "unconfirmed_verify_transaction": {
+		        "burn_factor": 2,
+		        "max_transaction_size": 32768,
+		        "max_decimals": 3
+		    }
         },
         {
             "id": 109548,
@@ -3672,8 +3684,11 @@ Result:
             "height": 0,
             "user_agent": "",
 		    "is_trusted_peer": true,
-		    "unconfirmed_burn_factor": 0,
-		    "unconfirmed_max_transaction_size": 0
+		    "unconfirmed_verify_transaction": {
+		        "burn_factor": 0,
+		        "max_transaction_size": 0,
+		        "max_decimals": 0
+		    }
         },
         {
             "id": 99115,
@@ -3688,8 +3703,11 @@ Result:
             "height": 180,
             "user_agent": "",
 		    "is_trusted_peer": true,
-		    "unconfirmed_burn_factor": 0,
-		    "unconfirmed_max_transaction_size": 0
+		    "unconfirmed_verify_transaction": {
+		        "burn_factor": 0,
+		        "max_transaction_size": 0,
+		        "max_decimals": 0
+		    }
         }
     ]
 }

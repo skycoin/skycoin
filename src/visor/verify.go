@@ -139,21 +139,21 @@ func (e ErrTxnViolatesUserConstraint) Error() string {
 //      * That the transaction burn enough coin hours (the fee)
 //      * That if that transaction does not spend from a locked distribution address
 //      * That the transaction does not create outputs with a higher decimal precision than is allowed
-func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, maxSize, burnFactor uint32) error {
-	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, maxSize, burnFactor); err != nil {
+func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, verifyParams params.VerifyTxn) error {
+	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, verifyParams); err != nil {
 		return NewErrTxnViolatesSoftConstraint(err)
 	}
 
 	return nil
 }
 
-func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, maxSize, burnFactor uint32) error {
+func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, verifyParams params.VerifyTxn) error {
 	txnSize, err := txn.Size()
 	if err != nil {
 		return errTxnExceedsMaxBlockSize
 	}
 
-	if txnSize > maxSize {
+	if txnSize > verifyParams.MaxTransactionSize {
 		return errTxnExceedsMaxBlockSize
 	}
 
@@ -162,7 +162,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 		return err
 	}
 
-	if err := fee.VerifyTransactionFee(&txn, f, burnFactor); err != nil {
+	if err := fee.VerifyTransactionFee(&txn, f, verifyParams.BurnFactor); err != nil {
 		return err
 	}
 
@@ -172,7 +172,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 
 	// Reject transactions that do not conform to decimal restrictions
 	for _, o := range txn.Out {
-		if err := params.DropletPrecisionCheck(o.Coins); err != nil {
+		if err := params.DropletPrecisionCheck(verifyParams.MaxDropletPrecision, o.Coins); err != nil {
 			return err
 		}
 	}

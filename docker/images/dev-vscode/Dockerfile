@@ -65,7 +65,8 @@ RUN apt-get update \
 # Add the vscode debian repo
 RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key add - \
     && echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list \
-    && apt-get update && apt-get -y install code \
+    && apt-get update \
+    && apt-get -y install code \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -75,14 +76,14 @@ RUN useradd --create-home --home-dir $HOME user \
 	&& chown -R user:user $HOME
 
 # Change to `user` and generate default user folders to avoid config problems in future
-# Install VS Code extensions passed on build arg VS_EXTENSIONS
 USER user
-RUN xdg-user-dirs-update --force \
-    && for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done \
-    code --user-data-dir $HOME --list-extensions
+RUN xdg-user-dirs-update --force
 
 # Back to root user
 USER root
+
+# Install VS Code extensions passed on build arg VS_EXTENSIONS
+RUN for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done
 
 # Create and assign permissions to `user` folders
 # Install golang and npm necessaries dependencies to VS Code extensions

@@ -17,6 +17,7 @@
   </div>
 
   <div *ngIf="currentState === states.Processing">Please, confirm the operation in the hardware wallet</div>
-  <div *ngIf="currentState === states.Finalized">Operation completed</div>
+  <div *ngIf="currentState === states.ReturnedSuccess">Operation completed successfully</div>
+  <div *ngIf="currentState === states.ReturnedRefused">The operation failed or was refused by the user</div>
   <div *ngIf="currentState === states.Failed">Error</div>
 </app-modal>

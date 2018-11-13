@@ -80,6 +80,7 @@ import { HwWalletOptionsComponent } from './components/layout/hardware-wallet/hw
 import { HwWipeDialogComponent } from './components/layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog';
 import { HwSeedDialogComponent } from './components/layout/hardware-wallet/hw-seed-dialog/hw-seed-dialog';
 import { HwAddedDialogComponent } from './components/layout/hardware-wallet/hw-added-dialog/hw-added-dialog';
+import { HwGenerateSeedDialogComponent } from './components/layout/hardware-wallet/hw-generate-seed-dialog/hw-generate-seed-dialog';
 
 
 const ROUTES = [
@@ -191,6 +192,7 @@ const ROUTES = [
     HwWipeDialogComponent,
     HwSeedDialogComponent,
     HwAddedDialogComponent,
+    HwGenerateSeedDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -208,6 +210,7 @@ const ROUTES = [
     HwWipeDialogComponent,
     HwSeedDialogComponent,
     HwAddedDialogComponent,
+    HwGenerateSeedDialogComponent,
   ],
   imports: [
     BrowserModule,

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, Inject } from '@angular/core';
+import { Component, OnDestroy, ViewChild, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -11,11 +11,11 @@ export enum States {
 }
 
 @Component({
-  selector: 'app-hw-wipe-dialog',
-  templateUrl: './hw-wipe-dialog.html',
-  styleUrls: ['./hw-wipe-dialog.scss'],
+  selector: 'app-hw-generate-seed-dialog',
+  templateUrl: './hw-generate-seed-dialog.html',
+  styleUrls: ['./hw-generate-seed-dialog.scss'],
 })
-export class HwWipeDialogComponent implements OnDestroy {
+export class HwGenerateSeedDialogComponent implements OnDestroy {
 
   currentState: States = States.Initial;
   states = States;
@@ -24,10 +24,10 @@ export class HwWipeDialogComponent implements OnDestroy {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public requestRecheck: any,
-    public dialogRef: MatDialogRef<HwWipeDialogComponent>,
+    public dialogRef: MatDialogRef<HwGenerateSeedDialogComponent>,
     private hwWalletService: HwWalletService,
   ) {
-    this.operationSubscription = this.hwWalletService.wipe().subscribe(
+    this.operationSubscription = this.hwWalletService.generateMnemonic().subscribe(
       response => {
         if (response.success) {
           this.requestRecheck();

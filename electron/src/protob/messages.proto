@@ -20,6 +20,9 @@ enum MessageType {
 	MessageType_Failure = 3 [(wire_out) = true];
 	MessageType_ChangePin = 4 [(wire_in) = true];
 	MessageType_WipeDevice = 5 [(wire_in) = true];
+	// Bootloader
+	MessageType_FirmwareErase = 6 [(wire_in) = true, (wire_bootloader) = true];
+	MessageType_FirmwareUpload = 7 [(wire_in) = true, (wire_bootloader) = true];
 	MessageType_GetEntropy = 9 [(wire_in) = true];
 	MessageType_Entropy = 10 [(wire_out) = true];
 	MessageType_LoadDevice = 13 [(wire_in) = true];
@@ -46,6 +49,7 @@ enum MessageType {
 	MessageType_SkycoinSignMessage = 116 [(wire_in) = true];
 	MessageType_ResponseSkycoinAddress = 117 [(wire_out) = true];
 	MessageType_ResponseSkycoinSignMessage = 118 [(wire_out) = true];
+	MessageType_GenerateMnemonic = 119 [(wire_in) = true];
 }
 
 ////////////////////
@@ -102,6 +106,13 @@ message Features {
 	optional bool unfinished_backup = 27;		// report unfinished backup (equals to Storage.unfinished_backup)
 }
 
+
+/**
+ * Request: Ask the device to generate a mnemonic and configure itself with it
+ * @next Success
+ */
+ message GenerateMnemonic {
+}
 
 /**
  * Request: Send a mnemonic to the device
@@ -389,3 +400,20 @@ message WordAck {
 	required string word = 1;				// one word of mnemonic on asked position
 }
 
+/**
+ * Request: Ask device to erase its firmware (so it can be replaced via FirmwareUpload)
+ * @start
+ * @next FirmwareRequest
+ */
+message FirmwareErase {
+    optional uint32 length = 1; // length of new firmware
+}
+
+/**
+ * Response: Ask for firmware chunk
+ * @next FirmwareUpload
+ */
+message FirmwareRequest {
+    optional uint32 offset = 1; // offset of requested firmware chunk
+    optional uint32 length = 2; // length of requested firmware chunk
+}

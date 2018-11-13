@@ -1,5 +1,5 @@
-import { Component, OnDestroy, ViewChild } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { Component, OnDestroy, ViewChild, Inject } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -8,7 +8,8 @@ import { ButtonComponent } from '../../button/button.component';
 export enum States {
   Initial,
   Processing,
-  Finalized,
+  ReturnedSuccess,
+  ReturnedRefused,
   Failed,
 }
 
@@ -28,6 +29,7 @@ export class HwSeedDialogComponent implements OnDestroy {
   private operationSubscription: ISubscription;
 
   constructor(
+    @Inject(MAT_DIALOG_DATA) public requestRecheck: any,
     public dialogRef: MatDialogRef<HwSeedDialogComponent>,
     private hwWalletService: HwWalletService,
     private formBuilder: FormBuilder,
@@ -44,8 +46,13 @@ export class HwSeedDialogComponent implements OnDestroy {
   setSeed() {
     this.currentState = States.Processing;
     this.operationSubscription = this.hwWalletService.setMnemonic(this.form.value.seed).subscribe(
-      () => {
-        this.currentState = States.Finalized;
+      response => {
+        if (response.success) {
+          this.requestRecheck();
+          this.currentState = States.ReturnedSuccess;
+        } else {
+          this.currentState = States.ReturnedRefused;
+        }
       },
       () => {
         this.currentState = States.Failed;

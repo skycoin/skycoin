@@ -221,6 +221,17 @@ const createSetMnemonicRequest = function(mnemonic) {
     return dataBytesFromChunks(chunks);
 };
 
+const createGenerateMnemonicRequest = function() {
+    const msgStructure = {};
+    const msg = messages.GenerateMnemonic.create(msgStructure);
+    const buffer = messages.GenerateMnemonic.encode(msg).finish();
+    const chunks = makeTrezorMessage(
+        buffer,
+        messages.MessageType.MessageType_GenerateMnemonic
+    );
+    return dataBytesFromChunks(chunks);
+};
+
 const createWipeDeviceRequest = function() {
     const msgStructure = {};
     const msg = messages.WipeDevice.create(msgStructure);
@@ -502,8 +513,12 @@ const devWipeDevice = function() {
             const deviceHandle = new DeviceHandler(deviceType);
             const devReadCallback = function(kind) {
                 deviceHandle.close();
-                devButtonRequestCallback(kind, () => {
-                    resolve("Wipe Device operation finished or refused");
+                devButtonRequestCallback(kind, (datakind) => {
+                    if (datakind == messages.MessageType.MessageType_Success) {
+                        resolve("Wipe Device operation completed");
+                    } else {
+                        resolve("Wipe Device operation failed or refused");
+                    }
                 });
             };
             deviceHandle.read(devReadCallback);
@@ -517,8 +532,31 @@ const devSetMnemonic = function(mnemonic) {
         const deviceHandle = new DeviceHandler(deviceType);
         const devReadCallback = function(kind) {
             deviceHandle.close();
-            devButtonRequestCallback(kind, () => {
-                resolve("Set Mnemonic operation finished or refused");
+            devButtonRequestCallback(kind, (datakind) => {
+                if (datakind == messages.MessageType.MessageType_Success) {
+                    resolve("Set Mnemonic operation completed");
+                } else {
+                    resolve("Set Mnemonic operation failed or refused");
+                }
+            });
+        };
+        deviceHandle.read(devReadCallback);
+        deviceHandle.write(dataBytes);
+    });
+};
+
+const devGenerateMnemonic = function() {
+    return new Promise((resolve) => {
+        const dataBytes = createGenerateMnemonicRequest();
+        const deviceHandle = new DeviceHandler(deviceType);
+        const devReadCallback = function(kind) {
+            deviceHandle.close();
+            devButtonRequestCallback(kind, (datakind) => {
+                if (datakind == messages.MessageType.MessageType_Success) {
+                    resolve("Generate Mnemonic operation completed");
+                } else {
+                    resolve("Generate Mnemonic operation failed or refused");
+                }
             });
         };
         deviceHandle.read(devReadCallback);
@@ -557,6 +595,7 @@ module.exports = {
     devAddressGenPinCode,
     devChangePin,
     devCheckMessageSignature,
+    devGenerateMnemonic,
     devSetMnemonic,
     devSkycoinSignMessagePinCode,
     devWipeDevice,

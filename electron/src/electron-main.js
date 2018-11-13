@@ -388,8 +388,16 @@ ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex) => {
 ipcMain.on('hwSetMnemonic', (event, requestId, mnemonic) => {
   const promise = deviceWallet.devSetMnemonic(mnemonic);
   promise.then(
-    result => { console.log("Mnemonic promise resolved", result); event.sender.send('hwSetMnemonicResponse', requestId, result); },
-    error => { console.log("Mnemonic promise errored: ", error); event.sender.send('hwSetMnemonicResponse', requestId, { error: error.toString() }); }
+    result => { console.log("Set mnemonic promise resolved", result); event.sender.send('hwSetMnemonicResponse', requestId, result); },
+    error => { console.log("Set mnemonic promise errored: ", error); event.sender.send('hwSetMnemonicResponse', requestId, { error: error.toString() }); }
+  );
+});
+
+ipcMain.on('hwGenerateMnemonic', (event, requestId) => {
+  const promise = deviceWallet.devGenerateMnemonic();
+  promise.then(
+    result => { console.log("Generate mnemonic promise resolved", result); event.sender.send('hwGenerateMnemonicResponse', requestId, result); },
+    error => { console.log("Generate mnemonic promise errored: ", error); event.sender.send('hwGenerateMnemonicResponse', requestId, { error: error.toString() }); }
   );
 });
 

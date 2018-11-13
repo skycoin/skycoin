@@ -19,6 +19,8 @@ var $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
  * @property {number} MessageType_Failure=3 MessageType_Failure value
  * @property {number} MessageType_ChangePin=4 MessageType_ChangePin value
  * @property {number} MessageType_WipeDevice=5 MessageType_WipeDevice value
+ * @property {number} MessageType_FirmwareErase=6 MessageType_FirmwareErase value
+ * @property {number} MessageType_FirmwareUpload=7 MessageType_FirmwareUpload value
  * @property {number} MessageType_GetEntropy=9 MessageType_GetEntropy value
  * @property {number} MessageType_Entropy=10 MessageType_Entropy value
  * @property {number} MessageType_LoadDevice=13 MessageType_LoadDevice value
@@ -45,6 +47,7 @@ var $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
  * @property {number} MessageType_SkycoinSignMessage=116 MessageType_SkycoinSignMessage value
  * @property {number} MessageType_ResponseSkycoinAddress=117 MessageType_ResponseSkycoinAddress value
  * @property {number} MessageType_ResponseSkycoinSignMessage=118 MessageType_ResponseSkycoinSignMessage value
+ * @property {number} MessageType_GenerateMnemonic=119 MessageType_GenerateMnemonic value
  */
 $root.MessageType = (function() {
     var valuesById = {}, values = Object.create(valuesById);
@@ -54,6 +57,8 @@ $root.MessageType = (function() {
     values[valuesById[3] = "MessageType_Failure"] = 3;
     values[valuesById[4] = "MessageType_ChangePin"] = 4;
     values[valuesById[5] = "MessageType_WipeDevice"] = 5;
+    values[valuesById[6] = "MessageType_FirmwareErase"] = 6;
+    values[valuesById[7] = "MessageType_FirmwareUpload"] = 7;
     values[valuesById[9] = "MessageType_GetEntropy"] = 9;
     values[valuesById[10] = "MessageType_Entropy"] = 10;
     values[valuesById[13] = "MessageType_LoadDevice"] = 13;
@@ -80,6 +85,7 @@ $root.MessageType = (function() {
     values[valuesById[116] = "MessageType_SkycoinSignMessage"] = 116;
     values[valuesById[117] = "MessageType_ResponseSkycoinAddress"] = 117;
     values[valuesById[118] = "MessageType_ResponseSkycoinSignMessage"] = 118;
+    values[valuesById[119] = "MessageType_GenerateMnemonic"] = 119;
     return values;
 })();
 
@@ -1250,6 +1256,167 @@ $root.Features = (function() {
     };
 
     return Features;
+})();
+
+$root.GenerateMnemonic = (function() {
+
+    /**
+     * Properties of a GenerateMnemonic.
+     * @exports IGenerateMnemonic
+     * @interface IGenerateMnemonic
+     */
+
+    /**
+     * Constructs a new GenerateMnemonic.
+     * @exports GenerateMnemonic
+     * @classdesc Request: Ask the device to generate a mnemonic and configure itself with it
+     * @next Success
+     * @implements IGenerateMnemonic
+     * @constructor
+     * @param {IGenerateMnemonic=} [properties] Properties to set
+     */
+    function GenerateMnemonic(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Creates a new GenerateMnemonic instance using the specified properties.
+     * @function create
+     * @memberof GenerateMnemonic
+     * @static
+     * @param {IGenerateMnemonic=} [properties] Properties to set
+     * @returns {GenerateMnemonic} GenerateMnemonic instance
+     */
+    GenerateMnemonic.create = function create(properties) {
+        return new GenerateMnemonic(properties);
+    };
+
+    /**
+     * Encodes the specified GenerateMnemonic message. Does not implicitly {@link GenerateMnemonic.verify|verify} messages.
+     * @function encode
+     * @memberof GenerateMnemonic
+     * @static
+     * @param {IGenerateMnemonic} message GenerateMnemonic message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GenerateMnemonic.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified GenerateMnemonic message, length delimited. Does not implicitly {@link GenerateMnemonic.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof GenerateMnemonic
+     * @static
+     * @param {IGenerateMnemonic} message GenerateMnemonic message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GenerateMnemonic.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a GenerateMnemonic message from the specified reader or buffer.
+     * @function decode
+     * @memberof GenerateMnemonic
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GenerateMnemonic} GenerateMnemonic
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GenerateMnemonic.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.GenerateMnemonic();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a GenerateMnemonic message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof GenerateMnemonic
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {GenerateMnemonic} GenerateMnemonic
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GenerateMnemonic.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a GenerateMnemonic message.
+     * @function verify
+     * @memberof GenerateMnemonic
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    GenerateMnemonic.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        return null;
+    };
+
+    /**
+     * Creates a GenerateMnemonic message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof GenerateMnemonic
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {GenerateMnemonic} GenerateMnemonic
+     */
+    GenerateMnemonic.fromObject = function fromObject(object) {
+        if (object instanceof $root.GenerateMnemonic)
+            return object;
+        return new $root.GenerateMnemonic();
+    };
+
+    /**
+     * Creates a plain object from a GenerateMnemonic message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof GenerateMnemonic
+     * @static
+     * @param {GenerateMnemonic} message GenerateMnemonic
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    GenerateMnemonic.toObject = function toObject() {
+        return {};
+    };
+
+    /**
+     * Converts this GenerateMnemonic to JSON.
+     * @function toJSON
+     * @memberof GenerateMnemonic
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    GenerateMnemonic.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return GenerateMnemonic;
 })();
 
 $root.SetMnemonic = (function() {
@@ -7678,6 +7845,406 @@ $root.WordAck = (function() {
     };
 
     return WordAck;
+})();
+
+$root.FirmwareErase = (function() {
+
+    /**
+     * Properties of a FirmwareErase.
+     * @exports IFirmwareErase
+     * @interface IFirmwareErase
+     * @property {number|null} [length] FirmwareErase length
+     */
+
+    /**
+     * Constructs a new FirmwareErase.
+     * @exports FirmwareErase
+     * @classdesc Request: Ask device to erase its firmware (so it can be replaced via FirmwareUpload)
+     * @start
+     * @next FirmwareRequest
+     * @implements IFirmwareErase
+     * @constructor
+     * @param {IFirmwareErase=} [properties] Properties to set
+     */
+    function FirmwareErase(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * FirmwareErase length.
+     * @member {number} length
+     * @memberof FirmwareErase
+     * @instance
+     */
+    FirmwareErase.prototype.length = 0;
+
+    /**
+     * Creates a new FirmwareErase instance using the specified properties.
+     * @function create
+     * @memberof FirmwareErase
+     * @static
+     * @param {IFirmwareErase=} [properties] Properties to set
+     * @returns {FirmwareErase} FirmwareErase instance
+     */
+    FirmwareErase.create = function create(properties) {
+        return new FirmwareErase(properties);
+    };
+
+    /**
+     * Encodes the specified FirmwareErase message. Does not implicitly {@link FirmwareErase.verify|verify} messages.
+     * @function encode
+     * @memberof FirmwareErase
+     * @static
+     * @param {IFirmwareErase} message FirmwareErase message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FirmwareErase.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.length != null && message.hasOwnProperty("length"))
+            writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.length);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified FirmwareErase message, length delimited. Does not implicitly {@link FirmwareErase.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof FirmwareErase
+     * @static
+     * @param {IFirmwareErase} message FirmwareErase message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FirmwareErase.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a FirmwareErase message from the specified reader or buffer.
+     * @function decode
+     * @memberof FirmwareErase
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {FirmwareErase} FirmwareErase
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FirmwareErase.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.FirmwareErase();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.length = reader.uint32();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a FirmwareErase message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof FirmwareErase
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {FirmwareErase} FirmwareErase
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FirmwareErase.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a FirmwareErase message.
+     * @function verify
+     * @memberof FirmwareErase
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    FirmwareErase.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.length != null && message.hasOwnProperty("length"))
+            if (!$util.isInteger(message.length))
+                return "length: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a FirmwareErase message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof FirmwareErase
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {FirmwareErase} FirmwareErase
+     */
+    FirmwareErase.fromObject = function fromObject(object) {
+        if (object instanceof $root.FirmwareErase)
+            return object;
+        var message = new $root.FirmwareErase();
+        if (object.length != null)
+            message.length = object.length >>> 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a FirmwareErase message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof FirmwareErase
+     * @static
+     * @param {FirmwareErase} message FirmwareErase
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    FirmwareErase.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults)
+            object.length = 0;
+        if (message.length != null && message.hasOwnProperty("length"))
+            object.length = message.length;
+        return object;
+    };
+
+    /**
+     * Converts this FirmwareErase to JSON.
+     * @function toJSON
+     * @memberof FirmwareErase
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    FirmwareErase.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return FirmwareErase;
+})();
+
+$root.FirmwareRequest = (function() {
+
+    /**
+     * Properties of a FirmwareRequest.
+     * @exports IFirmwareRequest
+     * @interface IFirmwareRequest
+     * @property {number|null} [offset] FirmwareRequest offset
+     * @property {number|null} [length] FirmwareRequest length
+     */
+
+    /**
+     * Constructs a new FirmwareRequest.
+     * @exports FirmwareRequest
+     * @classdesc Response: Ask for firmware chunk
+     * @next FirmwareUpload
+     * @implements IFirmwareRequest
+     * @constructor
+     * @param {IFirmwareRequest=} [properties] Properties to set
+     */
+    function FirmwareRequest(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * FirmwareRequest offset.
+     * @member {number} offset
+     * @memberof FirmwareRequest
+     * @instance
+     */
+    FirmwareRequest.prototype.offset = 0;
+
+    /**
+     * FirmwareRequest length.
+     * @member {number} length
+     * @memberof FirmwareRequest
+     * @instance
+     */
+    FirmwareRequest.prototype.length = 0;
+
+    /**
+     * Creates a new FirmwareRequest instance using the specified properties.
+     * @function create
+     * @memberof FirmwareRequest
+     * @static
+     * @param {IFirmwareRequest=} [properties] Properties to set
+     * @returns {FirmwareRequest} FirmwareRequest instance
+     */
+    FirmwareRequest.create = function create(properties) {
+        return new FirmwareRequest(properties);
+    };
+
+    /**
+     * Encodes the specified FirmwareRequest message. Does not implicitly {@link FirmwareRequest.verify|verify} messages.
+     * @function encode
+     * @memberof FirmwareRequest
+     * @static
+     * @param {IFirmwareRequest} message FirmwareRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FirmwareRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.offset != null && message.hasOwnProperty("offset"))
+            writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.offset);
+        if (message.length != null && message.hasOwnProperty("length"))
+            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.length);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified FirmwareRequest message, length delimited. Does not implicitly {@link FirmwareRequest.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof FirmwareRequest
+     * @static
+     * @param {IFirmwareRequest} message FirmwareRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FirmwareRequest.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a FirmwareRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof FirmwareRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {FirmwareRequest} FirmwareRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FirmwareRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.FirmwareRequest();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.offset = reader.uint32();
+                break;
+            case 2:
+                message.length = reader.uint32();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a FirmwareRequest message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof FirmwareRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {FirmwareRequest} FirmwareRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FirmwareRequest.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a FirmwareRequest message.
+     * @function verify
+     * @memberof FirmwareRequest
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    FirmwareRequest.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.offset != null && message.hasOwnProperty("offset"))
+            if (!$util.isInteger(message.offset))
+                return "offset: integer expected";
+        if (message.length != null && message.hasOwnProperty("length"))
+            if (!$util.isInteger(message.length))
+                return "length: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a FirmwareRequest message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof FirmwareRequest
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {FirmwareRequest} FirmwareRequest
+     */
+    FirmwareRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.FirmwareRequest)
+            return object;
+        var message = new $root.FirmwareRequest();
+        if (object.offset != null)
+            message.offset = object.offset >>> 0;
+        if (object.length != null)
+            message.length = object.length >>> 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a FirmwareRequest message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof FirmwareRequest
+     * @static
+     * @param {FirmwareRequest} message FirmwareRequest
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    FirmwareRequest.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults) {
+            object.offset = 0;
+            object.length = 0;
+        }
+        if (message.offset != null && message.hasOwnProperty("offset"))
+            object.offset = message.offset;
+        if (message.length != null && message.hasOwnProperty("length"))
+            object.length = message.length;
+        return object;
+    };
+
+    /**
+     * Converts this FirmwareRequest to JSON.
+     * @function toJSON
+     * @memberof FirmwareRequest
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    FirmwareRequest.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return FirmwareRequest;
 })();
 
 /**

@@ -54,14 +54,16 @@ export class WalletService {
           this.refreshBalances();
         });
     } else {
-      return this.hwWalletService.getAddresses(num, wallet.addresses.length).do(addresses => {
-        (addresses as any[]).forEach(value => wallet.addresses.push({
+      return this.hwWalletService.getAddresses(num, wallet.addresses.length).map(response => {
+        (response.rawResponse as any[]).forEach(value => wallet.addresses.push({
           address: value,
           coins: null,
           hours: null,
         }));
         this.saveHardwareWallets();
         this.refreshBalances();
+
+        return (response.rawResponse as any[]);
       });
     }
   }

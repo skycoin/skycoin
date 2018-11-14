@@ -282,7 +282,8 @@
   "hardware-wallet": {
     "general" : {
       "error-disconnected": "Impossible to perform the operation. The hardware wallet is not connected.",
-      "generic-error": "Impossible to perform the operation. Make sure you have connected the correct hardware wallet and that it is not waiting for input."
+      "generic-error": "Impossible to perform the operation. Make sure you have connected the correct hardware wallet and that it is not waiting for input.",
+      "error-incorrect-wallet": "Impossible to perform the operation. The connected hardware wallet is different from the selected one."
     }
   }
 }

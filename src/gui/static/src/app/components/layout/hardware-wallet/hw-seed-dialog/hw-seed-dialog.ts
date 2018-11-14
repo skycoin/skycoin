@@ -27,6 +27,7 @@ export class HwSeedDialogComponent implements OnDestroy {
   states = States;
 
   private operationSubscription: ISubscription;
+  private hwConnectionSubscription: ISubscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public requestRecheck: any,
@@ -36,6 +37,12 @@ export class HwSeedDialogComponent implements OnDestroy {
   ) {
     this.form = this.formBuilder.group({
       seed: ['cloud flower upset remain green metal below cup stem infant art thank', Validators.required],
+    });
+
+    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
+      if (!connected) {
+        this.dialogRef.close();
+      }
     });
   }
 
@@ -64,5 +71,6 @@ export class HwSeedDialogComponent implements OnDestroy {
     if (this.operationSubscription) {
       this.operationSubscription.unsubscribe();
     }
+    this.hwConnectionSubscription.unsubscribe();
   }
 }

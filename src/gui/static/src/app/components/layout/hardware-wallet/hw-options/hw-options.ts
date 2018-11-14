@@ -29,6 +29,7 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
   private operationSubscription: ISubscription;
   private dialogSubscription: ISubscription;
+  private hwConnectionSubscription: ISubscription;
 
   private recheck = false;
 
@@ -39,13 +40,13 @@ export class HwWalletOptionsComponent implements OnDestroy {
     private walletService: WalletService,
   ) {
     this.checkWallet();
+    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(() => this.checkWallet());
   }
 
   ngOnDestroy() {
-    if (this.operationSubscription) {
-      this.operationSubscription.unsubscribe();
-    }
+    this.removeOperationSubscription();
     this.removeDialogSubscription();
+    this.hwConnectionSubscription.unsubscribe();
   }
 
   generateMnemonic() {
@@ -84,11 +85,18 @@ export class HwWalletOptionsComponent implements OnDestroy {
     }
   }
 
+  private removeOperationSubscription() {
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
+    }
+  }
+
   private checkWallet() {
-    if (!this.hwWalletService.getDevice()) {
+    if (!this.hwWalletService.getDeviceSync()) {
       this.currentState = States.Disconnected;
     } else {
       this.currentState = States.Processing;
+      this.removeOperationSubscription();
 
       this. operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
         response => {

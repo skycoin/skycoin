@@ -12,6 +12,8 @@ const axios = require('axios');
 
 const deviceWallet = require('./device-wallet');
 
+const { Observable, of } = require('rxjs');
+
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
 // Devtools can be toggled with cmd+alt+i, ctrl+shift+i, F12
@@ -201,10 +203,6 @@ function createWindow(url) {
     console.log('Cleared the caching of the skycoin wallet.');
   });
 
-  ses.clearStorageData([], function() {
-    console.log('Cleared the stored cached data');
-  });
-
   if (url) {
     win.loadURL(url);
   } else {
@@ -373,8 +371,40 @@ ipcMain.on('hwCompatibilityActivated', (event) => {
   event.returnValue = hw;
 });
 
-ipcMain.on('hwGetDevice', (event) => {
+let checkHwSubscription;
+let hwConnected = false;
+
+function checkHw(wait) {
+  if (checkHwSubscription) {
+    checkHwSubscription.unsubscribe();
+  }
+
+  checkHwSubscription = Observable.of(1)
+    .delay(wait ? (hwConnected ? 2000 : 10000) : 0)
+    .subscribe(
+      () => {
+        const device = deviceWallet.getDevice();
+        if (device && !hwConnected) {
+          hwConnected = true;
+          if (win) {
+            win.webContents.send('hwConnectionEvent', true);
+          }
+        } else if (!device && hwConnected) {
+          hwConnected = false;
+          if (win) {
+            win.webContents.send('hwConnectionEvent', false);
+          }
+        }
+        checkHw(true);
+      }
+    );
+}
+
+checkHw(false);
+
+ipcMain.on('hwGetDeviceSync', (event) => {
   event.returnValue = deviceWallet.getDevice();
+  checkHw(false);
 });
 
 ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex) => {

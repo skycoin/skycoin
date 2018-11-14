@@ -21,6 +21,7 @@ export class HwGenerateSeedDialogComponent implements OnDestroy {
   states = States;
 
   private operationSubscription: ISubscription;
+  private hwConnectionSubscription: ISubscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public requestRecheck: any,
@@ -40,9 +41,16 @@ export class HwGenerateSeedDialogComponent implements OnDestroy {
         this.currentState = States.Failed;
       },
     );
+
+    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
+      if (!connected) {
+        this.dialogRef.close();
+      }
+    });
   }
 
   ngOnDestroy() {
     this.operationSubscription.unsubscribe();
+    this.hwConnectionSubscription.unsubscribe();
   }
 }

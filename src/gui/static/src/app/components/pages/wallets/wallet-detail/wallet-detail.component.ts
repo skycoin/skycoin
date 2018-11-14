@@ -10,6 +10,7 @@ import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { Observable } from 'rxjs/Observable';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -135,7 +136,24 @@ export class WalletDetailComponent implements OnDestroy {
             .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
         });
     } else {
-      this.walletService.addAddress(this.wallet, this.HowManyAddresses).subscribe(null,
+
+      let procedure: Observable<any>;
+
+      if (this.wallet.isHardware ) {
+        procedure = this.hwWalletService.getAddresses(1, 0).flatMap(
+          response => {
+            if (response.rawResponse[0] === this.wallet.addresses[0].address) {
+              return this.walletService.addAddress(this.wallet, this.HowManyAddresses);
+            } else {
+              return Observable.throw(this.translateService.instant('hardware-wallet.general.error-incorrect-wallet'));
+            }
+          },
+        );
+      } else {
+        procedure = this.walletService.addAddress(this.wallet, this.HowManyAddresses);
+      }
+
+      procedure.subscribe(null,
         err => {
           if (!this.wallet.isHardware ) {
             showSnackbarError(this.snackbar, err);

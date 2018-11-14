@@ -4,7 +4,11 @@ import { TranslateService } from '@ngx-translate/core';
 
 export function parseResponseMessage(body: string): string {
   if (typeof body === 'object') {
-    body = body['_body'];
+    if (body['_body']) {
+      body = body['_body'];
+    } else {
+      body = body + '';
+    }
   }
 
   if (body.indexOf('"error":') !== -1) {
@@ -30,7 +34,7 @@ export function showSnackbarError(snackbar: MatSnackBar, body: string, duration 
 }
 
 export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, translateService: TranslateService): string {
-  if (!hwWalletService.getDevice()) {
+  if (!hwWalletService.getDeviceSync()) {
     return translateService.instant('hardware-wallet.general.error-disconnected');
   } else {
     return translateService.instant('hardware-wallet.general.generic-error');

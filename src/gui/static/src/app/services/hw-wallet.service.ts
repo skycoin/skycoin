@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
+import { Subject } from 'rxjs/Subject';
+import { TranslateService } from '@ngx-translate/core';
 
 export class OperationResult {
   success: boolean;
@@ -11,9 +13,18 @@ export class OperationResult {
 export class HwWalletService {
 
   private eventsObservers = new Map<number, Subscriber<OperationResult>>();
+  private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
 
-  constructor() {
+  constructor(private translate: TranslateService) {
     if (window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated')) {
+      window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
+        if (!connected) {
+          this.eventsObservers.forEach((value, key) => {
+            this.dispatchError(key, this.translate.instant('hardware-wallet.general.error-disconnected'));
+          });
+        }
+        this.walletConnectedSubject.next(connected);
+      });
       window['ipcRenderer'].on('hwGetAddressesResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, true);
       });
@@ -32,8 +43,12 @@ export class HwWalletService {
     }
   }
 
-  getDevice() {
-    return window['ipcRenderer'].sendSync('hwGetDevice');
+  get walletConnectedAsyncEvent(): Observable<boolean> {
+    return this.walletConnectedSubject.asObservable();
+  }
+
+  getDeviceSync() {
+    return window['ipcRenderer'].sendSync('hwGetDeviceSync');
   }
 
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
@@ -96,6 +111,13 @@ export class HwWalletService {
         this.eventsObservers.get(requestId).error(rawResponse.error);
       }
       this.eventsObservers.get(requestId).complete();
+      this.eventsObservers.delete(requestId);
+    }
+  }
+
+  private dispatchError(requestId: number, error: String) {
+    if (this.eventsObservers.has(requestId)) {
+      this.eventsObservers.get(requestId).error(error);
       this.eventsObservers.delete(requestId);
     }
   }

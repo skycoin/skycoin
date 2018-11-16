@@ -179,13 +179,14 @@ func TestGetPendingTxs(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			rr := httptest.NewRecorder()
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -582,13 +583,14 @@ func TestGetTransactionByID(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -743,17 +745,16 @@ func TestInjectTransaction(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
+
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			handler := newServerMux(defaultMuxConfig(), gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -838,13 +839,14 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -970,13 +972,14 @@ func TestGetRawTx(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1254,14 +1257,14 @@ func TestGetTransactions(t *testing.T) {
 				req.Header.Set("Content-Type", ContentTypeForm)
 			}
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1493,17 +1496,18 @@ func TestVerifyTransaction(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", tc.contentType)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

@@ -220,15 +220,19 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 			rr := httptest.NewRecorder()
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(muxConfig{
+				host:           configuredHost,
+				appLoc:         ".",
+				disableCSRF:    tc.csrfDisabled,
+				disableCSP:     true,
+				enabledAPISets: allAPISetsEnabled,
+			}, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -367,15 +371,17 @@ func TestCoinSupply(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -591,15 +597,19 @@ func TestGetRichlist(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(muxConfig{
+				host:           configuredHost,
+				appLoc:         ".",
+				disableCSRF:    tc.csrfDisabled,
+				disableCSP:     true,
+				enabledAPISets: allAPISetsEnabled,
+			}, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -666,15 +676,20 @@ func TestGetAddressCount(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			handler := newServerMux(muxConfig{
+				host:           configuredHost,
+				appLoc:         ".",
+				disableCSRF:    tc.csrfDisabled,
+				disableCSP:     true,
+				enabledAPISets: allAPISetsEnabled,
+			}, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

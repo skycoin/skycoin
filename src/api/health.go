@@ -38,7 +38,7 @@ type HealthResponse struct {
 // healthHandler returns node health data
 // URI: /api/v1/health
 // Method: GET
-func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.HandlerFunc {
+func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -75,7 +75,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			OutgoingConnections:   health.OutgoingConnections,
 			IncomingConnections:   health.IncomingConnections,
 			Uptime:                wh.FromDuration(health.Uptime),
-			CSRFEnabled:           csrfStore.Enabled,
+			CSRFEnabled:           !c.disableCSRF,
 			CSPEnabled:            !c.disableCSP,
 			UnversionedAPIEnabled: c.enableUnversionedAPI,
 			GUIEnabled:            c.enableGUI,

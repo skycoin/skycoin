@@ -15,14 +15,14 @@
 
 echo "Build hook running"
 
-cd ../../../
+cd ../../../../
 
 # Build :develop tag
 docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
              --build-arg VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest defaltd.go-coverage-viewer eg2.tslint eamodio.gitlens" \
              -f $DOCKERFILE_PATH \
-             -t $IMAGE_NAME .
+             -t "$IMAGE_NAME" .
 
 # Build :dind tag
 docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \

@@ -39,12 +39,18 @@ type NodeParameters struct {
 	PeerListURL string `mapstructure:"peer_list_url"`
 	// UnconfirmedBurnFactor is the burn factor to apply when verifying unconfirmed transactions
 	UnconfirmedBurnFactor uint64 `mapstructure:"unconfirmed_burn_factor"`
+	// UnconfirmedMaxTransactionSize is the maximum size of an unconfirmed transaction
+	UnconfirmedMaxTransactionSize int `mapstructure:"unconfirmed_max_transaction_size"`
+	// UnconfirmedMaxDropletPrecision is the maximum number of decimals allowed in an unconfirmed transaction
+	UnconfirmedMaxDropletPrecision uint8 `mapstructure:"unconfirmed_max_decimals"`
 	// CreateBlockBurnFactor is the burn factor to apply to transactions when publishing blocks
 	CreateBlockBurnFactor uint64 `mapstructure:"create_block_burn_factor"`
+	// CreateBlockMaxTransactionSize is the maximum size of an transaction when publishing blocks
+	CreateBlockMaxTransactionSize int `mapstructure:"create_block_max_transaction_size"`
+	// CreateBlockMaxDropletPrecision is the maximum number of decimals allowed in a transaction when publishing blocks
+	CreateBlockMaxDropletPrecision uint8 `mapstructure:"create_block_max_decimals"`
 	// MaxBlockSize is the maximum size of blocks when publishing blocks
 	MaxBlockSize int `mapstructure:"max_block_size"`
-	// MaxUnconfirmedTransactionSize is the maximum size of an unconfirmed transaction
-	MaxUnconfirmedTransactionSize int `mapstructure:"max_unconfirmed_transaction_size"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
 	CoinName      string
@@ -68,10 +74,10 @@ type ParamsParameters struct {
 	// UnlockTimeInterval is the distribution address unlock time interval, measured in seconds.
 	// Once the InitialUnlockedCount is exhausted, UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
 	UnlockTimeInterval uint64 `mapstructure:"unlock_time_interval"`
-	// MaxDropletPrecision represents the decimal precision of droplets
-	MaxDropletPrecision uint64 `mapstructure:"max_droplet_precision"`
-	// MaxUserTransactionSize is max size of a user-created transaction (typically equal to the max size of a block)
-	MaxUserTransactionSize int `mapstructure:"max_user_transaction_size"`
+	// UserMaxDropletPrecision represents the decimal precision of droplets
+	UserMaxDropletPrecision uint64 `mapstructure:"user_max_decimals"`
+	// UserMaxTransactionSize is max size of a user-created transaction (typically equal to the max size of a block)
+	UserMaxTransactionSize int `mapstructure:"user_max_transaction_size"`
 	// DistributionAddresses are addresses that received coins from the genesis address in the first block,
 	// used to calculate current and max supply and do distribution timelocking
 	DistributionAddresses []string `mapstructure:"distribution_addresses"`
@@ -121,10 +127,13 @@ func setDefaults() {
 	viper.SetDefault("node.genesis_coin_volume", 100e12)
 	viper.SetDefault("node.port", 6000)
 	viper.SetDefault("node.web_interface_port", 6420)
-	viper.SetDefault("node.max_block_size", 32*1024)
-	viper.SetDefault("node.max_unconfirmed_transaction_size", 32*1024)
 	viper.SetDefault("node.unconfirmed_burn_factor", 2)
+	viper.SetDefault("node.unconfirmed_max_transaction_size", 32*1024)
+	viper.SetDefault("node.unconfirmed_max_decimals", 3)
 	viper.SetDefault("node.create_block_burn_factor", 2)
+	viper.SetDefault("node.create_block_max_transaction_size", 32*1024)
+	viper.SetDefault("node.create_block_max_decimals", 3)
+	viper.SetDefault("node.max_block_size", 32*1024)
 
 	// build defaults
 	viper.SetDefault("build.commit", "")
@@ -136,7 +145,7 @@ func setDefaults() {
 	viper.SetDefault("params.initial_unlocked_count", 25)
 	viper.SetDefault("params.unlock_address_rate", 5)
 	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)
-	viper.SetDefault("params.max_droplet_precision", 3)
+	viper.SetDefault("params.user_max_decimals", 3)
 	viper.SetDefault("params.user_burn_factor", 2)
-	viper.SetDefault("params.max_user_transaction_size", 32*1024)
+	viper.SetDefault("params.user_max_transaction_size", 32*1024)
 }

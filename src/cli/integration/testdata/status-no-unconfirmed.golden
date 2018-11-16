@@ -32,7 +32,16 @@
 		"gui_enabled": false,
 		"unversioned_api_enabled": false,
 		"json_rpc_enabled": false,
-		"coinhour_burn_factor": 2
+		"user_verify_transaction": {
+			"burn_factor": 2,
+			"max_transaction_size": 32768,
+			"max_decimals": 3
+		},
+		"unconfirmed_verify_transaction": {
+			"burn_factor": 2,
+			"max_transaction_size": 32768,
+			"max_decimals": 3
+		}
 	},
 	"cli_config": {
 		"webrpc_address": "http://127.0.0.1:1024"

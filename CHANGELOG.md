@@ -45,12 +45,15 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Add `/api/v2/wallet/recover` to recover an encrypted wallet by providing the seed
 - Add `fiberAddressGen` CLI command to generate distribution addresses for fiber coins
 - Coinhour burn factor when creating transactions can be configured at runtime with `USER_BURN_FACTOR` envvar
-- Max transaction size when creating transactions can be configured at runtime with `MAX_USER_TXN_SIZE` envvar
+- Max transaction size when creating transactions can be configured at runtime with `USER_MAX_TXN_SIZE` envvar
+- Max decimals allowed when creating transactions can be configured at runtime with `USER_MAX_DECIMALS` envvar
 - Daemon configured builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page. The builds available for previous versions are configured for desktop client use.
 - `skycoin-cli` builds will be available on the [releases](https://github.com/skycoin/skycoin/releases) page.
 - A user agent string is sent in the wire protocol's introduction packet
 - `-max-connections` option to control total max connections
 - `/api/v1/network/disconnect` to disconnect a peer
+- Complete support for `cipher` package in `libskycoin` C API.
+- Add `coin`, `wallet`, `util/droplet` and `util/fee` methods as part of `libskycoin` C API
 
 ### Fixed
 
@@ -91,12 +94,13 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `run.sh` is now `run-client.sh` and a new `run-daemon.sh` script is added for running in server daemon mode
 - `/api/v1/network/connection*` connection object's field `"introduced"` replaced with field `"state"` which may have the values `"pending"`, `"connected"` or `"introduced"`
 - `/api/v1/network/connection*` field `"is_trusted_peer"` added to connection object to indicate if the peer is in the hardcoded list of default peers
-- `/api/v1/network/connection*` field `"connected_at"` added to connection object
+- `/api/v1/network/connection*` field `"connected_at"`, `"unconfirmed_burn_factor"` and `"unconfirmed_max_transaction_size"` added to connection object
 - `/api/v1/network/connections` now includes incoming connections. Filters are added to query connections by state and direction
 - `/api/v1/resendUnconfirmedTxns` is now a `POST` method, previously was a `GET` method
 - Transactions that violation soft constraints will propagate through the network
 - Node will send more peers before disconnecting due to a full peer list
 - Refactor CSRF to use HMAC tokens.
+- Add transaction verification parameters to the `GET /health` response
 
 ### Removed
 

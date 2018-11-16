@@ -1641,7 +1641,17 @@ $ skycoin-cli status
         "wallet_api_enabled": true,
         "gui_enabled": true,
         "unversioned_api_enabled": false,
-        "json_rpc_enabled": false
+        "json_rpc_enabled": false,
+        "user_verify_transaction": {
+            "burn_factor": 2,
+            "max_transaction_size": 32768,
+            "max_decimals": 3
+        },
+        "unconfirmed_verify_transaction": {
+            "burn_factor": 2,
+            "max_transaction_size": 32768,
+            "max_decimals": 3
+        }
     },
     "cli_config": {
         "webrpc_address": "http://127.0.0.1:6420"

@@ -9,9 +9,9 @@ import (
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 )
 
-func TestCalculateDivisor(t *testing.T) {
+func TestDropletPrecisionToDivisor(t *testing.T) {
 	cases := []struct {
-		precision uint64
+		precision uint8
 		divisor   uint64
 	}{
 		{0, 1e6},
@@ -24,14 +24,14 @@ func TestCalculateDivisor(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		name := fmt.Sprintf("calculateDivisor(%d)=%d", tc.precision, tc.divisor)
+		name := fmt.Sprintf("DropletPrecisionToDivisor(%d)=%d", tc.precision, tc.divisor)
 		t.Run(name, func(t *testing.T) {
-			divisor := calculateDivisor(tc.precision)
+			divisor := DropletPrecisionToDivisor(tc.precision)
 			require.Equal(t, tc.divisor, divisor, "%d != %d", tc.divisor, divisor)
 		})
 	}
 
 	_require.PanicsWithLogMessage(t, "precision must be <= droplet.Exponent", func() {
-		calculateDivisor(7)
+		DropletPrecisionToDivisor(7)
 	})
 }

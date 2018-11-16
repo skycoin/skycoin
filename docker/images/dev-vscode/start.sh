@@ -26,6 +26,9 @@ if [[ -n "$DIND_COMMIT" ]]; then
     fi
 fi
 
+# Apply correct permissions to avoid problems when VS Code is open
+chmod -R 777 /home/user/
+
 # If user pass a command when run docker image VS Code it will be executed,
 # else, we run VS Code
 if [[ -n "$@" ]]; then

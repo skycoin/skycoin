@@ -21,8 +21,8 @@ to ease go development and version control with git.
 3. Run docker image
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -v $PWD:/go/src \
-            -w /go/src \
+            -v $PWD:/go/src/github.com/skycoin/skycoin \
+            -w /go/src/github.com/skycoin/skycoin \
             -e DISPLAY=$DISPLAY \
             skycoin/skycoindev-vscode:develop
 ```
@@ -36,8 +36,8 @@ You must pass VS_EXTENSIONS environment variable to command-line with extensions
 
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 
-            -v $PWD:/go/src \
-            -w /go/src \
+            -v $PWD:/go/src/github.com/skycoin/skycoin \
+            -w /go/src/github.com/skycoin/skycoin \
             -e DISPLAY=$DISPLAY \
             -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
             skycoin/skycoindev-vscode:dind
@@ -146,6 +146,7 @@ $ docker run --rm \
 - [Go Coverage Viewer](https://marketplace.visualstudio.com/items?itemName=defaltd.go-coverage-viewer)
 - [TSLint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint)
 - [GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens)
+- [Vim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim)
 
 ## Automated builds
 

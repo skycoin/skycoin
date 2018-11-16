@@ -58,6 +58,7 @@ RUN apt-get update \
         dbus-x11 \
         libfile-mimeinfo-perl \
         xdg-user-dirs \
+        xsel \
 	    --no-install-recommends \
 	&& apt clean \
 	&& rm -rf /var/lib/apt/lists/*
@@ -101,7 +102,7 @@ RUN mkdir -p $HOME/.cache/dconf \
     && ln -s /go/bin/godef /go/bin/godef-gomod \
     && npm install -g tslint typescript
 
-COPY docker/images/dev-vscode/start.sh /usr/local/bin/start.sh
+COPY ./docker/images/dev-vscode/start.sh /usr/local/bin/start.sh
 RUN ln -s usr/local/bin/start.sh / # backwards compat
 
 WORKDIR $HOME

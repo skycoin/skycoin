@@ -87,11 +87,17 @@ type Config struct {
 	Password             string
 }
 
+// HealthTimingFunction provides access to time measument
+type HealthTimingFunction = func() time.Time
+
 // HealthConfig configuration data exposed in /health
 type HealthConfig struct {
-	BuildInfo       readable.BuildInfo
-	CoinName        string
-	DaemonUserAgent useragent.Data
+	BuildInfo          readable.BuildInfo
+	CoinName           string
+	DaemonUserAgent    useragent.Data
+	GetAPIStartTime    HealthTimingFunction
+	GetCoinStartTime   HealthTimingFunction
+	GetDaemonStartTime HealthTimingFunction
 }
 
 type muxConfig struct {

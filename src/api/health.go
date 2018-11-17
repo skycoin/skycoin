@@ -34,12 +34,19 @@ type HealthResponse struct {
 	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
 	UserVerifyTxn         readable.VerifyTxn `json:"user_verify_transaction"`
 	UnconfirmedVerifyTxn  readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
+	APIStartedAt          int64              `json:api_started_at`
+	CoinStartedAt         int64              `json:coin_started_at`
+	DaemonStartedAt       int64              `json:daemon_started_at`
 }
 
 // healthHandler returns node health data
 // URI: /api/v1/health
 // Method: GET
 func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.HandlerFunc {
+	getAPIStartTime := c.health.GetAPIStartTime
+	getCoinStartTime := c.health.GetCoinStartTime
+	getDaemonStartTime := c.health.GetDaemonStartTime
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -64,6 +71,19 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			return
 		}
 
+		apiStartUnixTime := int64(0)
+		if getAPIStartTime != nil {
+			apiStartUnixTime = getAPIStartTime().Unix()
+		}
+		coinStartUnixTime := int64(0)
+		if getCoinStartTime != nil {
+			coinStartUnixTime = getCoinStartTime().Unix()
+		}
+		daemonStartUnixTime := int64(0)
+		if getDaemonStartTime != nil {
+			daemonStartUnixTime = getDaemonStartTime().Unix()
+		}
+
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
 				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
@@ -84,6 +104,9 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			WalletAPIEnabled:      walletAPIEnabled,
 			UserVerifyTxn:         readable.NewVerifyTxn(params.UserVerifyTxn),
 			UnconfirmedVerifyTxn:  readable.NewVerifyTxn(health.UnconfirmedVerifyTxn),
+			APIStartedAt:          apiStartUnixTime,
+			CoinStartedAt:         coinStartUnixTime,
+			DaemonStartedAt:       daemonStartUnixTime,
 		})
 	}
 }

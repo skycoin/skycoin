@@ -1721,6 +1721,130 @@ func TestWalletNewSeed(t *testing.T) {
 	}
 }
 
+func TestVerifySeed(t *testing.T) {
+	cases := []struct {
+		name         string
+		method       string
+		status       int
+		contentType  string
+		csrfDisabled bool
+		httpBody     string
+		httpResponse HTTPResponse
+	}{
+		{
+			name:         "405",
+			method:       http.MethodGet,
+			status:       http.StatusMethodNotAllowed,
+			httpResponse: NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""),
+		},
+
+		{
+			name:         "415 - Unsupported Media Type",
+			method:       http.MethodPost,
+			contentType:  ContentTypeForm,
+			status:       http.StatusUnsupportedMediaType,
+			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
+		},
+
+		{
+			name:         "400 - EOF",
+			method:       http.MethodPost,
+			contentType:  ContentTypeJSON,
+			status:       http.StatusBadRequest,
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "EOF"),
+		},
+		{
+			name:         "400 - Missing Seed",
+			method:       http.MethodPost,
+			contentType:  ContentTypeJSON,
+			status:       http.StatusBadRequest,
+			httpBody:     "{}",
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "seed is required"),
+		},
+		{
+			name:        "400 - Invalid seed",
+			method:      http.MethodPost,
+			contentType: ContentTypeJSON,
+			status:      http.StatusUnprocessableEntity,
+			httpBody: toJSON(t, VerifySeedRequest{
+				Seed: "bag attitude butter flock slab desk ship brain famous scheme clerk",
+			}),
+			httpResponse: NewHTTPErrorResponse(http.StatusUnprocessableEntity, "seed is not a valid bip39 seed"),
+		},
+		{
+			name:   "200",
+			method: http.MethodPost,
+			status: http.StatusOK,
+			httpBody: toJSON(t, VerifySeedRequest{
+				Seed: "chief stadium sniff exhibit ostrich exit fruit noodle good lava coin supply",
+			}),
+			httpResponse: HTTPResponse{Data: struct{}{}},
+		},
+		{
+			name:   "200 - csrf disabled",
+			method: http.MethodPost,
+			status: http.StatusOK,
+			httpBody: toJSON(t, VerifySeedRequest{
+				Seed: "chief stadium sniff exhibit ostrich exit fruit noodle good lava coin supply",
+			}),
+			httpResponse: HTTPResponse{Data: struct{}{}},
+			csrfDisabled: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/api/v2/wallet/seed/verify"
+			gateway := &MockGatewayer{}
+
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
+			require.NoError(t, err)
+
+			contentType := tc.contentType
+			if contentType == "" {
+				contentType = ContentTypeJSON
+			}
+
+			req.Header.Set("Content-Type", contentType)
+
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+			var rsp ReceivedHTTPResponse
+			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.httpResponse.Error, rsp.Error)
+
+			if rsp.Data == nil {
+				require.Nil(t, tc.httpResponse.Data)
+			} else {
+				require.NotNil(t, tc.httpResponse.Data)
+
+				var addrRsp struct{}
+				err := json.Unmarshal(rsp.Data, &addrRsp)
+				require.NoError(t, err)
+
+				require.Equal(t, tc.httpResponse.Data, addrRsp)
+			}
+
+		})
+	}
+}
+
 func TestGetWalletSeed(t *testing.T) {
 
 	tt := []struct {

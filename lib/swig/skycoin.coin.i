@@ -10,7 +10,7 @@
 	int isEqual(coin__Transaction* t){
 		return equalTransactions($self, t);
 	}
-	cipher_SHA256 getInnerHash(){
+	cipher_SHA256 GetInnerHash(){
 		cipher_SHA256 h;
 		cipher_SHA256_assignFrom(&h,$self->InnerHash);
 		return h;

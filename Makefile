@@ -256,10 +256,10 @@ generate-mocks: ## Regenerate test interface mocks
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 
 generate-golden-files: ## Run integration tests in update mode
-	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1
-	./ci-scripts/integration-test-stable.sh -c -u >/dev/null 2>&1
-	./ci-scripts/integration-test-stable.sh -d -u >/dev/null 2>&1
-	./ci-scripts/integration-test-stable.sh -c -d -u >/dev/null 2>&1
+	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -d -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -d -u >/dev/null 2>&1 || true
 
 merge-coverage: ## Merge coverage files and create HTML coverage output. gocovmerge is required, install with `go get github.com/wadey/gocovmerge`
 	@echo "To install gocovmerge do:"

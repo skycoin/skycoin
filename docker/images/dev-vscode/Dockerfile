@@ -102,8 +102,9 @@ RUN mkdir -p $HOME/.cache/dconf \
     && ln -s /go/bin/godef /go/bin/godef-gomod \
     && npm install -g tslint typescript
 
-COPY ./docker/images/dev-vscode/start.sh /usr/local/bin/start.sh
-RUN ln -s usr/local/bin/start.sh / # backwards compat
+COPY ./start.sh /usr/local/bin/start.sh
+# backwards compat
+RUN ln -s usr/local/bin/start.sh / 
 
 WORKDIR $HOME
 

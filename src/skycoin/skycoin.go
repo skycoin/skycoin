@@ -42,16 +42,12 @@ var (
 
 // Coin represents a fiber coin instance
 type Coin struct {
-	config          Config
-	logger          *logging.Logger
-	apiStartTime    time.Time
-	coinStartTime   time.Time
-	daemonStartTime time.Time
+	config Config
+	logger *logging.Logger
 }
 
 // Run starts the node
 func (c *Coin) Run() error {
-	c.coinStartTime = time.Now()
 	var db *dbutil.DB
 	var d *daemon.Daemon
 	var webInterface *api.Server
@@ -241,7 +237,6 @@ func (c *Coin) Run() error {
 	go func() {
 		defer wg.Done()
 
-		c.daemonStartTime = time.Now()
 		if err := d.Run(); err != nil {
 			c.logger.Error(err)
 			errC <- err
@@ -255,7 +250,6 @@ func (c *Coin) Run() error {
 		go func() {
 			defer wg.Done()
 
-			c.apiStartTime = time.Now()
 			if err := webInterface.Serve(); err != nil {
 				close(cancelLaunchBrowser)
 				c.logger.Error(err)
@@ -436,11 +430,8 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 				Commit:  c.config.Build.Commit,
 				Branch:  c.config.Build.Branch,
 			},
-			CoinName:           c.config.Node.CoinName,
-			DaemonUserAgent:    c.config.Node.userAgent,
-			GetAPIStartTime:    func() time.Time { return c.apiStartTime },
-			GetCoinStartTime:   func() time.Time { return c.coinStartTime },
-			GetDaemonStartTime: func() time.Time { return c.daemonStartTime },
+			CoinName:        c.config.Node.CoinName,
+			DaemonUserAgent: c.config.Node.userAgent,
 		},
 		Username: c.config.Node.WebInterfaceUsername,
 		Password: c.config.Node.WebInterfacePassword,

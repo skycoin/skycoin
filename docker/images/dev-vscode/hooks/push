@@ -1,5 +1,7 @@
 #!/bin/bash
 
 docker push $IMAGE_NAME
-docker push $DOCKER_REPO:dind
 
+if [ "$CACHE_TAG" -eq "develop" ]; then
+    docker push $DOCKER_REPO:dind
+fi

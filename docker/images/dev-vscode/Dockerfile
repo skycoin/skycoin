@@ -24,7 +24,16 @@ LABEL "org.label-schema.name"="skycoindev-cli" \
 # Tell debconf to run in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
 
+# Create a diferent user to run VS Code
+ENV HOME /home/user
+RUN useradd --create-home --home-dir $HOME user \
+	&& chown -R user:user $HOME
+
 # Install dependencies for vs code
+# Create and assign permissions to `user` folders
+# Install golang and npm necessaries dependencies to VS Code extensions
+# Add the vscode debian repo
+# Install VS Code extensions passed on build arg VS_EXTENSIONS
 RUN apt-get update \
     && apt-get install -y \
 	    apt-transport-https \
@@ -60,35 +69,7 @@ RUN apt-get update \
         xdg-user-dirs \
         xsel \
 	    --no-install-recommends \
-	&& apt clean \
-	&& rm -rf /var/lib/apt/lists/*
-
-# Add the vscode debian repo
-RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key add - \
-    && echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list \
-    && apt-get update \
-    && apt-get -y install code \
-    && apt clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create a diferent user to run VS Code
-ENV HOME /home/user
-RUN useradd --create-home --home-dir $HOME user \
-	&& chown -R user:user $HOME
-
-# Change to `user` and generate default user folders to avoid config problems in future
-USER user
-RUN xdg-user-dirs-update --force
-
-# Back to root user
-USER root
-
-# Install VS Code extensions passed on build arg VS_EXTENSIONS
-RUN for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done
-
-# Create and assign permissions to `user` folders
-# Install golang and npm necessaries dependencies to VS Code extensions
-RUN mkdir -p $HOME/.cache/dconf \
+	&& mkdir -p $HOME/.cache/dconf \
     && mkdir -p $HOME/.config/dconf \
     && chown user:user -R $HOME/.config \
     && chown user:user -R $HOME/.cache \
@@ -100,8 +81,23 @@ RUN mkdir -p $HOME/.cache/dconf \
     && go get -v github.com/sqs/goreturns \
     && ln -s /go/bin/gocode /go/bin/gocode-gomod \
     && ln -s /go/bin/godef /go/bin/godef-gomod \
-    && npm install -g tslint typescript
+    && npm install -g tslint typescript \
+    && curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key add - \
+    && echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list \
+    && apt-get update \
+    && apt-get -y install code \
+    && for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done \
+	&& apt clean \
+	&& rm -rf /var/lib/apt/lists/*
 
+# Change to `user` and generate default user folders to avoid config problems in future
+USER user
+RUN xdg-user-dirs-update --force
+
+# Back to root user
+USER root
+
+# Copy start.sh script to use it as our Docker ENTRYPOINT
 COPY ./start.sh /usr/local/bin/start.sh
 # backwards compat
 RUN ln -s usr/local/bin/start.sh / 

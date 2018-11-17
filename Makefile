@@ -7,7 +7,8 @@
 .PHONY: integration-test-disable-gui integration-test-disable-gui
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
-.PHONY: install-deps-ui build-ui help newcoin generate-mocks merge-coverage
+.PHONY: install-deps-ui build-ui help newcoins merge-coverage
+.PHONY: generate-mocks generate-golden-file
 
 COIN ?= skycoin
 

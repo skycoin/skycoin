@@ -1,5 +1,5 @@
 import { Component, OnDestroy, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 
@@ -11,11 +11,11 @@ enum States {
 }
 
 @Component({
-  selector: 'app-hw-wipe-dialog',
-  templateUrl: './hw-wipe-dialog.html',
-  styleUrls: ['./hw-wipe-dialog.scss'],
+  selector: 'app-hw-backup-dialog',
+  templateUrl: './hw-backup-dialog.html',
+  styleUrls: ['./hw-backup-dialog.scss'],
 })
-export class HwWipeDialogComponent implements OnDestroy {
+export class HwBackupDialogComponent implements OnDestroy {
 
   currentState: States = States.Initial;
   states = States;
@@ -24,14 +24,12 @@ export class HwWipeDialogComponent implements OnDestroy {
   private hwConnectionSubscription: ISubscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public requestRecheck: any,
-    public dialogRef: MatDialogRef<HwWipeDialogComponent>,
+    public dialogRef: MatDialogRef<HwBackupDialogComponent>,
     private hwWalletService: HwWalletService,
   ) {
-    this.operationSubscription = this.hwWalletService.wipe().subscribe(
+    this.operationSubscription = this.hwWalletService.backup().subscribe(
       response => {
         if (response.success) {
-          this.requestRecheck();
           this.currentState = States.ReturnedSuccess;
         } else {
           this.currentState = States.ReturnedRefused;

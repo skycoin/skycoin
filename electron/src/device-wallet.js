@@ -243,6 +243,17 @@ const createWipeDeviceRequest = function() {
     return dataBytesFromChunks(chunks);
 };
 
+const createBackupDeviceRequest = function() {
+    const msgStructure = {};
+    const msg = messages.BackupDevice.create(msgStructure);
+    const buffer = messages.BackupDevice.encode(msg).finish();
+    const chunks = makeTrezorMessage(
+        buffer,
+        messages.MessageType.MessageType_BackupDevice
+    );
+    return dataBytesFromChunks(chunks);
+};
+
 const createSignMessageRequest = function(addressN, message) {
     const msgStructure = {
         addressN,
@@ -526,6 +537,29 @@ const devWipeDevice = function() {
     });
 };
 
+const devBackupDevice = function() {
+    return new Promise((resolve) => {
+            const dataBytes = createBackupDeviceRequest();
+            const deviceHandle = new DeviceHandler(deviceType);
+            const buttonAckLoop = function(kind) {
+                if (kind != messages.MessageType.MessageType_ButtonRequest) {
+                    deviceHandle.close();
+                    if (kind == messages.MessageType.MessageType_Success) {
+                        resolve("Backup Device operation completed");
+                    } else {
+                        resolve("Backup Device operation failed or refused");
+                    }
+                    return;
+                }
+                const buttonAckBytes = createButtonAckRequest();
+                deviceHandle.read(buttonAckLoop);
+                deviceHandle.write(buttonAckBytes);
+            };
+            deviceHandle.read(buttonAckLoop);
+            deviceHandle.write(dataBytes);
+    });
+};
+
 const devSetMnemonic = function(mnemonic) {
     return new Promise((resolve) => {
         const dataBytes = createSetMnemonicRequest(mnemonic);
@@ -593,6 +627,7 @@ module.exports = {
     DeviceTypeEnum,
     devAddressGen,
     devAddressGenPinCode,
+    devBackupDevice,
     devChangePin,
     devCheckMessageSignature,
     devGenerateMnemonic,

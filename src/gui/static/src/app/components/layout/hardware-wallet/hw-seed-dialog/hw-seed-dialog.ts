@@ -5,7 +5,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ButtonComponent } from '../../button/button.component';
 
-export enum States {
+enum States {
   Initial,
   Processing,
   ReturnedSuccess,

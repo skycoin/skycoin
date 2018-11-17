@@ -34,6 +34,9 @@ export class HwWalletService {
       window['ipcRenderer'].on('hwGenerateMnemonicResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, (result as string).includes('operation completed'));
       });
+      window['ipcRenderer'].on('hwBackupDeviceResponse', (event, requestId, result) => {
+        this.dispatchEvent(requestId, result, (result as string).includes('operation completed'));
+      });
       window['ipcRenderer'].on('hwWipeResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, (result as string).includes('operation completed'));
       });
@@ -72,6 +75,15 @@ export class HwWalletService {
   generateMnemonic(): Observable<OperationResult> {
     const requestId = this.createRandomID();
     window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
+
+    return new Observable(observer => {
+      this.eventsObservers.set(requestId, observer);
+    });
+  }
+
+  backup(): Observable<OperationResult> {
+    const requestId = this.createRandomID();
+    window['ipcRenderer'].send('hwBackupDevice', requestId);
 
     return new Observable(observer => {
       this.eventsObservers.set(requestId, observer);

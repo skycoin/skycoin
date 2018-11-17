@@ -431,6 +431,14 @@ ipcMain.on('hwGenerateMnemonic', (event, requestId) => {
   );
 });
 
+ipcMain.on('hwBackupDevice', (event, requestId) => {
+  const promise = deviceWallet.devBackupDevice();
+  promise.then(
+    result => { console.log("Backup device promise resolved", result); event.sender.send('hwBackupDeviceResponse', requestId, result); },
+    error => { console.log("Backup device promise errored: ", error); event.sender.send('hwBackupDeviceResponse', requestId, { error: error.toString() }); }
+  );
+});
+
 ipcMain.on('hwWipe', (event, requestId) => {
   const promise = deviceWallet.devWipeDevice();
   promise.then(

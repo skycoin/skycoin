@@ -508,23 +508,25 @@ export class WalletService {
   }
 
   private refreshPendingTransactions() {
-    this.wallets.first().subscribe(wallets => {
-      Observable.forkJoin(wallets.filter(wallet => !wallet.isHardware).map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename, verbose: 1 })))
-        .subscribe(pending => {
-          this.pendingTxs.next([].concat.apply(
-            [],
-            pending
-              .filter(response => response.transactions.length > 0)
-              .map(response => response.transactions),
-          ).reduce((txs, tx) => {
-            if (!txs.find(t => t.transaction.txid === tx.transaction.txid)) {
-              txs.push(tx);
-            }
+    this.apiService.get('pendingTxs', { verbose: true })
+      .flatMap((transactions: any) => {
+        if (transactions.length === 0) {
+          return Observable.of([]);
+        }
 
-            return txs;
-          }, []));
+        return this.wallets.first().map((wallets: Wallet[]) => {
+          const walletAddresses = new Set<string>();
+          wallets.forEach(wallet => {
+            wallet.addresses.forEach(address => walletAddresses.add(address.address));
+          });
+
+          return transactions.filter(tran => {
+            return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
+            tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
+          });
         });
-    });
+      })
+      .subscribe(transactions => this.pendingTxs.next(transactions));
   }
 
   private getOutputs(addresses): Observable<Output[]> {

@@ -15,6 +15,9 @@
         <div class="label" *ngIf="currentState === states.NewConnected">Set a seed manually</div>
         <div class="label" *ngIf="currentState === states.ConfiguredConnected">Change seed</div>
       </button>
+      <button mat-button color="primary" (click)="backup()" *ngIf="currentState === states.ConfiguredConnected">
+        <div class="label">Backup the seed</div>
+      </button>
       <button mat-button color="primary" (click)="wipe()" *ngIf="currentState === states.ConfiguredConnected">
         <div class="label">Wipe</div>
       </button>

@@ -105,6 +105,7 @@
     "encryption-enabled": "Encryption enabled",
     "encryption-disabled": "Encryption disabled",
     "wallet": "Wallet",
+    "hardware-wallet": "Hardware Wallet",
 
     "new": {
       "create-title": "Create Wallet",

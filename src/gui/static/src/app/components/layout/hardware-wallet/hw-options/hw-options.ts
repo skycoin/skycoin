@@ -7,8 +7,9 @@ import { ISubscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog';
+import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog';
 
-export enum States {
+enum States {
   Disconnected,
   Processing,
   NewConnected,
@@ -55,6 +56,10 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
   setMnemonic() {
     this.openDialog(HwSeedDialogComponent);
+  }
+
+  backup() {
+    this.openDialog(HwBackupDialogComponent);
   }
 
   wipe() {

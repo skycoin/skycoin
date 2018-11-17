@@ -44,9 +44,9 @@ var (
 type Coin struct {
 	config          Config
 	logger          *logging.Logger
-	apiStartTime    time.DateTime
-	coinStartTime   time.DateTime
-	daemonStartTime time.DateTime
+	apiStartTime    time.Time
+	coinStartTime   time.Time
+	daemonStartTime time.Time
 }
 
 // Run starts the node
@@ -432,15 +432,15 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		HostWhitelist:        c.config.Node.hostWhitelist,
 		Health: api.HealthConfig{
 			BuildInfo: readable.BuildInfo{
-				Version:            c.config.Build.Version,
-				Commit:             c.config.Build.Commit,
-				Branch:             c.config.Build.Branch,
-				GetAPIStartTime:    func() { return c.apiStartTime },
-				GetCoinStartTime:   func() { return c.coinStartTime },
-				GetDaemonStartTime: func() { return c.daemonStartTime },
+				Version: c.config.Build.Version,
+				Commit:  c.config.Build.Commit,
+				Branch:  c.config.Build.Branch,
 			},
-			CoinName:        c.config.Node.CoinName,
-			DaemonUserAgent: c.config.Node.userAgent,
+			CoinName:           c.config.Node.CoinName,
+			DaemonUserAgent:    c.config.Node.userAgent,
+			GetAPIStartTime:    func() time.Time { return c.apiStartTime },
+			GetCoinStartTime:   func() time.Time { return c.coinStartTime },
+			GetDaemonStartTime: func() time.Time { return c.daemonStartTime },
 		},
 		Username: c.config.Node.WebInterfaceUsername,
 		Password: c.config.Node.WebInterfacePassword,

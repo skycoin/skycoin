@@ -106,6 +106,9 @@
     "encryption-disabled": "Encryption disabled",
     "wallet": "Wallet",
     "hardware-wallet": "Hardware Wallet",
+    "delete-confirmation1": "WARNING: the wallet",
+    "delete-confirmation2": "will be removed from the list. To add it again you will have to reconnect the hardware wallet. Do you want to continue?",
+    "delete-confirmation-check": "Yeah, I want to delete the wallet.",
 
     "new": {
       "create-title": "Create Wallet",
@@ -269,6 +272,12 @@
     "waiting-deposit": "Waiting for Bitcoin deposit",
     "waiting-send": "Waiting to send Skycoin",
     "unknown": "Unknown"
+  },
+
+  "confirmation" : {
+    "header-text": "Confirmation",
+    "confirm-button": "Yes",
+    "cancel-button": "No"
   },
 
   "service": {

@@ -1,5 +1,5 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Wallet } from '../../../../app.datatypes';
+import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
@@ -11,6 +11,7 @@ import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-add
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { Observable } from 'rxjs/Observable';
+import { ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -60,7 +61,24 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   deleteWallet() {
-    this.walletService.deleteHardwareWallet(this.wallet);
+    const confirmationData: ConfirmationData = {
+      text: this.translateService.instant('wallet.delete-confirmation1') + ' \"' +
+        this.wallet.label + '\" ' + this.translateService.instant('wallet.delete-confirmation2'),
+      headerText: 'confirmation.header-text',
+      checkboxText: 'wallet.delete-confirmation-check',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+    };
+
+    this.dialog.open(ConfirmationComponent, <MatDialogConfig> {
+      width: '450px',
+      data: confirmationData,
+      autoFocus: false,
+    }).afterClosed().subscribe(result => {
+      if (result) {
+        this.walletService.deleteHardwareWallet(this.wallet);
+      }
+    });
   }
 
   toggleEncryption() {

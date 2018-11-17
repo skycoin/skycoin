@@ -1,0 +1,23 @@
+<app-modal class="modal" [headline]="data.headerText | translate" [dialog]="dialogRef">
+  <div class="-body">
+    {{ data.text | translate }}
+  </div>
+
+  <div class="-check-container">
+    <mat-checkbox type="checkbox"
+                  class="-check"
+                  id="terms"
+                  [checked]="accepted"
+                  (change)="setAccept($event)">{{ data.checkboxText | translate }}
+    </mat-checkbox>
+  </div>
+
+  <div class="-buttons">
+    <app-button (action)="closeModal(false)">
+      {{ data.cancelButtonText | translate }}
+    </app-button>
+    <app-button (action)="closeModal(true)" class="primary" [disabled]="!accepted">
+      {{ data.confirmButtonText | translate }}
+    </app-button>
+  </div>
+</app-modal>

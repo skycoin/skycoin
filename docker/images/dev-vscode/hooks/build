@@ -16,6 +16,7 @@
 echo "Build hook running"
 
 #cd ../../../../
+echo "`pwd`"
 
 # Build :develop tag
 docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \

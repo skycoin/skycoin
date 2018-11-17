@@ -272,11 +272,13 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, rspErr
 	}
 
-	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
-	decoder.DisallowUnknownFields()
+	if respObj != struct{}{} {
+		decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
+		decoder.DisallowUnknownFields()
 
-	if err := decoder.Decode(respObj); err != nil {
-		return false, err
+		if err := decoder.Decode(respObj); err != nil {
+			return false, err
+		}
 	}
 
 	return true, rspErr
@@ -795,6 +797,15 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 		return "", err
 	}
 	return r.Seed, nil
+}
+
+// VerifySeed verifies whether the given seed is a valid bip39 mnemonic or not
+func (c *Client) VerifySeed(seed VerifySeedRequest) (bool, error) {
+	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", seed, struct{}{})
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
 }
 
 // WalletSeed makes a request to POST /api/v1/wallet/seed

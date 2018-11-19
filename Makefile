@@ -8,7 +8,7 @@
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
 .PHONY: install-deps-ui build-ui help newcoins merge-coverage
-.PHONY: generate-mocks generate-golden-file
+.PHONY: generate-mocks update-golden-file
 
 COIN ?= skycoin
 
@@ -256,7 +256,7 @@ generate-mocks: ## Regenerate test interface mocks
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 
-generate-golden-files: ## Run integration tests in update mode
+update-golden-files: ## Run integration tests in update mode
 	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true
 	./ci-scripts/integration-test-stable.sh -c -u >/dev/null 2>&1 || true
 	./ci-scripts/integration-test-stable.sh -d -u >/dev/null 2>&1 || true

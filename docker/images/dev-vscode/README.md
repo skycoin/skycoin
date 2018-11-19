@@ -126,6 +126,28 @@ $ docker run --rm \
     vim
 ```
 
+## How to use docker in docker image
+
+### Start a daemon instance
+
+```sh
+$ docker run --privileged --name some-name -d skycoin/skycoindev-vscode:dind
+```
+
+### Where to store data
+
+Create a data directory on the host system (outside the container) and mount this to a directory visible from inside the container.
+
+The downside is that you need to make sure that the directory exists, and that e.g. directory permissions and other security mechanisms on the host system are set up correctly.
+
+1. Create a data directory on a suitable volume on your host system, e.g. /my/own/var-lib-docker.
+2. Start your docker container like this:
+
+```sh
+$ docker run --privileged --name some-name -v /my/own/var-lib-docker:/var/lib/docker \ 
+-d skycoin/skycoindev-vscode:dind
+```
+
 ## Additional tools and packages installed
 
 ### Packages

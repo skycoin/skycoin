@@ -63,6 +63,10 @@ export class HwWalletService {
     });
   }
 
+  getFirst8Addresses(): Observable<string[]> {
+    return this.getAddressesRecursively(7, []);
+  }
+
   setMnemonic(mnemonic: string): Observable<OperationResult> {
     const requestId = this.createRandomID();
     window['ipcRenderer'].send('hwSetMnemonic', requestId, mnemonic);
@@ -106,6 +110,26 @@ export class HwWalletService {
     return new Observable(observer => {
       this.eventsObservers.set(requestId, observer);
     });
+  }
+
+  private getAddressesRecursively(index: number, addresses: string[]): Observable<string[]> {
+    let chain: Observable<any>;
+    if (index > 0) {
+      chain = this.getAddressesRecursively(index - 1, addresses).first();
+    } else {
+      chain = Observable.of(1);
+    }
+
+    chain = chain.flatMap(() => {
+      return this.getAddresses(1, index)
+      .map(response => {
+        addresses.push(response.rawResponse[0]);
+
+        return addresses;
+      });
+    });
+
+    return chain;
   }
 
   private createRandomID() {

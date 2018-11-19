@@ -90,11 +90,41 @@ export class WalletService {
       });
   }
 
-  createHardwareWallet(address) {
-    this.wallets.first().subscribe(wallets => {
-      wallets.push(this.crearteHardwareWalletData('Hardware wallet', [address]));
-      this.saveHardwareWallets();
-      this.refreshBalances();
+  createHardwareWallet(): Observable<void> {
+    let addresses: string[];
+    let addressWithTx = 0;
+    const addressMap: Map<string, boolean> = new Map<string, boolean>();
+    const addressWithTxMap: Map<string, boolean> = new Map<string, boolean>();
+
+    return this.hwWalletService.getFirst8Addresses().flatMap(response => {
+      addresses = response;
+      addresses.forEach(address => {
+        addressMap.set(address, true);
+      });
+
+      const addressesString = addresses.join(',');
+
+      return this.apiService.get('transactions', { addrs: addressesString });
+    }).flatMap(response => {
+      response.forEach(tx => {
+        tx.txn.outputs.forEach(output => {
+          if (addressMap.has(output.dst)) {
+            addressWithTxMap.set(output.dst, true);
+          }
+        });
+      });
+
+      addresses.forEach((address, i) => {
+        if (addressWithTxMap.has(address)) {
+          addressWithTx = i;
+        }
+      });
+
+      return this.wallets.first().map(wallets => {
+        wallets.push(this.crearteHardwareWalletData('Hardware wallet', addresses.slice(0, addressWithTx + 1)));
+        this.saveHardwareWallets();
+        this.refreshBalances();
+      });
     });
   }
 

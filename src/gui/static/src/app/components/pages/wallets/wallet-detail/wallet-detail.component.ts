@@ -21,7 +21,8 @@ import { ConfirmationComponent } from '../../../layout/confirmation/confirmation
 export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
-  private HowManyAddresses: number;
+  private howManyAddresses: number;
+  private addingAddress = false;
 
   constructor(
     private dialog: MatDialog,
@@ -43,17 +44,26 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   newAddress() {
+    if (this.addingAddress) {
+      return;
+    }
+
     this.snackbar.dismiss();
 
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    this.dialog.open(NumberOfAddressesComponent, config).afterClosed()
-      .subscribe(response => {
-        if (response) {
-          this.HowManyAddresses = response;
-          this.continueNewAddress();
-        }
-      });
+    if (!this.wallet.isHardware) {
+      const config = new MatDialogConfig();
+      config.width = '566px';
+      this.dialog.open(NumberOfAddressesComponent, config).afterClosed()
+        .subscribe(response => {
+          if (response) {
+            this.howManyAddresses = response;
+            this.continueNewAddress();
+          }
+        });
+    } else {
+      this.howManyAddresses = 1;
+      this.continueNewAddress();
+    }
   }
 
   toggleEmpty() {
@@ -142,15 +152,19 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   private continueNewAddress() {
+    this.addingAddress = true;
+
     if (!this.wallet.isHardware && this.wallet.encrypted) {
       const config = new MatDialogConfig();
       config.data = {
         wallet: this.wallet,
       };
 
-      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
+      const dialogRef = this.dialog.open(PasswordDialogComponent, config);
+      dialogRef.afterClosed().subscribe(() => this.addingAddress = false);
+      dialogRef.componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
-          this.walletService.addAddress(this.wallet, this.HowManyAddresses, passwordDialog.password)
+          this.walletService.addAddress(this.wallet, this.howManyAddresses, passwordDialog.password)
             .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
         });
     } else {
@@ -161,23 +175,24 @@ export class WalletDetailComponent implements OnDestroy {
         procedure = this.hwWalletService.getAddresses(1, 0).flatMap(
           response => {
             if (response.rawResponse[0] === this.wallet.addresses[0].address) {
-              return this.walletService.addAddress(this.wallet, this.HowManyAddresses);
+              return this.walletService.addAddress(this.wallet, this.howManyAddresses);
             } else {
               return Observable.throw(this.translateService.instant('hardware-wallet.general.error-incorrect-wallet'));
             }
           },
         );
       } else {
-        procedure = this.walletService.addAddress(this.wallet, this.HowManyAddresses);
+        procedure = this.walletService.addAddress(this.wallet, this.howManyAddresses);
       }
 
-      procedure.subscribe(null,
+      procedure.subscribe(() => this.addingAddress = false,
         err => {
           if (!this.wallet.isHardware ) {
             showSnackbarError(this.snackbar, err);
           } else {
             showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService));
           }
+          this.addingAddress = false;
         },
       );
     }

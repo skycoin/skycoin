@@ -32,7 +32,8 @@ export class HwWalletOptionsComponent implements OnDestroy {
   private dialogSubscription: ISubscription;
   private hwConnectionSubscription: ISubscription;
 
-  private recheck = false;
+  private recheckRequested = false;
+  private showErrorRequested = false;
 
   constructor(
     public dialogRef: MatDialogRef<HwWalletOptionsComponent>,
@@ -66,21 +67,28 @@ export class HwWalletOptionsComponent implements OnDestroy {
     this.openDialog(HwWipeDialogComponent);
   }
 
-  private openDialog(dialogType, recheckAfterClosed = true) {
+  private openDialog(dialogType) {
     this.removeDialogSubscription();
     const config = new MatDialogConfig();
     config.width = '450px';
 
-    if (recheckAfterClosed) {
-      config.data = (() => this.recheck = true);
-    }
+    config.data = ((error: string = null) => {
+      if (!error) {
+        this.recheckRequested = true;
+      } else {
+        this.showErrorRequested = true;
+      }
+    });
 
     this.dialogSubscription = this.dialog.open(dialogType, config)
       .afterClosed().subscribe(() => {
-        if (recheckAfterClosed && this.recheck) {
-          this.recheck = false;
+        if (this.recheckRequested) {
           this.checkWallet();
+        } else if (this.showErrorRequested) {
+          this.currentState = States.Error;
         }
+        this.recheckRequested = false;
+        this.showErrorRequested = false;
       });
   }
 
@@ -108,11 +116,11 @@ export class HwWalletOptionsComponent implements OnDestroy {
           this.walletAddress = response.rawResponse[0];
           this.walletService.wallets.first().subscribe(wallets => {
             const alreadySaved = wallets.some(wallet => wallet.addresses[0].address === this.walletAddress && wallet.isHardware);
-            if (!alreadySaved) {
-              this.walletService.createHardwareWallet(this.walletAddress);
-              this.openDialog(HwAddedDialogComponent, false);
+            if (alreadySaved) {
+              this.currentState = States.ConfiguredConnected;
+            } else {
+              this.openDialog(HwAddedDialogComponent);
             }
-            this.currentState = States.ConfiguredConnected;
           });
         },
         error => {

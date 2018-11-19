@@ -1,3 +1,8 @@
-<app-modal [headline]="'Dialog'" [dialog]="dialogRef">
-  <div>New hardware wallet detected. The wallet has been added to your wallet list.</div>
+<app-modal [headline]="'Dialog'" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
+  <app-loading-content
+    [isLoading]="true"
+    *ngIf="currentState === states.Initial"
+  ></app-loading-content>
+  <div *ngIf="currentState === states.Finished">New hardware wallet detected. The wallet has been added to your wallet list.</div>
+  <div *ngIf="currentState === states.Failed">Error</div>
 </app-modal>

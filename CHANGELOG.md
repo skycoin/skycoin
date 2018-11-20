@@ -54,7 +54,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `/api/v1/network/disconnect` to disconnect a peer
 - Complete support for `cipher` package in `libskycoin` C API.
 - Add `coin`, `wallet`, `util/droplet` and `util/fee` methods as part of `libskycoin` C API
-- Add `make generate-golden-files` to `Makefile`
+- Add `make update-golden-files` to `Makefile`
 
 ### Fixed
 

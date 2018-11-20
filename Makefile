@@ -8,7 +8,7 @@
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
 .PHONY: install-deps-ui build-ui help newcoins merge-coverage
-.PHONY: generate-mocks update-golden-file
+.PHONY: generate-mocks update-golden-files
 
 COIN ?= skycoin
 

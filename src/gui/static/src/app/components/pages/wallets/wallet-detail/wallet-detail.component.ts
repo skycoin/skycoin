@@ -1,7 +1,7 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
@@ -11,7 +11,8 @@ import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-add
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { Observable } from 'rxjs/Observable';
-import { ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
+import { showConfirmationModal } from '../../../../utils';
+import { AppConfig } from '../../../../app.config';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -22,7 +23,7 @@ export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
   private howManyAddresses: number;
-  private addingAddress = false;
+  private creatingAddress = false;
 
   constructor(
     private dialog: MatDialog,
@@ -44,7 +45,18 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   newAddress() {
-    if (this.addingAddress) {
+    if (this.creatingAddress) {
+      return;
+    }
+
+    if (this.wallet.addresses.length >= AppConfig.maxHardwareWalletAddresses) {
+      const confirmationData: ConfirmationData = {
+        text: 'wallet.max-hardware-wallets-error',
+        headerText: 'errors.error',
+        confirmButtonText: 'confirmation.close',
+      };
+      showConfirmationModal(this.dialog, confirmationData);
+
       return;
     }
 
@@ -80,11 +92,7 @@ export class WalletDetailComponent implements OnDestroy {
       cancelButtonText: 'confirmation.cancel-button',
     };
 
-    this.dialog.open(ConfirmationComponent, <MatDialogConfig> {
-      width: '450px',
-      data: confirmationData,
-      autoFocus: false,
-    }).afterClosed().subscribe(result => {
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(result => {
       if (result) {
         this.walletService.deleteHardwareWallet(this.wallet);
       }
@@ -152,7 +160,7 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   private continueNewAddress() {
-    this.addingAddress = true;
+    this.creatingAddress = true;
 
     if (!this.wallet.isHardware && this.wallet.encrypted) {
       const config = new MatDialogConfig();
@@ -161,7 +169,7 @@ export class WalletDetailComponent implements OnDestroy {
       };
 
       const dialogRef = this.dialog.open(PasswordDialogComponent, config);
-      dialogRef.afterClosed().subscribe(() => this.addingAddress = false);
+      dialogRef.afterClosed().subscribe(() => this.creatingAddress = false);
       dialogRef.componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.walletService.addAddress(this.wallet, this.howManyAddresses, passwordDialog.password)
@@ -185,14 +193,14 @@ export class WalletDetailComponent implements OnDestroy {
         procedure = this.walletService.addAddress(this.wallet, this.howManyAddresses);
       }
 
-      procedure.subscribe(() => this.addingAddress = false,
+      procedure.subscribe(() => this.creatingAddress = false,
         err => {
           if (!this.wallet.isHardware ) {
             showSnackbarError(this.snackbar, err);
           } else {
             showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService));
           }
-          this.addingAddress = false;
+          this.creatingAddress = false;
         },
       );
     }

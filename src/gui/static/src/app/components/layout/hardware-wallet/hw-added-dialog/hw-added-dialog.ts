@@ -24,17 +24,17 @@ export class HwAddedDialogComponent implements OnDestroy {
   private hwConnectionSubscription: ISubscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public sendResult: any,
+    @Inject(MAT_DIALOG_DATA) public notifyFinish: any,
     public dialogRef: MatDialogRef<HwAddedDialogComponent>,
     private walletService: WalletService,
     private hwWalletService: HwWalletService,
   ) {
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(() => {
       this.currentState = States.Finished;
-      this.sendResult();
+      this.notifyFinish();
     }, () => {
       this.currentState = States.Failed;
-      this.sendResult('Error');
+      this.notifyFinish('Error');
     });
 
     this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {

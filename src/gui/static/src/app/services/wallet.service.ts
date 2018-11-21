@@ -96,7 +96,7 @@ export class WalletService {
     const addressMap: Map<string, boolean> = new Map<string, boolean>();
     const addressWithTxMap: Map<string, boolean> = new Map<string, boolean>();
 
-    return this.hwWalletService.getFirst8Addresses().flatMap(response => {
+    return this.hwWalletService.getMaxAddresses().flatMap(response => {
       addresses = response;
       addresses.forEach(address => {
         addressMap.set(address, true);

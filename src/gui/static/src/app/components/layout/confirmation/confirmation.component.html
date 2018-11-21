@@ -1,9 +1,9 @@
-<app-modal class="modal" [headline]="data.headerText | translate" [dialog]="dialogRef">
+<app-modal class="modal" [class.red-title]="data.redTitle" [headline]="data.headerText | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
   <div class="-body">
     {{ data.text | translate }}
   </div>
 
-  <div class="-check-container">
+  <div class="-check-container" *ngIf="data.checkboxText">
     <mat-checkbox type="checkbox"
                   class="-check"
                   id="terms"
@@ -13,10 +13,10 @@
   </div>
 
   <div class="-buttons">
-    <app-button (action)="closeModal(false)">
+    <app-button (action)="closeModal(false)" *ngIf="data.cancelButtonText">
       {{ data.cancelButtonText | translate }}
     </app-button>
-    <app-button (action)="closeModal(true)" class="primary" [disabled]="!accepted">
+    <app-button (action)="closeModal(true)" class="primary" [disabled]="data.checkboxText && !accepted">
       {{ data.confirmButtonText | translate }}
     </app-button>
   </div>

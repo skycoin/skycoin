@@ -9,11 +9,14 @@ import { ConfirmationData } from '../../../app.datatypes';
 })
 export class ConfirmationComponent {
   accepted = false;
+  disableDismiss = false;
 
   constructor(
     public dialogRef: MatDialogRef<ConfirmationComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ConfirmationData,
-  ) { }
+  ) {
+    this.disableDismiss = !!data.disableDismiss;
+  }
 
   closeModal(isConfirmed: boolean) {
     this.dialogRef.close(isConfirmed);

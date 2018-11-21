@@ -118,6 +118,21 @@ mat-spinner.in-button .mat-spinner path {
   opacity: 0.3;
 }
 
+mat-spinner.in-button {
+  display: inline-block;
+  margin-left: 10px;
+  
+  &.small {
+    height: 18px !important;
+    width: 18px !important;
+  
+    svg {
+      height: 18px !important;
+      width: 18px !important;
+    }
+  }
+}
+
 snack-bar-container {
   background-color: rgba(255, 0, 0, 0.8) !important;
 }
@@ -365,4 +380,8 @@ On-boarding components
   .mat-dialog-content {
     max-height: 80vh !important;
   }
+}
+
+.mouse-disabled {
+  pointer-events: none;
 }

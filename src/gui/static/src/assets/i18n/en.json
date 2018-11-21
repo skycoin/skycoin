@@ -8,6 +8,7 @@
   },
 
   "errors": {
+    "error": "Error",
     "fetch-version": "Unable to fetch latest release version from Github",
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
@@ -91,7 +92,8 @@
   },
 
   "wallet": {
-    "new-address": "New Addresses",
+    "new-address": "New Address",
+    "new-addresses": "New Addresses",
     "show-empty": "Show Empty",
     "hide-empty": "Hide Empty",
     "encrypt": "Encrypt Wallet",
@@ -109,6 +111,7 @@
     "delete-confirmation1": "WARNING: the wallet",
     "delete-confirmation2": "will be removed from the list. To add it again you will have to reconnect the hardware wallet. Do you want to continue?",
     "delete-confirmation-check": "Yeah, I want to delete the wallet.",
+    "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the hardware wallet.",
 
     "new": {
       "create-title": "Create Wallet",
@@ -277,7 +280,8 @@
   "confirmation" : {
     "header-text": "Confirmation",
     "confirm-button": "Yes",
-    "cancel-button": "No"
+    "cancel-button": "No",
+    "close": "Close"
   },
 
   "service": {

@@ -3,6 +3,7 @@ import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
+import { AppConfig } from '../app.config';
 
 export class OperationResult {
   success: boolean;
@@ -63,8 +64,8 @@ export class HwWalletService {
     });
   }
 
-  getFirst8Addresses(): Observable<string[]> {
-    return this.getAddressesRecursively(7, []);
+  getMaxAddresses(): Observable<string[]> {
+    return this.getAddressesRecursively(AppConfig.maxHardwareWalletAddresses - 1, []);
   }
 
   setMnemonic(mnemonic: string): Observable<OperationResult> {

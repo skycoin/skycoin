@@ -24,14 +24,14 @@ export class HwWipeDialogComponent implements OnDestroy {
   private hwConnectionSubscription: ISubscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public requestRecheck: any,
+    @Inject(MAT_DIALOG_DATA) public notifyFinish: any,
     public dialogRef: MatDialogRef<HwWipeDialogComponent>,
     private hwWalletService: HwWalletService,
   ) {
     this.operationSubscription = this.hwWalletService.wipe().subscribe(
       response => {
         if (response.success) {
-          this.requestRecheck();
+          this.notifyFinish();
           this.currentState = States.ReturnedSuccess;
         } else {
           this.currentState = States.ReturnedRefused;

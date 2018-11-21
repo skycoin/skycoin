@@ -79,9 +79,11 @@ export interface Output {
 export interface ConfirmationData {
   text: string;
   headerText: string;
-  checkboxText: string;
+  checkboxText?: string;
   confirmButtonText: string;
-  cancelButtonText: string;
+  cancelButtonText?: string;
+  redTitle?: boolean;
+  disableDismiss?: boolean;
 }
 
 /**

@@ -30,7 +30,7 @@ export class HwSeedDialogComponent implements OnDestroy {
   private hwConnectionSubscription: ISubscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public requestRecheck: any,
+    @Inject(MAT_DIALOG_DATA) public notifyFinish: any,
     public dialogRef: MatDialogRef<HwSeedDialogComponent>,
     private hwWalletService: HwWalletService,
     private formBuilder: FormBuilder,
@@ -55,7 +55,7 @@ export class HwSeedDialogComponent implements OnDestroy {
     this.operationSubscription = this.hwWalletService.setMnemonic(this.form.value.seed).subscribe(
       response => {
         if (response.success) {
-          this.requestRecheck();
+          this.notifyFinish();
           this.currentState = States.ReturnedSuccess;
         } else {
           this.currentState = States.ReturnedRefused;

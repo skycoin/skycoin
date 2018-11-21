@@ -22,8 +22,9 @@ import { AppConfig } from '../../../../app.config';
 export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
+  creatingAddress = false;
+
   private howManyAddresses: number;
-  private creatingAddress = false;
 
   constructor(
     private dialog: MatDialog,

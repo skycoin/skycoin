@@ -18,14 +18,18 @@ to ease go development and version control with git.
 0. Make sure you're on a system running [X](https://en.wikipedia.org/wiki/X_Window_System).
 1. Disable X access control (don't do this on a public-facing machine): `$ xhost +` or `$ xhost +local:docker`
 2. `$ cd` to a path where you want to write some code.
-3. Run docker image
-```sh
+3. Since Visual Studio Code inside docker container run as user `user`, it's necessary apply permissions to files.
+    ```sh
+    $ sudo chown -R 777 .
+    ```
+4. Run docker image.
+    ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
             -v $PWD:/go/src/github.com/skycoin/skycoin \
             -w /go/src/github.com/skycoin/skycoin \
             -e DISPLAY=$DISPLAY \
             skycoin/skycoindev-vscode:develop
-```
+    ```
 5. You should see vscode pop up.
 6. Have fun. Write some code. Close vscode when you're done, and ctrl+c to shut down the container. Your files will be in the path on the host where you started.
 7. __Reenable X access control:__ `$ xhost -`

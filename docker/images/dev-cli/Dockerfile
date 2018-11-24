@@ -214,7 +214,7 @@ RUN cd /tmp/; \
     rm -rf /tmp/swig-*
 
 # Install golangci-lint
-ENV GOLANGCI_LINT 1.10.2
+ENV GOLANGCI_LINT 1.12.3
 RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v$GOLANGCI_LINT
 
 WORKDIR $GOPATH/src/github.com/skycoin

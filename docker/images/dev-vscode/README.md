@@ -63,14 +63,12 @@ container.
 
 `DOCKERFILE_PATH`: the dockerfile currently being built.
 
-`VS_EXTENSIONS`: VS Code extensions that you would add to docker image.
-
 Build image from `skycoindev-cli:develop`.
 
 ```sh
 $ git clone https://github.com/skycoin/skycoin
 $ cd skycoin
-$ SOURCE_COMMIT=352c8705eb776baf79da96216308b6d164e0ae13
+$ SOURCE_COMMIT=$(git rev-parse HEAD)
 $ IMAGE_NAME=skycoin/skycoindev-vscode:develop
 $ DOCKERFILE_PATH=docker/images/dev-vscode/Dockerfile
 $ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
@@ -85,7 +83,7 @@ Or, if you prefer use `skycoindev-cli:dind`. Run:
 ```sh
 $ git clone https://github.com/skycoin/skycoin
 $ cd skycoin
-$ SOURCE_COMMIT=352c8705eb776baf79da96216308b6d164e0ae13
+$ SOURCE_COMMIT=$(git rev-parse HEAD)
 $ IMAGE_NAME=skycoin/skycoindev-vscode:dind
 $ DOCKERFILE_PATH=docker/images/dev-vscode/Dockerfile
 $ docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \

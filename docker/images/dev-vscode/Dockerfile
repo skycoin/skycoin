@@ -44,50 +44,50 @@ RUN apt-get update \
 	    apt-utils \
 	    libasound2 \
 	    libatk1.0-0 \
-        libcairo2 \
-        libcups2 \
-        libexpat1 \
-        libfontconfig1 \
-        libfreetype6 \
-        libgtk2.0-0 \
-        libpango-1.0-0 \
-        libx11-xcb1 \
-        libxcomposite1 \
-        libxcursor1 \
-        libxdamage1 \
-        libxext6 \
-        libxfixes3 \
-        libxi6 \
-        libxrandr2 \
-        libxrender1 \
-        libxss1 \
-        libxtst6 \
-        openssh-client \
-        xdg-utils \
-        dconf-editor \
-        dbus-x11 \
-        libfile-mimeinfo-perl \
-        xdg-user-dirs \
-        xsel \
+      libcairo2 \
+      libcups2 \
+      libexpat1 \
+      libfontconfig1 \
+      libfreetype6 \
+      libgtk2.0-0 \
+      libpango-1.0-0 \
+      libx11-xcb1 \
+      libxcomposite1 \
+      libxcursor1 \
+      libxdamage1 \
+      libxext6 \
+      libxfixes3 \
+      libxi6 \
+      libxrandr2 \
+      libxrender1 \
+      libxss1 \
+      libxtst6 \
+      openssh-client \
+      xdg-utils \
+      dconf-editor \
+      dbus-x11 \
+      libfile-mimeinfo-perl \
+      xdg-user-dirs \
+      xsel \
 	    --no-install-recommends \
 	&& mkdir -p $HOME/.cache/dconf \
-    && mkdir -p $HOME/.config/dconf \
-    && chown user:user -R $HOME/.config \
-    && chown user:user -R $HOME/.cache \
-    && go get -v github.com/ramya-rao-a/go-outline \
-    && go get -v github.com/uudashr/gopkgs/cmd/gopkgs \
-    && go get -v github.com/acroca/go-symbols \
-    && go get -v github.com/stamblerre/gocode \
-    && go get -v github.com/ianthehat/godef \
-    && go get -v github.com/sqs/goreturns \
-    && ln -s /go/bin/gocode /go/bin/gocode-gomod \
-    && ln -s /go/bin/godef /go/bin/godef-gomod \
-    && npm install -g tslint typescript \
-    && curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key add - \
-    && echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list \
-    && apt-get update \
-    && apt-get -y install code \
-    && for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done \
+  && mkdir -p $HOME/.config/dconf \
+  && chown user:user -R $HOME/.config \
+  && chown user:user -R $HOME/.cache \
+  && go get -v github.com/ramya-rao-a/go-outline \
+  && go get -v github.com/uudashr/gopkgs/cmd/gopkgs \
+  && go get -v github.com/acroca/go-symbols \
+  && go get -v github.com/stamblerre/gocode \
+  && go get -v github.com/ianthehat/godef \
+  && go get -v github.com/sqs/goreturns \
+  && ln -s /go/bin/gocode /go/bin/gocode-gomod \
+  && ln -s /go/bin/godef /go/bin/godef-gomod \
+  && npm install -g tslint typescript \
+  && curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key add - \
+  && echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list \
+  && apt-get update \
+  && apt-get -y install code \
+  && for ext in $VS_EXTENSIONS; do code --user-data-dir $HOME --install-extension $ext; done \
 	&& apt clean \
 	&& rm -rf /var/lib/apt/lists/*
 

@@ -15,7 +15,7 @@ LABEL "org.label-schema.name"="skycoindev-cli" \
       "org.label-schema.vcs-ref"=$SCOMMIT \
       "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/dev-cli/README.md" \
       "org.label-schema.version"="1.0.0-rc.1" \
-      "org.label-schema.docker.cmd"="mkdir src; docker run --rm -v src:/go/src skycoin/skycoindev-cli ; go get github.com/skycoin/skycoin ; sudo chown -R `whoami` src" \
+      "org.label-schema.docker.cmd"="mkdir src; docker run --rm -v src:/go/src skycoin/skycoindev-cli ; go get github.com/skycoin/skycoin ; sudo chown -R `whoami` src"
 
 # Installs nodejs and npm. Needed for moxygen.
 
@@ -99,7 +99,7 @@ RUN set -ex \
     gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
   done
 
-ENV NODE_VERSION 10.2.1
+ENV NODE_VERSION 10.13.0
 
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && case "${dpkgArch##*-}" in \
@@ -119,7 +119,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && rm "node-v$NODE_VERSION-linux-$ARCH.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 
-ENV YARN_VERSION 1.7.0
+ENV YARN_VERSION 1.12.3
 
 RUN set -ex \
   && for key in \

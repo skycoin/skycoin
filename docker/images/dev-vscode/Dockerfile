@@ -16,11 +16,7 @@ LABEL "org.label-schema.name"="skycoindev-cli" \
       "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin.git" \
       "org.label-schema.vcs-ref"=$SCOMMIT \
       "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/dev-vscode/README.md" \
-      "org.label-schema.docker.cmd"="xhost +; cd src; docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
-                                    -v $PWD:/go/src \
-                                    -w /go/src \
-                                    -e DISPLAY=$DISPLAY \
-                                    skycoin/skycoindev-vscode:develop"
+      "org.label-schema.docker.cmd"="xhost +; cd src; docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix -v $PWD:/go/src -w /go/src -e DISPLAY=$DISPLAY skycoin/skycoindev-vscode:develop"
 
 # Tell debconf to run in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive

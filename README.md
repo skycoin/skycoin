@@ -63,6 +63,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Creating a new coin](#creating-a-new-coin)
 - [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
 - [Running with a custom max transaction size](#running-with-a-custom-max-transaction-size)
+- [Running with a custom max decimal places](#running-with-a-custom-max-decimal-places)
 - [URI Specification](#uri-specification)
 - [Wire protocol user agent](#wire-protocol-user-agent)
 - [Development](#development)
@@ -239,16 +240,26 @@ To control the burn factor in other scenarios, use `-burn-factor-unconfirmed` an
 ## Running with a custom max transaction size
 
 ```sh
-MAX_USER_TXN_SIZE=1024 ./run-client.sh
+USER_MAX_TXN_SIZE=1024 ./run-client.sh
 ```
 
 This maximum transaction size applies to user-created transactions.
 
-To control the transaction size for unconfirmed transactions, use `-unconfirmed-txn-size`.
+To control the transaction size in other scenarios, use `-max-txn-size-unconfirmed` and `-max-txn-size-create-block`.
 
-To control the max block size, use `-block-size`.
+To control the max block size, use `-max-block-size`.
 
 Transaction and block size are measured in bytes.
+
+## Running with a custom max decimal places
+
+```sh
+USER_MAX_DECIMALS=4 ./run-client.sh
+```
+
+This maximum transaction size applies to user-created transactions.
+
+To control the maximum decimals in other scenarios, use `-max-decimals-unconfirmed` and `-max-decimals-create-block`.
 
 ## URI Specification
 

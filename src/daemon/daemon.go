@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -193,6 +194,8 @@ type DaemonConfig struct { // nolint: golint
 	// User agent (sent in introduction messages)
 	UserAgent useragent.Data
 	userAgent string // parsed from UserAgent in preprocess()
+	// Transaction verification parameters for unconfirmed transactions
+	UnconfirmedVerifyTxn params.VerifyTxn
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
 }
@@ -227,6 +230,7 @@ func NewDaemonConfig() DaemonConfig {
 		UnconfirmedRefreshRate:       time.Minute,
 		UnconfirmedRemoveInvalidRate: time.Minute,
 		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
+		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
 	}
 }
 
@@ -252,7 +256,7 @@ type daemoner interface {
 	pexConfig() pex.Config
 	injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
-	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error)
+	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error)
 	sendRandomPeers(addr string) error
 }
 
@@ -387,6 +391,9 @@ func (dm *Daemon) Run() error {
 	defer close(dm.done)
 
 	logger.Infof("Daemon UserAgent is %s", dm.Config.userAgent)
+	logger.Info("Daemon unconfirmed BurnFactor is %d", dm.Config.UnconfirmedVerifyTxn.BurnFactor)
+	logger.Info("Daemon unconfirmed MaxTransactionSize is %d", dm.Config.UnconfirmedVerifyTxn.MaxTransactionSize)
+	logger.Info("Daemon unconfirmed MaxDropletPrecision is %d", dm.Config.UnconfirmedVerifyTxn.MaxDropletPrecision)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -950,8 +957,14 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 
 	logger.WithFields(fields).Debug("Sending introduction message")
 
-	m := NewIntroductionMessage(dm.Config.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
-	if err := dm.sendMessage(e.Addr, m); err != nil {
+	if err := dm.sendMessage(e.Addr, NewIntroductionMessage(
+		dm.Config.Mirror,
+		dm.Config.ProtocolVersion,
+		dm.pool.Pool.Config.Port,
+		dm.Config.BlockchainPubkey,
+		dm.Config.userAgent,
+		dm.Config.UnconfirmedVerifyTxn,
+	)); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return
 	}
@@ -1251,8 +1264,8 @@ func (dm *Daemon) daemonConfig() DaemonConfig {
 
 // connectionIntroduced transfers a connection to the "introduced" state in the connections state machine
 // and updates other state
-func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
-	c, err := dm.connections.introduced(addr, gnetID, m, userAgent)
+func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
+	c, err := dm.connections.introduced(addr, gnetID, m)
 	if err != nil {
 		return nil, err
 	}

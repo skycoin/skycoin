@@ -32,7 +32,9 @@ type HealthResponse struct {
 	GUIEnabled            bool               `json:"gui_enabled"`
 	UnversionedAPIEnabled bool               `json:"unversioned_api_enabled"`
 	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
-	BurnFactor            uint64             `json:"coinhour_burn_factor"`
+	UserVerifyTxn         readable.VerifyTxn `json:"user_verify_transaction"`
+	UnconfirmedVerifyTxn  readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
+	StartedAt             int64              `json:"started_at"`
 }
 
 // healthHandler returns node health data
@@ -81,7 +83,9 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			GUIEnabled:            c.enableGUI,
 			JSON20RPCEnabled:      c.enableJSON20RPC,
 			WalletAPIEnabled:      walletAPIEnabled,
-			BurnFactor:            params.UserBurnFactor,
+			UserVerifyTxn:         readable.NewVerifyTxn(params.UserVerifyTxn),
+			UnconfirmedVerifyTxn:  readable.NewVerifyTxn(health.UnconfirmedVerifyTxn),
+			StartedAt:             health.StartedAt.Unix(),
 		})
 	}
 }

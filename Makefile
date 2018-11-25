@@ -7,7 +7,8 @@
 .PHONY: integration-test-disable-gui integration-test-disable-gui
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
-.PHONY: install-deps-ui build-ui help newcoin generate-mocks merge-coverage
+.PHONY: install-deps-ui build-ui help newcoins merge-coverage
+.PHONY: generate-mocks update-golden-files
 
 COIN ?= skycoin
 
@@ -254,6 +255,12 @@ generate-mocks: ## Regenerate test interface mocks
 	# mockery can't generate the UnspentPooler mock in package visor, patch it
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
+
+update-golden-files: ## Run integration tests in update mode
+	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -d -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -d -u >/dev/null 2>&1 || true
 
 merge-coverage: ## Merge coverage files and create HTML coverage output. gocovmerge is required, install with `go get github.com/wadey/gocovmerge`
 	@echo "To install gocovmerge do:"

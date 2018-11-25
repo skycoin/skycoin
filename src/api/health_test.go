@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
@@ -128,6 +129,12 @@ func TestHealthHandler(t *testing.T) {
 				OutgoingConnections: 3,
 				IncomingConnections: 2,
 				Uptime:              time.Second * 4,
+				UnconfirmedVerifyTxn: params.VerifyTxn{
+					BurnFactor:          params.UserVerifyTxn.BurnFactor * 2,
+					MaxTransactionSize:  params.UserVerifyTxn.MaxTransactionSize * 2,
+					MaxDropletPrecision: params.UserVerifyTxn.MaxDropletPrecision - 1,
+				},
+				StartedAt: time.Now().Add(time.Second * -4),
 			}
 
 			gateway := &MockGatewayer{}
@@ -191,7 +198,15 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
-			require.Equal(t, uint64(0x2), r.BurnFactor)
+			require.Equal(t, uint32(2), r.UserVerifyTxn.BurnFactor)
+			require.Equal(t, uint32(32*1024), r.UserVerifyTxn.MaxTransactionSize)
+			require.Equal(t, uint8(3), r.UserVerifyTxn.MaxDropletPrecision)
+
+			require.Equal(t, health.UnconfirmedVerifyTxn.BurnFactor, r.UnconfirmedVerifyTxn.BurnFactor)
+			require.Equal(t, health.UnconfirmedVerifyTxn.MaxTransactionSize, r.UnconfirmedVerifyTxn.MaxTransactionSize)
+			require.Equal(t, health.UnconfirmedVerifyTxn.MaxDropletPrecision, r.UnconfirmedVerifyTxn.MaxDropletPrecision)
+			require.True(t, time.Now().Unix() > r.StartedAt)
+
 		})
 	}
 }

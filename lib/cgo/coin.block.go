@@ -20,6 +20,7 @@ import (
 import "C"
 
 //export SKY_coin_NewBlock
+// nolint nakedret
 func SKY_coin_NewBlock(_b C.Block__Handle, _currentTime uint64, _hash *C.cipher__SHA256, _txns C.Transactions__Handle, pFeeCalc *C.FeeCalculator, _arg2 *C.Block__Handle) (____error_code uint32) {
 	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
 		var fee C.GoUint64_
@@ -141,14 +142,17 @@ func SKY_coin_Block_HashBody(_b C.Block__Handle, _arg0 *C.cipher__SHA256) (____e
 }
 
 //export SKY_coin_Block_Size
-func SKY_coin_Block_Size(_b C.Block__Handle, _arg0 *int) (____error_code uint32) {
+func SKY_coin_Block_Size(_b C.Block__Handle, _arg0 *uint32) (____error_code uint32) {
 	b, ok := lookupBlockHandle(_b)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0 := b.Size()
-	*_arg0 = __arg0
+	__arg0, ____return_err := b.Size()
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg0 = __arg0
+	}
 	return
 }
 
@@ -231,14 +235,17 @@ func SKY_coin_BlockBody_Hash(_body C.BlockBody__Handle, _arg0 *C.cipher__SHA256)
 }
 
 //export SKY_coin_BlockBody_Size
-func SKY_coin_BlockBody_Size(_bb *C.BlockBody__Handle, _arg0 *int) (____error_code uint32) {
+func SKY_coin_BlockBody_Size(_bb *C.BlockBody__Handle, _arg0 *uint32) (____error_code uint32) {
 	bb, ok := lookupBlockBodyHandle(*_bb)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	__arg0 := bb.Size()
-	*_arg0 = __arg0
+	__arg0, ____return_err := bb.Size()
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg0 = __arg0
+	}
 	return
 }
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -397,7 +398,7 @@ func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 // VerifySingleTxnSoftHardConstraints checks that the transaction does not violate hard or soft constraints,
 // for transactions that are not included in a block.
 // Hard constraints are checked before soft constraints.
-func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int, burnFactor uint64) error {
+func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
@@ -415,7 +416,7 @@ func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.
 		return err
 	}
 
-	return VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, maxSize, burnFactor)
+	return VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, verifyParams)
 }
 
 func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
@@ -534,7 +535,11 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if bc.cfg.Arbitrating {
-		txns = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
+		txns, err = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
+		if err != nil {
+			logger.Critical().WithError(err).Error("processTransactions: coin.SortTransactions failed")
+			return nil, err
+		}
 	}
 
 	//TODO: audit
@@ -555,7 +560,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 		if err := bc.VerifyBlockTxnConstraints(tx, txn); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesSoftConstraint:
-				logger.WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
+				logger.Critical().WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
 			case ErrTxnViolatesHardConstraint:
 				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}

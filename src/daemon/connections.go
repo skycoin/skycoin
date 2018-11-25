@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -53,14 +54,15 @@ var (
 
 // ConnectionDetails connection data managed by daemon
 type ConnectionDetails struct {
-	State           ConnectionState
-	Outgoing        bool
-	ConnectedAt     time.Time
-	Mirror          uint32
-	ListenPort      uint16
-	ProtocolVersion int32
-	Height          uint64
-	UserAgent       useragent.Data
+	State                ConnectionState
+	Outgoing             bool
+	ConnectedAt          time.Time
+	Mirror               uint32
+	ListenPort           uint16
+	ProtocolVersion      int32
+	Height               uint64
+	UserAgent            useragent.Data
+	UnconfirmedVerifyTxn params.VerifyTxn
 }
 
 // HasIntroduced returns true if the connection has introduced
@@ -215,7 +217,7 @@ func (c *Connections) connected(addr string, gnetID uint64) (*connection, error)
 }
 
 // introduced the connection has introduced itself
-func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
+func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -293,9 +295,8 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 	conn.Mirror = m.Mirror
 	conn.ProtocolVersion = m.ProtocolVersion
 	conn.ListenPort = listenPort
-	if userAgent != nil {
-		conn.UserAgent = *userAgent
-	}
+	conn.UserAgent = m.userAgent
+	conn.UnconfirmedVerifyTxn = m.unconfirmedVerifyTxn
 
 	if !conn.Outgoing {
 		listenAddr := conn.ListenAddr()

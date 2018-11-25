@@ -540,7 +540,7 @@ func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr s
 		return nil, err
 	}
 
-	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, params.MaxUserTransactionSize, params.UserBurnFactor); err != nil {
+	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, params.UserVerifyTxn); err != nil {
 		return nil, err
 	}
 	if err := visor.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered); err != nil {
@@ -580,7 +580,7 @@ func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chg
 			return nil, err
 		}
 
-		return NewTransaction(spendOutputs, keys, txOuts), nil
+		return NewTransaction(spendOutputs, keys, txOuts)
 	}
 
 	makeTx := func() (*coin.Transaction, error) {
@@ -667,7 +667,7 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 	nAddrs := uint64(len(toAddrs))
 	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
 
-	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours, params.UserBurnFactor); err != nil {
+	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours, params.UserVerifyTxn.BurnFactor); err != nil {
 		return nil, err
 	}
 
@@ -725,18 +725,22 @@ func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, erro
 }
 
 // NewTransaction creates a transaction. The transaction should be validated against hard and soft constraints before transmission.
-func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) *coin.Transaction {
-	tx := coin.Transaction{}
+func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
+	txn := coin.Transaction{}
 	for _, u := range utxos {
-		tx.PushInput(u.Hash)
+		txn.PushInput(u.Hash)
 	}
 
 	for _, o := range outs {
-		tx.PushOutput(o.Address, o.Coins, o.Hours)
+		txn.PushOutput(o.Address, o.Coins, o.Hours)
 	}
 
-	tx.SignInputs(keys)
+	txn.SignInputs(keys)
 
-	tx.UpdateHeader()
-	return &tx
+	err := txn.UpdateHeader()
+	if err != nil {
+		return nil, err
+	}
+
+	return &txn, nil
 }

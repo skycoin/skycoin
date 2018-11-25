@@ -8,8 +8,8 @@
 # Skycoin development *vscode* image
 
 This image has the necessary tools to build, test, edit, lint and version the Skycoin
-source code. It comes with Visual Studio Code installed, along with some plugins
-to ease go development and version control with git.
+source code. It comes with Visual Studio Code installed and some extensions
+to speed up Skycoin development.
 
 # How use this image
 
@@ -36,7 +36,7 @@ to ease go development and version control with git.
 
 ## Add more VS Code extensions
 
-You must pass VS_EXTENSIONS environment variable to command-line with extensions of you prefer.
+If you want add more extensions, you must define VS_EXTENSIONS environment variable to command-line with extensions of you prefer.
 
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 
@@ -75,7 +75,7 @@ $ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                --build-arg SCOMMIT=$SOURCE_COMMIT \
                --build-arg VS_EXTENSIONS="ms-vscode.Go windmilleng.vscode-go-autotest defaltd.go-coverage-viewer" \
                -f $DOCKERFILE_PATH \
-               -t $IMAGE_NAME .
+               -t "$IMAGE_NAME" .
 ```
 
 Or, if you prefer use `skycoindev-cli:dind`. Run:
@@ -91,7 +91,7 @@ $ docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \
                --build-arg SCOMMIT=$SOURCE_COMMIT \
                --build-arg VS_EXTENSIONS="ms-python.python rebornix.Ruby"
                -f $DOCKERFILE_PATH \
-               -t IMAGE_NAME .
+               -t "$IMAGE_NAME" .
 ```
 
 When it finish, you will have two new images:

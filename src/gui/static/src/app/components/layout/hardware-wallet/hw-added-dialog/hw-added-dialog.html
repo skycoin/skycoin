@@ -1,8 +1,27 @@
-<app-modal [headline]="'Dialog'" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
-  <app-loading-content
-    [isLoading]="true"
-    *ngIf="currentState === states.Initial"
-  ></app-loading-content>
-  <div *ngIf="currentState === states.Finished">New hardware wallet detected. The wallet has been added to your wallet list.</div>
-  <div *ngIf="currentState === states.Failed">Error</div>
+<app-modal class="modal" [headline]="'hardware-wallet.added.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
+  <app-hw-message *ngIf="currentState === states.Initial"
+    [text]="'hardware-wallet.added.configuring' | translate"
+    [icon]="msgIcons.Spinner"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.Failed"
+    [text]="errorMsg | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+  
+  <div *ngIf="currentState === states.Finished">
+    <app-hw-message
+      [upperBigText]="'hardware-wallet.added.done' | translate"
+      [icon]="msgIcons.Success"
+    ></app-hw-message>
+    <div class="first-margin">{{ 'hardware-wallet.added.added1' | translate }}</div>
+    <div class="big-text">{{ walletName }}</div>
+    <div class="second-margin">{{ 'hardware-wallet.added.added2' | translate }}</div>
+
+    <div class="-buttons">
+      <app-button (action)="closeModal()" class="primary">
+        {{ 'hardware-wallet.general.close' | translate }}
+      </app-button>
+    </div>
+  </div>
 </app-modal>

@@ -1,26 +1,52 @@
-<app-modal [headline]="'Hardware Wallet'" [dialog]="dialogRef">
-    <div *ngIf="currentState === states.Error">Error connecting with the wallet. Check the hardware wallet screen and make sure to complete any pending operation</div>
-  <div *ngIf="currentState === states.Disconnected">No hardware wallet connected</div>
-  <div *ngIf="currentState === states.Processing">Please wait...</div>
+<app-modal class="modal" [headline]="'wallet.hardware' | translate" [dialog]="dialogRef">
+  <app-hw-message *ngIf="currentState === states.Processing"
+    [text]="'hardware-wallet.options.connecting' | translate"
+    [icon]="msgIcons.Spinner"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.Error"
+    [text]="(customErrorMsg ? customErrorMsg : 'hardware-wallet.general.generic-error') | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.Disconnected"
+    [text]="'hardware-wallet.options.disconnected' | translate"
+    [icon]="msgIcons.Usb"
+  ></app-hw-message>
 
   <div *ngIf="currentState === states.NewConnected || currentState === states.ConfiguredConnected">
-    <div *ngIf="currentState === states.NewConnected">An unconfigured wallet has been detected. Please, give it a seed.</div>
-    <div *ngIf="currentState === states.ConfiguredConnected">Hardware wallet detected. The first address of the wallet is: {{ walletAddress }}. Use the following options to configure your hardware wallet.</div>
+    <app-hw-message *ngIf="currentState === states.NewConnected"
+      [upperBigText]="'hardware-wallet.options.unconfigured-detected-tittle' | translate"
+      [text]="'hardware-wallet.options.unconfigured-detected' | translate"
+      [icon]="msgIcons.HardwareWallet"
+    ></app-hw-message>
 
-    <div class="buttons-container select-address-theme">
+    <app-hw-message *ngIf="currentState === states.ConfiguredConnected"
+      [text]="'hardware-wallet.options.configured-detected' | translate"
+      [lowerBigText]="walletName"
+      [icon]="msgIcons.HardwareWallet"
+    ></app-hw-message>
+
+    <div class="options-label">{{ 'hardware-wallet.options.options' | translate }}</div>
+    <div class="option-buttons-container select-address-theme">
       <button mat-button color="primary" (click)="generateMnemonic()" *ngIf="currentState === states.NewConnected">
-        <div class="label">Create a seed automatically</div>
+        <div class="label">{{ 'hardware-wallet.options.configure-automatically' | translate }}</div>
       </button>
-      <button mat-button color="primary" (click)="setMnemonic()">
-        <div class="label" *ngIf="currentState === states.NewConnected">Set a seed manually</div>
-        <div class="label" *ngIf="currentState === states.ConfiguredConnected">Change seed</div>
+      <button mat-button color="primary" (click)="setMnemonic()" *ngIf="currentState === states.NewConnected">
+        <div class="label">{{ 'hardware-wallet.options.restore-backup' | translate }}</div>
       </button>
       <button mat-button color="primary" (click)="backup()" *ngIf="currentState === states.ConfiguredConnected">
-        <div class="label">Backup the seed</div>
+        <div class="label">{{ 'hardware-wallet.options.create-backup' | translate }}</div>
       </button>
       <button mat-button color="primary" (click)="wipe()" *ngIf="currentState === states.ConfiguredConnected">
-        <div class="label">Wipe</div>
+        <div class="label -red">{{ 'hardware-wallet.options.wipe' | translate }}</div>
       </button>
     </div>
+  </div>
+
+  <div class="-buttons">
+    <app-button (action)="closeModal()" class="primary">
+      {{ 'hardware-wallet.general.close' | translate }}
+    </app-button>
   </div>
 </app-modal>

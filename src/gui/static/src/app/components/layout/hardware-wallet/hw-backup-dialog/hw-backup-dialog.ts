@@ -2,9 +2,11 @@ import { Component, OnDestroy, Inject } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { MessageIcons } from '../hw-message/hw-message.component';
 
 enum States {
   Initial,
+  Processing,
   ReturnedSuccess,
   ReturnedRefused,
   Failed,
@@ -19,6 +21,7 @@ export class HwBackupDialogComponent implements OnDestroy {
 
   currentState: States = States.Initial;
   states = States;
+  msgIcons = MessageIcons;
 
   private operationSubscription: ISubscription;
   private hwConnectionSubscription: ISubscription;
@@ -27,6 +30,27 @@ export class HwBackupDialogComponent implements OnDestroy {
     public dialogRef: MatDialogRef<HwBackupDialogComponent>,
     private hwWalletService: HwWalletService,
   ) {
+    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
+      if (!connected) {
+        this.dialogRef.close();
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
+    }
+    this.hwConnectionSubscription.unsubscribe();
+  }
+
+  closeModal() {
+    this.dialogRef.close();
+  }
+
+  requestBackup() {
+    this.currentState = States.Processing;
+
     this.operationSubscription = this.hwWalletService.backup().subscribe(
       response => {
         if (response.success) {
@@ -39,16 +63,5 @@ export class HwBackupDialogComponent implements OnDestroy {
         this.currentState = States.Failed;
       },
     );
-
-    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
-      if (!connected) {
-        this.dialogRef.close();
-      }
-    });
-  }
-
-  ngOnDestroy() {
-    this.operationSubscription.unsubscribe();
-    this.hwConnectionSubscription.unsubscribe();
   }
 }

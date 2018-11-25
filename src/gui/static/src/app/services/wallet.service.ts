@@ -90,7 +90,7 @@ export class WalletService {
       });
   }
 
-  createHardwareWallet(): Observable<void> {
+  createHardwareWallet(): Observable<Wallet> {
     let addresses: string[];
     let addressWithTx = 0;
     const addressMap: Map<string, boolean> = new Map<string, boolean>();
@@ -121,9 +121,12 @@ export class WalletService {
       });
 
       return this.wallets.first().map(wallets => {
-        wallets.push(this.crearteHardwareWalletData('Hardware wallet', addresses.slice(0, addressWithTx + 1)));
+        const newWallet = this.crearteHardwareWalletData('Hardware wallet', addresses.slice(0, addressWithTx + 1));
+        wallets.push(newWallet);
         this.saveHardwareWallets();
         this.refreshBalances();
+
+        return newWallet;
       });
     });
   }

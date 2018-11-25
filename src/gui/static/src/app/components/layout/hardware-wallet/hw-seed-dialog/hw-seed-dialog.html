@@ -1,23 +1,46 @@
-<app-modal [headline]="'Dialog'" [dialog]="dialogRef">
+<app-modal class="modal" [headline]="'hardware-wallet.options.restore-backup' | translate" [dialog]="dialogRef">
   <div *ngIf="currentState === states.Initial">
     <div [formGroup]="form">
       <div class="form-field">
-        <label for="seed">{{ 'seed' }}</label>
+        <label for="seed">{{ 'hardware-wallet.restore-backup.seed' | translate }}</label>
         <textarea formControlName="seed" id="seed" row="2"></textarea>
       </div>
     </div>
     <div class="-buttons">
-      <app-button (action)="closePopup()">
-        {{ 'cancel' }}
+      <app-button (action)="closeModal()">
+        {{ 'hardware-wallet.general.cancel' | translate }}
       </app-button>
-      <app-button (action)="setSeed()" class="primary" [disabled]="!form.valid" #button>
-        {{ 'continue' }}
+      <app-button (action)="setSeed()" class="primary" [disabled]="!form.valid">
+          {{ 'hardware-wallet.general.continue' | translate }}
       </app-button>
     </div>
   </div>
 
-  <div *ngIf="currentState === states.Processing">Please, confirm the operation in the hardware wallet</div>
-  <div *ngIf="currentState === states.ReturnedSuccess">Operation completed successfully</div>
-  <div *ngIf="currentState === states.ReturnedRefused">The operation failed or was refused by the user</div>
-  <div *ngIf="currentState === states.Failed">Error</div>
+  <div *ngIf="currentState !== states.Initial">
+    <app-hw-message *ngIf="currentState === states.Processing"
+      [text]="'hardware-wallet.general.confirm' | translate"
+      [icon]="msgIcons.Confirm"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.ReturnedSuccess"
+      [text]="'hardware-wallet.general.completed' | translate"
+      [icon]="msgIcons.Success"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.ReturnedRefused"
+      [text]="'hardware-wallet.restore-backup.refused' | translate"
+      [icon]="msgIcons.Error"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.Failed"
+      [text]="'hardware-wallet.general.generic-error' | translate"
+      [icon]="msgIcons.Error"
+    ></app-hw-message>
+
+    <div class="-buttons">
+      <app-button (action)="closeModal()" class="primary">
+        {{ 'hardware-wallet.general.close' | translate }}
+      </app-button>
+    </div>
+  </div>
 </app-modal>

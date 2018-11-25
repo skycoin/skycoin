@@ -83,6 +83,7 @@ import { HwAddedDialogComponent } from './components/layout/hardware-wallet/hw-a
 import { HwGenerateSeedDialogComponent } from './components/layout/hardware-wallet/hw-generate-seed-dialog/hw-generate-seed-dialog';
 import { HwBackupDialogComponent } from './components/layout/hardware-wallet/hw-backup-dialog/hw-backup-dialog';
 import { ConfirmationComponent } from './components/layout/confirmation/confirmation.component';
+import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
 
 
 const ROUTES = [
@@ -197,6 +198,7 @@ const ROUTES = [
     HwGenerateSeedDialogComponent,
     HwBackupDialogComponent,
     ConfirmationComponent,
+    HwMessageComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

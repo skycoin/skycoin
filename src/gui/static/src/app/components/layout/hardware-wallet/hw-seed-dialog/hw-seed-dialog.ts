@@ -3,7 +3,7 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
-import { ButtonComponent } from '../../button/button.component';
+import { MessageIcons } from '../hw-message/hw-message.component';
 
 enum States {
   Initial,
@@ -19,12 +19,10 @@ enum States {
   styleUrls: ['./hw-seed-dialog.scss'],
 })
 export class HwSeedDialogComponent implements OnDestroy {
-
-  @ViewChild('button') button: ButtonComponent;
-
   form: FormGroup;
   currentState: States = States.Initial;
   states = States;
+  msgIcons = MessageIcons;
 
   private operationSubscription: ISubscription;
   private hwConnectionSubscription: ISubscription;
@@ -41,12 +39,12 @@ export class HwSeedDialogComponent implements OnDestroy {
 
     this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
       if (!connected) {
-        this.dialogRef.close();
+        this.closeModal();
       }
     });
   }
 
-  closePopup() {
+  closeModal() {
     this.dialogRef.close();
   }
 

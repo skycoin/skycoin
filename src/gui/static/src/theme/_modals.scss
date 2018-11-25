@@ -3,9 +3,15 @@
 .modal {
   .-body {
     line-height: 20px;
-    font-size: 12px;
+    font-size: 13px;
     color: $grey-dark;
     opacity: 0.8;
+  }
+
+  .big-text {
+    color: black;
+    font-weight: bold;
+    font-size: 15px;
   }
 
   .-check-container{

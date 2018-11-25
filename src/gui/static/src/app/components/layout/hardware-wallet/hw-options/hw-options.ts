@@ -8,6 +8,8 @@ import { WalletService } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog';
+import { MessageIcons } from '../hw-message/hw-message.component';
+import { Wallet } from '../../../../app.datatypes';
 
 enum States {
   Disconnected,
@@ -24,9 +26,11 @@ enum States {
 })
 export class HwWalletOptionsComponent implements OnDestroy {
 
+  msgIcons = MessageIcons;
   currentState: States;
   states = States;
-  walletAddress = '';
+  walletName = '';
+  customErrorMsg = '';
 
   private operationSubscription: ISubscription;
   private dialogSubscription: ISubscription;
@@ -34,6 +38,7 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
   private recheckRequested = false;
   private showErrorRequested = false;
+  private wallet: Wallet;
 
   constructor(
     public dialogRef: MatDialogRef<HwWalletOptionsComponent>,
@@ -64,21 +69,36 @@ export class HwWalletOptionsComponent implements OnDestroy {
   }
 
   wipe() {
-    this.openDialog(HwWipeDialogComponent);
+    this.openDialog(HwWipeDialogComponent, true);
   }
 
-  private openDialog(dialogType) {
+  closeModal() {
+    this.dialogRef.close();
+  }
+
+  private openDialog(dialogType, includeWallet = false) {
+    this.customErrorMsg = '';
+
     this.removeDialogSubscription();
     const config = new MatDialogConfig();
     config.width = '450px';
+    config.autoFocus = false;
 
     config.data = ((error: string = null) => {
       if (!error) {
         this.recheckRequested = true;
       } else {
         this.showErrorRequested = true;
+        this.customErrorMsg = error;
       }
     });
+
+    if (includeWallet) {
+      config.data = {
+        wallet: this.wallet,
+        notifyFinishFunction: config.data,
+      };
+    }
 
     this.dialogSubscription = this.dialog.open(dialogType, config)
       .afterClosed().subscribe(() => {
@@ -113,9 +133,16 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
       this. operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
         response => {
-          this.walletAddress = response.rawResponse[0];
           this.walletService.wallets.first().subscribe(wallets => {
-            const alreadySaved = wallets.some(wallet => wallet.addresses[0].address === this.walletAddress && wallet.isHardware);
+            const alreadySaved = wallets.some(wallet => {
+              const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
+              if (found) {
+                this.wallet = wallet;
+                this.walletName = wallet.label;
+              }
+
+              return found;
+            });
             if (alreadySaved) {
               this.currentState = States.ConfiguredConnected;
             } else {

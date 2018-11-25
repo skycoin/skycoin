@@ -1,7 +1,7 @@
 <div class="-row -actions">
   <div class="-button" (click)="newAddress()" [ngClass]="{ 'mouse-disabled': creatingAddress }">
     <span [ngClass]="{ '-img -new-address': !creatingAddress, '-disabled-span': creatingAddress, '-enabled-span': !creatingAddress }">
-      <mat-spinner *ngIf="creatingAddress" [color]="spinnerStyle" class="in-button small"></mat-spinner>
+      <mat-spinner *ngIf="creatingAddress" class="in-button small"></mat-spinner>
       {{ (wallet.isHardware ? 'wallet.new-address' : 'wallet.new-addresses') | translate }}
     </span>
   </div>

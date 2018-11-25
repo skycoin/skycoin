@@ -69,6 +69,8 @@ export class HwWalletService {
   }
 
   setMnemonic(mnemonic: string): Observable<OperationResult> {
+    mnemonic = mnemonic.replace(/(\n|\r\n)$/, '');
+
     const requestId = this.createRandomID();
     window['ipcRenderer'].send('hwSetMnemonic', requestId, mnemonic);
 

@@ -2,6 +2,7 @@ import { Component, OnDestroy, ViewChild, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { MessageIcons } from '../hw-message/hw-message.component';
 
 enum States {
   Initial,
@@ -19,6 +20,7 @@ export class HwGenerateSeedDialogComponent implements OnDestroy {
 
   currentState: States = States.Initial;
   states = States;
+  msgIcons = MessageIcons;
 
   private operationSubscription: ISubscription;
   private hwConnectionSubscription: ISubscription;
@@ -52,5 +54,9 @@ export class HwGenerateSeedDialogComponent implements OnDestroy {
   ngOnDestroy() {
     this.operationSubscription.unsubscribe();
     this.hwConnectionSubscription.unsubscribe();
+  }
+
+  closeModal() {
+    this.dialogRef.close();
   }
 }

@@ -296,8 +296,46 @@
   "hardware-wallet": {
     "general" : {
       "error-disconnected": "Impossible to perform the operation. The hardware wallet is not connected.",
-      "generic-error": "Impossible to perform the operation. Make sure you have connected the correct hardware wallet and that it is not waiting for input.",
-      "error-incorrect-wallet": "Impossible to perform the operation. The connected hardware wallet is different from the selected one."
+      "generic-error": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet and that it is not waiting for input.",
+      "generic-error-internet": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet, that it is not waiting for input and that you have connection to the interne/node.",
+      "error-incorrect-wallet": "Impossible to perform the operation. The connected hardware wallet is different from the selected one.",
+      "confirm": "Please, confirm the operation in the hardware wallet.",
+      "close": "Close",
+      "cancel": "Cancel",
+      "continue": "Continue",
+      "completed": "Operation completed successfully.",
+      "refused": "The operation failed or was canceled."
+    },
+    "options" : {
+      "connecting": "Connecting...",
+      "disconnected": "No hardware wallet detected. Please connect a hardware wallet to use this option.",
+      "unconfigured-detected-tittle": "Unconfigured hardware wallet",
+      "unconfigured-detected": "An unconfigured hardware wallet has been detected. Select \"Configure automatically\" if you want to configure it as a brand new wallet and start using it immediately, or select \"Restore backup\" if you want to configure it with a backup of a hardware wallet that you have already used and thus be able to access its funds again.",
+      "configured-detected": "Hardware wallet detected. The device is identified in the wallets list as:",
+      "options": "Options:",
+      "configure-automatically": "Configure automatically",
+      "restore-backup": "Restore backup",
+      "create-backup": "Create a backup",
+      "wipe": "Wipe the device"
+    },
+    "added" : {
+      "title": "New Hardware Wallet",
+      "configuring": "New hardware wallet detected. Configuring...",
+      "done": "Done",
+      "added1": "The connected hardware wallet has been added at the bottom of the wallets list with the name:",
+      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, in the wallets list you can change the name of the wallet and remove it from the list, if you wish."
+    },
+    "wipe" : {
+      "warning": "WARNING: All the data in the hardware wallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",
+      "confirm-delete": "Also remove from the wallets list"
+    },
+    "create-backup" : {
+      "warning": "WARNING: You can only use this option to create a backup once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (called the \"seed\") would be able access the wallet balance, so extreme caution is advised.",
+      "instructions": "Write down the word list that appear on the screen of the hardware wallet. Make sure you respect the order and write each word correctly."
+    },
+    "restore-backup" : {
+      "seed": "Seed to restore",
+      "refused": "The operation failed or was canceled. If the operation failed, remember that the hardware wallet only accepts valid standard seeds."
     }
   }
 }

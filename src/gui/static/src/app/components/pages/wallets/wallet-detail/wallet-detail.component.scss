@@ -232,4 +232,8 @@
 mat-spinner {
   margin-left: 7px;
   margin-right: 12px;
+
+  ::ng-deep circle {
+    stroke: $grey-light;
+  }
 }

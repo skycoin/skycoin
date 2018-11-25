@@ -18,10 +18,10 @@
               <div class="-flex-fill -encryption">
                 <img src="../../../../assets/img/lock-gold.png"
                     [matTooltip]="'wallet.encryption-enabled' | translate"
-                    *ngIf="wallet.encrypted">
+                    *ngIf="wallet.encrypted && !wallet.isHardware">
                 <img src="../../../../assets/img/unlock-grey.png"
                     [matTooltip]="'wallet.encryption-disabled' | translate"
-                    *ngIf="!wallet.encrypted">
+                    *ngIf="!wallet.encrypted && !wallet.isHardware">
               </div>
               <div class="-width-130 -coins">{{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
               <div class="-width-130 -hours">{{ (wallet.hours ? wallet.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
@@ -44,7 +44,7 @@
         <img src="../../../../assets/img/load-gold.png"> {{ 'wallet.load' | translate }}
       </button>
       <button mat-button *ngIf="hwCompatibilityActivated" (click)="adminHwWallet()">
-        <img src="../../../../assets/img/load-gold.png"> {{ 'wallet.hardware' | translate }}
+        <img src="../../../../assets/img/hw-gold.png"> {{ 'wallet.hardware' | translate }}
       </button>
     </div>
   </div>

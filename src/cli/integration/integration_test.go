@@ -1450,6 +1450,8 @@ func TestStableStatus(t *testing.T) {
 	ret.Status.Version = readable.BuildInfo{}
 	// Uptime is not stable
 	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
+	// StartedAt is not stable
+	ret.Status.StartedAt = 0
 
 	goldenFile := "status"
 	if useCSRF(t) {

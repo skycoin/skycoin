@@ -134,6 +134,7 @@ func TestHealthHandler(t *testing.T) {
 					MaxTransactionSize:  params.UserVerifyTxn.MaxTransactionSize * 2,
 					MaxDropletPrecision: params.UserVerifyTxn.MaxDropletPrecision - 1,
 				},
+				StartedAt: time.Now().Add(time.Second * -4),
 			}
 
 			gateway := &MockGatewayer{}
@@ -204,6 +205,7 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, health.UnconfirmedVerifyTxn.BurnFactor, r.UnconfirmedVerifyTxn.BurnFactor)
 			require.Equal(t, health.UnconfirmedVerifyTxn.MaxTransactionSize, r.UnconfirmedVerifyTxn.MaxTransactionSize)
 			require.Equal(t, health.UnconfirmedVerifyTxn.MaxDropletPrecision, r.UnconfirmedVerifyTxn.MaxDropletPrecision)
+			require.True(t, time.Now().Unix() > r.StartedAt)
 
 		})
 	}

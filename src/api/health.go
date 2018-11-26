@@ -34,6 +34,7 @@ type HealthResponse struct {
 	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
 	UserVerifyTxn         readable.VerifyTxn `json:"user_verify_transaction"`
 	UnconfirmedVerifyTxn  readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
+	StartedAt             int64              `json:"started_at"`
 }
 
 // healthHandler returns node health data
@@ -84,6 +85,7 @@ func healthHandler(c muxConfig, csrfStore *CSRFStore, gateway Gatewayer) http.Ha
 			WalletAPIEnabled:      walletAPIEnabled,
 			UserVerifyTxn:         readable.NewVerifyTxn(params.UserVerifyTxn),
 			UnconfirmedVerifyTxn:  readable.NewVerifyTxn(health.UnconfirmedVerifyTxn),
+			StartedAt:             health.StartedAt.Unix(),
 		})
 	}
 }

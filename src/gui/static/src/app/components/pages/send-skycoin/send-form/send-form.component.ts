@@ -87,19 +87,27 @@ export class SendFormComponent implements OnInit, OnDestroy {
           this.createTransaction(passwordDialog);
         });
     } else {
-      if (this.hwWalletService.getDeviceSync()) {
-        this.processingSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
-          response => {
-            if (response.rawResponse[0] === (this.form.value.wallet as Wallet).addresses[0].address) {
-              this.createTransaction();
-            } else {
-              this.showError(this.translate.instant('hardware-wallet.general.error-incorrect-wallet'));
-            }
-          },
-          () => this.showError(this.translate.instant('hardware-wallet.general.generic-error')),
-        );
+      if (!this.form.value.wallet.isHardware) {
+        this.createTransaction();
       } else {
-        this.showError(this.translate.instant('hardware-wallet.general.error-disconnected'));
+        if (this.hwWalletService.getDeviceSync()) {
+          this.processingSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
+            response => {
+              if (response.success) {
+                if (response.rawResponse[0] === (this.form.value.wallet as Wallet).addresses[0].address) {
+                  this.createTransaction();
+                } else {
+                  this.showError(this.translate.instant('hardware-wallet.general.error-incorrect-wallet'));
+                }
+              } else {
+                this.showError(this.translate.instant('hardware-wallet.general.refused'));
+              }
+            },
+            () => this.showError(this.translate.instant('hardware-wallet.general.generic-error')),
+          );
+        } else {
+          this.showError(this.translate.instant('hardware-wallet.general.error-disconnected'));
+        }
       }
     }
   }

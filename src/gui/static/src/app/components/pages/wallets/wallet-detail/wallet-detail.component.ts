@@ -50,7 +50,7 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
-    if (this.wallet.addresses.length >= AppConfig.maxHardwareWalletAddresses) {
+    if (this.wallet.isHardware && this.wallet.addresses.length >= AppConfig.maxHardwareWalletAddresses) {
       const confirmationData: ConfirmationData = {
         text: 'wallet.max-hardware-wallets-error',
         headerText: 'errors.error',
@@ -183,10 +183,18 @@ export class WalletDetailComponent implements OnDestroy {
       if (this.wallet.isHardware ) {
         procedure = this.hwWalletService.getAddresses(1, 0).flatMap(
           response => {
-            if (response.rawResponse[0] === this.wallet.addresses[0].address) {
-              return this.walletService.addAddress(this.wallet, this.howManyAddresses);
+            if (response.success) {
+              if (response.rawResponse[0] === this.wallet.addresses[0].address) {
+                return this.walletService.addAddress(this.wallet, this.howManyAddresses);
+              } else {
+                showSnackbarError(this.snackbar, this.translateService.instant('hardware-wallet.general.error-incorrect-wallet'));
+
+                return Observable.of(1);
+              }
             } else {
-              return Observable.throw(this.translateService.instant('hardware-wallet.general.error-incorrect-wallet'));
+              showSnackbarError(this.snackbar, this.translateService.instant('hardware-wallet.general.refused'));
+
+              return Observable.of(1);
             }
           },
         );

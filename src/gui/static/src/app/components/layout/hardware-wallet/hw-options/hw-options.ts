@@ -10,6 +10,7 @@ import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-gen
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog';
 import { MessageIcons } from '../hw-message/hw-message.component';
 import { Wallet } from '../../../../app.datatypes';
+import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog';
 
 enum States {
   Disconnected,
@@ -17,6 +18,7 @@ enum States {
   NewConnected,
   ConfiguredConnected,
   Error,
+  ReturnedRefused,
 }
 
 @Component({
@@ -62,6 +64,10 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
   setMnemonic() {
     this.openDialog(HwSeedDialogComponent);
+  }
+
+  changePin() {
+    this.openDialog(HwChangePinDialogComponent);
   }
 
   backup() {
@@ -133,22 +139,26 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
       this. operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
         response => {
-          this.walletService.wallets.first().subscribe(wallets => {
-            const alreadySaved = wallets.some(wallet => {
-              const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
-              if (found) {
-                this.wallet = wallet;
-                this.walletName = wallet.label;
-              }
+          if (response.success) {
+            this.walletService.wallets.first().subscribe(wallets => {
+              const alreadySaved = wallets.some(wallet => {
+                const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
+                if (found) {
+                  this.wallet = wallet;
+                  this.walletName = wallet.label;
+                }
 
-              return found;
+                return found;
+              });
+              if (alreadySaved) {
+                this.currentState = States.ConfiguredConnected;
+              } else {
+                this.openDialog(HwAddedDialogComponent);
+              }
             });
-            if (alreadySaved) {
-              this.currentState = States.ConfiguredConnected;
-            } else {
-              this.openDialog(HwAddedDialogComponent);
-            }
-          });
+          } else {
+            this.currentState = States.ReturnedRefused;
+          }
         },
         error => {
           if ((error as string).includes('Mnemonic not set')) {

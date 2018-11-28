@@ -1,0 +1,16 @@
+<app-modal [headline]="'Pin'" [dialog]="dialogRef">
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="pin">Pin</label>
+      <input formControlName="pin" id="pin" (keydown.enter)="rename()">
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="closeModal()">
+      Cancel
+    </app-button>
+    <app-button (action)="sendPin()" class="primary" [disabled]="!form.valid">
+      Continue
+    </app-button>
+  </div>
+</app-modal>

@@ -9,10 +9,18 @@ class BufferReceiver {
         this.dataBuffer = undefined;
     }
 
+    // eslint-disable-next-line max-statements
     parseHeader(data) {
+        console.log("Received data of length: ", data.length);
         const dv8 = new Uint8Array(data);
         this.kind = new Uint16Array(dv8.slice(4, 5))[0];
         this.msgSize = new Uint32Array(dv8.slice(8, 11))[0];
+        console.log("That message says its size is: ", this.msgSize);
+        if (this.msgSize == 0) {
+            console.log("Skiping message parsing, msgSize == 0");
+            this.dataBuffer = new Uint8Array(64);
+            return;
+        }
         this.dataBuffer = new Uint8Array(64 * Math.ceil(this.msgSize / 64));
         this.dataBuffer.set(dv8.slice(9));
         this.bytesToGet = this.msgSize + 9 - 64;

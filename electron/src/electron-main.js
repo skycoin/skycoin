@@ -407,11 +407,42 @@ ipcMain.on('hwGetDeviceSync', (event) => {
   checkHw(false);
 });
 
+let lastPinPromiseResolve;
+let lastPinPromiseReject;
+
+const pinEvent = function() {
+  return new Promise((resolve, reject) => {
+    lastPinPromiseResolve = resolve;
+    lastPinPromiseReject = reject;
+
+    console.log("Hardware wallet pin requested");
+    if (win) {
+      win.webContents.send('hwPinRequested');
+    }
+  });
+};
+
+ipcMain.on('hwSendPin', (event, pin) => {
+  if (pin) {
+    lastPinPromiseResolve(pin);
+  } else {
+    lastPinPromiseReject(new Error("Cancelled"))
+  }
+});
+
 ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex) => {
-  const promise = deviceWallet.devAddressGenPinCode(addressN, startIndex);
+  const promise = deviceWallet.devAddressGenPinCode(addressN, startIndex, pinEvent);
   promise.then(
     addresses => { console.log("Addresses promise resolved", addresses); event.sender.send('hwGetAddressesResponse', requestId, addresses); },
     error => { console.log("Addresses promise errored: ", error); event.sender.send('hwGetAddressesResponse', requestId, { error: error.toString() }); }
+  );
+});
+
+ipcMain.on('hwChangePin', (event, requestId) => {
+  const promise = deviceWallet.devChangePin(pinEvent);
+  promise.then(
+    result => { console.log("Change pin promise resolved", result); event.sender.send('hwChangePinResponse', requestId, result); },
+    error => { console.log("Change pin promise errored: ", error); event.sender.send('hwChangePinResponse', requestId, { error: error.toString() }); }
   );
 });
 
@@ -448,7 +479,7 @@ ipcMain.on('hwWipe', (event, requestId) => {
 });
 
 ipcMain.on('hwSignMessage', (event, requestId, addressIndex, message) => {
-  const promise = deviceWallet.devSkycoinSignMessagePinCode(addressIndex, message);
+  const promise = deviceWallet.devSkycoinSignMessagePinCode(addressIndex, message, pinEvent);
   promise.then(
     result => { console.log("Signature promise resolved", result); event.sender.send('hwSignMessageResponse', requestId, result); },
     error => { console.log("Signature promise errored: ", error); event.sender.send('hwSignMessageResponse', requestId, { error: error.toString() }); }

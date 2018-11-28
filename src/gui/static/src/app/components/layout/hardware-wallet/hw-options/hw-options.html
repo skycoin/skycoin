@@ -9,6 +9,11 @@
     [icon]="msgIcons.Error"
   ></app-hw-message>
 
+  <app-hw-message *ngIf="currentState === states.ReturnedRefused"
+    [text]="'hardware-wallet.general.refused' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
   <app-hw-message *ngIf="currentState === states.Disconnected"
     [text]="'hardware-wallet.options.disconnected' | translate"
     [icon]="msgIcons.Usb"
@@ -34,6 +39,9 @@
       </button>
       <button mat-button color="primary" (click)="setMnemonic()" *ngIf="currentState === states.NewConnected">
         <div class="label">{{ 'hardware-wallet.options.restore-backup' | translate }}</div>
+      </button>
+      <button mat-button color="primary" (click)="changePin()" *ngIf="currentState === states.ConfiguredConnected">
+        <div class="label">{{ 'hardware-wallet.options.change-pin' | translate }}</div>
       </button>
       <button mat-button color="primary" (click)="backup()" *ngIf="currentState === states.ConfiguredConnected">
         <div class="label">{{ 'hardware-wallet.options.create-backup' | translate }}</div>

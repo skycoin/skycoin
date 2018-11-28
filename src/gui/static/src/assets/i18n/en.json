@@ -316,7 +316,8 @@
       "configure-automatically": "Configure automatically",
       "restore-backup": "Restore backup",
       "create-backup": "Create a backup",
-      "wipe": "Wipe the device"
+      "wipe": "Wipe the device",
+      "change-pin": "Change pin"
     },
     "added" : {
       "title": "New Hardware Wallet",

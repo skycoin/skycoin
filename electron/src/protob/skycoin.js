@@ -48,6 +48,7 @@ var $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
  * @property {number} MessageType_ResponseSkycoinAddress=117 MessageType_ResponseSkycoinAddress value
  * @property {number} MessageType_ResponseSkycoinSignMessage=118 MessageType_ResponseSkycoinSignMessage value
  * @property {number} MessageType_GenerateMnemonic=119 MessageType_GenerateMnemonic value
+ * @property {number} MessageType_GetVersion=120 MessageType_GetVersion value
  */
 $root.MessageType = (function() {
     var valuesById = {}, values = Object.create(valuesById);
@@ -86,6 +87,7 @@ $root.MessageType = (function() {
     values[valuesById[117] = "MessageType_ResponseSkycoinAddress"] = 117;
     values[valuesById[118] = "MessageType_ResponseSkycoinSignMessage"] = 118;
     values[valuesById[119] = "MessageType_GenerateMnemonic"] = 119;
+    values[valuesById[120] = "MessageType_GetVersion"] = 120;
     return values;
 })();
 
@@ -5531,6 +5533,167 @@ $root.GetEntropy = (function() {
     return GetEntropy;
 })();
 
+$root.GetVersion = (function() {
+
+    /**
+     * Properties of a GetVersion.
+     * @exports IGetVersion
+     * @interface IGetVersion
+     */
+
+    /**
+     * Constructs a new GetVersion.
+     * @exports GetVersion
+     * @classdesc Request: Request firmware version
+     * @next Success
+     * @implements IGetVersion
+     * @constructor
+     * @param {IGetVersion=} [properties] Properties to set
+     */
+    function GetVersion(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Creates a new GetVersion instance using the specified properties.
+     * @function create
+     * @memberof GetVersion
+     * @static
+     * @param {IGetVersion=} [properties] Properties to set
+     * @returns {GetVersion} GetVersion instance
+     */
+    GetVersion.create = function create(properties) {
+        return new GetVersion(properties);
+    };
+
+    /**
+     * Encodes the specified GetVersion message. Does not implicitly {@link GetVersion.verify|verify} messages.
+     * @function encode
+     * @memberof GetVersion
+     * @static
+     * @param {IGetVersion} message GetVersion message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GetVersion.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified GetVersion message, length delimited. Does not implicitly {@link GetVersion.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof GetVersion
+     * @static
+     * @param {IGetVersion} message GetVersion message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GetVersion.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a GetVersion message from the specified reader or buffer.
+     * @function decode
+     * @memberof GetVersion
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GetVersion} GetVersion
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GetVersion.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.GetVersion();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a GetVersion message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof GetVersion
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {GetVersion} GetVersion
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GetVersion.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a GetVersion message.
+     * @function verify
+     * @memberof GetVersion
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    GetVersion.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        return null;
+    };
+
+    /**
+     * Creates a GetVersion message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof GetVersion
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {GetVersion} GetVersion
+     */
+    GetVersion.fromObject = function fromObject(object) {
+        if (object instanceof $root.GetVersion)
+            return object;
+        return new $root.GetVersion();
+    };
+
+    /**
+     * Creates a plain object from a GetVersion message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof GetVersion
+     * @static
+     * @param {GetVersion} message GetVersion
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    GetVersion.toObject = function toObject() {
+        return {};
+    };
+
+    /**
+     * Converts this GetVersion to JSON.
+     * @function toJSON
+     * @memberof GetVersion
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    GetVersion.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return GetVersion;
+})();
+
 $root.Entropy = (function() {
 
     /**
@@ -8245,6 +8408,236 @@ $root.FirmwareRequest = (function() {
     };
 
     return FirmwareRequest;
+})();
+
+$root.FirmwareUpload = (function() {
+
+    /**
+     * Properties of a FirmwareUpload.
+     * @exports IFirmwareUpload
+     * @interface IFirmwareUpload
+     * @property {Uint8Array|null} [payload] FirmwareUpload payload
+     * @property {Uint8Array|null} [hash] FirmwareUpload hash
+     */
+
+    /**
+     * Constructs a new FirmwareUpload.
+     * @exports FirmwareUpload
+     * @classdesc Request: Ask device to upload its firmware
+     * @start
+     * @next FirmwareUpload
+     * @implements IFirmwareUpload
+     * @constructor
+     * @param {IFirmwareUpload=} [properties] Properties to set
+     */
+    function FirmwareUpload(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * FirmwareUpload payload.
+     * @member {Uint8Array} payload
+     * @memberof FirmwareUpload
+     * @instance
+     */
+    FirmwareUpload.prototype.payload = $util.newBuffer([]);
+
+    /**
+     * FirmwareUpload hash.
+     * @member {Uint8Array} hash
+     * @memberof FirmwareUpload
+     * @instance
+     */
+    FirmwareUpload.prototype.hash = $util.newBuffer([]);
+
+    /**
+     * Creates a new FirmwareUpload instance using the specified properties.
+     * @function create
+     * @memberof FirmwareUpload
+     * @static
+     * @param {IFirmwareUpload=} [properties] Properties to set
+     * @returns {FirmwareUpload} FirmwareUpload instance
+     */
+    FirmwareUpload.create = function create(properties) {
+        return new FirmwareUpload(properties);
+    };
+
+    /**
+     * Encodes the specified FirmwareUpload message. Does not implicitly {@link FirmwareUpload.verify|verify} messages.
+     * @function encode
+     * @memberof FirmwareUpload
+     * @static
+     * @param {IFirmwareUpload} message FirmwareUpload message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FirmwareUpload.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.payload != null && message.hasOwnProperty("payload"))
+            writer.uint32(/* id 1, wireType 2 =*/10).bytes(message.payload);
+        if (message.hash != null && message.hasOwnProperty("hash"))
+            writer.uint32(/* id 2, wireType 2 =*/18).bytes(message.hash);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified FirmwareUpload message, length delimited. Does not implicitly {@link FirmwareUpload.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof FirmwareUpload
+     * @static
+     * @param {IFirmwareUpload} message FirmwareUpload message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FirmwareUpload.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a FirmwareUpload message from the specified reader or buffer.
+     * @function decode
+     * @memberof FirmwareUpload
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {FirmwareUpload} FirmwareUpload
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FirmwareUpload.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.FirmwareUpload();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.payload = reader.bytes();
+                break;
+            case 2:
+                message.hash = reader.bytes();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a FirmwareUpload message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof FirmwareUpload
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {FirmwareUpload} FirmwareUpload
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FirmwareUpload.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a FirmwareUpload message.
+     * @function verify
+     * @memberof FirmwareUpload
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    FirmwareUpload.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.payload != null && message.hasOwnProperty("payload"))
+            if (!(message.payload && typeof message.payload.length === "number" || $util.isString(message.payload)))
+                return "payload: buffer expected";
+        if (message.hash != null && message.hasOwnProperty("hash"))
+            if (!(message.hash && typeof message.hash.length === "number" || $util.isString(message.hash)))
+                return "hash: buffer expected";
+        return null;
+    };
+
+    /**
+     * Creates a FirmwareUpload message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof FirmwareUpload
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {FirmwareUpload} FirmwareUpload
+     */
+    FirmwareUpload.fromObject = function fromObject(object) {
+        if (object instanceof $root.FirmwareUpload)
+            return object;
+        var message = new $root.FirmwareUpload();
+        if (object.payload != null)
+            if (typeof object.payload === "string")
+                $util.base64.decode(object.payload, message.payload = $util.newBuffer($util.base64.length(object.payload)), 0);
+            else if (object.payload.length)
+                message.payload = object.payload;
+        if (object.hash != null)
+            if (typeof object.hash === "string")
+                $util.base64.decode(object.hash, message.hash = $util.newBuffer($util.base64.length(object.hash)), 0);
+            else if (object.hash.length)
+                message.hash = object.hash;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a FirmwareUpload message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof FirmwareUpload
+     * @static
+     * @param {FirmwareUpload} message FirmwareUpload
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    FirmwareUpload.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults) {
+            if (options.bytes === String)
+                object.payload = "";
+            else {
+                object.payload = [];
+                if (options.bytes !== Array)
+                    object.payload = $util.newBuffer(object.payload);
+            }
+            if (options.bytes === String)
+                object.hash = "";
+            else {
+                object.hash = [];
+                if (options.bytes !== Array)
+                    object.hash = $util.newBuffer(object.hash);
+            }
+        }
+        if (message.payload != null && message.hasOwnProperty("payload"))
+            object.payload = options.bytes === String ? $util.base64.encode(message.payload, 0, message.payload.length) : options.bytes === Array ? Array.prototype.slice.call(message.payload) : message.payload;
+        if (message.hash != null && message.hasOwnProperty("hash"))
+            object.hash = options.bytes === String ? $util.base64.encode(message.hash, 0, message.hash.length) : options.bytes === Array ? Array.prototype.slice.call(message.hash) : message.hash;
+        return object;
+    };
+
+    /**
+     * Converts this FirmwareUpload to JSON.
+     * @function toJSON
+     * @memberof FirmwareUpload
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    FirmwareUpload.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return FirmwareUpload;
 })();
 
 /**

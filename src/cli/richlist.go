@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/skycoin/skycoin/src/api"
 	gcli "github.com/urfave/cli"
 )
@@ -8,9 +11,9 @@ import (
 func richListCmd() gcli.Command {
 	name := "richList"
 	return gcli.Command{
-		Name:  name,
-		Usage: "Returns top 20 address balances (based on unspent outputs). Distribution wallets are not currently included.",
-		//ArgsUsage:    "[top N wallets (default 20)] [include distribution wallets (true / false) (defalut false)]",
+		Name:         name,
+		Usage:        "Returns top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).",
+		ArgsUsage:    "[top N addresses (20 default)] [include distribution addresses (false default)]",
 		OnUsageError: onCommandUsageError(name),
 		Action:       getRichList,
 	}
@@ -19,30 +22,34 @@ func richListCmd() gcli.Command {
 func getRichList(c *gcli.Context) error {
 	client := APIClientFromContext(c)
 
-	//num := c.Args().Get(0)
-	//if num == "" {
-	//	num = "10"
-	//}
-
-	//n, err := strconv.ParseInt(num, 10, 32)
-	//if err != nil {
-	//	return fmt.Errorf("invalid number or top wallets, %s", err)
-	//}
-
-	//incDist := c.Args().Get(1)
-	//incDistFlag, err2 := strconv.ParseBool(incDist)
-	//if err2 != nil {
-	//	return fmt.Errorf("invalid boolean value, %s", err2)
-	//}
-
-	params := &api.RichlistParams{
-		N:                   20,
-		IncludeDistribution: false,
+	num := c.Args().First()
+	if num == "" {
+		num = "20" // default to 20 addresses
 	}
 
-	richList, err3 := client.Richlist(params)
-	if err3 != nil {
-		return err3
+	dist := c.Args().Get(1)
+	if dist == "" {
+		dist = "false" // default to false
+	}
+
+	n, err := strconv.Atoi(num)
+	if err != nil {
+		return fmt.Errorf("invalid number of addresses, %s", err)
+	}
+
+	d, err := strconv.ParseBool(dist)
+	if err != nil {
+		return fmt.Errorf("invalid (bool) flag for include distribution addresses, %s", err)
+	}
+
+	params := &api.RichlistParams{
+		N:                   n,
+		IncludeDistribution: d,
+	}
+
+	richList, err := client.Richlist(params)
+	if err != nil {
+		return err
 	}
 
 	return printJSON(richList)

@@ -5,11 +5,11 @@
 -	[`develop` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
 -	[`vscode` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
 
-# Skycoin development *vscode* image
+# Skycoin Docker image for development with [VS Code](https://code.visualstudio.com/) IDE
 
 This image has the necessary tools to build, test, edit, lint and version the Skycoin
-source code. It comes with Visual Studio Code installed and some extensions
-to speed up Skycoin development.
+source code. It comes with [Visual Studio Code](https://code.visualstudio.com/) installed and some extensions
+ot speed up workspace setup for Skycoin developers.
 
 # How use this image
 
@@ -17,31 +17,31 @@ to speed up Skycoin development.
 
 0. Make sure you're on a system running [X](https://en.wikipedia.org/wiki/X_Window_System).
 1. Disable X access control (don't do this on a public-facing machine): `$ xhost +` or `$ xhost +local:docker`
-2. `$ cd` to a path where you want to write some code.
-3. Since Visual Studio Code inside docker container run as user `user`, it's necessary apply permissions to files.
+2. `$ cd` to a path where you want to write some code (e.g. a working copy of [`skycoin/skycoin`](https://github.com/skycoin/skycoin) )
+3. Since Visual Studio Code inside docker container runs as user `skydev`, it's necessary apply permissions to files.
     ```sh
     $ sudo chown -R 777 .
     ```
-4. Run docker image.
+4. Run docker image, either `skycoin/skycoindev-vscode:develop` or `skycoin/skycoindev-vscode:dind`
     ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -v $PWD:/go/src/github.com/skycoin/skycoin \
-            -w /go/src/github.com/skycoin/skycoin \
+            -v $(pwd):$GOPATH/src/github.com/skycoin/skycoin \
+            -w $GOPATH/src/github.com/skycoin/skycoin \
             -e DISPLAY=$DISPLAY \
             skycoin/skycoindev-vscode:develop
     ```
 5. You should see vscode pop up.
-6. Have fun. Write some code. Close vscode when you're done, and ctrl+c to shut down the container. Your files will be in the path on the host where you started.
+6. Have fun. Write some code. Close VS Code IDE window when you're done, and press `Ctrl+C` to shut down the container. Your files will be in the host machine at the same path chosen in step `2` above.
 7. __Reenable X access control:__ `$ xhost -`
 
 ## Add more VS Code extensions
 
-If you want add more extensions, you must define VS_EXTENSIONS environment variable to command-line with extensions of you prefer.
+If you want add more extensions, you must define `VS_EXTENSIONS` environment variable to the command-line with extensions you prefer.
 
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 
             -v $PWD:/go/src/github.com/skycoin/skycoin \
-            -w /go/src/github.com/skycoin/skycoin \
+            -w $GOPATH/src/github.com/skycoin/skycoin \
             -e DISPLAY=$DISPLAY \
             -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
             skycoin/skycoindev-vscode:dind
@@ -52,18 +52,27 @@ to your user. This is necessary, because all processes inside the container run
 as root and the files created by it are therefore owned by root.
 
 If you already have a Go development environment installed, you just need to
-mount the src directory from your $GOPATH in the /go/src volume of the
+mount the src directory from your `$GOPATH` at path `/go/src` inside the
 container.
+
+```sh
+    $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 
+            -v $GOPATH/src:$GOPATH/src \
+            -w $GOPATH/src/github.com/skycoin/skycoin \
+            -e DISPLAY=$DISPLAY \
+            -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
+            skycoin/skycoindev-vscode:dind
+```
 
 # Build your own images
 
-`SOURCE_COMMIT`: the SHA1 hash of the commit being tested.
+The following arguments influence the Docker build process.
 
-`IMAGE_NAME`: the name and tag of the Docker repository being built.
+- `SOURCE_COMMIT`: the SHA1 hash of the commit being tested.
+- `IMAGE_NAME`: the name and tag of the Docker repository being built.
+- `DOCKERFILE_PATH`: the dockerfile currently being built.
 
-`DOCKERFILE_PATH`: the dockerfile currently being built.
-
-Build image from `skycoindev-cli:develop`.
+For instance, the following commands can be executed in order to build this VS Code dev image using `skycoindev-cli:develop` as base image.
 
 ```sh
 $ git clone https://github.com/skycoin/skycoin
@@ -78,7 +87,7 @@ $ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                -t "$IMAGE_NAME" .
 ```
 
-Or, if you prefer use `skycoindev-cli:dind`. Run:
+Or, if a decision has been made for including a Docker daemon then specify `skycoindev-cli:dind` instead and run:
 
 ```sh
 $ git clone https://github.com/skycoin/skycoin
@@ -94,7 +103,7 @@ $ docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \
                -t "$IMAGE_NAME" .
 ```
 
-When it finish, you will have two new images:
+As a result of following theses steps two new images will be obtained:
 
 `skycoin/skycoindev-vscode:develop` based on [skycoin/skycoindev-cli:develop](skycoin/docker/images/dev-cli) 
 `skycoin/skycoindev-vscode:dind` based on [skycoin/skycoindev-cli:dind](skycoin/docker/images/dev-docker)
@@ -120,7 +129,9 @@ $ docker run --rm \
     sh -c "cd skycoin; make lint"
 ```
 
-### Editing code
+### Editing code with terminal
+
+Comman line tools are still available . For instance it's possible to run `vim`
 
 ```sh
 $ docker run --rm \
@@ -158,7 +169,7 @@ $ docker run --privileged --name some-name -v /my/own/var-lib-docker:/var/lib/do
 - tig
 - swig
 
-### Vim's plugins
+### Vim plugins
 
 - Ale
 - tig-explorer

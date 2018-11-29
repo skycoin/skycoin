@@ -187,8 +187,9 @@ easy to start developing Skycoin. It comes with the compiler, linters, debugger
 and the vim editor among other tools.
 
 Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/README.md) is provided 
-to facilitate development process with Visual Studio Code and useful
-tools included on `skycoin/skycoindev-cli`.
+to facilitate the setup of the development process with [Visual Studio Code](https://code.visualstudio.com)
+and useful tools included in `skycoin/skycoindev-cli`.
+
 
 ## API Documentation
 

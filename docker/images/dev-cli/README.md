@@ -76,6 +76,6 @@ $ docker run --rm \
 
 Docker Cloud is configured to build images from `develop` branch on every push.
 The same process is triggered for all feature branches matching the pattern
-`/^([^_]+)_t([0-9]+)_.*docker/`. The tag generated for those images will be of the form
+`/^([^_]+)_t([0-9]+)_.*docker.*/`. The tag generated for those images will be of the form
 `feature-{\1}-{\2}`.
 

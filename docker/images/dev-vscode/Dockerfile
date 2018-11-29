@@ -22,9 +22,9 @@ LABEL "org.label-schema.name"="skycoindev-cli" \
 ENV DEBIAN_FRONTEND noninteractive
 
 # Create a diferent user to run VS Code
-ENV HOME /home/user
-RUN useradd --create-home --home-dir $HOME user \
-	&& chown -R user:user $HOME
+ENV HOME /home/skydev
+RUN useradd --create-home --home-dir $HOME skydev \
+	&& chown -R skydev:skydev $HOME
 
 # Install dependencies for vs code
 # Create and assign permissions to `user` folders
@@ -68,8 +68,8 @@ RUN apt-get update \
 	    --no-install-recommends \
 	&& mkdir -p $HOME/.cache/dconf \
   && mkdir -p $HOME/.config/dconf \
-  && chown user:user -R $HOME/.config \
-  && chown user:user -R $HOME/.cache \
+  && chown skydev:skydev -R $HOME/.config \
+  && chown skydev:skydev -R $HOME/.cache \
   && go get -v github.com/ramya-rao-a/go-outline \
   && go get -v github.com/uudashr/gopkgs/cmd/gopkgs \
   && go get -v github.com/acroca/go-symbols \
@@ -87,8 +87,8 @@ RUN apt-get update \
 	&& apt clean \
 	&& rm -rf /var/lib/apt/lists/*
 
-# Change to `user` and generate default user folders to avoid config problems in future
-USER user
+# Change to `skydev` and generate default user folders to avoid config problems in future
+USER skydev
 RUN xdg-user-dirs-update --force
 
 # Back to root user
@@ -99,8 +99,8 @@ COPY ./start.sh /usr/local/bin/start.sh
 # backwards compat
 RUN ln -s usr/local/bin/start.sh / 
 
-WORKDIR $HOME
+WORKDIR $GOPATH/src/github.com/skycoin/
 
 ENTRYPOINT ["start.sh"]
 
-#CMD [ "su", "user", "-p", "-c", "/usr/share/code/code" ]
+#CMD [ "su", "skydev", "-p", "-c", "/usr/share/code/code" ]

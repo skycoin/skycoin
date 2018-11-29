@@ -30,6 +30,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Last blocks](#last-blocks)
 	- [List wallet addresses](#list-wallet-addresses)
 	- [List wallets](#list-wallets)
+    - [Rich list](#rich-list)
 	- [Send](#send)
 	- [Show Config](#show-config)
 	- [Status](#status)
@@ -1489,6 +1490,54 @@ $ skycoin-cli listWallets
          "address_num": 6
      }
  ]
+}
+```
+</details>
+
+### Rich list
+Returns the top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
+
+```bash
+$ skycoin-cli richList [top N addresses] [include distribution addresses]
+```
+
+#### Example
+```bash
+$ skycoin-cli richList 5 false
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "richlist": [
+        {
+            "address": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
+            "coins": "1072264.838000",
+            "locked": false
+        },
+        {
+            "address": "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
+            "coins": "500000.000000",
+            "locked": false
+        },
+        {
+            "address": "2jNwfvZNUoRLiFzJtmnevSF6TKPfSehvrc1",
+            "coins": "252297.068000",
+            "locked": false
+        },
+        {
+            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+            "coins": "236884.364000",
+            "locked": false
+        },
+        {
+            "address": "2fR8BkeTRQC4R3ATNnujHsQQXcaB6m4Aqwo",
+            "coins": "173571.990000",
+            "locked": false
+        }
+    ]
 }
 ```
 </details>

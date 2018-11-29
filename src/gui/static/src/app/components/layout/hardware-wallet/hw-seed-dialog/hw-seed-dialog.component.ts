@@ -1,9 +1,9 @@
-import { Component, OnDestroy, Inject } from '@angular/core';
+import { Component, OnDestroy, ViewChild, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { MessageIcons } from '../hw-message/hw-message.component';
-import { WalletService } from '../../../../services/wallet.service';
 
 enum States {
   Initial,
@@ -14,26 +14,29 @@ enum States {
 }
 
 @Component({
-  selector: 'app-hw-wipe-dialog',
-  templateUrl: './hw-wipe-dialog.html',
-  styleUrls: ['./hw-wipe-dialog.scss'],
+  selector: 'app-hw-seed-dialog',
+  templateUrl: './hw-seed-dialog.component.html',
+  styleUrls: ['./hw-seed-dialog.component.scss'],
 })
-export class HwWipeDialogComponent implements OnDestroy {
-
+export class HwSeedDialogComponent implements OnDestroy {
+  form: FormGroup;
   currentState: States = States.Initial;
   states = States;
   msgIcons = MessageIcons;
-  deleteFromList = true;
 
   private operationSubscription: ISubscription;
   private hwConnectionSubscription: ISubscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: any,
-    public dialogRef: MatDialogRef<HwWipeDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public notifyFinish: any,
+    public dialogRef: MatDialogRef<HwSeedDialogComponent>,
     private hwWalletService: HwWalletService,
-    private walletService: WalletService,
+    private formBuilder: FormBuilder,
   ) {
+    this.form = this.formBuilder.group({
+      seed: ['cloud flower upset remain green metal below cup stem infant art thank', Validators.required],
+    });
+
     this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
       if (!connected) {
         this.closeModal();
@@ -41,31 +44,16 @@ export class HwWipeDialogComponent implements OnDestroy {
     });
   }
 
-  ngOnDestroy() {
-    if (this.operationSubscription) {
-      this.operationSubscription.unsubscribe();
-    }
-    this.hwConnectionSubscription.unsubscribe();
-  }
-
-  setDeleteFromList(event) {
-    this.deleteFromList = event.checked ? true : false;
-  }
-
   closeModal() {
     this.dialogRef.close();
   }
 
-  requestWipe() {
+  setSeed() {
     this.currentState = States.Processing;
-
-    this.operationSubscription = this.hwWalletService.wipe().subscribe(
+    this.operationSubscription = this.hwWalletService.setMnemonic(this.form.value.seed).subscribe(
       () => {
-        this.data.notifyFinishFunction();
+        this.notifyFinish();
         this.currentState = States.ReturnedSuccess;
-        if (this.deleteFromList) {
-          this.walletService.deleteHardwareWallet(this.data.wallet);
-        }
       },
       err => {
         if (err.result && err.result === OperationResults.FailedOrRefused) {
@@ -75,5 +63,12 @@ export class HwWipeDialogComponent implements OnDestroy {
         }
       },
     );
+  }
+
+  ngOnDestroy() {
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
+    }
+    this.hwConnectionSubscription.unsubscribe();
   }
 }

@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { HwChangePinDialogComponent } from './hw-change-pin-dialog';
+import { HwAddedDialogComponent } from './hw-added-dialog.component';
 
-describe('HwChangePinDialogComponent', () => {
-  let component: HwChangePinDialogComponent;
-  let fixture: ComponentFixture<HwChangePinDialogComponent>;
+describe('HwAddedDialogComponent', () => {
+  let component: HwAddedDialogComponent;
+  let fixture: ComponentFixture<HwAddedDialogComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ HwChangePinDialogComponent ],
+      declarations: [ HwAddedDialogComponent ],
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(HwChangePinDialogComponent);
+    fixture = TestBed.createComponent(HwAddedDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

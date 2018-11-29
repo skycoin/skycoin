@@ -13,8 +13,8 @@ enum States {
 
 @Component({
   selector: 'app-hw-added-dialog',
-  templateUrl: './hw-added-dialog.html',
-  styleUrls: ['./hw-added-dialog.scss'],
+  templateUrl: './hw-added-dialog.component.html',
+  styleUrls: ['./hw-added-dialog.component.scss'],
 })
 export class HwAddedDialogComponent implements OnDestroy {
 

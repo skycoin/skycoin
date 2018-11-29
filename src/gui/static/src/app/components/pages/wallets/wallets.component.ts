@@ -3,7 +3,7 @@ import { WalletService } from '../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';
 import { Wallet } from '../../../app.datatypes';
-import { HwWalletOptionsComponent } from '../../layout/hardware-wallet/hw-options/hw-options';
+import { HwWalletOptionsComponent } from '../../layout/hardware-wallet/hw-options/hw-options.component';
 import { ISubscription } from 'rxjs/Subscription';
 
 @Component({

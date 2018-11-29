@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { HwGenerateSeedDialogComponent } from './hw-generate-seed-dialog';
+import { HwBackupDialogComponent } from './hw-backup-dialog.component';
 
-describe('HwGenerateSeedDialogComponent', () => {
-  let component: HwGenerateSeedDialogComponent;
-  let fixture: ComponentFixture<HwGenerateSeedDialogComponent>;
+describe('HwBackupDialogComponent', () => {
+  let component: HwBackupDialogComponent;
+  let fixture: ComponentFixture<HwBackupDialogComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ HwGenerateSeedDialogComponent ],
+      declarations: [ HwBackupDialogComponent ],
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(HwGenerateSeedDialogComponent);
+    fixture = TestBed.createComponent(HwBackupDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

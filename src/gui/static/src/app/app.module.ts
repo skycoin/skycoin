@@ -76,16 +76,16 @@ import { SelectAddressComponent } from './components/pages/send-skycoin/send-for
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
 import { HwWalletService } from './services/hw-wallet.service';
-import { HwWalletOptionsComponent } from './components/layout/hardware-wallet/hw-options/hw-options';
-import { HwWipeDialogComponent } from './components/layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog';
-import { HwSeedDialogComponent } from './components/layout/hardware-wallet/hw-seed-dialog/hw-seed-dialog';
-import { HwAddedDialogComponent } from './components/layout/hardware-wallet/hw-added-dialog/hw-added-dialog';
-import { HwGenerateSeedDialogComponent } from './components/layout/hardware-wallet/hw-generate-seed-dialog/hw-generate-seed-dialog';
-import { HwBackupDialogComponent } from './components/layout/hardware-wallet/hw-backup-dialog/hw-backup-dialog';
+import { HwWalletOptionsComponent } from './components/layout/hardware-wallet/hw-options/hw-options.component';
+import { HwWipeDialogComponent } from './components/layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog.component';
+import { HwSeedDialogComponent } from './components/layout/hardware-wallet/hw-seed-dialog/hw-seed-dialog.component';
+import { HwAddedDialogComponent } from './components/layout/hardware-wallet/hw-added-dialog/hw-added-dialog.component';
+import { HwGenerateSeedDialogComponent } from './components/layout/hardware-wallet/hw-generate-seed-dialog/hw-generate-seed-dialog.component';
+import { HwBackupDialogComponent } from './components/layout/hardware-wallet/hw-backup-dialog/hw-backup-dialog.component';
 import { ConfirmationComponent } from './components/layout/confirmation/confirmation.component';
 import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
-import { HwChangePinDialogComponent } from './components/layout/hardware-wallet/hw-change-pin-dialog/hw-change-pin-dialog';
+import { HwChangePinDialogComponent } from './components/layout/hardware-wallet/hw-change-pin-dialog/hw-change-pin-dialog.component';
 
 
 const ROUTES = [

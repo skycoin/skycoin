@@ -14,8 +14,8 @@ enum States {
 
 @Component({
   selector: 'app-hw-backup-dialog',
-  templateUrl: './hw-backup-dialog.html',
-  styleUrls: ['./hw-backup-dialog.scss'],
+  templateUrl: './hw-backup-dialog.component.html',
+  styleUrls: ['./hw-backup-dialog.component.scss'],
 })
 export class HwBackupDialogComponent implements OnDestroy {
 

@@ -1,16 +1,16 @@
 import { Component, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialogConfig, MatDialog } from '@angular/material/dialog';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
-import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog';
-import { HwSeedDialogComponent } from '../hw-seed-dialog/hw-seed-dialog';
+import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
+import { HwSeedDialogComponent } from '../hw-seed-dialog/hw-seed-dialog.component';
 import { ISubscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../../services/wallet.service';
-import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog';
-import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog';
-import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog';
+import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
+import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
+import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
 import { MessageIcons } from '../hw-message/hw-message.component';
 import { Wallet } from '../../../../app.datatypes';
-import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog';
+import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog.component';
 
 enum States {
   Disconnected,
@@ -24,8 +24,8 @@ enum States {
 
 @Component({
   selector: 'app-hw-options',
-  templateUrl: './hw-options.html',
-  styleUrls: ['./hw-options.scss'],
+  templateUrl: './hw-options.component.html',
+  styleUrls: ['./hw-options.component.scss'],
 })
 export class HwWalletOptionsComponent implements OnDestroy {
 

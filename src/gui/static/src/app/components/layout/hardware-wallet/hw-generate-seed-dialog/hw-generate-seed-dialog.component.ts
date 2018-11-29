@@ -13,8 +13,8 @@ enum States {
 
 @Component({
   selector: 'app-hw-generate-seed-dialog',
-  templateUrl: './hw-generate-seed-dialog.html',
-  styleUrls: ['./hw-generate-seed-dialog.scss'],
+  templateUrl: './hw-generate-seed-dialog.component.html',
+  styleUrls: ['./hw-generate-seed-dialog.component.scss'],
 })
 export class HwGenerateSeedDialogComponent implements OnDestroy {
 

@@ -15,8 +15,8 @@ enum States {
 
 @Component({
   selector: 'app-hw-change-pin-dialog',
-  templateUrl: './hw-change-pin-dialog.html',
-  styleUrls: ['./hw-change-pin-dialog.scss'],
+  templateUrl: './hw-change-pin-dialog.component.html',
+  styleUrls: ['./hw-change-pin-dialog.component.scss'],
 })
 export class HwChangePinDialogComponent implements OnDestroy {
 

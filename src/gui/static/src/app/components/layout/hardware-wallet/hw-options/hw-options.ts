@@ -1,6 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialogConfig, MatDialog } from '@angular/material/dialog';
-import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog';
 import { HwSeedDialogComponent } from '../hw-seed-dialog/hw-seed-dialog';
 import { ISubscription } from 'rxjs/Subscription';
@@ -19,6 +19,7 @@ enum States {
   ConfiguredConnected,
   Error,
   ReturnedRefused,
+  WrongPin,
 }
 
 @Component({
@@ -139,32 +140,34 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
       this. operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
         response => {
-          if (response.success) {
-            this.walletService.wallets.first().subscribe(wallets => {
-              const alreadySaved = wallets.some(wallet => {
-                const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
-                if (found) {
-                  this.wallet = wallet;
-                  this.walletName = wallet.label;
-                }
-
-                return found;
-              });
-              if (alreadySaved) {
-                this.currentState = States.ConfiguredConnected;
-              } else {
-                this.openDialog(HwAddedDialogComponent);
+          this.walletService.wallets.first().subscribe(wallets => {
+            const alreadySaved = wallets.some(wallet => {
+              const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
+              if (found) {
+                this.wallet = wallet;
+                this.walletName = wallet.label;
               }
+
+              return found;
             });
-          } else {
-            this.currentState = States.ReturnedRefused;
-          }
+            if (alreadySaved) {
+              this.currentState = States.ConfiguredConnected;
+            } else {
+              this.openDialog(HwAddedDialogComponent);
+            }
+          });
         },
-        error => {
-          if ((error as string).includes('Mnemonic not set')) {
+        err => {
+          if (err.rawResponse && typeof err.rawResponse === 'string' && (err.rawResponse as string).includes('Mnemonic not set')) {
             this.currentState = States.NewConnected;
           } else {
-            this.currentState = States.Error;
+            if (err.result && err.result === OperationResults.FailedOrRefused) {
+              this.currentState = States.ReturnedRefused;
+            } else if (err.result && err.result === OperationResults.WrongPin) {
+              this.currentState = States.WrongPin;
+            } else {
+              this.currentState = States.Error;
+            }
           }
         },
       );

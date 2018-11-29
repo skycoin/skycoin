@@ -181,22 +181,8 @@ export class WalletDetailComponent implements OnDestroy {
       let procedure: Observable<any>;
 
       if (this.wallet.isHardware ) {
-        procedure = this.hwWalletService.getAddresses(1, 0).flatMap(
-          response => {
-            if (response.success) {
-              if (response.rawResponse[0] === this.wallet.addresses[0].address) {
-                return this.walletService.addAddress(this.wallet, this.howManyAddresses);
-              } else {
-                showSnackbarError(this.snackbar, this.translateService.instant('hardware-wallet.general.error-incorrect-wallet'));
-
-                return Observable.of(1);
-              }
-            } else {
-              showSnackbarError(this.snackbar, this.translateService.instant('hardware-wallet.general.refused'));
-
-              return Observable.of(1);
-            }
-          },
+        procedure = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).flatMap(
+          () => this.walletService.addAddress(this.wallet, this.howManyAddresses),
         );
       } else {
         procedure = this.walletService.addAddress(this.wallet, this.howManyAddresses);
@@ -207,7 +193,7 @@ export class WalletDetailComponent implements OnDestroy {
           if (!this.wallet.isHardware ) {
             showSnackbarError(this.snackbar, err);
           } else {
-            showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService));
+            showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
           }
           this.creatingAddress = false;
         },

@@ -14,6 +14,11 @@
     [icon]="msgIcons.Error"
   ></app-hw-message>
 
+  <app-hw-message *ngIf="currentState === states.WrongPin"
+    [text]="'hardware-wallet.general.error-incorrect-pin' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
   <app-hw-message *ngIf="currentState === states.Disconnected"
     [text]="'hardware-wallet.options.disconnected' | translate"
     [icon]="msgIcons.Usb"

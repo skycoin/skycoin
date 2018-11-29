@@ -1,7 +1,7 @@
 import { Component, OnDestroy, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
-import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { MessageIcons } from '../hw-message/hw-message.component';
 import { WalletService } from '../../../../services/wallet.service';
 
@@ -60,19 +60,19 @@ export class HwWipeDialogComponent implements OnDestroy {
     this.currentState = States.Processing;
 
     this.operationSubscription = this.hwWalletService.wipe().subscribe(
-      response => {
-        if (response.success) {
-          this.data.notifyFinishFunction();
-          this.currentState = States.ReturnedSuccess;
-          if (this.deleteFromList) {
-            this.walletService.deleteHardwareWallet(this.data.wallet);
-          }
-        } else {
-          this.currentState = States.ReturnedRefused;
+      () => {
+        this.data.notifyFinishFunction();
+        this.currentState = States.ReturnedSuccess;
+        if (this.deleteFromList) {
+          this.walletService.deleteHardwareWallet(this.data.wallet);
         }
       },
-      () => {
-        this.currentState = States.Failed;
+      err => {
+        if (err.result && err.result === OperationResults.FailedOrRefused) {
+          this.currentState = States.ReturnedRefused;
+        } else {
+          this.currentState = States.Failed;
+        }
       },
     );
   }

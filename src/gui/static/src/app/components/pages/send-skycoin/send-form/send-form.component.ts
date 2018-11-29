@@ -6,7 +6,7 @@ import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
-import { showSnackbarError } from '../../../../utils/errors';
+import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
@@ -90,25 +90,22 @@ export class SendFormComponent implements OnInit, OnDestroy {
       if (!this.form.value.wallet.isHardware) {
         this.createTransaction();
       } else {
-        if (this.hwWalletService.getDeviceSync()) {
-          this.processingSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
-            response => {
-              if (response.success) {
-                if (response.rawResponse[0] === (this.form.value.wallet as Wallet).addresses[0].address) {
-                  this.createTransaction();
-                } else {
-                  this.showError(this.translate.instant('hardware-wallet.general.error-incorrect-wallet'));
-                }
-              } else {
-                this.showError(this.translate.instant('hardware-wallet.general.refused'));
-              }
-            },
-            () => this.showError(this.translate.instant('hardware-wallet.general.generic-error')),
-          );
-        } else {
-          this.showError(this.translate.instant('hardware-wallet.general.error-disconnected'));
-        }
+        this.showBusy();
+        this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected((this.form.value.wallet as Wallet).addresses[0].address).subscribe(
+          () => this.createTransaction(),
+          err => this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, err)),
+        );
       }
+    }
+  }
+
+  private showBusy() {
+    if (this.previewTx) {
+      this.previewButton.setLoading();
+      this.sendButton.setDisabled();
+    } else {
+      this.sendButton.setLoading();
+      this.previewButton.setDisabled();
     }
   }
 
@@ -117,13 +114,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       passwordDialog.close();
     }
 
-    if (this.previewTx) {
-      this.previewButton.setLoading();
-      this.sendButton.setDisabled();
-    } else {
-      this.sendButton.setLoading();
-      this.previewButton.setDisabled();
-    }
+    this.showBusy();
 
     let createTxRequest: Observable<PreviewTransaction>;
 
@@ -168,7 +159,13 @@ export class SendFormComponent implements OnInit, OnDestroy {
           });
         }
       },
-      error => this.showError(error),
+      error => {
+        if (error && error.result) {
+          this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
+        } else {
+          this.showError(error);
+        }
+      },
     );
   }
 

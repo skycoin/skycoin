@@ -1,7 +1,7 @@
 import { Component, OnDestroy, ViewChild, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
-import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { MessageIcons } from '../hw-message/hw-message.component';
 
 enum States {
@@ -31,16 +31,16 @@ export class HwGenerateSeedDialogComponent implements OnDestroy {
     private hwWalletService: HwWalletService,
   ) {
     this.operationSubscription = this.hwWalletService.generateMnemonic().subscribe(
-      response => {
-        if (response.success) {
-          this.notifyFinish();
-          this.currentState = States.ReturnedSuccess;
-        } else {
-          this.currentState = States.ReturnedRefused;
-        }
-      },
       () => {
-        this.currentState = States.Failed;
+        this.notifyFinish();
+        this.currentState = States.ReturnedSuccess;
+      },
+      err => {
+        if (err.result && err.result === OperationResults.FailedOrRefused) {
+          this.currentState = States.ReturnedRefused;
+        } else {
+          this.currentState = States.Failed;
+        }
       },
     );
 

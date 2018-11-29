@@ -6,8 +6,16 @@ import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 
+export enum OperationResults {
+  Success,
+  FailedOrRefused,
+  WrongPin,
+  IncorrectHardwareWallet,
+  UndefinedError,
+}
+
 export class OperationResult {
-  success: boolean;
+  result: OperationResults;
   rawResponse: any;
 }
 
@@ -23,7 +31,7 @@ export class HwWalletService {
     this.requestPinComponentInternal = value;
   }
 
-  constructor(private translate: TranslateService, private dialog: MatDialog) {
+  constructor(private translate: TranslateService, dialog: MatDialog) {
     if (window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated')) {
       window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
         if (!connected) {
@@ -145,6 +153,21 @@ export class HwWalletService {
     });
   }
 
+  checkIfCorrectHwConnected(firstAddress: string): Observable<boolean> {
+    return this.getAddresses(1, 0).flatMap(
+      response => {
+        if (response.rawResponse[0] !== firstAddress) {
+          return Observable.throw({
+            result: OperationResults.IncorrectHardwareWallet,
+            rawResponse: '',
+          });
+        }
+
+        return Observable.of(true);
+      },
+    );
+  }
+
   private getAddressesRecursively(index: number, addresses: string[]): Observable<string[]> {
     let chain: Observable<any>;
     if (index > 0) {
@@ -171,20 +194,28 @@ export class HwWalletService {
 
   private dispatchEvent(requestId: number, rawResponse: any, success: boolean) {
     if (this.eventsObservers.has(requestId)) {
-      if (!rawResponse.error) {
+      if (!rawResponse.error && success) {
         this.eventsObservers.get(requestId).next({
-          success: success,
+          result: OperationResults.Success,
           rawResponse: rawResponse,
         });
       } else {
-        if (typeof rawResponse.error === 'string' && (rawResponse.error as string).includes('cancelled by user')) {
-          this.eventsObservers.get(requestId).next({
-            success: false,
-            rawResponse: rawResponse,
-          });
+        const responseContent = rawResponse.error ? rawResponse.error : rawResponse;
+        let result: OperationResults;
+
+        if (typeof responseContent === 'string' && (responseContent as string).includes('failed or refused')) {
+          result = OperationResults.FailedOrRefused;
+        } else if (typeof responseContent === 'string' && (responseContent as string).includes('PIN invalid')) {
+          result = OperationResults.WrongPin;
+        } else if (typeof responseContent === 'string' && (responseContent as string).includes('cancelled by user')) {
+          result = OperationResults.FailedOrRefused;
         } else {
-          this.eventsObservers.get(requestId).error(rawResponse.error);
+          result = OperationResults.UndefinedError;
         }
+        this.eventsObservers.get(requestId).error({
+          result: result,
+          rawResponse: responseContent,
+        });
       }
       this.eventsObservers.get(requestId).complete();
       this.eventsObservers.delete(requestId);
@@ -200,7 +231,7 @@ export class HwWalletService {
 
   private cancelAllOperations() {
     this.eventsObservers.forEach((value, key) => {
-      this.dispatchEvent(key, '', false);
+      this.dispatchEvent(key, 'failed or refused', false);
     });
   }
 

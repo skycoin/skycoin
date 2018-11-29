@@ -1,7 +1,7 @@
 import { Component, OnDestroy, Inject } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
-import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { MessageIcons } from '../hw-message/hw-message.component';
 
 enum States {
@@ -52,15 +52,15 @@ export class HwBackupDialogComponent implements OnDestroy {
     this.currentState = States.Processing;
 
     this.operationSubscription = this.hwWalletService.backup().subscribe(
-      response => {
-        if (response.success) {
-          this.currentState = States.ReturnedSuccess;
-        } else {
-          this.currentState = States.ReturnedRefused;
-        }
-      },
       () => {
-        this.currentState = States.Failed;
+        this.currentState = States.ReturnedSuccess;
+      },
+      err => {
+        if (err.result && err.result === OperationResults.FailedOrRefused) {
+          this.currentState = States.ReturnedRefused;
+        } else {
+          this.currentState = States.Failed;
+        }
       },
     );
   }

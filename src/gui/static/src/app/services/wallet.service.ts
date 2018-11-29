@@ -55,19 +55,15 @@ export class WalletService {
         });
     } else {
       return this.hwWalletService.getAddresses(num, wallet.addresses.length).flatMap(response => {
-        if (response.success) {
-          (response.rawResponse as any[]).forEach(value => wallet.addresses.push({
-            address: value,
-            coins: null,
-            hours: null,
-          }));
-          this.saveHardwareWallets();
-          this.refreshBalances();
+        (response.rawResponse as any[]).forEach(value => wallet.addresses.push({
+          address: value,
+          coins: null,
+          hours: null,
+        }));
+        this.saveHardwareWallets();
+        this.refreshBalances();
 
-          return Observable.of(response.rawResponse as any[]);
-        } else {
-          return Observable.throw(new Error(response.rawResponse));
-        }
+        return Observable.of(response.rawResponse);
       });
     }
   }
@@ -449,16 +445,10 @@ export class WalletService {
 
     chain = chain.flatMap(() => {
       return this.hwWalletService.signMessage(txInputs[index].address_index, txInputs[index].hash)
-      .flatMap(response => {
-        if (response.success) {
-          // TODO: use real signatures obtained from the hardware wallet. This signature is here temporarily while
-          // the signatures returned by the hardware wallet do not work correctly.
-          txSignatures.push('a55155ca15f73f0762f79c15917949a936658cff668647daf82a174eed95703a02622881f9cf6c7495536676f931b2d91d389a9e7b034232b3a1519c8da6fb8800');
-
-          return Observable.of(1);
-        } else {
-          return Observable.throw(new Error());
-        }
+      .map(response => {
+        // TODO: use real signatures obtained from the hardware wallet. This signature is here temporarily while
+        // the signatures returned by the hardware wallet do not work correctly.
+        txSignatures.push('a55155ca15f73f0762f79c15917949a936658cff668647daf82a174eed95703a02622881f9cf6c7495536676f931b2d91d389a9e7b034232b3a1519c8da6fb8800');
       });
     });
 

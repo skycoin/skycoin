@@ -20,4 +20,4 @@ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
              -f $DOCKERFILE_PATH \
              -t "$DOCKER_REPO:dind" .
-             
+

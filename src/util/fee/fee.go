@@ -24,7 +24,7 @@ var (
 // This checks tunable params that should prevent the transaction from
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
-func VerifyTransactionFee(t *coin.Transaction, fee, burnFactor uint64) error {
+func VerifyTransactionFee(t *coin.Transaction, fee uint64, burnFactor uint32) error {
 	hours, err := t.OutputHours()
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func VerifyTransactionFee(t *coin.Transaction, fee, burnFactor uint64) error {
 // VerifyTransactionFeeForHours verifies the fee given fee and hours,
 // where hours is the number of hours in a transaction's outputs,
 // and hours+fee is the number of hours in a transaction's inputs
-func VerifyTransactionFeeForHours(hours, fee, burnFactor uint64) error {
+func VerifyTransactionFeeForHours(hours, fee uint64, burnFactor uint32) error {
 	// Require non-zero coinhour fee
 	if fee == 0 {
 		return ErrTxnNoFee
@@ -60,9 +60,9 @@ func VerifyTransactionFeeForHours(hours, fee, burnFactor uint64) error {
 
 // RequiredFee returns the coinhours fee required for an amount of hours
 // The required fee is calculated as hours/burnFactor, rounded up.
-func RequiredFee(hours, burnFactor uint64) uint64 {
-	feeHours := hours / burnFactor
-	if hours%burnFactor != 0 {
+func RequiredFee(hours uint64, burnFactor uint32) uint64 {
+	feeHours := hours / uint64(burnFactor)
+	if hours%uint64(burnFactor) != 0 {
 		feeHours++
 	}
 
@@ -70,7 +70,7 @@ func RequiredFee(hours, burnFactor uint64) uint64 {
 }
 
 // RemainingHours returns the amount of coinhours leftover after paying the fee for the input.
-func RemainingHours(hours, burnFactor uint64) uint64 {
+func RemainingHours(hours uint64, burnFactor uint32) uint64 {
 	fee := RequiredFee(hours, burnFactor)
 	return hours - fee
 }

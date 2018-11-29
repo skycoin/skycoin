@@ -96,7 +96,10 @@ func SKY_cli_NewTransaction(_utxos []C.wallet__UxBalance, _keys []C.cipher__SecK
 	utxos := *(*[]wallet.UxBalance)(unsafe.Pointer(&_utxos))
 	keys := *(*[]cipher.SecKey)(unsafe.Pointer(&_keys))
 	outs := *(*[]coin.TransactionOutput)(unsafe.Pointer(&_outs))
-	__arg3 := cli.NewTransaction(utxos, keys, outs)
-	*_arg3 = registerTransactionHandle(__arg3)
+	__arg3, ____return_err := cli.NewTransaction(utxos, keys, outs)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg3 = registerTransactionHandle(__arg3)
+	}
 	return
 }

@@ -86,6 +86,7 @@ import { ConfirmationComponent } from './components/layout/confirmation/confirma
 import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwChangePinDialogComponent } from './components/layout/hardware-wallet/hw-change-pin-dialog/hw-change-pin-dialog.component';
+import { HwPinHelpComponent } from './components/layout/hardware-wallet/hw-pin-help/hw-pin-help.component';
 
 
 const ROUTES = [
@@ -203,6 +204,7 @@ const ROUTES = [
     HwMessageComponent,
     HwPinDialogComponent,
     HwChangePinDialogComponent,
+    HwPinHelpComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -225,6 +227,7 @@ const ROUTES = [
     ConfirmationComponent,
     HwPinDialogComponent,
     HwChangePinDialogComponent,
+    HwPinHelpComponent,
   ],
   imports: [
     BrowserModule,

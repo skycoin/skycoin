@@ -1,16 +1,35 @@
-<app-modal [headline]="'Pin'" [dialog]="dialogRef">
+<app-modal class="modal" [headline]="'hardware-wallet.enter-pin.title' | translate" [dialog]="dialogRef">
   <div [formGroup]="form">
     <div class="form-field">
-      <label for="pin">Pin</label>
-      <input formControlName="pin" id="pin" (keydown.enter)="sendPin()">
+      <div class="info">{{ 'hardware-wallet.enter-pin.instructions' | translate }}
+        <span class="link" (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>
+      </div>
+      <input formControlName="pin" id="pin" type="password" readonly>
+    </div>
+  </div>
+  <div class="select-address-theme">
+    <div class="num-pad-row">
+      <button mat-button color="primary" (click)="addNumber('7')"><span>#</span></button>
+      <button mat-button color="primary" (click)="addNumber('8')"><span>#</span></button>
+      <button mat-button color="primary" (click)="addNumber('9')"><span>#</span></button>
+    </div>
+    <div class="num-pad-row">
+      <button mat-button color="primary" (click)="addNumber('4')"><span>#</span></button>
+      <button mat-button color="primary" (click)="addNumber('5')"><span>#</span></button>
+      <button mat-button color="primary" (click)="addNumber('6')"><span>#</span></button>
+    </div>
+    <div class="num-pad-row">
+      <button mat-button color="primary" (click)="addNumber('1')"><span>#</span></button>
+      <button mat-button color="primary" (click)="addNumber('2')"><span>#</span></button>
+      <button mat-button color="primary" (click)="addNumber('3')"><span>#</span></button>
+    </div>
+    <div class="num-pad-row">
+      <button mat-button color="primary" (click)="removeNumber()"><span class="material-icons">backspace</span></button>
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="closeModal()">
-      Cancel
-    </app-button>
     <app-button (action)="sendPin()" class="primary" [disabled]="!form.valid">
-      Continue
+      {{ 'hardware-wallet.general.continue' | translate }}
     </app-button>
   </div>
 </app-modal>

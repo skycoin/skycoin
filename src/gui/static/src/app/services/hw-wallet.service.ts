@@ -43,7 +43,8 @@ export class HwWalletService {
       });
       window['ipcRenderer'].on('hwPinRequested', (event) => {
         dialog.open(this.requestPinComponentInternal, <MatDialogConfig> {
-          width: '450px',
+          width: '350px',
+          autoFocus: false,
         }).afterClosed().subscribe(pin => {
           if (!pin) {
             this.cancelAllOperations();

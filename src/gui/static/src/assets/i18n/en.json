@@ -299,7 +299,7 @@
       "generic-error": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet and that it is not waiting for input.",
       "generic-error-internet": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet, that it is not waiting for input and that you have connection to the interne/node.",
       "error-incorrect-wallet": "Impossible to perform the operation. The connected hardware wallet is different from the selected one.",
-      "error-incorrect-pin": "Impossible to perform the operation. The pin you have entered is not valid.",
+      "error-incorrect-pin": "Impossible to perform the operation. The PIN you have entered is not valid.",
       "confirm": "Please, confirm the operation in the hardware wallet.",
       "close": "Close",
       "cancel": "Cancel",
@@ -318,7 +318,7 @@
       "restore-backup": "Restore backup",
       "create-backup": "Create a backup",
       "wipe": "Wipe the device",
-      "change-pin": "Change pin"
+      "change-pin": "Change PIN"
     },
     "added" : {
       "title": "New Hardware Wallet",
@@ -340,7 +340,18 @@
       "refused": "The operation failed or was canceled. If the operation failed, remember that the hardware wallet only accepts valid standard seeds."
     },
     "change-pin" : {
-      "pin-mismatch": "Impossible to perform the operation. The two pins you have entered do not match."
+      "pin-mismatch": "Impossible to perform the operation. The two PINs you have entered do not match."
+    },
+    "enter-pin" : {
+      "title": "Enter PIN",
+      "instructions": "The PIN layout is displayed on the hardware wallet screen.",
+      "help": "Need help?"
+    },
+    "pin-help" : {
+      "title": "Help",
+      "part1": "When it is necessary to enter the PIN to continue, the hardware wallet screen will display a matrix of 9 boxes with numbers in random order (the order changes each time) and you will be asked to enter the PIN in the software wallet using a matrix of 9 buttons that simply show the symbol #.",
+      "part2": "To enter the PIN, see in the screen of the hardware wallet in which position of the numbers matrix the numbers of the PIN are and then press in the software wallet the buttons that are in the same position, in order. For example, if the PIN is \"23\" and on the hardware wallet screen the number 2 is in the upper left corner and the number 3 is in the middle, you must press the upper left button and then the middle button.",
+      "part3": "If you wish, you can also use the numpad on your keyboard to enter the PIN. However, as in the previous example, if the PIN is \"23\", you can not simply type \"23\" with the numpad, but you will have to press the keys that are in the position where the numbers 2 and 3 are shown on the screen of the hardware wallet."
     }
   }
 }

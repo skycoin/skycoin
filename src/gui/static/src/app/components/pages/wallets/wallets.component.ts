@@ -55,6 +55,7 @@ export class WalletsComponent implements OnDestroy {
   adminHwWallet() {
     const config = new MatDialogConfig();
     config.width = '566px';
+    config.autoFocus = false;
     this.dialog.open(HwWalletOptionsComponent, config);
   }
 

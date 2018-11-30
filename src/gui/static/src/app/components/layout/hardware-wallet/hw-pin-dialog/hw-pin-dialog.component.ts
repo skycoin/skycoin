@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { HwPinHelpComponent } from '../hw-pin-help/hw-pin-help.component';
 
 @Component({
   selector: 'app-hw-pin-dialog',
@@ -18,6 +19,7 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
     public dialogRef: MatDialogRef<HwPinDialogComponent>,
     private formBuilder: FormBuilder,
     private hwWalletService: HwWalletService,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit() {
@@ -40,7 +42,39 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
     this.dialogRef.close();
   }
 
+  openHelp() {
+    this.dialog.open(HwPinHelpComponent, <MatDialogConfig> {
+      width: '450px',
+    });
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  keyEvent(event: KeyboardEvent) {
+    const key = parseInt(event.key, 10);
+    if (key > 0 && key < 10) {
+      this.addNumber(key.toString());
+    } else if (event.keyCode === 8) {
+      this.removeNumber();
+    } else if (event.keyCode === 13) {
+      this.sendPin();
+    }
+  }
+
+  addNumber(number: string) {
+    const currentValue: string = this.form.value.pin;
+    if (currentValue.length < 8) {
+      this.form.get('pin').setValue(currentValue + number);
+    }
+  }
+
+  removeNumber() {
+    const currentValue: string = this.form.value.pin;
+    this.form.get('pin').setValue(currentValue.substring(0, currentValue.length - 1));
+  }
+
   sendPin() {
-    this.dialogRef.close(this.form.value.pin);
+    if (this.form.valid) {
+      this.dialogRef.close(this.form.value.pin);
+    }
   }
 }

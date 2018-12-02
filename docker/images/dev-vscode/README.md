@@ -16,13 +16,22 @@ ot speed up workspace setup for Skycoin developers.
 ## Initialize your development environment.
 
 0. Make sure you're on a system running [X](https://en.wikipedia.org/wiki/X_Window_System).
-1. Disable X access control (don't do this on a public-facing machine): `$ xhost +` or `$ xhost +local:docker`
+  - *GNU/Linux* users should be ready to go
+  - *Mac OS* users can follow the following steps
+    * `brew install xquartz`
+    * **Important**  Log out and log back into OS/X
+1. Disable X access control (don't do this on a public-facing machine):
+  - *GNU/Linux* : `$ xhost +` or `$ xhost +local:docker`
+  - *Mac OS* : XQuartz users should follow these steps
+    * `open -a Xquartz`
+    * With `xterm` active, open up `XQuartz` in menu bar => `Preferences` => `Security`. There make sure the `Allow connections from network clients` is checked `on`.
 2. `$ cd` to a path where you want to write some code (e.g. a working copy of [`skycoin/skycoin`](https://github.com/skycoin/skycoin) )
 3. Since Visual Studio Code inside docker container runs as user `skydev`, it's necessary apply permissions to files.
     ```sh
     $ sudo chown -R 777 .
     ```
 4. Run docker image, either `skycoin/skycoindev-vscode:develop` or `skycoin/skycoindev-vscode:dind`
+  - *GNU/Linux*
     ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
             -v $(pwd):$GOPATH/src/github.com/skycoin/skycoin \
@@ -30,9 +39,22 @@ ot speed up workspace setup for Skycoin developers.
             -e DISPLAY=$DISPLAY \
             skycoin/skycoindev-vscode:develop
     ```
+  - *Mac OS* users running XQuartz should launch `socat` for Docker to be able to connect to the X server. Assuming `en0` is your primary network interface
+    ```sh
+    $ brew install socat
+    $ socat TCP-LISTEN:6000,reuseaddr,fork UNIX-CLIENT:\"$DISPLAY\"
+    $ export IP=$(ifconfig en0 | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
+    $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -v $(pwd):$GOPATH/src/github.com/skycoin/skycoin \
+            -w $GOPATH/src/github.com/skycoin/skycoin \
+            -e DISPLAY=$IP:0 \
+            skycoin/skycoindev-vscode:develop
+    ```
 5. You should see vscode pop up.
 6. Have fun. Write some code. Close VS Code IDE window when you're done, and press `Ctrl+C` to shut down the container. Your files will be in the host machine at the same path chosen in step `2` above.
 7. __Reenable X access control:__ `$ xhost -`
+
+For the sake of brevity, the examples that follow only include the invocation of `docker` command for GNU/Linux. Beware of the fact that there will be differences in running the Docker images on other operating systems. The hints provided above will still be valid, though.
 
 ## Add more VS Code extensions
 

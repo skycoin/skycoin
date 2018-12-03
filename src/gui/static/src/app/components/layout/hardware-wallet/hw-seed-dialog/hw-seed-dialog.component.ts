@@ -34,7 +34,7 @@ export class HwSeedDialogComponent implements OnDestroy {
     private formBuilder: FormBuilder,
   ) {
     this.form = this.formBuilder.group({
-      seed: ['cloud flower upset remain green metal below cup stem infant art thank', Validators.required],
+      seed: ['', Validators.required],
     });
 
     this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {

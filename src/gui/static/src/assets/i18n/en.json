@@ -295,6 +295,7 @@
 
   "hardware-wallet": {
     "general" : {
+      "default-wallet-name": "New hardware wallet",
       "error-disconnected": "Impossible to perform the operation. The hardware wallet is not connected.",
       "generic-error": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet and that it is not waiting for input.",
       "generic-error-internet": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet, that it is not waiting for input and that you have connection to the interne/node.",

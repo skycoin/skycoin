@@ -29,6 +29,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   form: FormGroup;
   transactions = [];
   previewTx: boolean;
+  busy = false;
 
   private formSubscription: ISubscription;
   private processingSubscription: ISubscription;
@@ -107,6 +108,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.sendButton.setLoading();
       this.previewButton.setDisabled();
     }
+    this.busy = true;
   }
 
   private createTransaction(passwordDialog?: any) {
@@ -157,6 +159,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
             to: [this.form.value.address],
             transaction,
           });
+          this.busy = false;
         }
       },
       error => {
@@ -170,6 +173,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private showSuccess() {
+    this.busy = false;
     this.sendButton.setSuccess();
     this.resetForm();
 
@@ -179,6 +183,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private showError(error) {
+    this.busy = false;
     showSnackbarError(this.snackbar, error);
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();

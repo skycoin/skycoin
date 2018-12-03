@@ -121,7 +121,7 @@ export class WalletService {
       });
 
       return this.wallets.first().map(wallets => {
-        const newWallet = this.crearteHardwareWalletData('Hardware wallet', addresses.slice(0, addressWithTx + 1));
+        const newWallet = this.crearteHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, addressWithTx + 1));
         wallets.push(newWallet);
         this.saveHardwareWallets();
         this.refreshBalances();

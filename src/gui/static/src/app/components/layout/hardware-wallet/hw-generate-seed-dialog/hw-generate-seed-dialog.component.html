@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="'hardware-wallet.options.configure-automatically' | translate" [dialog]="dialogRef">
+<app-modal class="modal" [headline]="'hardware-wallet.options.configure-automatically' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
   <app-hw-message *ngIf="currentState === states.Initial"
     [text]="'hardware-wallet.general.confirm' | translate"
     [icon]="msgIcons.Confirm"
@@ -19,7 +19,7 @@
     [icon]="msgIcons.Error"
   ></app-hw-message>
 
-  <div class="-buttons">
+  <div class="-buttons" *ngIf="currentState !== states.Initial">
     <app-button (action)="closeModal()" class="primary">
       {{ 'hardware-wallet.general.close' | translate }}
     </app-button>

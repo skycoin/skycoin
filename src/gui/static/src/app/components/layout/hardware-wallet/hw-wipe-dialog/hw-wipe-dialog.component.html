@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="'hardware-wallet.options.wipe' | translate" [dialog]="dialogRef">
+<app-modal class="modal" [headline]="'hardware-wallet.options.wipe' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
       [text]="'hardware-wallet.wipe.warning' | translate"
@@ -44,7 +44,7 @@
       [icon]="msgIcons.Error"
     ></app-hw-message>
 
-    <div class="-buttons">
+    <div class="-buttons" *ngIf="currentState !== states.Processing">
       <app-button (action)="closeModal()" class="primary">
         {{ 'hardware-wallet.general.close' | translate }}
       </app-button>

@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="'hardware-wallet.options.restore-backup' | translate" [dialog]="dialogRef">
+<app-modal class="modal" [headline]="'hardware-wallet.options.restore-backup' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
   <div *ngIf="currentState === states.Initial">
     <div [formGroup]="form">
       <div class="form-field">
@@ -37,7 +37,7 @@
       [icon]="msgIcons.Error"
     ></app-hw-message>
 
-    <div class="-buttons">
+    <div class="-buttons" *ngIf="currentState !== states.Processing">
       <app-button (action)="closeModal()" class="primary">
         {{ 'hardware-wallet.general.close' | translate }}
       </app-button>

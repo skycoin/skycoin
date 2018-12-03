@@ -24,7 +24,7 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-      pin: ['', Validators.required],
+      pin: ['', Validators.compose([Validators.required, Validators.minLength(4)])],
     });
 
     this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {

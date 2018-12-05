@@ -1,5 +1,3 @@
-%include "../cmp.i"
-
 %extend coin__BlockHeader {
 	int isEqual(coin__BlockHeader* bh){
 		return equalBlockHeaders($self, bh);

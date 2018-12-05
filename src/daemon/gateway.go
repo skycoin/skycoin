@@ -923,6 +923,7 @@ type Health struct {
 	IncomingConnections  int
 	Uptime               time.Duration
 	UnconfirmedVerifyTxn params.VerifyTxn
+	StartedAt            time.Time
 }
 
 // GetHealth returns statistics about the running node
@@ -959,6 +960,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			IncomingConnections:  incomingConns,
 			Uptime:               time.Since(gw.v.StartedAt),
 			UnconfirmedVerifyTxn: gw.d.Config.UnconfirmedVerifyTxn,
+			StartedAt:            gw.v.StartedAt,
 		}
 	})
 

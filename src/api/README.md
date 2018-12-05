@@ -246,7 +246,8 @@ Response:
         "burn_factor": 2,
         "max_transaction_size": 32768,
         "max_decimals": 3
-    }
+    },
+    "started_at": 1542443907
 }
 ```
 

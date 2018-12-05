@@ -11,7 +11,14 @@ import { HwPinHelpComponent } from '../hw-pin-help/hw-pin-help.component';
   styleUrls: ['./hw-pin-dialog.component.scss'],
 })
 export class HwPinDialogComponent implements OnInit, OnDestroy {
+  static showForSigningTx = false;
+  static currentSignature = 1;
+  static totalSignatures = 2;
+
   form: FormGroup;
+  showForSigning: boolean;
+  current: number;
+  total: number;
 
   private hwConnectionSubscription: ISubscription;
 
@@ -20,7 +27,11 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
-  ) {}
+  ) {
+    this.showForSigning = HwPinDialogComponent.showForSigningTx;
+    this.current = HwPinDialogComponent.currentSignature;
+    this.total = HwPinDialogComponent.totalSignatures;
+  }
 
   ngOnInit() {
     this.form = this.formBuilder.group({

@@ -4,6 +4,8 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
 import { CreateWalletFormComponent } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
+import { HwWalletOptionsComponent } from '../../../layout/hardware-wallet/hw-options/hw-options.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -20,6 +22,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
 
   constructor(
     private dialog: MatDialog,
+    private router: Router,
   ) { }
 
   ngOnInit() {
@@ -48,6 +51,18 @@ export class OnboardingCreateWalletComponent implements OnInit {
 
   loadWallet() {
     this.emitCreatedData();
+  }
+
+  useHardwareWallet() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    config.autoFocus = false;
+    config.data = true;
+    this.dialog.open(HwWalletOptionsComponent, config).afterClosed().subscribe(result => {
+      if (result) {
+        this.router.navigate(['/wallets']);
+      }
+    });
   }
 
   private emitCreatedData() {

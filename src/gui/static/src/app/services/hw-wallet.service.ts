@@ -86,7 +86,7 @@ export class HwWalletService {
   }
 
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
-    const requestId = this.createRandomID();
+    const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
 
     return new Observable(observer => {
@@ -95,7 +95,7 @@ export class HwWalletService {
   }
 
   changePin(): Observable<OperationResult> {
-    const requestId = this.createRandomID();
+    const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwChangePin', requestId);
 
     return new Observable(observer => {
@@ -110,7 +110,7 @@ export class HwWalletService {
   setMnemonic(mnemonic: string): Observable<OperationResult> {
     mnemonic = mnemonic.replace(/(\n|\r\n)$/, '');
 
-    const requestId = this.createRandomID();
+    const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwSetMnemonic', requestId, mnemonic);
 
     return new Observable(observer => {
@@ -119,7 +119,7 @@ export class HwWalletService {
   }
 
   generateMnemonic(): Observable<OperationResult> {
-    const requestId = this.createRandomID();
+    const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
 
     return new Observable(observer => {
@@ -128,7 +128,7 @@ export class HwWalletService {
   }
 
   backup(): Observable<OperationResult> {
-    const requestId = this.createRandomID();
+    const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwBackupDevice', requestId);
 
     return new Observable(observer => {
@@ -137,7 +137,7 @@ export class HwWalletService {
   }
 
   wipe(): Observable<OperationResult> {
-    const requestId = this.createRandomID();
+    const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwWipe', requestId);
 
     return new Observable(observer => {
@@ -145,8 +145,13 @@ export class HwWalletService {
     });
   }
 
-  signMessage(addressIndex: number, message: string): Observable<OperationResult> {
-    const requestId = this.createRandomID();
+  signMessage(addressIndex: number, message: string, currentSignature?: number, totalSignatures?: number): Observable<OperationResult> {
+    const requestId = this.createRandomIdAndPrepare();
+    if (currentSignature && totalSignatures) {
+      this.requestPinComponentInternal.showForSigningTx = true;
+      this.requestPinComponentInternal.currentSignature = currentSignature;
+      this.requestPinComponentInternal.totalSignatures = totalSignatures;
+    }
     window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
 
     return new Observable(observer => {
@@ -189,7 +194,9 @@ export class HwWalletService {
     return chain;
   }
 
-  private createRandomID() {
+  private createRandomIdAndPrepare() {
+    this.requestPinComponentInternal.showForSigningTx = false;
+
     return Math.floor(Math.random() * 4000000000);
   }
 

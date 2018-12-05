@@ -23,6 +23,7 @@ export class HwWipeDialogComponent implements OnDestroy {
   currentState: States = States.Initial;
   states = States;
   msgIcons = MessageIcons;
+  showDeleteFromList = true;
   deleteFromList = true;
 
   private operationSubscription: ISubscription;
@@ -34,6 +35,11 @@ export class HwWipeDialogComponent implements OnDestroy {
     private hwWalletService: HwWalletService,
     private walletService: WalletService,
   ) {
+    if (!data.wallet) {
+      this.showDeleteFromList = false;
+      this.deleteFromList = false;
+    }
+
     this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
       if (!connected) {
         this.closeModal();
@@ -61,10 +67,14 @@ export class HwWipeDialogComponent implements OnDestroy {
 
     this.operationSubscription = this.hwWalletService.wipe().subscribe(
       () => {
-        this.data.notifyFinishFunction();
+        if (this.data.notifyFinishFunction) {
+          this.data.notifyFinishFunction();
+        } else {
+          this.data();
+        }
         this.currentState = States.ReturnedSuccess;
         if (this.deleteFromList) {
-          this.walletService.deleteHardwareWallet(this.data.wallet);
+          this.walletService.deleteHardwareWallet(this.data.wallet).subscribe();
         }
       },
       err => {

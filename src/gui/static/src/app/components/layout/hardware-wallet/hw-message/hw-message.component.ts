@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 export enum MessageIcons {
   Spinner,
@@ -18,8 +18,14 @@ export enum MessageIcons {
 export class HwMessageComponent {
   @Input() icon: MessageIcons = MessageIcons.HardwareWallet;
   @Input() text: string;
+  @Input() linkText: string;
   @Input() upperBigText: string;
   @Input() lowerBigText: string;
+  @Output() linkClicked = new EventEmitter();
 
   icons = MessageIcons;
+
+  activateLink() {
+    this.linkClicked.emit();
+  }
 }

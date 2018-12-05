@@ -80,6 +80,7 @@
   "wizard": {
     "wallet-desc": "If you don't have a Skycoin wallet, use the generated seed to create a new one. If you already have a wallet, toggle over to \"Load Wallet\" and enter your seed.",
     "encrypt-desc": "Increase security of your wallet by encrypting it. By entering a password below, your wallet will be encrypted. Only those with the password will be able access the wallet and remove funds.",
+    "hardware-wallet-link": "Using a hardware wallet?",
     "finish-button": "Finish",
     "back-button": "Back",
 
@@ -319,7 +320,9 @@
       "restore-backup": "Restore backup",
       "create-backup": "Create a backup",
       "wipe": "Wipe the device",
-      "change-pin": "Change PIN"
+      "change-pin": "Change PIN",
+      "forgotten-pin1": "If you can not access because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
+      "forgotten-pin2": "here."
     },
     "added" : {
       "title": "New Hardware Wallet",
@@ -346,6 +349,7 @@
     "enter-pin" : {
       "title": "Enter PIN",
       "instructions": "The PIN layout is displayed on the hardware wallet screen.",
+      "instructions-tx": "Enter the PIN to confirm and sign the transaction ({{ current }} of {{ total }} required signatures).",
       "help": "Need help?"
     },
     "pin-help" : {

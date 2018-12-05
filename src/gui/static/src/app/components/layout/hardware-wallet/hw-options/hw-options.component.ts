@@ -1,5 +1,5 @@
-import { Component, OnDestroy } from '@angular/core';
-import { MatDialogRef, MatDialogConfig, MatDialog } from '@angular/material/dialog';
+import { Component, OnDestroy, Inject } from '@angular/core';
+import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
 import { HwSeedDialogComponent } from '../hw-seed-dialog/hw-seed-dialog.component';
@@ -44,6 +44,7 @@ export class HwWalletOptionsComponent implements OnDestroy {
   private wallet: Wallet;
 
   constructor(
+    @Inject(MAT_DIALOG_DATA) private onboarding: boolean,
     public dialogRef: MatDialogRef<HwWalletOptionsComponent>,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
@@ -77,6 +78,10 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
   wipe() {
     this.openDialog(HwWipeDialogComponent, true);
+  }
+
+  wipeWithoutWallet() {
+    this.openDialog(HwWipeDialogComponent);
   }
 
   closeModal() {
@@ -151,7 +156,11 @@ export class HwWalletOptionsComponent implements OnDestroy {
               return found;
             });
             if (alreadySaved) {
-              this.currentState = States.ConfiguredConnected;
+              if (!this.onboarding) {
+                this.currentState = States.ConfiguredConnected;
+              } else {
+                this.dialogRef.close(true);
+              }
             } else {
               this.openDialog(HwAddedDialogComponent);
             }

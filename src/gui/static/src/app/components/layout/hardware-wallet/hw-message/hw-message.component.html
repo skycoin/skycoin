@@ -13,6 +13,7 @@
       <span class="big-text">{{ upperBigText }}</span>
     </div>
     <span *ngIf="text">{{ text }}</span>
+    <span *ngIf="linkText" class="link" (click)="activateLink()">{{ linkText }}</span>
     <div *ngIf="lowerBigText">
       <span class="big-text">{{ lowerBigText }}</span>
     </div>

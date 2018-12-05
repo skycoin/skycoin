@@ -13,6 +13,7 @@ import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { Observable } from 'rxjs/Observable';
 import { showConfirmationModal } from '../../../../utils';
 import { AppConfig } from '../../../../app.config';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -32,6 +33,7 @@ export class WalletDetailComponent implements OnDestroy {
     private snackbar: MatSnackBar,
     private hwWalletService: HwWalletService,
     private translateService: TranslateService,
+    private router: Router,
   ) { }
 
   ngOnDestroy() {
@@ -93,9 +95,17 @@ export class WalletDetailComponent implements OnDestroy {
       cancelButtonText: 'confirmation.cancel-button',
     };
 
-    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(result => {
-      if (result) {
-        this.walletService.deleteHardwareWallet(this.wallet);
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
+        this.walletService.deleteHardwareWallet(this.wallet).subscribe(result => {
+          if (result) {
+            this.walletService.all().first().subscribe(wallets => {
+              if (wallets.length === 0) {
+                setTimeout(() => this.router.navigate(['/wizard']), 500);
+              }
+            });
+          }
+        });
       }
     });
   }

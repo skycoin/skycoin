@@ -1,7 +1,8 @@
 <app-modal class="modal" [headline]="'hardware-wallet.enter-pin.title' | translate" [dialog]="dialogRef">
   <div [formGroup]="form">
     <div class="form-field">
-      <div class="info">{{ 'hardware-wallet.enter-pin.instructions' | translate }}
+      <div class="info"><span *ngIf="showForSigning">{{ 'hardware-wallet.enter-pin.instructions-tx' | translate:{current: current, total: total} }}</span>
+        {{ 'hardware-wallet.enter-pin.instructions' | translate }}
         <span class="link" (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>
       </div>
       <input formControlName="pin" id="pin" type="password" readonly>

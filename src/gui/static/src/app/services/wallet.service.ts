@@ -131,18 +131,24 @@ export class WalletService {
     });
   }
 
-  deleteHardwareWallet(wallet: Wallet) {
+  deleteHardwareWallet(wallet: Wallet): Observable<boolean> {
     if (wallet.isHardware) {
-      this.wallets.first().subscribe(wallets => {
+      return this.wallets.first().map(wallets => {
         const index = wallets.indexOf(wallet);
         if (index !== -1) {
           wallets.splice(index, 1);
 
           this.saveHardwareWallets();
           this.refreshBalances();
+
+          return true;
         }
+
+        return false;
       });
     }
+
+    return null;
   }
 
   folder(): Observable<string> {
@@ -444,7 +450,7 @@ export class WalletService {
     }
 
     chain = chain.flatMap(() => {
-      return this.hwWalletService.signMessage(txInputs[index].address_index, txInputs[index].hash)
+      return this.hwWalletService.signMessage(txInputs[index].address_index, txInputs[index].hash, index + 1, txInputs.length)
       .map(response => {
         // TODO: use real signatures obtained from the hardware wallet. This signature is here temporarily while
         // the signatures returned by the hardware wallet do not work correctly.

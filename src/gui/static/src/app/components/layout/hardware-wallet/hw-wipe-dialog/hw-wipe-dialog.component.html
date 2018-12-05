@@ -5,7 +5,7 @@
       [icon]="msgIcons.Warning"
     ></app-hw-message>
 
-    <div class="-check-container">
+    <div class="-check-container" *ngIf="showDeleteFromList">
       <mat-checkbox type="checkbox"
                     class="-check"
                     [checked]="deleteFromList"

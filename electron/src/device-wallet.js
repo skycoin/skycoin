@@ -49,7 +49,7 @@ const makeTrezorMessage = function(buffer, msgId) {
     dv.setUint8(8, 10);
     const trezorMsg8 = new Uint8Array(trezorMsg);
     trezorMsg8.set(u8Array.slice(1), 9);
-    let lengthToWrite = u8Array.byteLength;
+    let lengthToWrite = u8Array.byteLength + 9;
     const chunks = [];
     let j = 0;
     do {

@@ -19,6 +19,7 @@ import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 
 declare var Cipher: any;
+declare var CipherExtras: any;
 
 @Injectable()
 export class WalletService {
@@ -268,6 +269,9 @@ export class WalletService {
     let hoursToSend = new BigNumber('0');
     let calculatedHours = new BigNumber('0');
 
+    let innerHash: string;
+    let convertedOutputs: any[];
+
     const txOutputs = [];
     const txInputs = [];
     const txSignatures = [];
@@ -316,24 +320,36 @@ export class WalletService {
           });
         });
 
+        convertedOutputs = txOutputs.map(output => {
+          return {
+            ...output,
+            coins: parseInt((output.coins * 1000000) + '', 10),
+          };
+        });
+
+        innerHash = Cipher.GetTransactionInnerHash(JSON.stringify(txInputs), JSON.stringify(convertedOutputs));
+
         // Request signatures and add them to txSignatures sequentially.
-        return this.addSignatures(txInputs.length - 1, txInputs, txSignatures);
+        return this.addSignatures(txInputs.length - 1, txInputs, txSignatures, innerHash);
 
       }).flatMap(() => {
-        return this.generateRawTransaction(txInputs, txOutputs, txSignatures)
-          .flatMap((rawTransaction: string) => {
-            return Observable.of({
-              balance: amount,
-              inputs: txInputs,
-              outputs: txOutputs,
-              txid: null,
-              from: '',
-              to: [],
-              hoursSent: hoursToSend,
-              hoursBurned: totalHours.minus(calculatedHours),
-              encoded: rawTransaction,
-            });
-          });
+        const rawTransaction = Cipher.PrepareTransactionWithSignatures(
+          JSON.stringify(txInputs),
+          JSON.stringify(convertedOutputs),
+          JSON.stringify(txSignatures),
+        );
+
+        return Observable.of({
+          balance: amount,
+          inputs: txInputs,
+          outputs: txOutputs,
+          txid: null,
+          from: '',
+          to: [],
+          hoursSent: hoursToSend,
+          hoursBurned: totalHours.minus(calculatedHours),
+          encoded: rawTransaction,
+        });
       });
   }
 
@@ -441,37 +457,24 @@ export class WalletService {
     });
   }
 
-  private addSignatures(index: number, txInputs: any[], txSignatures: string[]): Observable<any> {
+  private addSignatures(index: number, txInputs: any[], txSignatures: string[], txInnerHash: string): Observable<any> {
     let chain: Observable<any>;
     if (index > 0) {
-      chain = this.addSignatures(index - 1, txInputs, txSignatures).first();
+      chain = this.addSignatures(index - 1, txInputs, txSignatures, txInnerHash).first();
     } else {
       chain = Observable.of(1);
     }
 
     chain = chain.flatMap(() => {
-      return this.hwWalletService.signMessage(txInputs[index].address_index, txInputs[index].hash, index + 1, txInputs.length)
-      .map(response => {
-        // TODO: use real signatures obtained from the hardware wallet. This signature is here temporarily while
-        // the signatures returned by the hardware wallet do not work correctly.
-        txSignatures.push('a55155ca15f73f0762f79c15917949a936658cff668647daf82a174eed95703a02622881f9cf6c7495536676f931b2d91d389a9e7b034232b3a1519c8da6fb8800');
-      });
+      const msgToSign = CipherExtras.AddSHA256(txInnerHash, txInputs[index].hash);
+
+      return this.hwWalletService.signMessage(txInputs[index].address_index, msgToSign, index + 1, txInputs.length)
+        .map(response => {
+          txSignatures.push(response.rawResponse);
+        });
     });
 
     return chain;
-  }
-
-  private generateRawTransaction(txInputs: any[], txOutputs: any[], txSignatures: string[]): Observable<string> {
-    const coinsMultiplier = 1000000;
-
-    const convertedOutputs: any[] = txOutputs.map(output => {
-      return {
-        ...output,
-        coins: parseInt((output.coins * coinsMultiplier) + '', 10),
-      };
-    });
-
-    return Observable.of(Cipher.PrepareTransactionWithSignatures(JSON.stringify(txInputs), JSON.stringify(convertedOutputs), JSON.stringify(txSignatures)));
   }
 
   private crearteHardwareWalletData(label: string, addresses: string[]): Wallet {

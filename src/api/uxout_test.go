@@ -133,17 +133,18 @@ func TestGetUxOutByID(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -248,16 +249,18 @@ func TestGetAddrUxOuts(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

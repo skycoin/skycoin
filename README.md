@@ -125,7 +125,7 @@ but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-make run
+make run-client
 ```
 
 ### Show Skycoin node options

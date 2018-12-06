@@ -20,6 +20,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/elapse"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/useragent"
@@ -1217,7 +1218,7 @@ func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
 
 // BroadcastUserTransaction broadcasts a single transaction to all peers.
 // Returns an error if no peers that would propagate the transaction could be reached.
-func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction) error {
+func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.SignedBlock, inputs coin.UxArray) error {
 	ids, err := dm.BroadcastTransaction(txn)
 	if err != nil {
 		return err
@@ -1247,7 +1248,7 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction) error {
 		// Check if our transaction would pass their soft-validation, using the hardcoded defaults
 		// that are used by v24 and earlier.
 		if c.UserAgent.Empty() {
-			if err := verifyUserTxnAgainstPeer(txn, params.VerifyTxn{
+			if err := verifyUserTxnAgainstPeer(txn, head, inputs, params.VerifyTxn{
 				BurnFactor:          2,
 				MaxTransactionSize:  32 * 1024,
 				MaxDropletPrecision: 3,
@@ -1272,13 +1273,15 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction) error {
 
 // verifyUserTxnAgainstPeer returns an error if a user-created transaction would not pass soft-validation
 // according to a peer's reported verification parameters
-func verifyUserTxnAgainstPeer(txn coin.Transaction, verifyParams params.VerifyTxn) error {
+func verifyUserTxnAgainstPeer(txn coin.Transaction, head *coin.SignedBlock, inputs coin.UxArray, verifyParams params.VerifyTxn) error {
+	// Check the droplet precision
 	for _, o := range txn.Out {
 		if err := params.DropletPrecisionCheck(verifyParams.MaxDropletPrecision, o.Coins); err != nil {
 			return err
 		}
 	}
 
+	// Check the txn size
 	txnSize, err := txn.Size()
 	if err != nil {
 		logger.Critical().WithError(err).Error("txn.Size failed unexpectedly")
@@ -1289,11 +1292,14 @@ func verifyUserTxnAgainstPeer(txn coin.Transaction, verifyParams params.VerifyTx
 		return errors.New("Transaction size would exceed MaxTransactionSize")
 	}
 
-	// Assume that our user transaction's fee was computed to the limit of params.UserVerifyTxn.BurnFactor
-	// Otherwise we would need the transaction inputs to fully verify.
-	// TODO -- pass in inputs if they're easy to obtain
-	if verifyParams.BurnFactor < params.UserVerifyTxn.BurnFactor {
-		return errors.New("Transaction fee would not pass remote BurnFactor")
+	// Check the coinhour burn fee
+	f, err := fee.TransactionFee(&txn, head.Time(), inputs)
+	if err != nil {
+		return err
+	}
+
+	if err := fee.VerifyTransactionFee(&txn, f, verifyParams.BurnFactor); err != nil {
+		return err
 	}
 
 	return nil

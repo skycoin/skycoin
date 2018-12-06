@@ -398,25 +398,29 @@ func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 // VerifySingleTxnSoftHardConstraints checks that the transaction does not violate hard or soft constraints,
 // for transactions that are not included in a block.
 // Hard constraints are checked before soft constraints.
-func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) error {
+func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) (*coin.SignedBlock, coin.UxArray, error) {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
 	if err != nil {
-		return NewErrTxnViolatesHardConstraint(err)
+		return nil, nil, NewErrTxnViolatesHardConstraint(err)
 	}
 
 	head, err := bc.Head(tx)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	// Hard constraints must be checked before soft constraints
 	if err := bc.verifySingleTxnHardConstraints(tx, txn, head, uxIn); err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	return VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, verifyParams)
+	if err := VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, verifyParams); err != nil {
+		return nil, nil, err
+	}
+
+	return head, uxIn, nil
 }
 
 func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {

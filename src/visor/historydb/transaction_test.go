@@ -165,7 +165,8 @@ func makeTransaction(t *testing.T) Transaction {
 	txn.Txn.SignInputs([]cipher.SecKey{s})
 	txn.Txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.Txn.PushOutput(makeAddress(), 5e6, 50)
-	txn.Txn.UpdateHeader()
+	err := txn.Txn.UpdateHeader()
+	require.NoError(t, err)
 	return txn
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -74,7 +75,9 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)
 
-	_, err = conns.introduced(addr, 1, &IntroductionMessage{}, &userAgent)
+	_, err = conns.introduced(addr, 1, &IntroductionMessage{
+		userAgent: userAgent,
+	})
 	require.Equal(t, ErrConnectionStateNotConnected, err)
 	require.Equal(t, 1, conns.PendingLen())
 
@@ -102,9 +105,10 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 		ListenPort:      port + 1,
 		Mirror:          1111,
 		ProtocolVersion: 2,
+		userAgent:       userAgent,
 	}
 
-	c, err = conns.introduced(addr, 1, m, &userAgent)
+	c, err = conns.introduced(addr, 1, m)
 	require.NoError(t, err)
 
 	require.True(t, c.Outgoing)
@@ -190,9 +194,15 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 		ListenPort:      port + 1,
 		Mirror:          1111,
 		ProtocolVersion: 2,
+		userAgent:       userAgent,
+		unconfirmedVerifyTxn: params.VerifyTxn{
+			BurnFactor:          4,
+			MaxTransactionSize:  1111,
+			MaxDropletPrecision: 2,
+		},
 	}
 
-	c, err = conns.introduced(addr, 1, m, &userAgent)
+	c, err = conns.introduced(addr, 1, m)
 	require.NoError(t, err)
 
 	require.False(t, c.Outgoing)
@@ -210,6 +220,9 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	require.True(t, c.HasIntroduced())
 	require.Equal(t, fmt.Sprintf("%s:%d", ip, m.ListenPort), c.ListenAddr())
 	require.Equal(t, userAgent, c.UserAgent)
+	require.Equal(t, uint32(4), c.UnconfirmedVerifyTxn.BurnFactor)
+	require.Equal(t, uint32(1111), c.UnconfirmedVerifyTxn.MaxTransactionSize)
+	require.Equal(t, uint8(2), c.UnconfirmedVerifyTxn.MaxDropletPrecision)
 
 	all = conns.all()
 	require.Equal(t, []connection{*c}, all)
@@ -259,7 +272,8 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-	}, &userAgent)
+		userAgent:       userAgent,
+	})
 	require.NoError(t, err)
 	require.Equal(t, 0, conns.PendingLen())
 	require.Equal(t, 1, len(conns.mirrors))
@@ -269,7 +283,8 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6061,
 		ProtocolVersion: 2,
-	}, &userAgent)
+		userAgent:       userAgent,
+	})
 	require.Equal(t, ErrConnectionIPMirrorExists, err)
 	require.Equal(t, 0, conns.PendingLen())
 
@@ -282,7 +297,8 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          7,
 		ListenPort:      6061,
 		ProtocolVersion: 2,
-	}, &userAgent)
+		userAgent:       userAgent,
+	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(conns.mirrors))
 	require.Equal(t, 2, conns.OutgoingLen())
@@ -303,7 +319,8 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-	}, &userAgent)
+		userAgent:       userAgent,
+	})
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(conns.mirrors))
@@ -353,7 +370,8 @@ func TestConnectionsMultipleSameListenPort(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-	}, &userAgent)
+		userAgent:       userAgent,
+	})
 	require.NoError(t, err)
 
 	listenAddrConns := conns.getByListenAddr(addr1)
@@ -391,19 +409,19 @@ func TestConnectionsErrors(t *testing.T) {
 	_, err = conns.connected("foo", 1)
 	testutil.RequireError(t, err, "address foo: missing port in address")
 
-	_, err = conns.introduced("foo", 1, &IntroductionMessage{}, &userAgent)
+	_, err = conns.introduced("foo", 1, &IntroductionMessage{})
 	testutil.RequireError(t, err, "address foo: missing port in address")
 
 	err = conns.remove("foo", 0)
 	testutil.RequireError(t, err, "address foo: missing port in address")
 
-	_, err = conns.introduced("127.0.0.1:6060", 1, &IntroductionMessage{}, &userAgent)
+	_, err = conns.introduced("127.0.0.1:6060", 1, &IntroductionMessage{})
 	require.Equal(t, ErrConnectionNotExist, err)
 
 	_, err = conns.connected("127.0.0.1:6060", 0)
 	require.Equal(t, ErrInvalidGnetID, err)
 
-	_, err = conns.introduced("127.0.0.1:6060", 0, &IntroductionMessage{}, &userAgent)
+	_, err = conns.introduced("127.0.0.1:6060", 0, &IntroductionMessage{})
 	require.Equal(t, ErrInvalidGnetID, err)
 }
 
@@ -464,7 +482,7 @@ func TestConnectionsStateTransitionErrors(t *testing.T) {
 	require.Equal(t, ErrConnectionExists, err)
 
 	// pending -> introduced fails
-	_, err = conns.introduced(addr, 1, &IntroductionMessage{}, &userAgent)
+	_, err = conns.introduced(addr, 1, &IntroductionMessage{})
 	require.Equal(t, ErrConnectionStateNotConnected, err)
 
 	_, err = conns.connected(addr, 1)
@@ -475,10 +493,10 @@ func TestConnectionsStateTransitionErrors(t *testing.T) {
 	require.Equal(t, ErrConnectionAlreadyConnected, err)
 
 	// connected -> introduced fails if gnet ID does not match
-	_, err = conns.introduced(addr, 2, &IntroductionMessage{}, &userAgent)
+	_, err = conns.introduced(addr, 2, &IntroductionMessage{})
 	require.Equal(t, ErrConnectionGnetIDMismatch, err)
 
-	_, err = conns.introduced(addr, 1, &IntroductionMessage{}, &userAgent)
+	_, err = conns.introduced(addr, 1, &IntroductionMessage{})
 	require.NoError(t, err)
 
 	// introduced -> connected fails
@@ -490,6 +508,6 @@ func TestConnectionsStateTransitionErrors(t *testing.T) {
 	require.Equal(t, ErrConnectionExists, err)
 
 	// introduced -> introduced fails
-	_, err = conns.introduced(addr, 1, &IntroductionMessage{}, &userAgent)
+	_, err = conns.introduced(addr, 1, &IntroductionMessage{})
 	require.Equal(t, ErrConnectionAlreadyIntroduced, err)
 }

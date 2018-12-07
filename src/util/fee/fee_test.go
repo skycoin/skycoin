@@ -154,7 +154,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 	testutil.RequireError(t, err, "Transaction output hours overflow")
 
 	cases := []struct {
-		burnFactor uint64
+		burnFactor uint32
 		cases      []verifyTxnFeeTestCase
 	}{
 		{2, burnFactor2VerifyTxnFeeTestCases},
@@ -164,7 +164,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 
 	tested := false
 	for _, tcc := range cases {
-		if tcc.burnFactor == params.UserBurnFactor {
+		if tcc.burnFactor == params.UserVerifyTxn.BurnFactor {
 			tested = true
 		}
 
@@ -183,7 +183,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 		}
 	}
 
-	require.True(t, tested, "configured params.UserBurnFactor=%d has not been tested", params.UserBurnFactor)
+	require.True(t, tested, "configured params.UserVerifyTxn.BurnFactor=%d has not been tested", params.UserVerifyTxn.BurnFactor)
 }
 
 type requiredFeeTestCase struct {
@@ -247,7 +247,7 @@ var burnFactor10RequiredFeeTestCases = []requiredFeeTestCase{
 
 func TestRequiredFee(t *testing.T) {
 	cases := []struct {
-		burnFactor uint64
+		burnFactor uint32
 		cases      []requiredFeeTestCase
 	}{
 		{2, burnFactor2RequiredFeeTestCases},
@@ -257,7 +257,7 @@ func TestRequiredFee(t *testing.T) {
 
 	tested := false
 	for _, tcc := range cases {
-		if tcc.burnFactor == params.UserBurnFactor {
+		if tcc.burnFactor == params.UserVerifyTxn.BurnFactor {
 			tested = true
 		}
 
@@ -273,7 +273,7 @@ func TestRequiredFee(t *testing.T) {
 		}
 	}
 
-	require.True(t, tested, "configured params.UserBurnFactor=%d has not been tested", params.UserBurnFactor)
+	require.True(t, tested, "configured params.UserVerifyTxn.BurnFactor=%d has not been tested", params.UserVerifyTxn.BurnFactor)
 }
 
 func TestTransactionFee(t *testing.T) {

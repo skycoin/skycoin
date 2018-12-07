@@ -102,7 +102,7 @@ func NewBlockBody(b coin.Block) (*BlockBody, error) {
 type Block struct {
 	Head BlockHeader `json:"header"`
 	Body BlockBody   `json:"body"`
-	Size int         `json:"size"`
+	Size uint32      `json:"size"`
 }
 
 // NewBlock creates a readable block
@@ -111,10 +111,16 @@ func NewBlock(b coin.Block) (*Block, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	size, err := b.Size()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Block{
 		Head: NewBlockHeader(b.Head),
 		Body: *body,
-		Size: b.Size(),
+		Size: size,
 	}, nil
 }
 

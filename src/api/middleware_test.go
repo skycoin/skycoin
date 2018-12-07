@@ -62,10 +62,7 @@ func TestOriginRefererCheck(t *testing.T) {
 				req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 				require.NoError(t, err)
 
-				csrfStore := &CSRFStore{
-					Enabled: true,
-				}
-				setCSRFParameters(csrfStore, tokenValid, req)
+				setCSRFParameters(t, tokenValid, req)
 
 				if tc.origin != "" {
 					req.Header.Set("Origin", tc.origin)
@@ -75,14 +72,11 @@ func TestOriginRefererCheck(t *testing.T) {
 				}
 
 				rr := httptest.NewRecorder()
-				handler := newServerMux(muxConfig{
-					host:            configuredHost,
-					appLoc:          ".",
-					enableJSON20RPC: true,
-					disableCSP:      true,
-					hostWhitelist:   tc.hostWhitelist,
-				}, gateway, csrfStore, nil)
 
+				cfg := defaultMuxConfig()
+				cfg.disableCSRF = false
+
+				handler := newServerMux(cfg, gateway, nil)
 				handler.ServeHTTP(rr, req)
 
 				switch tc.status {
@@ -137,10 +131,7 @@ func TestHostCheck(t *testing.T) {
 				req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 				require.NoError(t, err)
 
-				csrfStore := &CSRFStore{
-					Enabled: true,
-				}
-				setCSRFParameters(csrfStore, tokenValid, req)
+				setCSRFParameters(t, tokenValid, req)
 
 				req.Host = "example.com"
 
@@ -149,9 +140,10 @@ func TestHostCheck(t *testing.T) {
 					host:            configuredHost,
 					appLoc:          ".",
 					enableJSON20RPC: true,
+					disableCSRF:     false,
 					disableCSP:      true,
 					hostWhitelist:   tc.hostWhitelist,
-				}, gateway, csrfStore, nil)
+				}, gateway, nil)
 
 				handler.ServeHTTP(rr, req)
 
@@ -225,11 +217,12 @@ func TestContentSecurityPolicy(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{
-				host:       configuredHost,
-				appLoc:     tc.appLoc,
-				enableGUI:  tc.enableGUI,
-				disableCSP: !tc.enableCSP,
-			}, &MockGatewayer{}, &CSRFStore{}, nil)
+				host:        configuredHost,
+				appLoc:      tc.appLoc,
+				enableGUI:   tc.enableGUI,
+				disableCSP:  !tc.enableCSP,
+				disableCSRF: true,
+			}, &MockGatewayer{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			csp := rr.Header().Get("Content-Security-Policy")

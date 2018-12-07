@@ -127,7 +127,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 
 // Returns the balance of one or more addresses, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
-// URI: /api/v1/balance
+// URI: /api/v1s/balance
 // Method: GET, POST
 // Args:
 //     addrs: command separated list of addresses [required]

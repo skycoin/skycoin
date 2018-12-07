@@ -25,7 +25,7 @@ import (
 )
 
 func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *Blockchain) *Visor {
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
 
 	pool, err := NewUnconfirmedTransactionPool(db)
@@ -60,7 +60,7 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
 
-	_, softErr, err := v.InjectTransaction(txn)
+	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
 	require.Equal(t, NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
@@ -90,7 +90,7 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
 
-	_, softErr, err := v.InjectTransaction(txn)
+	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	testutil.RequireError(t, err, NewErrTxnViolatesHardConstraint(errors.New("Invalid number of signatures")).Error())
 }
@@ -120,7 +120,7 @@ func TestInjectValidTransaction(t *testing.T) {
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
-	_, softErr, err := v.InjectTransaction(txn)
+	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
 
@@ -156,7 +156,7 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
-	_, softErr, err := v.InjectTransaction(txn)
+	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
 	require.Equal(t, NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)

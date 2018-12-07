@@ -20,7 +20,7 @@ type BlockBodyVerbose struct {
 type BlockVerbose struct {
 	Head BlockHeader      `json:"header"`
 	Body BlockBodyVerbose `json:"body"`
-	Size int              `json:"size"`
+	Size uint32           `json:"size"`
 }
 
 // NewBlockBodyVerbose creates a verbose readable block body
@@ -52,10 +52,15 @@ func NewBlockVerbose(b coin.Block, inputs [][]visor.TransactionInput) (*BlockVer
 		return nil, err
 	}
 
+	size, err := b.Size()
+	if err != nil {
+		return nil, err
+	}
+
 	return &BlockVerbose{
 		Head: NewBlockHeader(b.Head),
 		Body: *body,
-		Size: b.Size(),
+		Size: size,
 	}, nil
 }
 

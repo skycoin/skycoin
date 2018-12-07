@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/daemon/strand"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -124,6 +125,30 @@ func newConnection(dc *connection, gc *gnet.Connection, pp *pex.Peer) Connection
 	return c
 }
 
+// newConnection creates a Connection from daemon.connection, gnet.Connection and pex.Peer
+func (gw *Gateway) newConnection(c *connection) (*Connection, error) {
+	if c == nil {
+		return nil, nil
+	}
+
+	gc, err := gw.d.pool.Pool.GetConnection(c.Addr)
+	if err != nil {
+		return nil, err
+	}
+
+	var pp *pex.Peer
+	listenAddr := c.ListenAddr()
+	if listenAddr != "" {
+		p, ok := gw.d.pex.GetPeer(listenAddr)
+		if ok {
+			pp = &p
+		}
+	}
+
+	cc := newConnection(c, gc, pp)
+	return &cc, nil
+}
+
 // GetConnections returns solicited (outgoing) connections
 func (gw *Gateway) GetConnections(f func(c Connection) bool) ([]Connection, error) {
 	var conns []Connection
@@ -188,30 +213,6 @@ func (gw *Gateway) GetConnection(addr string) (*Connection, error) {
 	}
 
 	return gw.newConnection(c)
-}
-
-// newConnection creates a Connection from daemon.connection, gnet.Connection and pex.Peer
-func (gw *Gateway) newConnection(c *connection) (*Connection, error) {
-	if c == nil {
-		return nil, nil
-	}
-
-	gc, err := gw.d.pool.Pool.GetConnection(c.Addr)
-	if err != nil {
-		return nil, err
-	}
-
-	var pp *pex.Peer
-	listenAddr := c.ListenAddr()
-	if listenAddr != "" {
-		p, ok := gw.d.pex.GetPeer(listenAddr)
-		if ok {
-			pp = &p
-		}
-	}
-
-	cc := newConnection(c, gc, pp)
-	return &cc, nil
 }
 
 // Disconnect disconnects a connection by gnet ID
@@ -486,14 +487,14 @@ func (gw *Gateway) GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction
 // InjectBroadcastTransaction injects transaction to the unconfirmed pool and broadcasts it.
 // If the transaction violates either hard or soft constraints, it is not broadcast.
 // This method is to be used by user-initiated transaction injections.
-// For transactions received over the network, use daemon.InjectTransaction and check the result to
+// For transactions received over the network, use daemon.injectTransaction and check the result to
 // decide on repropagation.
 func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
 		err = gw.v.WithUpdateTx("gateway.InjectBroadcastTransaction", func(tx *dbutil.Tx) error {
-			if _, err := gw.v.InjectTransactionStrictTx(tx, txn); err != nil {
-				logger.WithError(err).Error("InjectTransactionStrict failed")
+			if _, err := gw.v.InjectUserTransactionTx(tx, txn); err != nil {
+				logger.WithError(err).Error("InjectUserTransactionTx failed")
 				return err
 			}
 
@@ -616,9 +617,9 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 		}
 
 		// WARNING: This is not safe from races once we remove strand
-		_, err = gw.v.InjectTransactionStrict(*txn)
+		_, err = gw.v.InjectUserTransaction(*txn)
 		if err != nil {
-			logger.WithError(err).Error("InjectTransactionStrict failed")
+			logger.WithError(err).Error("InjectUserTransaction failed")
 			return
 		}
 
@@ -881,7 +882,7 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 		}
 	}
 
-	lockedAddrs := visor.GetLockedDistributionAddresses()
+	lockedAddrs := params.GetLockedDistributionAddresses()
 	addrsMap := make(map[string]struct{}, len(lockedAddrs))
 	for _, a := range lockedAddrs {
 		addrsMap[a] = struct{}{}
@@ -893,7 +894,7 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	}
 
 	if !includeDistribution {
-		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+		unlockedAddrs := params.GetUnlockedDistributionAddresses()
 		for _, a := range unlockedAddrs {
 			addrsMap[a] = struct{}{}
 		}
@@ -917,10 +918,12 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 
 // Health is returned by the /health endpoint
 type Health struct {
-	BlockchainMetadata  visor.BlockchainMetadata
-	OutgoingConnections int
-	IncomingConnections int
-	Uptime              time.Duration
+	BlockchainMetadata   visor.BlockchainMetadata
+	OutgoingConnections  int
+	IncomingConnections  int
+	Uptime               time.Duration
+	UnconfirmedVerifyTxn params.VerifyTxn
+	StartedAt            time.Time
 }
 
 // GetHealth returns statistics about the running node
@@ -952,10 +955,12 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 		}
 
 		health = &Health{
-			BlockchainMetadata:  *metadata,
-			OutgoingConnections: outgoingConns,
-			IncomingConnections: incomingConns,
-			Uptime:              time.Since(gw.v.StartedAt),
+			BlockchainMetadata:   *metadata,
+			OutgoingConnections:  outgoingConns,
+			IncomingConnections:  incomingConns,
+			Uptime:               time.Since(gw.v.StartedAt),
+			UnconfirmedVerifyTxn: gw.d.Config.UnconfirmedVerifyTxn,
+			StartedAt:            gw.v.StartedAt,
 		}
 	})
 

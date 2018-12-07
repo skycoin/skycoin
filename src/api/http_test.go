@@ -29,6 +29,7 @@ func defaultMuxConfig() muxConfig {
 	return muxConfig{
 		host:           configuredHost,
 		appLoc:         ".",
+		disableCSRF:    true,
 		disableCSP:     true,
 		enabledAPISets: allAPISetsEnabled,
 	}
@@ -177,11 +178,8 @@ func TestEnableGUI(t *testing.T) {
 			gateway := &MockGatewayer{}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{
-				host:       configuredHost,
-				appLoc:     tc.appLoc,
-				disableCSP: true,
-			}, gateway, &CSRFStore{}, nil)
+			cfg := defaultMuxConfig()
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			c := Config{
@@ -238,13 +236,12 @@ func TestAPISetDisabled(t *testing.T) {
 			require.NoError(t, err)
 
 			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
 			cfg.enableUnversionedAPI = true
 			cfg.enableJSON20RPC = false
 			cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
 
-			handler := newServerMux(cfg, &MockGatewayer{}, &CSRFStore{
-				Enabled: true,
-			}, nil)
+			handler := newServerMux(cfg, &MockGatewayer{}, nil)
 
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
@@ -295,15 +292,13 @@ func TestCORS(t *testing.T) {
 				name := fmt.Sprintf("%s %s %s", tc.name, m, e)
 				t.Run(name, func(t *testing.T) {
 					cfg := defaultMuxConfig()
+					cfg.disableCSRF = false
 					cfg.hostWhitelist = tc.hostWhitelist
 
 					req, err := http.NewRequest(http.MethodOptions, e, nil)
 					require.NoError(t, err)
 
-					csrfStore := &CSRFStore{
-						Enabled: true,
-					}
-					setCSRFParameters(csrfStore, tokenValid, req)
+					setCSRFParameters(t, tokenValid, req)
 
 					req.Header.Set("Origin", fmt.Sprintf("http://%s", tc.origin))
 					req.Header.Set("Access-Control-Request-Method", m)
@@ -311,7 +306,7 @@ func TestCORS(t *testing.T) {
 					requestHeaders := strings.ToLower(fmt.Sprintf("%s, Content-Type", CSRFHeaderName))
 					req.Header.Set("Access-Control-Request-Headers", requestHeaders)
 
-					handler := newServerMux(cfg, &MockGatewayer{}, csrfStore, nil)
+					handler := newServerMux(cfg, &MockGatewayer{}, nil)
 
 					rr := httptest.NewRecorder()
 					handler.ServeHTTP(rr, req)
@@ -434,14 +429,13 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 				req.SetBasicAuth(tc.reqUsername, tc.reqPassword)
 
 				cfg := defaultMuxConfig()
+				cfg.disableCSRF = false
 				cfg.enableUnversionedAPI = true
 				cfg.enableJSON20RPC = false
 				cfg.username = tc.username
 				cfg.password = tc.password
 
-				handler := newServerMux(cfg, &MockGatewayer{}, &CSRFStore{
-					Enabled: true,
-				}, nil)
+				handler := newServerMux(cfg, &MockGatewayer{}, nil)
 
 				rr := httptest.NewRecorder()
 				handler.ServeHTTP(rr, req)

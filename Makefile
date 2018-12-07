@@ -7,7 +7,8 @@
 .PHONY: integration-test-disable-gui integration-test-disable-gui
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
-.PHONY: install-deps-ui build-ui help newcoin generate-mocks merge-coverage
+.PHONY: install-deps-ui build-ui help newcoins merge-coverage
+.PHONY: generate-mocks update-golden-files
 
 COIN ?= skycoin
 
@@ -23,6 +24,7 @@ BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
 LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
 SRC_FILES = $(shell find ./src -type f -name "*.go")
+HEADER_FILES = $(shell find ./include -type f -name "*.h")
 BIN_DIR = bin
 DOC_DIR = docs
 INCLUDE_DIR = include
@@ -93,21 +95,23 @@ configure-build:
 	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
 	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
 
-$(BUILDLIB_DIR)/libskycoin.so: $(LIB_FILES) $(SRC_FILES)
+$(BUILDLIB_DIR)/libskycoin.so: $(LIB_FILES) $(SRC_FILES) $(HEADER_FILES)
 	rm -Rf $(BUILDLIB_DIR)/libskycoin.so
 	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
 	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
 
-$(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES) $(SRC_FILES)
+$(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES) $(SRC_FILES) $(HEADER_FILES)
 	rm -Rf $(BUILDLIB_DIR)/libskycoin.a
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
 	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
 
+## Build libskycoin C static library
 build-libc-static: $(BUILDLIB_DIR)/libskycoin.a
 
+## Build libskycoin C shared library
 build-libc-shared: $(BUILDLIB_DIR)/libskycoin.so
 
-## Build libskycoin C client library
+## Build libskycoin C client libraries
 build-libc: configure-build build-libc-static build-libc-shared
 
 ## Build libskycoin C client library and executable C test suites
@@ -251,6 +255,12 @@ generate-mocks: ## Regenerate test interface mocks
 	# mockery can't generate the UnspentPooler mock in package visor, patch it
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
+
+update-golden-files: ## Run integration tests in update mode
+	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -d -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -d -u >/dev/null 2>&1 || true
 
 merge-coverage: ## Merge coverage files and create HTML coverage output. gocovmerge is required, install with `go get github.com/wadey/gocovmerge`
 	@echo "To install gocovmerge do:"

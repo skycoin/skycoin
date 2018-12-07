@@ -114,15 +114,15 @@ To get a full list of skycoin's parameters, just run
  $ docker run --rm skycoin/skycoin:develop -help
 ```
 
-To run multiple nodes concurrently in the same host, it is highly recommended to create separate volumes for each node. For example, in order to run a master node along with the one launched above, it is necessary to execute
+To run multiple nodes concurrently in the same host, it is highly recommended to create separate volumes for each node. For example, in order to run a block publisher node along with the one launched above, it is necessary to execute
 
 ```sh
-$ docker volume create skycoin-master-data
-$ docker volume create skycoin-master-wallet
-$ docker run -d -v skycoin-master-data:/data/.skycoin \
-  -v skycoin-master-wallet:/wallet \
+$ docker volume create skycoin-block-publisher-data
+$ docker volume create skycoin-block-publisher-wallet
+$ docker run -d -v skycoin-block-publisher-data:/data/.skycoin \
+  -v skycoin-block-publisher-wallet:/wallet \
   -p 6001:6000 -p 6421:6420 \
-  --name skycoin-master-stable skycoin/skycoin -master
+  --name skycoin-block-publisher-stable skycoin/skycoin -block-publisher
 ```
 
 Notice that the host's port must be changed since collisions of two services listening at the same port are not allowed by the low-level operating system socket libraries.

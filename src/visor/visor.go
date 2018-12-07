@@ -21,7 +21,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -32,75 +32,25 @@ import (
 
 var (
 	logger = logging.MustGetLogger("visor")
-
-	// errInvalidDecimals is returned by DropletPrecisionCheck if a coin amount has an invalid number of decimal places
-	errInvalidDecimals = errors.New("invalid amount, too many decimal places")
-
-	// maxDropletDivisor represents the modulus divisor when checking droplet precision rules.
-	// It is computed from MaxDropletPrecision in init()
-	maxDropletDivisor uint64
 )
-
-// MaxDropletDivisor represents the modulus divisor when checking droplet precision rules.
-func MaxDropletDivisor() uint64 {
-	// The value is wrapped in a getter to make it immutable to external packages
-	return maxDropletDivisor
-}
-
-func init() {
-	sanityCheck()
-	// Compute maxDropletDivisor from precision
-	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
-}
-
-func sanityCheck() {
-	if InitialUnlockedCount > DistributionAddressesTotal {
-		logger.Panic("unlocked addresses > total distribution addresses")
-	}
-
-	if uint64(len(distributionAddresses)) != DistributionAddressesTotal {
-		logger.Panic("available distribution addresses > total allowed distribution addresses")
-	}
-
-	if DistributionAddressInitialBalance*DistributionAddressesTotal > MaxCoinSupply {
-		logger.Panic("total balance in distribution addresses > max coin supply")
-	}
-}
-
-func calculateDivisor(precision uint64) uint64 {
-	if precision > droplet.Exponent {
-		logger.Panic("precision must be <= droplet.Exponent")
-	}
-
-	n := droplet.Exponent - precision
-	var i uint64 = 1
-	for k := uint64(0); k < n; k++ {
-		i = i * 10
-	}
-	return i
-}
-
-// DropletPrecisionCheck checks if an amount of coins is valid given decimal place restrictions
-func DropletPrecisionCheck(amount uint64) error {
-	if amount%maxDropletDivisor != 0 {
-		return errInvalidDecimals
-	}
-	return nil
-}
 
 // Config configuration parameters for the Visor
 type Config struct {
-	// Is this the master blockchain
-	IsMaster bool
+	// Is this a block publishing node
+	IsBlockPublisher bool
 
-	//Public key of blockchain authority
+	// Public key of the blockchain
 	BlockchainPubkey cipher.PubKey
 
-	//Secret key of blockchain authority (if master)
+	// Secret key of the blockchain (required if block publisher)
 	BlockchainSeckey cipher.SecKey
 
-	// Maximum size of a block, in bytes.
-	MaxBlockSize int
+	// Transaction verification parameters used for unconfirmed transactions
+	UnconfirmedVerifyTxn params.VerifyTxn
+	// Transaction verification parameters used when creating a block
+	CreateBlockVerifyTxn params.VerifyTxn
+	// Maximum size of a block, in bytes for creating blocks
+	MaxBlockSize uint32
 
 	// Where the blockchain is saved
 	BlockchainFile string
@@ -129,17 +79,17 @@ type Config struct {
 	WalletCryptoType wallet.CryptoType
 }
 
-// NewVisorConfig put cap on block size, not on transactions/block
-//Skycoin transactions are smaller than Bitcoin transactions so skycoin has
-//a higher transactions per second for the same block size
-func NewVisorConfig() Config {
+// NewConfig creates Config
+func NewConfig() Config {
 	c := Config{
-		IsMaster: false,
+		IsBlockPublisher: false,
 
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		MaxBlockSize: DefaultMaxBlockSize,
+		UnconfirmedVerifyTxn: params.UserVerifyTxn,
+		CreateBlockVerifyTxn: params.UserVerifyTxn,
+		MaxBlockSize:         params.UserVerifyTxn.MaxTransactionSize,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -152,10 +102,46 @@ func NewVisorConfig() Config {
 
 // Verify verifies the configuration
 func (c Config) Verify() error {
-	if c.IsMaster {
+	if c.IsBlockPublisher {
 		if c.BlockchainPubkey != cipher.MustPubKeyFromSecKey(c.BlockchainSeckey) {
-			return errors.New("Cannot run in master: invalid seckey for pubkey")
+			return errors.New("Cannot run as block publisher: invalid seckey for pubkey")
 		}
+	}
+
+	if err := c.UnconfirmedVerifyTxn.Validate(); err != nil {
+		return err
+	}
+
+	if err := c.CreateBlockVerifyTxn.Validate(); err != nil {
+		return err
+	}
+
+	if c.UnconfirmedVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return fmt.Errorf("UnconfirmedVerifyTxn.BurnFactor must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
+	}
+
+	if c.CreateBlockVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return fmt.Errorf("CreateBlockVerifyTxn.BurnFactor must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
+	}
+
+	if c.UnconfirmedVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("UnconfirmedVerifyTxn.MaxTransactionSize must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+
+	if c.CreateBlockVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("CreateBlockVerifyTxn.MaxTransactionSize must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+
+	if c.UnconfirmedVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("UnconfirmedVerifyTxn.MaxDropletPrecision must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
+	}
+
+	if c.CreateBlockVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("CreateBlockVerifyTxn.MaxDropletPrecision must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
+	}
+
+	if c.MaxBlockSize < c.CreateBlockVerifyTxn.MaxTransactionSize {
+		return errors.New("MaxBlockSize must be >= CreateBlockVerifyTxn.MaxTransactionSize")
 	}
 
 	return nil
@@ -164,7 +150,7 @@ func (c Config) Verify() error {
 //go:generate go install
 //go:generate mockery -name Historyer -case underscore -inpkg -testonly
 //go:generate mockery -name Blockchainer -case underscore -inpkg -testonly
-//go:generate mockery -name UnconfirmedTxnPooler -case underscore -inpkg -testonly
+//go:generate mockery -name UnconfirmedTransactionPooler -case underscore -inpkg -testonly
 
 // Historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
 type Historyer interface {
@@ -196,20 +182,20 @@ type Blockchainer interface {
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
 	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) error
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
-// UnconfirmedTxnPooler is the interface that provides methods for
+// UnconfirmedTransactionPooler is the interface that provides methods for
 // accessing the unconfirmed transaction pool
-type UnconfirmedTxnPooler interface {
+type UnconfirmedTransactionPooler interface {
 	SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error
-	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
+	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error)
 	AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error)
 	RemoveTransactions(tx *dbutil.Tx, txns []cipher.SHA256) error
-	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error)
+	Refresh(tx *dbutil.Tx, bc Blockchainer, verifyParams params.VerifyTxn) ([]cipher.SHA256, error)
 	RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error)
-	GetUnknown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
+	FilterKnown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
 	GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error)
 	RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
 	GetIncomingOutputs(tx *dbutil.Tx, bh coin.BlockHeader) (coin.UxArray, error)
@@ -221,11 +207,11 @@ type UnconfirmedTxnPooler interface {
 	Len(tx *dbutil.Tx) (uint64, error)
 }
 
-// Visor manages the Blockchain as both a Master and a Normal
+// Visor manages the blockchain
 type Visor struct {
 	Config      Config
 	DB          *dbutil.DB
-	Unconfirmed UnconfirmedTxnPooler
+	Unconfirmed UnconfirmedTransactionPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
 	StartedAt   time.Time
@@ -236,13 +222,21 @@ type Visor struct {
 // NewVisor creates a Visor for managing the blockchain database
 func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	logger.Info("Creating new visor")
-	if c.IsMaster {
-		logger.Info("Visor is master")
+	if c.IsBlockPublisher {
+		logger.Info("Visor running in block publisher mode")
 	}
 
 	if err := c.Verify(); err != nil {
 		return nil, err
 	}
+
+	logger.Infof("Coinhour burn factor for unconfirmed transactions is %d", c.UnconfirmedVerifyTxn.BurnFactor)
+	logger.Infof("Max transaction size for unconfirmed transactions is %d", c.UnconfirmedVerifyTxn.MaxTransactionSize)
+	logger.Infof("Max decimals for unconfirmed transactions is %d", c.UnconfirmedVerifyTxn.MaxDropletPrecision)
+	logger.Infof("Coinhour burn factor for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.BurnFactor)
+	logger.Infof("Max transaction size for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxTransactionSize)
+	logger.Infof("Max decimals for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxDropletPrecision)
+	logger.Infof("Max block size is %d", c.MaxBlockSize)
 
 	// Loads wallet
 	wltServConfig := wallet.Config{
@@ -410,7 +404,7 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 
 	var sb coin.SignedBlock
 	// record the signature of genesis block
-	if vs.Config.IsMaster {
+	if vs.Config.IsBlockPublisher {
 		sb = vs.signBlock(*b)
 		logger.Infof("Genesis block signature=%s", sb.Sig.Hex())
 	} else {
@@ -438,7 +432,7 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 	if err := vs.DB.Update("RefreshUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.MaxBlockSize)
+		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.UnconfirmedVerifyTxn)
 		return err
 	}); err != nil {
 		return nil, err
@@ -465,8 +459,8 @@ func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
 
 // CreateBlock creates a SignedBlock from pending transactions
 func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, error) {
-	if !vs.Config.IsMaster {
-		logger.Panic("Only master chain can create blocks")
+	if !vs.Config.IsBlockPublisher {
+		logger.Panic("Only a block publisher node can create blocks")
 	}
 
 	// Gather all unconfirmed transactions
@@ -484,7 +478,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize); err != nil {
+		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
@@ -514,10 +508,18 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	}
 
 	// Sort them by highest fee per kilobyte
-	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee(tx, head.Time()))
+	txns, err = coin.SortTransactions(txns, vs.Blockchain.TransactionFee(tx, head.Time()))
+	if err != nil {
+		logger.Critical().WithError(err).Error("SortTransactions failed, no block can be made until the offending transaction is removed")
+		return coin.SignedBlock{}, err
+	}
 
 	// Apply block size transaction limit
-	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+	txns, err = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+	if err != nil {
+		logger.Critical().WithError(err).Error("TruncateBytesTo failed, no block can be made until the offending transaction is removed")
+		return coin.SignedBlock{}, err
+	}
 
 	if len(txns) == 0 {
 		logger.Panic("TruncateBytesTo removed all transactions")
@@ -552,7 +554,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 }
 
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
-// Blocks must be executed in sequence, and be signed by the master server
+// Blocks must be executed in sequence, and be signed by a block publisher node
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	return vs.DB.Update("ExecuteSignedBlock", func(tx *dbutil.Tx) error {
 		return vs.executeSignedBlock(tx, b)
@@ -560,7 +562,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 }
 
 // executeSignedBlock adds a block to the blockchain, or returns error.
-// Blocks must be executed in sequence, and be signed by the master server
+// Blocks must be executed in sequence, and be signed by a block publisher node
 func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 		return err
@@ -584,10 +586,10 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	return vs.history.ParseBlock(tx, b.Block)
 }
 
-// signBlock signs a block for master.  Will panic if anything is invalid
+// signBlock signs a block for a block publisher node. Will panic if anything is invalid
 func (vs *Visor) signBlock(b coin.Block) coin.SignedBlock {
-	if !vs.Config.IsMaster {
-		logger.Panic("Only master chain can sign blocks")
+	if !vs.Config.IsBlockPublisher {
+		logger.Panic("Only a block publisher node can sign blocks")
 	}
 
 	sig := cipher.MustSignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
@@ -915,18 +917,19 @@ func (vs *Visor) getBlocksVerbose(tx *dbutil.Tx, getBlocks func(*dbutil.Tx) ([]c
 	return blocks, inputs, nil
 }
 
-// InjectTransaction records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
+// InjectForeignTransaction records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard constraints, it is rejected, and error will not be nil.
 // If the transaction only violates soft constraints, it is still injected, and the soft constraint violation is returned.
-func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesSoftConstraint, error) {
+// This method is intended for transactions received over the network.
+func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesSoftConstraint, error) {
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
 
-	if err := vs.DB.Update("InjectTransaction", func(tx *dbutil.Tx) error {
+	if err := vs.DB.Update("InjectForeignTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
+		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.UnconfirmedVerifyTxn)
 		return err
 	}); err != nil {
 		return false, nil, err
@@ -935,16 +938,16 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesS
 	return known, softErr, nil
 }
 
-// InjectTransactionStrict records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
+// InjectUserTransaction records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
-func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
+func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, error) {
 	var known bool
 
-	if err := vs.DB.Update("InjectTransactionStrict", func(tx *dbutil.Tx) error {
+	if err := vs.DB.Update("InjectUserTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, err = vs.InjectTransactionStrictTx(tx, txn)
+		known, err = vs.InjectUserTransactionTx(tx, txn)
 		return err
 	}); err != nil {
 		return false, err
@@ -953,23 +956,23 @@ func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 	return known, nil
 }
 
-// InjectTransactionStrictTx records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
+// InjectUserTransactionTx records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
 // This method is only exported for use by the daemon gateway's InjectBroadcastTransaction method.
-func (vs *Visor) InjectTransactionStrictTx(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
+func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
 	if err := VerifySingleTxnUserConstraints(txn); err != nil {
 		return false, err
 	}
 
-	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize); err != nil {
+	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn); err != nil {
 		return false, err
 	}
 
-	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
+	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.UserVerifyTxn)
 	if softErr != nil {
-		logger.WithError(softErr).Warning("InjectTransactionStrict vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
+		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
 
 	return known, err
@@ -1924,13 +1927,13 @@ func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTransaction,
 	return txn, nil
 }
 
-// GetUnconfirmedUnknown returns unconfirmed txn hashes with known ones removed
-func (vs *Visor) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
+// FilterKnownUnconfirmed returns unconfirmed txn hashes with known ones removed
+func (vs *Visor) FilterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 
-	if err := vs.DB.View("GetUnconfirmedUnknown", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("FilterKnownUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.Unconfirmed.GetUnknown(tx, txns)
+		hashes, err = vs.Unconfirmed.FilterKnown(tx, txns)
 		return err
 	}); err != nil {
 		return nil, err
@@ -1939,11 +1942,11 @@ func (vs *Visor) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, e
 	return hashes, nil
 }
 
-// GetUnconfirmedKnown returns unconfirmed txn hashes with known ones removed
-func (vs *Visor) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error) {
+// GetKnownUnconfirmed returns unconfirmed txn hashes with known ones removed
+func (vs *Visor) GetKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error) {
 	var hashes coin.Transactions
 
-	if err := vs.DB.View("GetUnconfirmedKnown", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("GetKnownUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
 		hashes, err = vs.Unconfirmed.GetKnown(tx, txns)
 		return err
@@ -2230,7 +2233,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, vs.Config.MaxBlockSize); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.UserVerifyTxn); err != nil {
 			return err
 		}
 

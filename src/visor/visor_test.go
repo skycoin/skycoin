@@ -19,6 +19,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
@@ -275,9 +276,9 @@ func TestVisorCreateBlock(t *testing.T) {
 
 	his := historydb.New()
 
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = false
+	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
@@ -289,8 +290,8 @@ func TestVisorCreateBlock(t *testing.T) {
 		history:     his,
 	}
 
-	// CreateBlock panics if called when not master
-	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
+	// CreateBlock panics if called when not a block publisher
+	_require.PanicsWithLogMessage(t, "Only a block publisher node can create blocks", func() {
 		err := db.Update("", func(tx *dbutil.Tx) error {
 			_, err := v.createBlock(tx, when)
 			return err
@@ -298,7 +299,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	v.Config.IsMaster = true
+	v.Config.IsBlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
 
 	addGenesisBlockToVisor(t, v)
@@ -323,20 +324,21 @@ func TestVisorCreateBlock(t *testing.T) {
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
-	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, maxDropletDivisor)
+	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserVerifyTxn.MaxDropletPrecision)
 
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
+		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
 		return err
 	})
 	require.NoError(t, err)
 	require.False(t, known)
 	require.Nil(t, softErr)
 
-	v.Config.MaxBlockSize = txn.Size()
+	v.Config.MaxBlockSize, err = txn.Size()
+	require.NoError(t, err)
 	sb, err := v.CreateAndExecuteBlock()
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb.Body.Transactions))
@@ -361,10 +363,14 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Add more transactions than is allowed in a block, to verify truncation
 	var txns coin.Transactions
 	var i int
-	for len(txns) == len(txns.TruncateBytesTo(v.Config.MaxBlockSize)) {
+	truncatedTxns, err := txns.TruncateBytesTo(v.Config.MaxBlockSize)
+	require.NoError(t, err)
+	for len(txns) == len(truncatedTxns) {
 		tx := makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f)
 		txns = append(txns, tx)
 		i++
+		truncatedTxns, err = txns.TruncateBytesTo(v.Config.MaxBlockSize)
+		require.NoError(t, err)
 	}
 	require.NotEqual(t, 0, len(txns))
 
@@ -399,7 +405,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	foundInvalidCoins := false
 	for _, txn := range txns {
 		for _, o := range txn.Out {
-			if err := DropletPrecisionCheck(o.Coins); err != nil {
+			if err := params.DropletPrecisionCheck(v.Config.UnconfirmedVerifyTxn.MaxDropletPrecision, o.Coins); err != nil {
 				foundInvalidCoins = true
 				break
 			}
@@ -413,7 +419,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		var softErr *ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
-			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
+			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
 			return err
 		})
 		require.False(t, known)
@@ -474,7 +480,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Check that decimal rules are enforced
 	for i, txn := range blockTxns {
 		for j, o := range txn.Out {
-			err := DropletPrecisionCheck(o.Coins)
+			err := params.DropletPrecisionCheck(v.Config.CreateBlockVerifyTxn.MaxDropletPrecision, o.Coins)
 			require.NoError(t, err, "txout %d.%d coins=%d", i, j, o.Coins)
 		}
 	}
@@ -496,9 +502,9 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	his := historydb.New()
 
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = false
+	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
@@ -510,8 +516,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 		history:     his,
 	}
 
-	// CreateBlock panics if called when not master
-	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
+	// CreateBlock panics if called when not a block publisher
+	_require.PanicsWithLogMessage(t, "Only a block publisher node can create blocks", func() {
 		err := db.Update("", func(tx *dbutil.Tx) error {
 			_, err := v.createBlock(tx, when)
 			return err
@@ -519,7 +525,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	v.Config.IsMaster = true
+	v.Config.IsBlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
 
 	addGenesisBlockToVisor(t, v)
@@ -547,7 +553,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with valid decimal places
 	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
-	known, softErr, err := v.InjectTransaction(txn)
+	known, softErr, err := v.InjectForeignTransaction(txn)
 	require.False(t, known)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
@@ -574,8 +580,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
 	// Check transactions with overflowing output coins fail
-	txn = makeOverflowCoinsSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
-	_, softErr, err = v.InjectTransaction(txn)
+	txn = makeOverflowCoinsSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
 	require.Nil(t, softErr)
@@ -591,8 +597,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Check transactions with overflowing output hours fail
 	// It should not be injected; when injecting a txn, the overflowing output hours is treated
 	// as a hard constraint. It is only a soft constraint when the txn is included in a signed block.
-	txn = makeOverflowHoursSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
-	_, softErr, err = v.InjectTransaction(txn)
+	txn = makeOverflowHoursSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Transaction output hours overflow")
@@ -607,11 +613,11 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
-	invalidCoins := coins + (maxDropletDivisor / 10)
+	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
-	_, softErr, err = v.InjectTransaction(txn)
+	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
-	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
+	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -625,13 +631,13 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	txn.Out[0].Address = cipher.Address{}
-	known, err = v.InjectTransactionStrict(txn)
+	known, err = v.InjectUserTransaction(txn)
 	require.False(t, known)
 	require.IsType(t, ErrTxnViolatesUserConstraint{}, err)
 	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
 }
 
-func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -648,11 +654,12 @@ func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cip
 	spendTx.PushOutput(toAddr, totalCoins, hours)
 
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
-func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -669,35 +676,9 @@ func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cip
 	spendTx.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
 
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
-}
-
-func TestVisorCalculatePrecision(t *testing.T) {
-	cases := []struct {
-		precision uint64
-		divisor   uint64
-	}{
-		{0, 1e6},
-		{1, 1e5},
-		{2, 1e4},
-		{3, 1e3},
-		{4, 1e2},
-		{5, 1e1},
-		{6, 1},
-	}
-
-	for _, tc := range cases {
-		name := fmt.Sprintf("calculateDivisor(%d)=%d", tc.precision, tc.divisor)
-		t.Run(name, func(t *testing.T) {
-			divisor := calculateDivisor(tc.precision)
-			require.Equal(t, tc.divisor, divisor, "%d != %d", tc.divisor, divisor)
-		})
-	}
-
-	_require.PanicsWithLogMessage(t, "precision must be <= droplet.Exponent", func() {
-		calculateDivisor(7)
-	})
 }
 
 func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { // nolint: unparam
@@ -1946,9 +1927,9 @@ func TestRefreshUnconfirmed(t *testing.T) {
 
 	his := historydb.New()
 
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = true
+	cfg.IsBlockPublisher = true
 	cfg.BlockchainSeckey = genSecret
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
@@ -1978,7 +1959,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 
 	// Create a valid transaction that will remain valid
 	validTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
-	known, softErr, err := v.InjectTransaction(validTxn)
+	known, softErr, err := v.InjectForeignTransaction(validTxn)
 	require.False(t, known)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
@@ -1994,11 +1975,11 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
 	// This transaction will stay invalid on refresh
-	invalidCoins := coins + (maxDropletDivisor / 10)
+	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
 	alwaysInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
-	_, softErr, err = v.InjectTransaction(alwaysInvalidTxn)
+	_, softErr, err = v.InjectForeignTransaction(alwaysInvalidTxn)
 	require.NoError(t, err)
-	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
+	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -2008,13 +1989,15 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Create a transaction that exceeds MaxBlockSize
+	// Create a transaction that exceeds UnconfirmedVerifyTxn.MaxTransactionSize
 	// It's still injected, because this is considered a soft error
-	// This transaction will become valid on refresh (by increasing MaxBlockSize)
-	v.Config.MaxBlockSize = 1
+	// This transaction will become valid on refresh (by increasing UnconfirmedVerifyTxn.MaxTransactionSize)
+	originalMaxUnconfirmedTxnSize := v.Config.UnconfirmedVerifyTxn.MaxTransactionSize
+	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = 1
 	sometimesInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
-	_, softErr, err = v.InjectTransaction(sometimesInvalidTxn)
+	_, softErr, err = v.InjectForeignTransaction(sometimesInvalidTxn)
 	require.NoError(t, err)
+	require.NotNil(t, softErr)
 	testutil.RequireError(t, softErr.Err, errTxnExceedsMaxBlockSize.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
@@ -2028,7 +2011,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn remains valid,
 	// the second txn remains invalid,
 	// the third txn becomes valid
-	v.Config.MaxBlockSize = DefaultMaxBlockSize
+	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = originalMaxUnconfirmedTxnSize
 	hashes, err := v.RefreshUnconfirmed()
 	require.NoError(t, err)
 	require.Equal(t, []cipher.SHA256{sometimesInvalidTxn.Hash()}, hashes)
@@ -2037,7 +2020,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn becomes invalid,
 	// the second txn remains invalid,
 	// the third txn becomes invalid again
-	v.Config.MaxBlockSize = 1
+	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = 1
 	hashes, err = v.RefreshUnconfirmed()
 	require.NoError(t, err)
 	require.Nil(t, hashes)
@@ -2046,7 +2029,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn was valid, became invalid, and is now valid again
 	// The second txn was always invalid
 	// The third txn was invalid, became valid, became invalid, and is now valid again
-	v.Config.MaxBlockSize = DefaultMaxBlockSize
+	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = originalMaxUnconfirmedTxnSize
 	hashes, err = v.RefreshUnconfirmed()
 	require.NoError(t, err)
 
@@ -2076,9 +2059,9 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	his := historydb.New()
 
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = true
+	cfg.IsBlockPublisher = true
 	cfg.Arbitrating = true
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
@@ -2111,7 +2094,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	var coins uint64 = 10e6
 	txn1 := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
-	known, softErr, err := v.InjectTransaction(txn1)
+	known, softErr, err := v.InjectForeignTransaction(txn1)
 	require.False(t, known)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
@@ -2126,7 +2109,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	var fee uint64 = 1
 	txn2 := makeSpendTxWithFee(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins, fee)
-	known, softErr, err = v.InjectTransaction(txn2)
+	known, softErr, err = v.InjectForeignTransaction(txn2)
 	require.False(t, known)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
@@ -2687,7 +2670,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 			db, shutdown := testutil.PrepareDB(t)
 			defer shutdown()
 
-			unconfirmed := &MockUnconfirmedTxnPooler{}
+			unconfirmed := &MockUnconfirmedTransactionPooler{}
 			bc := &MockBlockchainer{}
 			unspent := &MockUnspentPooler{}
 			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
@@ -2766,7 +2749,8 @@ func makeTxn(t *testing.T, headTime uint64, in, out []coin.UxOut, keys []cipher.
 	}
 
 	txn.SignInputs(keys)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 
 	inbalances, err := wallet.NewUxBalances(headTime, in)
 	require.NoError(t, err)
@@ -2890,7 +2874,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		balances    []wallet.UxBalance
 		err         error
 
-		maxBlockSize int
+		maxUserTransactionSize uint32
 
 		getArrayRet coin.UxArray
 		getArrayErr error
@@ -2973,10 +2957,10 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			getArrayRet: inputs[:1],
 		},
 		{
-			name:         "transaction violate soft constraints, transaction size bigger than max block size",
-			maxBlockSize: 1,
-			txn:          txn,
-			err:          ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
+			name:                   "transaction violate soft constraints, transaction size bigger than max block size",
+			maxUserTransactionSize: 1,
+			txn:                    txn,
+			err:                    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
 
 			getArrayRet: inputs[:1],
 		},
@@ -3052,13 +3036,16 @@ func TestVerifyTxnVerbose(t *testing.T) {
 				Blockchain: bc,
 				DB:         db,
 				history:    history,
-				Config: Config{
-					MaxBlockSize: tc.maxBlockSize,
-				},
+				Config:     Config{},
 			}
 
-			if v.Config.MaxBlockSize == 0 {
-				v.Config.MaxBlockSize = DefaultMaxBlockSize
+			originalMaxUnconfirmedTxnSize := params.UserVerifyTxn.MaxTransactionSize
+			defer func() {
+				params.UserVerifyTxn.MaxTransactionSize = originalMaxUnconfirmedTxnSize
+			}()
+
+			if tc.maxUserTransactionSize != 0 {
+				params.UserVerifyTxn.MaxTransactionSize = tc.maxUserTransactionSize
 			}
 
 			var isConfirmed bool
@@ -3100,17 +3087,17 @@ func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *histor
 	return nil
 }
 
-// UnconfirmedTxnPoolerMock2 embeds UnconfirmedTxnPoolerMock, and rewrite the GetFiltered method
-type UnconfirmedTxnPoolerMock2 struct {
-	MockUnconfirmedTxnPooler
+// MockUnconfirmedTransactionPooler2 embeds UnconfirmedTxnPoolerMock, and rewrite the GetFiltered method
+type MockUnconfirmedTransactionPooler2 struct {
+	MockUnconfirmedTransactionPooler
 	txns []UnconfirmedTransaction
 }
 
-func NewUnconfirmedTransactionPoolerMock2() *UnconfirmedTxnPoolerMock2 {
-	return &UnconfirmedTxnPoolerMock2{}
+func NewUnconfirmedTransactionPoolerMock2() *MockUnconfirmedTransactionPooler2 {
+	return &MockUnconfirmedTransactionPooler2{}
 }
 
-func (m *UnconfirmedTxnPoolerMock2) GetFiltered(tx *dbutil.Tx, f func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+func (m *MockUnconfirmedTransactionPooler2) GetFiltered(tx *dbutil.Tx, f func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
 	var txns []UnconfirmedTransaction
 	for i := range m.txns {
 		if f(m.txns[i]) {

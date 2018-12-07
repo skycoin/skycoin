@@ -1,10 +1,10 @@
 package main
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-
 	"reflect"
 	"unsafe"
+
+	cipher "github.com/skycoin/skycoin/src/cipher"
 )
 
 /*
@@ -99,5 +99,12 @@ func SKY_cipher_Merkle(_h0 *[]C.cipher__SHA256, _arg1 *C.cipher__SHA256) (____er
 	h0 := (*[]cipher.SHA256)(unsafe.Pointer(_h0))
 	h := cipher.Merkle(*h0)
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
+	return
+}
+
+//export SKY_cipher_SHA256_Null
+func SKY_cipher_SHA256_Null(_g *C.cipher__SHA256, _arg0 *bool) (____error_code uint32) {
+	g := (*cipher.SHA256)(unsafe.Pointer(_g))
+	*_arg0 = g.Null()
 	return
 }

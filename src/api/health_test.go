@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
@@ -28,7 +29,6 @@ func TestHealthHandler(t *testing.T) {
 		err              string
 		getHealthErr     error
 		cfg              muxConfig
-		csrfEnabled      bool
 		walletAPIEnabled bool
 	}{
 		{
@@ -63,6 +63,7 @@ func TestHealthHandler(t *testing.T) {
 			cfg: muxConfig{
 				host:                 configuredHost,
 				appLoc:               ".",
+				disableCSRF:          false,
 				disableCSP:           false,
 				enableGUI:            true,
 				enableUnversionedAPI: true,
@@ -72,7 +73,6 @@ func TestHealthHandler(t *testing.T) {
 					EndpointsRead:   struct{}{},
 				},
 			},
-			csrfEnabled:      true,
 			walletAPIEnabled: false,
 		},
 	}
@@ -128,6 +128,12 @@ func TestHealthHandler(t *testing.T) {
 				OutgoingConnections: 3,
 				IncomingConnections: 2,
 				Uptime:              time.Second * 4,
+				UnconfirmedVerifyTxn: params.VerifyTxn{
+					BurnFactor:          params.UserVerifyTxn.BurnFactor * 2,
+					MaxTransactionSize:  params.UserVerifyTxn.MaxTransactionSize * 2,
+					MaxDropletPrecision: params.UserVerifyTxn.MaxDropletPrecision - 1,
+				},
+				StartedAt: time.Now().Add(time.Second * -4),
 			}
 
 			gateway := &MockGatewayer{}
@@ -142,12 +148,8 @@ func TestHealthHandler(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: tc.csrfEnabled,
-			}
-
 			rr := httptest.NewRecorder()
-			handler := newServerMux(tc.cfg, gateway, csrfStore, nil)
+			handler := newServerMux(tc.cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)
@@ -184,14 +186,22 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, metadata.HeadBlock.Block.Head.Hash().Hex(), r.BlockchainMetadata.Head.Hash)
 			require.Equal(t, metadata.HeadBlock.Block.Head.BodyHash.Hex(), r.BlockchainMetadata.Head.BodyHash)
 
-			require.Equal(t, tc.csrfEnabled, r.CSRFEnabled)
+			require.Equal(t, !tc.cfg.disableCSRF, r.CSRFEnabled)
 			require.Equal(t, !tc.cfg.disableCSP, r.CSPEnabled)
 			require.Equal(t, tc.cfg.enableUnversionedAPI, r.UnversionedAPIEnabled)
 			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
 			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
-			require.Equal(t, uint64(0x2), r.BurnFactor)
+			require.Equal(t, uint32(2), r.UserVerifyTxn.BurnFactor)
+			require.Equal(t, uint32(32*1024), r.UserVerifyTxn.MaxTransactionSize)
+			require.Equal(t, uint8(3), r.UserVerifyTxn.MaxDropletPrecision)
+
+			require.Equal(t, health.UnconfirmedVerifyTxn.BurnFactor, r.UnconfirmedVerifyTxn.BurnFactor)
+			require.Equal(t, health.UnconfirmedVerifyTxn.MaxTransactionSize, r.UnconfirmedVerifyTxn.MaxTransactionSize)
+			require.Equal(t, health.UnconfirmedVerifyTxn.MaxDropletPrecision, r.UnconfirmedVerifyTxn.MaxDropletPrecision)
+			require.True(t, time.Now().Unix() > r.StartedAt)
+
 		})
 	}
 }

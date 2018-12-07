@@ -763,9 +763,6 @@ unsigned int MaxUint16 = 0xFFFF;
 
 Test(coin_transactions, TestVerifyTransactionHoursSpending) {
  
-  unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
-unsigned int MaxUint16 = 0xFFFF;
-
   GoUint64 Million = 1000000;
   unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
   unsigned int MaxUint16 = 0xFFFF;
@@ -949,8 +946,6 @@ void testTransactionSorting(Transactions__Handle hTrans, int *original_indexes,
 }
 
 GoUint32_ feeCalculator3(Transaction__Handle handle, GoUint64_ *pFee, void *context) {
-  unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
-unsigned int MaxUint16 = 0xFFFF;
   cipher__SHA256 *thirdHash = (cipher__SHA256 *)context;
   cipher__SHA256 hash;
   unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;

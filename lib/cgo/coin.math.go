@@ -44,3 +44,14 @@ func SKY_coin_Int64ToUint64(_a int64, _arg1 *uint64) (____error_code uint32) {
 	}
 	return
 }
+
+//export SKY_coin_IntToUint32
+func SKY_coin_IntToUint32(_a int, _arg1 *uint32) (____error_code uint32) {
+	a := _a
+	__arg1, ____return_err := coin.IntToUint32(a)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg1 = __arg1
+	}
+	return
+}

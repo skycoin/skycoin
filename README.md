@@ -186,6 +186,9 @@ The [skycoin/skycoindev-cli docker image](docker/images/dev-cli/README.md) is pr
 easy to start developing Skycoin. It comes with the compiler, linters, debugger
 and the vim editor among other tools.
 
+The [skycoin/skycoindev-dind docker image](docker/images/dev-docker/README.md) comes with docker installed
+and all tools available on `skycoin/skycoindev-cli:develop` docker image.
+
 ## API Documentation
 
 ### REST API

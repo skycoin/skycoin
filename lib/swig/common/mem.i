@@ -3,10 +3,6 @@
 	$1 = &temp;
 }
 
-/* Handle out typemap. */
-%typemap(argout) Handle* {
-	%append_output( SWIG_From_long(*$1) );
-}
 
 /* Handle not as pointer is input. */
 %typemap(in) Handle {

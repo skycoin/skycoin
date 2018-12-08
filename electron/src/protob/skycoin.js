@@ -36,6 +36,7 @@ var $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
  * @property {number} MessageType_EntropyAck=36 MessageType_EntropyAck value
  * @property {number} MessageType_PassphraseRequest=41 MessageType_PassphraseRequest value
  * @property {number} MessageType_PassphraseAck=42 MessageType_PassphraseAck value
+ * @property {number} MessageType_GetFeatures=55 MessageType_GetFeatures value
  * @property {number} MessageType_PassphraseStateRequest=77 MessageType_PassphraseStateRequest value
  * @property {number} MessageType_PassphraseStateAck=78 MessageType_PassphraseStateAck value
  * @property {number} MessageType_RecoveryDevice=45 MessageType_RecoveryDevice value
@@ -75,6 +76,7 @@ $root.MessageType = (function() {
     values[valuesById[36] = "MessageType_EntropyAck"] = 36;
     values[valuesById[41] = "MessageType_PassphraseRequest"] = 41;
     values[valuesById[42] = "MessageType_PassphraseAck"] = 42;
+    values[valuesById[55] = "MessageType_GetFeatures"] = 55;
     values[valuesById[77] = "MessageType_PassphraseStateRequest"] = 77;
     values[valuesById[78] = "MessageType_PassphraseStateAck"] = 78;
     values[valuesById[45] = "MessageType_RecoveryDevice"] = 45;
@@ -465,16 +467,12 @@ $root.Features = (function() {
      * @property {boolean|null} [passphraseProtection] Features passphraseProtection
      * @property {string|null} [language] Features language
      * @property {string|null} [label] Features label
-     * @property {Array.<ICoinType>|null} [coins] Features coins
      * @property {boolean|null} [initialized] Features initialized
-     * @property {Uint8Array|null} [revision] Features revision
      * @property {Uint8Array|null} [bootloaderHash] Features bootloaderHash
-     * @property {boolean|null} [imported] Features imported
      * @property {boolean|null} [pinCached] Features pinCached
      * @property {boolean|null} [passphraseCached] Features passphraseCached
      * @property {boolean|null} [firmwarePresent] Features firmwarePresent
      * @property {boolean|null} [needsBackup] Features needsBackup
-     * @property {number|null} [flags] Features flags
      * @property {string|null} [model] Features model
      * @property {number|null} [fwMajor] Features fwMajor
      * @property {number|null} [fwMinor] Features fwMinor
@@ -495,7 +493,6 @@ $root.Features = (function() {
      * @param {IFeatures=} [properties] Properties to set
      */
     function Features(properties) {
-        this.coins = [];
         if (properties)
             for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -583,14 +580,6 @@ $root.Features = (function() {
     Features.prototype.label = "";
 
     /**
-     * Features coins.
-     * @member {Array.<ICoinType>} coins
-     * @memberof Features
-     * @instance
-     */
-    Features.prototype.coins = $util.emptyArray;
-
-    /**
      * Features initialized.
      * @member {boolean} initialized
      * @memberof Features
@@ -599,28 +588,12 @@ $root.Features = (function() {
     Features.prototype.initialized = false;
 
     /**
-     * Features revision.
-     * @member {Uint8Array} revision
-     * @memberof Features
-     * @instance
-     */
-    Features.prototype.revision = $util.newBuffer([]);
-
-    /**
      * Features bootloaderHash.
      * @member {Uint8Array} bootloaderHash
      * @memberof Features
      * @instance
      */
     Features.prototype.bootloaderHash = $util.newBuffer([]);
-
-    /**
-     * Features imported.
-     * @member {boolean} imported
-     * @memberof Features
-     * @instance
-     */
-    Features.prototype.imported = false;
 
     /**
      * Features pinCached.
@@ -653,14 +626,6 @@ $root.Features = (function() {
      * @instance
      */
     Features.prototype.needsBackup = false;
-
-    /**
-     * Features flags.
-     * @member {number} flags
-     * @memberof Features
-     * @instance
-     */
-    Features.prototype.flags = 0;
 
     /**
      * Features model.
@@ -762,17 +727,10 @@ $root.Features = (function() {
             writer.uint32(/* id 9, wireType 2 =*/74).string(message.language);
         if (message.label != null && message.hasOwnProperty("label"))
             writer.uint32(/* id 10, wireType 2 =*/82).string(message.label);
-        if (message.coins != null && message.coins.length)
-            for (var i = 0; i < message.coins.length; ++i)
-                $root.CoinType.encode(message.coins[i], writer.uint32(/* id 11, wireType 2 =*/90).fork()).ldelim();
         if (message.initialized != null && message.hasOwnProperty("initialized"))
             writer.uint32(/* id 12, wireType 0 =*/96).bool(message.initialized);
-        if (message.revision != null && message.hasOwnProperty("revision"))
-            writer.uint32(/* id 13, wireType 2 =*/106).bytes(message.revision);
         if (message.bootloaderHash != null && message.hasOwnProperty("bootloaderHash"))
             writer.uint32(/* id 14, wireType 2 =*/114).bytes(message.bootloaderHash);
-        if (message.imported != null && message.hasOwnProperty("imported"))
-            writer.uint32(/* id 15, wireType 0 =*/120).bool(message.imported);
         if (message.pinCached != null && message.hasOwnProperty("pinCached"))
             writer.uint32(/* id 16, wireType 0 =*/128).bool(message.pinCached);
         if (message.passphraseCached != null && message.hasOwnProperty("passphraseCached"))
@@ -781,8 +739,6 @@ $root.Features = (function() {
             writer.uint32(/* id 18, wireType 0 =*/144).bool(message.firmwarePresent);
         if (message.needsBackup != null && message.hasOwnProperty("needsBackup"))
             writer.uint32(/* id 19, wireType 0 =*/152).bool(message.needsBackup);
-        if (message.flags != null && message.hasOwnProperty("flags"))
-            writer.uint32(/* id 20, wireType 0 =*/160).uint32(message.flags);
         if (message.model != null && message.hasOwnProperty("model"))
             writer.uint32(/* id 21, wireType 2 =*/170).string(message.model);
         if (message.fwMajor != null && message.hasOwnProperty("fwMajor"))
@@ -861,22 +817,11 @@ $root.Features = (function() {
             case 10:
                 message.label = reader.string();
                 break;
-            case 11:
-                if (!(message.coins && message.coins.length))
-                    message.coins = [];
-                message.coins.push($root.CoinType.decode(reader, reader.uint32()));
-                break;
             case 12:
                 message.initialized = reader.bool();
                 break;
-            case 13:
-                message.revision = reader.bytes();
-                break;
             case 14:
                 message.bootloaderHash = reader.bytes();
-                break;
-            case 15:
-                message.imported = reader.bool();
                 break;
             case 16:
                 message.pinCached = reader.bool();
@@ -889,9 +834,6 @@ $root.Features = (function() {
                 break;
             case 19:
                 message.needsBackup = reader.bool();
-                break;
-            case 20:
-                message.flags = reader.uint32();
                 break;
             case 21:
                 message.model = reader.string();
@@ -979,27 +921,12 @@ $root.Features = (function() {
         if (message.label != null && message.hasOwnProperty("label"))
             if (!$util.isString(message.label))
                 return "label: string expected";
-        if (message.coins != null && message.hasOwnProperty("coins")) {
-            if (!Array.isArray(message.coins))
-                return "coins: array expected";
-            for (var i = 0; i < message.coins.length; ++i) {
-                var error = $root.CoinType.verify(message.coins[i]);
-                if (error)
-                    return "coins." + error;
-            }
-        }
         if (message.initialized != null && message.hasOwnProperty("initialized"))
             if (typeof message.initialized !== "boolean")
                 return "initialized: boolean expected";
-        if (message.revision != null && message.hasOwnProperty("revision"))
-            if (!(message.revision && typeof message.revision.length === "number" || $util.isString(message.revision)))
-                return "revision: buffer expected";
         if (message.bootloaderHash != null && message.hasOwnProperty("bootloaderHash"))
             if (!(message.bootloaderHash && typeof message.bootloaderHash.length === "number" || $util.isString(message.bootloaderHash)))
                 return "bootloaderHash: buffer expected";
-        if (message.imported != null && message.hasOwnProperty("imported"))
-            if (typeof message.imported !== "boolean")
-                return "imported: boolean expected";
         if (message.pinCached != null && message.hasOwnProperty("pinCached"))
             if (typeof message.pinCached !== "boolean")
                 return "pinCached: boolean expected";
@@ -1012,9 +939,6 @@ $root.Features = (function() {
         if (message.needsBackup != null && message.hasOwnProperty("needsBackup"))
             if (typeof message.needsBackup !== "boolean")
                 return "needsBackup: boolean expected";
-        if (message.flags != null && message.hasOwnProperty("flags"))
-            if (!$util.isInteger(message.flags))
-                return "flags: integer expected";
         if (message.model != null && message.hasOwnProperty("model"))
             if (!$util.isString(message.model))
                 return "model: string expected";
@@ -1071,30 +995,13 @@ $root.Features = (function() {
             message.language = String(object.language);
         if (object.label != null)
             message.label = String(object.label);
-        if (object.coins) {
-            if (!Array.isArray(object.coins))
-                throw TypeError(".Features.coins: array expected");
-            message.coins = [];
-            for (var i = 0; i < object.coins.length; ++i) {
-                if (typeof object.coins[i] !== "object")
-                    throw TypeError(".Features.coins: object expected");
-                message.coins[i] = $root.CoinType.fromObject(object.coins[i]);
-            }
-        }
         if (object.initialized != null)
             message.initialized = Boolean(object.initialized);
-        if (object.revision != null)
-            if (typeof object.revision === "string")
-                $util.base64.decode(object.revision, message.revision = $util.newBuffer($util.base64.length(object.revision)), 0);
-            else if (object.revision.length)
-                message.revision = object.revision;
         if (object.bootloaderHash != null)
             if (typeof object.bootloaderHash === "string")
                 $util.base64.decode(object.bootloaderHash, message.bootloaderHash = $util.newBuffer($util.base64.length(object.bootloaderHash)), 0);
             else if (object.bootloaderHash.length)
                 message.bootloaderHash = object.bootloaderHash;
-        if (object.imported != null)
-            message.imported = Boolean(object.imported);
         if (object.pinCached != null)
             message.pinCached = Boolean(object.pinCached);
         if (object.passphraseCached != null)
@@ -1103,8 +1010,6 @@ $root.Features = (function() {
             message.firmwarePresent = Boolean(object.firmwarePresent);
         if (object.needsBackup != null)
             message.needsBackup = Boolean(object.needsBackup);
-        if (object.flags != null)
-            message.flags = object.flags >>> 0;
         if (object.model != null)
             message.model = String(object.model);
         if (object.fwMajor != null)
@@ -1138,8 +1043,6 @@ $root.Features = (function() {
         if (!options)
             options = {};
         var object = {};
-        if (options.arrays || options.defaults)
-            object.coins = [];
         if (options.defaults) {
             object.vendor = "";
             object.majorVersion = 0;
@@ -1153,25 +1056,16 @@ $root.Features = (function() {
             object.label = "";
             object.initialized = false;
             if (options.bytes === String)
-                object.revision = "";
-            else {
-                object.revision = [];
-                if (options.bytes !== Array)
-                    object.revision = $util.newBuffer(object.revision);
-            }
-            if (options.bytes === String)
                 object.bootloaderHash = "";
             else {
                 object.bootloaderHash = [];
                 if (options.bytes !== Array)
                     object.bootloaderHash = $util.newBuffer(object.bootloaderHash);
             }
-            object.imported = false;
             object.pinCached = false;
             object.passphraseCached = false;
             object.firmwarePresent = false;
             object.needsBackup = false;
-            object.flags = 0;
             object.model = "";
             object.fwMajor = 0;
             object.fwMinor = 0;
@@ -1206,19 +1100,10 @@ $root.Features = (function() {
             object.language = message.language;
         if (message.label != null && message.hasOwnProperty("label"))
             object.label = message.label;
-        if (message.coins && message.coins.length) {
-            object.coins = [];
-            for (var j = 0; j < message.coins.length; ++j)
-                object.coins[j] = $root.CoinType.toObject(message.coins[j], options);
-        }
         if (message.initialized != null && message.hasOwnProperty("initialized"))
             object.initialized = message.initialized;
-        if (message.revision != null && message.hasOwnProperty("revision"))
-            object.revision = options.bytes === String ? $util.base64.encode(message.revision, 0, message.revision.length) : options.bytes === Array ? Array.prototype.slice.call(message.revision) : message.revision;
         if (message.bootloaderHash != null && message.hasOwnProperty("bootloaderHash"))
             object.bootloaderHash = options.bytes === String ? $util.base64.encode(message.bootloaderHash, 0, message.bootloaderHash.length) : options.bytes === Array ? Array.prototype.slice.call(message.bootloaderHash) : message.bootloaderHash;
-        if (message.imported != null && message.hasOwnProperty("imported"))
-            object.imported = message.imported;
         if (message.pinCached != null && message.hasOwnProperty("pinCached"))
             object.pinCached = message.pinCached;
         if (message.passphraseCached != null && message.hasOwnProperty("passphraseCached"))
@@ -1227,8 +1112,6 @@ $root.Features = (function() {
             object.firmwarePresent = message.firmwarePresent;
         if (message.needsBackup != null && message.hasOwnProperty("needsBackup"))
             object.needsBackup = message.needsBackup;
-        if (message.flags != null && message.hasOwnProperty("flags"))
-            object.flags = message.flags;
         if (message.model != null && message.hasOwnProperty("model"))
             object.model = message.model;
         if (message.fwMajor != null && message.hasOwnProperty("fwMajor"))

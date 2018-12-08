@@ -21,7 +21,7 @@ class BufferReceiver {
             this.dataBuffer = new Uint8Array(64);
             return;
         }
-        this.dataBuffer = new Uint8Array(64 * Math.ceil(this.msgSize / 64));
+        this.dataBuffer = new Uint8Array(64 * Math.ceil((this.msgSize + 9) / 64));
         this.dataBuffer.set(dv8.slice(9));
         this.bytesToGet = this.msgSize + 9 - 64;
 

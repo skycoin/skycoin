@@ -105,7 +105,7 @@ export class WalletService {
 
       const addressesString = addresses.join(',');
 
-      return this.apiService.get('transactions', { addrs: addressesString });
+      return this.apiService.post('transactions', { addrs: addressesString });
     }).flatMap(response => {
       response.forEach(tx => {
         tx.txn.outputs.forEach(output => {
@@ -260,8 +260,7 @@ export class WalletService {
   }
 
   createHwTransaction(wallet: Wallet, address: string, amount: BigNumber): Observable<PreviewTransaction> {
-    const allocationRatio = 0.25;
-    const unburnedHoursRatio = 0.5;
+   let unburnedHoursRatio: BigNumber;
 
     const addresses = wallet.addresses.map(a => a.address).join(',');
 
@@ -276,8 +275,11 @@ export class WalletService {
     const txInputs = [];
     const txSignatures = [];
 
-    return this.getOutputs(addresses)
-      .flatMap((outputs: Output[]) => {
+    return this.apiService.get('health').flatMap(response => {
+        unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(response.user_verify_transaction.burn_factor));
+
+        return this.getOutputs(addresses);
+      }).flatMap((outputs: Output[]) => {
         const minRequiredOutputs =  this.getMinRequiredOutputs(amount, outputs);
         let totalCoins = new BigNumber('0');
         minRequiredOutputs.map(output => totalCoins = totalCoins.plus(output.coins));
@@ -287,7 +289,7 @@ export class WalletService {
         }
 
         minRequiredOutputs.map(output => totalHours = totalHours.plus(output.calculated_hours));
-        hoursToSend = totalHours.multipliedBy(allocationRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
+        hoursToSend = totalHours.multipliedBy(unburnedHoursRatio).dividedBy(2).decimalPlaces(0, BigNumber.ROUND_FLOOR);
 
         calculatedHours = totalHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
 
@@ -525,7 +527,7 @@ export class WalletService {
       query = this.apiService.get('wallet/balance', { id: wallet.filename });
     } else {
       const formattedAddresses = wallet.addresses.map(a => a.address).join(',');
-      query = this.apiService.get('balance', { addrs: formattedAddresses });
+      query = this.apiService.post('balance', { addrs: formattedAddresses });
     }
 
     return query.map(balance => {
@@ -575,7 +577,7 @@ export class WalletService {
     if (!addresses) {
       return Observable.of([]);
     } else {
-      return this.apiService.get('outputs', { addrs: addresses }).map((response) => {
+      return this.apiService.post('outputs', { addrs: addresses }).map((response) => {
         const outputs = [];
         response.head_outputs.forEach(output => outputs.push({
           address: output.address,

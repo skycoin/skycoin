@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -233,7 +234,9 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 
 // IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
-	c *gnet.MessageContext `enc:"-"`
+	c                    *gnet.MessageContext `enc:"-"`
+	userAgent            useragent.Data       `enc:"-"`
+	unconfirmedVerifyTxn params.VerifyTxn     `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -246,14 +249,26 @@ type IntroductionMessage struct {
 	// Currently it contains the blockchain pubkey and user agent but will accept a client that does not provide it.
 	// If any of this data is provided, it must include a valid blockchain pubkey and a valid user agent string (maxlen=256).
 	// Contents of extra:
-	// ExtraByte uint32 // length prefix of []byte
-	// Pubkey    cipher.Pubkey // blockchain pubkey
-	// UserAgent string `enc:",maxlen=256"`
+	// ExtraByte           uint32 // length prefix of []byte
+	// Pubkey              cipher.Pubkey // blockchain pubkey
+	// BurnFactor          uint32 // burn factor for announced txns
+	// MaxTxnSize          uint32 // max txn size for announced txns
+	// MaxDropletPrecision uint8 // maximum number of decimal places for announced txns
+	// UserAgent           string `enc:",maxlen=256"`
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) *IntroductionMessage {
+	return &IntroductionMessage{
+		Mirror:          mirror,
+		ProtocolVersion: version,
+		ListenPort:      port,
+		Extra:           newIntroductionMessageExtra(pubkey, userAgent, verifyParams),
+	}
+}
+
+func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
 			"userAgent": userAgent,
@@ -263,20 +278,24 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 	if userAgent == "" {
 		logger.Panic("user agent is required")
 	}
+	useragent.MustParse(userAgent)
+
+	if err := verifyParams.Validate(); err != nil {
+		logger.Panic(err)
+	}
 
 	userAgentSerialized := encoder.SerializeString(userAgent)
+	verifyParamsSerialized := encoder.Serialize(verifyParams)
 
-	extra := make([]byte, len(pubkey)+len(userAgentSerialized))
+	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(verifyParamsSerialized))
 
 	copy(extra[:len(pubkey)], pubkey[:])
-	copy(extra[len(pubkey):], userAgentSerialized)
+	i := len(pubkey)
+	copy(extra[i:], verifyParamsSerialized)
+	i += len(verifyParamsSerialized)
+	copy(extra[i:], userAgentSerialized)
 
-	return &IntroductionMessage{
-		Mirror:          mirror,
-		ProtocolVersion: version,
-		ListenPort:      port,
-		Extra:           extra,
-	}
+	return extra
 }
 
 // Handle records message event in daemon
@@ -297,15 +316,14 @@ func (intro *IntroductionMessage) process(d daemoner) {
 
 	logger.WithFields(fields).Debug("IntroductionMessage.process")
 
-	userAgent, err := intro.verify(d)
-	if err != nil {
+	if err := intro.verify(d); err != nil {
 		if err := d.Disconnect(addr, err); err != nil {
 			logger.WithError(err).WithFields(fields).Warning("Disconnect")
 		}
 		return
 	}
 
-	if _, err := d.connectionIntroduced(addr, intro.c.ConnID, intro, userAgent); err != nil {
+	if _, err := d.connectionIntroduced(addr, intro.c.ConnID, intro); err != nil {
 		logger.WithError(err).WithFields(fields).Warning("connectionIntroduced failed")
 		var reason gnet.DisconnectReason
 		switch err {
@@ -352,7 +370,7 @@ func (intro *IntroductionMessage) process(d daemoner) {
 	}
 }
 
-func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
+func (intro *IntroductionMessage) verify(d daemoner) error {
 	addr := intro.c.Addr
 
 	fields := logrus.Fields{
@@ -365,7 +383,7 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 	// Disconnect if this is a self connection (we have the same mirror value)
 	if intro.Mirror == dc.Mirror {
 		logger.WithFields(fields).WithField("mirror", intro.Mirror).Info("Remote mirror value matches ours")
-		return nil, ErrDisconnectSelf
+		return ErrDisconnectSelf
 	}
 
 	// Disconnect if peer version is not within the supported range
@@ -374,7 +392,7 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 			"protocolVersion":    intro.ProtocolVersion,
 			"minProtocolVersion": dc.MinProtocolVersion,
 		}).Info("protocol version below minimum supported protocol version")
-		return nil, ErrDisconnectVersionNotSupported
+		return ErrDisconnectVersionNotSupported
 	}
 
 	logger.WithFields(fields).WithField("protocolVersion", intro.ProtocolVersion).Debug("Peer protocol version accepted")
@@ -383,12 +401,11 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 	// v25 sends blockchain pubkey and user agent
 	// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
 	// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
-	var userAgentData useragent.Data
 	if len(intro.Extra) > 0 {
 		var bcPubKey cipher.PubKey
 		if len(intro.Extra) < len(bcPubKey) {
 			logger.WithFields(fields).Warning("Extra data length does not meet the minimum requirement")
-			return nil, ErrDisconnectInvalidExtraData
+			return ErrDisconnectInvalidExtraData
 		}
 		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
@@ -397,24 +414,53 @@ func (intro *IntroductionMessage) verify(d daemoner) (*useragent.Data, error) {
 				"pubkey":       bcPubKey.Hex(),
 				"daemonPubkey": dc.BlockchainPubkey.Hex(),
 			}).Warning("Blockchain pubkey does not match")
-			return nil, ErrDisconnectBlockchainPubkeyNotMatched
+			return ErrDisconnectBlockchainPubkeyNotMatched
 		}
 
-		userAgentSerialized := intro.Extra[len(bcPubKey):]
+		i := len(bcPubKey)
+		if len(intro.Extra) < i+9 {
+			logger.WithFields(fields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
+			return ErrDisconnectInvalidExtraData
+		}
+		if err := encoder.DeserializeRaw(intro.Extra[i:i+9], &intro.unconfirmedVerifyTxn); err != nil {
+			// This should not occur due to the previous length check
+			logger.Critical().WithError(err).WithFields(fields).Warning("unconfirmedVerifyTxn params could not be deserialized")
+			return ErrDisconnectInvalidExtraData
+		}
+
+		if err := intro.unconfirmedVerifyTxn.Validate(); err != nil {
+			logger.WithError(err).WithFields(fields).WithFields(logrus.Fields{
+				"burnFactor":          intro.unconfirmedVerifyTxn.BurnFactor,
+				"maxTransactionSize":  intro.unconfirmedVerifyTxn.MaxTransactionSize,
+				"maxDropletPrecision": intro.unconfirmedVerifyTxn.MaxDropletPrecision,
+			}).Warning("Invalid unconfirmedVerifyTxn params")
+			switch err {
+			case params.ErrInvalidBurnFactor:
+				return ErrDisconnectInvalidBurnFactor
+			case params.ErrInvalidMaxTransactionSize:
+				return ErrDisconnectInvalidMaxTransactionSize
+			case params.ErrInvalidMaxDropletPrecision:
+				return ErrDisconnectInvalidMaxDropletPrecision
+			default:
+				return ErrDisconnectUnexpectedError
+			}
+		}
+
+		userAgentSerialized := intro.Extra[len(bcPubKey)+9:]
 		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 		if err != nil {
 			logger.WithError(err).WithFields(fields).Warning("Extra data user agent string could not be deserialized")
-			return nil, ErrDisconnectInvalidExtraData
+			return ErrDisconnectInvalidExtraData
 		}
 
-		userAgentData, err = useragent.Parse(useragent.Sanitize(userAgent))
+		intro.userAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
 			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Warning("User agent is invalid")
-			return nil, ErrDisconnectInvalidUserAgent
+			return ErrDisconnectInvalidUserAgent
 		}
 	}
 
-	return &userAgentData, nil
+	return nil
 }
 
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.

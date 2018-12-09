@@ -1,12 +1,16 @@
 package api
 
 import (
-	"crypto/subtle"
-	"encoding/base64"
-	"errors"
 	"net/http"
-	"sync"
 	"time"
+
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -19,79 +23,93 @@ const (
 	// CSRFMaxAge is the lifetime of a CSRF token in seconds
 	CSRFMaxAge = time.Second * 30
 
-	csrfTokenLength = 64
+	csrfSecretLength = 64
+
+	csrfNonceLength = 64
 )
+
+var (
+	// ErrCSRFInvalid is returned when the the CSRF token is in invalid format
+	ErrCSRFInvalid = errors.New("invalid CSRF token")
+	// ErrCSRFInvalidSignature is returned when the signature of the csrf token is invalid
+	ErrCSRFInvalidSignature = errors.New("invalid CSRF token signature")
+	// ErrCSRFExpired is returned when the csrf token has expired
+	ErrCSRFExpired = errors.New("csrf token expired")
+)
+
+var csrfSecretKey []byte
+
+func init() {
+	csrfSecretKey = cipher.RandByte(csrfSecretLength)
+}
 
 // CSRFToken csrf token
 type CSRFToken struct {
-	Value     []byte
+	Nonce     []byte
 	ExpiresAt time.Time
 }
 
 // newCSRFToken generates a new CSRF Token
-func newCSRFToken() CSRFToken {
-	return CSRFToken{
-		Value:     cipher.RandByte(csrfTokenLength),
-		ExpiresAt: time.Now().Add(CSRFMaxAge),
-	}
+func newCSRFToken() (string, error) {
+	return newCSRFTokenWithTime(time.Now().Add(CSRFMaxAge))
 }
 
-// String returns the token in base64 URL-safe encoded format
-func (c *CSRFToken) String() string {
-	return base64.RawURLEncoding.EncodeToString(c.Value)
-}
-
-// CSRFStore encapsulates a single CSRFToken
-type CSRFStore struct {
-	token   *CSRFToken
-	Enabled bool
-	sync.RWMutex
-}
-
-// getTokenValue returns a url safe base64 encoded token
-func (c *CSRFStore) getTokenValue() string {
-	c.RLock()
-	defer c.RUnlock()
-	return c.token.String()
-}
-
-// setToken sets a new CSRF token
-// if the value is changing the expire time should also change
-// so there is no explicit method to just set the value of the token
-func (c *CSRFStore) setToken(token CSRFToken) {
-	c.Lock()
-	defer c.Unlock()
-	c.token = &token
-}
-
-// expired checks if token expiry time is greater than current time
-func (c *CSRFStore) expired() bool {
-	return c.token == nil || time.Now().After(c.token.ExpiresAt)
-}
-
-// verifyToken checks that the given token is same as the internal token
-func (c *CSRFStore) verifyToken(headerToken string) error {
-	c.RLock()
-	defer c.RUnlock()
-
-	// check if token is initialized
-	if c.token == nil || len(c.token.Value) == 0 {
-		return errors.New("token not initialized")
+func newCSRFTokenWithTime(expiresAt time.Time) (string, error) {
+	token := &CSRFToken{
+		Nonce:     cipher.RandByte(csrfNonceLength),
+		ExpiresAt: expiresAt,
 	}
 
-	a, err := base64.RawURLEncoding.DecodeString(headerToken)
+	tokenJSON, err := json.Marshal(token)
+	if err != nil {
+		return "", err
+	}
+
+	h := hmac.New(sha256.New, csrfSecretKey)
+	_, err = h.Write([]byte(tokenJSON))
+	if err != nil {
+		return "", err
+	}
+
+	sig := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+
+	signingString := base64.RawURLEncoding.EncodeToString(tokenJSON)
+
+	return strings.Join([]string{signingString, sig}, "."), nil
+}
+
+// verifyCSRFToken checks validity of the given token
+func verifyCSRFToken(headerToken string) error {
+	tokenParts := strings.Split(headerToken, ".")
+	if len(tokenParts) != 2 {
+		return ErrCSRFInvalid
+	}
+
+	signingString, err := base64.RawURLEncoding.DecodeString(tokenParts[0])
 	if err != nil {
 		return err
 	}
 
-	// check if token values are same, using a constant time comparison
-	if subtle.ConstantTimeCompare(a, c.token.Value) != 1 {
-		return errors.New("invalid token")
+	h := hmac.New(sha256.New, csrfSecretKey)
+	_, err = h.Write([]byte(signingString))
+	if err != nil {
+		return err
 	}
 
-	// make sure token is still valid
-	if c.expired() {
-		return errors.New("token has expired")
+	sig := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+
+	if sig != tokenParts[1] {
+		return ErrCSRFInvalidSignature
+	}
+
+	var csrfToken CSRFToken
+	err = json.Unmarshal(signingString, &csrfToken)
+	if err != nil {
+		return err
+	}
+
+	if time.Now().After(csrfToken.ExpiresAt) {
+		return ErrCSRFExpired
 	}
 
 	return nil
@@ -102,36 +120,41 @@ func (c *CSRFStore) verifyToken(headerToken string) error {
 // Method: GET
 // Response:
 //  csrf_token: CSRF token to use in POST requests
-func getCSRFToken(store *CSRFStore) http.HandlerFunc {
+func getCSRFToken(disabled bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		if !store.Enabled {
+		if disabled {
 			logger.Warning("CSRF check disabled")
 			wh.Error404(w, "")
 			return
 		}
 
 		// generate a new token
-		store.setToken(newCSRFToken())
+		csrfToken, err := newCSRFToken()
+		if err != nil {
+			logger.Error(err)
+			wh.Error500(w, fmt.Sprintf("Failed to create a csrf token: %v", err))
+			return
+		}
 
-		wh.SendJSONOr500(logger, w, &map[string]string{"csrf_token": store.getTokenValue()})
+		wh.SendJSONOr500(logger, w, &map[string]string{"csrf_token": csrfToken})
 	}
 }
 
 // CSRFCheck verifies X-CSRF-Token header value
-func CSRFCheck(apiVersion string, store *CSRFStore, handler http.Handler) http.Handler {
+func CSRFCheck(apiVersion string, disabled bool, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if store.Enabled {
+		if !disabled {
 			switch r.Method {
 			case http.MethodPost, http.MethodPut, http.MethodDelete:
 				token := r.Header.Get(CSRFHeaderName)
-				if err := store.verifyToken(token); err != nil {
+				if err := verifyCSRFToken(token); err != nil {
 					logger.Errorf("CSRF token invalid: %v", err)
-					writeError(w, apiVersion, http.StatusForbidden, "invalid CSRF token")
+					writeError(w, apiVersion, http.StatusForbidden, err.Error())
 					return
 				}
 			}

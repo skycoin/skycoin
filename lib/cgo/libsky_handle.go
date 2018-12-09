@@ -13,13 +13,14 @@ import "C"
 import (
 	"hash"
 
+	gcli "github.com/urfave/cli"
+
 	api "github.com/skycoin/skycoin/src/api"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	cli "github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	wallet "github.com/skycoin/skycoin/src/wallet"
-	gcli "github.com/urfave/cli"
 )
 
 type Handle uint64

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -16,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -140,14 +142,20 @@ type NodeConfig struct {
 	// Reset the database if integrity checks fail, and continue running
 	ResetCorruptDB bool
 
-	// Maximum size of blocks in bytes to apply when creating blocks
-	MaxBlockSize int
-	// Maximum size of a transaction in bytes to apply to unconfirmed txns (received over the network, or when refreshing the pool)
-	MaxUnconfirmedTransactionSize int
-	// Coin hour burn factor to apply to unconfirmed txns (received over the network, or when refreshing the pool)
-	UnconfirmedBurnFactor uint64
-	// Coin hour burn factor to apply when creating blocks
-	CreateBlockBurnFactor uint64
+	// Transaction verification parameters for unconfirmed transactions
+	UnconfirmedVerifyTxn params.VerifyTxn
+	// Transaction verification parameters for transactions when creating blocks
+	CreateBlockVerifyTxn params.VerifyTxn
+	// Maximum block size
+	MaxBlockSize uint32
+
+	unconfirmedBurnFactor          uint64
+	maxUnconfirmedTransactionSize  uint64
+	unconfirmedMaxDropletPrecision uint64
+	createBlockBurnFactor          uint64
+	createBlockMaxTransactionSize  uint64
+	createBlockMaxDropletPrecision uint64
+	maxBlockSize                   uint64
 
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
@@ -269,10 +277,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		ResetCorruptDB: false,
 
 		// Blockchain/transaction validation
-		MaxUnconfirmedTransactionSize: params.MaxUserTransactionSize,
-		MaxBlockSize:                  params.MaxUserTransactionSize,
-		UnconfirmedBurnFactor:         params.UserBurnFactor,
-		CreateBlockBurnFactor:         params.UserBurnFactor,
+		UnconfirmedVerifyTxn: params.UserVerifyTxn,
+		CreateBlockVerifyTxn: params.UserVerifyTxn,
+		MaxBlockSize:         params.UserVerifyTxn.MaxTransactionSize,
 
 		// Wallets
 		WalletDirectory:  "",
@@ -304,8 +311,9 @@ func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
 		fmt.Println("Additional environment variables:")
-		fmt.Println("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be > 1.")
-		fmt.Println("* MAX_USER_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be > 183.")
+		fmt.Printf("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be >= %d.\n", params.MinBurnFactor)
+		fmt.Printf("* USER_MAX_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be >= %d.\n", params.MinTransactionSize)
+		fmt.Printf("* USER_MAX_DECIMALS - Set the maximum decimals allowed for user-created transactions. Must be <= %d.\n", droplet.Exponent)
 		os.Exit(0)
 	}
 
@@ -406,36 +414,94 @@ func (c *Config) postProcess() error {
 		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
 	}
 
+	if c.Node.MaxConnections < c.Node.MaxOutgoingConnections+c.Node.MaxDefaultPeerOutgoingConnections {
+		return errors.New("-max-connections must be >= -max-outgoing-connections + -max-default-peer-outgoing-connections")
+	}
+
 	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
 		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
 	}
 
-	if c.Node.MaxBlockSize <= 0 {
-		return errors.New("-block-size must be > 0")
+	if c.Node.maxBlockSize > math.MaxUint32 {
+		return errors.New("-max-block-size exceeds MaxUint32")
 	}
-	if c.Node.MaxBlockSize < params.MaxUserTransactionSize {
-		return fmt.Errorf("-max-block-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
+	if c.Node.maxUnconfirmedTransactionSize > math.MaxUint32 {
+		return errors.New("-max-txn-size-unconfirmed exceeds MaxUint32")
 	}
-
-	if c.Node.MaxUnconfirmedTransactionSize <= 0 {
-		return errors.New("-unconfirmed-txn-size must be > 0")
+	if c.Node.unconfirmedBurnFactor > math.MaxUint32 {
+		return errors.New("-burn-factor-unconfirmed exceeds MaxUint32")
 	}
-	if c.Node.MaxUnconfirmedTransactionSize < params.MaxUserTransactionSize {
-		return fmt.Errorf("-unconfirmed-txn-size must be >= params.MaxUserTransactionSize (%d)", params.MaxUserTransactionSize)
-	}
-
-	if c.Node.UnconfirmedBurnFactor < 2 {
-		return errors.New("-unconfirmed-burn-factor must be >= 2")
-	}
-	if c.Node.UnconfirmedBurnFactor < params.UserBurnFactor {
-		return fmt.Errorf("-unconfirmed-burn-factor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
+	if c.Node.createBlockBurnFactor > math.MaxUint32 {
+		return errors.New("-burn-factor-create-block exceeds MaxUint32")
 	}
 
-	if c.Node.CreateBlockBurnFactor < 2 {
-		return errors.New("-create-block-burn-factor must be >= 2")
+	if c.Node.unconfirmedMaxDropletPrecision > math.MaxUint8 {
+		return errors.New("-max-decimals-unconfirmed exceeds MaxUint8")
 	}
-	if c.Node.CreateBlockBurnFactor < params.UserBurnFactor {
-		return fmt.Errorf("-create-block-burn-factor must be >= params.UserBurnFactor (%d)", params.UserBurnFactor)
+	if c.Node.createBlockMaxDropletPrecision > math.MaxUint8 {
+		return errors.New("-max-decimals-create-block exceeds MaxUint8")
+	}
+
+	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)
+	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
+	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision)
+	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)
+	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)
+	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision)
+	c.Node.MaxBlockSize = uint32(c.Node.maxBlockSize)
+
+	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
+	}
+	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-txn-size-create-block must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
+	}
+	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("-max-txn-size-create-block must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+
+	if c.Node.MaxBlockSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
+	}
+	if c.Node.MaxBlockSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+	if c.Node.MaxBlockSize < c.Node.UnconfirmedVerifyTxn.MaxTransactionSize {
+		return errors.New("-max-block-size must be >= -max-txn-size-unconfirmed")
+	}
+	if c.Node.MaxBlockSize < c.Node.CreateBlockVerifyTxn.MaxTransactionSize {
+		return errors.New("-max-block-size must be >= -max-txn-size-create-block")
+	}
+
+	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.MinBurnFactor {
+		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
+	}
+	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
+	}
+
+	if c.Node.CreateBlockVerifyTxn.BurnFactor < params.MinBurnFactor {
+		return fmt.Errorf("-burn-factor-create-block must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
+	}
+	if c.Node.CreateBlockVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return fmt.Errorf("-burn-factor-create-block must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
+	}
+
+	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision > droplet.Exponent {
+		return fmt.Errorf("-max-decimals-unconfirmed must be <= droplet.Exponent (%d)", droplet.Exponent)
+	}
+	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("-max-decimals-unconfirmed must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
+	}
+
+	if c.Node.CreateBlockVerifyTxn.MaxDropletPrecision > droplet.Exponent {
+		return fmt.Errorf("-max-decimals-create-block must be <= droplet.Exponent (%d)", droplet.Exponent)
+	}
+	if c.Node.CreateBlockVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("-max-decimals-create-block must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
 	}
 
 	return nil
@@ -514,7 +580,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
 	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
+	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
@@ -574,10 +640,13 @@ func (c *NodeConfig) RegisterFlags() {
 
 	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
 
-	flag.IntVar(&c.MaxUnconfirmedTransactionSize, "unconfirmed-txn-size", c.MaxUnconfirmedTransactionSize, "maximum size of an unconfirmed transaction")
-	flag.IntVar(&c.MaxBlockSize, "block-size", c.MaxBlockSize, "maximum size of a block")
-	flag.Uint64Var(&c.UnconfirmedBurnFactor, "burn-factor-unconfirmed", c.UnconfirmedBurnFactor, "coinhour burn factor applied to unconfirmed transactions")
-	flag.Uint64Var(&c.CreateBlockBurnFactor, "burn-factor-create-block", c.CreateBlockBurnFactor, "coinhour burn factor applied when creating blocks")
+	flag.Uint64Var(&c.maxUnconfirmedTransactionSize, "max-txn-size-unconfirmed", uint64(c.UnconfirmedVerifyTxn.MaxTransactionSize), "maximum size of an unconfirmed transaction")
+	flag.Uint64Var(&c.unconfirmedBurnFactor, "burn-factor-unconfirmed", uint64(c.UnconfirmedVerifyTxn.BurnFactor), "coinhour burn factor applied to unconfirmed transactions")
+	flag.Uint64Var(&c.unconfirmedMaxDropletPrecision, "max-decimals-unconfirmed", uint64(c.UnconfirmedVerifyTxn.MaxDropletPrecision), "max number of decimal places applied to unconfirmed transactions")
+	flag.Uint64Var(&c.createBlockBurnFactor, "burn-factor-create-block", uint64(c.CreateBlockVerifyTxn.BurnFactor), "coinhour burn factor applied when creating blocks")
+	flag.Uint64Var(&c.createBlockMaxTransactionSize, "max-txn-size-create-block", uint64(c.CreateBlockVerifyTxn.MaxTransactionSize), "maximum size of a transaction applied when creating blocks")
+	flag.Uint64Var(&c.createBlockMaxDropletPrecision, "max-decimals-create-block", uint64(c.CreateBlockVerifyTxn.MaxDropletPrecision), "max number of decimal places applied when creating blocks")
+	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockSize), "maximum size of a block")
 
 	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")

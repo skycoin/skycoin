@@ -4,25 +4,20 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/skycoin/skycoin/src/util/droplet"
 )
 
 func init() {
-	loadCoinHourBurnFactor()
-	loadMaxUserTransactionSize()
-
-	// Compute maxDropletDivisor from precision
-	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
-
+	loadUserBurnFactor()
+	loadUserMaxTransactionSize()
+	loadUserMaxDecimals()
 	sanityCheck()
 }
 
 func sanityCheck() {
-	if UserBurnFactor <= 1 {
-		panic("UserBurnFactor must be > 1")
-	}
-
-	if MaxUserTransactionSize <= 0 {
-		panic("MaxUserTransactionSize must be > 0")
+	if err := UserVerifyTxn.Validate(); err != nil {
+		panic(err)
 	}
 
 	if InitialUnlockedCount > DistributionAddressesTotal {
@@ -42,38 +37,56 @@ func sanityCheck() {
 	}
 }
 
-func loadCoinHourBurnFactor() {
+func loadUserBurnFactor() {
 	xs := os.Getenv("USER_BURN_FACTOR")
 	if xs == "" {
 		return
 	}
 
-	x, err := strconv.ParseUint(xs, 10, 64)
+	x, err := strconv.ParseUint(xs, 10, 32)
 	if err != nil {
 		panic(fmt.Sprintf("Invalid USER_BURN_FACTOR %q: %v", xs, err))
 	}
 
-	if x <= 1 {
-		panic("USER_BURN_FACTOR must be > 1")
+	if x < uint64(MinBurnFactor) {
+		panic(fmt.Sprintf("USER_BURN_FACTOR must be >= %d", MinBurnFactor))
 	}
 
-	UserBurnFactor = x
+	UserVerifyTxn.BurnFactor = uint32(x)
 }
 
-func loadMaxUserTransactionSize() {
-	xs := os.Getenv("MAX_USER_TXN_SIZE")
+func loadUserMaxTransactionSize() {
+	xs := os.Getenv("USER_MAX_TXN_SIZE")
 	if xs == "" {
 		return
 	}
 
-	x, err := strconv.ParseInt(xs, 10, 32)
+	x, err := strconv.ParseUint(xs, 10, 32)
 	if err != nil {
-		panic(fmt.Sprintf("Invalid MAX_USER_TXN_SIZE %q: %v", xs, err))
+		panic(fmt.Sprintf("Invalid USER_MAX_TXN_SIZE %q: %v", xs, err))
 	}
 
-	if x <= 0 {
-		panic("MAX_USER_TXN_SIZE must be > 0")
+	if x < uint64(MinTransactionSize) {
+		panic(fmt.Sprintf("USER_MAX_TXN_SIZE must be >= %d", MinTransactionSize))
 	}
 
-	MaxUserTransactionSize = int(x)
+	UserVerifyTxn.MaxTransactionSize = uint32(x)
+}
+
+func loadUserMaxDecimals() {
+	xs := os.Getenv("USER_MAX_DECIMALS")
+	if xs == "" {
+		return
+	}
+
+	x, err := strconv.ParseUint(xs, 10, 8)
+	if err != nil {
+		panic(fmt.Sprintf("Invalid USER_MAX_DECIMALS %q: %v", xs, err))
+	}
+
+	if x > uint64(droplet.Exponent) {
+		panic(fmt.Sprintf("USER_MAX_DECIMALS must be <= %d", droplet.Exponent))
+	}
+
+	UserVerifyTxn.MaxDropletPrecision = uint8(x)
 }

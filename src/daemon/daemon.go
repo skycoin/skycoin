@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -144,6 +145,8 @@ type DaemonConfig struct { // nolint: golint
 	Port int
 	// Directory where application data is stored
 	DataDirectory string
+	// How often to check and initiate an outgoing connection to a trusted connection if needed
+	OutgoingTrustedRate time.Duration
 	// How often to check and initiate an outgoing connection if needed
 	OutgoingRate time.Duration
 	// How often to re-attempt to fill any missing private (aka required)  connections
@@ -191,6 +194,8 @@ type DaemonConfig struct { // nolint: golint
 	// User agent (sent in introduction messages)
 	UserAgent useragent.Data
 	userAgent string // parsed from UserAgent in preprocess()
+	// Transaction verification parameters for unconfirmed transactions
+	UnconfirmedVerifyTxn params.VerifyTxn
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
 }
@@ -203,6 +208,7 @@ func NewDaemonConfig() DaemonConfig {
 		Address:                      "",
 		Port:                         6677,
 		OutgoingRate:                 time.Second * 5,
+		OutgoingTrustedRate:          time.Millisecond * 100,
 		PrivateRate:                  time.Second * 5,
 		MaxConnections:               128,
 		MaxOutgoingConnections:       8,
@@ -224,6 +230,7 @@ func NewDaemonConfig() DaemonConfig {
 		UnconfirmedRefreshRate:       time.Minute,
 		UnconfirmedRemoveInvalidRate: time.Minute,
 		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
+		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
 	}
 }
 
@@ -249,7 +256,7 @@ type daemoner interface {
 	pexConfig() pex.Config
 	injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
-	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error)
+	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error)
 	sendRandomPeers(addr string) error
 }
 
@@ -307,9 +314,13 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 		done:          make(chan struct{}),
 	}
 
+	d.pool, err = NewPool(config.Pool, d)
+	if err != nil {
+		return nil, err
+	}
+
 	d.Gateway = NewGateway(config.Gateway, d)
 	d.Messages.Config.Register()
-	d.pool = NewPool(config.Pool, d)
 
 	return d, nil
 }
@@ -380,6 +391,9 @@ func (dm *Daemon) Run() error {
 	defer close(dm.done)
 
 	logger.Infof("Daemon UserAgent is %s", dm.Config.userAgent)
+	logger.Info("Daemon unconfirmed BurnFactor is %d", dm.Config.UnconfirmedVerifyTxn.BurnFactor)
+	logger.Info("Daemon unconfirmed MaxTransactionSize is %d", dm.Config.UnconfirmedVerifyTxn.MaxTransactionSize)
+	logger.Info("Daemon unconfirmed MaxDropletPrecision is %d", dm.Config.UnconfirmedVerifyTxn.MaxDropletPrecision)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -424,6 +438,19 @@ func (dm *Daemon) Run() error {
 	blocksAnnounceTicker := time.NewTicker(dm.Config.BlocksAnnounceRate)
 	defer blocksAnnounceTicker.Stop()
 
+	// outgoingTrustedConnectionsTicker is used to maintain at least one connection to a trusted peer.
+	// This may be configured at a very frequent rate, so if no trusted connections could be reached,
+	// there could be a lot of churn.
+	// The additional outgoingTrustedConnectionsTicker parameters are used to
+	// skip ticks of the outgoingTrustedConnectionsTicker in the event of total failure.
+	// outgoingTrustedConnectionsTickerSkipDuration is the minimum time to wait between
+	// ticks in the event of total failure.
+	outgoingTrustedConnectionsTicker := time.NewTicker(dm.Config.OutgoingTrustedRate)
+	defer outgoingTrustedConnectionsTicker.Stop()
+	outgoingTrustedConnectionsTickerSkipDuration := time.Second * 5
+	outgoingTrustedConnectionsTickerSkip := false
+	var outgoingTrustedConnectionsTickerSkipStart time.Time
+
 	privateConnectionsTicker := time.NewTicker(dm.Config.PrivateRate)
 	defer privateConnectionsTicker.Stop()
 	cullInvalidTicker := time.NewTicker(dm.Config.CullInvalidRate)
@@ -440,11 +467,9 @@ func (dm *Daemon) Run() error {
 	flushAnnouncedTxnsTicker := time.NewTicker(dm.Config.FlushAnnouncedTxnsRate)
 	defer flushAnnouncedTxnsTicker.Stop()
 
-	// Connect to all trusted peers on startup to try to ensure a connection
-	// establishes quickly.
+	// Connect to all trusted peers on startup to try to ensure a connection establishes quickly.
 	// The number of connections to default peers is restricted;
-	// if multiple connections succeed, extra connections beyond the limit will
-	// be disconnected.
+	// if multiple connections succeed, extra connections beyond the limit will be disconnected.
 	if !dm.Config.DisableOutgoingConnections {
 		wg.Add(1)
 		go func() {
@@ -542,6 +567,24 @@ loop:
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
 			dm.connectToRandomPeer()
+
+		case <-outgoingTrustedConnectionsTicker.C:
+			// Try to maintain at least one trusted connection
+			elapser.Register("outgoingTrustedConnectionsTicker")
+			// If connecting to a trusted peer totally fails, make sure to wait longer between further attempts
+			if outgoingTrustedConnectionsTickerSkip {
+				if time.Since(outgoingTrustedConnectionsTickerSkipStart) < outgoingTrustedConnectionsTickerSkipDuration {
+					continue
+				}
+			}
+
+			if err := dm.maybeConnectToTrustedPeer(); err != nil && err != ErrNetworkingDisabled {
+				logger.Critical().WithError(err).Error("maybeConnectToTrustedPeer")
+				outgoingTrustedConnectionsTickerSkip = true
+				outgoingTrustedConnectionsTickerSkipStart = time.Now()
+			} else {
+				outgoingTrustedConnectionsTickerSkip = false
+			}
 
 		case <-privateConnectionsTicker.C:
 			// Always try to stay connected to our private peers
@@ -706,13 +749,16 @@ func (dm *Daemon) makePrivateConnections() {
 	}
 }
 
+// connectToTrustedPeers tries to connect to all trusted peers
 func (dm *Daemon) connectToTrustedPeers() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
 
 	logger.Info("Connect to trusted peers")
-	// Make connections to all trusted peers
+	// Make connections to all trusted peers to try to ensure a connection
+	// MaxDefaultPeerOutgoingConnections limits will be enforced in gnet
+	// after connections have been established, so not all trusted peers will be connected to.
 	peers := dm.pex.TrustedPublic()
 	for _, p := range peers {
 		if err := dm.connectToPeer(p); err != nil {
@@ -721,7 +767,38 @@ func (dm *Daemon) connectToTrustedPeers() {
 	}
 }
 
-// Attempts to connect to a random peer. If it fails, the peer is removed.
+// maybeConnectToTrustedPeer tries to connect to one trusted peer if there are no trusted connections
+func (dm *Daemon) maybeConnectToTrustedPeer() error {
+	if dm.Config.DisableOutgoingConnections {
+		return ErrNetworkingDisabled
+	}
+
+	peers := dm.pex.TrustedPublic()
+	for _, p := range peers {
+		// Don't make a connection if we have a trusted peer connection
+		if len(dm.connections.getByListenAddr(p.Addr)) != 0 {
+			return nil
+		}
+	}
+
+	connected := false
+	for _, p := range peers {
+		if err := dm.connectToPeer(p); err != nil {
+			logger.WithError(err).WithField("addr", p.Addr).Warning("maybeConnectToTrustedPeer: connectToPeer failed")
+			continue
+		}
+		connected = true
+		break
+	}
+
+	if !connected {
+		return errors.New("Could not connect to any trusted peer")
+	}
+
+	return nil
+}
+
+// connectToRandomPeer attempts to connect to a random peer. If it fails, the peer is removed.
 func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
@@ -880,8 +957,14 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 
 	logger.WithFields(fields).Debug("Sending introduction message")
 
-	m := NewIntroductionMessage(dm.Config.Mirror, dm.Config.ProtocolVersion, dm.pool.Pool.Config.Port, dm.Config.BlockchainPubkey, dm.Config.userAgent)
-	if err := dm.sendMessage(e.Addr, m); err != nil {
+	if err := dm.sendMessage(e.Addr, NewIntroductionMessage(
+		dm.Config.Mirror,
+		dm.Config.ProtocolVersion,
+		dm.pool.Pool.Config.Port,
+		dm.Config.BlockchainPubkey,
+		dm.Config.userAgent,
+		dm.Config.UnconfirmedVerifyTxn,
+	)); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return
 	}
@@ -1181,8 +1264,8 @@ func (dm *Daemon) daemonConfig() DaemonConfig {
 
 // connectionIntroduced transfers a connection to the "introduced" state in the connections state machine
 // and updates other state
-func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage, userAgent *useragent.Data) (*connection, error) {
-	c, err := dm.connections.introduced(addr, gnetID, m, userAgent)
+func (dm *Daemon) connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error) {
+	c, err := dm.connections.introduced(addr, gnetID, m)
 	if err != nil {
 		return nil, err
 	}

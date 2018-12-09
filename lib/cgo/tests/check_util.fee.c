@@ -10,6 +10,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
+#include "skytxn.h"
 
 TestSuite(util_fee, .init = setup, .fini = teardown);
 #define BUFFER_SIZE 1024
@@ -56,7 +57,7 @@ verifyTxFeeTestCase burnFactor3verifyTxFeeTestCase[] = {
 };
 #define cases burnFactor2verifyTxFeeTestCase
 Test(util_fee, TestVerifyTransactionFee) {
-  Transaction__Handle *emptyTxn;
+  Transaction__Handle emptyTxn;
   makeEmptyTransaction(&emptyTxn);
   GoUint64 hours;
   GoUint64 err = SKY_coin_Transaction_OutputHours(emptyTxn, &hours);

@@ -120,6 +120,26 @@ invocation. The caller will be responsible for
 [reallocating another memory buffer](http://en.cppreference.com/w/c/memory/realloc)
 using a higher `cap` and retry.
 
+#### Memory handles
+
+Complex objects represent a challenge to proper memory management,
+especially when mutable values move across API boundaries. Hence some objects
+always remain managed by `libskycoin` C API. Client applications can refer
+to them using memory handles created by multiple functions distributed all over
+the API. The memory associated to these objects remains allocated until
+`SKY_handle_close` API function is applied upon the corresponding handle
+value.
+
+Opening and closing handles can lead to memory leaks under certain circumstances,
+including but not limited to nested scopes, and recursive function calls.
+In order to cope with this, the API provides the means to duplicate references to
+the same complex object by applying `SKY_handle_copy` function upon an existing
+(valid) handle pointing at the object. There are no copy semantics involved for
+the object. After the call a new handle reference is created pointing at the same
+object referred to by the original handle value. The target will remain allocated
+in memory (at least) until all open handles pointing at it will be closed by
+invoking `SKY_handle_close` API function.
+
 ## Generating documentation
 
 Follow these steps to generate API documentation.

@@ -1,6 +1,22 @@
 # Creates an image for skycoin development
 FROM golang:1.11-stretch
 
+ARG BDATE="test_build"
+ARG SCOMMIT="develop"
+
+# Image labels (see ./hooks/build for ARGS)
+LABEL "org.label-schema.name"="skycoindev-cli" \
+      "org.label-schema.description"="Docker image with go, node and command line tools for Skycoin developers" \
+      "org.label-schema.vendor"="Skycoin project" \
+      "org.label-schema.url"="skycoin.net" \
+      "org.label-schema.schema-version"="1.0" \
+      "org.label-schema.build-date"=$BDATE \
+      "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin.git" \
+      "org.label-schema.vcs-ref"=$SCOMMIT \
+      "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/dev-cli/README.md" \
+      "org.label-schema.version"="1.0.0-rc.1" \
+      "org.label-schema.docker.cmd"="mkdir src; docker run --rm -v src:/go/src skycoin/skycoindev-cli ; go get github.com/skycoin/skycoin ; sudo chown -R `whoami` src"
+
 # Installs nodejs and npm. Needed for moxygen.
 
 # Packages installed in buildpack-deps:stretch
@@ -78,12 +94,12 @@ RUN set -ex \
     56730D5401028683275BD23C23EFEFE93C4CFFFE \
     77984A986EBC2AA786BC0F66B01FBB92821C587A \
   ; do \
-    gpg --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys "$key" || \
-    gpg --keyserver hkp://ipv4.pool.sks-keyservers.net --recv-keys "$key" || \
-    gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
+    gpg --no-tty --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys "$key" || \
+    gpg --no-tty --keyserver hkp://ipv4.pool.sks-keyservers.net --recv-keys "$key" || \
+    gpg --no-tty --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
   done
 
-ENV NODE_VERSION 10.2.1
+ENV NODE_VERSION 10.13.0
 
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && case "${dpkgArch##*-}" in \
@@ -103,15 +119,15 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && rm "node-v$NODE_VERSION-linux-$ARCH.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 
-ENV YARN_VERSION 1.7.0
+ENV YARN_VERSION 1.12.3
 
 RUN set -ex \
   && for key in \
     6A010C5166006599AA17F08146C2130DFD2497F5 \
   ; do \
-    gpg --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys "$key" || \
-    gpg --keyserver hkp://ipv4.pool.sks-keyservers.net --recv-keys "$key" || \
-    gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
+    gpg --no-tty --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys "$key" || \
+    gpg --no-tty --keyserver hkp://ipv4.pool.sks-keyservers.net --recv-keys "$key" || \
+    gpg --no-tty --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
   done \
   && curl -fsSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
   && curl -fsSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc" \
@@ -198,7 +214,7 @@ RUN cd /tmp/; \
     rm -rf /tmp/swig-*
 
 # Install golangci-lint
-ENV GOLANGCI_LINT 1.10.2
+ENV GOLANGCI_LINT 1.12.3
 RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v$GOLANGCI_LINT
 
 WORKDIR $GOPATH/src/github.com/skycoin

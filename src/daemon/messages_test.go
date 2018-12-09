@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
@@ -35,15 +38,17 @@ func TestIntroductionMessage(t *testing.T) {
 		connectionIntroducedErr  error
 		requestBlocksFromAddrErr error
 		announceAllTxnsErr       error
+		sendRandomPeersErr       error
 	}
 
 	tt := []struct {
-		name      string
-		addr      string
-		gnetID    uint64
-		doProcess bool
-		mockValue daemonMockValue
-		intro     *IntroductionMessage
+		name                 string
+		addr                 string
+		gnetID               uint64
+		mockValue            daemonMockValue
+		userAgent            useragent.Data
+		unconfirmedVerifyTxn params.VerifyTxn
+		intro                *IntroductionMessage
 	}{
 		{
 			name: "INTR message without extra bytes",
@@ -66,6 +71,22 @@ func TestIntroductionMessage(t *testing.T) {
 			},
 		},
 		{
+			name: "INTR message with pubkey but nothing else",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidExtraData,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           pubkey[:],
+			},
+		},
+		{
 			name: "INTR message with pubkey but empty user agent",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
@@ -78,11 +99,11 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           append(pubkey[:], []byte{0, 0, 0, 0}...),
+				Extra:           append(pubkey[:], []byte{5, 0, 0, 0, 32, 32, 32, 32, 1, 0, 0, 0, 0}...),
 			},
 		},
 		{
-			name: "INTR message with pubkey and user agent",
+			name: "INTR message with all extra fields",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
 				mirror:          10000,
@@ -96,18 +117,36 @@ func TestIntroductionMessage(t *testing.T) {
 							Coin:    "skycoin",
 							Version: "0.24.1",
 						},
+						UnconfirmedVerifyTxn: params.VerifyTxn{
+							BurnFactor:          4,
+							MaxTransactionSize:  32768,
+							MaxDropletPrecision: 3,
+						},
 					},
 				},
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.24.1",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           append(pubkey[:], encoder.SerializeString("skycoin:0.24.1")...),
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 		{
-			name: "INTR message with pubkey, user agent and additional data",
+			name: "INTR message with all extra fields and additional data",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
 				mirror:          10000,
@@ -121,14 +160,32 @@ func TestIntroductionMessage(t *testing.T) {
 							Coin:    "skycoin",
 							Version: "0.24.1",
 						},
+						UnconfirmedVerifyTxn: params.VerifyTxn{
+							BurnFactor:          4,
+							MaxTransactionSize:  32768,
+							MaxDropletPrecision: 3,
+						},
 					},
 				},
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.24.1",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           append(append(pubkey[:], encoder.SerializeString("skycoin:0.24.1")...), []byte("additional data")...),
+				Extra: append(newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}), []byte("additional data")...),
 			},
 		},
 		{
@@ -144,7 +201,11 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           append(pubkey2[:], encoder.SerializeString("skycoin:0.24.1")...),
+				Extra: newIntroductionMessageExtra(pubkey2, "skycoin:0.24.1", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 		{
@@ -160,7 +221,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           []byte("invalid extra data"),
+				Extra:           []byte("invalid pubkey"),
 			},
 		},
 		{
@@ -176,7 +237,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           append(pubkey[:], []byte{1, 2, 3}...),
+				Extra:           append(pubkey[:], []byte{5, 0, 0, 0, 32, 32, 32, 32, 1, 1, 2, 3}...), // 3 bytes for useragent len prefix is invalid
 			},
 		},
 		{
@@ -192,7 +253,55 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra:           append(pubkey[:], encoder.SerializeString("skycoin:0241")...),
+				Extra:           append(append(pubkey[:], []byte{5, 0, 0, 0, 32, 32, 32, 32, 1}...), encoder.SerializeString("skycoin:0241")...),
+			},
+		},
+		{
+			name: "INTR message with pubkey, invalid burn factor",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidBurnFactor,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(append(pubkey[:], []byte{1, 0, 0, 0, 32, 32, 32, 32, 1}...), encoder.SerializeString("skycoin:0.24.1")...),
+			},
+		},
+		{
+			name: "INTR message with pubkey, invalid max transaction size",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidMaxTransactionSize,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(append(pubkey[:], []byte{2, 0, 0, 0, 1, 0, 0, 0, 1}...), encoder.SerializeString("skycoin:0.24.1")...),
+			},
+		},
+		{
+			name: "INTR message with pubkey, invalid max droplet precision",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidMaxDropletPrecision,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           append(append(pubkey[:], []byte{2, 0, 0, 0, 32, 32, 32, 32, 8}...), encoder.SerializeString("skycoin:0.24.1")...),
 			},
 		},
 		{
@@ -238,6 +347,39 @@ func TestIntroductionMessage(t *testing.T) {
 					},
 				},
 			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.24.1",
+				Remark:  "foo",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ProtocolVersion: 1,
+				ListenPort:      6000,
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.24.1(foo)", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
+			},
+		},
+		{
+			name:   "Connect twice",
+			addr:   "121.121.121.121:6000",
+			gnetID: 2,
+			mockValue: daemonMockValue{
+				mirror:                  10000,
+				protocolVersion:         1,
+				pubkey:                  pubkey,
+				disconnectReason:        ErrDisconnectConnectedTwice,
+				connectionIntroducedErr: ErrConnectionIPMirrorExists,
+				connectionIntroduced:    nil,
+			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
@@ -245,17 +387,15 @@ func TestIntroductionMessage(t *testing.T) {
 			},
 		},
 		{
-			name:      "Connect twice",
-			addr:      "121.121.121.121:6000",
-			gnetID:    2,
-			doProcess: true,
+			name: "peer list full",
+			addr: "121.121.121.121:12345",
 			mockValue: daemonMockValue{
 				mirror:                  10000,
 				protocolVersion:         1,
 				pubkey:                  pubkey,
-				disconnectReason:        ErrDisconnectConnectedTwice,
-				connectionIntroducedErr: ErrConnectionIPMirrorExists,
-				connectionIntroduced:    &connection{},
+				disconnectReason:        ErrDisconnectPeerlistFull,
+				connectionIntroducedErr: pex.ErrPeerlistFull,
+				connectionIntroduced:    nil,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -267,6 +407,7 @@ func TestIntroductionMessage(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			fmt.Printf("TEST NAME: %s\n", tc.name)
 			mc := &gnet.MessageContext{
 				Addr:   tc.addr,
 				ConnID: tc.gnetID,
@@ -286,9 +427,24 @@ func TestIntroductionMessage(t *testing.T) {
 			})
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
-			d.On("connectionIntroduced", tc.addr, tc.gnetID, tc.intro, mock.Anything).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
+			d.On("connectionIntroduced", tc.addr, tc.gnetID, mock.MatchedBy(func(m *IntroductionMessage) bool {
+				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.unconfirmedVerifyTxn.BurnFactor)
+				if m == nil {
+					return false
+				}
+
+				if tc.userAgent != m.userAgent {
+					return false
+				}
+				if tc.unconfirmedVerifyTxn != m.unconfirmedVerifyTxn {
+					return false
+				}
+
+				return true
+			})).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
 			d.On("requestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
 			d.On("announceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
+			d.On("sendRandomPeers", tc.addr).Return(tc.mockValue.sendRandomPeersErr)
 
 			err := tc.intro.Handle(mc, d)
 			require.NoError(t, err)
@@ -297,6 +453,8 @@ func TestIntroductionMessage(t *testing.T) {
 
 			if tc.mockValue.disconnectReason != nil {
 				d.AssertCalled(t, "Disconnect", tc.addr, tc.mockValue.disconnectReason)
+			} else {
+				d.AssertNotCalled(t, "Disconnect", mock.Anything, mock.Anything)
 			}
 		})
 	}
@@ -322,13 +480,17 @@ func TestMessageEncodeDecode(t *testing.T) {
 			},
 		},
 		{
-			goldenFile: "intro-msg-pubkey.golden",
+			goldenFile: "intro-msg-extra.golden",
 			obj:        &IntroductionMessage{},
 			msg: &IntroductionMessage{
 				Mirror:          99998888,
 				ListenPort:      8888,
 				ProtocolVersion: 12341234,
-				Extra:           introPubKey[:],
+				Extra: newIntroductionMessageExtra(introPubKey, "skycoin:0.25.0(foo)", params.VerifyTxn{
+					BurnFactor:          2,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 		{

@@ -56,6 +56,9 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Add `coin`, `wallet`, `util/droplet` and `util/fee` methods as part of `libskycoin` C API
 - Add `make update-golden-files` to `Makefile`
 - Add CLI `richList` command
+- Add `util/droplet` and `util/fee` API's as part of `libskycoin`
+- Implement SWIG interfaces in order to generate client libraries for multiple programming languages
+
 
 ### Fixed
 

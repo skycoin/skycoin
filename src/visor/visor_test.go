@@ -1998,7 +1998,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	_, softErr, err = v.InjectForeignTransaction(sometimesInvalidTxn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
-	testutil.RequireError(t, softErr.Err, errTxnExceedsMaxBlockSize.Error())
+	testutil.RequireError(t, softErr.Err, ErrTxnExceedsMaxBlockSize.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)

@@ -31,6 +31,8 @@ import (
 var (
 	// ErrNetworkingDisabled is returned if networking is disabled
 	ErrNetworkingDisabled = errors.New("Networking is disabled")
+	// ErrNoPeerAcceptsTxn is returned if no peer will propagate a transaction broadcasted with BroadcastUserTransaction
+	ErrNoPeerAcceptsTxn = errors.New("No peer will propagate this transaction")
 
 	logger = logging.MustGetLogger("daemon")
 )
@@ -1224,17 +1226,33 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.Sign
 		return err
 	}
 
+	accepts, err := checkBroadcastTxnRecipients(dm.connections, ids, txn, head, inputs)
+
+	if err != nil {
+		logger.WithError(err).Error("BroadcastUserTransaction")
+		return err
+	}
+
+	logger.Debugf("BroadcastUserTransaction transaction propagated by %d/%d conns", accepts, len(ids))
+
+	return nil
+}
+
+// checkBroadcastTxnRecipients checks whether or not the recipients of a txn broadcast would accept the transaction as valid,
+// based upon their reported txn verification parameters.
+// If no recipient would accept the txn, an error is returned.
+// The number of recipients that claim to accept the transaction is returned.
+func checkBroadcastTxnRecipients(connections *Connections, ids []uint64, txn coin.Transaction, head *coin.SignedBlock, inputs coin.UxArray) (int, error) {
 	// Check if the connections will accept our transaction as valid.
 	// Clients v24 and earlier do not propagate soft-invalid transactions.
 	// Clients v24 and earlier do not advertise a user agent.
 	// Clients v24 and earlier do not advertise their transaction verification parameters,
 	// but will use defaults of BurnFactor=2, MaxTransactionSize=32768, MaxDropletPrecision=3.
 	// If none of the connections will propagate our transaction, return an error.
-
 	accepts := 0
 
 	for _, id := range ids {
-		c := dm.connections.getByGnetID(id)
+		c := connections.getByGnetID(id)
 		if c == nil {
 			continue
 		}
@@ -1253,6 +1271,10 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.Sign
 				MaxTransactionSize:  32 * 1024,
 				MaxDropletPrecision: 3,
 			}); err != nil {
+				logger.WithFields(logrus.Fields{
+					"addr":   c.Addr,
+					"gnetID": c.gnetID,
+				}).Debug("Peer will not propagate this transaction")
 				continue
 			}
 		}
@@ -1261,14 +1283,10 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.Sign
 	}
 
 	if accepts == 0 {
-		err := errors.New("No peer will propagate this transaction")
-		logger.WithError(err).Error("BroadcastUserTransaction")
-		return err
+		return 0, ErrNoPeerAcceptsTxn
 	}
 
-	logger.Debugf("BroadcastUserTransaction transaction propagated by %d/%d conns", accepts, len(ids))
-
-	return nil
+	return accepts, nil
 }
 
 // verifyUserTxnAgainstPeer returns an error if a user-created transaction would not pass soft-validation
@@ -1289,7 +1307,7 @@ func verifyUserTxnAgainstPeer(txn coin.Transaction, head *coin.SignedBlock, inpu
 	}
 
 	if txnSize > verifyParams.MaxTransactionSize {
-		return errors.New("Transaction size would exceed MaxTransactionSize")
+		return visor.ErrTxnExceedsMaxBlockSize
 	}
 
 	// Check the coinhour burn fee

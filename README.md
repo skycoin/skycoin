@@ -125,7 +125,7 @@ but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-make run
+make run-client
 ```
 
 ### Show Skycoin node options
@@ -185,6 +185,9 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 The [skycoin/skycoindev-cli docker image](docker/images/dev-cli/README.md) is provided in order to make
 easy to start developing Skycoin. It comes with the compiler, linters, debugger
 and the vim editor among other tools.
+
+The [skycoin/skycoindev-dind docker image](docker/images/dev-docker/README.md) comes with docker installed
+and all tools available on `skycoin/skycoindev-cli:develop` docker image.
 
 Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/README.md) is provided 
 to facilitate the setup of the development process with [Visual Studio Code](https://code.visualstudio.com)

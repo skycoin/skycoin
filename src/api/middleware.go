@@ -88,12 +88,17 @@ func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler
 	for _, k := range hostWhitelist {
 		hostWhitelistMap[k] = struct{}{}
 	}
-	hostWhitelistMap[host] = struct{}{}
+
+	if addr, port, _ := iputil.SplitAddr(host); iputil.IsLocalhost(addr) { // nolint: errcheck
+		hostWhitelistMap[fmt.Sprintf("127.0.0.1:%d", port)] = struct{}{}
+		hostWhitelistMap[fmt.Sprintf("localhost:%d", port)] = struct{}{}
+	} else {
+		hostWhitelistMap[host] = struct{}{}
+	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		referer := r.Header.Get("Referer")
-
 		toCheck := origin
 		if toCheck == "" {
 			toCheck = referer

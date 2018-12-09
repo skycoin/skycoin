@@ -100,6 +100,7 @@ type muxConfig struct {
 	enableGUI            bool
 	enableJSON20RPC      bool
 	enableUnversionedAPI bool
+	disableCSRF          bool
 	disableCSP           bool
 	enabledAPISets       map[string]struct{}
 	hostWhitelist        []string
@@ -170,9 +171,6 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Infof("Web resources directory: %s", appLoc)
 	}
 
-	csrfStore := &CSRFStore{
-		Enabled: !c.DisableCSRF,
-	}
 	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
@@ -204,6 +202,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		enableGUI:            c.EnableGUI,
 		enableJSON20RPC:      c.EnableJSON20RPC,
 		enableUnversionedAPI: c.EnableUnversionedAPI,
+		disableCSRF:          c.DisableCSRF,
 		disableCSP:           c.DisableCSP,
 		health:               c.Health,
 		enabledAPISets:       c.EnabledAPISets,
@@ -212,7 +211,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		password:             c.Password,
 	}
 
-	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
+	srvMux := newServerMux(mc, gateway, rpc)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -324,7 +323,7 @@ func (s *Server) Shutdown() {
 }
 
 // newServerMux creates an http.ServeMux with handlers registered
-func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *webrpc.WebRPC) *http.ServeMux {
+func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	allowedOrigins := []string{fmt.Sprintf("http://%s", c.host)}
@@ -374,7 +373,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		handler = wh.ElapsedHandler(logger, handler)
 		handler = corsHandler.Handler(handler)
 		if checkCSRF {
-			handler = CSRFCheck(apiVersion, csrfStore, handler)
+			handler = CSRFCheck(apiVersion, c.disableCSRF, handler)
 		}
 		handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
@@ -435,11 +434,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		}
 		webHandlerCSRFOptional(apiVersion1, "/api/v1"+endpoint, handler, false)
 	}
-	csrfHandlerV1("/csrf", getCSRFToken(csrfStore)) // csrf is always available, regardless of the API set
+	csrfHandlerV1("/csrf", getCSRFToken(c.disableCSRF)) // csrf is always available, regardless of the API set
 
 	// Status endpoints
 	webHandlerV1("/version", versionHandler(c.health.BuildInfo)) // version is always available, regardless of the API set
-	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/health", forAPISet(healthHandler(c, gateway), []string{EndpointsRead, EndpointsStatus}))
 
 	// Wallet endpoints
 	webHandlerV1("/wallet", forAPISet(walletHandler(gateway), []string{EndpointsWallet}))

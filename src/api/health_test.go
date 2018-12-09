@@ -29,7 +29,6 @@ func TestHealthHandler(t *testing.T) {
 		err              string
 		getHealthErr     error
 		cfg              muxConfig
-		csrfEnabled      bool
 		walletAPIEnabled bool
 	}{
 		{
@@ -64,6 +63,7 @@ func TestHealthHandler(t *testing.T) {
 			cfg: muxConfig{
 				host:                 configuredHost,
 				appLoc:               ".",
+				disableCSRF:          false,
 				disableCSP:           false,
 				enableGUI:            true,
 				enableUnversionedAPI: true,
@@ -73,7 +73,6 @@ func TestHealthHandler(t *testing.T) {
 					EndpointsRead:   struct{}{},
 				},
 			},
-			csrfEnabled:      true,
 			walletAPIEnabled: false,
 		},
 	}
@@ -149,12 +148,8 @@ func TestHealthHandler(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: tc.csrfEnabled,
-			}
-
 			rr := httptest.NewRecorder()
-			handler := newServerMux(tc.cfg, gateway, csrfStore, nil)
+			handler := newServerMux(tc.cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)
@@ -191,7 +186,7 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, metadata.HeadBlock.Block.Head.Hash().Hex(), r.BlockchainMetadata.Head.Hash)
 			require.Equal(t, metadata.HeadBlock.Block.Head.BodyHash.Hex(), r.BlockchainMetadata.Head.BodyHash)
 
-			require.Equal(t, tc.csrfEnabled, r.CSRFEnabled)
+			require.Equal(t, !tc.cfg.disableCSRF, r.CSRFEnabled)
 			require.Equal(t, !tc.cfg.disableCSP, r.CSPEnabled)
 			require.Equal(t, tc.cfg.enableUnversionedAPI, r.UnversionedAPIEnabled)
 			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)

@@ -2,13 +2,15 @@
 
 ## Simple Tags
 
--	[`latest` (*docker/images/skycoindev-cli/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/skycoindev-cli/Dockerfile)
+-	[`latest` (*docker/images/dev-cli/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-cli/Dockerfile)
 
 # Skycoin development image
 
 This image has the necessary tools to build, test, edit, lint and version the Skycoin
 source code.  It comes with the Vim editor installed, along with some plugins
 to ease go development and version control with git.
+
+_Plase note that there is also a sister image with ["docker in docker"](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-docker/) feature on it._
 
 # How to use this image
 

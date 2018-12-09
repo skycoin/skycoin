@@ -12,14 +12,13 @@
 #include "skytest.h"
 #include "skytxn.h"
 
-
 TestSuite(coin_transaction, .init = setup, .fini = teardown);
 
 GoUint64 Million = 1000000;
 
 Test(coin_transaction, TestTransactionVerify) {
   unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
-unsigned int MaxUint16 = 0xFFFF;
+  unsigned int MaxUint16 = 0xFFFF;
   int result;
   coin__Transaction *ptx;
   Transaction__Handle handle;
@@ -62,7 +61,6 @@ unsigned int MaxUint16 = 0xFFFF;
   result = SKY_coin_Transaction_Verify(handle);
   cr_assert(result == SKY_ERROR);
 
-  
   // Too many sigs & inputs
   ptx = makeTransaction(&handle);
   result = SKY_coin_Transaction_ResetSignatures(handle, MaxUint16);
@@ -126,7 +124,6 @@ unsigned int MaxUint16 = 0xFFFF;
   result = SKY_coin_Transaction_Verify(handle);
   cr_assert(result == SKY_ERROR);
 
- 
   // Output coin overflow
   ptx = makeTransaction(&handle);
   pOutput = ptx->Out.data;
@@ -171,7 +168,7 @@ unsigned int MaxUint16 = 0xFFFF;
 
 Test(coin_transaction, TestTransactionPushInput, SKY_ABORT) {
   unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
-unsigned int MaxUint16 = 0xFFFF;
+  unsigned int MaxUint16 = 0xFFFF;
   int result;
   Transaction__Handle handle;
   coin__Transaction *ptx;
@@ -189,7 +186,6 @@ unsigned int MaxUint16 = 0xFFFF;
   cipher__SHA256 *pIn = ptx->In.data;
   cr_assert(eq(u8[sizeof(cipher__SHA256)], hash, *pIn));
 
-  
   int len = ptx->In.len;
   void *data = malloc(len * sizeof(cipher__SHA256));
   cr_assert(data != NULL);
@@ -713,8 +709,7 @@ int makeTestCaseArrays(test_ux *elems, int size, coin__UxArray *pArray) {
 
 Test(coin_transactions, TestVerifyTransactionCoinsSpending) {
   unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
-
-unsigned int MaxUint16 = 0xFFFF;
+  unsigned int MaxUint16 = 0xFFFF;
   // Input coins overflow
   test_ux in1[] = {{MaxUint64 - Million + 1, 10}, {Million, 0}};
 
@@ -762,7 +757,7 @@ unsigned int MaxUint16 = 0xFFFF;
 }
 
 Test(coin_transactions, TestVerifyTransactionHoursSpending) {
- 
+
   GoUint64 Million = 1000000;
   unsigned long long MaxUint64 = 0xFFFFFFFFFFFFFFFF;
   unsigned int MaxUint16 = 0xFFFF;

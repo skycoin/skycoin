@@ -189,6 +189,11 @@ and the vim editor among other tools.
 The [skycoin/skycoindev-dind docker image](docker/images/dev-docker/README.md) comes with docker installed
 and all tools available on `skycoin/skycoindev-cli:develop` docker image.
 
+Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/README.md) is provided 
+to facilitate the setup of the development process with [Visual Studio Code](https://code.visualstudio.com)
+and useful tools included in `skycoin/skycoindev-cli`.
+
+
 ## API Documentation
 
 ### REST API

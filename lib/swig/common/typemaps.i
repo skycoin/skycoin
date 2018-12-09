@@ -6,7 +6,6 @@
 %apply unsigned char  {GoUint8_, GoUint8};
 %apply signed char  {GoInt8_, GoInt8};
 %apply unsigned long long  {GoUint64, GoUint64_,GoUint_,GoUint};
-%apply GoSlice_* {coin__UxArray*};
 %apply short {GoInt16_, GoInt16};
 %apply int {GoInt32_, Go, GoInt32};
 %apply unsigned int {GoUint32_, GoUint32, BOOL, error};

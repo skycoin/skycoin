@@ -313,6 +313,9 @@ other programming languages.
 
 For further details run `make docs` to generate documetation and read the corresponding README and API references.
 
+It is also possible to [build client libraries for other programming languages](lib/swig/README.md)
+using [SWIG](http://www.swig.org/).
+
 ### Running Tests
 
 ```sh

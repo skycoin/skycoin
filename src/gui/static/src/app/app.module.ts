@@ -75,6 +75,10 @@ import { NumberOfAddressesComponent } from './components/pages/wallets/number-of
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
+import { ExchangeComponent } from './components/pages/exchange/exchange.component';
+import { ExchangeService } from './services/exchange.service';
+import { ExchangeCreateComponent } from './components/pages/exchange/exchange-create/exchange-create.component';
+import { ExchangeStatusComponent } from './components/pages/exchange/exchange-status/exchange-status.component';
 
 
 const ROUTES = [
@@ -101,6 +105,11 @@ const ROUTES = [
   {
     path: 'buy',
     component: BuyComponent,
+    canActivate: [WizardGuardService],
+  },
+  {
+    path: 'exchange',
+    component: ExchangeComponent,
     canActivate: [WizardGuardService],
   },
   {
@@ -182,6 +191,9 @@ const ROUTES = [
     SelectAddressComponent,
     CreateWalletFormComponent,
     ResetPasswordComponent,
+    ExchangeComponent,
+    ExchangeCreateComponent,
+    ExchangeStatusComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -232,6 +244,7 @@ const ROUTES = [
     ApiService,
     AppService,
     BlockchainService,
+    ExchangeService,
     NavBarService,
     NetworkService,
     PriceService,

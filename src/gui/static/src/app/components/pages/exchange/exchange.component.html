@@ -1,0 +1,21 @@
+<app-header [headline]="'title.exchange' | translate"></app-header>
+<div class="container">
+  <div class="-paper">
+
+    <app-exchange-create></app-exchange-create>
+
+  </div>
+  <div class="-contact">
+    <span>
+      {{ 'exchange.need-help' | translate }}
+      <a href="https://swaplabcc.freshdesk.com/support/home" target="_blank" rel="noreferrer nofollow">
+        {{ 'exchange.support-portal' | translate }}
+      </a>
+    </span>
+    <span>-</span>
+    <span>
+      {{ 'exchange.powered-by' | translate }}
+      <a href="https://swaplab.cc">swaplab.cc</a>
+    </span>
+  </div>
+</div>

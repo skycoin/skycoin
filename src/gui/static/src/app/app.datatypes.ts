@@ -68,6 +68,15 @@ export class Connection {
   source?: string;
 }
 
+export class TradingPair {
+  from: string;
+  to: string;
+  price: number;
+  pair: string;
+  min: number;
+  max: number;
+}
+
 /**
  * Response Objects
  */

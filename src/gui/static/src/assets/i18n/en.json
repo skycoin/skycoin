@@ -30,7 +30,8 @@
     "explorer": "Skycoin Explorer",
     "seed": "Wallet Seed",
     "qrcode": "QR Code",
-    "reset": "Reset Password"
+    "reset": "Reset Password",
+    "exchange": "Exchange"
   },
 
   "header": {
@@ -272,5 +273,23 @@
     "api" : {
       "server-error": "Server error"
     }
+  },
+
+  "exchange": {
+    "you-send": "You send",
+    "you-get": "You get",
+    "to-address": "To {{coin}} address",
+    "price": "Exchange rate",
+    "time-15": "Exchange time",
+    "exchange-button": "Exchange",
+    "min-amount": "Minimum amount:",
+    "max-amount": "Maximum amount:",
+    "agree-1": "I agree with",
+    "agree-2": "Terms",
+    "agree-3": "and",
+    "agree-4": "Privacy Policy",
+    "powered-by": "Powered by",
+    "need-help": "Need help?",
+    "support-portal": "Support portal"
   }
 }

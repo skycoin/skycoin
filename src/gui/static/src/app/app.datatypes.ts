@@ -77,6 +77,21 @@ export class TradingPair {
   max: number;
 }
 
+export class ExchangeOrder {
+  pair: string;
+  fromAmount: number|null;
+  toAmount: number;
+  toAddress: string;
+  toTag: string|null;
+  refundAddress: string|null;
+  refundTag: string|null;
+  id: string;
+  exchangeAddress: string;
+  exchangeTag: string|null;
+  toTx: string;
+  status: string;
+}
+
 /**
  * Response Objects
  */

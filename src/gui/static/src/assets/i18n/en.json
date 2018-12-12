@@ -285,11 +285,29 @@
     "min-amount": "Minimum amount:",
     "max-amount": "Maximum amount:",
     "agree-1": "I agree with",
-    "agree-2": "Terms",
+    "agree-2": "Terms of Use",
     "agree-3": "and",
     "agree-4": "Privacy Policy",
     "powered-by": "Powered by",
     "need-help": "Need help?",
-    "support-portal": "Support portal"
+    "support-portal": "Support portal",
+    "show-last": "Show last order",
+    "status": "Status",
+    "exchanging": "Exchanging {{from}} for {{to}}",
+    "statuses": {
+      "user-waiting": "Waiting for deposit. Please send {{amount}} {{from}} to the exchange address",
+      "market-waiting-confirmations": "Waiting for transaction confirmations",
+      "market-confirmed": "Transaction accepted",
+      "market-exchanged": "Traded {{from}} for {{to}}",
+      "market-withdraw-waiting": "Sending {{to}} to your address",
+      "complete": "Exchange completed!",
+      "error": "Error occurred, contact support"
+    },
+    "details": {
+      "exchange-addr": "Exchange address",
+      "exchange-addr-tag": "Tag to attach to transaction",
+      "tx-id": "Transaction ID",
+      "order-id": "Exchange Order ID"
+    }
   }
 }

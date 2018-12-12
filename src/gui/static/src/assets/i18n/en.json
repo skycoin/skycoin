@@ -298,11 +298,13 @@
     "general" : {
       "default-wallet-name": "New hardware wallet",
       "error-disconnected": "Impossible to perform the operation. The hardware wallet is not connected.",
+      "simple-error": "Error, impossible to perform the operation.",
       "generic-error": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet and that it is not waiting for input.",
       "generic-error-internet": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet, that it is not waiting for input and that you have connection to the interne/node.",
       "error-incorrect-wallet": "Impossible to perform the operation. The connected hardware wallet is different from the selected one.",
       "error-incorrect-pin": "Impossible to perform the operation. The PIN you have entered is not valid.",
       "confirm": "Please, confirm the operation in the hardware wallet.",
+      "confirm-and-more": "Please, confirm the operation in the hardware wallet and follow the instructions.",
       "close": "Close",
       "cancel": "Cancel",
       "continue": "Continue",
@@ -339,9 +341,12 @@
       "warning": "WARNING: You can only use this option to create a backup once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (called the \"seed\") would be able access the wallet balance, so extreme caution is advised.",
       "instructions": "Write down the word list that appear on the screen of the hardware wallet. Make sure you respect the order and write each word correctly."
     },
-    "restore-backup" : {
-      "seed": "Seed to restore",
-      "refused": "The operation failed or was canceled. If the operation failed, remember that the hardware wallet only accepts valid standard seeds."
+    "seed-word" : {
+      "title": "Enter word",
+      "Info1": "Enter the word indicated in the device",
+      "Info2": "You will be asked to enter the words of your backup seed in random order, plus a few additional words.",
+      "word": "Requested word",
+      "error-wrong-word": "Error: wrong word retyped."
     },
     "change-pin" : {
       "pin-mismatch": "Impossible to perform the operation. The two PINs you have entered do not match."

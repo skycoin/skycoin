@@ -78,7 +78,6 @@ import { ResetPasswordComponent } from './components/pages/reset-password/reset-
 import { HwWalletService } from './services/hw-wallet.service';
 import { HwWalletOptionsComponent } from './components/layout/hardware-wallet/hw-options/hw-options.component';
 import { HwWipeDialogComponent } from './components/layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog.component';
-import { HwSeedDialogComponent } from './components/layout/hardware-wallet/hw-seed-dialog/hw-seed-dialog.component';
 import { HwAddedDialogComponent } from './components/layout/hardware-wallet/hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from './components/layout/hardware-wallet/hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from './components/layout/hardware-wallet/hw-backup-dialog/hw-backup-dialog.component';
@@ -87,6 +86,8 @@ import { HwMessageComponent } from './components/layout/hardware-wallet/hw-messa
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwChangePinDialogComponent } from './components/layout/hardware-wallet/hw-change-pin-dialog/hw-change-pin-dialog.component';
 import { HwPinHelpComponent } from './components/layout/hardware-wallet/hw-pin-help/hw-pin-help.component';
+import { HwRestoreSeedDialogComponent } from './components/layout/hardware-wallet/hw-restore-seed-dialog/hw-restore-seed-dialog.component';
+import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 
 
 const ROUTES = [
@@ -196,7 +197,6 @@ const ROUTES = [
     ResetPasswordComponent,
     HwWalletOptionsComponent,
     HwWipeDialogComponent,
-    HwSeedDialogComponent,
     HwAddedDialogComponent,
     HwGenerateSeedDialogComponent,
     HwBackupDialogComponent,
@@ -205,6 +205,8 @@ const ROUTES = [
     HwPinDialogComponent,
     HwChangePinDialogComponent,
     HwPinHelpComponent,
+    HwRestoreSeedDialogComponent,
+    HwSeedWordDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -220,7 +222,6 @@ const ROUTES = [
     SelectAddressComponent,
     HwWalletOptionsComponent,
     HwWipeDialogComponent,
-    HwSeedDialogComponent,
     HwAddedDialogComponent,
     HwGenerateSeedDialogComponent,
     HwBackupDialogComponent,
@@ -228,6 +229,8 @@ const ROUTES = [
     HwPinDialogComponent,
     HwChangePinDialogComponent,
     HwPinHelpComponent,
+    HwRestoreSeedDialogComponent,
+    HwSeedWordDialogComponent,
   ],
   imports: [
     BrowserModule,

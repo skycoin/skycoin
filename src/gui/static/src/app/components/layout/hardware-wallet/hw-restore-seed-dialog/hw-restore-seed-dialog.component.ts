@@ -1,25 +1,24 @@
 import { Component, OnDestroy, ViewChild, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { MessageIcons } from '../hw-message/hw-message.component';
 
 enum States {
   Initial,
-  Processing,
   ReturnedSuccess,
   ReturnedRefused,
   Failed,
+  WrongWord,
 }
 
 @Component({
-  selector: 'app-hw-seed-dialog',
-  templateUrl: './hw-seed-dialog.component.html',
-  styleUrls: ['./hw-seed-dialog.component.scss'],
+  selector: 'app-hw-restore-seed-dialog',
+  templateUrl: './hw-restore-seed-dialog.component.html',
+  styleUrls: ['./hw-restore-seed-dialog.component.scss'],
 })
-export class HwSeedDialogComponent implements OnDestroy {
-  form: FormGroup;
+export class HwRestoreSeedDialogComponent implements OnDestroy {
+
   currentState: States = States.Initial;
   states = States;
   msgIcons = MessageIcons;
@@ -29,28 +28,10 @@ export class HwSeedDialogComponent implements OnDestroy {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public notifyFinish: any,
-    public dialogRef: MatDialogRef<HwSeedDialogComponent>,
+    public dialogRef: MatDialogRef<HwRestoreSeedDialogComponent>,
     private hwWalletService: HwWalletService,
-    private formBuilder: FormBuilder,
   ) {
-    this.form = this.formBuilder.group({
-      seed: ['', Validators.required],
-    });
-
-    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
-      if (!connected) {
-        this.closeModal();
-      }
-    });
-  }
-
-  closeModal() {
-    this.dialogRef.close();
-  }
-
-  setSeed() {
-    this.currentState = States.Processing;
-    this.operationSubscription = this.hwWalletService.setMnemonic(this.form.value.seed).subscribe(
+    this.operationSubscription = this.hwWalletService.recoverMnemonic().subscribe(
       () => {
         this.notifyFinish();
         this.currentState = States.ReturnedSuccess;
@@ -58,17 +39,27 @@ export class HwSeedDialogComponent implements OnDestroy {
       err => {
         if (err.result && err.result === OperationResults.FailedOrRefused) {
           this.currentState = States.ReturnedRefused;
+        } else if (err.result && err.result === OperationResults.WrongWord) {
+          this.currentState = States.WrongWord;
         } else {
           this.currentState = States.Failed;
         }
       },
     );
+
+    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
+      if (!connected) {
+        this.dialogRef.close();
+      }
+    });
   }
 
   ngOnDestroy() {
-    if (this.operationSubscription) {
-      this.operationSubscription.unsubscribe();
-    }
+    this.operationSubscription.unsubscribe();
     this.hwConnectionSubscription.unsubscribe();
+  }
+
+  closeModal() {
+    this.dialogRef.close();
   }
 }

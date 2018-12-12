@@ -1,0 +1,18 @@
+<app-modal class="modal" [headline]="'hardware-wallet.seed-word.title' | translate" [dialog]="dialogRef">
+  <app-hw-message
+    [upperBigText]="'hardware-wallet.seed-word.Info1' | translate"
+    [text]="'hardware-wallet.seed-word.Info2' | translate"
+    [icon]="msgIcons.None"
+  ></app-hw-message>
+  <div [formGroup]="form" class="form-container">
+    <div class="form-field">
+      <label for="seed">{{ 'hardware-wallet.seed-word.word' | translate }}</label>
+      <input formControlName="seed" id="seed" (keydown.enter)="sendWord()">
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="sendWord()" class="primary" [disabled]="!form.valid">
+      {{ 'hardware-wallet.general.continue' | translate }}
+    </app-button>
+  </div>
+</app-modal>

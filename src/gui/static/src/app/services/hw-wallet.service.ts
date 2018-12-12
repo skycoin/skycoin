@@ -5,12 +5,14 @@ import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig } from '@angular/material';
+import { HwSeedWordDialogComponent } from '../components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 
 export enum OperationResults {
   Success,
   FailedOrRefused,
   WrongPin,
   IncorrectHardwareWallet,
+  WrongWord,
   UndefinedError,
 }
 
@@ -52,6 +54,17 @@ export class HwWalletService {
           window['ipcRenderer'].send('hwSendPin', pin);
         });
       });
+      window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
+        dialog.open(HwSeedWordDialogComponent, <MatDialogConfig> {
+          width: '350px',
+        }).afterClosed().subscribe(word => {
+          if (!word) {
+            this.cancelAllOperations();
+            window['ipcRenderer'].send('hwCancelLastAction');
+          }
+          window['ipcRenderer'].send('hwSendSeedWord', word);
+        });
+      });
 
       window['ipcRenderer'].on('hwGetAddressesResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, true);
@@ -59,11 +72,11 @@ export class HwWalletService {
       window['ipcRenderer'].on('hwChangePinResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('PIN changed'));
       });
-      window['ipcRenderer'].on('hwSetMnemonicResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('operation completed'));
-      });
       window['ipcRenderer'].on('hwGenerateMnemonicResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('operation completed'));
+      });
+      window['ipcRenderer'].on('hwRecoverMnemonicResponse', (event, requestId, result) => {
+        this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('Device recovered'));
       });
       window['ipcRenderer'].on('hwBackupDeviceResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('operation completed'));
@@ -111,24 +124,22 @@ export class HwWalletService {
     return this.getAddressesRecursively(AppConfig.maxHardwareWalletAddresses - 1, []);
   }
 
-  setMnemonic(mnemonic: string): Observable<OperationResult> {
+  generateMnemonic(): Observable<OperationResult> {
     window['ipcRenderer'].send('hwCancelLastAction');
 
-    mnemonic = mnemonic.replace(/(\n|\r\n)$/, '');
-
     const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwSetMnemonic', requestId, mnemonic);
+    window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
 
     return new Observable(observer => {
       this.eventsObservers.set(requestId, observer);
     });
   }
 
-  generateMnemonic(): Observable<OperationResult> {
+  recoverMnemonic(): Observable<OperationResult> {
     window['ipcRenderer'].send('hwCancelLastAction');
 
     const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
+    window['ipcRenderer'].send('hwRecoverMnemonic', requestId);
 
     return new Observable(observer => {
       this.eventsObservers.set(requestId, observer);
@@ -231,6 +242,10 @@ export class HwWalletService {
           result = OperationResults.WrongPin;
         } else if (typeof responseContent === 'string' && (responseContent as string).includes('cancelled by user')) {
           result = OperationResults.FailedOrRefused;
+        } else if (typeof responseContent === 'string' && (responseContent as string).includes('Expected WordAck after Button')) {
+          result = OperationResults.FailedOrRefused;
+        } else if (typeof responseContent === 'string' && (responseContent as string).includes('Wrong word retyped')) {
+          result = OperationResults.WrongWord;
         } else {
           result = OperationResults.UndefinedError;
         }

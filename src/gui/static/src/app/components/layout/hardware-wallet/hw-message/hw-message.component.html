@@ -1,5 +1,5 @@
 <div class="content">
-  <div class="icon-container">
+  <div class="icon-container" *ngIf="icon !== icons.None">
     <mat-spinner *ngIf="icon == icons.Spinner"></mat-spinner>
     <i *ngIf="icon == icons.Success" class="material-icons -green">done</i>
     <i *ngIf="icon == icons.Error" class="material-icons -red">error_outline</i>

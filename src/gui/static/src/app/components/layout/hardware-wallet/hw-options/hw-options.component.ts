@@ -2,7 +2,6 @@ import { Component, OnDestroy, Inject } from '@angular/core';
 import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
-import { HwSeedDialogComponent } from '../hw-seed-dialog/hw-seed-dialog.component';
 import { ISubscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
@@ -11,6 +10,7 @@ import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.co
 import { MessageIcons } from '../hw-message/hw-message.component';
 import { Wallet } from '../../../../app.datatypes';
 import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog.component';
+import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 
 enum States {
   Disconnected,
@@ -65,7 +65,7 @@ export class HwWalletOptionsComponent implements OnDestroy {
   }
 
   setMnemonic() {
-    this.openDialog(HwSeedDialogComponent);
+    this.openDialog(HwRestoreSeedDialogComponent);
   }
 
   changePin() {

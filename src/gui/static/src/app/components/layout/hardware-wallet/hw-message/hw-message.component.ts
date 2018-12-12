@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 export enum MessageIcons {
+  None,
   Spinner,
   Success,
   Error,

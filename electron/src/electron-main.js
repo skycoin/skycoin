@@ -430,6 +430,29 @@ ipcMain.on('hwSendPin', (event, pin) => {
   }
 });
 
+let lastSeedWordPromiseResolve;
+let lastSeedWordPromiseReject;
+
+const requestSeedWordEvent = function() {
+  return new Promise((resolve, reject) => {
+    lastSeedWordPromiseResolve = resolve;
+    lastSeedWordPromiseReject = reject;
+
+    console.log("Hardware wallet seed word requested");
+    if (win) {
+      win.webContents.send('hwSeedWordRequested');
+    }
+  });
+};
+
+ipcMain.on('hwSendSeedWord', (event, word) => {
+  if (word) {
+    lastSeedWordPromiseResolve(word);
+  } else {
+    lastSeedWordPromiseReject(new Error("Cancelled"))
+  }
+});
+
 ipcMain.on('hwCancelLastAction', (event) => {
   deviceWallet.devCancelRequest();
 });
@@ -450,19 +473,19 @@ ipcMain.on('hwChangePin', (event, requestId) => {
   );
 });
 
-ipcMain.on('hwSetMnemonic', (event, requestId, mnemonic) => {
-  const promise = deviceWallet.devSetMnemonic(mnemonic);
-  promise.then(
-    result => { console.log("Set mnemonic promise resolved", result); event.sender.send('hwSetMnemonicResponse', requestId, result); },
-    error => { console.log("Set mnemonic promise errored: ", error); event.sender.send('hwSetMnemonicResponse', requestId, { error: error.toString() }); }
-  );
-});
-
 ipcMain.on('hwGenerateMnemonic', (event, requestId) => {
   const promise = deviceWallet.devGenerateMnemonic();
   promise.then(
     result => { console.log("Generate mnemonic promise resolved", result); event.sender.send('hwGenerateMnemonicResponse', requestId, result); },
     error => { console.log("Generate mnemonic promise errored: ", error); event.sender.send('hwGenerateMnemonicResponse', requestId, { error: error.toString() }); }
+  );
+});
+
+ipcMain.on('hwRecoverMnemonic', (event, requestId) => {
+  const promise = deviceWallet.devRecoveryDevice(requestSeedWordEvent);
+  promise.then(
+    result => { console.log("Recover mnemonic promise resolved", result); event.sender.send('hwRecoverMnemonicResponse', requestId, result); },
+    error => { console.log("Recover mnemonic promise errored: ", error); event.sender.send('hwRecoverMnemonicResponse', requestId, { error: error.toString() }); }
   );
 });
 

@@ -310,7 +310,8 @@ const createWipeDeviceRequest = function() {
 
 const createRecoveryDeviceRequest = function() {
     const msgStructure = {
-        'dryRun': true,
+        'dryRun': false,
+        'enforceWordList': true,
         'wordCount': 12
     };
     const msg = messages.RecoveryDevice.create(msgStructure);
@@ -591,6 +592,27 @@ const devUpdateFirmware = function(data, hash) {
     });
 };
 
+const devCancelRequest = function() {
+    return new Promise((resolve, reject) => {
+        const dataBytes = createCancelRequest();
+        const deviceHandle = new DeviceHandler(deviceType);
+        const devReadCallback = function(kind, data) {
+            deviceHandle.close();
+            if (kind == messages.MessageType.MessageType_Success) {
+                resolve(decodeSuccess(kind, data));
+                return;
+            }
+            if (kind == messages.MessageType.MessageType_Failure) {
+                resolve(decodeFailureAndPinCode(kind, data));
+                return;
+            }
+            reject(new Error(`Could not recognize message of kind ${kind}`));
+        };
+        deviceHandle.read(devReadCallback);
+        deviceHandle.write(dataBytes);
+    });
+};
+
 const devGetVersionDevice = function() {
     return new Promise((resolve) => {
             const dataBytes = createGetVersionRequest();
@@ -625,8 +647,8 @@ const devSendPinCodeRequest = function(pinCodeCallback, pinCodeReader) {
         const dataBytes = createSendPinCodeRequest(pinCode);
         const deviceHandle = new DeviceHandler(deviceType);
         deviceHandle.read((answerKind, dataBuffer) => {
-            pinCodeCallback(answerKind, dataBuffer);
             deviceHandle.close();
+            pinCodeCallback(answerKind, dataBuffer);
         });
         deviceHandle.write(dataBytes);
     };
@@ -638,9 +660,7 @@ const devSendPinCodeRequest = function(pinCodeCallback, pinCodeReader) {
             },
             () => {
                 console.log("Pin code promise rejected");
-                const dataBytes = createCancelRequest();
-                const deviceHandle = new DeviceHandler(deviceType);
-                deviceHandle.write(dataBytes);
+                devCancelRequest();
             }
             );
     } else {
@@ -763,13 +783,12 @@ const devWipeDevice = function() {
     });
 };
 
-const devBackupDevice = function() {
-    return new Promise((resolve) => {
+const devBackupDevice = function(pinCodeReader) {
+    return new Promise((resolve, reject) => {
             const dataBytes = createBackupDeviceRequest();
             const deviceHandle = new DeviceHandler(deviceType);
             const buttonAckLoop = function(kind) {
                 if (kind != messages.MessageType.MessageType_ButtonRequest) {
-                    deviceHandle.close();
                     if (kind == messages.MessageType.MessageType_Success) {
                         resolve("Backup Device operation completed");
                     } else {
@@ -777,11 +796,35 @@ const devBackupDevice = function() {
                     }
                     return;
                 }
+                buttonDevHandle = new DeviceHandler(deviceType);
                 const buttonAckBytes = createButtonAckRequest();
-                deviceHandle.read(buttonAckLoop);
-                deviceHandle.write(buttonAckBytes);
+                buttonDevHandle.read((k) => {
+                    buttonDevHandle.close();
+                    buttonAckLoop(k);
+                });
+                buttonDevHandle.write(buttonAckBytes);
             };
-            deviceHandle.read(buttonAckLoop);
+            const backupReader = function(kind) {
+                deviceHandle.close();
+                if (kind == messages.MessageType.MessageType_PinMatrixRequest) {
+                    devSendPinCodeRequest(
+                        (answerKind, answerBuffer) => {
+                        console.log("Pin code callback got answerKind", answerKind);
+                        if (answerKind == messages.MessageType.MessageType_ButtonRequest) {
+                            buttonAckLoop(answerKind);
+                            return;
+                        }
+                        if (answerKind == messages.MessageType.MessageType_Failure) {
+                            reject(new Error(decodeFailureAndPinCode(answerKind, answerBuffer)));
+                        }
+                    },
+                    pinCodeReader
+                    );
+                } else {
+                    buttonAckLoop(kind);
+                }
+            };
+            deviceHandle.read(backupReader);
             deviceHandle.write(dataBytes);
     });
 };
@@ -815,6 +858,7 @@ const devRecoveryDevice = function(wordReader) {
     return new Promise((resolve, reject) => {
         const dataBytes = createRecoveryDeviceRequest();
         const deviceHandle = new DeviceHandler(deviceType);
+        // eslint-disable-next-line max-statements
         const buttonAckLoop = function(kind) {
             if (kind != messages.MessageType.MessageType_ButtonRequest) {
                 if (kind == messages.MessageType.MessageType_WordRequest) {
@@ -831,8 +875,11 @@ const devRecoveryDevice = function(wordReader) {
                     });
                     return;
                 }
+                deviceHandle.close();
                 reject(new Error("Expected WordAck after Button confirmation"));
+                return;
             }
+            deviceHandle.reopen();
             const buttonAckBytes = createButtonAckRequest();
             deviceHandle.read(buttonAckLoop);
             deviceHandle.write(buttonAckBytes);
@@ -921,6 +968,7 @@ module.exports = {
     devAddressGen,
     devAddressGenPinCode,
     devBackupDevice,
+    devCancelRequest,
     devChangePin,
     devCheckMessageSignature,
     devGenerateMnemonic,

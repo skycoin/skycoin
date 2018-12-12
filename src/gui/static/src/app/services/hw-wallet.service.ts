@@ -86,6 +86,8 @@ export class HwWalletService {
   }
 
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
 
@@ -95,6 +97,8 @@ export class HwWalletService {
   }
 
   changePin(): Observable<OperationResult> {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwChangePin', requestId);
 
@@ -108,6 +112,8 @@ export class HwWalletService {
   }
 
   setMnemonic(mnemonic: string): Observable<OperationResult> {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
     mnemonic = mnemonic.replace(/(\n|\r\n)$/, '');
 
     const requestId = this.createRandomIdAndPrepare();
@@ -119,6 +125,8 @@ export class HwWalletService {
   }
 
   generateMnemonic(): Observable<OperationResult> {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
 
@@ -128,6 +136,8 @@ export class HwWalletService {
   }
 
   backup(): Observable<OperationResult> {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwBackupDevice', requestId);
 
@@ -137,6 +147,8 @@ export class HwWalletService {
   }
 
   wipe(): Observable<OperationResult> {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwWipe', requestId);
 
@@ -146,6 +158,8 @@ export class HwWalletService {
   }
 
   signMessage(addressIndex: number, message: string, currentSignature?: number, totalSignatures?: number): Observable<OperationResult> {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
     const requestId = this.createRandomIdAndPrepare();
     if (currentSignature && totalSignatures) {
       this.requestPinComponentInternal.showForSigningTx = true;

@@ -430,6 +430,10 @@ ipcMain.on('hwSendPin', (event, pin) => {
   }
 });
 
+ipcMain.on('hwCancelLastAction', (event) => {
+  deviceWallet.devCancelRequest();
+});
+
 ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex) => {
   const promise = deviceWallet.devAddressGenPinCode(addressN, startIndex, pinEvent);
   promise.then(
@@ -463,7 +467,7 @@ ipcMain.on('hwGenerateMnemonic', (event, requestId) => {
 });
 
 ipcMain.on('hwBackupDevice', (event, requestId) => {
-  const promise = deviceWallet.devBackupDevice();
+  const promise = deviceWallet.devBackupDevice(pinEvent);
   promise.then(
     result => { console.log("Backup device promise resolved", result); event.sender.send('hwBackupDeviceResponse', requestId, result); },
     error => { console.log("Backup device promise errored: ", error); event.sender.send('hwBackupDeviceResponse', requestId, { error: error.toString() }); }

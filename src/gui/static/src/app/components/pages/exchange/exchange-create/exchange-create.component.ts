@@ -13,8 +13,9 @@ import { ExchangeOrder, TradingPair } from '../../../../app.datatypes';
 import { ISubscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/merge';
-import { MatSnackBar } from '@angular/material';
+import { MatDialog, MatDialogConfig, MatSnackBar } from '@angular/material';
 import { showSnackbarError } from '../../../../utils/errors';
+import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
 
 @Component({
   selector: 'app-exchange-create',
@@ -54,6 +55,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     private exchangeService: ExchangeService,
     private formBuilder: FormBuilder,
     private snackbar: MatSnackBar,
+    private dialog: MatDialog,
   ) { }
 
   ngOnInit() {
@@ -69,6 +71,18 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   setAgreement(event) {
     this.agreement = event.checked;
     this.form.updateValueAndValidity();
+  }
+
+  selectAddress() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    config.autoFocus = false;
+
+    this.dialog.open(SelectAddressComponent, config).afterClosed().subscribe(address => {
+      if (address) {
+        this.form.get('toAddress').setValue(address);
+      }
+    });
   }
 
   exchange() {

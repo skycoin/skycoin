@@ -1,4 +1,4 @@
-<app-modal [headline]="'send.change-address-label' | translate" [dialog]="dialogRef">
+<app-modal [headline]="'title.select-address' | translate" [dialog]="dialogRef">
   <div class="wallet-container select-address-theme" *ngFor="let wallet of wallets">
     <div class="title" title="{{ wallet.label }}">{{ wallet.label }}</div>
     <button mat-button color="primary" *ngFor="let address of wallet.addresses" (click)="select(address.address)">

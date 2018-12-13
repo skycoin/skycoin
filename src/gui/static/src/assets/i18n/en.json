@@ -31,7 +31,8 @@
     "seed": "Wallet Seed",
     "qrcode": "QR Code",
     "reset": "Reset Password",
-    "exchange": "Exchange"
+    "exchange": "Exchange",
+    "select-address": "Select Address"
   },
 
   "header": {
@@ -294,6 +295,7 @@
     "show-last": "Show last order",
     "status": "Status",
     "exchanging": "Exchanging {{from}} for {{to}}",
+    "select": "Select",
     "statuses": {
       "user-waiting": "Waiting for deposit. Please send {{amount}} {{from}} to the exchange address",
       "market-waiting-confirmations": "Waiting for transaction confirmations",

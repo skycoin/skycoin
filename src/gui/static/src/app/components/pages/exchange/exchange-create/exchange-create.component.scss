@@ -109,3 +109,17 @@
     }
   }
 }
+
+.-select-address {
+  padding-left: 5px;
+  color: $blue;
+  cursor: pointer;
+
+  mat-icon {
+    color: $blue;
+    padding: 0;
+    display: inline;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+}

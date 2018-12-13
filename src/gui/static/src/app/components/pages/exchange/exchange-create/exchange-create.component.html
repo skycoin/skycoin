@@ -31,7 +31,16 @@
       </div>
     </div>
     <div class="form-field">
-      <label>{{ 'exchange.to-address' | translate:{coin: coinName} }}</label>
+      <label>
+        <span>{{ 'exchange.to-address' | translate:{coin: coinName} }}</span>
+        <span
+          class="-select-address"
+          (click)="selectAddress()"
+          *ngIf="activeTradingPair?.to === 'SKY'"
+        >
+          {{ 'exchange.select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+        </span>
+      </label>
       <input type="text" formControlName="toAddress">
     </div>
 

@@ -15,7 +15,15 @@
       width: 18px;
       height: 18px;
       font-size: 18px;
-      animation: spin 1s infinite linear;
+
+      &.-spin {
+        animation: spin 1s infinite linear;
+      }
+    }
+
+    .-value {
+      padding-right: 30px;
+      word-break: normal;
     }
   }
 }

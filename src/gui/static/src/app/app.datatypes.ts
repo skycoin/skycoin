@@ -90,6 +90,7 @@ export class ExchangeOrder {
   exchangeTag: string|null;
   toTx: string;
   status: string;
+  message?: string;
 }
 
 /**

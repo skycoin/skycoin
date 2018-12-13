@@ -16,19 +16,31 @@ export class ExchangeService {
   ) { }
 
   tradingPairs(): Observable<TradingPair[]> {
-    return this.post('/trading_pairs').map(data => data.result);
+    return this.post('trading_pairs').map(data => data.result);
   }
 
   exchange(pair: string, fromAmount: number, toAddress: string): Observable<ExchangeOrder> {
-    return this.post('/orders', { pair, fromAmount, toAddress }).map(data => data.result);
+    return this.post('orders', { pair, fromAmount, toAddress }).map(data => data.result);
   }
 
   status(id: string): Observable<ExchangeOrder> {
+    let isDone = false, shouldContinue = true;
+
     return Observable
-      .timer(0, 60 * 1000)
-      .flatMap(() => this.post('/orders/status', { id }))
+      .timer(0, 30 * 1000)
+      .flatMap(() => this.post('orders/status', { id }))
       .map(data => data.result)
-      .takeWhile((order: ExchangeOrder) => order.status !== 'complete');
+      .takeWhile((order: ExchangeOrder) => {
+        if (isDone) {
+          shouldContinue = false;
+        }
+
+        if (['complete', 'error'].indexOf(order.status) !== -1) {
+          isDone = true;
+        }
+
+        return shouldContinue;
+      });
   }
 
   setLastOrder(order) {
@@ -39,11 +51,12 @@ export class ExchangeService {
     return this.lastOrder;
   }
 
-  private post(url: string, body?: any): Observable<any> {
+  private post(url: string, body?: any, headers?: any): Observable<any> {
     return this.http.post(this.buildUrl(url), body, {
       responseType: 'json',
       headers: new HttpHeaders({
         'api-key': this.API_KEY,
+        ...headers,
       }),
     });
   }

@@ -32,7 +32,7 @@ export class ExchangeStatusComponent implements OnInit {
   }
 
   get translatedStatus() {
-    const status = this.order.status.replace('_', '-');
+    const status = this.order.status.replace(/_/g, '-');
     const params = {
       from: this.fromCoin,
       amount: this.order.fromAmount,
@@ -69,7 +69,11 @@ export class ExchangeStatusComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    // this.exchangeService.status(this.order.id).subscribe(o => this.order = o);
+    const fromAmount = this.order.fromAmount;
+
+    this.exchangeService.status(this.order.id).subscribe(order => {
+      this.order = { ...order, fromAmount };
+    });
   }
 
   showQrCode(event, address) {

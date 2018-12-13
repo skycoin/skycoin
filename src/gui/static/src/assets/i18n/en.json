@@ -301,13 +301,14 @@
       "market-exchanged": "Traded {{from}} for {{to}}",
       "market-withdraw-waiting": "Sending {{to}} to your address",
       "complete": "Exchange completed!",
-      "error": "Error occurred, contact support"
+      "error": "Error occurred"
     },
     "details": {
       "exchange-addr": "Exchange address",
-      "exchange-addr-tag": "Tag to attach to transaction",
+      "exchange-addr-tag": "Tag which must be attached to transaction",
       "tx-id": "Transaction ID",
-      "order-id": "Exchange Order ID"
+      "order-id": "Order ID",
+      "error-msg": "Error message"
     }
   }
 }

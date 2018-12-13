@@ -1,6 +1,6 @@
 <div class="-wrapper">
   <div class="-status">
-    <mat-icon>{{ statusIcon }}</mat-icon>
+    <mat-icon [ngClass]="{'-spin': statusIcon === 'refresh'}">{{ statusIcon }}</mat-icon>
     <div class="-item">
       <div class="-key">{{ 'exchange.status' | translate }}</div>
       <div class="-value">{{ translatedStatus }}</div>
@@ -36,5 +36,10 @@
   <div class="-item" *ngIf="order.status === statuses[6]">
     <div class="-key">{{ 'exchange.details.order-id' | translate }}</div>
     <div class="-value">{{ order.id }}</div>
+  </div>
+
+  <div class="-item" *ngIf="order.status === statuses[6]">
+    <div class="-key">{{ 'exchange.details.error-msg' | translate }}</div>
+    <div class="-value">{{ order.message }}</div>
   </div>
 </div>

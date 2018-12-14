@@ -1,7 +1,7 @@
 <app-modal class="modal" [headline]="'hardware-wallet.options.configure-automatically' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
   <app-hw-message *ngIf="currentState === states.Initial"
-    [text]="'hardware-wallet.general.confirm' | translate"
-    [icon]="msgIcons.Confirm"
+    [text]="'hardware-wallet.generate-seed.configuring' | translate"
+    [icon]="msgIcons.Spinner"
   ></app-hw-message>
 
   <app-hw-message *ngIf="currentState === states.ReturnedSuccess"

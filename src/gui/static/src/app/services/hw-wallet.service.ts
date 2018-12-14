@@ -7,6 +7,12 @@ import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { HwSeedWordDialogComponent } from '../components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 
+export enum ChangePinStates {
+  RequestingCurrentPin,
+  RequestingNewPin,
+  ConfirmingNewPin,
+}
+
 export enum OperationResults {
   Success,
   FailedOrRefused,
@@ -125,10 +131,16 @@ export class HwWalletService {
     });
   }
 
-  changePin(): Observable<OperationResult> {
+  changePin(changingCurrentPin: boolean): Observable<OperationResult> {
     window['ipcRenderer'].send('hwCancelLastAction');
 
     const requestId = this.createRandomIdAndPrepare();
+    this.requestPinComponentInternal.showForChangingPin = true;
+    if (changingCurrentPin) {
+      this.requestPinComponentInternal.changePinState = ChangePinStates.RequestingCurrentPin;
+    } else {
+      this.requestPinComponentInternal.changePinState = ChangePinStates.RequestingNewPin;
+    }
     window['ipcRenderer'].send('hwChangePin', requestId);
 
     return new Observable(observer => {
@@ -237,6 +249,7 @@ export class HwWalletService {
 
   private createRandomIdAndPrepare() {
     this.requestPinComponentInternal.showForSigningTx = false;
+    this.requestPinComponentInternal.showForChangingPin = false;
 
     return Math.floor(Math.random() * 4000000000);
   }

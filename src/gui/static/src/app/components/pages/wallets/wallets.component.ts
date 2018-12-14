@@ -78,7 +78,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
   }
 
   toggleWallet(wallet: Wallet) {
-    if (wallet.isHardware && wallet.hasHwSecurityWarnings && !wallet.opened) {
+    if (wallet.isHardware && wallet.hasHwSecurityWarnings && !wallet.stopShowingHwSecurityPopup && !wallet.opened) {
       const confirmationData: ConfirmationData = {
         headerText: 'hardware-wallet.security-warning.title',
         text: 'hardware-wallet.security-warning.text',
@@ -89,7 +89,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
       showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
-          wallet.hasHwSecurityWarnings = false;
+          wallet.stopShowingHwSecurityPopup = true;
           this.walletService.saveHardwareWallets();
           wallet.opened = true;
         }

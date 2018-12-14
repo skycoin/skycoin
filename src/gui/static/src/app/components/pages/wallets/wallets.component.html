@@ -22,6 +22,9 @@
                 <img src="../../../../assets/img/unlock-grey.png"
                     [matTooltip]="'wallet.encryption-disabled' | translate"
                     *ngIf="!wallet.encrypted && !wallet.isHardware">
+                <img src="../../../../assets/img/alert-red.png"
+                    [matTooltip]="'wallet.hw-security-warning' | translate"
+                    *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware">
               </div>
               <div class="-width-130 -coins">{{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
               <div class="-width-130 -hours">{{ (wallet.hours ? wallet.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>

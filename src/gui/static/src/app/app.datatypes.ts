@@ -61,6 +61,7 @@ export class Wallet {
   opened?: boolean;
   isHardware?: boolean;
   hasHwSecurityWarnings?: boolean;
+  stopShowingHwSecurityPopup?: boolean;
 }
 
 export class Connection {

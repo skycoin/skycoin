@@ -32,7 +32,9 @@ export class HwChangePinDialogComponent implements OnDestroy {
     public dialogRef: MatDialogRef<HwChangePinDialogComponent>,
     private hwWalletService: HwWalletService,
   ) {
-    this.operationSubscription = this.hwWalletService.changePin().subscribe(
+    this.operationSubscription = this.hwWalletService.getFeatures().flatMap(features => {
+      return this.hwWalletService.changePin(features.rawResponse.pinProtection);
+    }).subscribe(
       () => {
         this.currentState = States.ReturnedSuccess;
         this.notifyFinish(null, true);

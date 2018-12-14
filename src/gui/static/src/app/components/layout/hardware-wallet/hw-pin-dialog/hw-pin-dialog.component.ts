@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
-import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { HwWalletService, ChangePinStates } from '../../../../services/hw-wallet.service';
 import { HwPinHelpComponent } from '../hw-pin-help/hw-pin-help.component';
 
 @Component({
@@ -14,11 +14,16 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
   static showForSigningTx = false;
   static currentSignature = 1;
   static totalSignatures = 2;
+  static showForChangingPin = false;
+  static changePinState = ChangePinStates.RequestingCurrentPin;
 
   form: FormGroup;
   showForSigning: boolean;
   current: number;
   total: number;
+  changingPin: boolean;
+  changeState = ChangePinStates.RequestingCurrentPin;
+  changePinStates = ChangePinStates;
 
   private hwConnectionSubscription: ISubscription;
 
@@ -31,6 +36,9 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
     this.showForSigning = HwPinDialogComponent.showForSigningTx;
     this.current = HwPinDialogComponent.currentSignature;
     this.total = HwPinDialogComponent.totalSignatures;
+
+    this.changingPin = HwPinDialogComponent.showForChangingPin;
+    this.changeState = HwPinDialogComponent.changePinState;
   }
 
   ngOnInit() {
@@ -47,6 +55,14 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.hwConnectionSubscription.unsubscribe();
+
+    if (HwPinDialogComponent.showForChangingPin) {
+      if (HwPinDialogComponent.changePinState === ChangePinStates.RequestingCurrentPin) {
+        HwPinDialogComponent.changePinState = ChangePinStates.RequestingNewPin;
+      } else if (HwPinDialogComponent.changePinState === ChangePinStates.RequestingNewPin) {
+        HwPinDialogComponent.changePinState = ChangePinStates.ConfirmingNewPin;
+      }
+    }
   }
 
   closeModal() {

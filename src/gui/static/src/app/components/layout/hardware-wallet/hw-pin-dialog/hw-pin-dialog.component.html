@@ -1,7 +1,20 @@
-<app-modal class="modal" [headline]="'hardware-wallet.enter-pin.title' | translate" [dialog]="dialogRef">
+<app-modal
+  class="modal"
+  [headline]="(!changingPin ? 'hardware-wallet.enter-pin.title' :
+    (changeState === changePinStates.RequestingNewPin ? 'hardware-wallet.enter-pin.title-change-new' :
+      (changeState === changePinStates.ConfirmingNewPin ? 'hardware-wallet.enter-pin.title-change-confirm' :
+      'hardware-wallet.enter-pin.title-change-current')
+    )) | translate"
+  [dialog]="dialogRef">
   <div [formGroup]="form">
     <div class="form-field">
-      <div class="info"><span *ngIf="showForSigning">{{ 'hardware-wallet.enter-pin.instructions-tx' | translate:{current: current, total: total} }}</span>
+      <div class="info">
+        <span *ngIf="showForSigning">
+          {{ 'hardware-wallet.enter-pin.instructions-tx' | translate:{current: current, total: total} }}
+        </span>
+        <span *ngIf="changingPin && changeState === changePinStates.RequestingNewPin">
+            {{ 'hardware-wallet.enter-pin.instructions-change' | translate:{current: current, total: total} }}
+          </span>
         {{ 'hardware-wallet.enter-pin.instructions' | translate }}
         <span class="link" (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>
       </div>

@@ -142,21 +142,16 @@ export class WalletService {
       return this.hwWalletService.getFeatures().map(result => {
         const warnings: SecurityWarnings[] = [];
 
-        let hasSecurityWarnings = false;
+        wallet.hasHwSecurityWarnings = false;
         if (result.rawResponse.needsBackup) {
           warnings.push(SecurityWarnings.NeedsBackup);
-          hasSecurityWarnings = true;
+          wallet.hasHwSecurityWarnings = true;
         }
         if (!result.rawResponse.pinProtection) {
           warnings.push(SecurityWarnings.NeedsPin);
-          hasSecurityWarnings = true;
+          wallet.hasHwSecurityWarnings = true;
         }
-
-        // Do not update if wallet.hasHwSecurityWarnings is false, just return the warnings.
-        if (wallet.hasHwSecurityWarnings) {
-          wallet.hasHwSecurityWarnings = hasSecurityWarnings;
-          this.saveHardwareWallets();
-        }
+        this.saveHardwareWallets();
 
         return warnings;
       });

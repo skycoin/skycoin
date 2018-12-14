@@ -107,6 +107,7 @@
     "hardware": "Hardware Wallet",
     "encryption-enabled": "Encryption enabled",
     "encryption-disabled": "Encryption disabled",
+    "hw-security-warning": "Possible security risk. Access the hardware wallet options while the device is connected for more information.",
     "wallet": "Wallet",
     "hardware-wallet": "Hardware Wallet",
     "delete-confirmation1": "WARNING: the wallet",
@@ -313,7 +314,7 @@
     },
     "security-warning" : {
       "title": "Security warning",
-      "text": "The last time this hardware wallet was connected one or more security warnings were found. We recommend you to connect the hardware wallet, enter to the hardware wallet options and resolve the security problems before continuing.",
+      "text": "The last time this hardware wallet was connected one or more security warnings were found. We recommend you enter to the hardware wallet options while the device is connected and solve the security problems before continuing.",
       "check": "I understand the risks and want to continue",
       "continue": "Continue",
       "cancel": "Cancel"
@@ -322,7 +323,7 @@
       "connecting": "Connecting...",
       "disconnected": "No hardware wallet detected. Please connect a hardware wallet to use this option.",
       "unconfigured-detected-tittle": "Unconfigured hardware wallet",
-      "unconfigured-detected": "An unconfigured hardware wallet has been detected. Select \"Configure automatically\" if you want to configure it as a brand new wallet and start using it immediately, or select \"Restore backup\" if you want to configure it with a backup of a hardware wallet that you have already used and thus be able to access its funds again.",
+      "unconfigured-detected": "A seedless hardware wallet has been detected. Select \"Configure automatically\" if you want to configure it as a brand new wallet and start using it immediately, or select \"Restore backup\" if you want to configure it with a previously created seed backup and thus be able to access your funds again.",
       "configured-detected": "Hardware wallet detected. The device is identified in the wallets list as:",
       "security-warnings-title": "Security warnings",
       "security-warning-title": "Security warning",
@@ -338,11 +339,14 @@
       "forgotten-pin1": "If you can not access because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here."
     },
+    "generate-seed" : {
+      "configuring": "Configuring..."
+    },
     "added" : {
       "title": "New Hardware Wallet",
       "configuring": "New hardware wallet detected. Configuring...",
       "done": "Done",
-      "added1": "The connected hardware wallet has been added at the bottom of the wallets list with the name:",
+      "added1": "The connected hardware wallet has been added to the wallets list with the following name:",
       "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, in the wallets list you can change the name of the wallet and remove it from the list, if you wish."
     },
     "wipe" : {
@@ -350,7 +354,7 @@
       "confirm-delete": "Also remove from the wallets list"
     },
     "create-backup" : {
-      "warning": "WARNING: You can only use this option to create a backup once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (called the \"seed\") would be able access the wallet balance, so extreme caution is advised.",
+      "warning": "WARNING: You can only use this option to backup your hardware wallet seed once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") would be able access the wallet balance, so extreme caution is advised.",
       "instructions": "Write down the word list that appear on the screen of the hardware wallet. Make sure you respect the order and write each word correctly."
     },
     "seed-word" : {
@@ -365,8 +369,12 @@
     },
     "enter-pin" : {
       "title": "Enter PIN",
+      "title-change-current": "Enter the current PIN",
+      "title-change-new": "Enter the new PIN",
+      "title-change-confirm": "Confirm the new PIN",
       "instructions": "The PIN layout is displayed on the hardware wallet screen.",
       "instructions-tx": "Enter the PIN to confirm and sign the transaction ({{ current }} of {{ total }} required signatures).",
+      "instructions-change": "Please enter a hard-to-guess PIN of between 4 and 8 numbers.",
       "help": "Need help?"
     },
     "pin-help" : {

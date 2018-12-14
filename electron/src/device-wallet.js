@@ -214,6 +214,19 @@ const createGetFeaturesRequest = function() {
     return dataBytesFromChunks(chunks);
 };
 
+const createPassphraseRequest = function(passphrase) {
+    const msgStructure = {
+        passphrase
+    };
+    const msg = messages.PassphraseAck.create(msgStructure);
+    const buffer = messages.PassphraseAck.encode(msg).finish();
+    const chunks = makeTrezorMessage(
+        buffer,
+        messages.MessageType.MessageType_PassphraseAck
+    );
+    return dataBytesFromChunks(chunks);
+};
+
 const createButtonAckRequest = function() {
     const msgStructure = {};
     const msg = messages.ButtonAck.create(msgStructure);
@@ -631,7 +644,7 @@ const devGetVersionDevice = function() {
     });
 };
 
-const devAddressGen = function(addressN, startIndex, callback) {
+const devSendAddressGen = function(addressN, startIndex, callback) {
     const dataBytes = createAddressGenRequest(addressN, startIndex);
     const deviceHandle = new DeviceHandler(deviceType);
     const devReadCallback = function(kind, dataBuffer) {
@@ -669,35 +682,61 @@ const devSendPinCodeRequest = function(pinCodeCallback, pinCodeReader) {
     }
 };
 
-const devAddressGenPinCode = function(addressN, startIndex, pinCodeReader) {
-    return new Promise((resolve, reject) => {
-        devAddressGen(addressN, startIndex, function(kind, dataBuffer) {
-            console.log("Addresses generation kindly returned", messages.MessageType[kind]);
-            if (kind == messages.MessageType.MessageType_Failure) {
-                reject(new Error(decodeFailureAndPinCode(kind, dataBuffer)));
-            }
-            if (kind == messages.MessageType.MessageType_ResponseSkycoinAddress) {
-                resolve(decodeAddressGenAnswer(kind, dataBuffer));
-            }
-            if (kind == messages.MessageType.MessageType_PinMatrixRequest) {
-                devSendPinCodeRequest(
-                    (answerKind, answerBuffer) => {
-                    console.log("Pin code callback got answerKind", answerKind);
-                    if (answerKind == messages.MessageType.MessageType_ResponseSkycoinAddress) {
-                        resolve(decodeAddressGenAnswer(answerKind, answerBuffer));
-                    }
-                    if (answerKind == messages.MessageType.MessageType_Failure) {
-                        reject(new Error(decodeFailureAndPinCode(answerKind, answerBuffer)));
-                    }
-                },
-                pinCodeReader
-                );
-            }
+const devSendPassphraseAck = function(callback, passphraseReader) {
+    const sendPassphraseAck = function(passphrase) {
+        const dataBytes = createPassphraseRequest(passphrase);
+        const deviceHandle = new DeviceHandler(deviceType);
+        deviceHandle.read((kind, data) => {
+            deviceHandle.close();
+            callback(kind, data);
         });
+        deviceHandle.write(dataBytes);
+    };
+    if (passphraseReader !== null && passphraseReader !== undefined) {
+        const passphrasePromise = passphraseReader();
+        passphrasePromise.then(
+            (passphrase) => {
+                sendPassphraseAck(passphrase);
+            },
+            () => {
+                console.log("Pin code promise rejected");
+                devCancelRequest();
+            }
+        );
+    } else {
+        console.log("Please input your passphrase: ");
+        sendPassphraseAck(scanf('%s'));
+    }
+};
+
+// eslint-disable-next-line max-params
+const devAddressGen = function(addressN, startIndex, pinCodeReader, passphraseReader) {
+    return new Promise((resolve, reject) => {
+        const addressGenHandler = function(kind, dataBuffer) {
+            console.log("Addresses generation received message kind: ", messages.MessageType[kind]);
+            switch (kind) {
+            case messages.MessageType.MessageType_Failure:
+                reject(new Error(decodeFailureAndPinCode(kind, dataBuffer)));
+                break;
+            case messages.MessageType.MessageType_ResponseSkycoinAddress:
+                resolve(decodeAddressGenAnswer(kind, dataBuffer));
+                break;
+            case messages.MessageType.MessageType_PinMatrixRequest:
+                devSendPinCodeRequest(addressGenHandler, pinCodeReader);
+                break;
+            case messages.MessageType.MessageType_PassphraseRequest:
+                devSendPassphraseAck(addressGenHandler, passphraseReader);
+                break;
+            default:
+                reject(new Error(`Unexpected answer from the device: ${kind}`));
+                break;
+            }
+        };
+        devSendAddressGen(addressN, startIndex, addressGenHandler);
     });
 };
 
-const devSkycoinSignMessage = function(addressN, message, callback) {
+const devSendSkycoinSignMessage = function(addressN, message, callback) {
     const dataBytes = createSignMessageRequest(addressN, message);
     const deviceHandle = new DeviceHandler(deviceType);
     const devReadCallback = function(kind, dataBuffer) {
@@ -708,56 +747,57 @@ const devSkycoinSignMessage = function(addressN, message, callback) {
     deviceHandle.write(dataBytes);
 };
 
-const devSkycoinSignMessagePinCode = function(addressN, message, pinCodeReader) {
+// eslint-disable-next-line max-params
+const devSkycoinSignMessage = function(addressN, message, pinCodeReader, passphraseReader) {
     return new Promise((resolve, reject) => {
-        devSkycoinSignMessage(addressN, message, function(kind, dataBuffer) {
-            console.log("Signature generation kindly returned", messages.MessageType[kind]);
-            if (kind == messages.MessageType.MessageType_Failure) {
+        const skycoinSignHander = function(kind, dataBuffer) {
+            console.log("Signature generation received message kind:", messages.MessageType[kind]);
+            switch (kind) {
+            case messages.MessageType.MessageType_Failure:
                 reject(new Error(decodeFailureAndPinCode(kind, dataBuffer)));
-            }
-            if (kind == messages.MessageType.MessageType_ResponseSkycoinSignMessage) {
+                break;
+            case messages.MessageType.MessageType_ResponseSkycoinSignMessage:
                 resolve(decodeSignMessageAnswer(kind, dataBuffer));
+                break;
+            case messages.MessageType.MessageType_PassphraseRequest:
+                devSendPassphraseAck(skycoinSignHander, passphraseReader);
+                break;
+            case messages.MessageType.MessageType_PinMatrixRequest:
+                devSendPinCodeRequest(skycoinSignHander, pinCodeReader);
+                break;
+             default:
+                reject(new Error(`Unexpected answer from the device: ${kind}`));
+                break;
             }
-            if (kind == messages.MessageType.MessageType_PinMatrixRequest) {
-                devSendPinCodeRequest(
-                    (answerKind, answerBuffer) => {
-                    console.log("Pin code callback got answerKind", answerKind);
-                    if (answerKind == messages.MessageType.MessageType_ResponseSkycoinSignMessage) {
-                        resolve(decodeSignMessageAnswer(answerKind, answerBuffer));
-                    }
-                    if (answerKind == messages.MessageType.MessageType_Failure) {
-                        reject(new Error(decodeFailureAndPinCode(answerKind, answerBuffer)));
-                    }
-                },
-                pinCodeReader
-                );
-            }
-        });
+        };
+        devSendSkycoinSignMessage(addressN, message, skycoinSignHander);
     });
 };
 
-const devCheckMessageSignature = function(address, message, signature) {
+// eslint-disable-next-line max-params
+const devCheckMessageSignature = function(address, message, signature, passphraseReader) {
     return new Promise((resolve, reject) => {
         const dataBytes = createCheckMessageSignatureRequest(address, message, signature);
         const deviceHandle = new DeviceHandler(deviceType);
         const devReadCallback = function(kind, dataBuffer) {
+            deviceHandle.close();
             if (kind == messages.MessageType.MessageType_Success) {
                 try {
                     const answer = messages.Success.
                                     decode(dataBuffer);
-                    console.log("Address emiting that signature:", answer.message);
                     if (answer.message === address) {
-                        resolve("Signature is correct");
+                        resolve(`Address emiting that signature: ${answer.message}`);
                     } else {
                         reject(new Error("Wrong signature"));
                     }
                 } catch (e) {
                     reject(new Error("Wire format is invalid", e));
                 }
+            } else if (kind == messages.MessageType.MessageType_PassphraseRequest) {
+                devSendPassphraseAck(devReadCallback, passphraseReader);
             } else {
                 reject(new Error("Wrong answer kind", kind));
             }
-            deviceHandle.close();
         };
         deviceHandle.read(devReadCallback);
         deviceHandle.write(dataBytes);
@@ -966,7 +1006,6 @@ const devGetFeatures = function() {
 module.exports = {
     DeviceTypeEnum,
     devAddressGen,
-    devAddressGenPinCode,
     devBackupDevice,
     devCancelRequest,
     devChangePin,
@@ -976,7 +1015,7 @@ module.exports = {
     devGetVersionDevice,
     devRecoveryDevice,
     devSetMnemonic,
-    devSkycoinSignMessagePinCode,
+    devSkycoinSignMessage,
     devUpdateFirmware,
     devWipeDevice,
     getDevice,

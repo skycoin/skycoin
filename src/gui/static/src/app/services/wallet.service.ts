@@ -21,6 +21,11 @@ import { TranslateService } from '@ngx-translate/core';
 declare var Cipher: any;
 declare var CipherExtras: any;
 
+export enum SecurityWarnings {
+  NeedsBackup,
+  NeedsPin,
+}
+
 @Injectable()
 export class WalletService {
 
@@ -122,7 +127,7 @@ export class WalletService {
       });
 
       return this.wallets.first().map(wallets => {
-        const newWallet = this.crearteHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, addressWithTx + 1));
+        const newWallet = this.crearteHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, addressWithTx + 1), true);
         wallets.push(newWallet);
         this.saveHardwareWallets();
         this.refreshBalances();
@@ -130,6 +135,34 @@ export class WalletService {
         return newWallet;
       });
     });
+  }
+
+  updateWalletHasSecurityWarnings(wallet: Wallet): Observable<SecurityWarnings[]> {
+    if (wallet.isHardware) {
+      return this.hwWalletService.getFeatures().map(result => {
+        const warnings: SecurityWarnings[] = [];
+
+        let hasSecurityWarnings = false;
+        if (result.rawResponse.needsBackup) {
+          warnings.push(SecurityWarnings.NeedsBackup);
+          hasSecurityWarnings = true;
+        }
+        if (!result.rawResponse.pinProtection) {
+          warnings.push(SecurityWarnings.NeedsPin);
+          hasSecurityWarnings = true;
+        }
+
+        // Do not update if wallet.hasHwSecurityWarnings is false, just return the warnings.
+        if (wallet.hasHwSecurityWarnings) {
+          wallet.hasHwSecurityWarnings = hasSecurityWarnings;
+          this.saveHardwareWallets();
+        }
+
+        return warnings;
+      });
+    } else {
+      return Observable.of([]);
+    }
   }
 
   deleteHardwareWallet(wallet: Wallet): Observable<boolean> {
@@ -449,6 +482,7 @@ export class WalletService {
           hardwareWallets.push(this.crearteHardwareWalletData(
             wallet.label,
             wallet.addresses.map(address => address.address),
+            wallet.hasHwSecurityWarnings,
           ));
         }
       });
@@ -479,10 +513,11 @@ export class WalletService {
     return chain;
   }
 
-  private crearteHardwareWalletData(label: string, addresses: string[]): Wallet {
+  private crearteHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean): Wallet {
     return {
       label: label,
       filename: '',
+      hasHwSecurityWarnings: hasHwSecurityWarnings,
       coins: null,
       hours: null,
       addresses: addresses.map(address => {

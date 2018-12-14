@@ -3,7 +3,7 @@ import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angu
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
 import { ISubscription } from 'rxjs/Subscription';
-import { WalletService } from '../../../../services/wallet.service';
+import { WalletService, SecurityWarnings } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
@@ -11,6 +11,7 @@ import { MessageIcons } from '../hw-message/hw-message.component';
 import { Wallet } from '../../../../app.datatypes';
 import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog.component';
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
+import { Observable } from 'rxjs/Observable';
 
 enum States {
   Disconnected,
@@ -34,12 +35,15 @@ export class HwWalletOptionsComponent implements OnDestroy {
   states = States;
   walletName = '';
   customErrorMsg = '';
+  needsBackup: boolean;
+  needsPin: boolean;
 
   private operationSubscription: ISubscription;
   private dialogSubscription: ISubscription;
   private hwConnectionSubscription: ISubscription;
 
-  private recheckRequested = false;
+  private completeRecheckRequested = false;
+  private recheckSecurityOnlyRequested = false;
   private showErrorRequested = false;
   private wallet: Wallet;
 
@@ -96,9 +100,13 @@ export class HwWalletOptionsComponent implements OnDestroy {
     config.width = '450px';
     config.autoFocus = false;
 
-    config.data = ((error: string = null) => {
+    config.data = ((error: string = null, recheckSecurityOnly: boolean = false) => {
       if (!error) {
-        this.recheckRequested = true;
+        if (!recheckSecurityOnly) {
+          this.completeRecheckRequested = true;
+        } else {
+          this.recheckSecurityOnlyRequested = true;
+        }
       } else {
         this.showErrorRequested = true;
         this.customErrorMsg = error;
@@ -114,12 +122,15 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
     this.dialogSubscription = this.dialog.open(dialogType, config)
       .afterClosed().subscribe(() => {
-        if (this.recheckRequested) {
+        if (this.completeRecheckRequested) {
           this.checkWallet();
+        } else if (this.recheckSecurityOnlyRequested) {
+          this.updateSecurityWarnings().subscribe();
         } else if (this.showErrorRequested) {
           this.currentState = States.Error;
         }
-        this.recheckRequested = false;
+        this.completeRecheckRequested = false;
+        this.recheckSecurityOnlyRequested = false;
         this.showErrorRequested = false;
       });
   }
@@ -136,6 +147,15 @@ export class HwWalletOptionsComponent implements OnDestroy {
     }
   }
 
+  private updateSecurityWarnings(): Observable<SecurityWarnings[]> {
+    return this.walletService.updateWalletHasSecurityWarnings(this.wallet).map(warnings => {
+      this.needsBackup = warnings.includes(SecurityWarnings.NeedsBackup);
+      this.needsPin = warnings.includes(SecurityWarnings.NeedsPin);
+
+      return warnings;
+    });
+  }
+
   private checkWallet() {
     if (!this.hwWalletService.getDeviceSync()) {
       this.currentState = States.Disconnected;
@@ -143,7 +163,7 @@ export class HwWalletOptionsComponent implements OnDestroy {
       this.currentState = States.Processing;
       this.removeOperationSubscription();
 
-      this. operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
+      this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
         response => {
           this.walletService.wallets.first().subscribe(wallets => {
             const alreadySaved = wallets.some(wallet => {
@@ -156,11 +176,14 @@ export class HwWalletOptionsComponent implements OnDestroy {
               return found;
             });
             if (alreadySaved) {
-              if (!this.onboarding) {
-                this.currentState = States.ConfiguredConnected;
-              } else {
-                this.dialogRef.close(true);
-              }
+              this.updateSecurityWarnings().subscribe(() => {
+                if (!this.onboarding) {
+                  this.currentState = States.ConfiguredConnected;
+                } else {
+                  this.hwWalletService.showOptionsWhenPossible = true;
+                  this.dialogRef.close(true);
+                }
+              });
             } else {
               this.openDialog(HwAddedDialogComponent);
             }

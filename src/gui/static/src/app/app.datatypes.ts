@@ -60,6 +60,7 @@ export class Wallet {
   hideEmpty?: boolean;
   opened?: boolean;
   isHardware?: boolean;
+  hasHwSecurityWarnings?: boolean;
 }
 
 export class Connection {

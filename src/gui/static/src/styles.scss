@@ -255,6 +255,42 @@ mat-spinner.in-button svg {
 }
 
 /**
+Alerts
+ */
+
+.alert-box {
+  color: $red;
+  font-size: 12px;
+  padding: 0 10px;
+  line-height: 1.5;
+  background-color: #ffdede;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+
+  .title {
+    font-size: 20px;
+  }
+
+  mat-icon {
+    margin-right: 10px;
+    animation: blink 1s linear infinite;
+  }
+
+  @keyframes blink {
+    50% {
+      opacity: 0.2;
+    }
+  }
+
+  mat-checkbox {
+    margin-top: 10px;
+    display: inline-block;
+  }
+}
+
+/**
 On-boarding components
  */
 

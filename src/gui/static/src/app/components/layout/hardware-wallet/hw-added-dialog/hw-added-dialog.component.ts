@@ -34,9 +34,11 @@ export class HwAddedDialogComponent implements OnDestroy {
     private hwWalletService: HwWalletService,
   ) {
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
-      this.walletName = wallet.label;
-      this.currentState = States.Finished;
-      this.notifyFinish();
+      this.walletService.updateWalletHasSecurityWarnings(wallet).subscribe(() => {
+        this.walletName = wallet.label;
+        this.currentState = States.Finished;
+        this.notifyFinish();
+      });
     }, () => {
       this.currentState = States.Failed;
       this.notifyFinish(this.errorMsg);

@@ -24,6 +24,8 @@ export class OperationResult {
 @Injectable()
 export class HwWalletService {
 
+  showOptionsWhenPossible = false;
+
   private eventsObservers = new Map<number, Subscriber<OperationResult>>();
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
 
@@ -69,6 +71,9 @@ export class HwWalletService {
       window['ipcRenderer'].on('hwGetAddressesResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, true);
       });
+      window['ipcRenderer'].on('hwGetFeaturesResponse', (event, requestId, result) => {
+        this.dispatchEvent(requestId, result, true);
+      });
       window['ipcRenderer'].on('hwChangePinResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('PIN changed'));
       });
@@ -103,6 +108,17 @@ export class HwWalletService {
 
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
+
+    return new Observable(observer => {
+      this.eventsObservers.set(requestId, observer);
+    });
+  }
+
+  getFeatures(): Observable<OperationResult> {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
+    const requestId = this.createRandomIdAndPrepare();
+    window['ipcRenderer'].send('hwGetFeatures', requestId);
 
     return new Observable(observer => {
       this.eventsObservers.set(requestId, observer);

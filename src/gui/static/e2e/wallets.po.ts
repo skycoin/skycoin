@@ -48,7 +48,7 @@ export class WalletsPage {
     }
 
     if (label !== '' && (seed === confirm || (!confirm && seed !== ''))) {
-      const seedValidationCheckBox = element(by.css('.red-disclaimer-box .mat-checkbox-inner-container'));
+      const seedValidationCheckBox = element(by.css('.alert-box .mat-checkbox-inner-container'));
       seedValidationCheckBox.click();
     }
 

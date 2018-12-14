@@ -457,8 +457,16 @@ ipcMain.on('hwCancelLastAction', (event) => {
   deviceWallet.devCancelRequest();
 });
 
+ipcMain.on('hwGetFeatures', (event, requestId) => {
+  const promise = deviceWallet.devGetFeatures();
+  promise.then(
+    result => { console.log("Features promise resolved", result); event.sender.send('hwGetFeaturesResponse', requestId, result); },
+    error => { console.log("Features promise errored: ", error); event.sender.send('hwGetFeaturesResponse', requestId, { error: error.toString() }); }
+  );
+});
+
 ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex) => {
-  const promise = deviceWallet.devAddressGenPinCode(addressN, startIndex, pinEvent);
+  const promise = deviceWallet.devAddressGen(addressN, startIndex, pinEvent);
   promise.then(
     addresses => { console.log("Addresses promise resolved", addresses); event.sender.send('hwGetAddressesResponse', requestId, addresses); },
     error => { console.log("Addresses promise errored: ", error); event.sender.send('hwGetAddressesResponse', requestId, { error: error.toString() }); }
@@ -506,7 +514,7 @@ ipcMain.on('hwWipe', (event, requestId) => {
 });
 
 ipcMain.on('hwSignMessage', (event, requestId, addressIndex, message) => {
-  const promise = deviceWallet.devSkycoinSignMessagePinCode(addressIndex, message, pinEvent);
+  const promise = deviceWallet.devSkycoinSignMessage(addressIndex, message, pinEvent);
   promise.then(
     result => { console.log("Signature promise resolved", result); event.sender.send('hwSignMessageResponse', requestId, result); },
     error => { console.log("Signature promise errored: ", error); event.sender.send('hwSignMessageResponse', requestId, { error: error.toString() }); }

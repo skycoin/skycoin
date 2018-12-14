@@ -28,12 +28,14 @@ export class HwChangePinDialogComponent implements OnDestroy {
   private hwConnectionSubscription: ISubscription;
 
   constructor(
+    @Inject(MAT_DIALOG_DATA) public notifyFinish: any,
     public dialogRef: MatDialogRef<HwChangePinDialogComponent>,
     private hwWalletService: HwWalletService,
   ) {
     this.operationSubscription = this.hwWalletService.changePin().subscribe(
       () => {
         this.currentState = States.ReturnedSuccess;
+        this.notifyFinish(null, true);
       },
       err => {
         if (err.rawResponse && typeof err.rawResponse === 'string' && (err.rawResponse as string).includes('PIN mismatch')) {

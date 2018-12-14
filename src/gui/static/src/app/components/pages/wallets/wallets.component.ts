@@ -1,18 +1,20 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';
-import { Wallet } from '../../../app.datatypes';
+import { Wallet, ConfirmationData } from '../../../app.datatypes';
 import { HwWalletOptionsComponent } from '../../layout/hardware-wallet/hw-options/hw-options.component';
 import { ISubscription } from 'rxjs/Subscription';
 import { Router } from '@angular/router';
+import { HwWalletService } from '../../../services/hw-wallet.service';
+import { showConfirmationModal } from '../../../utils';
 
 @Component({
   selector: 'app-wallets',
   templateUrl: './wallets.component.html',
   styleUrls: ['./wallets.component.scss'],
 })
-export class WalletsComponent implements OnDestroy {
+export class WalletsComponent implements OnInit, OnDestroy {
 
   hwCompatibilityActivated = false;
 
@@ -23,6 +25,7 @@ export class WalletsComponent implements OnDestroy {
 
   constructor(
     public walletService: WalletService,
+    public hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private router: Router,
   ) {
@@ -41,6 +44,13 @@ export class WalletsComponent implements OnDestroy {
         }
       });
     });
+  }
+
+  ngOnInit(): void {
+    if (this.hwWalletService.showOptionsWhenPossible) {
+      this.hwWalletService.showOptionsWhenPossible = false;
+      this.adminHwWallet();
+    }
   }
 
   ngOnDestroy() {
@@ -68,6 +78,24 @@ export class WalletsComponent implements OnDestroy {
   }
 
   toggleWallet(wallet: Wallet) {
-    wallet.opened = !wallet.opened;
+    if (wallet.isHardware && wallet.hasHwSecurityWarnings && !wallet.opened) {
+      const confirmationData: ConfirmationData = {
+        headerText: 'hardware-wallet.security-warning.title',
+        text: 'hardware-wallet.security-warning.text',
+        checkboxText: 'hardware-wallet.security-warning.check',
+        confirmButtonText: 'hardware-wallet.security-warning.continue',
+        cancelButtonText: 'hardware-wallet.security-warning.cancel',
+      };
+
+      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+        if (confirmationResult) {
+          wallet.hasHwSecurityWarnings = false;
+          this.walletService.saveHardwareWallets();
+          wallet.opened = true;
+        }
+      });
+    } else {
+      wallet.opened = !wallet.opened;
+    }
   }
 }

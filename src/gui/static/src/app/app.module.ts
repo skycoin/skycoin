@@ -51,7 +51,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSliderModule } from '@angular/material';
+import { MatSliderModule, MatAutocompleteModule } from '@angular/material';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
@@ -88,6 +88,7 @@ import { HwChangePinDialogComponent } from './components/layout/hardware-wallet/
 import { HwPinHelpComponent } from './components/layout/hardware-wallet/hw-pin-help/hw-pin-help.component';
 import { HwRestoreSeedDialogComponent } from './components/layout/hardware-wallet/hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
+import { Bip39WordListService } from './services/bip39-word-list.service';
 
 
 const ROUTES = [
@@ -254,6 +255,7 @@ const ROUTES = [
     MatTooltipModule,
     MatCheckboxModule,
     MatSliderModule,
+    MatAutocompleteModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(ROUTES, { useHash: true }),
@@ -275,6 +277,7 @@ const ROUTES = [
     WalletService,
     WizardGuardService,
     HwWalletService,
+    Bip39WordListService,
   ],
   bootstrap: [AppComponent],
 })

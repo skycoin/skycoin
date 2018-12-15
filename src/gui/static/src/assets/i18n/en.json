@@ -342,6 +342,9 @@
     "generate-seed" : {
       "configuring": "Configuring..."
     },
+    "restore-seed" : {
+      "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet."
+    },
     "added" : {
       "title": "New Hardware Wallet",
       "configuring": "New hardware wallet detected. Configuring...",
@@ -362,7 +365,7 @@
       "Info1": "Enter the word indicated in the device",
       "Info2": "You will be asked to enter the words of your backup seed in random order, plus a few additional words.",
       "word": "Requested word",
-      "error-wrong-word": "Error: wrong word retyped."
+      "error-invalid-word": "The entered word is not valid"
     },
     "change-pin" : {
       "pin-mismatch": "Impossible to perform the operation. The two PINs you have entered do not match."

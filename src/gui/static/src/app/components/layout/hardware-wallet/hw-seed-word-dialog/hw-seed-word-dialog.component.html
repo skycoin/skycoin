@@ -6,8 +6,11 @@
   ></app-hw-message>
   <div [formGroup]="form" class="form-container">
     <div class="form-field">
-      <label for="seed">{{ 'hardware-wallet.seed-word.word' | translate }}</label>
-      <input formControlName="seed" id="seed" (keydown.enter)="sendWord()">
+      <label for="word">{{ 'hardware-wallet.seed-word.word' | translate }}</label>
+      <input matInput [matAutocomplete]="auto" formControlName="word" id="word" (keydown.enter)="sendWord()">
+      <mat-autocomplete #auto="matAutocomplete">
+        <mat-option class="option" *ngFor="let option of filteredOptions | async" [value]="option" (click)="sendWord()">{{option}}</mat-option>
+      </mat-autocomplete>
     </div>
   </div>
   <div class="-buttons">

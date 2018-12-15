@@ -6,11 +6,7 @@
     "axios": "^0.18.0",
     "electron-context-menu": "^0.9.1",
     "electron-debug": "^1.5.0",
-    "dgram": "^1.0.1",
-    "node-hid": "^0.7.3",
-    "protobufjs": "^6.8.8",
-    "scanf": "^1.0.2",
-    "babel-polyfill": "^6.26.0"
+    "hardware-wallet-js": "git+https://git@github.com/Senyoret1/hardware-wallet-js.git#fc6cdfc"
   },
   "devDependencies": {
     "electron-rebuild": "^1.8.2"

@@ -2,7 +2,7 @@
 
 const { ipcMain } = require('electron');
 
-const deviceWallet = require('./device-wallet');
+const deviceWallet = require('hardware-wallet-js/device-wallet');
 
 const { Observable, of } = require('rxjs');
 

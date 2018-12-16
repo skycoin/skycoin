@@ -55,7 +55,7 @@ export class HwWipeDialogComponent implements OnDestroy {
   }
 
   setDeleteFromList(event) {
-    this.deleteFromList = event.checked ? true : false;
+    this.deleteFromList = event.checked;
   }
 
   closeModal() {

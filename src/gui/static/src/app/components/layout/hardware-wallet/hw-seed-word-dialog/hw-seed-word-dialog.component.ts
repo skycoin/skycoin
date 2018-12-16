@@ -17,6 +17,8 @@ export class HwSeedWordDialogComponent implements OnInit, OnDestroy {
   form: FormGroup;
   filteredOptions: Observable<string[]>;
 
+  private sendingWord = false;
+
   constructor(
     public dialogRef: MatDialogRef<HwSeedWordDialogComponent>,
     private formBuilder: FormBuilder,
@@ -46,22 +48,27 @@ export class HwSeedWordDialogComponent implements OnInit, OnDestroy {
   }
 
   sendWord() {
-    this.snackbar.dismiss();
-    setTimeout(() => {
-      if (this.form.valid) {
-        if (this.validateWord(this.form.value.word)) {
-          this.dialogRef.close((this.form.value.word as string).trim().toLowerCase());
-        } else {
-          const config = new MatSnackBarConfig();
-          config.duration = 5000;
-          this.snackbar.open(this.translateService.instant('hardware-wallet.seed-word.error-invalid-word'), null, config);
+    if (!this.sendingWord) {
+      this.sendingWord = true;
+      this.snackbar.dismiss();
+
+      setTimeout(() => {
+        if (this.form.valid) {
+          if (this.validateWord(this.form.value.word)) {
+            this.dialogRef.close((this.form.value.word as string).trim().toLowerCase());
+          } else {
+            const config = new MatSnackBarConfig();
+            config.duration = 5000;
+            this.snackbar.open(this.translateService.instant('hardware-wallet.seed-word.error-invalid-word'), null, config);
+          }
         }
-      }
-    }, 32);
+        this.sendingWord = false;
+      }, 32);
+    }
   }
 
   private validateWord(word: string): boolean {
-    if (!this.bip38WordList.wordList.includes(word)) {
+    if (!this.bip38WordList.wordList.includes(word.trim().toLowerCase())) {
       return false;
     }
 

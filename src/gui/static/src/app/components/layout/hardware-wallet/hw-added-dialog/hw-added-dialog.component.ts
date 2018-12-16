@@ -25,7 +25,6 @@ export class HwAddedDialogComponent implements OnDestroy {
   walletName: string;
 
   private operationSubscription: ISubscription;
-  private hwConnectionSubscription: ISubscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public notifyFinish: any,
@@ -43,17 +42,10 @@ export class HwAddedDialogComponent implements OnDestroy {
       this.currentState = States.Failed;
       this.notifyFinish(this.errorMsg);
     });
-
-    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
-      if (!connected) {
-        this.dialogRef.close();
-      }
-    });
   }
 
   ngOnDestroy() {
     this.operationSubscription.unsubscribe();
-    this.hwConnectionSubscription.unsubscribe();
   }
 
   closeModal() {

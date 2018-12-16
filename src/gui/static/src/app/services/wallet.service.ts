@@ -98,14 +98,14 @@ export class WalletService {
 
   createHardwareWallet(): Observable<Wallet> {
     let addresses: string[];
-    let addressWithTx = 0;
-    const addressMap: Map<string, boolean> = new Map<string, boolean>();
-    const addressWithTxMap: Map<string, boolean> = new Map<string, boolean>();
+    let lastAddressWithTx = 0;
+    const addressesMap: Map<string, boolean> = new Map<string, boolean>();
+    const addressesWithTxMap: Map<string, boolean> = new Map<string, boolean>();
 
     return this.hwWalletService.getMaxAddresses().flatMap(response => {
       addresses = response;
       addresses.forEach(address => {
-        addressMap.set(address, true);
+        addressesMap.set(address, true);
       });
 
       const addressesString = addresses.join(',');
@@ -114,20 +114,20 @@ export class WalletService {
     }).flatMap(response => {
       response.forEach(tx => {
         tx.txn.outputs.forEach(output => {
-          if (addressMap.has(output.dst)) {
-            addressWithTxMap.set(output.dst, true);
+          if (addressesMap.has(output.dst)) {
+            addressesWithTxMap.set(output.dst, true);
           }
         });
       });
 
       addresses.forEach((address, i) => {
-        if (addressWithTxMap.has(address)) {
-          addressWithTx = i;
+        if (addressesWithTxMap.has(address)) {
+          lastAddressWithTx = i;
         }
       });
 
       return this.wallets.first().map(wallets => {
-        const newWallet = this.crearteHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, addressWithTx + 1), true);
+        const newWallet = this.createHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, lastAddressWithTx + 1), true);
         wallets.push(newWallet);
         this.saveHardwareWallets();
         this.refreshBalances();
@@ -474,7 +474,7 @@ export class WalletService {
 
       wallets.map(wallet => {
         if (wallet.isHardware) {
-          hardwareWallets.push(this.crearteHardwareWalletData(
+          hardwareWallets.push(this.createHardwareWalletData(
             wallet.label,
             wallet.addresses.map(address => address.address),
             wallet.hasHwSecurityWarnings,
@@ -508,7 +508,7 @@ export class WalletService {
     return chain;
   }
 
-  private crearteHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean): Wallet {
+  private createHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean): Wallet {
     return {
       label: label,
       filename: '',

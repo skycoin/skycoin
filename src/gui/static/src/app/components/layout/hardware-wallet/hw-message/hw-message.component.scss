@@ -54,12 +54,6 @@
   }
 
   .-blinking {
-    animation: blink 1s linear infinite;
-  }
-
-  @keyframes blink {
-    50% {
-      opacity: 0.2;
-    }
+    animation: alert-blinking 1s linear infinite;
   }
 }

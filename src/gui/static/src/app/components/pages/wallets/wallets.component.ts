@@ -24,8 +24,8 @@ export class WalletsComponent implements OnInit, OnDestroy {
   private subscription: ISubscription;
 
   constructor(
-    public walletService: WalletService,
-    public hwWalletService: HwWalletService,
+    private walletService: WalletService,
+    private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private router: Router,
   ) {

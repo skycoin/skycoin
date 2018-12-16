@@ -68,7 +68,7 @@ export class HwWalletOptionsComponent implements OnDestroy {
     this.openDialog(HwGenerateSeedDialogComponent);
   }
 
-  setMnemonic() {
+  restoreMnemonic() {
     this.openDialog(HwRestoreSeedDialogComponent);
   }
 

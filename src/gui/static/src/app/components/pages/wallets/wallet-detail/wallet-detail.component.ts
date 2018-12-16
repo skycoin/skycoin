@@ -87,8 +87,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   deleteWallet() {
     const confirmationData: ConfirmationData = {
-      text: this.translateService.instant('wallet.delete-confirmation1') + ' \"' +
-        this.wallet.label + '\" ' + this.translateService.instant('wallet.delete-confirmation2'),
+      text: this.translateService.instant('wallet.delete-confirmation', {name: this.wallet.label}),
       headerText: 'confirmation.header-text',
       checkboxText: 'wallet.delete-confirmation-check',
       confirmButtonText: 'confirmation.confirm-button',

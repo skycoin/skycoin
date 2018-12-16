@@ -20,6 +20,7 @@ export enum OperationResults {
   IncorrectHardwareWallet,
   WrongWord,
   UndefinedError,
+  Disconnected,
 }
 
 export class OperationResult {
@@ -46,7 +47,7 @@ export class HwWalletService {
       window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
         if (!connected) {
           this.eventsObservers.forEach((value, key) => {
-            this.dispatchError(key, this.translate.instant('hardware-wallet.general.error-disconnected'));
+            this.dispatchError(key, OperationResults.Disconnected, this.translate.instant('hardware-wallet.general.error-disconnected'));
           });
         }
         this.walletConnectedSubject.next(connected);
@@ -110,8 +111,6 @@ export class HwWalletService {
   }
 
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
 
@@ -121,8 +120,6 @@ export class HwWalletService {
   }
 
   getFeatures(): Observable<OperationResult> {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwGetFeatures', requestId);
 
@@ -132,8 +129,6 @@ export class HwWalletService {
   }
 
   changePin(changingCurrentPin: boolean): Observable<OperationResult> {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     const requestId = this.createRandomIdAndPrepare();
     this.requestPinComponentInternal.showForChangingPin = true;
     if (changingCurrentPin) {
@@ -153,8 +148,6 @@ export class HwWalletService {
   }
 
   generateMnemonic(): Observable<OperationResult> {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
 
@@ -164,8 +157,6 @@ export class HwWalletService {
   }
 
   recoverMnemonic(): Observable<OperationResult> {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwRecoverMnemonic', requestId);
 
@@ -175,8 +166,6 @@ export class HwWalletService {
   }
 
   backup(): Observable<OperationResult> {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwBackupDevice', requestId);
 
@@ -186,8 +175,6 @@ export class HwWalletService {
   }
 
   wipe(): Observable<OperationResult> {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwWipe', requestId);
 
@@ -197,8 +184,6 @@ export class HwWalletService {
   }
 
   signMessage(addressIndex: number, message: string, currentSignature?: number, totalSignatures?: number): Observable<OperationResult> {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     const requestId = this.createRandomIdAndPrepare();
     if (currentSignature && totalSignatures) {
       this.requestPinComponentInternal.showForSigningTx = true;
@@ -248,6 +233,8 @@ export class HwWalletService {
   }
 
   private createRandomIdAndPrepare() {
+    window['ipcRenderer'].send('hwCancelLastAction');
+
     this.requestPinComponentInternal.showForSigningTx = false;
     this.requestPinComponentInternal.showForChangingPin = false;
 
@@ -288,9 +275,12 @@ export class HwWalletService {
     }
   }
 
-  private dispatchError(requestId: number, error: String) {
+  private dispatchError(requestId: number, result: OperationResults, error: String) {
     if (this.eventsObservers.has(requestId)) {
-      this.eventsObservers.get(requestId).error(error);
+      this.eventsObservers.get(requestId).error({
+        result: result,
+        rawResponse: error,
+      });
       this.eventsObservers.delete(requestId);
     }
   }

@@ -141,7 +141,7 @@ ipcMain.on('hwGenerateMnemonic', (event, requestId) => {
 });
 
 ipcMain.on('hwRecoverMnemonic', (event, requestId) => {
-  const promise = deviceWallet.devRecoveryDevice(requestSeedWordEvent);
+  const promise = deviceWallet.devRecoveryDevice(false, requestSeedWordEvent);
   promise.then(
     result => { console.log("Recover mnemonic promise resolved", result); event.sender.send('hwRecoverMnemonicResponse', requestId, result); },
     error => { console.log("Recover mnemonic promise errored: ", error); event.sender.send('hwRecoverMnemonicResponse', requestId, { error: error.toString() }); }

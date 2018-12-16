@@ -13,7 +13,7 @@
           {{ 'hardware-wallet.enter-pin.instructions-tx' | translate:{current: current, total: total} }}
         </span>
         <span *ngIf="changingPin && changeState === changePinStates.RequestingNewPin">
-            {{ 'hardware-wallet.enter-pin.instructions-change' | translate:{current: current, total: total} }}
+            {{ 'hardware-wallet.enter-pin.instructions-change' | translate }}
           </span>
         {{ 'hardware-wallet.enter-pin.instructions' | translate }}
         <span class="link" (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>

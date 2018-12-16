@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewChild, Inject } from '@angular/core';
+import { Component, OnDestroy, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';

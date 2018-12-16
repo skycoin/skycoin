@@ -110,8 +110,7 @@
     "hw-security-warning": "Possible security risk. Access the hardware wallet options while the device is connected for more information.",
     "wallet": "Wallet",
     "hardware-wallet": "Hardware Wallet",
-    "delete-confirmation1": "WARNING: the wallet",
-    "delete-confirmation2": "will be removed from the list. To add it again you will have to reconnect the hardware wallet. Do you want to continue?",
+    "delete-confirmation": "WARNING: the wallet \"{{ name }}\" will be removed from the list. To add it again you will have to reconnect the device and enter to the hardware wallet options. Do you want to continue?",
     "delete-confirmation-check": "Yeah, I want to delete the wallet.",
     "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the hardware wallet.",
 
@@ -303,7 +302,7 @@
       "generic-error": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet and that it is not waiting for input.",
       "generic-error-internet": "Impossible to perform the operation. Make sure you have connected a valid hardware wallet, that it is not waiting for input and that you have connection to the interne/node.",
       "error-incorrect-wallet": "Impossible to perform the operation. The connected hardware wallet is different from the selected one.",
-      "error-incorrect-pin": "Impossible to perform the operation. The PIN you have entered is not valid.",
+      "error-incorrect-pin": "Impossible to perform the operation. The PIN you have entered is not correct.",
       "confirm": "Please, confirm the operation in the hardware wallet.",
       "confirm-and-more": "Please, confirm the operation in the hardware wallet and follow the instructions.",
       "close": "Close",

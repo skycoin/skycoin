@@ -45,29 +45,33 @@
       <mat-icon>error</mat-icon>
       <div>
         <div class="title">{{ (needsBackup && needsPin ? 'hardware-wallet.options.security-warnings-title' : 'hardware-wallet.options.security-warning-title') | translate}}</div>
-        <div *ngIf="needsBackup">{{ needsBackup && needsPin ? '1)' : '' }} {{ 'hardware-wallet.options.backup-warning' | translate}}</div>
+        <div *ngIf="needsBackup">{{ needsPin ? '1)' : '' }} {{ 'hardware-wallet.options.backup-warning' | translate}}</div>
         <br *ngIf="needsBackup && needsPin"/>
-        <div *ngIf="needsPin">{{ needsBackup && needsPin ? '2)' : '' }} {{ 'hardware-wallet.options.pin-warning' | translate}}</div>
+        <div *ngIf="needsPin">{{ needsBackup ? '2)' : '' }} {{ 'hardware-wallet.options.pin-warning' | translate}}</div>
       </div>
     </div>
 
     <div class="options-label">{{ 'hardware-wallet.options.options' | translate }}</div>
     <div class="option-buttons-container select-address-theme">
-      <button mat-button color="primary" (click)="generateMnemonic()" *ngIf="currentState === states.NewConnected">
-        <div class="label">{{ 'hardware-wallet.options.configure-automatically' | translate }}</div>
-      </button>
-      <button mat-button color="primary" (click)="setMnemonic()" *ngIf="currentState === states.NewConnected">
-        <div class="label">{{ 'hardware-wallet.options.restore-backup' | translate }}</div>
-      </button>
-      <button mat-button color="primary" (click)="backup()" *ngIf="currentState === states.ConfiguredConnected && needsBackup">
-        <div class="label">{{ 'hardware-wallet.options.create-backup' | translate }}</div>
-      </button>
-      <button mat-button color="primary" (click)="changePin()" *ngIf="currentState === states.ConfiguredConnected">
-        <div class="label">{{ (!needsPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate }}</div>
-      </button>
-      <button mat-button color="primary" (click)="wipe()" *ngIf="currentState === states.ConfiguredConnected">
-        <div class="label -red">{{ 'hardware-wallet.options.wipe' | translate }}</div>
-      </button>
+      <div *ngIf="currentState === states.NewConnected">
+        <button mat-button color="primary" (click)="generateMnemonic()">
+          <div class="label">{{ 'hardware-wallet.options.configure-automatically' | translate }}</div>
+        </button>
+        <button mat-button color="primary" (click)="restoreMnemonic()">
+          <div class="label">{{ 'hardware-wallet.options.restore-backup' | translate }}</div>
+        </button>
+      </div>
+      <div *ngIf="currentState === states.ConfiguredConnected">
+        <button mat-button color="primary" (click)="backup()" *ngIf="needsBackup">
+          <div class="label">{{ 'hardware-wallet.options.create-backup' | translate }}</div>
+        </button>
+        <button mat-button color="primary" (click)="changePin()">
+          <div class="label">{{ (!needsPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate }}</div>
+        </button>
+        <button mat-button color="primary" (click)="wipe()">
+          <div class="label -red">{{ 'hardware-wallet.options.wipe' | translate }}</div>
+        </button>
+      </div>
     </div>
   </div>
 

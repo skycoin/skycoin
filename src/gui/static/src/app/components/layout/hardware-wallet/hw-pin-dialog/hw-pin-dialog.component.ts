@@ -65,10 +65,6 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeModal() {
-    this.dialogRef.close();
-  }
-
   openHelp() {
     this.dialog.open(HwPinHelpComponent, <MatDialogConfig> {
       width: '450px',

@@ -275,18 +275,18 @@ Alerts
 
   mat-icon {
     margin-right: 10px;
-    animation: blink 1s linear infinite;
-  }
-
-  @keyframes blink {
-    50% {
-      opacity: 0.2;
-    }
+    animation: alert-blinking 1s linear infinite;
   }
 
   mat-checkbox {
     margin-top: 10px;
     display: inline-block;
+  }
+}
+
+@keyframes alert-blinking {
+  50% {
+    opacity: 0.2;
   }
 }
 

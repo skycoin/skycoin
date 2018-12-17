@@ -4,7 +4,7 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
 import { CreateWalletFormComponent } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
-import { HwWalletOptionsComponent } from '../../../layout/hardware-wallet/hw-options/hw-options.component';
+import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { Router } from '@angular/router';
 
 @Component({
@@ -58,7 +58,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
     config.width = '566px';
     config.autoFocus = false;
     config.data = true;
-    this.dialog.open(HwWalletOptionsComponent, config).afterClosed().subscribe(result => {
+    this.dialog.open(HwOptionsDialogComponent, config).afterClosed().subscribe(result => {
       if (result) {
         this.router.navigate(['/wallets']);
       }

@@ -13,14 +13,14 @@
     [text]="('hardware-wallet.general.refused' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin1' | translate)"
     [linkText]="'hardware-wallet.options.forgotten-pin2' | translate"
     [icon]="msgIcons.Error"
-    (linkClicked)="wipeWithoutWallet()"
+    (linkClicked)="wipe()"
   ></app-hw-message>
 
   <app-hw-message *ngIf="currentState === states.WrongPin"
     [text]="('hardware-wallet.general.error-incorrect-pin' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin1' | translate)"
     [linkText]="'hardware-wallet.options.forgotten-pin2' | translate"
     [icon]="msgIcons.Error"
-    (linkClicked)="wipeWithoutWallet()"
+    (linkClicked)="wipe()"
   ></app-hw-message>
 
   <app-hw-message *ngIf="currentState === states.Disconnected"

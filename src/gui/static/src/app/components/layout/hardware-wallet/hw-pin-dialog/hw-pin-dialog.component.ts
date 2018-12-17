@@ -1,9 +1,17 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, Inject } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService, ChangePinStates } from '../../../../services/hw-wallet.service';
-import { HwPinHelpComponent } from '../hw-pin-help/hw-pin-help.component';
+import { HwPinHelpDialogComponent } from '../hw-pin-help-dialog/hw-pin-help-dialog.component';
+
+export interface HwPinDialogParams {
+  signingTx: boolean;
+  currentSignature: number;
+  totalSignatures: number;
+  changingPin: boolean;
+  changePinState: ChangePinStates;
+}
 
 @Component({
   selector: 'app-hw-pin-dialog',
@@ -11,35 +19,18 @@ import { HwPinHelpComponent } from '../hw-pin-help/hw-pin-help.component';
   styleUrls: ['./hw-pin-dialog.component.scss'],
 })
 export class HwPinDialogComponent implements OnInit, OnDestroy {
-  static showForSigningTx = false;
-  static currentSignature = 1;
-  static totalSignatures = 2;
-  static showForChangingPin = false;
-  static changePinState = ChangePinStates.RequestingCurrentPin;
-
   form: FormGroup;
-  showForSigning: boolean;
-  current: number;
-  total: number;
-  changingPin: boolean;
-  changeState = ChangePinStates.RequestingCurrentPin;
   changePinStates = ChangePinStates;
 
   private hwConnectionSubscription: ISubscription;
 
   constructor(
+    @Inject(MAT_DIALOG_DATA) public data: HwPinDialogParams,
     public dialogRef: MatDialogRef<HwPinDialogComponent>,
     private formBuilder: FormBuilder,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
-  ) {
-    this.showForSigning = HwPinDialogComponent.showForSigningTx;
-    this.current = HwPinDialogComponent.currentSignature;
-    this.total = HwPinDialogComponent.totalSignatures;
-
-    this.changingPin = HwPinDialogComponent.showForChangingPin;
-    this.changeState = HwPinDialogComponent.changePinState;
-  }
+  ) {}
 
   ngOnInit() {
     this.form = this.formBuilder.group({
@@ -55,18 +46,10 @@ export class HwPinDialogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.hwConnectionSubscription.unsubscribe();
-
-    if (HwPinDialogComponent.showForChangingPin) {
-      if (HwPinDialogComponent.changePinState === ChangePinStates.RequestingCurrentPin) {
-        HwPinDialogComponent.changePinState = ChangePinStates.RequestingNewPin;
-      } else if (HwPinDialogComponent.changePinState === ChangePinStates.RequestingNewPin) {
-        HwPinDialogComponent.changePinState = ChangePinStates.ConfirmingNewPin;
-      }
-    }
   }
 
   openHelp() {
-    this.dialog.open(HwPinHelpComponent, <MatDialogConfig> {
+    this.dialog.open(HwPinHelpDialogComponent, <MatDialogConfig> {
       width: '450px',
     });
   }

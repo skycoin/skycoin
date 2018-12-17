@@ -6,6 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { HwSeedWordDialogComponent } from '../components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
+import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 
 export enum ChangePinStates {
   RequestingCurrentPin,
@@ -16,6 +17,8 @@ export enum ChangePinStates {
 export enum OperationResults {
   Success,
   FailedOrRefused,
+  PinMismatch,
+  WithoutSeed,
   WrongPin,
   IncorrectHardwareWallet,
   WrongWord,
@@ -35,6 +38,13 @@ export class HwWalletService {
 
   private eventsObservers = new Map<number, Subscriber<OperationResult>>();
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
+
+  // Values to be sent to HwPinDialogComponent
+  private changingPin: boolean;
+  private changePinState: ChangePinStates;
+  private signingTx: boolean;
+  private currentSignature: number;
+  private totalSignatures: number;
 
   // Set on AppComponent to avoid a circular reference.
   private requestPinComponentInternal;
@@ -56,9 +66,24 @@ export class HwWalletService {
         dialog.open(this.requestPinComponentInternal, <MatDialogConfig> {
           width: '350px',
           autoFocus: false,
+          data : <HwPinDialogParams> {
+            changingPin: this.changingPin,
+            changePinState: this.changePinState,
+            signingTx: this.signingTx,
+            currentSignature: this.currentSignature,
+            totalSignatures: this.totalSignatures,
+          },
         }).afterClosed().subscribe(pin => {
           if (!pin) {
             this.cancelAllOperations();
+          } else {
+            if (this.changingPin) {
+              if (this.changePinState === ChangePinStates.RequestingCurrentPin) {
+                this.changePinState = ChangePinStates.RequestingNewPin;
+              } else if (this.changePinState === ChangePinStates.RequestingNewPin) {
+                this.changePinState = ChangePinStates.ConfirmingNewPin;
+              }
+            }
           }
           window['ipcRenderer'].send('hwSendPin', pin);
         });
@@ -130,11 +155,11 @@ export class HwWalletService {
 
   changePin(changingCurrentPin: boolean): Observable<OperationResult> {
     const requestId = this.createRandomIdAndPrepare();
-    this.requestPinComponentInternal.showForChangingPin = true;
+    this.changingPin = true;
     if (changingCurrentPin) {
-      this.requestPinComponentInternal.changePinState = ChangePinStates.RequestingCurrentPin;
+      this.changePinState = ChangePinStates.RequestingCurrentPin;
     } else {
-      this.requestPinComponentInternal.changePinState = ChangePinStates.RequestingNewPin;
+      this.changePinState = ChangePinStates.RequestingNewPin;
     }
     window['ipcRenderer'].send('hwChangePin', requestId);
 
@@ -183,13 +208,11 @@ export class HwWalletService {
     });
   }
 
-  signMessage(addressIndex: number, message: string, currentSignature?: number, totalSignatures?: number): Observable<OperationResult> {
+  signMessage(addressIndex: number, message: string, currentSignature: number, totalSignatures: number): Observable<OperationResult> {
     const requestId = this.createRandomIdAndPrepare();
-    if (currentSignature && totalSignatures) {
-      this.requestPinComponentInternal.showForSigningTx = true;
-      this.requestPinComponentInternal.currentSignature = currentSignature;
-      this.requestPinComponentInternal.totalSignatures = totalSignatures;
-    }
+    this.signingTx = true;
+    this.currentSignature = currentSignature;
+    this.totalSignatures = totalSignatures;
     window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
 
     return new Observable(observer => {
@@ -235,8 +258,8 @@ export class HwWalletService {
   private createRandomIdAndPrepare() {
     window['ipcRenderer'].send('hwCancelLastAction');
 
-    this.requestPinComponentInternal.showForSigningTx = false;
-    this.requestPinComponentInternal.showForChangingPin = false;
+    this.changingPin = false;
+    this.signingTx = false;
 
     return Math.floor(Math.random() * 4000000000);
   }
@@ -262,6 +285,10 @@ export class HwWalletService {
           result = OperationResults.FailedOrRefused;
         } else if (typeof responseContent === 'string' && (responseContent as string).includes('Wrong word retyped')) {
           result = OperationResults.WrongWord;
+        } else if (typeof responseContent === 'string' && (responseContent as string).includes('PIN mismatch')) {
+          result = OperationResults.PinMismatch;
+        } else if (typeof responseContent === 'string' && (responseContent as string).includes('Mnemonic not set')) {
+          result = OperationResults.WithoutSeed;
         } else {
           result = OperationResults.UndefinedError;
         }

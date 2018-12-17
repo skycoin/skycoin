@@ -4,6 +4,7 @@ import { WalletService } from '../../../../services/wallet.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { MessageIcons } from '../hw-message/hw-message.component';
+import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 
 enum States {
   Initial,
@@ -27,20 +28,20 @@ export class HwAddedDialogComponent implements OnDestroy {
   private operationSubscription: ISubscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public notifyFinish: any,
+    @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwAddedDialogComponent>,
     private walletService: WalletService,
     private hwWalletService: HwWalletService,
   ) {
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
-      this.walletService.updateWalletHasSecurityWarnings(wallet).subscribe(() => {
+      this.walletService.updateWalletHasHwSecurityWarnings(wallet).subscribe(() => {
         this.walletName = wallet.label;
         this.currentState = States.Finished;
-        this.notifyFinish();
+        this.data.requestOptionsComponentRefresh();
       });
     }, () => {
       this.currentState = States.Failed;
-      this.notifyFinish(this.errorMsg);
+      this.data.requestOptionsComponentRefresh(this.errorMsg);
     });
   }
 

@@ -4,6 +4,7 @@ import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { MessageIcons } from '../hw-message/hw-message.component';
 import { WalletService } from '../../../../services/wallet.service';
+import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 
 enum States {
   Initial,
@@ -30,7 +31,7 @@ export class HwWipeDialogComponent implements OnDestroy {
   private hwConnectionSubscription: ISubscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: any,
+    @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwWipeDialogComponent>,
     private hwWalletService: HwWalletService,
     private walletService: WalletService,
@@ -67,11 +68,7 @@ export class HwWipeDialogComponent implements OnDestroy {
 
     this.operationSubscription = this.hwWalletService.wipe().subscribe(
       () => {
-        if (this.data.notifyFinishFunction) {
-          this.data.notifyFinishFunction();
-        } else {
-          this.data();
-        }
+        this.data.requestOptionsComponentRefresh();
         this.currentState = States.ReturnedSuccess;
         if (this.deleteFromList) {
           this.walletService.deleteHardwareWallet(this.data.wallet).subscribe();

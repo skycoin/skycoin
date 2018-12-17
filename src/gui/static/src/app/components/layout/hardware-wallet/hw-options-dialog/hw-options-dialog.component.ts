@@ -3,7 +3,7 @@ import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angu
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
 import { ISubscription } from 'rxjs/Subscription';
-import { WalletService, SecurityWarnings } from '../../../../services/wallet.service';
+import { WalletService, HwSecurityWarnings } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
@@ -23,12 +23,18 @@ enum States {
   WrongPin,
 }
 
+export interface ChildHwDialogParams {
+  wallet: Wallet;
+  walletHasPin: boolean;
+  requestOptionsComponentRefresh: any;
+}
+
 @Component({
-  selector: 'app-hw-options',
-  templateUrl: './hw-options.component.html',
-  styleUrls: ['./hw-options.component.scss'],
+  selector: 'app-hw-options-dialog',
+  templateUrl: './hw-options-dialog.component.html',
+  styleUrls: ['./hw-options-dialog.component.scss'],
 })
-export class HwWalletOptionsComponent implements OnDestroy {
+export class HwOptionsDialogComponent implements OnDestroy {
 
   msgIcons = MessageIcons;
   currentState: States;
@@ -49,7 +55,7 @@ export class HwWalletOptionsComponent implements OnDestroy {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) private onboarding: boolean,
-    public dialogRef: MatDialogRef<HwWalletOptionsComponent>,
+    public dialogRef: MatDialogRef<HwOptionsDialogComponent>,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private walletService: WalletService,
@@ -81,10 +87,6 @@ export class HwWalletOptionsComponent implements OnDestroy {
   }
 
   wipe() {
-    this.openDialog(HwWipeDialogComponent, true);
-  }
-
-  wipeWithoutWallet() {
     this.openDialog(HwWipeDialogComponent);
   }
 
@@ -92,7 +94,7 @@ export class HwWalletOptionsComponent implements OnDestroy {
     this.dialogRef.close();
   }
 
-  private openDialog(dialogType, includeWallet = false) {
+  private openDialog(dialogType) {
     this.customErrorMsg = '';
 
     this.removeDialogSubscription();
@@ -113,12 +115,11 @@ export class HwWalletOptionsComponent implements OnDestroy {
       }
     });
 
-    if (includeWallet) {
-      config.data = {
-        wallet: this.wallet,
-        notifyFinishFunction: config.data,
-      };
-    }
+    config.data = <ChildHwDialogParams> {
+      wallet: this.wallet,
+      walletHasPin: !this.needsPin,
+      requestOptionsComponentRefresh: config.data,
+    };
 
     this.dialogSubscription = this.dialog.open(dialogType, config)
       .afterClosed().subscribe(() => {
@@ -147,16 +148,18 @@ export class HwWalletOptionsComponent implements OnDestroy {
     }
   }
 
-  private updateSecurityWarnings(): Observable<SecurityWarnings[]> {
-    return this.walletService.updateWalletHasSecurityWarnings(this.wallet).map(warnings => {
-      this.needsBackup = warnings.includes(SecurityWarnings.NeedsBackup);
-      this.needsPin = warnings.includes(SecurityWarnings.NeedsPin);
+  private updateSecurityWarnings(): Observable<HwSecurityWarnings[]> {
+    return this.walletService.updateWalletHasHwSecurityWarnings(this.wallet).map(warnings => {
+      this.needsBackup = warnings.includes(HwSecurityWarnings.NeedsBackup);
+      this.needsPin = warnings.includes(HwSecurityWarnings.NeedsPin);
 
       return warnings;
     });
   }
 
   private checkWallet() {
+    this.wallet = null;
+
     if (!this.hwWalletService.getDeviceSync()) {
       this.currentState = States.Disconnected;
     } else {
@@ -190,16 +193,14 @@ export class HwWalletOptionsComponent implements OnDestroy {
           });
         },
         err => {
-          if (err.rawResponse && typeof err.rawResponse === 'string' && (err.rawResponse as string).includes('Mnemonic not set')) {
+          if (err.result && err.result === OperationResults.WithoutSeed) {
             this.currentState = States.NewConnected;
+          } else if (err.result && err.result === OperationResults.FailedOrRefused) {
+            this.currentState = States.ReturnedRefused;
+          } else if (err.result && err.result === OperationResults.WrongPin) {
+            this.currentState = States.WrongPin;
           } else {
-            if (err.result && err.result === OperationResults.FailedOrRefused) {
-              this.currentState = States.ReturnedRefused;
-            } else if (err.result && err.result === OperationResults.WrongPin) {
-              this.currentState = States.WrongPin;
-            } else {
-              this.currentState = States.Error;
-            }
+            this.currentState = States.Error;
           }
         },
       );

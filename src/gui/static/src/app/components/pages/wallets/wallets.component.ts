@@ -3,7 +3,7 @@ import { WalletService } from '../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';
 import { Wallet, ConfirmationData } from '../../../app.datatypes';
-import { HwWalletOptionsComponent } from '../../layout/hardware-wallet/hw-options/hw-options.component';
+import { HwOptionsDialogComponent } from '../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { ISubscription } from 'rxjs/Subscription';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../services/hw-wallet.service';
@@ -68,7 +68,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
     const config = new MatDialogConfig();
     config.width = '566px';
     config.autoFocus = false;
-    this.dialog.open(HwWalletOptionsComponent, config).afterClosed().subscribe(() => {
+    this.dialog.open(HwOptionsDialogComponent, config).afterClosed().subscribe(() => {
       this.walletService.all().first().subscribe(wallets => {
         if (wallets.length === 0) {
           setTimeout(() => this.router.navigate(['/wizard']), 500);

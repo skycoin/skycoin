@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { HwPinHelpComponent } from './hw-pin-help.component';
+import { HwOptionsDialogComponent } from './hw-options-dialog.component';
 
-describe('HwPinHelpComponent', () => {
-  let component: HwPinHelpComponent;
-  let fixture: ComponentFixture<HwPinHelpComponent>;
+describe('HwOptionsDialogComponent', () => {
+  let component: HwOptionsDialogComponent;
+  let fixture: ComponentFixture<HwOptionsDialogComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ HwPinHelpComponent ],
+      declarations: [ HwOptionsDialogComponent ],
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(HwPinHelpComponent);
+    fixture = TestBed.createComponent(HwOptionsDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

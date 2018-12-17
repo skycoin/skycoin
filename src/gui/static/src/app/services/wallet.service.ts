@@ -21,7 +21,7 @@ import { TranslateService } from '@ngx-translate/core';
 declare var Cipher: any;
 declare var CipherExtras: any;
 
-export enum SecurityWarnings {
+export enum HwSecurityWarnings {
   NeedsBackup,
   NeedsPin,
 }
@@ -29,7 +29,7 @@ export enum SecurityWarnings {
 @Injectable()
 export class WalletService {
 
-  private readonly hardwareWalletsStorageKey = 'wallets';
+  private readonly hardwareWalletsStorageKey = 'hardware-wallets';
 
   addresses: Address[];
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
@@ -89,7 +89,14 @@ export class WalletService {
       .do(wallet => {
         console.log(wallet);
         this.wallets.first().subscribe(wallets => {
-          wallets.push(wallet);
+          let lastSoftwareWalletIndex = wallets.length - 1;
+          for (let i = 0; i < wallets.length; i++) {
+            if (wallets[i].isHardware) {
+              lastSoftwareWalletIndex = i - 1;
+              break;
+            }
+          }
+          wallets.splice(lastSoftwareWalletIndex + 1, 0, wallet);
           this.wallets.next(wallets);
           this.refreshBalances();
         });
@@ -137,18 +144,18 @@ export class WalletService {
     });
   }
 
-  updateWalletHasSecurityWarnings(wallet: Wallet): Observable<SecurityWarnings[]> {
+  updateWalletHasHwSecurityWarnings(wallet: Wallet): Observable<HwSecurityWarnings[]> {
     if (wallet.isHardware) {
       return this.hwWalletService.getFeatures().map(result => {
-        const warnings: SecurityWarnings[] = [];
+        const warnings: HwSecurityWarnings[] = [];
 
         wallet.hasHwSecurityWarnings = false;
         if (result.rawResponse.needsBackup) {
-          warnings.push(SecurityWarnings.NeedsBackup);
+          warnings.push(HwSecurityWarnings.NeedsBackup);
           wallet.hasHwSecurityWarnings = true;
         }
         if (!result.rawResponse.pinProtection) {
-          warnings.push(SecurityWarnings.NeedsPin);
+          warnings.push(HwSecurityWarnings.NeedsPin);
           wallet.hasHwSecurityWarnings = true;
         }
         this.saveHardwareWallets();

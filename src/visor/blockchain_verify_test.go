@@ -348,7 +348,8 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 
 	verifySingleTxnSoftHardConstraints := func(txn coin.Transaction, verifyParams params.VerifyTxn) error {
 		return db.View("", func(tx *dbutil.Tx) error {
-			return bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams)
+			_, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams)
+			return err
 		})
 	}
 

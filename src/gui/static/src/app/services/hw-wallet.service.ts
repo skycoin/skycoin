@@ -5,7 +5,6 @@ import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig } from '@angular/material';
-import { HwSeedWordDialogComponent } from '../components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 
 export enum ChangePinStates {
@@ -51,6 +50,10 @@ export class HwWalletService {
   set requestPinComponent(value) {
     this.requestPinComponentInternal = value;
   }
+  private requestWordComponentInternal;
+  set requestWordComponent(value) {
+    this.requestWordComponentInternal = value;
+  }
 
   constructor(private translate: TranslateService, dialog: MatDialog) {
     if (window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated')) {
@@ -89,7 +92,7 @@ export class HwWalletService {
         });
       });
       window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
-        dialog.open(HwSeedWordDialogComponent, <MatDialogConfig> {
+        dialog.open(this.requestWordComponentInternal, <MatDialogConfig> {
           width: '350px',
         }).afterClosed().subscribe(word => {
           if (!word) {

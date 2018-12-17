@@ -1,10 +1,9 @@
-import { Component, OnDestroy, Inject } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
-import { MessageIcons } from '../hw-message/hw-message.component';
 import { WalletService } from '../../../../services/wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
+import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
 enum States {
   Initial,
@@ -19,16 +18,12 @@ enum States {
   templateUrl: './hw-wipe-dialog.component.html',
   styleUrls: ['./hw-wipe-dialog.component.scss'],
 })
-export class HwWipeDialogComponent implements OnDestroy {
+export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogComponent> {
 
   currentState: States = States.Initial;
   states = States;
-  msgIcons = MessageIcons;
   showDeleteFromList = true;
   deleteFromList = true;
-
-  private operationSubscription: ISubscription;
-  private hwConnectionSubscription: ISubscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
@@ -36,31 +31,16 @@ export class HwWipeDialogComponent implements OnDestroy {
     private hwWalletService: HwWalletService,
     private walletService: WalletService,
   ) {
+    super(hwWalletService, dialogRef);
+
     if (!data.wallet) {
       this.showDeleteFromList = false;
       this.deleteFromList = false;
     }
-
-    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
-      if (!connected) {
-        this.closeModal();
-      }
-    });
-  }
-
-  ngOnDestroy() {
-    if (this.operationSubscription) {
-      this.operationSubscription.unsubscribe();
-    }
-    this.hwConnectionSubscription.unsubscribe();
   }
 
   setDeleteFromList(event) {
     this.deleteFromList = event.checked;
-  }
-
-  closeModal() {
-    this.dialogRef.close();
   }
 
   requestWipe() {

@@ -1,9 +1,8 @@
-import { Component, OnDestroy, Inject } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
-import { MessageIcons } from '../hw-message/hw-message.component';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
+import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
 enum States {
   Initial,
@@ -17,20 +16,17 @@ enum States {
   templateUrl: './hw-generate-seed-dialog.component.html',
   styleUrls: ['./hw-generate-seed-dialog.component.scss'],
 })
-export class HwGenerateSeedDialogComponent implements OnDestroy {
+export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGenerateSeedDialogComponent> {
 
   currentState: States = States.Initial;
   states = States;
-  msgIcons = MessageIcons;
-
-  private operationSubscription: ISubscription;
-  private hwConnectionSubscription: ISubscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwGenerateSeedDialogComponent>,
     private hwWalletService: HwWalletService,
   ) {
+    super(hwWalletService, dialogRef);
     this.operationSubscription = this.hwWalletService.generateMnemonic().subscribe(
       () => {
         this.data.requestOptionsComponentRefresh();
@@ -44,20 +40,5 @@ export class HwGenerateSeedDialogComponent implements OnDestroy {
         }
       },
     );
-
-    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
-      if (!connected) {
-        this.dialogRef.close();
-      }
-    });
-  }
-
-  ngOnDestroy() {
-    this.operationSubscription.unsubscribe();
-    this.hwConnectionSubscription.unsubscribe();
-  }
-
-  closeModal() {
-    this.dialogRef.close();
   }
 }

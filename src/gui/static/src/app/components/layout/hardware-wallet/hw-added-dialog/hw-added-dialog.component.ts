@@ -1,10 +1,9 @@
-import { Component, OnDestroy, Inject } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { WalletService } from '../../../../services/wallet.service';
-import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
-import { MessageIcons } from '../hw-message/hw-message.component';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
+import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
 enum States {
   Initial,
@@ -17,22 +16,22 @@ enum States {
   templateUrl: './hw-added-dialog.component.html',
   styleUrls: ['./hw-added-dialog.component.scss'],
 })
-export class HwAddedDialogComponent implements OnDestroy {
+export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> {
 
-  msgIcons = MessageIcons;
+  closeIfHwDisconnected = false;
+
   currentState: States = States.Initial;
   states = States;
   errorMsg = 'hardware-wallet.general.generic-error-internet';
   walletName: string;
 
-  private operationSubscription: ISubscription;
-
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwAddedDialogComponent>,
     private walletService: WalletService,
-    private hwWalletService: HwWalletService,
+    hwWalletService: HwWalletService,
   ) {
+    super(hwWalletService, dialogRef);
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
       this.walletService.updateWalletHasHwSecurityWarnings(wallet).subscribe(() => {
         this.walletName = wallet.label;
@@ -43,13 +42,5 @@ export class HwAddedDialogComponent implements OnDestroy {
       this.currentState = States.Failed;
       this.data.requestOptionsComponentRefresh(this.errorMsg);
     });
-  }
-
-  ngOnDestroy() {
-    this.operationSubscription.unsubscribe();
-  }
-
-  closeModal() {
-    this.dialogRef.close();
   }
 }

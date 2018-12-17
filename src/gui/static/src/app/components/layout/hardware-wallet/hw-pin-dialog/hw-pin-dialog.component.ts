@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, HostListener, Inject } from '@angular/core';
+import { Component, OnInit, HostListener, Inject } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { ISubscription } from 'rxjs/Subscription';
 import { HwWalletService, ChangePinStates } from '../../../../services/hw-wallet.service';
 import { HwPinHelpDialogComponent } from '../hw-pin-help-dialog/hw-pin-help-dialog.component';
+import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
 export interface HwPinDialogParams {
   signingTx: boolean;
@@ -18,34 +18,24 @@ export interface HwPinDialogParams {
   templateUrl: './hw-pin-dialog.component.html',
   styleUrls: ['./hw-pin-dialog.component.scss'],
 })
-export class HwPinDialogComponent implements OnInit, OnDestroy {
+export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogComponent> implements OnInit {
   form: FormGroup;
   changePinStates = ChangePinStates;
-
-  private hwConnectionSubscription: ISubscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: HwPinDialogParams,
     public dialogRef: MatDialogRef<HwPinDialogComponent>,
     private formBuilder: FormBuilder,
-    private hwWalletService: HwWalletService,
     private dialog: MatDialog,
-  ) {}
+    hwWalletService: HwWalletService,
+  ) {
+    super(hwWalletService, dialogRef);
+  }
 
   ngOnInit() {
     this.form = this.formBuilder.group({
       pin: ['', Validators.compose([Validators.required, Validators.minLength(4)])],
     });
-
-    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
-      if (!connected) {
-        this.dialogRef.close();
-      }
-    });
-  }
-
-  ngOnDestroy() {
-    this.hwConnectionSubscription.unsubscribe();
   }
 
   openHelp() {

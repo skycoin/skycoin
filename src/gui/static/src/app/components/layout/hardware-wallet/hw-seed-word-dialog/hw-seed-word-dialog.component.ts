@@ -2,18 +2,18 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs/Observable';
-import { MessageIcons } from '../hw-message/hw-message.component';
 import { Bip39WordListService } from '../../../../services/bip39-word-list.service';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { TranslateService } from '@ngx-translate/core';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
 @Component({
   selector: 'app-hw-seed-word-dialog',
   templateUrl: './hw-seed-word-dialog.component.html',
   styleUrls: ['./hw-seed-word-dialog.component.scss'],
 })
-export class HwSeedWordDialogComponent implements OnInit, OnDestroy {
-  msgIcons = MessageIcons;
+export class HwSeedWordDialogComponent extends HwDialogBaseComponent<HwSeedWordDialogComponent> implements OnInit, OnDestroy {
   form: FormGroup;
   filteredOptions: Observable<string[]>;
 
@@ -25,7 +25,10 @@ export class HwSeedWordDialogComponent implements OnInit, OnDestroy {
     private bip38WordList: Bip39WordListService,
     private snackbar: MatSnackBar,
     private translateService: TranslateService,
-  ) {}
+    hwWalletService: HwWalletService,
+  ) {
+    super(hwWalletService, dialogRef);
+  }
 
   ngOnInit() {
     this.form = this.formBuilder.group({
@@ -44,6 +47,7 @@ export class HwSeedWordDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    super.ngOnDestroy();
     this.snackbar.dismiss();
   }
 

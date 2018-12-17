@@ -7,11 +7,11 @@ import { WalletService, HwSecurityWarnings } from '../../../../services/wallet.s
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
-import { MessageIcons } from '../hw-message/hw-message.component';
 import { Wallet } from '../../../../app.datatypes';
 import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog.component';
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { Observable } from 'rxjs/Observable';
+import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
 enum States {
   Disconnected,
@@ -34,9 +34,10 @@ export interface ChildHwDialogParams {
   templateUrl: './hw-options-dialog.component.html',
   styleUrls: ['./hw-options-dialog.component.scss'],
 })
-export class HwOptionsDialogComponent implements OnDestroy {
+export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDialogComponent> implements OnDestroy {
 
-  msgIcons = MessageIcons;
+  closeIfHwDisconnected = false;
+
   currentState: States;
   states = States;
   walletName = '';
@@ -44,9 +45,7 @@ export class HwOptionsDialogComponent implements OnDestroy {
   needsBackup: boolean;
   needsPin: boolean;
 
-  private operationSubscription: ISubscription;
   private dialogSubscription: ISubscription;
-  private hwConnectionSubscription: ISubscription;
 
   private completeRecheckRequested = false;
   private recheckSecurityOnlyRequested = false;
@@ -60,14 +59,18 @@ export class HwOptionsDialogComponent implements OnDestroy {
     private dialog: MatDialog,
     private walletService: WalletService,
   ) {
+    super(hwWalletService, dialogRef);
+
     this.checkWallet();
-    this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(() => this.checkWallet());
   }
 
   ngOnDestroy() {
-    this.removeOperationSubscription();
+    super.ngOnDestroy();
     this.removeDialogSubscription();
-    this.hwConnectionSubscription.unsubscribe();
+  }
+
+  hwConnectionChanged(connected: boolean) {
+    this.checkWallet();
   }
 
   generateMnemonic() {
@@ -88,10 +91,6 @@ export class HwOptionsDialogComponent implements OnDestroy {
 
   wipe() {
     this.openDialog(HwWipeDialogComponent);
-  }
-
-  closeModal() {
-    this.dialogRef.close();
   }
 
   private openDialog(dialogType) {
@@ -142,12 +141,6 @@ export class HwOptionsDialogComponent implements OnDestroy {
     }
   }
 
-  private removeOperationSubscription() {
-    if (this.operationSubscription) {
-      this.operationSubscription.unsubscribe();
-    }
-  }
-
   private updateSecurityWarnings(): Observable<HwSecurityWarnings[]> {
     return this.walletService.updateWalletHasHwSecurityWarnings(this.wallet).map(warnings => {
       this.needsBackup = warnings.includes(HwSecurityWarnings.NeedsBackup);
@@ -164,7 +157,10 @@ export class HwOptionsDialogComponent implements OnDestroy {
       this.currentState = States.Disconnected;
     } else {
       this.currentState = States.Processing;
-      this.removeOperationSubscription();
+
+      if (this.operationSubscription) {
+        this.operationSubscription.unsubscribe();
+      }
 
       this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
         response => {

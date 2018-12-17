@@ -6,6 +6,7 @@ import { AppService } from './services/app.service';
 import { WalletService } from './services/wallet.service';
 import { HwWalletService } from './services/hw-wallet.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
+import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +24,7 @@ export class AppComponent implements OnInit {
     translateService.use('en');
 
     hwWalletService.requestPinComponent = HwPinDialogComponent;
+    hwWalletService.requestWordComponent = HwSeedWordDialogComponent;
 
     walletService.initialLoadFailed.subscribe(failed => {
       if (failed) {

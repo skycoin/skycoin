@@ -140,10 +140,10 @@ func TestDBVerifyLogic(t *testing.T) {
 			shouldVerify: true,
 		},
 		{
-			name:         "db version 0.24.1, app version 0.24.1",
-			dbFile:       "version-0.24.1.db",
-			dbVersion:    "0.24.1",
-			appVersion:   "0.24.1",
+			name:         "db version 0.25.0, app version 0.25.0",
+			dbFile:       "version-0.25.0.db",
+			dbVersion:    "0.25.0",
+			appVersion:   "0.25.0",
 			shouldVerify: false,
 		},
 		{
@@ -169,18 +169,18 @@ func TestDBVerifyLogic(t *testing.T) {
 			shouldVerify: true,
 		},
 		{
-			name:         "db version 0.24.1, app version 0.26.0",
-			dbFile:       "version-0.24.1.db",
-			dbVersion:    "0.24.1",
+			name:         "db version 0.25.0, app version 0.26.0",
+			dbFile:       "version-0.25.0.db",
+			dbVersion:    "0.25.0",
 			appVersion:   "0.26.0",
 			shouldVerify: true,
 		},
 		{
-			name:       "db version 0.25.0, app version 0.24.1",
+			name:       "db version 0.25.0, app version 0.25.0",
 			dbFile:     "version-0.25.0.db",
 			dbVersion:  "0.25.0",
-			appVersion: "0.24.1",
-			err:        "Cannot use newer DB version=0.25.0 with older software version=0.24.1",
+			appVersion: "0.25.0",
+			err:        "Cannot use newer DB version=0.25.0 with older software version=0.25.0",
 		},
 	}
 

@@ -89,6 +89,7 @@ import { HwPinHelpDialogComponent } from './components/layout/hardware-wallet/hw
 import { HwRestoreSeedDialogComponent } from './components/layout/hardware-wallet/hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
+import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
 
 
 const ROUTES = [
@@ -208,6 +209,7 @@ const ROUTES = [
     HwPinHelpDialogComponent,
     HwRestoreSeedDialogComponent,
     HwSeedWordDialogComponent,
+    HwDialogBaseComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

@@ -7,7 +7,7 @@ import { HwWalletService } from '../../../services/hw-wallet.service';
 @Component({
   template: '',
 })
-export abstract class HwDialogBaseComponent<T> implements OnDestroy {
+export class HwDialogBaseComponent<T> implements OnDestroy {
   closeIfHwDisconnected = true;
 
   msgIcons = MessageIcons;

@@ -133,7 +133,7 @@ ipcMain.on('hwChangePin', (event, requestId) => {
 });
 
 ipcMain.on('hwGenerateMnemonic', (event, requestId) => {
-  const promise = deviceWallet.devGenerateMnemonic();
+  const promise = deviceWallet.devGenerateMnemonic(false);
   promise.then(
     result => { console.log("Generate mnemonic promise resolved", result); event.sender.send('hwGenerateMnemonicResponse', requestId, result); },
     error => { console.log("Generate mnemonic promise errored: ", error); event.sender.send('hwGenerateMnemonicResponse', requestId, { error: error.toString() }); }

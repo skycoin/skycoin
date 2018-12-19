@@ -82,3 +82,36 @@ func decodeRawTxCmd() gcli.Command {
 		},
 	}
 }
+
+func addressTransactionsCmd() gcli.Command {
+	name := "addressTransactions"
+	return gcli.Command{
+		Name:      name,
+		Usage:     "Show detail for transaction associated with one or more specified addresses",
+		ArgsUsage: "[address list]",
+		Description: `Display transactions for specific addresses, seperate multiple addresses with a space,
+        example: addressTransactions addr1 addr2 addr3`,
+		OnUsageError: onCommandUsageError(name),
+		Action:       getAddressTransactionsCmd,
+	}
+}
+
+func getAddressTransactionsCmd(c *gcli.Context) error {
+	client := APIClientFromContext(c)
+
+	addrs := make([]string, c.NArg())
+	var err error
+	for i := 0; i < c.NArg(); i++ {
+		addrs[i] = c.Args().Get(i)
+		if _, err = cipher.DecodeBase58Address(addrs[i]); err != nil {
+			return fmt.Errorf("invalid address: %v, err: %v", addrs[i], err)
+		}
+	}
+
+	outputs, err := client.GetTransactions(addrs)
+	if err != nil {
+		return err
+	}
+
+	return printJSON(outputs)
+}

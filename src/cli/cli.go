@@ -265,6 +265,7 @@ func NewApp(cfg Config) (*App, error) {
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
 		richlistCmd(),
+		addressTransactionsCmd(),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

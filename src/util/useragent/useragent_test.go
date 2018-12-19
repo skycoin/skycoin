@@ -153,11 +153,11 @@ func TestDataJSON(t *testing.T) {
 	require.Equal(t, `""`, string(x))
 
 	d.Coin = "skycoin"
-	d.Version = "0.25.0-rc1"
+	d.Version = "0.25.0"
 
 	x, err = json.Marshal(d)
 	require.NoError(t, err)
-	require.Equal(t, `"skycoin:0.25.0-rc1"`, string(x))
+	require.Equal(t, `"skycoin:0.25.0"`, string(x))
 
 	var e Data
 	err = json.Unmarshal([]byte(x), &e)
@@ -168,7 +168,7 @@ func TestDataJSON(t *testing.T) {
 
 	x, err = json.Marshal(d)
 	require.NoError(t, err)
-	require.Equal(t, `"skycoin:0.25.0-rc1(foo; bar)"`, string(x))
+	require.Equal(t, `"skycoin:0.25.0(foo; bar)"`, string(x))
 
 	e = Data{}
 	err = json.Unmarshal([]byte(x), &e)

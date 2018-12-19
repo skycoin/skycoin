@@ -226,7 +226,7 @@ Response:
         "branch": "develop"
     },
     "coin": "skycoin",
-    "user_agent": "skycoin:0.25.0-rc1",
+    "user_agent": "skycoin:0.25.0",
     "open_connections": 8,
     "outgoing_connections": 5,
     "incoming_connections": 3,

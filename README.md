@@ -606,7 +606,15 @@ Instructions for doing this:
 
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
-0. Update all version strings in the repo (grep for them) to the new version
+0. Update all version strings in the following repo files (grep for them) to the new version
+  * `electron/package-lock.json`
+  * `electron/package.json`
+  * `electron/skycoin/current-skycoin.json`
+  * `src/cli/cli.go`
+  * `src/gui/static/src/current-skycoin.json`
+  * `template/coin.template`
+  * `cli/integration/testdata/status*.golden`
+0. Run `make newcoin` to update `src/skycoin/skycoin.go`'s version
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion`	value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 q0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote, adding a new file for the new version and adjusting any configuration text that may have changed

@@ -26,7 +26,7 @@ import (
 
 var (
 	// Version is the CLI Version
-	Version = "0.25.0-rc1"
+	Version = "0.25.0"
 )
 
 const (
@@ -264,7 +264,7 @@ func NewApp(cfg Config) (*App, error) {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
-		richListCmd(),
+		richlistCmd(),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

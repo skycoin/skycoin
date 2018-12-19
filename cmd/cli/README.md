@@ -130,7 +130,7 @@ USAGE:
    skycoin-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.25.0-rc1
+   0.25.0
 
 COMMANDS:
      addPrivateKey         Add a private key to specific wallet
@@ -1498,12 +1498,12 @@ $ skycoin-cli listWallets
 Returns the top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
 
 ```bash
-$ skycoin-cli richList [top N addresses] [include distribution addresses]
+$ skycoin-cli richlist [top N addresses] [include distribution addresses]
 ```
 
 #### Example
 ```bash
-$ skycoin-cli richList 5 false
+$ skycoin-cli richlist 5 false
 ```
 
 <details>
@@ -1680,7 +1680,7 @@ $ skycoin-cli status
             "branch": "develop"
         },
 	    "coin": "skycoin",
-	    "user_agent": "skycoin:0.25.0-rc1",
+	    "user_agent": "skycoin:0.25.0",
         "open_connections": 8,
         "outgoing_connections": 5,
         "incoming_connections": 3,

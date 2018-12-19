@@ -189,7 +189,7 @@ and the vim editor among other tools.
 The [skycoin/skycoindev-dind docker image](docker/images/dev-docker/README.md) comes with docker installed
 and all tools available on `skycoin/skycoindev-cli:develop` docker image.
 
-Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/README.md) is provided 
+Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/README.md) is provided
 to facilitate the setup of the development process with [Visual Studio Code](https://code.visualstudio.com)
 and useful tools included in `skycoin/skycoindev-cli`.
 
@@ -607,9 +607,9 @@ Instructions for doing this:
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 0. Update all version strings in the repo (grep for them) to the new version
-0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `dbVerifyCheckpointVersion`	value
+0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion`	value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-0. Update files in https://github.com/skycoin/repo-info/tree/master/repos , adding a new file for the new version of the following images and adjusting any configuration text that may have changed
+q0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote, adding a new file for the new version and adjusting any configuration text that may have changed
   * `skycoin/skycoin`
   * `skycoin/skycoindev-cli`
   * `skycoin/skycoindev-vscode`

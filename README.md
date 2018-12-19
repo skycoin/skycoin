@@ -609,7 +609,10 @@ Instructions for doing this:
 0. Update all version strings in the repo (grep for them) to the new version
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `dbVerifyCheckpointVersion`	value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-0. Update files in `docker/images/mainnet/repo-info/remote/`, adding a new file for the new version and adjusting any configuration text that may have changed
+0. Update files in https://github.com/skycoin/repo-info, adding a new file for the new version of the following images and adjusting any configuration text that may have changed
+  * `skycoin/skycoin`
+  * `skycoin/skycoindev-cli`
+  * `skycoin/skycoindev-vscode`
 0. Merge these changes to `develop`
 0. Follow the steps in [pre-release testing](#pre-release-testing)
 0. Make a PR merging `develop` into `master`

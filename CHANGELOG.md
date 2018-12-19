@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+### Fixed
+
+### Changed
+
+### Removed
+
+## [0.25.0] - 2018-12-19
+
 ### Upcoming deprecated method removal notice
 
 In the v0.26.0 these features and functions will be removed.  If you have a need for any of these features, let us know.
@@ -55,10 +65,9 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Complete support for `cipher` package in `libskycoin` C API.
 - Add `coin`, `wallet`, `util/droplet` and `util/fee` methods as part of `libskycoin` C API
 - Add `make update-golden-files` to `Makefile`
-- Add CLI `richList` command
+- Add CLI `richlist` command
 - Add `util/droplet` and `util/fee` API's as part of `libskycoin`
 - Implement SWIG interfaces in order to generate client libraries for multiple programming languages
-
 
 ### Fixed
 
@@ -427,6 +436,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.25.0]: https://github.com/skycoin/skycoin/compare/v0.24.1...v0.25.0
 [0.24.1]: https://github.com/skycoin/skycoin/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/skycoin/skycoin/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/skycoin/skycoin/compare/v0.22.0...v0.23.0

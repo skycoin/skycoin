@@ -4,22 +4,23 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/api"
 	gcli "github.com/urfave/cli"
+
+	"github.com/skycoin/skycoin/src/api"
 )
 
-func richListCmd() gcli.Command {
-	name := "richList"
+func richlistCmd() gcli.Command {
+	name := "richlist"
 	return gcli.Command{
 		Name:         name,
 		Usage:        "Returns top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).",
 		ArgsUsage:    "[top N addresses (20 default)] [include distribution addresses (false default)]",
 		OnUsageError: onCommandUsageError(name),
-		Action:       getRichList,
+		Action:       getRichlist,
 	}
 }
 
-func getRichList(c *gcli.Context) error {
+func getRichlist(c *gcli.Context) error {
 	client := APIClientFromContext(c)
 
 	num := c.Args().First()
@@ -47,10 +48,10 @@ func getRichList(c *gcli.Context) error {
 		IncludeDistribution: d,
 	}
 
-	richList, err := client.Richlist(params)
+	richlist, err := client.Richlist(params)
 	if err != nil {
 		return err
 	}
 
-	return printJSON(richList)
+	return printJSON(richlist)
 }

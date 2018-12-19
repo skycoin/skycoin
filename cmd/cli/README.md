@@ -1498,12 +1498,12 @@ $ skycoin-cli listWallets
 Returns the top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
 
 ```bash
-$ skycoin-cli richList [top N addresses] [include distribution addresses]
+$ skycoin-cli richlist [top N addresses] [include distribution addresses]
 ```
 
 #### Example
 ```bash
-$ skycoin-cli richList 5 false
+$ skycoin-cli richlist 5 false
 ```
 
 <details>

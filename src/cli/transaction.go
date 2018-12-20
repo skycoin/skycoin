@@ -109,6 +109,7 @@ func getAddressTransactionsCmd(c *gcli.Context) error {
 		}
 	}
 
+	// If one or more addresses have beeb provided, request their transactions - otherwise report an error
 	if len(addrs) > 0 {
 		outputs, err := client.GetTransactions(addrs)
 		if err != nil {
@@ -117,5 +118,6 @@ func getAddressTransactionsCmd(c *gcli.Context) error {
 
 		return printJSON(outputs)
 	}
-	return fmt.Errorf("at least one address must be provided")
+
+	return fmt.Errorf("at least one address must be specified. Example: %s addr1 addr2 addr3", c.Command.Name)
 }

@@ -19,18 +19,18 @@ func TestDataBuild(t *testing.T) {
 	}{
 		{
 			name:      "without remark",
-			userAgent: "Skycoin:0.25.0",
+			userAgent: "Skycoin:0.24.1",
 			data: Data{
 				Coin:    "Skycoin",
-				Version: "0.25.0",
+				Version: "0.24.1",
 			},
 		},
 		{
 			name:      "with remark",
-			userAgent: "Skycoin:0.25.0(remark; foo)",
+			userAgent: "Skycoin:0.24.1(remark; foo)",
 			data: Data{
 				Coin:    "Skycoin",
-				Version: "0.25.0",
+				Version: "0.24.1",
 				Remark:  "remark; foo",
 			},
 		},
@@ -38,7 +38,7 @@ func TestDataBuild(t *testing.T) {
 			name: "invalid characters in coin",
 			data: Data{
 				Coin:    "foo<>",
-				Version: "0.25.0",
+				Version: "0.24.1",
 			},
 			err: ErrIllegalChars,
 		},
@@ -46,7 +46,7 @@ func TestDataBuild(t *testing.T) {
 			name: "invalid characters in version",
 			data: Data{
 				Coin:    "foo",
-				Version: "<0.25.0",
+				Version: "<0.24.1",
 			},
 			err: errors.New(`Invalid character(s) found in major number "<0"`),
 		},
@@ -54,7 +54,7 @@ func TestDataBuild(t *testing.T) {
 			name: "invalid characters in remark",
 			data: Data{
 				Coin:    "foo",
-				Version: "0.25.0",
+				Version: "0.24.1",
 				Remark:  "<>",
 			},
 			err: ErrIllegalChars,
@@ -62,7 +62,7 @@ func TestDataBuild(t *testing.T) {
 		{
 			name: "missing coin",
 			data: Data{
-				Version: "0.25.0",
+				Version: "0.24.1",
 			},
 			err: errors.New("missing coin name"),
 		},
@@ -85,7 +85,7 @@ func TestDataBuild(t *testing.T) {
 			name: "invalid remark",
 			data: Data{
 				Coin:    "skycoin",
-				Version: "0.25.0",
+				Version: "0.24.1",
 				Remark:  "\t",
 			},
 			err: ErrIllegalChars,
@@ -116,17 +116,17 @@ func TestParse(t *testing.T) {
 	}{
 		{
 			name:      "too long",
-			userAgent: fmt.Sprintf("skycoin:0.25.0[abcdefg](%s)", strings.Repeat("a", 245)),
+			userAgent: fmt.Sprintf("skycoin:0.24.1[abcdefg](%s)", strings.Repeat("a", 245)),
 			err:       ErrTooLong,
 		},
 		{
 			name:      "no tab chars allowed",
-			userAgent: "skycoin:0.25.0(\t)",
+			userAgent: "skycoin:0.24.1(\t)",
 			err:       ErrIllegalChars,
 		},
 		{
 			name:      "no newlines allowed",
-			userAgent: "skycoin:0.25.0(\n)",
+			userAgent: "skycoin:0.24.1(\n)",
 			err:       ErrIllegalChars,
 		},
 	}
@@ -153,11 +153,11 @@ func TestDataJSON(t *testing.T) {
 	require.Equal(t, `""`, string(x))
 
 	d.Coin = "skycoin"
-	d.Version = "0.25.0"
+	d.Version = "0.24.1"
 
 	x, err = json.Marshal(d)
 	require.NoError(t, err)
-	require.Equal(t, `"skycoin:0.25.0"`, string(x))
+	require.Equal(t, `"skycoin:0.24.1"`, string(x))
 
 	var e Data
 	err = json.Unmarshal([]byte(x), &e)
@@ -168,7 +168,7 @@ func TestDataJSON(t *testing.T) {
 
 	x, err = json.Marshal(d)
 	require.NoError(t, err)
-	require.Equal(t, `"skycoin:0.25.0(foo; bar)"`, string(x))
+	require.Equal(t, `"skycoin:0.24.1(foo; bar)"`, string(x))
 
 	e = Data{}
 	err = json.Unmarshal([]byte(x), &e)
@@ -186,7 +186,7 @@ func TestDataJSON(t *testing.T) {
 	require.Equal(t, Data{}, e)
 
 	// Fails, does not parse
-	err = json.Unmarshal([]byte(`"skycoin:0.25.0(<>)"`), &e)
+	err = json.Unmarshal([]byte(`"skycoin:0.24.1(<>)"`), &e)
 	require.Equal(t, ErrIllegalChars, err)
 }
 
@@ -215,7 +215,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "dogcattt", Sanitize(z))
 
 	// Should not have anything stripped
-	x := "Skycoin:0.25.0(foo; bar)"
+	x := "Skycoin:0.24.1(foo; bar)"
 	require.Equal(t, x, Sanitize(x))
 }
 
@@ -224,15 +224,15 @@ func TestEmpty(t *testing.T) {
 	require.True(t, d.Empty())
 
 	d.Coin = "skycoin"
-	d.Version = "0.25.0"
+	d.Version = "0.24.1"
 	require.False(t, d.Empty())
 }
 
 func TestMustParse(t *testing.T) {
-	d := MustParse("skycoin:0.25.0")
+	d := MustParse("skycoin:0.24.1")
 	require.Equal(t, Data{
 		Coin:    "skycoin",
-		Version: "0.25.0",
+		Version: "0.24.1",
 	}, d)
 
 	require.Panics(t, func() {

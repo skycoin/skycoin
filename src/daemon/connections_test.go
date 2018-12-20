@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
-var userAgent = useragent.MustParse("skycoin:0.25.0(foo)")
+var userAgent = useragent.MustParse("skycoin:0.24.1(foo)")
 
 func getMirrorPort(c *Connections, ip string, mirror uint32) uint16 {
 	c.Lock()

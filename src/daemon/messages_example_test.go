@@ -420,7 +420,7 @@ func ExampleIntroductionMessage() {
 
 	pk := cipher.MustPubKeyFromHex("0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a")
 
-	var message = NewIntroductionMessage(1234, 5, 7890, pk, "skycoin:0.25.0", params.VerifyTxn{
+	var message = NewIntroductionMessage(1234, 5, 7890, pk, "skycoin:0.24.1", params.VerifyTxn{
 		BurnFactor:          2,
 		MaxTransactionSize:  32768,
 		MaxDropletPrecision: 3,

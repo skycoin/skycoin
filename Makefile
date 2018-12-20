@@ -145,7 +145,8 @@ lint: ## Run linters. Use make install-linters first.
 check: lint clean-coverage test integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \
 	integration-test-enable-seed-api integration-test-disable-gui \
-	integration-test-auth integration-test-db-no-unconfirmed ## Run tests and linters
+	integration-test-auth integration-test-db-no-unconfirmed newcoin ## Run tests and linters
+	if [ "$(shell git diff ./cmd | wc -l)" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
 integration-test-stable: ## Run stable integration tests
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -n enable-csrf

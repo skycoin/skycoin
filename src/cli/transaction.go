@@ -99,6 +99,7 @@ func addressTransactionsCmd() gcli.Command {
 func getAddressTransactionsCmd(c *gcli.Context) error {
 	client := APIClientFromContext(c)
 
+	// Build the list of addresses from the command line arguments
 	addrs := make([]string, c.NArg())
 	var err error
 	for i := 0; i < c.NArg(); i++ {
@@ -108,10 +109,13 @@ func getAddressTransactionsCmd(c *gcli.Context) error {
 		}
 	}
 
-	outputs, err := client.GetTransactions(addrs)
-	if err != nil {
-		return err
-	}
+	if len(addrs) > 0 {
+		outputs, err := client.GetTransactions(addrs)
+		if err != nil {
+			return err
+		}
 
-	return printJSON(outputs)
+		return printJSON(outputs)
+	}
+	return fmt.Errorf("at least one address must be provided")
 }

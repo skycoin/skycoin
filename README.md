@@ -361,7 +361,7 @@ need to start a skycoin node:
 After the skycoin node is up, run the following command to start the live tests:
 
 ```sh
-./ci-scripts/integration-test.live.sh -v
+make integration-test-live
 ```
 
 The above command will run all tests except the wallet related tests. To run wallet tests, we
@@ -380,18 +380,38 @@ If the wallet is encrypted, also set `WALLET_PASSWORD`.
 export WALLET_DIR="$HOME/.skycoin/wallets"
 export WALLET_NAME="$valid_wallet_filename"
 export WALLET_PASSWORD="$wallet_password"
+/run-client.sh -launch-browser=false -enable-all-api-sets -enable-api-sets=DEPRECATED_WALLET_SPEND
 ```
 
 Then run the tests with the following command:
 
 ```sh
-make integration-test-live
+make integration-test-live-wallet
 ```
 
-or
+There are two other live integration test modes for CSRF disabled and networking disabled.
+
+To run the CSRF disabled tests:
 
 ```sh
-./ci-scripts/integration-test-live.sh -v -w
+./run-daemon.sh -disable-csrf
+```
+
+```sh
+make integration-test-live-disable-csrf
+```
+
+To run the networking disabled tests, which requires a live wallet:
+
+```sh
+./run-client.sh -disable-networking -launch-browser=false
+```
+
+```sh
+export WALLET_DIR="$HOME/.skycoin/wallets"
+export WALLET_NAME="$valid_wallet_filename"
+export WALLET_PASSWORD="$wallet_password"
+make integration-test-live-disable-networking
 ```
 
 #### Debugging Integration Tests
@@ -606,8 +626,9 @@ Instructions for doing this:
 
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
-0. Update all version strings in the repo (grep for them) to the new version
-0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion`	value
+0. Update version strings to the new version in the following files: `electron/package-lock.json`, `electron/package.json`, `electron/skycoin/current-skycoin.json`, `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `cli/integration/testdata/status*.golden`, `template/coin.template`
+0. Run `make newcoin`. Compare `git diff cmd/skycoin/skycoin.go`. The only change should be the version number in the file.
+0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote, adding a new file for the new version and adjusting any configuration text that may have changed
 0. Merge these changes to `develop`
@@ -628,7 +649,10 @@ For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 Performs these actions before releasing:
 
 * `make check`
-* `make integration-test-live` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet, and once with `-networking-disabled`
+* `make integration-test-live`
+* `make integration-test-live-disable-networking` (requires node run with `-disable-networking`)
+* `make integration-test-live-disable-csrf` (requires node run with `-disable-csrf`)
+* `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet
 * `go run cmd/cli/cli.go checkdb` against a synced node
 * On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.

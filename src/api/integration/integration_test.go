@@ -1107,7 +1107,9 @@ func TestLiveBalance(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, b.Confirmed, b.Predicted)
 	require.NotEmpty(t, b.Confirmed.Hours)
-	require.Equal(t, uint64(1e6*1e6), b.Confirmed.Coins)
+	// Add 1e4 because someone sent 0.01 coins to it
+	expectedBalance := uint64(1e6*1e6 + 1e4)
+	require.Equal(t, expectedBalance, b.Confirmed.Coins)
 
 	// Check that the balance is queryable for addresses known to be affected
 	// by the coinhour overflow problem
@@ -1864,7 +1866,7 @@ func TestLiveNetworkConnections(t *testing.T) {
 		if cc.State == daemon.ConnectionStatePending {
 			require.Equal(t, uint64(0), cc.GnetID)
 		} else {
-			require.NotEmpty(t, uint64(0), cc.GnetID)
+			require.NotEmpty(t, cc.GnetID)
 		}
 
 		require.Equal(t, cc.Outgoing, connection.Outgoing)
@@ -2957,6 +2959,7 @@ func TestStableResendUnconfirmedTransactions(t *testing.T) {
 	}
 	c := newClient()
 	_, err := c.ResendUnconfirmedTransactions()
+	require.NotNil(t, err)
 	respErr, ok := err.(api.ClientError)
 	require.True(t, ok)
 	require.Equal(t, fmt.Sprintf("503 Service Unavailable - %s", daemon.ErrNetworkingDisabled), respErr.Message)
@@ -2969,7 +2972,16 @@ func TestLiveResendUnconfirmedTransactions(t *testing.T) {
 	}
 	c := newClient()
 	_, err := c.ResendUnconfirmedTransactions()
-	require.NoError(t, err)
+
+	if liveDisableNetworking(t) {
+		require.NotNil(t, err)
+		respErr, ok := err.(api.ClientError)
+		require.True(t, ok)
+		require.Equal(t, fmt.Sprintf("503 Service Unavailable - %s", daemon.ErrNetworkingDisabled), respErr.Message)
+		require.Equal(t, http.StatusServiceUnavailable, respErr.StatusCode)
+	} else {
+		require.NoError(t, err)
+	}
 }
 
 type rawTransactionTestCase struct {
@@ -3092,6 +3104,10 @@ func TestLiveRawTransaction(t *testing.T) {
 
 func TestWalletNewSeed(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if doLive(t) && !doLiveWallet(t) {
 		return
 	}
 
@@ -4959,6 +4975,10 @@ func TestCreateWallet(t *testing.T) {
 		return
 	}
 
+	if doLive(t) && !doLiveWallet(t) {
+		return
+	}
+
 	c := newClient()
 
 	w, seed, clean := createWallet(t, c, false, "", "")
@@ -5008,6 +5028,10 @@ func TestGetWallet(t *testing.T) {
 		return
 	}
 
+	if doLive(t) && !doLiveWallet(t) {
+		return
+	}
+
 	c := newClient()
 
 	// Create a wallet
@@ -5022,6 +5046,10 @@ func TestGetWallet(t *testing.T) {
 
 func TestGetWallets(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if doLive(t) && !doLiveWallet(t) {
 		return
 	}
 
@@ -5058,6 +5086,10 @@ func TestGetWallets(t *testing.T) {
 // be removed automatically after testing.
 func TestWalletNewAddress(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if doLive(t) && !doLiveWallet(t) {
 		return
 	}
 
@@ -5134,6 +5166,10 @@ func TestLiveWalletBalance(t *testing.T) {
 
 func TestWalletUpdate(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if doLive(t) && !doLiveWallet(t) {
 		return
 	}
 
@@ -5233,6 +5269,10 @@ func TestWalletFolderName(t *testing.T) {
 		return
 	}
 
+	if doLive(t) && !doLiveWallet(t) {
+		return
+	}
+
 	c := newClient()
 	folderName, err := c.WalletFolderName()
 	require.NoError(t, err)
@@ -5243,6 +5283,10 @@ func TestWalletFolderName(t *testing.T) {
 
 func TestEncryptWallet(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if doLive(t) && !doLiveWallet(t) {
 		return
 	}
 
@@ -5281,6 +5325,10 @@ func TestEncryptWallet(t *testing.T) {
 
 func TestDecryptWallet(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if doLive(t) && !doLiveWallet(t) {
 		return
 	}
 
@@ -5326,6 +5374,10 @@ func TestDecryptWallet(t *testing.T) {
 
 func TestRecoverWallet(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if doLive(t) && !doLiveWallet(t) {
 		return
 	}
 
@@ -5394,6 +5446,10 @@ func TestRecoverWallet(t *testing.T) {
 
 func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if doLive(t) && !doLiveWallet(t) {
 		return
 	}
 

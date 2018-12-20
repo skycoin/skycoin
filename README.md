@@ -607,6 +607,7 @@ Instructions for doing this:
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 0. Update all version strings in the following repo files (grep for them) to the new version
+  * `README.md` files across project tree
   * `electron/package-lock.json`
   * `electron/package.json`
   * `electron/skycoin/current-skycoin.json`

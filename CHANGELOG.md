@@ -25,16 +25,6 @@ In the v0.26.0 these features and functions will be removed.  If you have a need
 - The unversioned REST API (the `-enable-unversioned-api` option will be removed, prefix your API requests with `/api/v1`). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-unversioned-api
 - `/api/v1/explorer/address` endpoint (use `GET /api/v1/transactions?verbose=1` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-explorer-address
 
-### Added
-
-### Fixed
-
-### Changed
-
-### Removed
-
-## [0.25.0] - 2018-12-18
-
 ### Notice
 
 Nodes v0.23.0 and earlier will not be able to connect to v0.25.0 due to a change in the introduction packet message.

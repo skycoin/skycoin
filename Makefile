@@ -142,13 +142,13 @@ lint: ## Run linters. Use make install-linters first.
 	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
 
-check-coin: newcoin ## Check that make newcoin succeeds and no files are changed.
+check-newcoin: newcoin ## Check that make newcoin succeeds and no files are changed.
 	if [ "$(shell git diff ./ | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
 check: lint clean-coverage test integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \
 	integration-test-enable-seed-api integration-test-disable-gui \
-	integration-test-auth integration-test-db-no-unconfirmed check-coin ## Run tests and linters
+	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -n enable-csrf

@@ -186,7 +186,7 @@ func TestDataJSON(t *testing.T) {
 	require.Equal(t, Data{}, e)
 
 	// Fails, does not parse
-	err = json.Unmarshal([]byte(`"skycoin:0.24.1(<>)"`), &e)
+	err = json.Unmarshal([]byte(`"skycoin:0.25.0(<>)"`), &e)
 	require.Equal(t, ErrIllegalChars, err)
 }
 
@@ -215,7 +215,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "dogcattt", Sanitize(z))
 
 	// Should not have anything stripped
-	x := "Skycoin:0.24.1(foo; bar)"
+	x := "Skycoin:0.25.0(foo; bar)"
 	require.Equal(t, x, Sanitize(x))
 }
 
@@ -224,7 +224,7 @@ func TestEmpty(t *testing.T) {
 	require.True(t, d.Empty())
 
 	d.Coin = "skycoin"
-	d.Version = "0.24.1"
+	d.Version = "0.25.0"
 	require.False(t, d.Empty())
 }
 

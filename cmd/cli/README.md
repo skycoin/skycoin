@@ -1675,7 +1675,7 @@ $ skycoin-cli status
             "time_since_last_block": "7m44s"
         },
         "version": {
-            "version": "0.24.1",
+            "version": "0.25.0",
             "commit": "620405485d3276c16c0379bc3b88b588e34c45e1",
             "branch": "develop"
         },

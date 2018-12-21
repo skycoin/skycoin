@@ -221,7 +221,7 @@ Response:
         "time_since_last_block": "4m46s"
     },
     "version": {
-        "version": "0.24.1",
+        "version": "0.25.0",
         "commit": "8798b5ee43c7ce43b9b75d57a1a6cd2c1295cd1e",
         "branch": "develop"
     },

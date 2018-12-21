@@ -143,7 +143,7 @@ lint: ## Run linters. Use make install-linters first.
 	go vet -all ./...
 
 check-coin: newcoin ## Check that make newcoin succeeds and no files are changed.
-	if [ "$(shell git diff ./cmd | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+	if [ "$(shell git diff ./ | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
 check: lint clean-coverage test integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \

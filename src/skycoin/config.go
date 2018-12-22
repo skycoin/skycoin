@@ -564,7 +564,8 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
 			api.EndpointsDeprecatedWalletSpend,
-			api.EndpointsPrometheus:
+			api.EndpointsPrometheus,
+			api.EndpointsNetCtrl:
 		case "":
 			continue
 		default:

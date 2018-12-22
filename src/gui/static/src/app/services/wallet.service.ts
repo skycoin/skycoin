@@ -134,7 +134,7 @@ export class WalletService {
       });
 
       return this.wallets.first().map(wallets => {
-        const newWallet = this.createHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, lastAddressWithTx + 1), true);
+        const newWallet = this.createHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, lastAddressWithTx + 1), true, false);
         wallets.push(newWallet);
         this.saveHardwareWallets();
         this.refreshBalances();
@@ -485,6 +485,7 @@ export class WalletService {
             wallet.label,
             wallet.addresses.map(address => address.address),
             wallet.hasHwSecurityWarnings,
+            wallet.stopShowingHwSecurityPopup,
           ));
         }
       });
@@ -515,11 +516,12 @@ export class WalletService {
     return chain;
   }
 
-  private createHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean): Wallet {
+  private createHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean, stopShowingHwSecurityPopup: boolean): Wallet {
     return {
       label: label,
       filename: '',
       hasHwSecurityWarnings: hasHwSecurityWarnings,
+      stopShowingHwSecurityPopup: stopShowingHwSecurityPopup,
       coins: null,
       hours: null,
       addresses: addresses.map(address => {

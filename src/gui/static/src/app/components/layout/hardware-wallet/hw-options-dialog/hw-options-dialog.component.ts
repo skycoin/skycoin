@@ -153,7 +153,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   private checkWallet() {
     this.wallet = null;
 
-    if (!this.hwWalletService.getDeviceSync()) {
+    if (!this.hwWalletService.getDeviceConnectedSync()) {
       this.currentState = States.Disconnected;
     } else {
       this.currentState = States.Processing;

@@ -103,6 +103,9 @@ export class HwWalletService {
         });
       });
 
+      window['ipcRenderer'].on('hwCancelLastActionResponse', (event, requestId, result) => {
+        this.dispatchEvent(requestId, '', true);
+      });
       window['ipcRenderer'].on('hwGetAddressesResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, true);
       });
@@ -134,40 +137,55 @@ export class HwWalletService {
     return this.walletConnectedSubject.asObservable();
   }
 
-  getDeviceSync() {
-    return window['ipcRenderer'].sendSync('hwGetDeviceSync');
+  getDeviceConnectedSync() {
+    return window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync');
   }
 
-  getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
+  cancelLastAction(): Observable<OperationResult> {
     const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
+    window['ipcRenderer'].send('hwCancelLastAction', requestId);
 
     return new Observable(observer => {
       this.eventsObservers.set(requestId, observer);
+    });
+  }
+
+  getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
+
+      return new Observable(observer => {
+        this.eventsObservers.set(requestId, observer);
+      });
     });
   }
 
   getFeatures(): Observable<OperationResult> {
-    const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwGetFeatures', requestId);
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwGetFeatures', requestId);
 
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
+      return new Observable(observer => {
+        this.eventsObservers.set(requestId, observer);
+      });
     });
   }
 
   changePin(changingCurrentPin: boolean): Observable<OperationResult> {
-    const requestId = this.createRandomIdAndPrepare();
-    this.changingPin = true;
-    if (changingCurrentPin) {
-      this.changePinState = ChangePinStates.RequestingCurrentPin;
-    } else {
-      this.changePinState = ChangePinStates.RequestingNewPin;
-    }
-    window['ipcRenderer'].send('hwChangePin', requestId);
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      this.changingPin = true;
+      if (changingCurrentPin) {
+        this.changePinState = ChangePinStates.RequestingCurrentPin;
+      } else {
+        this.changePinState = ChangePinStates.RequestingNewPin;
+      }
+      window['ipcRenderer'].send('hwChangePin', requestId);
 
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
+      return new Observable(observer => {
+        this.eventsObservers.set(requestId, observer);
+      });
     });
   }
 
@@ -176,50 +194,60 @@ export class HwWalletService {
   }
 
   generateMnemonic(): Observable<OperationResult> {
-    const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
 
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
+      return new Observable(observer => {
+        this.eventsObservers.set(requestId, observer);
+      });
     });
   }
 
   recoverMnemonic(): Observable<OperationResult> {
-    const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwRecoverMnemonic', requestId);
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwRecoverMnemonic', requestId);
 
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
+      return new Observable(observer => {
+        this.eventsObservers.set(requestId, observer);
+      });
     });
   }
 
   backup(): Observable<OperationResult> {
-    const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwBackupDevice', requestId);
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwBackupDevice', requestId);
 
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
+      return new Observable(observer => {
+        this.eventsObservers.set(requestId, observer);
+      });
     });
   }
 
   wipe(): Observable<OperationResult> {
-    const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwWipe', requestId);
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwWipe', requestId);
 
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
+      return new Observable(observer => {
+        this.eventsObservers.set(requestId, observer);
+      });
     });
   }
 
   signMessage(addressIndex: number, message: string, currentSignature: number, totalSignatures: number): Observable<OperationResult> {
-    const requestId = this.createRandomIdAndPrepare();
-    this.signingTx = true;
-    this.currentSignature = currentSignature;
-    this.totalSignatures = totalSignatures;
-    window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      this.signingTx = true;
+      this.currentSignature = currentSignature;
+      this.totalSignatures = totalSignatures;
+      window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
 
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
+      return new Observable(observer => {
+        this.eventsObservers.set(requestId, observer);
+      });
     });
   }
 
@@ -259,8 +287,6 @@ export class HwWalletService {
   }
 
   private createRandomIdAndPrepare() {
-    window['ipcRenderer'].send('hwCancelLastAction');
-
     this.changingPin = false;
     this.signingTx = false;
 

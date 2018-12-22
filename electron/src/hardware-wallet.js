@@ -6,6 +6,8 @@ const deviceWallet = require('hardware-wallet-js/device-wallet');
 
 const { Observable, of } = require('rxjs');
 
+const HID = require('node-hid');
+
 // Global reference of the window object.
 let win;
 
@@ -34,13 +36,13 @@ function checkHw(wait) {
     .delay(wait ? (hwConnected ? 2000 : 10000) : 0)
     .subscribe(
       () => {
-        const device = deviceWallet.getDevice();
-        if (device && !hwConnected) {
+        const connected = HID.devices().find((d) => d.manufacturer === "SkycoinFoundation");
+        if (connected && !hwConnected) {
           hwConnected = true;
           if (win) {
             win.webContents.send('hwConnectionEvent', true);
           }
-        } else if (!device && hwConnected) {
+        } else if (!connected && hwConnected) {
           hwConnected = false;
           if (win) {
             win.webContents.send('hwConnectionEvent', false);
@@ -53,8 +55,8 @@ function checkHw(wait) {
 
 checkHw(false);
 
-ipcMain.on('hwGetDeviceSync', (event) => {
-  event.returnValue = deviceWallet.getDevice();
+ipcMain.on('hwGetDeviceConnectedSync', (event) => {
+  event.returnValue = HID.devices().find((d) => d.manufacturer === "SkycoinFoundation");
   checkHw(false);
 });
 
@@ -104,8 +106,12 @@ ipcMain.on('hwSendSeedWord', (event, word) => {
   }
 });
 
-ipcMain.on('hwCancelLastAction', (event) => {
-  deviceWallet.devCancelRequest();
+ipcMain.on('hwCancelLastAction', (event, requestId) => {
+  const promise = deviceWallet.devCancelRequest();
+  promise.then(
+    result => { console.log("Cancel promise resolved", result); event.sender.send('hwCancelLastActionResponse', requestId, ''); },
+    error => { console.log("Cancel promise errored: ", error); event.sender.send('hwCancelLastActionResponse', requestId, { error: error.toString() }); }
+  );
 });
 
 ipcMain.on('hwGetFeatures', (event, requestId) => {

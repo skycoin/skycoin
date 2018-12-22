@@ -34,7 +34,7 @@ export function showSnackbarError(snackbar: MatSnackBar, body: string, duration 
 }
 
 export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, translateService: TranslateService, error: any): string {
-  if (!hwWalletService.getDeviceSync()) {
+  if (!hwWalletService.getDeviceConnectedSync()) {
     return translateService.instant('hardware-wallet.general.error-disconnected');
   } else {
     if (error.result) {

@@ -89,14 +89,7 @@ export class WalletService {
       .do(wallet => {
         console.log(wallet);
         this.wallets.first().subscribe(wallets => {
-          let lastSoftwareWalletIndex = wallets.length - 1;
-          for (let i = 0; i < wallets.length; i++) {
-            if (wallets[i].isHardware) {
-              lastSoftwareWalletIndex = i - 1;
-              break;
-            }
-          }
-          wallets.splice(lastSoftwareWalletIndex + 1, 0, wallet);
+          wallets.push(wallet);
           this.wallets.next(wallets);
           this.refreshBalances();
         });
@@ -135,7 +128,14 @@ export class WalletService {
 
       return this.wallets.first().map(wallets => {
         const newWallet = this.createHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, lastAddressWithTx + 1), true, false);
-        wallets.push(newWallet);
+        let lastHardwareWalletIndex = wallets.length - 1;
+        for (let i = 0; i < wallets.length; i++) {
+          if (!wallets[i].isHardware) {
+            lastHardwareWalletIndex = i - 1;
+            break;
+          }
+        }
+        wallets.splice(lastHardwareWalletIndex + 1, 0, newWallet);
         this.saveHardwareWallets();
         this.refreshBalances();
 
@@ -538,10 +538,12 @@ export class WalletService {
 
   private loadData(): void {
     this.apiService.getWallets().first().subscribe(
-      wallets => {
+      recoveredWallets => {
+        let wallets: Wallet[] = [];
         if (window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated')) {
           this.loadHardwareWallets(wallets);
         }
+        wallets = wallets.concat(recoveredWallets);
         this.wallets.next(wallets);
       },
       () => this.initialLoadFailed.next(true),

@@ -56,7 +56,7 @@ function checkHw(wait) {
 checkHw(false);
 
 ipcMain.on('hwGetDeviceConnectedSync', (event) => {
-  event.returnValue = HID.devices().find((d) => d.manufacturer === "SkycoinFoundation");
+  event.returnValue = HID.devices().find((d) => d.manufacturer && d.manufacturer === "SkycoinFoundation") !== undefined;
   checkHw(false);
 });
 
@@ -110,7 +110,7 @@ ipcMain.on('hwCancelLastAction', (event, requestId) => {
   const promise = deviceWallet.devCancelRequest();
   promise.then(
     result => { console.log("Cancel promise resolved", result); event.sender.send('hwCancelLastActionResponse', requestId, ''); },
-    error => { console.log("Cancel promise errored: ", error); event.sender.send('hwCancelLastActionResponse', requestId, { error: error.toString() }); }
+    error => { console.log("Cancel promise errored: ", error); event.sender.send('hwCancelLastActionResponse', requestId, ''); }
   );
 });
 

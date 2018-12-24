@@ -30,10 +30,17 @@ export class OperationResult {
   rawResponse: any;
 }
 
+interface EventData {
+  event: string;
+  successText?: string;
+}
+
 @Injectable()
 export class HwWalletService {
 
   showOptionsWhenPossible = false;
+
+  private requestSequence = 0;
 
   private eventsObservers = new Map<number, Subscriber<OperationResult>>();
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
@@ -103,32 +110,26 @@ export class HwWalletService {
         });
       });
 
-      window['ipcRenderer'].on('hwCancelLastActionResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, '', true);
-      });
-      window['ipcRenderer'].on('hwGetAddressesResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, true);
-      });
-      window['ipcRenderer'].on('hwGetFeaturesResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, true);
-      });
-      window['ipcRenderer'].on('hwChangePinResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('PIN changed'));
-      });
-      window['ipcRenderer'].on('hwGenerateMnemonicResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('operation completed'));
-      });
-      window['ipcRenderer'].on('hwRecoverMnemonicResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('Device recovered'));
-      });
-      window['ipcRenderer'].on('hwBackupDeviceResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('operation completed'));
-      });
-      window['ipcRenderer'].on('hwWipeResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, typeof result === 'string' && (result as string).includes('operation completed'));
-      });
-      window['ipcRenderer'].on('hwSignMessageResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, true);
+      const data: EventData[] = [
+        { event: 'hwChangePinResponse', successText: 'PIN changed' },
+        { event: 'hwGenerateMnemonicResponse', successText: 'operation completed' },
+        { event: 'hwRecoverMnemonicResponse', successText: 'Device recovered' },
+        { event: 'hwBackupDeviceResponse', successText: 'operation completed' },
+        { event: 'hwWipeResponse', successText: 'operation completed' },
+        { event: 'hwCancelLastActionResponse' },
+        { event: 'hwGetAddressesResponse' },
+        { event: 'hwGetFeaturesResponse' },
+        { event: 'hwSignMessageResponse' },
+      ];
+
+      data.forEach(item => {
+        window['ipcRenderer'].on(item.event, (event, requestId, result) => {
+          const success = item.successText
+            ? typeof result === 'string' && (result as string).includes(item.successText)
+            : true;
+
+          this.dispatchEvent(requestId, result, success);
+        });
       });
     }
   }
@@ -145,9 +146,7 @@ export class HwWalletService {
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwCancelLastAction', requestId);
 
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
-    });
+    return this.createRequestResponse(requestId);
   }
 
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
@@ -155,9 +154,7 @@ export class HwWalletService {
       const requestId = this.createRandomIdAndPrepare();
       window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
 
-      return new Observable(observer => {
-        this.eventsObservers.set(requestId, observer);
-      });
+      return this.createRequestResponse(requestId);
     });
   }
 
@@ -166,9 +163,7 @@ export class HwWalletService {
       const requestId = this.createRandomIdAndPrepare();
       window['ipcRenderer'].send('hwGetFeatures', requestId);
 
-      return new Observable(observer => {
-        this.eventsObservers.set(requestId, observer);
-      });
+      return this.createRequestResponse(requestId);
     });
   }
 
@@ -183,9 +178,7 @@ export class HwWalletService {
       }
       window['ipcRenderer'].send('hwChangePin', requestId);
 
-      return new Observable(observer => {
-        this.eventsObservers.set(requestId, observer);
-      });
+      return this.createRequestResponse(requestId);
     });
   }
 
@@ -198,9 +191,7 @@ export class HwWalletService {
       const requestId = this.createRandomIdAndPrepare();
       window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
 
-      return new Observable(observer => {
-        this.eventsObservers.set(requestId, observer);
-      });
+      return this.createRequestResponse(requestId);
     });
   }
 
@@ -209,9 +200,7 @@ export class HwWalletService {
       const requestId = this.createRandomIdAndPrepare();
       window['ipcRenderer'].send('hwRecoverMnemonic', requestId);
 
-      return new Observable(observer => {
-        this.eventsObservers.set(requestId, observer);
-      });
+      return this.createRequestResponse(requestId);
     });
   }
 
@@ -220,9 +209,7 @@ export class HwWalletService {
       const requestId = this.createRandomIdAndPrepare();
       window['ipcRenderer'].send('hwBackupDevice', requestId);
 
-      return new Observable(observer => {
-        this.eventsObservers.set(requestId, observer);
-      });
+      return this.createRequestResponse(requestId);
     });
   }
 
@@ -231,9 +218,7 @@ export class HwWalletService {
       const requestId = this.createRandomIdAndPrepare();
       window['ipcRenderer'].send('hwWipe', requestId);
 
-      return new Observable(observer => {
-        this.eventsObservers.set(requestId, observer);
-      });
+      return this.createRequestResponse(requestId);
     });
   }
 
@@ -245,9 +230,7 @@ export class HwWalletService {
       this.totalSignatures = totalSignatures;
       window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
 
-      return new Observable(observer => {
-        this.eventsObservers.set(requestId, observer);
-      });
+      return this.createRequestResponse(requestId);
     });
   }
 
@@ -263,7 +246,22 @@ export class HwWalletService {
 
         return Observable.of(true);
       },
-    );
+    ).catch(error => {
+      if (error.result && error.result === OperationResults.WithoutSeed) {
+        return Observable.throw({
+          result: OperationResults.IncorrectHardwareWallet,
+          rawResponse: '',
+        });
+      }
+
+      return Observable.throw(error);
+    });
+  }
+
+  private createRequestResponse(requestId: number): Observable<OperationResult> {
+    return new Observable(observer => {
+      this.eventsObservers.set(requestId, observer);
+    });
   }
 
   private getAddressesRecursively(index: number, addresses: string[]): Observable<string[]> {
@@ -290,7 +288,7 @@ export class HwWalletService {
     this.changingPin = false;
     this.signingTx = false;
 
-    return Math.floor(Math.random() * 4000000000);
+    return this.requestSequence++;
   }
 
   private dispatchEvent(requestId: number, rawResponse: any, success: boolean) {
@@ -301,22 +299,25 @@ export class HwWalletService {
           rawResponse: rawResponse,
         });
       } else {
-        const responseContent = rawResponse.error ? rawResponse.error : rawResponse;
+        let responseContent: string = rawResponse.error ? rawResponse.error : rawResponse;
+        if (typeof responseContent !== 'string') {
+          responseContent = '';
+        }
         let result: OperationResults;
 
-        if (typeof responseContent === 'string' && (responseContent as string).includes('failed or refused')) {
+        if (responseContent.includes('failed or refused')) {
           result = OperationResults.FailedOrRefused;
-        } else if (typeof responseContent === 'string' && (responseContent as string).includes('PIN invalid')) {
+        } else if (responseContent.includes('PIN invalid')) {
           result = OperationResults.WrongPin;
-        } else if (typeof responseContent === 'string' && (responseContent as string).includes('cancelled by user')) {
+        } else if (responseContent.includes('cancelled by user')) {
           result = OperationResults.FailedOrRefused;
-        } else if (typeof responseContent === 'string' && (responseContent as string).includes('Expected WordAck after Button')) {
+        } else if (responseContent.includes('Expected WordAck after Button')) {
           result = OperationResults.FailedOrRefused;
-        } else if (typeof responseContent === 'string' && (responseContent as string).includes('Wrong word retyped')) {
+        } else if (responseContent.includes('Wrong word retyped')) {
           result = OperationResults.WrongWord;
-        } else if (typeof responseContent === 'string' && (responseContent as string).includes('PIN mismatch')) {
+        } else if (responseContent.includes('PIN mismatch')) {
           result = OperationResults.PinMismatch;
-        } else if (typeof responseContent === 'string' && (responseContent as string).includes('Mnemonic not set')) {
+        } else if (responseContent.includes('Mnemonic not set')) {
           result = OperationResults.WithoutSeed;
         } else {
           result = OperationResults.UndefinedError;

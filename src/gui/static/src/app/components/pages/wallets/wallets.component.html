@@ -3,15 +3,15 @@
 
   <div class="container">
     <div *ngFor="let i of [0, 1]">
-      <ng-container *ngIf="(i === 0 && wallets.length > 0) || (i === 1 && hardwareWallets.length > 0)">
+      <ng-container *ngIf="(i === 0 && hardwareWallets.length > 0) || (i === 1 && wallets.length > 0)">
         <div class="-headers">
-          <div class="-width-250">{{ (i === 0 ? 'wallet.wallet' : 'wallet.hardware-wallet') | translate }}</div>
+          <div class="-width-250">{{ (i === 0 ? 'wallet.hardware-wallet' : 'wallet.wallet') | translate }}</div>
           <div class="-flex-fill"></div>
           <div class="-width-130 -text-right">{{ 'common.coin-id' | translate }}</div>
           <div class="-width-130 -text-right">{{ 'common.coin-hours' | translate }}</div>
         </div>
 
-        <div class="-wallets" *ngFor="let wallet of (i === 0 ? wallets : hardwareWallets)">
+        <div class="-wallets" *ngFor="let wallet of (i === 0 ? hardwareWallets : wallets)">
           <div class="-body">
             <div class="-wallet" (click)="toggleWallet(wallet)">
               <div class="-width-250 -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
@@ -47,7 +47,7 @@
         <img src="../../../../assets/img/load-gold.png"> {{ 'wallet.load' | translate }}
       </button>
       <button mat-button *ngIf="hwCompatibilityActivated" (click)="adminHwWallet()">
-        <img src="../../../../assets/img/hw-gold.png"> {{ 'wallet.hardware' | translate }}
+        <img src="../../../../assets/img/hw-gold.png"> {{ 'wallet.hardware-wallet' | translate }}
       </button>
     </div>
   </div>

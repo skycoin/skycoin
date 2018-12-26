@@ -10,6 +10,7 @@ enum States {
   ReturnedRefused,
   Failed,
   WrongWord,
+  InvalidSeed,
 }
 
 @Component({
@@ -38,6 +39,8 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
           this.currentState = States.ReturnedRefused;
         } else if (err.result && err.result === OperationResults.WrongWord) {
           this.currentState = States.WrongWord;
+        } else if (err.result && err.result === OperationResults.InvalidSeed) {
+          this.currentState = States.InvalidSeed;
         } else {
           this.currentState = States.Failed;
         }

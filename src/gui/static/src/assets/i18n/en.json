@@ -341,7 +341,8 @@
       "configuring": "Configuring..."
     },
     "restore-seed" : {
-      "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet."
+      "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet.",
+      "error-invalid-seed": "Error: The seed is not valid. Please be sure to enter the correct words in the correct order."
     },
     "added" : {
       "title": "New Hardware Wallet",

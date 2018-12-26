@@ -21,6 +21,7 @@ export enum OperationResults {
   WrongPin,
   IncorrectHardwareWallet,
   WrongWord,
+  InvalidSeed,
   UndefinedError,
   Disconnected,
 }
@@ -319,6 +320,8 @@ export class HwWalletService {
           result = OperationResults.PinMismatch;
         } else if (responseContent.includes('Mnemonic not set')) {
           result = OperationResults.WithoutSeed;
+        } else if (responseContent.includes('Invalid seed, are words in correct order?')) {
+          result = OperationResults.InvalidSeed;
         } else {
           result = OperationResults.UndefinedError;
         }

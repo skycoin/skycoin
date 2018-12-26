@@ -19,6 +19,11 @@
     [icon]="msgIcons.Error"
   ></app-hw-message>
 
+  <app-hw-message *ngIf="currentState === states.InvalidSeed"
+    [text]="'hardware-wallet.restore-seed.error-invalid-seed' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
   <app-hw-message *ngIf="currentState === states.Failed"
     [text]="'hardware-wallet.general.simple-error' | translate"
     [icon]="msgIcons.Error"

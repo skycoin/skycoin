@@ -630,7 +630,7 @@ Instructions for doing this:
 0. Run `make newcoin`. Compare `git diff cmd/skycoin/skycoin.go`. The only change should be the version number in the file.
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-q0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote, adding a new file for the new version and adjusting any configuration text that may have changed
+0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote, adding a new file for the new version and adjusting any configuration text that may have changed
   * `skycoin/skycoin`
   * `skycoin/skycoindev-cli`
   * `skycoin/skycoindev-vscode`

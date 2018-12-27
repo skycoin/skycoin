@@ -64,7 +64,7 @@ type TransactionOutput struct {
 func (txn *Transaction) Verify() error {
 	h := txn.HashInner()
 	if h != txn.InnerHash {
-		return errors.New("Invalid header hash")
+		return errors.New("InnerHash does not match computed hash")
 	}
 
 	if len(txn.In) == 0 {
@@ -95,7 +95,12 @@ func (txn *Transaction) Verify() error {
 		return errors.New("transaction type invalid")
 	}
 
-	if txn.Length != uint32(txn.Size()) {
+	txnSize, err := txn.Size()
+	if err != nil {
+		return err
+	}
+
+	if txn.Length != txnSize {
 		return errors.New("transaction size prefix invalid")
 	}
 
@@ -145,27 +150,33 @@ func (txn *Transaction) Verify() error {
 
 // VerifyInput verifies the input
 func (txn Transaction) VerifyInput(uxIn UxArray) error {
-	if DebugLevel2 {
+	if err := func() error {
 		if len(txn.In) != len(uxIn) {
-			log.Panic("tx.In != uxIn")
+			return errors.New("txn.In != uxIn")
 		}
 		if len(txn.In) != len(txn.Sigs) {
-			log.Panic("tx.In != tx.Sigs")
+			return errors.New("txn.In != txn.Sigs")
 		}
 		if txn.InnerHash != txn.HashInner() {
-			log.Panic("Invalid Tx Inner Hash")
+			return errors.New("Invalid Tx Inner Hash")
 		}
 		for i := range txn.In {
 			if txn.In[i] != uxIn[i].Hash() {
-				log.Panic("Ux hash mismatch")
+				return errors.New("Ux hash mismatch")
 			}
 		}
+		return nil
+	}(); err != nil {
+		if DebugLevel2 {
+			log.Panic(err)
+		}
+		return err
 	}
 
 	// Check signatures against unspent address
 	for i := range txn.In {
 		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
-		err := cipher.ChkSig(uxIn[i].Body.Address, hash, txn.Sigs[i])
+		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")
 		}
@@ -225,14 +236,14 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	innerHash := txn.HashInner()
 	for i, k := range keys {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
-		sigs[i] = cipher.SignHash(h, k)
+		sigs[i] = cipher.MustSignHash(h, k)
 	}
 	txn.Sigs = sigs
 }
 
 // Size returns the encoded byte size of the transaction
-func (txn *Transaction) Size() int {
-	return len(txn.Serialize())
+func (txn *Transaction) Size() (uint32, error) {
+	return IntToUint32(len(txn.Serialize()))
 }
 
 // Hash an entire Transaction struct, including the TransactionHeader
@@ -242,9 +253,13 @@ func (txn *Transaction) Hash() cipher.SHA256 {
 }
 
 // SizeHash returns the encoded size and the hash of it (avoids duplicate encoding)
-func (txn *Transaction) SizeHash() (int, cipher.SHA256) {
+func (txn *Transaction) SizeHash() (uint32, cipher.SHA256, error) {
 	b := txn.Serialize()
-	return len(b), cipher.SumSHA256(b)
+	s, err := IntToUint32(len(b))
+	if err != nil {
+		return 0, cipher.SHA256{}, err
+	}
+	return s, cipher.SumSHA256(b), nil
 }
 
 // TxID returns transaction ID as byte string
@@ -259,11 +274,15 @@ func (txn *Transaction) TxIDHex() string {
 }
 
 // UpdateHeader saves the txn body hash to TransactionHeader.Hash
-func (txn *Transaction) UpdateHeader() {
-	s := txn.Size()
-	txn.Length = uint32(s)
+func (txn *Transaction) UpdateHeader() error {
+	s, err := txn.Size()
+	if err != nil {
+		return err
+	}
+	txn.Length = s
 	txn.Type = byte(0x00)
 	txn.InnerHash = txn.HashInner()
+	return nil
 }
 
 // HashInner hashes only the Transaction Inputs & Outputs
@@ -343,53 +362,71 @@ func (txns Transactions) Hashes() []cipher.SHA256 {
 
 // Size returns the sum of contained Transactions' sizes.  It is not the size if
 // serialized, since that would have a length prefix.
-func (txns Transactions) Size() int {
-	size := 0
+func (txns Transactions) Size() (uint32, error) {
+	var size uint32
 	for i := range txns {
-		size += txns[i].Size()
-	}
-	return size
-}
-
-// TruncateBytesTo returns the first n transactions whose total size is less than or equal to
-// size.
-func (txns Transactions) TruncateBytesTo(size int) Transactions {
-	total := 0
-	for i := range txns {
-		pending := txns[i].Size()
-
-		if pending+total > size {
-			return txns[:i]
+		s, err := txns[i].Size()
+		if err != nil {
+			return 0, err
 		}
 
-		total += pending
+		size, err = AddUint32(size, s)
+		if err != nil {
+			return 0, err
+		}
 	}
-	return txns
+
+	return size, nil
+}
+
+// TruncateBytesTo returns the first n transactions whose total size is less than or equal to size
+func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
+	var total uint32
+	for i := range txns {
+		pending, err := txns[i].Size()
+		if err != nil {
+			return nil, err
+		}
+
+		pendingTotal, err := AddUint32(total, pending)
+		if err != nil {
+			return txns[:i], nil
+		}
+
+		if pendingTotal > size {
+			return txns[:i], nil
+		}
+
+		total = pendingTotal
+	}
+
+	return txns, nil
 }
 
 // SortableTransactions allows sorting transactions by fee & hash
 type SortableTransactions struct {
-	Txns   Transactions
-	Fees   []uint64
-	Hashes []cipher.SHA256
+	Transactions Transactions
+	Fees         []uint64
+	Hashes       []cipher.SHA256
 }
 
-// FeeCalculator given a transaction, return its fee or an error if the fee cannot be
-// calculated
+// FeeCalculator given a transaction, return its fee or an error if the fee cannot be calculated
 type FeeCalculator func(*Transaction) (uint64, error)
 
-// SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if
-// tied.  Transactions that fail in fee computation are excluded.
-func SortTransactions(txns Transactions, feeCalc FeeCalculator) Transactions {
-	sorted := NewSortableTransactions(txns, feeCalc)
+// SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if tied.
+// Transactions that fail in fee computation are excluded
+func SortTransactions(txns Transactions, feeCalc FeeCalculator) (Transactions, error) {
+	sorted, err := NewSortableTransactions(txns, feeCalc)
+	if err != nil {
+		return nil, err
+	}
 	sorted.Sort()
-	return sorted.Txns
+	return sorted.Transactions, nil
 }
 
-// NewSortableTransactions returns an array of txns that can be sorted by fee.  On creation, fees are
-// calculated, and if any txns have invalid fee, there are removed from
-// consideration
-func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableTransactions {
+// NewSortableTransactions returns an array of txns that can be sorted by fee.
+// On creation, fees are calculated, and if any txns have invalid fee, there are removed from consideration
+func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) (*SortableTransactions, error) {
 	newTxns := make(Transactions, len(txns))
 	fees := make([]uint64, len(txns))
 	hashes := make([]cipher.SHA256, len(txns))
@@ -400,10 +437,13 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableT
 			continue
 		}
 
-		size, hash := txns[i].SizeHash()
+		size, hash, err := txns[i].SizeHash()
+		if err != nil {
+			return nil, err
+		}
 
 		// Calculate fee priority based on fee per kb
-		feeKB, err := multUint64(fee, 1024)
+		feeKB, err := MultUint64(fee, 1024)
 
 		// If the fee * 1024 would exceed math.MaxUint64, set it to math.MaxUint64 so that
 		// this transaction can still be processed
@@ -416,11 +456,12 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) SortableT
 		fees[j] = feeKB / uint64(size)
 		j++
 	}
-	return SortableTransactions{
-		Txns:   newTxns[:j],
-		Fees:   fees[:j],
-		Hashes: hashes[:j],
-	}
+
+	return &SortableTransactions{
+		Transactions: newTxns[:j],
+		Fees:         fees[:j],
+		Hashes:       hashes[:j],
+	}, nil
 }
 
 // Sort sorts by tx fee, and then by hash if fee equal
@@ -430,7 +471,7 @@ func (txns SortableTransactions) Sort() {
 
 // Len returns length of transactions
 func (txns SortableTransactions) Len() int {
-	return len(txns.Txns)
+	return len(txns.Transactions)
 }
 
 // Less default sorting is fees descending, hash ascending if fees equal
@@ -445,7 +486,7 @@ func (txns SortableTransactions) Less(i, j int) bool {
 
 // Swap swaps txns
 func (txns SortableTransactions) Swap(i, j int) {
-	txns.Txns[i], txns.Txns[j] = txns.Txns[j], txns.Txns[i]
+	txns.Transactions[i], txns.Transactions[j] = txns.Transactions[j], txns.Transactions[i]
 	txns.Fees[i], txns.Fees[j] = txns.Fees[j], txns.Fees[i]
 	txns.Hashes[i], txns.Hashes[j] = txns.Hashes[j], txns.Hashes[i]
 }

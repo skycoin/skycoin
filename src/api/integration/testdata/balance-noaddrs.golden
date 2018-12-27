@@ -6,5 +6,17 @@
 	"predicted": {
 		"coins": 0,
 		"hours": 0
+	},
+	"addresses": {
+		"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9": {
+			"confirmed": {
+				"coins": 0,
+				"hours": 0
+			},
+			"predicted": {
+				"coins": 0,
+				"hours": 0
+			}
+		}
 	}
 }

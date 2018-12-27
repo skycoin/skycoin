@@ -3,9 +3,7 @@ set -e -o pipefail
 
 # Builds the release without electron
 
-if [ -n "$1" ]; then
-    GOX_OSARCH="$2"
-fi
+GOX_OSARCH="$@"
 
 echo "In package standalone release: $GOX_OSARCH"
 
@@ -15,18 +13,6 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$SCRIPTDIR" >/dev/null
 
-OSX64="${STL_OUTPUT}/${OSX64_STL}"
-WIN64="${STL_OUTPUT}/${WIN64_STL}"
-WIN32="${STL_OUTPUT}/${WIN32_STL}"
-LNX64="${STL_OUTPUT}/${LNX64_STL}"
-LNX_ARM="${STL_OUTPUT}/${LNX_ARM_STL}"
-
-OSX64_SRC="${OSX64}/src"
-WIN64_SRC="${WIN64}/src"
-WIN32_SRC="${WIN32}/src"
-LNX64_SRC="${LNX64}/src"
-LNX_ARM_SRC="${LNX_ARM}/src"
-
 DESTSRCS=()
 
 function copy_if_exists {
@@ -35,7 +21,7 @@ function copy_if_exists {
         exit 1
     fi
 
-    BIN="${GOX_OUTPUT}/${1}"
+    BIN="${GOX_GUI_OUTPUT_DIR}/${1}"
     DESTDIR="$2"
     DESTSRC="$3"
 
@@ -54,6 +40,10 @@ function copy_if_exists {
         mkdir -p "${DESTDIR}/src/gui/static"
         cp -R "$GUI_DIST_DIR" "${DESTDIR}/src/gui/static"
 
+        # Copy changelog to app
+        echo "Copying CHANGELOG.md to $DESTDIR"
+        cp ../CHANGELOG.md "$DESTDIR"
+
         echo "Adding $DESTSRC to package-source.sh list"
         DESTSRCS+=("$DESTSRC")
     else
@@ -63,16 +53,43 @@ function copy_if_exists {
 
 echo "Copying ${PKG_NAME} binaries"
 
-# copy binaries
-copy_if_exists "${OSX64_OUT}/${PKG_NAME}" "$OSX64" "$OSX64_SRC"
-copy_if_exists "${WIN64_OUT}/${PKG_NAME}.exe" "$WIN64" "$WIN64_SRC"
-copy_if_exists "${WIN32_OUT}/${PKG_NAME}.exe" "$WIN32" "$WIN32_SRC"
-copy_if_exists "${LNX64_OUT}/${PKG_NAME}" "$LNX64" "$LNX64_SRC"
-copy_if_exists "${LNX_ARM_OUT}/${PKG_NAME}" "$LNX_ARM" "$LNX_ARM_SRC"
+# OS X
+if [ ! -z "$OSX64_STL" ]; then
+    OSX64="${STL_OUTPUT_DIR}/${OSX64_STL}"
+    OSX64_SRC="${OSX64}/src"
+    copy_if_exists "${OSX64_OUT}/${PKG_NAME}" "$OSX64" "$OSX64_SRC"
+fi
 
-# Copy the source for reference
-# tar it with filters, move it, then untar in order to do this
-echo "Copying source snapshot"
+# Linux amd64
+if [ ! -z "$LNX64_STL" ]; then
+    LNX64="${STL_OUTPUT_DIR}/${LNX64_STL}"
+    LNX64_SRC="${LNX64}/src"
+    copy_if_exists "${LNX64_OUT}/${PKG_NAME}" "$LNX64" "$LNX64_SRC"
+fi
 
-./package-source.sh "${DESTSRCS[@]}"
+# Linux arm
+if [ ! -z "$LNX_ARM_STL" ]; then
+    LNX_ARM="${STL_OUTPUT_DIR}/${LNX_ARM_STL}"
+    LNX_ARM_SRC="${LNX_ARM}/src"
+    copy_if_exists "${LNX_ARM_OUT}/${PKG_NAME}" "$LNX_ARM" "$LNX_ARM_SRC"
+fi
 
+# Windows amd64
+if [ ! -z "$WIN64_STL" ]; then
+    WIN64="${STL_OUTPUT_DIR}/${WIN64_STL}"
+    WIN64_SRC="${WIN64}/src"
+    copy_if_exists "${WIN64_OUT}/${PKG_NAME}.exe" "$WIN64" "$WIN64_SRC"
+fi
+
+# Windows 386
+if [ ! -z "$WIN32_STL" ]; then
+    WIN32="${STL_OUTPUT_DIR}/${WIN32_STL}"
+    WIN32_SRC="${WIN32}/src"
+    copy_if_exists "${WIN32_OUT}/${PKG_NAME}.exe" "$WIN32" "$WIN32_SRC"
+fi
+
+# # Copy the source for reference
+# # tar it with filters, move it, then untar in order to do this
+# echo "Copying source snapshot"
+
+# ./package-source.sh "${DESTSRCS[@]}"

@@ -32,7 +32,11 @@ type wrappedResponseWriter struct {
 }
 
 func newWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
-	return &wrappedResponseWriter{w, http.StatusOK, bytes.Buffer{}}
+	return &wrappedResponseWriter{
+		ResponseWriter: w,
+		statusCode:     http.StatusOK,
+		response:       bytes.Buffer{},
+	}
 }
 
 func (lrw *wrappedResponseWriter) WriteHeader(code int) {

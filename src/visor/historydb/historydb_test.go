@@ -196,7 +196,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 	var tx Transaction
 	txHash := gb.Body.Transactions[0].Hash()
 	mustGetBucketValue(t, db, TransactionsBkt, txHash[:], &tx)
-	require.Equal(t, tx.Tx, gb.Body.Transactions[0])
+	require.Equal(t, tx.Txn, gb.Body.Transactions[0])
 
 	// check address in
 	outID := []cipher.SHA256{}
@@ -359,7 +359,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 		txInBkt := Transaction{}
 		k := tx.Hash()
 		mustGetBucketValue(t, db, TransactionsBkt, k[:], &txInBkt)
-		require.Equal(t, &txInBkt.Tx, tx)
+		require.Equal(t, &txInBkt.Txn, tx)
 
 		// check outputs
 		for _, o := range td.Vouts {
@@ -404,7 +404,9 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 
 	sigKey := cipher.MustSecKeyFromHex(td.Vin.SigKey)
 	txn.SignInputs([]cipher.SecKey{sigKey})
-	txn.UpdateHeader()
+	if err := txn.UpdateHeader(); err != nil {
+		return nil, nil, err
+	}
 	if err := bc.VerifyTransaction(txn); err != nil {
 		return nil, nil, err
 	}

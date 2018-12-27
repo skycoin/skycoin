@@ -19,10 +19,11 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/util/utc"
+	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -92,7 +93,7 @@ func addGenesisBlockToVisor(t *testing.T, vs *Visor) *coin.SignedBlock {
 	// create genesis block
 	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
-	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
+	gbSig := cipher.MustSignHash(gb.HashHeader(), genSecret)
 	vs.Config.GenesisSignature = gbSig
 
 	sb := coin.SignedBlock{
@@ -163,7 +164,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 	require.NotEmpty(t, badDB.Path())
 	t.Logf("badDB.Path() == %s", badDB.Path())
 
-	db, err := RepairCorruptDB(badDB, pubkey, nil)
+	db, err := ResetCorruptDB(badDB, pubkey, nil)
 	require.NoError(t, err)
 
 	err = db.Close()
@@ -270,14 +271,14 @@ func TestVisorCreateBlock(t *testing.T) {
 		Pubkey: genPublic,
 	})
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
 
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = false
+	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
@@ -289,8 +290,8 @@ func TestVisorCreateBlock(t *testing.T) {
 		history:     his,
 	}
 
-	// CreateBlock panics if called when not master
-	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
+	// CreateBlock panics if called when not a block publisher
+	_require.PanicsWithLogMessage(t, "Only a block publisher node can create blocks", func() {
 		err := db.Update("", func(tx *dbutil.Tx) error {
 			_, err := v.createBlock(tx, when)
 			return err
@@ -298,7 +299,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	v.Config.IsMaster = true
+	v.Config.IsBlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
 
 	addGenesisBlockToVisor(t, v)
@@ -323,20 +324,21 @@ func TestVisorCreateBlock(t *testing.T) {
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
-	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, maxDropletDivisor)
+	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserVerifyTxn.MaxDropletPrecision)
 
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
+		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
 		return err
 	})
 	require.NoError(t, err)
 	require.False(t, known)
 	require.Nil(t, softErr)
 
-	v.Config.MaxBlockSize = txn.Size()
+	v.Config.MaxBlockSize, err = txn.Size()
+	require.NoError(t, err)
 	sb, err := v.CreateAndExecuteBlock()
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb.Body.Transactions))
@@ -361,10 +363,14 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Add more transactions than is allowed in a block, to verify truncation
 	var txns coin.Transactions
 	var i int
-	for len(txns) == len(txns.TruncateBytesTo(v.Config.MaxBlockSize)) {
+	truncatedTxns, err := txns.TruncateBytesTo(v.Config.MaxBlockSize)
+	require.NoError(t, err)
+	for len(txns) == len(truncatedTxns) {
 		tx := makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f)
 		txns = append(txns, tx)
 		i++
+		truncatedTxns, err = txns.TruncateBytesTo(v.Config.MaxBlockSize)
+		require.NoError(t, err)
 	}
 	require.NotEqual(t, 0, len(txns))
 
@@ -393,13 +399,13 @@ func TestVisorCreateBlock(t *testing.T) {
 	i++
 	// Spending 9.000001 SKY
 	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1, f*70))
-	i++
+	// i++
 
 	// Confirm that at least one transaction has an invalid decimal output
 	foundInvalidCoins := false
 	for _, txn := range txns {
 		for _, o := range txn.Out {
-			if err := DropletPrecisionCheck(o.Coins); err != nil {
+			if err := params.DropletPrecisionCheck(v.Config.UnconfirmedVerifyTxn.MaxDropletPrecision, o.Coins); err != nil {
 				foundInvalidCoins = true
 				break
 			}
@@ -408,16 +414,35 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.True(t, foundInvalidCoins)
 
 	// Inject transactions into the unconfirmed pool
-	for _, txn := range txns {
+	for i, txn := range txns {
 		var known bool
+		var softErr *ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
-			known, _, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
+			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
 			return err
 		})
 		require.False(t, known)
 		require.NoError(t, err)
+
+		// The last 3 transactions will have a soft constraint violation for too many decimal places,
+		// but would still be injected into the pool
+		if i < len(txns)-3 {
+			require.Nil(t, softErr)
+		} else {
+			testutil.RequireError(t, softErr, "Transaction violates soft constraint: invalid amount, too many decimal places")
+		}
 	}
+
+	// Make sure all transactions were injected
+	var allInjectedTxns []coin.Transaction
+	err = db.View("", func(tx *dbutil.Tx) error {
+		var err error
+		allInjectedTxns, err = unconfirmed.AllRawTransactions(tx)
+		return err
+	})
+	require.NoError(t, err)
+	require.Equal(t, len(txns), len(allInjectedTxns))
 
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
@@ -428,7 +453,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.Equal(t, when+100, sb.Block.Head.Time)
 
 	blockTxns := sb.Block.Body.Transactions
-	require.NotEqual(t, len(txns), len(blockTxns), "Txns should be truncated")
+	require.NotEqual(t, len(txns), len(blockTxns), "Transactions should be truncated")
 	require.Equal(t, 18, len(blockTxns))
 
 	// Check fee ordering
@@ -455,7 +480,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Check that decimal rules are enforced
 	for i, txn := range blockTxns {
 		for j, o := range txn.Out {
-			err := DropletPrecisionCheck(o.Coins)
+			err := params.DropletPrecisionCheck(v.Config.CreateBlockVerifyTxn.MaxDropletPrecision, o.Coins)
 			require.NoError(t, err, "txout %d.%d coins=%d", i, j, o.Coins)
 		}
 	}
@@ -472,14 +497,14 @@ func TestVisorInjectTransaction(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
 
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = false
+	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
@@ -491,8 +516,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 		history:     his,
 	}
 
-	// CreateBlock panics if called when not master
-	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
+	// CreateBlock panics if called when not a block publisher
+	_require.PanicsWithLogMessage(t, "Only a block publisher node can create blocks", func() {
 		err := db.Update("", func(tx *dbutil.Tx) error {
 			_, err := v.createBlock(tx, when)
 			return err
@@ -500,7 +525,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	v.Config.IsMaster = true
+	v.Config.IsBlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
 
 	addGenesisBlockToVisor(t, v)
@@ -528,7 +553,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with valid decimal places
 	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
-	known, softErr, err := v.InjectTransaction(txn)
+	known, softErr, err := v.InjectForeignTransaction(txn)
 	require.False(t, known)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
@@ -555,8 +580,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
 	// Check transactions with overflowing output coins fail
-	txn = makeOverflowCoinsSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
-	_, softErr, err = v.InjectTransaction(txn)
+	txn = makeOverflowCoinsSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
 	require.Nil(t, softErr)
@@ -572,8 +597,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Check transactions with overflowing output hours fail
 	// It should not be injected; when injecting a txn, the overflowing output hours is treated
 	// as a hard constraint. It is only a soft constraint when the txn is included in a signed block.
-	txn = makeOverflowHoursSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
-	_, softErr, err = v.InjectTransaction(txn)
+	txn = makeOverflowHoursSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Transaction output hours overflow")
@@ -588,11 +613,11 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
-	invalidCoins := coins + (maxDropletDivisor / 10)
+	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
-	_, softErr, err = v.InjectTransaction(txn)
+	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
-	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
+	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -606,13 +631,13 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	txn.Out[0].Address = cipher.Address{}
-	known, err = v.InjectTransactionStrict(txn)
+	known, _, _, err = v.InjectUserTransaction(txn)
 	require.False(t, known)
 	require.IsType(t, ErrTxnViolatesUserConstraint{}, err)
 	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
 }
 
-func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -629,11 +654,12 @@ func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cip
 	spendTx.PushOutput(toAddr, totalCoins, hours)
 
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
-func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -650,46 +676,20 @@ func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cip
 	spendTx.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
 
 	spendTx.SignInputs(keys)
-	spendTx.UpdateHeader()
+	err := spendTx.UpdateHeader()
+	require.NoError(t, err)
 	return spendTx
 }
 
-func TestVisorCalculatePrecision(t *testing.T) {
-	cases := []struct {
-		precision uint64
-		divisor   uint64
-	}{
-		{0, 1e6},
-		{1, 1e5},
-		{2, 1e4},
-		{3, 1e3},
-		{4, 1e2},
-		{5, 1e1},
-		{6, 1},
-	}
-
-	for _, tc := range cases {
-		name := fmt.Sprintf("calculateDivisor(%d)=%d", tc.precision, tc.divisor)
-		t.Run(name, func(t *testing.T) {
-			divisor := calculateDivisor(tc.precision)
-			require.Equal(t, tc.divisor, divisor, "%d != %d", tc.divisor, divisor)
-		})
-	}
-
-	_require.PanicsWithLogMessage(t, "precision must be <= droplet.Exponent", func() {
-		calculateDivisor(7)
-	})
-}
-
-func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTxn, uint64) { // nolint: unparam
-	var txs []historydb.Transaction
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { // nolint: unparam
+	var txns []historydb.Transaction
 	var blocks []coin.SignedBlock
-	var uncfmTxs []UnconfirmedTxn
+	var uncfmTxns []UnconfirmedTransaction
 	for i := uint64(0); i < uint64(n); i++ {
-		tm := utc.UnixNow() + int64(i)*int64(time.Second)
-		txs = append(txs, historydb.Transaction{
+		tm := time.Now().UTC().Unix() + int64(i)*int64(time.Second)
+		txns = append(txns, historydb.Transaction{
 			BlockSeq: i,
-			Tx: coin.Transaction{
+			Txn: coin.Transaction{
 				InnerHash: testutil.RandSHA256(t),
 			},
 		})
@@ -703,63 +703,63 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 			},
 		})
 
-		uncfmTxs = append(uncfmTxs, UnconfirmedTxn{
-			Txn: coin.Transaction{
+		uncfmTxns = append(uncfmTxns, UnconfirmedTransaction{
+			Transaction: coin.Transaction{
 				InnerHash: testutil.RandSHA256(t),
 			},
-			Received: utc.UnixNow() + int64(n)*int64(time.Second),
+			Received: time.Now().UTC().Unix() + int64(n)*int64(time.Second),
 		})
 	}
 
-	return txs, blocks, uncfmTxs, uint64(n)
+	return txns, blocks, uncfmTxns, uint64(n)
 }
 
-func makeUncfmUxs(txs []UnconfirmedTxn) coin.UxArray {
+func makeUncfmUxs(txns []UnconfirmedTransaction) coin.UxArray {
 	var uxs coin.UxArray
-	for i := range txs {
+	for i := range txns {
 		uxs = append(uxs, coin.UxOut{
 			Head: coin.UxHead{
-				Time: uint64(txs[i].Received),
+				Time: uint64(txns[i].Received),
 			},
 			Body: coin.UxBody{
-				SrcTransaction: txs[i].Hash(),
+				SrcTransaction: txns[i].Hash(),
 			},
 		})
 	}
 	return uxs
 }
 
-type txsAndUncfmTxs struct {
-	Txs      []historydb.Transaction
-	UncfmTxs []UnconfirmedTxn
+type txnsAndUncfmTxns struct {
+	Txns      []historydb.Transaction
+	UncfmTxns []UnconfirmedTransaction
 }
-type expectTxResult struct {
-	txs      []Transaction
-	uncfmTxs []Transaction
-	err      error
+type expectTxnResult struct {
+	txns      []Transaction
+	uncfmTxns []Transaction
+	err       error
 }
 
 func TestGetTransactions(t *testing.T) {
 	// Generates test data
-	txs, blocks, uncfmTxs, headSeq := makeTestData(t, 10)
+	txns, blocks, uncfmTxns, headSeq := makeTestData(t, 10)
 	// Generates []Transaction
-	var ltxs []Transaction
-	for i := range txs {
-		height := headSeq - txs[i].BlockSeq + 1
-		ltxs = append(ltxs, Transaction{
-			Txn:    txs[i].Tx,
-			Status: NewConfirmedTransactionStatus(height, txs[i].BlockSeq),
-			Time:   blocks[i].Time(),
+	var lTxns []Transaction
+	for i := range txns {
+		height := headSeq - txns[i].BlockSeq + 1
+		lTxns = append(lTxns, Transaction{
+			Transaction: txns[i].Txn,
+			Status:      NewConfirmedTransactionStatus(height, txns[i].BlockSeq),
+			Time:        blocks[i].Time(),
 		})
 	}
 
 	// Generate unconfirmed []Transaction
-	var luncfmTxs []Transaction
-	for i, tx := range uncfmTxs {
-		luncfmTxs = append(luncfmTxs, Transaction{
-			Txn:    uncfmTxs[i].Txn,
-			Status: NewUnconfirmedTransactionStatus(),
-			Time:   uint64(nanoToTime(tx.Received).Unix()),
+	var luncfmTxns []Transaction
+	for i, txn := range uncfmTxns {
+		luncfmTxns = append(luncfmTxns, Transaction{
+			Transaction: uncfmTxns[i].Transaction,
+			Status:      NewUnconfirmedTransactionStatus(),
+			Time:        uint64(timeutil.NanoToTime(txn.Received).Unix()),
 		})
 	}
 
@@ -771,1101 +771,1101 @@ func TestGetTransactions(t *testing.T) {
 
 	tt := []struct {
 		name      string
-		addrTxns  map[cipher.Address]txsAndUncfmTxs
+		addrTxns  map[cipher.Address]txnsAndUncfmTxns
 		blocks    []coin.SignedBlock
 		bcHeadSeq uint64
 		filters   []TxFilter
-		expect    expectTxResult
+		expect    expectTxnResult
 	}{
 		{
-			"addrFilter=1 addr=1 txs=0 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+			"addrFilter=1 addr=1 txns=0 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=1 txs=0 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=1 txns=0 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=1 txs=0 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 addr=1 txns=0 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=1 txs=1 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: nil,
+			"addrFilter=1 addr=1 txns=1 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=1 txs=1 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=1 txns=1 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=1 txs=2 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: nil,
+			"addrFilter=1 addr=1 txns=2 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=1 txs=2 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=1 txns=2 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=1 txs=2 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 addr=1 txns=2 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=0 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+			"addrFilter=1 addr=2 txns=0 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=0 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=2 txns=0 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=0 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=2 txns=0 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[:2],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=1 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: nil,
+			"addrFilter=1 addr=2 txns=1 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: nil,
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=1 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=2 txns=1 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=1 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=2 txns=1 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[:2],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=2 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: nil,
+			"addrFilter=1 addr=2 txns=2 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: nil,
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=2 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=2 txns=2 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=2 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 addr=2 txns=2 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=2 unconfirmedTxs=3",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 addr=2 txns=2 unconfirmedTxns=3",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[2:3],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[2:3],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: luncfmTxs[:3],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: luncfmTxns[:3],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=3 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: nil,
+			"addrFilter=1 addr=2 txns=3 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: nil,
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      txs[2:3],
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      txns[2:3],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:3],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:3],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=3 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 addr=2 txns=3 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      txs[2:3],
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      txns[2:3],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:3],
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:3],
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=3 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 addr=2 txns=3 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      txs[2:3],
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      txns[2:3],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:3],
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:3],
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 addr=2 txs=3 unconfirmedTxs=3",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 addr=2 txns=3 unconfirmedTxns=3",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      txs[2:3],
-					UncfmTxs: uncfmTxs[2:3],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      txns[2:3],
+					UncfmTxns: uncfmTxns[2:3],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
-			expectTxResult{
-				txs:      ltxs[:3],
-				uncfmTxs: luncfmTxs[:3],
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:3],
+				uncfmTxns: luncfmTxns[:3],
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=false txs=0 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+			"confirmedTxFilter=1 confirmed=false txns=0 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=false confirmedTxs=1 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: nil,
+			"confirmedTxFilter=1 confirmed=false confirmedTxns=1 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=false confirmedTxs=1 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:1],
+			"confirmedTxFilter=1 confirmed=false confirmedTxns=1 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=false confirmedTxs=2 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"confirmedTxFilter=1 confirmed=false confirmedTxns=2 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=false confirmedTxs=2 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"confirmedTxFilter=1 confirmed=false confirmedTxns=2 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=true confirmedTxs=0 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+			"confirmedTxFilter=1 confirmed=true confirmedTxns=0 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(true),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=true confirmedTxs=1 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: nil,
+			"confirmedTxFilter=1 confirmed=true confirmedTxns=1 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(true),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=true confirmedTxs=1 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:1],
+			"confirmedTxFilter=1 confirmed=true confirmedTxns=1 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(true),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=true confirmedTxs=2 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"confirmedTxFilter=1 confirmed=true confirmedTxns=2 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(true),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmedTxFilter=1 confirmed=false addr=1 txs=0 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{},
+			"addrFilter=1 confirmedTxFilter=1 confirmed=false addr=1 txns=0 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=1 txs=1 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: nil,
+			"addrFilter=1 confirmed=false addr=1 txns=1 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=1 txs=1 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=false addr=1 txns=1 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=1 txs=1 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 confirmed=false addr=1 txns=1 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=2 txs=1 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: nil,
+			"addrFilter=1 confirmed=false addr=2 txns=1 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: nil,
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=2 txs=1 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=false addr=2 txns=1 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=2 txs=2 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=false addr=2 txns=2 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:1],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:1],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=2 txs=2 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=false addr=2 txns=2 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[1:2],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[1:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=2 txs=2 unconfirmedTxs=3",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 confirmed=false addr=2 txns=2 unconfirmedTxns=3",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[2:3],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[2:3],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:3],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:3],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=2/1 txs=2 unconfirmedTxs=3",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 confirmed=false addr=2/1 txns=2 unconfirmedTxns=3",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[2:3],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[2:3],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[:2],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[:2],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=false addr=2/2 txs=2 unconfirmedTxs=3",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 confirmed=false addr=2/2 txns=2 unconfirmedTxns=3",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: uncfmTxs[2:3],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: uncfmTxns[2:3],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[1:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[1:2]),
+				NewConfirmedTxFilter(false),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: luncfmTxs[2:3],
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: luncfmTxns[2:3],
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=true addr=1 txs=0 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      nil,
-					UncfmTxs: nil,
+			"addrFilter=1 confirmed=true addr=1 txns=0 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      nil,
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      nil,
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      nil,
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=true addr=1 txs=1 unconfirmedTxs=0",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: nil,
+			"addrFilter=1 confirmed=true addr=1 txns=1 unconfirmedTxns=0",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: nil,
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=true addr=1 txs=1 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:1],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=true addr=1 txns=1 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:1],
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:1],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:1],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=true addr=1 txs=2 unconfirmedTxs=1",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=true addr=1 txns=2 unconfirmedTxns=1",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=true addr=1 txs=2 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:2],
+			"addrFilter=1 confirmed=true addr=1 txns=2 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=true addr=2/1 txs=3 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=true addr=2/1 txns=3 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      txs[2:3],
-					UncfmTxs: uncfmTxs[1:2],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      txns[2:3],
+					UncfmTxns: uncfmTxns[1:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:2],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:2],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=true addr=2/2 txs=3 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=true addr=2/2 txns=3 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      txs[2:3],
-					UncfmTxs: uncfmTxs[1:2],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      txns[2:3],
+					UncfmTxns: uncfmTxns[1:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[1:2]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[1:2]),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[2:3],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[2:3],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 		{
-			"addrFilter=1 confirmed=true addr=2 txs=3 unconfirmedTxs=2",
-			map[cipher.Address]txsAndUncfmTxs{
-				addrs[0]: txsAndUncfmTxs{
-					Txs:      txs[:2],
-					UncfmTxs: uncfmTxs[:1],
+			"addrFilter=1 confirmed=true addr=2 txns=3 unconfirmedTxns=2",
+			map[cipher.Address]txnsAndUncfmTxns{
+				addrs[0]: txnsAndUncfmTxns{
+					Txns:      txns[:2],
+					UncfmTxns: uncfmTxns[:1],
 				},
-				addrs[1]: txsAndUncfmTxs{
-					Txs:      txs[2:3],
-					UncfmTxs: uncfmTxs[1:2],
+				addrs[1]: txnsAndUncfmTxns{
+					Txns:      txns[2:3],
+					UncfmTxns: uncfmTxns[1:2],
 				},
 			},
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(true),
 			},
-			expectTxResult{
-				txs:      ltxs[:3],
-				uncfmTxs: nil,
-				err:      nil,
+			expectTxnResult{
+				txns:      lTxns[:3],
+				uncfmTxns: nil,
+				err:       nil,
 			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			matchTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+			matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 				return true
 			})
 
 			his := newHistoryerMock2()
-			uncfmTxPool := NewUnconfirmedTxnPoolerMock2()
-			for addr, txs := range tc.addrTxns {
-				his.On("GetAddressTxns", matchTx, addr).Return(txs.Txs, nil)
-				his.txs = append(his.txs, txs.Txs...)
+			uncfmTxnPool := NewUnconfirmedTransactionPoolerMock2()
+			for addr, txns := range tc.addrTxns {
+				his.On("GetTransactionsForAddress", matchTxn, addr).Return(txns.Txns, nil)
+				his.txns = append(his.txns, txns.Txns...)
 
-				uncfmTxPool.On("GetUnspentsOfAddr", matchTx, addr).Return(makeUncfmUxs(txs.UncfmTxs), nil)
-				for i, uncfmTx := range txs.UncfmTxs {
-					uncfmTxPool.On("Get", matchTx, uncfmTx.Hash()).Return(&txs.UncfmTxs[i], nil)
+				uncfmTxnPool.On("GetUnspentsOfAddr", matchTxn, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
+				for i, uncfmTx := range txns.UncfmTxns {
+					uncfmTxnPool.On("Get", matchTxn, uncfmTx.Hash()).Return(&txns.UncfmTxns[i], nil)
 				}
-				uncfmTxPool.txs = append(uncfmTxPool.txs, txs.UncfmTxs...)
+				uncfmTxnPool.txns = append(uncfmTxnPool.txns, txns.UncfmTxns...)
 			}
 
-			bc := NewBlockchainerMock()
+			bc := &MockBlockchainer{}
 			for i, b := range tc.blocks {
-				bc.On("GetSignedBlockBySeq", matchTx, b.Seq()).Return(&tc.blocks[i], nil)
+				bc.On("GetSignedBlockBySeq", matchTxn, b.Seq()).Return(&tc.blocks[i], nil)
 			}
 
-			bc.On("HeadSeq", matchTx).Return(tc.bcHeadSeq, true, nil)
+			bc.On("HeadSeq", matchTxn).Return(tc.bcHeadSeq, true, nil)
 
 			db, shutdown := prepareDB(t)
 			defer shutdown()
@@ -1873,39 +1873,39 @@ func TestGetTransactions(t *testing.T) {
 			v := &Visor{
 				DB:          db,
 				history:     his,
-				Unconfirmed: uncfmTxPool,
+				Unconfirmed: uncfmTxnPool,
 				Blockchain:  bc,
 			}
 
-			retTxs, err := v.GetTransactions(tc.filters...)
+			retTxns, err := v.GetTransactions(tc.filters)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return
 			}
 
-			require.Len(t, retTxs, len(tc.expect.txs)+len(tc.expect.uncfmTxs))
+			require.Len(t, retTxns, len(tc.expect.txns)+len(tc.expect.uncfmTxns))
 
-			// Splits confirmed and unconfirmed txs in returned transactions
+			// Splits confirmed and unconfirmed txns in returned transactions
 			uncfmTxMap := make(map[cipher.SHA256]Transaction)
 			txMap := make(map[cipher.SHA256]Transaction)
-			for i, tx := range retTxs {
-				if retTxs[i].Status.Confirmed {
-					txMap[tx.Txn.Hash()] = retTxs[i]
+			for i, tx := range retTxns {
+				if retTxns[i].Status.Confirmed {
+					txMap[tx.Transaction.Hash()] = retTxns[i]
 				} else {
-					uncfmTxMap[tx.Txn.Hash()] = retTxs[i]
+					uncfmTxMap[tx.Transaction.Hash()] = retTxns[i]
 				}
 			}
 
 			// Confirms that all expected confirmed transactions must be in the txMap
-			for _, tx := range tc.expect.txs {
-				retTx, ok := txMap[tx.Txn.Hash()]
+			for _, tx := range tc.expect.txns {
+				retTx, ok := txMap[tx.Transaction.Hash()]
 				require.True(t, ok)
 				require.Equal(t, tx, retTx)
 			}
 
 			// Confirms that all expected unconfirmed transactions must be in the uncfmTxMap
-			for _, tx := range tc.expect.uncfmTxs {
-				retTx, ok := uncfmTxMap[tx.Txn.Hash()]
+			for _, tx := range tc.expect.uncfmTxns {
+				retTx, ok := uncfmTxMap[tx.Transaction.Hash()]
 				require.True(t, ok)
 				require.Equal(t, tx, retTx)
 			}
@@ -1922,14 +1922,14 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
 
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = true
+	cfg.IsBlockPublisher = true
 	cfg.BlockchainSeckey = genSecret
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
@@ -1959,7 +1959,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 
 	// Create a valid transaction that will remain valid
 	validTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
-	known, softErr, err := v.InjectTransaction(validTxn)
+	known, softErr, err := v.InjectForeignTransaction(validTxn)
 	require.False(t, known)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
@@ -1975,11 +1975,11 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
 	// This transaction will stay invalid on refresh
-	invalidCoins := coins + (maxDropletDivisor / 10)
+	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
 	alwaysInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
-	_, softErr, err = v.InjectTransaction(alwaysInvalidTxn)
+	_, softErr, err = v.InjectForeignTransaction(alwaysInvalidTxn)
 	require.NoError(t, err)
-	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
+	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -1989,14 +1989,16 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Create a transaction that exceeds MaxBlockSize
+	// Create a transaction that exceeds UnconfirmedVerifyTxn.MaxTransactionSize
 	// It's still injected, because this is considered a soft error
-	// This transaction will become valid on refresh (by increasing MaxBlockSize)
-	v.Config.MaxBlockSize = 1
+	// This transaction will become valid on refresh (by increasing UnconfirmedVerifyTxn.MaxTransactionSize)
+	originalMaxUnconfirmedTxnSize := v.Config.UnconfirmedVerifyTxn.MaxTransactionSize
+	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = 1
 	sometimesInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
-	_, softErr, err = v.InjectTransaction(sometimesInvalidTxn)
+	_, softErr, err = v.InjectForeignTransaction(sometimesInvalidTxn)
 	require.NoError(t, err)
-	testutil.RequireError(t, softErr.Err, errTxnExceedsMaxBlockSize.Error())
+	require.NotNil(t, softErr)
+	testutil.RequireError(t, softErr.Err, ErrTxnExceedsMaxBlockSize.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -2009,7 +2011,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn remains valid,
 	// the second txn remains invalid,
 	// the third txn becomes valid
-	v.Config.MaxBlockSize = DefaultMaxBlockSize
+	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = originalMaxUnconfirmedTxnSize
 	hashes, err := v.RefreshUnconfirmed()
 	require.NoError(t, err)
 	require.Equal(t, []cipher.SHA256{sometimesInvalidTxn.Hash()}, hashes)
@@ -2018,7 +2020,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn becomes invalid,
 	// the second txn remains invalid,
 	// the third txn becomes invalid again
-	v.Config.MaxBlockSize = 1
+	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = 1
 	hashes, err = v.RefreshUnconfirmed()
 	require.NoError(t, err)
 	require.Nil(t, hashes)
@@ -2027,7 +2029,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// The first txn was valid, became invalid, and is now valid again
 	// The second txn was always invalid
 	// The third txn was invalid, became valid, became invalid, and is now valid again
-	v.Config.MaxBlockSize = DefaultMaxBlockSize
+	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = originalMaxUnconfirmedTxnSize
 	hashes, err = v.RefreshUnconfirmed()
 	require.NoError(t, err)
 
@@ -2052,14 +2054,14 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	his := historydb.New()
 
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
-	cfg.IsMaster = true
+	cfg.IsBlockPublisher = true
 	cfg.Arbitrating = true
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
@@ -2092,7 +2094,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	var coins uint64 = 10e6
 	txn1 := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
-	known, softErr, err := v.InjectTransaction(txn1)
+	known, softErr, err := v.InjectForeignTransaction(txn1)
 	require.False(t, known)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
@@ -2107,7 +2109,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	var fee uint64 = 1
 	txn2 := makeSpendTxWithFee(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins, fee)
-	known, softErr, err = v.InjectTransaction(txn2)
+	known, softErr, err = v.InjectForeignTransaction(txn2)
 	require.False(t, known)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
@@ -2659,7 +2661,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 		},
 	}
 
-	matchTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+	matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 		return true
 	})
 
@@ -2668,9 +2670,9 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 			db, shutdown := testutil.PrepareDB(t)
 			defer shutdown()
 
-			unconfirmed := NewUnconfirmedTxnPoolerMock()
-			bc := NewBlockchainerMock()
-			unspent := NewUnspentPoolerMock()
+			unconfirmed := &MockUnconfirmedTransactionPooler{}
+			bc := &MockBlockchainer{}
+			unspent := &MockUnspentPooler{}
 			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
 
 			v := &Visor{
@@ -2679,8 +2681,8 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 				DB:          db,
 			}
 
-			unconfirmed.On("RawTxns", matchTx).Return(tc.rawTxnsRet, nil)
-			unspent.On("GetArray", matchTx, mock.MatchedBy(func(args []cipher.SHA256) bool {
+			unconfirmed.On("AllRawTransactions", matchTxn).Return(tc.rawTxnsRet, nil)
+			unspent.On("GetArray", matchTxn, mock.MatchedBy(func(args []cipher.SHA256) bool {
 				// Compares two []coin.UxOuts for equality, ignoring the order of elements in the slice
 				if len(args) != len(tc.getArrayInputs) {
 					return false
@@ -2703,7 +2705,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 				return true
 			})).Return(tc.getArrayRet, nil)
 			if tc.getUnspentsOfAddrsRet != nil {
-				unspent.On("GetUnspentsOfAddrs", matchTx, tc.addrs).Return(tc.getUnspentsOfAddrsRet, nil)
+				unspent.On("GetUnspentsOfAddrs", matchTxn, tc.addrs).Return(tc.getUnspentsOfAddrsRet, nil)
 			}
 			bc.On("Unspent").Return(unspent)
 
@@ -2747,7 +2749,8 @@ func makeTxn(t *testing.T, headTime uint64, in, out []coin.UxOut, keys []cipher.
 	}
 
 	txn.SignInputs(keys)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 
 	inbalances, err := wallet.NewUxBalances(headTime, in)
 	require.NoError(t, err)
@@ -2758,7 +2761,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	head := coin.SignedBlock{
 		Block: coin.Block{
 			Head: coin.BlockHeader{
-				Time: uint64(utc.UnixNow()),
+				Time: uint64(time.Now().UTC().Unix()),
 			},
 		},
 	}
@@ -2775,13 +2778,13 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 	addrs := make([]cipher.Address, 5)
 	for i := 0; i < 5; i++ {
-		addrs[i] = cipher.AddressFromSecKey(keys[i])
+		addrs[i] = cipher.MustAddressFromSecKey(keys[i])
 	}
 
 	srcTxnHashes := make([]cipher.SHA256, 5)
 	inputs := make([]coin.UxOut, 5)
-	historyOutputs := make([]*historydb.UxOut, 5)
-	// intputHashes := make([]cipher.SHA256, 5)
+	historyOutputs := make([]historydb.UxOut, 5)
+
 	for i := 0; i < 5; i++ {
 		srcTxnHashes[i] = testutil.RandSHA256(t)
 		inputs[i] = coin.UxOut{
@@ -2796,7 +2799,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			},
 		}
 
-		historyOutputs[i] = &historydb.UxOut{
+		historyOutputs[i] = historydb.UxOut{
 			Out: inputs[i],
 		}
 	}
@@ -2871,7 +2874,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		balances    []wallet.UxBalance
 		err         error
 
-		maxBlockSize int
+		maxUserTransactionSize uint32
 
 		getArrayRet coin.UxArray
 		getArrayErr error
@@ -2879,8 +2882,11 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		getHistoryTxnRet *historydb.Transaction
 		getHistoryTxnErr error
 
-		getHistoryUxOutsRet []*historydb.UxOut
+		getHistoryUxOutsRet []historydb.UxOut
 		getHistoryUxOutsErr error
+
+		getSignedBlocksBySeqRet *coin.SignedBlock
+		getSignedBlocksBySeqErr error
 	}{
 		{
 			name:        "transaction has been spent",
@@ -2888,9 +2894,50 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			isConfirmed: true,
 			balances:    spentUxBalances[:],
 
-			getArrayErr:         blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
-			getHistoryTxnRet:    &historydb.Transaction{Tx: txn},
+			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
+			getHistoryTxnRet: &historydb.Transaction{
+				Txn:      txn,
+				BlockSeq: 10,
+			},
 			getHistoryUxOutsRet: historyOutputs[:1],
+			getSignedBlocksBySeqRet: &coin.SignedBlock{
+				Block: coin.Block{
+					Head: coin.BlockHeader{
+						Time: 10000000,
+					},
+				},
+			},
+		},
+		{
+			name:        "transaction has been spent, get previous block error",
+			txn:         txn,
+			isConfirmed: true,
+			balances:    spentUxBalances[:],
+			err:         errors.New("GetSignedBlockBySeq failed"),
+
+			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
+			getHistoryTxnRet: &historydb.Transaction{
+				Txn:      txn,
+				BlockSeq: 10,
+			},
+			getHistoryUxOutsRet:     historyOutputs[:1],
+			getSignedBlocksBySeqErr: errors.New("GetSignedBlockBySeq failed"),
+		},
+		{
+			name:        "transaction has been spent, previous block not found",
+			txn:         txn,
+			isConfirmed: true,
+			balances:    spentUxBalances[:],
+			err:         fmt.Errorf("VerifyTxnVerbose: previous block seq=%d not found", 9),
+
+			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
+			getHistoryTxnRet: &historydb.Transaction{
+				Txn:      txn,
+				BlockSeq: 10,
+			},
+			getHistoryUxOutsRet:     historyOutputs[:1],
+			getSignedBlocksBySeqRet: nil,
+			getSignedBlocksBySeqErr: nil,
 		},
 		{
 			name:        "transaction does not exist in either unspents or historydb",
@@ -2910,10 +2957,10 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			getArrayRet: inputs[:1],
 		},
 		{
-			name:         "transaction violate soft constraints, transaction size bigger than max block size",
-			maxBlockSize: 1,
-			txn:          txn,
-			err:          ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
+			name:                   "transaction violate soft constraints, transaction size bigger than max block size",
+			maxUserTransactionSize: 1,
+			txn:                    txn,
+			err:                    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
 
 			getArrayRet: inputs[:1],
 		},
@@ -2961,7 +3008,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		},
 	}
 
-	matchTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+	matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 		return true
 	})
 
@@ -2970,29 +3017,35 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			db, shutdown := testutil.PrepareDB(t)
 			defer shutdown()
 
-			history := NewHistoryerMock()
-			bc := NewBlockchainerMock()
-			unspent := NewUnspentPoolerMock()
+			history := &MockHistoryer{}
+			bc := &MockBlockchainer{}
+			unspent := &MockUnspentPooler{}
 
 			bc.On("Unspent").Return(unspent)
-			bc.On("Head", matchTx).Return(&head, nil)
+			bc.On("Head", matchTxn).Return(&head, nil)
+			if tc.getHistoryTxnRet != nil {
+				bc.On("GetSignedBlockBySeq", matchTxn, tc.getHistoryTxnRet.BlockSeq-1).Return(tc.getSignedBlocksBySeqRet, tc.getSignedBlocksBySeqErr)
+			}
 
-			unspent.On("GetArray", matchTx, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
+			unspent.On("GetArray", matchTxn, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
 
-			history.On("GetTransaction", matchTx, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
-			history.On("GetUxOuts", matchTx, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
+			history.On("GetTransaction", matchTxn, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
+			history.On("GetUxOuts", matchTxn, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
 
 			v := &Visor{
 				Blockchain: bc,
 				DB:         db,
 				history:    history,
-				Config: Config{
-					MaxBlockSize: tc.maxBlockSize,
-				},
+				Config:     Config{},
 			}
 
-			if v.Config.MaxBlockSize == 0 {
-				v.Config.MaxBlockSize = DefaultMaxBlockSize
+			originalMaxUnconfirmedTxnSize := params.UserVerifyTxn.MaxTransactionSize
+			defer func() {
+				params.UserVerifyTxn.MaxTransactionSize = originalMaxUnconfirmedTxnSize
+			}()
+
+			if tc.maxUserTransactionSize != 0 {
+				params.UserVerifyTxn.MaxTransactionSize = tc.maxUserTransactionSize
 			}
 
 			var isConfirmed bool
@@ -3017,8 +3070,8 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 // historyerMock2 embeds historyerMock, and rewrite the ForEach method
 type historyerMock2 struct {
-	HistoryerMock
-	txs []historydb.Transaction
+	MockHistoryer
+	txns []historydb.Transaction
 }
 
 func newHistoryerMock2() *historyerMock2 {
@@ -3026,30 +3079,107 @@ func newHistoryerMock2() *historyerMock2 {
 }
 
 func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error {
-	for i := range h.txs {
-		if err := f(h.txs[i].Hash(), &h.txs[i]); err != nil {
+	for i := range h.txns {
+		if err := f(h.txns[i].Hash(), &h.txns[i]); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// UnconfirmedTxnPoolerMock2 embeds UnconfirmedTxnPoolerMock, and rewrite the GetTxns method
-type UnconfirmedTxnPoolerMock2 struct {
-	UnconfirmedTxnPoolerMock
-	txs []UnconfirmedTxn
+// MockUnconfirmedTransactionPooler2 embeds UnconfirmedTxnPoolerMock, and rewrite the GetFiltered method
+type MockUnconfirmedTransactionPooler2 struct {
+	MockUnconfirmedTransactionPooler
+	txns []UnconfirmedTransaction
 }
 
-func NewUnconfirmedTxnPoolerMock2() *UnconfirmedTxnPoolerMock2 {
-	return &UnconfirmedTxnPoolerMock2{}
+func NewUnconfirmedTransactionPoolerMock2() *MockUnconfirmedTransactionPooler2 {
+	return &MockUnconfirmedTransactionPooler2{}
 }
 
-func (m *UnconfirmedTxnPoolerMock2) GetTxns(tx *dbutil.Tx, f func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
-	var txs []UnconfirmedTxn
-	for i := range m.txs {
-		if f(m.txs[i]) {
-			txs = append(txs, m.txs[i])
+func (m *MockUnconfirmedTransactionPooler2) GetFiltered(tx *dbutil.Tx, f func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+	var txns []UnconfirmedTransaction
+	for i := range m.txns {
+		if f(m.txns[i]) {
+			txns = append(txns, m.txns[i])
 		}
 	}
-	return txs, nil
+	return txns, nil
+}
+
+func TestFbyAddresses(t *testing.T) {
+	uxs := make(coin.UxArray, 5)
+	addrs := make([]cipher.Address, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = testutil.MakeAddress()
+		uxs[i] = coin.UxOut{
+			Body: coin.UxBody{
+				Address: addrs[i],
+			},
+		}
+	}
+
+	tests := []struct {
+		name    string
+		addrs   []string
+		outputs []coin.UxOut
+		want    []coin.UxOut
+	}{
+		// TODO: Add test cases.
+		{
+			"filter with one address",
+			[]string{addrs[0].String()},
+			uxs[:2],
+			uxs[:1],
+		},
+		{
+			"filter with multiple addresses",
+			[]string{addrs[0].String(), addrs[1].String()},
+			uxs[:3],
+			uxs[:2],
+		},
+	}
+	for _, tt := range tests {
+		// fmt.Printf("want:%+v\n", tt.want)
+		outs := FbyAddresses(tt.addrs)(tt.outputs)
+		require.Equal(t, outs, coin.UxArray(tt.want))
+	}
+}
+
+func TestFbyHashes(t *testing.T) {
+	uxs := make(coin.UxArray, 5)
+	addrs := make([]cipher.Address, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = testutil.MakeAddress()
+		uxs[i] = coin.UxOut{
+			Body: coin.UxBody{
+				Address: addrs[i],
+			},
+		}
+	}
+
+	tests := []struct {
+		name    string
+		hashes  []string
+		outputs coin.UxArray
+		want    coin.UxArray
+	}{
+		// TODO: Add test cases.
+		{
+			"filter with one hash",
+			[]string{uxs[0].Hash().Hex()},
+			uxs[:2],
+			uxs[:1],
+		},
+		{
+			"filter with multiple hash",
+			[]string{uxs[0].Hash().Hex(), uxs[1].Hash().Hex()},
+			uxs[:3],
+			uxs[:2],
+		},
+	}
+	for _, tt := range tests {
+		outs := FbyHashes(tt.hashes)(tt.outputs)
+		require.Equal(t, outs, tt.want)
+	}
 }

@@ -18,20 +18,20 @@ func TestAddUint64(t *testing.T) {
 }
 
 func TestAddUint32(t *testing.T) {
-	n, err := addUint32(10, 11)
+	n, err := AddUint32(10, 11)
 	require.NoError(t, err)
 	require.Equal(t, uint32(21), n)
 
-	_, err = addUint32(math.MaxUint32, 1)
+	_, err = AddUint32(math.MaxUint32, 1)
 	require.Error(t, err)
 }
 
 func TestMultUint64(t *testing.T) {
-	n, err := multUint64(10, 11)
+	n, err := MultUint64(10, 11)
 	require.NoError(t, err)
 	require.Equal(t, uint64(110), n)
 
-	_, err = multUint64(math.MaxUint64/2, 3)
+	_, err = MultUint64(math.MaxUint64/2, 3)
 	require.Error(t, err)
 }
 
@@ -106,6 +106,43 @@ func TestInt64ToUint64(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(fmt.Sprint(tc.a), func(t *testing.T) {
 			x, err := Int64ToUint64(tc.a)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+			} else {
+				require.Equal(t, tc.b, x)
+			}
+		})
+	}
+}
+
+func TestIntToUint32(t *testing.T) {
+	cases := []struct {
+		a   int
+		b   uint32
+		err error
+	}{
+		{
+			a: 0,
+			b: 0,
+		},
+		{
+			a:   -1,
+			err: ErrIntUnderflowsUint32,
+		},
+		{
+			a: math.MaxInt32,
+			b: math.MaxInt32,
+		},
+		{
+			a: 999,
+			b: 999,
+		},
+		// 64bit test defined in Test64BitIntToUint32
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprint(tc.a), func(t *testing.T) {
+			x, err := IntToUint32(tc.a)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 			} else {

@@ -2,7 +2,7 @@
 
 ## Simple Tags
 
--	[`dind` (*docker/images/devdocker/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/devdocker/Dockerfile)
+-	[`dind` (*docker/images/dev-docker/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-docker/Dockerfile)
 
 # Skycoin development image including [docker in docker](https://hub.docker.com/_/docker/)
 

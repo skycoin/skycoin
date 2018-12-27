@@ -20,7 +20,7 @@ func blocksCmd() gcli.Command {
 }
 
 func getBlocks(c *gcli.Context) error {
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	// get start
 	start := c.Args().Get(0)
@@ -30,8 +30,7 @@ func getBlocks(c *gcli.Context) error {
 	}
 
 	if start == "" {
-		gcli.ShowSubcommandHelp(c)
-		return nil
+		return gcli.ShowSubcommandHelp(c)
 	}
 
 	s, err := strconv.ParseUint(start, 10, 64)
@@ -44,7 +43,7 @@ func getBlocks(c *gcli.Context) error {
 		return fmt.Errorf("invalid block seq: %v, must be unsigned integer", end)
 	}
 
-	rlt, err := rpcClient.GetBlocks(s, e)
+	rlt, err := client.BlocksInRange(s, e)
 	if err != nil {
 		return err
 	}

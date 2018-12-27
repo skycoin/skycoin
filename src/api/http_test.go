@@ -1,292 +1,127 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"sync"
 	"testing"
 
-	"errors"
-
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func TestGetOutputsHandler(t *testing.T) {
-	validAddr := "2eZYSbzBKJ7QCL4kd5LSqV478rJQGb4UNkf"
-	invalidAddr := "invalidAddr"
-	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
+const configuredHost = "127.0.0.1:6420"
 
-	type httpBody struct {
-		addrs   string
-		hashStr string
-	}
-	tt := []struct {
-		name                      string
-		method                    string
-		url                       string
-		status                    int
-		err                       string
-		httpBody                  *httpBody
-		uxid                      string
-		getUnspentOutputsResponse *visor.ReadableOutputSet
-		getUnspentOutputsError    error
-		httpResponse              *visor.ReadableOutputSet
-	}{
-		{
-			name:   "405",
-			method: http.MethodPost,
-			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
-		},
-		{
-			name:   "400 - addrs and hashes together",
-			method: http.MethodGet,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - addrs and hashes cannot be specified together",
-			httpBody: &httpBody{
-				addrs:   validAddr,
-				hashStr: validHash,
-			},
-		},
-		{
-			name:   "400 - invalid address",
-			method: http.MethodGet,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - addrs contains invalid address",
-			httpBody: &httpBody{
-				addrs: invalidAddr,
-			},
-		},
-		{
-			name:   "500 - getUnspentOutputsError",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - get unspent outputs failed: getUnspentOutputsError",
-			getUnspentOutputsResponse: nil,
-			getUnspentOutputsError:    errors.New("getUnspentOutputsError"),
-		},
-		{
-			name:   "200 - OK",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			getUnspentOutputsResponse: &visor.ReadableOutputSet{},
-			httpResponse:              &visor.ReadableOutputSet{},
-		},
-	}
+var allAPISetsEnabled = map[string]struct{}{
+	EndpointsRead:                  struct{}{},
+	EndpointsTransaction:           struct{}{},
+	EndpointsStatus:                struct{}{},
+	EndpointsWallet:                struct{}{},
+	EndpointsInsecureWalletSeed:    struct{}{},
+	EndpointsDeprecatedWalletSpend: struct{}{},
+	EndpointsPrometheus:            struct{}{},
+	EndpointsNetCtrl:               struct{}{},
+}
 
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
-			endpoint := "/api/v1/outputs"
-			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
-			gateway.On("IsCSPEnabled").Return(false)
-
-			v := url.Values{}
-			if tc.httpBody != nil {
-				if tc.httpBody.hashStr != "" {
-					v.Add("hashes", tc.httpBody.hashStr)
-				}
-				if tc.httpBody.addrs != "" {
-					v.Add("addrs", tc.httpBody.addrs)
-				}
-			}
-
-			if len(v) > 0 {
-				endpoint += "?" + v.Encode()
-			}
-
-			req, err := http.NewRequest(tc.method, endpoint, nil)
-			require.NoError(t, err)
-
-			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
-			handler.ServeHTTP(rr, req)
-
-			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
-
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-			} else {
-				var msg *visor.ReadableOutputSet
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, msg, tc.name)
-			}
-		})
+func defaultMuxConfig() muxConfig {
+	return muxConfig{
+		host:           configuredHost,
+		appLoc:         ".",
+		disableCSRF:    true,
+		disableCSP:     true,
+		enabledAPISets: allAPISetsEnabled,
 	}
 }
 
-func TestGetBalanceHandler(t *testing.T) {
-	type httpBody struct {
-		addrs string
-	}
-	invalidAddr := "invalidAddr"
-	validAddr := "2eZYSbzBKJ7QCL4kd5LSqV478rJQGb4UNkf"
-	address, err := cipher.DecodeBase58Address(validAddr)
-	require.NoError(t, err)
-	tt := []struct {
-		name                      string
-		method                    string
-		url                       string
-		status                    int
-		err                       string
-		httpBody                  *httpBody
-		uxid                      string
-		getBalanceOfAddrsArg      []cipher.Address
-		getBalanceOfAddrsResponse []wallet.BalancePair
-		getBalanceOfAddrsError    error
-		httpResponse              wallet.BalancePair
-	}{
-		{
-			name:   "405",
-			method: http.MethodPost,
-			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
-		},
-		{
-			name:   "400 - invalid address",
-			method: http.MethodGet,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - address invalidAddr is invalid: Invalid base58 character",
-			httpBody: &httpBody{
-				addrs: invalidAddr,
-			},
-		},
-		{
-			name:     "400 - no addresses",
-			method:   http.MethodGet,
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - addrs is required",
-			httpBody: &httpBody{},
-		},
-		{
-			name:   "500 - GetBalanceOfAddrsError",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetBalanceOfAddrs failed: GetBalanceOfAddrsError",
-			httpBody: &httpBody{
-				addrs: validAddr,
-			},
-			getBalanceOfAddrsArg:   []cipher.Address{address},
-			getBalanceOfAddrsError: errors.New("GetBalanceOfAddrsError"),
-		},
-		{
-			name:   "500 - balance Confirmed coins uint64 addition overflow",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - uint64 addition overflow",
-			httpBody: &httpBody{
-				addrs: validAddr,
-			},
-			getBalanceOfAddrsArg: []cipher.Address{address},
-			getBalanceOfAddrsResponse: []wallet.BalancePair{
-				{
-					Confirmed: wallet.Balance{Coins: math.MaxInt64 + 1, Hours: 0},
-					Predicted: wallet.Balance{Coins: 0, Hours: 0},
-				},
-				{
-					Confirmed: wallet.Balance{Coins: math.MaxInt64 + 1, Hours: 0},
-					Predicted: wallet.Balance{Coins: 0, Hours: 0},
-				},
-			},
-		},
-		{
-			name:   "500 - balance Predicted coins uint64 addition overflow",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - uint64 addition overflow",
-			httpBody: &httpBody{
-				addrs: validAddr,
-			},
-			getBalanceOfAddrsArg: []cipher.Address{address},
-			getBalanceOfAddrsResponse: []wallet.BalancePair{
-				{
-					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-					Predicted: wallet.Balance{Coins: math.MaxInt64 + 1, Hours: 0},
-				},
-				{
-					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-					Predicted: wallet.Balance{Coins: math.MaxInt64 + 1, Hours: 0},
-				},
-			},
-		},
-		{
-			name:   "200 - OK",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "200 - OK",
-			httpBody: &httpBody{
-				addrs: validAddr,
-			},
-			getBalanceOfAddrsArg: []cipher.Address{address},
-			getBalanceOfAddrsResponse: []wallet.BalancePair{
-				{
-					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-					Predicted: wallet.Balance{Coins: 0, Hours: 0},
-				},
-				{
-					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-					Predicted: wallet.Balance{Coins: 0, Hours: 0},
-				},
-			},
-			httpResponse: wallet.BalancePair{},
-		},
-	}
+var endpoints = []string{
+	"/address_uxouts",
+	"/addresscount",
+	"/balance",
+	"/block",
+	"/blockchain/metadata",
+	"/blockchain/progress",
+	"/blocks",
+	"/coinSupply",
+	"/explorer/address",
+	"/health",
+	"/injectTransaction",
+	"/last_blocks",
+	"/version",
+	"/network/connection",
+	"/network/connection/disconnect",
+	"/network/connections",
+	"/network/connections/exchange",
+	"/network/connections/trust",
+	"/network/defaultConnections",
+	"/outputs",
+	"/pendingTxs",
+	"/rawtx",
+	"/richlist",
+	"/resendUnconfirmedTxns",
+	"/transaction",
+	"/transactions",
+	"/uxout",
+	"/wallet",
+	"/wallet/balance",
+	"/wallet/create",
+	"/wallet/newAddress",
+	"/wallet/newSeed",
+	"/wallet/seed",
+	"/wallet/spend",
+	"/wallet/transaction",
+	"/wallet/transactions",
+	"/wallet/unload",
+	"/wallet/update",
+	"/wallets",
+	"/wallets/folderName",
+	"/webrpc",
 
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
-			endpoint := "/api/v1/balance"
-			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
-			gateway.On("IsCSPEnabled").Return(false)
+	"/api/v1/address_uxouts",
+	"/api/v1/addresscount",
+	"/api/v1/balance",
+	"/api/v1/block",
+	"/api/v1/blockchain/metadata",
+	"/api/v1/blockchain/progress",
+	"/api/v1/blocks",
+	"/api/v1/coinSupply",
+	"/api/v1/explorer/address",
+	"/api/v1/health",
+	"/api/v1/injectTransaction",
+	"/api/v1/last_blocks",
+	"/api/v1/version",
+	"/api/v1/network/connection",
+	"/api/v1/network/connections",
+	"/api/v1/network/connections/exchange",
+	"/api/v1/network/connections/trust",
+	"/api/v1/network/defaultConnections",
+	"/api/v1/outputs",
+	"/api/v1/pendingTxs",
+	"/api/v1/rawtx",
+	"/api/v1/richlist",
+	"/api/v1/resendUnconfirmedTxns",
+	"/api/v1/transaction",
+	"/api/v1/transactions",
+	"/api/v1/uxout",
+	"/api/v1/wallet",
+	"/api/v1/wallet/balance",
+	"/api/v1/wallet/create",
+	"/api/v1/wallet/newAddress",
+	"/api/v1/wallet/newSeed",
+	"/api/v1/wallet/seed",
+	"/api/v1/wallet/spend",
+	"/api/v1/wallet/transaction",
+	"/api/v1/wallet/transactions",
+	"/api/v1/wallet/unload",
+	"/api/v1/wallet/update",
+	"/api/v1/wallets",
+	"/api/v1/wallets/folderName",
+	"/api/v1/webrpc",
 
-			v := url.Values{}
-			if tc.httpBody != nil {
-				if tc.httpBody.addrs != "" {
-					v.Add("addrs", tc.httpBody.addrs)
-				}
-			}
-
-			if len(v) > 0 {
-				endpoint += "?" + v.Encode()
-			}
-
-			req, err := http.NewRequest(tc.method, endpoint, nil)
-			require.NoError(t, err)
-
-			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
-			handler.ServeHTTP(rr, req)
-
-			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
-
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-			} else {
-				var msg wallet.BalancePair
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, msg, tc.name)
-			}
-		})
-	}
+	"/api/v2/transaction/verify",
+	"/api/v2/address/verify",
+	"/api/v2/wallet/recover",
 }
 
 // TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,
@@ -340,11 +175,11 @@ func TestEnableGUI(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
 			require.NoError(t, err)
 
-			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway := &MockGatewayer{}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, gateway, &CSRFStore{}, nil)
+			cfg := defaultMuxConfig()
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			c := Config{
@@ -361,7 +196,10 @@ func TestEnableGUI(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				s.Serve()
+				err := s.Serve()
+				if err != nil && err.Error() != fmt.Sprintf("accept tcp %s: use of closed network connection", host) {
+					require.NoError(t, err)
+				}
 			}()
 
 			defer func() {
@@ -386,61 +224,233 @@ func TestEnableGUI(t *testing.T) {
 	}
 }
 
-func TestContentSecurityPolicy(t *testing.T) {
-	tt := []struct {
-		name            string
-		endpoint        string
-		enableCSP       bool
-		appLoc          string
-		expectCSPHeader string
+func TestAPISetDisabled(t *testing.T) {
+	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
+		switch e {
+		case "/webrpc", "/api/v1/webrpc":
+			continue
+		}
+
+		t.Run(e, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, e, nil)
+			require.NoError(t, err)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+			cfg.enableUnversionedAPI = true
+			cfg.enableJSON20RPC = false
+			cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
+
+			handler := newServerMux(cfg, &MockGatewayer{}, nil)
+
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+
+			switch e {
+			case "/csrf", "/api/v1/csrf", "/version", "/api/v1/version": // always enabled
+				require.Equal(t, http.StatusOK, rr.Code)
+			default:
+				require.Equal(t, http.StatusForbidden, rr.Code)
+				require.Equal(t, "403 Forbidden - Endpoint is disabled", strings.TrimSpace(rr.Body.String()))
+			}
+		})
+	}
+}
+
+func TestCORS(t *testing.T) {
+	cases := []struct {
+		name          string
+		origin        string
+		hostWhitelist []string
+		valid         bool
 	}{
 		{
-			name:            "enable CSP GET /",
-			endpoint:        "/",
-			enableCSP:       true,
-			appLoc:          "../gui/static/dist",
-			expectCSPHeader: "script-src 'self' 127.0.0.1",
+			name:   "options no whitelist",
+			origin: configuredHost,
+			valid:  true,
 		},
 		{
-			name:            "disable CSP GET /",
-			endpoint:        "/",
-			enableCSP:       false,
-			appLoc:          "../gui/static/dist",
-			expectCSPHeader: "",
+			name:          "options whitelist",
+			origin:        "example.com",
+			hostWhitelist: []string{"example.com"},
+			valid:         true,
 		},
 		{
-			// Confirms that the /csrf api won't be affected by the csp setting
-			name:            "enable CSP GET /csrf",
-			endpoint:        "/api/v1/csrf",
-			enableCSP:       true,
-			appLoc:          "",
-			expectCSPHeader: "",
-		},
-		{
-			// Confirms that the /version api won't be affected by the csp setting
-			name:            "enable CSP GET /version",
-			endpoint:        "/api/v1/version",
-			enableCSP:       true,
-			appLoc:          "",
-			expectCSPHeader: "",
+			name:   "options no whitelist not whitelisted",
+			origin: "example.com",
+			valid:  false,
 		},
 	}
 
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
-			require.NoError(t, err)
+	for _, e := range append(endpoints, "/api/v1/csrf") {
+		if !strings.HasPrefix(e, "/api/v") {
+			continue
+		}
 
-			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
-			gateway.On("GetBuildInfo").Return(visor.BuildInfo{})
+		for _, tc := range cases {
+			for _, m := range []string{http.MethodPost, http.MethodGet} {
+				name := fmt.Sprintf("%s %s %s", tc.name, m, e)
+				t.Run(name, func(t *testing.T) {
+					cfg := defaultMuxConfig()
+					cfg.disableCSRF = false
+					cfg.hostWhitelist = tc.hostWhitelist
 
-			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc, enableGUI: true}, gateway, &CSRFStore{}, nil)
-			handler.ServeHTTP(rr, req)
+					req, err := http.NewRequest(http.MethodOptions, e, nil)
+					require.NoError(t, err)
 
-			csp := rr.Header().Get("Content-Security-Policy")
-			require.Equal(t, tc.expectCSPHeader, csp)
-		})
+					setCSRFParameters(t, tokenValid, req)
+
+					req.Header.Set("Origin", fmt.Sprintf("http://%s", tc.origin))
+					req.Header.Set("Access-Control-Request-Method", m)
+
+					requestHeaders := strings.ToLower(fmt.Sprintf("%s, Content-Type", CSRFHeaderName))
+					req.Header.Set("Access-Control-Request-Headers", requestHeaders)
+
+					handler := newServerMux(cfg, &MockGatewayer{}, nil)
+
+					rr := httptest.NewRecorder()
+					handler.ServeHTTP(rr, req)
+
+					resp := rr.Result()
+
+					fmt.Println(resp.Header)
+					fmt.Println(rr.Body.String())
+
+					allowOrigins := resp.Header.Get("Access-Control-Allow-Origin")
+					allowHeaders := resp.Header.Get("Access-Control-Allow-Headers")
+					allowMethods := resp.Header.Get("Access-Control-Allow-Methods")
+
+					if tc.valid {
+						require.Equal(t, fmt.Sprintf("http://%s", tc.origin), allowOrigins)
+						require.Equal(t, requestHeaders, strings.ToLower(allowHeaders))
+						require.Equal(t, m, allowMethods)
+					} else {
+						require.Empty(t, allowOrigins)
+						require.Empty(t, allowHeaders)
+						require.Empty(t, allowMethods)
+					}
+
+					allowCreds := resp.Header.Get("Access-Control-Allow-Credentials")
+					require.Empty(t, allowCreds)
+				})
+			}
+		}
+	}
+}
+
+func TestHTTPBasicAuthInvalid(t *testing.T) {
+	username := "foo"
+	badUsername := "foof"
+	password := "bar"
+	badPassword := "barb"
+
+	userPassCombos := []struct {
+		u, p string
+	}{
+		{},
+		{
+			u: username,
+		},
+		{
+			p: password,
+		},
+		{
+			u: username,
+			p: password,
+		},
+	}
+
+	reqUserPassCombos := []struct {
+		u, p string
+	}{
+		{},
+		{
+			u: username,
+		},
+		{
+			u: badUsername,
+		},
+		{
+			p: password,
+		},
+		{
+			p: badPassword,
+		},
+		{
+			u: username,
+			p: password,
+		},
+		{
+			u: badUsername,
+			p: badPassword,
+		},
+		{
+			u: username,
+			p: badPassword,
+		},
+		{
+			u: badUsername,
+			p: password,
+		},
+	}
+
+	type testCase struct {
+		username    string
+		password    string
+		reqUsername string
+		reqPassword string
+		authorized  bool
+	}
+
+	cases := []testCase{}
+
+	for _, a := range userPassCombos {
+		for _, b := range reqUserPassCombos {
+			cases = append(cases, testCase{
+				username:    a.u,
+				password:    a.p,
+				reqUsername: b.u,
+				reqPassword: b.p,
+				authorized:  a.u == b.u && a.p == b.p,
+			})
+		}
+	}
+
+	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
+		for _, tc := range cases {
+			name := fmt.Sprintf("u=%s p=%s ru=%s rp=%s auth=%v e=%s", tc.username, tc.password, tc.reqUsername, tc.reqPassword, tc.authorized, e)
+			t.Run(name, func(t *testing.T) {
+				// Use a made-up request method so that any authorized request
+				// is guaranteed to fail before it reaches the mock gateway,
+				// which will panic without the mocks configured
+				req, err := http.NewRequest("FOOBAR", e, nil)
+				require.NoError(t, err)
+
+				req.SetBasicAuth(tc.reqUsername, tc.reqPassword)
+
+				cfg := defaultMuxConfig()
+				cfg.disableCSRF = false
+				cfg.enableUnversionedAPI = true
+				cfg.enableJSON20RPC = false
+				cfg.username = tc.username
+				cfg.password = tc.password
+
+				handler := newServerMux(cfg, &MockGatewayer{}, nil)
+
+				rr := httptest.NewRecorder()
+				handler.ServeHTTP(rr, req)
+
+				if !tc.authorized {
+					require.Equal(t, http.StatusUnauthorized, rr.Code)
+					if strings.HasPrefix(e, "/api/v2") {
+						require.Equal(t, "{\n    \"error\": {\n        \"message\": \"Unauthorized\",\n        \"code\": 401\n    }\n}", rr.Body.String())
+					} else {
+						require.Equal(t, "401 Unauthorized", strings.TrimSpace(rr.Body.String()))
+					}
+				} else {
+					require.NotEqual(t, http.StatusUnauthorized, rr.Code)
+				}
+			})
+		}
 	}
 }

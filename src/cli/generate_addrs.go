@@ -12,8 +12,8 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func generateAddrsCmd(cfg Config) gcli.Command {
-	name := "generateAddresses"
+func walletAddAddressesCmd(cfg Config) gcli.Command {
+	name := "walletAddAddresses"
 	return gcli.Command{
 		Name:      name,
 		Usage:     "Generate additional addresses for a wallet",
@@ -72,10 +72,8 @@ func generateAddrs(c *gcli.Context) error {
 	switch err.(type) {
 	case nil:
 	case WalletLoadError:
-		errorWithHelp(c, err)
-		return nil
-	case WalletSaveError:
-		return errors.New("save wallet failed")
+		printHelp(c)
+		return err
 	default:
 		return err
 	}
@@ -94,7 +92,7 @@ func generateAddrs(c *gcli.Context) error {
 }
 
 // GenerateAddressesInFile generates addresses in given wallet file
-func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) ([]cipher.Address, error) {
+func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) ([]cipher.Addresser, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
@@ -116,18 +114,18 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 		}
 	}
 
-	genAddrsInWallet := func(w *wallet.Wallet, n uint64) ([]cipher.Address, error) {
+	genAddrsInWallet := func(w *wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
 		return w.GenerateAddresses(n)
 	}
 
 	if wlt.IsEncrypted() {
-		genAddrsInWallet = func(w *wallet.Wallet, n uint64) ([]cipher.Address, error) {
+		genAddrsInWallet = func(w *wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
 			password, err := pr.Password()
 			if err != nil {
 				return nil, err
 			}
 
-			var addrs []cipher.Address
+			var addrs []cipher.Addresser
 			if err := w.GuardUpdate(password, func(wlt *wallet.Wallet) error {
 				var err error
 				addrs, err = wlt.GenerateAddresses(n)
@@ -158,7 +156,7 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 }
 
 // FormatAddressesAsJSON converts []cipher.Address to strings and formats the array into a standard JSON object wrapper
-func FormatAddressesAsJSON(addrs []cipher.Address) (string, error) {
+func FormatAddressesAsJSON(addrs []cipher.Addresser) (string, error) {
 	d, err := formatJSON(struct {
 		Addresses []string `json:"addresses"`
 	}{
@@ -173,12 +171,12 @@ func FormatAddressesAsJSON(addrs []cipher.Address) (string, error) {
 }
 
 // FormatAddressesAsJoinedArray converts []cipher.Address to strings and concatenates them with a comma
-func FormatAddressesAsJoinedArray(addrs []cipher.Address) string {
+func FormatAddressesAsJoinedArray(addrs []cipher.Addresser) string {
 	return strings.Join(AddressesToStrings(addrs), ",")
 }
 
 // AddressesToStrings converts []cipher.Address to []string
-func AddressesToStrings(addrs []cipher.Address) []string {
+func AddressesToStrings(addrs []cipher.Addresser) []string {
 	if addrs == nil {
 		return nil
 	}

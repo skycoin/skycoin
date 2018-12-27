@@ -22,10 +22,14 @@ type PoolConfig struct {
 	ClearStaleRate time.Duration
 	// Buffer size for gnet.ConnectionPool's network Read events
 	EventChannelSize int
-	// Maximum number of connections to maintain
-	MaxConnections                    int
+	// Maximum number of connections
+	MaxConnections int
+	// Maximum number of outgoing connections
+	MaxOutgoingConnections int
+	// Maximum number of outgoing connections to peers in the DefaultConnections list to maintain
 	MaxDefaultPeerOutgoingConnections int
-	DefaultPeerConnections            map[string]struct{}
+	// Default "trusted" peers
+	DefaultConnections []string
 	// These should be assigned by the controlling daemon
 	address string
 	port    int
@@ -33,7 +37,6 @@ type PoolConfig struct {
 
 // NewPoolConfig creates pool config
 func NewPoolConfig() PoolConfig {
-	//defIdleLimit := time.Minute
 	return PoolConfig{
 		port:                              6677,
 		address:                           "",
@@ -45,8 +48,8 @@ func NewPoolConfig() PoolConfig {
 		ClearStaleRate:                    1 * time.Second,
 		EventChannelSize:                  4096,
 		MaxConnections:                    128,
+		MaxOutgoingConnections:            8,
 		MaxDefaultPeerOutgoingConnections: 1,
-		DefaultPeerConnections:            make(map[string]struct{}),
 	}
 }
 
@@ -57,21 +60,28 @@ type Pool struct {
 }
 
 // NewPool creates pool
-func NewPool(cfg PoolConfig, d *Daemon) *Pool {
+func NewPool(cfg PoolConfig, d *Daemon) (*Pool, error) {
 	gnetCfg := gnet.NewConfig()
 	gnetCfg.DialTimeout = cfg.DialTimeout
 	gnetCfg.Port = uint16(cfg.port)
 	gnetCfg.Address = cfg.address
 	gnetCfg.ConnectCallback = d.onGnetConnect
 	gnetCfg.DisconnectCallback = d.onGnetDisconnect
+	gnetCfg.ConnectFailureCallback = d.onGnetConnectFailure
 	gnetCfg.MaxConnections = cfg.MaxConnections
+	gnetCfg.MaxOutgoingConnections = cfg.MaxOutgoingConnections
 	gnetCfg.MaxDefaultPeerOutgoingConnections = cfg.MaxDefaultPeerOutgoingConnections
-	gnetCfg.DefaultPeerConnections = cfg.DefaultPeerConnections
+	gnetCfg.DefaultConnections = cfg.DefaultConnections
+
+	pool, err := gnet.NewConnectionPool(gnetCfg, d)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Pool{
 		Config: cfg,
-		Pool:   gnet.NewConnectionPool(gnetCfg, d),
-	}
+		Pool:   pool,
+	}, nil
 }
 
 // Shutdown closes all connections and stops listening
@@ -93,12 +103,14 @@ func (pool *Pool) RunOffline() error {
 	return pool.Pool.RunOffline()
 }
 
-// Send a ping if our last message sent was over pingRate ago
+// sendPings send a ping if our last message sent was over pingRate ago
 func (pool *Pool) sendPings() {
-	pool.Pool.SendPings(pool.Config.PingRate, &PingMessage{})
+	if err := pool.Pool.SendPings(pool.Config.PingRate, &PingMessage{}); err != nil {
+		logger.WithError(err).Error("sendPings failed")
+	}
 }
 
-// Removes connections that have not sent a message in too long
-func (pool *Pool) clearStaleConnections() {
-	pool.Pool.ClearStaleConnections(pool.Config.IdleLimit, ErrDisconnectIdle)
+// getStaleConnections returns connections that have been idle for longer than idleLimit
+func (pool *Pool) getStaleConnections() ([]string, error) {
+	return pool.Pool.GetStaleConnections(pool.Config.IdleLimit)
 }

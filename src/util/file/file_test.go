@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/testutil"
 )
 
 func requireFileMode(t *testing.T, filename string, mode os.FileMode) {
@@ -21,8 +23,8 @@ func requireFileMode(t *testing.T, filename string, mode os.FileMode) {
 
 func requireFileContentsBinary(t *testing.T, filename string, contents []byte) {
 	f, err := os.Open(filename)
-	defer f.Close()
 	require.NoError(t, err)
+	defer f.Close()
 	b := make([]byte, len(contents)*16)
 	n, err := f.Read(b)
 	require.NoError(t, err)
@@ -35,16 +37,9 @@ func requireFileContents(t *testing.T, filename, contents string) { // nolint: u
 	requireFileContentsBinary(t, filename, []byte(contents))
 }
 
-func requireFileExists(t *testing.T, filename string) {
-	stat, err := os.Stat(filename)
-	require.NoError(t, err)
+func requireIsRegularFile(t *testing.T, filename string) {
+	stat := testutil.RequireFileExists(t, filename)
 	require.True(t, stat.Mode().IsRegular())
-}
-
-func requireFileNotExists(t *testing.T, filename string) {
-	_, err := os.Stat(filename)
-	require.Error(t, err)
-	require.True(t, os.IsNotExist(err))
 }
 
 func cleanup(fn string) {
@@ -116,7 +111,7 @@ func TestLoadJSON(t *testing.T) {
 	defer cleanup(fn)
 
 	// Loading nonexistant file
-	requireFileNotExists(t, fn)
+	testutil.RequireFileNotExists(t, fn)
 	err := LoadJSON(fn, &obj)
 	require.Error(t, err)
 	require.True(t, os.IsNotExist(err))
@@ -145,8 +140,8 @@ func TestSaveJSON(t *testing.T) {
 	err = SaveJSON(fn, obj, 0644)
 	require.NoError(t, err)
 
-	requireFileExists(t, fn)
-	requireFileNotExists(t, fn+".bak")
+	requireIsRegularFile(t, fn)
+	testutil.RequireFileNotExists(t, fn+".bak")
 	requireFileMode(t, fn, 0644)
 	requireFileContents(t, fn, string(b))
 
@@ -158,9 +153,9 @@ func TestSaveJSON(t *testing.T) {
 	require.NoError(t, err)
 
 	requireFileMode(t, fn, 0644)
-	requireFileExists(t, fn)
+	requireIsRegularFile(t, fn)
 	requireFileContents(t, fn, string(b2))
-	requireFileNotExists(t, fn+".tmp")
+	testutil.RequireFileNotExists(t, fn+".tmp")
 }
 
 func TestSaveJSONSafe(t *testing.T) {
@@ -174,7 +169,7 @@ func TestSaveJSONSafe(t *testing.T) {
 	b, err := json.MarshalIndent(obj, "", "    ")
 	require.NoError(t, err)
 
-	requireFileExists(t, fn)
+	requireIsRegularFile(t, fn)
 	requireFileMode(t, fn, 0600)
 	requireFileContents(t, fn, string(b))
 
@@ -183,32 +178,35 @@ func TestSaveJSONSafe(t *testing.T) {
 	err = SaveJSONSafe(fn, obj, 0600)
 	require.Error(t, err)
 
-	requireFileExists(t, fn)
+	requireIsRegularFile(t, fn)
 	requireFileContents(t, fn, string(b))
-	requireFileNotExists(t, fn+".bak")
-	requireFileNotExists(t, fn+".tmp")
+	testutil.RequireFileNotExists(t, fn+".bak")
+	testutil.RequireFileNotExists(t, fn+".tmp")
 }
 
 func TestSaveBinary(t *testing.T) {
 	fn := "test.bin"
 	defer cleanup(fn)
 	b := make([]byte, 128)
-	rand.Read(b)
-	err := SaveBinary(fn, b, 0644)
+	_, err := rand.Read(b)
 	require.NoError(t, err)
-	requireFileNotExists(t, fn+".tmp")
-	requireFileNotExists(t, fn+".bak")
-	requireFileExists(t, fn)
+	err = SaveBinary(fn, b, 0644)
+	require.NoError(t, err)
+	testutil.RequireFileNotExists(t, fn+".tmp")
+	testutil.RequireFileNotExists(t, fn+".bak")
+	requireIsRegularFile(t, fn)
 	requireFileContentsBinary(t, fn, b)
 	requireFileMode(t, fn, 0644)
 
 	b2 := make([]byte, 128)
-	rand.Read(b2)
+	_, err = rand.Read(b2)
+	require.NoError(t, err)
 	require.False(t, bytes.Equal(b, b2))
 
 	err = SaveBinary(fn, b2, 0644)
-	requireFileExists(t, fn)
-	requireFileNotExists(t, fn+".tmp")
+	require.NoError(t, err)
+	requireIsRegularFile(t, fn)
+	testutil.RequireFileNotExists(t, fn+".tmp")
 	requireFileContentsBinary(t, fn, b2)
 	// requireFileContentsBinary(t, fn+".bak", b)
 	requireFileMode(t, fn, 0644)

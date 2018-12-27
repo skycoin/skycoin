@@ -25,6 +25,10 @@ h4 {
     display: flex;
     flex-direction: column;
 
+    div {
+      word-break: break-all;
+    }
+
     .-address {
       padding: 10px 0;
       margin-bottom: 5px;
@@ -34,6 +38,7 @@ h4 {
 
 .-data {
   font-size: 12px;
+  display: flex;
 
   &:not(:last-child) {
     margin-bottom: 5px;
@@ -43,6 +48,10 @@ h4 {
     color: $grey;
     display: inline-block;
     width: 60px;
+    flex-shrink: 0;
+  }
+  span:last-child {
+    word-break: break-all;
   }
 
   &.-more {
@@ -50,7 +59,7 @@ h4 {
 
     span {
       width: auto !important;
-      margin-top: 30px;
+      margin-top: 20px;
       color: $gradient-blue-dark;
       cursor: pointer;
 
@@ -64,7 +73,7 @@ h4 {
 }
 
 .-tx-meta {
-  .-data:not(:last-child) {
+  .-data {
     margin-bottom: 10px;
   }
 }
@@ -73,7 +82,7 @@ h4 {
   text-align: center;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
 
   .-icon {
     &.-incoming {

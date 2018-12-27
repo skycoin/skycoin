@@ -31,7 +31,9 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.data = Object.assign({
       confirm: false,
       description: null,
+      warning: false,
       title: null,
+      wallet: null,
     }, data || {});
 
     this.translateService.get(['errors.incorrect-password', 'errors.api-disabled', 'errors.no-wallet']).subscribe(res => {

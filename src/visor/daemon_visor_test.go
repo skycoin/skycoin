@@ -25,10 +25,10 @@ import (
 )
 
 func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *Blockchain) *Visor {
-	cfg := NewVisorConfig()
+	cfg := NewConfig()
 	cfg.DBPath = db.Path()
 
-	pool, err := NewUnconfirmedTxnPool(db)
+	pool, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	return &Visor{
@@ -60,7 +60,7 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
 
-	_, softErr, err := v.InjectTransaction(txn)
+	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
 	require.Equal(t, NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
@@ -90,7 +90,7 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
 
-	_, softErr, err := v.InjectTransaction(txn)
+	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	testutil.RequireError(t, err, NewErrTxnViolatesHardConstraint(errors.New("Invalid number of signatures")).Error())
 }
@@ -115,20 +115,20 @@ func TestInjectValidTransaction(t *testing.T) {
 	v := setupSimpleVisor(t, db, bc)
 
 	// The unconfirmed pool should be empty
-	txns, err := v.GetAllUnconfirmedTxns()
+	txns, err := v.GetAllUnconfirmedTransactions()
 	require.NoError(t, err)
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
-	_, softErr, err := v.InjectTransaction(txn)
+	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	require.NoError(t, err)
 
 	// The transaction should appear in the unconfirmed pool
-	txns, err = v.GetAllUnconfirmedTxns()
+	txns, err = v.GetAllUnconfirmedTransactions()
 	require.NoError(t, err)
 	require.Len(t, txns, 1)
-	require.Equal(t, txns[0].Txn, txn)
+	require.Equal(t, txns[0].Transaction, txn)
 }
 
 func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
@@ -151,18 +151,18 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	v := setupSimpleVisor(t, db, bc)
 
 	// The unconfirmed pool should be empty
-	txns, err := v.GetAllUnconfirmedTxns()
+	txns, err := v.GetAllUnconfirmedTransactions()
 	require.NoError(t, err)
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
-	_, softErr, err := v.InjectTransaction(txn)
+	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
 	require.Equal(t, NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
 
 	// The transaction should appear in the unconfirmed pool
-	txns, err = v.GetAllUnconfirmedTxns()
+	txns, err = v.GetAllUnconfirmedTransactions()
 	require.NoError(t, err)
 	require.Len(t, txns, 1)
 }

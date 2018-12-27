@@ -1,3 +1,8 @@
+/*
+Package coin defines the core blockchain datastructures.
+
+This package should not have any dependencies except for go stdlib and cipher.
+*/
 package coin
 
 import (
@@ -47,7 +52,7 @@ type SignedBlock struct {
 
 // VerifySignature verifies that the block is signed by pubkey
 func (b SignedBlock) VerifySignature(pubkey cipher.PubKey) error {
-	return cipher.VerifySignature(pubkey, b.Sig, b.Block.HashHeader())
+	return cipher.VerifyPubKeySignedHash(pubkey, b.Sig, b.HashHeader())
 }
 
 // NewBlock creates new block.
@@ -118,7 +123,7 @@ func (b Block) HashBody() cipher.SHA256 {
 }
 
 // Size returns the size of the Block's Transactions, in bytes
-func (b Block) Size() int {
+func (b Block) Size() (uint32, error) {
 	return b.Body.Size()
 }
 
@@ -188,7 +193,7 @@ func (bb BlockBody) Hash() cipher.SHA256 {
 }
 
 // Size returns the size of Transactions, in bytes
-func (bb BlockBody) Size() int {
+func (bb BlockBody) Size() (uint32, error) {
 	// We can't use length of self.Bytes() because it has a length prefix
 	// Need only the sum of transaction sizes
 	return bb.Transactions.Size()

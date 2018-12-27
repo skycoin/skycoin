@@ -8,8 +8,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/utc"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 // Peers peer list
@@ -38,41 +40,47 @@ func newPeerlist() peerlist {
 // Filter peers filter
 type Filter func(peer Peer) bool
 
-// loadFromFile loads if the peer.txt file does exist
-// return nil if the file doesn't exist
-func loadPeersFromFile(path string) (map[string]*Peer, error) {
-	// check if the file does exist
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, nil
-	}
-
+// loadCachedPeersFile loads peers from the cached peers.json file
+func loadCachedPeersFile(path string) (map[string]*Peer, error) {
 	peersJSON := make(map[string]PeerJSON)
 	err := file.LoadJSON(path, &peersJSON)
 
-	if err == io.EOF {
-		logger.WithField("path", path).Error("corrupt or empty file, rewriting file")
+	if os.IsNotExist(err) {
+		logger.WithField("path", path).Info("File does not exist")
 		return nil, nil
-	} else if err != nil {
+	} else if err == io.EOF {
+		logger.WithField("path", path).Error("Corrupt or empty file")
+		return nil, nil
+	}
+
+	if err != nil {
+		logger.WithField("path", path).WithError(err).Error("Failed to load peers file")
 		return nil, err
 	}
+
 	peers := make(map[string]*Peer, len(peersJSON))
 	for addr, peerJSON := range peersJSON {
+		fields := logrus.Fields{
+			"addr": addr,
+			"path": path,
+		}
+
 		a, err := validateAddress(addr, true)
 
 		if err != nil {
-			logger.Errorf("Invalid address in peers JSON file %s: %v", addr, err)
+			logger.WithError(err).WithFields(fields).Error("Invalid address in peers JSON file")
 			continue
 		}
 
 		peer, err := newPeerFromJSON(peerJSON)
 		if err != nil {
-			logger.Errorf("newPeerFromJSON failed: %v", err)
+			logger.WithError(err).WithFields(fields).Error("newPeerFromJSON failed")
 			continue
 		}
 
 		if a != peer.Addr {
-			logger.Errorf("address key %s does not match Peer.Addr %s", a, peer.Addr)
+			fields["peerAddr"] = peer.Addr
+			logger.WithFields(fields).Error("Address key does not match Peer.Addr")
 			continue
 		}
 
@@ -89,6 +97,11 @@ func (pl *peerlist) setPeers(peers []Peer) {
 	}
 }
 
+func (pl *peerlist) hasPeer(addr string) bool {
+	p, ok := pl.peers[addr]
+	return ok && p != nil
+}
+
 func (pl *peerlist) addPeer(addr string) {
 	if p, ok := pl.peers[addr]; ok && p != nil {
 		p.Seen()
@@ -97,7 +110,6 @@ func (pl *peerlist) addPeer(addr string) {
 
 	peer := NewPeer(addr)
 	pl.peers[addr] = peer
-	return
 }
 
 func (pl *peerlist) addPeers(addrs []string) {
@@ -106,10 +118,16 @@ func (pl *peerlist) addPeers(addrs []string) {
 	}
 }
 
+func (pl *peerlist) seen(addr string) {
+	if p, ok := pl.peers[addr]; ok && p != nil {
+		p.Seen()
+	}
+}
+
 // getCanTryPeers returns all peers that are triable(retried times blew exponential backoff times)
 // and are able to pass the filters.
-func (pl *peerlist) getCanTryPeers(flts ...Filter) Peers {
-	var ps Peers
+func (pl *peerlist) getCanTryPeers(flts []Filter) Peers {
+	ps := make(Peers, 0)
 	flts = append([]Filter{canTry}, flts...)
 loop:
 	for _, p := range pl.peers {
@@ -126,8 +144,8 @@ loop:
 }
 
 // getPeers returns all peers that can pass the filters.
-func (pl *peerlist) getPeers(flts ...Filter) Peers {
-	var ps Peers
+func (pl *peerlist) getPeers(flts []Filter) Peers {
+	ps := make(Peers, 0)
 loop:
 	for _, p := range pl.peers {
 		for i := range flts {
@@ -163,12 +181,8 @@ func canTry(p Peer) bool {
 	return p.CanTry()
 }
 
-func zeroRetryTimes(p Peer) bool {
-	return p.RetryTimes == 0
-}
-
 // isExchangeable filters exchangeable peers
-var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
+var isExchangeable = []Filter{hasIncomingPort, isPublic}
 
 // removePeer removes peer
 func (pl *peerlist) removePeer(addr string) {
@@ -195,7 +209,14 @@ func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
 }
 
-// setHasIncomingPort updates whether the peer is valid and has public incoming port
+// setAllUntrusted unsets the trusted field on all peers
+func (pl *peerlist) setAllUntrusted() {
+	for _, p := range pl.peers {
+		p.Trusted = false
+	}
+}
+
+// setHasIncomingPort marks the peer's port as being publicly accessible
 func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error {
 	if p, ok := pl.peers[addr]; ok {
 		p.HasIncomingPort = hasIncomingPort
@@ -206,13 +227,24 @@ func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error 
 	return fmt.Errorf("set peer.HasIncomingPort failed: %v does not exist in peer list", addr)
 }
 
+// setUserAgent sets a peer's user agent
+func (pl *peerlist) setUserAgent(addr string, userAgent useragent.Data) error {
+	if p, ok := pl.peers[addr]; ok {
+		p.UserAgent = userAgent
+		p.Seen()
+		return nil
+	}
+
+	return fmt.Errorf("set peer.UserAgent failed: %v does not exist in peer list", addr)
+}
+
 // len returns number of peers
 func (pl *peerlist) len() int {
 	return len(pl.peers)
 }
 
-// getPeerByAddr returns peer of given address
-func (pl *peerlist) getPeerByAddr(addr string) (Peer, bool) {
+// getPeer returns peer for a given address
+func (pl *peerlist) getPeer(addr string) (Peer, bool) {
 	p, ok := pl.peers[addr]
 	if ok {
 		return *p, true
@@ -220,12 +252,12 @@ func (pl *peerlist) getPeerByAddr(addr string) (Peer, bool) {
 	return Peer{}, false
 }
 
-// ClearOld removes public peers that haven't been seen in timeAgo seconds
+// clearOld removes public, untrusted peers that haven't been seen in timeAgo seconds
 func (pl *peerlist) clearOld(timeAgo time.Duration) {
-	t := utc.Now()
+	t := time.Now().UTC()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
-		if !peer.Private && t.Sub(lastSeen) > timeAgo {
+		if !peer.Private && !peer.Trusted && t.Sub(lastSeen) > timeAgo {
 			delete(pl.peers, addr)
 		}
 	}
@@ -233,25 +265,27 @@ func (pl *peerlist) clearOld(timeAgo time.Duration) {
 
 // Returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.
-func (pl *peerlist) random(count int, flts ...Filter) Peers {
-	keys := pl.getCanTryPeers(flts...).ToAddrs()
+func (pl *peerlist) random(count int, flts []Filter) Peers {
+	keys := pl.getCanTryPeers(flts).ToAddrs()
 	if len(keys) == 0 {
 		return Peers{}
 	}
+
 	max := count
-	if count == 0 || count > len(keys) {
+	if max == 0 || max > len(keys) {
 		max = len(keys)
 	}
-	var ps Peers
+
+	ps := make(Peers, max)
 	perm := rand.Perm(len(keys))
-	for _, i := range perm[:max] {
-		ps = append(ps, *pl.peers[keys[i]])
+	for i, j := range perm[:max] {
+		ps[i] = *pl.peers[keys[j]]
 	}
 	return ps
 }
 
 // save saves known peers to disk as a newline delimited list of addresses to
-// <dir><PeerDatabaseFilename>
+// <dir><PeerCacheFilename>
 func (pl *peerlist) save(fn string) error {
 	// filter the peers that has retrytime > MaxPeerRetryTimes
 	peers := make(map[string]PeerJSON)
@@ -291,6 +325,27 @@ func (pl *peerlist) resetAllRetryTimes() {
 	}
 }
 
+func (pl *peerlist) findOldestUntrustedPeer() *Peer {
+	var oldest *Peer
+
+	for _, p := range pl.peers {
+		if p.Trusted || p.Private {
+			continue
+		}
+
+		if oldest == nil || p.LastSeen < oldest.LastSeen {
+			oldest = p
+		}
+	}
+
+	if oldest != nil {
+		p := *oldest
+		return &p
+	}
+
+	return nil
+}
+
 // PeerJSON is for saving and loading peers to disk. Some fields are strange,
 // to be backwards compatible due to variable name changes
 type PeerJSON struct {
@@ -302,6 +357,7 @@ type PeerJSON struct {
 	Trusted         bool  // Whether this peer is trusted
 	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
 	HasIncomingPort *bool // Whether this peer has incoming port
+	UserAgent       useragent.Data
 }
 
 // newPeerJSON returns a PeerJSON from a Peer
@@ -312,6 +368,7 @@ func newPeerJSON(p Peer) PeerJSON {
 		Private:         p.Private,
 		Trusted:         p.Trusted,
 		HasIncomingPort: &p.HasIncomingPort,
+		UserAgent:       p.UserAgent,
 	}
 }
 
@@ -355,5 +412,6 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 		Private:         p.Private,
 		Trusted:         p.Trusted,
 		HasIncomingPort: hasIncomingPort,
+		UserAgent:       p.UserAgent,
 	}, nil
 }

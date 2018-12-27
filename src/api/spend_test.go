@@ -15,7 +15,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/testutil" //http,json helpers
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -131,7 +131,7 @@ func TestCreateTransaction(t *testing.T) {
 			name:        "415",
 			method:      http.MethodPost,
 			status:      http.StatusUnsupportedMediaType,
-			contentType: "application/x-www-form-urlencoded",
+			contentType: ContentTypeForm,
 			err:         "415 Unsupported Media Type",
 		},
 
@@ -708,7 +708,7 @@ func TestCreateTransaction(t *testing.T) {
 					ID: "foo.wlt",
 				},
 			},
-			status: http.StatusOK,
+			status:                         http.StatusOK,
 			gatewayCreateTransactionResult: txn,
 			gatewayCreateTransactionInputs: inputs,
 			createTransactionResponse:      createTxnResponse,
@@ -733,7 +733,7 @@ func TestCreateTransaction(t *testing.T) {
 					ID: "foo.wlt",
 				},
 			},
-			status: http.StatusOK,
+			status:                         http.StatusOK,
 			gatewayCreateTransactionResult: txn,
 			gatewayCreateTransactionInputs: inputs,
 			createTransactionResponse:      createTxnResponse,
@@ -758,17 +758,17 @@ func TestCreateTransaction(t *testing.T) {
 					ID: "foo.wlt",
 				},
 			},
-			status: http.StatusOK,
+			status:                         http.StatusOK,
 			gatewayCreateTransactionResult: txn,
 			gatewayCreateTransactionInputs: inputs,
 			createTransactionResponse:      createTxnResponse,
 		},
 
 		{
-			name:   "200 - manual type nonzero hours - csrf disabled",
-			method: http.MethodPost,
-			body:   validBody,
-			status: http.StatusOK,
+			name:                           "200 - manual type nonzero hours - csrf disabled",
+			method:                         http.MethodPost,
+			body:                           validBody,
+			status:                         http.StatusOK,
 			gatewayCreateTransactionResult: txn,
 			gatewayCreateTransactionInputs: inputs,
 			createTransactionResponse:      createTxnResponse,
@@ -776,73 +776,72 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
-			name:   "500 - misc error",
-			method: http.MethodPost,
-			body:   validBody,
-			status: http.StatusInternalServerError,
+			name:                        "500 - misc error",
+			method:                      http.MethodPost,
+			body:                        validBody,
+			status:                      http.StatusInternalServerError,
 			gatewayCreateTransactionErr: errors.New("unhandled error"),
-			err: "500 Internal Server Error - unhandled error",
+			err:                         "500 Internal Server Error - unhandled error",
 		},
 
 		{
-			name:   "400 - no fee",
-			method: http.MethodPost,
-			body:   validBody,
-			status: http.StatusBadRequest,
+			name:                        "400 - no fee",
+			method:                      http.MethodPost,
+			body:                        validBody,
+			status:                      http.StatusBadRequest,
 			gatewayCreateTransactionErr: fee.ErrTxnNoFee,
-			err: "400 Bad Request - Transaction has zero coinhour fee",
+			err:                         "400 Bad Request - Transaction has zero coinhour fee",
 		},
 
 		{
-			name:   "400 - insufficient coin hours",
-			method: http.MethodPost,
-			body:   validBody,
-			status: http.StatusBadRequest,
+			name:                        "400 - insufficient coin hours",
+			method:                      http.MethodPost,
+			body:                        validBody,
+			status:                      http.StatusBadRequest,
 			gatewayCreateTransactionErr: fee.ErrTxnInsufficientCoinHours,
-			err: "400 Bad Request - Insufficient coinhours for transaction outputs",
+			err:                         "400 Bad Request - Insufficient coinhours for transaction outputs",
 		},
 
 		{
-			name:   "400 - uxout doesn't exist",
-			method: http.MethodPost,
-			body:   validBody,
-			status: http.StatusBadRequest,
+			name:                        "400 - uxout doesn't exist",
+			method:                      http.MethodPost,
+			body:                        validBody,
+			status:                      http.StatusBadRequest,
 			gatewayCreateTransactionErr: blockdb.NewErrUnspentNotExist("foo"),
-			err: "400 Bad Request - unspent output of foo does not exist",
+			err:                         "400 Bad Request - unspent output of foo does not exist",
 		},
 
 		{
-			name:   "400 - other wallet error",
-			method: http.MethodPost,
-			body:   validBody,
-			status: http.StatusBadRequest,
+			name:                        "400 - other wallet error",
+			method:                      http.MethodPost,
+			body:                        validBody,
+			status:                      http.StatusBadRequest,
 			gatewayCreateTransactionErr: wallet.ErrWalletEncrypted,
-			err: "400 Bad Request - wallet is encrypted",
+			err:                         "400 Bad Request - wallet is encrypted",
 		},
 
 		{
-			name:   "404 - wallet not found",
-			method: http.MethodPost,
-			body:   validBody,
-			status: http.StatusNotFound,
+			name:                        "404 - wallet not found",
+			method:                      http.MethodPost,
+			body:                        validBody,
+			status:                      http.StatusNotFound,
 			gatewayCreateTransactionErr: wallet.ErrWalletNotExist,
-			err: "404 Not Found - wallet doesn't exist",
+			err:                         "404 Not Found - wallet doesn't exist",
 		},
 
 		{
-			name:   "403 - wallet API disabled",
-			method: http.MethodPost,
-			body:   validBody,
-			status: http.StatusForbidden,
+			name:                        "403 - wallet API disabled",
+			method:                      http.MethodPost,
+			body:                        validBody,
+			status:                      http.StatusForbidden,
 			gatewayCreateTransactionErr: wallet.ErrWalletAPIDisabled,
-			err: "403 Forbidden",
+			err:                         "403 Forbidden",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway := &MockGatewayer{}
 
 			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
 			serializedBody, err := json.Marshal(tc.body)
@@ -863,28 +862,27 @@ func TestCreateTransaction(t *testing.T) {
 
 			contentType := tc.contentType
 			if contentType == "" {
-				contentType = "application/json"
+				contentType = ContentTypeJSON
 			}
 
 			req.Header.Add("Content-Type", contentType)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))

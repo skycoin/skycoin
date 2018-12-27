@@ -12,19 +12,19 @@ var (
 )
 
 // blockSigs manages known blockSigs as received.
-// TODO -- support out of order blocks.  This requires a change to the
+// TODO -- support out of order blocks. This requires a change to the
 // message protocol to support ranges similar to bitcoin's locator hashes.
 // We also need to keep track of whether a block has been executed so that
 // as continuity is established we can execute chains of blocks.
 // TODO -- Since we will need to hold blocks that cannot be verified
 // immediately against the blockchain, we need to be able to hold multiple
-// blockSigs per BkSeq, or use hashes as keys.  For now, this is not a
-// problem assuming the signed blocks created from master are valid blocks,
+// blockSigs per BkSeq, or use hashes as keys. For now, this is not a
+// problem assuming the signed blocks created by a block publisher are valid blocks,
 // because we can check the signature independently of the blockchain.
 type blockSigs struct{}
 
 // Get returns the signature of a specific block
-func (bs blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
+func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
 	var sig cipher.Sig
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, BlockSigsBkt, hash[:], &sig); err != nil {

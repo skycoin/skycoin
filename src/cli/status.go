@@ -3,14 +3,18 @@ package cli
 import (
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/api"
 )
 
 // StatusResult is printed by cli status command
 type StatusResult struct {
-	webrpc.StatusResult
+	Status api.HealthResponse `json:"status"`
+	Config ConfigStatus       `json:"cli_config"`
+}
+
+// ConfigStatus contains the configuration parameters loaded by the cli
+type ConfigStatus struct {
 	RPCAddress string `json:"webrpc_address"`
-	UseCSRF    bool   `json:"use_csrf"`
 }
 
 func statusCmd() gcli.Command {
@@ -21,8 +25,8 @@ func statusCmd() gcli.Command {
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rpcClient := RPCClientFromContext(c)
-			status, err := rpcClient.GetStatus()
+			client := APIClientFromContext(c)
+			status, err := client.Health()
 			if err != nil {
 				return err
 			}
@@ -30,9 +34,10 @@ func statusCmd() gcli.Command {
 			cfg := ConfigFromContext(c)
 
 			return printJSON(StatusResult{
-				StatusResult: *status,
-				RPCAddress:   cfg.RPCAddress,
-				UseCSRF:      cfg.UseCSRF,
+				Status: *status,
+				Config: ConfigStatus{
+					RPCAddress: cfg.RPCAddress,
+				},
 			})
 		},
 	}

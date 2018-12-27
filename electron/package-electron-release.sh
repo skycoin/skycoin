@@ -4,9 +4,7 @@ set -e -o pipefail
 # Copies gox-compiled binaries and compiled GUI assets
 # into an electron package
 
-if [ -n "$1" ]; then
-    GOX_OSARCH="$1"
-fi
+GOX_OSARCH="$@"
 
 . build-conf.sh "$GOX_OSARCH"
 
@@ -14,10 +12,10 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$SCRIPTDIR" >/dev/null
 
-OSX64="${ELN_OUTPUT}/${OSX64_ELN_PLT}"
-WIN64="${ELN_OUTPUT}/${WIN64_ELN_PLT}"
-WIN32="${ELN_OUTPUT}/${WIN32_ELN_PLT}"
-LNX64="${ELN_OUTPUT}/${LNX64_ELN_PLT}"
+OSX64="${ELN_OUTPUT_DIR}/${OSX64_ELN_PLT}"
+WIN64="${ELN_OUTPUT_DIR}/${WIN64_ELN_PLT}"
+WIN32="${ELN_OUTPUT_DIR}/${WIN32_ELN_PLT}"
+LNX64="${ELN_OUTPUT_DIR}/${LNX64_ELN_PLT}"
 
 OSX64_RES="${OSX64}/${OSX64_APP}/Contents/Resources/app"
 WIN64_RES="${WIN64}/resources/app"
@@ -42,7 +40,7 @@ function copy_if_exists {
         exit 1
     fi
 
-    BIN="${GOX_OUTPUT}/${1}"
+    BIN="${GOX_GUI_OUTPUT_DIR}/${1}"
     DESTDIR="$2"
     DESTBIN="${DESTDIR}/${3}"
     DESTSRC="$4"
@@ -57,6 +55,10 @@ function copy_if_exists {
         echo "Copying $GUI_DIST_DIR to $DESTDIR"
         cp -R "$GUI_DIST_DIR" "$DESTDIR"
 
+        # Copy changelog to app
+        echo "Copying CHANGELOG.md to $DESTDIR"
+        cp ../CHANGELOG.md "$DESTDIR"
+
         DESTSRCS+=("$DESTSRC")
     else
         echo "$BIN does not exist"
@@ -70,8 +72,8 @@ copy_if_exists "${PKG_NAME}_windows_amd64.exe" "$WIN64_RES" "${PKG_NAME}.exe" "$
 copy_if_exists "${PKG_NAME}_windows_386.exe" "$WIN32_RES" "${PKG_NAME}.exe" "$WIN32_SRC"
 copy_if_exists "${PKG_NAME}_linux_amd64" "$LNX64_RES" "${PKG_NAME}" "$LNX64_SRC"
 
-# Copy the source for reference
-# tar it with filters, move it, then untar in order to do this
-echo "Copying source snapshot"
+# # Copy the source for reference
+# # tar it with filters, move it, then untar in order to do this
+# echo "Copying source snapshot"
 
-./package-source.sh "${DESTSRCS[@]}"
+# ./package-source.sh "${DESTSRCS[@]}"

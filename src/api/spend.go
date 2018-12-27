@@ -12,10 +12,10 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-	"github.com/skycoin/skycoin/src/visor"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -183,7 +183,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 		return nil, err
 	}
 	if t.Hash() != hash {
-		return nil, errors.New("ReadableTransaction.Hash does not match parsed transaction hash")
+		return nil, errors.New("readable.Transaction.Hash does not match parsed transaction hash")
 	}
 
 	return &t, nil
@@ -369,7 +369,7 @@ func (r createTransactionRequest) Validate() error {
 			return fmt.Errorf("to[%d].coins must not be zero", i)
 		}
 
-		if to.Coins.Value()%visor.MaxDropletDivisor() != 0 {
+		if to.Coins.Value()%params.UserVerifyTxn.MaxDropletDivisor() != 0 {
 			return fmt.Errorf("to[%d].coins has too many decimal places", i)
 		}
 	}
@@ -465,6 +465,10 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 	}
 }
 
+// createTransactionHandler creates a signed transaction
+// Method: POST
+// URI: /api/v1/wallet/transaction
+// Args: JSON body
 func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -472,7 +476,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if r.Header.Get("Content-Type") != "application/json" {
+		if r.Header.Get("Content-Type") != ContentTypeJSON {
 			wh.Error415(w)
 			return
 		}

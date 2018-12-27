@@ -12,29 +12,35 @@ default_connections = [
     "118.178.135.93:6000",
     "47.88.33.156:6000",
     "121.41.103.148:6000",
-    "120.77.69.188:6000",
     "104.237.142.206:6000",
     "176.58.126.224:6000",
     "172.104.85.6:6000",
     "139.162.7.132:6000",
+    "139.162.39.186:6000",
+    "45.33.111.142:6000",
+    "109.237.27.172:6000",
+    "172.104.41.14:6000",
 ]
 peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
-#port = 6000
-#web_interface_port = 6420
+# port = 6000
+# web_interface_port = 6420
+# unconfirmed_burn_factor = 2
+# unconfirmed_max_transaction_size = 32 * 1024
+# unconfirmed_max_decimals = 3
+# create_block_burn_factor = 2
+# create_block_max_transaction_size = 32 * 1024
+# create_block_max_decimals = 3
+# max_block_size = 32 * 1024
 
-[build]
-version = "0.24.1"
-#build = ""
-#commit = ""
-
-[visor]
-#max_coin_supply = 1e8
-#distribution_addresses_total = 100
-#initial_unlocked_count = 25
-#unlock_addresss_rate = 5
-#unlocked_time_internal = 60 * 60 * 24 * 365
-#max_droplet_precision = 3
-#default_max_block_size = 32 * 1024
+[params]
+# max_coin_supply = 1e8
+# distribution_addresses_total = 100
+# initial_unlocked_count = 25
+# unlock_addresss_rate = 5
+# unlocked_time_internal = 60 * 60 * 24 * 365
+# user_max_decimals = 3
+# user_max_transaction_size = 32 * 1024
+# user_burn_factor = 2
 distribution_addresses = [
     "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
     "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",

@@ -1,3 +1,6 @@
+/*
+Package secp256k1 provides private and public key generation with the secp256k1 elliptic curve.
+*/
 // nolint: golint
 package secp256k1
 
@@ -8,6 +11,9 @@ import (
 
 	secp "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 )
+
+// DebugPrint enable debug print statements
+var DebugPrint = false
 
 //intenal, may fail
 //may return nil
@@ -36,7 +42,6 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {
-
 		log.Printf("seckey= %s", hex.EncodeToString(seckey))
 		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
 		log.Panicf("ERROR: pubkey verification failed, for deterministic. ret=%d", ret)
@@ -101,8 +106,8 @@ func UncompressPubkey(pubkey []byte) []byte {
 	}
 
 	var pubXY secp.XY
-	err := pubXY.ParsePubkey(pubkey)
-	if err == false {
+	ok := pubXY.ParsePubkey(pubkey)
+	if !ok {
 		log.Panic("ERROR: impossible, pubkey parse fail")
 	}
 
@@ -161,11 +166,13 @@ new_seckey:
 	seed = SumSHA256(seed[0:32])
 	copy(seckey[0:32], seed[0:32])
 
-	if bytes.Equal(seckey, seed) == false {
+	if !bytes.Equal(seckey, seed) {
 		log.Panic()
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
-		log.Printf("generateDeterministicKeyPair, secp.SeckeyIsValid fail")
+		if DebugPrint {
+			log.Printf("generateDeterministicKeyPair, secp.SeckeyIsValid fail")
+		}
 		goto new_seckey //regen
 	}
 
@@ -209,26 +216,25 @@ func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 	return pubkey, seckey
 }
 
-// DeterministicKeyPairIterator iteratores for deterministic keypair generation. Returns SHA256, Pubkey, Seckey
-//Feed SHA256 back into function to generate sequence of seckeys
-//If private key is diclosed, should not be able to compute future or past keys in sequence
+// DeterministicKeyPairIterator iteratores for deterministic keypair generation. Returns SHA256, PubKey, SecKey as bytes
+// Feeds SHA256 back into function to generate sequence of seckeys
+// If private key is disclosed, should not be able to compute future or past keys in sequence
 func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
-	seed1 := Secp256k1Hash(seedIn) //make it difficult to derive future seckeys from previous seckeys
+	seed1 := Secp256k1Hash(seedIn) // make it difficult to derive future seckeys from previous seckeys
 	seed2 := SumSHA256(append(seedIn, seed1...))
-	pubkey, seckey := generateDeterministicKeyPair(seed2) //this is our seckey
+	pubkey, seckey := generateDeterministicKeyPair(seed2) // this is our seckey
 	return seed1, pubkey, seckey
 }
 
 // Sign sign hash
 func Sign(msg []byte, seckey []byte) []byte {
-
 	if len(seckey) != 32 {
 		log.Panic("Sign, Invalid seckey length")
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
 		log.Panic("Attempting to sign with invalid seckey")
 	}
-	if msg == nil {
+	if len(msg) == 0 {
 		log.Panic("Sign, message nil")
 	}
 	var nonce = RandByte(32)
@@ -258,9 +264,9 @@ func Sign(msg []byte, seckey []byte) []byte {
 	if len(sigBytes) != 64 {
 		log.Fatalf("Invalid signature byte count: %d", len(sigBytes))
 	}
-	sig[64] = byte(int(recid))
+	sig[64] = byte(int(recid)) // nolint: unconvert
 
-	if int(recid) > 4 {
+	if int(recid) > 4 { // nolint: unconvert
 		log.Panic()
 	}
 
@@ -300,7 +306,7 @@ func SignDeterministic(msg []byte, seckey []byte, nonceSeed []byte) []byte {
 		log.Fatalf("Invalid signature byte count: %d", len(sigBytes))
 	}
 
-	if int(recid) > 4 {
+	if int(recid) > 4 { // nolint: unconvert
 		log.Panic()
 	}
 
@@ -347,18 +353,18 @@ func VerifyPubkey(pubkey []byte) int {
 	var pubkey1 secp.XY
 	ret := pubkey1.ParsePubkey(pubkey)
 
-	if ret == false {
+	if !ret {
 		return -2 //invalid, parse fail
 	}
 	//fails for unknown reason
 	//TODO: uncomment
-	if pubkey1.IsValid() == false {
+	if !pubkey1.IsValid() {
 		return -4 //invalid, validation fail
 	}
 	return 1 //valid
 }
 
-// VerifySignatureValidity renames ChkSignatureValidity
+// VerifySignatureValidity verifies a signature is well formed and not malleable
 func VerifySignatureValidity(sig []byte) int {
 	//64+1
 	if len(sig) != 65 {
@@ -381,7 +387,6 @@ func VerifySignatureValidity(sig []byte) int {
 }
 
 // VerifySignature for compressed signatures, does not need pubkey
-// Rename SignatureChk
 func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	if msg == nil || sig == nil || pubkey1 == nil {
 		log.Panic("VerifySignature, ERROR: invalid input, nils")
@@ -415,7 +420,7 @@ func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 		log.Panic("recovered pubkey length invalid")
 	}
 
-	if bytes.Equal(pubkey1, pubkey2) != true {
+	if !bytes.Equal(pubkey1, pubkey2) {
 		return 0 //pubkeys do not match
 	}
 
@@ -442,7 +447,7 @@ func SignatureErrorString(msg []byte, sig []byte, pubkey1 []byte) string {
 		return "pubkey from signature failed"
 	}
 
-	if bytes.Equal(pubkey1, pubkey2) == false {
+	if !bytes.Equal(pubkey1, pubkey2) {
 		return "input pubkey and recovered pubkey do not match"
 	}
 
@@ -464,7 +469,9 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 		recid)
 
 	if ret != 1 {
-		log.Printf("RecoverPubkey: code %d", ret)
+		if DebugPrint {
+			log.Printf("RecoverPubkey: code %d", ret)
+		}
 		return nil
 	}
 	//var pubkey2 []byte = pubkey1.Bytes() //compressed
@@ -492,11 +499,15 @@ func ECDH(pub []byte, sec []byte) []byte {
 	}
 
 	if VerifySeckey(sec) != 1 {
-		log.Printf("Invalid Seckey")
+		if DebugPrint {
+			log.Printf("Invalid Seckey")
+		}
 	}
 
 	if ret := VerifyPubkey(pub); ret != 1 {
-		log.Printf("Invalid Pubkey, %d", ret)
+		if DebugPrint {
+			log.Printf("Invalid Pubkey, %d", ret)
+		}
 		return nil
 	}
 

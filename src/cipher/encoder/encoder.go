@@ -2,17 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package encoder binary implements translation between numbers and byte sequences
-// and encoding and decoding of varints.
-//
-// Numbers are translated by reading and writing fixed-size values.
-// A fixed-size value is either a fixed-size arithmetic
-// type (int8, uint8, int16, float32, complex64, ...)
-// or an array or struct containing only fixed-size values.
-//
-// Varints are a method of encoding integers using one or more bytes;
-// numbers with smaller absolute value take a smaller number of bytes.
-// For a specification, see http://code.google.com/apis/protocolbuffers/docs/encoding.html.
+// Package encoder binary implements translation between struct data and byte sequences
 //
 // Fields can be ignored with the struct tag `enc:"-"` .
 // Unexported struct fields are ignored by default .
@@ -23,388 +13,242 @@
 // When omitempty is set, the no data will be written if the value is empty.
 // If the value is empty and omitempty is not set, then a length prefix with value 0 would be written.
 // omitempty can only be used for the last field in the struct
+//
+// Encoding of maps is supported, but note that the use of them results in non-deterministic output.
+// If determinism is required, do not use map.
+//
+// A length restriction to certain fields can be applied when decoding.
+// Use the tag `,maxlen=` on a struct field to apply this restriction.
+// `maxlen` works for string and slice types. The length is interpreted as the length
+// of the string or the number of elements in the slice.
+// Note that maxlen does not affect serialization; it may serialize objects which could fail deserialization.
+// Callers should check their length restricted values manually prior to serialization.
 package encoder
 
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"math"
 	"reflect"
+	"strconv"
 	"strings"
 )
-
-/*
-Todo:
-- ensure that invalid input from foreign server cannot crash
-- validate packet legnth for incoming
-*/
 
 var (
 	// ErrBufferUnderflow bytes in input buffer not enough to deserialize expected type
 	ErrBufferUnderflow = errors.New("Not enough buffer data to deserialize")
+	// ErrBufferOverflow bytes in output buffer not enough to serialize expected type
+	ErrBufferOverflow = errors.New("Not enough buffer data to serialize")
 	// ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
 	ErrInvalidOmitEmpty = errors.New("omitempty only supported for the final field in the struct")
+	// ErrRemainingBytes bytes remain in buffer after deserializing object
+	ErrRemainingBytes = errors.New("Bytes remain in buffer after deserializing object")
+	// ErrMaxLenExceeded a specified maximum length was exceeded when serializing or deserializing a variable length field
+	ErrMaxLenExceeded = errors.New("Maximum length exceeded for variable length field")
 )
 
-// TODO: constant length byte arrays must not be prefixed
+// SerializeAtomic encoder an integer or boolean contained in `data` to bytes.
+// Panics if `data` is not an integer or boolean type.
+func SerializeAtomic(data interface{}) []byte {
+	var b [8]byte
 
-// EncodeInt encodes an Integer type contained in `data`
-// into buffer `b`. If `data` is not an Integer type,
-// panic message is logged.
-func EncodeInt(b []byte, data interface{}) {
-	//var b [8]byte
-	var bs []byte
 	switch v := data.(type) {
-
-	case int8:
-		bs = b[:1]
-		b[0] = byte(v)
-	case uint8:
-		bs = b[:1]
-		b[0] = byte(v)
-	case int16:
-		bs = b[:2]
-		lePutUint16(bs, uint16(v))
-	case uint16:
-		bs = b[:2]
-		lePutUint16(bs, v)
-	case int32:
-		bs = b[:4]
-		lePutUint32(bs, uint32(v))
-	case uint32:
-		bs = b[:4]
-		lePutUint32(bs, v)
-	case int64:
-		bs = b[:8]
-		lePutUint64(bs, uint64(v))
-	case uint64:
-		bs = b[:8]
-		lePutUint64(bs, v)
-	default:
-		log.Panic("PushAtomic, case not handled")
-	}
-}
-
-// DecodeInt decodes `in` buffer into `data` parameter.
-// If `data` is not an Integer type, panic message is logged.
-func DecodeInt(in []byte, data interface{}) {
-
-	n := intDestSize(data)
-	if len(in) < n {
-		log.Panic()
-	}
-	if n != 0 {
-		var b [8]byte
-		copy(b[0:n], in[0:n])
-		bs := b[:n]
-
-		switch v := data.(type) {
-		case *int8:
-			*v = int8(b[0])
-		case *uint8:
-			*v = b[0]
-		case *int16:
-			*v = int16(leUint16(bs))
-		case *uint16:
-			*v = leUint16(bs)
-		case *int32:
-			*v = int32(leUint32(bs))
-		case *uint32:
-			*v = leUint32(bs)
-		case *int64:
-			*v = int64(leUint64(bs))
-		case *uint64:
-			*v = leUint64(bs)
-		default:
-			//FIX: this does not get triggered on invalid type in
-			// pass in struct on unit test
-			log.Panic("PopAtomic, case not handled")
-
+	case bool:
+		if v {
+			b[0] = 1
+		} else {
+			b[0] = 0
 		}
-
+		return b[:1]
+	case int8:
+		b[0] = byte(v)
+		return b[:1]
+	case uint8:
+		b[0] = v
+		return b[:1]
+	case int16:
+		lePutUint16(b[:2], uint16(v))
+		return b[:2]
+	case uint16:
+		lePutUint16(b[:2], v)
+		return b[:2]
+	case int32:
+		lePutUint32(b[:4], uint32(v))
+		return b[:4]
+	case uint32:
+		lePutUint32(b[:4], v)
+		return b[:4]
+	case int64:
+		lePutUint64(b[:8], uint64(v))
+		return b[:8]
+	case uint64:
+		lePutUint64(b[:8], v)
+		return b[:8]
+	default:
+		log.Panic("SerializeAtomic unhandled type")
+		return nil
 	}
 }
 
 // DeserializeAtomic deserializes `in` buffer into `data`
-// parameter. If `data` is not an atomic type
-// (i.e., Integer type or Boolean type), panic message is logged.
-func DeserializeAtomic(in []byte, data interface{}) {
-	n := intDestSize(data)
-	if len(in) < n {
-		log.Panic(ErrBufferUnderflow)
-	}
-	if n != 0 {
-		var b [8]byte
-		copy(b[0:n], in[0:n])
-		bs := b[:n]
-
-		switch v := data.(type) {
-		case *bool:
-			if b[0] == 1 {
-				*v = true
-			} else {
-				*v = false
-			}
-		case *int8:
-			*v = int8(b[0])
-		case *uint8:
-			*v = b[0]
-		case *int16:
-			*v = int16(leUint16(bs))
-		case *uint16:
-			*v = leUint16(bs)
-		case *int32:
-			*v = int32(leUint32(bs))
-		case *uint32:
-			*v = leUint32(bs)
-		case *int64:
-			*v = int64(leUint64(bs))
-		case *uint64:
-			*v = leUint64(bs)
-		default:
-			//FIX: this does not get triggered on invalid type in
-			// pass in struct on unit test
-			log.Panic("type not atomic")
+// parameter. Panics if `data` is not an integer or boolean type.
+// Returns the number of bytes read.
+func DeserializeAtomic(in []byte, data interface{}) (int, error) {
+	switch v := data.(type) {
+	case *bool:
+		if len(in) < 1 {
+			return 0, ErrBufferUnderflow
 		}
+		if in[0] == 0 {
+			*v = false
+		} else {
+			*v = true
+		}
+		return 1, nil
+	case *int8:
+		if len(in) < 1 {
+			return 0, ErrBufferUnderflow
+		}
+		*v = int8(in[0])
+		return 1, nil
+	case *uint8:
+		if len(in) < 1 {
+			return 0, ErrBufferUnderflow
+		}
+		*v = in[0]
+		return 1, nil
+	case *int16:
+		if len(in) < 2 {
+			return 0, ErrBufferUnderflow
+		}
+		*v = int16(leUint16(in[:2]))
+		return 2, nil
+	case *uint16:
+		if len(in) < 2 {
+			return 0, ErrBufferUnderflow
+		}
+		*v = leUint16(in[:2])
+		return 2, nil
+	case *int32:
+		if len(in) < 4 {
+			return 0, ErrBufferUnderflow
+		}
+		*v = int32(leUint32(in[:4]))
+		return 4, nil
+	case *uint32:
+		if len(in) < 4 {
+			return 0, ErrBufferUnderflow
+		}
+		*v = leUint32(in[:4])
+		return 4, nil
+	case *int64:
+		if len(in) < 8 {
+			return 0, ErrBufferUnderflow
+		}
+		*v = int64(leUint64(in[:8]))
+		return 8, nil
+	case *uint64:
+		if len(in) < 8 {
+			return 0, ErrBufferUnderflow
+		}
+		*v = leUint64(in[:8])
+		return 8, nil
+	default:
+		log.Panic("DeserializeAtomic unhandled type")
+		return 0, nil
 	}
 }
 
+// SerializeString serializes a string to []byte
+func SerializeString(s string) []byte {
+	v := reflect.ValueOf(s)
+	size, err := datasizeWrite(v)
+	if err != nil {
+		log.Panic(err)
+	}
+	buf := make([]byte, size)
+	e := &encoder{buf: buf}
+	e.value(v)
+	return buf
+}
+
+// DeserializeString deserializes a string from []byte, returning the string and the number of bytes read
+func DeserializeString(in []byte, maxlen int) (string, int, error) {
+	var s string
+	v := reflect.ValueOf(&s)
+	v = v.Elem()
+
+	inlen := len(in)
+	d1 := &decoder{buf: make([]byte, inlen)}
+	copy(d1.buf, in)
+
+	err := d1.value(v, maxlen)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return s, inlen - len(d1.buf), nil
+}
+
 // DeserializeRaw deserializes `in` buffer into return
-// parameter. If `data` is not either a Pointer type,
-// a Slice type or a Struct type, an error message
+// parameter. If `data` is not a Pointer or Map type an error
 // is returned. If `in` buffer can't be deserialized,
-// an error message is returned.
+// an error message is returned. If there are remaining
+// bytes in `in` after decoding to data, ErrRemainingBytes is returned.
 func DeserializeRaw(in []byte, data interface{}) error {
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
 	case reflect.Ptr:
 		v = v.Elem()
-	case reflect.Slice:
-	case reflect.Struct:
 	case reflect.Map:
 	default:
-		return fmt.Errorf("Invalid type %s", reflect.TypeOf(v).String())
+		return fmt.Errorf("DeserializeRaw value must be a ptr, is %s", v.Kind().String())
 	}
 
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)
 
-	//check if can deserialize
-	d2 := &decoder{buf: make([]byte, len(in))}
-	copy(d2.buf, in)
-	if d2.dchk(v) != 0 {
-		return errors.New("Deserialization failed")
-	}
-
-	return d1.value(v)
-}
-
-// Deserialize reads `dsize` bytes from `r` and deserializes
-// the resulting buffer into return parameter. If `data`
-// is not either a Pointer type, a Slice type or a Struct type,
-// an error message is returned. If `in` buffer can't be deserialized,
-// an error message is returned.
-func Deserialize(r io.Reader, dsize int, data interface{}) error {
-	// Fallback to reflect-based decoding.
-	//fmt.Printf("A1 v is type %s \n", reflect.TypeOf(data).String() )
-	//fmt.Printf("A2 v is value/type %s \n", reflect.ValueOf(data).Type().String() )
-	//fmt.Printf("A2 v is value,kind %s \n", reflect.ValueOf(data).Kind().String() )
-
-	var v reflect.Value
-	switch d := reflect.ValueOf(data); d.Kind() {
-	//case reflect.
-
-	case reflect.Ptr:
-		v = d.Elem()
-	case reflect.Slice:
-		v = d
-	case reflect.Struct:
-
-	default:
-		return errors.New("binary.Read: invalid type " + reflect.TypeOf(d).String())
-	}
-	//size, err := datasizeWrite(v)
-	//if err != nil {
-	//	return errors.New("binary.Read: " + err.Error())
-	//}
-
-	//fmt.Printf("B v is type %s \n", v.Type().String() )
-	//fmt.Printf("C v is type %s \n", reflect.TypeOf(v).String() )
-	//fmt.Printf("D v is type %s \n", reflect.TypeOf(reflect.TypeOf(v)).String() )
-
-	d1 := &decoder{buf: make([]byte, dsize)}
-	if _, err := io.ReadFull(r, d1.buf); err != nil {
+	if err := d1.value(v, 0); err != nil {
 		return err
 	}
 
-	//check if can deserialize
-	d2 := &decoder{buf: make([]byte, dsize)}
-	copy(d2.buf, d1.buf)
-	if d2.dchk(v) != 0 {
-		return errors.New("Deserialization failed")
+	if len(d1.buf) != 0 {
+		return ErrRemainingBytes
 	}
 
-	return d1.value(v)
-}
-
-// CanDeserialize returns true if `in` buffer can be
-// deserialized into `dst`'s type. Returns false in any
-// other case.
-func CanDeserialize(in []byte, dst reflect.Value) bool {
-	d1 := &decoder{buf: make([]byte, len(in))}
-	copy(d1.buf, in)
-	if d1.dchk(dst) != 0 {
-		return false
-	}
-	return true
+	return nil
 }
 
 // DeserializeRawToValue deserializes `in` buffer into
 // `dst`'s type and returns the number of bytes used and
 // the value of the buffer. If `data` is not either a
-// Pointer type, a Slice type or a Struct type, 0 and an error
-// message are returned. If `in` buffer can't be deserialized, 0 and
-// an error message are returned.
-func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
-	var v reflect.Value
-	switch dst.Kind() {
+// Pointer type an error is returned.
+// If `in` buffer can't be deserialized, the number of bytes read and an error message are returned.
+func DeserializeRawToValue(in []byte, v reflect.Value) (int, error) {
+	switch v.Kind() {
 	case reflect.Ptr:
-		v = dst.Elem()
-	case reflect.Slice:
-		v = dst
-	case reflect.Struct:
+		v = v.Elem()
+	case reflect.Map:
 	default:
-		return 0, errors.New("binary.Read: invalid type " + reflect.TypeOf(dst).String())
+		return 0, fmt.Errorf("DeserializeRawToValue value must be a ptr, is %s", v.Kind().String())
 	}
 
 	inlen := len(in)
 	d1 := &decoder{buf: make([]byte, inlen)}
 	copy(d1.buf, in)
 
-	//check if can deserialize
-	d2 := &decoder{buf: make([]byte, inlen)}
-	copy(d2.buf, d1.buf)
-	if d2.dchk(v) != 0 {
-		return 0, errors.New("Deserialization failed")
+	err := d1.value(v, 0)
+	if err != nil {
+		return 0, err
 	}
 
-	err := d1.value(v)
-	return inlen - len(d1.buf), err
-}
-
-// DeserializeToValue reads `dsize` bytes from `r`,
-// deserializes the resulting buffer into `dst`'s type and
-// returns the value of the buffer. If `data` is not either
-// a Pointer type, a Slice type or a Struct type, an error
-// message is returned. If `in` buffer can't be deserialized, an
-// error message is returned.
-func DeserializeToValue(r io.Reader, dsize int, dst reflect.Value) error {
-
-	//fmt.Printf("*A1 v is type %s \n", data.Type().String() )		//this is the type of the value
-
-	var v reflect.Value
-	switch dst.Kind() {
-	case reflect.Ptr:
-		v = dst.Elem()
-	case reflect.Slice:
-		v = dst
-	case reflect.Struct:
-
-	default:
-		return errors.New("binary.Read: invalid type " + reflect.TypeOf(dst).String())
-	}
-
-	//fmt.Printf("*A2 v is type %s \n", v.Type().String() )		//this is the type of the value
-
-	d1 := &decoder{buf: make([]byte, dsize)}
-	if _, err := io.ReadFull(r, d1.buf); err != nil {
-		return err
-	}
-
-	return d1.value(v)
-}
-
-// SerializeAtomic returns serialization of `data`
-// parameter. If `data` is not an atomic type, panic message is logged.
-func SerializeAtomic(data interface{}) []byte {
-	var b [8]byte
-	var bs []byte
-	switch v := data.(type) {
-	case *bool:
-		bs = b[:1]
-		if *v {
-			b[0] = 1
-		} else {
-			b[0] = 0
-		}
-	case bool:
-		bs = b[:1]
-		if v {
-			b[0] = 1
-		} else {
-			b[0] = 0
-		}
-	case *int8:
-		bs = b[:1]
-		b[0] = byte(*v)
-	case int8:
-		bs = b[:1]
-		b[0] = byte(v)
-	case *uint8:
-		bs = b[:1]
-		b[0] = *v
-	case uint8:
-		bs = b[:1]
-		b[0] = byte(v)
-	case *int16:
-		bs = b[:2]
-		lePutUint16(bs, uint16(*v))
-	case int16:
-		bs = b[:2]
-		lePutUint16(bs, uint16(v))
-	case *uint16:
-		bs = b[:2]
-		lePutUint16(bs, *v)
-	case uint16:
-		bs = b[:2]
-		lePutUint16(bs, v)
-	case *int32:
-		bs = b[:4]
-		lePutUint32(bs, uint32(*v))
-	case int32:
-		bs = b[:4]
-		lePutUint32(bs, uint32(v))
-	case *uint32:
-		bs = b[:4]
-		lePutUint32(bs, *v)
-	case uint32:
-		bs = b[:4]
-		lePutUint32(bs, v)
-	case *int64:
-		bs = b[:8]
-		lePutUint64(bs, uint64(*v))
-	case int64:
-		bs = b[:8]
-		lePutUint64(bs, uint64(v))
-	case *uint64:
-		bs = b[:8]
-		lePutUint64(bs, *v)
-	case uint64:
-		bs = b[:8]
-		lePutUint64(bs, v)
-	default:
-		log.Panic("type not atomic")
-	}
-	return bs
+	return inlen - len(d1.buf), nil
 }
 
 // Serialize returns serialized basic type-based `data`
-// parameter. Encoding is reflect-based.
+// parameter. Encoding is reflect-based. Panics if `data` is not serializable.
 func Serialize(data interface{}) []byte {
-	// Fast path for basic types.
-	// Fallback to reflect-based encoding.
 	v := reflect.Indirect(reflect.ValueOf(data))
 	size, err := datasizeWrite(v)
 	if err != nil {
@@ -420,12 +264,12 @@ func Serialize(data interface{}) []byte {
 // value v, which must be a fixed-size value (struct) or a
 // slice of fixed-size values, or a pointer to such data.
 // Reflect-based encoding is used.
-func Size(v interface{}) int {
+func Size(v interface{}) (int, error) {
 	n, err := datasizeWrite(reflect.Indirect(reflect.ValueOf(v)))
 	if err != nil {
-		return -1
+		return 0, err
 	}
-	return n
+	return n, nil
 }
 
 // isEmpty returns true if a value is "empty".
@@ -457,28 +301,54 @@ func datasizeWrite(v reflect.Value) (int, error) {
 
 	case reflect.Array:
 		// Arrays are a fixed size, so the length is not written
-		size := 0
-		for i := 0; i < v.Len(); i++ {
-			elem := v.Index(i)
-			s, err := datasizeWrite(elem)
-			if err != nil {
-				return 0, err
+		t := v.Type()
+		elem := t.Elem()
+		switch elem.Kind() {
+		case reflect.Uint8, reflect.Int8:
+			return v.Len(), nil
+		case reflect.Uint16, reflect.Int16:
+			return v.Len() * 2, nil
+		case reflect.Uint32, reflect.Int32, reflect.Float32:
+			return v.Len() * 4, nil
+		case reflect.Uint64, reflect.Int64, reflect.Float64:
+			return v.Len() * 8, nil
+		default:
+			size := 0
+			for i := 0; i < v.Len(); i++ {
+				elem := v.Index(i)
+				s, err := datasizeWrite(elem)
+				if err != nil {
+					return 0, err
+				}
+				size += s
 			}
-			size += s
+			return size, nil
 		}
-		return size, nil
 
 	case reflect.Slice:
-		size := 0
-		for i := 0; i < v.Len(); i++ {
-			elem := v.Index(i)
-			s, err := datasizeWrite(elem)
-			if err != nil {
-				return 0, err
+		t := v.Type()
+		elem := t.Elem()
+		switch elem.Kind() {
+		case reflect.Uint8, reflect.Int8:
+			return 4 + v.Len(), nil
+		case reflect.Uint16, reflect.Int16:
+			return 4 + v.Len()*2, nil
+		case reflect.Uint32, reflect.Int32, reflect.Float32:
+			return 4 + v.Len()*4, nil
+		case reflect.Uint64, reflect.Int64, reflect.Float64:
+			return 4 + v.Len()*8, nil
+		default:
+			size := 0
+			for i := 0; i < v.Len(); i++ {
+				elem := v.Index(i)
+				s, err := datasizeWrite(elem)
+				if err != nil {
+					return 0, err
+				}
+				size += s
 			}
-			size += s
+			return 4 + size, nil
 		}
-		return 4 + size, nil
 
 	case reflect.Map:
 		// length prefix
@@ -508,21 +378,24 @@ func datasizeWrite(v reflect.Value) (int, error) {
 				continue
 			}
 
-			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
+			tag := ff.Tag.Get("enc")
+			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
 				log.Panic(ErrInvalidOmitEmpty)
 			}
 
-			if tag != "-" {
-				fv := v.Field(i)
-				if !omitempty || !isEmpty(fv) {
-					s, err := datasizeWrite(fv)
-					if err != nil {
-						return 0, err
-					}
-					sum += s
+			if len(tag) > 0 && tag[0] == '-' {
+				continue
+			}
+
+			fv := v.Field(i)
+			if !omitempty || !isEmpty(fv) {
+				s, err := datasizeWrite(fv)
+				if err != nil {
+					return 0, err
 				}
+				sum += s
 			}
 		}
 		return sum, nil
@@ -531,7 +404,7 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		return 1, nil
 
 	case reflect.String:
-		return len(v.String()) + 4, nil
+		return 4 + v.Len(), nil
 
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
@@ -539,21 +412,42 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		return int(t.Size()), nil
 
 	default:
-		return 0, errors.New("invalid type " + t.String())
+		return 0, fmt.Errorf("invalid type %s", t.String())
 	}
 }
 
-// ParseTag to extract encoder args from raw string
-func ParseTag(tag string) (string, bool) {
-	tagSplit := strings.Split(tag, ",")
-	name := tagSplit[0]
+// TagOmitempty returns true if the tag specifies omitempty
+func TagOmitempty(tag string) bool {
+	return strings.Contains(tag, ",omitempty")
+}
 
-	omitempty := false
-	if len(tagSplit) > 1 && tagSplit[1] == "omitempty" {
-		omitempty = true
+func tagName(tag string) string { // nolint: deadcode,megacheck
+	commaIndex := strings.Index(tag, ",")
+	if commaIndex == -1 {
+		return tag
 	}
 
-	return name, omitempty
+	return tag[:commaIndex]
+}
+
+func tagMaxLen(tag string) int {
+	maxlenIndex := strings.Index(tag, ",maxlen=")
+	if maxlenIndex == -1 {
+		return 0
+	}
+
+	maxlenRem := tag[maxlenIndex+len(",maxlen="):]
+	commaIndex := strings.Index(maxlenRem, ",")
+	if commaIndex != -1 {
+		maxlenRem = maxlenRem[:commaIndex]
+	}
+
+	maxlen, err := strconv.Atoi(maxlenRem)
+	if err != nil {
+		panic("maxlen must be a number")
+	}
+
+	return maxlen
 }
 
 /*
@@ -594,20 +488,21 @@ func lePutUint64(b []byte, v uint64) {
 	b[7] = byte(v >> 56)
 }
 
-type coder struct {
-	buf []byte //nolint: structcheck
+type decoder struct {
+	buf []byte
 }
 
-type decoder coder
-type encoder coder
+type encoder struct {
+	buf []byte
+}
 
-func (d *decoder) bool() bool {
-	x := d.buf[0]
-	d.buf = d.buf[1:] //advance slice
-	if x == 0 {
-		return false
+func (d *decoder) bool() (bool, error) {
+	if len(d.buf) < 1 {
+		return false, ErrBufferUnderflow
 	}
-	return true
+	x := d.buf[0]
+	d.buf = d.buf[1:] // advance slice
+	return x != 0, nil
 }
 
 func (e *encoder) bool(x bool) {
@@ -619,27 +514,14 @@ func (e *encoder) bool(x bool) {
 	e.buf = e.buf[1:]
 }
 
-func (d decoder) string() string {
-	l := int(d.uint32()) //pop length
-	t := d.buf[:l]
-	d.buf = d.buf[l:]
-	return string(t)
-}
+func (d *decoder) uint8() (uint8, error) {
+	if len(d.buf) < 1 {
+		return 0, ErrBufferUnderflow
+	}
 
-func (e encoder) string(xs string) {
-	x := []byte(xs)
-	l := len(x)
-	for i := 0; i < l; i++ {
-		e.buf[i] = x[i]
-	} //memcpy
-	e.buf = e.buf[l:] //advance slice l bytes
-
-} //write this
-
-func (d *decoder) uint8() uint8 {
 	x := d.buf[0]
-	d.buf = d.buf[1:] //advance slice
-	return x
+	d.buf = d.buf[1:] // advance slice
+	return x, nil
 }
 
 func (e *encoder) uint8(x uint8) {
@@ -647,10 +529,14 @@ func (e *encoder) uint8(x uint8) {
 	e.buf = e.buf[1:]
 }
 
-func (d *decoder) uint16() uint16 {
+func (d *decoder) uint16() (uint16, error) {
+	if len(d.buf) < 2 {
+		return 0, ErrBufferUnderflow
+	}
+
 	x := leUint16(d.buf[0:2])
 	d.buf = d.buf[2:]
-	return x
+	return x, nil
 }
 
 func (e *encoder) uint16(x uint16) {
@@ -658,10 +544,14 @@ func (e *encoder) uint16(x uint16) {
 	e.buf = e.buf[2:]
 }
 
-func (d *decoder) uint32() uint32 {
+func (d *decoder) uint32() (uint32, error) {
+	if len(d.buf) < 4 {
+		return 0, ErrBufferUnderflow
+	}
+
 	x := leUint32(d.buf[0:4])
 	d.buf = d.buf[4:]
-	return x
+	return x, nil
 }
 
 func (e *encoder) uint32(x uint32) {
@@ -669,10 +559,14 @@ func (e *encoder) uint32(x uint32) {
 	e.buf = e.buf[4:]
 }
 
-func (d *decoder) uint64() uint64 {
+func (d *decoder) uint64() (uint64, error) {
+	if len(d.buf) < 8 {
+		return 0, ErrBufferUnderflow
+	}
+
 	x := leUint64(d.buf[0:8])
 	d.buf = d.buf[8:]
-	return x
+	return x, nil
 }
 
 func (e *encoder) uint64(x uint64) {
@@ -680,48 +574,80 @@ func (e *encoder) uint64(x uint64) {
 	e.buf = e.buf[8:]
 }
 
-//v.SetBytes(d.bytes())
-func (d decoder) bytes() []byte {
-	l := int(d.uint32()) //pop length
-	t := d.buf[:l]
-	d.buf = d.buf[l:]
-	return t
+func (e *encoder) bytes(x []byte) {
+	e.uint32(uint32(len(x)))
+	copy(e.buf, x)
+	e.buf = e.buf[len(x):]
 }
 
-func (e encoder) bytes(x []byte) {
-	l := len(x)
-	for i := 0; i < l; i++ {
-		e.buf[i] = x[i]
-	} //memcpy
-	e.buf = e.buf[l:] //advance slice l bytes
+func (d *decoder) int8() (int8, error) {
+	u, err := d.uint8()
+	if err != nil {
+		return 0, err
+	}
 
-} //write this
-
-func (d *decoder) int8() int8 { return int8(d.uint8()) }
+	return int8(u), nil
+}
 
 func (e *encoder) int8(x int8) { e.uint8(uint8(x)) }
 
-func (d *decoder) int16() int16 { return int16(d.uint16()) }
+func (d *decoder) int16() (int16, error) {
+	u, err := d.uint16()
+	if err != nil {
+		return 0, err
+	}
+
+	return int16(u), nil
+}
 
 func (e *encoder) int16(x int16) { e.uint16(uint16(x)) }
 
-func (d *decoder) int32() int32 { return int32(d.uint32()) }
+func (d *decoder) int32() (int32, error) {
+	u, err := d.uint32()
+	if err != nil {
+		return 0, err
+	}
+
+	return int32(u), nil
+}
 
 func (e *encoder) int32(x int32) { e.uint32(uint32(x)) }
 
-func (d *decoder) int64() int64 { return int64(d.uint64()) }
+func (d *decoder) int64() (int64, error) {
+	u, err := d.uint64()
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(u), nil
+}
 
 func (e *encoder) int64(x int64) { e.uint64(uint64(x)) }
 
-func (d *decoder) value(v reflect.Value) error {
+func (d *decoder) value(v reflect.Value, maxlen int) error {
 	kind := v.Kind()
 	switch kind {
-
 	case reflect.Array:
+
+		t := v.Type()
+		elem := t.Elem()
+
 		// Arrays are a fixed size, so the length is not written
-		for i := 0; i < v.Len(); i++ {
-			if err := d.value(v.Index(i)); err != nil {
-				return err
+		length := v.Len()
+
+		switch elem.Kind() {
+		case reflect.Uint8:
+			if length > len(d.buf) {
+				return ErrBufferUnderflow
+			}
+
+			reflect.Copy(v, reflect.ValueOf(d.buf[:length]))
+			d.buf = d.buf[length:]
+		default:
+			for i := 0; i < length; i++ {
+				if err := d.value(v.Index(i), 0); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -729,23 +655,32 @@ func (d *decoder) value(v reflect.Value) error {
 		if len(d.buf) < 4 {
 			return ErrBufferUnderflow
 		}
-		length := int(d.uint32())
-		if length < 0 || length > len(d.buf) {
-			return fmt.Errorf("Invalid length: %d", length)
+
+		ul, err := d.uint32()
+		if err != nil {
+			return err
 		}
+
+		length := int(ul)
+		if length < 0 || length > len(d.buf) {
+			return ErrBufferUnderflow
+		}
+
 		t := v.Type()
 		key := t.Key()
 		elem := t.Elem()
+
 		if v.IsNil() {
 			v.Set(reflect.Indirect(reflect.MakeMap(t)))
 		}
+
 		for i := 0; i < length; i++ {
 			keyv := reflect.Indirect(reflect.New(key))
 			elemv := reflect.Indirect(reflect.New(elem))
-			if err := d.value(keyv); err != nil {
+			if err := d.value(keyv, 0); err != nil {
 				return err
 			}
-			if err := d.value(elemv); err != nil {
+			if err := d.value(elemv, 0); err != nil {
 				return err
 			}
 			v.SetMapIndex(keyv, elemv)
@@ -755,22 +690,41 @@ func (d *decoder) value(v reflect.Value) error {
 		if len(d.buf) < 4 {
 			return ErrBufferUnderflow
 		}
-		length := int(d.uint32())
-		if length < 0 || length > len(d.buf) {
-			return fmt.Errorf("Invalid length: %d", length)
+
+		ul, err := d.uint32()
+		if err != nil {
+			return err
 		}
-		elem := v.Type().Elem()
-		if elem.Kind() == reflect.Uint8 {
+
+		length := int(ul)
+		if length < 0 || length > len(d.buf) {
+			return ErrBufferUnderflow
+		}
+
+		if length == 0 {
+			return nil
+		}
+
+		if maxlen > 0 && length > maxlen {
+			return ErrMaxLenExceeded
+		}
+
+		t := v.Type()
+		elem := t.Elem()
+
+		switch elem.Kind() {
+		case reflect.Uint8:
 			v.SetBytes(d.buf[:length])
 			d.buf = d.buf[length:]
-		} else {
+		default:
+			elemvs := reflect.MakeSlice(t, length, length)
 			for i := 0; i < length; i++ {
-				elemv := reflect.Indirect(reflect.New(elem))
-				if err := d.value(elemv); err != nil {
+				elemv := reflect.Indirect(elemvs.Index(i))
+				if err := d.value(elemv, 0); err != nil {
 					return err
 				}
-				v.Set(reflect.Append(v, elemv))
 			}
+			v.Set(elemvs)
 		}
 
 	case reflect.Struct:
@@ -783,24 +737,30 @@ func (d *decoder) value(v reflect.Value) error {
 				continue
 			}
 
-			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
+			tag := ff.Tag.Get("enc")
+			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
 				log.Panic(ErrInvalidOmitEmpty)
 			}
 
-			if tag != "-" {
-				fv := v.Field(i)
-				if fv.CanSet() && ff.Name != "_" {
-					if err := d.value(fv); err != nil {
-						// omitempty fields at the end of the buffer are ignored
-						if !(omitempty && len(d.buf) == 0) {
-							return err
-						}
+			if len(tag) > 0 && tag[0] == '-' {
+				continue
+			}
+
+			fv := v.Field(i)
+			if fv.CanSet() && ff.Name != "_" {
+				maxlen := tagMaxLen(tag)
+
+				if err := d.value(fv, maxlen); err != nil {
+					if err == ErrMaxLenExceeded {
+						return err
 					}
-				} else {
-					//dont decode anything
-					//d.skip(fv) //BUG!?
+
+					// omitempty fields at the end of the buffer are ignored if missing
+					if !omitempty || len(d.buf) != 0 {
+						return err
+					}
 				}
 			}
 		}
@@ -809,37 +769,92 @@ func (d *decoder) value(v reflect.Value) error {
 		if len(d.buf) < 4 {
 			return ErrBufferUnderflow
 		}
-		length := int(d.uint32())
-		if length < 0 || length > len(d.buf) {
-			return fmt.Errorf("Invalid length: %d", length)
+
+		ul, err := d.uint32()
+		if err != nil {
+			return err
 		}
+
+		length := int(ul)
+		if length < 0 || length > len(d.buf) {
+			return ErrBufferUnderflow
+		}
+
+		if maxlen > 0 && length > maxlen {
+			return ErrMaxLenExceeded
+		}
+
 		v.SetString(string(d.buf[:length]))
 		d.buf = d.buf[length:]
 
 	case reflect.Bool:
-		v.SetBool(d.bool())
+		b, err := d.bool()
+		if err != nil {
+			return err
+		}
+		v.SetBool(b)
 	case reflect.Int8:
-		v.SetInt(int64(d.int8()))
+		i, err := d.int8()
+		if err != nil {
+			return err
+		}
+		v.SetInt(int64(i))
 	case reflect.Int16:
-		v.SetInt(int64(d.int16()))
+		i, err := d.int16()
+		if err != nil {
+			return err
+		}
+		v.SetInt(int64(i))
 	case reflect.Int32:
-		v.SetInt(int64(d.int32()))
+		i, err := d.int32()
+		if err != nil {
+			return err
+		}
+		v.SetInt(int64(i))
 	case reflect.Int64:
-		v.SetInt(d.int64())
+		i, err := d.int64()
+		if err != nil {
+			return err
+		}
+		v.SetInt(i)
 
 	case reflect.Uint8:
-		v.SetUint(uint64(d.uint8()))
+		u, err := d.uint8()
+		if err != nil {
+			return err
+		}
+		v.SetUint(uint64(u))
 	case reflect.Uint16:
-		v.SetUint(uint64(d.uint16()))
+		u, err := d.uint16()
+		if err != nil {
+			return err
+		}
+		v.SetUint(uint64(u))
 	case reflect.Uint32:
-		v.SetUint(uint64(d.uint32()))
+		u, err := d.uint32()
+		if err != nil {
+			return err
+		}
+		v.SetUint(uint64(u))
 	case reflect.Uint64:
-		v.SetUint(d.uint64())
+		u, err := d.uint64()
+		if err != nil {
+			return err
+		}
+		v.SetUint(u)
 
 	case reflect.Float32:
-		v.SetFloat(float64(math.Float32frombits(d.uint32())))
+		u, err := d.uint32()
+		if err != nil {
+			return err
+		}
+		v.SetFloat(float64(math.Float32frombits(u)))
 	case reflect.Float64:
-		v.SetFloat(math.Float64frombits(d.uint64()))
+		u, err := d.uint64()
+		if err != nil {
+			return err
+		}
+		v.SetFloat(math.Float64frombits(u))
 
 	default:
 		log.Panicf("Decode error: kind %s not handled", v.Kind().String())
@@ -848,176 +863,36 @@ func (d *decoder) value(v reflect.Value) error {
 	return nil
 }
 
-//advance, returns -1 on failure
-//returns 0 on success
-func (d *decoder) adv(n int) int {
-	if n > len(d.buf) {
-		n = len(d.buf)
-		d.buf = d.buf[n:]
-		return -1
-	}
-	d.buf = d.buf[n:]
-	return 0
-}
-
-//recursive size
-func (d *decoder) dchk(v reflect.Value) int {
-	kind := v.Kind()
-	switch kind {
-
-	case reflect.Array:
-		// Arrays are a fixed size, so the length is not written
-		for i := 0; i < v.Len(); i++ {
-			if d.dchk(v.Index(i)) < 0 {
-				return -1
-			}
-		}
-		return 0
-
-	case reflect.Map:
-		if len(d.buf) < 4 {
-			return -1 //error
-		}
-
-		length := int(leUint32(d.buf[0:4]))
-		if d.adv(4) < 0 {
-			return -1
-		}
-
-		key := v.Type().Key()
-		elem := v.Type().Elem()
-
-		for i := 0; i < length; i++ {
-			keyv := reflect.Indirect(reflect.New(key))
-			elemv := reflect.Indirect(reflect.New(elem))
-
-			if d.dchk(keyv) < 0 {
-				return -1
-			}
-
-			if d.dchk(elemv) < 0 {
-				return -1
-			}
-		}
-		return 0
-	case reflect.Slice:
-		if len(d.buf) < 4 {
-			return -1
-		}
-
-		length := int(leUint32(d.buf[0:4]))
-		if d.adv(4) < 0 {
-			return -1
-		}
-
-		if length < 0 || length > len(d.buf) {
-			return -1
-		}
-
-		elem := v.Type().Elem()
-		if elem.Kind() == reflect.Uint8 {
-			return d.adv(length)
-		}
-
-		for i := 0; i < length; i++ {
-			elemv := reflect.Indirect(reflect.New(elem))
-
-			if d.dchk(elemv) < 0 {
-				return -1
-			}
-		}
-		return 0
-
-	case reflect.Struct:
-		t := v.Type()
-		nFields := v.NumField()
-		for i := 0; i < nFields; i++ {
-			ff := t.Field(i)
-			// Skip unexported fields
-			if ff.PkgPath != "" {
-				continue
-			}
-
-			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
-
-			if omitempty && i != nFields-1 {
-				log.Panic(ErrInvalidOmitEmpty)
-			}
-
-			if tag != "-" {
-				fv := v.Field(i)
-				if !omitempty && fv.CanSet() && ff.Name != "_" {
-					if d.dchk(fv) < 0 {
-						return -1
-					}
-				} else {
-					//dont try to decode anything
-					//d.skip(fv) //BUG!?
-				}
-			}
-		}
-		return 0
-
-	case reflect.Bool:
-		return d.adv(1)
-	case reflect.String:
-		if len(d.buf) < 4 {
-			return -1
-		}
-
-		length := int(leUint32(d.buf[0:4]))
-		if d.adv(4) < 0 {
-			return -1
-		}
-
-		return d.adv(length)
-	case reflect.Int8:
-		return d.adv(1)
-	case reflect.Int16:
-		return d.adv(2)
-	case reflect.Int32:
-		return d.adv(4)
-	case reflect.Int64:
-		return d.adv(8)
-
-	case reflect.Uint8:
-		return d.adv(1)
-	case reflect.Uint16:
-		return d.adv(2)
-	case reflect.Uint32:
-		return d.adv(4)
-	case reflect.Uint64:
-		return d.adv(8)
-
-	case reflect.Float32:
-		return d.adv(4)
-	case reflect.Float64:
-		return d.adv(8)
-
-	default:
-		log.Panicf("Decode error: kind %s not handled", v.Kind().String())
-	}
-
-	log.Panic()
-	return 0
-}
-
 func (e *encoder) value(v reflect.Value) {
-
 	switch v.Kind() {
 	case reflect.Interface:
 		e.value(v.Elem())
 
 	case reflect.Array:
 		// Arrays are a fixed size, so the length is not written
-		for i := 0; i < v.Len(); i++ {
-			e.value(v.Index(i))
+		t := v.Type()
+		elem := t.Elem()
+		switch elem.Kind() {
+		case reflect.Uint8:
+			reflect.Copy(reflect.ValueOf(e.buf), v)
+			e.buf = e.buf[v.Len():]
+		default:
+			for i := 0; i < v.Len(); i++ {
+				e.value(v.Index(i))
+			}
 		}
 
 	case reflect.Slice:
-		e.uint32(uint32(v.Len()))
-		for i := 0; i < v.Len(); i++ {
-			e.value(v.Index(i))
+		t := v.Type()
+		elem := t.Elem()
+		switch elem.Kind() {
+		case reflect.Uint8:
+			e.bytes(v.Bytes())
+		default:
+			e.uint32(uint32(v.Len()))
+			for i := 0; i < v.Len(); i++ {
+				e.value(v.Index(i))
+			}
 		}
 
 	case reflect.Map:
@@ -1038,20 +913,20 @@ func (e *encoder) value(v reflect.Value) {
 				continue
 			}
 
-			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
+			tag := ff.Tag.Get("enc")
+			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
 				log.Panic(ErrInvalidOmitEmpty)
 			}
 
-			if tag != "-" {
-				fv := v.Field(i)
-				if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
-					e.value(fv)
-				} else {
-					//dont write anything
-					//e.skip(v)
-				}
+			if len(tag) > 0 && tag[0] == '-' {
+				continue
+			}
+
+			fv := v.Field(i)
+			if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
+				e.value(fv)
 			}
 		}
 
@@ -1059,11 +934,7 @@ func (e *encoder) value(v reflect.Value) {
 		e.bool(v.Bool())
 
 	case reflect.String:
-		vb := []byte(v.String())
-		e.uint32(uint32(len(vb)))
-		for i := 0; i < len(vb); i++ {
-			e.uint8(vb[i])
-		}
+		e.bytes([]byte(v.String()))
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		switch v.Type().Kind() {
@@ -1077,7 +948,7 @@ func (e *encoder) value(v reflect.Value) {
 			e.int64(v.Int())
 		}
 
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		switch v.Type().Kind() {
 		case reflect.Uint8:
 			e.uint8(uint8(v.Uint()))
@@ -1098,50 +969,6 @@ func (e *encoder) value(v reflect.Value) {
 		}
 
 	default:
-		log.Panic("Encoding unhandled type " + v.Type().Name())
-
+		log.Panicf("Encoding unhandled type %s", v.Type().Name())
 	}
-
-}
-
-func (d *decoder) skip(v reflect.Value) {
-	n, _ := datasizeWrite(v)
-	d.buf = d.buf[n:]
-}
-
-//skip with byte size return
-/*
-func (d *decoder) skipn(v reflect.Value) int {
-    n := intDestSize(&v)
-    if n == 0 {
-        log.Panic()
-    }
-    d.buf = d.buf[n:]
-    return n
-}
-*/
-func (e *encoder) skip(v reflect.Value) {
-	n, _ := datasizeWrite(v)
-	for i := range e.buf[0:n] {
-		e.buf[i] = 0
-	}
-	e.buf = e.buf[n:]
-}
-
-// intDestSize returns the size of the integer that ptrType points to,
-// or 0 if the type is not supported.
-func intDestSize(ptrType interface{}) int {
-	switch ptrType.(type) {
-	case *bool:
-		return 1
-	case *int8, *uint8:
-		return 1
-	case *int16, *uint16:
-		return 2
-	case *int32, *uint32:
-		return 4
-	case *int64, *uint64:
-		return 8
-	}
-	return 0
 }

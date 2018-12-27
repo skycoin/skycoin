@@ -1,16 +1,26 @@
+/*
+skycoin daemon
+*/
 package main
 
-import (
-	_ "net/http/pprof"
+/*
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
+*/
 
+import (
+	"flag"
+	_ "net/http/pprof"
+	"os"
+
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.24.1"
+	Version = "0.25.0"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -21,6 +31,9 @@ var (
 	ConfigMode = ""
 
 	logger = logging.MustGetLogger("main")
+
+	// CoinName name of coin
+	CoinName = "skycoin"
 
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
@@ -41,47 +54,68 @@ var (
 		"118.178.135.93:6000",
 		"47.88.33.156:6000",
 		"121.41.103.148:6000",
-		"120.77.69.188:6000",
 		"104.237.142.206:6000",
 		"176.58.126.224:6000",
 		"172.104.85.6:6000",
 		"139.162.7.132:6000",
+		"139.162.39.186:6000",
+		"45.33.111.142:6000",
+		"109.237.27.172:6000",
+		"172.104.41.14:6000",
 	}
-)
 
-func main() {
-	// get node config
-	nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-		GenesisSignatureStr: GenesisSignatureStr,
-		GenesisAddressStr:   GenesisAddressStr,
-		GenesisCoinVolume:   GenesisCoinVolume,
-		GenesisTimestamp:    GenesisTimestamp,
-		BlockchainPubkeyStr: BlockchainPubkeyStr,
-		BlockchainSeckeyStr: BlockchainSeckeyStr,
-		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
-		Port:                6000,
-		WebInterfacePort:    6420,
-		DataDirectory:       "$HOME/.skycoin",
-		ProfileCPUFile:      "skycoin.prof",
+	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+		CoinName:                       CoinName,
+		GenesisSignatureStr:            GenesisSignatureStr,
+		GenesisAddressStr:              GenesisAddressStr,
+		GenesisCoinVolume:              GenesisCoinVolume,
+		GenesisTimestamp:               GenesisTimestamp,
+		BlockchainPubkeyStr:            BlockchainPubkeyStr,
+		BlockchainSeckeyStr:            BlockchainSeckeyStr,
+		DefaultConnections:             DefaultConnections,
+		PeerListURL:                    "https://downloads.skycoin.net/blockchain/peers.txt",
+		Port:                           6000,
+		WebInterfacePort:               6420,
+		DataDirectory:                  "$HOME/.skycoin",
+		UnconfirmedBurnFactor:          2,
+		UnconfirmedMaxTransactionSize:  32768,
+		UnconfirmedMaxDropletPrecision: 3,
+		CreateBlockBurnFactor:          2,
+		CreateBlockMaxTransactionSize:  32768,
+		CreateBlockMaxDropletPrecision: 3,
+		MaxBlockSize:                   32768,
 	})
 
+	parseFlags = true
+)
+
+func init() {
+	nodeConfig.RegisterFlags()
+}
+
+func main() {
+	if parseFlags {
+		flag.Parse()
+	}
+
 	// create a new fiber coin instance
-	coin := skycoin.NewCoin(
-		skycoin.Config{
-			Node: *nodeConfig,
-			Build: visor.BuildInfo{
-				Version: Version,
-				Commit:  Commit,
-				Branch:  Branch,
-			},
+	coin := skycoin.NewCoin(skycoin.Config{
+		Node: nodeConfig,
+		Build: readable.BuildInfo{
+			Version: Version,
+			Commit:  Commit,
+			Branch:  Branch,
 		},
-		logger,
-	)
+	}, logger)
 
 	// parse config values
-	coin.ParseConfig()
+	if err := coin.ParseConfig(); err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
 
 	// run fiber coin node
-	coin.Run()
+	if err := coin.Run(); err != nil {
+		os.Exit(1)
+	}
 }

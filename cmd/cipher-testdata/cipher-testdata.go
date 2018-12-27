@@ -1,3 +1,10 @@
+/*
+cipher-testdata generates testdata to be used by the cipher testsuite
+
+The cipher testsuite is in src/cipher/testsuite.
+The testdata should be reused by ports of the cipher library to verify
+behavior.
+*/
 package main
 
 import (
@@ -55,9 +62,7 @@ type job struct {
 
 func init() {
 	flag.Usage = func() {
-		// TODO go1.10 - use flag.CommandLine.Output() (not support in go1.9)
-		// fmt.Fprintf(flag.CommandLine.Output(), "%s\n\nUsage of %s:\n", help, os.Args[0])
-		fmt.Fprintf(os.Stderr, "%s\n\nUsage of %s:\n", help, os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "%s\n\nUsage of %s:\n", help, os.Args[0])
 		flag.PrintDefaults()
 	}
 }
@@ -188,16 +193,19 @@ func generateSeedTestData(j job) *testsuite.SeedTestData {
 		Keys: make([]testsuite.KeysTestData, j.addressCount),
 	}
 
-	keys := cipher.GenerateDeterministicKeyPairs(j.seed, j.addressCount)
+	keys := cipher.MustGenerateDeterministicKeyPairs(j.seed, j.addressCount)
 
 	for i, s := range keys {
 		data.Keys[i].Secret = s
 
-		p := cipher.PubKeyFromSecKey(s)
+		p := cipher.MustPubKeyFromSecKey(s)
 		data.Keys[i].Public = p
 
 		addr := cipher.AddressFromPubKey(p)
 		data.Keys[i].Address = addr
+
+		bitcoinAddr := cipher.BitcoinAddressFromPubKey(p)
+		data.Keys[i].BitcoinAddress = bitcoinAddr
 	}
 
 	return data
@@ -206,7 +214,7 @@ func generateSeedTestData(j job) *testsuite.SeedTestData {
 func signSeedTestData(data *testsuite.SeedTestData, hashes []cipher.SHA256) {
 	for i := range data.Keys {
 		for _, h := range hashes {
-			sig := cipher.SignHash(h, data.Keys[i].Secret)
+			sig := cipher.MustSignHash(h, data.Keys[i].Secret)
 			data.Keys[i].Signatures = append(data.Keys[i].Signatures, sig)
 		}
 	}

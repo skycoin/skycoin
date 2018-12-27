@@ -1,0 +1,44 @@
+{
+	"header": {
+		"seq": 100,
+		"block_hash": "725e76907998485d367a847b0fb49f08536c592247762279fcdbd9907fee5607",
+		"previous_block_hash": "5c06896760ace71b02edab01700ff9ca8c32ef1d647e14c3e0d5fa751e47867e",
+		"timestamp": 1429274636,
+		"fee": 613712,
+		"version": 0,
+		"tx_body_hash": "9f20b52befed2cbaaa4a066de7119b7fdbff09a83d8e2a82628671f51f3f6551",
+		"ux_hash": "ff354e4774397b6c1ab46e56920c82f79e54ac8edce2f0fc4a2e6f472a5e5aca"
+	},
+	"body": {
+		"txns": [
+			{
+				"length": 183,
+				"type": 0,
+				"txid": "9f20b52befed2cbaaa4a066de7119b7fdbff09a83d8e2a82628671f51f3f6551",
+				"inner_hash": "c2e60dbb6ad5095985d21391cbeb679fd0787c4a20471340d63f8de437d915df",
+				"fee": 613712,
+				"sigs": [
+					"2fefd2da9d3b4af87c4157f87da0b1bf82e3d6c9f6427572bd768cf85900d15d36971ffa17eb3b486f7692584102a7a58d9fb3ef57fa24d9a4ab02eba811ef4f00"
+				],
+				"inputs": [
+					{
+						"uxid": "aee4af7e06c24bccc2f87b16d0708bfea68ac1b420f97914965f4a23ad9e11d6",
+						"owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+						"coins": "23000.000000",
+						"hours": 294,
+						"calculated_hours": 701385
+					}
+				],
+				"outputs": [
+					{
+						"uxid": "194cc596d2beda803d8142ddc455872082f84b09a5edd8085082b60d314c1e29",
+						"dst": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+						"coins": "23000.000000",
+						"hours": 87673
+					}
+				]
+			}
+		]
+	},
+	"size": 183
+}

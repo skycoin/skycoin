@@ -1,21 +1,29 @@
 package coin
 
-import "errors"
-
-var (
-	// ErrUint64MultOverflow is returned when multiplying uint64 values would overflow uint64
-	ErrUint64MultOverflow = errors.New("uint64 multiplication overflow")
-	// ErrUint64AddOverflow is returned when adding uint64 values would overflow uint64
-	ErrUint64AddOverflow = errors.New("uint64 addition overflow")
-	// ErrUint32AddOverflow is returned when adding uint32 values would overflow uint32
-	ErrUint32AddOverflow = errors.New("uint32 addition overflow")
-	// ErrUint64OverflowsInt64 is returned when converting a uint64 to an int64 would overflow int64
-	ErrUint64OverflowsInt64 = errors.New("uint64 overflows int64")
-	// ErrInt64UnderflowsUint64 is returned when converting an int64 to a uint64 would underflow uint64
-	ErrInt64UnderflowsUint64 = errors.New("int64 underflows uint64")
+import (
+	"errors"
+	"math"
 )
 
-func multUint64(a, b uint64) (uint64, error) {
+var (
+	// ErrUint64MultOverflow is returned if when multiplying uint64 values would overflow uint64
+	ErrUint64MultOverflow = errors.New("uint64 multiplication overflow")
+	// ErrUint64AddOverflow is returned if when adding uint64 values would overflow uint64
+	ErrUint64AddOverflow = errors.New("uint64 addition overflow")
+	// ErrUint32AddOverflow is returned if when adding uint32 values would overflow uint32
+	ErrUint32AddOverflow = errors.New("uint32 addition overflow")
+	// ErrUint64OverflowsInt64 is returned if when converting a uint64 to an int64 would overflow int64
+	ErrUint64OverflowsInt64 = errors.New("uint64 overflows int64")
+	// ErrInt64UnderflowsUint64 is returned if when converting an int64 to a uint64 would underflow uint64
+	ErrInt64UnderflowsUint64 = errors.New("int64 underflows uint64")
+	// ErrIntUnderflowsUint32 is returned if when converting an int to a uint32 would underflow uint32
+	ErrIntUnderflowsUint32 = errors.New("int underflows uint32")
+	// ErrIntOverflowsUint32 is returned if when converting an int to a uint32 would overflow uint32
+	ErrIntOverflowsUint32 = errors.New("int overflows uint32")
+)
+
+// MultUint64 multiplies a by b, returning an error if the values would overflow
+func MultUint64(a, b uint64) (uint64, error) {
 	c := a * b
 	if a != 0 && c/a != b {
 		return 0, ErrUint64MultOverflow
@@ -32,7 +40,8 @@ func AddUint64(a, b uint64) (uint64, error) {
 	return c, nil
 }
 
-func addUint32(a, b uint32) (uint32, error) {
+// AddUint32 adds a and b, returning an error if the values would overflow
+func AddUint32(a, b uint32) (uint32, error) {
 	c := a + b
 	if c < a || c < b {
 		return 0, ErrUint32AddOverflow
@@ -55,4 +64,17 @@ func Int64ToUint64(a int64) (uint64, error) {
 		return 0, ErrInt64UnderflowsUint64
 	}
 	return uint64(a), nil
+}
+
+// IntToUint32 converts int to uint32, returning an error if the int value is negative or overflows uint32
+func IntToUint32(a int) (uint32, error) {
+	if a < 0 {
+		return 0, ErrIntUnderflowsUint32
+	}
+
+	if uint64(a) > math.MaxUint32 {
+		return 0, ErrIntOverflowsUint32
+	}
+
+	return uint32(a), nil
 }

@@ -1,3 +1,6 @@
+/*
+Package wallet implements wallets and the wallet database service
+*/
 package wallet
 
 import (
@@ -17,6 +20,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 
 	"github.com/shopspring/decimal"
 
@@ -89,27 +93,88 @@ var (
 	ErrUnknownUxOut = NewError(errors.New("uxout is not owned by any address in the wallet"))
 	// ErrNoUnspents is returned if a wallet has no unspents to spend
 	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
+	// ErrNullChangeAddress ChangeAddress must not be the null address
+	ErrNullChangeAddress = NewError(errors.New("ChangeAddress must not be the null address"))
+	// ErrMissingTo To is required
+	ErrMissingTo = NewError(errors.New("To is required"))
+	// ErrZeroCoinsTo To.Coins must not be zero
+	ErrZeroCoinsTo = NewError(errors.New("To.Coins must not be zero"))
+	// ErrWalletRecoverSeedWrong is returned if the seed does not match the specified wallet when recovering
+	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed is wrong"))
+	// ErrNilBalanceGetter is returned if Options.ScanN > 0 but a nil BalanceGetter was provided
+	ErrNilBalanceGetter = NewError(errors.New("scan ahead requested but balance getter is nil"))
+	// ErrWalletNotDeterministic is returned if a wallet's type is not deterministic but it is necessary for the requested operation
+	ErrWalletNotDeterministic = NewError(errors.New("wallet type is not deterministic"))
+	// ErrInvalidCoinType is returned for invalid coin types
+	ErrInvalidCoinType = NewError(errors.New("invalid coin type"))
+	// ErrNullAddressTo To.Address must not be the null address
+	ErrNullAddressTo = NewError(errors.New("To.Address must not be the null address"))
+	// ErrDuplicateTo To contains duplicate values
+	ErrDuplicateTo = NewError(errors.New("To contains duplicate values"))
+	// ErrMissingWalletID Wallet.ID is required
+	ErrMissingWalletID = NewError(errors.New("Wallet.ID is required"))
+	// ErrIncludesNullAddress Wallet.Addresses must not contain the null address
+	ErrIncludesNullAddress = NewError(errors.New("Wallet.Addresses must not contain the null address"))
+	// ErrDuplicateAddresses Wallet.Addresses contains duplicate values
+	ErrDuplicateAddresses = NewError(errors.New("Wallet.Addresses contains duplicate values"))
+	// ErrZeroToHoursAuto To.Hours must be zero for auto type hours selection
+	ErrZeroToHoursAuto = NewError(errors.New("To.Hours must be zero for auto type hours selection"))
+	// ErrMissingModeAuto HoursSelection.Mode is required for auto type hours selection
+	ErrMissingModeAuto = NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
+	// ErrInvalidHoursSelMode Invalid HoursSelection.Mode
+	ErrInvalidHoursSelMode = NewError(errors.New("Invalid HoursSelection.Mode"))
+	// ErrInvalidModeManual HoursSelection.Mode cannot be used for manual type hours selection
+	ErrInvalidModeManual = NewError(errors.New("HoursSelection.Mode cannot be used for manual type hours selection"))
+	// ErrInvalidHoursSelType Invalid HoursSelection.Type
+	ErrInvalidHoursSelType = NewError(errors.New("Invalid HoursSelection.Type"))
+	// ErrMissingShareFactor HoursSelection.ShareFactor must be set for share mode
+	ErrMissingShareFactor = NewError(errors.New("HoursSelection.ShareFactor must be set for share mode"))
+	// ErrInvalidShareFactor HoursSelection.ShareFactor can only be used for share mode
+	ErrInvalidShareFactor = NewError(errors.New("HoursSelection.ShareFactor can only be used for share mode"))
+	// ErrShareFactorOutOfRange HoursSelection.ShareFactor must be >= 0 and <= 1
+	ErrShareFactorOutOfRange = NewError(errors.New("HoursSelection.ShareFactor must be >= 0 and <= 1"))
+	// ErrWalletParamsConflict Wallet.UxOuts and Wallet.Addresses cannot be combined
+	ErrWalletParamsConflict = NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
+	// ErrDuplicateUxOuts Wallet.UxOuts contains duplicate values
+	ErrDuplicateUxOuts = NewError(errors.New("Wallet.UxOuts contains duplicate values"))
+	// ErrUnknownWalletID params.Wallet.ID does not match wallet
+	ErrUnknownWalletID = NewError(errors.New("params.Wallet.ID does not match wallet"))
 )
 
 const (
-	// WalletExt  wallet file extension
+	// WalletExt wallet file extension
 	WalletExt = "wlt"
 
-	// WalletTimestampFormat  wallet timestamp layout
+	// WalletTimestampFormat wallet timestamp layout
 	WalletTimestampFormat = "2006_01_02"
 
 	// CoinTypeSkycoin skycoin type
 	CoinTypeSkycoin CoinType = "skycoin"
 	// CoinTypeBitcoin bitcoin type
 	CoinTypeBitcoin CoinType = "bitcoin"
+
+	// WalletTypeDeterministic deterministic wallet type
+	WalletTypeDeterministic = "deterministic"
 )
+
+// ResolveCoinType normalizes a coin type string to a CoinType constant
+func ResolveCoinType(s string) (CoinType, error) {
+	switch strings.ToLower(s) {
+	case "sky", "skycoin":
+		return CoinTypeSkycoin, nil
+	case "btc", "bitcoin":
+		return CoinTypeBitcoin, nil
+	default:
+		return CoinType(""), ErrInvalidCoinType
+	}
+}
 
 // wallet meta fields
 const (
 	metaVersion    = "version"    // wallet version
 	metaFilename   = "filename"   // wallet file name
 	metaLabel      = "label"      // wallet label
-	metaTm         = "tm"         // the timestamp when creating the wallet
+	metaTimestamp  = "tm"         // the timestamp when creating the wallet
 	metaType       = "type"       // wallet type
 	metaCoin       = "coin"       // coin type
 	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
@@ -121,17 +186,6 @@ const (
 
 // CoinType represents the wallet coin type
 type CoinType string
-
-// Options options that could be used when creating a wallet
-type Options struct {
-	Coin       CoinType   // coin type, skycoin, bitcoin, etc.
-	Label      string     // wallet label.
-	Seed       string     // wallet seed.
-	Encrypt    bool       // whether the wallet need to be encrypted.
-	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN      uint64     // number of addresses that're going to be scanned
-}
 
 const (
 	// HoursSelectionTypeManual is used to specify manual hours selection in advanced spend
@@ -170,20 +224,20 @@ type CreateTransactionParams struct {
 // Validate validates CreateTransactionParams
 func (c CreateTransactionParams) Validate() error {
 	if c.ChangeAddress != nil && c.ChangeAddress.Null() {
-		return NewError(errors.New("ChangeAddress must not be the null address"))
+		return ErrNullChangeAddress
 	}
 
 	if len(c.To) == 0 {
-		return NewError(errors.New("To is required"))
+		return ErrMissingTo
 	}
 
 	for _, to := range c.To {
 		if to.Coins == 0 {
-			return NewError(errors.New("To.Coins must not be zero"))
+			return ErrZeroCoinsTo
 		}
 
 		if to.Address.Null() {
-			return NewError(errors.New("To.Address must not be the null address"))
+			return ErrNullAddressTo
 		}
 	}
 
@@ -198,69 +252,69 @@ func (c CreateTransactionParams) Validate() error {
 	}
 
 	if len(outputs) != len(c.To) {
-		return NewError(errors.New("To contains duplicate values"))
+		return ErrDuplicateTo
 	}
 
 	if c.Wallet.ID == "" {
-		return NewError(errors.New("Wallet.ID is required"))
+		return ErrMissingWalletID
 	}
 
 	addressMap := make(map[cipher.Address]struct{}, len(c.Wallet.Addresses))
 	for _, a := range c.Wallet.Addresses {
 		if a.Null() {
-			return NewError(errors.New("Wallet.Addresses must not contain the null address"))
+			return ErrIncludesNullAddress
 		}
 
 		addressMap[a] = struct{}{}
 	}
 
 	if len(addressMap) != len(c.Wallet.Addresses) {
-		return NewError(errors.New("Wallet.Addresses contains duplicate values"))
+		return ErrDuplicateAddresses
 	}
 
 	switch c.HoursSelection.Type {
 	case HoursSelectionTypeAuto:
 		for _, to := range c.To {
 			if to.Hours != 0 {
-				return NewError(errors.New("To.Hours must be zero for auto type hours selection"))
+				return ErrZeroToHoursAuto
 			}
 		}
 
 		switch c.HoursSelection.Mode {
 		case HoursSelectionModeShare:
 		case "":
-			return NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
+			return ErrMissingModeAuto
 		default:
-			return NewError(errors.New("Invalid HoursSelection.Mode"))
+			return ErrInvalidHoursSelMode
 		}
 
 	case HoursSelectionTypeManual:
 		if c.HoursSelection.Mode != "" {
-			return NewError(errors.New("HoursSelection.Mode cannot be used for manual type hours selection"))
+			return ErrInvalidModeManual
 		}
 
 	default:
-		return NewError(errors.New("Invalid HoursSelection.Type"))
+		return ErrInvalidHoursSelType
 	}
 
 	if c.HoursSelection.ShareFactor == nil {
 		if c.HoursSelection.Mode == HoursSelectionModeShare {
-			return NewError(errors.New("HoursSelection.ShareFactor must be set for share mode"))
+			return ErrMissingShareFactor
 		}
 	} else {
 		if c.HoursSelection.Mode != HoursSelectionModeShare {
-			return NewError(errors.New("HoursSelection.ShareFactor can only be used for share mode"))
+			return ErrInvalidShareFactor
 		}
 
 		zero := decimal.New(0, 0)
 		one := decimal.New(1, 0)
 		if c.HoursSelection.ShareFactor.LessThan(zero) || c.HoursSelection.ShareFactor.GreaterThan(one) {
-			return NewError(errors.New("HoursSelection.ShareFactor must be >= 0 and <= 1"))
+			return ErrShareFactorOutOfRange
 		}
 	}
 
 	if len(c.Wallet.UxOuts) != 0 && len(c.Wallet.Addresses) != 0 {
-		return NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
+		return ErrWalletParamsConflict
 	}
 
 	// Check for duplicate spending uxouts
@@ -270,18 +324,30 @@ func (c CreateTransactionParams) Validate() error {
 	}
 
 	if len(uxouts) != len(c.Wallet.UxOuts) {
-		return NewError(errors.New("Wallet.UxOuts contains duplicate values"))
+		return ErrDuplicateUxOuts
 	}
 
 	return nil
 }
 
-// newWalletFilename check for collisions and retry if failure
-func newWalletFilename() string {
+// NewWalletFilename generates a filename from the current time and random bytes
+func NewWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
 	// should read in wallet files and make sure does not exist
 	padding := hex.EncodeToString((cipher.RandByte(2)))
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
+}
+
+// Options options that could be used when creating a wallet
+type Options struct {
+	Coin       CoinType   // coin type, skycoin, bitcoin, etc.
+	Label      string     // wallet label.
+	Seed       string     // wallet seed.
+	Encrypt    bool       // whether the wallet need to be encrypted.
+	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN      uint64     // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN  uint64     // number of addresses to generate, regardless of balance
 }
 
 // Wallet is consisted of meta and entries.
@@ -301,9 +367,19 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		return nil, ErrMissingSeed
 	}
 
+	if opts.ScanN > 0 && bg == nil {
+		return nil, ErrNilBalanceGetter
+	}
+
 	coin := opts.Coin
 	if coin == "" {
 		coin = CoinTypeSkycoin
+	}
+
+	switch coin {
+	case CoinTypeSkycoin, CoinTypeBitcoin:
+	default:
+		return nil, fmt.Errorf("Invalid coin type %q", coin)
 	}
 
 	w := &Wallet{
@@ -313,8 +389,8 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			metaLabel:      opts.Label,
 			metaSeed:       opts.Seed,
 			metaLastSeed:   opts.Seed,
-			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
-			metaType:       "deterministic",
+			metaTimestamp:  strconv.FormatInt(time.Now().Unix(), 10),
+			metaType:       WalletTypeDeterministic,
 			metaCoin:       string(coin),
 			metaEncrypted:  "false",
 			metaCryptoType: "",
@@ -323,17 +399,22 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 	}
 
 	// Create a default wallet
-	_, err := w.GenerateAddresses(1)
-	if err != nil {
+	generateN := opts.GenerateN
+	if generateN == 0 {
+		generateN = 1
+	}
+	if _, err := w.GenerateAddresses(generateN); err != nil {
 		return nil, err
 	}
 
-	if opts.ScanN > 0 {
+	if opts.ScanN != 0 && coin != CoinTypeSkycoin {
+		return nil, errors.New("Wallet address scanning is not supported for Bitcoin wallets")
+	}
+
+	if opts.ScanN > generateN {
 		// Scan for addresses with balances
-		if bg != nil {
-			if err := w.ScanAddresses(opts.ScanN-1, bg); err != nil {
-				return nil, err
-			}
+		if _, err := w.ScanAddresses(opts.ScanN, bg); err != nil {
+			return nil, err
 		}
 	}
 
@@ -370,9 +451,6 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 
 // NewWallet creates wallet without scanning addresses
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
-	if opts.ScanN != 0 {
-		return nil, errors.New("scan number must be 0")
-	}
 	return newWallet(wltName, opts, nil)
 }
 
@@ -398,7 +476,7 @@ func (w *Wallet) Lock(password []byte, cryptoType CryptoType) error {
 	defer func() {
 		// Wipes all unencrypted sensitive data
 		ss.erase()
-		wlt.erase()
+		wlt.Erase()
 	}()
 
 	ss.set(secretSeed, wlt.seed())
@@ -438,10 +516,10 @@ func (w *Wallet) Lock(password []byte, cryptoType CryptoType) error {
 	wlt.setVersion(Version)
 
 	// Wipes unencrypted sensitive data
-	wlt.erase()
+	wlt.Erase()
 
 	// Wipes the secret fields in w
-	w.erase()
+	w.Erase()
 
 	// Replace the original wallet with new encrypted wallet
 	w.copyFrom(wlt)
@@ -536,13 +614,11 @@ func (w *Wallet) copyFrom(src *Wallet) {
 	}
 
 	// Copies the address entries
-	for _, e := range src.Entries {
-		w.Entries = append(w.Entries, e)
-	}
+	w.Entries = append(w.Entries, src.Entries...)
 }
 
-// erase wipes secret fields in wallet
-func (w *Wallet) erase() {
+// Erase wipes secret fields in wallet
+func (w *Wallet) Erase() {
 	// Wipes the seed and last seed
 	w.setSeed("")
 	w.setLastSeed("")
@@ -557,7 +633,7 @@ func (w *Wallet) erase() {
 	}
 }
 
-// GuardUpdate executes a function within the context of a read-wirte managed decrypted wallet.
+// GuardUpdate executes a function within the context of a read-write managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
 func (w *Wallet) GuardUpdate(password []byte, fn func(w *Wallet) error) error {
 	if !w.IsEncrypted() {
@@ -574,7 +650,7 @@ func (w *Wallet) GuardUpdate(password []byte, fn func(w *Wallet) error) error {
 		return err
 	}
 
-	defer wlt.erase()
+	defer wlt.Erase()
 
 	if err := fn(wlt); err != nil {
 		return err
@@ -586,7 +662,7 @@ func (w *Wallet) GuardUpdate(password []byte, fn func(w *Wallet) error) error {
 
 	*w = *wlt
 	// Wipes all sensitive data
-	w.erase()
+	w.Erase()
 	return nil
 }
 
@@ -606,7 +682,7 @@ func (w *Wallet) GuardView(password []byte, f func(w *Wallet) error) error {
 		return err
 	}
 
-	defer wlt.erase()
+	defer wlt.Erase()
 
 	return f(wlt)
 }
@@ -614,7 +690,7 @@ func (w *Wallet) GuardView(password []byte, f func(w *Wallet) error) error {
 // Load loads wallet from a given file
 func Load(wltFile string) (*Wallet, error) {
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)
+		return nil, fmt.Errorf("wallet %s doesn't exist", wltFile)
 	}
 
 	r := &ReadableWallet{}
@@ -695,41 +771,60 @@ func (w *Wallet) reset() {
 
 // Validate validates the wallet
 func (w *Wallet) Validate() error {
-	if _, ok := w.Meta[metaFilename]; !ok {
+	if fn := w.Meta[metaFilename]; fn == "" {
 		return errors.New("filename not set")
 	}
-	if _, ok := w.Meta[metaSeed]; !ok {
-		return errors.New("seed field not set")
+
+	if tm := w.Meta[metaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
 	}
 
 	walletType, ok := w.Meta[metaType]
 	if !ok {
 		return errors.New("type field not set")
 	}
-	if walletType != "deterministic" {
+	if walletType != WalletTypeDeterministic {
 		return errors.New("wallet type invalid")
 	}
 
-	if _, ok := w.Meta[metaCoin]; !ok {
+	if coinType := w.Meta[metaCoin]; coinType == "" {
 		return errors.New("coin field not set")
 	}
 
+	var isEncrypted bool
 	if encStr, ok := w.Meta[metaEncrypted]; ok {
 		// validate the encrypted value
-		isEncrypted, err := strconv.ParseBool(encStr)
+		var err error
+		isEncrypted, err = strconv.ParseBool(encStr)
 		if err != nil {
-			return fmt.Errorf("invalid encrypted value: %v", err)
+			return errors.New("encrypted field is not a valid bool")
+		}
+	}
+
+	// checks if the secrets field is empty
+	if isEncrypted {
+		cryptoType, ok := w.Meta[metaCryptoType]
+		if !ok {
+			return errors.New("crypto type field not set")
 		}
 
-		// checks if the secrets field is empty
-		if isEncrypted {
-			if _, ok := w.Meta[metaCryptoType]; !ok {
-				return errors.New("crypto type field not set")
-			}
+		if _, err := getCrypto(CryptoType(cryptoType)); err != nil {
+			return errors.New("unknown crypto type")
+		}
 
-			if _, ok := w.Meta[metaSecrets]; !ok {
-				return errors.New("wallet is encrypted, but secrets field not set")
-			}
+		if s := w.Meta[metaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+	} else {
+		if s := w.Meta[metaSeed]; s == "" {
+			return errors.New("seed missing in unencrypted wallet")
+		}
+
+		if s := w.Meta[metaLastSeed]; s == "" {
+			return errors.New("lastSeed missing in unencrypted wallet")
 		}
 	}
 
@@ -787,6 +882,26 @@ func (w *Wallet) setSeed(seed string) {
 	w.Meta[metaSeed] = seed
 }
 
+func (w *Wallet) coin() CoinType {
+	return CoinType(w.Meta[metaCoin])
+}
+
+func (w *Wallet) addressConstructor() func(cipher.PubKey) cipher.Addresser {
+	switch w.coin() {
+	case CoinTypeSkycoin:
+		return func(pk cipher.PubKey) cipher.Addresser {
+			return cipher.AddressFromPubKey(pk)
+		}
+	case CoinTypeBitcoin:
+		return func(pk cipher.PubKey) cipher.Addresser {
+			return cipher.BitcoinAddressFromPubKey(pk)
+		}
+	default:
+		logger.Panicf("Invalid wallet coin type %q", w.coin())
+		return nil
+	}
+}
+
 func (w *Wallet) setEncrypted(encrypt bool) {
 	w.Meta[metaEncrypted] = strconv.FormatBool(encrypt)
 }
@@ -825,8 +940,20 @@ func (w *Wallet) setSecrets(s string) {
 	w.Meta[metaSecrets] = s
 }
 
+func (w *Wallet) timestamp() int64 {
+	// Intentionally ignore the error when parsing the timestamp,
+	// if it isn't valid or is missing it will be set to 0.
+	// Also, this value is validated by wallet.Validate()
+	x, _ := strconv.ParseInt(w.Meta[metaTimestamp], 10, 64) // nolint: errcheck
+	return x
+}
+
+func (w *Wallet) setTimestamp(t int64) {
+	w.Meta[metaTimestamp] = strconv.FormatInt(t, 10)
+}
+
 // GenerateAddresses generates addresses
-func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
+func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
 	if num == 0 {
 		return nil, nil
 	}
@@ -838,21 +965,22 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	var seckeys []cipher.SecKey
 	var seed []byte
 	if len(w.Entries) == 0 {
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.seed()), int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.seed()), int(num))
 	} else {
 		sd, err := hex.DecodeString(w.lastSeed())
 		if err != nil {
 			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num))
 	}
 
 	w.setLastSeed(hex.EncodeToString(seed))
 
-	addrs := make([]cipher.Address, len(seckeys))
+	addrs := make([]cipher.Addresser, len(seckeys))
+	makeAddress := w.addressConstructor()
 	for i, s := range seckeys {
-		p := cipher.PubKeyFromSecKey(s)
-		a := cipher.AddressFromPubKey(p)
+		p := cipher.MustPubKeyFromSecKey(s)
+		a := makeAddress(p)
 		addrs[i] = a
 		w.Entries = append(w.Entries, Entry{
 			Address: a,
@@ -863,62 +991,118 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	return addrs, nil
 }
 
-// ScanAddresses scans ahead N addresses to find one with none-zero coins.
-func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
+// GenerateSkycoinAddresses generates Skycoin addresses. If the wallet's coin type is not Skycoin, returns an error
+func (w *Wallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error) {
+	if w.coin() != CoinTypeSkycoin {
+		return nil, errors.New("GenerateSkycoinAddresses called for non-skycoin wallet")
+	}
+
+	addrs, err := w.GenerateAddresses(num)
+	if err != nil {
+		return nil, err
+	}
+
+	skyAddrs := make([]cipher.Address, len(addrs))
+	for i, a := range addrs {
+		skyAddrs[i] = a.(cipher.Address)
+	}
+
+	return skyAddrs, nil
+}
+
+// ScanAddresses scans ahead N addresses, truncating up to the highest address with a non-zero balance.
+// If any address has a nonzero balance, it rescans N more addresses from that point, until a entire
+// sequence of N addresses has no balance.
+func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 	if w.IsEncrypted() {
-		return ErrWalletEncrypted
+		return 0, ErrWalletEncrypted
 	}
 
 	if scanN <= 0 {
-		return nil
+		return 0, nil
 	}
 
-	nExistingAddrs := uint64(len(w.Entries))
+	w2 := w.clone()
 
-	// Generate the addresses to scan
-	addrs, err := w.GenerateAddresses(scanN)
-	if err != nil {
-		return err
-	}
+	nExistingAddrs := uint64(len(w2.Entries))
+	nAddAddrs := uint64(0)
+	n := scanN
+	extraScan := uint64(0)
 
-	// Get these addresses' balances
-	bals, err := bg.GetBalanceOfAddrs(addrs)
-	if err != nil {
-		return err
-	}
+	for {
+		// Generate the addresses to scan
+		addrs, err := w2.GenerateSkycoinAddresses(n)
+		if err != nil {
+			return 0, err
+		}
 
-	// Check balance from the last one until we find the address that has coins
-	var keepNum uint64
-	for i := len(bals) - 1; i >= 0; i-- {
-		if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
-			keepNum = uint64(i + 1)
+		// Get these addresses' balances
+		bals, err := bg.GetBalanceOfAddrs(addrs)
+		if err != nil {
+			return 0, err
+		}
+
+		// Check balance from the last one until we find the address that has coins
+		var keepNum uint64
+		for i := len(bals) - 1; i >= 0; i-- {
+			if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
+				keepNum = uint64(i + 1)
+				break
+			}
+		}
+
+		if keepNum == 0 {
 			break
 		}
+
+		nAddAddrs += keepNum + extraScan
+
+		// extraScan is the number of addresses with a zero balance beyond the
+		// last address with a nonzero balance
+		extraScan = n - keepNum
+
+		// n is the number of addresses to scan the next iteration
+		n = scanN - extraScan
 	}
 
-	// Regenerate addresses up to keepNum.
+	// Regenerate addresses up to nExistingAddrs + nAddAddrss.
 	// This is necessary to keep the lastSeed updated.
-	if keepNum != uint64(len(bals)) {
-		w.reset()
-		w.GenerateAddresses(nExistingAddrs + keepNum)
+	w2.reset()
+	if _, err := w2.GenerateSkycoinAddresses(nExistingAddrs + nAddAddrs); err != nil {
+		return 0, err
 	}
 
-	return nil
+	*w = *w2
+
+	return nAddAddrs, nil
 }
 
 // GetAddresses returns all addresses in wallet
-func (w *Wallet) GetAddresses() []cipher.Address {
-	addrs := make([]cipher.Address, len(w.Entries))
+func (w *Wallet) GetAddresses() []cipher.Addresser {
+	addrs := make([]cipher.Addresser, len(w.Entries))
 	for i, e := range w.Entries {
 		addrs[i] = e.Address
 	}
 	return addrs
 }
 
+// GetSkycoinAddresses returns all Skycoin addresses in wallet. The wallet's coin type must be Skycoin.
+func (w *Wallet) GetSkycoinAddresses() ([]cipher.Address, error) {
+	if w.coin() != CoinTypeSkycoin {
+		return nil, errors.New("Wallet coin type is not Skycoin")
+	}
+
+	addrs := make([]cipher.Address, len(w.Entries))
+	for i, e := range w.Entries {
+		addrs[i] = e.SkycoinAddress()
+	}
+	return addrs, nil
+}
+
 // GetEntry returns entry of given address
 func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 	for _, e := range w.Entries {
-		if e.Address == a {
+		if e.SkycoinAddress() == a {
 			return e, true
 		}
 	}
@@ -929,7 +1113,7 @@ func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 func (w *Wallet) AddEntry(entry Entry) error {
 	// dup check
 	for _, e := range w.Entries {
-		if e.Address == entry.Address {
+		if e.SkycoinAddress() == entry.SkycoinAddress() {
 			return errors.New("duplicate address entry")
 		}
 	}
@@ -945,9 +1129,7 @@ func (w *Wallet) clone() *Wallet {
 		wlt.Meta[k] = v
 	}
 
-	for _, e := range w.Entries {
-		wlt.Entries = append(wlt.Entries, e)
-	}
+	wlt.Entries = append(wlt.Entries, w.Entries...)
 
 	return &wlt
 }
@@ -972,7 +1154,7 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 		if !ok {
 			return nil, ErrUnknownAddress
 		}
-		entriesMap[e.Address] = e
+		entriesMap[e.SkycoinAddress()] = e
 	}
 
 	// Determine which unspents to spend.
@@ -1015,9 +1197,9 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 	haveChange := changeCoins > 0
 	changeHours, addrHours, outputHours := DistributeSpendHours(spending.Hours, 1, haveChange)
 
-	logger.Infof("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d)", spending.Hours, outputHours, spending.Hours-outputHours)
-	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours); err != nil {
-		logger.Warningf("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed: %v", err)
+	logger.Infof("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d, %d)", spending.Hours, outputHours, spending.Hours-outputHours, params.UserVerifyTxn.BurnFactor)
+	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours, params.UserVerifyTxn.BurnFactor); err != nil {
+		logger.WithError(err).Warning("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed")
 		return nil, err
 	}
 
@@ -1029,7 +1211,10 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 	txn.PushOutput(dest, coins, addrHours[0])
 
 	txn.SignInputs(toSign)
-	txn.UpdateHeader()
+	if err := txn.UpdateHeader(); err != nil {
+		logger.Critical().WithError(err).Error("txn.UpdateHeader failed")
+		return nil, err
+	}
 
 	return &txn, nil
 }
@@ -1037,13 +1222,23 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options
-func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
-	if err := params.Validate(); err != nil {
+// Outputs to spend are chosen from the pool of outputs provided.
+// The outputs are chosen by the following procedure:
+//   - All outputs are merged into one list and are sorted coins highest, hours lowest, with the hash as a tiebreaker
+//   - Outputs are chosen from the beginning of this list, until the requested amount of coins is met.
+//     If hours are also specified, selection continues until the requested amount of hours are met.
+//   - If the total amount of coins in the chosen outputs is exactly equal to the requested amount of coins,
+//     such that there would be no change output but hours remain as change, another output will be chosen to create change,
+//     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
+// If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
+// If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
+func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
 
-	if params.Wallet.ID != w.Filename() {
-		return nil, nil, NewError(errors.New("params.Wallet.ID does not match wallet"))
+	if p.Wallet.ID != w.Filename() {
+		return nil, nil, NewError(errors.New("p.Wallet.ID does not match wallet"))
 	}
 
 	if w.IsEncrypted() {
@@ -1057,7 +1252,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		if !ok {
 			return nil, nil, ErrUnknownAddress
 		}
-		entriesMap[e.Address] = e
+		entriesMap[e.SkycoinAddress()] = e
 	}
 
 	txn := &coin.Transaction{}
@@ -1082,7 +1277,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	// calculate total coins and minimum hours to send
 	var totalOutCoins uint64
 	var requestedHours uint64
-	for _, to := range params.To {
+	for _, to := range p.To {
 		totalOutCoins, err = coin.AddUint64(totalOutCoins, to.Coins)
 		if err != nil {
 			return nil, nil, NewError(fmt.Errorf("total output coins error: %v", err))
@@ -1126,22 +1321,20 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		txn.PushInput(spend.Hash)
 	}
 
-	feeHours := fee.RequiredFee(totalInputHours)
+	feeHours := fee.RequiredFee(totalInputHours, params.UserVerifyTxn.BurnFactor)
 	if feeHours == 0 {
 		return nil, nil, fee.ErrTxnNoFee
 	}
 	remainingHours := totalInputHours - feeHours
 
-	switch params.HoursSelection.Type {
+	switch p.HoursSelection.Type {
 	case HoursSelectionTypeManual:
-		for _, out := range params.To {
-			txn.Out = append(txn.Out, out)
-		}
+		txn.Out = append(txn.Out, p.To...)
 
 	case HoursSelectionTypeAuto:
 		var addrHours []uint64
 
-		switch params.HoursSelection.Mode {
+		switch p.HoursSelection.Mode {
 		case HoursSelectionModeShare:
 			// multiply remaining hours after fee burn with share factor
 			hours, err := coin.Uint64ToInt64(remainingHours)
@@ -1149,14 +1342,14 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 				return nil, nil, err
 			}
 
-			allocatedHoursInt := params.HoursSelection.ShareFactor.Mul(decimal.New(hours, 0)).IntPart()
+			allocatedHoursInt := p.HoursSelection.ShareFactor.Mul(decimal.New(hours, 0)).IntPart()
 			allocatedHours, err := coin.Int64ToUint64(allocatedHoursInt)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			toCoins := make([]uint64, len(params.To))
-			for i, to := range params.To {
+			toCoins := make([]uint64, len(p.To))
+			for i, to := range p.To {
 				toCoins[i] = to.Coins
 			}
 
@@ -1168,7 +1361,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			return nil, nil, ErrInvalidHoursSelectionType
 		}
 
-		for i, out := range params.To {
+		for i, out := range p.To {
 			out.Hours = addrHours[i]
 			txn.Out = append(txn.Out, out)
 		}
@@ -1219,7 +1412,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			}
 
 			// Calculate the new fee for this new amount of hours
-			newFee := fee.RequiredFee(newTotalHours)
+			newFee := fee.RequiredFee(newTotalHours, params.UserVerifyTxn.BurnFactor)
 			if newFee < feeHours {
 				err := errors.New("updated fee after adding extra input for change is unexpectedly less than it was initially")
 				logger.WithError(err).Error()
@@ -1257,19 +1450,19 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	// With auto share mode, if there are leftover hours and change couldn't be force-added,
 	// recalculate that share ratio at 100%
-	if changeCoins == 0 && changeHours > 0 && params.HoursSelection.Type == HoursSelectionTypeAuto && params.HoursSelection.Mode == HoursSelectionModeShare {
+	if changeCoins == 0 && changeHours > 0 && p.HoursSelection.Type == HoursSelectionTypeAuto && p.HoursSelection.Mode == HoursSelectionModeShare {
 		oneDecimal := decimal.New(1, 0)
-		if params.HoursSelection.ShareFactor.Equal(oneDecimal) {
+		if p.HoursSelection.ShareFactor.Equal(oneDecimal) {
 			return nil, nil, errors.New("share factor is 1.0 but changeHours > 0 unexpectedly")
 		}
-		params.HoursSelection.ShareFactor = &oneDecimal
-		return w.CreateAndSignTransactionAdvanced(params, auxs, headTime)
+		p.HoursSelection.ShareFactor = &oneDecimal
+		return w.CreateAndSignTransactionAdvanced(p, auxs, headTime)
 	}
 
 	if changeCoins > 0 {
 		var changeAddress cipher.Address
-		if params.ChangeAddress != nil {
-			changeAddress = *params.ChangeAddress
+		if p.ChangeAddress != nil {
+			changeAddress = *p.ChangeAddress
 		} else {
 			// Choose a change address from the unspent outputs
 			// Sort spends by address, comparing bytes, and use the first
@@ -1290,7 +1483,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			var err error
 			changeAddress, err = cipher.AddressFromBytes(addressBytes[0])
 			if err != nil {
-				logger.Critical().Errorf("cipher.AddressFromBytes failed for change address converted to bytes: %v", err)
+				logger.Critical().WithError(err).Error("cipher.AddressFromBytes failed for change address converted to bytes")
 				return nil, nil, err
 			}
 		}
@@ -1299,7 +1492,10 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	}
 
 	txn.SignInputs(toSign)
-	txn.UpdateHeader()
+	if err := txn.UpdateHeader(); err != nil {
+		logger.Critical().WithError(err).Error("txn.UpdateHeader failed")
+		return nil, nil, err
+	}
 
 	inputs := make([]UxBalance, len(txn.In))
 	for i, h := range txn.In {
@@ -1310,8 +1506,8 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		inputs[i] = uxBalance
 	}
 
-	if err := verifyCreatedTransactionInvariants(params, txn, inputs); err != nil {
-		logger.Critical().Errorf("CreateAndSignTransactionAdvanced created transaction that violates invariants, aborting: %v", err)
+	if err := verifyCreatedTransactionInvariants(p, txn, inputs); err != nil {
+		logger.Critical().WithError(err).Error("CreateAndSignTransactionAdvanced created transaction that violates invariants, aborting")
 		return nil, nil, fmt.Errorf("Created transaction that violates invariants, this is a bug: %v", err)
 	}
 
@@ -1321,7 +1517,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 // verifyCreatedTransactionInvariants checks that the transaction that was created matches expectations.
 // Does not call visor verification methods because that causes import cycle.
 // daemon.Gateway checks that the transaction passes additional visor verification methods.
-func verifyCreatedTransactionInvariants(params CreateTransactionParams, txn *coin.Transaction, inputs []UxBalance) error {
+func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Transaction, inputs []UxBalance) error {
 	for _, o := range txn.Out {
 		// No outputs should be sent to the null address
 		if o.Address.Null() {
@@ -1333,20 +1529,20 @@ func verifyCreatedTransactionInvariants(params CreateTransactionParams, txn *coi
 		}
 	}
 
-	if len(txn.Out) != len(params.To) && len(txn.Out) != len(params.To)+1 {
+	if len(txn.Out) != len(p.To) && len(txn.Out) != len(p.To)+1 {
 		return errors.New("Transaction has unexpected number of outputs")
 	}
 
-	for i, o := range txn.Out[:len(params.To)] {
-		if o.Address != params.To[i].Address {
+	for i, o := range txn.Out[:len(p.To)] {
+		if o.Address != p.To[i].Address {
 			return errors.New("Output address does not match requested address")
 		}
 
-		if o.Coins != params.To[i].Coins {
+		if o.Coins != p.To[i].Coins {
 			return errors.New("Output coins does not match requested coins")
 		}
 
-		if params.To[i].Hours != 0 && o.Hours != params.To[i].Hours {
+		if p.To[i].Hours != 0 && o.Hours != p.To[i].Hours {
 			return errors.New("Output hours does not match requested hours")
 		}
 	}
@@ -1409,7 +1605,7 @@ func verifyCreatedTransactionInvariants(params CreateTransactionParams, txn *coi
 		return errors.New("Total input hours is less than the output hours")
 	}
 
-	if inputHours-outputHours < fee.RequiredFee(inputHours) {
+	if inputHours-outputHours < fee.RequiredFee(inputHours, params.UserVerifyTxn.BurnFactor) {
 		return errors.New("Transaction will not satisy required fee")
 	}
 
@@ -1428,7 +1624,7 @@ func verifyCreatedTransactionInvariants(params CreateTransactionParams, txn *coi
 // an array of length nAddrs with the hours to give to each destination address,
 // and a sum of these values.
 func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, []uint64, uint64) {
-	feeHours := fee.RequiredFee(inputHours)
+	feeHours := fee.RequiredFee(inputHours, params.UserVerifyTxn.BurnFactor)
 	remainingHours := inputHours - feeHours
 
 	var changeHours uint64
@@ -1782,7 +1978,7 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 	have.Coins += firstNonzero.Coins
 	have.Hours += firstNonzero.Hours
 
-	if have.Coins >= coins && fee.RemainingHours(have.Hours) >= hours {
+	if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserVerifyTxn.BurnFactor) >= hours {
 		return spending, nil
 	}
 
@@ -1800,7 +1996,7 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 		}
 	}
 
-	if have.Coins >= coins && fee.RemainingHours(have.Hours) >= hours {
+	if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserVerifyTxn.BurnFactor) >= hours {
 		return spending, nil
 	}
 
@@ -1813,7 +2009,7 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 		have.Coins += ux.Coins
 		have.Hours += ux.Hours
 
-		if have.Coins >= coins && fee.RemainingHours(have.Hours) >= hours {
+		if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserVerifyTxn.BurnFactor) >= hours {
 			return spending, nil
 		}
 	}

@@ -4,9 +4,7 @@ set -e -o pipefail
 # Compresses packaged standalone release after
 # ./package-standalone-release.sh is done
 
-if [ -n "$2" ]; then
-    GOX_OSARCH="$1"
-fi
+GOX_OSARCH="$@"
 
 . build-conf.sh "$GOX_OSARCH"
 
@@ -15,7 +13,7 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPTDIR" >/dev/null
 
 # Compress archives
-pushd "$STL_OUTPUT" >/dev/null
+pushd "$STL_OUTPUT_DIR" >/dev/null
 
 FINALS=()
 
@@ -99,9 +97,9 @@ fi
 popd >/dev/null
 
 # Move to final release dir
-mkdir -p "$FINAL_OUTPUT"
+mkdir -p "$FINAL_OUTPUT_DIR"
 for var in "${FINALS[@]}"; do
-    mv "${STL_OUTPUT}/${var}" "$FINAL_OUTPUT"
+    mv "${STL_OUTPUT_DIR}/${var}" "$FINAL_OUTPUT_DIR"
 done
 
 popd >/dev/null

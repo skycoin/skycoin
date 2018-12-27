@@ -1,4 +1,14 @@
 {
+	"head": {
+		"seq": 180,
+		"block_hash": "63614fdf08b67fcfc99d7b43d115fb9f57eb5c6833acdbdc712ee361f391f292",
+		"previous_block_hash": "93fce3f520d9ec5b5c29226ad39fb61e3b9a92464fdec87d6805cf8e8e782959",
+		"timestamp": 1431574528,
+		"fee": 2265261,
+		"version": 0,
+		"tx_body_hash": "0a610a34a8408effe8f2f70e4a85a3a8f4aca923f43e10a8a6e08cf410d7a35d",
+		"ux_hash": "058d1d0a22be7b9f5567a236866836a87d922760581832cfb8bfbd8b337d64b1"
+	},
 	"head_outputs": [
 		{
 			"hash": "75692aeff988ce0da734c474dbef3a1ce19a5a6823bbcd36acb856c83262261e",
@@ -2181,6 +2191,38 @@
 			"calculated_hours": 1013371112
 		}
 	],
-	"outgoing_outputs": [],
-	"incoming_outputs": []
+	"outgoing_outputs": [
+		{
+			"hash": "fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
+			"time": 1431339429,
+			"block_seq": 179,
+			"src_tx": "f58f664eea258100126636a4111838e489ef5aec848ca8498319c290fa2a0805",
+			"address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+			"coins": "615700.000000",
+			"hours": 5521648,
+			"calculated_hours": 45730107
+		}
+	],
+	"incoming_outputs": [
+		{
+			"hash": "32a060b2e2025cceb40f3f982c887952d3358d468db1719dd892eab575c14c14",
+			"time": 1431574528,
+			"block_seq": 180,
+			"src_tx": "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			"address": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
+			"coins": "10000.000000",
+			"hours": 5716263,
+			"calculated_hours": 5716263
+		},
+		{
+			"hash": "8f9c09c37e0c636178e4229e2e8212c067ef0a8c501be9e2757a97b980d7a98a",
+			"time": 1431574528,
+			"block_seq": 180,
+			"src_tx": "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			"address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+			"coins": "605700.000000",
+			"hours": 5716263,
+			"calculated_hours": 5716263
+		}
+	]
 }

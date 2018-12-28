@@ -82,3 +82,42 @@ func decodeRawTxCmd() gcli.Command {
 		},
 	}
 }
+
+func addressTransactionsCmd() gcli.Command {
+	name := "addressTransactions"
+	return gcli.Command{
+		Name:      name,
+		Usage:     "Show detail for transaction associated with one or more specified addresses",
+		ArgsUsage: "[address list]",
+		Description: `Display transactions for specific addresses, seperate multiple addresses with a space,
+        example: addressTransactions addr1 addr2 addr3`,
+		OnUsageError: onCommandUsageError(name),
+		Action:       getAddressTransactionsCmd,
+	}
+}
+
+func getAddressTransactionsCmd(c *gcli.Context) error {
+	client := APIClientFromContext(c)
+
+	// Build the list of addresses from the command line arguments
+	addrs := make([]string, c.NArg())
+	var err error
+	for i := 0; i < c.NArg(); i++ {
+		addrs[i] = c.Args().Get(i)
+		if _, err = cipher.DecodeBase58Address(addrs[i]); err != nil {
+			return fmt.Errorf("invalid address: %v, err: %v", addrs[i], err)
+		}
+	}
+
+	// If one or more addresses have beeb provided, request their transactions - otherwise report an error
+	if len(addrs) > 0 {
+		outputs, err := client.TransactionsVerbose(addrs)
+		if err != nil {
+			return err
+		}
+
+		return printJSON(outputs)
+	}
+
+	return fmt.Errorf("at least one address must be specified. Example: %s addr1 addr2 addr3", c.Command.Name)
+}

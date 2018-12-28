@@ -903,20 +903,6 @@ func (c *Client) PendingTransactionsVerbose() ([]readable.UnconfirmedTransaction
 	return v, nil
 }
 
-// GetTransactions makes a request to POST /api/v1/transactions
-func (c *Client) GetTransactions(addrs []string) ([]readable.TransactionWithStatus, error) {
-	v := url.Values{}
-	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/api/v1/transactions?" + v.Encode()
-
-	var r []readable.TransactionWithStatus
-	if err := c.Get(endpoint, &r); err != nil {
-		return r, err
-	}
-
-	return r, nil
-}
-
 // Transaction makes a request to GET /api/v1/transaction
 func (c *Client) Transaction(txid string) (*readable.TransactionWithStatus, error) {
 	v := url.Values{}

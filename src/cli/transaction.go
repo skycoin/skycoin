@@ -111,7 +111,7 @@ func getAddressTransactionsCmd(c *gcli.Context) error {
 
 	// If one or more addresses have beeb provided, request their transactions - otherwise report an error
 	if len(addrs) > 0 {
-		outputs, err := client.GetTransactions(addrs)
+		outputs, err := client.Transactions(addrs)
 		if err != nil {
 			return err
 		}

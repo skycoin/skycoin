@@ -1172,11 +1172,11 @@ Example request body with manual hours selection type, unencrypted wallet and al
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
         "coins": "1.032",
-        "hours": 7
+        "hours": "7"
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
-        "hours": 0
+        "hours": "0"
     }]
 }
 ```
@@ -1221,11 +1221,11 @@ Example request body with manual hours selection type, unencrypted wallet and sp
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
         "coins": "1.032",
-        "hours": 7
+        "hours": "7"
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
-        "hours": 0
+        "hours": "0"
     }]
 }
 ```

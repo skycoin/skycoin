@@ -800,8 +800,10 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 }
 
 // VerifySeed verifies whether the given seed is a valid bip39 mnemonic or not
-func (c *Client) VerifySeed(seed VerifySeedRequest) (bool, error) {
-	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", seed, struct{}{})
+func (c *Client) VerifySeed(seed string) (bool, error) {
+	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", VerifySeedRequest{
+		Seed: seed,
+	}, struct{}{})
 	if err != nil {
 		return false, err
 	}
@@ -1210,7 +1212,7 @@ func (c *Client) DecryptWallet(id, password string) (*WalletResponse, error) {
 	return &wlt, nil
 }
 
-// RecoverWallet makes a request to POST /api/v2/wallet/recover to recover an encrypted wallet by seed.
+// RecoverWallet makes a request to POST /api/v2/ wallet/recover to recover an encrypted wallet by seed.
 // The password argument is optional, if provided, the recovered wallet will be encrypted with this password,
 // otherwise the recovered wallet will be unencrypted.
 func (c *Client) RecoverWallet(id, seed, password string) (*WalletResponse, error) {

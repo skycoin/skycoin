@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/params"
 )
 
 const (
@@ -216,7 +217,7 @@ func (mai *MessagesAnnotationsIterator) Next() (Annotation, bool) {
 		if i < mai.MaxField {
 			f = t.Field(i)
 			if f.Type.Kind() == reflect.Slice {
-				if _, omitempty := encoder.ParseTag(f.Tag.Get("enc")); omitempty {
+				if encoder.TagOmitempty(f.Tag.Get("enc")) {
 					if i == mai.MaxField-1 {
 						vF = v.Field(i)
 						if vF.Len() == 0 {
@@ -419,7 +420,11 @@ func ExampleIntroductionMessage() {
 
 	pk := cipher.MustPubKeyFromHex("0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a")
 
-	var message = NewIntroductionMessage(1234, 5, 7890, pk)
+	var message = NewIntroductionMessage(1234, 5, 7890, pk, "skycoin:0.24.1", params.VerifyTxn{
+		BurnFactor:          2,
+		MaxTransactionSize:  32768,
+		MaxDropletPrecision: 3,
+	})
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
@@ -429,12 +434,12 @@ func ExampleIntroductionMessage() {
 	}
 	// Output:
 	// IntroductionMessage:
-	// 0x0000 | 33 00 00 00 ....................................... Length
+	// 0x0000 | 4e 00 00 00 ....................................... Length
 	// 0x0004 | 49 4e 54 52 ....................................... Prefix
 	// 0x0008 | d2 04 00 00 ....................................... Mirror
-	// 0x000c | d2 1e ............................................. Port
-	// 0x000e | 05 00 00 00 ....................................... Version
-	// 0x0012 | 21 00 00 00 ....................................... Extra length
+	// 0x000c | d2 1e ............................................. ListenPort
+	// 0x000e | 05 00 00 00 ....................................... ProtocolVersion
+	// 0x0012 | 3c 00 00 00 ....................................... Extra length
 	// 0x0016 | 03 ................................................ Extra[0]
 	// 0x0017 | 28 ................................................ Extra[1]
 	// 0x0018 | c5 ................................................ Extra[2]
@@ -468,7 +473,34 @@ func ExampleIntroductionMessage() {
 	// 0x0034 | e6 ................................................ Extra[30]
 	// 0x0035 | 45 ................................................ Extra[31]
 	// 0x0036 | 6a ................................................ Extra[32]
-	// 0x0037 |
+	// 0x0037 | 02 ................................................ Extra[33]
+	// 0x0038 | 00 ................................................ Extra[34]
+	// 0x0039 | 00 ................................................ Extra[35]
+	// 0x003a | 00 ................................................ Extra[36]
+	// 0x003b | 00 ................................................ Extra[37]
+	// 0x003c | 80 ................................................ Extra[38]
+	// 0x003d | 00 ................................................ Extra[39]
+	// 0x003e | 00 ................................................ Extra[40]
+	// 0x003f | 03 ................................................ Extra[41]
+	// 0x0040 | 0e ................................................ Extra[42]
+	// 0x0041 | 00 ................................................ Extra[43]
+	// 0x0042 | 00 ................................................ Extra[44]
+	// 0x0043 | 00 ................................................ Extra[45]
+	// 0x0044 | 73 ................................................ Extra[46]
+	// 0x0045 | 6b ................................................ Extra[47]
+	// 0x0046 | 79 ................................................ Extra[48]
+	// 0x0047 | 63 ................................................ Extra[49]
+	// 0x0048 | 6f ................................................ Extra[50]
+	// 0x0049 | 69 ................................................ Extra[51]
+	// 0x004a | 6e ................................................ Extra[52]
+	// 0x004b | 3a ................................................ Extra[53]
+	// 0x004c | 30 ................................................ Extra[54]
+	// 0x004d | 2e ................................................ Extra[55]
+	// 0x004e | 32 ................................................ Extra[56]
+	// 0x004f | 34 ................................................ Extra[57]
+	// 0x0050 | 2e ................................................ Extra[58]
+	// 0x0051 | 31 ................................................ Extra[59]
+	// 0x0052 |
 }
 
 func ExampleGetPeersMessage() {
@@ -793,4 +825,29 @@ func ExampleAnnounceTxnsMessage() {
 	// 0x002c | 1c 1d 7d bf d7 ba 2b b1 aa 9b 56 ed ae 26 ea 56
 	// 0x003c | 5c bf 72 f9 8c c6 a6 2c 72 97 23 cb c0 75 0d 3b ... Transactions[1]
 	// 0x004c |
+}
+
+func ExampleDisconnectMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+
+	message := NewDisconnectMessage(ErrDisconnectIdle)
+	fmt.Println("DisconnectMessage:")
+	var mai = NewMessagesAnnotationsIterator(message)
+	w := bufio.NewWriter(os.Stdout)
+	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	if err != nil {
+		fmt.Println(err)
+	}
+	// DisconnectMessage:
+	// 0x0000 | 31 00 00 00 ....................................... Length
+	// 0x0004 | 52 4a 43 54 ....................................... Prefix
+	// 0x0008 | 49 4e 54 52 ....................................... TargetPrefix
+	// 0x000c | 13 00 00 00 ....................................... ErrorCode
+	// 0x0010 | 1d 00 00 00 45 78 61 6d 70 6c 65 52 65 6a 65 63
+	// 0x0020 | 74 57 69 74 68 50 65 65 72 73 4d 65 73 73 61 67
+	// 0x0030 | 65 ................................................ Reason
+	// 0x0031 | 00 00 00 00 ....................................... Reserved length
+	// 0x0035 |
+
 }

@@ -1,10 +1,10 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -101,7 +101,7 @@ func TestVerifyAddress(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
 			gateway := &MockGatewayer{}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			contentType := tc.contentType
@@ -111,17 +111,16 @@ func TestVerifyAddress(t *testing.T) {
 
 			req.Header.Set("Content-Type", contentType)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

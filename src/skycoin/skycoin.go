@@ -22,10 +22,10 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/certutil"
-	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -201,7 +201,9 @@ func (c *Coin) Run() error {
 		}
 	}
 
-	c.logger.Infof("Coinhour burn factor is %d", fee.BurnFactor)
+	c.logger.Infof("Coinhour burn factor for user transactions is %d", params.UserVerifyTxn.BurnFactor)
+	c.logger.Infof("Max transaction size for user transactions is %d", params.UserVerifyTxn.MaxTransactionSize)
+	c.logger.Infof("Max decimals for user transactions is %d", params.UserVerifyTxn.MaxDropletPrecision)
 
 	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {
@@ -364,19 +366,26 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.Port = c.config.Node.Port
 	dc.Daemon.Address = c.config.Node.Address
 	dc.Daemon.LocalhostOnly = c.config.Node.LocalhostOnly
-	dc.Daemon.OutgoingMax = c.config.Node.MaxOutgoingConnections
+	dc.Daemon.MaxConnections = c.config.Node.MaxConnections
+	dc.Daemon.MaxOutgoingConnections = c.config.Node.MaxOutgoingConnections
 	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
+	dc.Daemon.UserAgent = c.config.Node.userAgent
+	dc.Daemon.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.config.Node.OutgoingConnectionsRate
-	dc.Visor.IsMaster = c.config.Node.RunMaster
+	dc.Visor.IsBlockPublisher = c.config.Node.RunBlockPublisher
 
 	dc.Visor.BlockchainPubkey = c.config.Node.blockchainPubkey
 	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey
+
+	dc.Visor.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
+	dc.Visor.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
+	dc.Visor.MaxBlockSize = c.config.Node.MaxBlockSize
 
 	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
 	dc.Visor.GenesisSignature = c.config.Node.genesisSignature
@@ -410,15 +419,19 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		EnableJSON20RPC:      c.config.Node.RPCInterface,
 		EnableGUI:            c.config.Node.EnableGUI,
 		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,
-		ReadTimeout:          c.config.Node.ReadTimeout,
-		WriteTimeout:         c.config.Node.WriteTimeout,
-		IdleTimeout:          c.config.Node.IdleTimeout,
+		ReadTimeout:          c.config.Node.HTTPReadTimeout,
+		WriteTimeout:         c.config.Node.HTTPWriteTimeout,
+		IdleTimeout:          c.config.Node.HTTPIdleTimeout,
 		EnabledAPISets:       c.config.Node.enabledAPISets,
 		HostWhitelist:        c.config.Node.hostWhitelist,
-		BuildInfo: readable.BuildInfo{
-			Version: c.config.Build.Version,
-			Commit:  c.config.Build.Commit,
-			Branch:  c.config.Build.Branch,
+		Health: api.HealthConfig{
+			BuildInfo: readable.BuildInfo{
+				Version: c.config.Build.Version,
+				Commit:  c.config.Build.Commit,
+				Branch:  c.config.Build.Branch,
+			},
+			CoinName:        c.config.Node.CoinName,
+			DaemonUserAgent: c.config.Node.userAgent,
 		},
 		Username: c.config.Node.WebInterfaceUsername,
 		Password: c.config.Node.WebInterfacePassword,
@@ -530,20 +543,20 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 	output := cipher.MustSHA256FromHex(UxID)
 	tx.PushInput(output)
 
-	addrs := visor.GetDistributionAddresses()
+	addrs := params.GetDistributionAddresses()
 
 	if len(addrs) != 100 {
 		log.Panic("Should have 100 distribution addresses")
 	}
 
 	// 1 million per address, measured in droplets
-	if visor.DistributionAddressInitialBalance != 1e6 {
-		log.Panic("visor.DistributionAddressInitialBalance expected to be 1e6*1e6")
+	if params.DistributionAddressInitialBalance != 1e6 {
+		log.Panic("params.DistributionAddressInitialBalance expected to be 1e6*1e6")
 	}
 
 	for i := range addrs {
 		addr := cipher.MustDecodeBase58Address(addrs[i])
-		tx.PushOutput(addr, visor.DistributionAddressInitialBalance*1e6, 1)
+		tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1)
 	}
 
 	seckeys := make([]cipher.SecKey, 1)
@@ -551,11 +564,11 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 	seckeys[0] = cipher.MustSecKeyFromHex(seckey)
 	tx.SignInputs(seckeys)
 
-	tx.UpdateHeader()
+	if err := tx.UpdateHeader(); err != nil {
+		log.Panic(err)
+	}
 
-	err := tx.Verify()
-
-	if err != nil {
+	if err := tx.Verify(); err != nil {
 		log.Panic(err)
 	}
 

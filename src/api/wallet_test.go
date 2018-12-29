@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"math"
@@ -191,7 +190,8 @@ func TestGetBalanceHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+
+			handler := newServerMux(defaultMuxConfig(), gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -630,22 +630,22 @@ func TestWalletSpendHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -760,14 +760,14 @@ func TestWalletGet(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -898,18 +898,18 @@ func TestWalletBalanceHandler(t *testing.T) {
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
 			}
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1043,18 +1043,18 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1260,14 +1260,14 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
-		csrfStore := &CSRFStore{
-			Enabled: true,
-		}
-		setCSRFParameters(csrfStore, tokenValid, req)
+		setCSRFParameters(t, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+		cfg := defaultMuxConfig()
+		cfg.disableCSRF = false
+
+		handler := newServerMux(cfg, gateway, nil)
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
@@ -1564,22 +1564,22 @@ func TestWalletCreateHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			req.Header.Add("Content-Type", ContentTypeForm)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1686,18 +1686,18 @@ func TestWalletNewSeed(t *testing.T) {
 				endpoint += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1840,18 +1840,18 @@ func TestGetWalletSeed(t *testing.T) {
 				v.Add("password", tc.password)
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -2054,22 +2054,22 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -2131,14 +2131,14 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
-		csrfStore := &CSRFStore{
-			Enabled: true,
-		}
-		setCSRFParameters(csrfStore, tokenValid, req)
+		setCSRFParameters(t, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+		cfg := defaultMuxConfig()
+		cfg.disableCSRF = false
+
+		handler := newServerMux(cfg, gateway, nil)
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
@@ -2355,13 +2355,14 @@ func TestGetWallets(t *testing.T) {
 		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
-		csrfStore := &CSRFStore{
-			Enabled: true,
-		}
-		setCSRFParameters(csrfStore, tokenValid, req)
+		setCSRFParameters(t, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+		cfg := defaultMuxConfig()
+		cfg.disableCSRF = false
+
+		handler := newServerMux(cfg, gateway, nil)
 
 		handler.ServeHTTP(rr, req)
 
@@ -2441,18 +2442,18 @@ func TestWalletUnloadHandler(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -2594,14 +2595,14 @@ func TestEncryptWallet(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -2777,14 +2778,14 @@ func TestDecryptWallet(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -3035,7 +3036,7 @@ func TestWalletRecover(t *testing.T) {
 			}
 
 			endpoint := "/api/v2/wallet/recover"
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
 			contentType := tc.contentType
@@ -3045,13 +3046,14 @@ func TestWalletRecover(t *testing.T) {
 
 			req.Header.Set("Content-Type", contentType)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

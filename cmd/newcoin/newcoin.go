@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 
 	"os"
 	"path/filepath"
@@ -14,28 +15,13 @@ import (
 
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 const (
 	// Version is the cli version
 	Version = "0.1"
 )
-
-// CoinTemplateParameters represents parameters used to generate the new coin files.
-type CoinTemplateParameters struct {
-	Version             string
-	PeerListURL         string
-	Port                int
-	WebInterfacePort    int
-	DataDirectory       string
-	GenesisSignatureStr string
-	GenesisAddressStr   string
-	BlockchainPubkeyStr string
-	BlockchainSeckeyStr string
-	GenesisTimestamp    uint64
-	GenesisCoinVolume   uint64
-	DefaultConnections  []string
-}
 
 var (
 	app = cli.NewApp()
@@ -90,9 +76,9 @@ func createCoinCommand() cli.Command {
 				Value: "coin_test.template",
 			},
 			cli.StringFlag{
-				Name:  "visor-template-file, vt",
-				Usage: "visor template file",
-				Value: "visor.template",
+				Name:  "params-template-file, pt",
+				Usage: "params template file",
+				Value: "params.template",
 			},
 			cli.StringFlag{
 				Name:  "config-dir, cd",
@@ -108,11 +94,17 @@ func createCoinCommand() cli.Command {
 		Action: func(c *cli.Context) error {
 			// -- parse flags -- //
 
+			coinName := c.String("coin")
+
+			if err := validateCoinName(coinName); err != nil {
+				return err
+			}
+
 			templateDir := c.String("template-dir")
 
 			coinTemplateFile := c.String("coin-template-file")
 			coinTestTemplateFile := c.String("coin-test-template-file")
-			visorTemplateFile := c.String("visor-template-file")
+			paramsTemplateFile := c.String("params-template-file")
 
 			// check that the coin template file exists
 			if _, err := os.Stat(filepath.Join(templateDir, coinTemplateFile)); os.IsNotExist(err) {
@@ -122,8 +114,8 @@ func createCoinCommand() cli.Command {
 			if _, err := os.Stat(filepath.Join(templateDir, coinTestTemplateFile)); os.IsNotExist(err) {
 				return err
 			}
-			// check that the visor template file exists
-			if _, err := os.Stat(filepath.Join(templateDir, visorTemplateFile)); os.IsNotExist(err) {
+			// check that the params template file exists
+			if _, err := os.Stat(filepath.Join(templateDir, paramsTemplateFile)); os.IsNotExist(err) {
 				return err
 			}
 
@@ -136,9 +128,7 @@ func createCoinCommand() cli.Command {
 				return err
 			}
 
-			coinName := c.String("coin")
-
-			// -- parse template and create new coin.go and visor parameters.go -- //
+			// -- parse template and create new coin.go and config blockchain.go -- //
 
 			config, err := skycoin.NewParameters(configFile, configDir)
 			if err != nil {
@@ -172,12 +162,13 @@ func createCoinCommand() cli.Command {
 			}
 			defer coinTestFile.Close()
 
-			visorParamsFile, err := os.Create("./src/visor/parameters.go")
+			paramsFilePath := "./src/params/params.go"
+			paramsFile, err := os.Create(paramsFilePath)
 			if err != nil {
-				log.Errorf("failed to create new visor parameters.go")
+				log.Errorf("failed to create new file %s", paramsFilePath)
 				return err
 			}
-			defer visorParamsFile.Close()
+			defer paramsFile.Close()
 
 			// change dir so that text/template can parse the file
 			err = os.Chdir(templateDir)
@@ -189,7 +180,7 @@ func createCoinCommand() cli.Command {
 			templateFiles := []string{
 				coinTemplateFile,
 				coinTestTemplateFile,
-				visorTemplateFile,
+				paramsTemplateFile,
 			}
 
 			t := template.New(coinTemplateFile)
@@ -199,19 +190,10 @@ func createCoinCommand() cli.Command {
 				return err
 			}
 
-			err = t.ExecuteTemplate(coinFile, coinTemplateFile, CoinTemplateParameters{
-				PeerListURL:         config.Node.PeerListURL,
-				Port:                config.Node.Port,
-				WebInterfacePort:    config.Node.WebInterfacePort,
-				DataDirectory:       "$HOME/." + coinName,
-				GenesisSignatureStr: config.Node.GenesisSignatureStr,
-				GenesisAddressStr:   config.Node.GenesisAddressStr,
-				BlockchainPubkeyStr: config.Node.BlockchainPubkeyStr,
-				BlockchainSeckeyStr: config.Node.BlockchainSeckeyStr,
-				GenesisTimestamp:    config.Node.GenesisTimestamp,
-				GenesisCoinVolume:   config.Node.GenesisCoinVolume,
-				DefaultConnections:  config.Node.DefaultConnections,
-			})
+			config.Node.CoinName = coinName
+			config.Node.DataDirectory = "$HOME/." + coinName
+
+			err = t.ExecuteTemplate(coinFile, coinTemplateFile, config.Node)
 			if err != nil {
 				log.Error("failed to parse coin template variables")
 				return err
@@ -223,15 +205,23 @@ func createCoinCommand() cli.Command {
 				return err
 			}
 
-			err = t.ExecuteTemplate(visorParamsFile, visorTemplateFile, config.Visor)
+			err = t.ExecuteTemplate(paramsFile, paramsTemplateFile, config.Params)
 			if err != nil {
-				log.Error("failed to parse visor params template variables")
+				log.Error("failed to parse params template variables")
 				return err
 			}
 
 			return nil
 		},
 	}
+}
+
+func validateCoinName(s string) error {
+	x := regexp.MustCompile(fmt.Sprintf(`^%s$`, useragent.NamePattern))
+	if !x.MatchString(s) {
+		return fmt.Errorf("invalid coin name. must only contain the characters %s", useragent.NamePattern)
+	}
+	return nil
 }
 
 func main() {

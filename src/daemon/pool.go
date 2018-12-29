@@ -22,9 +22,11 @@ type PoolConfig struct {
 	ClearStaleRate time.Duration
 	// Buffer size for gnet.ConnectionPool's network Read events
 	EventChannelSize int
-	// Maximum number of connections to maintain
+	// Maximum number of connections
 	MaxConnections int
-	// Maximum number of connections to peers in the DefaultConnections list to maintain
+	// Maximum number of outgoing connections
+	MaxOutgoingConnections int
+	// Maximum number of outgoing connections to peers in the DefaultConnections list to maintain
 	MaxDefaultPeerOutgoingConnections int
 	// Default "trusted" peers
 	DefaultConnections []string
@@ -46,6 +48,7 @@ func NewPoolConfig() PoolConfig {
 		ClearStaleRate:                    1 * time.Second,
 		EventChannelSize:                  4096,
 		MaxConnections:                    128,
+		MaxOutgoingConnections:            8,
 		MaxDefaultPeerOutgoingConnections: 1,
 	}
 }
@@ -57,21 +60,28 @@ type Pool struct {
 }
 
 // NewPool creates pool
-func NewPool(cfg PoolConfig, d *Daemon) *Pool {
+func NewPool(cfg PoolConfig, d *Daemon) (*Pool, error) {
 	gnetCfg := gnet.NewConfig()
 	gnetCfg.DialTimeout = cfg.DialTimeout
 	gnetCfg.Port = uint16(cfg.port)
 	gnetCfg.Address = cfg.address
 	gnetCfg.ConnectCallback = d.onGnetConnect
 	gnetCfg.DisconnectCallback = d.onGnetDisconnect
+	gnetCfg.ConnectFailureCallback = d.onGnetConnectFailure
 	gnetCfg.MaxConnections = cfg.MaxConnections
+	gnetCfg.MaxOutgoingConnections = cfg.MaxOutgoingConnections
 	gnetCfg.MaxDefaultPeerOutgoingConnections = cfg.MaxDefaultPeerOutgoingConnections
 	gnetCfg.DefaultConnections = cfg.DefaultConnections
 
+	pool, err := gnet.NewConnectionPool(gnetCfg, d)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Pool{
 		Config: cfg,
-		Pool:   gnet.NewConnectionPool(gnetCfg, d),
-	}
+		Pool:   pool,
+	}, nil
 }
 
 // Shutdown closes all connections and stops listening
@@ -93,16 +103,14 @@ func (pool *Pool) RunOffline() error {
 	return pool.Pool.RunOffline()
 }
 
-// Send a ping if our last message sent was over pingRate ago
+// sendPings send a ping if our last message sent was over pingRate ago
 func (pool *Pool) sendPings() {
 	if err := pool.Pool.SendPings(pool.Config.PingRate, &PingMessage{}); err != nil {
 		logger.WithError(err).Error("sendPings failed")
 	}
 }
 
-// Removes connections that have not sent a message in too long
-func (pool *Pool) clearStaleConnections() {
-	if err := pool.Pool.ClearStaleConnections(pool.Config.IdleLimit, ErrDisconnectIdle); err != nil {
-		logger.WithError(err).Error("clearStaleConnections failed")
-	}
+// getStaleConnections returns connections that have been idle for longer than idleLimit
+func (pool *Pool) getStaleConnections() ([]string, error) {
+	return pool.Pool.GetStaleConnections(pool.Config.IdleLimit)
 }

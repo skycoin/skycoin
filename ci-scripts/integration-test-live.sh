@@ -16,7 +16,7 @@ RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 MODE="live"
 TEST=""
 UPDATE=""
-TIMEOUT="10m"
+TIMEOUT="60m"
 # run go test with -v flag
 VERBOSE=""
 # run go test with -run flag

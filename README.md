@@ -62,7 +62,10 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
 - [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
+- [Running with a custom max transaction size](#running-with-a-custom-max-transaction-size)
+- [Running with a custom max decimal places](#running-with-a-custom-max-decimal-places)
 - [URI Specification](#uri-specification)
+- [Wire protocol user agent](#wire-protocol-user-agent)
 - [Development](#development)
 	- [Modules](#modules)
 	- [Client libraries](#client-libraries)
@@ -122,7 +125,7 @@ but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-make run
+make run-client
 ```
 
 ### Show Skycoin node options
@@ -183,6 +186,14 @@ The [skycoin/skycoindev-cli docker image](docker/images/dev-cli/README.md) is pr
 easy to start developing Skycoin. It comes with the compiler, linters, debugger
 and the vim editor among other tools.
 
+The [skycoin/skycoindev-dind docker image](docker/images/dev-docker/README.md) comes with docker installed
+and all tools available on `skycoin/skycoindev-cli:develop` docker image.
+
+Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/README.md) is provided
+to facilitate the setup of the development process with [Visual Studio Code](https://code.visualstudio.com)
+and useful tools included in `skycoin/skycoindev-cli`.
+
+
 ## API Documentation
 
 ### REST API
@@ -221,11 +232,39 @@ See the [newcoin tool README](./cmd/newcoin/README.md)
 The coin hour burn factor is the denominator in the ratio of coinhours that must be burned by a transaction.
 For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor of 10 means 1/10 of coin hours must be burned.
 
-The coin hour burn factor can be configured with a `COINHOUR_BURN_FACTOR` envvar. It cannot be configured through the command line.
+The coin hour burn factor can be configured with a `USER_BURN_FACTOR` envvar. It cannot be configured through the command line.
 
 ```sh
-COINHOUR_BURN_FACTOR=999 ./run.sh
+USER_BURN_FACTOR=999 ./run-client.sh
 ```
+
+This burn factor applies to user-created transactions.
+
+To control the burn factor in other scenarios, use `-burn-factor-unconfirmed` and `-burn-factor-create-block`.
+
+## Running with a custom max transaction size
+
+```sh
+USER_MAX_TXN_SIZE=1024 ./run-client.sh
+```
+
+This maximum transaction size applies to user-created transactions.
+
+To control the transaction size in other scenarios, use `-max-txn-size-unconfirmed` and `-max-txn-size-create-block`.
+
+To control the max block size, use `-max-block-size`.
+
+Transaction and block size are measured in bytes.
+
+## Running with a custom max decimal places
+
+```sh
+USER_MAX_DECIMALS=4 ./run-client.sh
+```
+
+This maximum transaction size applies to user-created transactions.
+
+To control the maximum decimals in other scenarios, use `-max-decimals-unconfirmed` and `-max-decimals-create-block`.
 
 ## URI Specification
 
@@ -237,6 +276,10 @@ Example Skycoin URIs:
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70&label=friend&message=Birthday%20Gift`
+
+## Wire protocol user agent
+
+[Wire protocol user agent description](https://github.com/skycoin/skycoin/wiki/Wire-protocol-user-agent)
 
 ## Development
 
@@ -269,6 +312,9 @@ other programming languages.
 * `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
 
 For further details run `make docs` to generate documetation and read the corresponding README and API references.
+
+It is also possible to [build client libraries for other programming languages](lib/swig/README.md)
+using [SWIG](http://www.swig.org/).
 
 ### Running Tests
 
@@ -315,7 +361,7 @@ need to start a skycoin node:
 After the skycoin node is up, run the following command to start the live tests:
 
 ```sh
-./ci-scripts/integration-test.live.sh -v
+make integration-test-live
 ```
 
 The above command will run all tests except the wallet related tests. To run wallet tests, we
@@ -334,18 +380,38 @@ If the wallet is encrypted, also set `WALLET_PASSWORD`.
 export WALLET_DIR="$HOME/.skycoin/wallets"
 export WALLET_NAME="$valid_wallet_filename"
 export WALLET_PASSWORD="$wallet_password"
+/run-client.sh -launch-browser=false -enable-all-api-sets -enable-api-sets=DEPRECATED_WALLET_SPEND
 ```
 
 Then run the tests with the following command:
 
 ```sh
-make integration-test-live
+make integration-test-live-wallet
 ```
 
-or
+There are two other live integration test modes for CSRF disabled and networking disabled.
+
+To run the CSRF disabled tests:
 
 ```sh
-./ci-scripts/integration-test-live.sh -v -w
+./run-daemon.sh -disable-csrf
+```
+
+```sh
+make integration-test-live-disable-csrf
+```
+
+To run the networking disabled tests, which requires a live wallet:
+
+```sh
+./run-client.sh -disable-networking -launch-browser=false
+```
+
+```sh
+export WALLET_DIR="$HOME/.skycoin/wallets"
+export WALLET_NAME="$valid_wallet_filename"
+export WALLET_PASSWORD="$wallet_password"
+make integration-test-live-disable-networking
 ```
 
 #### Debugging Integration Tests
@@ -560,21 +626,22 @@ Instructions for doing this:
 
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
-0. Update all version strings in the repo (grep for them) to the new version
-0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `dbVerifyCheckpointVersion`	value
+0. Update version strings to the new version in the following files: `electron/package-lock.json`, `electron/package.json`, `electron/skycoin/current-skycoin.json`, `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
+0. Run `make newcoin`. Compare `git diff cmd/skycoin/skycoin.go`. The only change should be the version number in the file.
+0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-0. Update files in `docker/images/mainnet/repo-info/remote/`, adding a new file for the new version and adjusting any configuration text that may have changed
+0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote for images `skycoin/skycoin`, `skycoin/skycoindev-cli`, and `skycoin/skycoindev-vscode`, adding a new file for the new version and adjusting any configuration text that may have changed
 0. Merge these changes to `develop`
 0. Follow the steps in [pre-release testing](#pre-release-testing)
 0. Make a PR merging `develop` into `master`
 0. Review the PR and merge it
-0. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+0. Tag the `master` branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
     Sign the tag. If you have your GPG key in github, creating a release on the Github website will automatically tag the release.
     It can be tagged from the command line with `git tag -as v0.20.0 $COMMIT_ID`, but Github will not recognize it as a "release".
 0. Make sure that the client runs properly from the `master` branch
 0. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
 
-If there are problems discovered after merging to master, start over, and increment the 3rd version number.
+If there are problems discovered after merging to `master`, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 
 #### Pre-release testing
@@ -582,7 +649,10 @@ For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 Performs these actions before releasing:
 
 * `make check`
-* `make integration-test-live` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet, and once with `-networking-disabled`
+* `make integration-test-live`
+* `make integration-test-live-disable-networking` (requires node run with `-disable-networking`)
+* `make integration-test-live-disable-csrf` (requires node run with `-disable-csrf`)
+* `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet
 * `go run cmd/cli/cli.go checkdb` against a synced node
 * On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.

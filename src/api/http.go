@@ -25,6 +25,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 var (
@@ -57,6 +58,8 @@ const (
 	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 	// EndpointsPrometheus endpoints for Go application metrics
 	EndpointsPrometheus = "PROMETHEUS"
+	// EndpointsNetCtrl endpoints for managing network connections
+	EndpointsNetCtrl = "NET_CTRL"
 )
 
 // Server exposes an HTTP API
@@ -77,11 +80,18 @@ type Config struct {
 	ReadTimeout          time.Duration
 	WriteTimeout         time.Duration
 	IdleTimeout          time.Duration
-	BuildInfo            readable.BuildInfo
+	Health               HealthConfig
 	HostWhitelist        []string
 	EnabledAPISets       map[string]struct{}
 	Username             string
 	Password             string
+}
+
+// HealthConfig configuration data exposed in /health
+type HealthConfig struct {
+	BuildInfo       readable.BuildInfo
+	CoinName        string
+	DaemonUserAgent useragent.Data
 }
 
 type muxConfig struct {
@@ -90,12 +100,13 @@ type muxConfig struct {
 	enableGUI            bool
 	enableJSON20RPC      bool
 	enableUnversionedAPI bool
+	disableCSRF          bool
 	disableCSP           bool
-	buildInfo            readable.BuildInfo
 	enabledAPISets       map[string]struct{}
 	hostWhitelist        []string
 	username             string
 	password             string
+	health               HealthConfig
 }
 
 // HTTPResponse represents the http response struct
@@ -160,9 +171,6 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Infof("Web resources directory: %s", appLoc)
 	}
 
-	csrfStore := &CSRFStore{
-		Enabled: !c.DisableCSRF,
-	}
 	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
@@ -194,15 +202,16 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		enableGUI:            c.EnableGUI,
 		enableJSON20RPC:      c.EnableJSON20RPC,
 		enableUnversionedAPI: c.EnableUnversionedAPI,
+		disableCSRF:          c.DisableCSRF,
 		disableCSP:           c.DisableCSP,
-		buildInfo:            c.BuildInfo,
+		health:               c.Health,
 		enabledAPISets:       c.EnabledAPISets,
 		hostWhitelist:        c.HostWhitelist,
 		username:             c.Username,
 		password:             c.Password,
 	}
 
-	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
+	srvMux := newServerMux(mc, gateway, rpc)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -314,7 +323,7 @@ func (s *Server) Shutdown() {
 }
 
 // newServerMux creates an http.ServeMux with handlers registered
-func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *webrpc.WebRPC) *http.ServeMux {
+func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	allowedOrigins := []string{fmt.Sprintf("http://%s", c.host)}
@@ -364,7 +373,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		handler = wh.ElapsedHandler(logger, handler)
 		handler = corsHandler.Handler(handler)
 		if checkCSRF {
-			handler = CSRFCheck(apiVersion, csrfStore, handler)
+			handler = CSRFCheck(apiVersion, c.disableCSRF, handler)
 		}
 		handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
@@ -425,11 +434,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		}
 		webHandlerCSRFOptional(apiVersion1, "/api/v1"+endpoint, handler, false)
 	}
-	csrfHandlerV1("/csrf", getCSRFToken(csrfStore)) // csrf is always available, regardless of the API set
+	csrfHandlerV1("/csrf", getCSRFToken(c.disableCSRF)) // csrf is always available, regardless of the API set
 
 	// Status endpoints
-	webHandlerV1("/version", versionHandler(c.buildInfo)) // version is always available, regardless of the API set
-	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), []string{EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/version", versionHandler(c.health.BuildInfo)) // version is always available, regardless of the API set
+	webHandlerV1("/health", forAPISet(healthHandler(c, gateway), []string{EndpointsRead, EndpointsStatus}))
 
 	// Wallet endpoints
 	webHandlerV1("/wallet", forAPISet(walletHandler(gateway), []string{EndpointsWallet}))
@@ -464,13 +473,16 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 
+	// Network admin endpoints
+	webHandlerV1("/network/connection/disconnect", forAPISet(disconnectHandler(gateway), []string{EndpointsNetCtrl}))
+
 	// Transaction related endpoints
 	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
 	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsTransaction, EndpointsWallet}))
-	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsTransaction}))
 	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsRead}))
 
 	// Unspent output related endpoints

@@ -72,7 +72,8 @@ func makeTransaction(t *testing.T) coin.Transaction {
 	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(makeAddress(), 5e6, 50)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 	return txn
 }
 
@@ -179,13 +180,14 @@ func TestGetPendingTxs(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			rr := httptest.NewRecorder()
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -582,13 +584,14 @@ func TestGetTransactionByID(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -680,13 +683,13 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody: string(invalidTxnBodyJSON),
 		},
 		{
-			name:                   "503 - daemon.ErrOutgoingConnectionsDisabled",
+			name:                   "503 - daemon.ErrNetworkingDisabled",
 			method:                 http.MethodPost,
 			status:                 http.StatusServiceUnavailable,
-			err:                    "503 Service Unavailable - Outgoing connections are disabled",
+			err:                    "503 Service Unavailable - Networking is disabled",
 			httpBody:               string(validTxnBodyJSON),
 			injectTransactionArg:   validTransaction,
-			injectTransactionError: daemon.ErrOutgoingConnectionsDisabled,
+			injectTransactionError: daemon.ErrNetworkingDisabled,
 		},
 		{
 			name:                   "503 - gnet.ErrNoReachableConnections",
@@ -701,7 +704,7 @@ func TestInjectTransaction(t *testing.T) {
 			name:                   "503 - gnet.ErrPoolEmpty",
 			method:                 http.MethodPost,
 			status:                 http.StatusServiceUnavailable,
-			err:                    "503 Service Unavailable - Connection pool is empty",
+			err:                    "503 Service Unavailable - Connection pool is empty after filtering connections",
 			httpBody:               string(validTxnBodyJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: gnet.ErrPoolEmpty,
@@ -740,20 +743,19 @@ func TestInjectTransaction(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
+
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			handler := newServerMux(defaultMuxConfig(), gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -787,30 +789,41 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 	}{
 		{
 			name:   "405",
-			method: http.MethodPost,
+			method: http.MethodGet,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
+
 		{
-			name:   "500 resend failed",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - ResendUnconfirmedTxns failed",
+			name:                     "500 resend failed network error",
+			method:                   http.MethodPost,
+			status:                   http.StatusServiceUnavailable,
+			err:                      "503 Service Unavailable - All pool connections are unreachable at this time",
+			resendUnconfirmedTxnsErr: gnet.ErrNoReachableConnections,
+		},
+
+		{
+			name:                     "500 resend failed unknown error",
+			method:                   http.MethodPost,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - ResendUnconfirmedTxns failed",
 			resendUnconfirmedTxnsErr: errors.New("ResendUnconfirmedTxns failed"),
 		},
+
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
+			name:                          "200",
+			method:                        http.MethodPost,
+			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: nil,
 			httpResponse: ResendResult{
 				Txids: []string{},
 			},
 		},
+
 		{
-			name:   "200 with hashes",
-			method: http.MethodGet,
-			status: http.StatusOK,
+			name:                          "200 with hashes",
+			method:                        http.MethodPost,
+			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: []cipher.SHA256{validHash1, validHash2},
 			httpResponse: ResendResult{
 				Txids: []string{validHash1.Hex(), validHash2.Hex()},
@@ -824,16 +837,17 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -959,13 +973,14 @@ func TestGetRawTx(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1243,14 +1258,14 @@ func TestGetTransactions(t *testing.T) {
 				req.Header.Set("Content-Type", ContentTypeForm)
 			}
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1298,12 +1313,16 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(makeAddress(), 5e6, 50)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 
 	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
 	require.NoError(t, err)
 
-	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
+	return transactionAndInputs{
+		txn:    txn,
+		inputs: []wallet.UxBalance{input},
+	}
 }
 
 func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
@@ -1314,12 +1333,16 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(cipher.Address{}, 5e6, 50)
-	txn.UpdateHeader()
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
 
 	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
 	require.NoError(t, err)
 
-	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
+	return transactionAndInputs{
+		txn:    txn,
+		inputs: []wallet.UxBalance{input},
+	}
 }
 
 func TestVerifyTransaction(t *testing.T) {
@@ -1478,21 +1501,22 @@ func TestVerifyTransaction(t *testing.T) {
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", tc.contentType)
 
-			csrfStore := &CSRFStore{
-				Enabled: !tc.csrfDisabled,
-			}
-			if csrfStore.Enabled {
-				setCSRFParameters(csrfStore, tokenValid, req)
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
 			} else {
-				setCSRFParameters(csrfStore, tokenInvalid, req)
+				setCSRFParameters(t, tokenValid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

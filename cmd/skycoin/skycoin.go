@@ -20,7 +20,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.25.0-rc1"
+	Version = "0.25.0"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -31,6 +31,9 @@ var (
 	ConfigMode = ""
 
 	logger = logging.MustGetLogger("main")
+
+	// CoinName name of coin
+	CoinName = "skycoin"
 
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
@@ -55,20 +58,32 @@ var (
 		"176.58.126.224:6000",
 		"172.104.85.6:6000",
 		"139.162.7.132:6000",
+		"139.162.39.186:6000",
+		"45.33.111.142:6000",
+		"109.237.27.172:6000",
+		"172.104.41.14:6000",
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-		GenesisSignatureStr: GenesisSignatureStr,
-		GenesisAddressStr:   GenesisAddressStr,
-		GenesisCoinVolume:   GenesisCoinVolume,
-		GenesisTimestamp:    GenesisTimestamp,
-		BlockchainPubkeyStr: BlockchainPubkeyStr,
-		BlockchainSeckeyStr: BlockchainSeckeyStr,
-		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
-		Port:                6000,
-		WebInterfacePort:    6420,
-		DataDirectory:       "$HOME/.skycoin",
+		CoinName:                       CoinName,
+		GenesisSignatureStr:            GenesisSignatureStr,
+		GenesisAddressStr:              GenesisAddressStr,
+		GenesisCoinVolume:              GenesisCoinVolume,
+		GenesisTimestamp:               GenesisTimestamp,
+		BlockchainPubkeyStr:            BlockchainPubkeyStr,
+		BlockchainSeckeyStr:            BlockchainSeckeyStr,
+		DefaultConnections:             DefaultConnections,
+		PeerListURL:                    "https://downloads.skycoin.net/blockchain/peers.txt",
+		Port:                           6000,
+		WebInterfacePort:               6420,
+		DataDirectory:                  "$HOME/.skycoin",
+		UnconfirmedBurnFactor:          2,
+		UnconfirmedMaxTransactionSize:  32768,
+		UnconfirmedMaxDropletPrecision: 3,
+		CreateBlockBurnFactor:          2,
+		CreateBlockMaxTransactionSize:  32768,
+		CreateBlockMaxDropletPrecision: 3,
+		MaxBlockSize:                   32768,
 	})
 
 	parseFlags = true

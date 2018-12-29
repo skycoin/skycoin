@@ -18,3 +18,15 @@ default_connections = [
 ]
 launch_browser = true
 peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
+unconfirmed_burn_factor = 10
+unconfirmed_max_transaction_size = 777
+unconfirmed_max_decimals = 3
+create_block_burn_factor = 9
+create_block_max_transaction_size = 1234
+create_block_max_decimals = 4
+max_block_size = 1111
+
+[params]
+user_burn_factor = 3
+user_max_transaction_size = 999
+user_max_decimals = 2

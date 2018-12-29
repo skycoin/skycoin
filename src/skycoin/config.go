@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,8 +15,11 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -31,6 +35,9 @@ type Config struct {
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {
+	// Name of the coin
+	CoinName string
+
 	// Disable peer exchange
 	DisablePEX bool
 	// Download peer list
@@ -70,6 +77,8 @@ type NodeConfig struct {
 	Address string
 	// gnet uses this for TCP incoming and outgoing
 	Port int
+	// MaxConnections is the maximum number of total connections allowed
+	MaxConnections int
 	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
 	// Maximum default outgoing connections
@@ -112,9 +121,14 @@ type NodeConfig struct {
 	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
 
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	// Timeouts for the HTTP listener
+	HTTPReadTimeout  time.Duration
+	HTTPWriteTimeout time.Duration
+	HTTPIdleTimeout  time.Duration
+
+	// Remark to include in user agent sent in the wire protocol introduction
+	UserAgentRemark string
+	userAgent       useragent.Data
 
 	// Logging
 	ColorLog bool
@@ -128,6 +142,21 @@ type NodeConfig struct {
 	// Reset the database if integrity checks fail, and continue running
 	ResetCorruptDB bool
 
+	// Transaction verification parameters for unconfirmed transactions
+	UnconfirmedVerifyTxn params.VerifyTxn
+	// Transaction verification parameters for transactions when creating blocks
+	CreateBlockVerifyTxn params.VerifyTxn
+	// Maximum block size
+	MaxBlockSize uint32
+
+	unconfirmedBurnFactor          uint64
+	maxUnconfirmedTransactionSize  uint64
+	unconfirmedMaxDropletPrecision uint64
+	createBlockBurnFactor          uint64
+	createBlockMaxTransactionSize  uint64
+	createBlockMaxDropletPrecision uint64
+	maxBlockSize                   uint64
+
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
@@ -139,7 +168,7 @@ type NodeConfig struct {
 	// Load custom peers from disk
 	CustomPeersFile string
 
-	RunMaster bool
+	RunBlockPublisher bool
 
 	/* Developer options */
 
@@ -176,6 +205,7 @@ type NodeConfig struct {
 // NewNodeConfig returns a new node config instance
 func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	nodeConfig := NodeConfig{
+		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
@@ -206,9 +236,11 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		Address: "",
 		//gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
-		// MaxOutgoingConnections is the maximum outgoing connections allowed.
+		// MaxConnections is the maximum number of total connections allowed
+		MaxConnections: 128,
+		// MaxOutgoingConnections is the maximum outgoing connections allowed
 		MaxOutgoingConnections: 8,
-		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed
 		MaxDefaultPeerOutgoingConnections: 1,
 		DownloadPeerList:                  true,
 		PeerListURL:                       node.PeerListURL,
@@ -224,7 +256,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    api.EndpointsRead + "," + api.EndpointsTransaction,
+		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
 
@@ -244,19 +276,22 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		VerifyDB:       false,
 		ResetCorruptDB: false,
 
+		// Blockchain/transaction validation
+		UnconfirmedVerifyTxn: params.UserVerifyTxn,
+		CreateBlockVerifyTxn: params.UserVerifyTxn,
+		MaxBlockSize:         params.UserVerifyTxn.MaxTransactionSize,
+
 		// Wallets
 		WalletDirectory:  "",
 		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
 
 		// Timeout settings for http.Server
 		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 60,
-		IdleTimeout:  time.Second * 120,
+		HTTPReadTimeout:  time.Second * 10,
+		HTTPWriteTimeout: time.Second * 60,
+		HTTPIdleTimeout:  time.Second * 120,
 
-		// Centralized network configuration
-		RunMaster: false,
-		/* Developer options */
+		RunBlockPublisher: false,
 
 		// Enable cpu profiling
 		ProfileCPU: false,
@@ -276,7 +311,9 @@ func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
 		fmt.Println("Additional environment variables:")
-		fmt.Println("* COINHOUR_BURN_FACTOR - Set the coin hour burn factor required for transactions. Must be > 1.")
+		fmt.Printf("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be >= %d.\n", params.MinBurnFactor)
+		fmt.Printf("* USER_MAX_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be >= %d.\n", params.MinTransactionSize)
+		fmt.Printf("* USER_MAX_DECIMALS - Set the maximum decimals allowed for user-created transactions. Must be <= %d.\n", droplet.Exponent)
 		os.Exit(0)
 	}
 
@@ -331,10 +368,22 @@ func (c *Config) postProcess() error {
 		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
 	}
 
-	if c.Node.RunMaster {
-		// Run in arbitrating mode if the node is master
+	if c.Node.RunBlockPublisher {
+		// Run in arbitrating mode if the node is block publisher
 		c.Node.Arbitrating = true
 	}
+
+	userAgentData := useragent.Data{
+		Coin:    c.Node.CoinName,
+		Version: c.Build.Version,
+		Remark:  c.Node.UserAgentRemark,
+	}
+
+	if _, err := userAgentData.Build(); err != nil {
+		return err
+	}
+
+	c.Node.userAgent = userAgentData
 
 	apiSets, err := buildAPISets(c.Node)
 	if err != nil {
@@ -365,6 +414,96 @@ func (c *Config) postProcess() error {
 		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
 	}
 
+	if c.Node.MaxConnections < c.Node.MaxOutgoingConnections+c.Node.MaxDefaultPeerOutgoingConnections {
+		return errors.New("-max-connections must be >= -max-outgoing-connections + -max-default-peer-outgoing-connections")
+	}
+
+	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
+		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
+	}
+
+	if c.Node.maxBlockSize > math.MaxUint32 {
+		return errors.New("-max-block-size exceeds MaxUint32")
+	}
+	if c.Node.maxUnconfirmedTransactionSize > math.MaxUint32 {
+		return errors.New("-max-txn-size-unconfirmed exceeds MaxUint32")
+	}
+	if c.Node.unconfirmedBurnFactor > math.MaxUint32 {
+		return errors.New("-burn-factor-unconfirmed exceeds MaxUint32")
+	}
+	if c.Node.createBlockBurnFactor > math.MaxUint32 {
+		return errors.New("-burn-factor-create-block exceeds MaxUint32")
+	}
+
+	if c.Node.unconfirmedMaxDropletPrecision > math.MaxUint8 {
+		return errors.New("-max-decimals-unconfirmed exceeds MaxUint8")
+	}
+	if c.Node.createBlockMaxDropletPrecision > math.MaxUint8 {
+		return errors.New("-max-decimals-create-block exceeds MaxUint8")
+	}
+
+	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)
+	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
+	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision)
+	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)
+	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)
+	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision)
+	c.Node.MaxBlockSize = uint32(c.Node.maxBlockSize)
+
+	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
+	}
+	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-txn-size-create-block must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
+	}
+	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("-max-txn-size-create-block must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+
+	if c.Node.MaxBlockSize < params.MinTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
+	}
+	if c.Node.MaxBlockSize < params.UserVerifyTxn.MaxTransactionSize {
+		return fmt.Errorf("-max-block-size must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
+	}
+	if c.Node.MaxBlockSize < c.Node.UnconfirmedVerifyTxn.MaxTransactionSize {
+		return errors.New("-max-block-size must be >= -max-txn-size-unconfirmed")
+	}
+	if c.Node.MaxBlockSize < c.Node.CreateBlockVerifyTxn.MaxTransactionSize {
+		return errors.New("-max-block-size must be >= -max-txn-size-create-block")
+	}
+
+	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.MinBurnFactor {
+		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
+	}
+	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
+	}
+
+	if c.Node.CreateBlockVerifyTxn.BurnFactor < params.MinBurnFactor {
+		return fmt.Errorf("-burn-factor-create-block must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
+	}
+	if c.Node.CreateBlockVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
+		return fmt.Errorf("-burn-factor-create-block must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
+	}
+
+	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision > droplet.Exponent {
+		return fmt.Errorf("-max-decimals-unconfirmed must be <= droplet.Exponent (%d)", droplet.Exponent)
+	}
+	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("-max-decimals-unconfirmed must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
+	}
+
+	if c.Node.CreateBlockVerifyTxn.MaxDropletPrecision > droplet.Exponent {
+		return fmt.Errorf("-max-decimals-create-block must be <= droplet.Exponent (%d)", droplet.Exponent)
+	}
+	if c.Node.CreateBlockVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
+		return fmt.Errorf("-max-decimals-create-block must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
+	}
+
 	return nil
 }
 
@@ -390,6 +529,8 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsStatus,
 		api.EndpointsWallet,
 		api.EndpointsTransaction,
+		api.EndpointsPrometheus,
+		api.EndpointsNetCtrl,
 		// Do not include insecure or deprecated API sets, they must always
 		// be explicitly enabled through -enable-api-sets
 	}
@@ -422,7 +563,9 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsTransaction,
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
-			api.EndpointsDeprecatedWalletSpend:
+			api.EndpointsDeprecatedWalletSpend,
+			api.EndpointsPrometheus,
+			api.EndpointsNetCtrl:
 		case "":
 			continue
 		default:
@@ -439,7 +582,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
 	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
+	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
@@ -455,9 +598,21 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
-	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, "enable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
-	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, "disable API set. Options are READ, STATUS, WALLET, INSECURE_WALLET_SEED, DEPRECATED_WALLET_SPEND. Multiple values should be separated by comma")
+
+	allAPISets := []string{
+		api.EndpointsRead,
+		api.EndpointsStatus,
+		api.EndpointsWallet,
+		api.EndpointsTransaction,
+		api.EndpointsPrometheus,
+		api.EndpointsNetCtrl,
+		api.EndpointsInsecureWalletSeed,
+		api.EndpointsDeprecatedWalletSpend,
+	}
+	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
+	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
+
 	flag.StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
 	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
 	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
@@ -485,20 +640,29 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableDefaultPeers, "disable-default-peers", c.DisableDefaultPeers, "disable the hardcoded default peers")
 	flag.StringVar(&c.CustomPeersFile, "custom-peers-file", c.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
 
-	// Key Configuration Data
-	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
+	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
 
-	flag.StringVar(&c.BlockchainPubkeyStr, "master-public-key", c.BlockchainPubkeyStr, "public key of the master chain")
-	flag.StringVar(&c.BlockchainSeckeyStr, "master-secret-key", c.BlockchainSeckeyStr, "secret key, set for master")
+	flag.Uint64Var(&c.maxUnconfirmedTransactionSize, "max-txn-size-unconfirmed", uint64(c.UnconfirmedVerifyTxn.MaxTransactionSize), "maximum size of an unconfirmed transaction")
+	flag.Uint64Var(&c.unconfirmedBurnFactor, "burn-factor-unconfirmed", uint64(c.UnconfirmedVerifyTxn.BurnFactor), "coinhour burn factor applied to unconfirmed transactions")
+	flag.Uint64Var(&c.unconfirmedMaxDropletPrecision, "max-decimals-unconfirmed", uint64(c.UnconfirmedVerifyTxn.MaxDropletPrecision), "max number of decimal places applied to unconfirmed transactions")
+	flag.Uint64Var(&c.createBlockBurnFactor, "burn-factor-create-block", uint64(c.CreateBlockVerifyTxn.BurnFactor), "coinhour burn factor applied when creating blocks")
+	flag.Uint64Var(&c.createBlockMaxTransactionSize, "max-txn-size-create-block", uint64(c.CreateBlockVerifyTxn.MaxTransactionSize), "maximum size of a transaction applied when creating blocks")
+	flag.Uint64Var(&c.createBlockMaxDropletPrecision, "max-decimals-create-block", uint64(c.CreateBlockVerifyTxn.MaxDropletPrecision), "max number of decimal places applied when creating blocks")
+	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockSize), "maximum size of a block")
+
+	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
+	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
+	flag.StringVar(&c.BlockchainSeckeyStr, "blockchain-secret-key", c.BlockchainSeckeyStr, "secret key of the blockchain")
 
 	flag.StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
 	flag.StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
-	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
+	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "Max number of peers to track in peerlist")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
@@ -514,7 +678,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	case "":
 	case "STANDALONE_CLIENT":
 		c.EnableAllAPISets = true
-		c.EnabledAPISets = "INSECURE_WALLET_SEED"
+		c.EnabledAPISets = api.EndpointsInsecureWalletSeed
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false

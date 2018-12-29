@@ -1451,6 +1451,8 @@ func TestStableStatus(t *testing.T) {
 	ret.Status.Version = readable.BuildInfo{}
 	// Uptime is not stable
 	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
+	// StartedAt is not stable
+	ret.Status.StartedAt = 0
 
 	goldenFile := "status"
 	if useCSRF(t) {
@@ -2093,7 +2095,7 @@ func TestLiveSendNotEnoughDecimals(t *testing.T) {
 
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
-	errMsg := []byte("See 'skycoin-cli send --help'\ninvalid amount, too many decimal places")
+	errMsg := []byte("See 'skycoin-cli send --help'\nTransaction violates soft constraint: invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -2270,7 +2272,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// Send with too small decimal value
-	errMsg := []byte("invalid amount, too many decimal places")
+	errMsg := []byte("Transaction violates soft constraint: invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)

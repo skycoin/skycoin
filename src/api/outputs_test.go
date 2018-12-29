@@ -143,7 +143,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

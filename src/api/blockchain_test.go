@@ -84,13 +84,14 @@ func TestGetBlockchainMetadata(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -185,13 +186,14 @@ func TestGetBlockchainProgress(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -556,14 +558,14 @@ func TestGetBlock(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", ContentTypeForm)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -988,13 +990,10 @@ func TestGetBlocks(t *testing.T) {
 				req.Header.Set("Content-Type", ContentTypeForm)
 			}
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1184,14 +1183,11 @@ func TestGetLastBlocks(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			csrfStore := &CSRFStore{
-				Enabled: true,
-			}
-			setCSRFParameters(csrfStore, tokenValid, req)
+			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
 
-			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, nil)
 
 			handler.ServeHTTP(rr, req)
 

@@ -73,6 +73,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
 	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
 	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+	- [Disconnect a peer](#disconnect-a-peer)
 - [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
 - [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 - [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
@@ -136,11 +137,12 @@ These API sets are:
 
 * `READ` - All query-related endpoints, they do not modify the state of the program
 * `STATUS` - A subset of `READ`, these endpoints report the application, network or blockchain status
-* `TXN` - Enables `/api/v1/injectTransaction` without enabling wallet endpoints
+* `TXN` - Enables `/api/v1/injectTransaction` and `/api/v1/resendUnconfirmedTxns` without enabling wallet endpoints
 * `WALLET` - These endpoints operate on local wallet files
-* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
-* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed
 * `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
+* `NET_CTRL` - The `/api/v1/network/connection/disconnect` method, intended for network administration endpoints
+* `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
+* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed in v0.26.0
 
 ## Authentication
 
@@ -219,18 +221,33 @@ Response:
         "time_since_last_block": "4m46s"
     },
     "version": {
-        "version": "0.24.1",
+        "version": "0.25.0",
         "commit": "8798b5ee43c7ce43b9b75d57a1a6cd2c1295cd1e",
         "branch": "develop"
     },
+    "coin": "skycoin",
+    "user_agent": "skycoin:0.25.0",
     "open_connections": 8,
+    "outgoing_connections": 5,
+    "incoming_connections": 3,
     "uptime": "6m30.629057248s",
     "csrf_enabled": true,
     "csp_enabled": true,
     "wallet_api_enabled": true,
     "gui_enabled": true,
     "unversioned_api_enabled": false,
-    "json_rpc_enabled": false
+    "json_rpc_enabled": false,
+    "user_verify_transaction": {
+        "burn_factor": 2,
+        "max_transaction_size": 32768,
+        "max_decimals": 3
+    },
+    "unconfirmed_verify_transaction": {
+        "burn_factor": 2,
+        "max_transaction_size": 32768,
+        "max_decimals": 3
+    },
+    "started_at": 1542443907
 }
 ```
 
@@ -1155,11 +1172,11 @@ Example request body with manual hours selection type, unencrypted wallet and al
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
         "coins": "1.032",
-        "hours": 7
+        "hours": "7"
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
-        "hours": 0
+        "hours": "0"
     }]
 }
 ```
@@ -1204,11 +1221,11 @@ Example request body with manual hours selection type, unencrypted wallet and sp
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
         "coins": "1.032",
-        "hours": 7
+        "hours": "7"
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
-        "hours": 0
+        "hours": "0"
     }]
 }
 ```
@@ -1528,9 +1545,9 @@ API sets: `INSECURE_WALLET_SEED`
 URI: /api/v2/wallet/recover
 Method: POST
 Args:
-	id: wallet id
-	seed: wallet seed
-	password: [optional] password to encrypt the recovered wallet with
+    id: wallet id
+    seed: wallet seed
+    password: [optional] password to encrypt the recovered wallet with
 ```
 
 Recovers an encrypted wallet by providing the wallet seed.
@@ -1547,28 +1564,28 @@ Result:
 
 ```json
 {
-	"data": {
-	    "meta": {
-	        "coin": "skycoin",
-	        "filename": "2017_11_25_e5fb.wlt",
-	        "label": "test",
-	        "type": "deterministic",
-	        "version": "0.2",
-	        "crypto_type": "",
-	        "timestamp": 1511640884,
-	        "encrypted": false
-	    },
-	    "entries": [
-	        {
-	            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-	            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
-	        },
-	        {
-	            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
-	            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
-	        }
-	    ]
-	}
+    "data": {
+        "meta": {
+            "coin": "skycoin",
+            "filename": "2017_11_25_e5fb.wlt",
+            "label": "test",
+            "type": "deterministic",
+            "version": "0.2",
+            "crypto_type": "",
+            "timestamp": 1511640884,
+            "encrypted": false
+        },
+        "entries": [
+            {
+                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+            },
+            {
+                "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
+            }
+        ]
+    }
 }
 ```
 
@@ -1854,9 +1871,9 @@ Method: POST
 Content-Type: application/json
 Body: {"rawtx": "hex-encoded serialized transaction string"}
 Errors:
-	400 - Bad input
-	500 - Other
-	503 - Network unavailable (transaction failed to broadcast)
+    400 - Bad input
+    500 - Other
+    503 - Network unavailable (transaction failed to broadcast)
 ```
 
 Broadcasts a hex-encoded, serialized transaction to the network.
@@ -2237,17 +2254,17 @@ Result:
 
 ### Resend unconfirmed transactions
 
-API sets: `READ`
+API sets: `TXN`
 
 ```
 URI: /api/v1/resendUnconfirmedTxns
-Method: GET
+Method: POST
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns
+curl -X POST 'http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns'
 ```
 
 Result:
@@ -3569,6 +3586,12 @@ Args:
     addr: ip:port address of a known connection
 ```
 
+Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
+
+* The `"pending"` state is prior to connection establishment.
+* The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
+* The `"introduced"` state is after the introduction handshake has completed.
+
 Example:
 
 ```sh
@@ -3583,11 +3606,19 @@ Result:
     "address": "176.9.84.75:6000",
     "last_sent": 1520675817,
     "last_received": 1520675817,
+    "connected_at": 1520675700,
     "outgoing": false,
-    "introduced": true,
+    "state": "introduced",
     "mirror": 719118746,
     "height": 181,
-    "listen_port": 6000
+    "listen_port": 6000,
+    "user_agent": "skycoin:0.25.0",
+    "is_trusted_peer": true,
+    "unconfirmed_verify_transaction": {
+        "burn_factor": 2,
+        "max_transaction_size": 32768,
+        "max_decimals": 3
+    }
 }
 ```
 
@@ -3598,7 +3629,18 @@ API sets: `STATUS`, `READ`
 ```
 URI: /api/v1/network/connections
 Method: GET
+Args:
+	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
+	direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 ```
+
+Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
+
+* The `"pending"` state is prior to connection establishment.
+* The `"connected"` state is after connection establishment, but before the introduction handshake has completed.
+* The `"introduced"` state is after the introduction handshake has completed.
+
+By default, both incoming and outgoing connections in the `"connected"` or `"introduced"` state are returned.
 
 Example:
 
@@ -3616,33 +3658,57 @@ Result:
             "address": "139.162.161.41:20002",
             "last_sent": 1520675750,
             "last_received": 1520675750,
+            "connected_at": 1520675500,
             "outgoing": false,
-            "introduced": true,
+            "state": "introduced",
             "mirror": 1338939619,
+            "listen_port": 20002,
             "height": 180,
-            "listen_port": 20002
+            "user_agent": "skycoin:0.25.0",
+		    "is_trusted_peer": true,
+		    "unconfirmed_verify_transaction": {
+		        "burn_factor": 2,
+		        "max_transaction_size": 32768,
+		        "max_decimals": 3
+		    }
         },
         {
             "id": 109548,
             "address": "176.9.84.75:6000",
             "last_sent": 1520675751,
             "last_received": 1520675751,
-            "outgoing": false,
-            "introduced": true,
-            "mirror": 719118746,
-            "height": 182,
-            "listen_port": 6000
+            "connected_at": 1520675751,
+            "state": "connected",
+            "outgoing": true,
+            "mirror": 0,
+            "listen_port": 6000,
+            "height": 0,
+            "user_agent": "",
+		    "is_trusted_peer": true,
+		    "unconfirmed_verify_transaction": {
+		        "burn_factor": 0,
+		        "max_transaction_size": 0,
+		        "max_decimals": 0
+		    }
         },
         {
             "id": 99115,
             "address": "185.120.34.60:6000",
             "last_sent": 1520675754,
             "last_received": 1520675754,
+            "connected_at": 1520673013,
             "outgoing": false,
-            "introduced": true,
+            "state": "introduced",
             "mirror": 1931713869,
+            "listen_port": 6000,
             "height": 180,
-            "listen_port": 6000
+            "user_agent": "",
+		    "is_trusted_peer": true,
+		    "unconfirmed_verify_transaction": {
+		        "burn_factor": 0,
+		        "max_transaction_size": 0,
+		        "max_decimals": 0
+		    }
         }
     ]
 }
@@ -3657,6 +3723,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/defaultConnections
 Method: GET
 ```
+
+Returns addresses in the default hardcoded list of peers.
 
 Example:
 
@@ -3687,6 +3755,9 @@ URI: /api/v1/network/connections/trust
 Method: GET
 ```
 
+Returns addresses marked as trusted in the peerlist.
+This is typically equal to the list of addresses in the default hardcoded list of peers.
+
 Example:
 
 ```sh
@@ -3715,6 +3786,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/connections/exchange
 Method: GET
 ```
+
+Returns addresses from the peerlist that are known to have an open port.
 
 Example:
 
@@ -3750,6 +3823,33 @@ Result:
     "35.201.160.163:6000",
     "47.88.33.156:6000"
 ]
+```
+
+### Disconnect a peer
+
+API sets: `NET_CTRL`
+
+```
+URI: /api/v1/network/connection/disconnect
+Method: POST
+Args:
+	id: ID of the connection
+
+Returns 404 if the connection is not found.
+```
+
+Disconnects a peer by ID.
+
+Example:
+
+```sh
+curl -X POST 'http://127.0.0.1:6420/api/v1/network/connection/disconnect?id=999'
+```
+
+Result:
+
+```json
+{}
 ```
 
 ## Migrating from the unversioned API
@@ -3789,19 +3889,19 @@ To replicate the same behavior as `/api/v1/spend`, use the following request bod
 
 ```json
 {
-	"hours_selection": {
-		"type": "auto",
-		"mode": "share",
-		"share_factor": "0.5",
-	},
-	"wallet": {
-		"id": "$wallet_id",
-		"password": "$password"
-	},
-	"to": [{
-		"address": "$dst",
-		"coins": "$coins"
-	}]
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5",
+    },
+    "wallet": {
+        "id": "$wallet_id",
+        "password": "$password"
+    },
+    "to": [{
+        "address": "$dst",
+        "coins": "$coins"
+    }]
 }
 ```
 

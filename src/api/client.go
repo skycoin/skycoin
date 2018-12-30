@@ -803,7 +803,7 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 func (c *Client) VerifySeed(seed string) (bool, error) {
 	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", VerifySeedRequest{
 		Seed: seed,
-	}, struct{}{})
+	}, nil)
 	if err != nil {
 		return false, err
 	}

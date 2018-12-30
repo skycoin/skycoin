@@ -5451,14 +5451,12 @@ func TestVerifyWallet(t *testing.T) {
 	c := newClient()
 
 	// check with correct seed
-	seedReq := api.VerifySeedRequest{Seed: "nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair"}
-	isBip, err := c.VerifySeed(seedReq)
+	isBip, err := c.VerifySeed("nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair")
 	require.NoError(t, err)
 	require.True(t, isBip)
 
 	// check with incorrect seed
-	seedReq = api.VerifySeedRequest{Seed: "nut "}
-	isBip, err = c.VerifySeed(seedReq)
+	isBip, err = c.VerifySeed("nut ")
 	testutil.RequireError(t, err, "seed is not a valid bip39 seed")
 	require.False(t, isBip)
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/apputil"
@@ -29,20 +29,20 @@ func wrapDB(db *bolt.DB) *dbutil.DB {
 	return wdb
 }
 
-func checkdbCmd() *gcli.Command {
-	return &gcli.Command{
+func checkdbCmd() *cobra.Command {
+	return &cobra.Command{
 		Short: "Verify the database",
 		Use:   "checkdb [db path]",
 		Long: `Checks if the given database file contains valid skycoin blockchain data.
     If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.`,
-		Args: gcli.MaximumNArgs(1),
+		Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  checkdb,
 	}
 }
 
-func checkdb(c *gcli.Command, args []string) error {
+func checkdb(c *cobra.Command, args []string) error {
 	// get db path
 	dbpath, err := resolveDBPath(cliConfig, args[0])
 	if err != nil {

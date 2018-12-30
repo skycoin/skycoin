@@ -3,16 +3,21 @@ package cli
 import (
 	"fmt"
 
-	gcli "github.com/spf13/cobra"
+	cobra "github.com/spf13/cobra"
 )
 
-func walletDirCmd() *gcli.Command {
-	walletDirCmd := &gcli.Command{
+func walletDirCmd() *cobra.Command {
+	walletDirCmd := &cobra.Command{
 		Use:          "walletDir",
 		Short:        "Displays wallet folder address",
-		Args:         gcli.NoArgs,
+		Args:         cobra.NoArgs,
 		SilenceUsage: true,
-		RunE: func(c *gcli.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
+
 			if jsonOutput {
 				return printJSON(struct {
 					WltDir string `json:"walletDir"`
@@ -26,6 +31,6 @@ func walletDirCmd() *gcli.Command {
 		},
 	}
 
-	walletDirCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Returns the results in JSON format.")
+	walletDirCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
 	return walletDirCmd
 }

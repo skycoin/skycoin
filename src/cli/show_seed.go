@@ -3,13 +3,13 @@ package cli
 import (
 	"fmt"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func showSeedCmd() *gcli.Command {
-	showSeedCmd := &gcli.Command{
+func showSeedCmd() *cobra.Command {
+	showSeedCmd := &cobra.Command{
 		Use:   "showSeed",
 		Short: "Show wallet seed",
 		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
@@ -19,8 +19,18 @@ func showSeedCmd() *gcli.Command {
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`, cliConfig.FullWalletPath()),
 		SilenceUsage: true,
-		RunE: func(c *gcli.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
 			w, err := resolveWalletPath(cliConfig, "")
+			if err != nil {
+				return err
+			}
+
+			password, err := c.Flags().GetString("password")
+			if err != nil {
+				return err
+			}
+
+			jsonOutput, err := c.Flags().GetBool("json")
 			if err != nil {
 				return err
 			}
@@ -51,8 +61,8 @@ func showSeedCmd() *gcli.Command {
 		},
 	}
 
-	showSeedCmd.Flags().StringVarP(&password, "password", "p", "", "Wallet password")
-	showSeedCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Returns the results in JSON format.")
+	showSeedCmd.Flags().StringP("password", "p", "", "Wallet password")
+	showSeedCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
 
 	return showSeedCmd
 }

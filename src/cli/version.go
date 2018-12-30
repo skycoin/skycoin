@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"reflect"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
-func versionCmd() *gcli.Command {
-	versionCmd := &gcli.Command{
+func versionCmd() *cobra.Command {
+	versionCmd := &cobra.Command{
 		Use:          "version",
 		Short:        "List the current version of Skycoin components",
-		Args:         gcli.NoArgs,
+		Args:         cobra.NoArgs,
 		SilenceUsage: true,
-		RunE: func(c *gcli.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
 			var ver = struct {
 				Skycoin string `json:"skycoin"`
 				Cli     string `json:"cli"`
@@ -26,6 +26,10 @@ func versionCmd() *gcli.Command {
 				Version,
 			}
 
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
 			if jsonOutput {
 				return printJSON(ver)
 			}
@@ -40,7 +44,7 @@ func versionCmd() *gcli.Command {
 		},
 	}
 
-	versionCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Returns the results in JSON format")
+	versionCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format")
 
 	return versionCmd
 }

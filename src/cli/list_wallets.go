@@ -19,8 +19,8 @@ type WalletEntry struct {
 
 func listWalletsCmd() *gcli.Command {
 	return &gcli.Command{
-		Short: "Lists all wallets stored in the wallet directory",
-		Use:   "listWallets",
+		Short:                 "Lists all wallets stored in the wallet directory",
+		Use:                   "listWallets",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  listWallets,

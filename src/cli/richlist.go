@@ -4,31 +4,31 @@ import (
 	"fmt"
 	"strconv"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/api"
 )
 
-func richlistCmd() gcli.Command {
+func richlistCmd() cobra.Command {
 	name := "richlist"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Returns top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).",
-		ArgsUsage:    "[top N addresses (20 default)] [include distribution addresses (false default)]",
-		OnUsageError: onCommandUsageError(name),
-		Action:       getRichlist,
+	return cobra.Command{
+		Short:                 name,
+		Long:                  "Returns top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).",
+		Use:                   "[top N addresses (20 default)] [include distribution addresses (false default)]",
+		Args:                  cobra.MinimumNArgs(2),
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		RunE:                  getRichlist,
 	}
 }
 
-func getRichlist(c *gcli.Context) error {
-	client := APIClientFromContext(c)
-
-	num := c.Args().First()
+func getRichlist(_ *cobra.Command, args []string) error {
+	num := args[0]
 	if num == "" {
 		num = "20" // default to 20 addresses
 	}
 
-	dist := c.Args().Get(1)
+	dist := args[1]
 	if dist == "" {
 		dist = "false" // default to false
 	}
@@ -48,7 +48,7 @@ func getRichlist(c *gcli.Context) error {
 		IncludeDistribution: d,
 	}
 
-	richlist, err := client.Richlist(params)
+	richlist, err := apiClient.Richlist(params)
 	if err != nil {
 		return err
 	}

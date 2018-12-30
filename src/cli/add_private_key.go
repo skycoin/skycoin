@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"path/filepath"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func addPrivateKeyCmd() *gcli.Command {
-	addPrivateKeyCmd := &gcli.Command{
+func addPrivateKeyCmd() *cobra.Command {
+	addPrivateKeyCmd := &cobra.Command{
 		Short: "Add a private key to specific wallet",
 		Use:   "addPrivateKey [flags] [private key]",
 		Long: fmt.Sprintf(`Add a private key to specific wallet, the default
@@ -22,10 +22,10 @@ func addPrivateKeyCmd() *gcli.Command {
     history enabled your wallet encryption password can be recovered from the
     history log. If you do not include the "-p" option you will be prompted to
     enter your password after you enter your command.`, cliConfig.FullWalletPath()),
-		SilenceUsage: true,
-		Args:         gcli.MinimumNArgs(1),
+		SilenceUsage:          true,
+		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
-		RunE: func(c *gcli.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
 			// get private key
 			skStr := args[0]
 			if skStr == "" {
@@ -33,11 +33,20 @@ func addPrivateKeyCmd() *gcli.Command {
 			}
 
 			// get wallet file path
+			walletFile, err := c.Flags().GetString("wallet-file")
+			if err != nil {
+				return err
+			}
+
 			w, err := resolveWalletPath(cliConfig, walletFile)
 			if err != nil {
 				return err
 			}
 
+			password, err := c.Flags().GetString("password")
+			if err != nil {
+				return err
+			}
 			pr := NewPasswordReader([]byte(password))
 
 			err = AddPrivateKeyToFile(w, skStr, pr)
@@ -55,8 +64,8 @@ func addPrivateKeyCmd() *gcli.Command {
 		},
 	}
 
-	addPrivateKeyCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
-	addPrivateKeyCmd.Flags().StringVarP(&password, "password", "p", "", "Wallet password")
+	addPrivateKeyCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
+	addPrivateKeyCmd.Flags().StringP("password", "p", "", "Wallet password")
 
 	return addPrivateKeyCmd
 }

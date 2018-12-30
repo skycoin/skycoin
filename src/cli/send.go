@@ -21,7 +21,7 @@ func sendCmd() *gcli.Command {
     after you enter your command.`,
 		SilenceUsage: true,
 		RunE: func(c *gcli.Command, args []string) error {
-			rawTxn, err := createRawTxnCmdHandler(args)
+			rawTxn, err := createRawTxnCmdHandler(c, args)
 			if err != nil {
 				printHelp(c)
 				return err
@@ -32,6 +32,10 @@ func sendCmd() *gcli.Command {
 				return err
 			}
 
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
 			if jsonOutput {
 				return printJSON(struct {
 					Txid string `json:"txid"`
@@ -45,15 +49,15 @@ func sendCmd() *gcli.Command {
 		},
 	}
 
-	sendCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
-	sendCmd.Flags().StringVarP(&address, "address", "a", "", "From address")
-	sendCmd.Flags().StringVarP(&changeAddress, "change-address", "c", "", `Specify different change address.
+	sendCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
+	sendCmd.Flags().StringP("address", "a", "", "From address")
+	sendCmd.Flags().StringP("change-address", "c", "", `Specify different change address.
 By default the from address or a wallets coinbase address will be used.`)
-	sendCmd.Flags().StringVarP(&many, "many", "m", "", `use JSON string to set multiple receive addresses and coins,
+	sendCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
-	sendCmd.Flags().StringVarP(&password, "password", "p", "", "Wallet password")
-	sendCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Returns the results in JSON format.")
-	sendCmd.Flags().StringVar(&csvFile, "csv-file", "", "CSV file containing addresses and amounts to send")
+	sendCmd.Flags().StringP("password", "p", "", "Wallet password")
+	sendCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	sendCmd.Flags().String("csv-file", "", "CSV file containing addresses and amounts to send")
 
 	return sendCmd
 }

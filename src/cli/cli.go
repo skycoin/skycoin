@@ -89,31 +89,6 @@ var (
 	quitChan  = make(chan struct{})
 )
 
-// flags used in cli commands
-var (
-	walletFile        string
-	address           string
-	changeAddress     string
-	many              string
-	password          string
-	jsonOutput        bool
-	csvFile           string
-	numAddresses      int
-	fiberNumAddresses int
-	coinName          string
-	label             string
-	useHex            bool
-	seed              string
-	strictSeed        bool
-	entropy           int
-	hideSecrets       bool
-	mode              string
-	encrypt           bool
-	addrsFilename     string
-	seedsFilename     string
-	overwrite         bool
-)
-
 // Config cli's configuration struct
 type Config struct {
 	WalletDir   string `json:"wallet_directory"`

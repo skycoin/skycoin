@@ -10,9 +10,9 @@ import (
 
 func listAddressesCmd() *gcli.Command {
 	return &gcli.Command{
-		Short: "Lists all addresses in a given wallet",
-		Use:   "listAddresses [walletName]",
-		Args:  gcli.MaximumNArgs(1),
+		Short:                 "Lists all addresses in a given wallet",
+		Use:                   "listAddresses [walletName]",
+		Args:                  gcli.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  listAddresses,

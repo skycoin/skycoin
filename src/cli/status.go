@@ -1,7 +1,7 @@
 package cli
 
 import (
-	gcli "github.com/spf13/cobra"
+	cobra "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/api"
 )
@@ -17,14 +17,14 @@ type ConfigStatus struct {
 	RPCAddress string `json:"webrpc_address"`
 }
 
-func statusCmd() *gcli.Command {
-	return &gcli.Command{
-		Use:   "status",
-		Short: "Check the status of current skycoin node",
+func statusCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:                   "status",
+		Short:                 "Check the status of current skycoin node",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
-		Args:                  gcli.NoArgs,
-		RunE: func(c *gcli.Command, args []string) error {
+		Args:                  cobra.NoArgs,
+		RunE: func(c *cobra.Command, args []string) error {
 			status, err := apiClient.Health()
 			if err != nil {
 				return err
@@ -40,12 +40,12 @@ func statusCmd() *gcli.Command {
 	}
 }
 
-func showConfigCmd() *gcli.Command {
-	return &gcli.Command{
-		Use:   "showConfig",
-		Short: "Show cli configuration",
+func showConfigCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:                   "showConfig",
+		Short:                 "Show cli configuration",
 		DisableFlagsInUseLine: true,
-		RunE: func(c *gcli.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
 			return printJSON(cliConfig)
 		},
 	}

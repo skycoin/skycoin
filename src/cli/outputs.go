@@ -31,7 +31,7 @@ func addressOutputsCmd() *gcli.Command {
 		Use:   "addressOutputs [address list]",
 		Long: `Display outputs of specific addresses, join multiple addresses with space,
     example: addressOutputs $addr1 $addr2 $addr3`,
-		Args: gcli.MinimumNArgs(1),
+		Args:                  gcli.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  getAddressOutputsCmd,

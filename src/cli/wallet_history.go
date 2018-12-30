@@ -8,7 +8,7 @@ import (
 
 	"sort"
 
-	gcli "github.com/spf13/cobra"
+	cobra "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/readable"
@@ -42,21 +42,26 @@ func (obt byTime) Len() int {
 	return len(obt)
 }
 
-func walletHisCmd() *gcli.Command {
-	walletHisCmd := &gcli.Command{
+func walletHisCmd() *cobra.Command {
+	walletHisCmd := &cobra.Command{
 		Short:        "Display the transaction history of specific wallet. Requires skycoin node rpc.",
 		Use:          "walletHistory",
 		SilenceUsage: true,
-		Args:         gcli.NoArgs,
+		Args:         cobra.NoArgs,
 		RunE:         walletHistoryAction,
 	}
 
-	walletHisCmd.Flags().StringVarP(&walletFile, "wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
+	walletHisCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
 
 	return walletHisCmd
 }
 
-func walletHistoryAction(c *gcli.Command, args []string) error {
+func walletHistoryAction(c *cobra.Command, args []string) error {
+	walletFile, err := c.Flags().GetString("wallet-file")
+	if err != nil {
+		return err
+	}
+
 	w, err := resolveWalletPath(cliConfig, walletFile)
 	if err != nil {
 		return err

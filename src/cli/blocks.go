@@ -9,9 +9,9 @@ import (
 
 func blocksCmd() *gcli.Command {
 	blocksCmd := &gcli.Command{
-		Short: "Lists the content of a single block or a range of blocks",
-		Use:   "blocks [starting block or single block seq] [ending block seq]",
-		Args:  gcli.RangeArgs(1, 2),
+		Short:                 "Lists the content of a single block or a range of blocks",
+		Use:                   "blocks [starting block or single block seq] [ending block seq]",
+		Args:                  gcli.RangeArgs(1, 2),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  getBlocks,

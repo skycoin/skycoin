@@ -43,9 +43,9 @@ func walletBalanceCmd() *gcli.Command {
 	used if no wallet was specified, use ENV 'WALLET_NAME'
 	to update default wallet file name, and 'WALLET_DIR' to update
 	the default wallet directory`, cliConfig.FullWalletPath()),
-		Args: gcli.MaximumNArgs(1),
+		Args:                  gcli.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
-		RunE: checkWltBalance,
+		RunE:                  checkWltBalance,
 	}
 }
 
@@ -55,7 +55,7 @@ func addressBalanceCmd() *gcli.Command {
 		Use:   "addressBalance [addresses]",
 		Long: `Check balance of specific addresses, join multiple addresses with space.
     example: addressBalance "$addr1 $addr2 $addr3"`,
-		Args: gcli.MinimumNArgs(1),
+		Args:                  gcli.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  addrBalance,

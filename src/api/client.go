@@ -272,7 +272,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, rspErr
 	}
 
-	if respObj != struct{}{} {
+	if respObj != nil {
 		decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
 		decoder.DisallowUnknownFields()
 

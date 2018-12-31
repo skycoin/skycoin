@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 ### Changed
+- Switch `skycoin-cli` from `urfave/cli` to `spf13/cobra`.
+  Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
+  `-` prefix is only allowed when using shorthand notation.
+
 
 ### Removed
 
@@ -117,7 +121,6 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Node will send more peers before disconnecting due to a full peer list
 - Refactor CSRF to use HMAC tokens.
 - Add transaction verification parameters to the `GET /health` response
-- Switch `skycoin-cli` from `urfave/cli` to `spf13/cobra`
 
 ### Removed
 

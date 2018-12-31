@@ -13,14 +13,14 @@ import "C"
 import (
 	"hash"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
-	api "github.com/skycoin/skycoin/src/api"
-	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
-	cli "github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
-	wallet "github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 type Handle uint64
@@ -136,31 +136,18 @@ func lookupConfigHandle(handle C.Config__Handle) (*cli.Config, bool) {
 	return nil, false
 }
 
-func registerAppHandle(obj *cli.App) C.App__Handle {
-	return (C.App__Handle)(registerHandle(obj))
+func registerCLIHandle(obj *cobra.Command) C.CLI__Handle {
+	return (C.CLI__Handle)(registerHandle(obj))
 }
 
-func lookupAppHandle(handle C.App__Handle) (*cli.App, bool) {
+func lookupCLIHandle(handle C.CLI__Handle) (*cobra.Command, bool) {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
-		if obj, isOK := (obj).(*cli.App); isOK {
+		if obj, isOK := (obj).(*cobra.Command); isOK {
 			return obj, true
 		}
 	}
-	return nil, false
-}
 
-func registerContextHandle(obj *gcli.Context) C.Context__Handle {
-	return (C.Context__Handle)(registerHandle(obj))
-}
-
-func lookupContextHandle(handle C.Context__Handle) (*gcli.Context, bool) {
-	obj, ok := lookupHandle(C.Handle(handle))
-	if ok {
-		if obj, isOK := (obj).(*gcli.Context); isOK {
-			return obj, true
-		}
-	}
 	return nil, false
 }
 

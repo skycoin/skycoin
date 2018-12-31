@@ -2,8 +2,6 @@ package main
 
 import (
 	"os"
-
-	"github.com/skycoin/skycoin/src/api/webrpc"
 )
 
 /*
@@ -15,15 +13,15 @@ import (
 */
 import "C"
 
-//export SKY_cli_App_Run
-func SKY_cli_App_Run(_app C.App__Handle, _args string) (____error_code uint32) {
-	app, okapp := lookupAppHandle(_app)
+//export SKY_cli_CLI_Run
+func SKY_cli_CLI_Run(_app C.CLI__Handle) (____error_code uint32) {
+	cli, okapp := lookupCLIHandle(_app)
 	if !okapp {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	args := splitCliArgs(_args)
-	____return_err := app.Run(args)
+
+	____return_err := cli.Execute()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 	}
@@ -53,18 +51,6 @@ func SKY_cli_Config_GetRPCAddress(_c C.Config__Handle, _arg0 *C.GoString_) (____
 	c := *__c
 	__arg0 := c.RPCAddress
 	copyString(__arg0, _arg0)
-	return
-}
-
-//export SKY_cli_RPCClientFromApp
-func SKY_cli_RPCClientFromApp(_app C.App__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
-	app, okapp := lookupAppHandle(_app)
-	if !okapp {
-		____error_code = SKY_BAD_HANDLE
-		return
-	}
-	__arg1 := app.App.Metadata["rpc"].(*webrpc.Client)
-	*_arg1 = registerWebRpcClientHandle(__arg1)
 	return
 }
 

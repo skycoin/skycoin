@@ -137,6 +137,7 @@ COMMANDS:
   addressBalance       Check the balance of specific addresses
   addressGen           Generate skycoin or bitcoin addresses
   addressOutputs       Display outputs of specific addresses
+  addressTransactions  Show detail for transaction associated with one or more specified addresses
   blocks               Lists the content of a single block or a range of blocks
   broadcastTransaction Broadcast a raw transaction to the network
   checkdb              Verify the database
@@ -149,6 +150,7 @@ COMMANDS:
   lastBlocks           Displays the content of the most recently N generated blocks
   listAddresses        Lists all addresses in a given wallet
   listWallets          Lists all wallets stored in the wallet directory
+  richlist             Get skycoin richlist
   send                 Send skycoin from a wallet or an address to a recipient address
   showConfig           Show cli configuration
   showSeed             Show wallet seed
@@ -2649,6 +2651,70 @@ $ skycoin-cli walletHistory $WALLET_PATH
      "outgoing_outputs": [],
      "incoming_outputs": []
  }
+}
+```
+</details>
+
+### Richlist
+Returns top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
+
+```bash
+$ skycoin-cli richlist [top N addresses (20 default)] [include distribution addresses (false default)]
+```
+
+```
+FLAGS:
+  -h, --help   help for richlist
+```
+
+#### Example
+##### Without distribution addresses
+```bash
+$ skycoin-cli richlist 2
+```
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "richlist": [
+        {
+            "address": "zVzkqNj3Ueuzo54sbACcYBqqGBPCGAac5W",
+            "coins": "2922927.299000",
+            "locked": false
+        },
+        {
+            "address": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
+            "coins": "675256.308000",
+            "locked": false
+        }
+    ]
+}
+```
+</details>
+
+##### Including distribution addresses
+```bash
+$ skycoin-cli richlist 2 true
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "richlist": [
+        {
+            "address": "zVzkqNj3Ueuzo54sbACcYBqqGBPCGAac5W",
+            "coins": "2922927.299000",
+            "locked": false
+        },
+        {
+            "address": "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm",
+            "coins": "1000000.010000",
+            "locked": true
+        }
+    ]
 }
 ```
 </details>

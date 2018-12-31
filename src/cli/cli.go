@@ -17,7 +17,7 @@ import (
 
 	"os"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/skycoin/skycoin/src/api"
@@ -208,18 +208,18 @@ func resolveDBPath(cfg Config, db string) (string, error) {
 }
 
 // NewCLI creates a cli instance
-func NewCLI(cfg Config) (*gcli.Command, error) {
+func NewCLI(cfg Config) (*cobra.Command, error) {
 	apiClient = api.NewClient(cfg.RPCAddress)
 	apiClient.SetAuth(cfg.RPCUsername, cfg.RPCPassword)
 
 	cliConfig = cfg
 
-	skyCLI := &gcli.Command{
+	skyCLI := &cobra.Command{
 		Short: fmt.Sprintf("The %s command line interface", cfg.Coin),
 		Use:   fmt.Sprintf("%s-cli", cfg.Coin),
 	}
 
-	commands := []*gcli.Command{
+	commands := []*cobra.Command{
 		addPrivateKeyCmd(),
 		addressBalanceCmd(),
 		addressGenCmd(),
@@ -248,6 +248,8 @@ func NewCLI(cfg Config) (*gcli.Command, error) {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(),
+		richlistCmd(),
+		addressTransactionsCmd(),
 	}
 
 	skyCLI.Version = Version
@@ -260,7 +262,7 @@ func NewCLI(cfg Config) (*gcli.Command, error) {
 	return skyCLI, nil
 }
 
-func printHelp(c *gcli.Command) {
+func printHelp(c *cobra.Command) {
 	c.Printf("See '%s %s --help'\n", c.Parent().Name(), c.Name())
 }
 

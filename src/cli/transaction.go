@@ -75,8 +75,8 @@ func decodeRawTxCmd() *cobra.Command {
 	}
 }
 
-func addressTransactionsCmd() cobra.Command {
-	return cobra.Command{
+func addressTransactionsCmd() *cobra.Command {
+	return &cobra.Command{
 		Short: "Show detail for transaction associated with one or more specified addresses",
 		Use:   "addressTransactions [address list]",
 		Long: `Display transactions for specific addresses, seperate multiple addresses with a space,

@@ -37,13 +37,13 @@ func TestConnection(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "400 - empty addr",
-			method: http.MethodGet,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - addr is required",
-			addr:   "",
+			name:                       "400 - empty addr",
+			method:                     http.MethodGet,
+			status:                     http.StatusBadRequest,
+			err:                        "400 Bad Request - addr is required",
+			addr:                       "",
 			gatewayGetConnectionResult: nil,
-			result: nil,
+			result:                     nil,
 		},
 		{
 			name:   "200",
@@ -88,11 +88,11 @@ func TestConnection(t *testing.T) {
 		},
 
 		{
-			name:   "500 - GetConnection failed",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetConnection failed",
-			addr:   "addr",
+			name:                      "500 - GetConnection failed",
+			method:                    http.MethodGet,
+			status:                    http.StatusInternalServerError,
+			err:                       "500 Internal Server Error - GetConnection failed",
+			addr:                      "addr",
 			gatewayGetConnectionError: errors.New("GetConnection failed"),
 		},
 
@@ -383,12 +383,12 @@ func TestDefaultConnections(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
+			name:                               "200",
+			method:                             http.MethodGet,
+			status:                             http.StatusOK,
+			err:                                "",
 			gatewayGetDefaultConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
+			result:                             []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {
@@ -436,12 +436,12 @@ func TestGetTrustConnections(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
+			name:                             "200",
+			method:                           http.MethodGet,
+			status:                           http.StatusOK,
+			err:                              "",
 			gatewayGetTrustConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
+			result:                           []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {
@@ -489,12 +489,12 @@ func TestGetExchgConnection(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
+			name:                            "200",
+			method:                          http.MethodGet,
+			status:                          http.StatusOK,
+			err:                             "",
 			gatewayGetExchgConnectionResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
+			result:                          []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {

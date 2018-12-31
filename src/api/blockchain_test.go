@@ -41,10 +41,10 @@ func TestGetBlockchainMetadata(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "500 - GetBlockchainMetadata error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetBlockchainMetadata failed: GetBlockchainMetadata error",
+			name:                     "500 - GetBlockchainMetadata error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - gateway.GetBlockchainMetadata failed: GetBlockchainMetadata error",
 			getBlockchainMetadataErr: errors.New("GetBlockchainMetadata error"),
 		},
 		{
@@ -130,10 +130,10 @@ func TestGetBlockchainProgress(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "500 - GetBlockchainProgress error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetBlockchainProgress failed: GetBlockchainProgress error",
+			name:                     "500 - GetBlockchainProgress error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - gateway.GetBlockchainProgress failed: GetBlockchainProgress error",
 			getBlockchainProgressErr: errors.New("GetBlockchainProgress error"),
 		},
 		{
@@ -347,29 +347,29 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			name:   "500 - get block by hash error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetSignedBlockByHash failed",
-			hash:   validHashString,
-			sha256: validSHA256,
+			name:                     "500 - get block by hash error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - GetSignedBlockByHash failed",
+			hash:                     validHashString,
+			sha256:                   validSHA256,
 			gatewayGetBlockByHashErr: errors.New("GetSignedBlockByHash failed"),
 		},
 		{
-			name:   "500 - get block by seq error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetSignedBlockBySeq failed",
-			seqStr: "1",
-			seq:    1,
+			name:                    "500 - get block by seq error",
+			method:                  http.MethodGet,
+			status:                  http.StatusInternalServerError,
+			err:                     "500 Internal Server Error - GetSignedBlockBySeq failed",
+			seqStr:                  "1",
+			seq:                     1,
 			gatewayGetBlockBySeqErr: errors.New("GetSignedBlockBySeq failed"),
 		},
 		{
-			name:   "200 - get block by seq",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			seqStr: "1",
-			seq:    1,
+			name:                       "200 - get block by seq",
+			method:                     http.MethodGet,
+			status:                     http.StatusOK,
+			seqStr:                     "1",
+			seq:                        1,
 			gatewayGetBlockBySeqResult: &coin.SignedBlock{},
 			response: &readable.Block{
 				Head: readable.BlockHeader{
@@ -388,11 +388,11 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			name:   "200 - get block by hash",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			hash:   validHashString,
-			sha256: validSHA256,
+			name:                        "200 - get block by hash",
+			method:                      http.MethodGet,
+			status:                      http.StatusOK,
+			hash:                        validHashString,
+			sha256:                      validSHA256,
 			gatewayGetBlockByHashResult: &coin.SignedBlock{},
 			response: &readable.Block{
 				Head: readable.BlockHeader{
@@ -478,7 +478,7 @@ func TestGetBlock(t *testing.T) {
 			verbose:                         true,
 			verboseStr:                      "1",
 			gatewayGetBlockByHashVerboseErr: errors.New("GetSignedBlockByHashVerbose failed"),
-			err: "500 Internal Server Error - GetSignedBlockByHashVerbose failed",
+			err:                             "500 Internal Server Error - GetSignedBlockByHashVerbose failed",
 		},
 
 		{
@@ -490,7 +490,7 @@ func TestGetBlock(t *testing.T) {
 			verbose:                        true,
 			verboseStr:                     "1",
 			gatewayGetBlockBySeqVerboseErr: errors.New("GetSignedBlockBySeqVerbose failed"),
-			err: "500 Internal Server Error - GetSignedBlockBySeqVerbose failed",
+			err:                            "500 Internal Server Error - GetSignedBlockBySeqVerbose failed",
 		},
 
 		{
@@ -731,7 +731,7 @@ func TestGetBlocks(t *testing.T) {
 			body: &httpBody{
 				Seqs: "1,2,4",
 			},
-			seqs: []uint64{1, 2, 4},
+			seqs:                  []uint64{1, 2, 4},
 			gatewayGetBlocksError: visor.NewErrBlockNotExist(4),
 		},
 
@@ -744,8 +744,8 @@ func TestGetBlocks(t *testing.T) {
 				Seqs:    "1,2,4",
 				Verbose: "1",
 			},
-			seqs:    []uint64{1, 2, 4},
-			verbose: true,
+			seqs:                         []uint64{1, 2, 4},
+			verbose:                      true,
 			gatewayGetBlocksVerboseError: visor.NewErrBlockNotExist(4),
 		},
 
@@ -758,8 +758,8 @@ func TestGetBlocks(t *testing.T) {
 				Start: "1",
 				End:   "3",
 			},
-			start: 1,
-			end:   3,
+			start:                        1,
+			end:                          3,
 			gatewayGetBlocksInRangeError: errors.New("gatewayGetBlocksInRangeError"),
 		},
 		{
@@ -772,9 +772,9 @@ func TestGetBlocks(t *testing.T) {
 				End:     "3",
 				Verbose: "1",
 			},
-			start:   1,
-			end:     3,
-			verbose: true,
+			start:                               1,
+			end:                                 3,
+			verbose:                             true,
 			gatewayGetBlocksInRangeVerboseError: errors.New("gatewayGetBlocksInRangeVerboseError"),
 		},
 
@@ -786,7 +786,7 @@ func TestGetBlocks(t *testing.T) {
 			body: &httpBody{
 				Seqs: "1,2,3",
 			},
-			seqs: []uint64{1, 2, 3},
+			seqs:                  []uint64{1, 2, 3},
 			gatewayGetBlocksError: errors.New("gatewayGetBlocksError"),
 		},
 		{
@@ -798,8 +798,8 @@ func TestGetBlocks(t *testing.T) {
 				Seqs:    "1,2,3",
 				Verbose: "1",
 			},
-			seqs:    []uint64{1, 2, 3},
-			verbose: true,
+			seqs:                         []uint64{1, 2, 3},
+			verbose:                      true,
 			gatewayGetBlocksVerboseError: errors.New("gatewayGetBlocksVerboseError"),
 		},
 
@@ -811,8 +811,8 @@ func TestGetBlocks(t *testing.T) {
 				Start: "1",
 				End:   "3",
 			},
-			start: 1,
-			end:   3,
+			start:                         1,
+			end:                           3,
 			gatewayGetBlocksInRangeResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
@@ -870,7 +870,7 @@ func TestGetBlocks(t *testing.T) {
 			body: &httpBody{
 				Seqs: "1,2,3",
 			},
-			seqs: []uint64{1, 2, 3},
+			seqs:                   []uint64{1, 2, 3},
 			gatewayGetBlocksResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
@@ -926,7 +926,7 @@ func TestGetBlocks(t *testing.T) {
 			body: &httpBody{
 				Seqs: "1,2,3",
 			},
-			seqs: []uint64{1, 2, 3},
+			seqs:                   []uint64{1, 2, 3},
 			gatewayGetBlocksResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
@@ -1087,7 +1087,7 @@ func TestGetLastBlocks(t *testing.T) {
 			body: httpBody{
 				Num: "1",
 			},
-			num: 1,
+			num:                       1,
 			gatewayGetLastBlocksError: errors.New("gatewayGetLastBlocksError"),
 		},
 		{
@@ -1099,8 +1099,8 @@ func TestGetLastBlocks(t *testing.T) {
 				Num:     "1",
 				Verbose: "1",
 			},
-			num:     1,
-			verbose: true,
+			num:                              1,
+			verbose:                          true,
 			gatewayGetLastBlocksVerboseError: errors.New("gatewayGetLastBlocksVerboseError"),
 		},
 		{
@@ -1110,7 +1110,7 @@ func TestGetLastBlocks(t *testing.T) {
 			body: httpBody{
 				Num: "1",
 			},
-			num: 1,
+			num:                        1,
 			gatewayGetLastBlocksResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{

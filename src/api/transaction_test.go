@@ -102,10 +102,10 @@ func TestGetPendingTxs(t *testing.T) {
 		httpResponse                         interface{}
 	}{
 		{
-			name:   "405",
-			method: http.MethodPost,
-			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
+			name:                          "405",
+			method:                        http.MethodPost,
+			status:                        http.StatusMethodNotAllowed,
+			err:                           "405 Method Not Allowed",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
 		},
 		{
@@ -125,25 +125,25 @@ func TestGetPendingTxs(t *testing.T) {
 			},
 		},
 		{
-			name:   "500 - get unconfirmedTxn error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetAllUnconfirmedTransactions failed",
+			name:                     "500 - get unconfirmedTxn error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - GetAllUnconfirmedTransactions failed",
 			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTransactions failed"),
 		},
 		{
-			name:       "500 - get unconfirmedTxnVerbose error",
-			method:     http.MethodGet,
-			status:     http.StatusInternalServerError,
-			verboseStr: "1",
-			verbose:    true,
-			err:        "500 Internal Server Error - GetAllUnconfirmedTransactionsVerbose failed",
+			name:                            "500 - get unconfirmedTxnVerbose error",
+			method:                          http.MethodGet,
+			status:                          http.StatusInternalServerError,
+			verboseStr:                      "1",
+			verbose:                         true,
+			err:                             "500 Internal Server Error - GetAllUnconfirmedTransactionsVerbose failed",
 			getAllUnconfirmedTxnsVerboseErr: errors.New("GetAllUnconfirmedTransactionsVerbose failed"),
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
+			name:                          "200",
+			method:                        http.MethodGet,
+			status:                        http.StatusOK,
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
 			httpResponse:                  []readable.UnconfirmedTransactions{},
 		},
@@ -364,8 +364,8 @@ func TestGetTransactionByID(t *testing.T) {
 				txid:    validHash,
 				verbose: "1",
 			},
-			verbose: true,
-			txid:    testutil.SHA256FromHex(t, validHash),
+			verbose:                          true,
+			txid:                             testutil.SHA256FromHex(t, validHash),
 			getTransactionResultVerboseError: errors.New("getTransactionResultVerboseError"),
 		},
 
@@ -1384,9 +1384,9 @@ func TestVerifyTransaction(t *testing.T) {
 		csrfDisabled                  bool
 	}{
 		{
-			name:   "405",
-			method: http.MethodGet,
-			status: http.StatusMethodNotAllowed,
+			name:                       "405",
+			method:                     http.MethodGet,
+			status:                     http.StatusMethodNotAllowed,
 			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
 			httpResponse:               NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""),
 		},

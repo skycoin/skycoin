@@ -272,13 +272,11 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, rspErr
 	}
 
-	if respObj != nil {
-		decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
-		decoder.DisallowUnknownFields()
+	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
+	decoder.DisallowUnknownFields()
 
-		if err := decoder.Decode(respObj); err != nil {
-			return false, err
-		}
+	if err := decoder.Decode(respObj); err != nil {
+		return false, err
 	}
 
 	return true, rspErr
@@ -803,7 +801,7 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 func (c *Client) VerifySeed(seed string) (bool, error) {
 	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", VerifySeedRequest{
 		Seed: seed,
-	}, nil)
+	}, struct{}{})
 	if err != nil {
 		return false, err
 	}

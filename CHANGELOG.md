@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Add CLI `addressTransactions` command
+- Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
 
 ### Fixed
 
@@ -69,7 +70,6 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Add CLI `richlist` command
 - Add `util/droplet` and `util/fee` API's as part of `libskycoin`
 - Implement SWIG interfaces in order to generate client libraries for multiple programming languages
-- Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
 
 ### Fixed
 

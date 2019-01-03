@@ -1,5 +1,20 @@
-autoload -U compinit && compinit
-autoload -U bashcompinit && bashcompinit
+#compdef skycoin-cli
 
-script_dir=$(dirname $0)
-source ${script_dir}/bash_autocomplete
+_arguments \
+  '1: :->level1' \
+  '2: :_files'
+case $state in
+  level1)
+    case $words[1] in
+      skycoin-cli)
+        _arguments '1: :(addPrivateKey addressBalance addressGen addressOutputs blocks broadcastTransaction checkdb createRawTransaction decodeRawTransaction decryptWallet encryptWallet fiberAddressGen lastBlocks listAddresses listWallets send showConfig showSeed status transaction verifyAddress version walletAddAddresses walletBalance walletCreate walletDir walletHistory walletOutputs)'
+      ;;
+      *)
+        _arguments '*: :_files'
+      ;;
+    esac
+  ;;
+  *)
+    _arguments '*: :_files'
+  ;;
+esac

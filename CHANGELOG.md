@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 ### Changed
+- Switch `skycoin-cli` from `urfave/cli` to `spf13/cobra`.
+  Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
+  `-` prefix is only allowed when using shorthand notation.
+
 
 ### Removed
 

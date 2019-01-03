@@ -5,26 +5,28 @@ import (
 
 	"github.com/skycoin/skycoin/src/wallet"
 
-	gcli "github.com/urfave/cli"
+	gcli "github.com/spf13/cobra"
 )
 
-func listAddressesCmd() gcli.Command {
-	name := "listAddresses"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Lists all addresses in a given wallet",
-		ArgsUsage:    "[walletName]",
-		OnUsageError: onCommandUsageError(name),
-		Action:       listAddresses,
+func listAddressesCmd() *gcli.Command {
+	return &gcli.Command{
+		Short:                 "Lists all addresses in a given wallet",
+		Use:                   "listAddresses [walletName]",
+		Args:                  gcli.MaximumNArgs(1),
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		RunE:                  listAddresses,
 	}
-	// Commands = append(Commands, cmd)
 }
 
-func listAddresses(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
+func listAddresses(c *gcli.Command, args []string) error {
+	var wltPath string
+	if len(args) > 0 {
+		wltPath = args[0]
+	}
 
 	// get wallet name
-	w, err := resolveWalletPath(cfg, c.Args().First())
+	w, err := resolveWalletPath(cliConfig, wltPath)
 	if err != nil {
 		return err
 	}

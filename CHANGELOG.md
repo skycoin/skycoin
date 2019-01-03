@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Add CLI `addressTransactions` command
+- Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
 
 ### Fixed
 

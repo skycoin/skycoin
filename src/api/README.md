@@ -33,6 +33,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get wallets](#get-wallets)
 	- [Get wallet folder name](#get-wallet-folder-name)
 	- [Generate wallet seed](#generate-wallet-seed)
+	- [Verify Wallet Seed](#verify-wallet-seed)
 	- [Create a wallet from seed](#create-a-wallet-from-seed)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
 	- [Updates wallet label](#updates-wallet-label)
@@ -853,6 +854,52 @@ Result:
 ```json
 {
     "seed": "helmet van actor peanut differ icon trial glare member cancel marble rack"
+}
+```
+
+### Verify wallet Seed
+
+API sets: `WALLET`
+
+```
+URI: /api/v2/wallet/seed/verify
+Method: POST
+Args:
+    seed: seed to be verified
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/seed/verify \
+ -H 'Content-type: application/json' \
+ -d '{ "seed": "nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair" }'
+```
+
+Result:
+
+```json
+{
+    "data": {}
+}
+```
+
+Example (wrong bip39 seed):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/seed/verify \
+ -H 'Content-type: application/json' \
+ -d '{ "seed": "wrong seed" }'
+```
+
+Result:
+
+```json
+{
+    "error": {
+        "message": "seed is not a valid bip39 seed",
+        "code": 422
+    }
 }
 ```
 

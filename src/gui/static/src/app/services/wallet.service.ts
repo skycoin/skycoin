@@ -29,8 +29,6 @@ export enum HwSecurityWarnings {
 @Injectable()
 export class WalletService {
 
-  private readonly hardwareWalletsStorageKey = 'hardware-wallets';
-
   addresses: Address[];
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
   pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
@@ -490,7 +488,7 @@ export class WalletService {
         }
       });
 
-      localStorage.setItem(this.hardwareWalletsStorageKey, JSON.stringify(hardwareWallets));
+      this.hwWalletService.saveWalletsDataSync(JSON.stringify(hardwareWallets));
 
       this.wallets.next(wallets);
     });
@@ -551,7 +549,7 @@ export class WalletService {
   }
 
   private loadHardwareWallets(wallets: Wallet[]) {
-    const storedWallets: string = localStorage.getItem(this.hardwareWalletsStorageKey);
+    const storedWallets: string = this.hwWalletService.getSavedWalletsDataSync();
     if (storedWallets) {
       const loadedWallets: Wallet[] = JSON.parse(storedWallets);
       loadedWallets.map(wallet => wallets.push(wallet));

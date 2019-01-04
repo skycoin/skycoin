@@ -8,11 +8,29 @@ const { Observable, of } = require('rxjs');
 
 const HID = require('node-hid');
 
+const fs = require('fs');
+
+const path = require('path');
+
 // Global reference of the window object.
 let win;
 
 function setWinRef(winRef) {
   win = winRef;
+}
+
+let fullWalletsFilePath;
+let walletsFilePath;
+let getSavedWalletsDataSyncEvent;
+
+function setWalletsFolderPath(folderPath) {
+  fullWalletsFilePath = path.join(folderPath, 'hw.data');
+  walletsFilePath = folderPath;
+
+  if (getSavedWalletsDataSyncEvent) {
+    getSavedWalletsData(getSavedWalletsDataSyncEvent);
+    getSavedWalletsDataSyncEvent = undefined;
+  }
 }
 
 deviceWallet.setDeviceType(deviceWallet.DeviceTypeEnum.USB);
@@ -54,6 +72,30 @@ checkHw(false);
 ipcMain.on('hwGetDeviceConnectedSync', (event) => {
   event.returnValue = HID.devices().find((d) => d.manufacturer && d.manufacturer === "SkycoinFoundation") !== undefined;
   checkHw(false);
+});
+
+ipcMain.on('hwGetSavedWalletsDataSync', (event) => {
+  if (fullWalletsFilePath) {
+    getSavedWalletsData(event);
+  } else {
+    getSavedWalletsDataSyncEvent = event;
+  }
+});
+
+function getSavedWalletsData(event) {
+  if (fs.existsSync(fullWalletsFilePath)) {
+    event.returnValue = fs.readFileSync(fullWalletsFilePath, 'utf8');
+  } else {
+    event.returnValue = '';
+  }
+}
+
+ipcMain.on('hwSaveWalletsDataSync', (event, data) => {
+  if (!fs.existsSync(walletsFilePath)) {
+    fs.mkdirSync(walletsFilePath, { recursive: true });
+  }
+  fs.writeFileSync(fullWalletsFilePath, data, 'utf8');
+  event.returnValue = null;
 });
 
 let lastPinPromiseResolve;
@@ -175,5 +217,6 @@ ipcMain.on('hwSignMessage', (event, requestId, addressIndex, message) => {
 });
 
 module.exports = {
-  setWinRef
+  setWinRef,
+  setWalletsFolderPath
 }

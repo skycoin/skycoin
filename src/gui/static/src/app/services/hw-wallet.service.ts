@@ -143,6 +143,14 @@ export class HwWalletService {
     return window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync');
   }
 
+  getSavedWalletsDataSync(): string {
+    return window['ipcRenderer'].sendSync('hwGetSavedWalletsDataSync');
+  }
+
+  saveWalletsDataSync(walletsData: string) {
+    window['ipcRenderer'].sendSync('hwSaveWalletsDataSync', walletsData);
+  }
+
   cancelLastAction(): Observable<OperationResult> {
     const requestId = this.createRandomIdAndPrepare();
     window['ipcRenderer'].send('hwCancelLastAction', requestId);

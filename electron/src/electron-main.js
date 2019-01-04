@@ -138,6 +138,14 @@ function startSkycoin() {
     // If in dev mode, simply open the dev server URL.
     currentURL = 'http://localhost:4200/';
     app.emit('skycoin-ready', { url: currentURL });
+
+    axios
+      .get('http://localhost:4200/api/v1/wallets/folderName')
+      .then(response => {
+        walletsFolder = response.data.address;
+        hwCode.setWalletsFolderPath(walletsFolder);
+      })
+      .catch(() => {});
   }
 }
 
@@ -317,7 +325,10 @@ app.on('skycoin-ready', (e) => {
 
   axios
     .get(e.url + '/api/v1/wallets/folderName')
-    .then(response => walletsFolder = response.data.address)
+    .then(response => {
+      walletsFolder = response.data.address;
+      hwCode.setWalletsFolderPath(walletsFolder);
+    })
     .catch(() => {});
 });
 

@@ -19,11 +19,16 @@ export class OnboardingCreateWalletComponent implements OnInit {
 
   showNewForm = true;
   doubleButtonActive = DoubleButtonActive.LeftButton;
+  hwCompatibilityActivated = false;
 
   constructor(
     private dialog: MatDialog,
     private router: Router,
-  ) { }
+  ) {
+    if (window['isElectron']) {
+      this.hwCompatibilityActivated = window['ipcRenderer'].sendSync('hwCompatibilityActivated');
+    }
+  }
 
   ngOnInit() {
     setTimeout(() => { this.formControl.initForm(null, this.fill); });

@@ -1,10 +1,6 @@
 <app-modal
   class="modal"
-  [headline]="(!data.changingPin ? 'hardware-wallet.enter-pin.title' :
-    (data.changePinState === changePinStates.RequestingNewPin ? 'hardware-wallet.enter-pin.title-change-new' :
-      (data.changePinState === changePinStates.ConfirmingNewPin ? 'hardware-wallet.enter-pin.title-change-confirm' :
-      'hardware-wallet.enter-pin.title-change-current')
-    )) | translate"
+  [headline]="title | translate"
   [dialog]="dialogRef">
   <div [formGroup]="form">
     <div class="form-field">

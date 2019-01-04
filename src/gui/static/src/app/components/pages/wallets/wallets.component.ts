@@ -48,8 +48,10 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.hwWalletService.showOptionsWhenPossible) {
-      this.hwWalletService.showOptionsWhenPossible = false;
-      this.adminHwWallet();
+      setTimeout(() => {
+        this.hwWalletService.showOptionsWhenPossible = false;
+        this.adminHwWallet();
+      });
     }
   }
 

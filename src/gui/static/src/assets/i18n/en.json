@@ -320,7 +320,7 @@
     "options" : {
       "connecting": "Connecting...",
       "disconnected": "No hardware wallet detected. Please connect a hardware wallet to use this option.",
-      "unconfigured-detected-tittle": "Unconfigured hardware wallet",
+      "unconfigured-detected-title": "Unconfigured hardware wallet",
       "unconfigured-detected": "A seedless hardware wallet has been detected. Select \"Configure automatically\" if you want to configure it as a brand new wallet and start using it immediately, or select \"Restore backup\" if you want to configure it with a previously created seed backup and thus be able to access your funds again.",
       "configured-detected": "Hardware wallet detected. The device is identified in the wallets list as:",
       "security-warnings-title": "Security warnings",
@@ -349,7 +349,7 @@
       "configuring": "New hardware wallet detected. Configuring...",
       "done": "Done",
       "added1": "The connected hardware wallet has been added to the wallets list with the following name:",
-      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, you can change the name of the wallet ot remove it from the wallets list, if you wish."
+      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish."
     },
     "wipe" : {
       "warning": "WARNING: All the data in the hardware wallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",
@@ -361,8 +361,8 @@
     },
     "seed-word" : {
       "title": "Enter word",
-      "Info1": "Enter the word indicated in the device",
-      "Info2": "You will be asked to enter the words of your backup seed in random order, plus a few additional words.",
+      "info1": "Enter the word indicated in the device",
+      "info2": "You will be asked to enter the words of your backup seed in random order, plus a few additional words.",
       "word": "Requested word",
       "error-invalid-word": "The entered word is not valid.",
       "error-loading-words": "Loading the word list. Please wait."

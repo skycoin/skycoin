@@ -30,7 +30,7 @@
 
   <div *ngIf="currentState === states.NewConnected || currentState === states.ConfiguredConnected">
     <app-hw-message *ngIf="currentState === states.NewConnected"
-      [upperBigText]="'hardware-wallet.options.unconfigured-detected-tittle' | translate"
+      [upperBigText]="'hardware-wallet.options.unconfigured-detected-title' | translate"
       [text]="'hardware-wallet.options.unconfigured-detected' | translate"
       [icon]="msgIcons.HardwareWallet"
     ></app-hw-message>

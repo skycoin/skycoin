@@ -38,6 +38,18 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
     });
   }
 
+  get title(): string {
+    if (!this.data.changingPin) {
+      return 'hardware-wallet.enter-pin.title';
+    } else if (this.data.changePinState === ChangePinStates.RequestingNewPin) {
+      return 'hardware-wallet.enter-pin.title-change-new';
+    } else if (this.data.changePinState === ChangePinStates.ConfirmingNewPin) {
+      return 'hardware-wallet.enter-pin.title-change-confirm';
+    } else {
+      return 'hardware-wallet.enter-pin.title-change-current';
+    }
+  }
+
   openHelp() {
     this.dialog.open(HwPinHelpDialogComponent, <MatDialogConfig> {
       width: '450px',

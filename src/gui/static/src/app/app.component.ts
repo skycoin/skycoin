@@ -7,6 +7,7 @@ import { WalletService } from './services/wallet.service';
 import { HwWalletService } from './services/hw-wallet.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
+import { Bip39WordListService } from './services/bip39-word-list.service';
 
 @Component({
   selector: 'app-root',
@@ -19,6 +20,7 @@ export class AppComponent implements OnInit {
     walletService: WalletService,
     translateService: TranslateService,
     hwWalletService: HwWalletService,
+    private bip38WordList: Bip39WordListService,
   ) {
     translateService.setDefaultLang('en');
     translateService.use('en');

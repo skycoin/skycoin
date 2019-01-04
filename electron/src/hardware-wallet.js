@@ -15,13 +15,9 @@ function setWinRef(winRef) {
   win = winRef;
 }
 
-// Detect if the code is running with the "hw" arg. The "hw" arg is added when running npm
-// start. If this is true, the UI will show the hardware wallet options.
-let hw = process.argv.find(arg => arg === 'hw') ? true : false;
-
 deviceWallet.setDeviceType(deviceWallet.DeviceTypeEnum.USB);
 ipcMain.on('hwCompatibilityActivated', (event) => {
-  event.returnValue = hw;
+  event.returnValue = true;
 });
 
 let checkHwSubscription;

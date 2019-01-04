@@ -101,23 +101,21 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     config.width = '450px';
     config.autoFocus = false;
 
-    config.data = ((error: string = null, recheckSecurityOnly: boolean = false) => {
-      if (!error) {
-        if (!recheckSecurityOnly) {
-          this.completeRecheckRequested = true;
-        } else {
-          this.recheckSecurityOnlyRequested = true;
-        }
-      } else {
-        this.showErrorRequested = true;
-        this.customErrorMsg = error;
-      }
-    });
-
     config.data = <ChildHwDialogParams> {
       wallet: this.wallet,
       walletHasPin: !this.needsPin,
-      requestOptionsComponentRefresh: config.data,
+      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly: boolean = false) => {
+        if (!error) {
+          if (!recheckSecurityOnly) {
+            this.completeRecheckRequested = true;
+          } else {
+            this.recheckSecurityOnlyRequested = true;
+          }
+        } else {
+          this.showErrorRequested = true;
+          this.customErrorMsg = error;
+        }
+      }),
     };
 
     this.dialogSubscription = this.dialog.open(dialogType, config)

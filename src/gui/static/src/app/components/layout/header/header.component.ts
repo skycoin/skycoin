@@ -36,7 +36,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private fetchVersionError: string;
 
   get loading() {
-    return !this.current || !this.highest || this.current !== this.highest;
+    return !this.current || !this.highest || this.current !== this.highest || !this.coins || this.coins === 'NaN' || !this.hours || this.hours === 'NaN';
   }
 
   get coins() {

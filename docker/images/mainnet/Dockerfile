@@ -5,7 +5,6 @@ FROM golang:1.11-stretch AS build
 ARG ARCH=amd64
 ARG GOARM
 ARG SKYCOIN_VERSION
-ARG BDATE
 ARG SCOMMIT
 ARG SBRANCH
 ARG STAG
@@ -43,6 +42,10 @@ COPY docker_launcher.sh /tmp/files/usr/local/bin/docker_launcher.sh
 
 # skycoin image
 FROM $IMAGE_FROM
+ARG BDATE
+ARG SCOMMIT
+ARG SBRANCH
+ARG STAG
 
 # Image labels
 LABEL "org.label-schema.name"="Skycoin" \

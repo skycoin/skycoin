@@ -1107,7 +1107,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	m := NewByteMessage(88)
 	n, err := p.BroadcastMessage(m, addrs)
 	require.NoError(t, err)
-	require.Equal(t, 2, n)
+	require.Equal(t, 2, len(n))
 
 	_, err = p.BroadcastMessage(m, []string{})
 	require.Equal(t, ErrNoAddresses, err)

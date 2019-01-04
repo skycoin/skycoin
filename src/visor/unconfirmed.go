@@ -203,7 +203,7 @@ func (utp *UnconfirmedTransactionPool) SetTransactionsAnnounced(tx *dbutil.Tx, h
 func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error) {
 	var isValid int8 = 1
 	var softErr *ErrTxnViolatesSoftConstraint
-	if err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams); err != nil {
+	if _, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams); err != nil {
 		logger.Warningf("bc.VerifySingleTxnSoftHardConstraints failed for txn %s: %v", txn.TxIDHex(), err)
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint:
@@ -314,7 +314,7 @@ func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, v
 	for _, utxn := range utxns {
 		utxn.Checked = now.UnixNano()
 
-		err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, verifyParams)
+		_, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, verifyParams)
 
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint, ErrTxnViolatesHardConstraint:

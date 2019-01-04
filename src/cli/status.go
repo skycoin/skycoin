@@ -1,7 +1,7 @@
 package cli
 
 import (
-	gcli "github.com/urfave/cli"
+	cobra "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/api"
 )
@@ -17,42 +17,36 @@ type ConfigStatus struct {
 	RPCAddress string `json:"webrpc_address"`
 }
 
-func statusCmd() gcli.Command {
-	name := "status"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Check the status of current skycoin node",
-		ArgsUsage:    " ",
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			client := APIClientFromContext(c)
-			status, err := client.Health()
+func statusCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:                   "status",
+		Short:                 "Check the status of current skycoin node",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.NoArgs,
+		RunE: func(c *cobra.Command, args []string) error {
+			status, err := apiClient.Health()
 			if err != nil {
 				return err
 			}
 
-			cfg := ConfigFromContext(c)
-
 			return printJSON(StatusResult{
 				Status: *status,
 				Config: ConfigStatus{
-					RPCAddress: cfg.RPCAddress,
+					RPCAddress: cliConfig.RPCAddress,
 				},
 			})
 		},
 	}
 }
 
-func showConfigCmd() gcli.Command {
-	name := "showConfig"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Show cli configuration",
-		ArgsUsage:    " ",
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			cfg := ConfigFromContext(c)
-			return printJSON(cfg)
+func showConfigCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:                   "showConfig",
+		Short:                 "Show cli configuration",
+		DisableFlagsInUseLine: true,
+		RunE: func(c *cobra.Command, args []string) error {
+			return printJSON(cliConfig)
 		},
 	}
 }

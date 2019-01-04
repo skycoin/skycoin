@@ -20,7 +20,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.25.0-rc1"
+	Version = "0.25.0"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -58,6 +58,10 @@ var (
 		"176.58.126.224:6000",
 		"172.104.85.6:6000",
 		"139.162.7.132:6000",
+		"139.162.39.186:6000",
+		"45.33.111.142:6000",
+		"109.237.27.172:6000",
+		"172.104.41.14:6000",
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{

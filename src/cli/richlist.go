@@ -4,32 +4,34 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/spf13/cobra"
+
 	"github.com/skycoin/skycoin/src/api"
-	gcli "github.com/urfave/cli"
 )
 
-func richListCmd() gcli.Command {
-	name := "richList"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Returns top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).",
-		ArgsUsage:    "[top N addresses (20 default)] [include distribution addresses (false default)]",
-		OnUsageError: onCommandUsageError(name),
-		Action:       getRichList,
+func richlistCmd() *cobra.Command {
+	return &cobra.Command{
+		Short:                 "Get skycoin richlist",
+		Long:                  "Returns top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).",
+		Use:                   "richlist [top N addresses (20 default)] [include distribution addresses (false default)]",
+		Args:                  cobra.MaximumNArgs(2),
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		RunE:                  getRichlist,
 	}
 }
 
-func getRichList(c *gcli.Context) error {
-	client := APIClientFromContext(c)
+func getRichlist(_ *cobra.Command, args []string) error {
+	// default values
+	num := "20"
+	dist := "false"
 
-	num := c.Args().First()
-	if num == "" {
-		num = "20" // default to 20 addresses
-	}
-
-	dist := c.Args().Get(1)
-	if dist == "" {
-		dist = "false" // default to false
+	switch len(args) {
+	case 1:
+		num = args[0]
+	case 2:
+		num = args[0]
+		dist = args[1]
 	}
 
 	n, err := strconv.Atoi(num)
@@ -47,10 +49,10 @@ func getRichList(c *gcli.Context) error {
 		IncludeDistribution: d,
 	}
 
-	richList, err := client.Richlist(params)
+	richlist, err := apiClient.Richlist(params)
 	if err != nil {
 		return err
 	}
 
-	return printJSON(richList)
+	return printJSON(richlist)
 }

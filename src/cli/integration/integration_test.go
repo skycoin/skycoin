@@ -488,13 +488,13 @@ func TestVerifyAddress(t *testing.T) {
 			"invalid skycoin address",
 			"2KG9eRXUhx6hrDZvNGB99DKahtrPDQ1W9vn",
 			errors.New("exit status 1"),
-			"Invalid checksum",
+			"Error: Invalid checksum",
 		},
 		{
 			"invalid bitcoin address",
 			"1Dcb9gpaZpBKmjqjCsiBsP3sBW1md2kEM2",
 			errors.New("exit status 1"),
-			"Invalid checksum",
+			"Error: Invalid checksum",
 		},
 	}
 
@@ -529,7 +529,7 @@ func TestDecodeRawTransaction(t *testing.T) {
 		{
 			name:   "invalid raw transaction",
 			rawTx:  "2601000000a1d",
-			errMsg: []byte("invalid raw transaction: encoding/hex: odd length hex string\n"),
+			errMsg: []byte("Error: invalid raw transaction: encoding/hex: odd length hex string\n"),
 		},
 	}
 
@@ -666,8 +666,8 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			name: "addressGen --m=wallet -hs -n 2",
-			args: []string{"addressGen", "--m=wallet", "-hs", "-n", "2"},
+			name: "addressGen -m=wallet -i -n 2",
+			args: []string{"addressGen", "-m=wallet", "-i", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
@@ -710,8 +710,8 @@ func TestAddressGen(t *testing.T) {
 			},
 		},
 		{
-			name: "addressGen --mode=wallet --c=btc -n 2",
-			args: []string{"addressGen", "--mode=wallet", "--c=btc", "-n", "2"},
+			name: "addressGen --mode=wallet -c=btc -n 2",
+			args: []string{"addressGen", "--mode=wallet", "-c=btc", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
 				var w wallet.ReadableWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
@@ -754,6 +754,7 @@ func TestAddressGen(t *testing.T) {
 			check: func(t *testing.T, v []byte) {
 				// Confirms that only addresses are returned
 				v = bytes.Trim(v, "\n")
+				fmt.Println(v)
 				_, err := cipher.DecodeBase58Address(string(v))
 				require.NoError(t, err)
 			},
@@ -772,7 +773,7 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen --entropy=9",
 			args: []string{"addressGen", "--entropy=9"},
 			check: func(t *testing.T, v []byte) {
-				require.Equal(t, "entropy must be 128 or 256\n", string(v))
+				require.Equal(t, "Error: entropy must be 128 or 256\n", string(v))
 			},
 			err: errors.New("exit status 1"),
 		},
@@ -812,7 +813,7 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen --hide-secrets --mode=secrets",
 			args: []string{"addressGen", "--mode=secrets", "--hide-secrets"},
 			check: func(t *testing.T, v []byte) {
-				require.Equal(t, "secrets mode selected but hideSecrets enabled\n", string(v))
+				require.Equal(t, "Error: secrets mode selected but hideSecrets enabled\n", string(v))
 			},
 			err: errors.New("exit status 1"),
 		},
@@ -987,8 +988,8 @@ func TestFiberAddressGen(t *testing.T) {
 			},
 		},
 		{
-			name: "fiberAddressGen --n=1",
-			args: []string{"fiberAddressGen", "--n=1"},
+			name: "fiberAddressGen -n=1",
+			args: []string{"fiberAddressGen", "-n=1"},
 			setup: func(t *testing.T) {
 				testutil.RequireFileNotExists(t, addrsFilename)
 				testutil.RequireFileNotExists(t, seedsFilename)
@@ -1015,7 +1016,7 @@ func TestFiberAddressGen(t *testing.T) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
 				testutil.RequireFileNotExists(t, seedsFilename)
-				require.Equal(t, "-addrs-file \"addresses.txt\" already exists. Use -overwrite to force writing\n", string(v))
+				require.Equal(t, "Error: -addrs-file \"addresses.txt\" already exists. Use -overwrite to force writing\n", string(v))
 			},
 			err: errors.New("exit status 1"),
 		},
@@ -1032,7 +1033,7 @@ func TestFiberAddressGen(t *testing.T) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
 				testutil.RequireFileNotExists(t, addrsFilename)
-				require.Equal(t, "-seeds-file \"seeds.csv\" already exists. Use -overwrite to force writing\n", string(v))
+				require.Equal(t, "Error: -seeds-file \"seeds.csv\" already exists. Use -overwrite to force writing\n", string(v))
 			},
 			err: errors.New("exit status 1"),
 		},
@@ -1057,8 +1058,8 @@ func TestFiberAddressGen(t *testing.T) {
 			},
 		},
 		{
-			name: "fiberAddressGen -addrs-file=fooaddrs.txt -seeds-file=fooseeds.csv",
-			args: []string{"fiberAddressGen", "-addrs-file", "fooaddrs.txt", "-seeds-file", "fooseeds.csv"},
+			name: "fiberAddressGen --addrs-file=fooaddrs.txt --seeds-file=fooseeds.csv",
+			args: []string{"fiberAddressGen", "--addrs-file", "fooaddrs.txt", "--seeds-file", "fooseeds.csv"},
 			setup: func(t *testing.T) {
 				testutil.RequireFileNotExists(t, "fooaddrs.txt")
 				testutil.RequireFileNotExists(t, "fooseeds.csv")
@@ -1078,7 +1079,7 @@ func TestFiberAddressGen(t *testing.T) {
 			check: func(t *testing.T, v []byte) {
 				testutil.RequireFileNotExists(t, addrsFilename)
 				testutil.RequireFileNotExists(t, seedsFilename)
-				require.Equal(t, "This command does not take any positional arguments\n", string(v))
+				require.Equal(t, "Error: this command does not take any positional arguments\n", string(v))
 			},
 			err: errors.New("exit status 1"),
 		},
@@ -1316,7 +1317,7 @@ func TestStableAddressOutputs(t *testing.T) {
 			name:   "addressOutputs two address one invalid",
 			args:   []string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "badaddress"},
 			err:    errors.New("exit status 1"),
-			errMsg: "invalid address: badaddress, err: Invalid address length\n",
+			errMsg: "Error: invalid address: badaddress, err: Invalid address length\n",
 		},
 	}
 
@@ -1510,21 +1511,21 @@ func TestStableTransaction(t *testing.T) {
 			name:       "invalid txid",
 			args:       []string{"abcd"},
 			err:        errors.New("exit status 1"),
-			errMsg:     "invalid txid\n",
+			errMsg:     "Error: invalid txid\n",
 			goldenFile: "",
 		},
 		{
 			name:       "not exist",
 			args:       []string{"540582ee4128b733f810f149e908d984a5f403ad2865108e6c1c5423aeefc759"},
 			err:        errors.New("exit status 1"),
-			errMsg:     "404 Not Found\n",
+			errMsg:     "Error: 404 Not Found\n",
 			goldenFile: "",
 		},
 		{
 			name:       "empty txid",
 			args:       []string{""},
 			err:        errors.New("exit status 1"),
-			errMsg:     "txid is empty\n",
+			errMsg:     "Error: txid is empty\n",
 			goldenFile: "",
 		},
 		{
@@ -2094,7 +2095,7 @@ func TestLiveSendNotEnoughDecimals(t *testing.T) {
 
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
-	errMsg := []byte("See 'skycoin-cli send --help'\ninvalid amount, too many decimal places")
+	errMsg := []byte("See 'skycoin-cli send --help'\nTransaction violates soft constraint: invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -2271,7 +2272,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// Send with too small decimal value
-	errMsg := []byte("invalid amount, too many decimal places")
+	errMsg := []byte("Transaction violates soft constraint: invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -2466,12 +2467,12 @@ func TestStableCheckDB(t *testing.T) {
 		{
 			name:   "no signature",
 			dbPath: "../../visor/testdata/data.db.nosig",
-			errMsg: "checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c\n",
+			errMsg: "Error: checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c\n",
 		},
 		{
 			name:   "invalid database",
 			dbPath: "../../visor/testdata/data.db.garbage",
-			errMsg: "open db failed: invalid database\n",
+			errMsg: "Error: open db failed: invalid database\n",
 		},
 		{
 			name:   "valid database",
@@ -2555,8 +2556,8 @@ func TestStableWalletCreate(t *testing.T) {
 			},
 		},
 		{
-			name:  "generate wallet with --rd option",
-			args:  []string{"--rd"},
+			name:  "generate wallet with -m option",
+			args:  []string{"-m"},
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
@@ -2630,7 +2631,7 @@ func TestStableWalletCreate(t *testing.T) {
 				_, clean := createUnencryptedWallet(t)
 				return clean
 			},
-			errMsg: []byte("integration-test.wlt already exist\n"),
+			errMsg: []byte("Error: integration-test.wlt already exist\n"),
 		},
 		{
 			name:  "encrypt=true",
@@ -2653,7 +2654,7 @@ func TestStableWalletCreate(t *testing.T) {
 			name:   "encrypt=false password=pwd",
 			args:   []string{"-p", "pwd"},
 			setup:  createTempWalletDir,
-			errMsg: []byte("password should not be set as we're not going to create a wallet with encryption\n"),
+			errMsg: []byte("Error: password should not be set as we're not going to create a wallet with encryption\n"),
 		},
 	}
 
@@ -2868,7 +2869,7 @@ func TestEncryptWallet(t *testing.T) {
 				_, clean := createEncryptedWallet(t)
 				return clean
 			},
-			errMsg: []byte("wallet is encrypted\n"),
+			errMsg: []byte("Error: wallet is encrypted\n"),
 		},
 		{
 			name: "wallet doesn't exist",
@@ -2951,7 +2952,7 @@ func TestDecryptWallet(t *testing.T) {
 				_, clean := createUnencryptedWallet(t)
 				return clean
 			},
-			errMsg: []byte("wallet is not encrypted\n"),
+			errMsg: []byte("Error: wallet is not encrypted\n"),
 		},
 		{
 			name: "invalid password",
@@ -2960,7 +2961,7 @@ func TestDecryptWallet(t *testing.T) {
 				_, clean := createEncryptedWallet(t)
 				return clean
 			},
-			errMsg: []byte("invalid password\n"),
+			errMsg: []byte("Error: invalid password\n"),
 		},
 		{
 			name: "wallet doesn't exist",
@@ -3057,7 +3058,7 @@ func TestShowSeed(t *testing.T) {
 				return clean
 			},
 			args:   []string{"-p", "wrong password"},
-			errMsg: []byte("invalid password\n"),
+			errMsg: []byte("Error: invalid password\n"),
 		},
 		{
 			name: "wallet doesn't exist",

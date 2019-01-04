@@ -443,7 +443,7 @@ func TestIntroductionMessage(t *testing.T) {
 				return true
 			})).Return(tc.mockValue.connectionIntroduced, tc.mockValue.connectionIntroducedErr)
 			d.On("requestBlocksFromAddr", tc.addr).Return(tc.mockValue.requestBlocksFromAddrErr)
-			d.On("announceAllTxns").Return(tc.mockValue.announceAllTxnsErr)
+			d.On("announceAllValidTxns").Return(tc.mockValue.announceAllTxnsErr)
 			d.On("sendRandomPeers", tc.addr).Return(tc.mockValue.sendRandomPeersErr)
 
 			err := tc.intro.Handle(mc, d)

@@ -134,14 +134,9 @@ typedef Handle Options__Handle;
 typedef Handle Config__Handle;
 
 /**
- * App Handle
+ * CLI Handle
 */
-typedef Handle App__Handle;
-
-/**
- * Gcli Context Handle
-*/
-typedef Handle Context__Handle;
+typedef Handle CLI__Handle;
 
 /**
  * API Client Handle
@@ -375,6 +370,10 @@ typedef Handle Number_Handle;
 */
 
 typedef Handle Signature_Handle;
+/**
+ * Handle for readable.UnspentOutputsSummary
+ * */
+typedef Handle UnspentOutputsSummary_Handle;
 
 typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
 

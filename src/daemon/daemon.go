@@ -20,6 +20,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/elapse"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/useragent"
@@ -30,6 +31,8 @@ import (
 var (
 	// ErrNetworkingDisabled is returned if networking is disabled
 	ErrNetworkingDisabled = errors.New("Networking is disabled")
+	// ErrNoPeerAcceptsTxn is returned if no peer will propagate a transaction broadcasted with BroadcastUserTransaction
+	ErrNoPeerAcceptsTxn = errors.New("No peer will propagate this transaction")
 
 	logger = logging.MustGetLogger("daemon")
 )
@@ -241,7 +244,7 @@ func NewDaemonConfig() DaemonConfig {
 type daemoner interface {
 	Disconnect(addr string, r gnet.DisconnectReason) error
 	sendMessage(addr string, msg gnet.Message) error
-	broadcastMessage(msg gnet.Message) (int, error)
+	broadcastMessage(msg gnet.Message) ([]uint64, error)
 	disconnectNow(addr string, r gnet.DisconnectReason) error
 	addPeers(addrs []string) int
 	recordPeerHeight(addr string, gnetID, height uint64)
@@ -251,7 +254,7 @@ type daemoner interface {
 	filterKnownUnconfirmed(txns []cipher.SHA256) ([]cipher.SHA256, error)
 	getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error)
 	requestBlocksFromAddr(addr string) error
-	announceAllTxns() error
+	announceAllValidTxns() error
 	daemonConfig() DaemonConfig
 	pexConfig() pex.Config
 	injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
@@ -391,9 +394,9 @@ func (dm *Daemon) Run() error {
 	defer close(dm.done)
 
 	logger.Infof("Daemon UserAgent is %s", dm.Config.userAgent)
-	logger.Info("Daemon unconfirmed BurnFactor is %d", dm.Config.UnconfirmedVerifyTxn.BurnFactor)
-	logger.Info("Daemon unconfirmed MaxTransactionSize is %d", dm.Config.UnconfirmedVerifyTxn.MaxTransactionSize)
-	logger.Info("Daemon unconfirmed MaxDropletPrecision is %d", dm.Config.UnconfirmedVerifyTxn.MaxDropletPrecision)
+	logger.Infof("Daemon unconfirmed BurnFactor is %d", dm.Config.UnconfirmedVerifyTxn.BurnFactor)
+	logger.Infof("Daemon unconfirmed MaxTransactionSize is %d", dm.Config.UnconfirmedVerifyTxn.MaxTransactionSize)
+	logger.Infof("Daemon unconfirmed MaxDropletPrecision is %d", dm.Config.UnconfirmedVerifyTxn.MaxDropletPrecision)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -1189,7 +1192,7 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	var txids []cipher.SHA256
 	for i := range txns {
 		logger.WithField("txid", txns[i].Hash().Hex()).Debug("Rebroadcast transaction")
-		if err := dm.BroadcastTransaction(txns[i].Transaction); err == nil {
+		if _, err := dm.BroadcastTransaction(txns[i].Transaction); err == nil {
 			txids = append(txids, txns[i].Transaction.Hash())
 		}
 	}
@@ -1198,19 +1201,124 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 }
 
 // BroadcastTransaction broadcasts a single transaction to all peers.
-func (dm *Daemon) BroadcastTransaction(t coin.Transaction) error {
+func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
 	if dm.Config.DisableNetworking {
-		return ErrNetworkingDisabled
+		return nil, ErrNetworkingDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{t})
-	n, err := dm.broadcastMessage(m)
+	m := NewGiveTxnsMessage(coin.Transactions{txn})
+	ids, err := dm.broadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Error("Broadcast GiveTxnsMessage failed")
+		return nil, err
+	}
+
+	logger.Debugf("BroadcastTransaction to %d conns", len(ids))
+
+	return ids, nil
+}
+
+// BroadcastUserTransaction broadcasts a single transaction to all peers.
+// Returns an error if no peers that would propagate the transaction could be reached.
+func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.SignedBlock, inputs coin.UxArray) error {
+	ids, err := dm.BroadcastTransaction(txn)
+	if err != nil {
 		return err
 	}
 
-	logger.Debugf("BroadcastTransaction to %d conns", n)
+	accepts, err := checkBroadcastTxnRecipients(dm.connections, ids, txn, head, inputs)
+
+	if err != nil {
+		logger.WithError(err).Error("BroadcastUserTransaction")
+		return err
+	}
+
+	logger.Debugf("BroadcastUserTransaction transaction propagated by %d/%d conns", accepts, len(ids))
+
+	return nil
+}
+
+// checkBroadcastTxnRecipients checks whether or not the recipients of a txn broadcast would accept the transaction as valid,
+// based upon their reported txn verification parameters.
+// If no recipient would accept the txn, an error is returned.
+// The number of recipients that claim to accept the transaction is returned.
+func checkBroadcastTxnRecipients(connections *Connections, ids []uint64, txn coin.Transaction, head *coin.SignedBlock, inputs coin.UxArray) (int, error) {
+	// Check if the connections will accept our transaction as valid.
+	// Clients v24 and earlier do not propagate soft-invalid transactions.
+	// Clients v24 and earlier do not advertise a user agent.
+	// Clients v24 and earlier do not advertise their transaction verification parameters,
+	// but will use defaults of BurnFactor=2, MaxTransactionSize=32768, MaxDropletPrecision=3.
+	// If none of the connections will propagate our transaction, return an error.
+	accepts := 0
+
+	for _, id := range ids {
+		c := connections.getByGnetID(id)
+		if c == nil {
+			continue
+		}
+
+		if !c.HasIntroduced() {
+			continue
+		}
+
+		// If the peer has not set their user agent, they are v24 or earlier.
+		// v24 and earlier will not propagate a transaction that does not pass soft-validation.
+		// Check if our transaction would pass their soft-validation, using the hardcoded defaults
+		// that are used by v24 and earlier.
+		if c.UserAgent.Empty() {
+			if err := verifyUserTxnAgainstPeer(txn, head, inputs, params.VerifyTxn{
+				BurnFactor:          2,
+				MaxTransactionSize:  32 * 1024,
+				MaxDropletPrecision: 3,
+			}); err != nil {
+				logger.WithFields(logrus.Fields{
+					"addr":   c.Addr,
+					"gnetID": c.gnetID,
+				}).Debug("Peer will not propagate this transaction")
+				continue
+			}
+		}
+
+		accepts++
+	}
+
+	if accepts == 0 {
+		return 0, ErrNoPeerAcceptsTxn
+	}
+
+	return accepts, nil
+}
+
+// verifyUserTxnAgainstPeer returns an error if a user-created transaction would not pass soft-validation
+// according to a peer's reported verification parameters
+func verifyUserTxnAgainstPeer(txn coin.Transaction, head *coin.SignedBlock, inputs coin.UxArray, verifyParams params.VerifyTxn) error {
+	// Check the droplet precision
+	for _, o := range txn.Out {
+		if err := params.DropletPrecisionCheck(verifyParams.MaxDropletPrecision, o.Coins); err != nil {
+			return err
+		}
+	}
+
+	// Check the txn size
+	txnSize, err := txn.Size()
+	if err != nil {
+		logger.Critical().WithError(err).Error("txn.Size failed unexpectedly")
+		return err
+	}
+
+	if txnSize > verifyParams.MaxTransactionSize {
+		return visor.ErrTxnExceedsMaxBlockSize
+	}
+
+	// Check the coinhour burn fee
+	f, err := fee.TransactionFee(&txn, head.Time(), inputs)
+	if err != nil {
+		return err
+	}
+
+	if err := fee.VerifyTransactionFee(&txn, f, verifyParams.BurnFactor); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -1317,13 +1425,13 @@ func (dm *Daemon) sendRandomPeers(addr string) error {
 	return dm.sendMessage(addr, m)
 }
 
-// announceAllTxns announces local unconfirmed transactions
-func (dm *Daemon) announceAllTxns() error {
+// announceAllValidTxns broadcasts valid unconfirmed transactions
+func (dm *Daemon) announceAllValidTxns() error {
 	if dm.Config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
-	// Get local unconfirmed transaction hashes.
+	// Get valid unconfirmed transaction hashes
 	hashes, err := dm.visor.GetAllValidUnconfirmedTxHashes()
 	if err != nil {
 		return err
@@ -1373,10 +1481,13 @@ func (dm *Daemon) sendMessage(addr string, msg gnet.Message) error {
 	return dm.pool.Pool.SendMessage(addr, msg)
 }
 
-// broadcastMessage sends a Message to all introduced connections in the Pool
-func (dm *Daemon) broadcastMessage(msg gnet.Message) (int, error) {
+// broadcastMessage sends a Message to all introduced connections in the Pool.
+// Returns the gnet IDs of connections that broadcast succeeded for.
+// Note that a connection could still fail to receive the message under certain network conditions,
+// there is no guarantee that a message was broadcast.
+func (dm *Daemon) broadcastMessage(msg gnet.Message) ([]uint64, error) {
 	if dm.Config.DisableNetworking {
-		return 0, ErrNetworkingDisabled
+		return nil, ErrNetworkingDisabled
 	}
 
 	conns := dm.connections.all()

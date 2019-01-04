@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"encoding/csv"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -19,7 +17,10 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
-	gcli "github.com/urfave/cli"
+	"encoding/csv"
+	"encoding/json"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -38,62 +39,30 @@ type sendAmountJSON struct {
 	Coins string `json:"coins"`
 }
 
-func createRawTxCmd(cfg Config) gcli.Command {
-	name := "createRawTransaction"
-	return gcli.Command{
-		Name:      name,
-		Usage:     "Create a raw transaction to be broadcast to the network later",
-		ArgsUsage: "[to address] [amount]",
-		Description: fmt.Sprintf(`
-  Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
+func createRawTxCmd() *cobra.Command {
+	createRawTxCmd := &cobra.Command{
+		Short: "Create a raw transaction to be broadcast to the network later",
+		Use:   "createRawTransaction [flags] [to address] [amount]",
+		Long: fmt.Sprintf(`Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
+    The default wallet (%s) will be used if no wallet and address was specified.
+    
+    If you are sending from a wallet the coins will be taken iteratively
+    from all addresses within the wallet starting with the first address until
+    the amount of the transaction is met.
 
-		  The default wallet (%s) will be
-		  used if no wallet and address was specified.
+    Use caution when using the "-p" command. If you have command history enabled
+    your wallet encryption password can be recovered from the history log. If you
+    do not include the "-p" option you will be prompted to enter your password
+    after you enter your command.`, cliConfig.FullWalletPath()),
+		SilenceUsage: true,
+		Args:         cobra.MinimumNArgs(2),
+		RunE: func(c *cobra.Command, args []string) error {
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
 
-
-        If you are sending from a wallet the coins will be taken iteratively
-        from all addresses within the wallet starting with the first address until
-        the amount of the transaction is met.
-
-        Use caution when using the "-p" command. If you have command history enabled
-        your wallet encryption password can be recovered from the history log. If you
-        do not include the "-p" option you will be prompted to enter your password
-        after you enter your command.`, cfg.FullWalletPath()),
-		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "f",
-				Usage: "[wallet file or path], From wallet",
-			},
-			gcli.StringFlag{
-				Name:  "a",
-				Usage: "[address] From address",
-			},
-			gcli.StringFlag{
-				Name: "c",
-				Usage: `[changeAddress] Specify different change address.
-				By default the from address or a wallets coinbase address will be used.`,
-			},
-			gcli.StringFlag{
-				Name: "m",
-				Usage: `[send to many] use JSON string to set multiple receive addresses and coins,
-				example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`,
-			},
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Wallet password",
-			},
-			gcli.BoolFlag{
-				Name:  "json,j",
-				Usage: "Returns the results in JSON format.",
-			},
-			gcli.StringFlag{
-				Name:  "csv",
-				Usage: "[filepath] CSV file containing addresses and amounts to send",
-			},
-		},
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			txn, err := createRawTxnCmdHandler(c)
+			txn, err := createRawTxnCmdHandler(c, args)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -105,7 +74,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 
 			rawTxn := hex.EncodeToString(txn.Serialize())
 
-			if c.Bool("json") {
+			if jsonOutput {
 				return printJSON(struct {
 					RawTx string `json:"rawtx"`
 				}{
@@ -118,6 +87,18 @@ func createRawTxCmd(cfg Config) gcli.Command {
 			return nil
 		},
 	}
+
+	createRawTxCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
+	createRawTxCmd.Flags().StringP("address", "a", "", "From address")
+	createRawTxCmd.Flags().StringP("change-address", "c", "", `Specify different change address.
+By default the from address or a wallets coinbase address will be used.`)
+	createRawTxCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
+example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
+	createRawTxCmd.Flags().StringP("password", "p", "", "Wallet password")
+	createRawTxCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	createRawTxCmd.Flags().String("csv-file", "", "CSV file containing addresses and amounts to send")
+
+	return createRawTxCmd
 }
 
 type walletAddress struct {
@@ -125,10 +106,18 @@ type walletAddress struct {
 	Address string
 }
 
-func fromWalletOrAddress(c *gcli.Context) (walletAddress, error) {
-	cfg := ConfigFromContext(c)
+func fromWalletOrAddress(c *cobra.Command) (walletAddress, error) {
+	walletFile, err := c.Flags().GetString("wallet-file")
+	if err != nil {
+		return walletAddress{}, nil
+	}
 
-	wlt, err := resolveWalletPath(cfg, c.String("f"))
+	address, err := c.Flags().GetString("address")
+	if err != nil {
+		return walletAddress{}, nil
+	}
+
+	wlt, err := resolveWalletPath(cliConfig, walletFile)
 	if err != nil {
 		return walletAddress{}, err
 	}
@@ -137,7 +126,7 @@ func fromWalletOrAddress(c *gcli.Context) (walletAddress, error) {
 		Wallet: wlt,
 	}
 
-	wltAddr.Address = c.String("a")
+	wltAddr.Address = address
 	if wltAddr.Address == "" {
 		return wltAddr, nil
 	}
@@ -181,35 +170,37 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 	return chgAddr, nil
 }
 
-func getToAddresses(c *gcli.Context) ([]SendAmount, error) {
-	csv := c.String("csv")
-	m := c.String("m")
+func getToAddresses(c *cobra.Command, args []string) ([]SendAmount, error) {
+	csvFile, err := c.Flags().GetString("csv-file")
+	if err != nil {
+		return nil, err
+	}
+	many, err := c.Flags().GetString("many")
+	if err != nil {
+		return nil, err
+	}
 
-	if csv != "" && m != "" {
+	if csvFile != "" && many != "" {
 		return nil, errors.New("-csv and -m cannot be combined")
 	}
 
-	if m != "" {
-		return parseSendAmountsFromJSON(m)
-	} else if csv != "" {
-		fields, err := openCSV(csv)
+	if many != "" {
+		return parseSendAmountsFromJSON(many)
+	} else if csvFile != "" {
+		fields, err := openCSV(csvFile)
 		if err != nil {
 			return nil, err
 		}
 		return parseSendAmountsFromCSV(fields)
 	}
 
-	if c.NArg() < 2 {
-		return nil, errors.New("invalid argument")
-	}
-
-	toAddr := c.Args().First()
+	toAddr := args[0]
 
 	if _, err := cipher.DecodeBase58Address(toAddr); err != nil {
 		return nil, err
 	}
 
-	amt, err := getAmount(c)
+	amt, err := getAmount(args)
 	if err != nil {
 		return nil, err
 	}
@@ -296,12 +287,8 @@ func parseSendAmountsFromJSON(m string) ([]SendAmount, error) {
 	return sendAmts, nil
 }
 
-func getAmount(c *gcli.Context) (uint64, error) {
-	if c.NArg() < 2 {
-		return 0, errors.New("not enough args")
-	}
-
-	amount := c.Args().Get(1)
+func getAmount(args []string) (uint64, error) {
+	amount := args[1]
 	amt, err := droplet.FromString(amount)
 	if err != nil {
 		return 0, fmt.Errorf("invalid amount: %v", err)
@@ -319,27 +306,34 @@ type createRawTxArgs struct {
 	Password      PasswordReader
 }
 
-func parseCreateRawTxArgs(c *gcli.Context) (*createRawTxArgs, error) {
+func parseCreateRawTxArgs(c *cobra.Command, args []string) (*createRawTxArgs, error) {
 	wltAddr, err := fromWalletOrAddress(c)
 	if err != nil {
 		return nil, err
 	}
 
-	chgAddr, err := getChangeAddress(wltAddr, c.String("c"))
+	changeAddress, err := c.Flags().GetString("change-address")
+	if err != nil {
+		return nil, err
+	}
+	chgAddr, err := getChangeAddress(wltAddr, changeAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	toAddrs, err := getToAddresses(c)
+	toAddrs, err := getToAddresses(c, args)
 	if err != nil {
 		return nil, err
 	}
-
 	if err := validateSendAmounts(toAddrs); err != nil {
 		return nil, err
 	}
 
-	pr := NewPasswordReader([]byte(c.String("p")))
+	password, err := c.Flags().GetString("password")
+	if err != nil {
+		return nil, err
+	}
+	pr := NewPasswordReader([]byte(password))
 
 	return &createRawTxArgs{
 		WalletID:      wltAddr.Wallet,
@@ -350,19 +344,17 @@ func parseCreateRawTxArgs(c *gcli.Context) (*createRawTxArgs, error) {
 	}, nil
 }
 
-func createRawTxnCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
-	apiClient := APIClientFromContext(c)
-
-	args, err := parseCreateRawTxArgs(c)
+func createRawTxnCmdHandler(c *cobra.Command, args []string) (*coin.Transaction, error) {
+	parsedArgs, err := parseCreateRawTxArgs(c, args)
 	if err != nil {
 		return nil, err
 	}
 
-	if args.Address == "" {
-		return CreateRawTxFromWallet(apiClient, args.WalletID, args.ChangeAddress, args.SendAmounts, args.Password)
+	if parsedArgs.Address == "" {
+		return CreateRawTxFromWallet(apiClient, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password)
 	}
 
-	return CreateRawTxFromAddress(apiClient, args.Address, args.WalletID, args.ChangeAddress, args.SendAmounts, args.Password)
+	return CreateRawTxFromAddress(apiClient, parsedArgs.Address, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password)
 }
 
 func validateSendAmounts(toAddrs []SendAmount) error {

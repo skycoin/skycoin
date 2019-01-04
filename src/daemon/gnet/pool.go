@@ -937,18 +937,18 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 // BroadcastMessage sends a Message to all connections specified in addrs.
 // If a connection does not exist for a given address, it is skipped.
 // If no messages were written to any connection, an error is returned.
-// Returns the number of connections that the message was queued for sending to.
+// Returns the gnet IDs of connections that the message was queued for sending to.
 // Note that actual sending can still fail later, if the connection drops before the message is sent.
-func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) (int, error) {
+func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) ([]uint64, error) {
 	if pool.Config.DebugPrint {
 		logger.WithField("msgType", reflect.TypeOf(msg)).Debug("BroadcastMessage")
 	}
 
 	if len(addrs) == 0 {
-		return 0, ErrNoAddresses
+		return nil, ErrNoAddresses
 	}
 
-	sentTo := 0
+	queuedConns := make([]uint64, 0, len(addrs))
 
 	if err := pool.strand("BroadcastMessage", func() error {
 		if len(pool.pool) == 0 {
@@ -963,8 +963,12 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) (int, 
 				foundConns++
 				select {
 				case conn.WriteQueue <- msg:
+					queuedConns = append(queuedConns, conn.ID)
 				default:
-					logger.Critical().WithField("addr", conn.Addr()).Info("Write queue full")
+					logger.Critical().WithFields(logrus.Fields{
+						"addr": conn.Addr(),
+						"id":   conn.ID,
+					}).Info("Write queue full")
 					fullWriteQueue++
 				}
 			}
@@ -978,14 +982,12 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message, addrs []string) (int, 
 			return ErrNoReachableConnections
 		}
 
-		sentTo = foundConns - fullWriteQueue
-
 		return nil
 	}); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return sentTo, nil
+	return queuedConns, nil
 }
 
 // Unpacks incoming bytes to a Message and calls the message handler.  If

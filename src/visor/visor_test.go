@@ -631,7 +631,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	txn.Out[0].Address = cipher.Address{}
-	known, err = v.InjectUserTransaction(txn)
+	known, _, _, err = v.InjectUserTransaction(txn)
 	require.False(t, known)
 	require.IsType(t, ErrTxnViolatesUserConstraint{}, err)
 	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
@@ -1998,7 +1998,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	_, softErr, err = v.InjectForeignTransaction(sometimesInvalidTxn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
-	testutil.RequireError(t, softErr.Err, errTxnExceedsMaxBlockSize.Error())
+	testutil.RequireError(t, softErr.Err, ErrTxnExceedsMaxBlockSize.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)

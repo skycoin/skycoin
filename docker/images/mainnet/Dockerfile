@@ -8,6 +8,7 @@ ARG SKYCOIN_VERSION
 ARG BDATE
 ARG SCOMMIT
 ARG SBRANCH
+ARG STAG
 
 # Image labels
 LABEL "org.label-schema.name"="Skycoin" \
@@ -18,7 +19,7 @@ LABEL "org.label-schema.name"="Skycoin" \
       "org.label-schema.schema-version"="1.0" \
       "org.label-schema.build-date"=$BDATE \
       "org.label-schema.vcs-ref"=$SCOMMIT \
-      "org.label-schema.version"="1.0.0-rc.1" \
+      "org.label-schema.version"=$STAG \
       "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/mainnet/README.md" \
       "org.label-schema.docker.cmd"="docker volume create skycoin-data; docker volume create skycoin-wallet; docker run -d -v skycoin-data:/data/.skycoin -v skycoin-wallet:/wallet -p 6000:6000 -p 6420:6420 --name skycoin-node-stable skycoin/skycoin"
 

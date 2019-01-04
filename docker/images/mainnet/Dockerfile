@@ -35,7 +35,7 @@ RUN sh -c \
      fi'
 
 RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
-    COMMIT=$(git rev-parse HEAD) BRANCH=$(git rev-parse -—abbrev-ref HEAD) \
+    COMMIT=$SCOMMIT BRANCH=$(git rev-parse -—abbrev-ref HEAD) \
     GOARCH=$ARCH GOARM=$GOARM CGO_ENABLED=0 GOOS=linux \
     GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}" \
     go install -ldflags "${GOLDFLAGS}" ./cmd/... && \

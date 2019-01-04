@@ -7,6 +7,7 @@ ARG GOARM
 ARG SKYCOIN_VERSION
 ARG BDATE
 ARG SCOMMIT
+ARG SBRANCH
 
 # Image labels
 LABEL "org.label-schema.name"="Skycoin" \
@@ -35,7 +36,7 @@ RUN sh -c \
      fi'
 
 RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
-    COMMIT=$SCOMMIT BRANCH=$(git rev-parse -—abbrev-ref HEAD) \
+    COMMIT=$SCOMMIT BRANCH=$SBRANCH \
     GOARCH=$ARCH GOARM=$GOARM CGO_ENABLED=0 GOOS=linux \
     GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}" \
     go install -ldflags "${GOLDFLAGS}" ./cmd/... && \

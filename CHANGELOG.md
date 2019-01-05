@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Correct build info for `skycoin` binary compiled for `skycoin/skycoin` mainnet image 
+- `/api/v1/health` will return correct build info when running Docker containers based on `skycoin/skycoin` mainnet image.
 
 ### Changed
 - Switch `skycoin-cli` from `urfave/cli` to `spf13/cobra`.

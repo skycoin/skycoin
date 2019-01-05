@@ -22,11 +22,9 @@
     <div class="form-field">
       <label>{{ 'exchange.you-get' | translate }}</label>
       <div class="-inputs">
-        <input type="text" formControlName="toAmount">
-        <div class="-select">
-          <select formControlName="to">
-            <option *ngFor="let coin of availableTo" [value]="coin">{{ coin }}</option>
-          </select>
+        <input type="text" formControlName="toAmount" readonly>
+        <div class="-input">
+          <input type="text" value="SKY" readonly>
         </div>
       </div>
     </div>

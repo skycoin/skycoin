@@ -29,7 +29,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
   @Output() submitted = new EventEmitter<ExchangeOrder>();
   form: FormGroup;
-  tradingPairs: TradingPair[] = [];
+  tradingPairs: TradingPair[];
   activeTradingPair: TradingPair;
   agreement = false;
   subscription: ISubscription;
@@ -120,6 +120,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   private loadData() {
     this.exchangeService.tradingPairs().subscribe(pairs => {
+      this.tradingPairs = [];
+
       pairs.forEach(pair => {
         if (pair.to === this.toCoin) {
           this.tradingPairs.push(pair);
@@ -132,14 +134,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   private updateActiveTradingPair() {
     this.activeTradingPair = this.tradingPairs.find(p => {
-      return p.pair === `${this.form.get('fromCoin').value}/${this.toCoin}`;
+      return p.from === this.defaultFromCoin || p.from === this.form.get('fromCoin').value;
     });
-
-    if (!this.activeTradingPair) {
-      this.activeTradingPair = this.tradingPairs.find(p => {
-        return p.from === this.form.get('fromCoin').value;
-      });
-    }
   }
 
   private validate(group: FormGroup) {

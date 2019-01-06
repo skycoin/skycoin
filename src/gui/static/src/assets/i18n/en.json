@@ -410,6 +410,7 @@
     "status": "Status",
     "exchanging": "Exchanging {{from}} for {{to}}",
     "select": "Select",
+    "offline": "Exchange is temporarily offline",
     "statuses": {
       "user-waiting": "Waiting for deposit. Please send {{amount}} {{from}} to the exchange address",
       "market-waiting-confirmations": "Waiting for transaction confirmations",

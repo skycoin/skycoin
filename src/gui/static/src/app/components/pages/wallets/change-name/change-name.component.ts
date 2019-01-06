@@ -36,9 +36,14 @@ export class ChangeNameComponent implements OnInit {
       return;
     }
 
-    this.button.setLoading();
-
-    this.walletService.renameWallet(this.data, this.form.value.label)
-      .subscribe(() => this.dialogRef.close(this.form.value.label));
+    if (!this.data.isHardware) {
+      this.button.setLoading();
+      this.walletService.renameWallet(this.data, this.form.value.label)
+        .subscribe(() => this.dialogRef.close(this.form.value.label));
+    } else {
+      this.data.label = this.form.value.label;
+      this.walletService.saveHardwareWallets();
+      this.dialogRef.close(this.form.value.label);
+    }
   }
 }

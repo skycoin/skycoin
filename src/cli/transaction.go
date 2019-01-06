@@ -10,18 +10,18 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 )
 
-func transactionCmd() gcli.Command {
-	name := "transaction"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Show detail info of specific transaction",
-		ArgsUsage:    "[transaction id]",
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			txid := c.Args().First()
+func transactionCmd() *cobra.Command {
+	return &cobra.Command{
+		Short:                 "Show detail info of specific transaction",
+		Use:                   "transaction [transaction id]",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.MaximumNArgs(1),
+		RunE: func(c *cobra.Command, args []string) error {
+			txid := args[0]
 			if txid == "" {
 				return errors.New("txid is empty")
 			}
@@ -32,9 +32,7 @@ func transactionCmd() gcli.Command {
 				return errors.New("invalid txid")
 			}
 
-			client := APIClientFromContext(c)
-
-			txn, err := client.Transaction(txid)
+			txn, err := apiClient.Transaction(txid)
 			if err != nil {
 				return err
 			}
@@ -46,21 +44,15 @@ func transactionCmd() gcli.Command {
 	}
 }
 
-func decodeRawTxCmd() gcli.Command {
-	name := "decodeRawTransaction"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Decode raw transaction",
-		ArgsUsage:    "[raw transaction]",
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			rawTxStr := c.Args().First()
-			if rawTxStr == "" {
-				printHelp(c)
-				return errors.New("missing raw transaction value")
-			}
-
-			b, err := hex.DecodeString(rawTxStr)
+func decodeRawTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Short:                 "Decode raw transaction",
+		Use:                   "decodeRawTransaction [raw transaction]",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.ExactArgs(1),
+		RunE: func(c *cobra.Command, args []string) error {
+			b, err := hex.DecodeString(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid raw transaction: %v", err)
 			}
@@ -83,27 +75,24 @@ func decodeRawTxCmd() gcli.Command {
 	}
 }
 
-func addressTransactionsCmd() gcli.Command {
-	name := "addressTransactions"
-	return gcli.Command{
-		Name:      name,
-		Usage:     "Show detail for transaction associated with one or more specified addresses",
-		ArgsUsage: "[address list]",
-		Description: `Display transactions for specific addresses, seperate multiple addresses with a space,
+func addressTransactionsCmd() *cobra.Command {
+	return &cobra.Command{
+		Short: "Show detail for transaction associated with one or more specified addresses",
+		Use:   "addressTransactions [address list]",
+		Long: `Display transactions for specific addresses, seperate multiple addresses with a space,
         example: addressTransactions addr1 addr2 addr3`,
-		OnUsageError: onCommandUsageError(name),
-		Action:       getAddressTransactionsCmd,
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		RunE:                  getAddressTransactionsCmd,
 	}
 }
 
-func getAddressTransactionsCmd(c *gcli.Context) error {
-	client := APIClientFromContext(c)
-
+func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 	// Build the list of addresses from the command line arguments
-	addrs := make([]string, c.NArg())
+	addrs := make([]string, len(args))
 	var err error
-	for i := 0; i < c.NArg(); i++ {
-		addrs[i] = c.Args().Get(i)
+	for i := 0; i < len(args); i++ {
+		addrs[i] = args[i]
 		if _, err = cipher.DecodeBase58Address(addrs[i]); err != nil {
 			return fmt.Errorf("invalid address: %v, err: %v", addrs[i], err)
 		}
@@ -111,7 +100,7 @@ func getAddressTransactionsCmd(c *gcli.Context) error {
 
 	// If one or more addresses have beeb provided, request their transactions - otherwise report an error
 	if len(addrs) > 0 {
-		outputs, err := client.TransactionsVerbose(addrs)
+		outputs, err := apiClient.TransactionsVerbose(addrs)
 		if err != nil {
 			return err
 		}
@@ -119,5 +108,5 @@ func getAddressTransactionsCmd(c *gcli.Context) error {
 		return printJSON(outputs)
 	}
 
-	return fmt.Errorf("at least one address must be specified. Example: %s addr1 addr2 addr3", c.Command.Name)
+	return fmt.Errorf("at least one address must be specified. Example: %s addr1 addr2 addr3", c.Name())
 }

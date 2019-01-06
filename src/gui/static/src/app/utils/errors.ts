@@ -1,8 +1,14 @@
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { HwWalletService, OperationResults } from '../services/hw-wallet.service';
+import { TranslateService } from '@ngx-translate/core';
 
 export function parseResponseMessage(body: string): string {
   if (typeof body === 'object') {
-    body = body['_body'];
+    if (body['_body']) {
+      body = body['_body'];
+    } else {
+      body = body + '';
+    }
   }
 
   if (body.indexOf('"error":') !== -1) {
@@ -25,4 +31,22 @@ export function showSnackbarError(snackbar: MatSnackBar, body: string, duration 
   config.duration = duration;
 
   snackbar.open(parseResponseMessage(body), null, config);
+}
+
+export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, translateService: TranslateService, error: any): string {
+  if (!hwWalletService.getDeviceConnectedSync()) {
+    return translateService.instant('hardware-wallet.general.error-disconnected');
+  } else {
+    if (error.result) {
+      if (error.result === OperationResults.FailedOrRefused) {
+        return translateService.instant('hardware-wallet.general.refused');
+      } else if (error.result === OperationResults.WrongPin) {
+        return translateService.instant('hardware-wallet.general.error-incorrect-pin');
+      } else if (error.result === OperationResults.IncorrectHardwareWallet) {
+        return translateService.instant('hardware-wallet.general.error-incorrect-wallet');
+      }
+    }
+
+    return translateService.instant('hardware-wallet.general.generic-error');
+  }
 }

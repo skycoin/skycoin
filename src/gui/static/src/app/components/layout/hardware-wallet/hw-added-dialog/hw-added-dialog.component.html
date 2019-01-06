@@ -1,0 +1,31 @@
+<app-modal class="modal" [headline]="'hardware-wallet.added.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial || currentState === states.Finished">
+  <app-hw-message *ngIf="currentState === states.Initial"
+    [text]="'hardware-wallet.added.configuring' | translate"
+    [icon]="msgIcons.Spinner"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.Failed"
+    [text]="errorMsg | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+  
+  <div *ngIf="currentState === states.Finished">
+    <app-hw-message
+      [upperBigText]="'hardware-wallet.added.done' | translate"
+      [icon]="msgIcons.Success"
+    ></app-hw-message>
+    <div class="upper-text">{{ 'hardware-wallet.added.added1' | translate }}</div>
+    <div [formGroup]="form">
+      <div class="form-field">
+        <input formControlName="label" id="label">
+      </div>
+    </div>
+    <div>{{ 'hardware-wallet.added.added2' | translate }}</div>
+  </div>
+
+  <div class="-buttons" *ngIf="currentState === states.Finished || currentState === states.Failed">
+    <app-button (action)="saveNameAndCloseModal()" class="primary" [disabled]="!form.valid">
+      {{ 'hardware-wallet.general.close' | translate }}
+    </app-button>
+  </div>
+</app-modal>

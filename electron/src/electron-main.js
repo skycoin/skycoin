@@ -6,9 +6,9 @@ const path = require('path');
 
 const childProcess = require('child_process');
 
-const cwd = require('process').cwd();
-
 const axios = require('axios');
+
+const hwCode = require('./hardware-wallet');
 
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
@@ -138,6 +138,14 @@ function startSkycoin() {
     // If in dev mode, simply open the dev server URL.
     currentURL = 'http://localhost:4200/';
     app.emit('skycoin-ready', { url: currentURL });
+
+    axios
+      .get('http://localhost:4200/api/v1/wallets/folderName')
+      .then(response => {
+        walletsFolder = response.data.address;
+        hwCode.setWalletsFolderPath(walletsFolder);
+      })
+      .catch(() => {});
   }
 }
 
@@ -169,15 +177,17 @@ function createWindow(url) {
     webPreferences: {
       webgl: false,
       webaudio: false,
-      contextIsolation: true,
+      contextIsolation: false,
       webviewTag: false,
       nodeIntegration: false,
       nodeIntegrationInWorker: false,
       allowRunningInsecureContent: false,
       webSecurity: true,
       plugins: false,
+      preload: __dirname + '/electron-api.js',
     },
   });
+  hwCode.setWinRef(win);
 
   win.webContents.on('did-fail-load', function() {
     if (!showErrorCalled) {
@@ -192,10 +202,6 @@ function createWindow(url) {
   const ses = win.webContents.session
   ses.clearCache(function () {
     console.log('Cleared the caching of the skycoin wallet.');
-  });
-
-  ses.clearStorageData([], function() {
-    console.log('Cleared the stored cached data');
   });
 
   if (url) {
@@ -213,6 +219,7 @@ function createWindow(url) {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
+    hwCode.setWinRef(win);
   });
 
   // If in dev mode, allow to open URLs.
@@ -318,7 +325,10 @@ app.on('skycoin-ready', (e) => {
 
   axios
     .get(e.url + '/api/v1/wallets/folderName')
-    .then(response => walletsFolder = response.data.address)
+    .then(response => {
+      walletsFolder = response.data.address;
+      hwCode.setWalletsFolderPath(walletsFolder);
+    })
     .catch(() => {});
 });
 

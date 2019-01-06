@@ -4,6 +4,8 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
 import { CreateWalletFormComponent } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
+import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -17,10 +19,16 @@ export class OnboardingCreateWalletComponent implements OnInit {
 
   showNewForm = true;
   doubleButtonActive = DoubleButtonActive.LeftButton;
+  hwCompatibilityActivated = false;
 
   constructor(
     private dialog: MatDialog,
-  ) { }
+    private router: Router,
+  ) {
+    if (window['isElectron']) {
+      this.hwCompatibilityActivated = window['ipcRenderer'].sendSync('hwCompatibilityActivated');
+    }
+  }
 
   ngOnInit() {
     setTimeout(() => { this.formControl.initForm(null, this.fill); });
@@ -48,6 +56,18 @@ export class OnboardingCreateWalletComponent implements OnInit {
 
   loadWallet() {
     this.emitCreatedData();
+  }
+
+  useHardwareWallet() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    config.autoFocus = false;
+    config.data = true;
+    this.dialog.open(HwOptionsDialogComponent, config).afterClosed().subscribe(result => {
+      if (result) {
+        this.router.navigate(['/wallets']);
+      }
+    });
   }
 
   private emitCreatedData() {

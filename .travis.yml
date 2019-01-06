@@ -61,6 +61,7 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start; fi
 
 script:
+  - make check-newcoin
   - make lint
   - make test-386
   - make test-amd64

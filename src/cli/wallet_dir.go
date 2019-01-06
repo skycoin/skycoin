@@ -3,36 +3,34 @@ package cli
 import (
 	"fmt"
 
-	gcli "github.com/urfave/cli"
+	cobra "github.com/spf13/cobra"
 )
 
-func walletDirCmd() gcli.Command {
-	name := "walletDir"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Displays wallet folder address",
-		ArgsUsage:    " ",
-		OnUsageError: onCommandUsageError(name),
-		Flags: []gcli.Flag{
-			gcli.BoolFlag{
-				Name:  "j,json",
-				Usage: "Returns the results in JSON format.",
-			},
-		},
-		Action: func(c *gcli.Context) error {
-			cfg := ConfigFromContext(c)
-			jsonFmt := c.Bool("json")
-			if jsonFmt {
+func walletDirCmd() *cobra.Command {
+	walletDirCmd := &cobra.Command{
+		Use:          "walletDir",
+		Short:        "Displays wallet folder address",
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
+		RunE: func(c *cobra.Command, args []string) error {
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
+
+			if jsonOutput {
 				return printJSON(struct {
 					WltDir string `json:"walletDir"`
 				}{
-					WltDir: cfg.WalletDir,
+					WltDir: cliConfig.WalletDir,
 				})
 			}
 
-			fmt.Println(cfg.WalletDir)
+			fmt.Println(cliConfig.WalletDir)
 			return nil
 		},
 	}
-	// Commands = append(Commands, cmd)
+
+	walletDirCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	return walletDirCmd
 }

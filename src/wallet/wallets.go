@@ -115,11 +115,8 @@ func (wlts Wallets) remove(id string) {
 }
 
 // get returns wallet by wallet id
-func (wlts Wallets) get(id string) (*Wallet, bool) {
-	if w, ok := wlts[id]; ok {
-		return w, true
-	}
-	return nil, false
+func (wlts Wallets) get(id string) *Wallet {
+	return wlts[id]
 }
 
 // set sets a wallet into the map

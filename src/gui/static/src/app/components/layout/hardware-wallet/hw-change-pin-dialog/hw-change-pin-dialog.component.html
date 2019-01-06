@@ -1,0 +1,40 @@
+<app-modal class="modal"
+  [headline]="(changingExistingPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate"
+  [dialog]="dialogRef"
+  [disableDismiss]="currentState === states.Initial">
+  <app-hw-message *ngIf="currentState === states.Initial"
+    [text]="'hardware-wallet.general.confirm' | translate"
+    [icon]="msgIcons.Confirm"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.ReturnedSuccess"
+    [text]="'hardware-wallet.general.completed' | translate"
+    [icon]="msgIcons.Success"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.ReturnedRefused"
+    [text]="'hardware-wallet.general.refused' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.WrongPin"
+    [text]="'hardware-wallet.general.error-incorrect-pin' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.PinMismatch"
+    [text]="'hardware-wallet.change-pin.pin-mismatch' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.Failed"
+    [text]="'hardware-wallet.general.generic-error' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
+  <div class="-buttons" *ngIf="currentState !== states.Initial">
+    <app-button (action)="closeModal()" class="primary">
+      {{ 'hardware-wallet.general.close' | translate }}
+    </app-button>
+  </div>
+</app-modal>

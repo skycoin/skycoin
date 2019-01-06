@@ -59,6 +59,9 @@ export class Wallet {
   encrypted: boolean;
   hideEmpty?: boolean;
   opened?: boolean;
+  isHardware?: boolean;
+  hasHwSecurityWarnings?: boolean;
+  stopShowingHwSecurityPopup?: boolean;
 }
 
 export class Connection {
@@ -91,6 +94,23 @@ export class ExchangeOrder {
   toTx: string;
   status: string;
   message?: string;
+}
+
+export interface Output {
+  address: string;
+  coins: BigNumber;
+  hash: string;
+  calculated_hours: BigNumber;
+}
+
+export interface ConfirmationData {
+  text: string;
+  headerText: string;
+  checkboxText?: string;
+  confirmButtonText: string;
+  cancelButtonText?: string;
+  redTitle?: boolean;
+  disableDismiss?: boolean;
 }
 
 /**

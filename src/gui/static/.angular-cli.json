@@ -25,7 +25,8 @@
         "styles.scss"
       ],
       "scripts": [
-        "assets/scripts/qrcode.min.js"
+        "assets/scripts/qrcode.min.js",
+        "assets/scripts/main.js"
       ],
       "environmentSource": "environments/environment.ts",
       "environments": {

@@ -3,44 +3,39 @@ package cli
 import (
 	"fmt"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func showSeedCmd(cfg Config) gcli.Command {
-	name := "showSeed"
-	return gcli.Command{
-		Name:  name,
-		Usage: "Show wallet seed",
-		Description: fmt.Sprintf(`
-		The default wallet (%s) will be
-		used if no wallet was specified.
+func showSeedCmd() *cobra.Command {
+	showSeedCmd := &cobra.Command{
+		Use:   "showSeed",
+		Short: "Show wallet seed",
+		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
 
-		Use caution when using the "-p" command. If you have command history enabled
-		your wallet encryption password can be recovered from the history log. If you
-		do not include the "-p" option you will be prompted to enter your password
-		after you enter your command.`, cfg.FullWalletPath()),
-		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Wallet password, if encrypted",
-			},
-			gcli.BoolFlag{
-				Name:  "j,json",
-				Usage: "Returns the results in JSON format",
-			},
-		},
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			cfg := ConfigFromContext(c)
-
-			w, err := resolveWalletPath(cfg, "")
+    Use caution when using the "-p" command. If you have command history enabled
+    your wallet encryption password can be recovered from the history log. If you
+    do not include the "-p" option you will be prompted to enter your password
+    after you enter your command.`, cliConfig.FullWalletPath()),
+		SilenceUsage: true,
+		RunE: func(c *cobra.Command, args []string) error {
+			w, err := resolveWalletPath(cliConfig, "")
 			if err != nil {
 				return err
 			}
 
-			pr := NewPasswordReader([]byte(c.String("p")))
+			password, err := c.Flags().GetString("password")
+			if err != nil {
+				return err
+			}
+
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
+
+			pr := NewPasswordReader([]byte(password))
 			seed, err := getSeed(w, pr)
 			switch err.(type) {
 			case nil:
@@ -51,7 +46,7 @@ func showSeedCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			if c.Bool("j") {
+			if jsonOutput {
 				v := struct {
 					Seed string `json:"seed"`
 				}{
@@ -65,6 +60,11 @@ func showSeedCmd(cfg Config) gcli.Command {
 			return nil
 		},
 	}
+
+	showSeedCmd.Flags().StringP("password", "p", "", "Wallet password")
+	showSeedCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+
+	return showSeedCmd
 }
 
 func getSeed(walletFile string, pr PasswordReader) (string, error) {

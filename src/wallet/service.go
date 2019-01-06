@@ -118,7 +118,7 @@ func (serv *Service) loadWallet(wltName string, options Options, bg BalanceGette
 func (serv *Service) generateUniqueWalletFilename() string {
 	wltName := NewWalletFilename()
 	for {
-		if _, ok := serv.wallets.get(wltName); !ok {
+		if w := serv.wallets.get(wltName); w == nil {
 			break
 		}
 		wltName = NewWalletFilename()
@@ -268,8 +268,8 @@ func (serv *Service) GetWallet(wltID string) (*Wallet, error) {
 
 // returns the clone of the wallet of given id
 func (serv *Service) getWallet(wltID string) (*Wallet, error) {
-	w, ok := serv.wallets.get(wltID)
-	if !ok {
+	w := serv.wallets.get(wltID)
+	if w == nil {
 		return nil, ErrWalletNotExist
 	}
 	return w.clone(), nil
@@ -406,6 +406,12 @@ func (serv *Service) Remove(wltID string) error {
 		return ErrWalletAPIDisabled
 	}
 
+	wlt := serv.wallets.get(wltID)
+	if wlt != nil && len(wlt.Entries) > 0 {
+		addr := wlt.Entries[0].Address.String()
+		delete(serv.firstAddrIDMap, addr)
+	}
+
 	serv.wallets.remove(wltID)
 	return nil
 }
@@ -425,7 +431,7 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 
 		if ok {
 			// check whose entries number is bigger
-			pw, _ := wlts.get(id)
+			pw := wlts.get(id)
 
 			if len(pw.Entries) >= len(wlt.Entries) {
 				rmWltIDS = append(rmWltIDS, wltID)

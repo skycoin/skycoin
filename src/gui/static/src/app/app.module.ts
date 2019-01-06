@@ -51,7 +51,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSliderModule } from '@angular/material';
+import { MatSliderModule, MatAutocompleteModule } from '@angular/material';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
@@ -79,6 +79,21 @@ import { ExchangeComponent } from './components/pages/exchange/exchange.componen
 import { ExchangeService } from './services/exchange.service';
 import { ExchangeCreateComponent } from './components/pages/exchange/exchange-create/exchange-create.component';
 import { ExchangeStatusComponent } from './components/pages/exchange/exchange-status/exchange-status.component';
+import { HwWalletService } from './services/hw-wallet.service';
+import { HwOptionsDialogComponent } from './components/layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
+import { HwWipeDialogComponent } from './components/layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog.component';
+import { HwAddedDialogComponent } from './components/layout/hardware-wallet/hw-added-dialog/hw-added-dialog.component';
+import { HwGenerateSeedDialogComponent } from './components/layout/hardware-wallet/hw-generate-seed-dialog/hw-generate-seed-dialog.component';
+import { HwBackupDialogComponent } from './components/layout/hardware-wallet/hw-backup-dialog/hw-backup-dialog.component';
+import { ConfirmationComponent } from './components/layout/confirmation/confirmation.component';
+import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
+import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
+import { HwChangePinDialogComponent } from './components/layout/hardware-wallet/hw-change-pin-dialog/hw-change-pin-dialog.component';
+import { HwPinHelpDialogComponent } from './components/layout/hardware-wallet/hw-pin-help-dialog/hw-pin-help-dialog.component';
+import { HwRestoreSeedDialogComponent } from './components/layout/hardware-wallet/hw-restore-seed-dialog/hw-restore-seed-dialog.component';
+import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
+import { Bip39WordListService } from './services/bip39-word-list.service';
+import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
 
 
 const ROUTES = [
@@ -194,6 +209,19 @@ const ROUTES = [
     ExchangeComponent,
     ExchangeCreateComponent,
     ExchangeStatusComponent,
+    HwOptionsDialogComponent,
+    HwWipeDialogComponent,
+    HwAddedDialogComponent,
+    HwGenerateSeedDialogComponent,
+    HwBackupDialogComponent,
+    ConfirmationComponent,
+    HwMessageComponent,
+    HwPinDialogComponent,
+    HwChangePinDialogComponent,
+    HwPinHelpDialogComponent,
+    HwRestoreSeedDialogComponent,
+    HwSeedWordDialogComponent,
+    HwDialogBaseComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -207,6 +235,17 @@ const ROUTES = [
     SeedModalComponent,
     NumberOfAddressesComponent,
     SelectAddressComponent,
+    HwOptionsDialogComponent,
+    HwWipeDialogComponent,
+    HwAddedDialogComponent,
+    HwGenerateSeedDialogComponent,
+    HwBackupDialogComponent,
+    ConfirmationComponent,
+    HwPinDialogComponent,
+    HwChangePinDialogComponent,
+    HwPinHelpDialogComponent,
+    HwRestoreSeedDialogComponent,
+    HwSeedWordDialogComponent,
   ],
   imports: [
     BrowserModule,
@@ -230,6 +269,7 @@ const ROUTES = [
     MatTooltipModule,
     MatCheckboxModule,
     MatSliderModule,
+    MatAutocompleteModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(ROUTES, { useHash: true }),
@@ -251,6 +291,8 @@ const ROUTES = [
     PurchaseService,
     WalletService,
     WizardGuardService,
+    HwWalletService,
+    Bip39WordListService,
   ],
   bootstrap: [AppComponent],
 })

@@ -365,8 +365,8 @@ func (intro *IntroductionMessage) process(d daemoner) {
 	}
 
 	// Announce unconfirmed txns
-	if err := d.announceAllTxns(); err != nil {
-		logger.WithError(err).Warning("announceAllTxns failed")
+	if err := d.announceAllValidTxns(); err != nil {
+		logger.WithError(err).Warning("announceAllValidTxns failed")
 	}
 }
 
@@ -908,9 +908,9 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 
 	// Announce these transactions to peers
 	m := NewAnnounceTxnsMessage(hashes)
-	if n, err := d.broadcastMessage(m); err != nil {
+	if ids, err := d.broadcastMessage(m); err != nil {
 		logger.WithError(err).Warning("Broadcast AnnounceTxnsMessage failed")
 	} else {
-		logger.Debugf("Announced %d transactions to %d peers", len(hashes), n)
+		logger.Debugf("Announced %d transactions to %d peers", len(hashes), len(ids))
 	}
 }

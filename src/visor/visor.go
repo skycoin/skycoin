@@ -182,7 +182,7 @@ type Blockchainer interface {
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
 	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) (*coin.SignedBlock, coin.UxArray, error)
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
@@ -478,7 +478,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn); err != nil {
+		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
@@ -942,18 +942,20 @@ func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnVi
 // already in the blockchain.
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
-func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, error) {
+func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, *coin.SignedBlock, coin.UxArray, error) {
 	var known bool
+	var head *coin.SignedBlock
+	var inputs coin.UxArray
 
 	if err := vs.DB.Update("InjectUserTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, err = vs.InjectUserTransactionTx(tx, txn)
+		known, head, inputs, err = vs.InjectUserTransactionTx(tx, txn)
 		return err
 	}); err != nil {
-		return false, err
+		return false, nil, nil, err
 	}
 
-	return known, nil
+	return known, head, inputs, nil
 }
 
 // InjectUserTransactionTx records a coin.Transaction to the UnconfirmedTransactionPool if the txn is not
@@ -961,13 +963,14 @@ func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, error) {
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
 // This method is only exported for use by the daemon gateway's InjectBroadcastTransaction method.
-func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (bool, error) {
+func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (bool, *coin.SignedBlock, coin.UxArray, error) {
 	if err := VerifySingleTxnUserConstraints(txn); err != nil {
-		return false, err
+		return false, nil, nil, err
 	}
 
-	if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn); err != nil {
-		return false, err
+	head, inputs, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn)
+	if err != nil {
+		return false, nil, nil, err
 	}
 
 	known, softErr, err := vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, params.UserVerifyTxn)
@@ -975,7 +978,7 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
 
-	return known, err
+	return known, head, inputs, err
 }
 
 // GetTransactionsForAddress returns the Transactions whose unspents give coins to a cipher.Address.

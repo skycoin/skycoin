@@ -13,8 +13,8 @@
       <div class="-inputs">
         <input type="text" formControlName="fromAmount">
         <div class="-select">
-          <select formControlName="from">
-            <option *ngFor="let coin of availableFrom" [value]="coin">{{ coin }}</option>
+          <select formControlName="fromCoin">
+            <option *ngFor="let pair of tradingPairs" [value]="pair.from">{{ pair.from }}</option>
           </select>
         </div>
       </div>
@@ -22,20 +22,16 @@
     <div class="form-field">
       <label>{{ 'exchange.you-get' | translate }}</label>
       <div class="-inputs">
-        <input type="text" formControlName="toAmount" readonly>
+        <input type="text" [value]="toAmount" readonly>
         <div class="-input">
-          <input type="text" value="SKY" readonly>
+          <input type="text" [value]="toCoin" readonly>
         </div>
       </div>
     </div>
     <div class="form-field">
       <label>
-        <span>{{ 'exchange.to-address' | translate:{coin: coinName} }}</span>
-        <span
-          class="-select-address"
-          (click)="selectAddress()"
-          *ngIf="activeTradingPair?.to === 'SKY'"
-        >
+        <span>{{ 'exchange.to-address' | translate:{coin: toCoin} }}</span>
+        <span class="-select-address" (click)="selectAddress()">
           {{ 'exchange.select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
         </span>
       </label>
@@ -63,22 +59,22 @@
   <div class="-info" *ngIf="activeTradingPair">
     <div class="-item">
       <div class="-key">{{ 'exchange.you-send' | translate }}</div>
-      <div class="-value">{{ sendAmount }} {{ form.get('from').value }}</div>
+      <div class="-value">{{ sendAmount }} {{ form.get('fromCoin').value }}</div>
     </div>
 
     <div class="-item">
       <div class="-key">{{ 'exchange.you-get' | translate }}</div>
-      <div class="-value">&asymp; {{ convertedAmount }} {{ form.get('to').value }}</div>
+      <div class="-value">&asymp; {{ toAmount }} {{ toCoin }}</div>
     </div>
 
     <div class="-item">
-      <div class="-key">{{ 'exchange.to-address' | translate:{coin: activeTradingPair.to} }}</div>
+      <div class="-key">{{ 'exchange.to-address' | translate:{coin: toCoin} }}</div>
       <div class="-value">{{ form.get('toAddress').value || '-' }}</div>
     </div>
 
     <div class="-item">
       <div class="-key">{{ 'exchange.price' | translate }}</div>
-      <div class="-value">1 {{ form.get('from').value }} &asymp; {{ activeTradingPair.price.toFixed(6) }} {{ form.get('to').value }}</div>
+      <div class="-value">1 {{ form.get('fromCoin').value }} &asymp; {{ activeTradingPair.price.toFixed(6) }} {{ toCoin }}</div>
     </div>
 
     <div class="-item">

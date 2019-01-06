@@ -10,6 +10,6 @@ pushd "$SCRIPTDIR" >/dev/null
 
 npm install
 cd src/
-npm install
+./install-dependencies.sh
 
 popd >/dev/null

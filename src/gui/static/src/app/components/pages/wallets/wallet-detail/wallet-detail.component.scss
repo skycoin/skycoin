@@ -106,6 +106,14 @@
       padding-left: 5px;
     }
 
+    .-enabled-span {
+      cursor: pointer;
+
+      &:hover {
+        color: $grey;
+      }
+    }
+
     span {
       color: #CECFD0;
       font-size: 12px;
@@ -149,6 +157,10 @@
         background-image: url(../../../../../assets/img/edit-grey.png);
       }
 
+      &.-btn-delete::before {
+        background-image: url(../../../../../assets/img/delete-grey.png);
+      }
+
       &:hover {
         color: $grey;
 
@@ -174,6 +186,10 @@
 
         &.-edit-wallet::before {
           background-image: url(../../../../../assets/img/edit-blue.png);
+        }
+
+        &.-btn-delete::before {
+          background-image: url(../../../../../assets/img/delete-red.png);
         }
       }
     }
@@ -211,4 +227,13 @@
 
 .copying .copy-label::after {
   animation: floatup .5s ease-in-out;
+}
+
+mat-spinner {
+  margin-left: 7px;
+  margin-right: 12px;
+
+  ::ng-deep circle {
+    stroke: $grey-light;
+  }
 }

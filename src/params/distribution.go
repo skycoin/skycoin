@@ -49,9 +49,7 @@ func GetLockedDistributionAddresses() []string {
 // Each address has 1,000,000 coins. There are 100 addresses.
 func GetDistributionAddressesDecoded() []cipher.Address {
 	addrs := make([]cipher.Address, len(distributionAddressesDecoded))
-	for i := range distributionAddressesDecoded {
-		addrs[i] = distributionAddressesDecoded[i]
-	}
+	copy(addrs, distributionAddressesDecoded)
 	return addrs
 }
 
@@ -79,8 +77,6 @@ func GetLockedDistributionAddressesDecoded() []cipher.Address {
 	// TODO -- once we reach 30% distribution, we can hardcode the
 	// initial timestamp for releasing more coins
 	addrs := make([]cipher.Address, DistributionAddressesTotal-InitialUnlockedCount)
-	for i := range distributionAddressesDecoded[InitialUnlockedCount:] {
-		addrs[i] = distributionAddressesDecoded[InitialUnlockedCount+uint64(i)]
-	}
+	copy(addrs, distributionAddressesDecoded[InitialUnlockedCount:])
 	return addrs
 }

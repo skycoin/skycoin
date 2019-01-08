@@ -256,8 +256,14 @@ func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 			richlist = richlist[:topn]
 		}
 
+		readableRichlist, err := readable.NewRichlistBalances(richlist)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		wh.SendJSONOr500(logger, w, Richlist{
-			Richlist: readable.NewRichlistBalances(richlist),
+			Richlist: readableRichlist,
 		})
 	}
 }

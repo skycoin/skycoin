@@ -1,23 +1,34 @@
 package readable
 
-import "github.com/skycoin/skycoin/src/visor"
+import (
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/visor"
+)
 
 // RichlistBalance holds info an address balance holder
 type RichlistBalance struct {
 	Address string `json:"address"`
 	Coins   string `json:"coins"`
 	Locked  bool   `json:"locked"`
+	coins   uint64 `json:"-"`
 }
 
 // NewRichlistBalances copies from visor.Richlist
-func NewRichlistBalances(visorRichlist visor.Richlist) []RichlistBalance {
+func NewRichlistBalances(visorRichlist visor.Richlist) ([]RichlistBalance, error) {
 	richlist := make([]RichlistBalance, len(visorRichlist))
 	for i, v := range visorRichlist {
+		coins, err := droplet.ToString(v.Coins)
+		if err != nil {
+			return nil, err
+		}
+
 		richlist[i] = RichlistBalance{
-			Address: v.Address,
-			Coins:   v.Coins,
+			Address: v.Address.String(),
+			Coins:   coins,
+			coins:   v.Coins,
 			Locked:  v.Locked,
 		}
 	}
-	return richlist
+
+	return richlist, nil
 }

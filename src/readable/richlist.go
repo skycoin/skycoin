@@ -10,7 +10,7 @@ type RichlistBalance struct {
 	Address string `json:"address"`
 	Coins   string `json:"coins"`
 	Locked  bool   `json:"locked"`
-	coins   uint64 `json:"-"`
+	coins   uint64
 }
 
 // NewRichlistBalances copies from visor.Richlist

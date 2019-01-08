@@ -33,6 +33,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get wallets](#get-wallets)
 	- [Get wallet folder name](#get-wallet-folder-name)
 	- [Generate wallet seed](#generate-wallet-seed)
+	- [Verify Wallet Seed](#verify-wallet-seed)
 	- [Create a wallet from seed](#create-a-wallet-from-seed)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
 	- [Updates wallet label](#updates-wallet-label)
@@ -856,6 +857,52 @@ Result:
 }
 ```
 
+### Verify wallet Seed
+
+API sets: `WALLET`
+
+```
+URI: /api/v2/wallet/seed/verify
+Method: POST
+Args:
+    seed: seed to be verified
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/seed/verify \
+ -H 'Content-type: application/json' \
+ -d '{ "seed": "nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair" }'
+```
+
+Result:
+
+```json
+{
+    "data": {}
+}
+```
+
+Example (wrong bip39 seed):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/seed/verify \
+ -H 'Content-type: application/json' \
+ -d '{ "seed": "wrong seed" }'
+```
+
+Result:
+
+```json
+{
+    "error": {
+        "message": "seed is not a valid bip39 seed",
+        "code": 422
+    }
+}
+```
+
 ### Create a wallet from seed
 
 API sets: `WALLET`
@@ -1172,11 +1219,11 @@ Example request body with manual hours selection type, unencrypted wallet and al
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
         "coins": "1.032",
-        "hours": 7
+        "hours": "7"
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
-        "hours": 0
+        "hours": "0"
     }]
 }
 ```
@@ -1221,11 +1268,11 @@ Example request body with manual hours selection type, unencrypted wallet and sp
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
         "coins": "1.032",
-        "hours": 7
+        "hours": "7"
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
-        "hours": 0
+        "hours": "0"
     }]
 }
 ```

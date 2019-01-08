@@ -17,7 +17,7 @@ import (
 
 	"os"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/skycoin/skycoin/src/api"
@@ -48,47 +48,30 @@ var (
     WALLET_NAME: Name of wallet file (without path). This value is overridden by any subcommand flag specifying a wallet filename. Default "%s"
     DATA_DIR: Directory where everything is stored. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName, defaultDataDir)
 
-	commandHelpTemplate = fmt.Sprintf(`USAGE:
-        {{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{if .Category}}
-
-CATEGORY:
-        {{.Category}}{{end}}{{if .Description}}
+	helpTemplate = fmt.Sprintf(`USAGE:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command] [flags] [arguments...]{{end}}{{with (or .Long .Short)}}
 
 DESCRIPTION:
-        {{.Description}}{{end}}{{if .VisibleFlags}}
+    {{. | trimTrailingWhitespaces}}{{end}}{{if .HasExample}}
 
-OPTIONS:
-        {{range .VisibleFlags}}{{.}}
-        {{end}}{{end}}
-%s
-`, envVarsHelp)
+EXAMPLES:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
 
-	appHelpTemplate = fmt.Sprintf(`NAME:
-   {{.Name}}{{if .Usage}} - {{.Usage}}{{end}}
+COMMANDS:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
 
-USAGE:
-   {{if .UsageText}}{{.UsageText}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[global options]{{end}}{{if .Commands}} command [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Version}}{{if not .HideVersion}}
+FLAGS:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
 
-VERSION:
-   {{.Version}}{{end}}{{end}}{{if .Description}}
+GLOBAL FLAGS:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
 
-DESCRIPTION:
-   {{.Description}}{{end}}{{if len .Authors}}
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
 
-AUTHOR{{with $length := len .Authors}}{{if ne 1 $length}}S{{end}}{{end}}:
-   {{range $index, $author := .Authors}}{{if $index}}
-   {{end}}{{$author}}{{end}}{{end}}{{if .VisibleCommands}}
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 
-COMMANDS:{{range .VisibleCategories}}{{if .Name}}
-   {{.Name}}:{{end}}{{range .VisibleCommands}}
-     {{join .Names ", "}}{{"\t"}}{{.Usage}}{{end}}{{end}}{{end}}{{if .VisibleFlags}}
-
-GLOBAL OPTIONS:
-   {{range $index, $option := .VisibleFlags}}{{if $index}}
-   {{end}}{{$option}}{{end}}{{end}}{{if .Copyright}}
-
-COPYRIGHT:
-   {{.Copyright}}{{end}}
 %s
 `, envVarsHelp)
 
@@ -100,11 +83,11 @@ COPYRIGHT:
 	ErrJSONMarshal = errors.New("json marshal failed")
 )
 
-// App Wraps the app so that main package won't use the raw App directly,
-// which will cause import issue
-type App struct {
-	gcli.App
-}
+var (
+	cliConfig Config
+	apiClient *api.Client
+	quitChan  = make(chan struct{})
+)
 
 // Config cli's configuration struct
 type Config struct {
@@ -224,19 +207,20 @@ func resolveDBPath(cfg Config, db string) (string, error) {
 	return absDB, nil
 }
 
-// NewApp creates an app instance
-func NewApp(cfg Config) (*App, error) {
-	gcli.AppHelpTemplate = appHelpTemplate
-	gcli.SubcommandHelpTemplate = commandHelpTemplate
-	gcli.CommandHelpTemplate = commandHelpTemplate
+// NewCLI creates a cli instance
+func NewCLI(cfg Config) (*cobra.Command, error) {
+	apiClient = api.NewClient(cfg.RPCAddress)
+	apiClient.SetAuth(cfg.RPCUsername, cfg.RPCPassword)
 
-	gcliApp := gcli.NewApp()
-	app := &App{
-		App: *gcliApp,
+	cliConfig = cfg
+
+	skyCLI := &cobra.Command{
+		Short: fmt.Sprintf("The %s command line interface", cfg.Coin),
+		Use:   fmt.Sprintf("%s-cli", cfg.Coin),
 	}
 
-	commands := []gcli.Command{
-		addPrivateKeyCmd(cfg),
+	commands := []*cobra.Command{
+		addPrivateKeyCmd(),
 		addressBalanceCmd(),
 		addressGenCmd(),
 		fiberAddressGenCmd(),
@@ -244,85 +228,42 @@ func NewApp(cfg Config) (*App, error) {
 		blocksCmd(),
 		broadcastTxCmd(),
 		checkdbCmd(),
-		createRawTxCmd(cfg),
+		createRawTxCmd(),
 		decodeRawTxCmd(),
-		decryptWalletCmd(cfg),
-		encryptWalletCmd(cfg),
+		decryptWalletCmd(),
+		encryptWalletCmd(),
 		lastBlocksCmd(),
 		listAddressesCmd(),
 		listWalletsCmd(),
 		sendCmd(),
 		showConfigCmd(),
-		showSeedCmd(cfg),
+		showSeedCmd(),
 		statusCmd(),
 		transactionCmd(),
 		verifyAddressCmd(),
 		versionCmd(),
-		walletCreateCmd(cfg),
-		walletAddAddressesCmd(cfg),
-		walletBalanceCmd(cfg),
+		walletCreateCmd(),
+		walletAddAddressesCmd(),
+		walletBalanceCmd(),
 		walletDirCmd(),
 		walletHisCmd(),
-		walletOutputsCmd(cfg),
+		walletOutputsCmd(),
 		richlistCmd(),
+		addressTransactionsCmd(),
 	}
 
-	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)
-	app.Version = Version
-	app.Usage = fmt.Sprintf("the %s command line interface", cfg.Coin)
-	app.Commands = commands
-	app.EnableBashCompletion = true
-	app.OnUsageError = func(context *gcli.Context, err error, isSubcommand bool) error {
-		fmt.Fprintf(context.App.Writer, "Error: %v\n\n", err)
-		return gcli.ShowAppHelp(context)
-	}
-	app.CommandNotFound = func(ctx *gcli.Context, command string) {
-		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} command. See '{{.HelpName}} --help'.\n", command)
-		gcli.HelpPrinter(app.Writer, tmp, app)
-		gcli.OsExiter(1)
-	}
+	skyCLI.Version = Version
+	skyCLI.SuggestionsMinimumDistance = 1
+	skyCLI.AddCommand(commands...)
 
-	apiClient := api.NewClient(cfg.RPCAddress)
-	apiClient.SetAuth(cfg.RPCUsername, cfg.RPCPassword)
+	skyCLI.SetHelpTemplate(helpTemplate)
+	skyCLI.SetUsageTemplate(helpTemplate)
 
-	app.Metadata = map[string]interface{}{
-		"config":   cfg,
-		"api":      apiClient,
-		"quitChan": make(chan struct{}),
-	}
-
-	return app, nil
+	return skyCLI, nil
 }
 
-// Run starts the app
-func (app *App) Run(args []string) error {
-	return app.App.Run(args)
-}
-
-// APIClientFromContext returns an api.Client from a urface/cli Context
-func APIClientFromContext(c *gcli.Context) *api.Client {
-	return c.App.Metadata["api"].(*api.Client)
-}
-
-// ConfigFromContext returns a Config from a urfave/cli Context
-func ConfigFromContext(c *gcli.Context) Config {
-	return c.App.Metadata["config"].(Config)
-}
-
-// QuitChanFromContext returns a chan struct{} from a urfave/cli Context
-func QuitChanFromContext(c *gcli.Context) chan struct{} {
-	return c.App.Metadata["quitChan"].(chan struct{})
-}
-
-func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
-	return func(c *gcli.Context, err error, isSubcommand bool) error {
-		fmt.Fprintf(c.App.Writer, "Error: %v\n\n", err)
-		return gcli.ShowCommandHelp(c, command)
-	}
-}
-
-func printHelp(c *gcli.Context) {
-	fmt.Fprintf(c.App.Writer, "See '%s %s --help'\n", c.App.HelpName, c.Command.Name)
+func printHelp(c *cobra.Command) {
+	c.Printf("See '%s %s --help'\n", c.Parent().Name(), c.Name())
 }
 
 func formatJSON(obj interface{}) ([]byte, error) {

@@ -1103,6 +1103,50 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// VerifySeedRequest is the request data for POST /api/v2/wallet/seed/verify
+type VerifySeedRequest struct {
+	Seed string `json:"seed"`
+}
+
+// walletVerifySeedHandler verifies a wallet seed
+// Method: POST
+// URI: /api/v2/wallet/seed/verify
+func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+		writeHTTPResponse(w, resp)
+		return
+	}
+
+	if r.Header.Get("Content-Type") != ContentTypeJSON {
+		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+		writeHTTPResponse(w, resp)
+		return
+	}
+
+	var req VerifySeedRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+		writeHTTPResponse(w, resp)
+		return
+	}
+
+	if req.Seed == "" {
+		resp := NewHTTPErrorResponse(http.StatusBadRequest, "seed is required")
+		writeHTTPResponse(w, resp)
+		return
+	}
+
+	mnemonicValid := bip39.IsMnemonicValid(req.Seed)
+	if !mnemonicValid {
+		resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, "seed is not a valid bip39 seed")
+		writeHTTPResponse(w, resp)
+		return
+	}
+
+	writeHTTPResponse(w, HTTPResponse{Data: struct{}{}})
+}
+
 // Unloads wallet from the wallet service
 // URI: /api/v1/wallet/unload
 // Method: POST

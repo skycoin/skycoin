@@ -5444,6 +5444,23 @@ func TestRecoverWallet(t *testing.T) {
 	require.Equal(t, w, w4)
 }
 
+func TestVerifyWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+	c := newClient()
+
+	// check with correct seed
+	isBip, err := c.VerifySeed("nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair")
+	require.NoError(t, err)
+	require.True(t, isBip)
+
+	// check with incorrect seed
+	isBip, err = c.VerifySeed("nut ")
+	testutil.RequireError(t, err, "seed is not a valid bip39 seed")
+	require.False(t, isBip)
+}
+
 func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return

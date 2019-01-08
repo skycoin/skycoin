@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- Add CLI `addressTransactions` command
+- Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
 
 ### Fixed
 
+- `/api/v1/health` will return correct build info when running Docker containers based on `skycoin/skycoin` mainnet image.
+
 ### Changed
+- Switch `skycoin-cli` from `urfave/cli` to `spf13/cobra`.
+  Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
+  `-` prefix is only allowed when using shorthand notation.
+
 
 ### Removed
 

@@ -134,14 +134,9 @@ typedef Handle Options__Handle;
 typedef Handle Config__Handle;
 
 /**
- * App Handle
+ * CLI Handle
 */
-typedef Handle App__Handle;
-
-/**
- * Gcli Context Handle
-*/
-typedef Handle Context__Handle;
+typedef Handle CLI__Handle;
 
 /**
  * API Client Handle

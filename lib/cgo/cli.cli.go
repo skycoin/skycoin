@@ -4,8 +4,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
-	cli "github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/cli"
 )
 
 /*
@@ -53,43 +52,19 @@ func SKY_cli_Config_FullDBPath(_c C.Config__Handle, _arg0 *C.GoString_) (____err
 	return
 }
 
-//export SKY_cli_NewApp
-func SKY_cli_NewApp(_cfg C.Config__Handle, _arg1 *C.App__Handle) (____error_code uint32) {
+//export SKY_cli_NewCLI
+func SKY_cli_NewCLI(_cfg C.Config__Handle, _arg1 *C.CLI__Handle) (____error_code uint32) {
 	__cfg, okcfg := lookupConfigHandle(_cfg)
 	if !okcfg {
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	cfg := *__cfg
-	__arg1, ____return_err := cli.NewApp(cfg)
+	__arg1, ____return_err := cli.NewCLI(cfg)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg1 = registerAppHandle(__arg1)
+		*_arg1 = registerCLIHandle(__arg1)
 	}
-	return
-}
-
-//export SKY_cli_RPCClientFromContext
-func SKY_cli_RPCClientFromContext(_c C.Context__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
-	c, okc := lookupContextHandle(_c)
-	if !okc {
-		____error_code = SKY_BAD_HANDLE
-		return
-	}
-	webrpcClient := c.App.Metadata["rpc"].(*webrpc.Client)
-	*_arg1 = registerWebRpcClientHandle(webrpcClient)
-	return
-}
-
-//export SKY_cli_ConfigFromContext
-func SKY_cli_ConfigFromContext(_c C.Context__Handle, _arg1 *C.Config__Handle) (____error_code uint32) {
-	c, okc := lookupContextHandle(_c)
-	if !okc {
-		____error_code = SKY_BAD_HANDLE
-		return
-	}
-	config := c.App.Metadata["config"].(cli.Config)
-	*_arg1 = registerConfigHandle(&config)
 	return
 }
 

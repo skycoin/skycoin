@@ -39,18 +39,22 @@ The outer hash is the hash of the whole transaction serialization
 */
 
 // Transaction transaction struct
+// swagger:model transaction
 type Transaction struct {
 	Length    uint32        //length prefix
 	Type      uint8         //transaction type
 	InnerHash cipher.SHA256 //inner hash SHA256 of In[],Out[]
 
-	Sigs []cipher.Sig        //list of signatures, 64+1 bytes each
-	In   []cipher.SHA256     //ouputs being spent
-	Out  []TransactionOutput //ouputs being created
+	Sigs []cipher.Sig    //list of signatures, 64+1 bytes each
+	In   []cipher.SHA256 //ouputs being spent
+	// swagger:allOf
+	Out []TransactionOutput //ouputs being created
 }
 
 // TransactionOutput hash output/name is function of Hash
+// swagger:model transactionOutput
 type TransactionOutput struct {
+	// swagger:allOf
 	Address cipher.Address //address to send to
 	Coins   uint64         //amount to be sent in coins
 	Hours   uint64         //amount to be sent in coin hours
@@ -404,6 +408,7 @@ func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
 }
 
 // SortableTransactions allows sorting transactions by fee & hash
+// swagger:model sortableTransactions
 type SortableTransactions struct {
 	Transactions Transactions
 	Fees         []uint64

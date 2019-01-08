@@ -20,6 +20,24 @@ import (
 // Method: GET
 // URI: /api/v1/blockchain/metadata
 func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/blockchain/metadata blockchainMetadata
+	//
+	// blockchainMetadataHandler returns the blockchain metadata
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -50,6 +68,24 @@ func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // URI: /api/v1/blockchain/progress
 func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/blockchain/progress blockchainProgress
+	//
+	// blockchainProgressHandler returns the blockchain sync progress
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -90,6 +126,24 @@ func parseBoolFlag(v string) (bool, error) {
 //  seq [int]
 // 	Note: only one of hash or seq is allowed
 func blockHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/block block
+	//
+	// blockHandler returns a block by hash or seq
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -205,6 +259,62 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 //  seqs [comma separated list of ints]
 //  verbose [bool]
 func blocksHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/blockchain/metadata blockchainMetadata
+	//
+	// blocksHandler returns blocks between a start and end point,
+	// or an explicit list of sequences.
+	// If using start and end, the block sequences include both the start and end point.
+	// Explicit sequences cannot be combined with start and end.
+	// TODO Add params to url
+	// Args:
+	//	start [int]
+	//	end [int]
+	//  seqs [comma separated list of ints]
+	//  verbose [bool]
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
+	// swagger:route POST /api/v1/blockchain/metadata blockchainMetadata
+	//
+	// blocksHandler returns blocks between a start and end point,
+	// or an explicit list of sequences.
+	// If using start and end, the block sequences include both the start and end point.
+	// Explicit sequences cannot be combined with start and end.
+	// TODO Add params to url
+	// Args:
+	//	start [int]
+	//	end [int]
+	//  seqs [comma separated list of ints]
+	//  verbose [bool]
+	//
+	//     Consumes:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -340,6 +450,25 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 //	num [int]
 //  verbose [bool]
 func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/last_blocks lastBlocks
+	//
+	// lastBlocksHandler returns the most recent N blocks on the blockchain
+	// TODO Add params to url
+	// Args:
+	//	num [int]
+	//  verbose [bool]
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

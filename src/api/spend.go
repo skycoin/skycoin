@@ -21,7 +21,9 @@ import (
 )
 
 // CreateTransactionResponse is returned by /wallet/transaction
+// swagger:response createTransactionResponse
 type CreateTransactionResponse struct {
+	// swagger:allOf
 	Transaction        CreatedTransaction `json:"transaction"`
 	EncodedTransaction string             `json:"encoded_transaction"`
 }
@@ -40,6 +42,7 @@ func NewCreateTransactionResponse(txn *coin.Transaction, inputs []wallet.UxBalan
 }
 
 // CreatedTransaction represents a transaction created by /wallet/transaction
+// swagger:response createdTransaction
 type CreatedTransaction struct {
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`
@@ -47,9 +50,11 @@ type CreatedTransaction struct {
 	InnerHash string `json:"inner_hash"`
 	Fee       string `json:"fee"`
 
-	Sigs []string                   `json:"sigs"`
-	In   []CreatedTransactionInput  `json:"inputs"`
-	Out  []CreatedTransactionOutput `json:"outputs"`
+	Sigs []string `json:"sigs"`
+	// swagger:allOf
+	In []CreatedTransactionInput `json:"inputs"`
+	// swagger:allOf
+	Out []CreatedTransactionOutput `json:"outputs"`
 }
 
 // NewCreatedTransaction returns a CreatedTransaction
@@ -190,6 +195,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 }
 
 // CreatedTransactionOutput is a transaction output
+// swagger:model createdtTransactionOutput
 type CreatedTransactionOutput struct {
 	UxID    string `json:"uxid"`
 	Address string `json:"address"`
@@ -213,6 +219,7 @@ func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256)
 }
 
 // CreatedTransactionInput is a verbose transaction input
+// swagger:model createdTransactionInput
 type CreatedTransactionInput struct {
 	UxID            string `json:"uxid"`
 	Address         string `json:"address,omitempty"`
@@ -253,34 +260,47 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 }
 
 // createTransactionRequest is sent to /wallet/transaction
+// swagger:parameters createTransactionRequest
 type createTransactionRequest struct {
-	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
-	HoursSelection    hoursSelection                 `json:"hours_selection"`
-	Wallet            createTransactionRequestWallet `json:"wallet"`
-	ChangeAddress     *wh.Address                    `json:"change_address,omitempty"`
-	To                []receiver                     `json:"to"`
+	IgnoreUnconfirmed bool `json:"ignore_unconfirmed"`
+	// swagger:allOf
+	HoursSelection hoursSelection `json:"hours_selection"`
+	// swagger:allOf
+	Wallet createTransactionRequestWallet `json:"wallet"`
+	// swagger:allOf
+	ChangeAddress *wh.Address `json:"change_address,omitempty"`
+	// swagger:allOf
+	To []receiver `json:"to"`
 }
 
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
+// swagger:model createTransactionRequestWallet
 type createTransactionRequestWallet struct {
-	ID        string       `json:"id"`
-	UxOuts    []wh.SHA256  `json:"unspents,omitempty"`
+	ID     string      `json:"id"`
+	UxOuts []wh.SHA256 `json:"unspents,omitempty"`
+	// swagger:allOf
 	Addresses []wh.Address `json:"addresses,omitempty"`
 	Password  string       `json:"password"`
 }
 
 // hoursSelection defines options for hours distribution
+// swagger:response hoursSelection
 type hoursSelection struct {
-	Type        string           `json:"type"`
-	Mode        string           `json:"mode"`
+	Type string `json:"type"`
+	Mode string `json:"mode"`
+	// swagger:allOf
 	ShareFactor *decimal.Decimal `json:"share_factor,omitempty"`
 }
 
 // receiver specifies a spend destination
+// swagger:model receiver
 type receiver struct {
+	// swagger:allOf
 	Address wh.Address `json:"address"`
-	Coins   wh.Coins   `json:"coins"`
-	Hours   *wh.Hours  `json:"hours,omitempty"`
+	// swagger:allOf
+	Coins wh.Coins `json:"coins"`
+	// swagger:allOf
+	Hours *wh.Hours `json:"hours,omitempty"`
 }
 
 // Validate validates createTransactionRequest data
@@ -470,6 +490,27 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 // URI: /api/v1/wallet/transaction
 // Args: JSON body
 func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/wallet/transaction createTransaction
+	//
+	// createTransactionHandler creates a signed transaction
+	// TODO add params url
+	//  JSON body
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: someResponse
+	//       422: validationError
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)

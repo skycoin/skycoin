@@ -8,11 +8,13 @@ import (
 )
 
 // VerifyAddressRequest is the request data for POST /api/v2/address/verify
+// swagger:parameters verifyAddressRequest
 type VerifyAddressRequest struct {
 	Address string `json:"address"`
 }
 
 // VerifyAddressResponse is returned by POST /api/v2/address/verify
+// swagger:response verifyAddressResponse
 type VerifyAddressResponse struct {
 	Version byte `json:"version"`
 }
@@ -21,6 +23,27 @@ type VerifyAddressResponse struct {
 // Method: POST
 // URI: /api/v2/address/verify
 func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
+
+	// swagger:route POST /api/v2/address/verify addressVerify
+	//
+	// addressVerifyHandler verifies a Skycoin address
+	//
+	//     Consumes:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
 		writeHTTPResponse(w, resp)

@@ -12,6 +12,7 @@ import (
 )
 
 // BlockBodyVerbose represents a verbose readable block body
+// swagger:model blockBodyVerbose
 type BlockBodyVerbose struct {
 	Transactions []BlockTransactionVerbose `json:"txns"`
 }
@@ -92,6 +93,7 @@ func NewBlocksVerbose(blocks []coin.SignedBlock, inputs [][][]visor.TransactionI
 
 // BlockTransactionVerbose has readable transaction data for transactions inside a block. It differs from Transaction
 // in that it includes metadata for transaction inputs and the calculated coinhour fee spent by the block
+// swagger:model blockTransactionVerbose
 type BlockTransactionVerbose struct {
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`
@@ -99,9 +101,11 @@ type BlockTransactionVerbose struct {
 	InnerHash string `json:"inner_hash"`
 	Fee       uint64 `json:"fee"`
 
-	Sigs []string            `json:"sigs"`
-	In   []TransactionInput  `json:"inputs"`
-	Out  []TransactionOutput `json:"outputs"`
+	Sigs []string `json:"sigs"`
+	// swagger:allOf
+	In []TransactionInput `json:"inputs"`
+	// swagger:allOf
+	Out []TransactionOutput `json:"outputs"`
 }
 
 // NewBlockTransactionVerbose creates BlockTransactionVerbose
@@ -189,9 +193,12 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 }
 
 // TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose
+// swagger:model transactionVerbose
 type TransactionVerbose struct {
+	// swagger:allOf
 	Status    *TransactionStatus `json:"status,omitempty"`
 	Timestamp uint64             `json:"timestamp,omitempty"`
+	// swagger:allOf
 	BlockTransactionVerbose
 }
 
@@ -212,12 +219,17 @@ func NewTransactionVerbose(txn visor.Transaction, inputs []visor.TransactionInpu
 }
 
 // UnconfirmedTransactionVerbose represents a verbose readable unconfirmed transaction
+// swagger:response unconfirmedTransactionVerbose
 type UnconfirmedTransactionVerbose struct {
+	// swagger:allOf
 	Transaction BlockTransactionVerbose `json:"transaction"`
-	Received    time.Time               `json:"received"`
-	Checked     time.Time               `json:"checked"`
-	Announced   time.Time               `json:"announced"`
-	IsValid     bool                    `json:"is_valid"`
+	// swagger:allOf
+	Received time.Time `json:"received"`
+	// swagger:allOf
+	Checked time.Time `json:"checked"`
+	// swagger:allOf
+	Announced time.Time `json:"announced"`
+	IsValid   bool      `json:"is_valid"`
 }
 
 // NewUnconfirmedTransactionVerbose creates a verbose readable unconfirmed transaction

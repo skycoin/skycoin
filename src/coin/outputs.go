@@ -36,13 +36,16 @@ import (
 */
 
 // UxOut represents uxout
+// swagger:model uxOut
 type UxOut struct {
+	// swagger:allOf
 	Head UxHead
 	Body UxBody //hashed part
 	//Meta UxMeta
 }
 
 // UxHead metadata (not hashed)
+// swagger:model uxHead
 type UxHead struct {
 	Time  uint64 //time of block it was created in
 	BkSeq uint64 //block it was created in, used to calculate depth
@@ -50,11 +53,13 @@ type UxHead struct {
 }
 
 // UxBody uxbody
+// swagger:model uxBody
 type UxBody struct {
-	SrcTransaction cipher.SHA256  // Inner Hash of Transaction
-	Address        cipher.Address // Address of receiver
-	Coins          uint64         // Number of coins
-	Hours          uint64         // Coin hours
+	SrcTransaction cipher.SHA256 // Inner Hash of Transaction
+	// swagger:allOf
+	Address cipher.Address // Address of receiver
+	Coins   uint64         // Number of coins
+	Hours   uint64         // Coin hours
 }
 
 // Hash returns the hash of UxBody

@@ -19,7 +19,60 @@ import (
 // If neither addrs nor hashes are specificed, return all unspent outputs.
 // If only one filter is specified, then return outputs match the filter.
 // Both filters cannot be specified.
+// Use goswagger y otras cosas test
 func outputsHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/network/connection/disconnect outputs
+	//
+	// outputsHandler returns UxOuts filtered by a set of addresses or a set of hashes MIERDA
+	// TODO add params url
+	//  addrs: comma-separated list of addresses
+	//  hashes: comma-separated list of uxout hashes
+	// If neither addrs nor hashes are specificed, return all unspent outputs.
+	// If only one filter is specified, then return outputs match the filter.
+	// Both filters cannot be specified.
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: someResponse
+	//       422: validationError
+
+	// swagger:route POST /api/v1/network/connection/disconnect outputs
+	//
+	// outputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
+	// TODO add params url and validations
+	//  addrs: comma-separated list of addresses
+	//  hashes: comma-separated list of uxout hashes
+	// If neither addrs nor hashes are specificed, return all unspent outputs.
+	// If only one filter is specified, then return outputs match the filter.
+	// Both filters cannot be specified.
+	//
+	//     Consumes:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: someResponse
+	//       422: validationError
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)

@@ -14,6 +14,26 @@ import (
 //	uxid: unspent output ID hash
 // Returns an unspent output by ID
 func uxOutHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/uxout uxOut
+	//
+	// Returns an unspent output by ID
+	// TODO add urls params
+	//	uxid: unspent output ID hash
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -53,6 +73,26 @@ func uxOutHandler(gateway Gatewayer) http.HandlerFunc {
 //	address
 // Returns the historical, spent outputs associated with an address
 func addrUxOutsHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/address_uxouts addUxOuts
+	//
+	// Returns the historical, spent outputs associated with an address
+	// TODO add urls params
+	//	address
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

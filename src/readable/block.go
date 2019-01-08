@@ -12,6 +12,7 @@ import (
 )
 
 // BlockHeader represents the readable block header
+// swagger:model blockHeader
 type BlockHeader struct {
 	BkSeq        uint64 `json:"seq"`
 	Hash         string `json:"block_hash"`

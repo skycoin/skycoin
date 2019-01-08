@@ -102,10 +102,10 @@ func TestGetPendingTxs(t *testing.T) {
 		httpResponse                         interface{}
 	}{
 		{
-			name:                          "405",
-			method:                        http.MethodPost,
-			status:                        http.StatusMethodNotAllowed,
-			err:                           "405 Method Not Allowed",
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
 		},
 		{
@@ -125,25 +125,25 @@ func TestGetPendingTxs(t *testing.T) {
 			},
 		},
 		{
-			name:                     "500 - get unconfirmedTxn error",
-			method:                   http.MethodGet,
-			status:                   http.StatusInternalServerError,
-			err:                      "500 Internal Server Error - GetAllUnconfirmedTransactions failed",
+			name:   "500 - get unconfirmedTxn error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetAllUnconfirmedTransactions failed",
 			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTransactions failed"),
 		},
 		{
-			name:                            "500 - get unconfirmedTxnVerbose error",
-			method:                          http.MethodGet,
-			status:                          http.StatusInternalServerError,
-			verboseStr:                      "1",
-			verbose:                         true,
-			err:                             "500 Internal Server Error - GetAllUnconfirmedTransactionsVerbose failed",
+			name:       "500 - get unconfirmedTxnVerbose error",
+			method:     http.MethodGet,
+			status:     http.StatusInternalServerError,
+			verboseStr: "1",
+			verbose:    true,
+			err:        "500 Internal Server Error - GetAllUnconfirmedTransactionsVerbose failed",
 			getAllUnconfirmedTxnsVerboseErr: errors.New("GetAllUnconfirmedTransactionsVerbose failed"),
 		},
 		{
-			name:                          "200",
-			method:                        http.MethodGet,
-			status:                        http.StatusOK,
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
 			httpResponse:                  []readable.UnconfirmedTransactions{},
 		},
@@ -364,8 +364,8 @@ func TestGetTransactionByID(t *testing.T) {
 				txid:    validHash,
 				verbose: "1",
 			},
-			verbose:                          true,
-			txid:                             testutil.SHA256FromHex(t, validHash),
+			verbose: true,
+			txid:    testutil.SHA256FromHex(t, validHash),
 			getTransactionResultVerboseError: errors.New("getTransactionResultVerboseError"),
 		},
 
@@ -795,25 +795,25 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		},
 
 		{
-			name:                     "500 resend failed network error",
-			method:                   http.MethodPost,
-			status:                   http.StatusServiceUnavailable,
-			err:                      "503 Service Unavailable - All pool connections are unreachable at this time",
+			name:   "500 resend failed network error",
+			method: http.MethodPost,
+			status: http.StatusServiceUnavailable,
+			err:    "503 Service Unavailable - All pool connections are unreachable at this time",
 			resendUnconfirmedTxnsErr: gnet.ErrNoReachableConnections,
 		},
 
 		{
-			name:                     "500 resend failed unknown error",
-			method:                   http.MethodPost,
-			status:                   http.StatusInternalServerError,
-			err:                      "500 Internal Server Error - ResendUnconfirmedTxns failed",
+			name:   "500 resend failed unknown error",
+			method: http.MethodPost,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - ResendUnconfirmedTxns failed",
 			resendUnconfirmedTxnsErr: errors.New("ResendUnconfirmedTxns failed"),
 		},
 
 		{
-			name:                          "200",
-			method:                        http.MethodPost,
-			status:                        http.StatusOK,
+			name:   "200",
+			method: http.MethodPost,
+			status: http.StatusOK,
 			resendUnconfirmedTxnsResponse: nil,
 			httpResponse: ResendResult{
 				Txids: []string{},
@@ -821,9 +821,9 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		},
 
 		{
-			name:                          "200 with hashes",
-			method:                        http.MethodPost,
-			status:                        http.StatusOK,
+			name:   "200 with hashes",
+			method: http.MethodPost,
+			status: http.StatusOK,
 			resendUnconfirmedTxnsResponse: []cipher.SHA256{validHash1, validHash2},
 			httpResponse: ResendResult{
 				Txids: []string{validHash1.Hex(), validHash2.Hex()},
@@ -1292,7 +1292,8 @@ func TestGetTransactions(t *testing.T) {
 }
 
 type transactionAndInputs struct {
-	txn    coin.Transaction
+	txn coin.Transaction
+	// swagger:ignore
 	inputs []wallet.UxBalance
 }
 
@@ -1384,9 +1385,9 @@ func TestVerifyTransaction(t *testing.T) {
 		csrfDisabled                  bool
 	}{
 		{
-			name:                       "405",
-			method:                     http.MethodGet,
-			status:                     http.StatusMethodNotAllowed,
+			name:   "405",
+			method: http.MethodGet,
+			status: http.StatusMethodNotAllowed,
 			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
 			httpResponse:               NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""),
 		},

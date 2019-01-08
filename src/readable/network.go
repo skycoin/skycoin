@@ -7,20 +7,24 @@ import (
 )
 
 // Connection a connection's state within the daemon
+// swagger:model connectionStruct
 type Connection struct {
-	GnetID               uint64                 `json:"id"`
-	Addr                 string                 `json:"address"`
-	LastSent             int64                  `json:"last_sent"`
-	LastReceived         int64                  `json:"last_received"`
-	ConnectedAt          int64                  `json:"connected_at"`
-	Outgoing             bool                   `json:"outgoing"`
-	State                daemon.ConnectionState `json:"state"`
-	Mirror               uint32                 `json:"mirror"`
-	ListenPort           uint16                 `json:"listen_port"`
-	Height               uint64                 `json:"height"`
-	UserAgent            useragent.Data         `json:"user_agent"`
-	IsTrustedPeer        bool                   `json:"is_trusted_peer"`
-	UnconfirmedVerifyTxn VerifyTxn              `json:"unconfirmed_verify_transaction"`
+	GnetID       uint64 `json:"id"`
+	Addr         string `json:"address"`
+	LastSent     int64  `json:"last_sent"`
+	LastReceived int64  `json:"last_received"`
+	ConnectedAt  int64  `json:"connected_at"`
+	Outgoing     bool   `json:"outgoing"`
+	// swagger:allOf
+	State      daemon.ConnectionState `json:"state"`
+	Mirror     uint32                 `json:"mirror"`
+	ListenPort uint16                 `json:"listen_port"`
+	Height     uint64                 `json:"height"`
+	// swagger:allOf
+	UserAgent     useragent.Data `json:"user_agent"`
+	IsTrustedPeer bool           `json:"is_trusted_peer"`
+	// swagger:allOf
+	UnconfirmedVerifyTxn VerifyTxn `json:"unconfirmed_verify_transaction"`
 }
 
 // NewConnection copies daemon.Connection to a struct with json tags
@@ -57,6 +61,7 @@ func NewConnection(c *daemon.Connection) Connection {
 }
 
 // VerifyTxn transaction verification parameters
+// swagger:model verifyTxn
 type VerifyTxn struct {
 	BurnFactor          uint32 `json:"burn_factor"`
 	MaxTransactionSize  uint32 `json:"max_transaction_size"`

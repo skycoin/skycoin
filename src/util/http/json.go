@@ -33,6 +33,7 @@ func SendJSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
 
 // Duration is a wrapper around time.Duration which implements json.Unmarshaler and json.Marshaler.
 // It marshals and unmarshals the duration as a string in the format accepted by time.ParseDuration and returned by time.Duration.String.
+// swagger:model duration
 type Duration struct {
 	time.Duration
 }
@@ -67,6 +68,7 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 
 // Address is a wrapper around cipher.Address which implements json.Unmarshaler and json.Marshaler.
 // It marshals and unmarshals the address as a string
+// swagger:model address
 type Address struct {
 	cipher.Address
 }
@@ -95,6 +97,7 @@ func (a Address) MarshalJSON() ([]byte, error) {
 
 // SHA256 is a wrapper around cipher.SHA256 which implements json.Unmarshaler and json.Marshaler.
 // It marshals and unmarshals the address as a string
+// swagger:ignore
 type SHA256 struct {
 	cipher.SHA256
 }

@@ -16,6 +16,7 @@ import (
 var logger = logging.MustGetLogger("readable")
 
 // TransactionStatus represents the transaction status
+// swagger:model transactionStatus
 type TransactionStatus struct {
 	Confirmed   bool `json:"confirmed"`
 	Unconfirmed bool `json:"unconfirmed"`
@@ -36,6 +37,7 @@ func NewTransactionStatus(status visor.TransactionStatus) TransactionStatus {
 }
 
 // TransactionOutput readable transaction output
+// swagger:model transactionOutput
 type TransactionOutput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"dst"`
@@ -44,6 +46,7 @@ type TransactionOutput struct {
 }
 
 // TransactionInput readable transaction input
+// swagger:model transactionInput
 type TransactionInput struct {
 	Hash            string `json:"uxid"`
 	Address         string `json:"owner"`
@@ -85,6 +88,7 @@ func NewTransactionInput(input visor.TransactionInput) (TransactionInput, error)
 }
 
 // Transaction represents a readable transaction
+// swagger:model transaction
 type Transaction struct {
 	Timestamp uint64 `json:"timestamp,omitempty"`
 	Length    uint32 `json:"length"`
@@ -155,12 +159,17 @@ func NewTransactionWithTimestamp(txn coin.Transaction, isGenesis bool, timestamp
 }
 
 // UnconfirmedTransactions represents a readable unconfirmed transaction
+// swagger:model unconfirmedTransactions
 type UnconfirmedTransactions struct {
+	// swagger:allOf
 	Transaction Transaction `json:"transaction"`
-	Received    time.Time   `json:"received"`
-	Checked     time.Time   `json:"checked"`
-	Announced   time.Time   `json:"announced"`
-	IsValid     bool        `json:"is_valid"`
+	// swagger:allOf
+	Received time.Time `json:"received"`
+	// swagger:allOf
+	Checked time.Time `json:"checked"`
+	// swagger:allOf
+	Announced time.Time `json:"announced"`
+	IsValid   bool      `json:"is_valid"`
 }
 
 // NewUnconfirmedTransaction creates a readable unconfirmed transaction
@@ -193,6 +202,7 @@ func NewUnconfirmedTransactions(txns []visor.UnconfirmedTransaction) ([]Unconfir
 }
 
 // TransactionWithStatus represents transaction result
+// swagger:model transactionWithStatus
 type TransactionWithStatus struct {
 	Status      TransactionStatus `json:"status"`
 	Time        uint64            `json:"time"`
@@ -219,9 +229,12 @@ func NewTransactionWithStatus(txn *visor.Transaction) (*TransactionWithStatus, e
 }
 
 // TransactionWithStatusVerbose represents verbose transaction result
+// swagger:model transactionWithStatusVerbose
 type TransactionWithStatusVerbose struct {
-	Status      TransactionStatus  `json:"status"`
-	Time        uint64             `json:"time"`
+	// swagger:allOf
+	Status TransactionStatus `json:"status"`
+	Time   uint64            `json:"time"`
+	// swagger:allOf
 	Transaction TransactionVerbose `json:"txn"`
 }
 

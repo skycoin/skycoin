@@ -15,6 +15,7 @@ import (
 )
 
 // UnspentOutput represents a readable output
+// swagger:response unspentOutput
 type UnspentOutput struct {
 	Hash              string `json:"hash"`
 	Time              uint64 `json:"time"`
@@ -46,6 +47,7 @@ func NewUnspentOutput(uxOut visor.UnspentOutput) (UnspentOutput, error) {
 }
 
 // UnspentOutputs slice of UnspentOutput
+// swagger:model unspentOutputs
 type UnspentOutputs []UnspentOutput
 
 // NewUnspentOutputs converts unspent outputs to a readable output
@@ -176,13 +178,18 @@ func OutputsToUxBalances(ros UnspentOutputs) ([]wallet.UxBalance, error) {
 }
 
 // UnspentOutputsSummary records unspent outputs in different status.
+// swagger:response unspentOutputsSummary
 type UnspentOutputsSummary struct {
+	// swagger:allOf
 	Head BlockHeader `json:"head"`
 	// HeadOutputs are unspent outputs confirmed in the blockchain
+	// swagger:allOf
 	HeadOutputs UnspentOutputs `json:"head_outputs"`
 	// OutgoingOutputs are unspent outputs being spent in unconfirmed transactions
+	// swagger:allOf
 	OutgoingOutputs UnspentOutputs `json:"outgoing_outputs"`
 	// IncomingOutputs are unspent outputs being created by unconfirmed transactions
+	// swagger:allOf
 	IncomingOutputs UnspentOutputs `json:"incoming_outputs"`
 }
 
@@ -237,6 +244,7 @@ func (os UnspentOutputsSummary) ExpectedOutputs() UnspentOutputs {
 }
 
 // SpentOutput is an unspent output that was spent
+// swagger:response spentOutput
 type SpentOutput struct {
 	Uxid          string `json:"uxid"`
 	Time          uint64 `json:"time"`

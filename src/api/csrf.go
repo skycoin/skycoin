@@ -44,6 +44,7 @@ func init() {
 }
 
 // CSRFToken csrf token
+// swagger:response csrfToken
 type CSRFToken struct {
 	Nonce     []byte
 	ExpiresAt time.Time
@@ -121,6 +122,26 @@ func verifyCSRFToken(headerToken string) error {
 // Response:
 //  csrf_token: CSRF token to use in POST requests
 func getCSRFToken(disabled bool) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/csrf csrfToken
+	//
+	// Creates a new CSRF token. Previous CSRF tokens are invalidated by this call.
+	// Response:
+	//  csrf_token: CSRF token to use in POST requests
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: OK
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

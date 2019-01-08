@@ -22,6 +22,7 @@ import (
 // A connection in the "connected" state has established a TCP connection,
 // but has not completed the introduction handshake.
 // A connection in the "introduced" state has completed the introduction handshake.
+// swagger:model connections
 type ConnectionState string
 
 const (

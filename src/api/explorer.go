@@ -14,6 +14,7 @@ import (
 )
 
 // CoinSupply records the coin supply info
+// swagger:parameters coinSupply
 type CoinSupply struct {
 	// Coins distributed beyond the project:
 	CurrentSupply string `json:"current_supply"`
@@ -44,6 +45,25 @@ func newStringSet(keys []string) map[string]struct{} {
 // Method: GET
 // URI: /api/v1/coinSupply
 func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/coinSupply coinSupply
+	//
+	// coinSupplyHandler returns coin distribution supply stats
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: someResponse
+	//       422: validationError
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -159,9 +179,29 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 // transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
 // Method: GET
 // URI: /explorer/address
-// Args:
-//	address [string]
 func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /explorer/address transactionsForAddress
+	//
+	// transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
+	//
+	// TODO add urls params:
+	//	address [string]
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: someResponse
+	//       422: validationError
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Critical().Warning("Call to deprecated /api/v1/explorer/address endpoint")
 
@@ -205,6 +245,7 @@ func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Richlist contains top address balances
+// swagger:model richlist
 type Richlist struct {
 	Richlist []readable.RichlistBalance `json:"richlist"`
 }
@@ -216,6 +257,29 @@ type Richlist struct {
 //	n [int, number of results to include]
 //  include-distribution [bool, include the distribution addresses in the richlist]
 func richlistHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /richlist?n=${number}&include-distribution=${bool} richlistHandler
+	//
+	// richlistHandler returns the top skycoin holders
+	//
+	// TODO add urls params:
+	//	n [int, number of results to include]
+	//  include-distribution [bool, include the distribution addresses in the richlist]
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: someResponse
+	//       422: validationError
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -268,6 +332,25 @@ func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // URI: /addresscount
 func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /addresscount addressCount
+	//
+	// addressCountHandler returns the total number of unique address that have coins
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: someResponse
+	//       422: validationError
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

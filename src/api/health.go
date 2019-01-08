@@ -17,30 +17,55 @@ type BlockchainMetadata struct {
 }
 
 // HealthResponse is returned by the /health endpoint
+// swagger:model healthResponse
 type HealthResponse struct {
-	BlockchainMetadata    BlockchainMetadata `json:"blockchain"`
-	Version               readable.BuildInfo `json:"version"`
-	CoinName              string             `json:"coin"`
-	DaemonUserAgent       string             `json:"user_agent"`
-	OpenConnections       int                `json:"open_connections"`
-	OutgoingConnections   int                `json:"outgoing_connections"`
-	IncomingConnections   int                `json:"incoming_connections"`
-	Uptime                wh.Duration        `json:"uptime"`
-	CSRFEnabled           bool               `json:"csrf_enabled"`
-	CSPEnabled            bool               `json:"csp_enabled"`
-	WalletAPIEnabled      bool               `json:"wallet_api_enabled"`
-	GUIEnabled            bool               `json:"gui_enabled"`
-	UnversionedAPIEnabled bool               `json:"unversioned_api_enabled"`
-	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
-	UserVerifyTxn         readable.VerifyTxn `json:"user_verify_transaction"`
-	UnconfirmedVerifyTxn  readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
-	StartedAt             int64              `json:"started_at"`
+	// swagger:allOf
+	BlockchainMetadata BlockchainMetadata `json:"blockchain"`
+	// swagger:allOf
+	Version             readable.BuildInfo `json:"version"`
+	CoinName            string             `json:"coin"`
+	DaemonUserAgent     string             `json:"user_agent"`
+	OpenConnections     int                `json:"open_connections"`
+	OutgoingConnections int                `json:"outgoing_connections"`
+	IncomingConnections int                `json:"incoming_connections"`
+	// swagger:allOf
+	Uptime                wh.Duration `json:"uptime"`
+	CSRFEnabled           bool        `json:"csrf_enabled"`
+	CSPEnabled            bool        `json:"csp_enabled"`
+	WalletAPIEnabled      bool        `json:"wallet_api_enabled"`
+	GUIEnabled            bool        `json:"gui_enabled"`
+	UnversionedAPIEnabled bool        `json:"unversioned_api_enabled"`
+	JSON20RPCEnabled      bool        `json:"json_rpc_enabled"`
+	// swagger:allOf
+	UserVerifyTxn readable.VerifyTxn `json:"user_verify_transaction"`
+	// swagger:allOf
+	UnconfirmedVerifyTxn readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
+	StartedAt            int64              `json:"started_at"`
 }
 
 // healthHandler returns node health data
 // URI: /api/v1/health
 // Method: GET
 func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/health health
+	//
+	// healthHandler returns node health data
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: someResponse
+	//       422: validationError
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

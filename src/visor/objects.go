@@ -9,13 +9,17 @@ import (
 
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us
 // to include unconfirmed txns
+// swagger:model transaction
 type Transaction struct {
+	// swagger:allOf
 	Transaction coin.Transaction
-	Status      TransactionStatus
-	Time        uint64
+	// swagger:allOf
+	Status TransactionStatus
+	Time   uint64
 }
 
 // TransactionStatus represents the transaction status
+// swagger:model transactionStatus
 type TransactionStatus struct {
 	Confirmed bool
 	// If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed.
@@ -48,6 +52,7 @@ func NewConfirmedTransactionStatus(height, blockSeq uint64) TransactionStatus {
 }
 
 // TransactionInput includes the UxOut spent in a transaction and the calculated hours of the output at spending time
+// swagger:model transactionInput
 type TransactionInput struct {
 	UxOut           coin.UxOut
 	CalculatedHours uint64
@@ -89,7 +94,9 @@ func NewBlockchainMetadata(head coin.SignedBlock, unconfirmedLen, unspentsLen ui
 }
 
 // UnconfirmedTransaction unconfirmed transaction
+// swagger:response unconfirmedTransaction
 type UnconfirmedTransaction struct {
+	// swagger:allOf
 	Transaction coin.Transaction
 	// Time the txn was last received
 	Received int64
@@ -119,6 +126,7 @@ func NewUnconfirmedTransaction(txn coin.Transaction) UnconfirmedTransaction {
 }
 
 // UnspentOutput includes coin.UxOut and adds CalculatedHours
+// swagger:model unspentOutput
 type UnspentOutput struct {
 	coin.UxOut
 	CalculatedHours uint64
@@ -159,7 +167,9 @@ func NewUnspentOutputs(uxOuts []coin.UxOut, calculateHoursTime uint64) ([]Unspen
 }
 
 // UnspentOutputsSummary includes current unspent outputs and incoming and outgoing unspent outputs
+// swagger:model unspentOutputSummary
 type UnspentOutputsSummary struct {
+	// swagger:allOf
 	HeadBlock *coin.SignedBlock
 	Confirmed []UnspentOutput
 	Outgoing  []UnspentOutput

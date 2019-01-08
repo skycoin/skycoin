@@ -31,11 +31,10 @@ type CoinSupply struct {
 	LockedAddresses []string `json:"locked_distribution_addresses"`
 }
 
-// newStringSet returns a map-based set for string lookup
-func newStringSet(keys []string) map[string]struct{} {
-	s := make(map[string]struct{}, len(keys))
-	for _, k := range keys {
-		s[k] = struct{}{}
+func newAddrSet(addrs []cipher.Address) map[cipher.Address]struct{} {
+	s := make(map[cipher.Address]struct{}, len(addrs))
+	for _, a := range addrs {
+		s[a] = struct{}{}
 	}
 	return s
 }
@@ -57,16 +56,15 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		unlockedAddrs := params.GetUnlockedDistributionAddresses()
-		// Search map of unlocked addresses
-		// used to filter unspents
-		unlockedAddrSet := newStringSet(unlockedAddrs)
+		unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
+		// Search map of unlocked addresses, used to filter unspents
+		unlockedAddrSet := newAddrSet(unlockedAddrs)
 
 		var unlockedSupply uint64
 		// check confirmed unspents only
 		for _, u := range allUnspents.Confirmed {
 			// check if address is an unlocked distribution address
-			if _, ok := unlockedAddrSet[u.Body.Address.String()]; ok {
+			if _, ok := unlockedAddrSet[u.Body.Address]; ok {
 				var err error
 				unlockedSupply, err = coin.AddUint64(unlockedSupply, u.Body.Coins)
 				if err != nil {
@@ -107,13 +105,13 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// locked distribution addresses
-		lockedAddrs := params.GetLockedDistributionAddresses()
-		lockedAddrSet := newStringSet(lockedAddrs)
+		lockedAddrs := params.GetLockedDistributionAddressesDecoded()
+		lockedAddrSet := newAddrSet(lockedAddrs)
 
 		// get total coins hours which excludes locked distribution addresses
 		var totalCoinHours uint64
 		for _, out := range allUnspents.Confirmed {
-			if _, ok := lockedAddrSet[out.Body.Address.String()]; !ok {
+			if _, ok := lockedAddrSet[out.Body.Address]; !ok {
 				var err error
 				totalCoinHours, err = coin.AddUint64(totalCoinHours, out.CalculatedHours)
 				if err != nil {
@@ -128,9 +126,9 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		var currentCoinHours uint64
 		for _, out := range allUnspents.Confirmed {
 			// check if address not in locked distribution addresses
-			if _, ok := lockedAddrSet[out.Body.Address.String()]; !ok {
+			if _, ok := lockedAddrSet[out.Body.Address]; !ok {
 				// check if address not in unlocked distribution addresses
-				if _, ok := unlockedAddrSet[out.Body.Address.String()]; !ok {
+				if _, ok := unlockedAddrSet[out.Body.Address]; !ok {
 					currentCoinHours += out.CalculatedHours
 				}
 			}
@@ -148,7 +146,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			MaxSupply:             maxSupplyStr,
 			CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 			TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
-			UnlockedAddresses:     unlockedAddrs,
+			UnlockedAddresses:     params.GetUnlockedDistributionAddresses(),
 			LockedAddresses:       params.GetLockedDistributionAddresses(),
 		}
 

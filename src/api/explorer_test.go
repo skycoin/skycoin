@@ -23,15 +23,15 @@ import (
 )
 
 func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutputsSummary) *CoinSupply {
-	unlockedAddrs := params.GetUnlockedDistributionAddresses()
+	unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
 	var unlockedSupply uint64
 	// check confirmed unspents only
 	// Search map of unlocked addresses
 	// used to filter unspents
-	unlockedAddrSet := newStringSet(unlockedAddrs)
+	unlockedAddrSet := newAddrSet(unlockedAddrs)
 	for _, u := range allUnspents.HeadOutputs {
 		// check if address is an unlocked distribution address
-		if _, ok := unlockedAddrSet[u.Address]; ok {
+		if _, ok := unlockedAddrSet[cipher.MustDecodeBase58Address(u.Address)]; ok {
 			coins, err := droplet.FromString(u.Coins)
 			require.NoError(t, err)
 			unlockedSupply += coins
@@ -55,13 +55,13 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 	require.NoError(t, err)
 
 	// locked distribution addresses
-	lockedAddrs := params.GetLockedDistributionAddresses()
-	lockedAddrSet := newStringSet(lockedAddrs)
+	lockedAddrs := params.GetLockedDistributionAddressesDecoded()
+	lockedAddrSet := newAddrSet(lockedAddrs)
 
 	// get total coins hours which excludes locked distribution addresses
 	var totalCoinHours uint64
 	for _, out := range allUnspents.HeadOutputs {
-		if _, ok := lockedAddrSet[out.Address]; !ok {
+		if _, ok := lockedAddrSet[cipher.MustDecodeBase58Address(out.Address)]; !ok {
 			totalCoinHours += out.Hours
 		}
 	}
@@ -70,9 +70,9 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 	var currentCoinHours uint64
 	for _, out := range allUnspents.HeadOutputs {
 		// check if address not in locked distribution addresses
-		if _, ok := lockedAddrSet[out.Address]; !ok {
+		if _, ok := lockedAddrSet[cipher.MustDecodeBase58Address(out.Address)]; !ok {
 			// check if address not in unlocked distribution addresses
-			if _, ok := unlockedAddrSet[out.Address]; !ok {
+			if _, ok := unlockedAddrSet[cipher.MustDecodeBase58Address(out.Address)]; !ok {
 				currentCoinHours += out.Hours
 			}
 		}
@@ -84,7 +84,7 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 		MaxSupply:             maxSupplyStr,
 		CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 		TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
-		UnlockedAddresses:     unlockedAddrs,
+		UnlockedAddresses:     params.GetUnlockedDistributionAddresses(),
 		LockedAddresses:       params.GetLockedDistributionAddresses(),
 	}
 	return &cs
@@ -252,14 +252,21 @@ func TestGetTransactionsForAddress(t *testing.T) {
 }
 
 func TestCoinSupply(t *testing.T) {
+	addrs := []cipher.Address{
+		testutil.MakeAddress(),
+		testutil.MakeAddress(),
+	}
+
 	unlockedAddrs := params.GetUnlockedDistributionAddresses()
 	successGatewayGetUnspentOutputsResult := readable.UnspentOutputsSummary{
 		HeadOutputs: readable.UnspentOutputs{
 			readable.UnspentOutput{
-				Coins: "0",
+				Address: addrs[0].String(),
+				Coins:   "0",
 			},
 			readable.UnspentOutput{
-				Coins: "0",
+				Address: addrs[1].String(),
+				Coins:   "0",
 			},
 		},
 	}
@@ -344,14 +351,16 @@ func TestCoinSupply(t *testing.T) {
 					visor.UnspentOutput{
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
-								Coins: 0,
+								Coins:   0,
+								Address: addrs[0],
 							},
 						},
 					},
 					visor.UnspentOutput{
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
-								Coins: 0,
+								Coins:   0,
+								Address: addrs[1],
 							},
 						},
 					},
@@ -462,28 +471,28 @@ func TestGetRichlist(t *testing.T) {
 			},
 			gatewayGetRichlistResult: visor.Richlist{
 				{
-					Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
-					Coins:   "1000000.000000",
+					Address: cipher.MustDecodeBase58Address("2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF"),
+					Coins:   1000000e6,
 					Locked:  false,
 				},
 				{
-					Address: "27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1",
-					Coins:   "500000.000000",
+					Address: cipher.MustDecodeBase58Address("27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1"),
+					Coins:   500000e6,
 					Locked:  false,
 				},
 				{
-					Address: "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
-					Coins:   "500000.000000",
+					Address: cipher.MustDecodeBase58Address("2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW"),
+					Coins:   500000e6,
 					Locked:  false,
 				},
 				{
-					Address: "2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs",
-					Coins:   "244458.000000",
+					Address: cipher.MustDecodeBase58Address("2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs"),
+					Coins:   244458e6,
 					Locked:  false,
 				},
 				{
-					Address: "24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C",
-					Coins:   "195503.000000",
+					Address: cipher.MustDecodeBase58Address("24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C"),
+					Coins:   195503e6,
 					Locked:  false,
 				},
 			},
@@ -517,28 +526,28 @@ func TestGetRichlist(t *testing.T) {
 			},
 			gatewayGetRichlistResult: visor.Richlist{
 				{
-					Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
-					Coins:   "1000000.000000",
+					Address: cipher.MustDecodeBase58Address("2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF"),
+					Coins:   1000000e6,
 					Locked:  false,
 				},
 				{
-					Address: "27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1",
-					Coins:   "500000.000000",
+					Address: cipher.MustDecodeBase58Address("27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1"),
+					Coins:   500000e6,
 					Locked:  false,
 				},
 				{
-					Address: "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
-					Coins:   "500000.000000",
+					Address: cipher.MustDecodeBase58Address("2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW"),
+					Coins:   500000e6,
 					Locked:  false,
 				},
 				{
-					Address: "2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs",
-					Coins:   "244458.000000",
+					Address: cipher.MustDecodeBase58Address("2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs"),
+					Coins:   244458e6,
 					Locked:  false,
 				},
 				{
-					Address: "24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C",
-					Coins:   "195503.000000",
+					Address: cipher.MustDecodeBase58Address("24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C"),
+					Coins:   195503e6,
 					Locked:  false,
 				},
 			},

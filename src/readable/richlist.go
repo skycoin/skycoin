@@ -10,7 +10,6 @@ type RichlistBalance struct {
 	Address string `json:"address"`
 	Coins   string `json:"coins"`
 	Locked  bool   `json:"locked"`
-	coins   uint64
 }
 
 // NewRichlistBalances copies from visor.Richlist
@@ -25,7 +24,6 @@ func NewRichlistBalances(visorRichlist visor.Richlist) ([]RichlistBalance, error
 		richlist[i] = RichlistBalance{
 			Address: v.Address.String(),
 			Coins:   coins,
-			coins:   v.Coins,
 			Locked:  v.Locked,
 		}
 	}

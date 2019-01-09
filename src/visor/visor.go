@@ -237,7 +237,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	logger.Infof("Max transaction size for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxTransactionSize)
 	logger.Infof("Max decimals for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxDropletPrecision)
 	logger.Infof("Max block size is %d", c.MaxBlockSize)
-
+	
 	// Loads wallet
 	wltServConfig := wallet.Config{
 		WalletDir:       c.WalletDirectory,

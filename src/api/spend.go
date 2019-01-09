@@ -379,23 +379,23 @@ func (r createTransactionRequest) Validate() error {
 	// Auto mode would distribute hours to the outputs and could hypothetically
 	// avoid assigning duplicate hours in many cases, but the complexity for doing
 	// so is very high, so also reject duplicate (address, coins) for auto mode.
-	outputs := make(map[coin.TransactionOutput]struct{}, len(r.To))
-	for _, to := range r.To {
-		var hours uint64
-		if to.Hours != nil {
-			hours = to.Hours.Value()
-		}
+	// outputs := make(map[coin.TransactionOutput]struct{}, len(r.To))
+	// for _, to := range r.To {
+	// 	var hours uint64
+	// 	if to.Hours != nil {
+	// 		hours = to.Hours.Value()
+	// 	}
 
-		outputs[coin.TransactionOutput{
-			Address: to.Address.Address,
-			Coins:   to.Coins.Value(),
-			Hours:   hours,
-		}] = struct{}{}
-	}
+	// 	outputs[coin.TransactionOutput{
+	// 		Address: to.Address.Address,
+	// 		Coins:   to.Coins.Value(),
+	// 		Hours:   hours,
+	// 	}] = struct{}{}
+	// }
 
-	if len(outputs) != len(r.To) {
-		return errors.New("to contains duplicate values")
-	}
+	// if len(outputs) != len(r.To) {
+	// 	return errors.New("to contains duplicate values")
+	// }
 
 	if len(r.Wallet.UxOuts) != 0 && len(r.Wallet.Addresses) != 0 {
 		return errors.New("wallet.unspents and wallet.addresses cannot be combined")

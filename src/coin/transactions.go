@@ -51,9 +51,10 @@ type Transaction struct {
 
 // TransactionOutput hash output/name is function of Hash
 type TransactionOutput struct {
-	Address cipher.Address //address to send to
-	Coins   uint64         //amount to be sent in coins
-	Hours   uint64         //amount to be sent in coin hours
+	Address         cipher.Address //address to send to
+	Coins           uint64         //amount to be sent in coins
+	Hours           uint64         //amount to be sent in coin hours
+	ProgramState    []byte         //serialized program state
 }
 
 // Verify attempts to determine if the transaction is well formed

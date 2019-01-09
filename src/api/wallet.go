@@ -139,16 +139,10 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		addrsParam := r.FormValue("addrs")
-		addrsStr := splitCommaString(addrsParam)
-
-		addrs := make([]cipher.Address, 0, len(addrsStr))
-		for _, addr := range addrsStr {
-			a, err := cipher.DecodeBase58Address(addr)
-			if err != nil {
-				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
-				return
-			}
-			addrs = append(addrs, a)
+		addrs, err := parseAddressesFromStr(addrsParam)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
 		}
 
 		if len(addrs) == 0 {

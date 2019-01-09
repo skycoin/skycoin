@@ -1044,7 +1044,7 @@ func TestGetTransactions(t *testing.T) {
 			name:   "400 - invalid `addrs` param",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+			err:    "400 Bad Request - parse parameter: 'addrs' failed: address \"invalid\" is invalid: Invalid base58 character",
 			httpBody: &httpBody{
 				addrs: invalidAddrsStr,
 			},

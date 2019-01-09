@@ -152,6 +152,8 @@ docs/libc/xml
 
 *.prof
 *.profile
+*.cpuprofile
+*.memprofile
 
 # cli fiberAddressGen default output
 addresses.txt

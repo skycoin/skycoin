@@ -2406,7 +2406,7 @@ func TestStableTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2415,7 +2415,7 @@ func TestStableTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2424,7 +2424,7 @@ func TestStableTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 		{
@@ -2510,7 +2510,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2519,7 +2519,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2528,7 +2528,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 		{
@@ -2587,7 +2587,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2596,7 +2596,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2605,7 +2605,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 	}
@@ -2697,7 +2697,7 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2706,7 +2706,7 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2715,7 +2715,7 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 		{
@@ -2796,7 +2796,7 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2805,7 +2805,7 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2814,7 +2814,7 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 		{
@@ -2873,7 +2873,7 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2882,7 +2882,7 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2891,7 +2891,7 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 	}

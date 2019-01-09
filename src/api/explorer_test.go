@@ -257,7 +257,7 @@ func TestCoinSupply(t *testing.T) {
 		testutil.MakeAddress(),
 	}
 
-	unlockedAddrs := params.GetUnlockedDistributionAddresses()
+	unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
 	successGatewayGetUnspentOutputsResult := readable.UnspentOutputsSummary{
 		HeadOutputs: readable.UnspentOutputs{
 			readable.UnspentOutput{
@@ -269,13 +269,6 @@ func TestCoinSupply(t *testing.T) {
 				Coins:   "0",
 			},
 		},
-	}
-
-	unlockedAddrsRaw := make([]cipher.Address, len(unlockedAddrs))
-	for i, addr := range unlockedAddrs {
-		a, err := cipher.DecodeBase58Address(addr)
-		require.NoError(t, err)
-		unlockedAddrsRaw[i] = a
 	}
 
 	var filterInUnlocked []visor.OutputsFilter
@@ -325,7 +318,7 @@ func TestCoinSupply(t *testing.T) {
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
 								Coins:   9223372036854775807,
-								Address: unlockedAddrsRaw[0],
+								Address: unlockedAddrs[0],
 							},
 						},
 					},
@@ -333,7 +326,7 @@ func TestCoinSupply(t *testing.T) {
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
 								Coins:   1000000,
-								Address: unlockedAddrsRaw[0],
+								Address: unlockedAddrs[0],
 							},
 						},
 					},

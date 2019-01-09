@@ -29,13 +29,16 @@ func getOutputsHandler(req Request, gateway Gatewayer) Response {
 	}
 
 	// validate those addresses
-	for _, a := range addrs {
-		if _, err := cipher.DecodeBase58Address(a); err != nil {
+	realAddrs := make([]cipher.Address, len(addrs))
+	for i, a := range addrs {
+		addr, err := cipher.DecodeBase58Address(a)
+		if err != nil {
 			return MakeErrorResponse(ErrCodeInvalidParams, fmt.Sprintf("invalid address: %v", a))
 		}
+		realAddrs[i] = addr
 	}
 
-	summary, err := gateway.GetUnspentOutputsSummary([]visor.OutputsFilter{visor.FbyAddresses(addrs)})
+	summary, err := gateway.GetUnspentOutputsSummary([]visor.OutputsFilter{visor.FbyAddresses(realAddrs)})
 	if err != nil {
 		logger.Errorf("get unspent outputs failed: %v", err)
 		return MakeErrorResponse(ErrCodeInternalError, fmt.Sprintf("gateway.GetUnspentOutputsSummary failed: %v", err))

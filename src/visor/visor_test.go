@@ -3121,26 +3121,24 @@ func TestFbyAddresses(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		addrs   []string
+		addrs   []cipher.Address
 		outputs []coin.UxOut
 		want    []coin.UxOut
 	}{
-		// TODO: Add test cases.
 		{
 			"filter with one address",
-			[]string{addrs[0].String()},
+			[]cipher.Address{addrs[0]},
 			uxs[:2],
 			uxs[:1],
 		},
 		{
 			"filter with multiple addresses",
-			[]string{addrs[0].String(), addrs[1].String()},
+			[]cipher.Address{addrs[0], addrs[1]},
 			uxs[:3],
 			uxs[:2],
 		},
 	}
 	for _, tt := range tests {
-		// fmt.Printf("want:%+v\n", tt.want)
 		outs := FbyAddresses(tt.addrs)(tt.outputs)
 		require.Equal(t, outs, coin.UxArray(tt.want))
 	}
@@ -3160,20 +3158,19 @@ func TestFbyHashes(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		hashes  []string
+		hashes  []cipher.SHA256
 		outputs coin.UxArray
 		want    coin.UxArray
 	}{
-		// TODO: Add test cases.
 		{
 			"filter with one hash",
-			[]string{uxs[0].Hash().Hex()},
+			[]cipher.SHA256{uxs[0].Hash()},
 			uxs[:2],
 			uxs[:1],
 		},
 		{
 			"filter with multiple hash",
-			[]string{uxs[0].Hash().Hex(), uxs[1].Hash().Hex()},
+			[]cipher.SHA256{uxs[0].Hash(), uxs[1].Hash()},
 			uxs[:3],
 			uxs[:2],
 		},

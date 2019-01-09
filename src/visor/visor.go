@@ -2467,13 +2467,13 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]Transacti
 type OutputsFilter func(outputs coin.UxArray) coin.UxArray
 
 // FbyAddressesNotIncluded filters the unspent outputs that are not owned by the addresses
-func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
+func FbyAddressesNotIncluded(addrs []cipher.Address) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := newStringSet(addrs)
+		addrMap := newAddrSet(addrs)
 
 		for _, u := range outputs {
-			if _, ok := addrMap[u.Body.Address.String()]; !ok {
+			if _, ok := addrMap[u.Body.Address]; !ok {
 				addrMatch = append(addrMatch, u)
 			}
 		}
@@ -2482,13 +2482,13 @@ func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 }
 
 // FbyAddresses filters the unspent outputs that owned by the addresses
-func FbyAddresses(addrs []string) OutputsFilter {
+func FbyAddresses(addrs []cipher.Address) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := newStringSet(addrs)
+		addrMap := newAddrSet(addrs)
 
 		for _, u := range outputs {
-			if _, ok := addrMap[u.Body.Address.String()]; ok {
+			if _, ok := addrMap[u.Body.Address]; ok {
 				addrMatch = append(addrMatch, u)
 			}
 		}
@@ -2497,13 +2497,13 @@ func FbyAddresses(addrs []string) OutputsFilter {
 }
 
 // FbyHashes filters the unspent outputs that have hashes matched.
-func FbyHashes(hashes []string) OutputsFilter {
+func FbyHashes(hashes []cipher.SHA256) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		hsMatch := coin.UxArray{}
-		hsMap := newStringSet(hashes)
+		hsMap := newSHA256Set(hashes)
 
 		for _, u := range outputs {
-			if _, ok := hsMap[u.Hash().Hex()]; ok {
+			if _, ok := hsMap[u.Hash()]; ok {
 				hsMatch = append(hsMatch, u)
 			}
 		}
@@ -2511,9 +2511,17 @@ func FbyHashes(hashes []string) OutputsFilter {
 	}
 }
 
-// newStringSet returns a map-based set for string lookup
-func newStringSet(keys []string) map[string]struct{} {
-	s := make(map[string]struct{}, len(keys))
+func newAddrSet(keys []cipher.Address) map[cipher.Address]struct{} {
+	s := make(map[cipher.Address]struct{}, len(keys))
+	for _, k := range keys {
+		s[k] = struct{}{}
+	}
+	return s
+}
+
+// newSHA256Set returns a map-based set for string lookup
+func newSHA256Set(keys []cipher.SHA256) map[cipher.SHA256]struct{} {
+	s := make(map[cipher.SHA256]struct{}, len(keys))
 	for _, k := range keys {
 		s[k] = struct{}{}
 	}

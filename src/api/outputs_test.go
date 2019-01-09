@@ -57,7 +57,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			name:   "400 - invalid address",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - addrs contains invalid address",
+			err:    "400 Bad Request - address \"invalidAddr\" is invalid: Invalid base58 character",
 			httpBody: &httpBody{
 				addrs: invalidAddr,
 			},
@@ -150,8 +150,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
 			} else {
 				var msg *readable.UnspentOutputsSummary
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)

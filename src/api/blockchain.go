@@ -118,6 +118,13 @@ func parseBoolFlag(v string) (bool, error) {
 	return strconv.ParseBool(v)
 }
 
+// swagger:parameters blockParams
+type blockParams struct {
+	// in: query
+	hash string `json:"block_hash"`
+	seq  int    `json:"block_seq"`
+}
+
 // blockHandler returns a block by hash or seq
 // Method: GET
 // URI: /api/v1/block
@@ -262,16 +269,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 
 	// swagger:route GET /api/v1/blockchain/metadata blockchainMetadata
 	//
-	// blocksHandler returns blocks between a start and end point,
-	// or an explicit list of sequences.
-	// If using start and end, the block sequences include both the start and end point.
-	// Explicit sequences cannot be combined with start and end.
-	// TODO Add params to url
-	// Args:
-	//	start [int]
-	//	end [int]
-	//  seqs [comma separated list of ints]
-	//  verbose [bool]
+	// blocksHandler returns blocks between a start and end point, or an explicit list of sequences. If using start and end, the block sequences include both the start and end point. Explicit sequences cannot be combined with start and end.
 	//
 	//     Produces:
 	//     - application/json
@@ -288,16 +286,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 
 	// swagger:route POST /api/v1/blockchain/metadata blockchainMetadata
 	//
-	// blocksHandler returns blocks between a start and end point,
-	// or an explicit list of sequences.
-	// If using start and end, the block sequences include both the start and end point.
-	// Explicit sequences cannot be combined with start and end.
-	// TODO Add params to url
-	// Args:
-	//	start [int]
-	//	end [int]
-	//  seqs [comma separated list of ints]
-	//  verbose [bool]
+	// blocksHandler returns blocks between a start and end point, or an explicit list of sequences. If using start and end, the block sequences include both the start and end point. Explicit sequences cannot be combined with start and end.
 	//
 	//     Consumes:
 	//     - application/json

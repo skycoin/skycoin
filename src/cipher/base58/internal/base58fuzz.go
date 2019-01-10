@@ -17,6 +17,34 @@ import (
 
 // Fuzz is the entrypoint for go-fuzz
 func Fuzz(b []byte) int {
+	decodeErr := encodeDecode(b)
+	encodeErr := decodeEncode(b)
+
+	if decodeErr == nil || encodeErr == nil {
+		return 1
+	}
+
+	return 0
+}
+
+func decodeEncode(b []byte) error {
+	x, err := base58.Decode(string(b))
+	if err != nil {
+		if x != nil {
+			panic("x != nil on error number 2")
+		}
+	} else {
+		s := base58.Encode(x)
+
+		if s != string(b) {
+			panic("encoded strings are not equal")
+		}
+	}
+
+	return err
+}
+
+func encodeDecode(b []byte) error {
 	s := base58.Encode(b)
 
 	x, err := base58.Decode(s)
@@ -24,26 +52,11 @@ func Fuzz(b []byte) int {
 		if x != nil {
 			panic("x != nil on error")
 		}
-		return 0
-	}
-
-	if !bytes.Equal(b, x) {
-		panic("decoded bytes are not equal")
-	}
-
-	x, err = base58.Decode(string(b))
-	if err != nil {
-		if x != nil {
-			panic("x != nil on error number 2")
+	} else {
+		if !bytes.Equal(b, x) {
+			panic("decoded bytes are not equal")
 		}
-		return 0
 	}
 
-	s = base58.Encode(x)
-
-	if s != string(b) {
-		panic("encoded strings are not equal")
-	}
-
-	return 1
+	return err
 }

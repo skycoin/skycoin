@@ -29,7 +29,7 @@ type thing struct {
 
 type innerThing struct {
 	A [2]byte
-	C string `enc:",maxlen=128`
+	C string `enc:",maxlen=128"`
 }
 
 // Fuzz is the entrypoint for go-fuzz

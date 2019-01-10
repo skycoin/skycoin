@@ -23,6 +23,7 @@ type thing struct {
 	M map[uint64]int64
 	F uint16
 	G int16
+	H []innerThing
 	Z []byte `enc:",omitempty"`
 }
 
@@ -63,6 +64,7 @@ func Fuzz(b []byte) int {
 	return 0
 }
 
+// Uncomment and change package name to "main", then "go run" this to write a serialized "thing"
 // func main() {
 // 	x := thing{
 // 		A: 12,
@@ -71,11 +73,18 @@ func Fuzz(b []byte) int {
 // 			A: [2]byte{0x40, 0xF7},
 // 			C: "foo",
 // 		},
+// 		// M: map[uint64]int64{0x00FF134444: -1234567},
+// 		F: 0xAA11,
+// 		G: -1000,
+// 		H: []innerThing{{
+// 			A: [2]byte{0x01, 0x02},
+// 			C: "",
+// 		}},
 // 	}
 
 // 	byt := encoder.Serialize(x)
 
-// 	f, err := os.Create("thing.serialized")
+// 	f, err := os.Create("thing3.serialized")
 // 	if err != nil {
 // 		panic(err)
 // 	}

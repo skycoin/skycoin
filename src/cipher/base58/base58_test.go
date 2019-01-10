@@ -82,6 +82,29 @@ func TestEncodeDecodeEmpty(t *testing.T) {
 	require.Equal(t, x, "")
 }
 
+func TestDecodeBadChar(t *testing.T) {
+	x := []byte("1111")
+
+	for i := 0; i < 256; i++ {
+		if i < 128 && btcAlphabet.decode[i] != -1 {
+			continue
+		}
+		y := append(x, byte(i))
+		_, err := Decode(string(y))
+		require.Equal(t, ErrInvalidChar, err)
+	}
+
+	bad := []string{
+		"-0xaA7F2DfD73e7035-93___x___6P3Or9N81_1____n__285_nJ25WTRQ_vexQWdN14S__9.9274920729751111",
+		"-05425.-2-___0xfF.037171326036317302-0xaBe05160542057653662WBKTdT58ZxXGpoYtbaJ5UPYnVLNmw2BHSH82885604906510132935198.-07771-0x2f6E663acEaDdaae7e",
+	}
+
+	for _, y := range bad {
+		_, err := Decode(y)
+		require.Equal(t, ErrInvalidChar, err)
+	}
+}
+
 func TestEncodeDecodeKnownAddrs(t *testing.T) {
 	testAddr := []string{
 		// Empty address

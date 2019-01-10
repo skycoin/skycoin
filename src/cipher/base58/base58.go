@@ -51,8 +51,6 @@ func Encode(bin []byte) string {
 // fastBase58EncodingAlphabet encodes the passed bytes into a base58 encoded
 // string with the passed alphabet.
 func fastBase58EncodingAlphabet(bin []byte, alphabet *Alphabet) string {
-	zero := alphabet.encode[0]
-
 	binsz := len(bin)
 	var i, j, zcount, high int
 	var carry uint32
@@ -82,7 +80,7 @@ func fastBase58EncodingAlphabet(bin []byte, alphabet *Alphabet) string {
 
 	if zcount != 0 {
 		for i = 0; i < zcount; i++ {
-			b58[i] = zero
+			b58[i] = '1'
 		}
 	}
 
@@ -117,8 +115,6 @@ func fastBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) 
 		outisz    = (b58sz + 3) >> 2
 		binu      = make([]byte, (b58sz+3)*3)
 		bytesleft = b58sz & 3
-
-		zero = rune(alphabet.encode[0])
 	)
 
 	if bytesleft > 0 {
@@ -129,7 +125,7 @@ func fastBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) 
 
 	var outi = make([]uint32, outisz)
 
-	for i := 0; i < b58sz && b58u[i] == zero; i++ {
+	for i := 0; i < b58sz && b58u[i] == '1'; i++ {
 		zcount++
 	}
 

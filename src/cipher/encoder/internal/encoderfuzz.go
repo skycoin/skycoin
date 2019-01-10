@@ -1,5 +1,11 @@
 package encoderfuzz
 
+import (
+	"fmt"
+
+	"github.com/skycoin/skycoin/src/cipher/encoder"
+)
+
 // To use the fuzzer:
 // Follow the install instructions from https://github.com/dvyukov/go-fuzz
 // Then, from the repo root,
@@ -9,20 +15,71 @@ package encoderfuzz
 // $ go-fuzz -bin=encoderfuzz-fuzz.zip -workdir=src/cipher/base58/internal
 // New corpus and crash objects will be put in src/cipher/base58/internal
 
+type thing struct {
+	X uint8 `enc:"-"`
+	A int8
+	B uint32
+	T innerThing
+	M map[uint64]int64
+	F uint16
+	G int16
+	Z []byte `enc:",omitempty"`
+}
+
+type innerThing struct {
+	A [2]byte
+	C string `enc:",maxlen=128`
+}
+
 // Fuzz is the entrypoint for go-fuzz
 func Fuzz(b []byte) int {
-	buf := SerializeString(string(b))
+	buf := encoder.SerializeString(string(b))
 	if buf == nil {
 		panic("SerializeString buf == nil")
 	}
 
-	s, x, err := DeserializeString(b, 8)
-	if len(s) != x+4 {
-		panic("DeserializeString len(s) != x + 4")
-	}
-	if err != nil {
-		return 0
+	s, x, errA := encoder.DeserializeString(b, 8)
+	if errA == nil {
+		if x != len(s)+4 {
+			panic(fmt.Sprintf("DeserializeString x != len(s) + 4 (%d = %d, %q)", x, len(s)+4, s))
+		}
 	}
 
-	return 1
+	var v uint32
+	n, errB := encoder.DeserializeAtomic(b, &v)
+	if errB == nil {
+		if n != 4 {
+			panic("DeserializeAtomic uint32 n bytes read is not 4")
+		}
+	}
+
+	var t thing
+	errC := encoder.DeserializeRaw(b, &t)
+
+	if errA == nil || errB == nil || errC == nil {
+		return 1
+	}
+
+	return 0
 }
+
+// func main() {
+// 	x := thing{
+// 		A: 12,
+// 		B: 0xFF33AA01,
+// 		T: innerThing{
+// 			A: [2]byte{0x40, 0xF7},
+// 			C: "foo",
+// 		},
+// 	}
+
+// 	byt := encoder.Serialize(x)
+
+// 	f, err := os.Create("thing.serialized")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	defer f.Close()
+
+// 	f.Write(byt)
+// }

@@ -120,6 +120,9 @@ func parseBoolFlag(v string) (bool, error) {
 
 // swagger:parameters blockParams
 type blockParams struct {
+	// blockParams has parameters 
+	//
+	// unique: true
 	// in: query
 	hash string `json:"block_hash"`
 	seq  int    `json:"block_seq"`

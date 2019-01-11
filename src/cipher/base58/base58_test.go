@@ -18,6 +18,7 @@ import (
 var benchmarkAddr = "BbZ79o3JNbvi4fifByyopgdS5q6uT9ytmj"
 
 func BenchmarkEncode(b *testing.B) {
+	b.ReportAllocs()
 	if _, err := Decode(benchmarkAddr); err != nil {
 		b.Fail()
 	}
@@ -25,11 +26,12 @@ func BenchmarkEncode(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = Decode(benchmarkAddr)
+		_, _ = Decode(benchmarkAddr) // nolint: errcheck
 	}
 }
 
 func BenchmarkEncodeOld(b *testing.B) {
+	b.ReportAllocs()
 	if _, err := oldBase582Hex(benchmarkAddr); err != nil {
 		b.Fail()
 	}
@@ -37,11 +39,12 @@ func BenchmarkEncodeOld(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = oldBase582Hex(benchmarkAddr)
+		_, _ = oldBase582Hex(benchmarkAddr) // nolint: errcheck
 	}
 }
 
 func BenchmarkDecode(b *testing.B) {
+	b.ReportAllocs()
 	d, err := Decode(benchmarkAddr)
 	if err != nil {
 		b.Fail()
@@ -60,6 +63,7 @@ func BenchmarkDecode(b *testing.B) {
 }
 
 func BenchmarkDecodeOld(b *testing.B) {
+	b.ReportAllocs()
 	d, err := oldBase582Hex(benchmarkAddr)
 	if err != nil {
 		b.Fail()

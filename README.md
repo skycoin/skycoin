@@ -82,7 +82,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 	- [Profiling](#profiling)
 	- [Fuzzing](#fuzzing)
 		- [base58](#base58)
-	- [encoder](#encoder)
+		- [encoder](#encoder)
 	- [Dependencies](#dependencies)
 		- [Rules](#rules)
 		- [Management](#management)
@@ -538,17 +538,15 @@ Fuzz tests are written for the following packages:
 To fuzz the `cipher/base58` package,
 
 ```sh
-go-fuzz-build github.com/skycoin/skycoin/src/cipher/base58/internal
-go-fuzz -bin=base58fuzz-fuzz.zip -workdir=src/cipher/base58/internal
+make fuzz-base58
 ```
 
-### encoder
+#### encoder
 
 To fuzz the `cipher/encoder` package,
 
 ```sh
-go-fuzz-build github.com/skycoin/skycoin/src/cipher/encoder/internal
-go-fuzz -bin=encoderfuzz-fuzz.zip -workdir=src/cipher/encoder/internal
+make fuzz-encoder
 ```
 
 ### Dependencies

@@ -9,6 +9,7 @@
 .PHONY: install-linters format release clean-release clean-coverage
 .PHONY: install-deps-ui build-ui help newcoins merge-coverage
 .PHONY: generate-mocks update-golden-files
+.PHONY: fuzz-base58 fuzz-encoder
 
 COIN ?= skycoin
 
@@ -272,6 +273,14 @@ merge-coverage: ## Merge coverage files and create HTML coverage output. gocovme
 	go tool cover -html coverage/all-coverage.merged.out -o coverage/all-coverage.html
 	@echo "Total coverage HTML file generated at coverage/all-coverage.html"
 	@echo "Open coverage/all-coverage.html in your browser to view"
+
+fuzz-base58: ## Fuzz the base58 package. Requires https://github.com/dvyukov/go-fuzz
+	go-fuzz-build github.com/skycoin/skycoin/src/cipher/base58/internal
+	go-fuzz -bin=base58fuzz-fuzz.zip -workdir=src/cipher/base58/internal
+
+fuzz-encoder: ## Fuzz the encoder package. Requires https://github.com/dvyukov/go-fuzz
+	go-fuzz-build github.com/skycoin/skycoin/src/cipher/encoder/internal
+	go-fuzz -bin=encoderfuzz-fuzz.zip -workdir=src/cipher/encoder/internal
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

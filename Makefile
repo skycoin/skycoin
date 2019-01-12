@@ -102,13 +102,6 @@ install-linters: ## Install linters
 	# However, they suggest `curl ... | bash` which we should not do
 	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
-install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
-	git clone --recursive https://github.com/skycoin/Criterion $(BUILD_DIR)/usr/tmp/Criterion
-	mkdir $(BUILD_DIR)/usr/tmp/Criterion/build
-	cd    $(BUILD_DIR)/usr/tmp/Criterion/build && cmake .. && cmake --build .
-	mv    $(BUILD_DIR)/usr/tmp/Criterion/build/libcriterion.* $(BUILD_DIR)/usr/lib/
-	cp -R $(BUILD_DIR)/usr/tmp/Criterion/include/* $(BUILD_DIR)/usr/include/
-
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src

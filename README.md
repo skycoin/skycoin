@@ -80,6 +80,8 @@ scratch, to remedy the rough edges in the Bitcoin design.
 	- [Formatting](#formatting)
 	- [Code Linting](#code-linting)
 	- [Profiling](#profiling)
+	- [Fuzzing](#fuzzing)
+		- [base58](#base58)
 	- [Dependencies](#dependencies)
 		- [Rules](#rules)
 		- [Management](#management)
@@ -528,6 +530,22 @@ go tool pprof http://localhost:6060/debug/pprof/heap
 ```
 
 A web page interface is provided by http/pprof at http://localhost:6060/debug/pprof/.
+
+### Fuzzing
+
+Fuzz tests are run with [go-fuzz](https://github.com/dvyukov/go-fuzz).
+[Follow the instructions on the go-fuzz page](https://github.com/dvyukov/go-fuzz) to install it.
+
+Fuzz tests are written for the following packages:
+
+#### base58
+
+To fuzz the base58 package,
+
+```sh
+go-fuzz-build github.com/skycoin/skycoin/src/cipher/base58/internal
+go-fuzz -bin=base58fuzz-fuzz.zip -workdir=src/cipher/base58/internal
+```
 
 ### Dependencies
 

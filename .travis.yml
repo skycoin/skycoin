@@ -81,13 +81,6 @@ script:
   - make integration-test-auth
   # Stable integration tests without unconfirmed transactions
   - make integration-test-db-no-unconfirmed
-  # libskycoin tests
-  - CC=gcc-6 make test-libc
-  # TODO: test pyskycoin
-  # - CC=gcc-6 make test-libpy
-  # TODO: test ui
-  # - make test-ui
-  # - make test-libpy
   - make lint-ui
   - make build-ui-travis
   - make test-ui

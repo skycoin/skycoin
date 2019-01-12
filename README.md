@@ -279,6 +279,12 @@ Example Skycoin URIs:
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70&label=friend&message=Birthday%20Gift`
 
+Additonally, if no `skycoin:` prefix is present when parsing, the string may be treated as an address:
+
+* `2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
+
+However, do not use this URI in QR codes displayed to the user, because the address can't be disambiguated from other Skyfiber coins.
+
 ## Wire protocol user agent
 
 [Wire protocol user agent description](https://github.com/skycoin/skycoin/wiki/Wire-protocol-user-agent)

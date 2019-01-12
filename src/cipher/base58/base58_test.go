@@ -15,6 +15,72 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var benchmarkAddr = "BbZ79o3JNbvi4fifByyopgdS5q6uT9ytmj"
+
+func BenchmarkEncode(b *testing.B) {
+	b.ReportAllocs()
+	if _, err := Decode(benchmarkAddr); err != nil {
+		b.Fail()
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = Decode(benchmarkAddr) // nolint: errcheck
+	}
+}
+
+func BenchmarkEncodeOld(b *testing.B) {
+	b.ReportAllocs()
+	if _, err := oldBase582Hex(benchmarkAddr); err != nil {
+		b.Fail()
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = oldBase582Hex(benchmarkAddr) // nolint: errcheck
+	}
+}
+
+func BenchmarkDecode(b *testing.B) {
+	b.ReportAllocs()
+	d, err := Decode(benchmarkAddr)
+	if err != nil {
+		b.Fail()
+	}
+
+	e := Encode(d)
+	if e != benchmarkAddr {
+		b.Fail()
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = Encode(d)
+	}
+}
+
+func BenchmarkDecodeOld(b *testing.B) {
+	b.ReportAllocs()
+	d, err := oldBase582Hex(benchmarkAddr)
+	if err != nil {
+		b.Fail()
+	}
+
+	e := oldHex2Base58(d)
+	if string(e) != benchmarkAddr {
+		b.Fail()
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = oldHex2Base58(d)
+	}
+}
+
 func testEncodeDecode(t *testing.T, a string) {
 	bin, err := Decode(a)
 	require.NoError(t, err)

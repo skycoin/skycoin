@@ -250,6 +250,9 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		walletOutputsCmd(),
 		richlistCmd(),
 		addressTransactionsCmd(),
+		depositCoinhoursCmd(),
+		transferCoinhoursCmd(),
+		withdrawCoinhoursCmd(),
 	}
 
 	skyCLI.Version = Version

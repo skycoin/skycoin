@@ -9,11 +9,11 @@ import (
 // To use the fuzzer:
 // Follow the install instructions from https://github.com/dvyukov/go-fuzz
 // Then, from the repo root,
-// $ go-fuzz-build github.com/skycoin/skycoin/src/cipher/base58/internal
+// $ go-fuzz-build github.com/skycoin/skycoin/src/cipher/encoder/internal
 // This creates a file encoderfuzz-fuzz.zip
 // Then,
-// $ go-fuzz -bin=encoderfuzz-fuzz.zip -workdir=src/cipher/base58/internal
-// New corpus and crash objects will be put in src/cipher/base58/internal
+// $ go-fuzz -bin=encoderfuzz-fuzz.zip -workdir=src/cipher/encoder/internal
+// New corpus and crash objects will be put in src/cipher/encoder/internal
 
 type thing struct {
 	X uint8 `enc:"-"`

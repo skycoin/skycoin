@@ -80,6 +80,9 @@ scratch, to remedy the rough edges in the Bitcoin design.
 	- [Formatting](#formatting)
 	- [Code Linting](#code-linting)
 	- [Profiling](#profiling)
+	- [Fuzzing](#fuzzing)
+		- [base58](#base58)
+		- [encoder](#encoder)
 	- [Dependencies](#dependencies)
 		- [Rules](#rules)
 		- [Management](#management)
@@ -113,7 +116,7 @@ Skycoin supports go1.10+.
 ### Go get skycoin
 
 ```sh
-go get github.com/skycoin/skycoin/...
+go get github.com/skycoin/skycoin/cmd/...
 ```
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
@@ -276,6 +279,12 @@ Example Skycoin URIs:
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70&label=friend&message=Birthday%20Gift`
+
+Additonally, if no `skycoin:` prefix is present when parsing, the string may be treated as an address:
+
+* `2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
+
+However, do not use this URI in QR codes displayed to the user, because the address can't be disambiguated from other Skyfiber coins.
 
 ## Wire protocol user agent
 
@@ -522,6 +531,29 @@ go tool pprof http://localhost:6060/debug/pprof/heap
 ```
 
 A web page interface is provided by http/pprof at http://localhost:6060/debug/pprof/.
+
+### Fuzzing
+
+Fuzz tests are run with [go-fuzz](https://github.com/dvyukov/go-fuzz).
+[Follow the instructions on the go-fuzz page](https://github.com/dvyukov/go-fuzz) to install it.
+
+Fuzz tests are written for the following packages:
+
+#### base58
+
+To fuzz the `cipher/base58` package,
+
+```sh
+make fuzz-base58
+```
+
+#### encoder
+
+To fuzz the `cipher/encoder` package,
+
+```sh
+make fuzz-encoder
+```
 
 ### Dependencies
 

@@ -116,7 +116,7 @@ Skycoin supports go1.10+.
 ### Go get skycoin
 
 ```sh
-go get github.com/skycoin/skycoin/...
+go get github.com/skycoin/skycoin/cmd/...
 ```
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.

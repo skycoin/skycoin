@@ -1,21 +1,19 @@
 package cli
 
 import (
+	"fmt"
 	"strconv"
 
+	"github.com/skycoin/skycoin/src/cipher"
+	chb "github.com/skycoin/skycoin/src/coinhourbank"
 	"github.com/spf13/cobra"
-	"github.com/watercompany/coinhour-bank/pkg/chb"
-	"github.com/watercompany/coinhour-bank/pkg/client"
 )
 
-func depositCoinhoursCmd() *cobra.Command {
-	depositCoinhoursCmd := &cobra.Command{
-		Use:   "depositCoinhours [hours amount]",
-		Short: "Sends coinhours to a coinhour bank account.",
-		Long: `Deposits coinhours into a coinhour bank account which a skycoin address you want to deposit hours into.
-		Once hours are into coinhour bank they can be transferred to other addresses without paying transaction fee.`,
+func coinhourBalanceCmd() *cobra.Command {
+	coinhourBalanceCmd := &cobra.Command{
+		Use: "coinhourBalance",
+		Short: "Get balance of coinhour bank account",
 		SilenceUsage: true,
-		Args:         cobra.ExactArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			bankClient, err := getCoinhourBankClient(c)
 			if err != nil {
@@ -24,6 +22,49 @@ func depositCoinhoursCmd() *cobra.Command {
 
 			// error is already checked when bank client is initialized
 			address, _ := c.Flags().GetString("address")
+			if _, err := cipher.DecodeBase58Address(address); err != nil {
+				return err
+			}
+
+			balance, err := bankClient.Balance(chb.Account(address))
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("%s balance: %v\n", address, balance)
+
+			return nil
+		},
+	}
+
+	coinhourBalanceCmd.Flags().StringP("wallet-file", "f", "", "[wallet file or path] From wallet. If no path is specified your default wallet path will be used.")
+	coinhourBalanceCmd.Flags().StringP("password", "p", "", "wallet password")
+	coinhourBalanceCmd.Flags().StringP("address", "a", "", "wallet address to take coinhours from")
+	coinhourBalanceCmd.Flags().StringP("nodeURL", "n", "http://localhost:6420", "skycoin node url")
+	coinhourBalanceCmd.Flags().StringP("bankURL", "b", "http://localhost:8081", "coinhour bank backend url")
+
+	return coinhourBalanceCmd
+}
+
+func depositCoinhoursCmd() *cobra.Command {
+	depositCoinhoursCmd := &cobra.Command{
+		Use:   "depositCoinhours [hours amount]",
+		Short: "Sends coinhours to a coinhour bank account.",
+		Long: `Deposits coinhours into a coinhour bank account which a skycoin address you want to deposit hours into.
+		Once hours are into coinhour bank they can be transferred to other addresses without paying transaction fee.`,
+		SilenceUsage: true,
+		DisableFlagsInUseLine: true,
+		Args:         cobra.ExactArgs(1),
+		RunE: func(c *cobra.Command, args []string) error {
+			bankClient, err := getCoinhourBankClient(c)
+			if err != nil {
+				return err
+			}
+
+			address, _ := c.Flags().GetString("address")
+			if _, err := cipher.DecodeBase58Address(address); err != nil {
+				return err
+			}
 
 			coinhours, err := strconv.ParseUint(args[0], 10, 64)
 			if err != nil {
@@ -57,13 +98,16 @@ func transferCoinhoursCmd() *cobra.Command {
 			}
 
 			address, _ := c.Flags().GetString("address")
+			if _, err := cipher.DecodeBase58Address(address); err != nil {
+				return err
+			}
 
-			coinhours, err := strconv.ParseUint(args[0], 10, 64)
+			coinhours, err := strconv.ParseUint(args[1], 10, 64)
 			if err != nil {
 				return err
 			}
 
-			return bankClient.TransferHours(chb.Account(address), chb.Account(args[1]), chb.CoinHours(coinhours))
+			return bankClient.TransferHours(chb.Account(address), chb.Account(args[0]), chb.CoinHours(coinhours))
 		},
 	}
 
@@ -89,6 +133,9 @@ func withdrawCoinhoursCmd() *cobra.Command {
 			}
 
 			address, _ := c.Flags().GetString("address")
+			if _, err := cipher.DecodeBase58Address(address); err != nil {
+				return err
+			}
 
 			coinhours, err := strconv.ParseUint(args[0], 10, 64)
 			if err != nil {
@@ -108,7 +155,7 @@ func withdrawCoinhoursCmd() *cobra.Command {
 	return withdrawCoinhoursCmd
 }
 
-func getCoinhourBankClient(c *cobra.Command) (*client.HourBankClient, error) {
+func getCoinhourBankClient(c *cobra.Command) (*chb.HourBankClient, error) {
 	walletFile, err := c.Flags().GetString("wallet-file")
 	if err != nil {
 		return nil, err
@@ -139,7 +186,7 @@ func getCoinhourBankClient(c *cobra.Command) (*client.HourBankClient, error) {
 		return nil, err
 	}
 
-	bankClient, err := client.NewHourBankClient(wlt, []byte(wltPassword), nodeURL, bankURL, chb.SourceAddress(address))
+	bankClient, err := chb.NewHourBankClient(nodeURL, bankURL, wlt, []byte(wltPassword), chb.SourceAddress(address))
 	if err != nil {
 		return nil, err
 	}

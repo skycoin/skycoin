@@ -23,7 +23,7 @@ import (
 // CreateTransactionResponse is returned by /wallet/transaction
 // swagger:response createTransactionResponse
 type CreateTransactionResponse struct {
-	// swagger:allOf
+	// in: body
 	Transaction        CreatedTransaction `json:"transaction"`
 	EncodedTransaction string             `json:"encoded_transaction"`
 }

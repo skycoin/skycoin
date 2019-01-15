@@ -61,6 +61,7 @@ func HashRipemd160(data []byte) Ripemd160 {
 }
 
 // SHA256 32 bytes
+// swagger:strfmt sha256
 type SHA256 [32]byte
 
 // MustSet sets value, panics on error

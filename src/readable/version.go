@@ -5,9 +5,12 @@ import "github.com/blang/semver"
 // BuildInfo represents the build info
 // swagger:model buildInfo
 type BuildInfo struct {
-	Version string `json:"version"` // version number
-	Commit  string `json:"commit"`  // git commit id
-	Branch  string `json:"branch"`  // git branch name
+	// version number
+	Version string `json:"version"`
+	// git commit id
+	Commit  string `json:"commit"`
+	// git branch name
+	Branch  string `json:"branch"`
 }
 
 // Semver returns the parsed semver.Version of the configured Version string

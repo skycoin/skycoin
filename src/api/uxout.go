@@ -32,7 +32,7 @@ func uxOutHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: OK
+	//       200: spentOutput
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -90,7 +90,7 @@ func addrUxOutsHandler(gateway Gatewayer) http.HandlerFunc {
 	//       oauth: read, write
 	//
 	//     Responses:
-	//       default: genericError
+	//       default: spent_output
 	//       200: OK
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -124,4 +124,10 @@ func addrUxOutsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendJSONOr500(logger, w, ret)
 	}
+}
+
+// swagger:response spent_output
+type spentOutputStruct struct {
+	// in: body
+	spent []readable.SpentOutput
 }

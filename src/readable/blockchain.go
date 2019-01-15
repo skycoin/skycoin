@@ -6,6 +6,7 @@ import (
 )
 
 // BlockchainMetadata encapsulates useful information from the coin.Blockchain
+// swagger:response blockchainMetadata
 type BlockchainMetadata struct {
 	// Most recent block's header
 	Head BlockHeader `json:"head"`
@@ -25,6 +26,7 @@ func NewBlockchainMetadata(bm visor.BlockchainMetadata) BlockchainMetadata {
 }
 
 // BlockchainProgress is the current blockchain syncing status
+// swagger:response blockchainProgress
 type BlockchainProgress struct {
 	// Our current blockchain length
 	Current uint64 `json:"current"`
@@ -35,6 +37,7 @@ type BlockchainProgress struct {
 }
 
 // PeerBlockchainHeight is a peer's IP address with their reported blockchain height
+// swagger:model peerBlockchainHeight
 type PeerBlockchainHeight struct {
 	Address string `json:"address"`
 	Height  uint64 `json:"height"`

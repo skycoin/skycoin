@@ -14,7 +14,7 @@ import (
 )
 
 // CoinSupply records the coin supply info
-// swagger:parameters coinSupply
+// swagger:response coinSupply
 type CoinSupply struct {
 	// Coins distributed beyond the project:
 	CurrentSupply string `json:"current_supply"`
@@ -61,7 +61,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: someResponse
+	//       200: coinSupply
 	//       422: validationError
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -178,14 +178,14 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 
 // transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
 // Method: GET
-// URI: /explorer/address
+// URI: /api/v1/explorer/address
 func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
+	// TODO Resolve address Problem Cool Response
 
-	// swagger:route GET /explorer/address transactionsForAddress
+	// swagger:route GET /api/v1/explorer/address transactionsForAddress
 	//
 	// transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
 	//
-	// TODO add urls params:
 	//	address [string]
 	//
 	//     Produces:
@@ -199,7 +199,7 @@ func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: someResponse
+	//       200: addressResponse
 	//       422: validationError
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -244,27 +244,35 @@ func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// swagger:response addressResponse
+type TransactionVerboseArray struct {
+	// in: body
+	Response []readable.TransactionVerbose
+}
+
 // Richlist contains top address balances
-// swagger:model richlist
+//
+// swagger:response rich_list_response
 type Richlist struct {
+	// in: body
 	Richlist []readable.RichlistBalance `json:"richlist"`
 }
 
 // richlistHandler returns the top skycoin holders
 // Method: GET
-// URI: /richlist?n=${number}&include-distribution=${bool}
+// URI: /api/v1/richlist?n=${number}&include-distribution=${bool}
 // Args:
 //	n [int, number of results to include]
 //  include-distribution [bool, include the distribution addresses in the richlist]
 func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /richlist?n=${number}&include-distribution=${bool} richlistHandler
+	// swagger:route GET /api/v1/richlist richlistHandler
 	//
 	// richlistHandler returns the top skycoin holders
 	//
 	// TODO add urls params:
 	//	n [int, number of results to include]
-	//  include-distribution [bool, include the distribution addresses in the richlist]
+	//  include-distribution [bool, include the distribution addresses in the richlist] pattern -> ?n=${number}&include-distribution=${bool}
 	//
 	//     Produces:
 	//     - application/json
@@ -277,7 +285,7 @@ func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: someResponse
+	//       200: rich_list_response
 	//       422: validationError
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -330,10 +338,10 @@ func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 
 // addressCountHandler returns the total number of unique address that have coins
 // Method: GET
-// URI: /addresscount
+// URI: /api/v1/addresscount
 func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /addresscount addressCount
+	// swagger:route GET /api/v1/addresscount addressCount
 	//
 	// addressCountHandler returns the total number of unique address that have coins
 	//
@@ -348,7 +356,7 @@ func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: someResponse
+	//       200: mapForResponse
 	//       422: validationError
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -365,4 +373,13 @@ func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendJSONOr500(logger, w, &map[string]uint64{"count": addrCount})
 	}
+}
+
+// swagger:model mapResponse
+type mapResponse map[string]uint64
+// TODO Response is empty, what can be??
+
+// swagger:response mapForResponse
+type MapForResponse struct {
+	mapForResponse mapResponse `json:"map_for_response"`
 }

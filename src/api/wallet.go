@@ -21,9 +21,7 @@ import (
 // SpendResult represents the result of spending
 // swagger:response spendResult
 type SpendResult struct {
-	// swagger:allOf
 	Balance *readable.BalancePair `json:"balance,omitempty"`
-	// swagger:allOf
 	Transaction *readable.Transaction `json:"txn,omitempty"`
 	Error       string                `json:"error,omitempty"`
 }
@@ -38,7 +36,6 @@ type UnconfirmedTxnsResponse struct {
 // UnconfirmedTxnsVerboseResponse contains verbose unconfirmed transaction data
 // swagger:model unconfirmedTxnsVerboseResponse
 type UnconfirmedTxnsVerboseResponse struct {
-	// swagger:allOf
 	Transactions []readable.UnconfirmedTransactionVerbose `json:"transactions"`
 }
 
@@ -47,16 +44,15 @@ type UnconfirmedTxnsVerboseResponse struct {
 type BalanceResponse struct {
 	// swagger:allOf
 	readable.BalancePair
-	// swagger:allOf
 	Addresses readable.AddressBalances `json:"addresses"`
 }
 
 // WalletResponse wallet response struct for http apis
-// swagger:model walletResponse
+// swagger:response walletResponse
 type WalletResponse struct {
-	// swagger:allOf
+	// in: body
 	Meta readable.WalletMeta `json:"meta"`
-	// swagger:allOf
+	// in: body
 	Entries []readable.WalletEntry `json:"entries"`
 }
 
@@ -866,7 +862,7 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: OK
+	//       200: body:walletsForResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -904,8 +900,13 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// swagger:response
+type walletsForResponse struct {
+	 response []WalletResponse `json:"response"`
+}
+
 // WalletFolder struct
-// swagger:response walletFolder
+// swagger:response walletFolderResponse
 type WalletFolder struct {
 	Address string `json:"address"`
 }
@@ -930,7 +931,7 @@ func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: OK
+	//       200: walletFolderResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

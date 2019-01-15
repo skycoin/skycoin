@@ -11,24 +11,26 @@ import (
 )
 
 // BlockchainMetadata extends visor.BlockchainMetadata to include the time since the last block
+// swagger:model blockchainMetadata_extend
 type BlockchainMetadata struct {
+	// swagger:allOf
 	readable.BlockchainMetadata
 	TimeSinceLastBlock wh.Duration `json:"time_since_last_block"`
 }
 
 // HealthResponse is returned by the /health endpoint
-// swagger:model healthResponse
+// swagger:response healthResponse
 type HealthResponse struct {
-	// swagger:allOf
+
+	// require: true
 	BlockchainMetadata BlockchainMetadata `json:"blockchain"`
-	// swagger:allOf
 	Version             readable.BuildInfo `json:"version"`
 	CoinName            string             `json:"coin"`
 	DaemonUserAgent     string             `json:"user_agent"`
 	OpenConnections     int                `json:"open_connections"`
 	OutgoingConnections int                `json:"outgoing_connections"`
 	IncomingConnections int                `json:"incoming_connections"`
-	// swagger:allOf
+	// swagger:strfmt duration
 	Uptime                wh.Duration `json:"uptime"`
 	CSRFEnabled           bool        `json:"csrf_enabled"`
 	CSPEnabled            bool        `json:"csp_enabled"`
@@ -36,12 +38,43 @@ type HealthResponse struct {
 	GUIEnabled            bool        `json:"gui_enabled"`
 	UnversionedAPIEnabled bool        `json:"unversioned_api_enabled"`
 	JSON20RPCEnabled      bool        `json:"json_rpc_enabled"`
-	// swagger:allOf
+	// swagger:ignore
 	UserVerifyTxn readable.VerifyTxn `json:"user_verify_transaction"`
-	// swagger:allOf
+	// swagger:ignore
 	UnconfirmedVerifyTxn readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
 	StartedAt            int64              `json:"started_at"`
 }
+
+// swagger:response realHealthResponse
+type RealHealthResponse struct {
+	// in: body
+	BlockchainMetadata struct {
+		// swagger:allOf
+		readable.BlockchainMetadata
+		TimeSinceLastBlock wh.Duration `json:"time_since_last_block"`
+	}`json:"blockchain"`
+	CoinName            string             `json:"coin"`
+	DaemonUserAgent     string             `json:"user_agent"`
+	OpenConnections     int                `json:"open_connections"`
+	OutgoingConnections int                `json:"outgoing_connections"`
+	IncomingConnections int                `json:"incoming_connections"`
+	// swagger:strfmt duration
+	Uptime                wh.Duration `json:"uptime"`
+	CSRFEnabled           bool        `json:"csrf_enabled"`
+	CSPEnabled            bool        `json:"csp_enabled"`
+	WalletAPIEnabled      bool        `json:"wallet_api_enabled"`
+	GUIEnabled            bool        `json:"gui_enabled"`
+	UnversionedAPIEnabled bool        `json:"unversioned_api_enabled"`
+	JSON20RPCEnabled      bool        `json:"json_rpc_enabled"`
+	// in: body
+	UserVerifyTxn readable.VerifyTxn `json:"user_verify_transaction"`
+	// in: body
+	UnconfirmedVerifyTxn readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
+	StartedAt            int64              `json:"started_at"`
+	// in: body
+	Version             readable.BuildInfo `json:"version"`
+}
+
 
 // healthHandler returns node health data
 // URI: /api/v1/health
@@ -63,7 +96,7 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: someResponse
+	//       200: realHealthResponse
 	//       422: validationError
 
 	return func(w http.ResponseWriter, r *http.Request) {

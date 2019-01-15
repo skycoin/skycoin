@@ -3,7 +3,7 @@ package readable
 import "github.com/skycoin/skycoin/src/visor"
 
 // RichlistBalance holds info an address balance holder
-// swagger:model richlistBalance
+// swagger:model rich_list_balance
 type RichlistBalance struct {
 	Address string `json:"address"`
 	Coins   string `json:"coins"`

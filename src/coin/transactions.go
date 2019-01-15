@@ -43,11 +43,13 @@ The outer hash is the hash of the whole transaction serialization
 type Transaction struct {
 	Length    uint32        //length prefix
 	Type      uint8         //transaction type
+	// in: body
 	InnerHash cipher.SHA256 //inner hash SHA256 of In[],Out[]
-
+	// in: body
 	Sigs []cipher.Sig    //list of signatures, 64+1 bytes each
+	// in: body
 	In   []cipher.SHA256 //ouputs being spent
-	// swagger:allOf
+	// in: body
 	Out []TransactionOutput //ouputs being created
 }
 

@@ -24,7 +24,7 @@ type VerifyAddressResponse struct {
 // URI: /api/v2/address/verify
 func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 
-	// swagger:route POST /api/v2/address/verify addressVerify
+	// swagger:route POST /api/v2/address/verify addressVerify verifyAddressRequest
 	//
 	// addressVerifyHandler verifies a Skycoin address
 	//
@@ -42,7 +42,7 @@ func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: OK
+	//       200: httpResponse
 
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")

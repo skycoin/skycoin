@@ -44,7 +44,6 @@ func init() {
 }
 
 // CSRFToken csrf token
-// swagger:response csrfToken
 type CSRFToken struct {
 	Nonce     []byte
 	ExpiresAt time.Time
@@ -140,7 +139,7 @@ func getCSRFToken(disabled bool) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: OK
+	//       200: csrfTokenResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -164,6 +163,15 @@ func getCSRFToken(disabled bool) http.HandlerFunc {
 
 		wh.SendJSONOr500(logger, w, &map[string]string{"csrf_token": csrfToken})
 	}
+}
+
+// Response to address /api/v1/csrf
+// swagger:response csrfTokenResponse
+type CsrfTokenResponse struct {
+	// Csrf Token is here
+	// swagger:allOf
+	csrfToken string `json:"csrf_token"`
+
 }
 
 // CSRFCheck verifies X-CSRF-Token header value

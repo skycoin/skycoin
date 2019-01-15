@@ -78,7 +78,9 @@ func (bh BlockHeader) ToCoinBlockHeader() (coin.BlockHeader, error) {
 }
 
 // BlockBody represents a readable block body
+// swagger:model blockBody
 type BlockBody struct {
+	// in: body
 	Transactions []Transaction `json:"txns"`
 }
 
@@ -100,8 +102,11 @@ func NewBlockBody(b coin.Block) (*BlockBody, error) {
 }
 
 // Block represents a readable block
+// swagger:model block
 type Block struct {
+	// in: body
 	Head BlockHeader `json:"header"`
+	// in: body
 	Body BlockBody   `json:"body"`
 	Size uint32      `json:"size"`
 }
@@ -126,6 +131,7 @@ func NewBlock(b coin.Block) (*Block, error) {
 }
 
 // Blocks an array of readable blocks.
+// swagger:response blocks_struct
 type Blocks struct {
 	Blocks []Block `json:"blocks"`
 }

@@ -110,12 +110,15 @@ type muxConfig struct {
 }
 
 // HTTPResponse represents the http response struct
+// swagger:response httpResponse
 type HTTPResponse struct {
+	// in: body
 	Error *HTTPError  `json:"error,omitempty"`
 	Data  interface{} `json:"data,omitempty"`
 }
 
 // HTTPError is included in an HTTPResponse
+// swagger:model httpError
 type HTTPError struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`

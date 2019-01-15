@@ -35,6 +35,7 @@ func SendJSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
 // It marshals and unmarshals the duration as a string in the format accepted by time.ParseDuration and returned by time.Duration.String.
 // swagger:model duration
 type Duration struct {
+	// swagger:allOf
 	time.Duration
 }
 

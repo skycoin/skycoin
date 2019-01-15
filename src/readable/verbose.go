@@ -18,6 +18,7 @@ type BlockBodyVerbose struct {
 }
 
 // BlockVerbose represents a readable block with verbose data
+// swagger:response blockVerbose
 type BlockVerbose struct {
 	Head BlockHeader      `json:"header"`
 	Body BlockBodyVerbose `json:"body"`
@@ -102,9 +103,7 @@ type BlockTransactionVerbose struct {
 	Fee       uint64 `json:"fee"`
 
 	Sigs []string `json:"sigs"`
-	// swagger:allOf
 	In []TransactionInput `json:"inputs"`
-	// swagger:allOf
 	Out []TransactionOutput `json:"outputs"`
 }
 
@@ -193,9 +192,9 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 }
 
 // TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose
-// swagger:model transactionVerbose
+// swagger:response transactionVerbose
 type TransactionVerbose struct {
-	// swagger:allOf
+	// in: body
 	Status    *TransactionStatus `json:"status,omitempty"`
 	Timestamp uint64             `json:"timestamp,omitempty"`
 	// swagger:allOf

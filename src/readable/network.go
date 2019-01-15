@@ -15,7 +15,6 @@ type Connection struct {
 	LastReceived int64  `json:"last_received"`
 	ConnectedAt  int64  `json:"connected_at"`
 	Outgoing     bool   `json:"outgoing"`
-	// swagger:allOf
 	State      daemon.ConnectionState `json:"state"`
 	Mirror     uint32                 `json:"mirror"`
 	ListenPort uint16                 `json:"listen_port"`

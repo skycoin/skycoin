@@ -19,6 +19,7 @@ type Balance struct {
 }
 
 // AddressBalances represents an address's balance
+// swagger:model addressBalance
 type AddressBalances struct {
 	Confirmed Balance `json:"confirmed"`
 	Spendable Balance `json:"spendable"`
@@ -27,6 +28,7 @@ type AddressBalances struct {
 }
 
 // BalanceResult represents an set of addresses' balances
+// swagger:model balanceResult
 type BalanceResult struct {
 	Confirmed Balance           `json:"confirmed"`
 	Spendable Balance           `json:"spendable"`

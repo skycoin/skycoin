@@ -26,10 +26,10 @@ import (
 //	verbose: [bool] include verbose transaction input data
 func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/pendingTxs pendingTxns
+	// swagger:route GET /api/v1/pendingTxs pendingTxnsVerboseTrue
 	//
-	// pendingTxnsHandler returns pending (unconfirmed) transactions
-	// TODO add params url
+	// pendingTxnsHandler returns pending (unconfirmed) transactions, with verbose ?verbose=1
+	// TODO add params url ?verbose=1
 	//	verbose: [bool] include verbose transaction input data
 	//
 	//     Produces:
@@ -43,7 +43,27 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: someResponse
+	//       200: []UnconfirmedTransactionVerbose
+	//       422: validationError
+
+	// swagger:route GET /api/v1/pendingTxs pendingTxnsVerboseFalse
+	//
+	// pendingTxnsHandler returns pending (unconfirmed) transactions
+	// TODO add params url ?verbose=0
+	//	verbose: [bool] include verbose transaction input data
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       api_key:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: UnconfirmedTransactionArray
 	//       422: validationError
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +109,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 	}
 }
+
 
 // TransactionEncodedResponse represents the data struct of the response to /api/v1/transaction?encoded=1
 // swagger:response transactionEncodedResponse
@@ -218,9 +239,9 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // TransactionsWithStatus array of transaction results
-// swagger:model transactionsWithStatus
+// swagger:response transactionsWithStatus
 type TransactionsWithStatus struct {
-	// swagger:allOf
+	// in: body
 	Transactions []readable.TransactionWithStatus `json:"txns"`
 }
 
@@ -257,7 +278,7 @@ func NewTransactionsWithStatus(txns []visor.Transaction) (*TransactionsWithStatu
 // TransactionsWithStatusVerbose array of transaction results
 // swagger:model transactionsWithStatusVerbose
 type TransactionsWithStatusVerbose struct {
-	// swagger:allOf
+	// in: body
 	Transactions []readable.TransactionWithStatusVerbose `json:"txns"`
 }
 
@@ -556,7 +577,7 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Responses:
 	//       default: genericError
-	//       200: OK
+	//       200: resendResult
 	//       405: MethodNotPost
 	// 		 500: otherError
 	//       503: networkUnavailableForBroadcastingTransaction

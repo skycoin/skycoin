@@ -18,11 +18,10 @@ func NewBalance(b wallet.Balance) Balance {
 }
 
 // BalancePair records the confirmed and predicted balance of an address
-// swagger:model balancePair
+// swagger:response balancePair
 type BalancePair struct {
 	// swagger:allOf
 	Confirmed Balance `json:"confirmed"`
-	// swagger:allOf
 	Predicted Balance `json:"predicted"` // TODO rename "pending"
 }
 
@@ -35,7 +34,6 @@ func NewBalancePair(bp wallet.BalancePair) BalancePair {
 }
 
 // AddressBalances represents a map of address balances
-// swagger:model addressBalances
 type AddressBalances map[string]BalancePair
 
 // NewAddressBalances copies from wallet.AddressBalances

@@ -50,7 +50,7 @@ type BlockHeader struct {
 // BlockBody represents the block body
 // swagger:model blockBody
 type BlockBody struct {
-	// swagger:allOf
+	// in: body
 	Transactions Transactions
 }
 

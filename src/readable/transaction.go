@@ -98,6 +98,7 @@ type Transaction struct {
 
 	Sigs []string            `json:"sigs"`
 	In   []string            `json:"inputs"`
+	// in: body
 	Out  []TransactionOutput `json:"outputs"`
 }
 
@@ -158,16 +159,19 @@ func NewTransactionWithTimestamp(txn coin.Transaction, isGenesis bool, timestamp
 	return newTxn, nil
 }
 
+// swagger:response UnconfirmedTransactionArray
+type UnconfirmedTransactionArray struct {
+	// in: body
+	UnconfirmedTransactions []UnconfirmedTransactions `json:"unconfirmed_transactions"`
+}
+
 // UnconfirmedTransactions represents a readable unconfirmed transaction
-// swagger:model unconfirmedTransactions
+// swagger:response unconfirmedTransactions
 type UnconfirmedTransactions struct {
-	// swagger:allOf
+	// in: body
 	Transaction Transaction `json:"transaction"`
-	// swagger:allOf
 	Received time.Time `json:"received"`
-	// swagger:allOf
 	Checked time.Time `json:"checked"`
-	// swagger:allOf
 	Announced time.Time `json:"announced"`
 	IsValid   bool      `json:"is_valid"`
 }
@@ -231,10 +235,8 @@ func NewTransactionWithStatus(txn *visor.Transaction) (*TransactionWithStatus, e
 // TransactionWithStatusVerbose represents verbose transaction result
 // swagger:model transactionWithStatusVerbose
 type TransactionWithStatusVerbose struct {
-	// swagger:allOf
 	Status TransactionStatus `json:"status"`
 	Time   uint64            `json:"time"`
-	// swagger:allOf
 	Transaction TransactionVerbose `json:"txn"`
 }
 

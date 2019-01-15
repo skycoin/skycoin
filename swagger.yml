@@ -1,0 +1,754 @@
+basePath: /v2_add_base_path
+consumes:
+- application/json
+definitions:
+  AddressBalances:
+    additionalProperties:
+      $ref: '#/definitions/BalancePair'
+    description: AddressBalances represents a map of address balances
+    type: object
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  BalancePair:
+    description: BalancePair records the confirmed and predicted balance of an address
+    properties:
+      confirmed:
+        $ref: '#/definitions/balance'
+      predicted:
+        $ref: '#/definitions/balance'
+    type: object
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  Coins:
+    description: It unmarshals a fixed-point decimal string to droplets and vice versa
+    format: uint64
+    title: Coins is a wrapper around uint64 which implements json.Unmarshaler and
+      json.Marshaler.
+    type: integer
+    x-go-package: github.com/skycoin/skycoin/src/util/http
+  CreatedTransaction:
+    description: CreatedTransaction represents a transaction created by /wallet/transaction
+    properties:
+      fee:
+        type: string
+        x-go-name: Fee
+      inner_hash:
+        type: string
+        x-go-name: InnerHash
+      inputs:
+        items:
+          $ref: '#/definitions/createdTransactionInput'
+        type: array
+        x-go-name: In
+      length:
+        format: uint32
+        type: integer
+        x-go-name: Length
+      outputs:
+        items:
+          $ref: '#/definitions/createdtTransactionOutput'
+        type: array
+        x-go-name: Out
+      sigs:
+        items:
+          type: string
+        type: array
+        x-go-name: Sigs
+      txid:
+        type: string
+        x-go-name: TxID
+      type:
+        format: uint8
+        type: integer
+        x-go-name: Type
+    type: object
+    x-go-package: github.com/skycoin/skycoin/src/api
+  Decimal:
+    description: number = value * 10 ^ exp
+    title: Decimal represents a fixed-point decimal. It is immutable.
+    type: object
+    x-go-package: github.com/skycoin/skycoin/vendor/github.com/shopspring/decimal
+  Hours:
+    description: It unmarshals a fixed-point decimal string to droplets and vice versa
+    format: uint64
+    title: Hours is a wrapper around uint64 which implements json.Unmarshaler and
+      json.Marshaler.
+    type: integer
+    x-go-package: github.com/skycoin/skycoin/src/util/http
+  Ripemd160:
+    description: Ripemd160 ripemd160
+    items:
+      format: uint8
+      type: integer
+    type: array
+    x-go-package: github.com/skycoin/skycoin/src/cipher
+  Sig:
+    description: Sig signature
+    items:
+      format: uint8
+      type: integer
+    type: array
+    x-go-package: github.com/skycoin/skycoin/src/cipher
+  UnconfirmedTransactions:
+    description: UnconfirmedTransactions represents a readable unconfirmed transaction
+    properties:
+      announced:
+        format: date-time
+        type: string
+        x-go-name: Announced
+      checked:
+        format: date-time
+        type: string
+        x-go-name: Checked
+      is_valid:
+        type: boolean
+        x-go-name: IsValid
+      received:
+        format: date-time
+        type: string
+        x-go-name: Received
+      transaction:
+        $ref: '#/definitions/transaction'
+    type: object
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  UnspentOutput:
+    description: UnspentOutput represents a readable output
+    properties:
+      address:
+        type: string
+        x-go-name: Address
+      block_seq:
+        format: uint64
+        type: integer
+        x-go-name: BkSeq
+      calculated_hours:
+        format: uint64
+        type: integer
+        x-go-name: CalculatedHours
+      coins:
+        type: string
+        x-go-name: Coins
+      hash:
+        type: string
+        x-go-name: Hash
+      hours:
+        format: uint64
+        type: integer
+        x-go-name: Hours
+      src_tx:
+        type: string
+        x-go-name: SourceTransaction
+      time:
+        format: uint64
+        type: integer
+        x-go-name: Time
+    type: object
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  address:
+    description: It marshals and unmarshals the address as a string
+    properties:
+      Key:
+        $ref: '#/definitions/Ripemd160'
+      Version:
+        format: uint8
+        type: integer
+    title: Address is a wrapper around cipher.Address which implements json.Unmarshaler
+      and json.Marshaler.
+    type: object
+    x-go-name: Address
+    x-go-package: github.com/skycoin/skycoin/src/util/http
+  balance:
+    description: Balance has coins and hours
+    properties:
+      coins:
+        format: uint64
+        type: integer
+        x-go-name: Coins
+      hours:
+        format: uint64
+        type: integer
+        x-go-name: Hours
+    type: object
+    x-go-name: Balance
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  buildInfo:
+    description: BuildInfo represents the build info
+    properties:
+      branch:
+        description: git branch name
+        type: string
+        x-go-name: Branch
+      commit:
+        description: git commit id
+        type: string
+        x-go-name: Commit
+      version:
+        description: version number
+        type: string
+        x-go-name: Version
+    type: object
+    x-go-name: BuildInfo
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  createdTransactionInput:
+    description: CreatedTransactionInput is a verbose transaction input
+    properties:
+      address:
+        type: string
+        x-go-name: Address
+      block:
+        format: uint64
+        type: integer
+        x-go-name: Block
+      calculated_hours:
+        type: string
+        x-go-name: CalculatedHours
+      coins:
+        type: string
+        x-go-name: Coins
+      hours:
+        type: string
+        x-go-name: Hours
+      timestamp:
+        format: uint64
+        type: integer
+        x-go-name: Time
+      txid:
+        type: string
+        x-go-name: TxID
+      uxid:
+        type: string
+        x-go-name: UxID
+    type: object
+    x-go-name: CreatedTransactionInput
+    x-go-package: github.com/skycoin/skycoin/src/api
+  createdtTransactionOutput:
+    description: CreatedTransactionOutput is a transaction output
+    properties:
+      address:
+        type: string
+        x-go-name: Address
+      coins:
+        type: string
+        x-go-name: Coins
+      hours:
+        type: string
+        x-go-name: Hours
+      uxid:
+        type: string
+        x-go-name: UxID
+    type: object
+    x-go-name: CreatedTransactionOutput
+    x-go-package: github.com/skycoin/skycoin/src/api
+  hoursSelection:
+    description: hoursSelection defines options for hours distribution
+    properties:
+      mode:
+        type: string
+        x-go-name: Mode
+      share_factor:
+        $ref: '#/definitions/Decimal'
+        type: string
+        x-go-name: ShareFactor
+      type:
+        type: string
+        x-go-name: Type
+    type: object
+    x-go-name: HoursSelection
+    x-go-package: github.com/skycoin/skycoin/src/api
+  httpError:
+    description: HTTPError is included in an HTTPResponse
+    properties:
+      code:
+        format: int64
+        type: integer
+        x-go-name: Code
+      message:
+        type: string
+        x-go-name: Message
+    type: object
+    x-go-name: HTTPError
+    x-go-package: github.com/skycoin/skycoin/src/api
+  peerBlockchainHeight:
+    description: PeerBlockchainHeight is a peer's IP address with their reported blockchain
+      height
+    properties:
+      address:
+        type: string
+        x-go-name: Address
+      height:
+        format: uint64
+        type: integer
+        x-go-name: Height
+    type: object
+    x-go-name: PeerBlockchainHeight
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  receiver:
+    description: receiver specifies a spend destination
+    properties:
+      address:
+        $ref: '#/definitions/address'
+        type: string
+        x-go-name: Address
+      coins:
+        $ref: '#/definitions/Coins'
+        type: string
+        x-go-name: Coins
+      hours:
+        $ref: '#/definitions/Hours'
+        type: string
+        x-go-name: Hours
+    type: object
+    x-go-name: Receiver
+    x-go-package: github.com/skycoin/skycoin/src/api
+  rich_list_balance:
+    description: RichlistBalance holds info an address balance holder
+    properties:
+      address:
+        type: string
+        x-go-name: Address
+      coins:
+        type: string
+        x-go-name: Coins
+      locked:
+        type: boolean
+        x-go-name: Locked
+    type: object
+    x-go-name: RichlistBalance
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  transaction:
+    description: Transaction represents a readable transaction
+    properties:
+      inner_hash:
+        type: string
+        x-go-name: InnerHash
+      inputs:
+        items:
+          type: string
+        type: array
+        x-go-name: In
+      length:
+        format: uint32
+        type: integer
+        x-go-name: Length
+      outputs:
+        description: 'in: body'
+        items:
+          $ref: '#/definitions/transactionOutput'
+        type: array
+        x-go-name: Out
+      sigs:
+        items:
+          type: string
+        type: array
+        x-go-name: Sigs
+      timestamp:
+        format: uint64
+        type: integer
+        x-go-name: Timestamp
+      txid:
+        type: string
+        x-go-name: Hash
+      type:
+        format: uint8
+        type: integer
+        x-go-name: Type
+    type: object
+    x-go-name: Transaction
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  transactionInput:
+    description: TransactionInput readable transaction input
+    properties:
+      calculated_hours:
+        format: uint64
+        type: integer
+        x-go-name: CalculatedHours
+      coins:
+        type: string
+        x-go-name: Coins
+      hours:
+        format: uint64
+        type: integer
+        x-go-name: Hours
+      owner:
+        type: string
+        x-go-name: Address
+      uxid:
+        type: string
+        x-go-name: Hash
+    type: object
+    x-go-name: TransactionInput
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  transactionOutput:
+    description: TransactionOutput readable transaction output
+    properties:
+      coins:
+        type: string
+        x-go-name: Coins
+      dst:
+        type: string
+        x-go-name: Address
+      hours:
+        format: uint64
+        type: integer
+        x-go-name: Hours
+      uxid:
+        type: string
+        x-go-name: Hash
+    type: object
+    x-go-name: TransactionOutput
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  transactionStatus:
+    description: TransactionStatus represents the transaction status
+    properties:
+      block_seq:
+        description: If confirmed, the sequence of the block in which the transaction
+          was executed
+        format: uint64
+        type: integer
+        x-go-name: BlockSeq
+      confirmed:
+        type: boolean
+        x-go-name: Confirmed
+      height:
+        description: If confirmed, how many blocks deep in the chain it is. Will be
+          at least 1 if confirmed
+        format: uint64
+        type: integer
+        x-go-name: Height
+      unconfirmed:
+        type: boolean
+        x-go-name: Unconfirmed
+    type: object
+    x-go-name: TransactionStatus
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  transactionWithStatus:
+    description: TransactionWithStatus represents transaction result
+    properties:
+      status:
+        $ref: '#/definitions/transactionStatus'
+      time:
+        format: uint64
+        type: integer
+        x-go-name: Time
+      txn:
+        $ref: '#/definitions/transaction'
+    type: object
+    x-go-name: TransactionWithStatus
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  unspentOutputs:
+    description: UnspentOutputs slice of UnspentOutput
+    items:
+      $ref: '#/definitions/UnspentOutput'
+    type: array
+    x-go-name: UnspentOutputs
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  verifyTxn:
+    description: VerifyTxn transaction verification parameters
+    properties:
+      burn_factor:
+        format: uint32
+        type: integer
+        x-go-name: BurnFactor
+      max_decimals:
+        format: uint8
+        type: integer
+        x-go-name: MaxDropletPrecision
+      max_transaction_size:
+        format: uint32
+        type: integer
+        x-go-name: MaxTransactionSize
+    type: object
+    x-go-name: VerifyTxn
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  walletEntry:
+    description: WalletEntry the wallet entry struct
+    properties:
+      address:
+        type: string
+        x-go-name: Address
+      public_key:
+        type: string
+        x-go-name: Public
+    type: object
+    x-go-name: WalletEntry
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  walletMeta:
+    description: WalletMeta the wallet meta struct
+    properties:
+      coin:
+        type: string
+        x-go-name: Coin
+      crypto_type:
+        type: string
+        x-go-name: CryptoType
+      encrypted:
+        type: boolean
+        x-go-name: Encrypted
+      filename:
+        type: string
+        x-go-name: Filename
+      label:
+        type: string
+        x-go-name: Label
+      timestamp:
+        format: int64
+        type: integer
+        x-go-name: Timestamp
+      type:
+        type: string
+        x-go-name: Type
+      version:
+        type: string
+        x-go-name: Version
+    type: object
+    x-go-name: WalletMeta
+    x-go-package: github.com/skycoin/skycoin/src/readable
+host: localhost
+info:
+  contact:
+    email: john.doe@example.com
+    name: Maceo Doe
+    url: http://john.doe.com
+  description: |-
+    the purpose of this application is to provide an application
+    that is using plain go code to define an API
+
+    This should demonstrate all the possible comment annotations
+    that are available to turn go code into a fully compliant swagger 2.0 spec
+  license:
+    name: MIT
+    url: http://opensource.org/licenses/MIT
+  termsOfService: there are no TOS at this moment, use at your own risk we take no
+    responsibility
+  title: Skycoin API.
+  version: 0.1.1
+paths:
+  /api/v1/coinSupply:
+    get:
+      description: coinSupplyHandler returns coin distribution supply stats
+      operationId: coinSupply
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/coinSupply'
+        "422":
+          $ref: '#/responses/validationError'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+  /api/v1/resendUnconfirmedTxns:
+    post:
+      consumes:
+      - application/json
+      description: Broadcasts all unconfirmed transactions from the unconfirmed transaction
+        pool
+      operationId: resendUnconfirmedTxns
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/resendResult'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+  /api/v1/version:
+    get:
+      description: versionHandler returns the application version info
+      operationId: version
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: buildInfo
+          schema:
+            $ref: '#/definitions/buildInfo'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+  /api/v1/wallets/folderName:
+    get:
+      description: Returns the wallet directory path
+      operationId: walletFolder
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/walletFolderResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+produces:
+- application/json
+responses:
+  coinSupply:
+    description: CoinSupply records the coin supply info
+    headers:
+      current_coinhour_supply:
+        description: CurrentCoinHourSupply is coins hours in non distribution addresses
+        type: string
+      current_supply:
+        description: 'Coins distributed beyond the project:'
+        type: string
+      locked_distribution_addresses:
+        description: Distribution addresses which are locked and do not count towards
+          total supply
+        items:
+          type: string
+        type: array
+      max_supply:
+        description: MaxSupply is the maximum number of coins to be distributed ever
+        type: string
+      total_coinhour_supply:
+        description: TotalCoinHourSupply is coin hours in all addresses including
+          unlocked distribution addresses
+        type: string
+      total_supply:
+        description: TotalSupply is CurrentSupply plus coins held by the distribution
+          addresses that are spendable
+        type: string
+      unlocked_distribution_addresses:
+        description: Distribution addresses which count towards total supply
+        items:
+          type: string
+        type: array
+  genericError:
+    description: |-
+      A GenericError is the default error message that is generated.
+      For certain status codes there are more appropriate error structures.
+    schema:
+      properties:
+        code:
+          format: int32
+          type: integer
+          x-go-name: Code
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  resendResult:
+    description: ResendResult the result of rebroadcasting transaction
+    headers:
+      txids:
+        items:
+          type: string
+        type: array
+  rich_list_response:
+    description: Richlist contains top address balances
+    schema:
+      items:
+        $ref: '#/definitions/rich_list_balance'
+      type: array
+  spentOutput:
+    description: SpentOutput is an unspent output that was spent
+    headers:
+      coins:
+        format: uint64
+        type: integer
+      hours:
+        format: uint64
+        type: integer
+      owner_address:
+        type: string
+      spent_block_seq:
+        format: uint64
+        type: integer
+      spent_tx:
+        type: string
+      src_block_seq:
+        format: uint64
+        type: integer
+      src_tx:
+        type: string
+      time:
+        format: uint64
+        type: integer
+      uxid:
+        type: string
+  validationError:
+    description: |-
+      A ValidationError is an that is generated for validation failures.
+      It has the same fields as a generic error but adds a Field property.
+    schema:
+      properties:
+        code:
+          format: int32
+          type: integer
+          x-go-name: Code
+        field:
+          type: string
+          x-go-name: Field
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  verifyAddressResponse:
+    description: VerifyAddressResponse is returned by POST /api/v2/address/verify
+    headers:
+      version:
+        format: uint8
+        type: integer
+  walletFolderResponse:
+    description: WalletFolder struct
+    headers:
+      address:
+        type: string
+  walletResponse:
+    description: WalletResponse wallet response struct for http apis
+    schema:
+      $ref: '#/definitions/walletMeta'
+      items:
+        $ref: '#/definitions/walletEntry'
+      type: array
+schemes:
+- http
+- https
+security:
+- api_key: []
+securityDefinitions:
+  api_key:
+    in: header
+    name: KEY
+    type: apiKey
+  oauth2:
+    authorizationUrl: /oauth2/auth
+    flow: accessCode
+    in: header
+    scopes:
+      bar: foo
+    tokenUrl: /oauth2/token
+    type: oauth2
+swagger: "2.0"
+x-meta-array:
+- value1
+- value2
+x-meta-array-obj:
+- name: obj
+  value: field
+x-meta-value: value

@@ -442,23 +442,6 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// parseAddressesFromStr parses comma separated addresses string into []cipher.Address
-func parseAddressesFromStr(s string) ([]cipher.Address, error) {
-	addrsStr := splitCommaString(s)
-
-	var addrs []cipher.Address
-	for _, s := range addrsStr {
-		a, err := cipher.DecodeBase58Address(s)
-		if err != nil {
-			return nil, err
-		}
-
-		addrs = append(addrs, a)
-	}
-
-	return addrs, nil
-}
-
 // URI: /api/v1/injectTransaction
 // Method: POST
 // Content-Type: application/json

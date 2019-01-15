@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
@@ -79,9 +78,6 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var addrs []string
-		var hashes []string
-
 		addrStr := r.FormValue("addrs")
 		hashStr := r.FormValue("hashes")
 
@@ -90,16 +86,13 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		filters := []visor.OutputsFilter{}
+		var filters []visor.OutputsFilter
 
 		if addrStr != "" {
-			addrs = splitCommaString(addrStr)
-
-			for _, a := range addrs {
-				if _, err := cipher.DecodeBase58Address(a); err != nil {
-					wh.Error400(w, "addrs contains invalid address")
-					return
-				}
+			addrs, err := parseAddressesFromStr(addrStr)
+			if err != nil {
+				wh.Error400(w, err.Error())
+				return
 			}
 
 			if len(addrs) > 0 {
@@ -108,7 +101,12 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if hashStr != "" {
-			hashes = splitCommaString(hashStr)
+			hashes, err := parseHashesFromStr(hashStr)
+			if err != nil {
+				wh.Error400(w, err.Error())
+				return
+			}
+
 			if len(hashes) > 0 {
 				filters = append(filters, visor.FbyHashes(hashes))
 			}

@@ -170,9 +170,6 @@ func (addr Address) Verify(pubKey PubKey) error {
 }
 
 // String address as Base58 encoded string
-// Returns address as printable
-// version is first byte in binary format
-// in printed address its key, version, checksum
 func (addr Address) String() string {
 	return string(base58.Hex2Base58(addr.Bytes()))
 }

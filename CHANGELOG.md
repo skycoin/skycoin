@@ -21,8 +21,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
   `-` prefix is only allowed when using shorthand notation.
 - Use an optimized `base58` library for faster address decoding and encoding.
-
 ### Removed
+
+- Remove libskycoin source code. Migrated to https://github.com/skycoin/libskycoin
 
 ## [0.25.0] - 2018-12-19
 

@@ -15,7 +15,7 @@
 cd ../../../
 
 if ["${CACHE_TAG#release-v}" != "$CACHE_TAG"] ; then
-  SOURCE_TAG="${CACHE_TAG#release-v}"
+  export SOURCE_TAG="${CACHE_TAG#release-v}"
 fi
 
 # Build skycoin/skycoin:latest

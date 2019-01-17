@@ -22,10 +22,10 @@ RUN sh -c \
         git checkout ${SKYCOIN_VERSION}; \
      fi'
 
-ENV GOARCH="$ARCH"
-    GOARM="$GOARM"
-    CGO_ENABLED="0"
-    GOOS="linux"
+ENV GOARCH="$ARCH" \
+    GOARM="$GOARM" \
+    CGO_ENABLED="0" \
+    GOOS="linux" \
     GOLDFLAGS="-X main.Commit=${SCOMMIT} -X main.Branch=${SBRANCH}" \
 
 RUN cd $GOPATH/src/github.com/skycoin/skycoin && \

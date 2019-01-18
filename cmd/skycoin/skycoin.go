@@ -1,5 +1,7 @@
+/*
+skycoin daemon
+*/
 package main
-
 
 /*
 CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR

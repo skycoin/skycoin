@@ -22,10 +22,14 @@ RUN sh -c \
         git checkout ${SKYCOIN_VERSION}; \
      fi'
 
+ENV GOARCH="$ARCH" \
+    GOARM="$GOARM" \
+    CGO_ENABLED="0" \
+    GOOS="linux" \
+    GOLDFLAGS="-X main.Commit=${SCOMMIT} -X main.Branch=${SBRANCH}"
+
 RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
-    COMMIT=$SCOMMIT BRANCH=$SBRANCH \
-    GOARCH=$ARCH GOARM=$GOARM CGO_ENABLED=0 GOOS=linux \
-    GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}" \
+    echo "Building with GOLDFLAGS=$GOLDFLAGS GOARCH=$GOARCH GOARM=$GOARM CGO_ENABLED=$CGO_ENABLED GOOS=$GOOS " && \
     go install -ldflags "${GOLDFLAGS}" ./cmd/... && \
     sh -c "if test -d $GOPATH/bin/linux_arm ; then mv $GOPATH/bin/linux_arm/* $GOPATH/bin/; fi; \
            if test -d $GOPATH/bin/linux_arm64 ; then mv $GOPATH/bin/linux_arm64/* $GOPATH/bin/; fi"

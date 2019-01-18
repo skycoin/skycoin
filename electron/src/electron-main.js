@@ -115,7 +115,7 @@ function startSkycoin() {
 		  var id = setInterval(function() {
 			// wait till the splash page loading is finished
 			if (splashLoaded) {
-          	  app.emit('skycoin-ready', { url: currentURL });
+			  app.emit('skycoin-ready', { url: currentURL });
 			  clearInterval(id);
 			}
 		  }, 500);

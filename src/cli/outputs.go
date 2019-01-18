@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -11,8 +11,8 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func walletOutputsCmd() *gcli.Command {
-	return &gcli.Command{
+func walletOutputsCmd() *cobra.Command {
+	return &cobra.Command{
 		Short: "Display outputs of specific wallet",
 		Use:   "walletOutputs [wallet file]",
 		Long: fmt.Sprintf(`Display outputs of specific wallet, the default wallet (%s) will be
@@ -25,20 +25,20 @@ func walletOutputsCmd() *gcli.Command {
 	}
 }
 
-func addressOutputsCmd() *gcli.Command {
-	return &gcli.Command{
+func addressOutputsCmd() *cobra.Command {
+	return &cobra.Command{
 		Short: "Display outputs of specific addresses",
 		Use:   "addressOutputs [address list]",
 		Long: `Display outputs of specific addresses, join multiple addresses with space,
     example: addressOutputs $addr1 $addr2 $addr3`,
-		Args:                  gcli.MinimumNArgs(1),
+		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  getAddressOutputsCmd,
 	}
 }
 
-func getWalletOutputsCmd(c *gcli.Command, args []string) error {
+func getWalletOutputsCmd(c *cobra.Command, args []string) error {
 	var wltPath string
 	if len(args) == 1 {
 		wltPath = args[0]
@@ -59,7 +59,7 @@ func getWalletOutputsCmd(c *gcli.Command, args []string) error {
 	})
 }
 
-func getAddressOutputsCmd(c *gcli.Command, args []string) error {
+func getAddressOutputsCmd(c *cobra.Command, args []string) error {
 	addrs := make([]string, len(args))
 
 	var err error

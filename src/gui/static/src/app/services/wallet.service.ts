@@ -267,7 +267,19 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, addresses: string[]|null, destinations: any[], hoursSelection: any, changeAddress: string|null, password: string|null): Observable<PreviewTransaction> {
+  createTransaction(
+    wallet: Wallet,
+    addresses: string[]|null,
+    unspents: string[]|null,
+    destinations: any[],
+    hoursSelection: any,
+    changeAddress: string|null,
+    password: string|null): Observable<PreviewTransaction> {
+
+    if (unspents) {
+      addresses = null;
+    }
+
     return this.apiService.post(
       'wallet/transaction',
       {
@@ -276,6 +288,7 @@ export class WalletService {
           id: wallet.filename,
           password,
           addresses,
+          unspents,
         },
         to: destinations,
         change_address: changeAddress,
@@ -492,6 +505,12 @@ export class WalletService {
 
       this.wallets.next(wallets);
     });
+  }
+
+  getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
+    const addresses = wallet.addresses.map(a => a.address).join(',');
+
+    return this.getOutputs(addresses);
   }
 
   private addSignatures(index: number, txInputs: any[], txSignatures: string[], txInnerHash: string): Observable<any> {

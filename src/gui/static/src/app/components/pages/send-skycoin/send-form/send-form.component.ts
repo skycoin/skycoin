@@ -124,6 +124,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       createTxRequest = this.walletService.createTransaction(
         this.form.value.wallet,
         null,
+        null,
         [{
           address: this.form.value.address,
           coins: this.form.value.amount,

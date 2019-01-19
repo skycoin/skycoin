@@ -5,10 +5,14 @@ import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { showSnackbarError } from '../../../../utils/errors';
-import { Subscription } from 'rxjs/Subscription';
+import { Subscription, ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
+import { Output as UnspentOutput, Wallet, Address } from '../../../../app.datatypes';
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/retryWhen';
+import 'rxjs/add/operator/concat';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -22,13 +26,20 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   @Output() onFormSubmitted = new EventEmitter<any>();
 
   form: FormGroup;
+  wallet: Wallet;
   addresses = [];
+  allUnspentOutputs: UnspentOutput[] = [];
+  unspentOutputs: UnspentOutput[] = [];
+  loadingUnspentOutputs = false;
+  availableCoins = new BigNumber(0);
+  availableHours = new BigNumber(0);
   autoHours = true;
   autoOptions = false;
   autoShareValue = '0.5';
   previewTx: boolean;
 
   private subscriptions: Subscription;
+  private getOutputsSubscriptions: ISubscription;
 
   constructor(
     public walletService: WalletService,
@@ -43,7 +54,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
-      addresses: ['', Validators.required],
+      addresses: [null],
+      outputs: [null],
       changeAddress: [''],
       destinations: this.formBuilder.array(
         [this.createDestinationFormGroup()],
@@ -52,12 +64,42 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions = this.form.get('wallet').valueChanges.subscribe(wallet => {
+      this.wallet = wallet;
+
+      this.closeGetOutputsSubscriptions();
+      this.allUnspentOutputs = [];
+      this.unspentOutputs = [];
+      this.loadingUnspentOutputs = true;
+
+      this.getOutputsSubscriptions = this.walletService.getWalletUnspentOutputs(wallet)
+        .retryWhen(errors => errors.delay(1000).take(10).concat(Observable.throw('')))
+        .subscribe(
+          result => {
+            this.loadingUnspentOutputs = false;
+            this.allUnspentOutputs = result;
+            this.unspentOutputs = this.filterUnspentOutputs();
+          },
+          () => this.loadingUnspentOutputs = false,
+        );
+
       this.addresses = wallet.addresses.filter(addr => addr.coins > 0);
-      this.form.get('addresses').setValue([]);
+      this.form.get('addresses').setValue(null);
+      this.form.get('outputs').setValue(null);
+
+      this.updateAvailableBalance();
       this.form.get('destinations').updateValueAndValidity();
     });
 
     this.subscriptions.add(this.form.get('addresses').valueChanges.subscribe(() => {
+      this.form.get('outputs').setValue(null);
+      this.unspentOutputs = this.filterUnspentOutputs();
+
+      this.updateAvailableBalance();
+      this.form.get('destinations').updateValueAndValidity();
+    }));
+
+    this.subscriptions.add(this.form.get('outputs').valueChanges.subscribe(() => {
+      this.updateAvailableBalance();
       this.form.get('destinations').updateValueAndValidity();
     }));
 
@@ -67,6 +109,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.closeGetOutputsSubscriptions();
     this.subscriptions.unsubscribe();
     this.navbarService.hideSwitch();
     this.snackbar.dismiss();
@@ -172,10 +215,23 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     this.autoOptions = this.formData.form.autoOptions;
+
+    if (this.formData.form.allUnspentOutputs) {
+      this.closeGetOutputsSubscriptions();
+
+      this.allUnspentOutputs = this.formData.form.allUnspentOutputs;
+      this.unspentOutputs = this.filterUnspentOutputs();
+
+      this.form.get('outputs').setValue(this.formData.form.outputs);
+    }
   }
 
   addressCompare(a, b) {
-    return a.address === b.address;
+    return a && b && a.address === b.address;
+  }
+
+  outputCompare(a, b) {
+    return a && b && a.hash === b.hash;
   }
 
   get destControls() {
@@ -183,7 +239,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private validateDestinations() {
-    if (!this.form || !Array.isArray(this.form.get('addresses').value)) {
+    if (!this.form) {
       return { Required: true };
     }
 
@@ -227,17 +283,16 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       return { Invalid: true };
     }
 
-    let coins = new BigNumber(0);
-    this.form.get('addresses').value.map(control => coins = coins.plus(control.coins));
+    this.updateAvailableBalance();
+
     let destinationsCoins = new BigNumber(0);
     this.destControls.map(control => destinationsCoins = destinationsCoins.plus(control.value.coins));
-
-    let hours = new BigNumber(0);
-    this.form.get('addresses').value.map(control => hours = hours.plus(control.hours));
     let destinationsHours = new BigNumber(0);
-    this.destControls.map(control => destinationsHours = destinationsHours.plus(control.value.hours));
+    if (!this.autoHours) {
+      this.destControls.map(control => destinationsHours = destinationsHours.plus(control.value.hours));
+    }
 
-    if (destinationsCoins.isGreaterThan(coins) || destinationsHours.isGreaterThan(hours)) {
+    if (destinationsCoins.isGreaterThan(this.availableCoins) || destinationsHours.isGreaterThan(this.availableHours)) {
       return { Invalid: true };
     }
 
@@ -265,9 +320,16 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.previewButton.setDisabled();
     }
 
+    const selectedAddresses = this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0 ?
+      this.form.get('addresses').value.map(addr => addr.address) : null;
+
+    const selectedOutputs = this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0 ?
+      this.form.get('outputs').value.map(addr => addr.hash) : null;
+
     this.walletService.createTransaction(
       this.form.get('wallet').value,
-      this.form.get('addresses').value.map(addr => addr.address),
+      selectedAddresses,
+      selectedOutputs,
       this.destinations,
       this.hoursSelection,
       this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
@@ -290,6 +352,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             destinations: this.destinations,
             hoursSelection: this.hoursSelection,
             autoOptions: this.autoOptions,
+            allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
+            outputs: this.form.get('outputs').value,
           },
           amount: amount,
           to: this.destinations.map(d => d.address),
@@ -314,7 +378,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private resetForm() {
     this.form.get('wallet').setValue('', { emitEvent: false });
-    this.form.get('addresses').setValue([]);
+    this.form.get('addresses').setValue(null);
+    this.form.get('outputs').setValue(null);
     this.form.get('changeAddress').setValue('');
 
     while (this.destControls.length > 0) {
@@ -357,5 +422,44 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     return hoursSelection;
+  }
+
+  private updateAvailableBalance() {
+    this.availableCoins = new BigNumber(0);
+    if (this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0) {
+      this.form.get('outputs').value.map(control => this.availableCoins = this.availableCoins.plus(control.coins));
+    } else if (this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0) {
+      this.form.get('addresses').value.map(control => this.availableCoins = this.availableCoins.plus(control.coins));
+    } else {
+      this.availableCoins = this.form.get('wallet').value.coins;
+    }
+
+    this.availableHours = new BigNumber(0);
+    if (this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0) {
+      this.form.get('outputs').value.map(control => this.availableHours = this.availableHours.plus(control.calculated_hours));
+    } else if (this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0) {
+      this.form.get('addresses').value.map(control => this.availableHours = this.availableHours.plus(control.hours));
+    } else {
+      this.availableHours = this.form.get('wallet').value.hours;
+    }
+    this.availableHours = this.availableHours.minus(1);
+  }
+
+  private filterUnspentOutputs(): UnspentOutput[] {
+    if (this.allUnspentOutputs.length === 0) {
+      return [];
+    } else if (!this.form.get('addresses').value || (this.form.get('addresses').value as Address[]).length === 0) {
+      return this.allUnspentOutputs;
+    } else {
+      return this.allUnspentOutputs.filter(out => (this.form.get('addresses').value as Address[]).some(addr => addr.address === out.address));
+    }
+  }
+
+  private closeGetOutputsSubscriptions() {
+    this.loadingUnspentOutputs = false;
+    
+    if (this.getOutputsSubscriptions) {
+      this.getOutputsSubscriptions.unsubscribe();
+    }
   }
 }

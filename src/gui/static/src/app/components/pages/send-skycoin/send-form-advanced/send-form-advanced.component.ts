@@ -457,7 +457,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private closeGetOutputsSubscriptions() {
     this.loadingUnspentOutputs = false;
-    
+
     if (this.getOutputsSubscriptions) {
       this.getOutputsSubscriptions.unsubscribe();
     }

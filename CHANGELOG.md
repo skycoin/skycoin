@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - `/api/v1/health` will return correct build info when running Docker containers based on `skycoin/skycoin` mainnet image.
+- #2083, Windows desktop wallet sometimes shows "Error#1" on start
 
 ### Changed
 - Extend URI specification to allow plain addresses (i.e. without a `skycoin:` prefix)

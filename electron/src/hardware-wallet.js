@@ -79,7 +79,6 @@ ipcMain.on('hwGetSavedWalletsDataSync', (event) => {
     getSavedWalletsData(event);
   } else {
     getSavedWalletsDataSyncEvent = event;
-	event.returnValue = '';
   }
 });
 

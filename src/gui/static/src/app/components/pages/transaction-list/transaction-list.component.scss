@@ -1,5 +1,71 @@
 @import '../../../../theme/variables';
 
+.form-field {
+  margin: 20px 40px;
+  margin-bottom: -10px;
+}
+
+mat-select {
+  border-bottom: 2px solid rgba(0, 0, 0, 0.02);
+
+  ::ng-deep .mat-select-trigger {
+    padding: 10px 30px 10px 10px;
+    display: block;
+    font-size: 11px;
+    height: 100%;
+    line-height: 20px;
+  }
+
+  ::ng-deep .mat-select-value {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  ::ng-deep .mat-select-arrow {
+    border: none;
+  }
+
+  ::ng-deep .mat-select-placeholder {
+    transition: unset !important;
+
+    &::before {
+      content: 'filter_list';
+      font-family: 'Material Icons';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 13px;
+      margin-right: 10px;
+    }
+  }
+
+  mat-select-trigger::before {
+    content: 'filter_list';
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 13px;
+    margin-right: 10px;
+  }
+
+  .filter {
+    font-size: 13px;
+    margin-left: 28px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+
+mat-option ::ng-deep .mat-pseudo-checkbox-checked {
+  background: $gradient-blue-dark;
+}
+
+.mat-option-disabled {
+  ::ng-deep .mat-pseudo-checkbox-disabled {
+    opacity: 0.5;
+  }
+}
+
 .-paper {
   background-color: #fbfbfb;
   border-radius: 10px;

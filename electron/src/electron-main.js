@@ -21,6 +21,7 @@ global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
 let showErrorCalled = false;
+let splashLoaded = false
 
 // Detect if the code is running with the "dev" arg. The "dev" arg is added when running npm
 // start. If this is true, a local node will not be started, but one is expected to be running,
@@ -111,7 +112,13 @@ function startSkycoin() {
       data.toString().split('\n').forEach(line => {
         if (line.indexOf(marker) !== -1) {
           currentURL = 'http://' + line.split(marker)[1].trim();
-          app.emit('skycoin-ready', { url: currentURL });
+		  var id = setInterval(function() {
+			// wait till the splash page loading is finished
+			if (splashLoaded) {
+			  app.emit('skycoin-ready', { url: currentURL });
+			  clearInterval(id);
+			}
+		  }, 500);
         }
       });
     });
@@ -188,6 +195,12 @@ function createWindow(url) {
     },
   });
   hwCode.setWinRef(win);
+
+  win.webContents.on('did-finish-load', function() {
+	if (!splashLoaded) {
+	  splashLoaded = true;
+	}
+  });
 
   win.webContents.on('did-fail-load', function() {
     if (!showErrorCalled) {

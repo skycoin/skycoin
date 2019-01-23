@@ -106,7 +106,6 @@ install-linters: ## Install linters
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
-	goimports -w -local github.com/skycoin/skycoin ./lib
 
 install-deps-ui:  ## Install the UI dependencies
 	cd $(GUI_STATIC_DIR) && npm install

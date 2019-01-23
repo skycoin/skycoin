@@ -9,6 +9,7 @@ import { Subscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
+import { BlockchainService } from '../../../../services/blockchain.service';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -36,6 +37,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
     private navbarService: NavBarService,
+    private blockchainService: BlockchainService,
   ) { }
 
   ngOnInit() {
@@ -210,7 +212,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         if (name === 'coins') {
           const parts = value.split('.');
 
-          if (parts.length === 2 && parts[1].length > 6) {
+          if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
             return true;
           }
         } else if (name === 'hours') {

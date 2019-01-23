@@ -5,14 +5,21 @@ import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { WalletService } from './wallet.service';
 import 'rxjs/add/observable/timer';
+import 'rxjs/add/operator/retryWhen';
+import 'rxjs/add/operator/concat';
 
 @Injectable()
 export class BlockchainService {
   private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
   private refreshedBalance = false;
+  private maxDecimals = 6;
 
   get progress() {
     return this.progressSubject.asObservable();
+  }
+
+  get currentMaxDecimals(): number {
+    return this.maxDecimals;
   }
 
   constructor(
@@ -20,6 +27,9 @@ export class BlockchainService {
     private walletService: WalletService,
     private ngZone: NgZone,
   ) {
+    this.apiService.get('health').retryWhen(errors => errors.delay(1000).take(10).concat(Observable.throw('')))
+      .subscribe ((response: any) => this.maxDecimals = response.user_verify_transaction.max_decimals);
+
     this.ngZone.runOutsideAngular(() => {
       Observable.timer(0, 2000)
         .flatMap(() => this.getBlockchainProgress())

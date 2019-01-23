@@ -38,6 +38,7 @@
     "syncing-blocks": "Syncing blocks",
     "update1": "Wallet update",
     "update2": "available.",
+    "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
     "pending-txs1": "There are some",
     "pending-txs2": "pending transactions.",
     "pending-txs3": "Data you see may not be updated.",
@@ -93,7 +94,6 @@
   },
 
   "wallet": {
-    "synchronizing": "Synchronizing...",
     "new-address": "New Address",
     "new-addresses": "New Addresses",
     "show-empty": "Show Empty",

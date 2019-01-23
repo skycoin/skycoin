@@ -8,7 +8,6 @@ import { ISubscription } from 'rxjs/Subscription';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { showConfirmationModal } from '../../../utils';
-import { BlockchainService } from '../../../services/blockchain.service';
 
 @Component({
   selector: 'app-wallets',
@@ -21,17 +20,14 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
   wallets: Wallet[] = [];
   hardwareWallets: Wallet[] = [];
-  synchronized = false;
 
   private subscription: ISubscription;
-  private synchronizedSubscription: ISubscription;
 
   constructor(
     private walletService: WalletService,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private router: Router,
-    blockchainService: BlockchainService,
   ) {
     if (window['isElectron']) {
       this.hwCompatibilityActivated = window['ipcRenderer'].sendSync('hwCompatibilityActivated');
@@ -48,8 +44,6 @@ export class WalletsComponent implements OnInit, OnDestroy {
         }
       });
     });
-
-    this.synchronizedSubscription = blockchainService.synchronized.subscribe(value => this.synchronized = value);
   }
 
   ngOnInit(): void {
@@ -63,7 +57,6 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
-    this.synchronizedSubscription.unsubscribe();
   }
 
   addWallet(create) {

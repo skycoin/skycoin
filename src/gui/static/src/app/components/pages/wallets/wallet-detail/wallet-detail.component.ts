@@ -14,6 +14,8 @@ import { Observable } from 'rxjs/Observable';
 import { showConfirmationModal } from '../../../../utils';
 import { AppConfig } from '../../../../app.config';
 import { Router } from '@angular/router';
+import { ISubscription } from 'rxjs/Subscription';
+import { BlockchainService } from '../../../../services/blockchain.service';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -24,8 +26,10 @@ export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
   creatingAddress = false;
+  synchronized = false;
 
   private howManyAddresses: number;
+  private synchronizedSubscription: ISubscription;
 
   constructor(
     private dialog: MatDialog,
@@ -34,10 +38,14 @@ export class WalletDetailComponent implements OnDestroy {
     private hwWalletService: HwWalletService,
     private translateService: TranslateService,
     private router: Router,
-  ) { }
+    blockchainService: BlockchainService,
+  ) {
+    this.synchronizedSubscription = blockchainService.synchronized.subscribe(value => this.synchronized = value);
+  }
 
   ngOnDestroy() {
     this.snackbar.dismiss();
+    this.synchronizedSubscription.unsubscribe();
   }
 
   editWallet() {

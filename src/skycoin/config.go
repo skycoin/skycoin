@@ -37,6 +37,10 @@ type Config struct {
 type NodeConfig struct {
 	// Name of the coin
 	CoinName string
+	// Coinhours name
+	CoinhoursName string
+	// Ticker code
+	Ticker string
 
 	// Disable peer exchange
 	DisablePEX bool
@@ -86,7 +90,7 @@ type NodeConfig struct {
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
 	PeerlistSize int
 	// Wallet Address Version
-	//AddressVersion string
+	// AddressVersion string
 	// Remote web interface
 	WebInterface bool
 	// Remote web interface port
@@ -201,6 +205,8 @@ type NodeConfig struct {
 func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	nodeConfig := NodeConfig{
 		CoinName:            node.CoinName,
+		CoinhoursName:       node.CoinhoursName,
+		Ticker:              node.Ticker,
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
@@ -227,7 +233,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Which address to serve on. Leave blank to automatically assign to a
 		// public interface
 		Address: "",
-		//gnet uses this for TCP incoming and outgoing
+		// gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
 		// MaxConnections is the maximum number of total connections allowed
 		MaxConnections: 128,
@@ -241,7 +247,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		OutgoingConnectionsRate: time.Second * 5,
 		PeerlistSize:            65535,
 		// Wallet Address Version
-		//AddressVersion: "test",
+		// AddressVersion: "test",
 		// Remote web interface
 		WebInterface:      true,
 		WebInterfacePort:  node.WebInterfacePort,

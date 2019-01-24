@@ -20,7 +20,9 @@ type BlockchainMetadata struct {
 type HealthResponse struct {
 	BlockchainMetadata   BlockchainMetadata `json:"blockchain"`
 	Version              readable.BuildInfo `json:"version"`
-	CoinName             string             `json:"coin"`
+	CoinName              string             `json:"coin"`
+	CoinhoursName         string             `json:"coinhours_name"`
+	Ticker                string             `json:"ticker"`
 	DaemonUserAgent      string             `json:"user_agent"`
 	OpenConnections      int                `json:"open_connections"`
 	OutgoingConnections  int                `json:"outgoing_connections"`
@@ -69,7 +71,9 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
 			Version:              c.health.BuildInfo,
-			CoinName:             c.health.CoinName,
+			CoinName:              c.health.CoinName,
+			CoinhoursName:         c.health.CoinhoursName,
+			Ticker:                c.health.Ticker,
 			DaemonUserAgent:      userAgent,
 			OpenConnections:      health.OutgoingConnections + health.IncomingConnections,
 			OutgoingConnections:  health.OutgoingConnections,

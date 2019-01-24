@@ -428,6 +428,8 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 				Branch:  c.config.Build.Branch,
 			},
 			CoinName:        c.config.Node.CoinName,
+			CoinhoursName:   c.config.Node.CoinhoursName,
+			Ticker:          c.config.Node.Ticker,
 			DaemonUserAgent: c.config.Node.userAgent,
 		},
 		Username: c.config.Node.WebInterfaceUsername,

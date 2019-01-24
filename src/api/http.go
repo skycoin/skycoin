@@ -86,6 +86,8 @@ type Config struct {
 type HealthConfig struct {
 	BuildInfo       readable.BuildInfo
 	CoinName        string
+	CoinhoursName   string
+	Ticker          string
 	DaemonUserAgent useragent.Data
 }
 

@@ -29,6 +29,7 @@ func defaultMuxConfig() muxConfig {
 		host:           configuredHost,
 		appLoc:         ".",
 		disableCSRF:    true,
+		disableCORS:    true,
 		disableCSP:     true,
 		enabledAPISets: allAPISetsEnabled,
 	}
@@ -211,22 +212,31 @@ func TestCORS(t *testing.T) {
 		origin        string
 		hostWhitelist []string
 		valid         bool
+		corsDisabled  bool
 	}{
 		{
-			name:   "options no whitelist",
-			origin: configuredHost,
-			valid:  true,
+			name:         "options no whitelist",
+			origin:       configuredHost,
+			valid:        true,
+			corsDisabled: false,
 		},
 		{
 			name:          "options whitelist",
 			origin:        "example.com",
 			hostWhitelist: []string{"example.com"},
 			valid:         true,
+			corsDisabled:  false,
 		},
 		{
-			name:   "options no whitelist not whitelisted",
-			origin: "example.com",
-			valid:  false,
+			name:         "options no whitelist not whitelisted",
+			origin:       "example.com",
+			valid:        false,
+			corsDisabled: false,
+		},
+		{
+			name:         "disable cors",
+			valid:        false,
+			corsDisabled: true,
 		},
 	}
 
@@ -241,6 +251,7 @@ func TestCORS(t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					cfg := defaultMuxConfig()
 					cfg.disableCSRF = false
+					cfg.disableCORS = tc.corsDisabled
 					cfg.hostWhitelist = tc.hostWhitelist
 
 					req, err := http.NewRequest(http.MethodOptions, e, nil)

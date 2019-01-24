@@ -414,6 +414,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 	config := api.Config{
 		StaticDir:      c.config.Node.GUIDirectory,
 		DisableCSRF:    c.config.Node.DisableCSRF,
+		DisableCORS:          c.config.Node.DisableCORS,
 		DisableCSP:     c.config.Node.DisableCSP,
 		EnableGUI:      c.config.Node.EnableGUI,
 		ReadTimeout:    c.config.Node.HTTPReadTimeout,

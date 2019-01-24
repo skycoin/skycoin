@@ -251,8 +251,6 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		richlistCmd(),
 		addressTransactionsCmd(),
 		depositCoinhoursCmd(),
-		transferCoinhoursCmd(),
-		withdrawCoinhoursCmd(),
 		coinhourBalanceCmd(),
 	}
 

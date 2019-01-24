@@ -18,8 +18,9 @@ type BlockchainMetadata struct {
 
 // HealthResponse is returned by the /health endpoint
 type HealthResponse struct {
-	BlockchainMetadata   BlockchainMetadata `json:"blockchain"`
-	Version              readable.BuildInfo `json:"version"`
+	BlockchainMetadata    BlockchainMetadata `json:"blockchain"`
+	Version               readable.BuildInfo `json:"version"`
+	DisplayName           string             `json:"display_name"`
 	CoinName              string             `json:"coin"`
 	CoinhoursName         string             `json:"coinhours_name"`
 	Ticker                string             `json:"ticker"`
@@ -70,7 +71,8 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
-			Version:              c.health.BuildInfo,
+			Version:               c.health.BuildInfo,
+			DisplayName:           c.health.DisplayName,
 			CoinName:              c.health.CoinName,
 			CoinhoursName:         c.health.CoinhoursName,
 			Ticker:                c.health.Ticker,

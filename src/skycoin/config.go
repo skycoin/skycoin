@@ -35,6 +35,8 @@ type Config struct {
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {
+	// DisplayName user-facing name
+	DisplayName string
 	// Name of the coin
 	CoinName string
 	// Coinhours name
@@ -204,6 +206,7 @@ type NodeConfig struct {
 // NewNodeConfig returns a new node config instance
 func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 	nodeConfig := NodeConfig{
+		DisplayName:         node.DisplayName,
 		CoinName:            node.CoinName,
 		CoinhoursName:       node.CoinhoursName,
 		Ticker:              node.Ticker,

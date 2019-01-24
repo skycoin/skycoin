@@ -32,6 +32,8 @@ var (
 
 	logger = logging.MustGetLogger("main")
 
+	// DisplayName user-facing name
+	DisplayName = "Skycoin"
 	// CoinName name of coin
 	CoinName = "skycoin"
 	// CoinhoursName name of coinhours
@@ -69,6 +71,7 @@ var (
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+		DisplayName:                    DisplayName,
 		CoinName:                       CoinName,
 		CoinhoursName:                  CoinhoursName,
 		Ticker:                         Ticker,

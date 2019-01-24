@@ -32,8 +32,14 @@ var (
 
 	logger = logging.MustGetLogger("main")
 
+	// DisplayName user-facing name
+	DisplayName = "{{.DisplayName}}"
 	// CoinName name of coin
 	CoinName = "{{.CoinName}}"
+	// CoinhoursName name of coinhours
+	CoinhoursName = "{{.CoinhoursName}}"
+	// Ticker short name
+	Ticker = "{{.Ticker}}"
 
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "{{.GenesisSignatureStr}}"
@@ -57,7 +63,10 @@ var (
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+		DisplayName:                    DisplayName,
 		CoinName:                       CoinName,
+		CoinhoursName:                  CoinhoursName,
+		Ticker:                         Ticker,
 		GenesisSignatureStr:            GenesisSignatureStr,
 		GenesisAddressStr:              GenesisAddressStr,
 		GenesisCoinVolume:              GenesisCoinVolume,

@@ -53,6 +53,7 @@ type NodeParameters struct {
 	MaxBlockSize int `mapstructure:"max_block_size"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
+	DisplayName   string
 	CoinName      string
 	CoinhoursName string
 	Ticker        string

@@ -427,6 +427,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 				Commit:  c.config.Build.Commit,
 				Branch:  c.config.Build.Branch,
 			},
+			DisplayName:     c.config.Node.DisplayName,
 			CoinName:        c.config.Node.CoinName,
 			CoinhoursName:   c.config.Node.CoinhoursName,
 			Ticker:          c.config.Node.Ticker,

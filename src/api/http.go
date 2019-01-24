@@ -85,6 +85,7 @@ type Config struct {
 // HealthConfig configuration data exposed in /health
 type HealthConfig struct {
 	BuildInfo       readable.BuildInfo
+	DisplayName     string
 	CoinName        string
 	CoinhoursName   string
 	Ticker          string

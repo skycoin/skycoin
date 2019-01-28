@@ -103,6 +103,33 @@ func TestPubKeyHex(t *testing.T) {
 	require.Equal(t, p2.Hex(), h)
 }
 
+func TestPubKeyString(t *testing.T) {
+	p, _ := GenerateKeyPair()
+	require.Equal(t, p.Hex(), p.String())
+}
+
+func TestPubKeyTextMarshaller(t *testing.T) {
+	p, _ := GenerateKeyPair()
+	h, err := p.MarshalText()
+	require.NoError(t, err)
+
+	var p2 PubKey
+	err = p2.UnmarshalText(h)
+	require.NoError(t, err)
+	require.Equal(t, p, p2)
+}
+
+func TestPubKeyBinaryMarshaller(t *testing.T) {
+	p, _ := GenerateKeyPair()
+	b, err := p.MarshalBinary()
+	require.NoError(t, err)
+
+	var p2 PubKey
+	err = p2.UnmarshalBinary(b)
+	require.NoError(t, err)
+	require.Equal(t, p, p2)
+}
+
 func TestNewPubKeyRandom(t *testing.T) {
 	// Random bytes should not be valid, most of the time
 	failed := false
@@ -261,6 +288,33 @@ func TestSecKeyHex(t *testing.T) {
 	p2 := MustSecKeyFromHex(h)
 	require.Equal(t, p2, p)
 	require.Equal(t, p2.Hex(), h)
+}
+
+func TestSecKeyString(t *testing.T) {
+	_, s := GenerateKeyPair()
+	require.Equal(t, s.Hex(), s.String())
+}
+
+func TestSecKeyTextMarshaller(t *testing.T) {
+	_, s := GenerateKeyPair()
+	h, err := s.MarshalText()
+	require.NoError(t, err)
+
+	var s2 SecKey
+	err = s2.UnmarshalText(h)
+	require.NoError(t, err)
+	require.Equal(t, s, s2)
+}
+
+func TestSecKeyBinaryMarshaller(t *testing.T) {
+	_, s := GenerateKeyPair()
+	b, err := s.MarshalBinary()
+	require.NoError(t, err)
+
+	var s2 SecKey
+	err = s2.UnmarshalBinary(b)
+	require.NoError(t, err)
+	require.Equal(t, s, s2)
 }
 
 func TestSecKeyVerify(t *testing.T) {

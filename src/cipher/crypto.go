@@ -191,6 +191,39 @@ func (pk PubKey) Null() bool {
 	return pk == PubKey{}
 }
 
+// String implements fmt.Stringer for PubKey. Returns Hex representation.
+func (pk PubKey) String() string {
+	return pk.Hex()
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (pk PubKey) MarshalText() ([]byte, error) {
+	return []byte(pk.Hex()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (pk *PubKey) UnmarshalText(data []byte) error {
+	dPK, err := PubKeyFromHex(string(data))
+	if err == nil {
+		*pk = dPK
+	}
+	return err
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (pk PubKey) MarshalBinary() ([]byte, error) {
+	return pk[:], nil
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (pk *PubKey) UnmarshalBinary(data []byte) error {
+	dPK, err := NewPubKey(data)
+	if err == nil {
+		*pk = dPK
+	}
+	return err
+}
+
 // SecKey secret key
 type SecKey [32]byte
 
@@ -266,6 +299,39 @@ func (sk SecKey) Hex() string {
 // Null returns true if SecKey is the null SecKey
 func (sk SecKey) Null() bool {
 	return sk == SecKey{}
+}
+
+// String implements fmt.Stringer for SecKey. Returns Hex representation.
+func (sk SecKey) String() string {
+	return sk.Hex()
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (sk SecKey) MarshalText() ([]byte, error) {
+	return []byte(sk.Hex()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (sk *SecKey) UnmarshalText(data []byte) error {
+	dSK, err := SecKeyFromHex(string(data))
+	if err == nil {
+		*sk = dSK
+	}
+	return err
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (sk SecKey) MarshalBinary() ([]byte, error) {
+	return sk[:], nil
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (sk *SecKey) UnmarshalBinary(data []byte) error {
+	dSK, err := NewSecKey(data)
+	if err == nil {
+		*sk = dSK
+	}
+	return err
 }
 
 //ECDH generates a shared secret

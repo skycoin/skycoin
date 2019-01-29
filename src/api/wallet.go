@@ -19,7 +19,6 @@ import (
 )
 
 // SpendResult represents the result of spending
-// swagger:response spendResult
 type SpendResult struct {
 	Balance *readable.BalancePair `json:"balance,omitempty"`
 	Transaction *readable.Transaction `json:"txn,omitempty"`
@@ -29,7 +28,6 @@ type SpendResult struct {
 // UnconfirmedTxnsResponse contains unconfirmed transaction data
 // swagger:model unconfirmedTxnsResponse
 type UnconfirmedTxnsResponse struct {
-	// swagger:allOf
 	Transactions []readable.UnconfirmedTransactions `json:"transactions"`
 }
 
@@ -40,19 +38,14 @@ type UnconfirmedTxnsVerboseResponse struct {
 }
 
 // BalanceResponse address balance summary struct
-// swagger:response balanceResponse
 type BalanceResponse struct {
-	// swagger:allOf
 	readable.BalancePair
 	Addresses readable.AddressBalances `json:"addresses"`
 }
 
 // WalletResponse wallet response struct for http apis
-// swagger:response walletResponse
 type WalletResponse struct {
-	// in: body
 	Meta readable.WalletMeta `json:"meta"`
-	// in: body
 	Entries []readable.WalletEntry `json:"entries"`
 }
 
@@ -103,25 +96,7 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 //     id: wallet id [required]
 func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/wallet/balance walletBalance
-	//
-	// Returns the wallet's balance, both confirmed and predicted.  The predicted
-	// balance is the confirmed balance minus the pending spends.
-	// TODO add urls params
-	//  id: wallet id [required]
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -163,48 +138,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 //     addrs: command separated list of addresses [required]
 func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1s/balance balance
-	//
-	// Returns the balance of one or more addresses, both confirmed and predicted.  The predicted
-	// balance is the confirmed balance minus the pending spends.
-	// TODO add urls params
-	//  addrs: command separated list of addresses [required]
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
-
-	// swagger:route POST /api/v1s/balance balance
-	//
-	// Returns the balance of one or more addresses, both confirmed and predicted.  The predicted
-	// balance is the confirmed balance minus the pending spends.
-	// TODO add urls params
-	//  addrs: command separated list of addresses [required]
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
@@ -276,36 +210,7 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 //         if this field is not empty, the spend succeeded, but the response data could not be prepared
 func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/spend walletSpend
-	//
-	// Creates and broadcasts a transaction sending money from one of our wallets
-	// to destination address.
-	// Response:
-	//  balance: new balance of the wallet
-	//  txn: spent transaction
-	//  error: an error that may have occurred after broadcast the transaction to the network
-	//      if this field is not empty, the spend succeeded, but the response data could not be prepared
-	// TODO add urls params
-	//  id: wallet id
-	//  dst: recipient address
-	//  coins: the number of droplet you will send
-	//  password: wallet password
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -405,32 +310,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 //     password: password for encrypting wallet [optional, must be provided if "encrypt" is set]
 func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/create walletCreate
-	//
-	// Loads wallet from seed, will scan ahead N address and
-	// load addresses till the last one that have coins.
-	// TODO add urls params
-	//  seed: wallet seed [required]
-	//  label: wallet label [required]
-	//  scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-	//  encrypt: bool value, whether encrypt the wallet [optional]
-	//  password: password for encrypting wallet [optional, must be provided if "encrypt" is set]
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -535,29 +415,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 //     password: wallet password [optional, must be provided if the wallet is encrypted]
 func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/newAddress walletNewAddresses
-	//
-	// Genreates new addresses
-	// TODO add urls params
-	//  id: wallet id [required]
-	//  num: number of address need to create [optional, if not set the default value is 1]
-	//  password: wallet password [optional, must be provided if the wallet is encrypted]
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -619,29 +477,7 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 //     label: the label the wallet will be updated to [required]
 func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/update walletUpdate
-	//
-	// Update wallet label
-	// TODO add urls params
-	//  id: wallet id [required]
-	//  label: the label the wallet will be updated to [required]
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
-
+	// TODO For v3
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -686,24 +522,7 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 //     id: wallet id [required]
 func walletHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/wallet wallet
-	//
-	// Returns a wallet by id
-	// TODO add urls params
-	//     id: wallet id [required]
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -744,25 +563,7 @@ func walletHandler(gateway Gatewayer) http.HandlerFunc {
 //	verbose: [bool] include verbose transaction input data
 func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/wallet/transactions walletTransactions
-	//
-	// walletTransactionsHandler returns all unconfirmed transactions for all addresses in a given wallet
-	// TODO add urls params
-	//	id: wallet id [required]
-	//	verbose: [bool] include verbose transaction input data
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -841,22 +642,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/wallets wallets
-	//
-	// Returns all loaded wallets
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: body:walletsForResponse
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -894,10 +680,6 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// swagger:response
-type walletsForResponse struct {
-	 response []WalletResponse `json:"response"`
-}
 
 // WalletFolder struct
 // swagger:response walletFolderResponse
@@ -920,8 +702,7 @@ func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
 	//     Schemes: http, https
 	//
 	//     Security:
-	//       api_key:
-	//       oauth: read, write
+	//       csrfAuth: []
 	//
 	//     Responses:
 	//       default: genericError
@@ -957,24 +738,7 @@ func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
 //     entropy: entropy bitsize [optional, default value of 128 will be used if not set]
 func newSeedHandler() http.HandlerFunc {
 
-	// swagger:route GET /api/v1/wallet/newSeed newSeed
-	//
-	// Generates wallet seed
-	// TODO add urls params
-	//  entropy: entropy bitsize [optional, default value of 128 will be used if not set]
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -1030,29 +794,7 @@ func newSeedHandler() http.HandlerFunc {
 //     password: wallet password
 func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/seed walletSeed
-	//
-	// Returns seed of wallet of given id
-	// Returns the historical, spent outputs associated with an address
-	// TODO add urls params
-	//  id: wallet id
-	//  password: wallet password
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1107,6 +849,9 @@ type VerifySeedRequest struct {
 // Method: POST
 // URI: /api/v2/wallet/seed/verify
 func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
+
+	// TODO For v3
+
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
 		writeHTTPResponse(w, resp)
@@ -1149,27 +894,7 @@ func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 //     id: wallet id
 func walletUnloadHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/unload walletUnload
-	//
-	// Returns the historical, spent outputs associated with an address
-	// TODO add urls params
-	//  id: wallet id
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1202,28 +927,7 @@ func walletUnloadHandler(gateway Gatewayer) http.HandlerFunc {
 //     password: wallet password
 func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/encrypt walletEncrypt
-	//
-	// Encrypts wallet
-	// TODO add urls params
-	//  id: wallet id
-	//  password: wallet password
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1277,28 +981,7 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 //     password: wallet password
 func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/decrypt walletDecrypt
-	//
-	// Decrypts wallet
-	// TODO add urls params
-	//  id: wallet id
-	//  password: wallet password
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1364,33 +1047,7 @@ type WalletRecoverRequest struct {
 // If the wallet is not encrypted, an error is returned.
 func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v2/wallet/recover walletRecover
-	//
-	// Recovers an encrypted wallet by providing the seed.
-	// The first address will be generated from seed and compared to the first address
-	// of the specified wallet. If they match, the wallet will be regenerated
-	// with an optional password.
-	// If the wallet is not encrypted, an error is returned.
-	// TODO add urls params
-	//	id: wallet id
-	//  seed: wallet seed
-	//  password: [optional] new password
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

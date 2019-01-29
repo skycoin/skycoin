@@ -22,8 +22,7 @@ func versionHandler(bi readable.BuildInfo) http.HandlerFunc {
 	//     Schemes: http, https
 	//
 	//     Security:
-	//       api_key:
-	//       oauth: read, write
+	//       csrfAuth: []
 	//
 	//     Responses:
 	//       default: genericError

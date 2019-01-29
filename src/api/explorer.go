@@ -55,8 +55,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 	//     Schemes: http, https
 	//
 	//     Security:
-	//       api_key:
-	//       oauth: read, write
+	//       csrfAuth: []
 	//
 	//     Responses:
 	//       default: genericError
@@ -178,28 +177,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // URI: /api/v1/explorer/address
 func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
-	// TODO Resolve address Problem Cool Response
-
-	// swagger:route GET /api/v1/explorer/address transactionsForAddress
-	//
-	// transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
-	//
-	//	address [string]
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: addressResponse
-	//       422: validationError
-
+	// TODO For v3
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Critical().Warning("Call to deprecated /api/v1/explorer/address endpoint")
 
@@ -242,17 +220,13 @@ func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// swagger:response addressResponse
 type TransactionVerboseArray struct {
-	// in: body
 	Response []readable.TransactionVerbose
 }
 
 // Richlist contains top address balances
 //
-// swagger:response rich_list_response
 type Richlist struct {
-	// in: body
 	Richlist []readable.RichlistBalance `json:"richlist"`
 }
 
@@ -264,27 +238,7 @@ type Richlist struct {
 //  include-distribution [bool, include the distribution addresses in the richlist]
 func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/richlist richlistHandler
-	//
-	// richlistHandler returns the top skycoin holders
-	//
-	// TODO add urls params:
-	//	n [int, number of results to include]
-	//  include-distribution [bool, include the distribution addresses in the richlist] pattern -> ?n=${number}&include-distribution=${bool}
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: rich_list_response
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -345,23 +299,7 @@ func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/addresscount
 func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/addresscount addressCount
-	//
-	// addressCountHandler returns the total number of unique address that have coins
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: mapForResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -377,13 +315,4 @@ func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendJSONOr500(logger, w, &map[string]uint64{"count": addrCount})
 	}
-}
-
-// swagger:model mapResponse
-type mapResponse map[string]uint64
-// TODO Response is empty, what can be??
-
-// swagger:response mapForResponse
-type MapForResponse struct {
-	mapForResponse mapResponse `json:"map_for_response"`
 }

@@ -21,25 +21,7 @@ import (
 //	addr - An IP:Port string
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/network/connections connection
-	//
-	// connectionHandler returns a specific connection
-	// TODO add params urls
-	//	addr - An IP:Port string
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: someResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -95,26 +77,7 @@ func NewConnections(dconns []daemon.Connection) Connections {
 //  direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/network/connections connections
-	//
-	// connectionsHandler returns all outgoing connections
-	// TODO add params urls
-	//	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
-	//  direction: [optional] "outgoing" or "incoming". If not provided, both are included.
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: someResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -181,12 +144,6 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// swagger:response defaultConnectionResponse
-type DefaultConnectionResponse struct {
-	//Body struct{
-		returned []string `json:"default_connections"`
-	//}`json:"body"`
-}
 
 // defaultConnectionsHandler returns the list of default hardcoded bootstrap addresses.
 // They are not necessarily connected to.
@@ -194,24 +151,7 @@ type DefaultConnectionResponse struct {
 // Method: GET
 func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/network/defaultConnections defaultConnections
-	//
-	// defaultConnectionsHandler returns the list of default hardcoded bootstrap addresses.
-	// They are not necessarily connected to.
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: defaultConnectionResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -232,24 +172,7 @@ func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/network/trust trustConnections
-	//
-	// trustConnectionsHandler returns all trusted connections
-	// In the default configuration, these will be a subset of the default hardcoded bootstrap addresses
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: someResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -269,23 +192,7 @@ func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/network/exchange exchgConnections
-	//
-	// exchgConnectionsHandler returns all connections found through peer exchange
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: someResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -307,28 +214,7 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 //	id: ID of the connection
 func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/network/connection/disconnect disconnect
-	//
-	// disconnectHandler disconnects a connection by ID or address
-	// TODO add params url
-	//	id: ID of the connection
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: someResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

@@ -94,7 +94,6 @@ func NewBlockchainMetadata(head coin.SignedBlock, unconfirmedLen, unspentsLen ui
 }
 
 // UnconfirmedTransaction unconfirmed transaction
-// swagger:response unconfirmedTransaction
 type UnconfirmedTransaction struct {
 	// swagger:allOf
 	Transaction coin.Transaction

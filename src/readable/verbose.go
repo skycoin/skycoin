@@ -12,13 +12,11 @@ import (
 )
 
 // BlockBodyVerbose represents a verbose readable block body
-// swagger:model blockBodyVerbose
 type BlockBodyVerbose struct {
 	Transactions []BlockTransactionVerbose `json:"txns"`
 }
 
 // BlockVerbose represents a readable block with verbose data
-// swagger:response blockVerbose
 type BlockVerbose struct {
 	Head BlockHeader      `json:"header"`
 	Body BlockBodyVerbose `json:"body"`
@@ -192,12 +190,9 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 }
 
 // TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose
-// swagger:response transactionVerbose
 type TransactionVerbose struct {
-	// in: body
 	Status    *TransactionStatus `json:"status,omitempty"`
 	Timestamp uint64             `json:"timestamp,omitempty"`
-	// swagger:allOf
 	BlockTransactionVerbose
 }
 
@@ -218,15 +213,10 @@ func NewTransactionVerbose(txn visor.Transaction, inputs []visor.TransactionInpu
 }
 
 // UnconfirmedTransactionVerbose represents a verbose readable unconfirmed transaction
-// swagger:response unconfirmedTransactionVerbose
 type UnconfirmedTransactionVerbose struct {
-	// swagger:allOf
 	Transaction BlockTransactionVerbose `json:"transaction"`
-	// swagger:allOf
 	Received time.Time `json:"received"`
-	// swagger:allOf
 	Checked time.Time `json:"checked"`
-	// swagger:allOf
 	Announced time.Time `json:"announced"`
 	IsValid   bool      `json:"is_valid"`
 }

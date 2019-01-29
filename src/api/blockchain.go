@@ -21,22 +21,7 @@ import (
 // URI: /api/v1/blockchain/metadata
 func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/blockchain/metadata blockchainMetadataHandler
-	//
-	// blockchainMetadataHandler returns the blockchain metadata
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: blockchainMetadata
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -69,22 +54,7 @@ func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/blockchain/progress
 func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/blockchain/progress blockchainProgress
-	//
-	// blockchainProgressHandler returns the blockchain sync progress
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: blockchainProgress
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -136,23 +106,7 @@ type blockParams struct {
 //  seq [int]
 // 	Note: only one of hash or seq is allowed
 func blockHandler(gateway Gatewayer) http.HandlerFunc {
-	//TODO Resolve verbose....
-	//swagger:route GET /api/v1/block block blockParams
-	//
-	// blockHandler returns a block by hash or seq
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: blockVerbose
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -269,43 +223,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 //  seqs [comma separated list of ints]
 //  verbose [bool]
 func blocksHandler(gateway Gatewayer) http.HandlerFunc {
-	// TODO Resolve verbose and other params
-	// swagger:route GET /api/v1/blocks blocks_BAD_TODO
-	//
-	// blocksHandler returns blocks between a start and end point, or an explicit list of sequences. If using start and end, the block sequences include both the start and end point. Explicit sequences cannot be combined with start and end.
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: blocks_struct
-
-	// swagger:route POST /api/v1/blockchain/metadata_TODO blocks_BAD_TODO
-	//
-	// blocksHandler returns blocks between a start and end point, or an explicit list of sequences. If using start and end, the block sequences include both the start and end point. Explicit sequences cannot be combined with start and end.
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: blocks_struct
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
@@ -451,24 +369,7 @@ type ParamsLastBlocks struct {
 //	num [int]
 //  verbose [bool]
 func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
-	// TODO Resolve verbose and Params
-	// swagger:route GET /api/v1/last_blocks lastBlocks paramsLastBlocks
-	//
-	// lastBlocksHandler returns the most recent N blocks on the blockchain
-	//
-	// Args:
-	//	num [int]
-	//  verbose [bool]
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: blocks_struct
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

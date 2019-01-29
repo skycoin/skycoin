@@ -3,7 +3,7 @@ package readable
 import "github.com/blang/semver"
 
 // BuildInfo represents the build info
-// swagger:model buildInfo
+// swagger:response buildInfo
 type BuildInfo struct {
 	// version number
 	Version string `json:"version"`

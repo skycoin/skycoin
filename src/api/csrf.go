@@ -122,24 +122,7 @@ func verifyCSRFToken(headerToken string) error {
 //  csrf_token: CSRF token to use in POST requests
 func getCSRFToken(disabled bool) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/csrf csrfToken
-	//
-	// Creates a new CSRF token. Previous CSRF tokens are invalidated by this call.
-	// Response:
-	//  csrf_token: CSRF token to use in POST requests
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: csrfTokenResponse
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -166,11 +149,11 @@ func getCSRFToken(disabled bool) http.HandlerFunc {
 }
 
 // Response to address /api/v1/csrf
-// swagger:response csrfTokenResponse
 type CsrfTokenResponse struct {
 	// Csrf Token is here
-	// swagger:allOf
-	csrfToken string `json:"csrf_token"`
+	Body struct{
+		csrfToken string
+	} `json:"csrf_token"`
 
 }
 

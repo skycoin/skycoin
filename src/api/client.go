@@ -31,8 +31,6 @@ const (
 )
 
 // ClientError is used for non-200 API responses
-//
-// swagger:model clientError
 type ClientError struct {
 	Status     string
 	StatusCode int
@@ -53,16 +51,12 @@ func (e ClientError) Error() string {
 }
 
 // ReceivedHTTPResponse parsed a HTTPResponse received by the Client, for the V2 API
-//
-// swagger:model receivedHTTPResponse
 type ReceivedHTTPResponse struct {
 	Error *HTTPError      `json:"error,omitempty"`
 	Data  json.RawMessage `json:"data"`
 }
 
 // Client provides an interface to a remote node's HTTP API
-//
-// swagger:model client
 type Client struct {
 	HTTPClient *http.Client
 	Addr       string
@@ -705,20 +699,15 @@ func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendRes
 }
 
 // CreateTransactionRequest is sent to /api/v1/wallet/transaction
-// swagger:parameters createTransactionRequest
 type CreateTransactionRequest struct {
 	IgnoreUnconfirmed bool `json:"ignore_unconfirmed"`
-	// swagger:allOf
 	HoursSelection HoursSelection `json:"hours_selection"`
-	// swagger:allOf
 	Wallet        CreateTransactionRequestWallet `json:"wallet"`
 	ChangeAddress *string                        `json:"change_address,omitempty"`
-	// swagger:allOf
 	To []Receiver `json:"to"`
 }
 
 // CreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
-// swagger:model createTransactionRequestWallet
 type CreateTransactionRequestWallet struct {
 	ID        string   `json:"id"`
 	UxOuts    []string `json:"unspents,omitempty"`
@@ -727,7 +716,6 @@ type CreateTransactionRequestWallet struct {
 }
 
 // HoursSelection defines options for hours distribution
-// swagger:model hoursSelection
 type HoursSelection struct {
 	Type        string `json:"type"`
 	Mode        string `json:"mode"`
@@ -735,7 +723,6 @@ type HoursSelection struct {
 }
 
 // Receiver specifies a spend destination
-// swagger:model receiver
 type Receiver struct {
 	Address string `json:"address"`
 	Coins   string `json:"coins"`
@@ -1149,7 +1136,6 @@ func (c *Client) AddressTransactions(addr string) ([]readable.TransactionVerbose
 }
 
 // RichlistParams are arguments to the /richlist endpoint
-// swagger:parameters richlistParams
 type RichlistParams struct {
 	N                   int
 	IncludeDistribution bool

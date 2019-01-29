@@ -159,16 +159,8 @@ func NewTransactionWithTimestamp(txn coin.Transaction, isGenesis bool, timestamp
 	return newTxn, nil
 }
 
-// swagger:response UnconfirmedTransactionArray
-type UnconfirmedTransactionArray struct {
-	// in: body
-	UnconfirmedTransactions []UnconfirmedTransactions `json:"unconfirmed_transactions"`
-}
-
 // UnconfirmedTransactions represents a readable unconfirmed transaction
-// swagger:response unconfirmedTransactions
 type UnconfirmedTransactions struct {
-	// in: body
 	Transaction Transaction `json:"transaction"`
 	Received time.Time `json:"received"`
 	Checked time.Time `json:"checked"`

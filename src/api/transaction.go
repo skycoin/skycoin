@@ -26,45 +26,7 @@ import (
 //	verbose: [bool] include verbose transaction input data
 func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/pendingTxs pendingTxnsVerboseTrue
-	//
-	// pendingTxnsHandler returns pending (unconfirmed) transactions, with verbose ?verbose=1
-	// TODO add params url ?verbose=1
-	//	verbose: [bool] include verbose transaction input data
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: []UnconfirmedTransactionVerbose
-	//       422: validationError
-
-	// swagger:route GET /api/v1/pendingTxs pendingTxnsVerboseFalse
-	//
-	// pendingTxnsHandler returns pending (unconfirmed) transactions
-	// TODO add params url ?verbose=0
-	//	verbose: [bool] include verbose transaction input data
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: UnconfirmedTransactionArray
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -112,9 +74,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 
 
 // TransactionEncodedResponse represents the data struct of the response to /api/v1/transaction?encoded=1
-// swagger:response transactionEncodedResponse
 type TransactionEncodedResponse struct {
-	// swagger:allOf
 	Status             readable.TransactionStatus `json:"status"`
 	Time               uint64                     `json:"time"`
 	EncodedTransaction string                     `json:"encoded_transaction"`
@@ -129,27 +89,7 @@ type TransactionEncodedResponse struct {
 //  encoded: [bool] return as a raw encoded transaction
 func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/transaction transaction
-	//
-	// transactionHandler returns a transaction identified by its txid hash
-	// TODO add params url
-	//	txid: transaction hash
-	//	verbose: [bool] include verbose transaction input data
-	//  encoded: [bool] return as a raw encoded transaction
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: someResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -239,9 +179,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // TransactionsWithStatus array of transaction results
-// swagger:response transactionsWithStatus
 type TransactionsWithStatus struct {
-	// in: body
 	Transactions []readable.TransactionWithStatus `json:"txns"`
 }
 
@@ -325,52 +263,7 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 //	   verbose: [bool] include verbose transaction input data
 func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/transactions transactions
-	//
-	// transactionHandler returns a transaction identified by its txid hash
-	// TODO add params url
-	//  addrs: Comma separated addresses [optional, returns all transactions if no address provided]
-	//  confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-	//	verbose: [bool] include verbose transaction input data
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: someResponse
-	//       422: validationError
-
-	// swagger:route POST /api/v1/transactions transactions
-	//
-	// transactionHandler returns a transaction identified by its txid hash
-	// TODO add params url
-	//  addrs: Comma separated addresses [optional, returns all transactions if no address provided]
-	//  confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-	//	verbose: [bool] include verbose transaction input data
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: someResponse
-	//       422: validationError
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
@@ -453,27 +346,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 //      503 - network unavailable for broadcasting transaction
 func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/injectTransaction injectTransaction
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
-	//       400: badTransaction
-	//       405: MethodNotPost
-	// 		 500: otherError
-	//       503: networkUnavailableForBroadcastingTransaction
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -555,15 +428,11 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	//     Schemes: http, https
 	//
 	//     Security:
-	//       api_key:
-	//       oauth: read, write
+	//       csrfAuth: []
 	//
 	//     Responses:
 	//       default: genericError
 	//       200: resendResult
-	//       405: MethodNotPost
-	// 		 500: otherError
-	//       503: networkUnavailableForBroadcastingTransaction
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -593,25 +462,7 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 // The transaction may be confirmed or unconfirmed.
 func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/rawtx rawTxn
-	//
-	// Returns the hex-encoded byte serialization of a transaction.
-	// The transaction may be confirmed or unconfirmed.
-	// TODO add urls params
-	//	txid: transaction ID hash
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -654,7 +505,6 @@ type VerifyTxnRequest struct {
 }
 
 // VerifyTxnResponse the response data struct for /api/v2/transaction/verify
-// swagger:response verifyTxnResponse
 type VerifyTxnResponse struct {
 	Confirmed   bool               `json:"confirmed"`
 	Transaction CreatedTransaction `json:"transaction"`
@@ -665,25 +515,7 @@ type VerifyTxnResponse struct {
 // URI: /api/v2/transaction/verify
 func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v2/transaction/verify verifyTxn
-	//
-	// Decode and verify an encoded transaction
-	//
-	//     Consumes:
-	//     - application/json
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       api_key:
-	//       oauth: read, write
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: OK
+	// TODO For v3
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

@@ -220,10 +220,6 @@ func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-type TransactionVerboseArray struct {
-	Response []readable.TransactionVerbose
-}
-
 // Richlist contains top address balances
 //
 type Richlist struct {

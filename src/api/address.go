@@ -8,7 +8,6 @@ import (
 )
 
 // VerifyAddressRequest is the request data for POST /api/v2/address/verify
-// swagger:parameters verifyAddressRequest
 type VerifyAddressRequest struct {
 	Address string `json:"address"`
 }

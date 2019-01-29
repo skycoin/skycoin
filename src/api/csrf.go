@@ -148,15 +148,6 @@ func getCSRFToken(disabled bool) http.HandlerFunc {
 	}
 }
 
-// Response to address /api/v1/csrf
-type CsrfTokenResponse struct {
-	// Csrf Token is here
-	Body struct{
-		csrfToken string
-	} `json:"csrf_token"`
-
-}
-
 // CSRFCheck verifies X-CSRF-Token header value
 func CSRFCheck(apiVersion string, disabled bool, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

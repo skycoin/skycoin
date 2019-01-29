@@ -88,16 +88,6 @@ func parseBoolFlag(v string) (bool, error) {
 	return strconv.ParseBool(v)
 }
 
-// swagger:parameters blockParams
-type blockParams struct {
-	// blockParams has parameters 
-	//
-	// unique: true
-	// in: query
-	hash string `json:"block_hash"`
-	seq  int    `json:"block_seq"`
-}
-
 // blockHandler returns a block by hash or seq
 // Method: GET
 // URI: /api/v1/block
@@ -352,15 +342,6 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 	}
 }
-
-// swagger:model paramsLastBlocks
-type ParamsLastBlocks struct {
-	// in: query
-	num int
-	// in: query
-	verbose bool
-}
-
 
 // lastBlocksHandler returns the most recent N blocks on the blockchain
 // Method: GET

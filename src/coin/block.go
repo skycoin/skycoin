@@ -13,6 +13,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
+//go:generate skyencoder -struct Block
+
 // Block represents the block struct
 type Block struct {
 	Head BlockHeader

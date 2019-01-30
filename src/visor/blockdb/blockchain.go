@@ -64,7 +64,6 @@ type BlockSigs interface {
 	ForEach(*dbutil.Tx, func(cipher.SHA256, cipher.Sig) error) error
 }
 
-//go:generate go install
 //go:generate mockery -name UnspentPooler -case underscore -testonly -inpkg
 
 // UnspentPooler unspent outputs pool

@@ -147,7 +147,6 @@ func (c Config) Verify() error {
 	return nil
 }
 
-//go:generate go install
 //go:generate mockery -name Historyer -case underscore -inpkg -testonly
 //go:generate mockery -name Blockchainer -case underscore -inpkg -testonly
 //go:generate mockery -name UnconfirmedTransactionPooler -case underscore -inpkg -testonly

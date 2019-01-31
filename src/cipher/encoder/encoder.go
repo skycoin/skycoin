@@ -48,7 +48,7 @@ var (
 	ErrMaxLenExceeded = errors.New("Maximum length exceeded for variable length field")
 )
 
-// SerializeAtomic Encoder an integer or boolean contained in `data` to bytes.
+// SerializeAtomic encodes an integer or boolean contained in `data` to bytes.
 // Panics if `data` is not an integer or boolean type.
 func SerializeAtomic(data interface{}) []byte {
 	var b [8]byte

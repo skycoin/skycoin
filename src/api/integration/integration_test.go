@@ -128,6 +128,17 @@ func useCSRF(t *testing.T) bool {
 	return useCSRF
 }
 
+func allowCORS(t *testing.T) bool {
+	x := os.Getenv("ALLOW_CORS")
+	if x == "" {
+		return false
+	}
+
+	allowCORS, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return allowCORS
+}
+
 func doStable(t *testing.T) bool {
 	if enabled() && mode(t) == testModeStable {
 		return true
@@ -5805,6 +5816,7 @@ func TestStableHealth(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
+	require.Equal(t, allowCORS(t), r.CORSEnabled)
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
 	require.False(t, r.GUIEnabled)

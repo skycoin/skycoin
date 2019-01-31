@@ -26,6 +26,8 @@ VERBOSE=""
 RUN_TESTS=""
 DISABLE_CSRF="-disable-csrf"
 USE_CSRF=""
+DISABLE_CORS="-disable-cors"
+ALLOW_CORS=""
 DB_NO_UNCONFIRMED=""
 DB_FILE="blockchain-180.db"
 
@@ -38,11 +40,12 @@ usage () {
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
   echo "-c <boolean> -- Run tests with CSRF enabled"
+  echo "-x <boolean> -- Run test with CORS enabled"
   echo "-d <boolean> -- Run tests without unconfirmed transactions"
   exit 1
 }
 
-while getopts "h?t:r:n:uvcd" args; do
+while getopts "h?t:r:n:uvcxd" args; do
   case $args in
     h|\?)
         usage;
@@ -53,7 +56,8 @@ while getopts "h?t:r:n:uvcd" args; do
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
     d ) DB_NO_UNCONFIRMED="1"; DB_FILE="blockchain-180-no-unconfirmed.db";;
-    c ) DISABLE_CSRF=""; USE_CSRF="1";
+    c ) DISABLE_CSRF=""; USE_CSRF="1";;
+    x ) DISABLE_CORS=""; ALLOW_CORS="1"
   esac
 done
 
@@ -100,6 +104,7 @@ echo "starting $COIN node in background with http listener on $HOST"
             -enable-all-api-sets=true \
             -wallet-dir="$WALLET_DIR" \
             $DISABLE_CSRF \
+            $DISABLE_CORS \
             -test.run "^TestRunMain$" \
             -test.coverprofile="${COVERAGEFILE}" \
             &
@@ -117,7 +122,7 @@ set +e
 if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
-	USE_CSRF=$USE_CSRF DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED COIN=$COIN \
+	USE_CSRF=$USE_CSRF ALLOW_CORS=$ALLOW_CORS DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED COIN=$COIN \
     go test ./src/api/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 API_FAIL=$?
@@ -127,7 +132,7 @@ fi
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
-	USE_CSRF=$USE_CSRF DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED COIN=$COIN \
+	USE_CSRF=$USE_CSRF ALLOW_CORS=$ALLOW_CORS DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED COIN=$COIN \
     go test ./src/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?

@@ -372,6 +372,18 @@ func useCSRF(t *testing.T) bool {
 	return useCSRF
 }
 
+func allowCORS(t *testing.T) bool {
+	x := os.Getenv("ALLOW_CORS")
+	if x == "" {
+		return false
+	}
+
+	allowCORS, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return allowCORS
+
+}
+
 func TestWalletAddAddresses(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return
@@ -1451,10 +1463,12 @@ func TestStableStatus(t *testing.T) {
 	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
 	// StartedAt is not stable
 	ret.Status.StartedAt = 0
-
 	goldenFile := "status"
 	if useCSRF(t) {
 		goldenFile += "-csrf-enabled"
+	}
+	if allowCORS(t) {
+		goldenFile += "-cors-enabled"
 	}
 	if dbNoUnconfirmed(t) {
 		goldenFile += "-no-unconfirmed"

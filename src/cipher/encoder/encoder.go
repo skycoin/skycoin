@@ -586,9 +586,14 @@ func (e *Encoder) Uint64(x uint64) {
 	e.Buffer = e.Buffer[8:]
 }
 
-// Bytes encodes []byte
-func (e *Encoder) Bytes(x []byte) {
+// ByteSlice encodes []byte
+func (e *Encoder) ByteSlice(x []byte) {
 	e.Uint32(uint32(len(x)))
+	e.CopyBytes(x)
+}
+
+// CopyBytes copies bytes to the buffer, without a length prefix
+func (e *Encoder) CopyBytes(x []byte) {
 	copy(e.Buffer, x)
 	e.Buffer = e.Buffer[len(x):]
 }
@@ -916,7 +921,7 @@ func (e *Encoder) value(v reflect.Value) {
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8:
-			e.Bytes(v.Bytes())
+			e.ByteSlice(v.Bytes())
 		default:
 			e.Uint32(uint32(v.Len()))
 			for i := 0; i < v.Len(); i++ {
@@ -963,7 +968,7 @@ func (e *Encoder) value(v reflect.Value) {
 		e.Bool(v.Bool())
 
 	case reflect.String:
-		e.Bytes([]byte(v.String()))
+		e.ByteSlice([]byte(v.String()))
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		switch v.Type().Kind() {

@@ -65,9 +65,9 @@ check: lint clean-coverage test-386 test-amd64 integration-test-stable integrati
 	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -n enable-csrf
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-cors
 
-integration-test-stable-enable-cors: ## Run stable integration tests with CORS enabled
+integration-test-stable-disable-cors: ## Run stable integration tests with CORS disabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-cors
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
@@ -173,11 +173,9 @@ generate: ## Generate test interface mocks and struct encoders
 
 update-golden-files: ## Run integration tests in update mode
 	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true
-	./ci-scripts/integration-test-stable.sh -c -u >/dev/null 2>&1 || true
-	./ci-scripts/integration-test-stable.sh -x -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -x -u >/dev/null 2>&1 || true
 	./ci-scripts/integration-test-stable.sh -d -u >/dev/null 2>&1 || true
-	./ci-scripts/integration-test-stable.sh -c -d -u >/dev/null 2>&1 || true
-	./ci-scripts/integration-test-stable.sh -x -d -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -x -d -u >/dev/null 2>&1 || true
 
 merge-coverage: ## Merge coverage files and create HTML coverage output. gocovmerge is required, install with `go get github.com/wadey/gocovmerge`
 	@echo "To install gocovmerge do:"

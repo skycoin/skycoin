@@ -8,7 +8,7 @@
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
 .PHONY: install-deps-ui build-ui help newcoins merge-coverage
-.PHONY: generate-mocks update-golden-files
+.PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 
 COIN ?= skycoin
@@ -159,7 +159,7 @@ clean-coverage: ## Remove coverage output files
 newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
 	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
 
-generate-mocks: ## Regenerate test interface mocks
+generate: ## Generate test interface mocks and struct encoders
 	go generate ./src/...
 	# mockery can't generate the UnspentPooler mock in package visor, patch it
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go

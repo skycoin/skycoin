@@ -26,8 +26,8 @@ VERBOSE=""
 RUN_TESTS=""
 DISABLE_CSRF="-disable-csrf"
 USE_CSRF=""
-DISABLE_CORS="-disable-cors"
-ALLOW_CORS=""
+DISABLE_CORS=""
+ALLOW_CORS="1"
 DB_NO_UNCONFIRMED=""
 DB_FILE="blockchain-180.db"
 
@@ -40,7 +40,7 @@ usage () {
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
   echo "-c <boolean> -- Run tests with CSRF enabled"
-  echo "-x <boolean> -- Run test with CORS enabled"
+  echo "-x <boolean> -- Run test with CORS disabled"
   echo "-d <boolean> -- Run tests without unconfirmed transactions"
   exit 1
 }
@@ -57,7 +57,7 @@ while getopts "h?t:r:n:uvcxd" args; do
     v ) VERBOSE="-v";;
     d ) DB_NO_UNCONFIRMED="1"; DB_FILE="blockchain-180-no-unconfirmed.db";;
     c ) DISABLE_CSRF=""; USE_CSRF="1";;
-    x ) DISABLE_CORS=""; ALLOW_CORS="1"
+    x ) DISABLE_CORS="-disable-cors"; ALLOW_CORS="";
   esac
 done
 

@@ -12,7 +12,7 @@
 				"ux_hash": "058d1d0a22be7b9f5567a236866836a87d922760581832cfb8bfbd8b337d64b1"
 			},
 			"unspents": 218,
-			"unconfirmed": 1,
+			"unconfirmed": 0,
 			"time_since_last_block": "0s"
 		},
 		"version": {
@@ -27,7 +27,7 @@
 		"incoming_connections": 0,
 		"uptime": "0s",
 		"csrf_enabled": true,
-		"cors_enabled": true,
+		"cors_enabled": false,
 		"csp_enabled": true,
 		"wallet_api_enabled": true,
 		"gui_enabled": false,

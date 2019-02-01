@@ -1467,8 +1467,8 @@ func TestStableStatus(t *testing.T) {
 	if useCSRF(t) {
 		goldenFile += "-csrf-enabled"
 	}
-	if allowCORS(t) {
-		goldenFile += "-cors-enabled"
+	if !allowCORS(t) {
+		goldenFile += "-cors-disabled"
 	}
 	if dbNoUnconfirmed(t) {
 		goldenFile += "-no-unconfirmed"

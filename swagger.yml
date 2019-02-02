@@ -85,6 +85,24 @@ paths:
       security:
       - csrfAuth:
         - '[]'
+  /api/v3/csrf:
+    get:
+      operationId: csrf
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/csrfResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - csrfAuth:
+        - '[]'
+      summary: Creates a new CSRF token. Previous CSRF tokens are invalidated by this
+        call.
 produces:
 - application/json
 - application/xml
@@ -132,6 +150,15 @@ responses:
         items:
           type: string
         type: array
+  csrfResponse:
+    description: Response to address /api/v1/csrf.
+    schema:
+      properties:
+        csrf_token:
+          description: Body of csrf Token
+          type: string
+          x-go-name: Token
+      type: object
   genericError:
     description: |-
       A GenericError is the default error message that is generated.

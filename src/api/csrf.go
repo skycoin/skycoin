@@ -148,13 +148,64 @@ func getCSRFToken(disabled bool) http.HandlerFunc {
 	}
 }
 
-// Response to address /api/v1/csrf
-type CsrfTokenResponse struct {
-	// Csrf Token is here
-	Body struct{
-		csrfToken string
-	} `json:"csrf_token"`
 
+// Response to address /api/v1/csrf.
+// swagger:response csrfResponse
+type CsrfTokenResponse struct {
+	// The CSRF Token Response body
+	// in: body
+	Body struct {
+		// Body of csrf Token
+		//
+		Token string `json:"csrf_token"`
+	}
+}
+// Creates a new CSRF token. Previous CSRF tokens are invalidated by this call.
+// URI: /api/v3/csrf
+// Method: GET
+// Response:
+//  csrf_token: CSRF token to use in POST requests
+func getCSRFTokenv3(disabled bool) http.HandlerFunc {
+
+	// swagger:route GET /api/v3/csrf csrf
+	//
+	// Creates a new CSRF token. Previous CSRF tokens are invalidated by this call.
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       csrfAuth: []
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: csrfResponse
+
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		if disabled {
+			logger.Warning("CSRF check disabled")
+			wh.Error404(w, "")
+			return
+		}
+
+		// generate a new token
+		csrfToken, err := newCSRFToken()
+		if err != nil {
+			logger.Error(err)
+			wh.Error500(w, fmt.Sprintf("Failed to create a csrf token: %v", err))
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, &map[string]string{"csrf_token": csrfToken})
+	}
 }
 
 // CSRFCheck verifies X-CSRF-Token header value

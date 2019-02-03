@@ -40,20 +40,20 @@ The outer hash is the hash of the whole transaction serialization
 
 // Transaction transaction struct
 type Transaction struct {
-	Length    uint32        //length prefix
-	Type      uint8         //transaction type
-	InnerHash cipher.SHA256 //inner hash SHA256 of In[],Out[]
+	Length    uint32        // length prefix
+	Type      uint8         // transaction type
+	InnerHash cipher.SHA256 // inner hash SHA256 of In[],Out[]
 
-	Sigs []cipher.Sig        //list of signatures, 64+1 bytes each
-	In   []cipher.SHA256     //ouputs being spent
-	Out  []TransactionOutput //ouputs being created
+	Sigs []cipher.Sig        `enc:",maxlen=65535"` // list of signatures, 64+1 bytes each
+	In   []cipher.SHA256     `enc:",maxlen=65535"` // ouputs being spent
+	Out  []TransactionOutput `enc:",maxlen=65535"` // ouputs being created
 }
 
 // TransactionOutput hash output/name is function of Hash
 type TransactionOutput struct {
-	Address cipher.Address //address to send to
-	Coins   uint64         //amount to be sent in coins
-	Hours   uint64         //amount to be sent in coin hours
+	Address cipher.Address // address to send to
+	Coins   uint64         // amount to be sent in coins
+	Hours   uint64         // amount to be sent in coin hours
 }
 
 // Verify attempts to determine if the transaction is well formed
@@ -78,8 +78,12 @@ func (txn *Transaction) Verify() error {
 	if len(txn.Sigs) != len(txn.In) {
 		return errors.New("Invalid number of signatures")
 	}
-	if len(txn.Sigs) >= math.MaxUint16 {
+	if len(txn.Sigs) > math.MaxUint16 {
 		return errors.New("Too many signatures and inputs")
+	}
+
+	if len(txn.Out) > math.MaxUint16 {
+		return errors.New("Too many ouptuts")
 	}
 
 	// Check duplicate inputs
@@ -185,8 +189,8 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 	return nil
 }
 
-// PushInput adds a UxArray to the Transaction given the hash of a UxOut.
-// Returns the signature index for later signing
+// PushInput adds a unspent output hash to the inputs of a Transaction.
+// Returns the index of the input in the transaction input array.
 func (txn *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
 	if len(txn.In) >= math.MaxUint16 {
 		log.Panic("Max transaction inputs reached")

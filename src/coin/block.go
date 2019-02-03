@@ -13,6 +13,9 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
+// MaxBlockTransactions is the maximum number of transactions in a block (see the maxlen struct tag value applied to BlockBody.Transactions)
+const MaxBlockTransactions = 65535
+
 // Block represents the block struct
 type Block struct {
 	Head BlockHeader
@@ -41,7 +44,7 @@ type BlockHeader struct {
 
 // BlockBody represents the block body
 type BlockBody struct {
-	Transactions Transactions
+	Transactions Transactions `enc:",maxlen=65535"`
 }
 
 // SignedBlock signed block

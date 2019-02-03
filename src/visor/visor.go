@@ -520,6 +520,10 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 		return coin.SignedBlock{}, err
 	}
 
+	if len(txns) > coin.MaxBlockTransactions {
+		txns = txns[:coin.MaxBlockTransactions]
+	}
+
 	if len(txns) == 0 {
 		logger.Panic("TruncateBytesTo removed all transactions")
 	}

@@ -33,6 +33,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -923,7 +924,7 @@ func assertVerboseBlockFee(t *testing.T, b *readable.BlockVerbose) {
 	fee := uint64(0)
 	for _, txn := range b.Body.Transactions {
 		var err error
-		fee, err = coin.AddUint64(fee, txn.Fee)
+		fee, err = mathutil.AddUint64(fee, txn.Fee)
 		require.NoError(t, err)
 	}
 
@@ -3503,7 +3504,7 @@ func TestLiveWalletSpend(t *testing.T) {
 				for _, o := range tx.Transaction.Out {
 					c, err := droplet.FromString(o.Coins)
 					require.NoError(t, err)
-					coins, err = coin.AddUint64(coins, c)
+					coins, err = mathutil.AddUint64(coins, c)
 					require.NoError(t, err)
 				}
 
@@ -3767,7 +3768,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				for _, o := range tx.Transaction.Out {
 					c, err := droplet.FromString(o.Coins)
 					require.NoError(t, err)
-					coins, err = coin.AddUint64(coins, c)
+					coins, err = mathutil.AddUint64(coins, c)
 					require.NoError(t, err)
 				}
 
@@ -4931,7 +4932,7 @@ func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction) {
 		require.NotNil(t, in.CalculatedHours)
 		calculatedHours, err := strconv.ParseUint(in.CalculatedHours, 10, 64)
 		require.NoError(t, err)
-		inputHours, err = coin.AddUint64(inputHours, calculatedHours)
+		inputHours, err = mathutil.AddUint64(inputHours, calculatedHours)
 		require.NoError(t, err)
 
 		require.NotNil(t, in.Hours)
@@ -4943,7 +4944,7 @@ func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction) {
 		require.NotNil(t, in.Coins)
 		coins, err := droplet.FromString(in.Coins)
 		require.NoError(t, err)
-		inputCoins, err = coin.AddUint64(inputCoins, coins)
+		inputCoins, err = mathutil.AddUint64(inputCoins, coins)
 		require.NoError(t, err)
 	}
 
@@ -4952,12 +4953,12 @@ func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction) {
 	for _, out := range r.Out {
 		hours, err := strconv.ParseUint(out.Hours, 10, 64)
 		require.NoError(t, err)
-		outputHours, err = coin.AddUint64(outputHours, hours)
+		outputHours, err = mathutil.AddUint64(outputHours, hours)
 		require.NoError(t, err)
 
 		coins, err := droplet.FromString(out.Coins)
 		require.NoError(t, err)
-		outputCoins, err = coin.AddUint64(outputCoins, coins)
+		outputCoins, err = mathutil.AddUint64(outputCoins, coins)
 		require.NoError(t, err)
 	}
 

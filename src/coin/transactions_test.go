@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 func makeTransactionFromUxOut(t *testing.T, ux UxOut, s cipher.SecKey) Transaction {
@@ -389,9 +390,9 @@ func TestTransactionsSize(t *testing.T) {
 	txns := makeTransactions(t, 10)
 	var size uint32
 	for _, txn := range txns {
-		encodedLen, err := IntToUint32(len(encoder.Serialize(&txn)))
+		encodedLen, err := mathutil.IntToUint32(len(encoder.Serialize(&txn)))
 		require.NoError(t, err)
-		size, err = AddUint32(size, encodedLen)
+		size, err = mathutil.AddUint32(size, encodedLen)
 		require.NoError(t, err)
 	}
 
@@ -419,7 +420,7 @@ func TestTransactionsTruncateBytesTo(t *testing.T) {
 	for i := 0; i < len(txns)/2; i++ {
 		size, err := txns[i].Size()
 		require.NoError(t, err)
-		trunc, err = AddUint32(trunc, size)
+		trunc, err = mathutil.AddUint32(trunc, size)
 		require.NoError(t, err)
 	}
 
@@ -444,7 +445,7 @@ func TestTransactionsTruncateBytesTo(t *testing.T) {
 	size5, err := txns[5].Size()
 	require.NoError(t, err)
 	require.True(t, size5 >= 2)
-	trunc, err = AddUint32(trunc, size5-2)
+	trunc, err = mathutil.AddUint32(trunc, size5-2)
 	require.NoError(t, err)
 	txns2, err = txns.TruncateBytesTo(trunc)
 	require.NoError(t, err)

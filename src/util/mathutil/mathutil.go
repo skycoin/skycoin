@@ -1,4 +1,5 @@
-package coin
+// Package mathutil provides math utilities
+package mathutil
 
 import (
 	"errors"

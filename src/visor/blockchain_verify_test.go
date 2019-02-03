@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -235,10 +236,10 @@ func makeUnspentsTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr
 		err := spendTx.PushInput(ux.Hash())
 		require.NoError(t, err)
 
-		totalHours, err = coin.AddUint64(totalHours, ux.Body.Hours)
+		totalHours, err = mathutil.AddUint64(totalHours, ux.Body.Hours)
 		require.NoError(t, err)
 
-		totalCoins, err = coin.AddUint64(totalCoins, ux.Body.Coins)
+		totalCoins, err = mathutil.AddUint64(totalCoins, ux.Body.Coins)
 		require.NoError(t, err)
 	}
 

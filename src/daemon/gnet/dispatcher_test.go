@@ -126,14 +126,17 @@ func TestEncodeMessage(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 	m := NewByteMessage(7)
-	b := EncodeMessage(m)
+	b, err := EncodeMessage(m)
+	require.NoError(t, err)
 	require.True(t, bytes.Equal(b, []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}))
 }
 
 func TestEncodeMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	require.Panics(t, func() { EncodeMessage(&DummyMessage{}) })
+	require.Panics(t, func() {
+		_, _ = EncodeMessage(&DummyMessage{}) // nolint: errcheck
+	})
 }
 
 func TestSendByteMessage(t *testing.T) {

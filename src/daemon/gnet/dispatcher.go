@@ -3,6 +3,7 @@ package gnet
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"reflect"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 // SendResult result of a single message send
@@ -29,7 +31,10 @@ func newSendResult(addr string, m Message, err error) SendResult {
 
 // Serializes a Message over a net.Conn
 func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
-	m := EncodeMessage(msg)
+	m, err := EncodeMessage(msg)
+	if err != nil {
+		return err
+	}
 	return sendByteMessage(conn, m, timeout)
 }
 
@@ -119,7 +124,7 @@ func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
 }
 
 // EncodeMessage packs a Message into []byte containing length, id and data
-func EncodeMessage(msg Message) []byte {
+func EncodeMessage(msg Message) ([]byte, error) {
 	t := reflect.ValueOf(msg).Elem().Type()
 	msgID, succ := MessageIDMap[t]
 	if !succ {
@@ -128,12 +133,25 @@ func EncodeMessage(msg Message) []byte {
 	bMsg := encoder.Serialize(msg)
 
 	// message length
-	bLen := encoder.SerializeAtomic(uint32(len(bMsg) + len(msgID)))
+
+	if len(bMsg) > math.MaxUint32 {
+		return nil, errors.New("Message length exceeds math.MaxUint32")
+	}
+	if len(msgID) > math.MaxUint32 {
+		return nil, errors.New("Message ID length exceeds math.MaxUint32")
+	}
+
+	n, err := mathutil.AddUint32(uint32(len(bMsg)), uint32(len(msgID)))
+	if err != nil {
+		return nil, err
+	}
+
+	bLen := encoder.SerializeAtomic(n)
 	m := make([]byte, 0)
 	m = append(m, bLen...)     // length prefix
 	m = append(m, msgID[:]...) // message id
 	m = append(m, bMsg...)     // message bytes
-	return m
+	return m, nil
 }
 
 // Sends []byte over a net.Conn

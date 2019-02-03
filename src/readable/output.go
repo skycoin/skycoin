@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -80,12 +81,12 @@ func (ros UnspentOutputs) Balance() (wallet.Balance, error) {
 			return wallet.Balance{}, err
 		}
 
-		bal.Coins, err = coin.AddUint64(bal.Coins, coins)
+		bal.Coins, err = mathutil.AddUint64(bal.Coins, coins)
 		if err != nil {
 			return wallet.Balance{}, err
 		}
 
-		bal.Hours, err = coin.AddUint64(bal.Hours, out.CalculatedHours)
+		bal.Hours, err = mathutil.AddUint64(bal.Hours, out.CalculatedHours)
 		if err != nil {
 			return wallet.Balance{}, err
 		}

@@ -6,11 +6,11 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 // CoinSupply records the coin supply info
@@ -66,7 +66,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			// check if address is an unlocked distribution address
 			if _, ok := unlockedAddrSet[u.Body.Address]; ok {
 				var err error
-				unlockedSupply, err = coin.AddUint64(unlockedSupply, u.Body.Coins)
+				unlockedSupply, err = mathutil.AddUint64(unlockedSupply, u.Body.Coins)
 				if err != nil {
 					err = fmt.Errorf("uint64 overflow while adding up unlocked supply coins: %v", err)
 					wh.Error500(w, err.Error())
@@ -113,7 +113,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		for _, out := range allUnspents.Confirmed {
 			if _, ok := lockedAddrSet[out.Body.Address]; !ok {
 				var err error
-				totalCoinHours, err = coin.AddUint64(totalCoinHours, out.CalculatedHours)
+				totalCoinHours, err = mathutil.AddUint64(totalCoinHours, out.CalculatedHours)
 				if err != nil {
 					err = fmt.Errorf("uint64 overflow while adding up total coin hours: %v", err)
 					wh.Error500(w, err.Error())

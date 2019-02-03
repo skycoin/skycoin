@@ -23,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -1457,12 +1458,12 @@ func (vs *Visor) AddressBalances(head *coin.SignedBlock, auxs coin.AddressUxOuts
 				return 0, 0, err
 			}
 
-			coins, err = coin.AddUint64(coins, ux.Body.Coins)
+			coins, err = mathutil.AddUint64(coins, ux.Body.Coins)
 			if err != nil {
 				return 0, 0, err
 			}
 
-			hours, err = coin.AddUint64(hours, uxHours)
+			hours, err = mathutil.AddUint64(hours, uxHours)
 			if err != nil {
 				return 0, 0, err
 			}

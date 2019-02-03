@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -584,7 +585,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 	var feeInvalid bool
 	for _, o := range txn.Out {
 		var err error
-		outputHours, err = coin.AddUint64(outputHours, o.Hours)
+		outputHours, err = mathutil.AddUint64(outputHours, o.Hours)
 		if err != nil {
 			feeInvalid = true
 		}
@@ -593,7 +594,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		inputHours, err = mathutil.AddUint64(inputHours, i.Hours)
 		if err != nil {
 			feeInvalid = true
 		}

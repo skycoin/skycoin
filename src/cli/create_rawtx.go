@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -550,7 +551,7 @@ func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chg
 	var totalCoins uint64
 	for _, arg := range toAddrs {
 		var err error
-		totalCoins, err = coin.AddUint64(totalCoins, arg.Coins)
+		totalCoins, err = mathutil.AddUint64(totalCoins, arg.Coins)
 		if err != nil {
 			return nil, err
 		}

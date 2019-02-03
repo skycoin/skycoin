@@ -6,6 +6,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -40,21 +41,21 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 	for _, addrBalance := range addressBalances {
 		var err error
 		// compute confirmed balance
-		walletBalance.Confirmed.Coins, err = coin.AddUint64(walletBalance.Confirmed.Coins, addrBalance.Confirmed.Coins)
+		walletBalance.Confirmed.Coins, err = mathutil.AddUint64(walletBalance.Confirmed.Coins, addrBalance.Confirmed.Coins)
 		if err != nil {
 			return walletBalance, addressBalances, err
 		}
-		walletBalance.Confirmed.Hours, err = coin.AddUint64(walletBalance.Confirmed.Hours, addrBalance.Confirmed.Hours)
+		walletBalance.Confirmed.Hours, err = mathutil.AddUint64(walletBalance.Confirmed.Hours, addrBalance.Confirmed.Hours)
 		if err != nil {
 			return walletBalance, addressBalances, err
 		}
 
 		// compute predicted balance
-		walletBalance.Predicted.Coins, err = coin.AddUint64(walletBalance.Predicted.Coins, addrBalance.Predicted.Coins)
+		walletBalance.Predicted.Coins, err = mathutil.AddUint64(walletBalance.Predicted.Coins, addrBalance.Predicted.Coins)
 		if err != nil {
 			return walletBalance, addressBalances, err
 		}
-		walletBalance.Predicted.Hours, err = coin.AddUint64(walletBalance.Predicted.Hours, addrBalance.Predicted.Hours)
+		walletBalance.Predicted.Hours, err = mathutil.AddUint64(walletBalance.Predicted.Hours, addrBalance.Predicted.Hours)
 		if err != nil {
 			return walletBalance, addressBalances, err
 		}

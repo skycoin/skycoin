@@ -10,6 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 var (
@@ -143,7 +144,7 @@ func (txn *Transaction) Verify() error {
 	coins := uint64(0)
 	for _, to := range txn.Out {
 		var err error
-		coins, err = AddUint64(coins, to.Coins)
+		coins, err = mathutil.AddUint64(coins, to.Coins)
 		if err != nil {
 			return errors.New("Output coins overflow")
 		}
@@ -249,7 +250,7 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 
 // Size returns the encoded byte size of the transaction
 func (txn *Transaction) Size() (uint32, error) {
-	return IntToUint32(len(txn.Serialize()))
+	return mathutil.IntToUint32(len(txn.Serialize()))
 }
 
 // Hash an entire Transaction struct, including the TransactionHeader
@@ -261,7 +262,7 @@ func (txn *Transaction) Hash() cipher.SHA256 {
 // SizeHash returns the encoded size and the hash of it (avoids duplicate encoding)
 func (txn *Transaction) SizeHash() (uint32, cipher.SHA256, error) {
 	b := txn.Serialize()
-	s, err := IntToUint32(len(b))
+	s, err := mathutil.IntToUint32(len(b))
 	if err != nil {
 		return 0, cipher.SHA256{}, err
 	}
@@ -329,7 +330,7 @@ func (txn *Transaction) OutputHours() (uint64, error) {
 	hours := uint64(0)
 	for i := range txn.Out {
 		var err error
-		hours, err = AddUint64(hours, txn.Out[i].Hours)
+		hours, err = mathutil.AddUint64(hours, txn.Out[i].Hours)
 		if err != nil {
 			return 0, errors.New("Transaction output hours overflow")
 		}
@@ -349,7 +350,7 @@ func (txns Transactions) Fees(calc FeeCalculator) (uint64, error) {
 			return 0, err
 		}
 
-		total, err = AddUint64(total, fee)
+		total, err = mathutil.AddUint64(total, fee)
 		if err != nil {
 			return 0, errors.New("Transactions fee totals overflow")
 		}
@@ -376,7 +377,7 @@ func (txns Transactions) Size() (uint32, error) {
 			return 0, err
 		}
 
-		size, err = AddUint32(size, s)
+		size, err = mathutil.AddUint32(size, s)
 		if err != nil {
 			return 0, err
 		}
@@ -394,7 +395,7 @@ func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
 			return nil, err
 		}
 
-		pendingTotal, err := AddUint32(total, pending)
+		pendingTotal, err := mathutil.AddUint32(total, pending)
 		if err != nil {
 			return txns[:i], nil
 		}
@@ -449,7 +450,7 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) (*Sortabl
 		}
 
 		// Calculate fee priority based on fee per kb
-		feeKB, err := MultUint64(fee, 1024)
+		feeKB, err := mathutil.MultUint64(fee, 1024)
 
 		// If the fee * 1024 would exceed math.MaxUint64, set it to math.MaxUint64 so that
 		// this transaction can still be processed
@@ -502,7 +503,7 @@ func VerifyTransactionCoinsSpending(uxIn UxArray, uxOut UxArray) error {
 	coinsIn := uint64(0)
 	for i := range uxIn {
 		var err error
-		coinsIn, err = AddUint64(coinsIn, uxIn[i].Body.Coins)
+		coinsIn, err = mathutil.AddUint64(coinsIn, uxIn[i].Body.Coins)
 		if err != nil {
 			return errors.New("Transaction input coins overflow")
 		}
@@ -511,7 +512,7 @@ func VerifyTransactionCoinsSpending(uxIn UxArray, uxOut UxArray) error {
 	coinsOut := uint64(0)
 	for i := range uxOut {
 		var err error
-		coinsOut, err = AddUint64(coinsOut, uxOut[i].Body.Coins)
+		coinsOut, err = mathutil.AddUint64(coinsOut, uxOut[i].Body.Coins)
 		if err != nil {
 			return errors.New("Transaction output coins overflow")
 		}
@@ -544,7 +545,7 @@ func VerifyTransactionHoursSpending(headTime uint64, uxIn UxArray, uxOut UxArray
 			}
 		}
 
-		hoursIn, err = AddUint64(hoursIn, uxHours)
+		hoursIn, err = mathutil.AddUint64(hoursIn, uxHours)
 		if err != nil {
 			return errors.New("Transaction input hours overflow")
 		}

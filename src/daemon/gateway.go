@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -873,7 +874,7 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	for _, out := range rbOuts.Confirmed {
 		if _, ok := allAccounts[out.Body.Address]; ok {
 			var err error
-			allAccounts[out.Body.Address], err = coin.AddUint64(allAccounts[out.Body.Address], out.Body.Coins)
+			allAccounts[out.Body.Address], err = mathutil.AddUint64(allAccounts[out.Body.Address], out.Body.Coins)
 			if err != nil {
 				return nil, err
 			}

@@ -26,6 +26,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 // Error wraps wallet related errors
@@ -1287,12 +1288,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 	var totalOutCoins uint64
 	var requestedHours uint64
 	for _, to := range p.To {
-		totalOutCoins, err = coin.AddUint64(totalOutCoins, to.Coins)
+		totalOutCoins, err = mathutil.AddUint64(totalOutCoins, to.Coins)
 		if err != nil {
 			return nil, nil, NewError(fmt.Errorf("total output coins error: %v", err))
 		}
 
-		requestedHours, err = coin.AddUint64(requestedHours, to.Hours)
+		requestedHours, err = mathutil.AddUint64(requestedHours, to.Hours)
 		if err != nil {
 			return nil, nil, NewError(fmt.Errorf("total output hours error: %v", err))
 		}
@@ -1311,12 +1312,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 	var totalInputHours uint64
 	toSign := make([]cipher.SecKey, len(spends))
 	for i, spend := range spends {
-		totalInputCoins, err = coin.AddUint64(totalInputCoins, spend.Coins)
+		totalInputCoins, err = mathutil.AddUint64(totalInputCoins, spend.Coins)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		totalInputHours, err = coin.AddUint64(totalInputHours, spend.Hours)
+		totalInputHours, err = mathutil.AddUint64(totalInputHours, spend.Hours)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1349,13 +1350,13 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 		switch p.HoursSelection.Mode {
 		case HoursSelectionModeShare:
 			// multiply remaining hours after fee burn with share factor
-			hours, err := coin.Uint64ToInt64(remainingHours)
+			hours, err := mathutil.Uint64ToInt64(remainingHours)
 			if err != nil {
 				return nil, nil, err
 			}
 
 			allocatedHoursInt := p.HoursSelection.ShareFactor.Mul(decimal.New(hours, 0)).IntPart()
-			allocatedHours, err := coin.Int64ToUint64(allocatedHoursInt)
+			allocatedHours, err := mathutil.Int64ToUint64(allocatedHoursInt)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -1418,7 +1419,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			extra := z[0]
 
 			// Calculate the new hours being spent
-			newTotalHours, err := coin.AddUint64(totalInputHours, extra.Hours)
+			newTotalHours, err := mathutil.AddUint64(totalInputHours, extra.Hours)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -1444,7 +1445,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 				}
 
 				additionalHours := extra.Hours - additionalFee
-				changeHours, err = coin.AddUint64(changeHours, additionalHours)
+				changeHours, err = mathutil.AddUint64(changeHours, additionalHours)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -1604,7 +1605,7 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		inputHours, err = mathutil.AddUint64(inputHours, i.Hours)
 		if err != nil {
 			return err
 		}
@@ -1613,7 +1614,7 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 	var outputHours uint64
 	for _, i := range txn.Out {
 		var err error
-		outputHours, err = coin.AddUint64(outputHours, i.Hours)
+		outputHours, err = mathutil.AddUint64(outputHours, i.Hours)
 		if err != nil {
 			return err
 		}
@@ -1703,12 +1704,12 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		}
 
 		var err error
-		total, err = coin.AddUint64(total, c)
+		total, err = mathutil.AddUint64(total, c)
 		if err != nil {
 			return nil, err
 		}
 
-		cInt64, err := coin.Uint64ToInt64(c)
+		cInt64, err := mathutil.Uint64ToInt64(c)
 		if err != nil {
 			return nil, err
 		}
@@ -1716,13 +1717,13 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		coinsInt[i] = big.NewInt(cInt64)
 	}
 
-	totalInt64, err := coin.Uint64ToInt64(total)
+	totalInt64, err := mathutil.Uint64ToInt64(total)
 	if err != nil {
 		return nil, err
 	}
 	totalInt := big.NewInt(totalInt64)
 
-	hoursInt64, err := coin.Uint64ToInt64(hours)
+	hoursInt64, err := mathutil.Uint64ToInt64(hours)
 	if err != nil {
 		return nil, err
 	}
@@ -1747,7 +1748,7 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		fracHours := fracInt.Uint64()
 
 		addrHours[i] = fracHours
-		assignedHours, err = coin.AddUint64(assignedHours, fracHours)
+		assignedHours, err = mathutil.AddUint64(assignedHours, fracHours)
 		if err != nil {
 			return nil, err
 		}

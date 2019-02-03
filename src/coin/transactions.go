@@ -190,13 +190,12 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 }
 
 // PushInput adds a unspent output hash to the inputs of a Transaction.
-// Returns the index of the input in the transaction input array.
-func (txn *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
+func (txn *Transaction) PushInput(uxOut cipher.SHA256) error {
 	if len(txn.In) >= math.MaxUint16 {
-		log.Panic("Max transaction inputs reached")
+		return errors.New("Max transaction inputs reached")
 	}
 	txn.In = append(txn.In, uxOut)
-	return uint16(len(txn.In) - 1)
+	return nil
 }
 
 // UxID compute transaction output id
@@ -210,13 +209,16 @@ func (txOut TransactionOutput) UxID(txID cipher.SHA256) cipher.SHA256 {
 }
 
 // PushOutput Adds a TransactionOutput, sending coins & hours to an Address
-func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
-	to := TransactionOutput{
+func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) error {
+	if len(txn.Out) >= math.MaxUint16 {
+		return errors.New("Max transaction outputs reached")
+	}
+	txn.Out = append(txn.Out, TransactionOutput{
 		Address: dst,
 		Coins:   coins,
 		Hours:   hours,
-	}
-	txn.Out = append(txn.Out, to)
+	})
+	return nil
 }
 
 // SignInputs signs all inputs in the transaction

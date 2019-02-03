@@ -130,7 +130,10 @@ func (fbc *fakeBlockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 
 func (fbc *fakeBlockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) coin.Block {
 	txn := coin.Transaction{}
-	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
+	err := txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
+	if err != nil {
+		panic(err)
+	}
 	body := coin.BlockBody{Transactions: coin.Transactions{txn}}
 	prevHash := cipher.SHA256{}
 	head := coin.BlockHeader{
@@ -393,13 +396,18 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 		return nil, nil, errors.New("no unspent output")
 	}
 
-	txn.PushInput(ux.Hash())
+	if err := txn.PushInput(ux.Hash()); err != nil {
+		return nil, nil, err
+	}
+
 	for _, o := range td.Vouts {
 		addr, err := cipher.DecodeBase58Address(o.ToAddr)
 		if err != nil {
 			return nil, nil, err
 		}
-		txn.PushOutput(addr, o.Coins, o.Hours)
+		if err := txn.PushOutput(addr, o.Coins, o.Hours); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	sigKey := cipher.MustSecKeyFromHex(td.Vin.SigKey)

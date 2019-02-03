@@ -161,11 +161,14 @@ func TestTransactionGetArray(t *testing.T) {
 func makeTransaction(t *testing.T) Transaction {
 	txn := Transaction{}
 	ux, s := makeUxOutWithSecret(t)
-	txn.Txn.PushInput(ux.Hash())
+	err := txn.Txn.PushInput(ux.Hash())
+	require.NoError(t, err)
 	txn.Txn.SignInputs([]cipher.SecKey{s})
-	txn.Txn.PushOutput(makeAddress(), 1e6, 50)
-	txn.Txn.PushOutput(makeAddress(), 5e6, 50)
-	err := txn.Txn.UpdateHeader()
+	err = txn.Txn.PushOutput(makeAddress(), 1e6, 50)
+	require.NoError(t, err)
+	err = txn.Txn.PushOutput(makeAddress(), 5e6, 50)
+	require.NoError(t, err)
+	err = txn.Txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn
 }

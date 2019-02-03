@@ -51,7 +51,8 @@ func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr ci
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		spendTx.PushInput(ux.Hash())
+		err := spendTx.PushInput(ux.Hash())
+		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
 	}
@@ -60,12 +61,14 @@ func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr ci
 
 	hours := totalHours / 4
 
-	spendTx.PushOutput(toAddr, coins, hours)
+	err := spendTx.PushOutput(toAddr, coins, hours)
+	require.NoError(t, err)
 	if totalCoins-coins != 0 {
-		spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, totalHours/4)
+		err := spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, totalHours/4)
+		require.NoError(t, err)
 	}
 	spendTx.SignInputs(keys)
-	err := spendTx.UpdateHeader()
+	err = spendTx.UpdateHeader()
 	require.NoError(t, err)
 	return spendTx
 }

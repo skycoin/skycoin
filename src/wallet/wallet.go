@@ -1180,7 +1180,10 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 			return nil, NewError(fmt.Errorf("address %v does not exist in wallet %v", au.Address, w.Filename()))
 		}
 
-		txn.PushInput(au.Hash)
+		if err := txn.PushInput(au.Hash); err != nil {
+			logger.Critical().WithError(err).Error("PushInput failed")
+			return nil, err
+		}
 
 		toSign[i] = entry.Secret
 
@@ -1205,10 +1208,16 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 
 	if haveChange {
 		changeAddr := spends[0].Address
-		txn.PushOutput(changeAddr, changeCoins, changeHours)
+		if err := txn.PushOutput(changeAddr, changeCoins, changeHours); err != nil {
+			logger.Critical().WithError(err).Error("PushOutput failed")
+			return nil, err
+		}
 	}
 
-	txn.PushOutput(dest, coins, addrHours[0])
+	if err := txn.PushOutput(dest, coins, addrHours[0]); err != nil {
+		logger.Critical().WithError(err).Error("PushOutput failed")
+		return nil, err
+	}
 
 	txn.SignInputs(toSign)
 	if err := txn.UpdateHeader(); err != nil {
@@ -1318,7 +1327,10 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 		}
 
 		toSign[i] = entry.Secret
-		txn.PushInput(spend.Hash)
+		if err := txn.PushInput(spend.Hash); err != nil {
+			logger.Critical().WithError(err).Error("PushInput failed")
+			return nil, nil, err
+		}
 	}
 
 	feeHours := fee.RequiredFee(totalInputHours, params.UserVerifyTxn.BurnFactor)
@@ -1443,7 +1455,10 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 				}
 
 				toSign = append(toSign, entry.Secret)
-				txn.PushInput(extra.Hash)
+				if err := txn.PushInput(extra.Hash); err != nil {
+					logger.Critical().WithError(err).Error("PushInput failed")
+					return nil, nil, err
+				}
 			}
 		}
 	}
@@ -1488,7 +1503,10 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			}
 		}
 
-		txn.PushOutput(changeAddress, changeCoins, changeHours)
+		if err := txn.PushOutput(changeAddress, changeCoins, changeHours); err != nil {
+			logger.Critical().WithError(err).Error("PushOutput failed")
+			return nil, nil, err
+		}
 	}
 
 	txn.SignInputs(toSign)

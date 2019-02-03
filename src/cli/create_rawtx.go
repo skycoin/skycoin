@@ -45,7 +45,7 @@ func createRawTxCmd() *cobra.Command {
 		Use:   "createRawTransaction [flags] [to address] [amount]",
 		Long: fmt.Sprintf(`Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
     The default wallet (%s) will be used if no wallet and address was specified.
-    
+
     If you are sending from a wallet the coins will be taken iteratively
     from all addresses within the wallet starting with the first address until
     the amount of the transaction is met.
@@ -720,11 +720,15 @@ func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, erro
 func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
 	txn := coin.Transaction{}
 	for _, u := range utxos {
-		txn.PushInput(u.Hash)
+		if err := txn.PushInput(u.Hash); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, o := range outs {
-		txn.PushOutput(o.Address, o.Coins, o.Hours)
+		if err := txn.PushOutput(o.Address, o.Coins, o.Hours); err != nil {
+			return nil, err
+		}
 	}
 
 	txn.SignInputs(keys)

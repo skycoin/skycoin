@@ -508,11 +508,13 @@ func TestUnspentProcessBlock(t *testing.T) {
 
 			txn := coin.Transaction{}
 			for _, in := range tc.inputs {
-				txn.PushInput(in.Hash())
+				err := txn.PushInput(in.Hash())
+				require.NoError(t, err)
 			}
 
 			for _, o := range tc.outputs {
-				txn.PushOutput(o.addr, o.coins, o.hours)
+				err := txn.PushOutput(o.addr, o.coins, o.hours)
+				require.NoError(t, err)
 			}
 
 			var block *coin.Block

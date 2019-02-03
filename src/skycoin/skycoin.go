@@ -536,12 +536,14 @@ func (c *Coin) ParseConfig() error {
 	return c.config.postProcess()
 }
 
-// InitTransaction creates the initialize transaction
+// InitTransaction creates the genesis transaction
 func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction {
 	var tx coin.Transaction
 
 	output := cipher.MustSHA256FromHex(UxID)
-	tx.PushInput(output)
+	if err := tx.PushInput(output); err != nil {
+		log.Panic(err)
+	}
 
 	addrs := params.GetDistributionAddresses()
 

@@ -642,7 +642,8 @@ func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		spendTx.PushInput(ux.Hash())
+		err := spendTx.PushInput(ux.Hash())
+		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
 	}
@@ -650,11 +651,13 @@ func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	hours := totalHours / 12
 
 	// These two outputs' coins added up will overflow
-	spendTx.PushOutput(toAddr, 18446744073709551000, hours)
-	spendTx.PushOutput(toAddr, totalCoins, hours)
+	err := spendTx.PushOutput(toAddr, 18446744073709551000, hours)
+	require.NoError(t, err)
+	err = spendTx.PushOutput(toAddr, totalCoins, hours)
+	require.NoError(t, err)
 
 	spendTx.SignInputs(keys)
-	err := spendTx.UpdateHeader()
+	err = spendTx.UpdateHeader()
 	require.NoError(t, err)
 	return spendTx
 }
@@ -664,7 +667,8 @@ func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		spendTx.PushInput(ux.Hash())
+		err := spendTx.PushInput(ux.Hash())
+		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
 	}
@@ -672,11 +676,13 @@ func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	hours := totalHours / 12
 
 	// These two outputs' hours added up will overflow
-	spendTx.PushOutput(toAddr, totalCoins/2, 18446744073709551615)
-	spendTx.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
+	err := spendTx.PushOutput(toAddr, totalCoins/2, 18446744073709551615)
+	require.NoError(t, err)
+	err = spendTx.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
+	require.NoError(t, err)
 
 	spendTx.SignInputs(keys)
-	err := spendTx.UpdateHeader()
+	err = spendTx.UpdateHeader()
 	require.NoError(t, err)
 	return spendTx
 }

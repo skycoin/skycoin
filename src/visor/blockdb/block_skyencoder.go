@@ -125,6 +125,11 @@ func EncodeBlock(buf []byte, obj *coin.Block) error {
 	// obj.Head.UxHash
 	e.CopyBytes(obj.Head.UxHash[:])
 
+	// obj.Body.Transactions maxlen check
+	if len(obj.Body.Transactions) > 65535 {
+		return encoder.ErrMaxLenExceeded
+	}
+
 	// obj.Body.Transactions length check
 	if len(obj.Body.Transactions) > math.MaxUint32 {
 		return errors.New("obj.Body.Transactions length exceeds math.MaxUint32")
@@ -145,6 +150,11 @@ func EncodeBlock(buf []byte, obj *coin.Block) error {
 		// x.InnerHash
 		e.CopyBytes(x.InnerHash[:])
 
+		// x.Sigs maxlen check
+		if len(x.Sigs) > 65535 {
+			return encoder.ErrMaxLenExceeded
+		}
+
 		// x.Sigs length check
 		if len(x.Sigs) > math.MaxUint32 {
 			return errors.New("x.Sigs length exceeds math.MaxUint32")
@@ -161,6 +171,11 @@ func EncodeBlock(buf []byte, obj *coin.Block) error {
 
 		}
 
+		// x.In maxlen check
+		if len(x.In) > 65535 {
+			return encoder.ErrMaxLenExceeded
+		}
+
 		// x.In length check
 		if len(x.In) > math.MaxUint32 {
 			return errors.New("x.In length exceeds math.MaxUint32")
@@ -175,6 +190,11 @@ func EncodeBlock(buf []byte, obj *coin.Block) error {
 			// x
 			e.CopyBytes(x[:])
 
+		}
+
+		// x.Out maxlen check
+		if len(x.Out) > 65535 {
+			return encoder.ErrMaxLenExceeded
 		}
 
 		// x.Out length check
@@ -208,9 +228,8 @@ func EncodeBlock(buf []byte, obj *coin.Block) error {
 }
 
 // DecodeBlock decodes an object of type Block from the buffer in encoder.Decoder.
-// If the buffer has any remaining bytes after decoding, an error is returned,
-// except when conforming to an omitempty declaration on the final field.
-func DecodeBlock(buf []byte, obj *coin.Block) error {
+// Returns the number of bytes used from the buffer to decode the object.
+func DecodeBlock(buf []byte, obj *coin.Block) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -219,7 +238,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 		// obj.Head.Version
 		i, err := d.Uint32()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Head.Version = i
 	}
@@ -228,7 +247,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 		// obj.Head.Time
 		i, err := d.Uint64()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Head.Time = i
 	}
@@ -237,7 +256,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 		// obj.Head.BkSeq
 		i, err := d.Uint64()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Head.BkSeq = i
 	}
@@ -246,7 +265,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 		// obj.Head.Fee
 		i, err := d.Uint64()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Head.Fee = i
 	}
@@ -254,7 +273,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 	{
 		// obj.Head.PrevHash
 		if len(d.Buffer) < len(obj.Head.PrevHash) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 		}
 		copy(obj.Head.PrevHash[:], d.Buffer[:len(obj.Head.PrevHash)])
 		d.Buffer = d.Buffer[len(obj.Head.PrevHash):]
@@ -263,7 +282,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 	{
 		// obj.Head.BodyHash
 		if len(d.Buffer) < len(obj.Head.BodyHash) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 		}
 		copy(obj.Head.BodyHash[:], d.Buffer[:len(obj.Head.BodyHash)])
 		d.Buffer = d.Buffer[len(obj.Head.BodyHash):]
@@ -272,7 +291,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 	{
 		// obj.Head.UxHash
 		if len(d.Buffer) < len(obj.Head.UxHash) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 		}
 		copy(obj.Head.UxHash[:], d.Buffer[:len(obj.Head.UxHash)])
 		d.Buffer = d.Buffer[len(obj.Head.UxHash):]
@@ -283,12 +302,16 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+		}
+
+		if length > 65535 {
+			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -299,7 +322,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 					// obj.Body.Transactions[z2].Length
 					i, err := d.Uint32()
 					if err != nil {
-						return err
+						return len(buf) - len(d.Buffer), err
 					}
 					obj.Body.Transactions[z2].Length = i
 				}
@@ -308,7 +331,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 					// obj.Body.Transactions[z2].Type
 					i, err := d.Uint8()
 					if err != nil {
-						return err
+						return len(buf) - len(d.Buffer), err
 					}
 					obj.Body.Transactions[z2].Type = i
 				}
@@ -316,7 +339,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 				{
 					// obj.Body.Transactions[z2].InnerHash
 					if len(d.Buffer) < len(obj.Body.Transactions[z2].InnerHash) {
-						return encoder.ErrBufferUnderflow
+						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 					}
 					copy(obj.Body.Transactions[z2].InnerHash[:], d.Buffer[:len(obj.Body.Transactions[z2].InnerHash)])
 					d.Buffer = d.Buffer[len(obj.Body.Transactions[z2].InnerHash):]
@@ -327,12 +350,16 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return err
+						return len(buf) - len(d.Buffer), err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return encoder.ErrBufferUnderflow
+						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+					}
+
+					if length > 65535 {
+						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -342,7 +369,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 							{
 								// obj.Body.Transactions[z2].Sigs[z4]
 								if len(d.Buffer) < len(obj.Body.Transactions[z2].Sigs[z4]) {
-									return encoder.ErrBufferUnderflow
+									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 								}
 								copy(obj.Body.Transactions[z2].Sigs[z4][:], d.Buffer[:len(obj.Body.Transactions[z2].Sigs[z4])])
 								d.Buffer = d.Buffer[len(obj.Body.Transactions[z2].Sigs[z4]):]
@@ -357,12 +384,16 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return err
+						return len(buf) - len(d.Buffer), err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return encoder.ErrBufferUnderflow
+						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+					}
+
+					if length > 65535 {
+						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -372,7 +403,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 							{
 								// obj.Body.Transactions[z2].In[z4]
 								if len(d.Buffer) < len(obj.Body.Transactions[z2].In[z4]) {
-									return encoder.ErrBufferUnderflow
+									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 								}
 								copy(obj.Body.Transactions[z2].In[z4][:], d.Buffer[:len(obj.Body.Transactions[z2].In[z4])])
 								d.Buffer = d.Buffer[len(obj.Body.Transactions[z2].In[z4]):]
@@ -387,12 +418,16 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return err
+						return len(buf) - len(d.Buffer), err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return encoder.ErrBufferUnderflow
+						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+					}
+
+					if length > 65535 {
+						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -403,7 +438,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 								// obj.Body.Transactions[z2].Out[z4].Address.Version
 								i, err := d.Uint8()
 								if err != nil {
-									return err
+									return len(buf) - len(d.Buffer), err
 								}
 								obj.Body.Transactions[z2].Out[z4].Address.Version = i
 							}
@@ -411,7 +446,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 							{
 								// obj.Body.Transactions[z2].Out[z4].Address.Key
 								if len(d.Buffer) < len(obj.Body.Transactions[z2].Out[z4].Address.Key) {
-									return encoder.ErrBufferUnderflow
+									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 								}
 								copy(obj.Body.Transactions[z2].Out[z4].Address.Key[:], d.Buffer[:len(obj.Body.Transactions[z2].Out[z4].Address.Key)])
 								d.Buffer = d.Buffer[len(obj.Body.Transactions[z2].Out[z4].Address.Key):]
@@ -421,7 +456,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 								// obj.Body.Transactions[z2].Out[z4].Coins
 								i, err := d.Uint64()
 								if err != nil {
-									return err
+									return len(buf) - len(d.Buffer), err
 								}
 								obj.Body.Transactions[z2].Out[z4].Coins = i
 							}
@@ -430,7 +465,7 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 								// obj.Body.Transactions[z2].Out[z4].Hours
 								i, err := d.Uint64()
 								if err != nil {
-									return err
+									return len(buf) - len(d.Buffer), err
 								}
 								obj.Body.Transactions[z2].Out[z4].Hours = i
 							}
@@ -442,9 +477,5 @@ func DecodeBlock(buf []byte, obj *coin.Block) error {
 		}
 	}
 
-	if len(d.Buffer) != 0 {
-		return encoder.ErrRemainingBytes
-	}
-
-	return nil
+	return len(buf) - len(d.Buffer), nil
 }

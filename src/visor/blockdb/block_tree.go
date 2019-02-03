@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -163,8 +164,10 @@ func (bt *blockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker)
 func (bt *blockTree) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) error {
 	return dbutil.ForEach(tx, BlocksBkt, func(_, v []byte) error {
 		var b coin.Block
-		if err := DecodeBlock(v, &b); err != nil {
+		if n, err := DecodeBlock(v, &b); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		return f(&b)

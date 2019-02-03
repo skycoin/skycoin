@@ -66,9 +66,8 @@ func EncodeUxOut(buf []byte, obj *coin.UxOut) error {
 }
 
 // DecodeUxOut decodes an object of type UxOut from the buffer in encoder.Decoder.
-// If the buffer has any remaining bytes after decoding, an error is returned,
-// except when conforming to an omitempty declaration on the final field.
-func DecodeUxOut(buf []byte, obj *coin.UxOut) error {
+// Returns the number of bytes used from the buffer to decode the object.
+func DecodeUxOut(buf []byte, obj *coin.UxOut) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -77,7 +76,7 @@ func DecodeUxOut(buf []byte, obj *coin.UxOut) error {
 		// obj.Head.Time
 		i, err := d.Uint64()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Head.Time = i
 	}
@@ -86,7 +85,7 @@ func DecodeUxOut(buf []byte, obj *coin.UxOut) error {
 		// obj.Head.BkSeq
 		i, err := d.Uint64()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Head.BkSeq = i
 	}
@@ -94,7 +93,7 @@ func DecodeUxOut(buf []byte, obj *coin.UxOut) error {
 	{
 		// obj.Body.SrcTransaction
 		if len(d.Buffer) < len(obj.Body.SrcTransaction) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 		}
 		copy(obj.Body.SrcTransaction[:], d.Buffer[:len(obj.Body.SrcTransaction)])
 		d.Buffer = d.Buffer[len(obj.Body.SrcTransaction):]
@@ -104,7 +103,7 @@ func DecodeUxOut(buf []byte, obj *coin.UxOut) error {
 		// obj.Body.Address.Version
 		i, err := d.Uint8()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Body.Address.Version = i
 	}
@@ -112,7 +111,7 @@ func DecodeUxOut(buf []byte, obj *coin.UxOut) error {
 	{
 		// obj.Body.Address.Key
 		if len(d.Buffer) < len(obj.Body.Address.Key) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 		}
 		copy(obj.Body.Address.Key[:], d.Buffer[:len(obj.Body.Address.Key)])
 		d.Buffer = d.Buffer[len(obj.Body.Address.Key):]
@@ -122,7 +121,7 @@ func DecodeUxOut(buf []byte, obj *coin.UxOut) error {
 		// obj.Body.Coins
 		i, err := d.Uint64()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Body.Coins = i
 	}
@@ -131,14 +130,10 @@ func DecodeUxOut(buf []byte, obj *coin.UxOut) error {
 		// obj.Body.Hours
 		i, err := d.Uint64()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 		obj.Body.Hours = i
 	}
 
-	if len(d.Buffer) != 0 {
-		return encoder.ErrRemainingBytes
-	}
-
-	return nil
+	return len(buf) - len(d.Buffer), nil
 }

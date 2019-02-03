@@ -60,9 +60,8 @@ func EncodeHashPairs(buf []byte, obj *HashPairs) error {
 }
 
 // DecodeHashPairs decodes an object of type HashPairs from the buffer in encoder.Decoder.
-// If the buffer has any remaining bytes after decoding, an error is returned,
-// except when conforming to an omitempty declaration on the final field.
-func DecodeHashPairs(buf []byte, obj *HashPairs) error {
+// Returns the number of bytes used from the buffer to decode the object.
+func DecodeHashPairs(buf []byte, obj *HashPairs) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -72,12 +71,12 @@ func DecodeHashPairs(buf []byte, obj *HashPairs) error {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 		}
 
 		if length != 0 {
@@ -87,7 +86,7 @@ func DecodeHashPairs(buf []byte, obj *HashPairs) error {
 				{
 					// obj.HashPairs[z1].Hash
 					if len(d.Buffer) < len(obj.HashPairs[z1].Hash) {
-						return encoder.ErrBufferUnderflow
+						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 					}
 					copy(obj.HashPairs[z1].Hash[:], d.Buffer[:len(obj.HashPairs[z1].Hash)])
 					d.Buffer = d.Buffer[len(obj.HashPairs[z1].Hash):]
@@ -96,7 +95,7 @@ func DecodeHashPairs(buf []byte, obj *HashPairs) error {
 				{
 					// obj.HashPairs[z1].PreHash
 					if len(d.Buffer) < len(obj.HashPairs[z1].PreHash) {
-						return encoder.ErrBufferUnderflow
+						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 					}
 					copy(obj.HashPairs[z1].PreHash[:], d.Buffer[:len(obj.HashPairs[z1].PreHash)])
 					d.Buffer = d.Buffer[len(obj.HashPairs[z1].PreHash):]
@@ -106,9 +105,5 @@ func DecodeHashPairs(buf []byte, obj *HashPairs) error {
 		}
 	}
 
-	if len(d.Buffer) != 0 {
-		return encoder.ErrRemainingBytes
-	}
-
-	return nil
+	return len(buf) - len(d.Buffer), nil
 }

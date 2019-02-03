@@ -27,9 +27,8 @@ func EncodeSigWrapper(buf []byte, obj *SigWrapper) error {
 }
 
 // DecodeSigWrapper decodes an object of type SigWrapper from the buffer in encoder.Decoder.
-// If the buffer has any remaining bytes after decoding, an error is returned,
-// except when conforming to an omitempty declaration on the final field.
-func DecodeSigWrapper(buf []byte, obj *SigWrapper) error {
+// Returns the number of bytes used from the buffer to decode the object.
+func DecodeSigWrapper(buf []byte, obj *SigWrapper) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -37,15 +36,11 @@ func DecodeSigWrapper(buf []byte, obj *SigWrapper) error {
 	{
 		// obj.Sig
 		if len(d.Buffer) < len(obj.Sig) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 		}
 		copy(obj.Sig[:], d.Buffer[:len(obj.Sig)])
 		d.Buffer = d.Buffer[len(obj.Sig):]
 	}
 
-	if len(d.Buffer) != 0 {
-		return encoder.ErrRemainingBytes
-	}
-
-	return nil
+	return len(buf) - len(d.Buffer), nil
 }

@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 func TestNewMessageContext(t *testing.T) {
@@ -141,6 +143,26 @@ type DummyMessage struct{}
 
 var DummyPrefix = MessagePrefix{'D', 'U', 'M', 'Y'}
 
+// EncodeSize implements gnet.Serializer
+func (dm *DummyMessage) EncodeSize() int {
+	return encoder.Size(dm)
+}
+
+// Encode implements gnet.Serializer
+func (dm *DummyMessage) Encode(buf []byte) error {
+	buf2 := encoder.Serialize(dm)
+	if len(buf) < len(buf2) {
+		return errors.New("Not enough buffer data to encode")
+	}
+	copy(buf[:], buf2[:])
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (dm *DummyMessage) Decode(buf []byte) (int, error) {
+	return len(buf), encoder.DeserializeRaw(buf, dm)
+}
+
 func (dm *DummyMessage) Handle(context *MessageContext, x interface{}) error {
 	return nil
 }
@@ -152,6 +174,26 @@ var (
 	ErrErrorMessageHandler = errors.New("Bad")
 )
 
+// EncodeSize implements gnet.Serializer
+func (em *ErrorMessage) EncodeSize() int {
+	return encoder.Size(em)
+}
+
+// Encode implements gnet.Serializer
+func (em *ErrorMessage) Encode(buf []byte) error {
+	buf2 := encoder.Serialize(em)
+	if len(buf) < len(buf2) {
+		return errors.New("Not enough buffer data to encode")
+	}
+	copy(buf[:], buf2[:])
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (em *ErrorMessage) Decode(buf []byte) (int, error) {
+	return len(buf), encoder.DeserializeRaw(buf, em)
+}
+
 func (em *ErrorMessage) Handle(context *MessageContext, x interface{}) error {
 	return ErrErrorMessageHandler
 }
@@ -161,6 +203,26 @@ type ByteMessage struct {
 }
 
 var BytePrefix = MessagePrefix{'B', 'Y', 'T', 'E'}
+
+// EncodeSize implements gnet.Serializer
+func (bm *ByteMessage) EncodeSize() int {
+	return encoder.Size(bm)
+}
+
+// Encode implements gnet.Serializer
+func (bm *ByteMessage) Encode(buf []byte) error {
+	buf2 := encoder.Serialize(bm)
+	if len(buf) < len(buf2) {
+		return errors.New("Not enough buffer data to encode")
+	}
+	copy(buf[:], buf2[:])
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (bm *ByteMessage) Decode(buf []byte) (int, error) {
+	return len(buf), encoder.DeserializeRaw(buf, bm)
+}
 
 func (bm *ByteMessage) Handle(c *MessageContext, x interface{}) error {
 	return nil
@@ -172,4 +234,24 @@ func NewByteMessage(x byte) Message {
 
 type PointerMessage struct {
 	Ptr *int
+}
+
+// EncodeSize implements gnet.Serializer
+func (m *PointerMessage) EncodeSize() int {
+	return encoder.Size(m)
+}
+
+// Encode implements gnet.Serializer
+func (m *PointerMessage) Encode(buf []byte) error {
+	buf2 := encoder.Serialize(m)
+	if len(buf) < len(buf2) {
+		return errors.New("Not enough buffer data to encode")
+	}
+	copy(buf[:], buf2[:])
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (m *PointerMessage) Decode(buf []byte) (int, error) {
+	return len(buf), encoder.DeserializeRaw(buf, m)
 }

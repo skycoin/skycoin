@@ -44,6 +44,16 @@ func NewMessageConfig(prefix string, m interface{}) MessageConfig {
 	}
 }
 
+//go:generate skyencoder -struct IntroductionMessage
+//go:generate skyencoder -struct GivePeersMessage
+//go:generate skyencoder -struct GetBlocksMessage
+//go:generate skyencoder -struct GiveBlocksMessage
+//go:generate skyencoder -struct AnnounceBlocksMessage
+//go:generate skyencoder -struct GetTxnsMessage
+//go:generate skyencoder -struct GiveTxnsMessage
+//go:generate skyencoder -struct AnnounceTxnsMessage
+//go:generate skyencoder -struct DisconnectMessage
+
 // Creates and populates the message configs
 func getMessageConfigs() []MessageConfig {
 	return []MessageConfig{
@@ -146,6 +156,21 @@ func NewGetPeersMessage() *GetPeersMessage {
 	return &GetPeersMessage{}
 }
 
+// EncodeSize implements gnet.Serializer
+func (gpm *GetPeersMessage) EncodeSize() int {
+	return 0
+}
+
+// Encode implements gnet.Serializer
+func (gpm *GetPeersMessage) Encode(buf []byte) error {
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (gpm *GetPeersMessage) Decode(buf []byte) (int, error) {
+	return 0, nil
+}
+
 // Handle handles message
 func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gpm.addr = mc.Addr
@@ -181,6 +206,21 @@ func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 		ipaddrs = append(ipaddrs, ipaddr)
 	}
 	return &GivePeersMessage{Peers: ipaddrs}
+}
+
+// EncodeSize implements gnet.Serializer
+func (gpm *GivePeersMessage) EncodeSize() int {
+	return EncodeSizeGivePeersMessage(gpm)
+}
+
+// Encode implements gnet.Serializer
+func (gpm *GivePeersMessage) Encode(buf []byte) error {
+	return EncodeGivePeersMessage(buf, gpm)
+}
+
+// Decode implements gnet.Serializer
+func (gpm *GivePeersMessage) Decode(buf []byte) (int, error) {
+	return DecodeGivePeersMessage(buf, gpm)
 }
 
 // GetPeers is required by the pex.GivePeersMessage interface.
@@ -296,6 +336,21 @@ func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyP
 	copy(extra[i:], userAgentSerialized)
 
 	return extra
+}
+
+// EncodeSize implements gnet.Serializer
+func (intro *IntroductionMessage) EncodeSize() int {
+	return EncodeSizeIntroductionMessage(intro)
+}
+
+// Encode implements gnet.Serializer
+func (intro *IntroductionMessage) Encode(buf []byte) error {
+	return EncodeIntroductionMessage(buf, intro)
+}
+
+// Decode implements gnet.Serializer
+func (intro *IntroductionMessage) Decode(buf []byte) (int, error) {
+	return DecodeIntroductionMessage(buf, intro)
 }
 
 // Handle records message event in daemon
@@ -468,6 +523,21 @@ type PingMessage struct {
 	c *gnet.MessageContext `enc:"-"`
 }
 
+// EncodeSize implements gnet.Serializer
+func (ping *PingMessage) EncodeSize() int {
+	return 0
+}
+
+// Encode implements gnet.Serializer
+func (ping *PingMessage) Encode(buf []byte) error {
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (ping *PingMessage) Decode(buf []byte) (int, error) {
+	return 0, nil
+}
+
 // Handle implements the Messager interface
 func (ping *PingMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	ping.c = mc
@@ -491,6 +561,21 @@ func (ping *PingMessage) process(d daemoner) {
 
 // PongMessage Sent in reply to a PingMessage.  No action is taken when this is received.
 type PongMessage struct {
+}
+
+// EncodeSize implements gnet.Serializer
+func (pong *PongMessage) EncodeSize() int {
+	return 0
+}
+
+// Encode implements gnet.Serializer
+func (pong *PongMessage) Encode(buf []byte) error {
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (pong *PongMessage) Decode(buf []byte) (int, error) {
+	return 0, nil
 }
 
 // Handle handles message
@@ -527,6 +612,21 @@ func NewDisconnectMessage(reason gnet.DisconnectReason) *DisconnectMessage {
 	}
 }
 
+// EncodeSize implements gnet.Serializer
+func (dm *DisconnectMessage) EncodeSize() int {
+	return EncodeSizeDisconnectMessage(dm)
+}
+
+// Encode implements gnet.Serializer
+func (dm *DisconnectMessage) Encode(buf []byte) error {
+	return EncodeDisconnectMessage(buf, dm)
+}
+
+// Decode implements gnet.Serializer
+func (dm *DisconnectMessage) Decode(buf []byte) (int, error) {
+	return DecodeDisconnectMessage(buf, dm)
+}
+
 // Handle an event queued by Handle()
 func (dm *DisconnectMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	dm.c = mc
@@ -560,6 +660,21 @@ func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMes
 		LastBlock:       lastBlock,
 		RequestedBlocks: requestedBlocks, // count of blocks requested
 	}
+}
+
+// EncodeSize implements gnet.Serializer
+func (gbm *GetBlocksMessage) EncodeSize() int {
+	return EncodeSizeGetBlocksMessage(gbm)
+}
+
+// Encode implements gnet.Serializer
+func (gbm *GetBlocksMessage) Encode(buf []byte) error {
+	return EncodeGetBlocksMessage(buf, gbm)
+}
+
+// Decode implements gnet.Serializer
+func (gbm *GetBlocksMessage) Decode(buf []byte) (int, error) {
+	return DecodeGetBlocksMessage(buf, gbm)
 }
 
 // Handle handles message
@@ -611,6 +726,21 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 	return &GiveBlocksMessage{
 		Blocks: blocks,
 	}
+}
+
+// EncodeSize implements gnet.Serializer
+func (gbm *GiveBlocksMessage) EncodeSize() int {
+	return EncodeSizeGiveBlocksMessage(gbm)
+}
+
+// Encode implements gnet.Serializer
+func (gbm *GiveBlocksMessage) Encode(buf []byte) error {
+	return EncodeGiveBlocksMessage(buf, gbm)
+}
+
+// Decode implements gnet.Serializer
+func (gbm *GiveBlocksMessage) Decode(buf []byte) (int, error) {
+	return DecodeGiveBlocksMessage(buf, gbm)
 }
 
 // Handle handle message
@@ -709,6 +839,21 @@ func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
 	}
 }
 
+// EncodeSize implements gnet.Serializer
+func (abm *AnnounceBlocksMessage) EncodeSize() int {
+	return EncodeSizeAnnounceBlocksMessage(abm)
+}
+
+// Encode implements gnet.Serializer
+func (abm *AnnounceBlocksMessage) Encode(buf []byte) error {
+	return EncodeAnnounceBlocksMessage(buf, abm)
+}
+
+// Decode implements gnet.Serializer
+func (abm *AnnounceBlocksMessage) Decode(buf []byte) (int, error) {
+	return DecodeAnnounceBlocksMessage(buf, abm)
+}
+
 // Handle handles message
 func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	abm.c = mc
@@ -766,6 +911,21 @@ func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 	}
 }
 
+// EncodeSize implements gnet.Serializer
+func (atm *AnnounceTxnsMessage) EncodeSize() int {
+	return EncodeSizeAnnounceTxnsMessage(atm)
+}
+
+// Encode implements gnet.Serializer
+func (atm *AnnounceTxnsMessage) Encode(buf []byte) error {
+	return EncodeAnnounceTxnsMessage(buf, atm)
+}
+
+// Decode implements gnet.Serializer
+func (atm *AnnounceTxnsMessage) Decode(buf []byte) (int, error) {
+	return DecodeAnnounceTxnsMessage(buf, atm)
+}
+
 // GetFiltered returns txns
 func (atm *AnnounceTxnsMessage) GetFiltered() []cipher.SHA256 {
 	return atm.Transactions
@@ -817,6 +977,21 @@ func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 	}
 }
 
+// EncodeSize implements gnet.Serializer
+func (gtm *GetTxnsMessage) EncodeSize() int {
+	return EncodeSizeGetTxnsMessage(gtm)
+}
+
+// Encode implements gnet.Serializer
+func (gtm *GetTxnsMessage) Encode(buf []byte) error {
+	return EncodeGetTxnsMessage(buf, gtm)
+}
+
+// Decode implements gnet.Serializer
+func (gtm *GetTxnsMessage) Decode(buf []byte) (int, error) {
+	return DecodeGetTxnsMessage(buf, gtm)
+}
+
 // Handle handle message
 func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gtm.c = mc
@@ -862,6 +1037,21 @@ func NewGiveTxnsMessage(txns []coin.Transaction) *GiveTxnsMessage {
 	return &GiveTxnsMessage{
 		Transactions: txns,
 	}
+}
+
+// EncodeSize implements gnet.Serializer
+func (gtm *GiveTxnsMessage) EncodeSize() int {
+	return EncodeSizeGiveTxnsMessage(gtm)
+}
+
+// Encode implements gnet.Serializer
+func (gtm *GiveTxnsMessage) Encode(buf []byte) error {
+	return EncodeGiveTxnsMessage(buf, gtm)
+}
+
+// Decode implements gnet.Serializer
+func (gtm *GiveTxnsMessage) Decode(buf []byte) (int, error) {
+	return DecodeGiveTxnsMessage(buf, gtm)
 }
 
 // GetFiltered returns transactions hashes

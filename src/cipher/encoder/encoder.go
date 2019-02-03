@@ -50,6 +50,21 @@ var (
 	ErrMapDuplicateKeys = errors.New("Duplicate keys encountered while decoding a map")
 )
 
+// SerializeUint32 serializes a uint32
+func SerializeUint32(x uint32) []byte {
+	var b [4]byte
+	lePutUint32(b[:], x)
+	return b[:]
+}
+
+// DeserializeUint32 serializes a uint32
+func DeserializeUint32(buf []byte) (uint32, int, error) {
+	if len(buf) < 4 {
+		return 0, 0, ErrBufferUnderflow
+	}
+	return leUint32(buf[:4]), 4, nil
+}
+
 // SerializeAtomic encodes an integer or boolean contained in `data` to bytes.
 // Panics if `data` is not an integer or boolean type.
 func SerializeAtomic(data interface{}) []byte {
@@ -165,10 +180,7 @@ func DeserializeAtomic(in []byte, data interface{}) (int, error) {
 // SerializeString serializes a string to []byte
 func SerializeString(s string) []byte {
 	v := reflect.ValueOf(s)
-	size, err := datasizeWrite(v)
-	if err != nil {
-		log.Panic(err)
-	}
+	size := datasizeWrite(v)
 	buf := make([]byte, size)
 	e := &Encoder{
 		Buffer: buf,
@@ -260,10 +272,7 @@ func DeserializeRawToValue(in []byte, v reflect.Value) (int, error) {
 // parameter. Encoding is reflect-based. Panics if `data` is not serializable.
 func Serialize(data interface{}) []byte {
 	v := reflect.Indirect(reflect.ValueOf(data))
-	size, err := datasizeWrite(v)
-	if err != nil {
-		log.Panic(err)
-	}
+	size := datasizeWrite(v)
 	buf := make([]byte, size)
 	e := &Encoder{
 		Buffer: buf,
@@ -276,12 +285,8 @@ func Serialize(data interface{}) []byte {
 // value v, which must be a fixed-size value (struct) or a
 // slice of fixed-size values, or a pointer to such data.
 // Reflect-based encoding is used.
-func Size(v interface{}) (int, error) {
-	n, err := datasizeWrite(reflect.Indirect(reflect.ValueOf(v)))
-	if err != nil {
-		return 0, err
-	}
-	return n, nil
+func Size(v interface{}) int {
+	return datasizeWrite(reflect.Indirect(reflect.ValueOf(v)))
 }
 
 // isEmpty returns true if a value is "empty".
@@ -305,7 +310,7 @@ func isEmpty(v reflect.Value) bool {
 // For compound structures, it sums the sizes of the elements. Thus, for instance, for a slice
 // it returns the length of the slice times the element size and does not count the memory
 // occupied by the header.
-func datasizeWrite(v reflect.Value) (int, error) {
+func datasizeWrite(v reflect.Value) int {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Interface:
@@ -317,24 +322,21 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8, reflect.Int8:
-			return v.Len(), nil
+			return v.Len()
 		case reflect.Uint16, reflect.Int16:
-			return v.Len() * 2, nil
+			return v.Len() * 2
 		case reflect.Uint32, reflect.Int32, reflect.Float32:
-			return v.Len() * 4, nil
+			return v.Len() * 4
 		case reflect.Uint64, reflect.Int64, reflect.Float64:
-			return v.Len() * 8, nil
+			return v.Len() * 8
 		default:
 			size := 0
 			for i := 0; i < v.Len(); i++ {
 				elem := v.Index(i)
-				s, err := datasizeWrite(elem)
-				if err != nil {
-					return 0, err
-				}
+				s := datasizeWrite(elem)
 				size += s
 			}
-			return size, nil
+			return size
 		}
 
 	case reflect.Slice:
@@ -342,43 +344,34 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8, reflect.Int8:
-			return 4 + v.Len(), nil
+			return 4 + v.Len()
 		case reflect.Uint16, reflect.Int16:
-			return 4 + v.Len()*2, nil
+			return 4 + v.Len()*2
 		case reflect.Uint32, reflect.Int32, reflect.Float32:
-			return 4 + v.Len()*4, nil
+			return 4 + v.Len()*4
 		case reflect.Uint64, reflect.Int64, reflect.Float64:
-			return 4 + v.Len()*8, nil
+			return 4 + v.Len()*8
 		default:
 			size := 0
 			for i := 0; i < v.Len(); i++ {
 				elem := v.Index(i)
-				s, err := datasizeWrite(elem)
-				if err != nil {
-					return 0, err
-				}
+				s := datasizeWrite(elem)
 				size += s
 			}
-			return 4 + size, nil
+			return 4 + size
 		}
 
 	case reflect.Map:
 		// length prefix
 		size := 4
 		for _, key := range v.MapKeys() {
-			s, err := datasizeWrite(key)
-			if err != nil {
-				return 0, err
-			}
+			s := datasizeWrite(key)
 			size += s
 			elem := v.MapIndex(key)
-			s, err = datasizeWrite(elem)
-			if err != nil {
-				return 0, err
-			}
+			s = datasizeWrite(elem)
 			size += s
 		}
-		return size, nil
+		return size
 
 	case reflect.Struct:
 		sum := 0
@@ -403,28 +396,26 @@ func datasizeWrite(v reflect.Value) (int, error) {
 
 			fv := v.Field(i)
 			if !omitempty || !isEmpty(fv) {
-				s, err := datasizeWrite(fv)
-				if err != nil {
-					return 0, err
-				}
+				s := datasizeWrite(fv)
 				sum += s
 			}
 		}
-		return sum, nil
+		return sum
 
 	case reflect.Bool:
-		return 1, nil
+		return 1
 
 	case reflect.String:
-		return 4 + v.Len(), nil
+		return 4 + v.Len()
 
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Float32, reflect.Float64:
-		return int(t.Size()), nil
+		return int(t.Size())
 
 	default:
-		return 0, fmt.Errorf("invalid type %s", t.String())
+		log.Panicf("invalid type %s", t.String())
+		return 0
 	}
 }
 

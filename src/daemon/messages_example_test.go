@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -348,6 +349,26 @@ func (m *EmptySliceStruct) Handle(mc *gnet.MessageContext, daemon interface{}) e
 	return nil
 }
 
+// EncodeSize implements gnet.Serializer
+func (m *EmptySliceStruct) EncodeSize() int {
+	return encoder.Size(m)
+}
+
+// Encode implements gnet.Serializer
+func (m *EmptySliceStruct) Encode(buf []byte) error {
+	buf2 := encoder.Serialize(m)
+	if len(buf) < len(buf2) {
+		return errors.New("Not enough buffer data to encode")
+	}
+	copy(buf[:], buf2[:])
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (m *EmptySliceStruct) Decode(buf []byte) (int, error) {
+	return len(buf), encoder.DeserializeRaw(buf, m)
+}
+
 func ExampleEmptySliceStruct() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
@@ -391,6 +412,26 @@ type OmitEmptySliceTestStruct struct {
 func (m *OmitEmptySliceTestStruct) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	// Do nothing
 	return nil
+}
+
+// EncodeSize implements gnet.Serializer
+func (m *OmitEmptySliceTestStruct) EncodeSize() int {
+	return encoder.Size(m)
+}
+
+// Encode implements gnet.Serializer
+func (m *OmitEmptySliceTestStruct) Encode(buf []byte) error {
+	buf2 := encoder.Serialize(m)
+	if len(buf) < len(buf2) {
+		return errors.New("Not enough buffer data to encode")
+	}
+	copy(buf[:], buf2[:])
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (m *OmitEmptySliceTestStruct) Decode(buf []byte) (int, error) {
+	return len(buf), encoder.DeserializeRaw(buf, m)
 }
 
 func ExampleOmitEmptySliceTestStruct() {

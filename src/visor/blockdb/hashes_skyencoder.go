@@ -54,9 +54,8 @@ func EncodeHashes(buf []byte, obj *Hashes) error {
 }
 
 // DecodeHashes decodes an object of type Hashes from the buffer in encoder.Decoder.
-// If the buffer has any remaining bytes after decoding, an error is returned,
-// except when conforming to an omitempty declaration on the final field.
-func DecodeHashes(buf []byte, obj *Hashes) error {
+// Returns the number of bytes used from the buffer to decode the object.
+func DecodeHashes(buf []byte, obj *Hashes) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -66,12 +65,12 @@ func DecodeHashes(buf []byte, obj *Hashes) error {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return err
+			return len(buf) - len(d.Buffer), err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return encoder.ErrBufferUnderflow
+			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 		}
 
 		if length != 0 {
@@ -81,7 +80,7 @@ func DecodeHashes(buf []byte, obj *Hashes) error {
 				{
 					// obj.Hashes[z1]
 					if len(d.Buffer) < len(obj.Hashes[z1]) {
-						return encoder.ErrBufferUnderflow
+						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 					}
 					copy(obj.Hashes[z1][:], d.Buffer[:len(obj.Hashes[z1])])
 					d.Buffer = d.Buffer[len(obj.Hashes[z1]):]
@@ -91,9 +90,5 @@ func DecodeHashes(buf []byte, obj *Hashes) error {
 		}
 	}
 
-	if len(d.Buffer) != 0 {
-		return encoder.ErrRemainingBytes
-	}
-
-	return nil
+	return len(buf) - len(d.Buffer), nil
 }

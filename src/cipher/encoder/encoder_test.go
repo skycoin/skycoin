@@ -317,13 +317,12 @@ func TestEncodeNestedSlice(t *testing.T) {
 		size += 4 + i*2
 	}
 	c := Container{elems}
-	n, err := datasizeWrite(reflect.ValueOf(c))
-	require.NoError(t, err)
+	n := datasizeWrite(reflect.ValueOf(c))
 	require.False(t, n != size+4, "Wrong data size")
 
 	b := Serialize(c)
 	d := Container{}
-	err = DeserializeRaw(b, &d)
+	err := DeserializeRaw(b, &d)
 	require.NoError(t, err)
 
 	for i, e := range d.Elements {
@@ -1124,8 +1123,7 @@ func TestRandomGarbage(t *testing.T) {
 		Q: map[string]string{"foo": "bar", "cat": "dog"},
 	}
 
-	size, err := datasizeWrite(reflect.ValueOf(x))
-	require.NoError(t, err)
+	size := datasizeWrite(reflect.ValueOf(x))
 
 	var y hasEveryType
 	for j := 0; j < 100; j++ {
@@ -1349,4 +1347,50 @@ func TestDeserializeString(t *testing.T) {
 			require.Equal(t, tc.n, n)
 		})
 	}
+}
+
+func TestSerializeUint32(t *testing.T) {
+	cases := []struct {
+		x uint32
+	}{
+		{
+			x: 0,
+		},
+		{
+			x: 1,
+		},
+		{
+			x: 0xFF,
+		},
+		{
+			x: 0xFFFF,
+		},
+		{
+			x: 0xFFFFFF,
+		},
+		{
+			x: 0xFFFFFFFF,
+		},
+		{
+			x: math.MaxUint32,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprint(tc.x), func(t *testing.T) {
+			b := SerializeUint32(tc.x)
+			y, n, err := DeserializeUint32(b)
+			require.NoError(t, err)
+			require.Equal(t, 4, n)
+			require.Equal(t, tc.x, y)
+		})
+	}
+
+	_, _, err := DeserializeUint32(make([]byte, 3))
+	require.Equal(t, ErrBufferUnderflow, err)
+
+	y, n, err := DeserializeUint32([]byte{1, 0, 0, 0, 0})
+	require.NoError(t, err)
+	require.Equal(t, 4, n)
+	require.Equal(t, uint32(1), y)
 }

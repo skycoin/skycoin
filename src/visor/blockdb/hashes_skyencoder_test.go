@@ -64,11 +64,7 @@ func newRandomZeroLenNilHashesForEncodeTest(t *testing.T, rand *mathrand.Rand) *
 func testSkyencoderHashes(t *testing.T, obj *Hashes) {
 	// EncodeSize
 
-	n1, err := encoder.Size(obj)
-	if err != nil {
-		t.Fatalf("encoder.Size failed: %v", err)
-	}
-
+	n1 := encoder.Size(obj)
 	n2 := EncodeSizeHashes(obj)
 
 	if n1 != n2 {
@@ -80,7 +76,7 @@ func testSkyencoderHashes(t *testing.T, obj *Hashes) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err = EncodeHashes(data2, obj)
+	err := EncodeHashes(data2, obj)
 	if err != nil {
 		t.Fatalf("EncodeHashes failed: %v", err)
 	}
@@ -106,13 +102,85 @@ func testSkyencoderHashes(t *testing.T, obj *Hashes) {
 	}
 
 	var obj3 Hashes
-	err = DecodeHashes(data2, &obj3)
+	n, err := DecodeHashes(data2, &obj3)
 	if err != nil {
 		t.Fatalf("DecodeHashes failed: %v", err)
+	}
+	if n != len(data2) {
+		t.Fatalf("DecodeHashes bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
 		t.Fatal("encoder.DeserializeRaw() != DecodeHashes()")
+	}
+
+	isEncodableField := func(f reflect.StructField) bool {
+		// Skip unexported fields
+		if f.PkgPath != "" {
+			return false
+		}
+
+		// Skip fields disabled with and enc:"- struct tag
+		tag := f.Tag.Get("enc")
+		return !strings.HasPrefix(tag, "-,") && tag != "-"
+	}
+
+	hasOmitEmptyField := func(obj interface{}) bool {
+		v := reflect.ValueOf(obj)
+		switch v.Kind() {
+		case reflect.Ptr:
+			v = v.Elem()
+		}
+
+		switch v.Kind() {
+		case reflect.Struct:
+			t := v.Type()
+			n := v.NumField()
+			f := t.Field(n - 1)
+			tag := f.Tag.Get("enc")
+			return isEncodableField(f) && strings.Contains(tag, ",omitempty")
+		default:
+			return false
+		}
+	}
+
+	// returns the number of bytes encoded by an omitempty field on a given object
+	omitEmptyLen := func(obj interface{}) int {
+		if !hasOmitEmptyField(obj) {
+			return 0
+		}
+
+		v := reflect.ValueOf(obj)
+		switch v.Kind() {
+		case reflect.Ptr:
+			v = v.Elem()
+		}
+
+		switch v.Kind() {
+		case reflect.Struct:
+			n := v.NumField()
+			f := v.Field(n - 1)
+			if f.Len() == 0 {
+				return 0
+			}
+			return 4 + f.Len()
+
+		default:
+			return 0
+		}
+	}
+
+	// Check that the bytes read value is correct when providing an extended buffer
+	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
+		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
+		data3 := append(data2[:], padding...)
+		n, err = DecodeHashes(data3, &obj3)
+		if err != nil {
+			t.Fatalf("DecodeHashes failed: %v", err)
+		}
+		if n != len(data2) {
+			t.Fatalf("DecodeHashes bytes read length should be %d, is %d", len(data2), n)
+		}
 	}
 }
 
@@ -157,7 +225,7 @@ func TestSkyencoderHashes(t *testing.T) {
 
 func decodeHashesExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj Hashes
-	err := DecodeHashes(buf, &obj)
+	_, err := DecodeHashes(buf, &obj)
 
 	if err == nil {
 		t.Fatal("DecodeHashes: expected error, got nil")
@@ -168,7 +236,7 @@ func decodeHashesExpectError(t *testing.T, buf []byte, expectedErr error) {
 	}
 }
 
-func testSkyencoderHashesDecodeErrors(t *testing.T, k int, obj *Hashes) {
+func testSkyencoderHashesDecodeErrors(t *testing.T, k int, tag string, obj *Hashes) {
 	isEncodableField := func(f reflect.StructField) bool {
 		// Skip unexported fields
 		if f.PkgPath != "" {
@@ -259,7 +327,7 @@ func testSkyencoderHashesDecodeErrors(t *testing.T, k int, obj *Hashes) {
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field
 	if hasOmitEmptyField(obj) && numEncodableFields(obj) > 1 {
-		t.Run(fmt.Sprintf("%d buffer underflow nil", k), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d %s buffer underflow nil", k, tag), func(t *testing.T) {
 			decodeHashesExpectError(t, nil, encoder.ErrBufferUnderflow)
 		})
 	}
@@ -271,7 +339,7 @@ func testSkyencoderHashesDecodeErrors(t *testing.T, k int, obj *Hashes) {
 		if i == skipN {
 			continue
 		}
-		t.Run(fmt.Sprintf("%d buffer underflow bytes=%d", k, i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d %s buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
 			decodeHashesExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
 		})
 	}
@@ -284,12 +352,6 @@ func testSkyencoderHashesDecodeErrors(t *testing.T, k int, obj *Hashes) {
 	} else {
 		buf = append(buf, 0)
 	}
-
-	// Buffer too long
-	buf = append(buf, 0)
-	t.Run(fmt.Sprintf("%d remaining bytes", k), func(t *testing.T) {
-		decodeHashesExpectError(t, buf[:], encoder.ErrRemainingBytes)
-	})
 }
 
 func TestSkyencoderHashesDecodeErrors(t *testing.T) {
@@ -299,7 +361,7 @@ func TestSkyencoderHashesDecodeErrors(t *testing.T) {
 	for i := 0; i < n; i++ {
 		emptyObj := newEmptyHashesForEncodeTest()
 		fullObj := newRandomHashesForEncodeTest(t, rand)
-		testSkyencoderHashesDecodeErrors(t, i, emptyObj)
-		testSkyencoderHashesDecodeErrors(t, i, fullObj)
+		testSkyencoderHashesDecodeErrors(t, i, "empty", emptyObj)
+		testSkyencoderHashesDecodeErrors(t, i, "full", fullObj)
 	}
 }

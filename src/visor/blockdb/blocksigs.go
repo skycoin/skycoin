@@ -2,6 +2,7 @@ package blockdb
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -56,8 +57,10 @@ func (bs *blockSigs) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) er
 		}
 
 		var sig SigWrapper
-		if err := DecodeSigWrapper(v, &sig); err != nil {
+		if n, err := DecodeSigWrapper(v, &sig); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		return f(hash, sig.Sig)

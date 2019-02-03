@@ -558,7 +558,9 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 
 	for i := range addrs {
 		addr := cipher.MustDecodeBase58Address(addrs[i])
-		tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1)
+		if err := tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1); err != nil {
+			log.Panic(err)
+		}
 	}
 
 	seckeys := make([]cipher.SecKey, 1)

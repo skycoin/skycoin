@@ -136,7 +136,8 @@ func TestNewGenesisBlock(t *testing.T) {
 
 func TestCreateUnspent(t *testing.T) {
 	tx := Transaction{}
-	tx.PushOutput(genAddress, 11e6, 255)
+	err := tx.PushOutput(genAddress, 11e6, 255)
+	require.NoError(t, err)
 	bh := BlockHeader{
 		Time:  tNow(),
 		BkSeq: uint64(1),
@@ -173,7 +174,8 @@ func TestCreateUnspent(t *testing.T) {
 
 func TestCreateUnspents(t *testing.T) {
 	tx := Transaction{}
-	tx.PushOutput(genAddress, 11e6, 255)
+	err := tx.PushOutput(genAddress, 11e6, 255)
+	require.NoError(t, err)
 	bh := BlockHeader{
 		Time:  tNow(),
 		BkSeq: uint64(1),

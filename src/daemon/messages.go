@@ -729,18 +729,18 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (gbm *GiveBlocksMessage) EncodeSize() int {
-	return EncodeSizeGiveBlocksMessage(gbm)
+func (m *GiveBlocksMessage) EncodeSize() int {
+	return EncodeSizeGiveBlocksMessage(m)
 }
 
 // Encode implements gnet.Serializer
-func (gbm *GiveBlocksMessage) Encode(buf []byte) error {
-	return EncodeGiveBlocksMessage(buf, gbm)
+func (m *GiveBlocksMessage) Encode(buf []byte) error {
+	return EncodeGiveBlocksMessage(buf, m)
 }
 
 // Decode implements gnet.Serializer
-func (gbm *GiveBlocksMessage) Decode(buf []byte) (int, error) {
-	return DecodeGiveBlocksMessage(buf, gbm)
+func (m *GiveBlocksMessage) Decode(buf []byte) (int, error) {
+	return DecodeGiveBlocksMessage(buf, m)
 }
 
 // Handle handle message

@@ -46,6 +46,8 @@ var (
 	ErrRemainingBytes = errors.New("Bytes remain in buffer after deserializing object")
 	// ErrMaxLenExceeded a specified maximum length was exceeded when serializing or deserializing a variable length field
 	ErrMaxLenExceeded = errors.New("Maximum length exceeded for variable length field")
+	// ErrMapDuplicateKeys encountered duplicate map keys while decoding a map
+	ErrMapDuplicateKeys = errors.New("Duplicate keys encountered while decoding a map")
 )
 
 // SerializeAtomic encodes an integer or boolean contained in `data` to bytes.
@@ -168,7 +170,9 @@ func SerializeString(s string) []byte {
 		log.Panic(err)
 	}
 	buf := make([]byte, size)
-	e := &Encoder{Buffer: buf}
+	e := &Encoder{
+		Buffer: buf,
+	}
 	e.value(v)
 	return buf
 }
@@ -180,7 +184,9 @@ func DeserializeString(in []byte, maxlen int) (string, int, error) {
 	v = v.Elem()
 
 	inlen := len(in)
-	d1 := &Decoder{Buffer: make([]byte, inlen)}
+	d1 := &Decoder{
+		Buffer: make([]byte, inlen),
+	}
 	copy(d1.Buffer, in)
 
 	err := d1.value(v, maxlen)
@@ -206,7 +212,9 @@ func DeserializeRaw(in []byte, data interface{}) error {
 		return fmt.Errorf("DeserializeRaw value must be a ptr, is %s", v.Kind().String())
 	}
 
-	d1 := &Decoder{Buffer: make([]byte, len(in))}
+	d1 := &Decoder{
+		Buffer: make([]byte, len(in)),
+	}
 	copy(d1.Buffer, in)
 
 	if err := d1.value(v, 0); err != nil {
@@ -235,7 +243,9 @@ func DeserializeRawToValue(in []byte, v reflect.Value) (int, error) {
 	}
 
 	inlen := len(in)
-	d1 := &Decoder{Buffer: make([]byte, inlen)}
+	d1 := &Decoder{
+		Buffer: make([]byte, inlen),
+	}
 	copy(d1.Buffer, in)
 
 	err := d1.value(v, 0)
@@ -255,7 +265,9 @@ func Serialize(data interface{}) []byte {
 		log.Panic(err)
 	}
 	buf := make([]byte, size)
-	e := &Encoder{Buffer: buf}
+	e := &Encoder{
+		Buffer: buf,
+	}
 	e.value(v)
 	return buf
 }
@@ -430,7 +442,8 @@ func tagName(tag string) string { // nolint: deadcode,megacheck
 	return tag[:commaIndex]
 }
 
-func tagMaxLen(tag string) int {
+// TagMaxLen returns the maxlen value tagged on a struct. Returns 0 if no tag is present.
+func TagMaxLen(tag string) int {
 	maxlenIndex := strings.Index(tag, ",maxlen=")
 	if maxlenIndex == -1 {
 		return 0
@@ -686,10 +699,6 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 		}
 
 	case reflect.Map:
-		if len(d.Buffer) < 4 {
-			return ErrBufferUnderflow
-		}
-
 		ul, err := d.Uint32()
 		if err != nil {
 			return err
@@ -698,6 +707,10 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
 			return ErrBufferUnderflow
+		}
+
+		if length == 0 {
+			return nil
 		}
 
 		t := v.Type()
@@ -720,11 +733,11 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 			v.SetMapIndex(keyv, elemv)
 		}
 
-	case reflect.Slice:
-		if len(d.Buffer) < 4 {
-			return ErrBufferUnderflow
+		if v.Len() != length {
+			return ErrMapDuplicateKeys
 		}
 
+	case reflect.Slice:
 		ul, err := d.Uint32()
 		if err != nil {
 			return err
@@ -784,7 +797,7 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 
 			fv := v.Field(i)
 			if fv.CanSet() && ff.Name != "_" {
-				maxlen := tagMaxLen(tag)
+				maxlen := TagMaxLen(tag)
 
 				if err := d.value(fv, maxlen); err != nil {
 					if err == ErrMaxLenExceeded {
@@ -800,10 +813,6 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 		}
 
 	case reflect.String:
-		if len(d.Buffer) < 4 {
-			return ErrBufferUnderflow
-		}
-
 		ul, err := d.Uint32()
 		if err != nil {
 			return err

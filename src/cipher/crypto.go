@@ -343,6 +343,10 @@ func MustSigFromHex(s string) Sig {
 	return sig
 }
 
+func (s Sig) String() string {
+	return s.Hex()
+}
+
 // Hex converts signature to hex string
 func (s Sig) Hex() string {
 	return hex.EncodeToString(s[:])

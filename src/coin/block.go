@@ -127,11 +127,6 @@ func (b Block) Size() (uint32, error) {
 	return b.Body.Size()
 }
 
-// String return readable string of block.
-func (b Block) String() string {
-	return b.Head.String()
-}
-
 // GetTransaction looks up a Transaction by its Head.Hash.
 // Returns the Transaction and whether it was found or not
 // TODO -- build a private index on the block, or a global blockchain one
@@ -173,13 +168,6 @@ func (bh BlockHeader) Hash() cipher.SHA256 {
 // Bytes serialize the blockheader and return the byte value.
 func (bh BlockHeader) Bytes() []byte {
 	return encoder.Serialize(bh)
-}
-
-// String return readable string of block header.
-func (bh BlockHeader) String() string {
-	return fmt.Sprintf("Version: %d\nTime: %d\nBkSeq: %d\nFee: %d\n"+
-		"PrevHash: %s\nBodyHash: %s", bh.Version, bh.Time, bh.BkSeq,
-		bh.Fee, bh.PrevHash.Hex(), bh.BodyHash.Hex())
 }
 
 // Hash returns the merkle hash of contained transactions

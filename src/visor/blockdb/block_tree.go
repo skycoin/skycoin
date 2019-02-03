@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -45,7 +44,12 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	}
 
 	// write block into blocks bucket.
-	if err := dbutil.PutBucketValue(tx, BlocksBkt, hash[:], encoder.Serialize(b)); err != nil {
+	buf := make([]byte, EncodeSizeBlock(b))
+	if err := EncodeBlock(buf, b); err != nil {
+		return err
+	}
+
+	if err := dbutil.PutBucketValue(tx, BlocksBkt, hash[:], buf); err != nil {
 		return err
 	}
 
@@ -159,7 +163,7 @@ func (bt *blockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker)
 func (bt *blockTree) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) error {
 	return dbutil.ForEach(tx, BlocksBkt, func(_, v []byte) error {
 		var b coin.Block
-		if err := encoder.DeserializeRaw(v, &b); err != nil {
+		if err := DecodeBlock(v, &b); err != nil {
 			return err
 		}
 
@@ -235,7 +239,15 @@ func hasChild(tx *dbutil.Tx, b coin.Block) (bool, error) {
 }
 
 func setHashPairInDepth(tx *dbutil.Tx, dep uint64, hps []coin.HashPair) error {
-	return dbutil.PutBucketValue(tx, TreeBkt, dbutil.Itob(dep), encoder.Serialize(hps))
+	hpss := &HashPairs{
+		HashPairs: hps,
+	}
+	buf := make([]byte, EncodeSizeHashPairs(hpss))
+	if err := EncodeHashPairs(buf, hpss); err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, TreeBkt, dbutil.Itob(dep), buf)
 }
 
 func allPairs(hp coin.HashPair) bool {

@@ -2,7 +2,6 @@ package blockdb
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -25,7 +24,7 @@ type blockSigs struct{}
 
 // Get returns the signature of a specific block
 func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
-	var sig cipher.Sig
+	var sig SigWrapper
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, BlockSigsBkt, hash[:], &sig); err != nil {
 		return cipher.Sig{}, false, err
@@ -33,12 +32,19 @@ func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, e
 		return cipher.Sig{}, false, nil
 	}
 
-	return sig, true, nil
+	return sig.Sig, true, nil
 }
 
 // Add adds a signed block to the db
 func (bs *blockSigs) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
-	return dbutil.PutBucketValue(tx, BlockSigsBkt, hash[:], encoder.Serialize(sig))
+	sw := &SigWrapper{
+		Sig: sig,
+	}
+	buf := make([]byte, EncodeSizeSigWrapper(sw))
+	if err := EncodeSigWrapper(buf, sw); err != nil {
+		return err
+	}
+	return dbutil.PutBucketValue(tx, BlockSigsBkt, hash[:], buf)
 }
 
 // ForEach iterates all signatures and calls f on them
@@ -49,11 +55,11 @@ func (bs *blockSigs) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) er
 			return err
 		}
 
-		var sig cipher.Sig
-		if err := encoder.DeserializeRaw(v, &sig); err != nil {
+		var sig SigWrapper
+		if err := DecodeSigWrapper(v, &sig); err != nil {
 			return err
 		}
 
-		return f(hash, sig)
+		return f(hash, sig.Sig)
 	})
 }

@@ -13,6 +13,27 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
+// Hashes wraps []cipher.SHA256
+type Hashes struct {
+	Hashes []cipher.SHA256
+}
+
+// SigWrapper wraps cipher.Sig
+type SigWrapper struct {
+	Sig cipher.Sig
+}
+
+// HashPairs wraps []coin.HashPair
+type HashPairs struct {
+	HashPairs []coin.HashPair
+}
+
+//go:generate skyencoder -struct Block -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -struct HashPairs
+//go:generate skyencoder -struct Hashes
+//go:generate skyencoder -struct SigWrapper
+
 var (
 	logger = logging.MustGetLogger("blockdb")
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -90,7 +89,7 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+		if err := DecodeUxOut(v, &ux); err != nil {
 			return err
 		}
 
@@ -104,7 +103,12 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 }
 
 func (pl pool) put(tx *dbutil.Tx, hash cipher.SHA256, ux coin.UxOut) error {
-	return dbutil.PutBucketValue(tx, UnspentPoolBkt, hash[:], encoder.Serialize(ux))
+	buf := make([]byte, EncodeSizeUxOut(&ux))
+	if err := EncodeUxOut(buf, &ux); err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnspentPoolBkt, hash[:], buf)
 }
 
 func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
@@ -114,7 +118,7 @@ func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 type poolAddrIndex struct{}
 
 func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
-	var hashes []cipher.SHA256
+	var hashes Hashes
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), &hashes); err != nil {
 		return nil, err
@@ -122,7 +126,7 @@ func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256,
 		return nil, nil
 	}
 
-	return hashes, nil
+	return hashes.Hashes, nil
 }
 
 func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.SHA256) error {
@@ -139,8 +143,15 @@ func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.S
 		hashesMap[h] = struct{}{}
 	}
 
-	encodedHashes := encoder.Serialize(hashes)
-	return dbutil.PutBucketValue(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), encodedHashes)
+	hs := &Hashes{
+		Hashes: hashes,
+	}
+	buf := make([]byte, EncodeSizeHashes(hs))
+	if err := EncodeHashes(buf, hs); err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), buf)
 }
 
 // adjust adds and removes hashes from an address -> hashes index
@@ -261,7 +272,7 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 	var maxBlockSeq uint64
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
 		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+		if err := DecodeUxOut(v, &ux); err != nil {
 			return err
 		}
 

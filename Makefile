@@ -56,8 +56,10 @@ lint: ## Run linters. Use make install-linters first.
 	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
 
-check-newcoin: newcoin ## Check that make newcoin succeeds and no files are changed.
-	if [ "$(shell git diff ./ | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+check-newcoin: newcoin ## Check that make newcoin succeeds and no templated files are changed.
+	if [ "$(shell git diff ./cmd/skycoin/skycoin.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+	if [ "$(shell git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+	if [ "$(shell git diff ./cmd/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
 check: lint clean-coverage test integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \
@@ -164,6 +166,10 @@ generate: ## Generate test interface mocks and struct encoders
 	# mockery can't generate the UnspentPooler mock in package visor, patch it
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
+
+install-generators: ## Install tools used by go generate
+	go get github.com/vektra/mockery/.../
+	go get github.com/skycoin/skyencoder/cmd/skyencoder
 
 update-golden-files: ## Run integration tests in update mode
 	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true

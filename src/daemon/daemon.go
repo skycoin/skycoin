@@ -323,6 +323,12 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 	}
 
 	d.Gateway = NewGateway(config.Gateway, d)
+
+	// init chb client if node url is set
+	if config.Gateway.CoinhourBankNodeURL != "" {
+		d.Gateway.InitCHB()
+	}
+
 	d.Messages.Config.Register()
 
 	return d, nil

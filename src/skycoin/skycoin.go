@@ -400,6 +400,9 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
 	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
 
+	if c.config.Node.EnableCHB {
+		dc.Gateway.CoinhourBankNodeURL = c.config.Node.CHBNodeURL
+	}
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
 	if err != nil {

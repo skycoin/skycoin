@@ -52,6 +52,10 @@ type NodeConfig struct {
 	DisableNetworking bool
 	// Enable GUI
 	EnableGUI bool
+	// Enable CHB
+	EnableCHB bool
+	// CHBNodeUrl
+	CHBNodeURL string
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
 	// Enable unversioned API endpoints (without the /api/v1 prefix)
@@ -223,6 +227,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		DisableNetworking: false,
 		// Enable GUI
 		EnableGUI: false,
+		// Enable CHB
+		EnableCHB: false,
+		// CHBNodeURL
+		CHBNodeURL: "",
 		// Enable unversioned API
 		EnableUnversionedAPI: false,
 		// Disable CSRF check in the wallet API
@@ -535,6 +543,10 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		// be explicitly enabled through -enable-api-sets
 	}
 
+	if c.EnableCHB {
+		apiSets[api.EndpointsCoinhourBank] = struct{}{}
+	}
+
 	if c.EnableAllAPISets {
 		for _, s := range allAPISets {
 			apiSets[s] = struct{}{}
@@ -585,6 +597,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
+	flag.BoolVar(&c.EnableCHB, "enable-chb", c.EnableCHB, "enable coinhour bank service.")
+	flag.StringVar(&c.CHBNodeURL, "chb-node-url", c.CHBNodeURL, "with -enable-chb=true, this url is used for coinhour bank client")
 	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")

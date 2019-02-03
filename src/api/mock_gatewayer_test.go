@@ -15,6 +15,27 @@ type MockGatewayer struct {
 	mock.Mock
 }
 
+// CoinhoursBalance provides a mock function with given fields: address
+func (_m *MockGatewayer) CoinhoursBalance(address string) (uint64, error) {
+	ret := _m.Called(address)
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func(string) uint64); ok {
+		r0 = rf(address)
+	} else {
+		r0 = ret.Get(0).(uint64)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(address)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CreateTransaction provides a mock function with given fields: w
 func (_m *MockGatewayer) CreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
 	ret := _m.Called(w)
@@ -91,6 +112,20 @@ func (_m *MockGatewayer) DecryptWallet(wltID string, password []byte) (*wallet.W
 	}
 
 	return r0, r1
+}
+
+// DepositCoinhours provides a mock function with given fields: _a0, _a1, _a2, _a3
+func (_m *MockGatewayer) DepositCoinhours(_a0 uint64, _a1 string, _a2 coin.UxArray, _a3 *wallet.Wallet) error {
+	ret := _m.Called(_a0, _a1, _a2, _a3)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64, string, coin.UxArray, *wallet.Wallet) error); ok {
+		r0 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Disconnect provides a mock function with given fields: id

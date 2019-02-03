@@ -61,6 +61,8 @@ const (
 	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
 	EndpointsNetCtrl = "NET_CTRL"
+	// EndpointsCoinhourBank endspoints for coinhour bank operations
+	EndpointsCoinhourBank = "COINHOUR_BANK"
 )
 
 // Server exposes an HTTP API
@@ -460,6 +462,10 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV1("/wallet/encrypt", forAPISet(walletEncryptHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/decrypt", forAPISet(walletDecryptHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV2("/wallet/recover", forAPISet(walletRecoverHandler(gateway), []string{EndpointsWallet}))
+
+	// CoinhourBank endpoints
+	webHandlerV2("/coinhourbank/deposit", forAPISet(chbDepositHandler(gateway), []string{EndpointsCoinhourBank}))
+	webHandlerV2("/coinhourbank/balance", forAPISet(chbBalanceHandler(gateway), []string{EndpointsCoinhourBank}))
 
 	// Blockchain interface
 	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsRead, EndpointsStatus}))

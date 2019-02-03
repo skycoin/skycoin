@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/coinhourbank"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/daemon/strand"
@@ -26,9 +27,10 @@ var (
 
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
-	BufferSize        int
-	EnableWalletAPI   bool
-	EnableSpendMethod bool
+	BufferSize          int
+	EnableWalletAPI     bool
+	EnableSpendMethod   bool
+	CoinhourBankNodeURL string
 }
 
 // NewGatewayConfig create and init an GatewayConfig
@@ -48,6 +50,8 @@ type Gateway struct {
 	d *Daemon
 	// Backref to Visor
 	v *visor.Visor
+	// Backref to coinhourbank client
+	chb *coinhourbank.HourBankClient
 	// Requests are queued on this channel
 	requests chan strand.Request
 	quit     chan struct{}
@@ -62,6 +66,11 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 		requests: make(chan strand.Request, c.BufferSize),
 		quit:     make(chan struct{}),
 	}
+}
+
+// InitCHB initializes the coinhour bank client
+func (gw *Gateway) InitCHB() {
+	gw.chb = coinhourbank.NewHourBankClient(gw.Config.CoinhourBankNodeURL)
 }
 
 // Shutdown closes the Gateway
@@ -859,6 +868,16 @@ func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
 		seed, err = gw.v.Wallets.GetWalletSeed(id, password)
 	})
 	return seed, err
+}
+
+// DepositCoinhours deposits coinhours into the corresponding coinhour bank account
+func (gw *Gateway) DepositCoinhours(hours uint64, account string, outputs coin.UxArray, wallet *wallet.Wallet) error {
+	return gw.chb.DepositHours(hours, account, outputs, wallet)
+}
+
+// CoinhoursBalance retrieves balance of the corresponding the coinhour bank account
+func (gw *Gateway) CoinhoursBalance(address string) (uint64, error) {
+	return gw.chb.Balance(address)
 }
 
 // GetRichlist returns rich list as desc order.

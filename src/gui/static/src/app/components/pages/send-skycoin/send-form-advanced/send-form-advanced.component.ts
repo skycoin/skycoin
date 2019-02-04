@@ -426,22 +426,27 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private updateAvailableBalance() {
     this.availableCoins = new BigNumber(0);
-    if (this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0) {
-      this.form.get('outputs').value.map(control => this.availableCoins = this.availableCoins.plus(control.coins));
-    } else if (this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0) {
-      this.form.get('addresses').value.map(control => this.availableCoins = this.availableCoins.plus(control.coins));
+    this.availableHours = new BigNumber(0);
+
+    const outputs: UnspentOutput[] = this.form.get('outputs').value;
+    const addresses: Address[] = this.form.get('addresses').value;
+
+    if (outputs && outputs.length > 0) {
+      outputs.map(control => {
+        this.availableCoins = this.availableCoins.plus(control.coins);
+        this.availableHours = this.availableHours.plus(control.calculated_hours);
+      });
+    } else if (addresses && addresses.length > 0) {
+      addresses.map(control => {
+        this.availableCoins = this.availableCoins.plus(control.coins);
+        this.availableHours = this.availableHours.plus(control.hours);
+      });
     } else {
-      this.availableCoins = this.form.get('wallet').value.coins;
+      const wallet: Wallet = this.form.get('wallet').value;
+      this.availableCoins = wallet.coins;
+      this.availableHours = wallet.hours;
     }
 
-    this.availableHours = new BigNumber(0);
-    if (this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0) {
-      this.form.get('outputs').value.map(control => this.availableHours = this.availableHours.plus(control.calculated_hours));
-    } else if (this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0) {
-      this.form.get('addresses').value.map(control => this.availableHours = this.availableHours.plus(control.hours));
-    } else {
-      this.availableHours = this.form.get('wallet').value.hours;
-    }
     this.availableHours = this.availableHours.minus(1);
   }
 

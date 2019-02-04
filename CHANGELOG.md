@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add CLI `addressTransactions` command
 - Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
 - Filter transactions in the History view in the UI
+- Add `/api/v2/data/get`, `/api/v2/data/save`, `/api/v2/data/delete` endpoints to store arbitrary data on disk.
 
 ### Fixed
 

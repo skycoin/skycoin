@@ -22,6 +22,7 @@ var allAPISetsEnabled = map[string]struct{}{
 	EndpointsInsecureWalletSeed: struct{}{},
 	EndpointsPrometheus:         struct{}{},
 	EndpointsNetCtrl:            struct{}{},
+	EndpointsFilesystem:            struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {
@@ -78,6 +79,7 @@ var endpoints = []string{
 	"/api/v2/wallet/recover",
 	"/api/v2/wallet/seed/verify",
 	"/api/v2/wallet/transaction/sign",
+	"/api/v2/data",
 }
 
 // TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,

@@ -61,6 +61,20 @@ func (_m *MockGatewayer) DecryptWallet(wltID string, password []byte) (*wallet.W
 	return r0, r1
 }
 
+// DeleteData provides a mock function with given fields: filename, keys
+func (_m *MockGatewayer) DeleteData(filename string, keys []string) error {
+	ret := _m.Called(filename, keys)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, []string) error); ok {
+		r0 = rf(filename, keys)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Disconnect provides a mock function with given fields: id
 func (_m *MockGatewayer) Disconnect(id uint64) error {
 	ret := _m.Called(id)
@@ -392,6 +406,29 @@ func (_m *MockGatewayer) GetConnections(f func(daemon.Connection) bool) ([]daemo
 	var r1 error
 	if rf, ok := ret.Get(1).(func(func(daemon.Connection) bool) error); ok {
 		r1 = rf(f)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetData provides a mock function with given fields: filename, keys
+func (_m *MockGatewayer) GetData(filename string, keys []string) (map[string]interface{}, error) {
+	ret := _m.Called(filename, keys)
+
+	var r0 map[string]interface{}
+	if rf, ok := ret.Get(0).(func(string, []string) map[string]interface{}); ok {
+		r0 = rf(filename, keys)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]interface{})
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, []string) error); ok {
+		r1 = rf(filename, keys)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1118,6 +1155,43 @@ func (_m *MockGatewayer) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SaveData provides a mock function with given fields: filename, data, update
+func (_m *MockGatewayer) SaveData(filename string, data map[string]interface{}, update bool) error {
+	ret := _m.Called(filename, data, update)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, map[string]interface{}, bool) error); ok {
+		r0 = rf(filename, data, update)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Spend provides a mock function with given fields: wltID, password, coins, dest
+func (_m *MockGatewayer) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+	ret := _m.Called(wltID, password, coins, dest)
+
+	var r0 *coin.Transaction
+	if rf, ok := ret.Get(0).(func(string, []byte, uint64, cipher.Address) *coin.Transaction); ok {
+		r0 = rf(wltID, password, coins, dest)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*coin.Transaction)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, []byte, uint64, cipher.Address) error); ok {
+		r1 = rf(wltID, password, coins, dest)
 	} else {
 		r1 = ret.Error(1)
 	}

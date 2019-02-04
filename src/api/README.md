@@ -40,6 +40,10 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Decrypt wallet](#decrypt-wallet)
 	- [Get wallet seed](#get-wallet-seed)
 	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
+- [Filesystem APIs](#filesystem-apis)
+    - [Save data](#save-data)
+    - [Get data](#get-data)
+    - [Delete data](#delete-data)
 - [Transaction APIs](#transaction-apis)
 	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
 	- [Get transaction info by id](#get-transaction-info-by-id)
@@ -1614,7 +1618,7 @@ Recovers an encrypted wallet by providing the wallet seed.
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1/api/v2/wallet/recover
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/recover
  -H 'Content-Type: application/json' \
  -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed"}'
 ```
@@ -1646,6 +1650,131 @@ Result:
         ]
     }
 }
+```
+
+## Filesystem APIs
+
+### Save data
+
+API sets: `FILESYSTEM`
+
+```
+URI: /api/v2/data/save
+Method: POST
+Args:
+    filename: filename [required]
+    data: arbitrary data to save [required]
+    update: update existing values [optional]
+```
+
+Saves arbitrary data to disk.
+
+If `update` is set to true then old values are updated,
+if a key does not exist then its added.
+
+Example:
+
+```sh
+curl -X POST \
+  http://127.0.0.1:6420/api/v2/data/save \
+  -H 'Content-Type: application/json' \
+  -d '{
+	"filename": "test.json",
+	"data": {"key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"},
+}'
+```
+
+Result:
+
+```json
+"success"
+```
+
+Example(update):
+
+```sh
+curl -X POST \
+  http://127.0.0.1:6420/api/v2/data/save \
+  -H 'Content-Type: application/json' \
+  -d '{
+	"filename": "test.json",
+	"data": {"key2": "value4", "key4": "value6"},
+}'
+```
+
+Result:
+
+```json
+"success"
+```
+
+
+### Get data
+
+API sets: `FILESYSTEM`
+
+```
+URI: /api/v2/data/get
+Method: POST
+Args:
+    filename: filename [required]
+    keys: list of keys to retrieve [required]
+```
+
+Get data from a file on disk
+
+Example:
+
+```sh
+curl -X POST \
+  http://127.0.0.1:6420/api/v2/data/get \
+  -H 'Content-Type: application/json' \
+  -d '{
+	"filename": "test.json",
+	"keys": ["key1", "key2", "key3"]
+}'
+```
+
+Result:
+
+```json
+{
+    "key1": "value1",
+    "key2": "value3",
+    "key3": "value3"
+}
+```
+
+### Delete data
+
+API sets: `FILESYSTEM`
+
+```
+URI: /api/v2/data/delete
+Method: POST
+Args:
+    filename: filename [required]
+    keys: list of keys to retrieve [required]
+```
+
+Delete data from a file on disk
+
+Example:
+
+```sh
+curl -X POST \
+  http://127.0.0.1:6420/api/v2/data/delete \
+  -H 'Content-Type: application/json' \
+  -d '{
+	"filename": "test.json",
+	"keys": ["key1"]
+}'
+```
+
+Result:
+
+```json
+"success"
 ```
 
 ## Transaction APIs

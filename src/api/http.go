@@ -57,6 +57,8 @@ const (
 	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
 	EndpointsNetCtrl = "NET_CTRL"
+	// EndpointsFilesystem endpoints interact with the filesystem
+	EndpointsFilesystem = "FILESYSTEM"
 )
 
 // Server exposes an HTTP API
@@ -442,6 +444,11 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV1("/wallet/encrypt", forAPISet(walletEncryptHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/decrypt", forAPISet(walletDecryptHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV2("/wallet/recover", forAPISet(walletRecoverHandler(gateway), []string{EndpointsWallet}))
+
+	// Filesystem endpoints
+	webHandlerV2("/data/get", forAPISet(dataGetHandler(gateway), []string{EndpointsFilesystem}))
+	webHandlerV2("/data/save", forAPISet(dataSaveHandler(gateway), []string{EndpointsFilesystem}))
+	webHandlerV2("/data/delete", forAPISet(dataDeleteHandler(gateway), []string{EndpointsFilesystem}))
 
 	// Blockchain interface
 	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsRead, EndpointsStatus}))

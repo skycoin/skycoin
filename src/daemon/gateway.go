@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"errors"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -11,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -539,6 +542,69 @@ func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
 	}
 
 	return gw.v.Wallets.GetWalletSeed(id, password)
+}
+
+// SaveData saves arbitrary data to a file on disk
+func (gw *Gateway) SaveData(filename string, data map[string]interface{}, update bool) error {
+	if update {
+		var currentData = make(map[string]interface{})
+		err := file.LoadJSON(filepath.Join(gw.d.Config.DataDirectory, filename), &currentData)
+		if err != nil {
+			logger.WithError(err).Error("failed to load json file")
+			return err
+		}
+
+		for k, v := range data {
+			currentData[k] = v
+		}
+
+		data = currentData
+	}
+
+	return file.SaveJSON(filepath.Join(gw.d.Config.DataDirectory, filename), data, 0644)
+}
+
+// GetData fetches data from a file on disk
+func (gw *Gateway) GetData(filename string, keys []string) (map[string]interface{}, error) {
+	var data map[string]interface{}
+	err := file.LoadJSON(filepath.Join(gw.d.Config.DataDirectory, filename), &data)
+	if err != nil {
+		logger.WithError(err).Error("failed to load json file")
+		return nil, err
+	}
+
+	if len(data) == 0 {
+		return nil, errors.New("empty file")
+	}
+
+	var retData = make(map[string]interface{})
+	for _, key := range keys {
+		if val, ok := data[key]; ok {
+			retData[key] = val
+		}
+	}
+
+	return retData, nil
+}
+
+// DeleteData deletes data from a file on disk
+func (gw *Gateway) DeleteData(filename string, keys []string) error {
+	var data map[string]interface{}
+	err := file.LoadJSON(filepath.Join(gw.d.Config.DataDirectory, filename), &data)
+	if err != nil {
+		logger.WithError(err).Error("failed to load json file")
+		return err
+	}
+
+	if len(data) == 0 {
+		return errors.New("empty file")
+	}
+
+	for _, key := range keys {
+		delete(data, key)
+	}
+
+	return file.SaveJSON(filepath.Join(gw.d.Config.DataDirectory, filename), data, 0644)
 }
 
 // GetRichlist returns rich list as desc order.

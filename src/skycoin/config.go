@@ -535,7 +535,7 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsTransaction,
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
-		// Do not include insecure or deprecated API sets, they must always
+		// Do not include insecure, deprecated or filesystem API sets, they must always
 		// be explicitly enabled through -enable-api-sets
 	}
 
@@ -568,7 +568,8 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
 			api.EndpointsPrometheus,
-			api.EndpointsNetCtrl:
+			api.EndpointsNetCtrl,
+			api.EndpointsFilesystem:
 		case "":
 			continue
 		default:
@@ -610,6 +611,7 @@ func (c *NodeConfig) RegisterFlags() {
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		api.EndpointsInsecureWalletSeed,
+		api.EndpointsFilesystem,
 	}
 	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
@@ -680,7 +682,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	case "":
 	case "STANDALONE_CLIENT":
 		c.EnableAllAPISets = true
-		c.EnabledAPISets = api.EndpointsInsecureWalletSeed
+		c.EnabledAPISets = api.EndpointsInsecureWalletSeed + "," + api.EndpointsFilesystem
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false

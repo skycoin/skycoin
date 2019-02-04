@@ -10,10 +10,13 @@ import (
 // VerifyAddressRequest is the request data for POST /api/v2/address/verify
 // swagger:parameters verifyAddressRequest
 type VerifyAddressRequest struct {
+	// required: true
+	// in: body
 	Address string `json:"address"`
 }
 
 // VerifyAddressResponse is returned by POST /api/v2/address/verify
+// swagger:response verifyAddressResponse
 type VerifyAddressResponse struct {
 	Version byte `json:"version"`
 }
@@ -23,6 +26,22 @@ type VerifyAddressResponse struct {
 // URI: /api/v2/address/verify
 func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO For v3
+	// swagger:route POST /api/v1/address/verify verify_address verifyAddressRequest
+	//
+	// healthHandler returns node health data.
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       csrfAuth: []
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: verifyAddressResponse
+
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
 		writeHTTPResponse(w, resp)

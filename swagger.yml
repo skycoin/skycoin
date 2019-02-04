@@ -3,66 +3,61 @@ consumes:
 - application/json
 - application/xml
 definitions:
-  BlockHeader:
-    description: BlockHeader represents the readable block header
+  WalletResponse:
+    description: WalletResponse wallet response struct for http apis
     properties:
-      block_hash:
+      entries:
+        items:
+          $ref: '#/definitions/walletEntry'
+        type: array
+        x-go-name: Entries
+      meta:
+        $ref: '#/definitions/walletMeta'
+    type: object
+    x-go-package: github.com/skycoin/skycoin/src/api
+  walletEntry:
+    description: WalletEntry the wallet entry struct
+    properties:
+      address:
         type: string
-        x-go-name: Hash
-      fee:
-        format: uint64
-        type: integer
-        x-go-name: Fee
-      previous_block_hash:
+        x-go-name: Address
+      public_key:
         type: string
-        x-go-name: PreviousHash
-      seq:
-        format: uint64
-        type: integer
-        x-go-name: BkSeq
+        x-go-name: Public
+    type: object
+    x-go-name: WalletEntry
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  walletMeta:
+    description: WalletMeta the wallet meta struct
+    properties:
+      coin:
+        type: string
+        x-go-name: Coin
+      crypto_type:
+        type: string
+        x-go-name: CryptoType
+      encrypted:
+        type: boolean
+        x-go-name: Encrypted
+      filename:
+        type: string
+        x-go-name: Filename
+      label:
+        type: string
+        x-go-name: Label
       timestamp:
-        format: uint64
+        format: int64
         type: integer
-        x-go-name: Time
-      tx_body_hash:
+        x-go-name: Timestamp
+      type:
         type: string
-        x-go-name: BodyHash
-      ux_hash:
-        type: string
-        x-go-name: UxHash
+        x-go-name: Type
       version:
-        format: uint32
-        type: integer
+        type: string
         x-go-name: Version
     type: object
+    x-go-name: WalletMeta
     x-go-package: github.com/skycoin/skycoin/src/readable
-  blockchainMetadataSuper:
-    description: BlockchainMetadata encapsulates useful information from the coin.Blockchain
-    properties:
-      head:
-        $ref: '#/definitions/BlockHeader'
-      unconfirmed:
-        description: Number of known unconfirmed txns
-        format: uint64
-        type: integer
-        x-go-name: Unconfirmed
-      unspents:
-        description: Number of unspent outputs in the coin.Blockchain
-        format: uint64
-        type: integer
-        x-go-name: Unspents
-    type: object
-    x-go-name: BlockchainMetadata
-    x-go-package: github.com/skycoin/skycoin/src/readable
-  duration:
-    allOf:
-    - {}
-    description: It marshals and unmarshals the duration as a string in the format
-      accepted by time.ParseDuration and returned by time.Duration.String.
-    title: Duration is a wrapper around time.Duration which implements json.Unmarshaler
-      and json.Marshaler.
-    x-go-name: Duration
-    x-go-package: github.com/skycoin/skycoin/src/util/http
 host: staging.node.skycoin.net
 info:
   contact:
@@ -73,6 +68,32 @@ info:
   title: Skycoin REST API.
   version: 0.25.0
 paths:
+  /api/v1/address/verify:
+    post:
+      operationId: verifyAddressRequest
+      parameters:
+      - in: body
+        name: address
+        required: true
+        schema:
+          type: string
+        x-go-name: Address
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/verifyAddressResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - csrfAuth:
+        - '[]'
+      summary: healthHandler returns node health data.
+      tags:
+      - verify_address
   /api/v1/coinSupply:
     get:
       description: coinSupplyHandler returns coin distribution supply stats
@@ -110,14 +131,14 @@ paths:
         - '[]'
       summary: Creates a new CSRF token. Previous CSRF tokens are invalidated by this
         call.
-  /api/v1/health:
+  /api/v1/network/defaultConnections:
     get:
-      operationId: csrf
+      operationId: defaultConnections
       produces:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/healthResponse'
+          $ref: '#/responses/defaultConnectionsResponse'
         default:
           $ref: '#/responses/genericError'
       schemes:
@@ -126,7 +147,8 @@ paths:
       security:
       - csrfAuth:
         - '[]'
-      summary: healthHandler returns node health data.
+      summary: defaultConnectionsHandler returns the list of default hardcoded bootstrap
+        addresses.\n They are not necessarily connected to.
   /api/v1/resendUnconfirmedTxns:
     post:
       consumes:
@@ -164,6 +186,23 @@ paths:
       security:
       - csrfAuth:
         - '[]'
+  /api/v1/wallets:
+    get:
+      description: Generates new addresses
+      operationId: wallets
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/walletsResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - csrfAuth:
+        - '[]'
   /api/v1/wallets/folderName:
     get:
       description: Returns the wallet directory path
@@ -181,6 +220,46 @@ paths:
       security:
       - csrfAuth:
         - '[]'
+    post:
+      description: |-
+        Consume:
+        application/json
+      operationId: walletParams
+      parameters:
+      - description: Parameters for Wallet New Address
+        in: body
+        name: Params
+        schema:
+          properties:
+            id:
+              type: string
+              x-go-name: Id
+            num:
+              format: int64
+              type: integer
+              x-go-name: Num
+            password:
+              type: string
+              x-go-name: Password
+          required:
+          - id
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/walletAddressResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - csrfAuth:
+        - '[]'
+      summary: Generates new addresses
+      tags:
+      - walletNewAddresses
 produces:
 - application/json
 - application/xml
@@ -237,6 +316,13 @@ responses:
           type: string
           x-go-name: Token
       type: object
+  defaultConnectionsResponse:
+    description: This struct is for endpoint /api/v1/defaultConnections response.
+    headers:
+      DefaultConnections:
+        items:
+          type: string
+        type: array
   genericError:
     description: |-
       A GenericError is the default error message that is generated.
@@ -250,46 +336,6 @@ responses:
         message:
           type: string
           x-go-name: Message
-      type: object
-  healthResponse:
-    description: HealthResponse is returned by the /health endpoint
-    headers:
-      BlockChain: {}
-      coin:
-        type: string
-      csp_enabled:
-        type: boolean
-      csrf_enabled:
-        type: boolean
-      gui_enabled:
-        type: boolean
-      incoming_connections:
-        format: int64
-        type: integer
-      json_rpc_enabled:
-        type: boolean
-      open_connections:
-        format: int64
-        type: integer
-      outgoing_connections:
-        format: int64
-        type: integer
-      started_at:
-        format: int64
-        type: integer
-      unversioned_api_enabled:
-        type: boolean
-      user_agent:
-        type: string
-      wallet_api_enabled:
-        type: boolean
-    schema:
-      allOf:
-      - $ref: '#/definitions/blockchainMetadataSuper'
-      - properties:
-          time_since_last_block:
-            $ref: '#/definitions/duration'
-        type: object
       type: object
   resendResult:
     description: ResendResult the result of rebroadcasting transaction
@@ -315,11 +361,30 @@ responses:
           type: string
           x-go-name: Message
       type: object
+  verifyAddressResponse:
+    description: VerifyAddressResponse is returned by POST /api/v2/address/verify
+    headers:
+      version:
+        format: uint8
+        type: integer
+  walletAddressResponse:
+    description: This struct is for catch wallet addresses
+    headers:
+      addresses:
+        items:
+          type: string
+        type: array
   walletFolderResponse:
     description: WalletFolder struct
     headers:
       address:
         type: string
+  walletsResponse:
+    description: This struct is for endpoint /api/v1/wallets response
+    schema:
+      items:
+        $ref: '#/definitions/WalletResponse'
+      type: array
 schemes:
 - http
 - https

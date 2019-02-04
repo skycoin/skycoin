@@ -405,8 +405,27 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
+// This struct is for catch Body params in requests
+// swagger:parameters walletParams
+type WalletAddressParams struct {
+	// Parameters for Wallet New Address
+	// in: body
+	Params struct {
+		// required: true
+		Id string `json:"id"`
+		Num int `json:"num"`
+		Password string `json:"password"`
 
-// Genreates new addresses
+	}
+}
+
+// This struct is for catch wallet addresses
+// swagger:response walletAddressResponse
+type WalletAddressResponse struct {
+	Address []string `json:"addresses"`
+}
+
+// Generates new addresses
 // URI: /api/v1/wallet/newAddress
 // Method: POST
 // Args:
@@ -415,7 +434,24 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 //     password: wallet password [optional, must be provided if the wallet is encrypted]
 func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:route POST /api/v1/wallets/folderName walletNewAddresses walletParams
+	//
+	// Generates new addresses
+	//
+	//     Consume:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       csrfAuth: []
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: walletAddressResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -637,12 +673,34 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// This struct is for endpoint /api/v1/wallets response
+// swagger:response walletsResponse
+type WalletsResponse struct {
+	// in: body
+	Responses []WalletResponse
+}
+
+
 // Returns all loaded wallets
 // URI: /api/v1/wallets
 // Method: GET
 func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:route GET /api/v1/wallets wallets
+	//
+	// Generates new addresses
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       csrfAuth: []
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: walletsResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

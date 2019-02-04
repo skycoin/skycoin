@@ -145,13 +145,34 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 
+// This struct is for endpoint /api/v1/defaultConnections response.
+// swagger:response defaultConnectionsResponse
+type DefaultConnectionsResponse struct {
+	DefaultConnections []string
+}
+
+
 // defaultConnectionsHandler returns the list of default hardcoded bootstrap addresses.
 // They are not necessarily connected to.
 // URI: /api/v1/network/defaultConnections
 // Method: GET
 func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:route GET /api/v1/network/defaultConnections defaultConnections
+	//
+	// defaultConnectionsHandler returns the list of default hardcoded bootstrap addresses.\n They are not necessarily connected to.
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Security:
+	//       csrfAuth: []
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: defaultConnectionsResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

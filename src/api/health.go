@@ -41,51 +41,10 @@ type HealthResponse struct {
 	StartedAt            int64              `json:"started_at"`
 }
 
-// HealthResponse is returned by the /health endpoint
-// swagger:response healthResponse
-type HealthResponseSwagger struct {
-	BlockChain struct{
-		// in: body
-		BlockchainMetadata
-	}
-	CoinName            string             `json:"coin"`
-	DaemonUserAgent     string             `json:"user_agent"`
-	OpenConnections     int                `json:"open_connections"`
-	OutgoingConnections int                `json:"outgoing_connections"`
-	IncomingConnections int                `json:"incoming_connections"`
-	CSRFEnabled           bool        `json:"csrf_enabled"`
-	CSPEnabled            bool        `json:"csp_enabled"`
-	WalletAPIEnabled      bool        `json:"wallet_api_enabled"`
-	GUIEnabled            bool        `json:"gui_enabled"`
-	UnversionedAPIEnabled bool        `json:"unversioned_api_enabled"`
-	JSON20RPCEnabled      bool        `json:"json_rpc_enabled"`
-	StartedAt            int64              `json:"started_at"`
-}
-
-
-
 // healthHandler returns node health data
 // URI: /api/v1/health
 // Method: GET
 func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
-
-
-	// swagger:route GET /api/v1/health csrf
-	//
-	// healthHandler returns node health data.
-	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Security:
-	//       csrfAuth: []
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: healthResponse
-
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

@@ -15,7 +15,7 @@
         <div class="-address">
           <h4 *ngIf="transaction.balance < 0 && transaction.confirmed">
             {{ 'history.sent' | translate }} {{ 'common.coin-id' | translate }}
-            <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'yyyy-MM-dd hh:mm a' }}</span>
+            <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
           </h4>
           <h4 *ngIf="transaction.balance < 0 && !transaction.confirmed">
             {{ 'history.sending' | translate }} {{ 'common.coin-id' | translate }}
@@ -23,7 +23,7 @@
           </h4>
           <h4 *ngIf="transaction.balance > 0 && transaction.confirmed">
             {{ 'history.received' | translate }} {{ 'common.coin-id' | translate }}
-            <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'yyyy-MM-dd hh:mm a' }}</span>
+            <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
           </h4>
           <h4 *ngIf="transaction.balance > 0 && !transaction.confirmed">
             {{ 'history.receiving' | translate }} {{ 'common.coin-id' | translate }}

@@ -19,10 +19,8 @@ type Connection struct {
 	Mirror     uint32                 `json:"mirror"`
 	ListenPort uint16                 `json:"listen_port"`
 	Height     uint64                 `json:"height"`
-	// swagger:allOf
 	UserAgent     useragent.Data `json:"user_agent"`
 	IsTrustedPeer bool           `json:"is_trusted_peer"`
-	// swagger:allOf
 	UnconfirmedVerifyTxn VerifyTxn `json:"unconfirmed_verify_transaction"`
 }
 

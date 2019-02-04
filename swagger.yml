@@ -2,6 +2,67 @@ basePath: /
 consumes:
 - application/json
 - application/xml
+definitions:
+  BlockHeader:
+    description: BlockHeader represents the readable block header
+    properties:
+      block_hash:
+        type: string
+        x-go-name: Hash
+      fee:
+        format: uint64
+        type: integer
+        x-go-name: Fee
+      previous_block_hash:
+        type: string
+        x-go-name: PreviousHash
+      seq:
+        format: uint64
+        type: integer
+        x-go-name: BkSeq
+      timestamp:
+        format: uint64
+        type: integer
+        x-go-name: Time
+      tx_body_hash:
+        type: string
+        x-go-name: BodyHash
+      ux_hash:
+        type: string
+        x-go-name: UxHash
+      version:
+        format: uint32
+        type: integer
+        x-go-name: Version
+    type: object
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  blockchainMetadataSuper:
+    description: BlockchainMetadata encapsulates useful information from the coin.Blockchain
+    properties:
+      head:
+        $ref: '#/definitions/BlockHeader'
+      unconfirmed:
+        description: Number of known unconfirmed txns
+        format: uint64
+        type: integer
+        x-go-name: Unconfirmed
+      unspents:
+        description: Number of unspent outputs in the coin.Blockchain
+        format: uint64
+        type: integer
+        x-go-name: Unspents
+    type: object
+    x-go-name: BlockchainMetadata
+    x-go-package: github.com/skycoin/skycoin/src/readable
+  duration:
+    allOf:
+    - {}
+    description: It marshals and unmarshals the duration as a string in the format
+      accepted by time.ParseDuration and returned by time.Duration.String.
+    title: Duration is a wrapper around time.Duration which implements json.Unmarshaler
+      and json.Marshaler.
+    x-go-name: Duration
+    x-go-package: github.com/skycoin/skycoin/src/util/http
 host: staging.node.skycoin.net
 info:
   contact:
@@ -31,6 +92,41 @@ paths:
       security:
       - csrfAuth:
         - '[]'
+  /api/v1/csrf:
+    get:
+      operationId: csrf
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/csrfResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - csrfAuth:
+        - '[]'
+      summary: Creates a new CSRF token. Previous CSRF tokens are invalidated by this
+        call.
+  /api/v1/health:
+    get:
+      operationId: csrf
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/healthResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      security:
+      - csrfAuth:
+        - '[]'
+      summary: healthHandler returns node health data.
   /api/v1/resendUnconfirmedTxns:
     post:
       consumes:
@@ -85,24 +181,6 @@ paths:
       security:
       - csrfAuth:
         - '[]'
-  /api/v3/csrf:
-    get:
-      operationId: csrf
-      produces:
-      - application/json
-      responses:
-        "200":
-          $ref: '#/responses/csrfResponse'
-        default:
-          $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
-      security:
-      - csrfAuth:
-        - '[]'
-      summary: Creates a new CSRF token. Previous CSRF tokens are invalidated by this
-        call.
 produces:
 - application/json
 - application/xml
@@ -172,6 +250,46 @@ responses:
         message:
           type: string
           x-go-name: Message
+      type: object
+  healthResponse:
+    description: HealthResponse is returned by the /health endpoint
+    headers:
+      BlockChain: {}
+      coin:
+        type: string
+      csp_enabled:
+        type: boolean
+      csrf_enabled:
+        type: boolean
+      gui_enabled:
+        type: boolean
+      incoming_connections:
+        format: int64
+        type: integer
+      json_rpc_enabled:
+        type: boolean
+      open_connections:
+        format: int64
+        type: integer
+      outgoing_connections:
+        format: int64
+        type: integer
+      started_at:
+        format: int64
+        type: integer
+      unversioned_api_enabled:
+        type: boolean
+      user_agent:
+        type: string
+      wallet_api_enabled:
+        type: boolean
+    schema:
+      allOf:
+      - $ref: '#/definitions/blockchainMetadataSuper'
+      - properties:
+          time_since_last_block:
+            $ref: '#/definitions/duration'
+        type: object
       type: object
   resendResult:
     description: ResendResult the result of rebroadcasting transaction

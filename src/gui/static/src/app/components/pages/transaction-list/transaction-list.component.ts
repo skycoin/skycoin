@@ -7,6 +7,7 @@ import { TransactionDetailComponent } from './transaction-detail/transaction-det
 import { NormalTransaction } from '../../../app.datatypes';
 import { QrCodeComponent } from '../../layout/qr-code/qr-code.component';
 import { FormGroup, FormBuilder } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 export class Wallet {
   label: string;
@@ -35,22 +36,37 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   form: FormGroup;
 
   private price: number;
+  private requestedAddress: string;
+  private walletsLoaded = false;
+  private transactionsLoaded = false;
   private priceSubscription: ISubscription;
   private filterSubscription: ISubscription;
   private walletsSubscription: ISubscription;
+  private routeSubscription: ISubscription;
 
   constructor(
     private dialog: MatDialog,
     private priceService: PriceService,
     private walletService: WalletService,
     private formBuilder: FormBuilder,
+    route: ActivatedRoute,
   ) {
+
+    this.form = this.formBuilder.group({
+      filter: [[]],
+    });
+
+    this.routeSubscription = route.queryParams.subscribe(params => {
+      this.requestedAddress = params['addr'];
+      this.showRequestedAddress();
+    });
+
     this.walletsSubscription = walletService.all().delay(1).subscribe(wallets => {
       this.wallets = [];
       let incompleteData = false;
 
-      // A local copy of the data is created to avoid problems when updating the
-      // wallet addresses when updating the balance.
+      // A local copy of the data is created to avoid problems after updating the
+      // wallet addresses while updating the balance.
       wallets.forEach(wallet => {
         if (!wallet.coins || !wallet.hours || incompleteData) {
           incompleteData = true;
@@ -86,11 +102,12 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         this.wallets = [];
       } else {
         this.walletsSubscription.unsubscribe();
+        if (!this.walletsLoaded) {
+          this.walletsLoaded = true;
+          this.showRequestedAddress();
+        }
       }
-    });
 
-    this.form = this.formBuilder.group({
-      filter: [[]],
     });
   }
 
@@ -100,6 +117,9 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.walletService.transactions().first().subscribe(transactions => {
       this.allTransactions = transactions;
       this.transactions = transactions;
+
+      this.transactionsLoaded = true;
+      this.showRequestedAddress();
     });
 
     this.filterSubscription = this.form.get('filter').valueChanges.subscribe(() => {
@@ -134,6 +154,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.priceSubscription.unsubscribe();
     this.filterSubscription.unsubscribe();
     this.walletsSubscription.unsubscribe();
+    this.routeSubscription.unsubscribe();
   }
 
   showTransaction(transaction: NormalTransaction) {
@@ -149,5 +170,31 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     const config = new MatDialogConfig();
     config.data = { address };
     this.dialog.open(QrCodeComponent, config);
+  }
+
+  removeFilters() {
+    this.form.get('filter').setValue([]);
+  }
+
+  private showRequestedAddress() {
+    if (!this.transactionsLoaded || !this.wallets || this.wallets.length === 0) {
+      return;
+    }
+
+    if (this.requestedAddress) {
+      let addressFound: Address;
+      this.wallets.forEach(wallet => {
+        const found = wallet.addresses.find(address => address.address === this.requestedAddress);
+        if (found) {
+          addressFound = found;
+        }
+      });
+
+      if (addressFound) {
+        this.form.get('filter').setValue([addressFound]);
+      }
+    } else {
+      this.form.get('filter').setValue([]);
+    }
   }
 }

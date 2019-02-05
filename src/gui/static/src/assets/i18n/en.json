@@ -153,7 +153,8 @@
       "copy": "Copy",
       "copy-address": "Copy address",
       "copied": "Copied!",
-      "outputs": "Unspent Outputs"
+      "outputs": "Unspent Outputs",
+      "history": "History"
     }
   },
 
@@ -268,8 +269,9 @@
     "pending": "Pending",
     "no-txs": "You have no transaction history",
     "no-txs-filter": "There are no transactions matching the current filter criteria",
-    "no-filter": "Showing for all the wallets and addresses",
-    "filter": "Showing only for: ",
+    "no-filter": "No filter active (press to select wallets/addresses)",
+    "filter": "Active filter: ",
+    "filters": "Active filters: ",
     "all-addresses": "All addresses"
   },
 

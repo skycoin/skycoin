@@ -1,7 +1,13 @@
 <app-header [headline]="'title.transactions' | translate"></app-header>
 <div class="container">
   <div [formGroup]="form" class="form-field" *ngIf="allTransactions">
-    <mat-select multiple formControlName="filter" [placeholder]="'history.no-filter' | translate" id="filter">
+    <mat-select
+      multiple
+      [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }"
+      formControlName="filter"
+      [placeholder]="'history.no-filter' | translate"
+      id="filter"
+    >
       <mat-optgroup *ngFor="let wallet of wallets" label="
         {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
         ({{ wallet.hours | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
@@ -15,7 +21,8 @@
         </mat-option>
       </mat-optgroup>
       <mat-select-trigger>
-        <span>{{ 'history.filter' | translate }}</span>
+        <span *ngIf="form.get('filter').value.length === 1">{{ 'history.filter' | translate }}</span>
+        <span *ngIf="form.get('filter').value.length > 1">{{ 'history.filters' | translate }}</span>
         <ng-container *ngFor="let filter of form.get('filter').value; let i = index">
           <div class="filter" *ngIf="filter.label || !filter.showingWholeWallet">
             <span *ngIf="filter.label">{{ filter.label }}</span>
@@ -26,6 +33,7 @@
         </ng-container>
       </mat-select-trigger>
     </mat-select>
+    <img class="x-button" src="assets/img/close-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
   </div>
 
   <app-loading-content

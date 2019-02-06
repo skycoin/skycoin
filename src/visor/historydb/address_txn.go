@@ -6,6 +6,13 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
+//go:generate skyencoder -struct Hashes
+
+// Hashes wraps []cipher.SHA256
+type Hashes struct {
+	Hashes []cipher.SHA256
+}
+
 // AddressTxnsBkt maps addresses to transaction hashes
 var AddressTxnsBkt = []byte("address_txns")
 
@@ -14,15 +21,23 @@ var AddressTxnsBkt = []byte("address_txns")
 type addressTxns struct{}
 
 // get returns the transaction hashes of given address
-func (atx *addressTxns) get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
-	var txHashes []cipher.SHA256
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, AddressTxnsBkt, address.Bytes(), &txHashes); err != nil {
+func (atx *addressTxns) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
+	var txnHashes Hashes
+
+	v, err := dbutil.GetBucketValueNoCopy(tx, AddressTxnsBkt, addr.Bytes())
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
 	}
 
-	return txHashes, nil
+	if n, err := DecodeHashes(v, &txnHashes); err != nil {
+		return nil, err
+	} else if n != len(v) {
+		return nil, encoder.ErrRemainingBytes
+	}
+
+	return txnHashes.Hashes, nil
 }
 
 // add adds a hash to an address's hash list
@@ -40,7 +55,17 @@ func (atx *addressTxns) add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA2
 	}
 
 	hashes = append(hashes, hash)
-	return dbutil.PutBucketValue(tx, AddressTxnsBkt, addr.Bytes(), encoder.Serialize(hashes))
+
+	hs := &Hashes{
+		Hashes: hashes,
+	}
+	n := EncodeSizeHashes(hs)
+	buf := make([]byte, n)
+	if err := EncodeHashes(buf, hs); err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, AddressTxnsBkt, addr.Bytes(), buf)
 }
 
 // isEmpty checks if address transactions bucket is empty

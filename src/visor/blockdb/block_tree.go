@@ -134,10 +134,17 @@ func (bt *blockTree) RemoveBlock(tx *dbutil.Tx, b *coin.Block) error {
 func (bt *blockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	var b coin.Block
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, BlocksBkt, hash[:], &b); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, BlocksBkt, hash[:])
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if n, err := DecodeBlock(v, &b); err != nil {
+		return nil, err
+	} else if n != len(v) {
+		return nil, encoder.ErrRemainingBytes
 	}
 
 	if hash != b.HashHeader() {
@@ -175,14 +182,22 @@ func (bt *blockTree) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) er
 }
 
 func (bt *blockTree) getHashInDepth(tx *dbutil.Tx, depth uint64, filter Walker) (cipher.SHA256, bool, error) {
-	var pairs []coin.HashPair
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, TreeBkt, dbutil.Itob(depth), &pairs); err != nil {
+	var pairs HashPairs
+
+	v, err := dbutil.GetBucketValueNoCopy(tx, TreeBkt, dbutil.Itob(depth))
+	if err != nil {
 		return cipher.SHA256{}, false, err
-	} else if !ok {
+	} else if v == nil {
 		return cipher.SHA256{}, false, nil
 	}
 
-	hash, ok := filter(tx, pairs)
+	if n, err := DecodeHashPairs(v, &pairs); err != nil {
+		return cipher.SHA256{}, false, err
+	} else if n != len(v) {
+		return cipher.SHA256{}, false, encoder.ErrRemainingBytes
+	}
+
+	hash, ok := filter(tx, pairs.HashPairs)
 	if !ok {
 		return cipher.SHA256{}, false, errors.New("No hash found in depth")
 	}
@@ -210,16 +225,24 @@ func removePairs(hps []coin.HashPair, pair coin.HashPair) []coin.HashPair {
 	return pairs
 }
 
-func getHashPairInDepth(tx *dbutil.Tx, dep uint64, fn func(hp coin.HashPair) bool) ([]coin.HashPair, error) {
-	var hps []coin.HashPair
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, TreeBkt, dbutil.Itob(dep), &hps); err != nil {
+func getHashPairInDepth(tx *dbutil.Tx, depth uint64, fn func(hp coin.HashPair) bool) ([]coin.HashPair, error) {
+	var hps HashPairs
+
+	v, err := dbutil.GetBucketValueNoCopy(tx, TreeBkt, dbutil.Itob(depth))
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
 	}
 
+	if n, err := DecodeHashPairs(v, &hps); err != nil {
+		return nil, err
+	} else if n != len(v) {
+		return nil, encoder.ErrRemainingBytes
+	}
+
 	var pairs []coin.HashPair
-	for _, ps := range hps {
+	for _, ps := range hps.HashPairs {
 		if fn(ps) {
 			pairs = append(pairs, ps)
 		}

@@ -8,12 +8,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -298,4 +300,336 @@ func shaFileID(dbPath string) (string, error) {
 	sum := h.Sum(nil)
 	encodedSum := base64.RawURLEncoding.EncodeToString(sum[:8])
 	return encodedSum, nil
+}
+
+// TODO -- cli tool to verify -- use as part of integration test
+
+// VerifyDBSkyencoderSafe verifies that the skyencoder generated code has the same result as the encoder
+// for all data in the blockchain
+func VerifyDBSkyencoderSafe(db *dbutil.DB, quit <-chan struct{}) error {
+	return db.View("VerifyDBSkyencoderSafe", func(tx *dbutil.Tx) error {
+		return verifyDBSkyencoderSafe(tx, quit)
+	})
+}
+
+func verifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
+	if quit == nil {
+		quit = make(chan struct{})
+	}
+
+	// blockdb
+
+	if err := dbutil.ForEach(tx, blockdb.BlockSigsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var sig1 blockdb.Sig
+		if n, err := blockdb.DecodeSig(v, &sig1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var sig2 cipher.Sig
+		if err := encoder.DeserializeRaw(v, &sig2); err != nil {
+			return err
+		}
+
+		if sig1.Sig != sig2 {
+			return errors.New("blockdb.BlockSigsBkt sig decode mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, blockdb.BlocksBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 coin.Block
+		if n, err := blockdb.DecodeBlock(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 coin.Block
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1, b2) {
+			return errors.New("blockdb.BlocksBkt block mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, blockdb.TreeBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 blockdb.HashPairs
+		if n, err := blockdb.DecodeHashPairs(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 []coin.HashPair
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1.HashPairs, b2) {
+			return errors.New("blockdb.TreeBkt hash pairs mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, blockdb.UnspentPoolBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 coin.UxOut
+		if n, err := blockdb.DecodeUxOut(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 coin.UxOut
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1, b2) {
+			return errors.New("blockdb.UnspentPoolBkt ux out mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, blockdb.UnspentPoolAddrIndexBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 blockdb.Hashes
+		if n, err := blockdb.DecodeHashes(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 []cipher.SHA256
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1.Hashes, b2) {
+			return errors.New("blockdb.UnspentPoolAddrIndexBkt sha256 hashes mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	// visor
+
+	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 UnconfirmedTransaction
+		if n, err := DecodeUnconfirmedTransaction(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 UnconfirmedTransaction
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1, b2) {
+			return errors.New("UnconfirmedTxnsBkt unconfirmed transaction mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 UxArray
+		if n, err := DecodeUxArray(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 coin.UxArray
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1.UxArray, b2) {
+			return errors.New("UnconfirmedUnspentsBkt ux out slice mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	// historydb
+
+	if err := dbutil.ForEach(tx, historydb.AddressTxnsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 historydb.Hashes
+		if n, err := historydb.DecodeHashes(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 []cipher.SHA256
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1.Hashes, b2) {
+			return errors.New("historydb.AddressTxnsBkt sha256 hashes mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, historydb.AddressUxBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 historydb.Hashes
+		if n, err := historydb.DecodeHashes(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 []cipher.SHA256
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1.Hashes, b2) {
+			return errors.New("historydb.AddressUxBkt sha256 hashes mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, historydb.UxOutsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 historydb.UxOut
+		if n, err := historydb.DecodeUxOut(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 historydb.UxOut
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1, b2) {
+			return errors.New("Uhistorydb.xOutsBkt ux out mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, historydb.TransactionsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 historydb.Transaction
+		if n, err := historydb.DecodeTransaction(v, &b1); err != nil {
+			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
+		}
+
+		var b2 historydb.Transaction
+		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1, b2) {
+			return errors.New("historydb.TransactionsBkt ux out mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }

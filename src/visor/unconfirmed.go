@@ -2,6 +2,7 @@ package visor
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -20,23 +21,48 @@ var (
 	errUpdateObjectDoesNotExist = errors.New("object does not exist in bucket")
 )
 
+//go:generate skyencoder -struct UnconfirmedTransaction
+//go:generate skyencoder -struct UxArray
+
+// UxArray wraps coin.UxArray
+type UxArray struct {
+	UxArray coin.UxArray
+}
+
 // unconfirmed transactions bucket
 type unconfirmedTxns struct{}
 
 func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTransaction, error) {
 	var txn UnconfirmedTransaction
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()))
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if n, err := DecodeUnconfirmedTransaction(v, &txn); err != nil {
+		return nil, err
+	} else if n != len(v) {
+		return nil, encoder.ErrRemainingBytes
+	}
+
+	if hash != txn.Hash() {
+		return nil, fmt.Errorf("DB key %s does not match block hash header %s", hash, txn.Hash())
 	}
 
 	return &txn, nil
 }
 
 func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTransaction) error {
-	return dbutil.PutBucketValue(tx, UnconfirmedTxnsBkt, []byte(v.Hash().Hex()), encoder.Serialize(v))
+	n := EncodeSizeUnconfirmedTransaction(v)
+	buf := make([]byte, n)
+	if err := EncodeUnconfirmedTransaction(buf, v); err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnconfirmedTxnsBkt, []byte(v.Hash().Hex()), buf)
 }
 
 func (utb *unconfirmedTxns) update(tx *dbutil.Tx, hash cipher.SHA256, f func(v *UnconfirmedTransaction) error) error {
@@ -65,8 +91,10 @@ func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTransaction, err
 
 	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
 		var txn UnconfirmedTransaction
-		if err := encoder.DeserializeRaw(v, &txn); err != nil {
+		if n, err := DecodeUnconfirmedTransaction(v, &txn); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		txns = append(txns, txn)
@@ -90,8 +118,10 @@ func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx
 		}
 
 		var txn UnconfirmedTransaction
-		if err := encoder.DeserializeRaw(v, &txn); err != nil {
+		if n, err := DecodeUnconfirmedTransaction(v, &txn); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		return f(hash, txn)
@@ -105,7 +135,16 @@ func (utb *unconfirmedTxns) len(tx *dbutil.Tx) (uint64, error) {
 type txnUnspents struct{}
 
 func (txus *txnUnspents) put(tx *dbutil.Tx, hash cipher.SHA256, uxs coin.UxArray) error {
-	return dbutil.PutBucketValue(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()), encoder.Serialize(uxs))
+	uxa := &UxArray{
+		UxArray: uxs,
+	}
+	n := EncodeSizeUxArray(uxa)
+	buf := make([]byte, n)
+	if err := EncodeUxArray(buf, uxa); err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()), buf)
 }
 
 func (txus *txnUnspents) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
@@ -116,14 +155,16 @@ func (txus *txnUnspents) getByAddr(tx *dbutil.Tx, a cipher.Address) (coin.UxArra
 	var uxo coin.UxArray
 
 	if err := dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(_, v []byte) error {
-		var uxa coin.UxArray
-		if err := encoder.DeserializeRaw(v, &uxa); err != nil {
+		var uxa UxArray
+		if n, err := DecodeUxArray(v, &uxa); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
-		for i := range uxa {
-			if uxa[i].Body.Address == a {
-				uxo = append(uxo, uxa[i])
+		for i := range uxa.UxArray {
+			if uxa.UxArray[i].Body.Address == a {
+				uxo = append(uxo, uxa.UxArray[i])
 			}
 		}
 

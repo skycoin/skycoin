@@ -13,16 +13,23 @@ var AddressUxBkt = []byte("address_in")
 type addressUx struct{}
 
 // get return nil on not found.
-func (au *addressUx) get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
-	var uxHashes []cipher.SHA256
+func (au *addressUx) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
+	var uxHashes Hashes
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, AddressUxBkt, address.Bytes(), &uxHashes); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, AddressUxBkt, addr.Bytes())
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
 	}
 
-	return uxHashes, nil
+	if n, err := DecodeHashes(v, &uxHashes); err != nil {
+		return nil, err
+	} else if n != len(v) {
+		return nil, encoder.ErrRemainingBytes
+	}
+
+	return uxHashes.Hashes, nil
 }
 
 // add adds a hash to an address's hash list
@@ -40,7 +47,17 @@ func (au *addressUx) add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SH
 	}
 
 	hashes = append(hashes, uxHash)
-	return dbutil.PutBucketValue(tx, AddressUxBkt, address.Bytes(), encoder.Serialize(hashes))
+
+	hs := &Hashes{
+		Hashes: hashes,
+	}
+	n := EncodeSizeHashes(hs)
+	buf := make([]byte, n)
+	if err := EncodeHashes(buf, hs); err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, AddressUxBkt, address.Bytes(), buf)
 }
 
 // isEmpty checks if the addressUx bucket is empty

@@ -3,8 +3,8 @@ package blockdb
 
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
-// EncodeSizeSigWrapper computes the size of an encoded object of type SigWrapper
-func EncodeSizeSigWrapper(obj *SigWrapper) int {
+// EncodeSizeSig computes the size of an encoded object of type Sig
+func EncodeSizeSig(obj *Sig) int {
 	i0 := 0
 
 	// obj.Sig
@@ -13,9 +13,9 @@ func EncodeSizeSigWrapper(obj *SigWrapper) int {
 	return i0
 }
 
-// EncodeSigWrapper encodes an object of type SigWrapper to the buffer in encoder.Encoder.
+// EncodeSig encodes an object of type Sig to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeSigWrapper(buf []byte, obj *SigWrapper) error {
+func EncodeSig(buf []byte, obj *Sig) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -26,9 +26,9 @@ func EncodeSigWrapper(buf []byte, obj *SigWrapper) error {
 	return nil
 }
 
-// DecodeSigWrapper decodes an object of type SigWrapper from the buffer in encoder.Decoder.
+// DecodeSig decodes an object of type Sig from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeSigWrapper(buf []byte, obj *SigWrapper) (int, error) {
+func DecodeSig(buf []byte, obj *Sig) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

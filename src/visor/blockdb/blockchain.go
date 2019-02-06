@@ -18,8 +18,8 @@ type Hashes struct {
 	Hashes []cipher.SHA256
 }
 
-// SigWrapper wraps cipher.Sig
-type SigWrapper struct {
+// Sig wraps cipher.Sig
+type Sig struct {
 	Sig cipher.Sig
 }
 
@@ -32,7 +32,7 @@ type HashPairs struct {
 //go:generate skyencoder -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
 //go:generate skyencoder -struct HashPairs
 //go:generate skyencoder -struct Hashes
-//go:generate skyencoder -struct SigWrapper
+//go:generate skyencoder -struct Sig
 
 var (
 	logger = logging.MustGetLogger("blockdb")

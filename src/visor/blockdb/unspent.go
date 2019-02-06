@@ -76,10 +76,17 @@ type pool struct{}
 func (pl pool) get(tx *dbutil.Tx, hash cipher.SHA256) (*coin.UxOut, error) {
 	var out coin.UxOut
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnspentPoolBkt, hash[:], &out); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UnspentPoolBkt, hash[:])
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if n, err := DecodeUxOut(v, &out); err != nil {
+		return nil, err
+	} else if n != len(v) {
+		return nil, encoder.ErrRemainingBytes
 	}
 
 	return &out, nil
@@ -123,10 +130,17 @@ type poolAddrIndex struct{}
 func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
 	var hashes Hashes
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), &hashes); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UnspentPoolAddrIndexBkt, addr.Bytes())
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if n, err := DecodeHashes(v, &hashes); err != nil {
+		return nil, err
+	} else if n != len(v) {
+		return nil, encoder.ErrRemainingBytes
 	}
 
 	return hashes.Hashes, nil

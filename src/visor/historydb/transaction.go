@@ -14,6 +14,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
+//go:generate skyencoder -struct Transaction
+
 // Transaction contains transaction info and the seq of block which executed this block.
 type Transaction struct {
 	Txn      coin.Transaction
@@ -34,17 +36,31 @@ type transactions struct{}
 // put transaction to the db
 func (txs *transactions) put(tx *dbutil.Tx, txn *Transaction) error {
 	hash := txn.Hash()
-	return dbutil.PutBucketValue(tx, TransactionsBkt, hash[:], encoder.Serialize(txn))
+
+	n := EncodeSizeTransaction(txn)
+	buf := make([]byte, n)
+	if err := EncodeTransaction(buf, txn); err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, TransactionsBkt, hash[:], buf)
 }
 
 // get gets transaction by transaction hash, return nil on not found
 func (txs *transactions) get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, error) {
 	var txn Transaction
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, TransactionsBkt, hash[:], &txn); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, TransactionsBkt, hash[:])
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if n, err := DecodeTransaction(v, &txn); err != nil {
+		return nil, err
+	} else if n != len(v) {
+		return nil, encoder.ErrRemainingBytes
 	}
 
 	return &txn, nil
@@ -54,15 +70,15 @@ func (txs *transactions) get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, e
 func (txs *transactions) getArray(tx *dbutil.Tx, hashes []cipher.SHA256) ([]Transaction, error) {
 	txns := make([]Transaction, 0, len(hashes))
 	for _, h := range hashes {
-		var txn Transaction
-
-		if ok, err := dbutil.GetBucketObjectDecoded(tx, TransactionsBkt, h[:], &txn); err != nil {
+		txn, err := txs.get(tx, h)
+		if err != nil {
 			return nil, err
-		} else if !ok {
+		}
+		if txn == nil {
 			return nil, errors.New("Transaction not found")
 		}
 
-		txns = append(txns, txn)
+		txns = append(txns, *txn)
 	}
 
 	return txns, nil
@@ -87,8 +103,10 @@ func (txs *transactions) forEach(tx *dbutil.Tx, f func(cipher.SHA256, *Transacti
 		}
 
 		var txn Transaction
-		if err := encoder.DeserializeRaw(v, &txn); err != nil {
+		if n, err := DecodeTransaction(v, &txn); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		return f(hash, &txn)

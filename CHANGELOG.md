@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Add CLI `addressTransactions` command
 - Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
+- Add CLI `checkDBDecoding` command to verify the `skyencoder`-generated binary decoders match the reflect-based decoder
 
 ### Fixed
 
@@ -17,11 +18,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #2083, Windows desktop wallet sometimes shows "Error#1" on start
 
 ### Changed
+
 - Extend URI specification to allow plain addresses (i.e. without a `skycoin:` prefix)
 - Switch `skycoin-cli` from `urfave/cli` to `spf13/cobra`.
   Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
   `-` prefix is only allowed when using shorthand notation.
 - Use an optimized `base58` library for faster address decoding and encoding.
+- Use [`skyencoder`](https://github.com/skycoin/skyencoder)-generated binary encoders/decoders for network and database data, instead of the reflect-based encoders/decoders in `cipher/encoder`.
+
 ### Removed
 
 - Remove libskycoin source code. Migrated to https://github.com/skycoin/libskycoin

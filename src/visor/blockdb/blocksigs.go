@@ -25,12 +25,19 @@ type blockSigs struct{}
 
 // Get returns the signature of a specific block
 func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
-	var sig SigWrapper
+	var sig Sig
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, BlockSigsBkt, hash[:], &sig); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, BlockSigsBkt, hash[:])
+	if err != nil {
 		return cipher.Sig{}, false, err
-	} else if !ok {
+	} else if v == nil {
 		return cipher.Sig{}, false, nil
+	}
+
+	if n, err := DecodeSig(v, &sig); err != nil {
+		return cipher.Sig{}, false, err
+	} else if n != len(v) {
+		return cipher.Sig{}, false, encoder.ErrRemainingBytes
 	}
 
 	return sig.Sig, true, nil
@@ -38,11 +45,11 @@ func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, e
 
 // Add adds a signed block to the db
 func (bs *blockSigs) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
-	sw := &SigWrapper{
+	sw := &Sig{
 		Sig: sig,
 	}
-	buf := make([]byte, EncodeSizeSigWrapper(sw))
-	if err := EncodeSigWrapper(buf, sw); err != nil {
+	buf := make([]byte, EncodeSizeSig(sw))
+	if err := EncodeSig(buf, sw); err != nil {
 		return err
 	}
 	return dbutil.PutBucketValue(tx, BlockSigsBkt, hash[:], buf)
@@ -56,8 +63,8 @@ func (bs *blockSigs) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) er
 			return err
 		}
 
-		var sig SigWrapper
-		if n, err := DecodeSigWrapper(v, &sig); err != nil {
+		var sig Sig
+		if n, err := DecodeSig(v, &sig); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes

@@ -685,7 +685,8 @@ Performs these actions before releasing:
 * `make integration-test-live-disable-networking` (requires node run with `-disable-networking`)
 * `make integration-test-live-disable-csrf` (requires node run with `-disable-csrf`)
 * `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet
-* `go run cmd/cli/cli.go checkdb` against a synced node
+* `go run cmd/cli/cli.go checkdb` against a fully synced database
+* `go run cmd/cli/cli.go checkDBDecoding` against a fully synced database
 * On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
     * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.

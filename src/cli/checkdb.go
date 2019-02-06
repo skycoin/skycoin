@@ -135,7 +135,7 @@ func checkDBDecoding(c *cobra.Command, args []string) error {
 		return fmt.Errorf("checkDBDecoding failed: %v", err)
 	}
 
-	fmt.Println("check db encoding success")
+	fmt.Println("check db decoding success")
 	return nil
 
 }

@@ -48,7 +48,7 @@ func checkDB(c *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		dbPath = args[0]
 	}
-	dbPath, err := resolveDBPath(cliConfig, args[0])
+	dbPath, err := resolveDBPath(cliConfig, dbPath)
 	if err != nil {
 		return err
 	}

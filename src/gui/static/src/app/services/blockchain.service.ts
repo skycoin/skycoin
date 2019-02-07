@@ -11,6 +11,7 @@ import 'rxjs/add/operator/concat';
 @Injectable()
 export class BlockchainService {
   private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
+  private synchronizedSubject: Subject<any> = new BehaviorSubject<boolean>(false);
   private refreshedBalance = false;
   private maxDecimals = 6;
 
@@ -20,6 +21,10 @@ export class BlockchainService {
 
   get currentMaxDecimals(): number {
     return this.maxDecimals;
+  }
+
+  get synchronized() {
+    return this.synchronizedSubject.asObservable();
   }
 
   constructor(
@@ -88,6 +93,7 @@ export class BlockchainService {
   }
 
   private completeLoading() {
+    this.synchronizedSubject.next(true);
     this.progressSubject.next({ current: 999999999999, highest: 999999999999 });
     this.walletService.refreshBalances();
   }

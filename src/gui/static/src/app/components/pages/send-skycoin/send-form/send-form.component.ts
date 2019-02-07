@@ -11,10 +11,11 @@ import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
 import { Observable } from 'rxjs/Observable';
-import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
+import { PreviewTransaction, Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { BlockchainService } from '../../../../services/blockchain.service';
+import { showConfirmationModal } from '../../../../utils';
 
 @Component({
   selector: 'app-send-form',
@@ -62,12 +63,37 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   preview() {
     this.previewTx = true;
-    this.unlockAndSend();
+    this.checkBeforeSending();
   }
 
   send() {
     this.previewTx = false;
-    this.unlockAndSend();
+    this.checkBeforeSending();
+  }
+
+  private checkBeforeSending() {
+    this.blockchainService.synchronized.first().subscribe(synchronized => {
+      if (synchronized) {
+        this.unlockAndSend();
+      } else {
+        this.showSynchronizingWarning();
+      }
+    });
+  }
+
+  private showSynchronizingWarning() {
+    const confirmationData: ConfirmationData = {
+      text: 'send.synchronizing-warning',
+      headerText: 'confirmation.header-text',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+    };
+
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
+        this.unlockAndSend();
+      }
+    });
   }
 
   private unlockAndSend() {

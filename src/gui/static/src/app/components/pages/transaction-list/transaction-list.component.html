@@ -1,8 +1,44 @@
 <app-header [headline]="'title.transactions' | translate"></app-header>
 <div class="container">
+  <div [formGroup]="form" class="form-field" *ngIf="allTransactions">
+    <mat-select
+      multiple
+      [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }"
+      formControlName="filter"
+      [placeholder]="'history.no-filter' | translate"
+      id="filter"
+    >
+      <mat-optgroup *ngFor="let wallet of wallets" label="
+        {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+        ({{ wallet.hours | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+      ">
+        <mat-option *ngIf="wallet.addresses.length > 1" [value]="wallet">
+          {{ 'history.all-addresses' | translate }}
+        </mat-option>
+        <mat-option *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
+          {{ address.address }} - {{ address.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ address.hours | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+        </mat-option>
+      </mat-optgroup>
+      <mat-select-trigger>
+        <span *ngIf="form.get('filter').value.length === 1">{{ 'history.filter' | translate }}</span>
+        <span *ngIf="form.get('filter').value.length > 1">{{ 'history.filters' | translate }}</span>
+        <ng-container *ngFor="let filter of form.get('filter').value; let i = index">
+          <div class="filter" *ngIf="filter.label || !filter.showingWholeWallet">
+            <span *ngIf="filter.label">{{ filter.label }}</span>
+            <span *ngIf="!filter.label">{{ filter.address }}</span>
+            - {{ filter.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+            ({{ filter.hours | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+          </div>
+        </ng-container>
+      </mat-select-trigger>
+    </mat-select>
+    <img class="x-button" src="assets/img/close-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
+  </div>
+
   <app-loading-content
-    [isLoading]="!transactions"
-    noDataText="history.no-txs"
+    [isLoading]="!allTransactions"
+    [noDataText]="!allTransactions || allTransactions.length === 0 ? 'history.no-txs' : 'history.no-txs-filter'"
     *ngIf="!transactions || transactions.length === 0"
   ></app-loading-content>
 

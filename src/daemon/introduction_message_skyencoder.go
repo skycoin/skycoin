@@ -9,8 +9,8 @@ import (
 )
 
 // EncodeSizeIntroductionMessage computes the size of an encoded object of type IntroductionMessage
-func EncodeSizeIntroductionMessage(obj *IntroductionMessage) int {
-	i0 := 0
+func EncodeSizeIntroductionMessage(obj *IntroductionMessage) uint64 {
+	i0 := uint64(0)
 
 	// obj.Mirror
 	i0 += 4
@@ -25,7 +25,7 @@ func EncodeSizeIntroductionMessage(obj *IntroductionMessage) int {
 	if len(obj.Extra) != 0 {
 
 		// obj.Extra
-		i0 += 4 + len(obj.Extra)
+		i0 += 4 + uint64(len(obj.Extra))
 
 	}
 
@@ -52,7 +52,7 @@ func EncodeIntroductionMessage(buf []byte, obj *IntroductionMessage) error {
 	if len(obj.Extra) != 0 {
 
 		// obj.Extra length check
-		if len(obj.Extra) > math.MaxUint32 {
+		if uint64(len(obj.Extra)) > math.MaxUint32 {
 			return errors.New("obj.Extra length exceeds math.MaxUint32")
 		}
 

@@ -4,8 +4,8 @@ package historydb
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
 // EncodeSizeUxOut computes the size of an encoded object of type UxOut
-func EncodeSizeUxOut(obj *UxOut) int {
-	i0 := 0
+func EncodeSizeUxOut(obj *UxOut) uint64 {
+	i0 := uint64(0)
 
 	// obj.Out.Head.Time
 	i0 += 8

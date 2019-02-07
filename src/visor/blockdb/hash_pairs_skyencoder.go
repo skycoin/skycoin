@@ -10,13 +10,13 @@ import (
 )
 
 // EncodeSizeHashPairs computes the size of an encoded object of type HashPairs
-func EncodeSizeHashPairs(obj *HashPairs) int {
-	i0 := 0
+func EncodeSizeHashPairs(obj *HashPairs) uint64 {
+	i0 := uint64(0)
 
 	// obj.HashPairs
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x.Hash
 		i1 += 32
@@ -24,7 +24,7 @@ func EncodeSizeHashPairs(obj *HashPairs) int {
 		// x.PreHash
 		i1 += 32
 
-		i0 += len(obj.HashPairs) * i1
+		i0 += uint64(len(obj.HashPairs)) * i1
 	}
 
 	return i0
@@ -38,7 +38,7 @@ func EncodeHashPairs(buf []byte, obj *HashPairs) error {
 	}
 
 	// obj.HashPairs length check
-	if len(obj.HashPairs) > math.MaxUint32 {
+	if uint64(len(obj.HashPairs)) > math.MaxUint32 {
 		return errors.New("obj.HashPairs length exceeds math.MaxUint32")
 	}
 

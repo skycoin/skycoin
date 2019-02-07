@@ -9,13 +9,13 @@ import (
 )
 
 // EncodeSizeGivePeersMessage computes the size of an encoded object of type GivePeersMessage
-func EncodeSizeGivePeersMessage(obj *GivePeersMessage) int {
-	i0 := 0
+func EncodeSizeGivePeersMessage(obj *GivePeersMessage) uint64 {
+	i0 := uint64(0)
 
 	// obj.Peers
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x.IP
 		i1 += 4
@@ -23,7 +23,7 @@ func EncodeSizeGivePeersMessage(obj *GivePeersMessage) int {
 		// x.Port
 		i1 += 2
 
-		i0 += len(obj.Peers) * i1
+		i0 += uint64(len(obj.Peers)) * i1
 	}
 
 	return i0
@@ -37,7 +37,7 @@ func EncodeGivePeersMessage(buf []byte, obj *GivePeersMessage) error {
 	}
 
 	// obj.Peers length check
-	if len(obj.Peers) > math.MaxUint32 {
+	if uint64(len(obj.Peers)) > math.MaxUint32 {
 		return errors.New("obj.Peers length exceeds math.MaxUint32")
 	}
 

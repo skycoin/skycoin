@@ -144,8 +144,8 @@ type DummyMessage struct{}
 var DummyPrefix = MessagePrefix{'D', 'U', 'M', 'Y'}
 
 // EncodeSize implements gnet.Serializer
-func (dm *DummyMessage) EncodeSize() int {
-	return encoder.Size(dm)
+func (dm *DummyMessage) EncodeSize() uint64 {
+	return uint64(encoder.Size(dm))
 }
 
 // Encode implements gnet.Serializer
@@ -175,8 +175,8 @@ var (
 )
 
 // EncodeSize implements gnet.Serializer
-func (em *ErrorMessage) EncodeSize() int {
-	return encoder.Size(em)
+func (em *ErrorMessage) EncodeSize() uint64 {
+	return uint64(encoder.Size(em))
 }
 
 // Encode implements gnet.Serializer
@@ -205,8 +205,8 @@ type ByteMessage struct {
 var BytePrefix = MessagePrefix{'B', 'Y', 'T', 'E'}
 
 // EncodeSize implements gnet.Serializer
-func (bm *ByteMessage) EncodeSize() int {
-	return encoder.Size(bm)
+func (bm *ByteMessage) EncodeSize() uint64 {
+	return uint64(encoder.Size(bm))
 }
 
 // Encode implements gnet.Serializer
@@ -237,8 +237,8 @@ type PointerMessage struct {
 }
 
 // EncodeSize implements gnet.Serializer
-func (m *PointerMessage) EncodeSize() int {
-	return encoder.Size(m)
+func (m *PointerMessage) EncodeSize() uint64 {
+	return uint64(encoder.Size(m))
 }
 
 // Encode implements gnet.Serializer

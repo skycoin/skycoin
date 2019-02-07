@@ -4,8 +4,8 @@ package daemon
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
 // EncodeSizeAnnounceBlocksMessage computes the size of an encoded object of type AnnounceBlocksMessage
-func EncodeSizeAnnounceBlocksMessage(obj *AnnounceBlocksMessage) int {
-	i0 := 0
+func EncodeSizeAnnounceBlocksMessage(obj *AnnounceBlocksMessage) uint64 {
+	i0 := uint64(0)
 
 	// obj.MaxBkSeq
 	i0 += 8

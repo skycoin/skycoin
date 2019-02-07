@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/skycoin/encodertest"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/cipher/encoder/encodertest"
 )
 
 func newEmptyAnnounceBlocksMessageForEncodeTest() *AnnounceBlocksMessage {
@@ -67,7 +67,7 @@ func testSkyencoderAnnounceBlocksMessage(t *testing.T, obj *AnnounceBlocksMessag
 	n1 := encoder.Size(obj)
 	n2 := EncodeSizeAnnounceBlocksMessage(obj)
 
-	if n1 != n2 {
+	if uint64(n1) != n2 {
 		t.Fatalf("encoder.Size() != EncodeSizeAnnounceBlocksMessage() (%d != %d)", n1, n2)
 	}
 
@@ -145,7 +145,7 @@ func testSkyencoderAnnounceBlocksMessage(t *testing.T, obj *AnnounceBlocksMessag
 	}
 
 	// returns the number of bytes encoded by an omitempty field on a given object
-	omitEmptyLen := func(obj interface{}) int {
+	omitEmptyLen := func(obj interface{}) uint64 {
 		if !hasOmitEmptyField(obj) {
 			return 0
 		}
@@ -163,7 +163,7 @@ func testSkyencoderAnnounceBlocksMessage(t *testing.T, obj *AnnounceBlocksMessag
 			if f.Len() == 0 {
 				return 0
 			}
-			return 4 + f.Len()
+			return uint64(4 + f.Len())
 
 		default:
 			return 0
@@ -293,7 +293,7 @@ func testSkyencoderAnnounceBlocksMessageDecodeErrors(t *testing.T, k int, tag st
 	}
 
 	// returns the number of bytes encoded by an omitempty field on a given object
-	omitEmptyLen := func(obj interface{}) int {
+	omitEmptyLen := func(obj interface{}) uint64 {
 		if !hasOmitEmptyField(obj) {
 			return 0
 		}
@@ -311,7 +311,7 @@ func testSkyencoderAnnounceBlocksMessageDecodeErrors(t *testing.T, k int, tag st
 			if f.Len() == 0 {
 				return 0
 			}
-			return 4 + f.Len()
+			return uint64(4 + f.Len())
 
 		default:
 			return 0
@@ -335,7 +335,7 @@ func testSkyencoderAnnounceBlocksMessageDecodeErrors(t *testing.T, k int, tag st
 	// Test all possible truncations of the encoded byte array, but skip
 	// a truncation that would be valid where omitempty is removed
 	skipN := n - omitEmptyLen(obj)
-	for i := 0; i < n; i++ {
+	for i := uint64(0); i < n; i++ {
 		if i == skipN {
 			continue
 		}

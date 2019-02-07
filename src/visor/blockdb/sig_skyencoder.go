@@ -4,8 +4,8 @@ package blockdb
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
 // EncodeSizeSig computes the size of an encoded object of type Sig
-func EncodeSizeSig(obj *Sig) int {
-	i0 := 0
+func EncodeSizeSig(obj *Sig) uint64 {
+	i0 := uint64(0)
 
 	// obj.Sig
 	i0 += 65

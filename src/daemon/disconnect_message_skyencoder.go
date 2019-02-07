@@ -9,14 +9,14 @@ import (
 )
 
 // EncodeSizeDisconnectMessage computes the size of an encoded object of type DisconnectMessage
-func EncodeSizeDisconnectMessage(obj *DisconnectMessage) int {
-	i0 := 0
+func EncodeSizeDisconnectMessage(obj *DisconnectMessage) uint64 {
+	i0 := uint64(0)
 
 	// obj.ReasonCode
 	i0 += 2
 
 	// obj.Reserved
-	i0 += 4 + len(obj.Reserved)
+	i0 += 4 + uint64(len(obj.Reserved))
 
 	return i0
 }
@@ -32,7 +32,7 @@ func EncodeDisconnectMessage(buf []byte, obj *DisconnectMessage) error {
 	e.Uint16(obj.ReasonCode)
 
 	// obj.Reserved length check
-	if len(obj.Reserved) > math.MaxUint32 {
+	if uint64(len(obj.Reserved)) > math.MaxUint32 {
 		return errors.New("obj.Reserved length exceeds math.MaxUint32")
 	}
 

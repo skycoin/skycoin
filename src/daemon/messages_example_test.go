@@ -350,8 +350,8 @@ func (m *EmptySliceStruct) Handle(mc *gnet.MessageContext, daemon interface{}) e
 }
 
 // EncodeSize implements gnet.Serializer
-func (m *EmptySliceStruct) EncodeSize() int {
-	return encoder.Size(m)
+func (m *EmptySliceStruct) EncodeSize() uint64 {
+	return uint64(encoder.Size(m))
 }
 
 // Encode implements gnet.Serializer
@@ -415,8 +415,8 @@ func (m *OmitEmptySliceTestStruct) Handle(mc *gnet.MessageContext, daemon interf
 }
 
 // EncodeSize implements gnet.Serializer
-func (m *OmitEmptySliceTestStruct) EncodeSize() int {
-	return encoder.Size(m)
+func (m *OmitEmptySliceTestStruct) EncodeSize() uint64 {
+	return uint64(encoder.Size(m))
 }
 
 // Encode implements gnet.Serializer

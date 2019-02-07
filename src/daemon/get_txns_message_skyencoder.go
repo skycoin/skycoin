@@ -10,18 +10,18 @@ import (
 )
 
 // EncodeSizeGetTxnsMessage computes the size of an encoded object of type GetTxnsMessage
-func EncodeSizeGetTxnsMessage(obj *GetTxnsMessage) int {
-	i0 := 0
+func EncodeSizeGetTxnsMessage(obj *GetTxnsMessage) uint64 {
+	i0 := uint64(0)
 
 	// obj.Transactions
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x
 		i1 += 32
 
-		i0 += len(obj.Transactions) * i1
+		i0 += uint64(len(obj.Transactions)) * i1
 	}
 
 	return i0
@@ -35,7 +35,7 @@ func EncodeGetTxnsMessage(buf []byte, obj *GetTxnsMessage) error {
 	}
 
 	// obj.Transactions length check
-	if len(obj.Transactions) > math.MaxUint32 {
+	if uint64(len(obj.Transactions)) > math.MaxUint32 {
 		return errors.New("obj.Transactions length exceeds math.MaxUint32")
 	}
 

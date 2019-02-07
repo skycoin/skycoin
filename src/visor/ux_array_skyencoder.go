@@ -10,13 +10,13 @@ import (
 )
 
 // EncodeSizeUxArray computes the size of an encoded object of type UxArray
-func EncodeSizeUxArray(obj *UxArray) int {
-	i0 := 0
+func EncodeSizeUxArray(obj *UxArray) uint64 {
+	i0 := uint64(0)
 
 	// obj.UxArray
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x.Head.Time
 		i1 += 8
@@ -39,7 +39,7 @@ func EncodeSizeUxArray(obj *UxArray) int {
 		// x.Body.Hours
 		i1 += 8
 
-		i0 += len(obj.UxArray) * i1
+		i0 += uint64(len(obj.UxArray)) * i1
 	}
 
 	return i0
@@ -53,7 +53,7 @@ func EncodeUxArray(buf []byte, obj *UxArray) error {
 	}
 
 	// obj.UxArray length check
-	if len(obj.UxArray) > math.MaxUint32 {
+	if uint64(len(obj.UxArray)) > math.MaxUint32 {
 		return errors.New("obj.UxArray length exceeds math.MaxUint32")
 	}
 

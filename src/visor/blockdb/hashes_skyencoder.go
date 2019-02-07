@@ -10,18 +10,18 @@ import (
 )
 
 // EncodeSizeHashes computes the size of an encoded object of type Hashes
-func EncodeSizeHashes(obj *Hashes) int {
-	i0 := 0
+func EncodeSizeHashes(obj *Hashes) uint64 {
+	i0 := uint64(0)
 
 	// obj.Hashes
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x
 		i1 += 32
 
-		i0 += len(obj.Hashes) * i1
+		i0 += uint64(len(obj.Hashes)) * i1
 	}
 
 	return i0
@@ -35,7 +35,7 @@ func EncodeHashes(buf []byte, obj *Hashes) error {
 	}
 
 	// obj.Hashes length check
-	if len(obj.Hashes) > math.MaxUint32 {
+	if uint64(len(obj.Hashes)) > math.MaxUint32 {
 		return errors.New("obj.Hashes length exceeds math.MaxUint32")
 	}
 

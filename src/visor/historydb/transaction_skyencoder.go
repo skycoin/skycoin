@@ -11,8 +11,8 @@ import (
 )
 
 // EncodeSizeTransaction computes the size of an encoded object of type Transaction
-func EncodeSizeTransaction(obj *Transaction) int {
-	i0 := 0
+func EncodeSizeTransaction(obj *Transaction) uint64 {
+	i0 := uint64(0)
 
 	// obj.Txn.Length
 	i0 += 4
@@ -26,29 +26,29 @@ func EncodeSizeTransaction(obj *Transaction) int {
 	// obj.Txn.Sigs
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x
 		i1 += 65
 
-		i0 += len(obj.Txn.Sigs) * i1
+		i0 += uint64(len(obj.Txn.Sigs)) * i1
 	}
 
 	// obj.Txn.In
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x
 		i1 += 32
 
-		i0 += len(obj.Txn.In) * i1
+		i0 += uint64(len(obj.Txn.In)) * i1
 	}
 
 	// obj.Txn.Out
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x.Address.Version
 		i1++
@@ -62,7 +62,7 @@ func EncodeSizeTransaction(obj *Transaction) int {
 		// x.Hours
 		i1 += 8
 
-		i0 += len(obj.Txn.Out) * i1
+		i0 += uint64(len(obj.Txn.Out)) * i1
 	}
 
 	// obj.BlockSeq
@@ -93,7 +93,7 @@ func EncodeTransaction(buf []byte, obj *Transaction) error {
 	}
 
 	// obj.Txn.Sigs length check
-	if len(obj.Txn.Sigs) > math.MaxUint32 {
+	if uint64(len(obj.Txn.Sigs)) > math.MaxUint32 {
 		return errors.New("obj.Txn.Sigs length exceeds math.MaxUint32")
 	}
 
@@ -114,7 +114,7 @@ func EncodeTransaction(buf []byte, obj *Transaction) error {
 	}
 
 	// obj.Txn.In length check
-	if len(obj.Txn.In) > math.MaxUint32 {
+	if uint64(len(obj.Txn.In)) > math.MaxUint32 {
 		return errors.New("obj.Txn.In length exceeds math.MaxUint32")
 	}
 
@@ -135,7 +135,7 @@ func EncodeTransaction(buf []byte, obj *Transaction) error {
 	}
 
 	// obj.Txn.Out length check
-	if len(obj.Txn.Out) > math.MaxUint32 {
+	if uint64(len(obj.Txn.Out)) > math.MaxUint32 {
 		return errors.New("obj.Txn.Out length exceeds math.MaxUint32")
 	}
 

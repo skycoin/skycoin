@@ -7,8 +7,8 @@ import (
 )
 
 // EncodeSizeUxOut computes the size of an encoded object of type UxOut
-func EncodeSizeUxOut(obj *coin.UxOut) int {
-	i0 := 0
+func EncodeSizeUxOut(obj *coin.UxOut) uint64 {
+	i0 := uint64(0)
 
 	// obj.Head.Time
 	i0 += 8

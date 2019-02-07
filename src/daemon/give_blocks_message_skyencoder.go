@@ -11,13 +11,13 @@ import (
 )
 
 // EncodeSizeGiveBlocksMessage computes the size of an encoded object of type GiveBlocksMessage
-func EncodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) int {
-	i0 := 0
+func EncodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) uint64 {
+	i0 := uint64(0)
 
 	// obj.Blocks
 	i0 += 4
 	for _, x := range obj.Blocks {
-		i1 := 0
+		i1 := uint64(0)
 
 		// x.Block.Head.Version
 		i1 += 4
@@ -43,7 +43,7 @@ func EncodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) int {
 		// x.Block.Body.Transactions
 		i1 += 4
 		for _, x := range x.Block.Body.Transactions {
-			i2 := 0
+			i2 := uint64(0)
 
 			// x.Length
 			i2 += 4
@@ -57,29 +57,29 @@ func EncodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) int {
 			// x.Sigs
 			i2 += 4
 			{
-				i3 := 0
+				i3 := uint64(0)
 
 				// x
 				i3 += 65
 
-				i2 += len(x.Sigs) * i3
+				i2 += uint64(len(x.Sigs)) * i3
 			}
 
 			// x.In
 			i2 += 4
 			{
-				i3 := 0
+				i3 := uint64(0)
 
 				// x
 				i3 += 32
 
-				i2 += len(x.In) * i3
+				i2 += uint64(len(x.In)) * i3
 			}
 
 			// x.Out
 			i2 += 4
 			{
-				i3 := 0
+				i3 := uint64(0)
 
 				// x.Address.Version
 				i3++
@@ -93,7 +93,7 @@ func EncodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) int {
 				// x.Hours
 				i3 += 8
 
-				i2 += len(x.Out) * i3
+				i2 += uint64(len(x.Out)) * i3
 			}
 
 			i1 += i2
@@ -121,7 +121,7 @@ func EncodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) error {
 	}
 
 	// obj.Blocks length check
-	if len(obj.Blocks) > math.MaxUint32 {
+	if uint64(len(obj.Blocks)) > math.MaxUint32 {
 		return errors.New("obj.Blocks length exceeds math.MaxUint32")
 	}
 
@@ -158,7 +158,7 @@ func EncodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) error {
 		}
 
 		// x.Block.Body.Transactions length check
-		if len(x.Block.Body.Transactions) > math.MaxUint32 {
+		if uint64(len(x.Block.Body.Transactions)) > math.MaxUint32 {
 			return errors.New("x.Block.Body.Transactions length exceeds math.MaxUint32")
 		}
 
@@ -183,7 +183,7 @@ func EncodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) error {
 			}
 
 			// x.Sigs length check
-			if len(x.Sigs) > math.MaxUint32 {
+			if uint64(len(x.Sigs)) > math.MaxUint32 {
 				return errors.New("x.Sigs length exceeds math.MaxUint32")
 			}
 
@@ -204,7 +204,7 @@ func EncodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) error {
 			}
 
 			// x.In length check
-			if len(x.In) > math.MaxUint32 {
+			if uint64(len(x.In)) > math.MaxUint32 {
 				return errors.New("x.In length exceeds math.MaxUint32")
 			}
 
@@ -225,7 +225,7 @@ func EncodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) error {
 			}
 
 			// x.Out length check
-			if len(x.Out) > math.MaxUint32 {
+			if uint64(len(x.Out)) > math.MaxUint32 {
 				return errors.New("x.Out length exceeds math.MaxUint32")
 			}
 

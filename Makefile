@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-lint check
+.PHONY: run run-help test test-386 test-amd64 check
 .PHONY: integration-test-stable integration-test-stable-disable-csrf
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
@@ -61,7 +61,8 @@ check-newcoin: newcoin ## Check that make newcoin succeeds and no templated file
 	@if [ "$(shell git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 	@if [ "$(shell git diff ./src/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
-check: lint clean-coverage test integration-test-stable integration-test-stable-disable-csrf \
+check: lint clean-coverage test-386 test-amd64 \
+	integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \
 	integration-test-enable-seed-api integration-test-disable-gui \
 	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters

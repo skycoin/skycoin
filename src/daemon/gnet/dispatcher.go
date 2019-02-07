@@ -140,7 +140,7 @@ func EncodeMessage(msg Serializer) ([]byte, error) {
 	if !succ {
 		logger.Panicf("Attempted to serialize message struct not in MessageIDMap: %v", msg)
 	}
-	if len(msgID) > math.MaxUint32 {
+	if uint64(len(msgID)) > math.MaxUint32 {
 		return nil, errors.New("Message ID length exceeds math.MaxUint32")
 	}
 
@@ -158,9 +158,17 @@ func EncodeMessage(msg Serializer) ([]byte, error) {
 
 	// Serialize total message length
 	bLenPrefix := encoder.SerializeUint32(bLen)
+	if uint64(len(bLenPrefix)) > math.MaxUint32 {
+		return nil, errors.New("Message length prefix length exceeds math.MaxUint32")
+	}
+
+	mLen, err := mathutil.AddUint32(bLen, uint32(len(bLenPrefix)))
+	if err != nil {
+		return nil, err
+	}
 
 	// Allocate message bytes
-	m := make([]byte, len(bLenPrefix)+len(msgID)+bMsgLen)
+	m := make([]byte, mLen)
 
 	// Write the total message length to the buffer
 	copy(m[:], bLenPrefix[:])

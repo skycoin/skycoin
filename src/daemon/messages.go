@@ -157,7 +157,7 @@ func NewGetPeersMessage() *GetPeersMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (gpm *GetPeersMessage) EncodeSize() int {
+func (gpm *GetPeersMessage) EncodeSize() uint64 {
 	return 0
 }
 
@@ -209,7 +209,7 @@ func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (gpm *GivePeersMessage) EncodeSize() int {
+func (gpm *GivePeersMessage) EncodeSize() uint64 {
 	return EncodeSizeGivePeersMessage(gpm)
 }
 
@@ -339,7 +339,7 @@ func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyP
 }
 
 // EncodeSize implements gnet.Serializer
-func (intro *IntroductionMessage) EncodeSize() int {
+func (intro *IntroductionMessage) EncodeSize() uint64 {
 	return EncodeSizeIntroductionMessage(intro)
 }
 
@@ -524,7 +524,7 @@ type PingMessage struct {
 }
 
 // EncodeSize implements gnet.Serializer
-func (ping *PingMessage) EncodeSize() int {
+func (ping *PingMessage) EncodeSize() uint64 {
 	return 0
 }
 
@@ -564,7 +564,7 @@ type PongMessage struct {
 }
 
 // EncodeSize implements gnet.Serializer
-func (pong *PongMessage) EncodeSize() int {
+func (pong *PongMessage) EncodeSize() uint64 {
 	return 0
 }
 
@@ -613,7 +613,7 @@ func NewDisconnectMessage(reason gnet.DisconnectReason) *DisconnectMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (dm *DisconnectMessage) EncodeSize() int {
+func (dm *DisconnectMessage) EncodeSize() uint64 {
 	return EncodeSizeDisconnectMessage(dm)
 }
 
@@ -663,7 +663,7 @@ func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMes
 }
 
 // EncodeSize implements gnet.Serializer
-func (gbm *GetBlocksMessage) EncodeSize() int {
+func (gbm *GetBlocksMessage) EncodeSize() uint64 {
 	return EncodeSizeGetBlocksMessage(gbm)
 }
 
@@ -729,7 +729,7 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (m *GiveBlocksMessage) EncodeSize() int {
+func (m *GiveBlocksMessage) EncodeSize() uint64 {
 	return EncodeSizeGiveBlocksMessage(m)
 }
 
@@ -840,7 +840,7 @@ func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (abm *AnnounceBlocksMessage) EncodeSize() int {
+func (abm *AnnounceBlocksMessage) EncodeSize() uint64 {
 	return EncodeSizeAnnounceBlocksMessage(abm)
 }
 
@@ -912,7 +912,7 @@ func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (atm *AnnounceTxnsMessage) EncodeSize() int {
+func (atm *AnnounceTxnsMessage) EncodeSize() uint64 {
 	return EncodeSizeAnnounceTxnsMessage(atm)
 }
 
@@ -978,7 +978,7 @@ func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (gtm *GetTxnsMessage) EncodeSize() int {
+func (gtm *GetTxnsMessage) EncodeSize() uint64 {
 	return EncodeSizeGetTxnsMessage(gtm)
 }
 
@@ -1040,7 +1040,7 @@ func NewGiveTxnsMessage(txns []coin.Transaction) *GiveTxnsMessage {
 }
 
 // EncodeSize implements gnet.Serializer
-func (gtm *GiveTxnsMessage) EncodeSize() int {
+func (gtm *GiveTxnsMessage) EncodeSize() uint64 {
 	return EncodeSizeGiveTxnsMessage(gtm)
 }
 

@@ -11,8 +11,8 @@ import (
 )
 
 // EncodeSizeUnconfirmedTransaction computes the size of an encoded object of type UnconfirmedTransaction
-func EncodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) int {
-	i0 := 0
+func EncodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) uint64 {
+	i0 := uint64(0)
 
 	// obj.Transaction.Length
 	i0 += 4
@@ -26,29 +26,29 @@ func EncodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) int {
 	// obj.Transaction.Sigs
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x
 		i1 += 65
 
-		i0 += len(obj.Transaction.Sigs) * i1
+		i0 += uint64(len(obj.Transaction.Sigs)) * i1
 	}
 
 	// obj.Transaction.In
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x
 		i1 += 32
 
-		i0 += len(obj.Transaction.In) * i1
+		i0 += uint64(len(obj.Transaction.In)) * i1
 	}
 
 	// obj.Transaction.Out
 	i0 += 4
 	{
-		i1 := 0
+		i1 := uint64(0)
 
 		// x.Address.Version
 		i1++
@@ -62,7 +62,7 @@ func EncodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) int {
 		// x.Hours
 		i1 += 8
 
-		i0 += len(obj.Transaction.Out) * i1
+		i0 += uint64(len(obj.Transaction.Out)) * i1
 	}
 
 	// obj.Received
@@ -102,7 +102,7 @@ func EncodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) error
 	}
 
 	// obj.Transaction.Sigs length check
-	if len(obj.Transaction.Sigs) > math.MaxUint32 {
+	if uint64(len(obj.Transaction.Sigs)) > math.MaxUint32 {
 		return errors.New("obj.Transaction.Sigs length exceeds math.MaxUint32")
 	}
 
@@ -123,7 +123,7 @@ func EncodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) error
 	}
 
 	// obj.Transaction.In length check
-	if len(obj.Transaction.In) > math.MaxUint32 {
+	if uint64(len(obj.Transaction.In)) > math.MaxUint32 {
 		return errors.New("obj.Transaction.In length exceeds math.MaxUint32")
 	}
 
@@ -144,7 +144,7 @@ func EncodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) error
 	}
 
 	// obj.Transaction.Out length check
-	if len(obj.Transaction.Out) > math.MaxUint32 {
+	if uint64(len(obj.Transaction.Out)) > math.MaxUint32 {
 		return errors.New("obj.Transaction.Out length exceeds math.MaxUint32")
 	}
 

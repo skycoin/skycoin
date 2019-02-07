@@ -358,7 +358,7 @@ export class WalletService {
         convertedOutputs = txOutputs.map(output => {
           return {
             ...output,
-            coins: parseInt((output.coins * 1000000) + '', 10),
+            coins: parseInt(new BigNumber(output.coins).multipliedBy(1000000).toFixed(0), 10),
           };
         });
 

@@ -9,10 +9,12 @@ import { Subscription, ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
-import { Output as UnspentOutput, Wallet, Address } from '../../../../app.datatypes';
+import { Output as UnspentOutput, Wallet, Address, ConfirmationData } from '../../../../app.datatypes';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/retryWhen';
 import 'rxjs/add/operator/concat';
+import { BlockchainService } from '../../../../services/blockchain.service';
+import { showConfirmationModal } from '../../../../utils';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -47,6 +49,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
     private navbarService: NavBarService,
+    private blockchainService: BlockchainService,
   ) { }
 
   ngOnInit() {
@@ -117,12 +120,37 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   preview() {
     this.previewTx = true;
-    this.unlockAndSend();
+    this.checkBeforeSending();
   }
 
   send() {
     this.previewTx = false;
-    this.unlockAndSend();
+    this.checkBeforeSending();
+  }
+
+  private checkBeforeSending() {
+    this.blockchainService.synchronized.first().subscribe(synchronized => {
+      if (synchronized) {
+        this.unlockAndSend();
+      } else {
+        this.showSynchronizingWarning();
+      }
+    });
+  }
+
+  private showSynchronizingWarning() {
+    const confirmationData: ConfirmationData = {
+      text: 'send.synchronizing-warning',
+      headerText: 'confirmation.header-text',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+    };
+
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
+        this.unlockAndSend();
+      }
+    });
   }
 
   unlockAndSend() {

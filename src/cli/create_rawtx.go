@@ -96,7 +96,7 @@ By default the from address or a wallets coinbase address will be used.`)
 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
 	createRawTxCmd.Flags().StringP("password", "p", "", "Wallet password")
 	createRawTxCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
-	createRawTxCmd.Flags().String("csv-file", "", "CSV file containing addresses and amounts to send")
+	createRawTxCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
 
 	return createRawTxCmd
 }
@@ -171,7 +171,7 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 }
 
 func getToAddresses(c *cobra.Command, args []string) ([]SendAmount, error) {
-	csvFile, err := c.Flags().GetString("csv-file")
+	csvFile, err := c.Flags().GetString("csv")
 	if err != nil {
 		return nil, err
 	}

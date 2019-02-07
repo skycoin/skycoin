@@ -8,7 +8,7 @@
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
 .PHONY: install-deps-ui build-ui help newcoins merge-coverage
-.PHONY: generate-mocks update-golden-files
+.PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 
 COIN ?= skycoin
@@ -53,7 +53,7 @@ test-amd64: ## Run tests for Skycoin with GOARCH=amd64
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
 	golangci-lint run -c .golangci.yml ./...
-	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
+	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
 
 check-newcoin: newcoin ## Check that make newcoin succeeds and no files are changed.
@@ -106,7 +106,6 @@ install-linters: ## Install linters
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
-	goimports -w -local github.com/skycoin/skycoin ./lib
 
 install-deps-ui:  ## Install the UI dependencies
 	cd $(GUI_STATIC_DIR) && npm install
@@ -160,7 +159,7 @@ clean-coverage: ## Remove coverage output files
 newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
 	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
 
-generate-mocks: ## Regenerate test interface mocks
+generate: ## Generate test interface mocks and struct encoders
 	go generate ./src/...
 	# mockery can't generate the UnspentPooler mock in package visor, patch it
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go

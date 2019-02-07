@@ -371,7 +371,7 @@ export class WalletService {
         convertedOutputs = txOutputs.map(output => {
           return {
             ...output,
-            coins: parseInt((output.coins * 1000000) + '', 10),
+            coins: parseInt(new BigNumber(output.coins).multipliedBy(1000000).toFixed(0), 10),
           };
         });
 
@@ -649,16 +649,78 @@ export class WalletService {
     }
   }
 
+  private sortOutputs(outputs: Output[], highestToLowest: boolean) {
+    outputs.sort((a, b) => {
+      if (b.coins.isGreaterThan(a.coins)) {
+        return highestToLowest ? 1 : -1;
+      } else if (b.coins.isLessThan(a.coins)) {
+        return highestToLowest ? -1 : 1;
+      } else {
+        if (b.calculated_hours.isGreaterThan(a.calculated_hours)) {
+          return -1;
+        } else if (b.calculated_hours.isLessThan(a.calculated_hours)) {
+          return 1;
+        } else {
+          return 0;
+        }
+      }
+    });
+  }
+
   private getMinRequiredOutputs(transactionAmount: BigNumber, outputs: Output[]): Output[] {
-    outputs.sort( function(a, b) {
-      return b.coins.minus(a.coins).toNumber();
+
+    // Split the outputs into those with and without hours
+    const outputsWithHours: Output[] = [];
+    const outputsWitouthHours: Output[] = [];
+    outputs.forEach(output => {
+      if (output.calculated_hours.isGreaterThan(0)) {
+        outputsWithHours.push(output);
+      } else {
+        outputsWitouthHours.push(output);
+      }
     });
 
-    const minRequiredOutputs: Output[] = [];
-    let sumCoins: BigNumber = new BigNumber('0');
+    // Abort if there are no outputs with non-zero coinhours.
+    if (outputsWithHours.length === 0) {
+      return [];
+    }
 
-    outputs.forEach(output => {
-      if (sumCoins.isLessThan(transactionAmount) && output.calculated_hours.isGreaterThan(0)) {
+    // Sort the outputs with hours by coins, from highest to lowest. If two items have the same amount of
+    // coins, the one with the least hours is placed first.
+    this.sortOutputs(outputsWithHours, true);
+
+    // Use the first nonzero output.
+    const minRequiredOutputs: Output[] = [outputsWithHours[0]];
+    let sumCoins: BigNumber = new BigNumber(outputsWithHours[0].coins);
+
+    // If it's enough, finish.
+    if (sumCoins.isGreaterThanOrEqualTo(transactionAmount)) {
+      return minRequiredOutputs;
+    }
+
+    // Sort the outputs without hours by coins, from lowest to highest.
+    this.sortOutputs(outputsWitouthHours, false);
+
+    // Add the outputs without hours, until having the necessary amount of coins.
+    outputsWitouthHours.forEach(output => {
+      if (sumCoins.isLessThan(transactionAmount)) {
+        minRequiredOutputs.push(output);
+        sumCoins = sumCoins.plus(output.coins);
+      }
+    });
+
+    // If it's enough, finish.
+    if (sumCoins.isGreaterThanOrEqualTo(transactionAmount)) {
+      return minRequiredOutputs;
+    }
+
+    outputsWithHours.splice(0, 1);
+    // Sort the outputs with hours by coins, from lowest to highest.
+    this.sortOutputs(outputsWithHours, false);
+
+    // Add the outputs with hours, until having the necessary amount of coins.
+    outputsWithHours.forEach((output) => {
+      if (sumCoins.isLessThan(transactionAmount)) {
         minRequiredOutputs.push(output);
         sumCoins = sumCoins.plus(output.coins);
       }

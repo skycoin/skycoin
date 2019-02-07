@@ -82,6 +82,11 @@
         {{ 'common.coin-hours' | translate }}
       </span>
       <span>{{ 'send.available-msg-part3' | translate }}</span>
+      <span class="value">
+        {{ minimumFee.decimalPlaces(0).toString() | number:'1.0-6' }}
+        {{ 'common.coin-hours' | translate }}
+      </span>
+      <span>{{ 'send.available-msg-part4' | translate }}</span>
     </div>
   </ng-container>
 

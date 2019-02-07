@@ -17,6 +17,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { BigNumber } from 'bignumber.js';
 import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { AppService } from './app.service';
 
 declare var Cipher: any;
 declare var CipherExtras: any;
@@ -37,6 +38,7 @@ export class WalletService {
   initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(
+    private appService: AppService,
     private apiService: ApiService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
@@ -306,8 +308,7 @@ export class WalletService {
   }
 
   createHwTransaction(wallet: Wallet, address: string, amount: BigNumber): Observable<PreviewTransaction> {
-   let unburnedHoursRatio: BigNumber;
-
+    const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.appService.burnRate));
     const addresses = wallet.addresses.map(a => a.address).join(',');
 
     let totalHours = new BigNumber('0');
@@ -321,11 +322,7 @@ export class WalletService {
     const txInputs = [];
     const txSignatures = [];
 
-    return this.apiService.get('health').flatMap(response => {
-        unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(response.user_verify_transaction.burn_factor));
-
-        return this.getOutputs(addresses);
-      }).flatMap((outputs: Output[]) => {
+    return this.getOutputs(addresses).flatMap((outputs: Output[]) => {
         const minRequiredOutputs =  this.getMinRequiredOutputs(amount, outputs);
         let totalCoins = new BigNumber('0');
         minRequiredOutputs.map(output => totalCoins = totalCoins.plus(output.coins));

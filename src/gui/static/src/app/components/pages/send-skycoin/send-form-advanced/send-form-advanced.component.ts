@@ -15,6 +15,7 @@ import 'rxjs/add/operator/retryWhen';
 import 'rxjs/add/operator/concat';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { showConfirmationModal } from '../../../../utils';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -35,6 +36,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   loadingUnspentOutputs = false;
   availableCoins = new BigNumber(0);
   availableHours = new BigNumber(0);
+  minimumFee = new BigNumber(0);
   autoHours = true;
   autoOptions = false;
   autoShareValue = '0.5';
@@ -45,6 +47,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   constructor(
     public walletService: WalletService,
+    private appService: AppService,
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
@@ -475,7 +478,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.availableHours = wallet.hours;
     }
 
-    this.availableHours = this.availableHours.minus(1);
+    const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.appService.burnRate));
+    const sendableHours = this.availableHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
+    this.minimumFee = this.availableHours.minus(sendableHours);
+    this.availableHours = sendableHours;
   }
 
   private filterUnspentOutputs(): UnspentOutput[] {

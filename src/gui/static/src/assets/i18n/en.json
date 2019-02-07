@@ -38,6 +38,7 @@
     "syncing-blocks": "Syncing blocks",
     "update1": "Wallet update",
     "update2": "available.",
+    "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
     "pending-txs1": "There are some",
     "pending-txs2": "pending transactions.",
     "pending-txs3": "Data you see may not be updated.",
@@ -158,6 +159,7 @@
   },
 
   "send": {
+    "synchronizing-warning": "The wallet is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
     "from-label": "Send from",
     "to-label": "Send to",
     "amount-label": "Amount",

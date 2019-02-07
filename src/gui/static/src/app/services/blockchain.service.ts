@@ -9,10 +9,15 @@ import 'rxjs/add/observable/timer';
 @Injectable()
 export class BlockchainService {
   private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
+  private synchronizedSubject: Subject<any> = new BehaviorSubject<boolean>(false);
   private refreshedBalance = false;
 
   get progress() {
     return this.progressSubject.asObservable();
+  }
+
+  get synchronized() {
+    return this.synchronizedSubject.asObservable();
   }
 
   constructor(
@@ -78,6 +83,7 @@ export class BlockchainService {
   }
 
   private completeLoading() {
+    this.synchronizedSubject.next(true);
     this.progressSubject.next({ current: 999999999999, highest: 999999999999 });
     this.walletService.refreshBalances();
   }

@@ -1,6 +1,6 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../services/price.service';
-import { Subscription } from 'rxjs/Subscription';
+import { Subscription, ISubscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../services/wallet.service';
 import { BlockchainService } from '../../../services/blockchain.service';
 import { Observable } from 'rxjs/Observable';
@@ -31,8 +31,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   updateAvailable: boolean;
   hasPendingTxs: boolean;
   price: number;
+  synchronized = true;
 
   private subscription: Subscription;
+  private synchronizedSubscription: ISubscription;
   private fetchVersionError: string;
 
   get loading() {
@@ -75,6 +77,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.highest = response.highest;
         this.current = response.current;
         this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
+
+        // Adding the code here prevents the warning from flashing if the wallet is synchronized. Also, adding the
+        // subscription to this.subscription causes problems.
+        if (!this.synchronizedSubscription) {
+          this.synchronizedSubscription = this.blockchainService.synchronized.subscribe(value => this.synchronized = value);
+        }
       });
 
     this.setVersion();
@@ -98,6 +106,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+    if (this.synchronizedSubscription) {
+      this.synchronizedSubscription.unsubscribe();
+    }
   }
 
   setVersion() {

@@ -3,9 +3,12 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -14,9 +17,9 @@ import (
 
 func TestSaveData(t *testing.T) {
 	type httpBody struct {
-		filename string
-		data     map[string]interface{}
-		update   bool
+		Filename string
+		Data     map[string]interface{}
+		Update   bool
 	}
 
 	tt := []struct {
@@ -35,7 +38,6 @@ func TestSaveData(t *testing.T) {
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
-
 		{
 			name:        "415",
 			method:      http.MethodPost,
@@ -44,15 +46,36 @@ func TestSaveData(t *testing.T) {
 			err:         "415 Unsupported Media Type",
 		},
 		{
-			name:   "200",
+			name:   "400 - missing filename",
 			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing filename",
 			body: &httpBody{
-				filename: "foo.json",
-				data: map[string]interface{}{
+				Data: map[string]interface{}{
 					"key1": "value1",
 					"key2": "value2",
 				},
-				update: false,
+			},
+		},
+		{
+			name:   "400 - empty data",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - empty data",
+			body: &httpBody{
+				Filename: "foo.json",
+			},
+		},
+		{
+			name:   "200",
+			method: http.MethodPost,
+			body: &httpBody{
+				Filename: "foo.json",
+				Data: map[string]interface{}{
+					"key1": "value1",
+					"key2": "value2",
+				},
+				Update: false,
 			},
 			status:             http.StatusOK,
 			contentType:        ContentTypeJSON,
@@ -112,14 +135,16 @@ func TestSaveData(t *testing.T) {
 
 func TestGetData(t *testing.T) {
 	type httpBody struct {
-		filename string
-		keys     []string
+		Filename string
+		Keys     string
 	}
 
 	tt := []struct {
 		name                 string
 		method               string
 		body                 *httpBody
+		filename             string
+		keys                 []string
 		status               int
 		err                  string
 		contentType          string
@@ -129,30 +154,77 @@ func TestGetData(t *testing.T) {
 	}{
 		{
 			name:   "405",
-			method: http.MethodGet,
+			method: http.MethodDelete,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
-
 		{
-			name:        "415",
-			method:      http.MethodPost,
-			status:      http.StatusUnsupportedMediaType,
-			contentType: ContentTypeForm,
-			err:         "415 Unsupported Media Type",
+			name:   "400 - missing filename",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing filename",
+			body: &httpBody{
+				Keys: "key1,key2",
+			},
+		},
+		{
+			name:   "400 - missing keys",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing keys",
+			body: &httpBody{
+				Filename: "foo.json",
+			},
+		},
+		{
+			name:   "400 - empty file",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			body: &httpBody{
+				Filename: "foo.json",
+				Keys:     "key1,key2",
+			},
+			filename:          "foo.json",
+			keys:              []string{"key1", "key2"},
+			err:               "400 Bad Request - empty file",
+			gatewayGetDataErr: errors.New("empty file"),
+		},
+		{
+			name:   "404 - file not exist",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			body: &httpBody{
+				Filename: "foo.json",
+				Keys:     "key1,key2",
+			},
+			filename:          "foo.json",
+			keys:              []string{"key1", "key2"},
+			err:               "404 Not Found - file foo.json does not exist",
+			gatewayGetDataErr: os.ErrNotExist,
+		},
+		{
+			name:   "403 - permission denied",
+			method: http.MethodGet,
+			status: http.StatusForbidden,
+			body: &httpBody{
+				Filename: "foo.json",
+				Keys:     "key1,key2",
+			},
+			filename:          "foo.json",
+			keys:              []string{"key1", "key2"},
+			err:               "403 Forbidden - cannot access foo.json: permission denied",
+			gatewayGetDataErr: os.ErrPermission,
 		},
 		{
 			name:   "200",
-			method: http.MethodPost,
+			method: http.MethodGet,
 			body: &httpBody{
-				filename: "foo.json",
-				keys: []string{
-					"key1",
-					"key2",
-				},
+				Filename: "foo.json",
+				Keys:     "key1,key2",
 			},
+			filename:          "foo.json",
+			keys:              []string{"key1", "key2"},
 			status:            http.StatusOK,
-			contentType:       ContentTypeJSON,
 			err:               "",
 			gatewayGetDataErr: nil,
 			gatewatGetDataResult: map[string]interface{}{
@@ -171,28 +243,23 @@ func TestGetData(t *testing.T) {
 			endpoint := "/api/v2/data/get"
 			gateway := &MockGatewayer{}
 
-			serializedBody, err := json.Marshal(tc.body)
-			require.NoError(t, err)
+			gateway.On("GetData", tc.filename, tc.keys).Return(tc.gatewatGetDataResult, tc.gatewayGetDataErr)
 
-			var body getDataRequest
-			err = json.Unmarshal(serializedBody, &body)
-
-			if err == nil {
-				gateway.On("GetData", body.Filename, body.Keys).Return(tc.gatewatGetDataResult, tc.gatewayGetDataErr)
+			v := url.Values{}
+			if tc.body != nil {
+				if tc.body.Filename != "" {
+					v.Add("filename", tc.body.Filename)
+				}
+				if tc.body.Keys != "" {
+					v.Add("keys", tc.body.Keys)
+				}
+				if len(v) > 0 {
+					endpoint += "?" + v.Encode()
+				}
 			}
 
-			requestJSON, err := json.Marshal(tc.body)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(requestJSON))
-			require.NoError(t, err)
-
-			contentType := tc.contentType
-			if contentType == "" {
-				contentType = ContentTypeJSON
-			}
-
-			req.Header.Add("Content-Type", contentType)
 
 			rr := httptest.NewRecorder()
 
@@ -221,46 +288,94 @@ func TestGetData(t *testing.T) {
 
 func TestDeleteData(t *testing.T) {
 	type httpBody struct {
-		filename string
-		keys     []string
+		Filename string
+		Keys     string
 	}
 
 	tt := []struct {
 		name                 string
 		method               string
 		body                 *httpBody
+		filename             string
+		keys                 []string
 		status               int
 		err                  string
-		contentType          string
 		gatewayDeleteDataErr error
 		responseBody         string
 	}{
 		{
 			name:   "405",
-			method: http.MethodGet,
+			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
-
 		{
-			name:        "415",
-			method:      http.MethodPost,
-			status:      http.StatusUnsupportedMediaType,
-			contentType: ContentTypeForm,
-			err:         "415 Unsupported Media Type",
+			name:   "400 - missing filename",
+			method: http.MethodDelete,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing filename",
+			body: &httpBody{
+				Keys: "key1,key2",
+			},
+		},
+		{
+			name:   "400 - missing keys",
+			method: http.MethodDelete,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing keys",
+			body: &httpBody{
+				Filename: "foo.json",
+			},
+		},
+		{
+			name:   "400 - empty file",
+			method: http.MethodDelete,
+			status: http.StatusBadRequest,
+			body: &httpBody{
+				Filename: "foo.json",
+				Keys:     "key1,key2",
+			},
+			filename:             "foo.json",
+			keys:                 []string{"key1", "key2"},
+			err:                  "400 Bad Request - empty file",
+			gatewayDeleteDataErr: errors.New("empty file"),
+		},
+		{
+			name:   "404 - file not exist",
+			method: http.MethodDelete,
+			status: http.StatusNotFound,
+			body: &httpBody{
+				Filename: "foo.json",
+				Keys:     "key1,key2",
+			},
+			filename:             "foo.json",
+			keys:                 []string{"key1", "key2"},
+			err:                  "404 Not Found - file foo.json does not exist",
+			gatewayDeleteDataErr: os.ErrNotExist,
+		},
+		{
+			name:   "403 - permission denied",
+			method: http.MethodDelete,
+			status: http.StatusForbidden,
+			body: &httpBody{
+				Filename: "foo.json",
+				Keys:     "key1,key2",
+			},
+			filename:             "foo.json",
+			keys:                 []string{"key1", "key2"},
+			err:                  "403 Forbidden - cannot access foo.json: permission denied",
+			gatewayDeleteDataErr: os.ErrPermission,
 		},
 		{
 			name:   "200",
-			method: http.MethodPost,
+			method: http.MethodDelete,
 			body: &httpBody{
-				filename: "foo.json",
-				keys: []string{
-					"key1",
-					"key2",
-				},
+				Filename: "foo.json",
+				Keys:     "key1,key2",
 			},
+			filename:             "foo.json",
+			keys:                 []string{"key1", "key2"},
 			status:               http.StatusOK,
-			contentType:          ContentTypeJSON,
 			err:                  "",
 			gatewayDeleteDataErr: nil,
 			responseBody:         "\"success\"",
@@ -272,28 +387,23 @@ func TestDeleteData(t *testing.T) {
 			endpoint := "/api/v2/data/delete"
 			gateway := &MockGatewayer{}
 
-			serializedBody, err := json.Marshal(tc.body)
-			require.NoError(t, err)
+			gateway.On("DeleteData", tc.filename, tc.keys).Return(tc.gatewayDeleteDataErr)
 
-			var body getDataRequest
-			err = json.Unmarshal(serializedBody, &body)
-
-			if err == nil {
-				gateway.On("DeleteData", body.Filename, body.Keys).Return(tc.gatewayDeleteDataErr)
+			v := url.Values{}
+			if tc.body != nil {
+				if tc.body.Filename != "" {
+					v.Add("filename", tc.body.Filename)
+				}
+				if tc.body.Keys != "" {
+					v.Add("keys", tc.body.Keys)
+				}
+				if len(v) > 0 {
+					endpoint += "?" + v.Encode()
+				}
 			}
 
-			requestJSON, err := json.Marshal(tc.body)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(requestJSON))
-			require.NoError(t, err)
-
-			contentType := tc.contentType
-			if contentType == "" {
-				contentType = ContentTypeJSON
-			}
-
-			req.Header.Add("Content-Type", contentType)
 
 			rr := httptest.NewRecorder()
 

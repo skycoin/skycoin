@@ -1715,7 +1715,7 @@ API sets: `FILESYSTEM`
 
 ```
 URI: /api/v2/data/get
-Method: POST
+Method: GET
 Args:
     filename: filename [required]
     keys: list of keys to retrieve [required]
@@ -1726,13 +1726,10 @@ Get data from a file on disk
 Example:
 
 ```sh
-curl -X POST \
+curl -X GET \
   http://127.0.0.1:6420/api/v2/data/get \
-  -H 'Content-Type: application/json' \
-  -d '{
-	"filename": "test.json",
-	"keys": ["key1", "key2", "key3"]
-}'
+  -F filename=test.json \
+  -F 'keys=key1,key2,key3''
 ```
 
 Result:
@@ -1762,13 +1759,10 @@ Delete data from a file on disk
 Example:
 
 ```sh
-curl -X POST \
+curl -X DELETE \
   http://127.0.0.1:6420/api/v2/data/delete \
-  -H 'Content-Type: application/json' \
-  -d '{
-	"filename": "test.json",
-	"keys": ["key1"]
-}'
+  -F filename=test.json \
+  -F 'keys=key1,key2,key3''
 ```
 
 Result:

@@ -25,6 +25,9 @@ create_block_burn_factor = 9
 create_block_max_transaction_size = 1234
 create_block_max_decimals = 4
 max_block_size = 1111
+display_name = "Skycoin"
+coinhours_name = "SKY Hours"
+ticker = "SKY"
 
 [params]
 user_burn_factor = 3

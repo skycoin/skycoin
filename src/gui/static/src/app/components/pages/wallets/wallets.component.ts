@@ -29,9 +29,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private router: Router,
   ) {
-    if (window['isElectron']) {
-      this.hwCompatibilityActivated = window['ipcRenderer'].sendSync('hwCompatibilityActivated');
-    }
+    this.hwCompatibilityActivated = this.hwWalletService.hwWalletCompatibilityActivated;
 
     this.subscription = this.walletService.all().subscribe(wallets => {
       this.wallets = [];

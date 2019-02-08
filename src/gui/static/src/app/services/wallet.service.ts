@@ -538,7 +538,7 @@ export class WalletService {
     this.apiService.getWallets().first().subscribe(
       recoveredWallets => {
         let wallets: Wallet[] = [];
-        if (window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated')) {
+        if (this.hwWalletService.hwWalletCompatibilityActivated) {
           this.loadHardwareWallets(wallets);
         }
         wallets = wallets.concat(recoveredWallets);

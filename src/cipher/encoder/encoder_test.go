@@ -60,8 +60,6 @@ type TestStructWithoutIgnore struct {
 	K []byte
 }
 
-//func (*B) Fatal
-
 func Test_Encode_1(t *testing.T) {
 	var ts TestStruct
 	ts.X = 345535
@@ -1393,4 +1391,39 @@ func TestSerializeUint32(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 4, n)
 	require.Equal(t, uint32(1), y)
+}
+
+type BoolStruct struct {
+	B bool
+}
+
+func TestEncodeBool(t *testing.T) {
+	bt := BoolStruct{
+		B: true,
+	}
+	bf := BoolStruct{
+		B: false,
+	}
+
+	buf := Serialize(bt)
+	require.Equal(t, 1, len(buf))
+	require.Equal(t, byte(1), buf[0])
+
+	var bb BoolStruct
+	err := DeserializeRaw(buf, &bb)
+	require.NoError(t, err)
+	require.True(t, bb.B)
+
+	buf = Serialize(bf)
+	require.Equal(t, 1, len(buf))
+	require.Equal(t, byte(0), buf[0])
+
+	require.True(t, bb.B)
+	err = DeserializeRaw(buf, &bb)
+	require.NoError(t, err)
+	require.False(t, bb.B)
+
+	buf = []byte{2}
+	err = DeserializeRaw(buf, &bb)
+	require.Equal(t, ErrInvalidBool, err)
 }

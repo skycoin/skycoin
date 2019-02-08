@@ -48,6 +48,8 @@ var (
 	ErrMaxLenExceeded = errors.New("Maximum length exceeded for variable length field")
 	// ErrMapDuplicateKeys encountered duplicate map keys while decoding a map
 	ErrMapDuplicateKeys = errors.New("Duplicate keys encountered while decoding a map")
+	// ErrInvalidBool is returned if the decoder encounters a value other than 0 or 1 for a bool type field
+	ErrInvalidBool = errors.New("Invalid value for bool type")
 )
 
 // SerializeUint32 serializes a uint32
@@ -509,7 +511,15 @@ func (d *Decoder) Bool() (bool, error) {
 	}
 	x := d.Buffer[0]
 	d.Buffer = d.Buffer[1:] // advance slice
-	return x != 0, nil
+
+	switch x {
+	case 0:
+		return false, nil
+	case 1:
+		return true, nil
+	default:
+		return false, ErrInvalidBool
+	}
 }
 
 // Bool encodes bool

@@ -26,8 +26,8 @@ VERBOSE=""
 RUN_TESTS=""
 DISABLE_CSRF="-disable-csrf"
 USE_CSRF=""
-DISABLE_CORS=""
-ALLOW_CORS="1"
+DISABLE_HEADERCHECK=""
+HEADERCHECK="1"
 DB_NO_UNCONFIRMED=""
 DB_FILE="blockchain-180.db"
 WEB_USERNAME="foobar"
@@ -42,7 +42,7 @@ usage () {
   echo "-v <boolean> -- Run test with -v flag"
   echo "-c <boolean> -- Run tests with CSRF enabled"
   echo "-d <boolean> -- Run tests without unconfirmed transactions"
-  echo "-x <boolean> -- Run test with CORS disabled"
+  echo "-x <boolean> -- Run test with headercheck disabled"
   exit 1
 }
 
@@ -57,7 +57,7 @@ while getopts "h?t:r:n:uvcd" args; do
     v ) VERBOSE="-v";;
     d ) DB_NO_UNCONFIRMED="1"; DB_FILE="blockchain-180-no-unconfirmed.db";;
     c ) DISABLE_CSRF=""; USE_CSRF="1";;
-    x ) DISABLE_CORS="-disable-cors"; ALLOW_CORS="";
+    x ) DISABLE_HEADERCHECK="-disable-headercheck"; HEADERCHECK="";
   esac
 done
 
@@ -105,7 +105,7 @@ echo "starting $COIN node in background with http listener on $HOST"
             -enable-all-api-sets=true \
             -wallet-dir="$WALLET_DIR" \
             $DISABLE_CSRF \
-            $DISABLE_CORS \
+            $DISABLE_HEADERCHECK \
             -test.run "^TestRunMain$" \
             -test.coverprofile="${COVERAGEFILE}" \
             &
@@ -124,7 +124,7 @@ if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE \
 SKYCOIN_NODE_HOST=$HOST SKYCOIN_NODE_USERNAME=$WEB_USERNAME SKYCOIN_NODE_PASSWORD=$WEB_PASSWORD \
-USE_CSRF=$USE_CSRF ALLOW_CORS=$ALLOW_CORS DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED \
+USE_CSRF=$USE_CSRF HEADERCHECK=$HEADERCHECK DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED \
     go test ./src/api/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 API_FAIL=$?
@@ -135,7 +135,7 @@ if [[ -z $TEST  || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE \
 RPC_ADDR=$RPC_ADDR RPC_USER=$WEB_USERNAME RPC_PASS=$WEB_PASSWORD \
-USE_CSRF=$USE_CSRF ALLOW_CORS=$ALLOW_CORS DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED \
+USE_CSRF=$USE_CSRF HEADERCHECK=$HEADERCHECK DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED \
     go test ./src/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?

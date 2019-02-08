@@ -128,15 +128,15 @@ func useCSRF(t *testing.T) bool {
 	return useCSRF
 }
 
-func allowCORS(t *testing.T) bool {
-	x := os.Getenv("ALLOW_CORS")
+func doHeadercheck(t *testing.T) bool {
+	x := os.Getenv("HEADERCHECK")
 	if x == "" {
 		return false
 	}
 
-	allowCORS, err := strconv.ParseBool(x)
+	doHeadercheck, err := strconv.ParseBool(x)
 	require.NoError(t, err)
-	return allowCORS
+	return doHeadercheck
 }
 
 func doStable(t *testing.T) bool {
@@ -5816,7 +5816,7 @@ func TestStableHealth(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
-	require.Equal(t, allowCORS(t), r.CORSEnabled)
+	require.Equal(t, doHeadercheck(t), r.HeadercheckEnabled)
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
 	require.False(t, r.GUIEnabled)

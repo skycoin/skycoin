@@ -27,7 +27,7 @@
 		"incoming_connections": 0,
 		"uptime": "0s",
 		"csrf_enabled": false,
-		"cors_enabled": true,
+		"headercheck_enabled": true,
 		"csp_enabled": true,
 		"wallet_api_enabled": true,
 		"gui_enabled": false,

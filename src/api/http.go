@@ -68,19 +68,19 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir      string
-	DisableCSRF    bool
-	DisableCORS          bool
-	DisableCSP     bool
-	EnableGUI      bool
-	ReadTimeout    time.Duration
-	WriteTimeout   time.Duration
-	IdleTimeout    time.Duration
-	Health         HealthConfig
-	HostWhitelist  []string
-	EnabledAPISets map[string]struct{}
-	Username       string
-	Password       string
+	StaticDir          string
+	DisableCSRF        bool
+	DisableHeadercheck bool
+	DisableCSP         bool
+	EnableGUI          bool
+	ReadTimeout        time.Duration
+	WriteTimeout       time.Duration
+	IdleTimeout        time.Duration
+	Health             HealthConfig
+	HostWhitelist      []string
+	EnabledAPISets     map[string]struct{}
+	Username           string
+	Password           string
 }
 
 // HealthConfig configuration data exposed in /health
@@ -91,17 +91,17 @@ type HealthConfig struct {
 }
 
 type muxConfig struct {
-	host           string
-	appLoc         string
-	enableGUI      bool
-	disableCSRF    bool
-	disableCORS          bool
-	disableCSP     bool
-	enabledAPISets map[string]struct{}
-	hostWhitelist  []string
-	username       string
-	password       string
-	health         HealthConfig
+	host               string
+	appLoc             string
+	enableGUI          bool
+	disableCSRF        bool
+	disableHeadercheck bool
+	disableCSP         bool
+	enabledAPISets     map[string]struct{}
+	hostWhitelist      []string
+	username           string
+	password           string
+	health             HealthConfig
 }
 
 // HTTPResponse represents the http response struct
@@ -170,9 +170,8 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Warning("CSRF check disabled")
 	}
 
-
-	if c.DisableCORS {
-		logger.Warning("CORS check disabled")
+	if c.DisableHeadercheck {
+		logger.Warning("Header check disabled")
 	}
 
 	if c.ReadTimeout == 0 {
@@ -186,17 +185,17 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	}
 
 	mc := muxConfig{
-		host:           host,
-		appLoc:         appLoc,
-		enableGUI:      c.EnableGUI,
-		disableCSRF:    c.DisableCSRF,
-		disableCORS:          c.DisableCORS,
-		disableCSP:     c.DisableCSP,
-		health:         c.Health,
-		enabledAPISets: c.EnabledAPISets,
-		hostWhitelist:  c.HostWhitelist,
-		username:       c.Username,
-		password:       c.Password,
+		host:               host,
+		appLoc:             appLoc,
+		enableGUI:          c.EnableGUI,
+		disableCSRF:        c.DisableCSRF,
+		disableHeadercheck: c.DisableHeadercheck,
+		disableCSP:         c.DisableCSP,
+		health:             c.Health,
+		enabledAPISets:     c.EnabledAPISets,
+		hostWhitelist:      c.HostWhitelist,
+		username:           c.Username,
+		password:           c.Password,
 	}
 
 	srvMux := newServerMux(mc, gateway)
@@ -357,25 +356,26 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		}
 	}
 
-	webHandlerWithOptionals := func(apiVersion, endpoint string, handler http.Handler, checkCSRF bool, checkCORS bool) {
+	webHandlerWithOptionals := func(apiVersion, endpoint string, handler http.Handler, checkCSRF bool, checkHeaders bool) {
 		handler = wh.ElapsedHandler(logger, handler)
 
-		if checkCORS {
-			handler = corsHandler.Handler(handler)
-		}
+		handler = corsHandler.Handler(handler)
 
 		if checkCSRF {
 			handler = CSRFCheck(apiVersion, c.disableCSRF, handler)
 		}
 
-		handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+		if checkHeaders {
+			handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+		}
+
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 
 	webHandler := func(apiVersion, endpoint string, handler http.Handler) {
-		webHandlerWithOptionals(apiVersion, endpoint, handler, true, true)
+		webHandlerWithOptionals(apiVersion, endpoint, handler, true, !c.disableHeadercheck)
 	}
 
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
@@ -415,10 +415,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
-		if c.enableUnversionedAPI {
-			webHandlerWithOptionals(apiVersion1, endpoint, handler, false, !c.disableCORS)
-		}
-		webHandlerWithOptionals(apiVersion1, "/api/v1"+endpoint, handler, false, !c.disableCORS)
+		webHandlerWithOptionals(apiVersion1, "/api/v1"+endpoint, handler, false, !c.disableHeadercheck)
 	}
 	csrfHandlerV1("/csrf", getCSRFToken(c.disableCSRF)) // csrf is always available, regardless of the API set
 

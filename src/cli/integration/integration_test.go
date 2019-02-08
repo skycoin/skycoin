@@ -28,7 +28,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -372,15 +372,15 @@ func useCSRF(t *testing.T) bool {
 	return useCSRF
 }
 
-func allowCORS(t *testing.T) bool {
-	x := os.Getenv("ALLOW_CORS")
+func doHeadercheck(t *testing.T) bool {
+	x := os.Getenv("HEADERCHECK")
 	if x == "" {
 		return false
 	}
 
-	allowCORS, err := strconv.ParseBool(x)
+	doHeadercheck, err := strconv.ParseBool(x)
 	require.NoError(t, err)
-	return allowCORS
+	return doHeadercheck
 
 }
 
@@ -1467,8 +1467,8 @@ func TestStableStatus(t *testing.T) {
 	if useCSRF(t) {
 		goldenFile += "-csrf-enabled"
 	}
-	if !allowCORS(t) {
-		goldenFile += "-cors-disabled"
+	if !doHeadercheck(t) {
+		goldenFile += "-headercheck-disabled"
 	}
 	if dbNoUnconfirmed(t) {
 		goldenFile += "-no-unconfirmed"

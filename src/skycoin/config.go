@@ -55,7 +55,7 @@ type NodeConfig struct {
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
 	// Disable CORS check in the wallet API
-	DisableCORS bool
+	DisableHeadercheck bool
 	// Enable unversioned API endpoints (without the /api/v1 prefix)
 	EnableUnversionedAPI bool
 	// Disable CSP disable content-security-policy in http response
@@ -90,7 +90,7 @@ type NodeConfig struct {
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
 	PeerlistSize int
 	// Wallet Address Version
-	//AddressVersion string
+	// AddressVersion string
 	// Remote web interface
 	WebInterface bool
 	// Remote web interface port
@@ -224,8 +224,8 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnableGUI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
-		// Disable CORS check in the wallet API
-		DisableCORS: false,
+		// Disable header check in the wallet API
+		DisableHeadercheck: false,
 		// DisableCSP disable content-security-policy in http response
 		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
@@ -233,7 +233,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Which address to serve on. Leave blank to automatically assign to a
 		// public interface
 		Address: "",
-		//gnet uses this for TCP incoming and outgoing
+		// gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
 		// MaxConnections is the maximum number of total connections allowed
 		MaxConnections: 128,
@@ -247,7 +247,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		OutgoingConnectionsRate: time.Second * 5,
 		PeerlistSize:            65535,
 		// Wallet Address Version
-		//AddressVersion: "test",
+		// AddressVersion: "test",
 		// Remote web interface
 		WebInterface:      true,
 		WebInterfacePort:  node.WebInterfacePort,
@@ -582,7 +582,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.DisableCORS, "disable-cors", c.DisableCORS, "disable CORS check")
+	flag.BoolVar(&c.DisableHeadercheck, "disable-headercheck", c.DisableHeadercheck, "disable Header check")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -675,7 +675,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false
-		c.DisableCORS = false
+		c.DisableHeadercheck = false
 		c.DisableCSP = false
 		c.DownloadPeerList = true
 		c.WebInterface = true

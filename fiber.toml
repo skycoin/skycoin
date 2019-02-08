@@ -31,6 +31,9 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 # create_block_max_transaction_size = 32 * 1024
 # create_block_max_decimals = 3
 # max_block_size = 32 * 1024
+# display_name = "Skycoin"
+# coinhours_name = "SKY Hours"
+# ticker = "SKY"
 
 [params]
 # max_coin_supply = 1e8

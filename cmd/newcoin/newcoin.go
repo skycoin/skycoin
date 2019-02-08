@@ -61,21 +61,6 @@ func createCoinCommand() cli.Command {
 				Value: "skycoin",
 			},
 			cli.StringFlag{
-				Name:  "display-name",
-				Usage: "user-facing name",
-				Value: "Skycoin",
-			},
-			cli.StringFlag{
-				Name:  "coinhours-name",
-				Usage: "name of coinhours",
-				Value: "SKY Hours",
-			},
-			cli.StringFlag{
-				Name:  "ticker",
-				Usage: "ticker code",
-				Value: "SKY",
-			},
-			cli.StringFlag{
 				Name:  "template-dir, td",
 				Usage: "template directory path",
 				Value: "./template",
@@ -110,10 +95,6 @@ func createCoinCommand() cli.Command {
 			// -- parse flags -- //
 
 			coinName := c.String("coin")
-			displayName := c.String("display-name")
-			coinhoursName := c.String("coinhours-name")
-			ticker := c.String("ticker")
-
 			if err := validateCoinName(coinName); err != nil {
 				return err
 			}
@@ -209,9 +190,6 @@ func createCoinCommand() cli.Command {
 			}
 
 			config.Node.CoinName = coinName
-			config.Node.DisplayName = displayName
-			config.Node.CoinhoursName = coinhoursName
-			config.Node.Ticker = ticker
 			config.Node.DataDirectory = "$HOME/." + coinName
 
 			err = t.ExecuteTemplate(coinFile, coinTemplateFile, config.Node)

@@ -51,12 +51,15 @@ type NodeParameters struct {
 	CreateBlockMaxDropletPrecision uint8 `mapstructure:"create_block_max_decimals"`
 	// MaxBlockSize is the maximum size of blocks when publishing blocks
 	MaxBlockSize int `mapstructure:"max_block_size"`
+	// DisplayName is the user-facing name of the coin
+	DisplayName string `mapstructure:"display_name"`
+	// CoinhoursName is the name of coin's hours
+	CoinhoursName string `mapstructure:"coinhours_name"`
+	// Ticker is the 3/4 letter code of the coin
+	Ticker string `mapstructure:"ticker"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
-	DisplayName   string
 	CoinName      string
-	CoinhoursName string
-	Ticker        string
 	DataDirectory string
 }
 
@@ -137,6 +140,9 @@ func setDefaults() {
 	viper.SetDefault("node.create_block_max_transaction_size", 32*1024)
 	viper.SetDefault("node.create_block_max_decimals", 3)
 	viper.SetDefault("node.max_block_size", 32*1024)
+	viper.SetDefault("node.display_name", "Skycoin")
+	viper.SetDefault("node.coinhours_name", "SKY Hours")
+	viper.SetDefault("node.ticker", "SKY")
 
 	// build defaults
 	viper.SetDefault("build.commit", "")

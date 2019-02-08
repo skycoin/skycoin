@@ -465,7 +465,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 
 	// CoinhourBank endpoints
 	webHandlerV2("/coinhourbank/deposit", forAPISet(chbDepositHandler(gateway), []string{EndpointsCoinhourBank}))
-	webHandlerV2("/coinhourbank/balance", forAPISet(chbBalanceHandler(gateway), []string{EndpointsCoinhourBank}))
 
 	// Blockchain interface
 	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsRead, EndpointsStatus}))

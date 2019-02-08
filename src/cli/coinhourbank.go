@@ -12,43 +12,6 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func coinhourBalanceCmd() *cobra.Command {
-	coinhourBalanceCmd := &cobra.Command{
-		Use:          "coinhourBalance",
-		Short:        "Get balance of coinhour bank account",
-		SilenceUsage: true,
-		RunE: func(c *cobra.Command, args []string) error {
-			bankClient, err := getCoinhourBankClient(c)
-			if err != nil {
-				return err
-			}
-
-			address, err := c.Flags().GetString("address")
-			if err != nil {
-				return err
-			}
-
-			if _, err := cipher.DecodeBase58Address(address); err != nil {
-				return err
-			}
-
-			balance, err := bankClient.Balance(address)
-			if err != nil {
-				return err
-			}
-
-			fmt.Printf("%s balance: %v\n", address, balance)
-
-			return nil
-		},
-	}
-
-	coinhourBalanceCmd.Flags().StringP("address", "a", "", "wallet address to take coinhours from")
-	coinhourBalanceCmd.Flags().StringP("bankURL", "b", "http://localhost:8081", "coinhour bank backend url")
-
-	return coinhourBalanceCmd
-}
-
 func depositCoinhoursCmd() *cobra.Command {
 	depositCoinhoursCmd := &cobra.Command{
 		Use:   "depositCoinhours [hours amount]",

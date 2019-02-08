@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -51,32 +50,6 @@ func NewHourBankClient(bankURL string) *HourBankClient {
 	return &HourBankClient{
 		bankURL: bankURL,
 	}
-}
-
-// Balance returns balance for current account
-func (c *HourBankClient) Balance(account string) (uint64, error) {
-	balanceURL := fmt.Sprintf("%s/api/account/%s/balance", c.bankURL, account)
-	res, err := http.Get(balanceURL) /* #nosec */
-	if err != nil {
-		return uint64(0), err
-	}
-
-	if res.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return uint64(0), err
-		}
-
-		bodyString := string(bodyBytes)
-		coinHoursInt, err := strconv.ParseInt(bodyString, 10, 64)
-		if err != nil {
-			return uint64(0), err
-		}
-
-		return uint64(coinHoursInt), nil
-	}
-
-	return uint64(0), fmt.Errorf("http response is not 200: %d", res.StatusCode)
 }
 
 // DepositHours puts SKY coin hours into the bank

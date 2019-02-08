@@ -875,11 +875,6 @@ func (gw *Gateway) DepositCoinhours(hours uint64, account string, outputs coin.U
 	return gw.chb.DepositHours(hours, account, outputs, wallet)
 }
 
-// CoinhoursBalance retrieves balance of the corresponding the coinhour bank account
-func (gw *Gateway) CoinhoursBalance(address string) (uint64, error) {
-	return gw.chb.Balance(address)
-}
-
 // GetRichlist returns rich list as desc order.
 func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
 	rbOuts, err := gw.GetUnspentOutputsSummary(nil)

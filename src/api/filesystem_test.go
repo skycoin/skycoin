@@ -147,7 +147,6 @@ func TestGetData(t *testing.T) {
 		keys                 []string
 		status               int
 		err                  string
-		contentType          string
 		gatewayGetDataErr    error
 		gatewatGetDataResult map[string]interface{}
 		responseBody         map[string]string

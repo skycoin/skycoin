@@ -754,7 +754,6 @@ func TestAddressGen(t *testing.T) {
 			check: func(t *testing.T, v []byte) {
 				// Confirms that only addresses are returned
 				v = bytes.Trim(v, "\n")
-				fmt.Println(v)
 				_, err := cipher.DecodeBase58Address(string(v))
 				require.NoError(t, err)
 			},
@@ -2031,7 +2030,7 @@ func TestLiveSend(t *testing.T) {
 				return []string{"send", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
 			},
-			errMsg:  []byte("See 'skycoin-cli send --help'\nTransaction has zero coinhour fee"),
+			errMsg:  []byte("See 'skycoin-cli send --help'\nError: Transaction has zero coinhour fee"),
 			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
@@ -2095,7 +2094,7 @@ func TestLiveSendNotEnoughDecimals(t *testing.T) {
 
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
-	errMsg := []byte("See 'skycoin-cli send --help'\nTransaction violates soft constraint: invalid amount, too many decimal places")
+	errMsg := []byte("See 'skycoin-cli send --help'\nError: Transaction violates soft constraint: invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -2197,7 +2196,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			// Send 0.5 coin to the second address.
 			// Send 0.5 coin to the third address.
 			// After sending, the first address should have at least 1 coin left.
-			name: "send to multiple address with -csv option",
+			name: "send to multiple address with --csv option",
 			args: func() []string {
 				fields := [][]string{
 					{w.Entries[1].Address.String(), "0.5"},
@@ -2219,7 +2218,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 				tmpCSVFile = f.Name()
 
-				return []string{"createRawTransaction", "-csv", tmpCSVFile}
+				return []string{"createRawTransaction", "--csv", tmpCSVFile}
 			},
 			checkTx: func(t *testing.T, txid string) {
 				// Confirms the first address has at least 1 coin left.
@@ -2272,7 +2271,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// Send with too small decimal value
-	errMsg := []byte("Transaction violates soft constraint: invalid amount, too many decimal places")
+	errMsg := []byte("Error: Transaction violates soft constraint: invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)

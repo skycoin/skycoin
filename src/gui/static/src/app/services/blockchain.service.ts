@@ -11,6 +11,7 @@ export class BlockchainService {
   private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
   private synchronizedSubject: Subject<any> = new BehaviorSubject<boolean>(false);
   private refreshedBalance = false;
+  private lastCurrentBlock = 0;
 
   get progress() {
     return this.progressSubject.asObservable();
@@ -28,9 +29,25 @@ export class BlockchainService {
     this.ngZone.runOutsideAngular(() => {
       Observable.timer(0, 2000)
         .flatMap(() => this.getBlockchainProgress())
-        .takeWhile((response: any) => !response.current || response.current !== response.highest)
+        .takeWhile((response: any) => {
+          if (!response.current || response.current < this.lastCurrentBlock || !response.peers || response.peers.length === 0) {
+            return true;
+          }
+
+          if (response.current !== response.highest) {
+            this.lastCurrentBlock = response.current;
+
+            return true;
+          }
+
+          return false;
+        })
         .subscribe(
           response => this.ngZone.run(() => {
+            if (!response.current || response.current < this.lastCurrentBlock || !response.peers || response.peers.length === 0) {
+              return;
+            }
+
             this.progressSubject.next(response);
 
             if (!this.refreshedBalance) {

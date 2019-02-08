@@ -6,6 +6,7 @@
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.config.js --delete-output-path false",
     "build": "ng build --prod",
+    "build-prod-hw": "ng build --prod --environment prod-hw",
     "build-travis": "ng build --prod --output-path=$BUILD_UI_TRAVIS_DIR",
     "test": "ng test --watch=false",
     "lint": "ng lint",

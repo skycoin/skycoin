@@ -6,6 +6,7 @@ import { MatDialogRef } from '@angular/material';
 import { CreateWalletFormComponent } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { Router } from '@angular/router';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -24,10 +25,9 @@ export class OnboardingCreateWalletComponent implements OnInit {
   constructor(
     private dialog: MatDialog,
     private router: Router,
+    hwWalletService: HwWalletService,
   ) {
-    if (window['isElectron']) {
-      this.hwCompatibilityActivated = window['ipcRenderer'].sendSync('hwCompatibilityActivated');
-    }
+    this.hwCompatibilityActivated = hwWalletService.hwWalletCompatibilityActivated;
   }
 
   ngOnInit() {

@@ -1729,7 +1729,7 @@ Example:
 curl -X GET \
   http://127.0.0.1:6420/api/v2/data/get \
   -F filename=test.json \
-  -F 'keys=key1,key2,key3''
+  -F 'keys=key1,key2,key3'
 ```
 
 Result:
@@ -1762,7 +1762,7 @@ Example:
 curl -X DELETE \
   http://127.0.0.1:6420/api/v2/data/delete \
   -F filename=test.json \
-  -F 'keys=key1,key2,key3''
+  -F 'keys=key1,key2,key3'
 ```
 
 Result:

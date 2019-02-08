@@ -323,7 +323,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:     allowedOrigins,
 		Debug:              false,
-		AllowedMethods:     []string{http.MethodGet, http.MethodPost},
+		AllowedMethods:     []string{http.MethodGet, http.MethodPost, http.MethodDelete},
 		AllowedHeaders:     []string{"Origin", "Accept", "Content-Type", "X-Requested-With", CSRFHeaderName},
 		AllowCredentials:   false, // credentials are not used, but it would be safe to enable if necessary
 		OptionsPassthrough: false,

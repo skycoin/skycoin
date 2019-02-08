@@ -7,6 +7,7 @@ definitions:
     description: WalletResponse wallet response struct for http apis
     properties:
       entries:
+        description: 'in: body'
         items:
           $ref: '#/definitions/walletEntry'
         type: array
@@ -68,32 +69,6 @@ info:
   title: Skycoin REST API.
   version: 0.25.0
 paths:
-  /api/v1/address/verify:
-    post:
-      operationId: verifyAddressRequest
-      parameters:
-      - in: body
-        name: address
-        required: true
-        schema:
-          type: string
-        x-go-name: Address
-      produces:
-      - application/json
-      responses:
-        "200":
-          $ref: '#/responses/verifyAddressResponse'
-        default:
-          $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
-      security:
-      - csrfAuth:
-        - '[]'
-      summary: healthHandler returns node health data.
-      tags:
-      - verify_address
   /api/v1/coinSupply:
     get:
       description: coinSupplyHandler returns coin distribution supply stats
@@ -110,9 +85,6 @@ paths:
       schemes:
       - http
       - https
-      security:
-      - csrfAuth:
-        - '[]'
   /api/v1/csrf:
     get:
       operationId: csrf
@@ -126,11 +98,67 @@ paths:
       schemes:
       - http
       - https
-      security:
-      - csrfAuth:
-        - '[]'
       summary: Creates a new CSRF token. Previous CSRF tokens are invalidated by this
         call.
+  /api/v1/network/connections:
+    get:
+      operationId: networkConnections
+      parameters:
+      - description: Address port
+        in: query
+        name: addr
+        required: true
+        type: string
+        x-go-name: Ip
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: This endpoint return a connection struct
+          schema:
+            properties:
+              address:
+                type: string
+              connected_at:
+                type: integer
+              height:
+                type: integer
+              id:
+                type: integer
+              is_trusted_peer:
+                type: boolean
+              last_received:
+                type: integer
+              last_sent:
+                type: integer
+              listen_port:
+                type: integer
+              mirror:
+                type: integer
+              outgoing:
+                type: boolean
+              state:
+                enum:
+                - pending
+                - connected
+                - introduced
+                type: string
+              unconfirmed_verify_transaction:
+                description: Represent unconfirmed transactions
+                properties:
+                  burn_factor:
+                    type: integer
+                  max_decimals:
+                    type: integer
+                  max_transaction_size:
+                    type: integer
+                type: object
+              user_agent:
+                type: string
+            type: object
+        default:
+          $ref: '#/responses/genericError'
+      summary: This endpoint returns a specific connection.
   /api/v1/network/defaultConnections:
     get:
       operationId: defaultConnections
@@ -144,9 +172,6 @@ paths:
       schemes:
       - http
       - https
-      security:
-      - csrfAuth:
-        - '[]'
       summary: defaultConnectionsHandler returns the list of default hardcoded bootstrap
         addresses.\n They are not necessarily connected to.
   /api/v1/resendUnconfirmedTxns:
@@ -166,9 +191,6 @@ paths:
       schemes:
       - http
       - https
-      security:
-      - csrfAuth:
-        - '[]'
   /api/v1/version:
     get:
       description: versionHandler returns the application version info
@@ -183,9 +205,132 @@ paths:
       schemes:
       - http
       - https
-      security:
-      - csrfAuth:
-        - '[]'
+  /api/v1/wallet:
+    get:
+      operationId: wallet
+      parameters:
+      - description: tags to filter by
+        in: query
+        name: id
+        type: string
+        x-go-name: Id
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/walletResponses'
+        default:
+          $ref: '#/responses/genericError'
+      summary: Returns a wallet by id.
+  /api/v1/wallet/balance:
+    get:
+      operationId: walletBalance
+      parameters:
+      - description: tags to filter by
+        in: query
+        name: id
+        required: true
+        type: string
+        x-go-name: Id
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/genericError'
+        default:
+          $ref: '#/responses/genericError'
+      summary: Returns the wallet's balance, both confirmed and predicted.  The predicted
+        balance is the confirmed balance minus the pending spends.
+  /api/v1/wallet/newSeed:
+    get:
+      consumes:
+      - application/json
+      description: Returns the wallet directory path
+      operationId: walletNewSeedParameters
+      parameters:
+      - description: 'entropy: entropy bitsize [optional, default value of 128 will
+          be used if not set]'
+        in: body
+        name: entrpy
+        schema:
+          format: int64
+          type: integer
+        x-go-name: Entrpy
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/walletNewSeedResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      tags:
+      - walletNewSeed
+  /api/v1/wallet/seed:
+    post:
+      consumes:
+      - application/json
+      operationId: walletSeedParameters
+      parameters:
+      - format: int64
+        in: query
+        name: id
+        type: integer
+        x-go-name: Id
+      - in: query
+        name: password
+        type: string
+        x-go-name: Password
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/walletSeedResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      summary: This endpoint only works for encrypted wallets. If the wallet is unencrypted,
+        The seed will be not returned.
+      tags:
+      - walletSeed
+  /api/v1/wallet/update:
+    post:
+      consumes:
+      - application/json
+      operationId: walletUpdateParams
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          properties:
+            id:
+              format: int64
+              type: integer
+              x-go-name: Id
+            label:
+              type: string
+              x-go-name: Label
+          required:
+          - id
+          - label
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/walletUpdateResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      summary: Update the wallet.
+      tags:
+      - walletUpdate
   /api/v1/wallets:
     get:
       description: Generates new addresses
@@ -200,9 +345,6 @@ paths:
       schemes:
       - http
       - https
-      security:
-      - csrfAuth:
-        - '[]'
   /api/v1/wallets/folderName:
     get:
       description: Returns the wallet directory path
@@ -217,9 +359,6 @@ paths:
       schemes:
       - http
       - https
-      security:
-      - csrfAuth:
-        - '[]'
     post:
       description: |-
         Consume:
@@ -254,12 +393,32 @@ paths:
       schemes:
       - http
       - https
-      security:
-      - csrfAuth:
-        - '[]'
       summary: Generates new addresses
       tags:
       - walletNewAddresses
+  /api/v2/address/verify:
+    post:
+      operationId: verifyAddressRequest
+      parameters:
+      - in: body
+        name: address
+        required: true
+        schema:
+          type: string
+        x-go-name: Address
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/verifyAddressResponse'
+        default:
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      summary: healthHandler returns node health data.
+      tags:
+      - verify_address
 produces:
 - application/json
 - application/xml
@@ -379,6 +538,37 @@ responses:
     headers:
       address:
         type: string
+  walletNewSeedResponse:
+    description: This represent Response for endPoint /api/v1/wallet/newSeed
+    schema:
+      properties:
+        seed:
+          type: string
+          x-go-name: Seed
+      type: object
+  walletResponses:
+    description: WalletResponse wallet response struct for http apis
+    schema:
+      $ref: '#/definitions/walletMeta'
+      items:
+        $ref: '#/definitions/walletEntry'
+      type: array
+  walletSeedResponse:
+    description: This represent an endpoint for /api/v1/wallet/seed
+    schema:
+      properties:
+        seed:
+          type: string
+          x-go-name: Seed
+      type: object
+  walletUpdateResponse:
+    description: This represent Response for endpoint /api/v1/wallet/update
+    schema:
+      properties:
+        response:
+          type: string
+          x-go-name: Response
+      type: object
   walletsResponse:
     description: This struct is for endpoint /api/v1/wallets response
     schema:
@@ -388,9 +578,6 @@ responses:
 schemes:
 - http
 - https
-security:
-- csrfAuth:
-  - '[]'
 securityDefinitions:
   csrfAuth:
     in: header

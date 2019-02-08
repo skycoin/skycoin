@@ -27,6 +27,7 @@ var (
 )
 
 // Ripemd160 ripemd160
+// swagger:model ripemd160
 type Ripemd160 [20]byte
 
 // MustSet sets value, panics on error

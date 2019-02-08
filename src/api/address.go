@@ -26,7 +26,7 @@ type VerifyAddressResponse struct {
 // URI: /api/v2/address/verify
 func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO For v3
-	// swagger:route POST /api/v1/address/verify verify_address verifyAddressRequest
+	// swagger:route POST /api/v2/address/verify verify_address verifyAddressRequest
 	//
 	// healthHandler returns node health data.
 	//
@@ -34,9 +34,6 @@ func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	//     - application/json
 	//
 	//     Schemes: http, https
-	//
-	//     Security:
-	//       csrfAuth: []
 	//
 	//     Responses:
 	//       default: genericError

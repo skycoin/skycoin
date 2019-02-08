@@ -15,13 +15,69 @@ import (
 )
 
 // connectionHandler returns a specific connection
-// URI: /api/v1/network/connections
+// URI: /api/v1/network/connection
 // Method: GET
 // Args:
 //	addr - An IP:Port string
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:operation GET /api/v1/network/connections networkConnections
+	//
+	// This endpoint returns a specific connection.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: addr
+	//   in: query
+	//   description: Address port
+	//   required: true
+	//   type: string
+	//   x-go-name: Ip
+	// responses:
+	//   200:
+	//     description: This endpoint return a connection struct
+	//     schema:
+	//       type: object
+	//       properties:
+	//         id:
+	//           type: integer
+	//         address:
+	//           type: string
+	//         state:
+	//           type: string
+	//           enum: [pending, connected, introduced]
+	//         user_agent:
+	//           type: string
+	//         last_sent:
+	//           type: integer
+	//         last_received:
+	//           type: integer
+	//         connected_at:
+	//           type: integer
+	//         outgoing:
+	//           type: boolean
+	//         mirror:
+	//           type: integer
+	//         listen_port:
+	//           type: integer
+	//         height:
+	//           type: integer
+	//         is_trusted_peer:
+	//           type: boolean
+	//         unconfirmed_verify_transaction:
+	//           description: Represent unconfirmed transactions
+	//           type: object
+	//           properties:
+	//             burn_factor:
+	//               type: integer
+	//             max_transaction_size:
+	//               type: integer
+	//             max_decimals:
+	//               type: integer
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -166,9 +222,6 @@ func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	//     - application/json
 	//
 	//     Schemes: http, https
-	//
-	//     Security:
-	//       csrfAuth: []
 	//
 	//     Responses:
 	//       default: genericError

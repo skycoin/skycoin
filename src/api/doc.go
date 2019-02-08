@@ -16,14 +16,11 @@
 //     - application/json
 //     - application/xml
 //
-//     Security:
-//     - csrfAuth: []
-//
 //     SecurityDefinitions:
 //     csrfAuth:
 //          type: apiKey
-//          name: csrf_Token
 //          in: header
+//          name: csrf_Token
 //
 // swagger:meta
 package api

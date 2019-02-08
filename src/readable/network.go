@@ -7,7 +7,6 @@ import (
 )
 
 // Connection a connection's state within the daemon
-// swagger:model connectionStruct
 type Connection struct {
 	GnetID       uint64 `json:"id"`
 	Addr         string `json:"address"`

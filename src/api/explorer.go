@@ -54,9 +54,6 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	//     Schemes: http, https
 	//
-	//     Security:
-	//       csrfAuth: []
-	//
 	//     Responses:
 	//       default: genericError
 	//       200: coinSupply

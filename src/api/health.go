@@ -46,6 +46,119 @@ type HealthResponse struct {
 // Method: GET
 func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 
+	// swagger:operation GET /api/v1/health health
+	//
+	// Returns node health data.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	// responses:
+	//   200:
+	//     description: This endpoint returns node health data.
+	//     schema:
+	//       properties:
+	//         blockchain:
+	//           type: object
+	//           properties:
+	//             head:
+	//               type: object
+	//               properties:
+	//                 seq:
+	//                   type: string
+	//                 block_hash:
+	//                   type: string
+	//                 previous_block_hash:
+	//                   type: string
+	//                 timestamp:
+	//                   type: integer
+	//                   format: int64
+	//                 fee:
+	//                   type: integer
+	//                   format: int64
+	//                 version:
+	//                   type: integer
+	//                   format: int64
+	//                 tx_body_hash:
+	//                   type: string
+	//                 ux_hash:
+	//                   type: string
+	//             unspents:
+	//               type: integer
+	//               format: int64
+	//             unconfirmed:
+	//               type: integer
+	//               format: int64
+	//             time_since_last_block:
+	//               type: string
+	//         version:
+	//           type: object
+	//           properties:
+	//             version:
+	//               type: string
+	//             commit:
+	//               type: string
+	//             branch:
+	//               type: string
+	//         coin:
+	//           type: string
+	//         user_agent:
+	//           type: string
+	//         open_connections:
+	//           type: integer
+	//           format: int64
+	//         outgoing_connections:
+	//           type: integer
+	//           format: int64
+	//         incoming_connections:
+	//           type: integer
+	//           format: int64
+	//         uptime:
+	//           type: string
+	//         csrf_enabled:
+	//             type: boolean
+	//         csp_enabled:
+	//             type: boolean
+	//         wallet_api_enabled:
+	//             type: boolean
+	//         gui_enabled:
+	//             type: boolean
+	//         unversioned_api_enabled:
+	//             type: boolean
+	//         json_rpc_enabled:
+	//             type: boolean
+	//         user_verify_transaction:
+	//           type: object
+	//           properties:
+	//             burn_factor:
+	//               type: integer
+	//               format: int64
+	//             max_transaction_size:
+	//               type: integer
+	//               format: int64
+	//             max_decimal:
+	//               type: integer
+	//               format: int64
+	//         unconfirmed_verify_transaction:
+	//           type: object
+	//           properties:
+	//             burn_factor:
+	//               type: integer
+	//               format: int64
+	//             max_transaction_size:
+	//               type: integer
+	//               format: int64
+	//             max_decimal:
+	//               type: integer
+	//               format: int64
+	//         started_at:
+	//             type: integer
+	//             format: int64
+	//
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

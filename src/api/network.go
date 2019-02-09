@@ -26,6 +26,8 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	// This endpoint returns a specific connection.
 	//
 	// ---
+	//
+	//
 	// produces:
 	// - application/json
 	// parameters:
@@ -34,7 +36,10 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Address port
 	//   required: true
 	//   type: string
-	//   x-go-name: Ip
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: This endpoint return a connection struct
@@ -117,7 +122,6 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Connections wraps []Connection
-//
 type Connections struct {
 	Connections []readable.Connection `json:"connections"`
 }
@@ -149,6 +153,10 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	// ---
 	// produces:
 	// - application/json
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// parameters:
 	// - name: states
 	//   in: query
@@ -282,13 +290,6 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-
-// This struct is for endpoint /api/v1/defaultConnections response.
-type DefaultConnectionsResponse struct {
-	DefaultConnections []string
-}
-
-
 // defaultConnectionsHandler returns the list of default hardcoded bootstrap addresses.
 // They are not necessarily connected to.
 // URI: /api/v1/network/defaultConnections
@@ -302,6 +303,9 @@ func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	// ---
 	// produces:
 	// - application/json
+	//
+	// security:
+	// - csrfAuth: []
 	//
 	// responses:
 	//   200:
@@ -340,6 +344,9 @@ func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	// produces:
 	// - application/json
 	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: This endpoint return a list of trusted connections.
@@ -377,6 +384,9 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	// ---
 	// produces:
 	// - application/json
+	//
+	// security:
+	// - csrfAuth: []
 	//
 	// responses:
 	//   200:
@@ -422,6 +432,9 @@ func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Address id.
 	//   required: true
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
 	//
 	// produces:
 	// - application/json

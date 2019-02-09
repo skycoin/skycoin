@@ -430,25 +430,6 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
-// This struct is for catch Body params in requests
-// swagger:parameters walletParams
-type WalletAddressParams struct {
-	// Parameters for Wallet New Address
-	// in: body
-	Params struct {
-		// required: true
-		Id string `json:"id"`
-		Num int `json:"num"`
-		Password string `json:"password"`
-
-	}
-}
-
-// This struct is for catch wallet addresses
-// swagger:response walletAddressResponse
-type WalletAddressResponse struct {
-	Address []string `json:"addresses"`
-}
 
 // Generates new addresses
 // URI: /api/v1/wallet/newAddress
@@ -459,21 +440,41 @@ type WalletAddressResponse struct {
 //     password: wallet password [optional, must be provided if the wallet is encrypted]
 func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallets/folderName walletNewAddresses walletParams
+	// swagger:operation POST /api/v1/wallet/newAddress walletNewAddress
 	//
 	// Generates new addresses
 	//
-	//     Consume:
-	//     - application/json
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: id
+	//   in: query
+	//   description: Wallet Id
+	//   required: true
+	//   type: string
+	// - name: num
+	//   in: query
+	//   description: The number you want to generate
+	//   required: false
+	//   type: string
+	// - name: password
+	//   in: query
+	//   description: Wallet Password
+	//   required: false
+	//   type: string
+	// responses:
+	//   200:
+	//     description: This endpoint generate new addresses
+	//     schema:
+	//       properties:
+	//         addresses:
+	//           type: array
+	//           items:
+	//             type: string
 	//
-	//     Produces:
-	//     - application/json
-	//
-	//     Schemes: http, https
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: walletAddressResponse
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -527,26 +528,24 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 // This represent Parameters for endpoint /api/v1/wallet/update
-// swagger:parameters walletUpdateParams
-type WalletUpdateParams struct {
-	// in: body
-	Body struct{
-		// required: true
-		Id int `json:"id"`
-		// required: true
-		Label string `json:"label"`
-
-	}
-}
-
-// This represent Response for endpoint /api/v1/wallet/update
-// swagger:response walletUpdateResponse
-type WalletUpdateResponse struct {
-	// in: body
-	Response struct{
-		Response string `json:"response"`
-	}
-}
+//type WalletUpdateParams struct {
+//	// in: body
+//	Body struct{
+//		// required: true
+//		Id int `json:"id"`
+//		// required: true
+//		Label string `json:"label"`
+//
+//	}
+//}
+//
+//// This represent Response for endpoint /api/v1/wallet/update
+//type WalletUpdateResponse struct {
+//	// in: body
+//	Response struct{
+//		Response string `json:"response"`
+//	}
+//}
 
 // Update wallet label
 // URI: /api/v1/wallet/update
@@ -556,21 +555,40 @@ type WalletUpdateResponse struct {
 //     label: the label the wallet will be updated to [required]
 func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/update walletUpdate walletUpdateParams
+	// swagger:operation POST /api/v1/wallet/update walletUpdate
 	//
 	// Update the wallet.
 	//
-	//     Consumes:
-	//     - application/json
+	// ---
+	// produces:
+	// - application/json
 	//
-	//     Produces:
-	//     - application/json
+	// parameters:
+	// - name: id
+	//   in: query
+	//   required: true
+	//   description: Wallet Id.
+	//   type: string
+	// - name: label
+	//   in: query
+	//   required: true
+	//   description: The label the wallet will be updated to.
+	//   type: string
 	//
-	//     Schemes: http, https
+	// security:
+	// - csrfAuth: []
 	//
-	//     Responses:
-	//       default: genericError
-	//       200: walletUpdateResponse
+	// responses:
+	//   200:
+	//     description: This endpoint Returns the label the wallet will be updated to .
+	//     schema:
+	//       properties:
+	//         success:
+	//           type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// TODO params to body
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -749,31 +767,60 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// This struct is for endpoint /api/v1/wallets response
-// swagger:response walletsResponse
-type WalletsResponse struct {
-	// in: body
-	Responses []WalletResponse
-}
-
-
 // Returns all loaded wallets
 // URI: /api/v1/wallets
 // Method: GET
 func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/wallets wallets
+	// swagger:operation GET /api/v1/wallets wallets
 	//
-	// Generates new addresses
+	// Returns all loaded wallets
 	//
-	//     Produces:
-	//     - application/json
+	// ---
 	//
-	//     Schemes: http, https
+	// produces:
+	// - application/json
 	//
-	//     Responses:
-	//       default: genericError
-	//       200: walletsResponse
+	// security:
+	// - csrfAuth: []
+	//
+	// responses:
+	//   default:
+	//     $ref: '#/responses/genericError'
+	//   200:
+	//     description: This endpoint return a connection struct
+	//     schema:
+	//       type: array
+	//       items:
+	//         properties:
+	//           meta:
+	//             type: object
+	//             properties:
+	//               coin:
+	//                type: string
+	//               filename:
+	//                type: string
+	//               label:
+	//                type: string
+	//               type:
+	//                type: string
+	//               version:
+	//                type: string
+	//               crypto_type:
+	//                type: string
+	//               timestamp:
+	//                type: integer
+	//               encrypted:
+	//                type: boolean
+	//           entries:
+	//             type: array
+	//             items:
+	//               properties:
+	//                 address:
+	//                   type: string
+	//                 public_key:
+	//                   type: string
+
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -813,7 +860,6 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 
 
 // WalletFolder struct
-// swagger:response walletFolderResponse
 type WalletFolder struct {
 	Address string `json:"address"`
 }
@@ -823,18 +869,35 @@ type WalletFolder struct {
 // Method: GET
 func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route GET /api/v1/wallets/folderName walletFolder
+	// swagger:operation GET /api/v1/wallets/folderName walletFolder
 	//
 	// Returns the wallet directory path
 	//
-	//     Produces:
-	//     - application/json
+	// ---
 	//
-	//     Schemes: http, https
 	//
-	//     Responses:
-	//       default: genericError
-	//       200: walletFolderResponse
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: addr
+	//   in: query
+	//   description: Address port
+	//   required: true
+	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint return a connection struct
+	//     schema:
+	//       type: object
+	//       properties:
+	//         address:
+	//           type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -859,23 +922,6 @@ func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// This represent Parameters for endPoint /api/v1/wallet/newSeed
-// swagger:parameters walletNewSeedParameters
-type WalletNewSeedParameters struct {
-	//     entropy: entropy bitsize [optional, default value of 128 will be used if not set]
-	// in: body
-	Entrpy int `json:"entrpy"`
-}
-
-// This represent Response for endPoint /api/v1/wallet/newSeed
-// swagger:response walletNewSeedResponse
-type WalletNewSeedResponse struct {
-	// in: body
-	Body struct{
-		Seed string `json:"seed"`
-	}
-}
-
 // Generates wallet seed
 // URI: /api/v1/wallet/newSeed
 // Method: GET
@@ -883,21 +929,35 @@ type WalletNewSeedResponse struct {
 //     entropy: entropy bitsize [optional, default value of 128 will be used if not set]
 func newSeedHandler() http.HandlerFunc {
 
-	// swagger:route GET /api/v1/wallet/newSeed walletNewSeed walletNewSeedParameters
+	// swagger:operation GET /api/v1/wallet/newSeed walletNewSeed
 	//
 	// Returns the wallet directory path
 	//
-	//     Consumes:
-	//     - application/json
+	// ---
 	//
-	//     Produces:
-	//     - application/json
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: entropy
+	//   in: query
+	//   description: Entropy bitSize.
+	//   required: false
+	//   type: string
+	//   enum: [128, 256]
 	//
-	//     Schemes: http, https
+	// security:
+	// - csrfAuth: []
 	//
-	//     Responses:
-	//       default: genericError
-	//       200: walletNewSeedResponse
+	//
+	// responses:
+	//   200:
+	//     description: Generates wallet seed
+	//     schema:
+	//       properties:
+	//         seed:
+	//           type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -944,23 +1004,21 @@ func newSeedHandler() http.HandlerFunc {
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
-
-// This represent Parameters for endpoint /api/v1/wallet/seed
-// swagger:parameters walletSeedParameters
-type WalletSeedParameters struct {
-
-	Id int `json:"id"`
-	Password string `json:"password"`
-}
-
-// This represent an endpoint for /api/v1/wallet/seed
-// swagger:response walletSeedResponse
-type WalletSeedResponse struct {
-	// in: body
-	Body struct{
-		Seed string `json:"seed"`
-	}
-}
+//
+//// This represent Parameters for endpoint /api/v1/wallet/seed
+//type WalletSeedParameters struct {
+//
+//	Id int `json:"id"`
+//	Password string `json:"password"`
+//}
+//
+//// This represent an endpoint for /api/v1/wallet/seed
+//type WalletSeedResponse struct {
+//	// in: body
+//	Body struct{
+//		Seed string `json:"seed"`
+//	}
+//}
 
 // Returns seed of wallet of given id
 // URI: /api/v1/wallet/seed
@@ -970,21 +1028,37 @@ type WalletSeedResponse struct {
 //     password: wallet password
 func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/wallet/seed walletSeed walletSeedParameters
+	// swagger:operation POST /api/v1/wallet/seed walletSeed
 	//
 	// This endpoint only works for encrypted wallets. If the wallet is unencrypted, The seed will be not returned.
 	//
-	//     Consumes:
-	//     - application/json
+	// ---
+	// produces:
+	// - application/json
 	//
-	//     Produces:
-	//     - application/json
+	// security:
+	// - csrfAuth: []
 	//
-	//     Schemes: http, https
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: walletSeedResponse
+	// parameters:
+	// - name: id
+	//   in: query
+	//   description: Wallet Id.
+	//   required: true
+	//   type: string
+	// - name: password
+	//   in: query
+	//   description: Wallet password.
+	//   required: true
+	//   type: string
+	// responses:
+	//   200:
+	//     description: This endpoint Returns seed of wallet of given id
+	//     schema:
+	//       properties:
+	//         seed:
+	//           type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

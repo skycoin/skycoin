@@ -3,19 +3,6 @@ consumes:
 - application/json
 - application/xml
 definitions:
-  WalletResponse:
-    description: WalletResponse wallet response struct for http apis
-    properties:
-      entries:
-        description: 'in: body'
-        items:
-          $ref: '#/definitions/walletEntry'
-        type: array
-        x-go-name: Entries
-      meta:
-        $ref: '#/definitions/walletMeta'
-    type: object
-    x-go-package: github.com/skycoin/skycoin/src/api
   walletEntry:
     description: WalletEntry the wallet entry struct
     properties:
@@ -64,11 +51,30 @@ info:
   contact:
     email: skycoin.doe@example.com
     name: Skycoin project
-    url: https://www.skycoin.net
+    url: https://staging.node.skycoin.net
   description: Skycoin is a next-generation cryptocurrency.
   title: Skycoin REST API.
   version: 0.25.0
 paths:
+  /api/v1/addresscount:
+    get:
+      operationId: addressCount
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: This endpoint Returns the total number of unique address that
+            have coins.
+          schema:
+            properties:
+              count:
+                format: int64
+                type: integer
+        default:
+          $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
+      summary: Returns the total number of unique address that have coins.
   /api/v1/coinSupply:
     get:
       description: coinSupplyHandler returns coin distribution supply stats
@@ -78,8 +84,6 @@ paths:
       responses:
         "200":
           $ref: '#/responses/coinSupply'
-        "422":
-          $ref: '#/responses/validationError'
         default:
           $ref: '#/responses/genericError'
       schemes:
@@ -92,14 +96,128 @@ paths:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/csrfResponse'
+          description: Return a csrf Token.
+          schema:
+            properties:
+              csrf_token:
+                properties:
+                  version:
+                    type: string
+                type: object
+            type: object
         default:
           $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
       summary: Creates a new CSRF token. Previous CSRF tokens are invalidated by this
         call.
+  /api/v1/health:
+    get:
+      operationId: health
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: This endpoint returns node health data.
+          schema:
+            properties:
+              blockchain:
+                properties:
+                  head:
+                    properties:
+                      block_hash:
+                        type: string
+                      fee:
+                        format: int64
+                        type: integer
+                      previous_block_hash:
+                        type: string
+                      seq:
+                        type: string
+                      timestamp:
+                        format: int64
+                        type: integer
+                      tx_body_hash:
+                        type: string
+                      ux_hash:
+                        type: string
+                      version:
+                        format: int64
+                        type: integer
+                    type: object
+                  time_since_last_block:
+                    type: string
+                  unconfirmed:
+                    format: int64
+                    type: integer
+                  unspents:
+                    format: int64
+                    type: integer
+                type: object
+              coin:
+                type: string
+              csp_enabled:
+                type: boolean
+              csrf_enabled:
+                type: boolean
+              gui_enabled:
+                type: boolean
+              incoming_connections:
+                format: int64
+                type: integer
+              json_rpc_enabled:
+                type: boolean
+              open_connections:
+                format: int64
+                type: integer
+              outgoing_connections:
+                format: int64
+                type: integer
+              started_at:
+                format: int64
+                type: integer
+              unconfirmed_verify_transaction:
+                properties:
+                  burn_factor:
+                    format: int64
+                    type: integer
+                  max_decimal:
+                    format: int64
+                    type: integer
+                  max_transaction_size:
+                    format: int64
+                    type: integer
+                type: object
+              unversioned_api_enabled:
+                type: boolean
+              uptime:
+                type: string
+              user_agent:
+                type: string
+              user_verify_transaction:
+                properties:
+                  burn_factor:
+                    format: int64
+                    type: integer
+                  max_decimal:
+                    format: int64
+                    type: integer
+                  max_transaction_size:
+                    format: int64
+                    type: integer
+                type: object
+              version:
+                properties:
+                  branch:
+                    type: string
+                  commit:
+                    type: string
+                  version:
+                    type: string
+                type: object
+              wallet_api_enabled:
+                type: boolean
+        default:
+          $ref: '#/responses/genericError'
+      summary: Returns node health data.
   /api/v1/network/connection:
     get:
       operationId: networkConnection
@@ -109,7 +227,6 @@ paths:
         name: addr
         required: true
         type: string
-        x-go-name: Ip
       produces:
       - application/json
       responses:
@@ -168,6 +285,8 @@ paths:
             type: object
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: This endpoint returns a specific connection.
   /api/v1/network/connection/disconnect:
     get:
@@ -186,6 +305,8 @@ paths:
           description: This endpoint
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
   /api/v1/network/connections:
     get:
       operationId: networkConnections
@@ -264,6 +385,8 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: This endpoint returns all outgoings connections.
   /api/v1/network/connections/exchange:
     get:
@@ -281,6 +404,8 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
   /api/v1/network/connections/trust:
     get:
       operationId: networkConnectionsTrust
@@ -295,6 +420,8 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: trustConnectionsHandler returns all trusted connections.\n They are
         not necessarily connected to. In the default configuration, these will be
         a subset of the default hardcoded bootstrap addresses.
@@ -312,6 +439,8 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: defaultConnectionsHandler returns the list of default hardcoded bootstrap
         addresses.\n They are not necessarily connected to.
   /api/v1/resendUnconfirmedTxns:
@@ -381,184 +510,216 @@ paths:
           $ref: '#/responses/genericError'
       summary: Returns the wallet's balance, both confirmed and predicted.  The predicted
         balance is the confirmed balance minus the pending spends.
-  /api/v1/wallet/newSeed:
-    get:
-      consumes:
-      - application/json
-      description: Returns the wallet directory path
-      operationId: walletNewSeedParameters
-      parameters:
-      - description: 'entropy: entropy bitsize [optional, default value of 128 will
-          be used if not set]'
-        in: body
-        name: entrpy
-        schema:
-          format: int64
-          type: integer
-        x-go-name: Entrpy
-      produces:
-      - application/json
-      responses:
-        "200":
-          $ref: '#/responses/walletNewSeedResponse'
-        default:
-          $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
-      tags:
-      - walletNewSeed
-  /api/v1/wallet/seed:
+  /api/v1/wallet/newAddress:
     post:
-      consumes:
-      - application/json
-      operationId: walletSeedParameters
+      description: Generates new addresses
+      operationId: walletNewAddress
       parameters:
-      - format: int64
+      - description: Wallet Id
         in: query
         name: id
-        type: integer
-        x-go-name: Id
-      - in: query
+        required: true
+        type: string
+      - description: The number you want to generate
+        in: query
+        name: num
+        type: string
+      - description: Wallet Password
+        in: query
         name: password
         type: string
-        x-go-name: Password
       produces:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/walletSeedResponse'
+          description: This endpoint generate new addresses
+          schema:
+            properties:
+              addresses:
+                items:
+                  type: string
+                type: array
         default:
           $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
+  /api/v1/wallet/newSeed:
+    get:
+      description: Returns the wallet directory path
+      operationId: walletNewSeed
+      parameters:
+      - description: Entropy bitSize.
+        enum:
+        - 128
+        - 256
+        in: query
+        name: entropy
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Generates wallet seed
+          schema:
+            properties:
+              seed:
+                type: string
+        default:
+          $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
+  /api/v1/wallet/seed:
+    post:
+      operationId: walletSeed
+      parameters:
+      - description: Wallet Id.
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Wallet password.
+        in: query
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: This endpoint Returns seed of wallet of given id
+          schema:
+            properties:
+              seed:
+                type: string
+        default:
+          $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: This endpoint only works for encrypted wallets. If the wallet is unencrypted,
         The seed will be not returned.
-      tags:
-      - walletSeed
   /api/v1/wallet/update:
     post:
-      consumes:
-      - application/json
-      operationId: walletUpdateParams
+      operationId: walletUpdate
       parameters:
-      - in: body
-        name: Body
-        schema:
-          properties:
-            id:
-              format: int64
-              type: integer
-              x-go-name: Id
-            label:
-              type: string
-              x-go-name: Label
-          required:
-          - id
-          - label
-          type: object
+      - description: Wallet Id.
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: The label the wallet will be updated to.
+        in: query
+        name: label
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/walletUpdateResponse'
+          description: This endpoint Returns the label the wallet will be updated
+            to .
+          schema:
+            properties:
+              success:
+                type: string
         default:
           $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
+      security:
+      - csrfAuth: []
       summary: Update the wallet.
-      tags:
-      - walletUpdate
   /api/v1/wallets:
     get:
-      description: Generates new addresses
+      description: Returns all loaded wallets
       operationId: wallets
       produces:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/walletsResponse'
+          description: This endpoint return a connection struct
+          schema:
+            items:
+              properties:
+                entries:
+                  items:
+                    properties:
+                      address:
+                        type: string
+                      public_key:
+                        type: string
+                  type: array
+                meta:
+                  properties:
+                    coin:
+                      type: string
+                    crypto_type:
+                      type: string
+                    encrypted:
+                      type: boolean
+                    filename:
+                      type: string
+                    label:
+                      type: string
+                    timestamp:
+                      type: integer
+                    type:
+                      type: string
+                    version:
+                      type: string
+                  type: object
+            type: array
         default:
           $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
+      security:
+      - csrfAuth: []
   /api/v1/wallets/folderName:
     get:
       description: Returns the wallet directory path
       operationId: walletFolder
-      produces:
-      - application/json
-      responses:
-        "200":
-          $ref: '#/responses/walletFolderResponse'
-        default:
-          $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
-    post:
-      description: |-
-        Consume:
-        application/json
-      operationId: walletParams
       parameters:
-      - description: Parameters for Wallet New Address
-        in: body
-        name: Params
-        schema:
-          properties:
-            id:
-              type: string
-              x-go-name: Id
-            num:
-              format: int64
-              type: integer
-              x-go-name: Num
-            password:
-              type: string
-              x-go-name: Password
-          required:
-          - id
-          type: object
+      - description: Address port
+        in: query
+        name: addr
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/walletAddressResponse'
+          description: This endpoint return a connection struct
+          schema:
+            properties:
+              address:
+                type: string
+            type: object
         default:
           $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
-      summary: Generates new addresses
-      tags:
-      - walletNewAddresses
+      security:
+      - csrfAuth: []
   /api/v2/address/verify:
     post:
-      operationId: verifyAddressRequest
+      operationId: verifyAddress
       parameters:
-      - in: body
+      - description: Address id.
+        in: query
         name: address
         required: true
-        schema:
-          type: string
-        x-go-name: Address
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/verifyAddressResponse'
+          description: Response verifies a Skycoin address
+          schema:
+            properties:
+              data:
+                properties:
+                  version:
+                    format: int64
+                    type: integer
+                type: object
+            type: object
         default:
           $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
+      security:
+      - csrfAuth: []
       summary: healthHandler returns node health data.
-      tags:
-      - verify_address
 produces:
 - application/json
 - application/xml
@@ -576,45 +737,36 @@ responses:
         description: version number
         type: string
   coinSupply:
-    description: CoinSupply records the coin supply info
+    description: CoinSupply records the coin supply info.
     headers:
       current_coinhour_supply:
-        description: CurrentCoinHourSupply is coins hours in non distribution addresses
+        description: CurrentCoinHourSupply is coins hours in non distribution addresses.
         type: string
       current_supply:
-        description: 'Coins distributed beyond the project:'
+        description: Coins distributed beyond the project.
         type: string
       locked_distribution_addresses:
         description: Distribution addresses which are locked and do not count towards
-          total supply
+          total supply.
         items:
           type: string
         type: array
       max_supply:
-        description: MaxSupply is the maximum number of coins to be distributed ever
+        description: MaxSupply is the maximum number of coins to be distributed ever.
         type: string
       total_coinhour_supply:
         description: TotalCoinHourSupply is coin hours in all addresses including
-          unlocked distribution addresses
+          unlocked distribution addresses.
         type: string
       total_supply:
         description: TotalSupply is CurrentSupply plus coins held by the distribution
-          addresses that are spendable
+          addresses that are spendable.
         type: string
       unlocked_distribution_addresses:
-        description: Distribution addresses which count towards total supply
+        description: Distribution addresses which count towards total supply.
         items:
           type: string
         type: array
-  csrfResponse:
-    description: Response to address /api/v1/csrf.
-    schema:
-      properties:
-        csrf_token:
-          description: Body of csrf Token
-          type: string
-          x-go-name: Token
-      type: object
   genericError:
     description: |-
       A GenericError is the default error message that is generated.
@@ -636,77 +788,12 @@ responses:
         items:
           type: string
         type: array
-  validationError:
-    description: |-
-      A ValidationError is an that is generated for validation failures.
-      It has the same fields as a generic error but adds a Field property.
-    schema:
-      properties:
-        code:
-          format: int32
-          type: integer
-          x-go-name: Code
-        field:
-          type: string
-          x-go-name: Field
-        message:
-          type: string
-          x-go-name: Message
-      type: object
-  verifyAddressResponse:
-    description: VerifyAddressResponse is returned by POST /api/v2/address/verify
-    headers:
-      version:
-        format: uint8
-        type: integer
-  walletAddressResponse:
-    description: This struct is for catch wallet addresses
-    headers:
-      addresses:
-        items:
-          type: string
-        type: array
-  walletFolderResponse:
-    description: WalletFolder struct
-    headers:
-      address:
-        type: string
-  walletNewSeedResponse:
-    description: This represent Response for endPoint /api/v1/wallet/newSeed
-    schema:
-      properties:
-        seed:
-          type: string
-          x-go-name: Seed
-      type: object
   walletResponses:
     description: WalletResponse wallet response struct for http apis
     schema:
       $ref: '#/definitions/walletMeta'
       items:
         $ref: '#/definitions/walletEntry'
-      type: array
-  walletSeedResponse:
-    description: This represent an endpoint for /api/v1/wallet/seed
-    schema:
-      properties:
-        seed:
-          type: string
-          x-go-name: Seed
-      type: object
-  walletUpdateResponse:
-    description: This represent Response for endpoint /api/v1/wallet/update
-    schema:
-      properties:
-        response:
-          type: string
-          x-go-name: Response
-      type: object
-  walletsResponse:
-    description: This struct is for endpoint /api/v1/wallets response
-    schema:
-      items:
-        $ref: '#/definitions/WalletResponse'
       type: array
 schemes:
 - http

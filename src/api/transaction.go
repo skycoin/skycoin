@@ -323,23 +323,6 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// parseAddressesFromStr parses comma separated addresses string into []cipher.Address
-func parseAddressesFromStr(s string) ([]cipher.Address, error) {
-	addrsStr := splitCommaString(s)
-
-	var addrs []cipher.Address
-	for _, s := range addrsStr {
-		a, err := cipher.DecodeBase58Address(s)
-		if err != nil {
-			return nil, err
-		}
-
-		addrs = append(addrs, a)
-	}
-
-	return addrs, nil
-}
-
 // URI: /api/v1/injectTransaction
 // Method: POST
 // Content-Type: application/json
@@ -362,6 +345,11 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
 			wh.Error400(w, err.Error())
+			return
+		}
+
+		if v.Rawtx == "" {
+			wh.Error400(w, "rawtx is required")
 			return
 		}
 
@@ -507,6 +495,12 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 		var req VerifyTxnRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if req.EncodedTransaction == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "encoded_transaction is required")
 			writeHTTPResponse(w, resp)
 			return
 		}

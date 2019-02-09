@@ -2,7 +2,7 @@
   <div class="form-field">
     <label for="wallet">{{ 'send.from-label' | translate }}</label>
     <div class="-select">
-      <select formControlName="wallet" id="wallet">
+      <select formControlName="wallet" id="wallet" [attr.disabled]="busy ? 'true' : null">
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
           {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
@@ -12,11 +12,11 @@
   </div>
   <div class="form-field">
     <label for="address">{{ 'send.to-label' | translate }}</label>
-    <input formControlName="address" id="address">
+    <input formControlName="address" id="address" [attr.disabled]="busy ? 'true' : null">
   </div>
   <div class="form-field">
     <label for="amount">{{ 'send.amount-label' | translate }}</label>
-    <input formControlName="amount" id="amount" (keydown.enter)="preview()">
+    <input formControlName="amount" id="amount" (keydown.enter)="preview()" [attr.disabled]="busy ? 'true' : null">
   </div>
   <div class="-buttons">
     <app-button #previewButton (action)="preview()" [disabled]="!form.valid">

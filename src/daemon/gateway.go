@@ -869,22 +869,21 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	}
 
 	// Build a map from addresses to total coins held
-	allAccounts := map[string]uint64{}
+	allAccounts := map[cipher.Address]uint64{}
 	for _, out := range rbOuts.Confirmed {
-		addr := out.Body.Address.String()
-		if _, ok := allAccounts[addr]; ok {
+		if _, ok := allAccounts[out.Body.Address]; ok {
 			var err error
-			allAccounts[addr], err = coin.AddUint64(allAccounts[addr], out.Body.Coins)
+			allAccounts[out.Body.Address], err = coin.AddUint64(allAccounts[out.Body.Address], out.Body.Coins)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			allAccounts[addr] = out.Body.Coins
+			allAccounts[out.Body.Address] = out.Body.Coins
 		}
 	}
 
-	lockedAddrs := params.GetLockedDistributionAddresses()
-	addrsMap := make(map[string]struct{}, len(lockedAddrs))
+	lockedAddrs := params.GetLockedDistributionAddressesDecoded()
+	addrsMap := make(map[cipher.Address]struct{}, len(lockedAddrs))
 	for _, a := range lockedAddrs {
 		addrsMap[a] = struct{}{}
 	}
@@ -895,7 +894,7 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	}
 
 	if !includeDistribution {
-		unlockedAddrs := params.GetUnlockedDistributionAddresses()
+		unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
 		for _, a := range unlockedAddrs {
 			addrsMap[a] = struct{}{}
 		}

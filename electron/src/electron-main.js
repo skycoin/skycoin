@@ -6,9 +6,9 @@ const path = require('path');
 
 const childProcess = require('child_process');
 
-const cwd = require('process').cwd();
-
 const axios = require('axios');
+
+const hwCode = require('./hardware-wallet');
 
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
@@ -21,6 +21,7 @@ global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
 let showErrorCalled = false;
+let splashLoaded = false
 
 // Detect if the code is running with the "dev" arg. The "dev" arg is added when running npm
 // start. If this is true, a local node will not be started, but one is expected to be running,
@@ -30,7 +31,7 @@ let showErrorCalled = false;
 let dev = process.argv.find(arg => arg === 'dev') ? true : false;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com, api.github.com');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');
@@ -111,7 +112,13 @@ function startSkycoin() {
       data.toString().split('\n').forEach(line => {
         if (line.indexOf(marker) !== -1) {
           currentURL = 'http://' + line.split(marker)[1].trim();
-          app.emit('skycoin-ready', { url: currentURL });
+		  var id = setInterval(function() {
+			// wait till the splash page loading is finished
+			if (splashLoaded) {
+			  app.emit('skycoin-ready', { url: currentURL });
+			  clearInterval(id);
+			}
+		  }, 500);
         }
       });
     });
@@ -138,6 +145,14 @@ function startSkycoin() {
     // If in dev mode, simply open the dev server URL.
     currentURL = 'http://localhost:4200/';
     app.emit('skycoin-ready', { url: currentURL });
+
+    axios
+      .get('http://localhost:4200/api/v1/wallets/folderName')
+      .then(response => {
+        walletsFolder = response.data.address;
+        hwCode.setWalletsFolderPath(walletsFolder);
+      })
+      .catch(() => {});
   }
 }
 
@@ -169,14 +184,22 @@ function createWindow(url) {
     webPreferences: {
       webgl: false,
       webaudio: false,
-      contextIsolation: true,
+      contextIsolation: false,
       webviewTag: false,
       nodeIntegration: false,
       nodeIntegrationInWorker: false,
       allowRunningInsecureContent: false,
       webSecurity: true,
       plugins: false,
+      preload: __dirname + '/electron-api.js',
     },
+  });
+  hwCode.setWinRef(win);
+
+  win.webContents.on('did-finish-load', function() {
+	if (!splashLoaded) {
+	  splashLoaded = true;
+	}
   });
 
   win.webContents.on('did-fail-load', function() {
@@ -194,10 +217,6 @@ function createWindow(url) {
     console.log('Cleared the caching of the skycoin wallet.');
   });
 
-  ses.clearStorageData([], function() {
-    console.log('Cleared the stored cached data');
-  });
-
   if (url) {
     win.loadURL(url);
   } else {
@@ -213,6 +232,7 @@ function createWindow(url) {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
+    hwCode.setWinRef(win);
   });
 
   // If in dev mode, allow to open URLs.
@@ -318,7 +338,10 @@ app.on('skycoin-ready', (e) => {
 
   axios
     .get(e.url + '/api/v1/wallets/folderName')
-    .then(response => walletsFolder = response.data.address)
+    .then(response => {
+      walletsFolder = response.data.address;
+      hwCode.setWalletsFolderPath(walletsFolder);
+    })
     .catch(() => {});
 });
 

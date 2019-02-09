@@ -46,6 +46,20 @@ func (rd *Ripemd160) Set(b []byte) error {
 	return nil
 }
 
+// Ripemd160FromBytes converts []byte to Ripemd160
+func Ripemd160FromBytes(b []byte) (Ripemd160, error) {
+	h := Ripemd160{}
+	err := h.Set(b)
+	return h, err
+}
+
+// MustRipemd160FromBytes converts []byte to Ripemd160, panics on error
+func MustRipemd160FromBytes(b []byte) Ripemd160 {
+	h := Ripemd160{}
+	h.MustSet(b)
+	return h
+}
+
 // HashRipemd160 hash data to Ripemd160
 func HashRipemd160(data []byte) Ripemd160 {
 	ripemd160Hash := <-ripemd160HashPool

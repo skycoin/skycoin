@@ -20,6 +20,7 @@ import (
 	"github.com/rs/cors"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -453,6 +454,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV1("/wallets/folderName", forAPISet(walletFolderHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/newSeed", forAPISet(newSeedHandler(), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), []string{EndpointsInsecureWalletSeed}))
+	webHandlerV2("/wallet/seed/verify", forAPISet(walletVerifySeedHandler, []string{EndpointsWallet}))
 
 	webHandlerV1("/wallet/unload", forAPISet(walletUnloadHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/encrypt", forAPISet(walletEncryptHandler(gateway), []string{EndpointsWallet}))
@@ -546,4 +548,38 @@ func splitCommaString(s string) []string {
 	}
 
 	return dedupWords
+}
+
+// parseAddressesFromStr parses comma-separated addresses string into []cipher.Address
+func parseAddressesFromStr(s string) ([]cipher.Address, error) {
+	addrsStr := splitCommaString(s)
+
+	addrs := make([]cipher.Address, len(addrsStr))
+	for i, s := range addrsStr {
+		a, err := cipher.DecodeBase58Address(s)
+		if err != nil {
+			return nil, fmt.Errorf("address %q is invalid: %v", s, err)
+		}
+
+		addrs[i] = a
+	}
+
+	return addrs, nil
+}
+
+// parseAddressesFromStr parses comma-separated hashes string into []cipher.SHA256
+func parseHashesFromStr(s string) ([]cipher.SHA256, error) {
+	hashesStr := splitCommaString(s)
+
+	hashes := make([]cipher.SHA256, len(hashesStr))
+	for i, s := range hashesStr {
+		h, err := cipher.SHA256FromHex(s)
+		if err != nil {
+			return nil, fmt.Errorf("SHA256 hash %q is invalid: %v", s, err)
+		}
+
+		hashes[i] = h
+	}
+
+	return hashes, nil
 }

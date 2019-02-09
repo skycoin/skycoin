@@ -8,6 +8,7 @@
   },
 
   "errors": {
+    "error": "Error",
     "fetch-version": "Unable to fetch latest release version from Github",
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
@@ -37,6 +38,7 @@
     "syncing-blocks": "Syncing blocks",
     "update1": "Wallet update",
     "update2": "available.",
+    "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
     "pending-txs1": "There are some",
     "pending-txs2": "pending transactions.",
     "pending-txs3": "Data you see may not be updated.",
@@ -79,6 +81,7 @@
   "wizard": {
     "wallet-desc": "If you don't have a Skycoin wallet, use the generated seed to create a new one. If you already have a wallet, toggle over to \"Load Wallet\" and enter your seed.",
     "encrypt-desc": "Increase security of your wallet by encrypting it. By entering a password below, your wallet will be encrypted. Only those with the password will be able access the wallet and remove funds.",
+    "hardware-wallet-link": "Using a hardware wallet?",
     "finish-button": "Finish",
     "back-button": "Back",
 
@@ -91,18 +94,25 @@
   },
 
   "wallet": {
-    "new-address": "New Addresses",
+    "new-address": "New Address",
+    "new-addresses": "New Addresses",
     "show-empty": "Show Empty",
     "hide-empty": "Hide Empty",
     "encrypt": "Encrypt Wallet",
     "decrypt": "Decrypt Wallet",
     "decrypt-warning": "Warning: for security reasons, it is not recommended to keep the wallets unencrypted. Caution is advised.",
+    "delete": "Delete Wallet",
     "edit": "Edit Wallet",
     "add": "Add Wallet",
     "load": "Load Wallet",
     "encryption-enabled": "Encryption enabled",
     "encryption-disabled": "Encryption disabled",
+    "hw-security-warning": "Possible security risk. Access the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list) while the device is connected for more information.",
     "wallet": "Wallet",
+    "hardware-wallet": "Hardware Wallet",
+    "delete-confirmation": "WARNING: The wallet \"{{ name }}\" will be removed from the list. To add it again, you will have to reconnect the device and open the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list). Do you want to continue?",
+    "delete-confirmation-check": "Yeah, I want to delete the wallet.",
+    "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the hardware wallet.",
 
     "new": {
       "create-title": "Create Wallet",
@@ -144,11 +154,13 @@
       "copy": "Copy",
       "copy-address": "Copy address",
       "copied": "Copied!",
-      "outputs": "Unspent Outputs"
+      "outputs": "Unspent Outputs",
+      "history": "History"
     }
   },
 
   "send": {
+    "synchronizing-warning": "The wallet is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
     "from-label": "Send from",
     "to-label": "Send to",
     "amount-label": "Amount",
@@ -257,7 +269,12 @@
     "received": "Received",
     "receiving": "Receiving",
     "pending": "Pending",
-    "no-txs": "You have no transaction history"
+    "no-txs": "You have no transaction history",
+    "no-txs-filter": "There are no transactions matching the current filter criteria",
+    "no-filter": "No filter active (press to select wallets/addresses)",
+    "filter": "Active filter: ",
+    "filters": "Active filters: ",
+    "all-addresses": "All addresses"
   },
 
   "teller": {
@@ -268,9 +285,114 @@
     "unknown": "Unknown"
   },
 
+  "confirmation" : {
+    "header-text": "Confirmation",
+    "confirm-button": "Yes",
+    "cancel-button": "No",
+    "close": "Close"
+  },
+
   "service": {
     "api" : {
       "server-error": "Server error"
+    },
+    "wallet": {
+      "not-enough-hours": "Not enough available Coin Hours to perform the transaction!"
+    }
+  },
+
+  "hardware-wallet": {
+    "general" : {
+      "default-wallet-name": "New hardware wallet",
+      "error-disconnected": "Unable to perform the operation. The hardware wallet is not connected.",
+      "simple-error": "Error, Unable to perform the operation.",
+      "generic-error": "Unable to perform the operation. Make sure you have connected a valid hardware wallet and that it is not waiting for input.",
+      "generic-error-internet": "Unable to perform the operation. Make sure you have connected a valid hardware wallet that is not waiting for input and that you have a connection to the internet/node.",
+      "error-incorrect-wallet": "Unable to perform the operation. The connected hardware wallet is different from the expected one.",
+      "error-incorrect-pin": "Unable to perform the operation. The PIN you have entered is not correct.",
+      "confirm": "Please, confirm the operation in the hardware wallet.",
+      "confirm-and-more": "Please, confirm the operation in the hardware wallet and follow the instructions.",
+      "close": "Close",
+      "cancel": "Cancel",
+      "continue": "Continue",
+      "completed": "Operation completed successfully.",
+      "refused": "The operation failed or was canceled."
+    },
+    "security-warning" : {
+      "title": "Security warning",
+      "text": "The last time this hardware wallet was connected, one or more security warnings were found. We recommend you to open the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list) while the device is connected and solve the security problems before continuing.",
+      "check": "I understand the risks and want to continue",
+      "continue": "Continue",
+      "cancel": "Cancel"
+    },
+    "options" : {
+      "connecting": "Connecting...",
+      "disconnected": "No hardware wallet detected. Please connect a hardware wallet to use this option.",
+      "unconfigured-detected-title": "Unconfigured hardware wallet",
+      "unconfigured-detected": "A seedless hardware wallet has been detected. Select \"Configure automatically\" if you want to configure it as a brand new wallet and start using it immediately, or select \"Restore backup\" if you want to configure it with a previously created seed backup and thus be able to access your funds again.",
+      "configured-detected": "Hardware wallet detected. The device is identified in the wallets list as:",
+      "security-warnings-title": "Security warnings",
+      "security-warning-title": "Security warning",
+      "backup-warning": "You should backup the hardware wallet seed or you could lose access to the funds in case of problems. To do this, select the \"Create a backup\" option.",
+      "pin-warning": "The connected hardware wallet does not have a PIN. The PIN code protects the hardware wallet in case of loss, theft and hacks. To create a PIN code, select the \"Create PIN code\" option.",
+      "options": "Options:",
+      "configure-automatically": "Configure automatically",
+      "restore-backup": "Restore backup",
+      "create-backup": "Create a backup",
+      "wipe": "Wipe the device",
+      "create-pin": "Create PIN code",
+      "change-pin": "Change PIN code",
+      "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
+      "forgotten-pin2": "here."
+    },
+    "generate-seed" : {
+      "configuring": "Configuring..."
+    },
+    "restore-seed" : {
+      "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet.",
+      "error-invalid-seed": "Error: The seed is not valid. Please be sure to enter the correct words in the correct order."
+    },
+    "added" : {
+      "title": "New Hardware Wallet",
+      "configuring": "New hardware wallet detected. Configuring...",
+      "done": "Done",
+      "added1": "The connected hardware wallet has been added to the wallets list with the following name:",
+      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish."
+    },
+    "wipe" : {
+      "warning": "WARNING: All the data in the hardware wallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",
+      "confirm-delete": "Also remove from the wallets list"
+    },
+    "create-backup" : {
+      "warning": "WARNING: You can only use this option to backup your hardware wallet seed once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") will be able access the wallet balance, so extreme caution is advised.",
+      "instructions": "Write down the word list that appear on the screen of the hardware wallet. Make sure you respect the order and write each word correctly."
+    },
+    "seed-word" : {
+      "title": "Enter word",
+      "info1": "Enter the word indicated in the device",
+      "info2": "You will be asked to enter the words of your backup seed in random order, plus a few additional words.",
+      "word": "Requested word",
+      "error-invalid-word": "The entered word is not valid.",
+      "error-loading-words": "Loading the word list. Please wait."
+    },
+    "change-pin" : {
+      "pin-mismatch": "Unable to perform the operation. Two PINs you have entered do not match."
+    },
+    "enter-pin" : {
+      "title": "Enter PIN",
+      "title-change-current": "Enter the current PIN",
+      "title-change-new": "Enter the new PIN",
+      "title-change-confirm": "Confirm the new PIN",
+      "instructions": "The PIN layout is displayed on the hardware wallet screen.",
+      "instructions-tx": "Enter the PIN to confirm and sign the transaction ({{ current }} of {{ total }} required signatures).",
+      "instructions-change": "Please enter a hard-to-guess PIN of between 4 and 8 numbers.",
+      "help": "Need help?"
+    },
+    "pin-help" : {
+      "title": "Help",
+      "part1": "When it is necessary to enter the PIN to continue, the hardware wallet screen will display a matrix of 9 boxes with numbers in random order (the order changes each time) and you will be asked to enter the PIN in the software wallet using a matrix of 9 buttons that simply show the symbol #.",
+      "part2": "To enter the PIN, look at the position of the PIN numbers in numbers matrix on the screen of the hardware wallet and press the corresponding buttons in the software wallet. For example, if the PIN is \"23\" and the number 2 is in the upper left, number 3 in the middle of the hardware wallet numbers matrix, press the upper left and middle button in that order in the software wallet.",
+      "part3": "If you wish, you can also use the numpad on your keyboard to enter the PIN. However, as in the previous example, if the PIN is \"23\", you can not simply type \"23\" with the numpad, but you will have to press the keys that are in the position where the numbers 2 and 3 are shown on the screen of the hardware wallet."
     }
   }
 }

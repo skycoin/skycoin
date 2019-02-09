@@ -662,10 +662,10 @@ func TestInjectTransaction(t *testing.T) {
 			err:    "400 Bad Request - EOF",
 		},
 		{
-			name:     "400 - Invalid transaction: Not enough buffer data to deserialize",
+			name:     "400 - rawtx required",
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Invalid transaction: Not enough buffer data to deserialize",
+			err:      "400 Bad Request - rawtx is required",
 			httpBody: `{"wrongKey":"wrongValue"}`,
 		},
 		{
@@ -1044,7 +1044,7 @@ func TestGetTransactions(t *testing.T) {
 			name:   "400 - invalid `addrs` param",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+			err:    "400 Bad Request - parse parameter: 'addrs' failed: address \"invalid\" is invalid: Invalid base58 character",
 			httpBody: &httpBody{
 				addrs: invalidAddrsStr,
 			},
@@ -1405,12 +1405,12 @@ func TestVerifyTransaction(t *testing.T) {
 			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
 		},
 		{
-			name:         "400 - Invalid transaction: Not enough buffer data to deserialize",
+			name:         "400 - encoded_transaction is required",
 			method:       http.MethodPost,
 			contentType:  ContentTypeJSON,
 			status:       http.StatusBadRequest,
 			httpBody:     `{"wrongKey":"wrongValue"}`,
-			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Not enough buffer data to deserialize"),
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "encoded_transaction is required"),
 		},
 		{
 			name:         "400 - encoding/hex: odd length hex string",

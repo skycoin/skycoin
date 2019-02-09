@@ -25,12 +25,14 @@
         "styles.scss"
       ],
       "scripts": [
-        "assets/scripts/qrcode.min.js"
+        "assets/scripts/qrcode.min.js",
+        "assets/scripts/main.js"
       ],
       "environmentSource": "environments/environment.ts",
       "environments": {
         "dev": "environments/environment.ts",
-        "prod": "environments/environment.prod.ts"
+        "prod": "environments/environment.prod.ts",
+        "prod-hw": "environments/environment.ts"
       }
     }
   ],

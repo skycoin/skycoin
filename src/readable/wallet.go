@@ -3,6 +3,7 @@ package readable
 import "github.com/skycoin/skycoin/src/wallet"
 
 // Balance has coins and hours
+// swagger:model balance
 type Balance struct {
 	Coins uint64 `json:"coins"`
 	Hours uint64 `json:"hours"`
@@ -17,6 +18,7 @@ func NewBalance(b wallet.Balance) Balance {
 }
 
 // BalancePair records the confirmed and predicted balance of an address
+// swagger:model balancePair
 type BalancePair struct {
 	Confirmed Balance `json:"confirmed"`
 	Predicted Balance `json:"predicted"` // TODO rename "pending"
@@ -31,6 +33,7 @@ func NewBalancePair(bp wallet.BalancePair) BalancePair {
 }
 
 // AddressBalances represents a map of address balances
+// swagger:model addressBalances
 type AddressBalances map[string]BalancePair
 
 // NewAddressBalances copies from wallet.AddressBalances

@@ -19,7 +19,8 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 )
 
-const (
+const /**/(
+
 	dialTimeout         = 60 * time.Second
 	httpClientTimeout   = 120 * time.Second
 	tlsHandshakeTimeout = 60 * time.Second

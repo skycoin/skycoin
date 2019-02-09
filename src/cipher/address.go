@@ -61,9 +61,11 @@ func PubKeyRipemd160(pubKey PubKey) Ripemd160 {
 // Address version is after Key to enable better vanity address generation
 // Address struct is a 25 byte with a 20 byte public key hash, 1 byte address
 // type and 4 byte checksum.
-// swagger:model address
+// swagger:model addressModel
 type Address struct {
+	// in: body
 	Version byte      //1 byte
+	// in: body
 	Key     Ripemd160 //20 byte pubkey hash
 }
 

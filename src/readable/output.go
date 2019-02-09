@@ -15,6 +15,7 @@ import (
 )
 
 // UnspentOutput represents a readable output
+// swagger:model unspentOutput
 type UnspentOutput struct {
 	Hash              string `json:"hash"`
 	Time              uint64 `json:"time"`
@@ -46,6 +47,7 @@ func NewUnspentOutput(uxOut visor.UnspentOutput) (UnspentOutput, error) {
 }
 
 // UnspentOutputs slice of UnspentOutput
+// swagger:model unspentOutputs
 type UnspentOutputs []UnspentOutput
 
 // NewUnspentOutputs converts unspent outputs to a readable output

@@ -6,7 +6,7 @@
 //     Host: staging.node.skycoin.net
 //     BasePath: /
 //     Version: 0.25.0
-//     Contact: Skycoin project<skycoin.doe@example.com> https://www.skycoin.net
+//     Contact: Skycoin project<skycoin.doe@example.com> https://staging.node.skycoin.net
 //
 //     Consumes:
 //     - application/json
@@ -16,14 +16,11 @@
 //     - application/json
 //     - application/xml
 //
-//     Security:
-//     - csrfAuth: []
-//
 //     SecurityDefinitions:
 //     csrfAuth:
 //          type: apiKey
-//          name: csrf_Token
 //          in: header
+//          name: csrf_Token
 //
 // swagger:meta
 package api

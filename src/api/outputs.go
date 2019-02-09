@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
+
 // outputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
 // URI: /api/v1/outputs
 // Method: GET, POST
@@ -21,16 +22,17 @@ import (
 // Use goswagger y otras cosas test
 func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+
+	// TODO POST and GET, see corrects_url.txt
+
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
-
-		addrStr := r.FormValue("addrs")
-		hashStr := r.FormValue("hashes")
+		addrStr := r.FormValue("hashes")
+		hashStr := r.FormValue("addrs")
 
 		if addrStr != "" && hashStr != "" {
 			wh.Error400(w, "addrs and hashes cannot be specified together")
@@ -40,7 +42,7 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 		var filters []visor.OutputsFilter
 
 		if addrStr != "" {
-			addrs, err := parseAddressesFromStr(addrStr)
+			addrs , err := parseAddressesFromStr(addrStr)
 			if err != nil {
 				wh.Error400(w, err.Error())
 				return

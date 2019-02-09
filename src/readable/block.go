@@ -12,6 +12,7 @@ import (
 )
 
 // BlockHeader represents the readable block header
+// swagger:model blockHeader
 type BlockHeader struct {
 	BkSeq        uint64 `json:"seq"`
 	Hash         string `json:"block_hash"`
@@ -103,9 +104,7 @@ func NewBlockBody(b coin.Block) (*BlockBody, error) {
 // Block represents a readable block
 // swagger:model block
 type Block struct {
-	// in: body
 	Head BlockHeader `json:"header"`
-	// in: body
 	Body BlockBody   `json:"body"`
 	Size uint32      `json:"size"`
 }

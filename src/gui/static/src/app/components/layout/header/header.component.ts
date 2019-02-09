@@ -123,6 +123,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   private retrieveReleaseVersion() {
+    /*
+    // Old method for checking if an update is available. Must be replaced after adding the
+    // number of the lastest version in a Skycoin domain.
     this.http.get('https://api.github.com/repos/skycoin/skycoin/tags')
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || this.fetchVersionError))
@@ -130,5 +133,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.releaseVersion = response.find(element => element['name'].indexOf('rc') === -1)['name'].substr(1);
         this.updateAvailable = shouldUpgradeVersion(this.version, this.releaseVersion);
       });
+    */
+    this.updateAvailable = false;
   }
 }

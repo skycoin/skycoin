@@ -100,9 +100,9 @@ paths:
       - https
       summary: Creates a new CSRF token. Previous CSRF tokens are invalidated by this
         call.
-  /api/v1/network/connections:
+  /api/v1/network/connection:
     get:
-      operationId: networkConnections
+      operationId: networkConnection
       parameters:
       - description: Address port
         in: query
@@ -120,20 +120,27 @@ paths:
               address:
                 type: string
               connected_at:
+                format: int64
                 type: integer
               height:
+                format: int64
                 type: integer
               id:
+                format: int64
                 type: integer
               is_trusted_peer:
                 type: boolean
               last_received:
+                format: int64
                 type: integer
               last_sent:
+                format: int64
                 type: integer
               listen_port:
+                format: int32
                 type: integer
               mirror:
+                format: int32
                 type: integer
               outgoing:
                 type: boolean
@@ -147,10 +154,13 @@ paths:
                 description: Represent unconfirmed transactions
                 properties:
                   burn_factor:
+                    format: int32
                     type: integer
                   max_decimals:
+                    format: int32
                     type: integer
                   max_transaction_size:
+                    format: int32
                     type: integer
                 type: object
               user_agent:
@@ -159,6 +169,135 @@ paths:
         default:
           $ref: '#/responses/genericError'
       summary: This endpoint returns a specific connection.
+  /api/v1/network/connection/disconnect:
+    get:
+      description: This endpoint disconnects a connection by ID or address
+      operationId: networkConnectionsDisconnect
+      parameters:
+      - description: Address id.
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: This endpoint
+        default:
+          $ref: '#/responses/genericError'
+  /api/v1/network/connections:
+    get:
+      operationId: networkConnections
+      parameters:
+      - description: Connection status.
+        enum:
+        - pending
+        - connected
+        - introduced
+        in: query
+        name: states
+        type: string
+      - description: Direction of the connection.
+        enum:
+        - connected
+        - introduced
+        in: query
+        name: direction
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: This endpoint return a connection struct
+          schema:
+            items:
+              properties:
+                address:
+                  type: string
+                connected_at:
+                  format: int64
+                  type: integer
+                height:
+                  format: int64
+                  type: integer
+                id:
+                  format: int64
+                  type: integer
+                is_trusted_peer:
+                  type: boolean
+                last_received:
+                  format: int64
+                  type: integer
+                last_sent:
+                  format: int64
+                  type: integer
+                listen_port:
+                  format: int32
+                  type: integer
+                mirror:
+                  format: int32
+                  type: integer
+                outgoing:
+                  type: boolean
+                state:
+                  enum:
+                  - pending
+                  - connected
+                  - introduced
+                  type: string
+                unconfirmed_verify_transaction:
+                  description: Represent unconfirmed transactions
+                  properties:
+                    burn_factor:
+                      format: int32
+                      type: integer
+                    max_decimals:
+                      format: int32
+                      type: integer
+                    max_transaction_size:
+                      format: int32
+                      type: integer
+                  type: object
+                user_agent:
+                  type: string
+            type: array
+        default:
+          $ref: '#/responses/genericError'
+      summary: This endpoint returns all outgoings connections.
+  /api/v1/network/connections/exchange:
+    get:
+      description: This endpoint returns all connections found through peer exchange
+      operationId: networkConnectionsExchange
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: This endpoint return a list of all connections found through
+            peer exchange.
+          schema:
+            items:
+              type: string
+            type: array
+        default:
+          $ref: '#/responses/genericError'
+  /api/v1/network/connections/trust:
+    get:
+      operationId: networkConnectionsTrust
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: This endpoint return a list of trusted connections.
+          schema:
+            items:
+              type: string
+            type: array
+        default:
+          $ref: '#/responses/genericError'
+      summary: trustConnectionsHandler returns all trusted connections.\n They are
+        not necessarily connected to. In the default configuration, these will be
+        a subset of the default hardcoded bootstrap addresses.
   /api/v1/network/defaultConnections:
     get:
       operationId: defaultConnections
@@ -166,12 +305,13 @@ paths:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/defaultConnectionsResponse'
+          description: This endpoint return an list of default connections.
+          schema:
+            items:
+              type: string
+            type: array
         default:
           $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
       summary: defaultConnectionsHandler returns the list of default hardcoded bootstrap
         addresses.\n They are not necessarily connected to.
   /api/v1/resendUnconfirmedTxns:
@@ -475,13 +615,6 @@ responses:
           type: string
           x-go-name: Token
       type: object
-  defaultConnectionsResponse:
-    description: This struct is for endpoint /api/v1/defaultConnections response.
-    headers:
-      DefaultConnections:
-        items:
-          type: string
-        type: array
   genericError:
     description: |-
       A GenericError is the default error message that is generated.

@@ -53,8 +53,6 @@ const (
 	EndpointsWallet = "WALLET"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
-	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
-	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 	// EndpointsPrometheus endpoints for Go application metrics
 	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
@@ -417,7 +415,6 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV1("/wallet/create", forAPISet(walletCreateHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/newAddress", forAPISet(walletNewAddressesHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/balance", forAPISet(walletBalanceHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/spend", forAPISet(walletSpendHandler(gateway), []string{EndpointsDeprecatedWalletSpend}))
 	webHandlerV1("/wallet/transaction", forAPISet(createTransactionHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/transactions", forAPISet(walletTransactionsHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/update", forAPISet(walletUpdateHandler(gateway), []string{EndpointsWallet}))

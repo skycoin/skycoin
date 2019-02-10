@@ -15,14 +15,13 @@ import (
 const configuredHost = "127.0.0.1:6420"
 
 var allAPISetsEnabled = map[string]struct{}{
-	EndpointsRead:                  struct{}{},
-	EndpointsTransaction:           struct{}{},
-	EndpointsStatus:                struct{}{},
-	EndpointsWallet:                struct{}{},
-	EndpointsInsecureWalletSeed:    struct{}{},
-	EndpointsDeprecatedWalletSpend: struct{}{},
-	EndpointsPrometheus:            struct{}{},
-	EndpointsNetCtrl:               struct{}{},
+	EndpointsRead:               struct{}{},
+	EndpointsTransaction:        struct{}{},
+	EndpointsStatus:             struct{}{},
+	EndpointsWallet:             struct{}{},
+	EndpointsInsecureWalletSeed: struct{}{},
+	EndpointsPrometheus:         struct{}{},
+	EndpointsNetCtrl:            struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {
@@ -67,7 +66,6 @@ var endpoints = []string{
 	"/api/v1/wallet/newAddress",
 	"/api/v1/wallet/newSeed",
 	"/api/v1/wallet/seed",
-	"/api/v1/wallet/spend",
 	"/api/v1/wallet/transaction",
 	"/api/v1/wallet/transactions",
 	"/api/v1/wallet/unload",

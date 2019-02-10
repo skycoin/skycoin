@@ -1680,7 +1680,7 @@ curl -X POST \
   -H 'Content-Type: application/json' \
   -d '{
 	"filename": "test.json",
-	"data": {"key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"},
+	"data": {"key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"}
 }'
 ```
 
@@ -1699,6 +1699,7 @@ curl -X POST \
   -d '{
 	"filename": "test.json",
 	"data": {"key2": "value4", "key4": "value6"},
+	"update": true
 }'
 ```
 

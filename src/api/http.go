@@ -446,9 +446,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV2("/wallet/recover", forAPISet(walletRecoverHandler(gateway), []string{EndpointsWallet}))
 
 	// Filesystem endpoints
-	webHandlerV2("/data/get", forAPISet(dataGetHandler(gateway), []string{EndpointsFilesystem}))
-	webHandlerV2("/data/save", forAPISet(dataSaveHandler(gateway), []string{EndpointsFilesystem}))
-	webHandlerV2("/data/delete", forAPISet(dataDeleteHandler(gateway), []string{EndpointsFilesystem}))
+	webHandlerV2("/data", forAPISet(dataHandler(gateway), []string{EndpointsFilesystem}))
 
 	// Blockchain interface
 	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsRead, EndpointsStatus}))

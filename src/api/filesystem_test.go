@@ -33,12 +33,6 @@ func TestSaveData(t *testing.T) {
 		responseBody       string
 	}{
 		{
-			name:   "405",
-			method: http.MethodGet,
-			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
-		},
-		{
 			name:        "415",
 			method:      http.MethodPost,
 			status:      http.StatusUnsupportedMediaType,
@@ -87,7 +81,7 @@ func TestSaveData(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/api/v2/data/save"
+			endpoint := "/api/v2/data"
 			gateway := &MockGatewayer{}
 
 			serializedBody, err := json.Marshal(tc.body)
@@ -151,12 +145,6 @@ func TestGetData(t *testing.T) {
 		gatewatGetDataResult map[string]interface{}
 		responseBody         map[string]string
 	}{
-		{
-			name:   "405",
-			method: http.MethodDelete,
-			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
-		},
 		{
 			name:   "400 - missing filename",
 			method: http.MethodGet,
@@ -239,7 +227,7 @@ func TestGetData(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/api/v2/data/get"
+			endpoint := "/api/v2/data"
 			gateway := &MockGatewayer{}
 
 			gateway.On("GetData", tc.filename, tc.keys).Return(tc.gatewatGetDataResult, tc.gatewayGetDataErr)
@@ -302,12 +290,6 @@ func TestDeleteData(t *testing.T) {
 		gatewayDeleteDataErr error
 		responseBody         string
 	}{
-		{
-			name:   "405",
-			method: http.MethodPost,
-			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
-		},
 		{
 			name:   "400 - missing filename",
 			method: http.MethodDelete,
@@ -383,7 +365,7 @@ func TestDeleteData(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/api/v2/data/delete"
+			endpoint := "/api/v2/data"
 			gateway := &MockGatewayer{}
 
 			gateway.On("DeleteData", tc.filename, tc.keys).Return(tc.gatewayDeleteDataErr)

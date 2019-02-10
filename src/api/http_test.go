@@ -15,6 +15,7 @@ import (
 const configuredHost = "127.0.0.1:6420"
 
 var allAPISetsEnabled = map[string]struct{}{
+
 	EndpointsRead:               struct{}{},
 	EndpointsTransaction:        struct{}{},
 	EndpointsStatus:             struct{}{},

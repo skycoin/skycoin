@@ -12,7 +12,7 @@ func walletDirCmd() *cobra.Command {
 		Short:        "Displays wallet folder address",
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(c *cobra.Command, _ []string) error {
 			jsonOutput, err := c.Flags().GetBool("json")
 			if err != nil {
 				return err

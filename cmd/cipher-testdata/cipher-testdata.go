@@ -16,7 +16,7 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/cipher/testsuite"
 	"github.com/skycoin/skycoin/src/util/file"
 )
@@ -81,7 +81,7 @@ func main() {
 	fmt.Println("Creating output directory", *outputDir)
 
 	// Create the output directory
-	if err := os.MkdirAll(*outputDir, 0755); err != nil {
+	if err := os.MkdirAll(*outputDir, 0750); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

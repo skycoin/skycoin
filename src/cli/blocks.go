@@ -20,7 +20,7 @@ func blocksCmd() *gcli.Command {
 	return blocksCmd
 }
 
-func getBlocks(c *gcli.Command, args []string) error {
+func getBlocks(_ *gcli.Command, args []string) error {
 	var start, end string
 	start = args[0]
 

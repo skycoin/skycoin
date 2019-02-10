@@ -2174,13 +2174,12 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 		}
 
 		uxa, err = vs.Blockchain.Unspent().GetArray(tx, txn.In)
-		switch err.(type) {
+		switch e := err.(type) {
 		case nil:
 			// For unconfirmed transactions, use the blockchain head time to calculate hours
 			feeCalcTime = head.Time()
 
 		case blockdb.ErrUnspentNotExist:
-			uxid := err.(blockdb.ErrUnspentNotExist).UxID
 			// Gets uxouts of txn.In from historydb
 			outs, err := vs.history.GetUxOuts(tx, txn.In)
 			if err != nil {
@@ -2188,7 +2187,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			}
 
 			if len(outs) == 0 {
-				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", uxid)
+				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", e.UxID)
 				return NewErrTxnViolatesHardConstraint(err)
 			}
 

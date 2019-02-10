@@ -205,9 +205,8 @@ func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Block
 	var softErr *ErrTxnViolatesSoftConstraint
 	if _, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams); err != nil {
 		logger.Warningf("bc.VerifySingleTxnSoftHardConstraints failed for txn %s: %v", txn.TxIDHex(), err)
-		switch err.(type) {
+		switch e := err.(type) {
 		case ErrTxnViolatesSoftConstraint:
-			e := err.(ErrTxnViolatesSoftConstraint)
 			softErr = &e
 			isValid = 0
 		case ErrTxnViolatesHardConstraint:

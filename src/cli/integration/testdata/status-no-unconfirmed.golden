@@ -30,8 +30,6 @@
 		"csp_enabled": true,
 		"wallet_api_enabled": true,
 		"gui_enabled": false,
-		"unversioned_api_enabled": false,
-		"json_rpc_enabled": false,
 		"user_verify_transaction": {
 			"burn_factor": 2,
 			"max_transaction_size": 32768,

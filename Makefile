@@ -59,7 +59,7 @@ lint: ## Run linters. Use make install-linters first.
 check-newcoin: newcoin ## Check that make newcoin succeeds and no files are changed.
 	if [ "$(shell git diff ./ | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
-check: lint clean-coverage test integration-test-stable integration-test-stable-disable-csrf \
+check: lint clean-coverage test-386 test-amd64 integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \
 	integration-test-enable-seed-api integration-test-disable-gui \
 	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -68,17 +69,28 @@ func TestNewService(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			// check if the dup wallet is loaded
-			_, ok1 := s.wallets["test3.1.wlt"]
-			_, ok2 := s.wallets["test3.wlt"]
-			if ok1 && ok2 {
-				t.Fatal("load dup wallet")
-			}
-
-			require.Equal(t, 4, len(s.wallets))
+			require.Equal(t, 6, len(s.wallets))
 
 		})
 	}
+}
+
+func TestNewServiceDupWallets(t *testing.T) {
+	_, err := NewService(Config{
+		WalletDir:       "./testdata/duplicate_wallets",
+		EnableWalletAPI: true,
+	})
+	require.NotNil(t, err)
+	require.Error(t, err)
+	require.True(t, strings.HasPrefix(err.Error(), "duplicate wallet found with initial address 2M755W9o7933roLASK9PZTmqRsjQUsVen9y in file"), err.Error())
+}
+
+func TestNewServiceEmptyWallet(t *testing.T) {
+	_, err := NewService(Config{
+		WalletDir:       "./testdata/empty_wallet",
+		EnableWalletAPI: true,
+	})
+	testutil.RequireError(t, err, "empty wallet file found: \"empty.wlt\"")
 }
 
 func TestServiceCreateWallet(t *testing.T) {

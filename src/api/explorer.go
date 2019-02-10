@@ -154,54 +154,6 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
-// Method: GET
-// URI: /explorer/address
-// Args:
-//	address [string]
-func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Critical().Warning("Call to deprecated /api/v1/explorer/address endpoint")
-
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		addr := r.FormValue("address")
-		if addr == "" {
-			wh.Error400(w, "address is empty")
-			return
-		}
-
-		cipherAddr, err := cipher.DecodeBase58Address(addr)
-		if err != nil {
-			wh.Error400(w, "invalid address")
-			return
-		}
-
-		txns, inputs, err := gateway.GetVerboseTransactionsForAddress(cipherAddr)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetVerboseTransactionsForAddress failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		vb := make([]readable.TransactionVerbose, len(txns))
-		for i, txn := range txns {
-			v, err := readable.NewTransactionVerbose(txn, inputs[i])
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-
-			vb[i] = v
-		}
-
-		wh.SendJSONOr500(logger, w, vb)
-	}
-}
-
 // Richlist contains top address balances
 type Richlist struct {
 	Richlist []readable.RichlistBalance `json:"richlist"`

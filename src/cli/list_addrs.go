@@ -19,7 +19,7 @@ func listAddressesCmd() *gcli.Command {
 	}
 }
 
-func listAddresses(c *gcli.Command, args []string) error {
+func listAddresses(_ *gcli.Command, args []string) error {
 	var wltPath string
 	if len(args) > 0 {
 		wltPath = args[0]

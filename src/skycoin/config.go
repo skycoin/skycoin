@@ -105,9 +105,6 @@ type NodeConfig struct {
 	// Allow web interface auth without HTTPS
 	WebInterfacePlaintextAuth bool
 
-	// Enable the deprecated JSON 2.0 RPC interface
-	RPCInterface bool
-
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
 
@@ -255,8 +252,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
-
-		RPCInterface: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -612,8 +607,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
 	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
-	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
-
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
@@ -679,7 +672,6 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.DisableCSRF = false
 		c.DisableCSP = false
 		c.DownloadPeerList = true
-		c.RPCInterface = false
 		c.WebInterface = true
 		c.LogToFile = false
 		c.ResetCorruptDB = true

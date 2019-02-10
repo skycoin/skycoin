@@ -5,13 +5,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 
 	"github.com/spf13/cobra"
 )
+
+// TxnResult wraps readable.TransactionWithStatus
+type TxnResult struct {
+	Transaction *readable.TransactionWithStatus `json:"transaction"`
+}
 
 func transactionCmd() *cobra.Command {
 	return &cobra.Command{
@@ -37,7 +41,7 @@ func transactionCmd() *cobra.Command {
 				return err
 			}
 
-			return printJSON(webrpc.TxnResult{
+			return printJSON(TxnResult{
 				Transaction: txn,
 			})
 		},

@@ -137,12 +137,11 @@ func TestHostCheck(t *testing.T) {
 
 				rr := httptest.NewRecorder()
 				handler := newServerMux(muxConfig{
-					host:            configuredHost,
-					appLoc:          ".",
-					enableJSON20RPC: true,
-					disableCSRF:     false,
-					disableCSP:      true,
-					hostWhitelist:   tc.hostWhitelist,
+					host:          configuredHost,
+					appLoc:        ".",
+					disableCSRF:   false,
+					disableCSP:    true,
+					hostWhitelist: tc.hostWhitelist,
 				}, gateway, nil)
 
 				handler.ServeHTTP(rr, req)

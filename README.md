@@ -56,7 +56,6 @@ scratch, to remedy the rough edges in the Bitcoin design.
 	- [Development image](#development-image)
 - [API Documentation](#api-documentation)
 	- [REST API](#rest-api)
-	- [JSON-RPC 2.0 API](#json-rpc-20-api)
 	- [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
@@ -203,12 +202,6 @@ and useful tools included in `skycoin/skycoindev-cli`.
 
 [REST API](src/api/README.md).
 
-### JSON-RPC 2.0 API
-
-*Deprecated, avoid using this*
-
-[JSON-RPC 2.0 README](src/api/webrpc/README.md).
-
 ### Skycoin command line interface
 
 [CLI command API](cmd/cli/README.md).
@@ -301,7 +294,6 @@ We have two branches: `master` and `develop`.
 ### Modules
 
 * `api` - REST API interface
-* `api/webrpc` - JSON-RPC 2.0 API [deprecated]
 * `cipher` - cryptographic library
 * `cli` - CLI library
 * `coin` - blockchain data structures

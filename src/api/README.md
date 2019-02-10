@@ -59,8 +59,6 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get block by hash or seq](#get-block-by-hash-or-seq)
 	- [Get blocks in specific range](#get-blocks-in-specific-range)
 	- [Get last N blocks](#get-last-n-blocks)
-- [Explorer APIs](#explorer-apis)
-	- [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
 	- [Get uxout](#get-uxout)
 	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
@@ -3285,68 +3283,6 @@ Result:
 }
 ```
 
-## Explorer APIs
-
-### Get address affected transactions
-
-API sets: `READ`
-
-```
-URI: /api/v1/explorer/address
-Method: GET
-Args:
-    address
-```
-
-**Deprecated** Use `/api/v1/transactions?verbose=1&addrs=` instead.
-
-Example:
-
-```sh
-curl http://127.0.0.1:6420/api/v1/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
-```
-
-Result:
-
-```json
-[
-    {
-        "status": {
-            "confirmed": true,
-            "unconfirmed": false,
-            "height": 38076,
-            "block_seq": 15493
-        },
-        "timestamp": 1518878675,
-        "length": 183,
-        "type": 0,
-        "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
-        "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
-        "fee": 126249,
-        "sigs": [
-            "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
-        ],
-        "inputs": [
-            {
-                "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
-                "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
-                "coins": "125.000000",
-                "hours": 34596,
-                "calculated_hours": 178174
-            }
-        ],
-        "outputs": [
-            {
-                "uxid": "5b4a79c7de2e9099e083bbc8096619ae76ba6fbe34875c61bbe2d3bfa6b18b99",
-                "dst": "2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg",
-                "coins": "125.000000",
-                "hours": 51925
-            }
-        ]
-    }
-]
-```
-
 ## Uxout APIs
 
 ### Get uxout
@@ -3977,7 +3913,7 @@ Use the value of `"encoded_transaction"` as the `"rawtx"` value in the request t
 
 ## Migration from /api/v1/explorer/address
 
-The `GET /api/v1/explorer/address` endpoint is deprecated and will be removed in v0.26.0.
+The `GET /api/v1/explorer/address` was deprecated in v0.25.0 and removed in v0.26.0.
 
 To migrate from it, use [`GET /api/v1/transactions?verbose=1`](#get-transactions-for-addresses).
 

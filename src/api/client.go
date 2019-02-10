@@ -1118,19 +1118,6 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 	return nil, err
 }
 
-// AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]readable.TransactionVerbose, error) {
-	v := url.Values{}
-	v.Add("address", addr)
-	endpoint := "/api/v1/explorer/address?" + v.Encode()
-
-	var b []readable.TransactionVerbose
-	if err := c.Get(endpoint, &b); err != nil {
-		return nil, err
-	}
-	return b, nil
-}
-
 // RichlistParams are arguments to the /richlist endpoint
 type RichlistParams struct {
 	N                   int

@@ -20,7 +20,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { AppService } from './app.service';
 
 declare var Cipher: any;
-declare var CipherExtras: any;
 
 export enum HwSecurityWarnings {
   NeedsBackup,
@@ -330,6 +329,9 @@ export class WalletService {
         if (totalCoins.isLessThan(amount)) {
           throw new Error(this.translate.instant('service.wallet.not-enough-hours'));
         }
+        if (minRequiredOutputs.length > 8) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
+        }
 
         minRequiredOutputs.map(output => totalHours = totalHours.plus(output.calculated_hours));
         hoursToSend = totalHours.multipliedBy(unburnedHoursRatio).dividedBy(2).decimalPlaces(0, BigNumber.ROUND_FLOOR);
@@ -384,6 +386,11 @@ export class WalletService {
             coins: parseInt(new BigNumber(output.coins).multipliedBy(1000000).toFixed(0), 10),
           };
         });
+
+        // Impossible at this time. Here waiting for when the possibility of sending to multiple addresses is added.
+        if (convertedOutputs.length > 8) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+        }
 
         return this.hwWalletService.signTransaction(hwInputs, hwOutputs);
       }).flatMap(signatures => {

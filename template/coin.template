@@ -67,6 +67,7 @@ var (
 		CoinName:                       CoinName,
 		CoinhoursName:                  CoinhoursName,
 		Ticker:                         Ticker,
+		ExplorerURL:                    "{{.ExplorerURL}}",
 		GenesisSignatureStr:            GenesisSignatureStr,
 		GenesisAddressStr:              GenesisAddressStr,
 		GenesisCoinVolume:              GenesisCoinVolume,

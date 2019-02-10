@@ -88,6 +88,7 @@ type HealthConfig struct {
 	DisplayName     string
 	CoinName        string
 	CoinhoursName   string
+	ExplorerURL     string
 	Ticker          string
 	DaemonUserAgent useragent.Data
 }

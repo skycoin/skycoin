@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
   `-` prefix is only allowed when using shorthand notation.
 - Use an optimized `base58` library for faster address decoding and encoding.
-- Add `display_name, `coinhours_name` and `ticker` to `/health` endpoint
+- Add `display_name`,`coinhours_name`,`ticker` and `explorer_url` to `/health` endpoint.
 
 ### Removed
 

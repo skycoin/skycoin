@@ -23,6 +23,7 @@ type HealthResponse struct {
 	DisplayName           string             `json:"display_name"`
 	CoinName              string             `json:"coin"`
 	CoinhoursName         string             `json:"coinhours_name"`
+	ExplorerURL           string             `json:"explorer_url"`
 	Ticker                string             `json:"ticker"`
 	DaemonUserAgent      string             `json:"user_agent"`
 	OpenConnections      int                `json:"open_connections"`
@@ -76,6 +77,7 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 			CoinName:              c.health.CoinName,
 			CoinhoursName:         c.health.CoinhoursName,
 			Ticker:                c.health.Ticker,
+			ExplorerURL:           c.health.ExplorerURL,
 			DaemonUserAgent:      userAgent,
 			OpenConnections:      health.OutgoingConnections + health.IncomingConnections,
 			OutgoingConnections:  health.OutgoingConnections,

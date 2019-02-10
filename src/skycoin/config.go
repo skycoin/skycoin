@@ -43,6 +43,8 @@ type NodeConfig struct {
 	CoinhoursName string
 	// Ticker code
 	Ticker string
+	// Block explorer URL
+	ExplorerURL string
 
 	// Disable peer exchange
 	DisablePEX bool
@@ -210,6 +212,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		CoinName:            node.CoinName,
 		CoinhoursName:       node.CoinhoursName,
 		Ticker:              node.Ticker,
+		ExplorerURL:         node.ExplorerURL,
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
@@ -664,10 +667,10 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 	flag.BoolVar(&c.Version, "version", false, "show node version")
 
-	flag.StringVar(&c.CoinName, "coin", "skycoin", "name of the coin")
 	flag.StringVar(&c.DisplayName, "display-name", "Skycoin", "user-facing coin name")
-	flag.StringVar(&c.CoinhoursName, "coinhours-name", "SKY Hours", "name of coinhours")
+	flag.StringVar(&c.CoinhoursName, "coinhours-name", "Coin Hours", "name of coinhours")
 	flag.StringVar(&c.Ticker, "ticker", "SKY", "3/4 letter short name of the coin")
+	flag.StringVar(&c.ExplorerURL, "explorer-url", "https://explorer.skycoin.net", "url of the block explorer")
 }
 
 func (c *NodeConfig) applyConfigMode(configMode string) {

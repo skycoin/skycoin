@@ -37,7 +37,7 @@ var (
 	// CoinName name of coin
 	CoinName = "skycoin"
 	// CoinhoursName name of coinhours
-	CoinhoursName = "SKY Hours"
+	CoinhoursName = "Coin Hours"
 	// Ticker short name
 	Ticker = "SKY"
 
@@ -75,6 +75,7 @@ var (
 		CoinName:                       CoinName,
 		CoinhoursName:                  CoinhoursName,
 		Ticker:                         Ticker,
+		ExplorerURL:                    "https://explorer.skycoin.net",
 		GenesisSignatureStr:            GenesisSignatureStr,
 		GenesisAddressStr:              GenesisAddressStr,
 		GenesisCoinVolume:              GenesisCoinVolume,

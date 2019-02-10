@@ -57,6 +57,8 @@ type NodeParameters struct {
 	CoinhoursName string `mapstructure:"coinhours_name"`
 	// Ticker is the 3/4 letter code of the coin
 	Ticker string `mapstructure:"ticker"`
+	// ExplorerURL is the URL of the block explorer
+	ExplorerURL string `mapstructure:"explorer_url"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
 	CoinName      string
@@ -141,8 +143,9 @@ func setDefaults() {
 	viper.SetDefault("node.create_block_max_decimals", 3)
 	viper.SetDefault("node.max_block_size", 32*1024)
 	viper.SetDefault("node.display_name", "Skycoin")
-	viper.SetDefault("node.coinhours_name", "SKY Hours")
+	viper.SetDefault("node.coinhours_name", "Coin Hours")
 	viper.SetDefault("node.ticker", "SKY")
+	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.net")
 
 	// build defaults
 	viper.SetDefault("build.commit", "")

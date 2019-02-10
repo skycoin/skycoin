@@ -11,7 +11,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 export class HwConfirmTxDialogComponent extends HwDialogBaseComponent<HwConfirmTxDialogComponent> {
 
   constructor(
-    dialogRef: MatDialogRef<HwConfirmTxDialogComponent>,
+    public dialogRef: MatDialogRef<HwConfirmTxDialogComponent>,
     hwWalletService: HwWalletService,
   ) {
     super(hwWalletService, dialogRef);

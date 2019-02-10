@@ -297,7 +297,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         if (name === 'coins') {
           const parts = value.split('.');
 
-          if (parts.length === 2 && parts[1].length > 6) {
+          if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
             return true;
           }
         } else if (name === 'hours') {

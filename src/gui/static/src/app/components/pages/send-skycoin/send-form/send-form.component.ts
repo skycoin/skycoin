@@ -231,7 +231,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.form.get('amount').setValidators([
         Validators.required,
         Validators.max(balance),
-        this.validateAmount,
+        this.validateAmount.bind(this),
       ]);
 
       this.form.get('amount').updateValueAndValidity();
@@ -255,7 +255,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     const parts = amountControl.value.split('.');
 
-    if (parts.length === 2 && parts[1].length > 6) {
+    if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
       return { Invalid: true };
     }
 

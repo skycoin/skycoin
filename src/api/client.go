@@ -677,23 +677,6 @@ func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	return &b, nil
 }
 
-// Spend makes a request to POST /api/v1/wallet/spend
-func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendResult, error) {
-	v := url.Values{}
-	v.Add("id", id)
-	v.Add("dst", dst)
-	v.Add("coins", fmt.Sprint(coins))
-	v.Add("password", password)
-
-	var r SpendResult
-	endpoint := "/api/v1/wallet/spend"
-	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
-		return nil, err
-	}
-
-	return &r, nil
-}
-
 // CreateTransactionRequest is sent to /api/v1/wallet/transaction
 type CreateTransactionRequest struct {
 	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`

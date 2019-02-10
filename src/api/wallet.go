@@ -9,21 +9,11 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
 )
-
-// SpendResult represents the result of spending
-type SpendResult struct {
-	Balance     *readable.BalancePair `json:"balance,omitempty"`
-	Transaction *readable.Transaction `json:"txn,omitempty"`
-	Error       string                `json:"error,omitempty"`
-}
 
 // UnconfirmedTxnsResponse contains unconfirmed transaction data
 type UnconfirmedTxnsResponse struct {
@@ -183,107 +173,6 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 			BalancePair: readable.NewBalancePair(balance),
 			Addresses:   addressBalances,
 		})
-	}
-}
-
-// Creates and broadcasts a transaction sending money from one of our wallets
-// to destination address.
-// URI: /api/v1/wallet/spend
-// Method: POST
-// Args:
-//     id: wallet id
-//     dst: recipient address
-//     coins: the number of droplet you will send
-//     password: wallet password
-// Response:
-//     balance: new balance of the wallet
-//     txn: spent transaction
-//     error: an error that may have occurred after broadcast the transaction to the network
-//         if this field is not empty, the spend succeeded, but the response data could not be prepared
-func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			wh.Error405(w)
-			return
-		}
-
-		wltID := r.FormValue("id")
-		if wltID == "" {
-			wh.Error400(w, "missing wallet id")
-			return
-		}
-
-		sdst := r.FormValue("dst")
-		if sdst == "" {
-			wh.Error400(w, "missing destination address \"dst\"")
-			return
-		}
-		dst, err := cipher.DecodeBase58Address(sdst)
-		if err != nil {
-			wh.Error400(w, fmt.Sprintf("invalid destination address: %v", err))
-			return
-		}
-
-		scoins := r.FormValue("coins")
-		coins, err := strconv.ParseUint(scoins, 10, 64)
-		if err != nil {
-			wh.Error400(w, `invalid "coins" value`)
-			return
-		}
-
-		if coins <= 0 {
-			wh.Error400(w, `invalid "coins" value, must > 0`)
-			return
-		}
-
-		tx, err := gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst)
-		switch err {
-		case nil:
-		case fee.ErrTxnNoFee,
-			wallet.ErrSpendingUnconfirmed,
-			wallet.ErrInsufficientBalance,
-			wallet.ErrWalletNotEncrypted,
-			wallet.ErrMissingPassword,
-			wallet.ErrWalletEncrypted,
-			wallet.ErrInvalidPassword:
-			wh.Error400(w, err.Error())
-			return
-		case wallet.ErrWalletAPIDisabled,
-			daemon.ErrSpendMethodDisabled:
-			wh.Error403(w, "")
-			return
-		case wallet.ErrWalletNotExist:
-			wh.Error404(w, "")
-			return
-		default:
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		var ret SpendResult
-
-		ret.Transaction, err = readable.NewTransaction(*tx, false)
-		if err != nil {
-			err = fmt.Errorf("readable.NewTransaction failed: %v", err)
-			logger.Error(err)
-			ret.Error = err.Error()
-			wh.SendJSONOr500(logger, w, ret)
-			return
-		}
-
-		// Get the new wallet balance
-		walletBalance, _, err := gateway.GetWalletBalance(wltID)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetWalletBalance failed: %v", err)
-			logger.Error(err)
-			ret.Error = err.Error()
-			wh.SendJSONOr500(logger, w, ret)
-			return
-		}
-		b := readable.NewBalancePair(walletBalance)
-		ret.Balance = &b
-
-		wh.SendJSONOr500(logger, w, ret)
 	}
 }
 

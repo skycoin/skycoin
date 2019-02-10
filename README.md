@@ -661,7 +661,7 @@ Instructions for doing this:
 0. Update version strings to the new version in the following files: `electron/package-lock.json`, `electron/package.json`, `electron/skycoin/current-skycoin.json`, `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote for images `skycoin/skycoin`, `skycoin/skycoindev-cli`, and `skycoin/skycoindev-vscode`, adding a new file for the new version and adjusting any configuration text that may have changed
+0. Update the files in https://github.com/skycoin/repo-info by following the [metadata update procedure](https://github.com/skycoin/repo-info/#updating-skycoin-repository-metadate),
 0. Merge these changes to `develop`
 0. Follow the steps in [pre-release testing](#pre-release-testing)
 0. Make a PR merging `develop` into `master`

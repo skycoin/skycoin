@@ -147,7 +147,7 @@ func TestHealthHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(tc.cfg, gateway, nil)
+			handler := newServerMux(tc.cfg, gateway)
 			handler.ServeHTTP(rr, req)
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)

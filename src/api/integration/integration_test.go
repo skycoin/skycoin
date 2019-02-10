@@ -5894,11 +5894,6 @@ func TestDisableWalletAPI(t *testing.T) {
 		}
 
 		t.Run(tc.name, f(tc))
-
-		if strings.HasPrefix(tc.endpoint, "/api/v1") {
-			tc.endpoint = strings.TrimPrefix(tc.endpoint, "/api/v1")
-			t.Run(tc.name, f(tc))
-		}
 	}
 
 	// Confirms that no new wallet is created

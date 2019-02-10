@@ -19,9 +19,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -72,19 +70,18 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir       string
-	DisableCSRF     bool
-	DisableCSP      bool
-	EnableJSON20RPC bool
-	EnableGUI       bool
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	IdleTimeout     time.Duration
-	Health          HealthConfig
-	HostWhitelist   []string
-	EnabledAPISets  map[string]struct{}
-	Username        string
-	Password        string
+	StaticDir      string
+	DisableCSRF    bool
+	DisableCSP     bool
+	EnableGUI      bool
+	ReadTimeout    time.Duration
+	WriteTimeout   time.Duration
+	IdleTimeout    time.Duration
+	Health         HealthConfig
+	HostWhitelist  []string
+	EnabledAPISets map[string]struct{}
+	Username       string
+	Password       string
 }
 
 // HealthConfig configuration data exposed in /health
@@ -95,17 +92,16 @@ type HealthConfig struct {
 }
 
 type muxConfig struct {
-	host            string
-	appLoc          string
-	enableGUI       bool
-	enableJSON20RPC bool
-	disableCSRF     bool
-	disableCSP      bool
-	enabledAPISets  map[string]struct{}
-	hostWhitelist   []string
-	username        string
-	password        string
-	health          HealthConfig
+	host           string
+	appLoc         string
+	enableGUI      bool
+	disableCSRF    bool
+	disableCSP     bool
+	enabledAPISets map[string]struct{}
+	hostWhitelist  []string
+	username       string
+	password       string
+	health         HealthConfig
 }
 
 // HTTPResponse represents the http response struct
@@ -174,17 +170,6 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Warning("CSRF check disabled")
 	}
 
-	var rpc *webrpc.WebRPC
-	if c.EnableJSON20RPC {
-		logger.Info("JSON 2.0 RPC enabled")
-		var err error
-		// TODO: change webprc to use http.Gatewayer
-		rpc, err = webrpc.New(gateway.(*daemon.Gateway))
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if c.ReadTimeout == 0 {
 		c.ReadTimeout = defaultReadTimeout
 	}
@@ -196,20 +181,19 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	}
 
 	mc := muxConfig{
-		host:            host,
-		appLoc:          appLoc,
-		enableGUI:       c.EnableGUI,
-		enableJSON20RPC: c.EnableJSON20RPC,
-		disableCSRF:     c.DisableCSRF,
-		disableCSP:      c.DisableCSP,
-		health:          c.Health,
-		enabledAPISets:  c.EnabledAPISets,
-		hostWhitelist:   c.HostWhitelist,
-		username:        c.Username,
-		password:        c.Password,
+		host:           host,
+		appLoc:         appLoc,
+		enableGUI:      c.EnableGUI,
+		disableCSRF:    c.DisableCSRF,
+		disableCSP:     c.DisableCSP,
+		health:         c.Health,
+		enabledAPISets: c.EnabledAPISets,
+		hostWhitelist:  c.HostWhitelist,
+		username:       c.Username,
+		password:       c.Password,
 	}
 
-	srvMux := newServerMux(mc, gateway, rpc)
+	srvMux := newServerMux(mc, gateway)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -321,7 +305,7 @@ func (s *Server) Shutdown() {
 }
 
 // newServerMux creates an http.ServeMux with handlers registered
-func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.ServeMux {
+func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	allowedOrigins := []string{fmt.Sprintf("http://%s", c.host)}
@@ -416,10 +400,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 
 			webHandler(apiVersion1, route, fs)
 		}
-	}
-
-	if c.enableJSON20RPC {
-		webHandlerV1("/webrpc", http.HandlerFunc(rpc.Handler))
 	}
 
 	// get the current CSRF token

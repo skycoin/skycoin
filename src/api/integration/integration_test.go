@@ -5953,7 +5953,6 @@ func TestStableHealth(t *testing.T) {
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
 	require.False(t, r.GUIEnabled)
-	require.False(t, r.JSON20RPCEnabled)
 }
 
 func TestLiveHealth(t *testing.T) {

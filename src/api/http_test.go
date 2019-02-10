@@ -74,7 +74,6 @@ var endpoints = []string{
 	"/api/v1/wallet/update",
 	"/api/v1/wallets",
 	"/api/v1/wallets/folderName",
-	"/api/v1/webrpc",
 
 	"/api/v2/transaction/verify",
 	"/api/v2/address/verify",
@@ -184,18 +183,12 @@ func TestEnableGUI(t *testing.T) {
 
 func TestAPISetDisabled(t *testing.T) {
 	for _, e := range append(endpoints, []string{"/api/v1/csrf"}...) {
-		switch e {
-		case "/api/v1/webrpc":
-			continue
-		}
-
 		t.Run(e, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, e, nil)
 			require.NoError(t, err)
 
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
-			cfg.enableJSON20RPC = false
 			cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
 
 			handler := newServerMux(cfg, &MockGatewayer{}, nil)
@@ -387,7 +380,6 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 
 				cfg := defaultMuxConfig()
 				cfg.disableCSRF = false
-				cfg.enableJSON20RPC = false
 				cfg.username = tc.username
 				cfg.password = tc.password
 

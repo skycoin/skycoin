@@ -1,13 +1,8 @@
 # Skycoin Exchange Integration
 
-A Skycoin node offers multiple interfaces:
+A Skycoin node offers a REST API on port 6420 (when running from source; if you are using the releases downloaded from the website, the port is randomized)
 
-* REST API on port 6420 (when running from source; if you are using the releases downloaded from the website, the port is randomized)
-* JSON-RPC 2.0 API accessible on `/api/v1/webrpc` endpoint **[deprecated]**
-
-A CLI tool is provided in `cmd/cli/cli.go`. This tool communicates over the JSON-RPC 2.0 API. In the future it will communicate over the REST API.
-
-*Note*: Do not interface with the JSON-RPC 2.0 API directly, it is deprecated and will be removed in a future version.
+A CLI tool is provided in `cmd/cli/cli.go`. This tool communicates over the REST API.
 
 The API interfaces do not support authentication or encryption so they should only be used over localhost.
 

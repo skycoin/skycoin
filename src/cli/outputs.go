@@ -5,7 +5,6 @@ import (
 
 	gcli "github.com/spf13/cobra"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -38,6 +37,11 @@ func addressOutputsCmd() *gcli.Command {
 	}
 }
 
+// OutputsResult the output json format
+type OutputsResult struct {
+	Outputs readable.UnspentOutputsSummary `json:"outputs"`
+}
+
 func getWalletOutputsCmd(c *gcli.Command, args []string) error {
 	var wltPath string
 	if len(args) == 1 {
@@ -54,7 +58,7 @@ func getWalletOutputsCmd(c *gcli.Command, args []string) error {
 		return err
 	}
 
-	return printJSON(webrpc.OutputsResult{
+	return printJSON(OutputsResult{
 		Outputs: *outputs,
 	})
 }
@@ -75,7 +79,7 @@ func getAddressOutputsCmd(c *gcli.Command, args []string) error {
 		return err
 	}
 
-	return printJSON(webrpc.OutputsResult{
+	return printJSON(OutputsResult{
 		Outputs: *outputs,
 	})
 }

@@ -30,7 +30,6 @@ type HealthResponse struct {
 	CSPEnabled           bool               `json:"csp_enabled"`
 	WalletAPIEnabled     bool               `json:"wallet_api_enabled"`
 	GUIEnabled           bool               `json:"gui_enabled"`
-	JSON20RPCEnabled     bool               `json:"json_rpc_enabled"`
 	UserVerifyTxn        readable.VerifyTxn `json:"user_verify_transaction"`
 	UnconfirmedVerifyTxn readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
 	StartedAt            int64              `json:"started_at"`
@@ -79,7 +78,6 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 			CSRFEnabled:          !c.disableCSRF,
 			CSPEnabled:           !c.disableCSP,
 			GUIEnabled:           c.enableGUI,
-			JSON20RPCEnabled:     c.enableJSON20RPC,
 			WalletAPIEnabled:     walletAPIEnabled,
 			UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
 			UnconfirmedVerifyTxn: readable.NewVerifyTxn(health.UnconfirmedVerifyTxn),

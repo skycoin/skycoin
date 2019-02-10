@@ -11,7 +11,7 @@ import (
 	gcli "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/wallet"
 )

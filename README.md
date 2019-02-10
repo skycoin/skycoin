@@ -310,12 +310,7 @@ We have two branches: `master` and `develop`.
 Skycoin implements client libraries which export core functionality for usage from
 other programming languages.
 
-* `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
-
-For further details run `make docs` to generate documetation and read the corresponding README and API references.
-
-It is also possible to [build client libraries for other programming languages](lib/swig/README.md)
-using [SWIG](http://www.swig.org/).
+* [libskycoin C client library and SWIG interface](https://github.com/skycoin/libskycoin)
 
 ### Running Tests
 

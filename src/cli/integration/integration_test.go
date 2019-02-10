@@ -74,7 +74,7 @@ func init() {
 func TestMain(m *testing.M) {
 	abs, err := filepath.Abs(binaryName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("get binary name absolute path failed: %v\n", err))
+		fmt.Fprintf(os.Stderr, "get binary name absolute path failed: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -83,7 +83,7 @@ func TestMain(m *testing.M) {
 	// Build cli binary file.
 	args := []string{"build", "-o", binaryPath, "../../../cmd/cli/cli.go"}
 	if err := exec.Command("go", args...).Run(); err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("Make %v binary failed: %v\n", binaryName, err))
+		fmt.Fprintf(os.Stderr, "Make %v binary failed: %v\n", binaryName, err)
 		os.Exit(1)
 	}
 
@@ -91,7 +91,7 @@ func TestMain(m *testing.M) {
 
 	// Remove the generated cli binary file.
 	if err := os.Remove(binaryPath); err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("Delete %v failed: %v", binaryName, err))
+		fmt.Fprintf(os.Stderr, "Delete %v failed: %v", binaryName, err)
 		os.Exit(1)
 	}
 

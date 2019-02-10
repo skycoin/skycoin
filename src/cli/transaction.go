@@ -5,13 +5,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 
 	"github.com/spf13/cobra"
 )
+
+// TxnResult wraps readable.TransactionWithStatus
+type TxnResult struct {
+	Transaction *readable.TransactionWithStatus `json:"transaction"`
+}
 
 func transactionCmd() *cobra.Command {
 	return &cobra.Command{
@@ -20,7 +24,7 @@ func transactionCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.MaximumNArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			txid := args[0]
 			if txid == "" {
 				return errors.New("txid is empty")
@@ -37,7 +41,7 @@ func transactionCmd() *cobra.Command {
 				return err
 			}
 
-			return printJSON(webrpc.TxnResult{
+			return printJSON(TxnResult{
 				Transaction: txn,
 			})
 		},
@@ -51,7 +55,7 @@ func decodeRawTxCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			b, err := hex.DecodeString(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid raw transaction: %v", err)

@@ -76,7 +76,7 @@ func TestOriginRefererCheck(t *testing.T) {
 				cfg := defaultMuxConfig()
 				cfg.disableCSRF = false
 
-				handler := newServerMux(cfg, gateway, nil)
+				handler := newServerMux(cfg, gateway)
 				handler.ServeHTTP(rr, req)
 
 				switch tc.status {
@@ -137,13 +137,12 @@ func TestHostCheck(t *testing.T) {
 
 				rr := httptest.NewRecorder()
 				handler := newServerMux(muxConfig{
-					host:            configuredHost,
-					appLoc:          ".",
-					enableJSON20RPC: true,
-					disableCSRF:     false,
-					disableCSP:      true,
-					hostWhitelist:   tc.hostWhitelist,
-				}, gateway, nil)
+					host:          configuredHost,
+					appLoc:        ".",
+					disableCSRF:   false,
+					disableCSP:    true,
+					hostWhitelist: tc.hostWhitelist,
+				}, gateway)
 
 				handler.ServeHTTP(rr, req)
 
@@ -222,7 +221,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 				enableGUI:   tc.enableGUI,
 				disableCSP:  !tc.enableCSP,
 				disableCSRF: true,
-			}, &MockGatewayer{}, nil)
+			}, &MockGatewayer{})
 			handler.ServeHTTP(rr, req)
 
 			csp := rr.Header().Get("Content-Security-Policy")

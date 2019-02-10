@@ -35,14 +35,14 @@ func checkdbCmd() *cobra.Command {
 		Use:   "checkdb [db path]",
 		Long: `Checks if the given database file contains valid skycoin blockchain data.
     If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.`,
-		Args:                  cobra.MaximumNArgs(1),
+		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  checkdb,
 	}
 }
 
-func checkdb(c *cobra.Command, args []string) error {
+func checkdb(_ *cobra.Command, args []string) error {
 	// get db path
 	dbpath, err := resolveDBPath(cliConfig, args[0])
 	if err != nil {

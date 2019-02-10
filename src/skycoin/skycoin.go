@@ -398,7 +398,6 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
 
 	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
 
 	if c.config.Node.EnableCHB {
 		dc.Gateway.CoinhourBankNodeURL = c.config.Node.CHBNodeURL
@@ -416,17 +415,15 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 	config := api.Config{
-		StaticDir:            c.config.Node.GUIDirectory,
-		DisableCSRF:          c.config.Node.DisableCSRF,
-		DisableCSP:           c.config.Node.DisableCSP,
-		EnableJSON20RPC:      c.config.Node.RPCInterface,
-		EnableGUI:            c.config.Node.EnableGUI,
-		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,
-		ReadTimeout:          c.config.Node.HTTPReadTimeout,
-		WriteTimeout:         c.config.Node.HTTPWriteTimeout,
-		IdleTimeout:          c.config.Node.HTTPIdleTimeout,
-		EnabledAPISets:       c.config.Node.enabledAPISets,
-		HostWhitelist:        c.config.Node.hostWhitelist,
+		StaticDir:      c.config.Node.GUIDirectory,
+		DisableCSRF:    c.config.Node.DisableCSRF,
+		DisableCSP:     c.config.Node.DisableCSP,
+		EnableGUI:      c.config.Node.EnableGUI,
+		ReadTimeout:    c.config.Node.HTTPReadTimeout,
+		WriteTimeout:   c.config.Node.HTTPWriteTimeout,
+		IdleTimeout:    c.config.Node.HTTPIdleTimeout,
+		EnabledAPISets: c.config.Node.enabledAPISets,
+		HostWhitelist:  c.config.Node.hostWhitelist,
 		Health: api.HealthConfig{
 			BuildInfo: readable.BuildInfo{
 				Version: c.config.Build.Version,

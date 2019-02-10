@@ -237,7 +237,6 @@ func NewDaemonConfig() DaemonConfig {
 	}
 }
 
-//go:generate go install
 //go:generate mockery -name daemoner -case underscore -inpkg -testonly
 
 // daemoner Daemon interface
@@ -374,9 +373,6 @@ func (dm *Daemon) Shutdown() {
 
 	logger.Info("Shutting down Pool")
 	dm.pool.Shutdown()
-
-	logger.Info("Shutting down Gateway")
-	dm.Gateway.Shutdown()
 
 	logger.Info("Shutting down Pex")
 	dm.pex.Shutdown()
@@ -617,13 +613,6 @@ loop:
 
 			if err := dm.visor.SetTransactionsAnnounced(txns); err != nil {
 				logger.WithError(err).Error("Failed to set unconfirmed txn announce time")
-			}
-
-		case req := <-dm.Gateway.requests:
-			// Process any pending RPC requests
-			elapser.Register("dm.Gateway.requests")
-			if err := req.Func(); err != nil {
-				logger.WithError(err).Error()
 			}
 
 		case <-blockCreationTicker.C:

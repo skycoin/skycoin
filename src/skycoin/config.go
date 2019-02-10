@@ -58,8 +58,6 @@ type NodeConfig struct {
 	CHBNodeURL string
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable unversioned API endpoints (without the /api/v1 prefix)
-	EnableUnversionedAPI bool
 	// Disable CSP disable content-security-policy in http response
 	DisableCSP bool
 	// Comma separated list of API sets enabled on the remote web interface
@@ -110,9 +108,6 @@ type NodeConfig struct {
 	WebInterfacePassword string
 	// Allow web interface auth without HTTPS
 	WebInterfacePlaintextAuth bool
-
-	// Enable the deprecated JSON 2.0 RPC interface
-	RPCInterface bool
 
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
@@ -231,8 +226,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnableCHB: false,
 		// CHBNodeURL
 		CHBNodeURL: "",
-		// Enable unversioned API
-		EnableUnversionedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
 		// DisableCSP disable content-security-policy in http response
@@ -267,8 +260,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
-
-		RPCInterface: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -575,7 +566,6 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsTransaction,
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
-			api.EndpointsDeprecatedWalletSpend,
 			api.EndpointsPrometheus,
 			api.EndpointsNetCtrl:
 		case "":
@@ -599,7 +589,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.EnableCHB, "enable-chb", c.EnableCHB, "enable coinhour bank service.")
 	flag.StringVar(&c.CHBNodeURL, "chb-node-url", c.CHBNodeURL, "with -enable-chb=true, this url is used for coinhour bank client")
-	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
@@ -621,7 +610,6 @@ func (c *NodeConfig) RegisterFlags() {
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		api.EndpointsInsecureWalletSeed,
-		api.EndpointsDeprecatedWalletSpend,
 	}
 	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
@@ -630,8 +618,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
 	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
 	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
-
-	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
@@ -698,7 +684,6 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.DisableCSRF = false
 		c.DisableCSP = false
 		c.DownloadPeerList = true
-		c.RPCInterface = false
 		c.WebInterface = true
 		c.LogToFile = false
 		c.ResetCorruptDB = true

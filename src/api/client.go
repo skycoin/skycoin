@@ -677,23 +677,6 @@ func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	return &b, nil
 }
 
-// Spend makes a request to POST /api/v1/wallet/spend
-func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendResult, error) {
-	v := url.Values{}
-	v.Add("id", id)
-	v.Add("dst", dst)
-	v.Add("coins", fmt.Sprint(coins))
-	v.Add("password", password)
-
-	var r SpendResult
-	endpoint := "/api/v1/wallet/spend"
-	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
-		return nil, err
-	}
-
-	return &r, nil
-}
-
 // CreateTransactionRequest is sent to /api/v1/wallet/transaction
 type CreateTransactionRequest struct {
 	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
@@ -1116,19 +1099,6 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 	}
 
 	return nil, err
-}
-
-// AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]readable.TransactionVerbose, error) {
-	v := url.Values{}
-	v.Add("address", addr)
-	endpoint := "/api/v1/explorer/address?" + v.Encode()
-
-	var b []readable.TransactionVerbose
-	if err := c.Get(endpoint, &b); err != nil {
-		return nil, err
-	}
-	return b, nil
 }
 
 // RichlistParams are arguments to the /richlist endpoint

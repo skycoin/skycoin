@@ -3169,6 +3169,7 @@ type addressTransactionsTestCase struct {
 }
 
 func TestStableAddressTransactions(t *testing.T) {
+	// Formerly tested /api/v1/explorer/address, now tests /api/v1/transactions?verbose=1
 	if !doStable(t) {
 		return
 	}
@@ -3193,7 +3194,7 @@ func TestStableAddressTransactions(t *testing.T) {
 			name:    "invalid address",
 			address: "prRXwTcDK24hs6AFxj",
 			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - invalid address",
+			errMsg:  "400 Bad Request - parse parameter: 'addrs' failed: address \"prRXwTcDK24hs6AFxj\" is invalid: Invalid address length",
 		},
 	}
 
@@ -3215,7 +3216,7 @@ func TestStableAddressTransactions(t *testing.T) {
 	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txns, err := c.AddressTransactions(tc.address)
+			txns, err := c.TransactionsVerbose([]string{tc.address})
 			if tc.errMsg != "" {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 				return
@@ -3223,13 +3224,14 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []readable.TransactionVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
 }
 
 func TestLiveAddressTransactions(t *testing.T) {
+	// Formerly tested /api/v1/explorer/address, now tests /api/v1/transactions?verbose=1
 	if !doLive(t) {
 		return
 	}
@@ -3238,7 +3240,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 		{
 			name: "address with transactions",
 			// This is the first distribution address which has spent all of its coins
-			// It's transactions list should not change, unless someone sends coins to it
+			// Its transactions list should not change, unless someone sends coins to it
 			address: "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 			golden:  "address-transactions-R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ.golden",
 		},
@@ -3254,15 +3256,14 @@ func TestLiveAddressTransactions(t *testing.T) {
 			name:    "invalid address",
 			address: "prRXwTcDK24hs6AFxj",
 			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - invalid address",
+			errMsg:  "400 Bad Request - parse parameter: 'addrs' failed: address \"prRXwTcDK24hs6AFxj\" is invalid: Invalid address length",
 		},
 	}
 
 	c := newClient()
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txns, err := c.AddressTransactions(tc.address)
+			txns, err := c.TransactionsVerbose([]string{tc.address})
 			if tc.errMsg != "" {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 				return
@@ -3275,7 +3276,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 				txns[i].Status.Height = 0
 			}
 
-			var expected []readable.TransactionVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
@@ -3470,137 +3471,6 @@ func TestLivePendingTransactionsVerbose(t *testing.T) {
 
 	_, err := c.PendingTransactionsVerbose()
 	require.NoError(t, err)
-}
-
-func TestLiveWalletSpend(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	if liveDisableNetworking(t) {
-		t.Skip("Spend tests require networking")
-		return
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
-
-	tt := []struct {
-		name     string
-		to       string
-		coins    uint64
-		checkTxn func(t *testing.T, tx *readable.TransactionWithStatus)
-	}{
-		{
-			name:  "send all coins to the first address",
-			to:    w.Entries[0].Address.String(),
-			coins: totalCoins,
-			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
-				// Confirms the total output coins are equal to the totalCoins
-				var coins uint64
-				for _, o := range tx.Transaction.Out {
-					c, err := droplet.FromString(o.Coins)
-					require.NoError(t, err)
-					coins, err = coin.AddUint64(coins, c)
-					require.NoError(t, err)
-				}
-
-				// Confirms the address balance are equal to the totalCoins
-				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
-				require.Equal(t, totalCoins, coins)
-			},
-		},
-		{
-			// send 0.003 coin to the second address,
-			// this amount is chosen to not interfere with TestLiveWalletCreateTransaction
-			name:  "send 0.003 coin to second address",
-			to:    w.Entries[1].Address.String(),
-			coins: 3e3,
-			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
-				// Confirms there're two outputs, one to the second address, one as change output to the first address.
-				require.Len(t, tx.Transaction.Out, 2)
-
-				// Gets the output of the second address in the transaction
-				getAddrOutputInTxn := func(t *testing.T, tx *readable.TransactionWithStatus, addr string) *readable.TransactionOutput {
-					for _, output := range tx.Transaction.Out {
-						if output.Address == addr {
-							return &output
-						}
-					}
-					t.Fatalf("transaction doesn't have output to address: %v", addr)
-					return nil
-				}
-
-				out := getAddrOutputInTxn(t, tx, w.Entries[1].Address.String())
-
-				// Confirms the second address has 0.003 coin
-				require.Equal(t, out.Coins, "0.003000")
-				require.Equal(t, out.Address, w.Entries[1].Address.String())
-
-				coin, err := droplet.FromString(out.Coins)
-				require.NoError(t, err)
-
-				// Gets the expected change coins
-				expectChangeCoins := totalCoins - coin
-
-				// Gets the real change coins
-				changeOut := getAddrOutputInTxn(t, tx, w.Entries[0].Address.String())
-				changeCoins, err := droplet.FromString(changeOut.Coins)
-				require.NoError(t, err)
-				// Confirms the change coins are matched.
-				require.Equal(t, expectChangeCoins, changeCoins)
-			},
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := c.Spend(w.Filename(), tc.to, tc.coins, password)
-			if err != nil {
-				t.Fatalf("spend failed: %v", err)
-			}
-
-			tk := time.NewTicker(time.Second)
-			var txn *readable.TransactionWithStatus
-		loop:
-			for {
-				select {
-				case <-time.After(30 * time.Second):
-					t.Fatal("Waiting for transaction to be confirmed timeout")
-				case <-tk.C:
-					txn = getTransaction(t, c, result.Transaction.Hash)
-					if txn.Status.Confirmed {
-						break loop
-					}
-				}
-			}
-			tc.checkTxn(t, txn)
-		})
-	}
-
-	// Return if wallet is encrypted, cause the rest of the tests will spend a lot of time.
-	if w.IsEncrypted() {
-		return
-	}
-
-	// Confirms sending coins less than 0.001 is not allowed
-	errMsg := "500 Internal Server Error - Transaction violates soft constraint: invalid amount, too many decimal places"
-	for i := uint64(1); i < uint64(1000); i++ {
-		cs, err := droplet.ToString(i)
-		require.NoError(t, err)
-		name := fmt.Sprintf("send invalid coin %v", cs)
-		t.Run(name, func(t *testing.T) {
-			result, err := c.Spend(w.Filename(), w.Entries[0].Address.String(), i, password)
-			if w.IsEncrypted() && len(password) == 0 {
-				assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password")
-				return
-			}
-			assertResponseError(t, err, http.StatusInternalServerError, errMsg)
-			require.Nil(t, result)
-		})
-	}
 }
 
 func TestStableInjectTransaction(t *testing.T) {
@@ -4099,7 +3969,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 					Hours:   1,
 				},
 				{
-					// Address omitted -- will be check later in the test body
+					// Address omitted -- will be checked later in the test body
 					Coins: 1e3,
 					Hours: remainingHours - 1,
 				},
@@ -5732,20 +5602,6 @@ func TestDisableWalletAPI(t *testing.T) {
 			code:      http.StatusForbidden,
 		},
 		{
-			name:     "wallet spending",
-			method:   http.MethodPost,
-			endpoint: "/api/v1/wallet/spend",
-			body: func() io.Reader {
-				v := url.Values{}
-				v.Add("id", "test.wlt")
-				v.Add("coins", "100000") // 1e5
-				v.Add("dst", "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6")
-				return strings.NewReader(v.Encode())
-			},
-			expectErr: "403 Forbidden - Endpoint is disabled",
-			code:      http.StatusForbidden,
-		},
-		{
 			name:      "get wallet unconfirmed transactions",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/transactions?id=test.wlt",
@@ -5893,11 +5749,6 @@ func TestDisableWalletAPI(t *testing.T) {
 		}
 
 		t.Run(tc.name, f(tc))
-
-		if strings.HasPrefix(tc.endpoint, "/api/v1") {
-			tc.endpoint = strings.TrimPrefix(tc.endpoint, "/api/v1")
-			t.Run(tc.name, f(tc))
-		}
 	}
 
 	// Confirms that no new wallet is created
@@ -5956,9 +5807,7 @@ func TestStableHealth(t *testing.T) {
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
-	require.False(t, r.UnversionedAPIEnabled)
 	require.False(t, r.GUIEnabled)
-	require.False(t, r.JSON20RPCEnabled)
 }
 
 func TestLiveHealth(t *testing.T) {

@@ -5,11 +5,6 @@ API default service port is `6420`. However, if running the desktop or standalon
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
 The API has two versions, `/api/v1` and `/api/v2`.
-Previously, there was no `/api/vx` prefix.
-Starting in application version v0.24.0, the existing endpoints from v0.23.0
-are now prefixed with `/api/v1`. To retain the old endpoints, run the application
-with `-enable-unversioned-api`.  This option will be removed in v0.26.0
-and the `/api/v1` prefix will be required for previously unversioned endpoints.
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
@@ -33,12 +28,11 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get wallets](#get-wallets)
 	- [Get wallet folder name](#get-wallet-folder-name)
 	- [Generate wallet seed](#generate-wallet-seed)
-	- [Verify Wallet Seed](#verify-wallet-seed)
+	- [Verify wallet Seed](#verify-wallet-seed)
 	- [Create a wallet from seed](#create-a-wallet-from-seed)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
 	- [Updates wallet label](#updates-wallet-label)
 	- [Get wallet balance](#get-wallet-balance)
-	- [Spend coins from wallet](#spend-coins-from-wallet)
 	- [Create transaction](#create-transaction)
 	- [Unload wallet](#unload-wallet)
 	- [Encrypt wallet](#encrypt-wallet)
@@ -59,8 +53,6 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get block by hash or seq](#get-block-by-hash-or-seq)
 	- [Get blocks in specific range](#get-blocks-in-specific-range)
 	- [Get last N blocks](#get-last-n-blocks)
-- [Explorer APIs](#explorer-apis)
-	- [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
 	- [Get uxout](#get-uxout)
 	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
@@ -143,7 +135,6 @@ These API sets are:
 * `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
 * `NET_CTRL` - The `/api/v1/network/connection/disconnect` method, intended for network administration endpoints
 * `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
-* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed in v0.26.0
 
 ## Authentication
 
@@ -236,8 +227,6 @@ Response:
     "csp_enabled": true,
     "wallet_api_enabled": true,
     "gui_enabled": true,
-    "unversioned_api_enabled": false,
-    "json_rpc_enabled": false,
     "user_verify_transaction": {
         "burn_factor": 2,
         "max_transaction_size": 32768,
@@ -1096,92 +1085,6 @@ Result:
 }
 ```
 
-### Spend coins from wallet
-
-API sets: `DEPRECATED_WALLET_SPEND`
-
-```
-URI: /api/v1/wallet/spend
-Method: POST
-Args:
-    id: wallet id
-    dst: recipient address
-    coins: number of coins to send, in droplets. 1 coin equals 1e6 droplets.
-    password: wallet password.
-Response:
-    balance: new balance of the wallet
-    txn: spent transaction
-    error: an error that may have occured after broadcast the transaction to the network
-           if this field is not empty, the spend succeeded, but the response data could not be prepared
-Statuses:
-    200: successful spend. NOTE: the response may include an "error" field. if this occurs, the spend succeeded
-         but the response data could not be prepared. The client should NOT spend again.
-    400: Invalid query params, wallet lacks enough coin hours, insufficient balance
-    403: Wallet api disabled
-    404: wallet does not exist
-    500: other errors
-```
-
-
-**This endpoint is deprecated, use [POST /wallet/transaction](#create-transaction)**
-
-Example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
-
-```sh
-curl -X POST  http://127.0.0.1:6420/api/v1/wallet/spend \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'id=2017_05_09_ea42.wlt' \
-  -d 'dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc' \
-  -d 'coins=1000000'
-  -d 'password=$password'
-```
-
-Result:
-
-```json
-{
-    "balance": {
-        "confirmed": {
-            "coins": 61000000,
-            "hours": 19667
-        },
-        "predicted": {
-            "coins": 61000000,
-            "hours": 19667
-        }
-    },
-    "txn": {
-        "length": 317,
-        "type": 0,
-        "txid": "89578005d8730fe1789288ee7dea036160a9bd43234fb673baa6abd91289a48b",
-        "inner_hash": "cac977eee019832245724aa643ceff451b9d8b24612b2f6a58177c79e8a4c26f",
-        "sigs": [
-            "3f084a0c750731dd985d3137200f9b5fc3de06069e62edea0cdd3a91d88e56b95aff5104a3e797ab4d6d417861af0c343efb0fff2e5ba9e7cf88ab714e10f38101",
-            "e9a8aa8860d189daf0b1dbfd2a4cc309fc0c7250fa81113aa7258f9603d19727793c1b7533131605db64752aeb9c1f4465198bb1d8dd597213d6406a0a81ed3701"
-        ],
-        "inputs": [
-            "bb89d4ed40d0e6e3a82c12e70b01a4bc240d2cd4f252cfac88235abe61bd3ad0",
-            "170d6fd7be1d722a1969cb3f7d45cdf4d978129c3433915dbaf098d4f075bbfc"
-        ],
-        "outputs": [
-            {
-                "uxid": "ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106",
-                "dst": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
-                "coins": "60.000000",
-                "hours": 2458
-            },
-            {
-                "uxid": "be40210601829ba8653bac1d6ecc4049955d97fb490a48c310fd912280422bd9",
-                "dst": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
-                "coins": "1.000000",
-                "hours": 2458
-            }
-        ]
-    },
-    "error": ""
-}
-```
-
 ### Create transaction
 
 API sets: `WALLET`
@@ -1932,16 +1835,18 @@ If there are no available connections, the API responds with a `503 Service Unav
 Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
 This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
 
-Also, in rare cases the transaction may be broadcast but might not be saved to the database. In this case the client
-would have a window of opportunity to attempt a double spend, resulting in unexpected behavior.
-However, if the database save failed, it is likely that a subsequent call to inject transaction will also fail.
-
 The recommended way to handle transaction injections from your system is to inject the transaction then wait
 for the transaction to be confirmed.  Transactions typically confirm quickly, so if it is not confirmed after some
 timeout such as 1 minute, the application can continue to retry the broadcast with `/api/v1/resendUnconfirmedTxns`.
 Broadcast only fails without an error if the node's peers disconnect or timeout after the broadcast was initiated,
 which is a network problem that may recover, so rebroadcasting with `/api/v1/resendUnconfirmedTxns` will resolve it,
-or else the network is unavailable.  Any transactions saved to the database will be resent on startup.
+or else the network is unavailable.
+
+`POST /api/v1/transaction` accepts an `ignore_unconfirmed` option to allow transactions to be created without waiting
+for unconfirmed transactions to confirm.
+
+Any unconfirmed transactions found in the database at startup are resent. So, if the network broadcast failed but
+the transaction was saved to the database, when you restart the client, it will resend.
 
 It is safe to retry the injection after a `503` failure.
 
@@ -3283,68 +3188,6 @@ Result:
 }
 ```
 
-## Explorer APIs
-
-### Get address affected transactions
-
-API sets: `READ`
-
-```
-URI: /api/v1/explorer/address
-Method: GET
-Args:
-    address
-```
-
-**Deprecated** Use `/api/v1/transactions?verbose=1&addrs=` instead.
-
-Example:
-
-```sh
-curl http://127.0.0.1:6420/api/v1/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
-```
-
-Result:
-
-```json
-[
-    {
-        "status": {
-            "confirmed": true,
-            "unconfirmed": false,
-            "height": 38076,
-            "block_seq": 15493
-        },
-        "timestamp": 1518878675,
-        "length": 183,
-        "type": 0,
-        "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
-        "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
-        "fee": 126249,
-        "sigs": [
-            "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
-        ],
-        "inputs": [
-            {
-                "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
-                "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
-                "coins": "125.000000",
-                "hours": 34596,
-                "calculated_hours": 178174
-            }
-        ],
-        "outputs": [
-            {
-                "uxid": "5b4a79c7de2e9099e083bbc8096619ae76ba6fbe34875c61bbe2d3bfa6b18b99",
-                "dst": "2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg",
-                "coins": "125.000000",
-                "hours": 51925
-            }
-        ]
-    }
-]
-```
-
 ## Uxout APIs
 
 ### Get uxout
@@ -3905,7 +3748,7 @@ The unversioned API are the API endpoints without an `/api` prefix.
 These endpoints are all prefixed with `/api/v1` now.
 
 `-enable-unversioned-api` was added as an option to assist migration to `/api/v1`
-but this option will be removed in v0.26.0.
+but this option was removed in v0.26.0.
 
 To migrate from the unversioned API, add `/api/v1` to all endpoints that you call
 that do not have an `/api` prefix already.
@@ -3914,7 +3757,8 @@ For example, `/block` would become `/api/v1/block`.
 
 ## Migrating from the JSONRPC API
 
-The JSONRPC-2.0 RPC API will be removed in v0.26.0.
+The JSONRPC-2.0 RPC API was deprecated with v0.25.0 and removed in v0.26.0.
+
 Anyone still using this can follow this guide to migrate to the REST API:
 
 * `get_status` is replaced by `/api/v1/blockchain/metadata` and `/api/v1/health`
@@ -3975,7 +3819,7 @@ Use the value of `"encoded_transaction"` as the `"rawtx"` value in the request t
 
 ## Migration from /api/v1/explorer/address
 
-The `GET /api/v1/explorer/address` endpoint is deprecated and will be removed in v0.26.0.
+The `GET /api/v1/explorer/address` was deprecated in v0.25.0 and removed in v0.26.0.
 
 To migrate from it, use [`GET /api/v1/transactions?verbose=1`](#get-transactions-for-addresses).
 

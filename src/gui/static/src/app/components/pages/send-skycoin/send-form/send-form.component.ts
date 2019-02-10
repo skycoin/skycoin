@@ -11,9 +11,11 @@ import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
 import { Observable } from 'rxjs/Observable';
-import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
+import { PreviewTransaction, Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { BlockchainService } from '../../../../services/blockchain.service';
+import { showConfirmationModal } from '../../../../utils';
 
 @Component({
   selector: 'app-send-form',
@@ -42,6 +44,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     private navbarService: NavBarService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
+    private blockchainService: BlockchainService,
   ) {}
 
   ngOnInit() {
@@ -60,12 +63,37 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   preview() {
     this.previewTx = true;
-    this.unlockAndSend();
+    this.checkBeforeSending();
   }
 
   send() {
     this.previewTx = false;
-    this.unlockAndSend();
+    this.checkBeforeSending();
+  }
+
+  private checkBeforeSending() {
+    this.blockchainService.synchronized.first().subscribe(synchronized => {
+      if (synchronized) {
+        this.unlockAndSend();
+      } else {
+        this.showSynchronizingWarning();
+      }
+    });
+  }
+
+  private showSynchronizingWarning() {
+    const confirmationData: ConfirmationData = {
+      text: 'send.synchronizing-warning',
+      headerText: 'confirmation.header-text',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+    };
+
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
+        this.unlockAndSend();
+      }
+    });
   }
 
   private unlockAndSend() {
@@ -123,6 +151,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     if (!this.form.value.wallet.isHardware) {
       createTxRequest = this.walletService.createTransaction(
         this.form.value.wallet,
+        null,
         null,
         [{
           address: this.form.value.address,
@@ -202,7 +231,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.form.get('amount').setValidators([
         Validators.required,
         Validators.max(balance),
-        this.validateAmount,
+        this.validateAmount.bind(this),
       ]);
 
       this.form.get('amount').updateValueAndValidity();
@@ -226,7 +255,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     const parts = amountControl.value.split('.');
 
-    if (parts.length === 2 && parts[1].length > 6) {
+    if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
       return { Invalid: true };
     }
 

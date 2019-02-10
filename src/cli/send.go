@@ -57,7 +57,7 @@ By default the from address or a wallets coinbase address will be used.`)
 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
 	sendCmd.Flags().StringP("password", "p", "", "Wallet password")
 	sendCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
-	sendCmd.Flags().String("csv-file", "", "CSV file containing addresses and amounts to send")
+	sendCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
 
 	return sendCmd
 }

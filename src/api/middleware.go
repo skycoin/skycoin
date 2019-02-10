@@ -84,7 +84,7 @@ func OriginRefererCheck(host string, hostWhitelist []string, handler http.Handle
 }
 
 func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler http.Handler) http.Handler {
-	hostWhitelistMap := make(map[string]struct{}, len(hostWhitelist)+1)
+	hostWhitelistMap := make(map[string]struct{}, len(hostWhitelist)+2)
 	for _, k := range hostWhitelist {
 		hostWhitelistMap[k] = struct{}{}
 	}
@@ -100,20 +100,22 @@ func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler
 		origin := r.Header.Get("Origin")
 		referer := r.Header.Get("Referer")
 		toCheck := origin
+		toCheckHeader := "Origin"
 		if toCheck == "" {
 			toCheck = referer
+			toCheckHeader = "Referer"
 		}
 
 		if toCheck != "" {
 			u, err := url.Parse(toCheck)
 			if err != nil {
-				logger.Critical().Errorf("Invalid URL in Origin or Referer header: %s %v", toCheck, err)
+				logger.Critical().Errorf("Invalid URL in %s header: %s %v", toCheckHeader, toCheck, err)
 				writeError(w, apiVersion, http.StatusForbidden, "Invalid URL in Origin or Referer header")
 				return
 			}
 
 			if _, isWhitelisted := hostWhitelistMap[u.Host]; !isWhitelisted {
-				logger.Critical().Errorf("Origin or Referer header value %s does not match host and is not whitelisted", toCheck)
+				logger.Critical().Errorf("%s header value %s does not match host and is not whitelisted", toCheckHeader, toCheck)
 				writeError(w, apiVersion, http.StatusForbidden, "Invalid Origin or Referer")
 				return
 			}

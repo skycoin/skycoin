@@ -191,7 +191,7 @@ func TestGetBalanceHandler(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -644,7 +644,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -766,7 +766,7 @@ func TestWalletGet(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -908,7 +908,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1053,7 +1053,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1266,7 +1266,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		cfg := defaultMuxConfig()
 		cfg.disableCSRF = false
 
-		handler := newServerMux(cfg, gateway, nil)
+		handler := newServerMux(cfg, gateway)
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
@@ -1578,7 +1578,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1696,7 +1696,7 @@ func TestWalletNewSeed(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1817,7 +1817,7 @@ func TestVerifySeed(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -1975,7 +1975,7 @@ func TestGetWalletSeed(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -2193,7 +2193,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -2262,7 +2262,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		cfg := defaultMuxConfig()
 		cfg.disableCSRF = false
 
-		handler := newServerMux(cfg, gateway, nil)
+		handler := newServerMux(cfg, gateway)
 		handler.ServeHTTP(rr, req)
 
 		status := rr.Code
@@ -2486,7 +2486,7 @@ func TestGetWallets(t *testing.T) {
 		cfg := defaultMuxConfig()
 		cfg.disableCSRF = false
 
-		handler := newServerMux(cfg, gateway, nil)
+		handler := newServerMux(cfg, gateway)
 
 		handler.ServeHTTP(rr, req)
 
@@ -2577,7 +2577,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -2726,7 +2726,7 @@ func TestEncryptWallet(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -2909,7 +2909,7 @@ func TestDecryptWallet(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -3177,7 +3177,7 @@ func TestWalletRecover(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

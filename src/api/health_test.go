@@ -61,12 +61,11 @@ func TestHealthHandler(t *testing.T) {
 			method: http.MethodGet,
 			code:   http.StatusOK,
 			cfg: muxConfig{
-				host:            configuredHost,
-				appLoc:          ".",
-				disableCSRF:     false,
-				disableCSP:      false,
-				enableGUI:       true,
-				enableJSON20RPC: true,
+				host:        configuredHost,
+				appLoc:      ".",
+				disableCSRF: false,
+				disableCSP:  false,
+				enableGUI:   true,
 				enabledAPISets: map[string]struct{}{
 					EndpointsStatus: struct{}{},
 					EndpointsRead:   struct{}{},
@@ -148,7 +147,7 @@ func TestHealthHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(tc.cfg, gateway, nil)
+			handler := newServerMux(tc.cfg, gateway)
 			handler.ServeHTTP(rr, req)
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)
@@ -188,7 +187,6 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, !tc.cfg.disableCSRF, r.CSRFEnabled)
 			require.Equal(t, !tc.cfg.disableCSP, r.CSPEnabled)
 			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
-			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
 			require.Equal(t, uint32(2), r.UserVerifyTxn.BurnFactor)

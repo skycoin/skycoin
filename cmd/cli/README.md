@@ -79,7 +79,7 @@ The CLI uses environment variable to manage the configurations.
 
 ### RPC_ADDR
 
-CLI will connect to skycoin node RPC address `http://127.0.0.1:6420` by default.
+CLI will connect to skycoin node REST API address `http://127.0.0.1:6420` by default.
 You can change the address by setting the `RPC_ADDR` environment variable
 with the following command:
 
@@ -1865,7 +1865,6 @@ $ skycoin-cli status
         "csp_enabled": true,
         "wallet_api_enabled": true,
         "gui_enabled": true,
-        "json_rpc_enabled": false,
         "user_verify_transaction": {
             "burn_factor": 2,
             "max_transaction_size": 32768,

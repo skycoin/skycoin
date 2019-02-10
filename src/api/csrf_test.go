@@ -64,13 +64,12 @@ func TestCSRFWrapper(t *testing.T) {
 
 					rr := httptest.NewRecorder()
 					handler := newServerMux(muxConfig{
-						host:            configuredHost,
-						appLoc:          ".",
-						enableJSON20RPC: true,
-						disableCSRF:     false,
-						disableCSP:      true,
-						enabledAPISets:  allAPISetsEnabled,
-					}, gateway, nil)
+						host:           configuredHost,
+						appLoc:         ".",
+						disableCSRF:    false,
+						disableCSP:     true,
+						enabledAPISets: allAPISetsEnabled,
+					}, gateway)
 
 					handler.ServeHTTP(rr, req)
 
@@ -105,13 +104,12 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 	gateway := &MockGatewayer{}
 
 	handler := newServerMux(muxConfig{
-		host:            configuredHost,
-		appLoc:          ".",
-		enableJSON20RPC: true,
-		disableCSRF:     false,
-		disableCSP:      true,
-		enabledAPISets:  allAPISetsEnabled,
-	}, gateway, nil)
+		host:           configuredHost,
+		appLoc:         ".",
+		disableCSRF:    false,
+		disableCSP:     true,
+		enabledAPISets: allAPISetsEnabled,
+	}, gateway)
 
 	var wg sync.WaitGroup
 
@@ -183,13 +181,12 @@ func TestCSRF(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		handler := newServerMux(muxConfig{
-			host:            configuredHost,
-			appLoc:          ".",
-			enableJSON20RPC: true,
-			disableCSRF:     false,
-			disableCSP:      true,
-			enabledAPISets:  allAPISetsEnabled,
-		}, gateway, nil)
+			host:           configuredHost,
+			appLoc:         ".",
+			disableCSRF:    false,
+			disableCSP:     true,
+			enabledAPISets: allAPISetsEnabled,
+		}, gateway)
 
 		handler.ServeHTTP(rr, req)
 
@@ -205,7 +202,7 @@ func TestCSRF(t *testing.T) {
 	gateway := &MockGatewayer{}
 	cfg := defaultMuxConfig()
 	cfg.disableCSRF = false
-	handler := newServerMux(cfg, gateway, nil)
+	handler := newServerMux(cfg, gateway)
 
 	// non-GET request to /csrf is invalid
 	req, err := http.NewRequest(http.MethodPost, "/api/v1/csrf", nil)
@@ -218,7 +215,7 @@ func TestCSRF(t *testing.T) {
 
 	// CSRF disabled 404s
 	cfg.disableCSRF = true
-	handler = newServerMux(cfg, gateway, nil)
+	handler = newServerMux(cfg, gateway)
 
 	req, err = http.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	require.NoError(t, err)
@@ -229,7 +226,7 @@ func TestCSRF(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, rr.Code)
 
 	cfg.disableCSRF = false
-	handler = newServerMux(cfg, gateway, nil)
+	handler = newServerMux(cfg, gateway)
 
 	// Request a CSRF token, use it in a request
 	req, err = http.NewRequest(http.MethodGet, "/api/v1/csrf", nil)

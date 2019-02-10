@@ -222,7 +222,7 @@ func TestCoinSupply(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -450,7 +450,7 @@ func TestGetRichlist(t *testing.T) {
 				disableCSRF:    tc.csrfDisabled,
 				disableCSP:     true,
 				enabledAPISets: allAPISetsEnabled,
-			}, gateway, nil)
+			}, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -530,7 +530,7 @@ func TestGetAddressCount(t *testing.T) {
 				disableCSRF:    tc.csrfDisabled,
 				disableCSP:     true,
 				enabledAPISets: allAPISetsEnabled,
-			}, gateway, nil)
+			}, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

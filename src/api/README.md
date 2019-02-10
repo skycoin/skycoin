@@ -229,7 +229,6 @@ Response:
     "csp_enabled": true,
     "wallet_api_enabled": true,
     "gui_enabled": true,
-    "json_rpc_enabled": false,
     "user_verify_transaction": {
         "burn_factor": 2,
         "max_transaction_size": 32768,
@@ -3837,7 +3836,7 @@ The unversioned API are the API endpoints without an `/api` prefix.
 These endpoints are all prefixed with `/api/v1` now.
 
 `-enable-unversioned-api` was added as an option to assist migration to `/api/v1`
-but this option will be removed in v0.26.0.
+but this option was removed in v0.26.0.
 
 To migrate from the unversioned API, add `/api/v1` to all endpoints that you call
 that do not have an `/api` prefix already.
@@ -3846,7 +3845,8 @@ For example, `/block` would become `/api/v1/block`.
 
 ## Migrating from the JSONRPC API
 
-The JSONRPC-2.0 RPC API will be removed in v0.26.0.
+The JSONRPC-2.0 RPC API was deprecated with v0.25.0 and removed in v0.26.0.
+
 Anyone still using this can follow this guide to migrate to the REST API:
 
 * `get_status` is replaced by `/api/v1/blockchain/metadata` and `/api/v1/health`

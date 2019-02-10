@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Duplicate wallets in the wallets folder will prevent the application from starting
+- An empty wallet in the wallets folder will prevent the application from starting
+
 ### Removed
 
 - `/api/v1/explorer/address` endpoint (use `GET /api/v1/transactions?verbose=1` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-explorer-address

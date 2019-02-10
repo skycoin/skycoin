@@ -54,7 +54,7 @@ type NodeConfig struct {
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Disable CORS check in the wallet API
+	// Disable Host, Origin and Referer header check in the wallet API
 	DisableHeadercheck bool
 	// Enable unversioned API endpoints (without the /api/v1 prefix)
 	EnableUnversionedAPI bool
@@ -224,7 +224,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnableGUI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
-		// Disable header check in the wallet API
+		// Disable Host, Origin and Referer header check in the wallet API
 		DisableHeadercheck: false,
 		// DisableCSP disable content-security-policy in http response
 		DisableCSP: false,
@@ -582,7 +582,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.DisableHeadercheck, "disable-headercheck", c.DisableHeadercheck, "disable Header check")
+	flag.BoolVar(&c.DisableHeadercheck, "disable-headercheck", c.DisableHeadercheck, "disables the host, origin and referer header checks.")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")

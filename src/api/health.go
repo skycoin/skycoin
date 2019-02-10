@@ -18,7 +18,6 @@ type BlockchainMetadata struct {
 
 // HealthResponse is returned by the /health endpoint
 type HealthResponse struct {
-<<<<<<< 8ce8115a116d9f110da8e874a7af84aca85a148a
 	BlockchainMetadata   BlockchainMetadata `json:"blockchain"`
 	Version              readable.BuildInfo `json:"version"`
 	CoinName             string             `json:"coin"`
@@ -28,32 +27,13 @@ type HealthResponse struct {
 	IncomingConnections  int                `json:"incoming_connections"`
 	Uptime               wh.Duration        `json:"uptime"`
 	CSRFEnabled          bool               `json:"csrf_enabled"`
+	HeadercheckEnabled   bool               `json:"headercheck_enabled"`
 	CSPEnabled           bool               `json:"csp_enabled"`
 	WalletAPIEnabled     bool               `json:"wallet_api_enabled"`
 	GUIEnabled           bool               `json:"gui_enabled"`
 	UserVerifyTxn        readable.VerifyTxn `json:"user_verify_transaction"`
 	UnconfirmedVerifyTxn readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
 	StartedAt            int64              `json:"started_at"`
-=======
-	BlockchainMetadata    BlockchainMetadata `json:"blockchain"`
-	Version               readable.BuildInfo `json:"version"`
-	CoinName              string             `json:"coin"`
-	DaemonUserAgent       string             `json:"user_agent"`
-	OpenConnections       int                `json:"open_connections"`
-	OutgoingConnections   int                `json:"outgoing_connections"`
-	IncomingConnections   int                `json:"incoming_connections"`
-	Uptime                wh.Duration        `json:"uptime"`
-	CSRFEnabled           bool               `json:"csrf_enabled"`
-	HeadercheckEnabled    bool               `json:"headercheck_enabled"`
-	CSPEnabled            bool               `json:"csp_enabled"`
-	WalletAPIEnabled      bool               `json:"wallet_api_enabled"`
-	GUIEnabled            bool               `json:"gui_enabled"`
-	UnversionedAPIEnabled bool               `json:"unversioned_api_enabled"`
-	JSON20RPCEnabled      bool               `json:"json_rpc_enabled"`
-	UserVerifyTxn         readable.VerifyTxn `json:"user_verify_transaction"`
-	UnconfirmedVerifyTxn  readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
-	StartedAt             int64              `json:"started_at"`
->>>>>>> implement the correct check
 }
 
 // healthHandler returns node health data
@@ -89,7 +69,6 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
-<<<<<<< 8ce8115a116d9f110da8e874a7af84aca85a148a
 			Version:              c.health.BuildInfo,
 			CoinName:             c.health.CoinName,
 			DaemonUserAgent:      userAgent,
@@ -98,31 +77,13 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 			IncomingConnections:  health.IncomingConnections,
 			Uptime:               wh.FromDuration(health.Uptime),
 			CSRFEnabled:          !c.disableCSRF,
+			HeadercheckEnabled:   !c.disableHeadercheck,
 			CSPEnabled:           !c.disableCSP,
 			GUIEnabled:           c.enableGUI,
 			WalletAPIEnabled:     walletAPIEnabled,
 			UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
 			UnconfirmedVerifyTxn: readable.NewVerifyTxn(health.UnconfirmedVerifyTxn),
 			StartedAt:            health.StartedAt.Unix(),
-=======
-			Version:               c.health.BuildInfo,
-			CoinName:              c.health.CoinName,
-			DaemonUserAgent:       userAgent,
-			OpenConnections:       health.OutgoingConnections + health.IncomingConnections,
-			OutgoingConnections:   health.OutgoingConnections,
-			IncomingConnections:   health.IncomingConnections,
-			Uptime:                wh.FromDuration(health.Uptime),
-			CSRFEnabled:           !c.disableCSRF,
-			HeadercheckEnabled:    !c.disableHeadercheck,
-			CSPEnabled:            !c.disableCSP,
-			UnversionedAPIEnabled: c.enableUnversionedAPI,
-			GUIEnabled:            c.enableGUI,
-			JSON20RPCEnabled:      c.enableJSON20RPC,
-			WalletAPIEnabled:      walletAPIEnabled,
-			UserVerifyTxn:         readable.NewVerifyTxn(params.UserVerifyTxn),
-			UnconfirmedVerifyTxn:  readable.NewVerifyTxn(health.UnconfirmedVerifyTxn),
-			StartedAt:             health.StartedAt.Unix(),
->>>>>>> implement the correct check
 		})
 	}
 }

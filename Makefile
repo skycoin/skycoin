@@ -65,10 +65,10 @@ check: lint clean-coverage test-386 test-amd64 integration-test-stable integrati
 	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-cors
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-headercheck
 
-integration-test-stable-disable-cors: ## Run stable integration tests with CORS disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-cors
+integration-test-stable-disable-headercheck: ## Run stable integration tests with headercheck disabled
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-headercheck
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
@@ -79,7 +79,7 @@ integration-test-live: ## Run live integration tests
 integration-test-live-wallet: ## Run live integration tests with wallet
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -w
 
-integration-test-live-enable-cors: ## Run live integration tests against a node with CORS enabled
+integration-test-live-enable-headercheck: ## Run live integration tests against a node with headercheck enabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
 integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled

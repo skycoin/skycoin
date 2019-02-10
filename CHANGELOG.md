@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
   `-` prefix is only allowed when using shorthand notation.
 - Use an optimized `base58` library for faster address decoding and encoding.
-- Add option to disable host/origin/referer header checks and add `headercheck_enabled` in `/health`.
+- Add `-disable-headercheck` flag to disable host/origin/referer header checks for the node APIs and add `headercheck_enabled` parameter in `/health` endpoint.
 
 ### Removed
 

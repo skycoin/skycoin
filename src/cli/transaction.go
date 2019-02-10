@@ -24,7 +24,7 @@ func transactionCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.MaximumNArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			txid := args[0]
 			if txid == "" {
 				return errors.New("txid is empty")
@@ -55,7 +55,7 @@ func decodeRawTxCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			b, err := hex.DecodeString(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid raw transaction: %v", err)

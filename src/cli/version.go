@@ -13,7 +13,7 @@ func versionCmd() *cobra.Command {
 		Short:        "List the current version of Skycoin components",
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(c *cobra.Command, _ []string) error {
 			var ver = struct {
 				Skycoin string `json:"skycoin"`
 				Cli     string `json:"cli"`

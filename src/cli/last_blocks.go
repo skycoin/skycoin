@@ -19,7 +19,7 @@ func lastBlocksCmd() *gcli.Command {
 	}
 }
 
-func getLastBlocks(c *gcli.Command, args []string) error {
+func getLastBlocks(_ *gcli.Command, args []string) error {
 	num := args[0]
 	if num == "" {
 		num = "1"

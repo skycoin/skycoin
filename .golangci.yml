@@ -175,6 +175,8 @@ issues:
     - "G204: Subprocess launched with variable"
     - "G104: Errors unhandled"
     - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
+    # unparam warns that return value is always nil for functions that have an obligatory error return value but cannot produce an error
+    - .*result 0 \(error\) is always nil
 
   # Independently from option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all

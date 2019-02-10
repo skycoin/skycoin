@@ -42,7 +42,7 @@ func checkdbCmd() *cobra.Command {
 	}
 }
 
-func checkdb(c *cobra.Command, args []string) error {
+func checkdb(_ *cobra.Command, args []string) error {
 	// get db path
 	dbpath, err := resolveDBPath(cliConfig, args[0])
 	if err != nil {

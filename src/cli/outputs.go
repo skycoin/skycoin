@@ -42,7 +42,7 @@ type OutputsResult struct {
 	Outputs readable.UnspentOutputsSummary `json:"outputs"`
 }
 
-func getWalletOutputsCmd(c *gcli.Command, args []string) error {
+func getWalletOutputsCmd(_ *gcli.Command, args []string) error {
 	var wltPath string
 	if len(args) == 1 {
 		wltPath = args[0]
@@ -63,7 +63,7 @@ func getWalletOutputsCmd(c *gcli.Command, args []string) error {
 	})
 }
 
-func getAddressOutputsCmd(c *gcli.Command, args []string) error {
+func getAddressOutputsCmd(_ *gcli.Command, args []string) error {
 	addrs := make([]string, len(args))
 
 	var err error

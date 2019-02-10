@@ -52,7 +52,7 @@ If no wallet name is specified a generic name will be selected.`)
 	return walletCreateCmd
 }
 
-func generateWalletHandler(c *gcli.Command, args []string) error {
+func generateWalletHandler(c *gcli.Command, _ []string) error {
 	// create wallet dir if not exist
 	if _, err := os.Stat(cliConfig.WalletDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(cliConfig.WalletDir, 0750); err != nil {

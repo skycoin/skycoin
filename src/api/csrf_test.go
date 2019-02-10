@@ -64,13 +64,12 @@ func TestCSRFWrapper(t *testing.T) {
 
 					rr := httptest.NewRecorder()
 					handler := newServerMux(muxConfig{
-						host:                 configuredHost,
-						appLoc:               ".",
-						enableJSON20RPC:      true,
-						enableUnversionedAPI: true,
-						disableCSRF:          false,
-						disableCSP:           true,
-						enabledAPISets:       allAPISetsEnabled,
+						host:            configuredHost,
+						appLoc:          ".",
+						enableJSON20RPC: true,
+						disableCSRF:     false,
+						disableCSP:      true,
+						enabledAPISets:  allAPISetsEnabled,
 					}, gateway, nil)
 
 					handler.ServeHTTP(rr, req)
@@ -106,13 +105,12 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 	gateway := &MockGatewayer{}
 
 	handler := newServerMux(muxConfig{
-		host:                 configuredHost,
-		appLoc:               ".",
-		enableJSON20RPC:      true,
-		enableUnversionedAPI: true,
-		disableCSRF:          false,
-		disableCSP:           true,
-		enabledAPISets:       allAPISetsEnabled,
+		host:            configuredHost,
+		appLoc:          ".",
+		enableJSON20RPC: true,
+		disableCSRF:     false,
+		disableCSP:      true,
+		enabledAPISets:  allAPISetsEnabled,
 	}, gateway, nil)
 
 	var wg sync.WaitGroup

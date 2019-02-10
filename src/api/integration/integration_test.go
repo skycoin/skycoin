@@ -5894,11 +5894,6 @@ func TestDisableWalletAPI(t *testing.T) {
 		}
 
 		t.Run(tc.name, f(tc))
-
-		if strings.HasPrefix(tc.endpoint, "/api/v1") {
-			tc.endpoint = strings.TrimPrefix(tc.endpoint, "/api/v1")
-			t.Run(tc.name, f(tc))
-		}
 	}
 
 	// Confirms that no new wallet is created
@@ -5957,7 +5952,6 @@ func TestStableHealth(t *testing.T) {
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
-	require.False(t, r.UnversionedAPIEnabled)
 	require.False(t, r.GUIEnabled)
 	require.False(t, r.JSON20RPCEnabled)
 }

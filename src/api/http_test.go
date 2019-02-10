@@ -36,47 +36,6 @@ func defaultMuxConfig() muxConfig {
 }
 
 var endpoints = []string{
-	"/address_uxouts",
-	"/addresscount",
-	"/balance",
-	"/block",
-	"/blockchain/metadata",
-	"/blockchain/progress",
-	"/blocks",
-	"/coinSupply",
-	"/health",
-	"/injectTransaction",
-	"/last_blocks",
-	"/version",
-	"/network/connection",
-	"/network/connection/disconnect",
-	"/network/connections",
-	"/network/connections/exchange",
-	"/network/connections/trust",
-	"/network/defaultConnections",
-	"/outputs",
-	"/pendingTxs",
-	"/rawtx",
-	"/richlist",
-	"/resendUnconfirmedTxns",
-	"/transaction",
-	"/transactions",
-	"/uxout",
-	"/wallet",
-	"/wallet/balance",
-	"/wallet/create",
-	"/wallet/newAddress",
-	"/wallet/newSeed",
-	"/wallet/seed",
-	"/wallet/spend",
-	"/wallet/transaction",
-	"/wallet/transactions",
-	"/wallet/unload",
-	"/wallet/update",
-	"/wallets",
-	"/wallets/folderName",
-	"/webrpc",
-
 	"/api/v1/address_uxouts",
 	"/api/v1/addresscount",
 	"/api/v1/balance",
@@ -120,6 +79,7 @@ var endpoints = []string{
 	"/api/v2/transaction/verify",
 	"/api/v2/address/verify",
 	"/api/v2/wallet/recover",
+	"/api/v2/wallet/seed/verify",
 }
 
 // TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,
@@ -223,9 +183,9 @@ func TestEnableGUI(t *testing.T) {
 }
 
 func TestAPISetDisabled(t *testing.T) {
-	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
+	for _, e := range append(endpoints, []string{"/api/v1/csrf"}...) {
 		switch e {
-		case "/webrpc", "/api/v1/webrpc":
+		case "/api/v1/webrpc":
 			continue
 		}
 
@@ -235,7 +195,6 @@ func TestAPISetDisabled(t *testing.T) {
 
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
-			cfg.enableUnversionedAPI = true
 			cfg.enableJSON20RPC = false
 			cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
 
@@ -245,7 +204,7 @@ func TestAPISetDisabled(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			switch e {
-			case "/csrf", "/api/v1/csrf", "/version", "/api/v1/version": // always enabled
+			case "/api/v1/csrf", "/api/v1/version": // always enabled
 				require.Equal(t, http.StatusOK, rr.Code)
 			default:
 				require.Equal(t, http.StatusForbidden, rr.Code)
@@ -414,7 +373,7 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 		}
 	}
 
-	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
+	for _, e := range append(endpoints, []string{"/api/v1/csrf"}...) {
 		for _, tc := range cases {
 			name := fmt.Sprintf("u=%s p=%s ru=%s rp=%s auth=%v e=%s", tc.username, tc.password, tc.reqUsername, tc.reqPassword, tc.authorized, e)
 			t.Run(name, func(t *testing.T) {
@@ -428,7 +387,6 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 
 				cfg := defaultMuxConfig()
 				cfg.disableCSRF = false
-				cfg.enableUnversionedAPI = true
 				cfg.enableJSON20RPC = false
 				cfg.username = tc.username
 				cfg.password = tc.password

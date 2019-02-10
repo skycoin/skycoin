@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
+- `/api/v1/explorer/address` endpoint (use `GET /api/v1/transactions?verbose=1` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-explorer-address
+
 ## [0.25.1] - 2019-02-08
 
 ### Added

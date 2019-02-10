@@ -500,7 +500,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsRead}))
 
 	// Explorer endpoints
-	webHandlerV1("/explorer/address", forAPISet(transactionsForAddressHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/coinSupply", forAPISet(coinSupplyHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/richlist", forAPISet(richlistHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsRead}))

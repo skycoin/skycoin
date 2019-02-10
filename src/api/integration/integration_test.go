@@ -3169,6 +3169,7 @@ type addressTransactionsTestCase struct {
 }
 
 func TestStableAddressTransactions(t *testing.T) {
+	// Formerly tested /api/v1/explorer/address, now tests /api/v1/transactions?verbose=1
 	if !doStable(t) {
 		return
 	}
@@ -3193,7 +3194,7 @@ func TestStableAddressTransactions(t *testing.T) {
 			name:    "invalid address",
 			address: "prRXwTcDK24hs6AFxj",
 			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - invalid address",
+			errMsg:  "400 Bad Request - parse parameter: 'addrs' failed: address \"prRXwTcDK24hs6AFxj\" is invalid: Invalid address length",
 		},
 	}
 
@@ -3215,7 +3216,7 @@ func TestStableAddressTransactions(t *testing.T) {
 	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txns, err := c.AddressTransactions(tc.address)
+			txns, err := c.TransactionsVerbose([]string{tc.address})
 			if tc.errMsg != "" {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 				return
@@ -3223,13 +3224,14 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []readable.TransactionVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
 }
 
 func TestLiveAddressTransactions(t *testing.T) {
+	// Formerly tested /api/v1/explorer/address, now tests /api/v1/transactions?verbose=1
 	if !doLive(t) {
 		return
 	}
@@ -3238,7 +3240,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 		{
 			name: "address with transactions",
 			// This is the first distribution address which has spent all of its coins
-			// It's transactions list should not change, unless someone sends coins to it
+			// Its transactions list should not change, unless someone sends coins to it
 			address: "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 			golden:  "address-transactions-R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ.golden",
 		},
@@ -3254,15 +3256,14 @@ func TestLiveAddressTransactions(t *testing.T) {
 			name:    "invalid address",
 			address: "prRXwTcDK24hs6AFxj",
 			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - invalid address",
+			errMsg:  "400 Bad Request - parse parameter: 'addrs' failed: address \"prRXwTcDK24hs6AFxj\" is invalid: Invalid address length",
 		},
 	}
 
 	c := newClient()
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txns, err := c.AddressTransactions(tc.address)
+			txns, err := c.TransactionsVerbose([]string{tc.address})
 			if tc.errMsg != "" {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 				return
@@ -3275,7 +3276,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 				txns[i].Status.Height = 0
 			}
 
-			var expected []readable.TransactionVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}

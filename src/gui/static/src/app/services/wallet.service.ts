@@ -301,12 +301,12 @@ export class WalletService {
     let hoursToSend = new BigNumber('0');
     let calculatedHours = new BigNumber('0');
 
-    let innerHash: string;
     let convertedOutputs: any[];
 
     const txOutputs = [];
     const txInputs = [];
-    const txSignatures = [];
+    const hwOutputs = [];
+    const hwInputs = [];
 
     return this.apiService.get('health').flatMap(response => {
         unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(response.user_verify_transaction.burn_factor));
@@ -334,11 +334,19 @@ export class WalletService {
             coins: changeCoins.toNumber(),
             hours: calculatedHours.minus(hoursToSend).toNumber(),
           });
+
+          hwOutputs.push({
+            address: wallet.addresses[0].address,
+            address_index: 0,
+            coin: parseInt(changeCoins.multipliedBy(1000000).toFixed(0), 10),
+            hour: calculatedHours.minus(hoursToSend).toNumber(),
+          });
         } else {
           hoursToSend = calculatedHours;
         }
 
         txOutputs.push({ address: address, coins: amount.toNumber(), hours: hoursToSend.toNumber() });
+        hwOutputs.push({ address: address, coin: parseInt(amount.multipliedBy(1000000).toFixed(0), 10), hour: hoursToSend.toNumber() });
 
         if (address === wallet.addresses[0].address) {
           hoursToSend = calculatedHours;
@@ -353,6 +361,11 @@ export class WalletService {
             calculated_hours: input.calculated_hours.toNumber(),
             coins: input.coins.toNumber(),
           });
+
+          hwInputs.push({
+            hashIn: input.hash,
+            index: txInputs[txInputs.length - 1].address_index,
+          });
         });
 
         convertedOutputs = txOutputs.map(output => {
@@ -362,16 +375,12 @@ export class WalletService {
           };
         });
 
-        innerHash = Cipher.GetTransactionInnerHash(JSON.stringify(txInputs), JSON.stringify(convertedOutputs));
-
-        // Request signatures and add them to txSignatures sequentially.
-        return this.addSignatures(txInputs.length - 1, txInputs, txSignatures, innerHash);
-
-      }).flatMap(() => {
+        return this.hwWalletService.signTransaction(hwInputs, hwOutputs);
+      }).flatMap(signatures => {
         const rawTransaction = Cipher.PrepareTransactionWithSignatures(
           JSON.stringify(txInputs),
           JSON.stringify(convertedOutputs),
-          JSON.stringify(txSignatures),
+          JSON.stringify(signatures.rawResponse),
         );
 
         return Observable.of({
@@ -492,26 +501,6 @@ export class WalletService {
 
       this.wallets.next(wallets);
     });
-  }
-
-  private addSignatures(index: number, txInputs: any[], txSignatures: string[], txInnerHash: string): Observable<any> {
-    let chain: Observable<any>;
-    if (index > 0) {
-      chain = this.addSignatures(index - 1, txInputs, txSignatures, txInnerHash).first();
-    } else {
-      chain = Observable.of(1);
-    }
-
-    chain = chain.flatMap(() => {
-      const msgToSign = CipherExtras.AddSHA256(txInnerHash, txInputs[index].hash);
-
-      return this.hwWalletService.signMessage(txInputs[index].address_index, msgToSign, index + 1, txInputs.length)
-        .map(response => {
-          txSignatures.push(response.rawResponse);
-        });
-    });
-
-    return chain;
   }
 
   private createHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean, stopShowingHwSecurityPopup: boolean): Wallet {

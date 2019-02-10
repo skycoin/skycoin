@@ -5957,7 +5957,6 @@ func TestStableHealth(t *testing.T) {
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
-	require.False(t, r.UnversionedAPIEnabled)
 	require.False(t, r.GUIEnabled)
 	require.False(t, r.JSON20RPCEnabled)
 }

@@ -5,11 +5,6 @@ API default service port is `6420`. However, if running the desktop or standalon
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
 The API has two versions, `/api/v1` and `/api/v2`.
-Previously, there was no `/api/vx` prefix.
-Starting in application version v0.24.0, the existing endpoints from v0.23.0
-are now prefixed with `/api/v1`. To retain the old endpoints, run the application
-with `-enable-unversioned-api`.  This option will be removed in v0.26.0
-and the `/api/v1` prefix will be required for previously unversioned endpoints.
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
@@ -234,7 +229,6 @@ Response:
     "csp_enabled": true,
     "wallet_api_enabled": true,
     "gui_enabled": true,
-    "unversioned_api_enabled": false,
     "json_rpc_enabled": false,
     "user_verify_transaction": {
         "burn_factor": 2,

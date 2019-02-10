@@ -72,20 +72,19 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir            string
-	DisableCSRF          bool
-	DisableCSP           bool
-	EnableJSON20RPC      bool
-	EnableGUI            bool
-	EnableUnversionedAPI bool
-	ReadTimeout          time.Duration
-	WriteTimeout         time.Duration
-	IdleTimeout          time.Duration
-	Health               HealthConfig
-	HostWhitelist        []string
-	EnabledAPISets       map[string]struct{}
-	Username             string
-	Password             string
+	StaticDir       string
+	DisableCSRF     bool
+	DisableCSP      bool
+	EnableJSON20RPC bool
+	EnableGUI       bool
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
+	Health          HealthConfig
+	HostWhitelist   []string
+	EnabledAPISets  map[string]struct{}
+	Username        string
+	Password        string
 }
 
 // HealthConfig configuration data exposed in /health
@@ -96,18 +95,17 @@ type HealthConfig struct {
 }
 
 type muxConfig struct {
-	host                 string
-	appLoc               string
-	enableGUI            bool
-	enableJSON20RPC      bool
-	enableUnversionedAPI bool
-	disableCSRF          bool
-	disableCSP           bool
-	enabledAPISets       map[string]struct{}
-	hostWhitelist        []string
-	username             string
-	password             string
-	health               HealthConfig
+	host            string
+	appLoc          string
+	enableGUI       bool
+	enableJSON20RPC bool
+	disableCSRF     bool
+	disableCSP      bool
+	enabledAPISets  map[string]struct{}
+	hostWhitelist   []string
+	username        string
+	password        string
+	health          HealthConfig
 }
 
 // HTTPResponse represents the http response struct
@@ -198,18 +196,17 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	}
 
 	mc := muxConfig{
-		host:                 host,
-		appLoc:               appLoc,
-		enableGUI:            c.EnableGUI,
-		enableJSON20RPC:      c.EnableJSON20RPC,
-		enableUnversionedAPI: c.EnableUnversionedAPI,
-		disableCSRF:          c.DisableCSRF,
-		disableCSP:           c.DisableCSP,
-		health:               c.Health,
-		enabledAPISets:       c.EnabledAPISets,
-		hostWhitelist:        c.HostWhitelist,
-		username:             c.Username,
-		password:             c.Password,
+		host:            host,
+		appLoc:          appLoc,
+		enableGUI:       c.EnableGUI,
+		enableJSON20RPC: c.EnableJSON20RPC,
+		disableCSRF:     c.DisableCSRF,
+		disableCSP:      c.DisableCSP,
+		health:          c.Health,
+		enabledAPISets:  c.EnabledAPISets,
+		hostWhitelist:   c.HostWhitelist,
+		username:        c.Username,
+		password:        c.Password,
 	}
 
 	srvMux := newServerMux(mc, gateway, rpc)
@@ -387,9 +384,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	}
 
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
-		if c.enableUnversionedAPI {
-			webHandler(apiVersion1, endpoint, handler)
-		}
 		webHandler(apiVersion1, "/api/v1"+endpoint, handler)
 	}
 
@@ -430,9 +424,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
-		if c.enableUnversionedAPI {
-			webHandlerCSRFOptional(apiVersion1, endpoint, handler, false)
-		}
 		webHandlerCSRFOptional(apiVersion1, "/api/v1"+endpoint, handler, false)
 	}
 	csrfHandlerV1("/csrf", getCSRFToken(c.disableCSRF)) // csrf is always available, regardless of the API set

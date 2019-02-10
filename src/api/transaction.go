@@ -346,7 +346,26 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 //      503 - network unavailable for broadcasting transaction
 func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:operation POST /api/v1/injectTransaction injectTransaction
+	//
+	// Broadcast a hex-encoded, serialized transaction to the network.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: rawtx
+	//   in: header
+	//   description: hex-encoded serialized transaction string.
+	//   required: true
+	//   type: string
+	// responses:
+	//   200:
+	//     description: This endpoint a hex-encoded transaction to the network.
+	//     type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -459,7 +478,28 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 // The transaction may be confirmed or unconfirmed.
 func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:operation GET /api/v1/rawtx rawtx
+	//
+	// Returns the hex-encoded byte serialization of a transaction. The transaction may be confirmed or unconfirmed.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: txid
+	//   in: query
+	//   description: Transaction id hash
+	//   type: string
+	//   x-go-name: txid
+	//
+	// responses:
+	//   200:
+	//     description: Returns the hex-encoded byte serialization of a transaction
+	//     properties:
+	//       type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

@@ -137,13 +137,9 @@ func getCSRFToken(disabled bool) http.HandlerFunc {
 	//       type: object
 	//       properties:
 	//         csrf_token:
-	//           type: object
-	//           properties:
-	//             version:
-	//               type: string
+	//           type: string
 	//   default:
 	//     $ref: '#/responses/genericError'
-
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

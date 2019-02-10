@@ -173,7 +173,89 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // URI: /api/v1/explorer/address
 func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
-	// TODO For v3
+
+	// swagger:operation GET /api/v1/explorer/address explorerAddress
+	//
+	// Returns all transactions (confirmed and unconfirmed) for an address
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: address
+	//   in: query
+	//   description: tags to filter by
+	//   type: string
+	// responses:
+	//   200:
+	//     description: Response for endpoint /api/v1/explorer/address
+	//     schema:
+	//       type: array
+	//       items:
+	//         properties:
+	//           status:
+	//             type: object
+	//             properties:
+	//               confirmed:
+	//                 type: boolean
+	//               unconfirmed:
+	//                 type: boolean
+	//               label:
+	//                 type: integer
+	//                 format: int64
+	//           timestamp:
+	//             type: integer
+	//             format: integer
+	//           length:
+	//             type: integer
+	//             format: int64
+	//           type:
+	//             type: integer
+	//             format: in64
+	//           fee:
+	//             type: integer
+	//             format: in64
+	//           txid:
+	//             type: string
+	//           inner_hash:
+	//             type: string
+	//           sigs:
+	//             type: array
+	//             items:
+	//               type: string
+	//           inputs:
+	//             type: array
+	//             items:
+	//               properties:
+	//                 uxid:
+	//                   type: string
+	//                 owner:
+	//                   type: string
+	//                 coins:
+	//                   type: string
+	//                 hours:
+	//                   type: integer
+	//                   format: int64
+	//                 calculated_hours:
+	//                   type: integer
+	//                   format: int64
+	//           outputs:
+	//             type: array
+	//             items:
+	//               properties:
+	//                 uxid:
+	//                   type: string
+	//                 dst:
+	//                   type: string
+	//                 coins:
+	//                   type: string
+	//                 hours:
+	//                   type: integer
+	//                   format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Critical().Warning("Call to deprecated /api/v1/explorer/address endpoint")
 
@@ -230,7 +312,43 @@ type Richlist struct {
 //  include-distribution [bool, include the distribution addresses in the richlist]
 func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+
+	// swagger:operation GET /api/v1/richlist richlist
+	//
+	// Returns the top skycoin holders.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: 'include-distribution'
+	//   required: false
+	//   in: query
+	//   description: include distribution addresses or not, default value false
+	//   type: string
+	// - name: 'n'
+	//   required: false
+	//   in: query
+	//   description: include distribution addresses or not, default value false
+	//   type: string
+	// responses:
+	//   200:
+	//     description: Response for endpoint /api/v1/address_uxouts
+	//     schema:
+	//       properties:
+	//         richlist:
+	//           type: array
+	//           items:
+	//             properties:
+	//               address:
+	//                 type: string
+	//               coins:
+	//                 type: string
+	//               locked:
+	//                 type: boolean
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

@@ -21,7 +21,50 @@ import (
 // URI: /api/v1/blockchain/metadata
 func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:operation GET /api/v1/blockchain/metadata blockchainMetadata
+	//
+	// Returns the blockchain metadata.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint returns the blockchain metadata.
+	//     schema:
+	//       properties:
+	//         head:
+	//           type: object
+	//           properties:
+	//             seq:
+	//               type: string
+	//             block_hash:
+	//               type: string
+	//             previous_block_hash:
+	//               type: string
+	//             timestamp:
+	//               type: integer
+	//               format: int64
+	//             fee:
+	//               type: integer
+	//               format: int64
+	//             version:
+	//               type: integer
+	//               format: int64
+	//             tx_body_hash:
+	//               type: string
+	//             ux_hash:
+	//               type: string
+	//         unspents:
+	//           type: integer
+	//           format: int64
+	//         unconfirmed:
+	//           type: integer
+	//           format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -55,6 +98,37 @@ func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 
 	// TODO For v3
+	// swagger:operation GET /api/v1/blockchain/progress blockchainProgress
+	//
+	// Returns the blockchain sync progress.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint returns the blockchain sync progress
+	//     schema:
+	//       properties:
+	//         current:
+	//           type: integer
+	//           format: int64
+	//         highest:
+	//           type: integer
+	//           format: int64
+	//         peers:
+	//           type: array
+	//           items:
+	//             properties:
+	//               address:
+	//                 type: string
+	//               height:
+	//                 type: integer
+	//                 format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

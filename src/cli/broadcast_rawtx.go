@@ -13,7 +13,7 @@ func broadcastTxCmd() *gcli.Command {
 		Args:                  gcli.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
-		RunE: func(c *gcli.Command, args []string) error {
+		RunE: func(_ *gcli.Command, args []string) error {
 			rawtx := args[0]
 
 			txid, err := apiClient.InjectEncodedTransaction(rawtx)

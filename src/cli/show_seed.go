@@ -19,7 +19,7 @@ func showSeedCmd() *cobra.Command {
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`, cliConfig.FullWalletPath()),
 		SilenceUsage: true,
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(c *cobra.Command, _ []string) error {
 			w, err := resolveWalletPath(cliConfig, "")
 			if err != nil {
 				return err

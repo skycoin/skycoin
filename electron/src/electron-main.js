@@ -83,7 +83,6 @@ function startSkycoin() {
       '-download-peerlist=true',
       '-enable-all-api-sets=true',
       '-enable-api-sets=INSECURE_WALLET_SEED',
-      '-rpc-interface=false',
       '-disable-csrf=false',
       '-reset-corrupt-db=true',
       '-enable-gui=true',

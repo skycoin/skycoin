@@ -90,167 +90,6 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 	return &cs
 }
 
-func TestGetTransactionsForAddress(t *testing.T) {
-	address := testutil.MakeAddress()
-	successAddress := "111111111111111111111691FSP"
-	successAddressRaw, err := cipher.DecodeBase58Address(successAddress)
-	require.NoError(t, err)
-
-	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
-	validHashRaw, err := cipher.SHA256FromHex(validHash)
-	require.NoError(t, err)
-
-	type verboseResult struct {
-		Transactions []visor.Transaction
-		Inputs       [][]visor.TransactionInput
-	}
-
-	tt := []struct {
-		name                                   string
-		method                                 string
-		status                                 int
-		err                                    string
-		addressParam                           string
-		gatewayGetTransactionsForAddressErr    error
-		gatewayGetTransactionsForAddressResult verboseResult
-		result                                 []readable.TransactionVerbose
-		csrfDisabled                           bool
-	}{
-		{
-			name:         "405",
-			method:       http.MethodPost,
-			status:       http.StatusMethodNotAllowed,
-			err:          "405 Method Not Allowed",
-			addressParam: "0",
-		},
-		{
-			name:         "400 - address is empty",
-			method:       http.MethodGet,
-			status:       http.StatusBadRequest,
-			err:          "400 Bad Request - address is empty",
-			addressParam: "",
-		},
-		{
-			name:         "400 - invalid address",
-			method:       http.MethodGet,
-			status:       http.StatusBadRequest,
-			err:          "400 Bad Request - invalid address",
-			addressParam: "badAddress",
-		},
-		{
-			name:                                "500 - gw GetVerboseTransactionsForAddress error",
-			method:                              http.MethodGet,
-			status:                              http.StatusInternalServerError,
-			err:                                 "500 Internal Server Error - gateway.GetVerboseTransactionsForAddress failed: gatewayGetTransactionsForAddressErr",
-			addressParam:                        address.String(),
-			gatewayGetTransactionsForAddressErr: errors.New("gatewayGetTransactionsForAddressErr"),
-		},
-		{
-			name:         "200",
-			method:       http.MethodGet,
-			status:       http.StatusOK,
-			addressParam: address.String(),
-			gatewayGetTransactionsForAddressResult: verboseResult{
-				Transactions: []visor.Transaction{
-					{
-						Transaction: coin.Transaction{
-							In: []cipher.SHA256{
-								validHashRaw,
-							},
-						},
-					},
-				},
-				Inputs: [][]visor.TransactionInput{
-					[]visor.TransactionInput{
-						{
-							UxOut: coin.UxOut{
-								Body: coin.UxBody{
-									Address: successAddressRaw,
-									Coins:   99000000,
-									Hours:   100,
-								},
-							},
-							CalculatedHours: 101,
-						},
-					},
-				},
-			},
-			result: []readable.TransactionVerbose{
-				{
-					Status: &readable.TransactionStatus{
-						Unconfirmed: true,
-					},
-					BlockTransactionVerbose: readable.BlockTransactionVerbose{
-						Hash:      "4fa025f043d1e5e8895ca4dc6602dac8d5c315544c166044d80c98a09e950c71",
-						InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
-						Fee:       101,
-						Sigs:      []string{},
-						In: []readable.TransactionInput{
-							{
-								Hash:            "e8ca653d9953b548f0098dd303f8166e636856a5c40e478e3756e440c01e9cb9",
-								Address:         successAddress,
-								Coins:           "99.000000",
-								Hours:           100,
-								CalculatedHours: 101,
-							},
-						},
-						Out: []readable.TransactionOutput{},
-					},
-				},
-			},
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/api/v1/explorer/address"
-			gateway := &MockGatewayer{}
-			gateway.On("GetVerboseTransactionsForAddress", address).Return(tc.gatewayGetTransactionsForAddressResult.Transactions,
-				tc.gatewayGetTransactionsForAddressResult.Inputs, tc.gatewayGetTransactionsForAddressErr)
-
-			v := url.Values{}
-			if tc.addressParam != "" {
-				v.Add("address", tc.addressParam)
-			}
-
-			if len(v) > 0 {
-				endpoint += "?" + v.Encode()
-			}
-
-			req, err := http.NewRequest(tc.method, endpoint, nil)
-			require.NoError(t, err)
-			rr := httptest.NewRecorder()
-
-			if tc.csrfDisabled {
-				setCSRFParameters(t, tokenInvalid, req)
-			} else {
-				setCSRFParameters(t, tokenValid, req)
-			}
-			handler := newServerMux(muxConfig{
-				host:           configuredHost,
-				appLoc:         ".",
-				disableCSRF:    tc.csrfDisabled,
-				disableCSP:     true,
-				enabledAPISets: allAPISetsEnabled,
-			}, gateway, nil)
-			handler.ServeHTTP(rr, req)
-
-			status := rr.Code
-			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
-
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
-			} else {
-				var msg []readable.TransactionVerbose
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.result, msg)
-			}
-		})
-	}
-}
-
 func TestCoinSupply(t *testing.T) {
 	addrs := []cipher.Address{
 		testutil.MakeAddress(),
@@ -383,7 +222,7 @@ func TestCoinSupply(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -611,7 +450,7 @@ func TestGetRichlist(t *testing.T) {
 				disableCSRF:    tc.csrfDisabled,
 				disableCSP:     true,
 				enabledAPISets: allAPISetsEnabled,
-			}, gateway, nil)
+			}, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -691,7 +530,7 @@ func TestGetAddressCount(t *testing.T) {
 				disableCSRF:    tc.csrfDisabled,
 				disableCSP:     true,
 				enabledAPISets: allAPISetsEnabled,
-			}, gateway, nil)
+			}, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

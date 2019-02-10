@@ -86,7 +86,6 @@ echo "starting $COIN node in background with http listener on $HOST"
             -launch-browser=false \
             -data-dir="$DATA_DIR" \
             -wallet-dir="$WALLET_DIR" \
-            -enable-unversioned-api=true \
             -enable-all-api-sets=true \
             -disable-api-sets=WALLET \
             -test.run "^TestRunMain$" \

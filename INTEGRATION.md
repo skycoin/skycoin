@@ -87,7 +87,7 @@ For integrations, the skycoin node should be run from source with `./run-daemon.
 
 ### libskycoin Documentation
 
-[libskycoin documentation](/lib/cgo/README.md)
+[libskycoin documentation](https://github.com/skycoin/libskycoin)
 
 ## Implementation guidelines
 

@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"

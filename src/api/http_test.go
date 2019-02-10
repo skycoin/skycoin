@@ -23,7 +23,7 @@ var allAPISetsEnabled = map[string]struct{}{
 	EndpointsInsecureWalletSeed: struct{}{},
 	EndpointsPrometheus:         struct{}{},
 	EndpointsNetCtrl:            struct{}{},
-	EndpointsFilesystem:            struct{}{},
+	EndpointsFilesystem:         struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {

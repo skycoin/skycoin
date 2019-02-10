@@ -111,7 +111,7 @@ func TestSaveData(t *testing.T) {
 
 			cfg := defaultMuxConfig()
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -252,7 +252,7 @@ func TestGetData(t *testing.T) {
 
 			cfg := defaultMuxConfig()
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -390,7 +390,7 @@ func TestDeleteData(t *testing.T) {
 
 			cfg := defaultMuxConfig()
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

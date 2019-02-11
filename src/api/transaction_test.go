@@ -102,10 +102,10 @@ func TestGetPendingTxs(t *testing.T) {
 		httpResponse                         interface{}
 	}{
 		{
-			name:   "405",
-			method: http.MethodPost,
-			status: http.StatusMethodNotAllowed,
-			err:    "405 Method Not Allowed",
+			name:                          "405",
+			method:                        http.MethodPost,
+			status:                        http.StatusMethodNotAllowed,
+			err:                           "405 Method Not Allowed",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
 		},
 		{
@@ -125,25 +125,25 @@ func TestGetPendingTxs(t *testing.T) {
 			},
 		},
 		{
-			name:   "500 - get unconfirmedTxn error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetAllUnconfirmedTransactions failed",
+			name:                     "500 - get unconfirmedTxn error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - GetAllUnconfirmedTransactions failed",
 			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTransactions failed"),
 		},
 		{
-			name:       "500 - get unconfirmedTxnVerbose error",
-			method:     http.MethodGet,
-			status:     http.StatusInternalServerError,
-			verboseStr: "1",
-			verbose:    true,
-			err:        "500 Internal Server Error - GetAllUnconfirmedTransactionsVerbose failed",
+			name:                            "500 - get unconfirmedTxnVerbose error",
+			method:                          http.MethodGet,
+			status:                          http.StatusInternalServerError,
+			verboseStr:                      "1",
+			verbose:                         true,
+			err:                             "500 Internal Server Error - GetAllUnconfirmedTransactionsVerbose failed",
 			getAllUnconfirmedTxnsVerboseErr: errors.New("GetAllUnconfirmedTransactionsVerbose failed"),
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
+			name:                          "200",
+			method:                        http.MethodGet,
+			status:                        http.StatusOK,
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTransaction{},
 			httpResponse:                  []readable.UnconfirmedTransactions{},
 		},
@@ -364,8 +364,8 @@ func TestGetTransactionByID(t *testing.T) {
 				txid:    validHash,
 				verbose: "1",
 			},
-			verbose: true,
-			txid:    testutil.SHA256FromHex(t, validHash),
+			verbose:                          true,
+			txid:                             testutil.SHA256FromHex(t, validHash),
 			getTransactionResultVerboseError: errors.New("getTransactionResultVerboseError"),
 		},
 
@@ -737,39 +737,61 @@ func TestInjectTransaction(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/api/v1/injectTransaction"
-			gateway := &MockGatewayer{}
-			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
+	endpoints := []struct {
+		url  string
+		isV2 bool
+	}{
+		{
+			url:  "/api/v2/transaction/inject",
+			isV2: true,
+		},
+		{
+			url:  "/api/v1/injectTransaction",
+			isV2: false,
+		},
+	}
+	for _, endpointDef := range endpoints {
+		for _, tc := range tt {
+			t.Run(tc.name, func(t *testing.T) {
+				endpoint := endpointDef.url
+				isV2 := endpointDef.isV2
+				gateway := &MockGatewayer{}
+				gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
-			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
-			require.NoError(t, err)
-
-			if tc.csrfDisabled {
-				setCSRFParameters(t, tokenInvalid, req)
-			} else {
-				setCSRFParameters(t, tokenValid, req)
-
-			}
-
-			rr := httptest.NewRecorder()
-
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
-			handler.ServeHTTP(rr, req)
-
-			status := rr.Code
-			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
-
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
-			} else {
-				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
+				req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 				require.NoError(t, err)
-				require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name)
-			}
-		})
+
+				if tc.csrfDisabled {
+					setCSRFParameters(t, tokenInvalid, req)
+				} else {
+					setCSRFParameters(t, tokenValid, req)
+				}
+
+				rr := httptest.NewRecorder()
+
+				handler := newServerMux(defaultMuxConfig(), gateway, nil)
+				handler.ServeHTTP(rr, req)
+
+				status := rr.Code
+				require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+				if status != http.StatusOK {
+					require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+						strings.TrimSpace(rr.Body.String()), status, tc.err)
+				} else {
+					expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
+					require.NoError(t, err)
+					if isV2 {
+						var rTxn readable.Transaction
+						err = json.Unmarshal(rr.Body.Bytes(), &rTxn)
+						require.NoError(t, err)
+						require.Equal(t, expectedResponse, rTxn.Hash, tc.name+" v2")
+					} else {
+						require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name+" v1")
+					}
+				}
+			})
+		}
 	}
 }
 
@@ -795,25 +817,25 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		},
 
 		{
-			name:   "500 resend failed network error",
-			method: http.MethodPost,
-			status: http.StatusServiceUnavailable,
-			err:    "503 Service Unavailable - All pool connections are unreachable at this time",
+			name:                     "500 resend failed network error",
+			method:                   http.MethodPost,
+			status:                   http.StatusServiceUnavailable,
+			err:                      "503 Service Unavailable - All pool connections are unreachable at this time",
 			resendUnconfirmedTxnsErr: gnet.ErrNoReachableConnections,
 		},
 
 		{
-			name:   "500 resend failed unknown error",
-			method: http.MethodPost,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - ResendUnconfirmedTxns failed",
+			name:                     "500 resend failed unknown error",
+			method:                   http.MethodPost,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - ResendUnconfirmedTxns failed",
 			resendUnconfirmedTxnsErr: errors.New("ResendUnconfirmedTxns failed"),
 		},
 
 		{
-			name:   "200",
-			method: http.MethodPost,
-			status: http.StatusOK,
+			name:                          "200",
+			method:                        http.MethodPost,
+			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: nil,
 			httpResponse: ResendResult{
 				Txids: []string{},
@@ -821,9 +843,9 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		},
 
 		{
-			name:   "200 with hashes",
-			method: http.MethodPost,
-			status: http.StatusOK,
+			name:                          "200 with hashes",
+			method:                        http.MethodPost,
+			status:                        http.StatusOK,
 			resendUnconfirmedTxnsResponse: []cipher.SHA256{validHash1, validHash2},
 			httpResponse: ResendResult{
 				Txids: []string{validHash1.Hex(), validHash2.Hex()},
@@ -1385,9 +1407,9 @@ func TestVerifyTransaction(t *testing.T) {
 		csrfDisabled                  bool
 	}{
 		{
-			name:   "405",
-			method: http.MethodGet,
-			status: http.StatusMethodNotAllowed,
+			name:                       "405",
+			method:                     http.MethodGet,
+			status:                     http.StatusMethodNotAllowed,
 			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
 			httpResponse:               NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""),
 		},

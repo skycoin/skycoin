@@ -401,7 +401,7 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 
 // SignTransaction signs an unsigned transaction using a wallet. Specific inputs may be signed by specifying signIndexes.
 // If signIndexes is empty, all inputs will be signed.
-func (gw *Gateway) SignTransaction(wltName string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, error) {
+func (gw *Gateway) SignTransaction(wltName string, password []byte, txn *coin.Transaction, signIndexes []int) ([]wallet.UxBalance, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}

@@ -300,51 +300,10 @@ func (serv *Service) GetWallets() (Wallets, error) {
 	return wlts, nil
 }
 
-// SignTransaction signs a transaction from a wallet. Specific inputs may be signed by specifying signIndexes.
-// If signIndexes is empty, all inputs will be signed.
-func (serv *Service) SignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, error) {
-	serv.RLock()
-	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
-		return nil, ErrWalletAPIDisabled
-	}
-
-	w, err := serv.getWallet(wltID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if the wallet needs a password
-	if w.IsEncrypted() {
-		if len(password) == 0 {
-			return nil, nil, ErrMissingPassword
-		}
-	} else {
-		if len(password) != 0 {
-			return nil, nil, ErrWalletNotEncrypted
-		}
-	}
-
-	var txn *coin.Transaction
-	if w.IsEncrypted() {
-		err = w.GuardView(password, func(wlt *Wallet) error {
-			var err error
-			txn, err = wlt.SignTransaction(txn, signIndexes)
-			return err
-		})
-	} else {
-		txn, err = w.SignTransaction(txn, signIndexes)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return txn, nil
-}
-
 // CreateTransaction creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateTransaction(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+	// TODO -- remove, unused (use visor.CreateTransaction)
 	serv.RLock()
 	defer serv.RUnlock()
 

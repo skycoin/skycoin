@@ -305,3 +305,40 @@ func TestGateway_CreateTransaction(t *testing.T) {
 		})
 	}
 }
+
+func TestGateway_SignTransaction(t *testing.T) {
+	tests := []struct {
+		name            string
+		enableWalletAPI bool
+		txn             *coin.Transaction
+		wltID           string
+		password        []byte
+		signIndexes     []int
+		err             error
+		inputs          []wallet.UxBalance
+	}{
+		{
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gw := &Gateway{
+				Config: GatewayConfig{
+					EnableWalletAPI: tc.enableWalletAPI,
+				},
+			}
+
+			inputs, err := gw.SignTransaction(tc.wltID, tc.password, tc.txn, tc.signIndexes)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.params, params)
+			}
+		})
+	}
+}

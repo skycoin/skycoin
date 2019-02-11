@@ -2705,3 +2705,34 @@ func TestWalletValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestSignTransaction(t *testing.T) {
+	cases := []struct {
+		name        string
+		txn         *coin.Transaction
+		signIndexes []int
+		uxOuts      []coin.UxOut
+		err         error
+	}{
+		{
+			name: "signed txn",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			w := &Wallet{}
+
+			err := w.SignTransaction(tc.txn, tc.signIndexes, tc.uxOuts)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			require.False(t, txn.IsUnsigned())
+			err = txn.Verify()
+			require.NoError(t, err)
+		})
+	}
+}

@@ -92,7 +92,6 @@ func NewBlocksVerbose(blocks []coin.SignedBlock, inputs [][][]visor.TransactionI
 
 // BlockTransactionVerbose has readable transaction data for transactions inside a block. It differs from Transaction
 // in that it includes metadata for transaction inputs and the calculated coinhour fee spent by the block
-// swagger:model blockTransactionVerbose
 type BlockTransactionVerbose struct {
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`

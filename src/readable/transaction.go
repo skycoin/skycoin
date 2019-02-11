@@ -37,7 +37,6 @@ func NewTransactionStatus(status visor.TransactionStatus) TransactionStatus {
 }
 
 // TransactionOutput readable transaction output
-// swagger:model transactionOutput
 type TransactionOutput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"dst"`
@@ -46,7 +45,6 @@ type TransactionOutput struct {
 }
 
 // TransactionInput readable transaction input
-// swagger:model transactionInput
 type TransactionInput struct {
 	Hash            string `json:"uxid"`
 	Address         string `json:"owner"`
@@ -88,7 +86,6 @@ func NewTransactionInput(input visor.TransactionInput) (TransactionInput, error)
 }
 
 // Transaction represents a readable transaction
-// swagger:model transaction
 type Transaction struct {
 	Timestamp uint64 `json:"timestamp,omitempty"`
 	Length    uint32 `json:"length"`
@@ -98,7 +95,6 @@ type Transaction struct {
 
 	Sigs []string            `json:"sigs"`
 	In   []string            `json:"inputs"`
-	// in: body
 	Out  []TransactionOutput `json:"outputs"`
 }
 
@@ -198,7 +194,6 @@ func NewUnconfirmedTransactions(txns []visor.UnconfirmedTransaction) ([]Unconfir
 }
 
 // TransactionWithStatus represents transaction result
-// swagger:model transactionWithStatus
 type TransactionWithStatus struct {
 	Status      TransactionStatus `json:"status"`
 	Time        uint64            `json:"time"`
@@ -225,7 +220,6 @@ func NewTransactionWithStatus(txn *visor.Transaction) (*TransactionWithStatus, e
 }
 
 // TransactionWithStatusVerbose represents verbose transaction result
-// swagger:model transactionWithStatusVerbose
 type TransactionWithStatusVerbose struct {
 	Status TransactionStatus `json:"status"`
 	Time   uint64            `json:"time"`

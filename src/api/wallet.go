@@ -991,7 +991,92 @@ func walletHandler(gateway Gatewayer) http.HandlerFunc {
 //	verbose: [bool] include verbose transaction input data
 func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+
+	// swagger:operation GET /api/v1/wallet/transactions walletTransactions
+	//
+	// Returns returns all unconfirmed transactions for all addresses in a given wallet.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: id
+	//   in: query
+	//   description: Wallet id.
+	//   required: true
+	//   type: string
+	// - name: verbose
+	//   in: query
+	//   default: true
+	//   description: include verbose transaction input data
+	//   required: false
+	//   type: boolean
+	// responses:
+	//   200:
+	//     description: Returns returns all unconfirmed transactions for all addresses in a given wallet
+	//     schema:
+	//       properties:
+	//         transactions:
+	//           type: array
+	//           items:
+	//             properties:
+	//               transaction:
+	//                 type: object
+	//                 properties:
+	//                   length:
+	//                     type: integer
+	//                     format: int32
+	//                   type:
+	//                     type: integer
+	//                     format: int32
+	//                   fee:
+	//                     type: integer
+	//                     format: int64
+	//                   txid:
+	//                     type: string
+	//                   inner_hash:
+	//                     type: string
+	//                   sigs:
+	//                     type: array
+	//                     items:
+	//                       type: string
+	//                   inputs:
+	//                     type: object
+	//                     properties:
+	//                       uxid:
+	//                         type: string
+	//                       dst:
+	//                         type: string
+	//                       coins:
+	//                         type: string
+	//                       hours:
+	//                         type: integer
+	//                         format: int64
+	//                       calculated_hours:
+	//                         type: integer
+	//                         format: int64
+	//                   outputs:
+	//                     type: object
+	//                     properties:
+	//                       uxid:
+	//                         type: string
+	//                       dst:
+	//                         type: string
+	//                       coins:
+	//                         type: string
+	//                       hours:
+	//                         type: integer
+	//                         format: int64
+	//               received:
+	//                 type: string
+	//               checked:
+	//                 type: string
+	//               announced:
+	//                 type: string
+	//               is_valid:
+	//                 type: boolean
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -1412,7 +1497,44 @@ type VerifySeedRequest struct {
 // URI: /api/v2/wallet/seed/verify
 func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 
-	// TODO For v3
+	// swagger:operation POST /api/v2/wallet/seed/verify walletSeedVerify
+	//
+	// Verifies a wallet seed.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	// consumes:
+	// - application/json
+	// parameters:
+	// - name: seed
+	//   in: body
+	//   description: Seed to be verified.
+	//   type: string
+	//
+	// responses:
+	//   200:
+	//     description: Verifies a wallet seed.
+	//     properties:
+	//       data:
+	//         description: Empty
+	//   422:
+	//     description: Wrong Seed
+	//     properties:
+	//       error:
+	//         type: object
+	//         properties:
+	//           message:
+	//             description: seed is not valid bip39 seed
+	//             type: string
+	//           code:
+	//             description: 422
+	//             type: integer
+	//             format: int32
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")

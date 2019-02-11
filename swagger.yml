@@ -171,6 +171,111 @@ paths:
           $ref: '#/responses/genericError'
       summary: Returns the balance of one or more addresses, both confirmed and predicted.
         The predicted balance is the confirmed balance minus the pending spends.
+  /api/v1/block:
+    get:
+      description: 'Returns a block by hash or seq. Note: only one of hash or seq
+        is allowed'
+      operationId: block
+      parameters:
+      - default: true
+        description: include verbose
+        in: query
+        name: verbose
+        type: boolean
+      - in: query
+        name: hash
+        type: string
+      - in: query
+        name: seq
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: BlockVerbose represents a readable block with verbose data.
+          schema:
+            properties:
+              body:
+                properties:
+                  txns:
+                    items:
+                      properties:
+                        fee:
+                          format: int32
+                          type: integer
+                        hash:
+                          type: string
+                        inner_hash:
+                          type: string
+                        inputs:
+                          items:
+                            properties:
+                              calculated_hours:
+                                format: int64
+                                type: integer
+                              coins:
+                                type: string
+                              dst:
+                                type: string
+                              hours:
+                                format: int64
+                                type: integer
+                              uxid:
+                                type: string
+                          type: array
+                        length:
+                          format: int32
+                          type: integer
+                        outputs:
+                          items:
+                            properties:
+                              coins:
+                                type: string
+                              dst:
+                                type: string
+                              hours:
+                                format: int64
+                                type: integer
+                              uxid:
+                                type: string
+                          type: array
+                        sigs:
+                          items:
+                            type: string
+                          type: array
+                        type:
+                          format: int32
+                          type: integer
+                    type: array
+                type: object
+              header:
+                properties:
+                  block_hash:
+                    type: string
+                  fee:
+                    format: int32
+                    type: integer
+                  previous_block_hash:
+                    type: string
+                  seq:
+                    format: int32
+                    type: integer
+                  timestamp:
+                    format: int64
+                    type: integer
+                  tx_body_hash:
+                    type: string
+                  ux_hash:
+                    type: string
+                  version:
+                    format: int32
+                    type: integer
+                type: object
+              size:
+                format: int32
+                type: integer
+        default:
+          $ref: '#/responses/genericError'
   /api/v1/blockchain/metadata:
     get:
       operationId: blockchainMetadata
@@ -240,6 +345,229 @@ paths:
         default:
           $ref: '#/responses/genericError'
       summary: Returns the blockchain sync progress.
+  /api/v1/blocks:
+    get:
+      description: |-
+        or an explicit list of sequences.
+        If using start and end, the block sequences include both the start and end point.
+        Explicit sequences cannot be combined with start and end.
+      operationId: blocksGet
+      parameters:
+      - default: true
+        description: include verbose
+        in: query
+        name: verbose
+        type: boolean
+      - in: query
+        name: start
+        type: integer
+      - in: query
+        name: end
+        type: integer
+      - in: query
+        name: seqs
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns blocks between a start and end point.
+          schema:
+            properties:
+              blocks:
+                items:
+                  properties:
+                    body:
+                      items:
+                        properties:
+                          fee:
+                            format: int32
+                            type: integer
+                          hash:
+                            type: string
+                          inner_hash:
+                            type: string
+                          inputs:
+                            items:
+                              properties:
+                                calculated_hours:
+                                  format: int64
+                                  type: integer
+                                coins:
+                                  type: string
+                                dst:
+                                  type: string
+                                hours:
+                                  format: int64
+                                  type: integer
+                                uxid:
+                                  type: string
+                            type: array
+                          length:
+                            format: int32
+                            type: integer
+                          outputs:
+                            items:
+                              properties:
+                                coins:
+                                  type: string
+                                dst:
+                                  type: string
+                                hours:
+                                  format: int64
+                                  type: integer
+                                uxid:
+                                  type: string
+                            type: array
+                          sigs:
+                            items:
+                              type: string
+                            type: array
+                          type:
+                            format: int32
+                            type: integer
+                      type: array
+                    header:
+                      properties:
+                        block_hash:
+                          type: string
+                        fee:
+                          format: int64
+                          type: integer
+                        previous_block_hash:
+                          type: string
+                        seq:
+                          format: int64
+                          type: integer
+                        timestamp:
+                          format: int64
+                          type: integer
+                        tx_body_hash:
+                          type: string
+                        ux_hash:
+                          type: string
+                        version:
+                          format: int32
+                          type: integer
+                      type: object
+                    size:
+                      format: int32
+                      type: integer
+                type: array
+        default:
+          $ref: '#/responses/genericError'
+      summary: blocksHandler returns blocks between a start and end point,
+    post:
+      description: |-
+        or an explicit list of sequences.
+        If using start and end, the block sequences include both the start and end point.
+        Explicit sequences cannot be combined with start and end.
+      operationId: blocksPost
+      parameters:
+      - default: true
+        description: include verbose
+        in: query
+        name: verbose
+        type: boolean
+      - in: query
+        name: start
+        type: integer
+      - in: query
+        name: end
+        type: integer
+      - in: query
+        name: seqs
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns blocks between a start and end point.
+          schema:
+            properties:
+              blocks:
+                items:
+                  properties:
+                    body:
+                      items:
+                        properties:
+                          fee:
+                            format: int32
+                            type: integer
+                          hash:
+                            type: string
+                          inner_hash:
+                            type: string
+                          inputs:
+                            items:
+                              properties:
+                                calculated_hours:
+                                  format: int64
+                                  type: integer
+                                coins:
+                                  type: string
+                                dst:
+                                  type: string
+                                hours:
+                                  format: int64
+                                  type: integer
+                                uxid:
+                                  type: string
+                            type: array
+                          length:
+                            format: int32
+                            type: integer
+                          outputs:
+                            items:
+                              properties:
+                                coins:
+                                  type: string
+                                dst:
+                                  type: string
+                                hours:
+                                  format: int64
+                                  type: integer
+                                uxid:
+                                  type: string
+                            type: array
+                          sigs:
+                            items:
+                              type: string
+                            type: array
+                          type:
+                            format: int32
+                            type: integer
+                      type: array
+                    header:
+                      properties:
+                        block_hash:
+                          type: string
+                        fee:
+                          format: int64
+                          type: integer
+                        previous_block_hash:
+                          type: string
+                        seq:
+                          format: int64
+                          type: integer
+                        timestamp:
+                          format: int64
+                          type: integer
+                        tx_body_hash:
+                          type: string
+                        ux_hash:
+                          type: string
+                        version:
+                          format: int32
+                          type: integer
+                      type: object
+                    size:
+                      format: int32
+                      type: integer
+                type: array
+        default:
+          $ref: '#/responses/genericError'
+      summary: blocksHandler returns blocks between a start and end point,
   /api/v1/coinSupply:
     get:
       description: coinSupplyHandler returns coin distribution supply stats
@@ -476,6 +804,108 @@ paths:
         default:
           $ref: '#/responses/genericError'
       summary: Broadcast a hex-encoded, serialized transaction to the network.
+  /api/v1/last_blocks:
+    get:
+      description: Returns the most recent N blocks on the blockchain
+      operationId: lastBlocks
+      parameters:
+      - default: true
+        description: include verbose
+        in: query
+        name: verbose
+        type: boolean
+      - in: query
+        name: num
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns the most recent N blocks on the blockchain.
+          schema:
+            properties:
+              blocks:
+                items:
+                  properties:
+                    body:
+                      items:
+                        properties:
+                          fee:
+                            format: int32
+                            type: integer
+                          hash:
+                            type: string
+                          inner_hash:
+                            type: string
+                          inputs:
+                            items:
+                              properties:
+                                calculated_hours:
+                                  format: int64
+                                  type: integer
+                                coins:
+                                  type: string
+                                dst:
+                                  type: string
+                                hours:
+                                  format: int64
+                                  type: integer
+                                uxid:
+                                  type: string
+                            type: array
+                          length:
+                            format: int32
+                            type: integer
+                          outputs:
+                            items:
+                              properties:
+                                coins:
+                                  type: string
+                                dst:
+                                  type: string
+                                hours:
+                                  format: int64
+                                  type: integer
+                                uxid:
+                                  type: string
+                            type: array
+                          sigs:
+                            items:
+                              type: string
+                            type: array
+                          type:
+                            format: int32
+                            type: integer
+                      type: array
+                    header:
+                      properties:
+                        block_hash:
+                          type: string
+                        fee:
+                          format: int64
+                          type: integer
+                        previous_block_hash:
+                          type: string
+                        seq:
+                          format: int64
+                          type: integer
+                        timestamp:
+                          format: int64
+                          type: integer
+                        tx_body_hash:
+                          type: string
+                        ux_hash:
+                          type: string
+                        version:
+                          format: int32
+                          type: integer
+                      type: object
+                    size:
+                      format: int32
+                      type: integer
+                type: array
+        default:
+          $ref: '#/responses/genericError'
   /api/v1/network/connection:
     get:
       operationId: networkConnection
@@ -950,6 +1380,88 @@ paths:
       summary: If neither addrs nor hashes are specificed, return all unspent outputs.
         If only one filter is specified, then return outputs match the filter. Both
         filters cannot be specified.
+  /api/v1/pendingTxs:
+    get:
+      description: Returns pending (unconfirmed) transactions
+      operationId: pendingTxs
+      parameters:
+      - default: true
+        description: include verbose transaction input data
+        in: query
+        name: verbose
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns a transaction identified by its txid hash.
+          schema:
+            items:
+              properties:
+                announced:
+                  type: string
+                checked:
+                  type: string
+                is_valid:
+                  type: boolean
+                received:
+                  type: string
+                transaction:
+                  description: BlockTransactionVerbose has readable transaction data
+                    for transactions inside a block. It differs from Transaction in
+                    that it includes metadata for transaction inputs and the calculated
+                    coinhour fee spent by the block
+                  properties:
+                    fee:
+                      format: int32
+                      type: integer
+                    hash:
+                      type: string
+                    inner_hash:
+                      type: string
+                    inputs:
+                      items:
+                        properties:
+                          calculated_hours:
+                            format: int64
+                            type: integer
+                          coins:
+                            type: string
+                          dst:
+                            type: string
+                          hours:
+                            format: int64
+                            type: integer
+                          uxid:
+                            type: string
+                      type: array
+                    length:
+                      format: int32
+                      type: integer
+                    outputs:
+                      items:
+                        properties:
+                          coins:
+                            type: string
+                          dst:
+                            type: string
+                          hours:
+                            format: int64
+                            type: integer
+                          uxid:
+                            type: string
+                      type: array
+                    sigs:
+                      items:
+                        type: string
+                      type: array
+                    type:
+                      format: int32
+                      type: integer
+                  type: object
+            type: array
+        default:
+          $ref: '#/responses/genericError'
   /api/v1/rawtx:
     get:
       operationId: rawtx
@@ -1017,6 +1529,366 @@ paths:
         default:
           $ref: '#/responses/genericError'
       summary: Returns the top skycoin holders.
+  /api/v1/transaction:
+    get:
+      description: Returns a transaction identified by its txid hash
+      operationId: transaction
+      parameters:
+      - description: transaction hash
+        in: query
+        name: txid
+        required: true
+        type: string
+      - description: return as a raw encoded transaction.
+        in: query
+        name: encoded
+        type: boolean
+      - default: true
+        description: include verbose transaction input data
+        in: query
+        name: verbose
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns a transaction identified by its txid hash.
+          schema:
+            properties:
+              status:
+                properties:
+                  block_seq:
+                    description: If confirmed, the sequence of the block in which
+                      the transaction was executed
+                    format: int64
+                    type: integer
+                  confirmed:
+                    type: boolean
+                  height:
+                    description: If confirmed, how many blocks deep in the chain it
+                      is. Will be at least 1 if confirmed
+                    format: int64
+                    type: integer
+                  unconfirmed:
+                    type: boolean
+                type: object
+              time:
+                format: int64
+                type: integer
+              txn:
+                description: TransactionVerbose has readable transaction data. It
+                  adds TransactionStatus to a BlockTransactionVerbose
+                properties:
+                  fee:
+                    format: int32
+                    type: integer
+                  hash:
+                    type: string
+                  inner_hash:
+                    type: string
+                  inputs:
+                    items:
+                      properties:
+                        calculated_hours:
+                          format: int64
+                          type: integer
+                        coins:
+                          type: string
+                        dst:
+                          type: string
+                        hours:
+                          format: int64
+                          type: integer
+                        uxid:
+                          type: string
+                    type: array
+                  length:
+                    format: int32
+                    type: integer
+                  outputs:
+                    items:
+                      properties:
+                        coins:
+                          type: string
+                        dst:
+                          type: string
+                        hours:
+                          format: int64
+                          type: integer
+                        uxid:
+                          type: string
+                    type: array
+                  sigs:
+                    items:
+                      type: string
+                    type: array
+                  status:
+                    properties:
+                      block_seq:
+                        description: If confirmed, the sequence of the block in which
+                          the transaction was executed
+                        format: int64
+                        type: integer
+                      confirmed:
+                        type: boolean
+                      height:
+                        description: If confirmed, how many blocks deep in the chain
+                          it is. Will be at least 1 if confirmed
+                        format: int64
+                        type: integer
+                      unconfirmed:
+                        type: boolean
+                    type: object
+                  timestamp:
+                    format: int64
+                    type: integer
+                  type:
+                    format: int32
+                    type: integer
+                type: object
+        default:
+          $ref: '#/responses/genericError'
+  /api/v1/transactions:
+    get:
+      operationId: transactionsGet
+      parameters:
+      - description: command separated list of addresses
+        in: query
+        name: addrs
+        type: string
+      - description: Whether the transactions should be confirmed [optional, must
+          be 0 or 1; if not provided, returns all]
+        in: query
+        name: confirmed
+        type: string
+      - default: true
+        description: include verbose transaction input data
+        in: query
+        name: verbose
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns transactions that match the filters.
+          schema:
+            items:
+              properties:
+                status:
+                  properties:
+                    block_seq:
+                      description: If confirmed, the sequence of the block in which
+                        the transaction was executed
+                      format: int64
+                      type: integer
+                    confirmed:
+                      type: boolean
+                    height:
+                      description: If confirmed, how many blocks deep in the chain
+                        it is. Will be at least 1 if confirmed
+                      format: int64
+                      type: integer
+                    unconfirmed:
+                      type: boolean
+                  type: object
+                time:
+                  format: int64
+                  type: integer
+                txn:
+                  description: TransactionVerbose has readable transaction data. It
+                    adds TransactionStatus to a BlockTransactionVerbose
+                  properties:
+                    fee:
+                      format: int32
+                      type: integer
+                    hash:
+                      type: string
+                    inner_hash:
+                      type: string
+                    inputs:
+                      items:
+                        properties:
+                          calculated_hours:
+                            format: int64
+                            type: integer
+                          coins:
+                            type: string
+                          dst:
+                            type: string
+                          hours:
+                            format: int64
+                            type: integer
+                          uxid:
+                            type: string
+                      type: array
+                    length:
+                      format: int32
+                      type: integer
+                    outputs:
+                      items:
+                        properties:
+                          coins:
+                            type: string
+                          dst:
+                            type: string
+                          hours:
+                            format: int64
+                            type: integer
+                          uxid:
+                            type: string
+                      type: array
+                    sigs:
+                      items:
+                        type: string
+                      type: array
+                    status:
+                      properties:
+                        block_seq:
+                          description: If confirmed, the sequence of the block in
+                            which the transaction was executed
+                          format: int64
+                          type: integer
+                        confirmed:
+                          type: boolean
+                        height:
+                          description: If confirmed, how many blocks deep in the chain
+                            it is. Will be at least 1 if confirmed
+                          format: int64
+                          type: integer
+                        unconfirmed:
+                          type: boolean
+                      type: object
+                    timestamp:
+                      format: int64
+                      type: integer
+                    type:
+                      format: int32
+                      type: integer
+                  type: object
+            type: array
+        default:
+          $ref: '#/responses/genericError'
+      summary: Returns transactions that match the filters.
+    post:
+      operationId: transactionsPost
+      parameters:
+      - description: command separated list of addresses
+        in: query
+        name: addrs
+        type: string
+      - description: Whether the transactions should be confirmed [optional, must
+          be 0 or 1; if not provided, returns all]
+        in: query
+        name: confirmed
+        type: string
+      - default: true
+        description: include verbose transaction input data
+        in: query
+        name: verbose
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns transactions that match the filters.
+          schema:
+            items:
+              properties:
+                status:
+                  properties:
+                    block_seq:
+                      description: If confirmed, the sequence of the block in which
+                        the transaction was executed
+                      format: int64
+                      type: integer
+                    confirmed:
+                      type: boolean
+                    height:
+                      description: If confirmed, how many blocks deep in the chain
+                        it is. Will be at least 1 if confirmed
+                      format: int64
+                      type: integer
+                    unconfirmed:
+                      type: boolean
+                  type: object
+                time:
+                  format: int64
+                  type: integer
+                txn:
+                  description: TransactionVerbose has readable transaction data. It
+                    adds TransactionStatus to a BlockTransactionVerbose
+                  properties:
+                    fee:
+                      format: int32
+                      type: integer
+                    hash:
+                      type: string
+                    inner_hash:
+                      type: string
+                    inputs:
+                      items:
+                        properties:
+                          calculated_hours:
+                            format: int64
+                            type: integer
+                          coins:
+                            type: string
+                          dst:
+                            type: string
+                          hours:
+                            format: int64
+                            type: integer
+                          uxid:
+                            type: string
+                      type: array
+                    length:
+                      format: int32
+                      type: integer
+                    outputs:
+                      items:
+                        properties:
+                          coins:
+                            type: string
+                          dst:
+                            type: string
+                          hours:
+                            format: int64
+                            type: integer
+                          uxid:
+                            type: string
+                      type: array
+                    sigs:
+                      items:
+                        type: string
+                      type: array
+                    status:
+                      properties:
+                        block_seq:
+                          description: If confirmed, the sequence of the block in
+                            which the transaction was executed
+                          format: int64
+                          type: integer
+                        confirmed:
+                          type: boolean
+                        height:
+                          description: If confirmed, how many blocks deep in the chain
+                            it is. Will be at least 1 if confirmed
+                          format: int64
+                          type: integer
+                        unconfirmed:
+                          type: boolean
+                      type: object
+                    timestamp:
+                      format: int64
+                      type: integer
+                    type:
+                      format: int32
+                      type: integer
+                  type: object
+            type: array
+        default:
+          $ref: '#/responses/genericError'
+      summary: Returns transactions that match the filters.
   /api/v1/uxout:
     get:
       operationId: uxout
@@ -1522,6 +2394,91 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+  /api/v1/wallet/transactions:
+    get:
+      operationId: walletTransactions
+      parameters:
+      - description: Wallet id.
+        in: query
+        name: id
+        required: true
+        type: string
+      - default: true
+        description: include verbose transaction input data
+        in: query
+        name: verbose
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns returns all unconfirmed transactions for all addresses
+            in a given wallet
+          schema:
+            properties:
+              transactions:
+                items:
+                  properties:
+                    announced:
+                      type: string
+                    checked:
+                      type: string
+                    is_valid:
+                      type: boolean
+                    received:
+                      type: string
+                    transaction:
+                      properties:
+                        fee:
+                          format: int64
+                          type: integer
+                        inner_hash:
+                          type: string
+                        inputs:
+                          properties:
+                            calculated_hours:
+                              format: int64
+                              type: integer
+                            coins:
+                              type: string
+                            dst:
+                              type: string
+                            hours:
+                              format: int64
+                              type: integer
+                            uxid:
+                              type: string
+                          type: object
+                        length:
+                          format: int32
+                          type: integer
+                        outputs:
+                          properties:
+                            coins:
+                              type: string
+                            dst:
+                              type: string
+                            hours:
+                              format: int64
+                              type: integer
+                            uxid:
+                              type: string
+                          type: object
+                        sigs:
+                          items:
+                            type: string
+                          type: array
+                        txid:
+                          type: string
+                        type:
+                          format: int32
+                          type: integer
+                      type: object
+                type: array
+        default:
+          $ref: '#/responses/genericError'
+      summary: Returns returns all unconfirmed transactions for all addresses in a
+        given wallet.
   /api/v1/wallet/unload:
     post:
       operationId: walletUnload

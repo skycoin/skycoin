@@ -787,23 +787,6 @@ paths:
         default:
           $ref: '#/responses/genericError'
       summary: Returns node health data.
-  /api/v1/injectTransaction:
-    post:
-      operationId: injectTransaction
-      parameters:
-      - description: hex-encoded serialized transaction string.
-        in: header
-        name: rawtx
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: This endpoint a hex-encoded transaction to the network.
-        default:
-          $ref: '#/responses/genericError'
-      summary: Broadcast a hex-encoded, serialized transaction to the network.
   /api/v1/last_blocks:
     get:
       description: Returns the most recent N blocks on the blockchain
@@ -2619,6 +2602,74 @@ paths:
       security:
       - csrfAuth: []
       summary: healthHandler returns node health data.
+  /api/v2/injectTransaction:
+    post:
+      operationId: injectTransaction
+      parameters:
+      - description: hex-encoded serialized transaction string.
+        in: header
+        name: rawtx
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ok, returns the transaction.
+          schema:
+            properties:
+              data:
+                properties:
+                  transaction:
+                    description: Represents a readable transaction
+                    properties:
+                      hash:
+                        type: string
+                      inner_hash:
+                        type: string
+                      inputs:
+                        items:
+                          type: string
+                        type: array
+                      length:
+                        format: int32
+                        type: integer
+                      outputs:
+                        items:
+                          properties:
+                            coins:
+                              type: string
+                            dst:
+                              type: string
+                            hours:
+                              format: int64
+                              type: integer
+                            uxid:
+                              type: string
+                        type: array
+                      sigs:
+                        items:
+                          type: string
+                        type: array
+                      timestamp:
+                        format: int64
+                        type: integer
+                      type:
+                        format: int32
+                        type: integer
+                    type: object
+                type: object
+              error:
+                properties:
+                  code:
+                    format: int64
+                    type: integer
+                  message:
+                    type: string
+                type: object
+        default:
+          $ref: '#/responses/genericError'
+      summary: Broadcast a hex-encoded, serialized transaction to the network.
   /api/v2/wallet/recover:
     post:
       operationId: walletRecover
@@ -2681,6 +2732,26 @@ paths:
         will be generated from seed and compared to the first address of the specified
         wallet. If they match, the wallet will be regenerated with an optional password.
         If the wallet is not encrypted, an error is returned.
+  /api/v2/wallet/seed/verify:
+    post:
+      consumes:
+      - application/json
+      operationId: walletSeedVerify
+      parameters:
+      - description: Seed to be verified.
+        in: header
+        name: seed
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verifies a wallet seed.
+        "422":
+          description: Wrong Seed
+        default:
+          $ref: '#/responses/genericError'
+      summary: Verifies a wallet seed.
 produces:
 - application/json
 - application/xml

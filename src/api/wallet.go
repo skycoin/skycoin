@@ -1509,7 +1509,7 @@ func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 	// - application/json
 	// parameters:
 	// - name: seed
-	//   in: body
+	//   in: header
 	//   description: Seed to be verified.
 	//   type: string
 	//

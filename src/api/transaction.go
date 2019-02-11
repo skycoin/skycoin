@@ -782,7 +782,7 @@ type RawTxnData struct {
 //      503 - network unavailable for broadcasting transaction
 func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
-	// swagger:operation POST /api/v1/injectTransaction injectTransaction
+	// swagger:operation POST /api/v2/injectTransaction injectTransaction
 	//
 	// Broadcast a hex-encoded, serialized transaction to the network.
 	//
@@ -797,8 +797,58 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 	//   type: string
 	// responses:
 	//   200:
-	//     description: This endpoint a hex-encoded transaction to the network.
-	//     type: string
+	//     description: Ok, returns the transaction.
+	//     schema:
+	//       properties:
+	//         error:
+	//           type: object
+	//           properties:
+	//             message:
+	//               type: string
+	//             code:
+	//               type: integer
+	//               format: int64
+	//         data:
+	//           type: object
+	//           properties:
+	//             transaction:
+	//               type: object
+	//               description: Represents a readable transaction
+	//               properties:
+	//                 timestamp:
+	//                   type: integer
+	//                   format: int64
+	//                 length:
+	//                   type: integer
+	//                   format: int32
+	//                 type:
+	//                   type: integer
+	//                   format: int32
+	//                 hash:
+	//                   type: string
+	//                 inner_hash:
+	//                   type: string
+	//                 sigs:
+	//                   type: array
+	//                   items:
+	//                     type: string
+	//                 inputs:
+	//                   type: array
+	//                   items:
+	//                     type: string
+	//                 outputs:
+	//                   type: array
+	//                   items:
+	//                     properties:
+	//                       uxid:
+	//                         type: string
+	//                       dst:
+	//                         type: string
+	//                       coins:
+	//                         type: string
+	//                       hours:
+	//                         type: integer
+	//                         format: int64
 	//   default:
 	//     $ref: '#/responses/genericError'
 

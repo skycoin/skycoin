@@ -2752,6 +2752,7 @@ paths:
             properties:
               data:
                 description: Empty
+                type: object
         "422":
           description: Wrong Seed
         default:

@@ -1518,6 +1518,7 @@ func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 	//     schema:
 	//       properties:
 	//         data:
+	//           type: object
 	//           description: Empty
 	//   422:
 	//     description: Wrong Seed

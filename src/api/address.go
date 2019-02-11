@@ -24,7 +24,7 @@ func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// swagger:operation POST /api/v2/address/verify verifyAddress
 	//
-	// healthHandler returns node health data.
+	// Verifies a Skycoin address.
 	//
 	// ---
 	//
@@ -47,6 +47,8 @@ func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	//     schema:
 	//       type: object
 	//       properties:
+	//         error:
+	//           type: object
 	//         data:
 	//           type: object
 	//           properties:

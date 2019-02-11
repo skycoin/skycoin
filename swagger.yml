@@ -1120,11 +1120,9 @@ paths:
       parameters:
       - in: query
         name: address
-        required: true
         type: string
       - in: query
         name: hash
-        required: true
         type: string
       produces:
       - application/json
@@ -1244,11 +1242,9 @@ paths:
       parameters:
       - in: query
         name: address
-        required: true
         type: string
       - in: query
         name: hash
-        required: true
         type: string
       produces:
       - application/json
@@ -1445,24 +1441,6 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
-  /api/v1/rawtx:
-    get:
-      operationId: rawtx
-      parameters:
-      - description: Transaction id hash
-        in: query
-        name: txid
-        type: string
-        x-go-name: txid
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Returns the hex-encoded byte serialization of a transaction
-        default:
-          $ref: '#/responses/genericError'
-      summary: Returns the hex-encoded byte serialization of a transaction. The transaction
-        may be confirmed or unconfirmed.
   /api/v1/resendUnconfirmedTxns:
     post:
       consumes:
@@ -1631,6 +1609,27 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+  /api/v1/transaction/raw:
+    get:
+      operationId: transactionRaw
+      parameters:
+      - description: Transaction id hash
+        in: query
+        name: txid
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns the hex-encoded byte serialization of a transaction
+          schema:
+            properties:
+              rawtx:
+                type: string
+        default:
+          $ref: '#/responses/genericError'
+      summary: Returns the hex-encoded byte serialization of a transaction. The transaction
+        may be confirmed or unconfirmed.
   /api/v1/transactions:
     get:
       operationId: transactionsGet
@@ -2514,7 +2513,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: This endpoint return a connection struct
+          description: This endpoint return all loaded wallets
           schema:
             items:
               properties:
@@ -2564,7 +2563,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: This endpoint return a connection struct
+          description: This endpoint return the wallet directory path
           schema:
             properties:
               address:
@@ -2596,12 +2595,14 @@ paths:
                     format: int64
                     type: integer
                 type: object
+              error:
+                type: object
             type: object
         default:
           $ref: '#/responses/genericError'
       security:
       - csrfAuth: []
-      summary: healthHandler returns node health data.
+      summary: Verifies a Skycoin address.
   /api/v2/injectTransaction:
     post:
       operationId: injectTransaction
@@ -2747,6 +2748,10 @@ paths:
       responses:
         "200":
           description: Verifies a wallet seed.
+          schema:
+            properties:
+              data:
+                description: Empty
         "422":
           description: Wrong Seed
         default:

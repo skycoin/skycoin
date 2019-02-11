@@ -851,11 +851,10 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	// responses:
 	//   200:
 	//     description: This endpoint Returns the label the wallet will be updated to .
-	//     type: string
+	//     properties:
+	//       type: string
 	//   default:
 	//     $ref: '#/responses/genericError'
-
-	// TODO params to body
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1171,7 +1170,7 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	//   default:
 	//     $ref: '#/responses/genericError'
 	//   200:
-	//     description: This endpoint return a connection struct
+	//     description: This endpoint return all loaded wallets
 	//     schema:
 	//       type: array
 	//       items:
@@ -1273,7 +1272,7 @@ func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
 	//
 	// responses:
 	//   200:
-	//     description: This endpoint return a connection struct
+	//     description: This endpoint return the wallet directory path
 	//     schema:
 	//       type: object
 	//       properties:
@@ -1516,9 +1515,10 @@ func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 	// responses:
 	//   200:
 	//     description: Verifies a wallet seed.
-	//     properties:
-	//       data:
-	//         description: Empty
+	//     schema:
+	//       properties:
+	//         data:
+	//           description: Empty
 	//   422:
 	//     description: Wrong Seed
 	//     properties:

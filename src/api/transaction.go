@@ -1010,7 +1010,7 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 // The transaction may be confirmed or unconfirmed.
 func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
-	// swagger:operation GET /api/v1/rawtx rawtx
+	// swagger:operation GET /api/v1/transaction/raw transactionRaw
 	//
 	// Returns the hex-encoded byte serialization of a transaction. The transaction may be confirmed or unconfirmed.
 	//
@@ -1023,13 +1023,14 @@ func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 	//   in: query
 	//   description: Transaction id hash
 	//   type: string
-	//   x-go-name: txid
 	//
 	// responses:
 	//   200:
 	//     description: Returns the hex-encoded byte serialization of a transaction
-	//     properties:
-	//       type: string
+	//     schema:
+	//       properties:
+	//         rawtx:
+	//           type: string
 	//   default:
 	//     $ref: '#/responses/genericError'
 

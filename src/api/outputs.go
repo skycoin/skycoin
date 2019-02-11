@@ -30,11 +30,11 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 	// parameters:
 	// - name: address
 	//   in: query
-	//   required: true
+	//   required: false
 	//   type: string
 	// - name: hash
 	//   in: query
-	//   required: true
+	//   required: false
 	//   type: string
 	//
 	// produces:
@@ -154,11 +154,11 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 	// parameters:
 	// - name: address
 	//   in: query
-	//   required: true
+	//   required: false
 	//   type: string
 	// - name: hash
 	//   in: query
-	//   required: true
+	//   required: false
 	//   type: string
 	//
 	// produces:

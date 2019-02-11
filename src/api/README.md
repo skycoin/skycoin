@@ -1111,7 +1111,6 @@ Example request body with manual hours selection type, unencrypted wallet and al
 
 ```json
 {
-    "ignore_unconfirmed": false,
     "hours_selection": {
         "type": "manual"
     },
@@ -1127,7 +1126,9 @@ Example request body with manual hours selection type, unencrypted wallet and al
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
         "hours": "0"
-    }]
+    }],
+	"unsigned": false,
+    "ignore_unconfirmed": false
 }
 ```
 
@@ -1152,7 +1153,9 @@ Example request body with auto hours selection type, encrypted wallet, specified
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2"
-    }]
+    }],
+	"unsigned": false,
+    "ignore_unconfirmed": false
 }
 ```
 
@@ -1176,7 +1179,9 @@ Example request body with manual hours selection type, unencrypted wallet and sp
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
         "hours": "0"
-    }]
+    }],
+	"unsigned": false,
+    "ignore_unconfirmed": false
 }
 ```
 
@@ -1275,6 +1280,12 @@ a transaction in the unconfirmed transaction pool.
 When `true`, the API will ignore unspent outputs that appear as spent in
 a transaction in the unconfirmed transaction pool when building the transaction,
 but not return an error.
+
+`unsigned` is optional and defaults to `false`.
+When `true`, the transaction will not be signed by the wallet.
+An unsigned transaction will be returned.
+The `"length"` and `"txid"` values of the `"transaction"` object will need to be updated
+after signing the transaction, which can be performed offline.
 
 Example:
 

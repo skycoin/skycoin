@@ -965,3 +965,48 @@ func TestSortTransactions(t *testing.T) {
 		})
 	}
 }
+
+func TestUnsignedEstimatedSize(t *testing.T) {
+	multisigsTxn := makeTransaction(t)
+	multisigsTxn.Sigs = append(multisigsTxn.Sigs, make([]cipher.Sig, 3)...)
+	multisigsTxn.In = append(multisigsTxn.In, make([]cipher.SHA256, 3)...)
+
+	cases := []struct {
+		name string
+		txn  Transaction
+	}{
+		{
+			name: "1 sig",
+			txn:  makeTransaction(t),
+		},
+		{
+			name: "4 sigs",
+			txn:  multisigsTxn,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NotEmpty(t, tc.txn.Sigs)
+
+			_, err := tc.txn.UnsignedEstimatedSize()
+			testutil.RequireError(t, err, "Transaction is signed")
+
+			s, err := tc.txn.Size()
+			require.NoError(t, err)
+
+			sigsLen := len(tc.txn.Sigs)
+			tc.txn.Sigs = nil
+
+			u, err := tc.txn.UnsignedEstimatedSize()
+			require.NoError(t, err)
+
+			require.Equal(t, s, u, "%d != %d", s, u)
+
+			s2, err := tc.txn.Size()
+			require.NoError(t, err)
+			require.True(t, s2 < s)
+			require.Equal(t, uint32(len(cipher.Sig{})*sigsLen), s-s2)
+		})
+	}
+}

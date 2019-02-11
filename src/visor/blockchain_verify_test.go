@@ -557,7 +557,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	testutil.RequireError(t, coinHoursErr, "UxOut.CoinHours addition of earned coin hours overflow")
 
 	// VerifySingleTxnSoftConstraints should fail on this, when trying to calculate the TransactionFee
-	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, params.UserVerifyTxn)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, params.UserVerifyTxn, TxnSigned)
 	testutil.RequireError(t, err, NewErrTxnViolatesSoftConstraint(coinHoursErr).Error())
 
 	// VerifySingleTxnHardConstraints should fail on this, when performing the extra check of
@@ -635,7 +635,7 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 	})
 	require.NoError(t, err)
 
-	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, params.UserVerifyTxn)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, params.UserVerifyTxn, TxnSigned)
 	if expectedErr == nil {
 		require.NoError(t, err)
 	} else {

@@ -266,6 +266,35 @@ func (txn *Transaction) Size() (uint32, error) {
 	return IntToUint32(len(txn.Serialize()))
 }
 
+// UnsignedEstimatedSize returns the encoded byte size of the transaction,
+// plus the expected size of the signatures that are absent in an unsigned transaction
+func (txn *Transaction) UnsignedEstimatedSize() (uint32, error) {
+	if !txn.IsUnsigned() {
+		return 0, errors.New("Transaction is signed")
+	}
+
+	s, err := txn.Size()
+	if err != nil {
+		return 0, err
+	}
+
+	n, err := MultUint64(uint64(len(cipher.Sig{})), uint64(len(txn.In)))
+	if err != nil {
+		return 0, err
+	}
+
+	if n > math.MaxUint32 {
+		return 0, errors.New("Estimate byte size of pending signatures exceeds math.MaxUint32")
+	}
+
+	return AddUint32(s, uint32(n))
+}
+
+// IsUnsigned returns true if the transaction is not signed
+func (txn *Transaction) IsUnsigned() bool {
+	return len(txn.Sigs) == 0
+}
+
 // Hash an entire Transaction struct, including the TransactionHeader
 func (txn *Transaction) Hash() cipher.SHA256 {
 	b := txn.Serialize()

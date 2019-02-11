@@ -2707,23 +2707,58 @@ func TestWalletValidate(t *testing.T) {
 }
 
 func TestSignTransaction(t *testing.T) {
+	txnSigned, uxs, seckeys := makeTransaction(t)
+	txnUnsigned := txnSigned
+	txnUnsigned.Sigs = make([]cipher.Sig, len(txnSigned.Sigs))
+
+	w := &Wallet{}
+	for _, x := range seckeys {
+		p := cipher.MustPubKeyFromSecKey(x)
+		a := cipher.AddressFromPubKey(p)
+		err := w.AddEntry(Entry{
+			Address: a,
+			Public:  p,
+			Secret:  x,
+		})
+		require.NoError(t, err)
+	}
+
+	/* TODO --
+
+	- Txn with inputs with duplicate addresses
+	- Selective sig indexes
+	- All sig indexes defined
+
+	- Invalid cases
+
+	*/
+
 	cases := []struct {
 		name        string
-		txn         *coin.Transaction
+		txn         coin.Transaction
 		signIndexes []int
 		uxOuts      []coin.UxOut
 		err         error
 	}{
 		{
-			name: "signed txn",
+			name:   "signed txn",
+			txn:    txnSigned,
+			uxOuts: uxs,
+			err:    errors.New("Unsigned transaction signatures must be null"),
+		},
+		{
+			name:   "valid unsigned txn, all sigs",
+			txn:    txnUnsigned,
+			uxOuts: uxs,
+			err:    nil,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			w := &Wallet{}
+			txn := tc.txn
 
-			err := w.SignTransaction(tc.txn, tc.signIndexes, tc.uxOuts)
+			err := w.SignTransaction(&txn, tc.signIndexes, tc.uxOuts)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return
@@ -2733,6 +2768,54 @@ func TestSignTransaction(t *testing.T) {
 			require.False(t, txn.IsUnsigned())
 			err = txn.Verify()
 			require.NoError(t, err)
+			err = txn.VerifyInputSignatures(tc.uxOuts)
+			require.NoError(t, err)
 		})
 	}
+}
+
+func makeTransaction(t *testing.T) (coin.Transaction, []coin.UxOut, []cipher.SecKey) {
+	txn := coin.Transaction{}
+
+	toSign := make([]cipher.SecKey, 0)
+	uxs := make([]coin.UxOut, 0)
+	for i := 0; i < 4; i++ {
+		ux, s := makeUxOutWithSecret(t)
+		txn.PushInput(ux.Hash())
+		toSign = append(toSign, s)
+		uxs = append(uxs, ux)
+	}
+
+	txn.SignInputs(toSign)
+	txn.PushOutput(makeAddress(), 1e6, 50)
+	txn.PushOutput(makeAddress(), 5e6, 50)
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
+	return txn, uxs, toSign
+}
+
+func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
+	body, sec := makeUxBodyWithSecret(t)
+	return coin.UxOut{
+		Head: coin.UxHead{
+			Time:  100,
+			BkSeq: 2,
+		},
+		Body: body,
+	}, sec
+}
+
+func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
+	p, s := cipher.GenerateKeyPair()
+	return coin.UxBody{
+		SrcTransaction: testutil.RandSHA256(t),
+		Address:        cipher.AddressFromPubKey(p),
+		Coins:          1e6,
+		Hours:          100,
+	}, s
+}
+
+func makeAddress() cipher.Address {
+	p, _ := cipher.GenerateKeyPair()
+	return cipher.AddressFromPubKey(p)
 }

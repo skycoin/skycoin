@@ -1137,7 +1137,11 @@ func (w *Wallet) clone() *Wallet {
 	return &wlt
 }
 
-func validateSignIndexes(x []int) error {
+func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {
+	if len(x) > len(uxOuts) {
+		return errors.New("Number of signature indexes exceeds number of inputs")
+	}
+
 	for _, i := range x {
 		if i >= len(uxOuts) || i < 0 {
 			return errors.New("Signature index out of range")
@@ -1159,62 +1163,73 @@ func validateSignIndexes(x []int) error {
 // If signIndexes is empty, all inputs will be signed.
 // The transaction should already have a valid header.
 func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) error {
+	txnInnerHash := txn.InnerHash
+	if txn.HashInner() != txnInnerHash {
+		return errors.New("Transaction inner hash does not match computed inner hash")
+	}
+
 	if err := txn.VerifyUnsigned(); err != nil {
-		return nil, err
+		return err
 	}
 	if len(txn.In) == 0 {
-		return nil, errors.New("No transaction inputs to sign")
+		return errors.New("No transaction inputs to sign")
 	}
 	if len(uxOuts) != len(txn.In) {
-		return nil, errors.New("len(uxOuts) != len(txn.In)")
+		return errors.New("len(uxOuts) != len(txn.In)")
 	}
-	if len(signIndexes) > len(uxOuts) {
-		return nil, errors.New("Number of signature indexes exceeds number of inputs")
-	}
-	if err := validateSignIndexes(signIndexes); err != nil {
-		return nil, err
+	if err := validateSignIndexes(signIndexes, uxOuts); err != nil {
+		return err
 	}
 
 	// Check if wallet has addresses for the uxOuts it needs to sign
 
-	numSigs := len(signIndexes)
-	if numSigs == 0 {
-		numSigs = len(uxOuts)
-	}
+	addrs := make(map[cipher.Address][]int)
 
-	addrs := make(map[cipher.Address]int, numSigs)
 	if len(signIndexes) > 0 {
-		for i, in := range signIndexes {
-			addrs[uxOuts[i].Address] = in
+		for _, in := range signIndexes {
+			x := addrs[uxOuts[in].Body.Address]
+			x = append(x, in)
+			addrs[uxOuts[in].Body.Address] = x
 		}
 	} else {
 		for i, o := range uxOuts {
-			addrs[o.Address] = i
+			x := addrs[o.Body.Address]
+			x = append(x, i)
+			addrs[o.Body.Address] = x
 		}
 	}
 
-	// maps w.Entries index to txn.In index for signing
-	toSign := make(map[int]int, numSigs)
+	toSign := make(map[int][]int)
 
-	for i, e := range wallet.Entries {
-		if len(addrs) == 0 {
+	for i, e := range w.Entries {
+		if len(toSign) == len(addrs) {
 			break
 		}
 		addr := e.SkycoinAddress()
 		if x, ok := addrs[addr]; ok {
 			toSign[i] = x
-			delete(addrs, addr)
 		}
 	}
 
-	if len(addrs) != 0 {
-		return nil, errors.New("Wallet cannot sign all requested inputs")
+	fmt.Printf("addrs: %+v\n", addrs)
+	fmt.Printf("toSign: %+v\n", toSign)
+
+	if len(toSign) != len(addrs) {
+		return errors.New("Wallet cannot sign all requested inputs")
 	}
 
 	for k, v := range toSign {
-		if err := txn.SignInput(wallet.Entries[k].Secret, v); err != nil {
-			return nil, err
+		for _, x := range v {
+			if err := txn.SignInput(w.Entries[k].Secret, x); err != nil {
+				return err
+			}
 		}
+	}
+
+	if txnInnerHash != txn.HashInner() {
+		err := errors.New("Transaction inner hash modified in the process of signing")
+		logger.Critical().WithError(err).Error()
+		return err
 	}
 
 	return nil

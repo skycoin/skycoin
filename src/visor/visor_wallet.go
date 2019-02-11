@@ -187,7 +187,16 @@ func (vs *Visor) SignTransaction(wltID string, password []byte, txn *coin.Transa
 			uxOuts[i] = in.UxOut
 		}
 
-		return w.SignTransaction(txn, signIndexes, uxOuts)
+		if err := w.SignTransaction(txn, signIndexes, uxOuts); err != nil {
+			return err
+		}
+
+		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnSigned); err != nil {
+			logger.WithError(err).Error("Signed transaction violates transaction constraints")
+			return err
+		}
+
+		return nil
 	}); err != nil {
 		return nil, nil, err
 	}

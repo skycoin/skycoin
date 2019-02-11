@@ -484,10 +484,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
 	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsTransaction, EndpointsWallet}))
+	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway, false), []string{EndpointsTransaction, EndpointsWallet}))
+	webHandlerV2("/transaction/inject", forAPISet(injectTransactionHandler(gateway, true), []string{EndpointsTransaction, EndpointsWallet}))
 	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsTransaction}))
 	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway, false), []string{EndpointsRead}))
-	webHandlerV2("/rawtx", forAPISet(rawTxnHandler(gateway, true), []string{EndpointsRead}))
+	webHandlerV2("/transaction/raw", forAPISet(rawTxnHandler(gateway, true), []string{EndpointsRead}))
 
 	// Unspent output related endpoints
 	webHandlerV1("/outputs", forAPISet(outputsHandler(gateway), []string{EndpointsRead}))

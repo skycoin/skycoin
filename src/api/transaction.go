@@ -780,7 +780,7 @@ type RawTxnData struct {
 //      400 - bad transaction
 //		500 - other error
 //      503 - network unavailable for broadcasting transaction
-func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
+func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
 	// swagger:operation POST /api/v1/injectTransaction injectTransaction
 	//
@@ -808,9 +808,7 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 		// get the rawtransaction
-		v := struct {
-			Rawtx string `json:"rawtx"`
-		}{}
+		var v RawTxnData
 
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
 			wh.Error400(w, err.Error())
@@ -838,7 +836,19 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, txn.Hash().Hex())
+		if forAPIVersion2 {
+			var resp HTTPResponse
+			rTxn, err := readable.NewTransaction(txn, false)
+			if err != nil {
+				resp = NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+				writeHTTPResponse(w, resp)
+				return
+			}
+			resp.Data = rTxn
+			writeHTTPResponse(w, resp)
+		} else {
+			wh.SendJSONOr500(logger, w, txn.Hash().Hex())
+		}
 	}
 }
 

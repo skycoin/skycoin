@@ -91,17 +91,18 @@ func (txn *Transaction) verify(unsigned bool) error {
 		return errors.New("No outputs")
 	}
 
+	// Check signature index fields
+	if len(txn.Sigs) != len(txn.In) {
+		return errors.New("Invalid number of signatures")
+	}
+	if len(txn.Sigs) >= math.MaxUint16 {
+		return errors.New("Too many signatures and inputs")
+	}
 	if unsigned {
-		if len(txn.Sigs) != 0 {
-			return errors.New("Unsigned transaction must have zero signatures")
-		}
-	} else {
-		// Check signature index fields
-		if len(txn.Sigs) != len(txn.In) {
-			return errors.New("Invalid number of signatures")
-		}
-		if len(txn.Sigs) >= math.MaxUint16 {
-			return errors.New("Too many signatures and inputs")
+		for _, s := range txn.Sigs {
+			if !s.Null() {
+				return errors.New("Unsigned transaction signatures must be null")
+			}
 		}
 	}
 
@@ -143,10 +144,12 @@ func (txn *Transaction) verify(unsigned bool) error {
 	}
 
 	// Validate signature
-	for i, sig := range txn.Sigs {
-		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
-		if err := cipher.VerifySignedHash(sig, hash); err != nil {
-			return err
+	if !unsigned {
+		for i, sig := range txn.Sigs {
+			hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
+			if err := cipher.VerifySignedHash(sig, hash); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -242,7 +245,7 @@ func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	txn.InnerHash = txn.HashInner() // update hash
 
-	if len(txn.Sigs) != 0 {
+	if !txn.IsUnsigned() {
 		log.Panic("Transaction has been signed")
 	}
 	if len(keys) != len(txn.In) {
@@ -269,33 +272,16 @@ func (txn *Transaction) Size() (uint32, error) {
 	return IntToUint32(len(txn.Serialize()))
 }
 
-// UnsignedEstimatedSize returns the encoded byte size of the transaction,
-// plus the expected size of the signatures that are absent in an unsigned transaction
-func (txn *Transaction) UnsignedEstimatedSize() (uint32, error) {
-	if !txn.IsUnsigned() {
-		return 0, ErrTransactionSigned
-	}
-
-	s, err := txn.Size()
-	if err != nil {
-		return 0, err
-	}
-
-	n, err := MultUint64(uint64(len(cipher.Sig{})), uint64(len(txn.In)))
-	if err != nil {
-		return 0, err
-	}
-
-	if n > math.MaxUint32 {
-		return 0, errors.New("Estimated byte size of pending signatures exceeds math.MaxUint32")
-	}
-
-	return AddUint32(s, uint32(n))
-}
-
-// IsUnsigned returns true if the transaction is not signed
+// IsUnsigned returns true if the transaction is not signed.
+// Unsigned transactions have a full signature array, but the signatures are null.
 func (txn *Transaction) IsUnsigned() bool {
-	return len(txn.Sigs) == 0
+	for _, s := range txn.Sigs {
+		if !s.Null() {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Hash an entire Transaction struct, including the TransactionHeader

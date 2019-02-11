@@ -4812,10 +4812,12 @@ func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction, unsig
 	require.NotEmpty(t, r.In)
 	require.NotEmpty(t, r.Out)
 
+	require.Equal(t, len(r.In), len(r.Sigs))
 	if unsigned {
-		require.Empty(t, r.Sigs)
-	} else {
-		require.Equal(t, len(r.In), len(r.Sigs))
+		for _, s := range r.Sigs {
+			ss := cipher.MustSigFromHex(s)
+			require.True(t, ss.Null())
+		}
 	}
 
 	fee, err := strconv.ParseUint(r.Fee, 10, 64)

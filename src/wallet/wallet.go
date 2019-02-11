@@ -1420,7 +1420,9 @@ func (w *Wallet) CreateTransaction(p CreateTransactionParams, auxs coin.AddressU
 		txn.PushOutput(changeAddress, changeCoins, changeHours)
 	}
 
-	if !p.Unsigned {
+	if p.Unsigned {
+		txn.Sigs = make([]cipher.Sig, len(txn.In))
+	} else {
 		txn.SignInputs(toSign)
 	}
 
@@ -1485,13 +1487,13 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 		}
 	}
 
+	if len(txn.Sigs) != len(txn.In) {
+		return errors.New("Number of signatures does not match number of inputs")
+	}
+
 	if p.Unsigned {
-		if len(txn.Sigs) != 0 {
-			return errors.New("Unsigned transaction should have no signatures")
-		}
-	} else {
-		if len(txn.Sigs) != len(txn.In) {
-			return errors.New("Number of signatures does not match number of inputs")
+		if !txn.IsUnsigned() {
+			return errors.New("Transaction is not unsigned")
 		}
 	}
 

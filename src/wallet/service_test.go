@@ -1444,8 +1444,11 @@ func TestServiceCreateTransaction(t *testing.T) {
 		require.True(t, reflect.DeepEqual(a.Transaction.Out, b.Transaction.Out))
 		require.Equal(t, a.Transaction.InnerHash, b.Transaction.InnerHash)
 		require.Equal(t, a.Transaction.Type, b.Transaction.Type)
+		require.Equal(t, a.Transaction.Length, b.Transaction.Length)
+		require.Equal(t, len(a.Transaction.Sigs), len(b.Transaction.Sigs))
 
 		if a.Unsigned == b.Unsigned {
+			require.Equal(t, a.Transaction.Hash(), b.Transaction.Hash())
 			// Sigs have a nonce so will vary each run, unset them before comparing the whole transaction
 			require.Equal(t, len(a.Transaction.Sigs), len(b.Transaction.Sigs))
 			at := *a.Transaction
@@ -1454,11 +1457,7 @@ func TestServiceCreateTransaction(t *testing.T) {
 			bt.Sigs = nil
 			require.True(t, reflect.DeepEqual(at, bt))
 		} else {
-			if a.Unsigned {
-				require.True(t, a.Transaction.Length < b.Transaction.Length)
-			} else {
-				require.True(t, b.Transaction.Length < a.Transaction.Length)
-			}
+			require.NotEqual(t, a.Transaction.Hash(), b.Transaction.Hash())
 		}
 	}
 

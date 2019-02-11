@@ -416,7 +416,7 @@ func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.
 		return nil, nil, err
 	}
 
-	if err := VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, verifyParams, signed); err != nil {
+	if err := VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, verifyParams); err != nil {
 		return nil, nil, err
 	}
 

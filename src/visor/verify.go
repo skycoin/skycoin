@@ -151,31 +151,18 @@ func (e ErrTxnViolatesUserConstraint) Error() string {
 //      * That the transaction burn enough coin hours (the fee)
 //      * That if that transaction does not spend from a locked distribution address
 //      * That the transaction does not create outputs with a higher decimal precision than is allowed
-func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, verifyParams params.VerifyTxn, signed TxnSignedFlag) error {
-	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, verifyParams, signed); err != nil {
+func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, verifyParams params.VerifyTxn) error {
+	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, verifyParams); err != nil {
 		return NewErrTxnViolatesSoftConstraint(err)
 	}
 
 	return nil
 }
 
-func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, verifyParams params.VerifyTxn, signed TxnSignedFlag) error {
-	var txnSize uint32
-	if signed == TxnSigned {
-		var err error
-		txnSize, err = txn.Size()
-		if err != nil {
-			return ErrTxnExceedsMaxBlockSize
-		}
-	} else {
-		var err error
-		txnSize, err = txn.UnsignedEstimatedSize()
-		if err != nil {
-			if err == coin.ErrTransactionSigned {
-				return err
-			}
-			return ErrTxnExceedsMaxBlockSize
-		}
+func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, verifyParams params.VerifyTxn) error {
+	txnSize, err := txn.Size()
+	if err != nil {
+		return ErrTxnExceedsMaxBlockSize
 	}
 
 	if txnSize > verifyParams.MaxTransactionSize {

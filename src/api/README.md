@@ -1284,8 +1284,8 @@ but not return an error.
 `unsigned` is optional and defaults to `false`.
 When `true`, the transaction will not be signed by the wallet.
 An unsigned transaction will be returned.
-The `"length"` and `"txid"` values of the `"transaction"` object will need to be updated
-after signing the transaction, which can be performed offline.
+The `"txid"` value of the `"transaction"` object will need to be updated
+after signing the transaction.
 
 Example:
 

@@ -17,6 +17,9 @@ var (
 	DebugLevel1 = true
 	// DebugLevel2 enable checks for impossible conditions
 	DebugLevel2 = true
+
+	// ErrTransactionSigned is returned if a method for unsigned transactions is called on a signed transaction
+	ErrTransactionSigned = errors.New("Transaction is signed")
 )
 
 /*
@@ -270,7 +273,7 @@ func (txn *Transaction) Size() (uint32, error) {
 // plus the expected size of the signatures that are absent in an unsigned transaction
 func (txn *Transaction) UnsignedEstimatedSize() (uint32, error) {
 	if !txn.IsUnsigned() {
-		return 0, errors.New("Transaction is signed")
+		return 0, ErrTransactionSigned
 	}
 
 	s, err := txn.Size()
@@ -284,7 +287,7 @@ func (txn *Transaction) UnsignedEstimatedSize() (uint32, error) {
 	}
 
 	if n > math.MaxUint32 {
-		return 0, errors.New("Estimate byte size of pending signatures exceeds math.MaxUint32")
+		return 0, errors.New("Estimated byte size of pending signatures exceeds math.MaxUint32")
 	}
 
 	return AddUint32(s, uint32(n))

@@ -171,6 +171,9 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 		var err error
 		txnSize, err = txn.UnsignedEstimatedSize()
 		if err != nil {
+			if err == coin.ErrTransactionSigned {
+				return err
+			}
 			return ErrTxnExceedsMaxBlockSize
 		}
 	}

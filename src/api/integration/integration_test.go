@@ -3739,7 +3739,15 @@ func toDropletString(t *testing.T, i uint64) string {
 	return x
 }
 
-func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
+func TestLiveWalletCreateTransactionSpecificUnsigned(t *testing.T) {
+	testLiveWalletCreateTransactionSpecific(t, true)
+}
+
+func TestLiveWalletCreateTransactionSpecificSigned(t *testing.T) {
+	testLiveWalletCreateTransactionSpecific(t, false)
+}
+
+func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 	if !doLive(t) {
 		return
 	}
@@ -4483,16 +4491,19 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 	}
 }
 
-func TestLiveWalletCreateTransactionRandom(t *testing.T) {
+func TestLiveWalletCreateTransactionRandomUnsigned(t *testing.T) {
+	testLiveWalletCreateTransactionRandom(t, true)
+}
+
+func TestLiveWalletCreateTransactionRandomSigned(t *testing.T) {
+	testLiveWalletCreateTransactionRandom(t, false)
+}
+
+func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 	if !doLive(t) {
 		return
 	}
 
-	testLiveWalletCreateTransactionRandom(t, false)
-	testLiveWalletCreateTransactionRandom(t, true)
-}
-
-func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 	debug := false
 	tLog := func(t *testing.T, args ...interface{}) {
 		if debug {

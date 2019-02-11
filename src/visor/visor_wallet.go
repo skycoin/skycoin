@@ -163,3 +163,34 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 
 	return txn, inputs, nil
 }
+
+// SignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
+// If signIndexes is empty, all inputs will be signed.
+func (vs *Visor) SignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) ([]wallet.UxBalance, error) {
+	var inputs []wallet.UxBalance
+
+	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
+		if err := vs.DB.View("SignTransaction", func(tx *dbutil.Tx) error {
+			headTime, err := vs.Blockchain.Time(tx)
+			if err != nil {
+				return err
+			}
+
+			inputs, err = vs.getTransactionInputs(tx, headTime, txn.In)
+			return err
+		}); err != nil {
+			return err
+		}
+
+		uxOuts := make([]coin.UxOut, len(inputs))
+		for i, in := range inputs {
+			uxOuts[i] = in.UxOut
+		}
+
+		return w.SignTransaction(txn, signIndexes, uxOuts)
+	}); err != nil {
+		return nil, nil, err
+	}
+
+	return inputs, nil
+}

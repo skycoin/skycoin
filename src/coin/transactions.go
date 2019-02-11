@@ -241,6 +241,23 @@ func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 	txn.Out = append(txn.Out, to)
 }
 
+// SignInput signs a specific input in the transaction.
+// InnerHash should already be set to a valid value
+func (txn *Transaction) SignInput(key cipher.SecKey, index int) error {
+	if index < 0 || index >= len(txn.In) {
+		return errors.New("Signature index out of range")
+	}
+
+	if len(txn.Sigs) == 0 {
+		txn.Sigs = make([]cipher.Sig, len(txn.In))
+	}
+
+	h := cipher.AddSHA256(txn.InnerHash, txn.In[index])
+	txn.Sigs[index] = cipher.MustSignHash(h, key)
+
+	return nil
+}
+
 // SignInputs signs all inputs in the transaction
 func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	txn.InnerHash = txn.HashInner() // update hash

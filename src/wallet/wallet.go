@@ -1125,7 +1125,9 @@ func (w *Wallet) AddEntry(entry Entry) error {
 
 // clone returns the clone of self
 func (w *Wallet) clone() *Wallet {
-	wlt := Wallet{Meta: make(map[string]string)}
+	wlt := Wallet{
+		Meta: make(map[string]string),
+	}
 	for k, v := range w.Meta {
 		wlt.Meta[k] = v
 	}
@@ -1133,6 +1135,89 @@ func (w *Wallet) clone() *Wallet {
 	wlt.Entries = append(wlt.Entries, w.Entries...)
 
 	return &wlt
+}
+
+func validateSignIndexes(x []int) error {
+	for _, i := range x {
+		if i >= len(uxOuts) || i < 0 {
+			return errors.New("Signature index out of range")
+		}
+	}
+
+	m := make(map[int]struct{}, len(x))
+	for _, i := range x {
+		if _, ok := m[i]; ok {
+			return errors.New("Duplicate value in signature indexes")
+		}
+		m[i] = struct{}{}
+	}
+
+	return nil
+}
+
+// SignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
+// If signIndexes is empty, all inputs will be signed.
+// The transaction should already have a valid header.
+func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) error {
+	if err := txn.VerifyUnsigned(); err != nil {
+		return nil, err
+	}
+	if len(txn.In) == 0 {
+		return nil, errors.New("No transaction inputs to sign")
+	}
+	if len(uxOuts) != len(txn.In) {
+		return nil, errors.New("len(uxOuts) != len(txn.In)")
+	}
+	if len(signIndexes) > len(uxOuts) {
+		return nil, errors.New("Number of signature indexes exceeds number of inputs")
+	}
+	if err := validateSignIndexes(signIndexes); err != nil {
+		return nil, err
+	}
+
+	// Check if wallet has addresses for the uxOuts it needs to sign
+
+	numSigs := len(signIndexes)
+	if numSigs == 0 {
+		numSigs = len(uxOuts)
+	}
+
+	addrs := make(map[cipher.Address]int, numSigs)
+	if len(signIndexes) > 0 {
+		for i, in := range signIndexes {
+			addrs[uxOuts[i].Address] = in
+		}
+	} else {
+		for i, o := range uxOuts {
+			addrs[o.Address] = i
+		}
+	}
+
+	// maps w.Entries index to txn.In index for signing
+	toSign := make(map[int]int, numSigs)
+
+	for i, e := range wallet.Entries {
+		if len(addrs) == 0 {
+			break
+		}
+		addr := e.SkycoinAddress()
+		if x, ok := addrs[addr]; ok {
+			toSign[i] = x
+			delete(addrs, addr)
+		}
+	}
+
+	if len(addrs) != 0 {
+		return nil, errors.New("Wallet cannot sign all requested inputs")
+	}
+
+	for k, v := range toSign {
+		if err := txn.SignInput(wallet.Entries[k].Secret, v); err != nil {
+			return nil, err
+		}
+	}
+
+	return nil
 }
 
 // Validator validate if the wallet be able to create spending transaction

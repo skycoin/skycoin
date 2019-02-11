@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -532,5 +533,114 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, txnResp)
+	}
+}
+
+// WalletSignTransactionRequest is the request body object for /api/v2/transaction/sign
+type WalletSignTransactionRequest struct {
+	EncodedTransaction string `json:"encoded_transaction"`
+	SignIndexes        []int  `json:"sign_indexes"`
+}
+
+// walletSignTransactionHandler signs an unsigned transaction
+// Method: POST
+// URI: /api/v2/wallet/transaction/sign
+// Args: JSON body
+func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if r.Header.Get("Content-Type") != ContentTypeJSON {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		var req WalletSignTransactionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if req.EncodedTransaction == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "encoded_transaction is required")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		txn, err := decodeTxn(req.EncodedTransaction)
+		if err != nil {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("decode transaction failed: %v", err))
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		// Check that number of sign_indexes does not exceed number of inputs
+		if len(req.SignIndexes) > len(txn.In) {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "Too many values in sign_indexes")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		// Check that values in sign_indexes are in the range of txn inputs
+		for _, i := range signIndexes {
+			if i < 0 || i >= len(txn.In) {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, "Value in sign_indexes exceeds range of transaction inputs array")
+				writeHTTPResponse(w, resp)
+				return
+			}
+		}
+
+		// Check for duplicate values in sign_indexes
+		signIndexesMap := make(map[int]struct{}, len(signIndexes))
+		for _, i := range signIndexes {
+			if _, ok := signIndexesMap[i]; ok {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, "Duplicate value in sign_indexes")
+				writeHTTPResponse(w, resp)
+				return
+			}
+			signIndexesMap[i] = struct{}{}
+		}
+
+		inputs, err := gateway.SignTransaction(txn, req.SignIndexes)
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletAPIDisabled:
+				resp := NewHTTPErrorResponse(http.StatusForbidden, err.Error())
+				writeHTTPResponse(w, resp)
+				return
+			case coin.ErrTransactionSigned:
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				writeHTTPResponse(w, resp)
+				return
+			default:
+				switch err.(type) {
+				case visor.ErrTxnViolatesSoftConstraint,
+					visor.ErrTxnViolatesHardConstraint,
+					visor.ErrTxnViolatesUserConstraint:
+					resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+					writeHTTPResponse(w, resp)
+					return
+				default:
+					resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+					writeHTTPResponse(w, resp)
+					return
+				}
+			}
+		}
+
+		txnResp, err := NewCreateTransactionResponse(txn, inputs)
+		if err != nil {
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		writeHTTPResponse(w, txnResp)
 	}
 }

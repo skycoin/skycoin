@@ -69,9 +69,10 @@ func makeTransaction(t *testing.T) coin.Transaction {
 	ux, s := makeUxOutWithSecret(t)
 
 	txn.PushInput(ux.Hash())
-	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(makeAddress(), 5e6, 50)
+
+	txn.SignInputs([]cipher.SecKey{s})
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn

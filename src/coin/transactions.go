@@ -262,9 +262,6 @@ func (txn *Transaction) SignInput(key cipher.SecKey, index int) error {
 func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	txn.InnerHash = txn.HashInner() // update hash
 
-	if !txn.IsUnsigned() {
-		log.Panic("Transaction has been signed")
-	}
 	if len(keys) != len(txn.In) {
 		log.Panic("Invalid number of keys")
 	}
@@ -273,6 +270,9 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	}
 	if len(keys) == 0 {
 		log.Panic("No keys")
+	}
+	if len(txn.Sigs) > 0 && txn.IsPartiallySigned() {
+		log.Panic("Transaction has been signed")
 	}
 
 	sigs := make([]cipher.Sig, len(txn.In))
@@ -289,15 +289,38 @@ func (txn *Transaction) Size() (uint32, error) {
 	return IntToUint32(len(txn.Serialize()))
 }
 
-// IsUnsigned returns true if the transaction is not signed.
+// IsFullyUnsigned returns true if the transaction is not signed for any input.
 // Unsigned transactions have a full signature array, but the signatures are null.
-func (txn *Transaction) IsUnsigned() bool {
+// Returns true if the signatures array is empty.
+func (txn *Transaction) IsFullyUnsigned() bool {
 	for _, s := range txn.Sigs {
 		if !s.Null() {
 			return false
 		}
 	}
 
+	return true
+}
+
+// IsFullySigned returns true if the transaction is fully signed.
+// Returns true if the signatures array is empty.
+func (txn *Transaction) IsFullySigned() bool {
+	for _, s := range txn.Sigs {
+		if s.Null() {
+			return false
+		}
+	}
+
+	return true
+}
+
+// IsPartiallySigned returns true if the transaction has at least one null signature,
+// not but all signatures are null signatures
+// Returns false if the signatures array is empty.
+func (txn *Transaction) IsPartiallySigned() bool {
+	if txn.IsFullySigned() || txn.IsFullySigned() {
+		return false
+	}
 	return true
 }
 

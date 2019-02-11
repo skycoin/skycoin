@@ -1161,16 +1161,23 @@ func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {
 
 // SignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
 // If signIndexes is empty, all inputs will be signed.
-// The transaction should already have a valid header.
+// The transaction should already have a valid header. The transaction may be partially signed,
+// but a valid existing signature cannot be overwritten.
+// Clients should avoid signing the same transaction multiple times.
 func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) error {
+	// Sanity check
 	txnInnerHash := txn.InnerHash
 	if txn.HashInner() != txnInnerHash {
 		return errors.New("Transaction inner hash does not match computed inner hash")
 	}
 
-	if err := txn.VerifyUnsigned(); err != nil {
-		return err
+	if len(txn.Sigs) == 0 {
+		return errors.New("Transaction signatures array is empty")
 	}
+	if txn.IsFullySigned() {
+		return errors.New("Transaction is fully signed")
+	}
+
 	if len(txn.In) == 0 {
 		return errors.New("No transaction inputs to sign")
 	}
@@ -1181,26 +1188,30 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 		return err
 	}
 
-	// Check if wallet has addresses for the uxOuts it needs to sign
-
+	// Build a mapping of addresses to the inputs that need to be signed
 	addrs := make(map[cipher.Address][]int)
-
 	if len(signIndexes) > 0 {
 		for _, in := range signIndexes {
+			if !txn.Sigs[in].Null() {
+				return fmt.Errorf("Transaction is already signed at index %d", in)
+			}
 			x := addrs[uxOuts[in].Body.Address]
 			x = append(x, in)
 			addrs[uxOuts[in].Body.Address] = x
 		}
 	} else {
 		for i, o := range uxOuts {
+			if !txn.Sigs[i].Null() {
+				continue
+			}
 			x := addrs[o.Body.Address]
 			x = append(x, i)
 			addrs[o.Body.Address] = x
 		}
 	}
 
+	// Check that the wallet has all addresses needed for signing
 	toSign := make(map[int][]int)
-
 	for i, e := range w.Entries {
 		if len(toSign) == len(addrs) {
 			break
@@ -1211,21 +1222,27 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 		}
 	}
 
-	fmt.Printf("addrs: %+v\n", addrs)
-	fmt.Printf("toSign: %+v\n", toSign)
-
 	if len(toSign) != len(addrs) {
 		return errors.New("Wallet cannot sign all requested inputs")
 	}
 
+	// Sign the selected inputs
 	for k, v := range toSign {
 		for _, x := range v {
+			if !txn.Sigs[x].Null() {
+				return fmt.Errorf("Transaction is already signed at index %d", x)
+			}
 			if err := txn.SignInput(w.Entries[k].Secret, x); err != nil {
 				return err
 			}
 		}
 	}
 
+	if err := txn.UpdateHeader(); err != nil {
+		return err
+	}
+
+	// Sanity check
 	if txnInnerHash != txn.HashInner() {
 		err := errors.New("Transaction inner hash modified in the process of signing")
 		logger.Critical().WithError(err).Error()
@@ -1592,7 +1609,7 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 	}
 
 	if p.Unsigned {
-		if !txn.IsUnsigned() {
+		if !txn.IsFullyUnsigned() {
 			return errors.New("Transaction is not unsigned")
 		}
 	}

@@ -152,7 +152,6 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-
 // TransactionEncodedResponse represents the data struct of the response to /api/v1/transaction?encoded=1
 type TransactionEncodedResponse struct {
 	Status             readable.TransactionStatus `json:"status"`
@@ -168,7 +167,6 @@ type TransactionEncodedResponse struct {
 //	verbose: [bool] include verbose transaction input data
 //  encoded: [bool] return as a raw encoded transaction
 func transactionHandler(gateway Gatewayer) http.HandlerFunc {
-
 
 	// swagger:operation GET /api/v1/transaction transaction
 	//
@@ -768,6 +766,11 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// RawTxnData used in requests and responses including raw transaction data
+type RawTxnData struct {
+	Rawtx string `json:"rawtx"`
+}
+
 // URI: /api/v1/injectTransaction
 // Method: POST
 // Content-Type: application/json
@@ -798,7 +801,6 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	//     type: string
 	//   default:
 	//     $ref: '#/responses/genericError'
-
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -907,9 +909,10 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // Args:
 //	txid: transaction ID hash
+//	forAPIVersion2: return rawdata in JSON object (instead of plain/text string)
 // Returns the hex-encoded byte serialization of a transaction.
 // The transaction may be confirmed or unconfirmed.
-func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
+func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
 	// swagger:operation GET /api/v1/rawtx rawtx
 	//
@@ -964,7 +967,16 @@ func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		d := txn.Transaction.Serialize()
-		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
+		d2hex := hex.EncodeToString(d)
+		if forAPIVersion2 {
+			var resp HTTPResponse
+			resp.Data = RawTxnData{
+				Rawtx: d2hex,
+			}
+			writeHTTPResponse(w, resp)
+		} else {
+			wh.SendJSONOr500(logger, w, d2hex)
+		}
 	}
 }
 

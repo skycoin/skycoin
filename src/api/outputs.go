@@ -164,6 +164,9 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 	// produces:
 	// - application/json
 	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: UnspentOutputsSummary records unspent outputs in different status.

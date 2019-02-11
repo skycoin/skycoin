@@ -600,6 +600,9 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: include verbose transaction input data
 	//   required: false
 	//   type: boolean
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: Returns transactions that match the filters.
@@ -795,6 +798,9 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 	//   description: hex-encoded serialized transaction string.
 	//   required: true
 	//   type: string
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: Ok, returns the transaction.
@@ -939,7 +945,6 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 }
 
 // ResendResult the result of rebroadcasting transaction
-// swagger:response resendResult
 type ResendResult struct {
 	Txids []string `json:"txids"`
 }
@@ -965,21 +970,29 @@ func NewResendResult(hashes []cipher.SHA256) ResendResult {
 //      503 - network unavailable for broadcasting transaction
 func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/resendUnconfirmedTxns resendUnconfirmedTxns
+	// swagger:operation POST /api/v1/resendUnconfirmedTxns resendUnconfirmedTxns
 	//
 	// Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
 	//
-	//     Consumes:
-	//     - application/json
+	// ---
+	// consumes:
+	// - application/json
 	//
-	//     Produces:
-	//     - application/json
+	// produces:
+	// - application/json
+	// security:
+	// - csrfAuth: []
 	//
-	//     Schemes: http, https
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: resendResult
+	// responses:
+	//   default:
+	//     $ref: '#/responses/genericError'
+	//   200:
+	//     description: OK, Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
+	//     properties:
+	//       txids:
+	//         type: array
+	//         items:
+	//           type: string
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

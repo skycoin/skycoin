@@ -37,9 +37,6 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	//   required: true
 	//   type: string
 	//
-	// security:
-	// - csrfAuth: []
-	//
 	// responses:
 	//   200:
 	//     description: This endpoint return a connection struct
@@ -304,9 +301,6 @@ func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	// produces:
 	// - application/json
 	//
-	// security:
-	// - csrfAuth: []
-	//
 	// responses:
 	//   200:
 	//     description: This endpoint return an list of default connections.
@@ -384,9 +378,6 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	// ---
 	// produces:
 	// - application/json
-	//
-	// security:
-	// - csrfAuth: []
 	//
 	// responses:
 	//   200:

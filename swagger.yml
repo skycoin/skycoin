@@ -2,15 +2,15 @@ basePath: /
 consumes:
 - application/json
 - application/xml
-host: staging.node.skycoin.net
+host: 127.0.0.1:6420
 info:
   contact:
     email: skycoin.doe@example.com
     name: Skycoin project
-    url: https://staging.node.skycoin.net
+    url: https://127.0.0.1:6420
   description: Skycoin is a next-generation cryptocurrency.
   title: Skycoin REST API.
-  version: 0.25.0
+  version: 0.25.1
 paths:
   /api/v1/address_uxouts:
     get:
@@ -71,8 +71,6 @@ paths:
                 type: integer
         default:
           $ref: '#/responses/genericError'
-      security:
-      - csrfAuth: []
       summary: Returns the total number of unique address that have coins.
   /api/v1/balance:
     get:
@@ -169,6 +167,8 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: Returns the balance of one or more addresses, both confirmed and predicted.
         The predicted balance is the confirmed balance minus the pending spends.
   /api/v1/block:
@@ -567,6 +567,8 @@ paths:
                 type: array
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: blocksHandler returns blocks between a start and end point,
   /api/v1/coinSupply:
     get:
@@ -956,8 +958,6 @@ paths:
             type: object
         default:
           $ref: '#/responses/genericError'
-      security:
-      - csrfAuth: []
       summary: This endpoint returns a specific connection.
   /api/v1/network/connection/disconnect:
     get:
@@ -1075,8 +1075,6 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
-      security:
-      - csrfAuth: []
   /api/v1/network/connections/trust:
     get:
       operationId: networkConnectionsTrust
@@ -1110,8 +1108,6 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
-      security:
-      - csrfAuth: []
       summary: defaultConnectionsHandler returns the list of default hardcoded bootstrap
         addresses.\n They are not necessarily connected to.
   /api/v1/outputs:
@@ -1356,6 +1352,8 @@ paths:
                 type: array
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: If neither addrs nor hashes are specificed, return all unspent outputs.
         If only one filter is specified, then return outputs match the filter. Both
         filters cannot be specified.
@@ -1452,12 +1450,12 @@ paths:
       - application/json
       responses:
         "200":
-          $ref: '#/responses/resendResult'
+          description: OK, Broadcasts all unconfirmed transactions from the unconfirmed
+            transaction pool
         default:
           $ref: '#/responses/genericError'
-      schemes:
-      - http
-      - https
+      security:
+      - csrfAuth: []
   /api/v1/richlist:
     get:
       operationId: richlist
@@ -1870,6 +1868,8 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: Returns transactions that match the filters.
   /api/v1/uxout:
     get:
@@ -2090,6 +2090,8 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
   /api/v1/wallet/decrypt:
     post:
       operationId: walletDecrypt
@@ -2141,6 +2143,8 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: Decrypts wallet.
   /api/v1/wallet/encrypt:
     post:
@@ -2193,6 +2197,8 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: Encrypt wallet.
   /api/v1/wallet/newAddress:
     post:
@@ -2225,6 +2231,8 @@ paths:
                 type: array
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
   /api/v1/wallet/newSeed:
     get:
       description: Returns the wallet directory path
@@ -2248,8 +2256,6 @@ paths:
                 type: string
         default:
           $ref: '#/responses/genericError'
-      security:
-      - csrfAuth: []
   /api/v1/wallet/seed:
     post:
       operationId: walletSeed
@@ -2376,6 +2382,8 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
   /api/v1/wallet/transactions:
     get:
       operationId: walletTransactions
@@ -2547,8 +2555,6 @@ paths:
             type: array
         default:
           $ref: '#/responses/genericError'
-      security:
-      - csrfAuth: []
   /api/v1/wallets/folderName:
     get:
       description: Returns the wallet directory path
@@ -2571,8 +2577,6 @@ paths:
             type: object
         default:
           $ref: '#/responses/genericError'
-      security:
-      - csrfAuth: []
   /api/v2/address/verify:
     post:
       operationId: verifyAddress
@@ -2670,6 +2674,8 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: Broadcast a hex-encoded, serialized transaction to the network.
   /api/v2/wallet/recover:
     post:
@@ -2729,6 +2735,8 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: Recovers an encrypted wallet by providing the seed. The first address
         will be generated from seed and compared to the first address of the specified
         wallet. If they match, the wallet will be regenerated with an optional password.
@@ -2757,6 +2765,8 @@ paths:
           description: Wrong Seed
         default:
           $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
       summary: Verifies a wallet seed.
 produces:
 - application/json
@@ -2819,13 +2829,6 @@ responses:
           type: string
           x-go-name: Message
       type: object
-  resendResult:
-    description: ResendResult the result of rebroadcasting transaction
-    headers:
-      txids:
-        items:
-          type: string
-        type: array
 schemes:
 - http
 - https

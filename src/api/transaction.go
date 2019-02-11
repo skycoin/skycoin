@@ -804,34 +804,70 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			wh.Error405(w)
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error405(w)
+			}
 			return
 		}
 		// get the rawtransaction
 		var v RawTxnData
 
+		if forAPIVersion2 && r.Header.Get("Content-Type") != ContentTypeJSON {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-			wh.Error400(w, err.Error())
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error400(w, err.Error())
+			}
 			return
 		}
 
 		b, err := hex.DecodeString(v.Rawtx)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error400(w, err.Error())
+			}
 			return
 		}
 
 		txn, err := coin.TransactionDeserialize(b)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error400(w, err.Error())
+			}
 			return
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
 			if daemon.IsBroadcastFailure(err) {
-				wh.Error503(w, err.Error())
+				if forAPIVersion2 {
+					resp := NewHTTPErrorResponse(http.StatusForbidden, "")
+					writeHTTPResponse(w, resp)
+				} else {
+					wh.Error503(w, err.Error())
+				}
 			} else {
-				wh.Error500(w, err.Error())
+				if forAPIVersion2 {
+					resp := NewHTTPErrorResponse(http.StatusInternalServerError, "")
+					writeHTTPResponse(w, resp)
+				} else {
+					wh.Error500(w, err.Error())
+				}
 			}
 			return
 		}
@@ -949,30 +985,61 @@ func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			wh.Error405(w)
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error405(w)
+			}
+			return
+		}
+
+		if forAPIVersion2 && r.Header.Get("Content-Type") != ContentTypeJSON {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		txid := r.FormValue("txid")
 		if txid == "" {
-			wh.Error400(w, "txid is empty")
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, "txid is empty")
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error400(w, "txid is empty")
+			}
 			return
 		}
 
 		h, err := cipher.SHA256FromHex(txid)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error400(w, err.Error())
+			}
 			return
 		}
 
 		txn, err := gateway.GetTransaction(h)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error400(w, err.Error())
+			}
 			return
 		}
 
 		if txn == nil {
-			wh.Error404(w, "")
+			if forAPIVersion2 {
+				resp := NewHTTPErrorResponse(http.StatusNotFound, err.Error())
+				writeHTTPResponse(w, resp)
+			} else {
+				wh.Error404(w, "")
+			}
 			return
 		}
 

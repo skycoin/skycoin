@@ -4412,69 +4412,74 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 		})
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
+	bools := []bool{true, false}
+	for _, unsigned := range bools {
+		for _, tc := range cases {
+			name := fmt.Sprintf("unsigned=%v %s", unsigned, tc.name)
+			t.Run(name, func(t *testing.T) {
+				require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
 
-			result, err := c.CreateTransaction(tc.req)
-			if tc.err != "" {
-				assertResponseError(t, err, tc.code, tc.err)
-				return
-			}
+				tc.req.Unsigned = unsigned
+				result, err := c.CreateTransaction(tc.req)
+				if tc.err != "" {
+					assertResponseError(t, err, tc.code, tc.err)
+					return
+				}
 
-			require.NoError(t, err)
+				require.NoError(t, err)
 
-			if len(tc.outputsSubset) == 0 {
-				require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
-			}
+				if len(tc.outputsSubset) == 0 {
+					require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
+				}
 
-			for i, o := range tc.outputs {
-				// The final change output may not have the address specified,
-				// if the ChangeAddress was not specified in the wallet params.
-				// Calculate it automatically based upon the transaction inputs
-				if o.Address.Null() {
-					require.Equal(t, i, len(tc.outputs)-1)
-					require.Nil(t, tc.req.ChangeAddress)
+				for i, o := range tc.outputs {
+					// The final change output may not have the address specified,
+					// if the ChangeAddress was not specified in the wallet params.
+					// Calculate it automatically based upon the transaction inputs
+					if o.Address.Null() {
+						require.Equal(t, i, len(tc.outputs)-1)
+						require.Nil(t, tc.req.ChangeAddress)
 
-					changeAddr := result.Transaction.Out[i].Address
-					// The changeAddr must be associated with one of the transaction inputs
-					changeAddrFound := false
-					for _, x := range result.Transaction.In {
-						require.NotNil(t, x.Address)
-						if changeAddr == x.Address {
-							changeAddrFound = true
-							break
+						changeAddr := result.Transaction.Out[i].Address
+						// The changeAddr must be associated with one of the transaction inputs
+						changeAddrFound := false
+						for _, x := range result.Transaction.In {
+							require.NotNil(t, x.Address)
+							if changeAddr == x.Address {
+								changeAddrFound = true
+								break
+							}
 						}
+
+						require.True(t, changeAddrFound)
+					} else {
+						require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
 					}
 
-					require.True(t, changeAddrFound)
-				} else {
-					require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
-				}
-
-				coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
-				require.NoError(t, err)
-				require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
-
-				if !tc.ignoreHours {
-					hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
+					coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
 					require.NoError(t, err)
-					require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
+					require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
+
+					if !tc.ignoreHours {
+						hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
+						require.NoError(t, err)
+						require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
+					}
 				}
-			}
 
-			assertEncodeTxnMatchesTxn(t, result)
-			assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
-			assertCreatedTransactionValid(t, result.Transaction)
+				assertEncodeTxnMatchesTxn(t, result)
+				assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
+				assertCreatedTransactionValid(t, result.Transaction, unsigned)
 
-			if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
-				assertRequestedHours(t, tc.req.To, result.Transaction.Out)
-			}
+				if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
+					assertRequestedHours(t, tc.req.To, result.Transaction.Out)
+				}
 
-			if tc.additionalRespVerify != nil {
-				tc.additionalRespVerify(t, result)
-			}
-		})
+				if tc.additionalRespVerify != nil {
+					tc.additionalRespVerify(t, result)
+				}
+			})
+		}
 	}
 }
 
@@ -4483,6 +4488,11 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		return
 	}
 
+	testLiveWalletCreateTransactionRandom(t, false)
+	testLiveWalletCreateTransactionRandom(t, true)
+}
+
+func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 	debug := false
 	tLog := func(t *testing.T, args ...interface{}) {
 		if debug {
@@ -4648,6 +4658,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		// Auto, random share factor
 
 		result, err := c.CreateTransaction(api.CreateTransactionRequest{
+			Unsigned: unsigned,
 			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
 				Mode:        wallet.HoursSelectionModeShare,
@@ -4665,11 +4676,12 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		assertEncodeTxnMatchesTxn(t, result)
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
-		assertCreatedTransactionValid(t, result.Transaction)
+		assertCreatedTransactionValid(t, result.Transaction, unsigned)
 
 		// Auto, share factor 0
 
 		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+			Unsigned: unsigned,
 			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
 				Mode:        wallet.HoursSelectionModeShare,
@@ -4687,7 +4699,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		assertEncodeTxnMatchesTxn(t, result)
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
-		assertCreatedTransactionValid(t, result.Transaction)
+		assertCreatedTransactionValid(t, result.Transaction, unsigned)
 
 		// Check that the non-change outputs have 0 hours
 		for _, o := range result.Transaction.Out[:nAutoOutputs] {
@@ -4697,6 +4709,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		// Auto, share factor 1
 
 		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+			Unsigned: unsigned,
 			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
 				Mode:        wallet.HoursSelectionModeShare,
@@ -4714,7 +4727,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		assertEncodeTxnMatchesTxn(t, result)
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
-		assertCreatedTransactionValid(t, result.Transaction)
+		assertCreatedTransactionValid(t, result.Transaction, unsigned)
 
 		// Check that the change output has 0 hours
 		if len(result.Transaction.Out) > nAutoOutputs {
@@ -4724,6 +4737,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		// Manual
 
 		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+			Unsigned: unsigned,
 			HoursSelection: api.HoursSelection{
 				Type: wallet.HoursSelectionTypeManual,
 			},
@@ -4740,7 +4754,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		assertTxnOutputCount(t, changeAddress, nOutputs, result)
 		assertRequestedCoins(t, to, result.Transaction.Out)
 		assertRequestedHours(t, to, result.Transaction.Out)
-		assertCreatedTransactionValid(t, result.Transaction)
+		assertCreatedTransactionValid(t, result.Transaction, unsigned)
 	}
 }
 
@@ -4786,9 +4800,15 @@ func assertRequestedHours(t *testing.T, to []api.Receiver, out []api.CreatedTran
 	}
 }
 
-func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction) {
+func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction, unsigned bool) {
 	require.NotEmpty(t, r.In)
 	require.NotEmpty(t, r.Out)
+
+	if unsigned {
+		require.Empty(t, r.Sigs)
+	} else {
+		require.Equal(t, len(r.In), len(r.Sigs))
+	}
 
 	fee, err := strconv.ParseUint(r.Fee, 10, 64)
 	require.NoError(t, err)

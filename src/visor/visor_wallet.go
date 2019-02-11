@@ -131,9 +131,9 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 			}
 
 			// Create and sign transaction
-			txn, inputs, err = w.CreateAndSignTransactionAdvanced(p, auxs, head.Time())
+			txn, inputs, err = w.CreateTransaction(p, auxs, head.Time())
 			if err != nil {
-				logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
+				logger.WithError(err).Error("CreateTransaction failed")
 				return err
 			}
 
@@ -145,7 +145,12 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 				return err
 			}
 
-			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn); err != nil {
+			signed := TxnSigned
+			if p.Unsigned {
+				signed = TxnUnsigned
+			}
+
+			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
 				logger.WithError(err).Error("Created transaction violates transaction constraints")
 				return err
 			}

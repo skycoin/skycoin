@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -613,198 +614,7 @@ func TestServiceGetWallets(t *testing.T) {
 	}
 }
 
-func TestServiceCreateAndSignTransaction(t *testing.T) {
-	headTime := time.Now().UTC().Unix()
-	seed := []byte("seed")
-
-	// Generate first keys
-	_, secKeys := cipher.MustGenerateDeterministicKeyPairsSeed(seed, 1)
-	secKey := secKeys[0]
-	addr := cipher.MustAddressFromSecKey(secKey)
-
-	// Create unspent outptus
-	var uxouts []coin.UxOut
-	addrs := []cipher.Address{}
-	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey, 2e6, 100)
-		uxouts = append(uxouts, uxout)
-
-		p, _ := cipher.GenerateKeyPair()
-		a := cipher.AddressFromPubKey(p)
-		addrs = append(addrs, a)
-	}
-
-	// Create unspent outputs with no hours
-	var uxoutsNoHours []coin.UxOut
-	addrsNoHours := []cipher.Address{}
-	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey, 2e6, 0)
-		uxout.Head.Time = uint64(headTime)
-		uxoutsNoHours = append(uxoutsNoHours, uxout)
-
-		p, _ := cipher.GenerateKeyPair()
-		a := cipher.AddressFromPubKey(p)
-		addrsNoHours = append(addrsNoHours, a)
-	}
-
-	tt := []struct {
-		name             string
-		opts             Options
-		pwd              []byte
-		unspents         []coin.UxOut
-		coins            uint64
-		dest             cipher.Address
-		disableWalletAPI bool
-		err              error
-	}{
-		{
-			name: "encrypted=false has change=no",
-			opts: Options{
-				Seed: string(seed),
-			},
-			unspents: uxouts[:],
-			coins:    2e6,
-			dest:     addrs[0],
-		},
-
-		{
-			name: "encrypted=true has change=no",
-			opts: Options{
-				Seed:     string(seed),
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			pwd:      []byte("pwd"),
-			unspents: uxouts[:],
-			coins:    2e6,
-			dest:     addrs[0],
-		},
-		{
-			name: "encrypted=false has change=yes",
-			opts: Options{
-				Seed: string(seed),
-			},
-			unspents: uxouts[:],
-			coins:    1e6,
-			dest:     addrs[0],
-		},
-		{
-			name: "encrypted=false spend zero",
-			opts: Options{
-				Seed: string(seed),
-			},
-			unspents: uxouts[:],
-			dest:     addrs[0],
-			err:      ErrZeroSpend,
-		},
-		{
-			name: "encrypted=false spend fractional coins",
-			opts: Options{
-				Seed: string(seed),
-			},
-			unspents: uxouts[:],
-			coins:    1e3,
-			dest:     addrs[0],
-		},
-		{
-			name: "encrypted=false not enough confirmed coins",
-			opts: Options{
-				Seed: string(seed),
-			},
-			unspents: uxouts[:],
-			coins:    100e6,
-			dest:     addrs[0],
-			err:      ErrInsufficientBalance,
-		},
-		{
-			name: "encrypted=false no coin hours in inputs",
-			opts: Options{
-				Seed: string(seed),
-			},
-			unspents: uxoutsNoHours[:],
-			coins:    1e6,
-			dest:     addrsNoHours[0],
-			err:      fee.ErrTxnNoFee,
-		},
-		{
-			name: "disable wallet api=true",
-			opts: Options{
-				Seed:  string(seed),
-				Label: "label",
-			},
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
-		},
-
-		{
-			name: "encrypted=false password provided",
-			opts: Options{
-				Seed: string(seed),
-			},
-			pwd: []byte("foo"),
-			err: ErrWalletNotEncrypted,
-		},
-	}
-
-	for _, tc := range tt {
-		for ct := range cryptoTable {
-			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			t.Run(name, func(t *testing.T) {
-				addrUxOuts := coin.AddressUxOuts{
-					addr: tc.unspents,
-				}
-
-				unspents := make(map[cipher.SHA256]coin.UxOut)
-
-				for _, uxs := range addrUxOuts {
-					for _, ux := range uxs {
-						unspents[ux.Hash()] = ux
-					}
-				}
-
-				dir := prepareWltDir()
-				s, err := NewService(Config{
-					WalletDir:       dir,
-					CryptoType:      ct,
-					EnableWalletAPI: !tc.disableWalletAPI,
-				})
-				require.NoError(t, err)
-
-				if tc.disableWalletAPI {
-					_, err = s.CreateAndSignTransaction("", tc.pwd, addrUxOuts, uint64(headTime), tc.coins, tc.dest)
-					require.Equal(t, tc.err, err)
-					return
-				}
-
-				wltName := NewWalletFilename()
-
-				w, err := s.CreateWallet(wltName, tc.opts, nil)
-				require.NoError(t, err)
-
-				tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, addrUxOuts, uint64(headTime), tc.coins, tc.dest)
-
-				if tc.err != nil {
-					require.Error(t, err)
-					require.Equal(t, tc.err, err, err.Error())
-					return
-				}
-
-				require.NoError(t, err)
-
-				// check the IN of tx
-				for _, inUxid := range tx.In {
-					_, ok := unspents[inUxid]
-					require.True(t, ok)
-				}
-
-				err = tx.Verify()
-				require.NoError(t, err)
-			})
-		}
-	}
-}
-
-func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
+func TestServiceCreateTransaction(t *testing.T) {
 	headTime := uint64(time.Now().UTC().Unix())
 	seed := []byte("seed")
 
@@ -1621,164 +1431,217 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		cryptoTypes = append(cryptoTypes, ct)
 	}
 
-	for _, tc := range cases {
-		cts := cryptoTypes
-		if !tc.opts.Encrypt {
-			cts = cts[:1]
+	type TestResult struct {
+		Transaction *coin.Transaction
+		Inputs      []UxBalance
+		Unsigned    bool
+	}
+
+	results := make(map[string]TestResult, len(cases))
+
+	compareResult := func(t *testing.T, a, b TestResult) {
+		require.True(t, reflect.DeepEqual(a.Inputs, b.Inputs))
+		require.True(t, reflect.DeepEqual(a.Transaction.Out, b.Transaction.Out))
+		require.Equal(t, a.Transaction.InnerHash, b.Transaction.InnerHash)
+		require.Equal(t, a.Transaction.Type, b.Transaction.Type)
+
+		if a.Unsigned == b.Unsigned {
+			// Sigs have a nonce so will vary each run, unset them before comparing the whole transaction
+			require.Equal(t, len(a.Transaction.Sigs), len(b.Transaction.Sigs))
+			at := *a.Transaction
+			bt := *b.Transaction
+			at.Sigs = nil
+			bt.Sigs = nil
+			require.True(t, reflect.DeepEqual(at, bt))
+		} else {
+			if a.Unsigned {
+				require.True(t, a.Transaction.Length < b.Transaction.Length)
+			} else {
+				require.True(t, b.Transaction.Length < a.Transaction.Length)
+			}
 		}
+	}
 
-		for _, ct := range cts {
-			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			fmt.Println(name)
-			t.Run(name, func(t *testing.T) {
-				if tc.headTime == 0 {
-					tc.headTime = headTime
-				}
+	bools := []bool{true, false}
+	for _, unsigned := range bools {
+		for _, tc := range cases {
+			cts := cryptoTypes
+			if !tc.opts.Encrypt {
+				cts = cts[:1]
+			}
 
-				addrUxOuts := coin.AddressUxOuts{
-					addr: tc.unspents,
-				}
-
-				if tc.addressUnspents != nil {
-					addrUxOuts = tc.addressUnspents
-				}
-
-				unspents := make(map[cipher.SHA256]coin.UxOut)
-				for _, uxs := range addrUxOuts {
-					for _, ux := range uxs {
-						unspents[ux.Hash()] = ux
+			for _, ct := range cts {
+				name := fmt.Sprintf("unsigned=%v crypto=%v %s", unsigned, ct, tc.name)
+				fmt.Println(name)
+				t.Run(name, func(t *testing.T) {
+					if tc.headTime == 0 {
+						tc.headTime = headTime
 					}
-				}
 
-				if tc.opts.Seed == "" {
-					tc.opts.Seed = string(seed)
-				}
-
-				dir := prepareWltDir()
-				s, err := NewService(Config{
-					WalletDir:       dir,
-					CryptoType:      ct,
-					EnableWalletAPI: true,
-				})
-				require.NoError(t, err)
-
-				if tc.walletNotExist {
-					tc.params.Wallet.ID = "foo.wlt"
-				} else {
-					wltName := NewWalletFilename()
-					opts := tc.opts
-					if opts.Encrypt && len(opts.Password) == 0 {
-						opts.Password = []byte("password")
+					addrUxOuts := coin.AddressUxOuts{
+						addr: tc.unspents,
 					}
-					w, err := s.CreateWallet(wltName, opts, nil)
-					require.NoError(t, err)
 
-					if !w.IsEncrypted() {
-						_, err := s.NewAddresses(w.Filename(), nil, 10)
-						require.NoError(t, err)
+					if tc.addressUnspents != nil {
+						addrUxOuts = tc.addressUnspents
+					}
 
-						w, err = s.GetWallet(wltName)
-						require.NoError(t, err)
-
-						require.Equal(t, 11, len(w.Entries))
-						require.Equal(t, w.Entries[0].Address, addr)
-						for i, e := range w.Entries[1:] {
-							require.Equal(t, e.Address, extraWalletAddrs[i])
+					unspents := make(map[cipher.SHA256]coin.UxOut)
+					for _, uxs := range addrUxOuts {
+						for _, ux := range uxs {
+							unspents[ux.Hash()] = ux
 						}
 					}
 
-					tc.params.Wallet.ID = wltName
-				}
-
-				s.enableWalletAPI = !tc.disableWalletAPI
-
-				txn, inputs, err := s.CreateAndSignTransactionAdvanced(tc.params, addrUxOuts, tc.headTime)
-				if tc.err != nil {
-					require.Equal(t, tc.err, err)
-					return
-				}
-
-				require.NoError(t, err)
-
-				err = txn.Verify()
-				require.NoError(t, err)
-
-				require.Equal(t, len(inputs), len(txn.In))
-
-				// Checks duplicate inputs in array
-				inputsMap := make(map[cipher.SHA256]struct{})
-				for _, i := range inputs {
-					_, ok := inputsMap[i.Hash]
-					require.False(t, ok)
-					inputsMap[i.Hash] = struct{}{}
-				}
-
-				for i, inUxid := range txn.In {
-					_, ok := unspents[inUxid]
-					require.True(t, ok)
-
-					require.Equal(t, inUxid, inputs[i].Hash)
-				}
-
-				// Compare the transaction inputs
-				chosenUnspents := make([]coin.UxOut, len(tc.chosenUnspents))
-				chosenUnspentHashes := make([]cipher.SHA256, len(tc.chosenUnspents))
-				for i, u := range tc.chosenUnspents {
-					chosenUnspents[i] = u
-					chosenUnspentHashes[i] = u.Hash()
-				}
-				sort.Slice(chosenUnspentHashes, func(i, j int) bool {
-					return bytes.Compare(chosenUnspentHashes[i][:], chosenUnspentHashes[j][:]) < 0
-				})
-				sort.Slice(chosenUnspents, func(i, j int) bool {
-					h1 := chosenUnspents[i].Hash()
-					h2 := chosenUnspents[j].Hash()
-					return bytes.Compare(h1[:], h2[:]) < 0
-				})
-
-				sortedTxnIn := make([]cipher.SHA256, len(txn.In))
-				copy(sortedTxnIn[:], txn.In[:])
-
-				sort.Slice(sortedTxnIn, func(i, j int) bool {
-					return bytes.Compare(sortedTxnIn[i][:], sortedTxnIn[j][:]) < 0
-				})
-
-				require.Equal(t, chosenUnspentHashes, sortedTxnIn)
-
-				sort.Slice(inputs, func(i, j int) bool {
-					h1 := inputs[i].Hash
-					h2 := inputs[j].Hash
-					return bytes.Compare(h1[:], h2[:]) < 0
-				})
-
-				chosenUnspentsUxBalances := make([]UxBalance, len(chosenUnspents))
-				for i, o := range chosenUnspents {
-					b, err := NewUxBalance(tc.headTime, o)
-					require.NoError(t, err)
-					chosenUnspentsUxBalances[i] = b
-				}
-
-				require.Equal(t, chosenUnspentsUxBalances, inputs)
-
-				// Assign expected hours for comparison
-				var to []coin.TransactionOutput
-				to = append(to, tc.params.To...)
-
-				if len(tc.toExpectedHours) != 0 {
-					require.Equal(t, len(tc.toExpectedHours), len(to))
-					for i, h := range tc.toExpectedHours {
-						to[i].Hours = h
+					if tc.opts.Seed == "" {
+						tc.opts.Seed = string(seed)
 					}
-				}
 
-				// Add the change output if specified
-				if tc.changeOutput != nil {
-					to = append(to, *tc.changeOutput)
-				}
+					dir := prepareWltDir()
+					s, err := NewService(Config{
+						WalletDir:       dir,
+						CryptoType:      ct,
+						EnableWalletAPI: true,
+					})
+					require.NoError(t, err)
 
-				// Compare transaction outputs
-				require.Equal(t, to, txn.Out)
-			})
+					if tc.walletNotExist {
+						tc.params.Wallet.ID = "foo.wlt"
+					} else {
+						wltName := NewWalletFilename()
+						opts := tc.opts
+						if opts.Encrypt && len(opts.Password) == 0 {
+							opts.Password = []byte("password")
+						}
+						w, err := s.CreateWallet(wltName, opts, nil)
+						require.NoError(t, err)
+
+						if !w.IsEncrypted() {
+							_, err := s.NewAddresses(w.Filename(), nil, 10)
+							require.NoError(t, err)
+
+							w, err = s.GetWallet(wltName)
+							require.NoError(t, err)
+
+							require.Equal(t, 11, len(w.Entries))
+							require.Equal(t, w.Entries[0].Address, addr)
+							for i, e := range w.Entries[1:] {
+								require.Equal(t, e.Address, extraWalletAddrs[i])
+							}
+						}
+
+						tc.params.Wallet.ID = wltName
+					}
+
+					s.enableWalletAPI = !tc.disableWalletAPI
+
+					tc.params.Unsigned = unsigned
+					txn, inputs, err := s.CreateTransaction(tc.params, addrUxOuts, tc.headTime)
+					if tc.err != nil {
+						require.Equal(t, tc.err, err)
+						return
+					}
+
+					require.NoError(t, err)
+
+					if tc.params.Unsigned {
+						err := txn.VerifyUnsigned()
+						require.NoError(t, err)
+					} else {
+						err := txn.Verify()
+						require.NoError(t, err)
+					}
+
+					require.Equal(t, len(inputs), len(txn.In))
+
+					// Checks duplicate inputs in array
+					inputsMap := make(map[cipher.SHA256]struct{})
+					for _, i := range inputs {
+						_, ok := inputsMap[i.Hash]
+						require.False(t, ok)
+						inputsMap[i.Hash] = struct{}{}
+					}
+
+					for i, inUxid := range txn.In {
+						_, ok := unspents[inUxid]
+						require.True(t, ok)
+
+						require.Equal(t, inUxid, inputs[i].Hash)
+					}
+
+					// Compare the transaction inputs
+					chosenUnspents := make([]coin.UxOut, len(tc.chosenUnspents))
+					chosenUnspentHashes := make([]cipher.SHA256, len(tc.chosenUnspents))
+					for i, u := range tc.chosenUnspents {
+						chosenUnspents[i] = u
+						chosenUnspentHashes[i] = u.Hash()
+					}
+					sort.Slice(chosenUnspentHashes, func(i, j int) bool {
+						return bytes.Compare(chosenUnspentHashes[i][:], chosenUnspentHashes[j][:]) < 0
+					})
+					sort.Slice(chosenUnspents, func(i, j int) bool {
+						h1 := chosenUnspents[i].Hash()
+						h2 := chosenUnspents[j].Hash()
+						return bytes.Compare(h1[:], h2[:]) < 0
+					})
+
+					sortedTxnIn := make([]cipher.SHA256, len(txn.In))
+					copy(sortedTxnIn[:], txn.In[:])
+
+					sort.Slice(sortedTxnIn, func(i, j int) bool {
+						return bytes.Compare(sortedTxnIn[i][:], sortedTxnIn[j][:]) < 0
+					})
+
+					require.Equal(t, chosenUnspentHashes, sortedTxnIn)
+
+					sort.Slice(inputs, func(i, j int) bool {
+						h1 := inputs[i].Hash
+						h2 := inputs[j].Hash
+						return bytes.Compare(h1[:], h2[:]) < 0
+					})
+
+					chosenUnspentsUxBalances := make([]UxBalance, len(chosenUnspents))
+					for i, o := range chosenUnspents {
+						b, err := NewUxBalance(tc.headTime, o)
+						require.NoError(t, err)
+						chosenUnspentsUxBalances[i] = b
+					}
+
+					require.Equal(t, chosenUnspentsUxBalances, inputs)
+
+					// Assign expected hours for comparison
+					var to []coin.TransactionOutput
+					to = append(to, tc.params.To...)
+
+					if len(tc.toExpectedHours) != 0 {
+						require.Equal(t, len(tc.toExpectedHours), len(to))
+						for i, h := range tc.toExpectedHours {
+							to[i].Hours = h
+						}
+					}
+
+					// Add the change output if specified
+					if tc.changeOutput != nil {
+						to = append(to, *tc.changeOutput)
+					}
+
+					// Compare transaction outputs
+					require.Equal(t, to, txn.Out)
+
+					// compare to previous result for the same test case
+					// but with different parameters (cryptotype, unsigned)
+					result := TestResult{
+						Transaction: txn,
+						Inputs:      inputs,
+						Unsigned:    tc.params.Unsigned,
+					}
+					if prevResult, ok := results[tc.name]; ok {
+						compareResult(t, prevResult, result)
+					} else {
+						results[tc.name] = result
+					}
+				})
+			}
 		}
 	}
 }

@@ -254,6 +254,7 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 
 // createTransactionRequest is sent to /wallet/transaction
 type createTransactionRequest struct {
+	Unsigned          bool                           `json:"unsigned"`
 	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
 	HoursSelection    hoursSelection                 `json:"hours_selection"`
 	Wallet            createTransactionRequestWallet `json:"wallet"`
@@ -453,6 +454,7 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 	}
 
 	return wallet.CreateTransactionParams{
+		Unsigned:          r.Unsigned,
 		IgnoreUnconfirmed: r.IgnoreUnconfirmed,
 		HoursSelection: wallet.HoursSelection{
 			Type:        r.HoursSelection.Type,

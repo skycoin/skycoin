@@ -164,13 +164,13 @@ func TestTransactionVerifyInput(t *testing.T) {
 	// Invalid uxIn args
 	txn := makeTransaction(t)
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInput(nil) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(nil) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInput(UxArray{}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{}) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInput(make(UxArray, 3)) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(make(UxArray, 3)) // nolint: errcheck
 	})
 
 	// txn.In != txn.Sigs
@@ -178,14 +178,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs = []cipher.Sig{}
 	_require.PanicsWithLogMessage(t, "txn.In != txn.Sigs", func() {
-		_ = txn.VerifyInput(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
 	})
 
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs = append(txn.Sigs, cipher.Sig{})
 	_require.PanicsWithLogMessage(t, "txn.In != txn.Sigs", func() {
-		_ = txn.VerifyInput(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
 	})
 
 	// txn.InnerHash != txn.HashInner()
@@ -193,27 +193,27 @@ func TestTransactionVerifyInput(t *testing.T) {
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.InnerHash = cipher.SHA256{}
 	_require.PanicsWithLogMessage(t, "Invalid Tx Inner Hash", func() {
-		_ = txn.VerifyInput(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
 	})
 
 	// txn.In does not match uxIn hashes
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	_require.PanicsWithLogMessage(t, "Ux hash mismatch", func() {
-		_ = txn.VerifyInput(UxArray{UxOut{}}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{UxOut{}}) // nolint: errcheck
 	})
 
 	// Invalid signature
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs[0] = cipher.Sig{}
-	err := txn.VerifyInput(UxArray{ux})
+	err := txn.VerifyInputSignatures(UxArray{ux})
 	testutil.RequireError(t, err, "Signature not valid for output being spent")
 
 	// Valid
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
-	err = txn.VerifyInput(UxArray{ux})
+	err = txn.VerifyInputSignatures(UxArray{ux})
 	require.NoError(t, err)
 }
 

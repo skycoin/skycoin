@@ -56,12 +56,26 @@ type TransactionOutput struct {
 	Hours   uint64         //amount to be sent in coin hours
 }
 
-// Verify attempts to determine if the transaction is well formed
+// Verify attempts to determine if the transaction is well formed.
 // Verify cannot check transaction signatures, it needs the address from unspents
 // Verify cannot check if outputs being spent exist
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (txn *Transaction) Verify() error {
+	return txn.verify(false)
+}
+
+// VerifyUnsigned attempts to determine if the transaction is well formed,
+// but requires the transaction to have no signatures.
+// Verify cannot check transaction signatures, it needs the address from unspents
+// Verify cannot check if outputs being spent exist
+// Verify cannot check if the transaction would create or destroy coins
+// or if the inputs have the required coin base
+func (txn *Transaction) VerifyUnsigned() error {
+	return txn.verify(true)
+}
+
+func (txn *Transaction) verify(unsigned bool) error {
 	h := txn.HashInner()
 	if h != txn.InnerHash {
 		return errors.New("InnerHash does not match computed hash")
@@ -74,12 +88,18 @@ func (txn *Transaction) Verify() error {
 		return errors.New("No outputs")
 	}
 
-	// Check signature index fields
-	if len(txn.Sigs) != len(txn.In) {
-		return errors.New("Invalid number of signatures")
-	}
-	if len(txn.Sigs) >= math.MaxUint16 {
-		return errors.New("Too many signatures and inputs")
+	if unsigned {
+		if len(txn.Sigs) != 0 {
+			return errors.New("Unsigned transaction must have zero signatures")
+		}
+	} else {
+		// Check signature index fields
+		if len(txn.Sigs) != len(txn.In) {
+			return errors.New("Invalid number of signatures")
+		}
+		if len(txn.Sigs) >= math.MaxUint16 {
+			return errors.New("Too many signatures and inputs")
+		}
 	}
 
 	// Check duplicate inputs
@@ -148,8 +168,8 @@ func (txn *Transaction) Verify() error {
 	return nil
 }
 
-// VerifyInput verifies the input
-func (txn Transaction) VerifyInput(uxIn UxArray) error {
+// VerifyInputSignatures verifies the inputs and signatures
+func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
 	if err := func() error {
 		if len(txn.In) != len(uxIn) {
 			return errors.New("txn.In != uxIn")

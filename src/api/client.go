@@ -679,6 +679,7 @@ func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 
 // CreateTransactionRequest is sent to /api/v1/wallet/transaction
 type CreateTransactionRequest struct {
+	Unsigned          bool                           `json:"unsigned"`
 	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
 	HoursSelection    HoursSelection                 `json:"hours_selection"`
 	Wallet            CreateTransactionRequestWallet `json:"wallet"`

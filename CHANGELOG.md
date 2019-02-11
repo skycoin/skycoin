@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `unsigned` option to `POST /api/v2/wallet/transaction` to create unsigned transactions from a wallet
+
 ### Fixed
 
 ### Changed

@@ -300,46 +300,9 @@ func (serv *Service) GetWallets() (Wallets, error) {
 	return wlts, nil
 }
 
-// CreateAndSignTransaction creates and signs a transaction from wallet.
+// CreateTransaction creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	serv.RLock()
-	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
-		return nil, ErrWalletAPIDisabled
-	}
-
-	w, err := serv.getWallet(wltID)
-	if err != nil {
-		return nil, err
-	}
-
-	var tx *coin.Transaction
-	f := func(wlt *Wallet) error {
-		var err error
-		tx, err = wlt.CreateAndSignTransaction(auxs, headTime, coins, dest)
-		return err
-	}
-
-	if w.IsEncrypted() {
-		if err := w.GuardView(password, f); err != nil {
-			return nil, err
-		}
-	} else {
-		if len(password) != 0 {
-			return nil, ErrWalletNotEncrypted
-		}
-
-		if err := f(w); err != nil {
-			return nil, err
-		}
-	}
-	return tx, nil
-}
-
-// CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
-// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+func (serv *Service) CreateTransaction(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 
@@ -372,11 +335,11 @@ func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionPa
 	if w.IsEncrypted() {
 		err = w.GuardView(params.Wallet.Password, func(wlt *Wallet) error {
 			var err error
-			tx, inputs, err = wlt.CreateAndSignTransactionAdvanced(params, auxs, headTime)
+			tx, inputs, err = wlt.CreateTransaction(params, auxs, headTime)
 			return err
 		})
 	} else {
-		tx, inputs, err = w.CreateAndSignTransactionAdvanced(params, auxs, headTime)
+		tx, inputs, err = w.CreateTransaction(params, auxs, headTime)
 	}
 	if err != nil {
 		return nil, nil, err

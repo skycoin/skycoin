@@ -122,6 +122,8 @@ var endpoints = []string{
 	"/api/v2/transaction/verify",
 	"/api/v2/address/verify",
 	"/api/v2/wallet/recover",
+	"/api/v2/transaction/raw",
+	"/api/v2/transaction/inject",
 }
 
 // TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,

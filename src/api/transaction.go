@@ -1058,7 +1058,6 @@ func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 }
 
 // VerifyTxnRequest represents the data struct of the request for /api/v2/transaction/verify
-// swager:parameters verifyTxnRequest
 type VerifyTxnRequest struct {
 	EncodedTransaction string `json:"encoded_transaction"`
 }

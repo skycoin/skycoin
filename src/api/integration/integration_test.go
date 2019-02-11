@@ -4420,74 +4420,71 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 		})
 	}
 
-	bools := []bool{true, false}
-	for _, unsigned := range bools {
-		for _, tc := range cases {
-			name := fmt.Sprintf("unsigned=%v %s", unsigned, tc.name)
-			t.Run(name, func(t *testing.T) {
-				require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
+	for _, tc := range cases {
+		name := fmt.Sprintf("unsigned=%v %s", unsigned, tc.name)
+		t.Run(name, func(t *testing.T) {
+			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
 
-				tc.req.Unsigned = unsigned
-				result, err := c.CreateTransaction(tc.req)
-				if tc.err != "" {
-					assertResponseError(t, err, tc.code, tc.err)
-					return
-				}
+			tc.req.Unsigned = unsigned
+			result, err := c.CreateTransaction(tc.req)
+			if tc.err != "" {
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
 
-				require.NoError(t, err)
+			require.NoError(t, err)
 
-				if len(tc.outputsSubset) == 0 {
-					require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
-				}
+			if len(tc.outputsSubset) == 0 {
+				require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
+			}
 
-				for i, o := range tc.outputs {
-					// The final change output may not have the address specified,
-					// if the ChangeAddress was not specified in the wallet params.
-					// Calculate it automatically based upon the transaction inputs
-					if o.Address.Null() {
-						require.Equal(t, i, len(tc.outputs)-1)
-						require.Nil(t, tc.req.ChangeAddress)
+			for i, o := range tc.outputs {
+				// The final change output may not have the address specified,
+				// if the ChangeAddress was not specified in the wallet params.
+				// Calculate it automatically based upon the transaction inputs
+				if o.Address.Null() {
+					require.Equal(t, i, len(tc.outputs)-1)
+					require.Nil(t, tc.req.ChangeAddress)
 
-						changeAddr := result.Transaction.Out[i].Address
-						// The changeAddr must be associated with one of the transaction inputs
-						changeAddrFound := false
-						for _, x := range result.Transaction.In {
-							require.NotNil(t, x.Address)
-							if changeAddr == x.Address {
-								changeAddrFound = true
-								break
-							}
+					changeAddr := result.Transaction.Out[i].Address
+					// The changeAddr must be associated with one of the transaction inputs
+					changeAddrFound := false
+					for _, x := range result.Transaction.In {
+						require.NotNil(t, x.Address)
+						if changeAddr == x.Address {
+							changeAddrFound = true
+							break
 						}
-
-						require.True(t, changeAddrFound)
-					} else {
-						require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
 					}
 
-					coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
+					require.True(t, changeAddrFound)
+				} else {
+					require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
+				}
+
+				coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
+				require.NoError(t, err)
+				require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
+
+				if !tc.ignoreHours {
+					hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
 					require.NoError(t, err)
-					require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
-
-					if !tc.ignoreHours {
-						hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
-						require.NoError(t, err)
-						require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
-					}
+					require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
 				}
+			}
 
-				assertEncodeTxnMatchesTxn(t, result)
-				assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
-				assertCreatedTransactionValid(t, result.Transaction, unsigned)
+			assertEncodeTxnMatchesTxn(t, result)
+			assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
+			assertCreatedTransactionValid(t, result.Transaction, unsigned)
 
-				if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
-					assertRequestedHours(t, tc.req.To, result.Transaction.Out)
-				}
+			if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
+				assertRequestedHours(t, tc.req.To, result.Transaction.Out)
+			}
 
-				if tc.additionalRespVerify != nil {
-					tc.additionalRespVerify(t, result)
-				}
-			})
-		}
+			if tc.additionalRespVerify != nil {
+				tc.additionalRespVerify(t, result)
+			}
+		})
 	}
 }
 

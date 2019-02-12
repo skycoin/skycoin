@@ -210,7 +210,7 @@ func TestTransactionVerifyUnsigned(t *testing.T) {
 	err = txn.VerifyUnsigned()
 	testutil.RequireError(t, err, "Invalid number of signatures")
 
-	// Transaction is unsigned if at least signature is null
+	// Transaction is unsigned if at least 1 signature is null
 	txn = makeTransactionMultipleInputs(t, 3)
 	require.True(t, len(txn.Sigs) > 1)
 	txn.Sigs[0] = cipher.Sig{}

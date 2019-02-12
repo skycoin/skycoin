@@ -1217,18 +1217,14 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 			if !signedTxn.Sigs[in].Null() {
 				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", in))
 			}
-			x := addrs[uxOuts[in].Body.Address]
-			x = append(x, in)
-			addrs[uxOuts[in].Body.Address] = x
+			addrs[uxOuts[in].Body.Address] = append(addrs[uxOuts[in].Body.Address], in)
 		}
 	} else {
 		for i, o := range uxOuts {
 			if !signedTxn.Sigs[i].Null() {
 				continue
 			}
-			x := addrs[o.Body.Address]
-			x = append(x, i)
-			addrs[o.Body.Address] = x
+			addrs[o.Body.Address] = append(addrs[o.Body.Address], i)
 		}
 	}
 

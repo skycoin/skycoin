@@ -1607,27 +1607,6 @@ paths:
                 type: object
         default:
           $ref: '#/responses/genericError'
-  /api/v1/transaction/raw:
-    get:
-      operationId: transactionRaw
-      parameters:
-      - description: Transaction id hash
-        in: query
-        name: txid
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Returns the hex-encoded byte serialization of a transaction
-          schema:
-            properties:
-              rawtx:
-                type: string
-        default:
-          $ref: '#/responses/genericError'
-      summary: Returns the hex-encoded byte serialization of a transaction. The transaction
-        may be confirmed or unconfirmed.
   /api/v1/transactions:
     get:
       operationId: transactionsGet
@@ -2607,9 +2586,9 @@ paths:
       security:
       - csrfAuth: []
       summary: Verifies a Skycoin address.
-  /api/v2/injectTransaction:
+  /api/v2/transaction/inject:
     post:
-      operationId: injectTransaction
+      operationId: transactionInject
       parameters:
       - description: hex-encoded serialized transaction string.
         in: header
@@ -2677,6 +2656,27 @@ paths:
       security:
       - csrfAuth: []
       summary: Broadcast a hex-encoded, serialized transaction to the network.
+  /api/v2/transaction/raw:
+    get:
+      operationId: transactionRaw
+      parameters:
+      - description: Transaction id hash
+        in: query
+        name: txid
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns the hex-encoded byte serialization of a transaction
+          schema:
+            properties:
+              rawtx:
+                type: string
+        default:
+          $ref: '#/responses/genericError'
+      summary: Returns the hex-encoded byte serialization of a transaction. The transaction
+        may be confirmed or unconfirmed.
   /api/v2/wallet/recover:
     post:
       operationId: walletRecover

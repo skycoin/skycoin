@@ -1338,7 +1338,6 @@ func TestGetTransactions(t *testing.T) {
 
 type transactionAndInputs struct {
 	txn coin.Transaction
-	// swagger:ignore
 	inputs []wallet.UxBalance
 }
 

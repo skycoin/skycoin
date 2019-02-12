@@ -1408,49 +1408,51 @@ Result:
 
 ```json
 {
-    "transaction": {
-        "length": 257,
-        "type": 0,
-        "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
-        "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
-        "fee": "437691",
-        "sigs": [
-            "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
-        ],
-        "inputs": [
-            {
-                "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
-                "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
-                "coins": "10.000000",
-                "hours": "853667",
-                "calculated_hours": "862290",
-                "timestamp": 1524242826,
-                "block": 23575,
-                "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
-            }
-        ],
-        "outputs": [
-            {
-                "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
-                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-                "coins": "1.000000",
-                "hours": "22253"
-            },
-            {
-                "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
-                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-                "coins": "8.990000",
-                "hours": "200046"
-            },
-            {
-                "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
-                "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
-                "coins": "0.010000",
-                "hours": "222300"
-            }
-        ]
-    },
-    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+	"data": {
+	    "transaction": {
+	        "length": 257,
+	        "type": 0,
+	        "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
+	        "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+	        "fee": "437691",
+	        "sigs": [
+	            "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+	        ],
+	        "inputs": [
+	            {
+	                "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
+	                "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
+	                "coins": "10.000000",
+	                "hours": "853667",
+	                "calculated_hours": "862290",
+	                "timestamp": 1524242826,
+	                "block": 23575,
+	                "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
+	            }
+	        ],
+	        "outputs": [
+	            {
+	                "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
+	                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+	                "coins": "1.000000",
+	                "hours": "22253"
+	            },
+	            {
+	                "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
+	                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+	                "coins": "8.990000",
+	                "hours": "200046"
+	            },
+	            {
+	                "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
+	                "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+	                "coins": "0.010000",
+	                "hours": "222300"
+	            }
+	        ]
+	    },
+	    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+	}
 }
 ```
 

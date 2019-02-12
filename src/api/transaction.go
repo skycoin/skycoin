@@ -16,7 +16,6 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // pendingTxnsHandler returns pending (unconfirmed) transactions
@@ -575,7 +574,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 }
 
 // newCreatedTransactionFuzzy creates a CreatedTransaction but accommodates possibly invalid txn input
-func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
+func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []visor.TransactionInput) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) && len(inputs) != 0 {
 		return nil, errors.New("len(txn.In) != len(inputs)")
 	}
@@ -593,7 +592,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		inputHours, err = coin.AddUint64(inputHours, i.CalculatedHours)
 		if err != nil {
 			feeInvalid = true
 		}

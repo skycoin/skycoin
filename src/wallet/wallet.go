@@ -28,7 +28,8 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
-// Error wraps wallet related errors
+// Error wraps wallet related errors.
+// It wraps errors caused by user input, but not errors caused by programmer input or internal issues.
 type Error struct {
 	error
 }
@@ -1189,24 +1190,24 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 	// Sanity check
 	txnInnerHash := signedTxn.InnerHash
 	if signedTxn.HashInner() != txnInnerHash {
-		return nil, errors.New("Transaction inner hash does not match computed inner hash")
+		return nil, NewError(errors.New("Transaction inner hash does not match computed inner hash"))
 	}
 
 	if len(signedTxn.Sigs) == 0 {
-		return nil, errors.New("Transaction signatures array is empty")
+		return nil, NewError(errors.New("Transaction signatures array is empty"))
 	}
 	if signedTxn.IsFullySigned() {
-		return nil, errors.New("Transaction is fully signed")
+		return nil, NewError(errors.New("Transaction is fully signed"))
 	}
 
 	if len(signedTxn.In) == 0 {
-		return nil, errors.New("No transaction inputs to sign")
+		return nil, NewError(errors.New("No transaction inputs to sign"))
 	}
 	if len(uxOuts) != len(signedTxn.In) {
 		return nil, errors.New("len(uxOuts) != len(txn.In)")
 	}
 	if err := validateSignIndexes(signIndexes, uxOuts); err != nil {
-		return nil, err
+		return nil, NewError(err)
 	}
 
 	// Build a mapping of addresses to the inputs that need to be signed
@@ -1214,7 +1215,7 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 	if len(signIndexes) > 0 {
 		for _, in := range signIndexes {
 			if !signedTxn.Sigs[in].Null() {
-				return nil, fmt.Errorf("Transaction is already signed at index %d", in)
+				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", in))
 			}
 			x := addrs[uxOuts[in].Body.Address]
 			x = append(x, in)
@@ -1244,14 +1245,14 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 	}
 
 	if len(toSign) != len(addrs) {
-		return nil, errors.New("Wallet cannot sign all requested inputs")
+		return nil, NewError(errors.New("Wallet cannot sign all requested inputs"))
 	}
 
 	// Sign the selected inputs
 	for k, v := range toSign {
 		for _, x := range v {
 			if !signedTxn.Sigs[x].Null() {
-				return nil, fmt.Errorf("Transaction is already signed at index %d", x)
+				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", x))
 			}
 			if err := signedTxn.SignInput(w.Entries[k].Secret, x); err != nil {
 				return nil, err

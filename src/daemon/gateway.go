@@ -391,7 +391,7 @@ func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.U
 }
 
 // CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
-func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
+func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
@@ -401,7 +401,7 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 
 // SignTransaction signs an unsigned transaction using a wallet. Specific inputs may be signed by specifying signIndexes.
 // If signIndexes is empty, all inputs will be signed.
-func (gw *Gateway) SignTransaction(wltName string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []wallet.UxBalance, error) {
+func (gw *Gateway) SignTransaction(wltName string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
@@ -634,6 +634,6 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 
 // VerifyTxnVerbose verifies an isolated transaction and returns []wallet.UxBalance of
 // transaction inputs, whether the transaction is confirmed and error if any
-func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
+func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]visor.TransactionInput, bool, error) {
 	return gw.v.VerifyTxnVerbose(txn)
 }

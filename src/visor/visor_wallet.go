@@ -103,13 +103,13 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 }
 
 // CreateTransaction creates a transaction based upon the parameters in wallet.CreateTransactionParams
-func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
+func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
 
 	var txn *coin.Transaction
-	var inputs []wallet.UxBalance
+	var uxb []wallet.UxBalance
 
 	if err := vs.Wallets.ViewSecrets(p.Wallet.ID, p.Wallet.Password, func(w *wallet.Wallet) error {
 		// Get all addresses from the wallet for checking p against
@@ -131,7 +131,7 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 			}
 
 			// Create and sign transaction
-			txn, inputs, err = w.CreateTransaction(p, auxs, head.Time())
+			txn, uxb, err = w.CreateTransaction(p, auxs, head.Time())
 			if err != nil {
 				logger.WithError(err).Error("CreateTransaction failed")
 				return err
@@ -161,43 +161,46 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 		return nil, nil, err
 	}
 
+	inputs := NewTransactionInputsFromUxBalance(uxb)
+
 	return txn, inputs, nil
 }
 
 // SignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
 // If signIndexes is empty, all inputs will be signed.
-func (vs *Visor) SignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []wallet.UxBalance, error) {
-	var inputs []wallet.UxBalance
+func (vs *Visor) SignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []TransactionInput, error) {
+	var inputs []TransactionInput
 	var signedTxn *coin.Transaction
 
 	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
-		if err := vs.DB.View("SignTransaction", func(tx *dbutil.Tx) error {
+		return vs.DB.View("SignTransaction", func(tx *dbutil.Tx) error {
 			headTime, err := vs.Blockchain.Time(tx)
 			if err != nil {
 				return err
 			}
 
-			signedTxn, inputs, err = vs.getTransactionInputs(tx, headTime, txn.In)
-			return err
-		}); err != nil {
-			return err
-		}
+			inputs, err = vs.getTransactionInputs(tx, headTime, txn.In)
+			if err != nil {
+				return err
+			}
 
-		uxOuts := make([]coin.UxOut, len(inputs))
-		for i, in := range inputs {
-			uxOuts[i] = in.UxOut
-		}
+			uxOuts := make([]coin.UxOut, len(inputs))
+			for i, in := range inputs {
+				uxOuts[i] = in.UxOut
+			}
 
-		if err := w.SignTransaction(txn, signIndexes, uxOuts); err != nil {
-			return err
-		}
+			signedTxn, err = w.SignTransaction(txn, signIndexes, uxOuts)
+			if err != nil {
+				return err
+			}
 
-		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnSigned); err != nil {
-			logger.WithError(err).Error("Signed transaction violates transaction constraints")
-			return err
-		}
+			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnSigned); err != nil {
+				logger.WithError(err).Error("Signed transaction violates transaction constraints")
+				return err
+			}
 
-		return nil
+			return nil
+		})
 	}); err != nil {
 		return nil, nil, err
 	}

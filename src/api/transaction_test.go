@@ -24,7 +24,6 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTransaction {
@@ -1294,10 +1293,10 @@ func TestGetTransactions(t *testing.T) {
 
 type transactionAndInputs struct {
 	txn    coin.Transaction
-	inputs []wallet.UxBalance
+	inputs []visor.TransactionInput
 }
 
-func newVerifyTxnResponseJSON(t *testing.T, txn *coin.Transaction, inputs []wallet.UxBalance, isTxnConfirmed bool) VerifyTxnResponse {
+func newVerifyTxnResponseJSON(t *testing.T, txn *coin.Transaction, inputs []visor.TransactionInput, isTxnConfirmed bool) VerifyTxnResponse {
 	ctxn, err := newCreatedTransactionFuzzy(txn, inputs)
 	require.NoError(t, err)
 	return VerifyTxnResponse{
@@ -1317,12 +1316,12 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 
-	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
+	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix()))
 	require.NoError(t, err)
 
 	return transactionAndInputs{
 		txn:    txn,
-		inputs: []wallet.UxBalance{input},
+		inputs: []visor.TransactionInput{input},
 	}
 }
 
@@ -1337,12 +1336,12 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 
-	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
+	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix()))
 	require.NoError(t, err)
 
 	return transactionAndInputs{
 		txn:    txn,
-		inputs: []wallet.UxBalance{input},
+		inputs: []visor.TransactionInput{input},
 	}
 }
 
@@ -1368,7 +1367,7 @@ func TestVerifyTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	type verifyTxnVerboseResult struct {
-		Uxouts         []wallet.UxBalance
+		Uxouts         []visor.TransactionInput
 		IsTxnConfirmed bool
 		Err            error
 	}

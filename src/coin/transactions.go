@@ -17,9 +17,6 @@ var (
 	DebugLevel1 = true
 	// DebugLevel2 enable checks for impossible conditions
 	DebugLevel2 = true
-
-	// ErrTransactionSigned is returned if a method for unsigned transactions is called on a signed transaction
-	ErrTransactionSigned = errors.New("Transaction is signed")
 )
 
 /*

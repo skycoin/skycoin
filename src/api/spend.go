@@ -28,7 +28,7 @@ type CreateTransactionResponse struct {
 }
 
 // NewCreateTransactionResponse creates a CreateTransactionResponse
-func NewCreateTransactionResponse(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreateTransactionResponse, error) {
+func NewCreateTransactionResponse(txn *coin.Transaction, inputs []visor.TransactionInput) (*CreateTransactionResponse, error) {
 	cTxn, err := NewCreatedTransaction(txn, inputs)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ type CreatedTransaction struct {
 }
 
 // NewCreatedTransaction returns a CreatedTransaction
-func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
+func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInput) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) {
 		return nil, errors.New("len(txn.In) != len(inputs)")
 	}
@@ -71,7 +71,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		inputHours, err = coin.AddUint64(inputHours, i.CalculatedHours)
 		if err != nil {
 			return nil, err
 		}
@@ -226,29 +226,29 @@ type CreatedTransactionInput struct {
 }
 
 // NewCreatedTransactionInput creates CreatedTransactionInput
-func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput, error) {
-	coins, err := droplet.ToString(out.Coins)
+func NewCreatedTransactionInput(out visor.TransactionInput) (*CreatedTransactionInput, error) {
+	coins, err := droplet.ToString(out.UxOut.Body.Coins)
 	if err != nil {
 		return nil, err
 	}
 
-	if out.SrcTransaction.Null() {
+	if out.UxOut.Body.SrcTransaction.Null() {
 		return nil, errors.New("NewCreatedTransactionInput UxOut.SrcTransaction is not initialized")
 	}
 
-	addr := out.Address.String()
-	hours := fmt.Sprint(out.InitialHours)
-	calculatedHours := fmt.Sprint(out.Hours)
-	txID := out.SrcTransaction.Hex()
+	addr := out.UxOut.Body.Address.String()
+	hours := fmt.Sprint(out.UxOut.Body.Hours)
+	calculatedHours := fmt.Sprint(out.CalculatedHours)
+	txID := out.UxOut.Body.SrcTransaction.Hex()
 
 	return &CreatedTransactionInput{
-		UxID:            out.Hash.Hex(),
+		UxID:            out.UxOut.Hash().Hex(),
 		Address:         addr,
 		Coins:           coins,
 		Hours:           hours,
 		CalculatedHours: calculatedHours,
-		Time:            out.Time,
-		Block:           out.BkSeq,
+		Time:            out.UxOut.Head.Time,
+		Block:           out.UxOut.Head.BkSeq,
 		TxID:            txID,
 	}, nil
 }
@@ -583,7 +583,7 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		txn, err := decodeTxn(req.EncodedTransaction)
 		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("decode transaction failed: %v", err))
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("Decode transaction failed: %v", err))
 			writeHTTPResponse(w, resp)
 			return
 		}
@@ -596,7 +596,7 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Check that values in sign_indexes are in the range of txn inputs
-		for _, i := range signIndexes {
+		for _, i := range req.SignIndexes {
 			if i < 0 || i >= len(txn.In) {
 				resp := NewHTTPErrorResponse(http.StatusBadRequest, "Value in sign_indexes exceeds range of transaction inputs array")
 				writeHTTPResponse(w, resp)
@@ -605,8 +605,8 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Check for duplicate values in sign_indexes
-		signIndexesMap := make(map[int]struct{}, len(signIndexes))
-		for _, i := range signIndexes {
+		signIndexesMap := make(map[int]struct{}, len(req.SignIndexes))
+		for _, i := range req.SignIndexes {
 			if _, ok := signIndexesMap[i]; ok {
 				resp := NewHTTPErrorResponse(http.StatusBadRequest, "Duplicate value in sign_indexes")
 				writeHTTPResponse(w, resp)
@@ -618,19 +618,20 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		signedTxn, inputs, err := gateway.SignTransaction(req.WalletID, []byte(req.Password), txn, req.SignIndexes)
 		if err != nil {
 			switch err {
-			case wallet.ErrWalletAPIDisabled:
-				resp := NewHTTPErrorResponse(http.StatusForbidden, err.Error())
+			case wallet.ErrWalletNotExist:
+				resp := NewHTTPErrorResponse(http.StatusNotFound, err.Error())
 				writeHTTPResponse(w, resp)
 				return
-			case coin.ErrTransactionSigned:
-				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			case wallet.ErrWalletAPIDisabled:
+				resp := NewHTTPErrorResponse(http.StatusForbidden, err.Error())
 				writeHTTPResponse(w, resp)
 				return
 			default:
 				switch err.(type) {
 				case visor.ErrTxnViolatesSoftConstraint,
 					visor.ErrTxnViolatesHardConstraint,
-					visor.ErrTxnViolatesUserConstraint:
+					visor.ErrTxnViolatesUserConstraint,
+					wallet.Error:
 					resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 					writeHTTPResponse(w, resp)
 					return
@@ -649,6 +650,8 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		writeHTTPResponse(w, txnResp)
+		writeHTTPResponse(w, HTTPResponse{
+			Data: txnResp,
+		})
 	}
 }

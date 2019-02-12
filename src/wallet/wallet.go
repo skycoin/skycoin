@@ -1159,41 +1159,62 @@ func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {
 	return nil
 }
 
+func copyTransaction(txn *coin.Transaction) *coin.Transaction {
+	txn2 := *txn
+	txn2.Sigs = make([]cipher.Sig, len(txn.Sigs))
+	copy(txn2.Sigs, txn.Sigs)
+	txn2.In = make([]cipher.SHA256, len(txn.In))
+	copy(txn2.In, txn.In)
+	txn2.Out = make([]coin.TransactionOutput, len(txn.Out))
+	copy(txn2.Out, txn.Out)
+
+	if txn.HashInner() != txn2.HashInner() {
+		logger.Panic("copyTransaction copy broke InnerHash")
+	}
+	if txn.Hash() != txn2.Hash() {
+		logger.Panic("copyTransaction copy broke Hash")
+	}
+
+	return &txn2
+}
+
 // SignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
 // If signIndexes is empty, all inputs will be signed.
 // The transaction should already have a valid header. The transaction may be partially signed,
 // but a valid existing signature cannot be overwritten.
 // Clients should avoid signing the same transaction multiple times.
-func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) error {
+func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) (*coin.Transaction, error) {
+	signedTxn := copyTransaction(txn)
+
 	// Sanity check
-	txnInnerHash := txn.InnerHash
-	if txn.HashInner() != txnInnerHash {
-		return errors.New("Transaction inner hash does not match computed inner hash")
+	txnInnerHash := signedTxn.InnerHash
+	if signedTxn.HashInner() != txnInnerHash {
+		return nil, errors.New("Transaction inner hash does not match computed inner hash")
 	}
 
-	if len(txn.Sigs) == 0 {
-		return errors.New("Transaction signatures array is empty")
+	if len(signedTxn.Sigs) == 0 {
+		return nil, errors.New("Transaction signatures array is empty")
 	}
-	if txn.IsFullySigned() {
-		return errors.New("Transaction is fully signed")
+	if signedTxn.IsFullySigned() {
+		return nil, errors.New("Transaction is fully signed")
 	}
 
-	if len(txn.In) == 0 {
-		return errors.New("No transaction inputs to sign")
+	if len(signedTxn.In) == 0 {
+		return nil, errors.New("No transaction inputs to sign")
 	}
-	if len(uxOuts) != len(txn.In) {
-		return errors.New("len(uxOuts) != len(txn.In)")
+	if len(uxOuts) != len(signedTxn.In) {
+		return nil, errors.New("len(uxOuts) != len(txn.In)")
 	}
 	if err := validateSignIndexes(signIndexes, uxOuts); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Build a mapping of addresses to the inputs that need to be signed
 	addrs := make(map[cipher.Address][]int)
 	if len(signIndexes) > 0 {
 		for _, in := range signIndexes {
-			if !txn.Sigs[in].Null() {
-				return fmt.Errorf("Transaction is already signed at index %d", in)
+			if !signedTxn.Sigs[in].Null() {
+				return nil, fmt.Errorf("Transaction is already signed at index %d", in)
 			}
 			x := addrs[uxOuts[in].Body.Address]
 			x = append(x, in)
@@ -1201,7 +1222,7 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 		}
 	} else {
 		for i, o := range uxOuts {
-			if !txn.Sigs[i].Null() {
+			if !signedTxn.Sigs[i].Null() {
 				continue
 			}
 			x := addrs[o.Body.Address]
@@ -1223,33 +1244,33 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 	}
 
 	if len(toSign) != len(addrs) {
-		return errors.New("Wallet cannot sign all requested inputs")
+		return nil, errors.New("Wallet cannot sign all requested inputs")
 	}
 
 	// Sign the selected inputs
 	for k, v := range toSign {
 		for _, x := range v {
-			if !txn.Sigs[x].Null() {
-				return fmt.Errorf("Transaction is already signed at index %d", x)
+			if !signedTxn.Sigs[x].Null() {
+				return nil, fmt.Errorf("Transaction is already signed at index %d", x)
 			}
-			if err := txn.SignInput(w.Entries[k].Secret, x); err != nil {
-				return err
+			if err := signedTxn.SignInput(w.Entries[k].Secret, x); err != nil {
+				return nil, err
 			}
 		}
 	}
 
-	if err := txn.UpdateHeader(); err != nil {
-		return err
+	if err := signedTxn.UpdateHeader(); err != nil {
+		return nil, err
 	}
 
 	// Sanity check
-	if txnInnerHash != txn.HashInner() {
+	if txnInnerHash != signedTxn.HashInner() {
 		err := errors.New("Transaction inner hash modified in the process of signing")
 		logger.Critical().WithError(err).Error()
-		return err
+		return nil, err
 	}
 
-	return nil
+	return signedTxn, nil
 }
 
 // Validator validate if the wallet be able to create spending transaction

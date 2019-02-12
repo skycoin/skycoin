@@ -900,3 +900,20 @@ func TestCreateTransaction(t *testing.T) {
 func newStrPtr(s string) *string {
 	return &s
 }
+
+// func TestSignTransaction(t *testing.T) {
+// 	tt := []struct {
+// 		name                           string
+// 		method                         string
+// 		body                           *rawRequest
+// 		status                         int
+// 		err                            string
+// 		gatewayCreateTransactionInputs []wallet.UxBalance
+// 		gatewayCreateTransactionErr    error
+// 		createTransactionResponse      *CreateTransactionResponse
+// 		csrfDisabled                   bool
+// 		contentType                    string
+// 	}{
+// 		{},
+// 	}
+// }

@@ -536,8 +536,10 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// WalletSignTransactionRequest is the request body object for /api/v2/transaction/sign
+// WalletSignTransactionRequest is the request body object for /api/v2/wallet/transaction/sign
 type WalletSignTransactionRequest struct {
+	WalletID           string `json:"wallet_id"`
+	Password           string `json:"password"`
 	EncodedTransaction string `json:"encoded_transaction"`
 	SignIndexes        []int  `json:"sign_indexes"`
 }
@@ -563,6 +565,12 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		var req WalletSignTransactionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if req.WalletID == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "wallet_id is required")
 			writeHTTPResponse(w, resp)
 			return
 		}
@@ -607,7 +615,7 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			signIndexesMap[i] = struct{}{}
 		}
 
-		inputs, err := gateway.SignTransaction(txn, req.SignIndexes)
+		signedTxn, inputs, err := gateway.SignTransaction(req.WalletID, []byte(req.Password), txn, req.SignIndexes)
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletAPIDisabled:
@@ -634,7 +642,7 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		txnResp, err := NewCreateTransactionResponse(txn, inputs)
+		txnResp, err := NewCreateTransactionResponse(signedTxn, inputs)
 		if err != nil {
 			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
 			writeHTTPResponse(w, resp)

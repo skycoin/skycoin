@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"reflect"
 	"testing"
 	"time"
 
@@ -2958,12 +2959,7 @@ func TestSignTransaction(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txn := tc.txn
-			sigs := make([]cipher.Sig, len(txn.Sigs))
-			copy(sigs, txn.Sigs)
-			txn.Sigs = sigs
-
-			err := tc.w.SignTransaction(&txn, tc.signIndexes, tc.uxOuts)
+			signedTxn, err := tc.w.SignTransaction(&tc.txn, tc.signIndexes, tc.uxOuts)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return
@@ -2971,23 +2967,26 @@ func TestSignTransaction(t *testing.T) {
 
 			require.NoError(t, err)
 
+			// The original txn should not be modified
+			require.False(t, reflect.DeepEqual(tc.txn, *signedTxn))
+
 			if len(tc.signIndexes) == 0 || len(tc.signIndexes) == len(tc.uxOuts) || tc.complete {
 				// Transaction should be fully signed
-				require.False(t, txn.IsFullyUnsigned())
-				err = txn.Verify()
+				require.False(t, signedTxn.IsFullyUnsigned())
+				err = signedTxn.Verify()
 				require.NoError(t, err)
-				err = txn.VerifyInputSignatures(tc.uxOuts)
+				err = signedTxn.VerifyInputSignatures(tc.uxOuts)
 				require.NoError(t, err)
 			} else {
 				// index of a valid signature should be found in the signIndexes
 				for _, x := range tc.signIndexes {
-					require.False(t, txn.Sigs[x].Null())
+					require.False(t, signedTxn.Sigs[x].Null())
 				}
 
 				if !tc.partial {
 					// Number of signatures should equal length of signIndexes
 					nSigned := 0
-					for _, s := range txn.Sigs {
+					for _, s := range signedTxn.Sigs {
 						if !s.Null() {
 							nSigned++
 						}

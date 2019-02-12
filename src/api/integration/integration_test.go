@@ -409,11 +409,12 @@ func TestStableVerifyTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	cases := []struct {
-		name    string
-		golden  string
-		txn     coin.Transaction
-		errCode int
-		errMsg  string
+		name     string
+		golden   string
+		txn      coin.Transaction
+		unsigned bool
+		errCode  int
+		errMsg   string
 	}{
 		{
 			name:    "invalid transaction empty",
@@ -430,6 +431,24 @@ func TestStableVerifyTransaction(t *testing.T) {
 			errCode: http.StatusUnprocessableEntity,
 			errMsg:  "Transaction violates hard constraint: Signature not valid for hash",
 		},
+
+		{
+			name:     "invalid transaction empty",
+			txn:      coin.Transaction{},
+			unsigned: true,
+			golden:   "verify-transaction-invalid-empty.golden",
+			errCode:  http.StatusUnprocessableEntity,
+			errMsg:   "Transaction violates soft constraint: Transaction has zero coinhour fee",
+		},
+
+		{
+			name:     "invalid transaction bad signature",
+			txn:      badSignatureTxn,
+			unsigned: true,
+			golden:   "verify-transaction-invalid-bad-sig.golden",
+			errCode:  http.StatusUnprocessableEntity,
+			errMsg:   "Transaction violates hard constraint: Unsigned transaction must contain a null signature",
+		},
 	}
 
 	for _, tc := range cases {
@@ -438,6 +457,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 
 			resp, err := c.VerifyTransaction(api.VerifyTransactionRequest{
 				EncodedTransaction: encodedTxn,
+				Unsigned:           tc.unsigned,
 			})
 
 			if tc.errCode != 0 && tc.errCode != http.StatusOK {

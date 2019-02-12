@@ -72,8 +72,6 @@ var (
 	ErrTxnExceedsMaxBlockSize = errors.New("Transaction size bigger than max block size")
 	// ErrTxnIsLocked transaction has locked address inputs
 	ErrTxnIsLocked = errors.New("Transaction has locked address inputs")
-	// ErrInvalidTxnSignedFlag TxnSignedFlag has invalid value
-	ErrInvalidTxnSignedFlag = errors.New("Invalid TxnSignedFlag value")
 )
 
 // TxnSignedFlag indicates if the transaction is unsigned or not
@@ -297,7 +295,7 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 			return err
 		}
 	default:
-		return ErrInvalidTxnSignedFlag
+		logger.Panic("Invalid TxnSignedFlag")
 	}
 
 	uxOut := coin.CreateUnspents(head, txn)

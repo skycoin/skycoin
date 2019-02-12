@@ -3733,6 +3733,154 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 	}
 }
 
+func TestLiveWalletSignTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := newClient()
+
+	w, _, _, password := prepareAndCheckWallet(t, c, 2e6, 20)
+
+	// Fetch outputs held by the wallet
+	addrs := make([]string, len(w.Entries))
+	for i, e := range w.Entries {
+		addrs[i] = e.SkycoinAddress().String()
+	}
+
+	summary, err := c.OutputsForAddresses(addrs)
+	require.NoError(t, err)
+	// Abort if the transaction is spending summary
+	require.Empty(t, summary.OutgoingOutputs)
+	// Need at least 2 summary for the created transaction
+	require.True(t, len(summary.HeadOutputs) > 1)
+
+	// Use the first two outputs for a transaction
+	headOutputs := summary.HeadOutputs[:2]
+	outputs, err := headOutputs.ToUxArray()
+	require.NoError(t, err)
+	totalCoins, err := outputs.Coins()
+	require.NoError(t, err)
+	totalCoinsStr, err := droplet.ToString(totalCoins)
+	require.NoError(t, err)
+
+	uxOutHashes := make([]string, len(outputs))
+	for i, o := range outputs {
+		uxOutHashes[i] = o.Hash().Hex()
+	}
+
+	// Create an unsigned transaction using two inputs
+	// Ensure at least 2 inputs
+	// Specify outputs in the request to create txn
+	// Specify unsigned in the request to create txn
+	txnResp, err := c.WalletCreateTransaction(api.WalletCreateTransactionRequest{
+		Unsigned: true,
+		HoursSelection: api.HoursSelection{
+			Type:        wallet.HoursSelectionTypeAuto,
+			Mode:        wallet.HoursSelectionModeShare,
+			ShareFactor: "0.5",
+		},
+		Wallet: api.WalletCreateTransactionRequestWallet{
+			ID:       w.Filename(),
+			Password: password,
+			UxOuts:   uxOutHashes,
+		},
+		To: []api.Receiver{
+			{
+				Address: w.Entries[0].SkycoinAddress().String(),
+				Coins:   totalCoinsStr,
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	type testCase struct {
+		name        string
+		req         api.WalletSignTransactionRequest
+		fullySigned bool
+		err         string
+		code        int
+	}
+
+	cases := []testCase{
+		{
+			name: "sign one input",
+			req: api.WalletSignTransactionRequest{
+				WalletID:           w.Filename(),
+				Password:           password,
+				SignIndexes:        []int{1},
+				EncodedTransaction: txnResp.EncodedTransaction,
+			},
+			fullySigned: false,
+		},
+		{
+			name: "sign all inputs",
+			req: api.WalletSignTransactionRequest{
+				WalletID:           w.Filename(),
+				Password:           password,
+				SignIndexes:        nil,
+				EncodedTransaction: txnResp.EncodedTransaction,
+			},
+			fullySigned: true,
+		},
+	}
+
+	doTest := func(tc testCase) {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := c.WalletSignTransaction(tc.req)
+			if tc.err != "" {
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			txnBytes, err := hex.DecodeString(tc.req.EncodedTransaction)
+			require.NoError(t, err)
+			txn, err := coin.TransactionDeserialize(txnBytes)
+			require.NoError(t, err)
+
+			// TxID should have changed
+			require.NotEqual(t, txn.Hash(), resp.Transaction.TxID)
+			// Length, InnerHash should not have changed
+			require.Equal(t, txn.Length, resp.Transaction.Length)
+			require.Equal(t, txn.InnerHash.Hex(), resp.Transaction.InnerHash)
+
+			_, err = c.VerifyTransaction(resp.EncodedTransaction)
+			if tc.fullySigned {
+				require.NoError(t, err)
+			} else {
+				testutil.RequireError(t, err, "Transaction violates hard constraint: Unsigned input in transaction")
+			}
+		})
+	}
+
+	for _, tc := range cases {
+		doTest(tc)
+	}
+
+	// Create a partially signed transaction then sign the remainder of it
+	resp, err := c.WalletSignTransaction(api.WalletSignTransactionRequest{
+		WalletID:           w.Filename(),
+		Password:           password,
+		SignIndexes:        []int{1},
+		EncodedTransaction: txnResp.EncodedTransaction,
+	})
+	require.NoError(t, err)
+
+	doTest(testCase{
+		name: "sign partially signed transaction",
+		req: api.WalletSignTransactionRequest{
+			WalletID:           w.Filename(),
+			Password:           password,
+			EncodedTransaction: resp.EncodedTransaction,
+		},
+		fullySigned: true,
+	})
+}
+
 func toDropletString(t *testing.T, i uint64) string {
 	x, err := droplet.ToString(i)
 	require.NoError(t, err)

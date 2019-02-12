@@ -288,6 +288,11 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 		if err := txn.VerifyUnsigned(); err != nil {
 			return err
 		}
+
+		// Check that signatures are allowed to spend inputs for signatures that are not null
+		if err := txn.VerifyPartialInputSignatures(uxIn); err != nil {
+			return err
+		}
 	}
 
 	uxOut := coin.CreateUnspents(head, txn)

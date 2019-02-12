@@ -196,7 +196,12 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 				return err
 			}
 
-			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnSigned); err != nil {
+			signed := TxnSigned
+			if !txn.IsFullySigned() {
+				signed = TxnUnsigned
+			}
+
+			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
 				logger.WithError(err).Error("Signed transaction violates transaction constraints")
 				return err
 			}

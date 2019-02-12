@@ -66,7 +66,7 @@ func (txn *Transaction) Verify() error {
 }
 
 // VerifyUnsigned attempts to determine if the transaction is well formed,
-// but requires the transaction to have no signatures.
+// but requires the transaction to have at least one null signature.
 // Verify cannot check transaction signatures, it needs the address from unspents
 // Verify cannot check if outputs being spent exist
 // Verify cannot check if the transaction would create or destroy coins
@@ -96,10 +96,15 @@ func (txn *Transaction) verify(unsigned bool) error {
 		return errors.New("Too many signatures and inputs")
 	}
 	if unsigned {
+		haveNullSig := false
 		for _, s := range txn.Sigs {
-			if !s.Null() {
-				return errors.New("Unsigned transaction signatures must be null")
+			if s.Null() {
+				haveNullSig = true
+				break
 			}
+		}
+		if !haveNullSig {
+			return errors.New("Unsigned transaction must have a null signature")
 		}
 	}
 
@@ -141,12 +146,17 @@ func (txn *Transaction) verify(unsigned bool) error {
 	}
 
 	// Validate signature
-	if !unsigned {
-		for i, sig := range txn.Sigs {
-			hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
-			if err := cipher.VerifySignedHash(sig, hash); err != nil {
-				return err
+	for i, sig := range txn.Sigs {
+		if sig.Null() {
+			if unsigned {
+				continue
+			} else {
+				return errors.New("Unsigned input in transaction")
 			}
+		}
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
+		if err := cipher.VerifySignatureRecoverPubKey(sig, hash); err != nil {
+			return err
 		}
 	}
 
@@ -171,25 +181,27 @@ func (txn *Transaction) verify(unsigned bool) error {
 	return nil
 }
 
+func (txn Transaction) verifyInputSignaturesPrelude(uxIn UxArray) error {
+	if len(txn.In) != len(uxIn) {
+		return errors.New("txn.In != uxIn")
+	}
+	if len(txn.In) != len(txn.Sigs) {
+		return errors.New("txn.In != txn.Sigs")
+	}
+	if txn.InnerHash != txn.HashInner() {
+		return errors.New("Invalid Tx Inner Hash")
+	}
+	for i := range txn.In {
+		if txn.In[i] != uxIn[i].Hash() {
+			return errors.New("Ux hash mismatch")
+		}
+	}
+	return nil
+}
+
 // VerifyInputSignatures verifies the inputs and signatures
 func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
-	if err := func() error {
-		if len(txn.In) != len(uxIn) {
-			return errors.New("txn.In != uxIn")
-		}
-		if len(txn.In) != len(txn.Sigs) {
-			return errors.New("txn.In != txn.Sigs")
-		}
-		if txn.InnerHash != txn.HashInner() {
-			return errors.New("Invalid Tx Inner Hash")
-		}
-		for i := range txn.In {
-			if txn.In[i] != uxIn[i].Hash() {
-				return errors.New("Ux hash mismatch")
-			}
-		}
-		return nil
-	}(); err != nil {
+	if err := txn.verifyInputSignaturesPrelude(uxIn); err != nil {
 		if DebugLevel2 {
 			log.Panic(err)
 		}
@@ -198,6 +210,30 @@ func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i := range txn.In {
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
+		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
+		if err != nil {
+			return errors.New("Signature not valid for output being spent")
+		}
+	}
+
+	return nil
+}
+
+// VerifyPartialInputSignatures verifies the inputs and signatures for signatures that are not null
+func (txn Transaction) VerifyPartialInputSignatures(uxIn UxArray) error {
+	if err := txn.verifyInputSignaturesPrelude(uxIn); err != nil {
+		if DebugLevel2 {
+			log.Panic(err)
+		}
+		return err
+	}
+
+	// Check signatures against unspent address for signatures that are not null
+	for i := range txn.In {
+		if txn.Sigs[i].Null() {
+			continue
+		}
 		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
 		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
 		if err != nil {

@@ -193,9 +193,18 @@ func TestTransactionVerify(t *testing.T) {
 }
 
 func TestTransactionVerifyUnsigned(t *testing.T) {
-	txn := makeTransaction(t)
+	txn := makeTransactionMultipleInputs(t, 2)
 	err := txn.VerifyUnsigned()
 	testutil.RequireError(t, err, "Unsigned transaction must have a null signature")
+
+	// Invalid signature, not empty
+	// A stable invalid signature must be used because random signatures could appear valid
+	// Note: Transaction.Verify() only checks that the signature is a minimally valid signature
+	badSig := "9a0f86874a4d9541f58a1de4db1c1b58765a868dc6f027445d0a2a8a7bddd1c45ea559fcd7bef45e1b76ccdaf8e50bbebd952acbbea87d1cb3f7a964bc89bf1ed5"
+	txn = makeTransactionMultipleInputs(t, 2)
+	txn.Sigs[0] = cipher.Sig{}
+	txn.Sigs[1] = cipher.MustSigFromHex(badSig)
+	testutil.RequireError(t, txn.VerifyUnsigned(), "Failed to recover pubkey from signature")
 
 	txn.Sigs = nil
 	err = txn.VerifyUnsigned()

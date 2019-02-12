@@ -4632,6 +4632,13 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			if tc.additionalRespVerify != nil {
 				tc.additionalRespVerify(t, result)
 			}
+
+			_, err = c.VerifyTransaction(result.EncodedTransaction)
+			if tc.req.Unsigned {
+				assertResponseError(t, err, http.StatusUnprocessableEntity, "Transaction violates hard constraint: Unsigned input in transaction")
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
@@ -4833,6 +4840,12 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction, unsigned)
+		_, err = c.VerifyTransaction(result.EncodedTransaction)
+		if unsigned {
+			assertResponseError(t, err, http.StatusUnprocessableEntity, "Transaction violates hard constraint: Unsigned input in transaction")
+		} else {
+			require.NoError(t, err)
+		}
 
 		// Auto, share factor 0
 
@@ -4856,6 +4869,12 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction, unsigned)
+		_, err = c.VerifyTransaction(result.EncodedTransaction)
+		if unsigned {
+			assertResponseError(t, err, http.StatusUnprocessableEntity, "Transaction violates hard constraint: Unsigned input in transaction")
+		} else {
+			require.NoError(t, err)
+		}
 
 		// Check that the non-change outputs have 0 hours
 		for _, o := range result.Transaction.Out[:nAutoOutputs] {
@@ -4884,6 +4903,12 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction, unsigned)
+		_, err = c.VerifyTransaction(result.EncodedTransaction)
+		if unsigned {
+			assertResponseError(t, err, http.StatusUnprocessableEntity, "Transaction violates hard constraint: Unsigned input in transaction")
+		} else {
+			require.NoError(t, err)
+		}
 
 		// Check that the change output has 0 hours
 		if len(result.Transaction.Out) > nAutoOutputs {
@@ -4911,6 +4936,12 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		assertRequestedCoins(t, to, result.Transaction.Out)
 		assertRequestedHours(t, to, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction, unsigned)
+		_, err = c.VerifyTransaction(result.EncodedTransaction)
+		if unsigned {
+			assertResponseError(t, err, http.StatusUnprocessableEntity, "Transaction violates hard constraint: Unsigned input in transaction")
+		} else {
+			require.NoError(t, err)
+		}
 	}
 }
 

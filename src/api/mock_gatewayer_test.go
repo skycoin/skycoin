@@ -15,8 +15,8 @@ type MockGatewayer struct {
 	mock.Mock
 }
 
-// CreateTransaction provides a mock function with given fields: w
-func (_m *MockGatewayer) CreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
+// WalletCreateTransaction provides a mock function with given fields: w
+func (_m *MockGatewayer) WalletCreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
 	ret := _m.Called(w)
 
 	var r0 *coin.Transaction
@@ -1157,8 +1157,8 @@ func (_m *MockGatewayer) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	return r0, r1
 }
 
-// SignTransaction provides a mock function with given fields: wltID, password, txn, signIndexes
-func (_m *MockGatewayer) SignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error) {
+// WalletSignTransaction provides a mock function with given fields: wltID, password, txn, signIndexes
+func (_m *MockGatewayer) WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error) {
 	ret := _m.Called(wltID, password, txn, signIndexes)
 
 	var r0 *coin.Transaction

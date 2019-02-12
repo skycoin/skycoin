@@ -3533,7 +3533,7 @@ func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
 
 	type testCase struct {
 		name         string
-		createTxnReq api.CreateTransactionRequest
+		createTxnReq api.WalletCreateTransactionRequest
 		err          string
 		code         int
 	}
@@ -3543,11 +3543,11 @@ func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
 			name: "valid request, networking disabled",
 			err:  "503 Service Unavailable - Outgoing connections are disabled",
 			code: http.StatusServiceUnavailable,
-			createTxnReq: api.CreateTransactionRequest{
+			createTxnReq: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3565,7 +3565,7 @@ func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txnResp, err := c.CreateTransaction(tc.createTxnReq)
+			txnResp, err := c.WalletCreateTransaction(tc.createTxnReq)
 			require.NoError(t, err)
 
 			txid, err := c.InjectEncodedTransaction(txnResp.EncodedTransaction)
@@ -3608,18 +3608,18 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 
 	tt := []struct {
 		name         string
-		createTxnReq api.CreateTransactionRequest
+		createTxnReq api.WalletCreateTransactionRequest
 		checkTxn     func(t *testing.T, tx *readable.TransactionWithStatus)
 	}{
 		{
 			name: "send all coins to the first address",
-			createTxnReq: api.CreateTransactionRequest{
+			createTxnReq: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
 					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: "1",
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3650,13 +3650,13 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 			// send 0.003 coin to the second address,
 			// this amount is chosen to not interfere with TestLiveWalletCreateTransaction
 			name: "send 0.003 coin to second address",
-			createTxnReq: api.CreateTransactionRequest{
+			createTxnReq: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
 					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: "0.5",
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3707,7 +3707,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			txnResp, err := c.CreateTransaction(tc.createTxnReq)
+			txnResp, err := c.WalletCreateTransaction(tc.createTxnReq)
 			require.NoError(t, err)
 
 			txid, err := c.InjectEncodedTransaction(txnResp.EncodedTransaction)
@@ -3795,7 +3795,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 	type testCase struct {
 		name                 string
-		req                  api.CreateTransactionRequest
+		req                  api.WalletCreateTransactionRequest
 		outputs              []coin.TransactionOutput
 		outputsSubset        []coin.TransactionOutput
 		err                  string
@@ -3807,11 +3807,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 	cases := []testCase{
 		{
 			name: "invalid decimals",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3830,11 +3830,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "overflowing hours",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3863,11 +3863,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "insufficient coins",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3886,11 +3886,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "insufficient hours",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3915,11 +3915,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			// because then this test cannot be performed, since there is no
 			// way to use all outputs and produce change in that case.
 			name: "valid request, manual one output with change, spend all",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3954,11 +3954,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			// because then this test cannot be performed, since there is no
 			// way to use all outputs and produce change in that case.
 			name: "valid request, manual one output with change, spend all, unspecified change address",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -3986,11 +3986,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, manual one output with change, don't spend all",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -4017,11 +4017,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, manual one output no change",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -4048,12 +4048,12 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			// this test only checks that if IgnoreUnconfirmed is specified,
 			// the API doesn't throw up some parsing error
 			name: "valid request, manual one output no change, ignore unconfirmed",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				IgnoreUnconfirmed: true,
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -4077,13 +4077,13 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, auto one output no change, share factor recalculates to 1.0",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
 					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: "0.5",
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -4106,13 +4106,13 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, auto two outputs with change",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
 					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: "0.5",
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -4147,11 +4147,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "uxout does not exist",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 					UxOuts:   []string{unknownOutput.Hex()},
@@ -4171,11 +4171,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "uxout not held by the wallet",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 					UxOuts:   []string{nonWalletOutputs[0].Hash},
@@ -4195,11 +4195,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "insufficient balance with uxouts",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 					UxOuts:   []string{walletOutputs[0].Hash},
@@ -4220,11 +4220,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 		{
 			// NOTE: expects wallet to have multiple outputs with non-zero coins
 			name: "insufficient hours with uxouts",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 					UxOuts:   []string{walletOutputs[0].Hash},
@@ -4244,11 +4244,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, uxouts specified",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 					// NOTE: all uxouts are provided, which has the same behavior as
@@ -4286,11 +4286,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "specified addresses not in wallet",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:        w.Filename(),
 					Password:  password,
 					Addresses: []string{testutil.MakeAddress().String()},
@@ -4310,11 +4310,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, addresses specified",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 					// NOTE: all addresses are provided, which has the same behavior as
@@ -4351,11 +4351,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 	if w.IsEncrypted() {
 		cases = append(cases, testCase{
 			name: "invalid password",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password + "foo",
 				},
@@ -4374,11 +4374,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		cases = append(cases, testCase{
 			name: "password not provided",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: "",
 				},
@@ -4398,11 +4398,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 	} else {
 		cases = append(cases, testCase{
 			name: "password provided for unencrypted wallet",
-			req: api.CreateTransactionRequest{
+			req: api.WalletCreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: api.CreateTransactionRequestWallet{
+				Wallet: api.WalletCreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password + "foo",
 				},
@@ -4426,7 +4426,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
 
 			tc.req.Unsigned = unsigned
-			result, err := c.CreateTransaction(tc.req)
+			result, err := c.WalletCreateTransaction(tc.req)
 			if tc.err != "" {
 				assertResponseError(t, err, tc.code, tc.err)
 				return
@@ -4665,7 +4665,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 
 		// Auto, random share factor
 
-		result, err := c.CreateTransaction(api.CreateTransactionRequest{
+		result, err := c.WalletCreateTransaction(api.WalletCreateTransactionRequest{
 			Unsigned: unsigned,
 			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
@@ -4673,7 +4673,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 				ShareFactor: shareFactor,
 			},
 			ChangeAddress: &changeAddress,
-			Wallet: api.CreateTransactionRequestWallet{
+			Wallet: api.WalletCreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
 			},
@@ -4688,7 +4688,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 
 		// Auto, share factor 0
 
-		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+		result, err = c.WalletCreateTransaction(api.WalletCreateTransactionRequest{
 			Unsigned: unsigned,
 			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
@@ -4696,7 +4696,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 				ShareFactor: "0",
 			},
 			ChangeAddress: &changeAddress,
-			Wallet: api.CreateTransactionRequestWallet{
+			Wallet: api.WalletCreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
 			},
@@ -4716,7 +4716,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 
 		// Auto, share factor 1
 
-		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+		result, err = c.WalletCreateTransaction(api.WalletCreateTransactionRequest{
 			Unsigned: unsigned,
 			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
@@ -4724,7 +4724,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 				ShareFactor: "1",
 			},
 			ChangeAddress: &changeAddress,
-			Wallet: api.CreateTransactionRequestWallet{
+			Wallet: api.WalletCreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
 			},
@@ -4744,13 +4744,13 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 
 		// Manual
 
-		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+		result, err = c.WalletCreateTransaction(api.WalletCreateTransactionRequest{
 			Unsigned: unsigned,
 			HoursSelection: api.HoursSelection{
 				Type: wallet.HoursSelectionTypeManual,
 			},
 			ChangeAddress: &changeAddress,
-			Wallet: api.CreateTransactionRequestWallet{
+			Wallet: api.WalletCreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
 			},
@@ -5736,11 +5736,11 @@ func TestDisableWalletAPI(t *testing.T) {
 			endpoint:    "/api/v1/wallet/transaction",
 			contentType: api.ContentTypeJSON,
 			json: func() interface{} {
-				return api.CreateTransactionRequest{
+				return api.WalletCreateTransactionRequest{
 					HoursSelection: api.HoursSelection{
 						Type: wallet.HoursSelectionTypeManual,
 					},
-					Wallet: api.CreateTransactionRequestWallet{
+					Wallet: api.WalletCreateTransactionRequestWallet{
 						ID: "test.wlt",
 					},
 					ChangeAddress: &changeAddress,

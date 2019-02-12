@@ -498,7 +498,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, inputs, err := gateway.CreateTransaction(params.ToWalletParams())
+		txn, inputs, err := gateway.WalletCreateTransaction(params.ToWalletParams())
 		if err != nil {
 			switch err.(type) {
 			case wallet.Error:
@@ -615,7 +615,7 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			signIndexesMap[i] = struct{}{}
 		}
 
-		signedTxn, inputs, err := gateway.SignTransaction(req.WalletID, []byte(req.Password), txn, req.SignIndexes)
+		signedTxn, inputs, err := gateway.WalletSignTransaction(req.WalletID, []byte(req.Password), txn, req.SignIndexes)
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletNotExist:

@@ -390,23 +390,23 @@ func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.U
 	return gw.v.GetUnconfirmedTransactions(visor.SendsToAddresses(addrs))
 }
 
-// CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
-func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
+// WalletCreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
+func (gw *Gateway) WalletCreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
-	return gw.v.CreateTransaction(params)
+	return gw.v.WalletCreateTransaction(params)
 }
 
-// SignTransaction signs an unsigned transaction using a wallet. Specific inputs may be signed by specifying signIndexes.
+// WalletSignTransaction signs an unsigned transaction using a wallet. Specific inputs may be signed by specifying signIndexes.
 // If signIndexes is empty, all inputs will be signed.
-func (gw *Gateway) SignTransaction(wltName string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error) {
+func (gw *Gateway) WalletSignTransaction(wltName string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
-	return gw.v.SignTransaction(wltName, password, txn, signIndexes)
+	return gw.v.WalletSignTransaction(wltName, password, txn, signIndexes)
 }
 
 // CreateWallet creates wallet

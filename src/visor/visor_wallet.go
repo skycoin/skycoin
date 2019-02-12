@@ -102,8 +102,8 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 	return txns, inputs, nil
 }
 
-// CreateTransaction creates a transaction based upon the parameters in wallet.CreateTransactionParams
-func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
+// WalletCreateTransaction creates a transaction based upon the parameters in wallet.CreateTransactionParams
+func (vs *Visor) WalletCreateTransaction(p wallet.CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -118,7 +118,7 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 			return err
 		}
 
-		return vs.DB.View("CreateTransaction", func(tx *dbutil.Tx) error {
+		return vs.DB.View("WalletCreateTransaction", func(tx *dbutil.Tx) error {
 			head, err := vs.Blockchain.Head(tx)
 			if err != nil {
 				logger.WithError(err).Error("Blockchain.Head failed")
@@ -133,7 +133,7 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 			// Create and sign transaction
 			txn, uxb, err = w.CreateTransaction(p, auxs, head.Time())
 			if err != nil {
-				logger.WithError(err).Error("CreateTransaction failed")
+				logger.WithError(err).Error("wallet.CreateTransaction failed")
 				return err
 			}
 
@@ -166,16 +166,17 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 	return txn, inputs, nil
 }
 
-// SignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
+// WalletSignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
 // If signIndexes is empty, all inputs will be signed.
-func (vs *Visor) SignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []TransactionInput, error) {
+func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []TransactionInput, error) {
 	var inputs []TransactionInput
 	var signedTxn *coin.Transaction
 
 	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
-		return vs.DB.View("SignTransaction", func(tx *dbutil.Tx) error {
+		return vs.DB.View("WalletSignTransaction", func(tx *dbutil.Tx) error {
 			headTime, err := vs.Blockchain.Time(tx)
 			if err != nil {
+				logger.WithError(err).Error("Blockchain.Time failed")
 				return err
 			}
 
@@ -191,6 +192,7 @@ func (vs *Visor) SignTransaction(wltID string, password []byte, txn *coin.Transa
 
 			signedTxn, err = w.SignTransaction(txn, signIndexes, uxOuts)
 			if err != nil {
+				logger.WithError(err).Error("wallet.SignTransaction failed")
 				return err
 			}
 

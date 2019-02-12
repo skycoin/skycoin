@@ -22,7 +22,7 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func TestCreateTransaction(t *testing.T) {
+func TestWalletCreateTransaction(t *testing.T) {
 	type rawRequestWallet struct {
 		ID        string   `json:"id"`
 		UxOuts    []string `json:"unspents,omitempty"`
@@ -858,13 +858,13 @@ func TestCreateTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 
-			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
+			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.WalletCreateTransaction
 			serializedBody, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 			var body createTransactionRequest
 			err = json.Unmarshal(serializedBody, &body)
 			if err == nil {
-				gateway.On("CreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
+				gateway.On("WalletCreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
 			}
 
 			endpoint := "/api/v1/wallet/transaction"
@@ -919,7 +919,7 @@ func newStrPtr(s string) *string {
 	return &s
 }
 
-func TestSignTransaction(t *testing.T) {
+func TestWalletSignTransaction(t *testing.T) {
 	// changeAddress := testutil.MakeAddress()
 	destinationAddress := testutil.MakeAddress()
 	// emptyAddress := cipher.Address{}
@@ -1205,9 +1205,8 @@ func TestSignTransaction(t *testing.T) {
 				}
 			}
 
-			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.SignTransaction
 			if tc.body != nil {
-				gateway.On("SignTransaction", tc.body.WalletID, []byte(tc.body.Password), txn, tc.body.SignIndexes).Return(tc.gatewaySignTransactionResult, tc.gatewaySignTransactionInputs, tc.gatewaySignTransactionErr)
+				gateway.On("WalletSignTransaction", tc.body.WalletID, []byte(tc.body.Password), txn, tc.body.SignIndexes).Return(tc.gatewaySignTransactionResult, tc.gatewaySignTransactionInputs, tc.gatewaySignTransactionErr)
 			}
 
 			endpoint := "/api/v2/wallet/transaction/sign"

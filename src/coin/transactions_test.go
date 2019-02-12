@@ -1034,16 +1034,19 @@ func TestSortTransactions(t *testing.T) {
 func TestTransactionSignedUnsigned(t *testing.T) {
 	txn := makeTransactionMultipleInputs(t, 2)
 	require.True(t, txn.IsFullySigned())
-	require.True(t, txn.hasAnySignature())
+	require.True(t, txn.hasNonNullSignature())
 	require.False(t, txn.IsFullyUnsigned())
+	require.False(t, txn.hasNullSignature())
 
 	txn.Sigs[1] = cipher.Sig{}
 	require.False(t, txn.IsFullySigned())
-	require.True(t, txn.hasAnySignature())
+	require.True(t, txn.hasNonNullSignature())
 	require.False(t, txn.IsFullyUnsigned())
+	require.True(t, txn.hasNullSignature())
 
 	txn.Sigs[0] = cipher.Sig{}
 	require.False(t, txn.IsFullySigned())
-	require.False(t, txn.hasAnySignature())
+	require.False(t, txn.hasNonNullSignature())
 	require.True(t, txn.IsFullyUnsigned())
+	require.True(t, txn.hasNullSignature())
 }

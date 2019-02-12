@@ -76,11 +76,6 @@ func (txn *Transaction) VerifyUnsigned() error {
 }
 
 func (txn *Transaction) verify(unsigned bool) error {
-	h := txn.HashInner()
-	if h != txn.InnerHash {
-		return errors.New("InnerHash does not match computed hash")
-	}
-
 	if len(txn.In) == 0 {
 		return errors.New("No inputs")
 	}
@@ -94,18 +89,6 @@ func (txn *Transaction) verify(unsigned bool) error {
 	}
 	if len(txn.Sigs) >= math.MaxUint16 {
 		return errors.New("Too many signatures and inputs")
-	}
-	if unsigned {
-		haveNullSig := false
-		for _, s := range txn.Sigs {
-			if s.Null() {
-				haveNullSig = true
-				break
-			}
-		}
-		if !haveNullSig {
-			return errors.New("Unsigned transaction must contain a null signature")
-		}
 	}
 
 	// Check duplicate inputs
@@ -145,21 +128,6 @@ func (txn *Transaction) verify(unsigned bool) error {
 		return errors.New("Duplicate output in transaction")
 	}
 
-	// Validate signature
-	for i, sig := range txn.Sigs {
-		if sig.Null() {
-			if unsigned {
-				continue
-			} else {
-				return errors.New("Unsigned input in transaction")
-			}
-		}
-		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
-		if err := cipher.VerifySignatureRecoverPubKey(sig, hash); err != nil {
-			return err
-		}
-	}
-
 	// Prevent zero coin outputs
 	// Artificial restriction to prevent spam
 	for _, txo := range txn.Out {
@@ -175,6 +143,33 @@ func (txn *Transaction) verify(unsigned bool) error {
 		coins, err = AddUint64(coins, to.Coins)
 		if err != nil {
 			return errors.New("Output coins overflow")
+		}
+	}
+
+	// Check InnerHash
+	h := txn.HashInner()
+	if h != txn.InnerHash {
+		return errors.New("InnerHash does not match computed hash")
+	}
+
+	// Validate signature
+	for i, sig := range txn.Sigs {
+		if sig.Null() {
+			if unsigned {
+				continue
+			} else {
+				return errors.New("Unsigned input in transaction")
+			}
+		}
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
+		if err := cipher.VerifySignatureRecoverPubKey(sig, hash); err != nil {
+			return err
+		}
+	}
+
+	if unsigned {
+		if !txn.hasNullSignature() {
+			return errors.New("Unsigned transaction must contain a null signature")
 		}
 	}
 
@@ -304,7 +299,7 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	if len(keys) == 0 {
 		log.Panic("No keys")
 	}
-	if len(txn.Sigs) > 0 && txn.hasAnySignature() {
+	if len(txn.Sigs) > 0 && txn.hasNonNullSignature() {
 		log.Panic("Transaction has been signed")
 	}
 
@@ -347,10 +342,21 @@ func (txn *Transaction) IsFullySigned() bool {
 	return true
 }
 
-// hasAnySignature returns true if the transaction has at least one non-null signature,
-func (txn *Transaction) hasAnySignature() bool {
+// hasNonNullSignature returns true if the transaction has at least one non-null signature
+func (txn *Transaction) hasNonNullSignature() bool {
 	for _, s := range txn.Sigs {
 		if !s.Null() {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hasNullSignature returns true if the transaction has at least one null signature
+func (txn *Transaction) hasNullSignature() bool {
+	for _, s := range txn.Sigs {
+		if s.Null() {
 			return true
 		}
 	}

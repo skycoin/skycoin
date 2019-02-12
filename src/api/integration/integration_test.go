@@ -447,7 +447,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 			unsigned: true,
 			golden:   "verify-transaction-invalid-bad-sig.golden",
 			errCode:  http.StatusUnprocessableEntity,
-			errMsg:   "Transaction violates hard constraint: Unsigned transaction must contain a null signature",
+			errMsg:   "Transaction violates hard constraint: Signature not valid for hash",
 		},
 	}
 

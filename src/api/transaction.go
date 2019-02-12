@@ -1023,7 +1023,7 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 // The transaction may be confirmed or unconfirmed.
 func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
-	// swagger:operation GET /api/v1/transaction/raw transactionRaw
+	// swagger:operation GET /api/v2/transaction/raw transactionRaw
 	//
 	// Returns the hex-encoded byte serialization of a transaction. The transaction may be confirmed or unconfirmed.
 	//

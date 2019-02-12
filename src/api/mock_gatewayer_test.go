@@ -15,38 +15,6 @@ type MockGatewayer struct {
 	mock.Mock
 }
 
-// WalletCreateTransaction provides a mock function with given fields: w
-func (_m *MockGatewayer) WalletCreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
-	ret := _m.Called(w)
-
-	var r0 *coin.Transaction
-	if rf, ok := ret.Get(0).(func(wallet.CreateTransactionParams) *coin.Transaction); ok {
-		r0 = rf(w)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*coin.Transaction)
-		}
-	}
-
-	var r1 []visor.TransactionInput
-	if rf, ok := ret.Get(1).(func(wallet.CreateTransactionParams) []visor.TransactionInput); ok {
-		r1 = rf(w)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([]visor.TransactionInput)
-		}
-	}
-
-	var r2 error
-	if rf, ok := ret.Get(2).(func(wallet.CreateTransactionParams) error); ok {
-		r2 = rf(w)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
-}
-
 // CreateWallet provides a mock function with given fields: wltName, options
 func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
 	ret := _m.Called(wltName, options)
@@ -1157,38 +1125,6 @@ func (_m *MockGatewayer) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	return r0, r1
 }
 
-// WalletSignTransaction provides a mock function with given fields: wltID, password, txn, signIndexes
-func (_m *MockGatewayer) WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error) {
-	ret := _m.Called(wltID, password, txn, signIndexes)
-
-	var r0 *coin.Transaction
-	if rf, ok := ret.Get(0).(func(string, []byte, *coin.Transaction, []int) *coin.Transaction); ok {
-		r0 = rf(wltID, password, txn, signIndexes)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*coin.Transaction)
-		}
-	}
-
-	var r1 []visor.TransactionInput
-	if rf, ok := ret.Get(1).(func(string, []byte, *coin.Transaction, []int) []visor.TransactionInput); ok {
-		r1 = rf(wltID, password, txn, signIndexes)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([]visor.TransactionInput)
-		}
-	}
-
-	var r2 error
-	if rf, ok := ret.Get(2).(func(string, []byte, *coin.Transaction, []int) error); ok {
-		r2 = rf(wltID, password, txn, signIndexes)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
-}
-
 // UnloadWallet provides a mock function with given fields: id
 func (_m *MockGatewayer) UnloadWallet(id string) error {
 	ret := _m.Called(id)
@@ -1217,13 +1153,13 @@ func (_m *MockGatewayer) UpdateWalletLabel(wltID string, label string) error {
 	return r0
 }
 
-// VerifyTxnVerbose provides a mock function with given fields: txn
-func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction) ([]visor.TransactionInput, bool, error) {
-	ret := _m.Called(txn)
+// VerifyTxnVerbose provides a mock function with given fields: txn, signed
+func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error) {
+	ret := _m.Called(txn, signed)
 
 	var r0 []visor.TransactionInput
-	if rf, ok := ret.Get(0).(func(*coin.Transaction) []visor.TransactionInput); ok {
-		r0 = rf(txn)
+	if rf, ok := ret.Get(0).(func(*coin.Transaction, visor.TxnSignedFlag) []visor.TransactionInput); ok {
+		r0 = rf(txn, signed)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]visor.TransactionInput)
@@ -1231,15 +1167,79 @@ func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction) ([]visor.Transa
 	}
 
 	var r1 bool
-	if rf, ok := ret.Get(1).(func(*coin.Transaction) bool); ok {
-		r1 = rf(txn)
+	if rf, ok := ret.Get(1).(func(*coin.Transaction, visor.TxnSignedFlag) bool); ok {
+		r1 = rf(txn, signed)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func(*coin.Transaction) error); ok {
-		r2 = rf(txn)
+	if rf, ok := ret.Get(2).(func(*coin.Transaction, visor.TxnSignedFlag) error); ok {
+		r2 = rf(txn, signed)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// WalletCreateTransaction provides a mock function with given fields: w
+func (_m *MockGatewayer) WalletCreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
+	ret := _m.Called(w)
+
+	var r0 *coin.Transaction
+	if rf, ok := ret.Get(0).(func(wallet.CreateTransactionParams) *coin.Transaction); ok {
+		r0 = rf(w)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*coin.Transaction)
+		}
+	}
+
+	var r1 []visor.TransactionInput
+	if rf, ok := ret.Get(1).(func(wallet.CreateTransactionParams) []visor.TransactionInput); ok {
+		r1 = rf(w)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]visor.TransactionInput)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(wallet.CreateTransactionParams) error); ok {
+		r2 = rf(w)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// WalletSignTransaction provides a mock function with given fields: wltID, password, txn, signIndexes
+func (_m *MockGatewayer) WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error) {
+	ret := _m.Called(wltID, password, txn, signIndexes)
+
+	var r0 *coin.Transaction
+	if rf, ok := ret.Get(0).(func(string, []byte, *coin.Transaction, []int) *coin.Transaction); ok {
+		r0 = rf(wltID, password, txn, signIndexes)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*coin.Transaction)
+		}
+	}
+
+	var r1 []visor.TransactionInput
+	if rf, ok := ret.Get(1).(func(string, []byte, *coin.Transaction, []int) []visor.TransactionInput); ok {
+		r1 = rf(wltID, password, txn, signIndexes)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]visor.TransactionInput)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(string, []byte, *coin.Transaction, []int) error); ok {
+		r2 = rf(wltID, password, txn, signIndexes)
 	} else {
 		r2 = ret.Error(2)
 	}

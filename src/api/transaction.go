@@ -463,13 +463,15 @@ func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// VerifyTxnRequest represents the data struct of the request for /api/v2/transaction/verify
-type VerifyTxnRequest struct {
+// VerifyTransactionRequest represents the data struct of the request for /api/v2/transaction/verify
+type VerifyTransactionRequest struct {
+	Unsigned           bool   `json:"unsigned"`
 	EncodedTransaction string `json:"encoded_transaction"`
 }
 
-// VerifyTxnResponse the response data struct for /api/v2/transaction/verify
-type VerifyTxnResponse struct {
+// VerifyTransactionResponse the response data struct for /api/v2/transaction/verify
+type VerifyTransactionResponse struct {
+	Unsigned    bool               `json:"unsigned"`
 	Confirmed   bool               `json:"confirmed"`
 	Transaction CreatedTransaction `json:"transaction"`
 }
@@ -491,7 +493,7 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var req VerifyTxnRequest
+		var req VerifyTransactionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 			writeHTTPResponse(w, resp)
@@ -511,8 +513,13 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		signed := visor.TxnSigned
+		if req.Unsigned {
+			signed = visor.TxnUnsigned
+		}
+
 		var resp HTTPResponse
-		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn)
+		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn, signed)
 		if err != nil {
 			switch err.(type) {
 			case visor.ErrTxnViolatesSoftConstraint,
@@ -529,8 +536,9 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		verifyTxnResp := VerifyTxnResponse{
+		verifyTxnResp := VerifyTransactionResponse{
 			Confirmed: isTxnConfirmed,
+			Unsigned:  !txn.IsFullySigned(),
 		}
 
 		if len(inputs) != len(txn.In) {

@@ -63,5 +63,5 @@ type Gatewayer interface {
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
-	VerifyTxnVerbose(txn *coin.Transaction) ([]visor.TransactionInput, bool, error)
+	VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error)
 }

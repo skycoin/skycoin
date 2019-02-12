@@ -1082,12 +1082,8 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 }
 
 // VerifyTransaction makes a request to POST /api/v2/transaction/verify.
-func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
-	req := VerifyTxnRequest{
-		EncodedTransaction: encodedTxn,
-	}
-
-	var rsp VerifyTxnResponse
+func (c *Client) VerifyTransaction(req VerifyTransactionRequest) (*VerifyTransactionResponse, error) {
+	var rsp VerifyTransactionResponse
 	ok, err := c.PostJSONV2("/api/v2/transaction/verify", req, &rsp)
 	if ok {
 		return &rsp, err

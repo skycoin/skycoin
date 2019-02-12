@@ -978,9 +978,6 @@ func TestWalletSignTransaction(t *testing.T) {
 	signedTxnResp, err := NewCreateTransactionResponse(&signedTxn, inputs)
 	require.NoError(t, err)
 
-	// createdTxn, err := NewCreatedTransaction(txn, inputs)
-	// require.NoError(t, err)
-
 	validBody := &WalletSignTransactionRequest{
 		WalletID:           "foo.wlt",
 		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
@@ -992,11 +989,9 @@ func TestWalletSignTransaction(t *testing.T) {
 		body                         *WalletSignTransactionRequest
 		rawBody                      string
 		status                       int
-		txn                          *coin.Transaction
 		gatewaySignTransactionResult *coin.Transaction
 		gatewaySignTransactionInputs []visor.TransactionInput
 		gatewaySignTransactionErr    error
-		createTransactionResponse    *CreateTransactionResponse
 		csrfDisabled                 bool
 		contentType                  string
 		httpResponse                 HTTPResponse
@@ -1136,13 +1131,6 @@ func TestWalletSignTransaction(t *testing.T) {
 			httpResponse:              NewHTTPErrorResponse(http.StatusForbidden, "wallet api is disabled"),
 		},
 
-		// Valid tests
-
-		// valid, no password
-		// valid, password
-
-		// valid, sig indexes
-
 		{
 			name:                         "200 - no password",
 			method:                       http.MethodPost,
@@ -1153,6 +1141,19 @@ func TestWalletSignTransaction(t *testing.T) {
 			httpResponse: HTTPResponse{
 				Data: *signedTxnResp,
 			},
+		},
+
+		{
+			name:                         "200 - no password csrf disabled",
+			method:                       http.MethodPost,
+			body:                         validBody,
+			status:                       http.StatusOK,
+			gatewaySignTransactionResult: &signedTxn,
+			gatewaySignTransactionInputs: inputs,
+			httpResponse: HTTPResponse{
+				Data: *signedTxnResp,
+			},
+			csrfDisabled: true,
 		},
 
 		{

@@ -104,7 +104,7 @@ func (txn *Transaction) verify(unsigned bool) error {
 			}
 		}
 		if !haveNullSig {
-			return errors.New("Unsigned transaction must have a null signature")
+			return errors.New("Unsigned transaction must contain a null signature")
 		}
 	}
 
@@ -304,7 +304,7 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	if len(keys) == 0 {
 		log.Panic("No keys")
 	}
-	if len(txn.Sigs) > 0 && txn.IsPartiallySigned() {
+	if len(txn.Sigs) > 0 && txn.hasAnySignature() {
 		log.Panic("Transaction has been signed")
 	}
 
@@ -347,14 +347,15 @@ func (txn *Transaction) IsFullySigned() bool {
 	return true
 }
 
-// IsPartiallySigned returns true if the transaction has at least one null signature,
-// not but all signatures are null signatures
-// Returns false if the signatures array is empty.
-func (txn *Transaction) IsPartiallySigned() bool {
-	if txn.IsFullySigned() || txn.IsFullySigned() {
-		return false
+// hasAnySignature returns true if the transaction has at least one non-null signature,
+func (txn *Transaction) hasAnySignature() bool {
+	for _, s := range txn.Sigs {
+		if !s.Null() {
+			return true
+		}
 	}
-	return true
+
+	return false
 }
 
 // Hash an entire Transaction struct, including the TransactionHeader

@@ -370,7 +370,7 @@ func testVerifyTransactionSoftHardConstraints(t *testing.T, signed TxnSignedFlag
 	if signed == TxnSigned {
 		require.NoError(t, err)
 	} else {
-		requireHardViolation(t, "Unsigned transaction signatures must be null", err)
+		requireHardViolation(t, "Unsigned transaction must contain a null signature", err)
 	}
 
 	if signed == TxnUnsigned {

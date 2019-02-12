@@ -2730,16 +2730,6 @@ func TestSignTransaction(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	/* TODO --
-
-	- Txn with inputs with duplicate addresses
-	- Selective sig indexes
-	- All sig indexes defined
-
-	- Invalid cases
-
-	*/
-
 	badTxnInnerHash, _, _ := makeTransaction(t, 2)
 	badTxnInnerHash.InnerHash = testutil.RandSHA256(t)
 
@@ -2806,28 +2796,28 @@ func TestSignTransaction(t *testing.T) {
 			w:      w,
 			txn:    txnSigned,
 			uxOuts: uxs,
-			err:    errors.New("Transaction is fully signed"),
+			err:    NewError(errors.New("Transaction is fully signed")),
 		},
 
 		{
 			name: "bad txn inner hash",
 			w:    w,
 			txn:  badTxnInnerHash,
-			err:  errors.New("Transaction inner hash does not match computed inner hash"),
+			err:  NewError(errors.New("Transaction inner hash does not match computed inner hash")),
 		},
 
 		{
 			name: "txn no inputs",
 			w:    w,
 			txn:  badTxnNoInputs,
-			err:  errors.New("No transaction inputs to sign"),
+			err:  NewError(errors.New("No transaction inputs to sign")),
 		},
 
 		{
 			name: "txn no sigs",
 			w:    w,
 			txn:  badTxnNoSigs,
-			err:  errors.New("Transaction signatures array is empty"),
+			err:  NewError(errors.New("Transaction signatures array is empty")),
 		},
 
 		{
@@ -2844,7 +2834,7 @@ func TestSignTransaction(t *testing.T) {
 			txn:         txnUnsigned,
 			uxOuts:      uxs,
 			signIndexes: []int{0, 1, 2, 3, 4, 5},
-			err:         errors.New("Number of signature indexes exceeds number of inputs"),
+			err:         NewError(errors.New("Number of signature indexes exceeds number of inputs")),
 		},
 
 		{
@@ -2853,7 +2843,7 @@ func TestSignTransaction(t *testing.T) {
 			txn:         txnUnsigned,
 			uxOuts:      uxs,
 			signIndexes: []int{0, 1, 5, 2},
-			err:         errors.New("Signature index out of range"),
+			err:         NewError(errors.New("Signature index out of range")),
 		},
 
 		{
@@ -2862,7 +2852,7 @@ func TestSignTransaction(t *testing.T) {
 			txn:         txnUnsigned,
 			uxOuts:      uxs,
 			signIndexes: []int{0, 1, 1},
-			err:         errors.New("Duplicate value in signature indexes"),
+			err:         NewError(errors.New("Duplicate value in signature indexes")),
 		},
 
 		{
@@ -2870,7 +2860,7 @@ func TestSignTransaction(t *testing.T) {
 			w:      w,
 			txn:    txnOtherWallet,
 			uxOuts: uxsOtherWallet,
-			err:    errors.New("Wallet cannot sign all requested inputs"),
+			err:    NewError(errors.New("Wallet cannot sign all requested inputs")),
 		},
 
 		{
@@ -2878,7 +2868,7 @@ func TestSignTransaction(t *testing.T) {
 			w:      otherWallet,
 			txn:    txnOtherWallet,
 			uxOuts: uxsOtherWallet,
-			err:    errors.New("Wallet cannot sign all requested inputs"),
+			err:    NewError(errors.New("Wallet cannot sign all requested inputs")),
 		},
 
 		{
@@ -2887,7 +2877,7 @@ func TestSignTransaction(t *testing.T) {
 			txn:         txnOtherWallet,
 			uxOuts:      uxsOtherWallet,
 			signIndexes: []int{2, 0},
-			err:         errors.New("Wallet cannot sign all requested inputs"),
+			err:         NewError(errors.New("Wallet cannot sign all requested inputs")),
 		},
 
 		{

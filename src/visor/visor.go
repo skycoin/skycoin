@@ -2162,7 +2162,7 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 
 // VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
 // transaction is confirmed, and error if any
-func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]TransactionInput, bool, error) {
+func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed TxnSignedFlag) ([]TransactionInput, bool, error) {
 	var uxa coin.UxArray
 	var isTxnConfirmed bool
 	var feeCalcTime uint64
@@ -2238,7 +2238,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]TransactionInput, bo
 			return err
 		}
 
-		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa, TxnSigned)
+		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa, signed)
 	})
 
 	// If we were able to query the inputs, return the verbose inputs to the caller

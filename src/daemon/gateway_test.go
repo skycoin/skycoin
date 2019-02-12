@@ -315,6 +315,7 @@ func TestGateway_WalletSignTransaction(t *testing.T) {
 		password        []byte
 		signIndexes     []int
 		err             error
+		outTxn          *coin.Transaction
 		inputs          []visor.TransactionInput
 	}{
 		{
@@ -332,12 +333,13 @@ func TestGateway_WalletSignTransaction(t *testing.T) {
 				},
 			}
 
-			inputs, err := gw.WalletSignTransaction(tc.wltID, tc.password, tc.txn, tc.signIndexes)
+			txn, inputs, err := gw.WalletSignTransaction(tc.wltID, tc.password, tc.txn, tc.signIndexes)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.params, params)
+				require.Equal(t, tc.inputs, inputs)
+				require.Equal(t, tc.outTxn, txn)
 			}
 		})
 	}

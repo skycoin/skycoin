@@ -195,7 +195,7 @@ func TestTransactionVerify(t *testing.T) {
 func TestTransactionVerifyUnsigned(t *testing.T) {
 	txn := makeTransactionMultipleInputs(t, 2)
 	err := txn.VerifyUnsigned()
-	testutil.RequireError(t, err, "Unsigned transaction must have a null signature")
+	testutil.RequireError(t, err, "Unsigned transaction must contain a null signature")
 
 	// Invalid signature, not empty
 	// A stable invalid signature must be used because random signatures could appear valid
@@ -1029,4 +1029,21 @@ func TestSortTransactions(t *testing.T) {
 			require.Equal(t, tc.sortedTxns, txns)
 		})
 	}
+}
+
+func TestTransactionSignedUnsigned(t *testing.T) {
+	txn := makeTransactionMultipleInputs(t, 2)
+	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.hasAnySignature())
+	require.False(t, txn.IsFullyUnsigned())
+
+	txn.Sigs[1] = cipher.Sig{}
+	require.False(t, txn.IsFullySigned())
+	require.True(t, txn.hasAnySignature())
+	require.False(t, txn.IsFullyUnsigned())
+
+	txn.Sigs[0] = cipher.Sig{}
+	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.hasAnySignature())
+	require.True(t, txn.IsFullyUnsigned())
 }

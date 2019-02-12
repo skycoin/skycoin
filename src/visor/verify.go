@@ -72,16 +72,18 @@ var (
 	ErrTxnExceedsMaxBlockSize = errors.New("Transaction size bigger than max block size")
 	// ErrTxnIsLocked transaction has locked address inputs
 	ErrTxnIsLocked = errors.New("Transaction has locked address inputs")
+	// ErrInvalidTxnSignedFlag TxnSignedFlag has invalid value
+	ErrInvalidTxnSignedFlag = errors.New("Invalid TxnSignedFlag value")
 )
 
 // TxnSignedFlag indicates if the transaction is unsigned or not
-type TxnSignedFlag bool
+type TxnSignedFlag int
 
 const (
 	// TxnSigned is used for signed transactions
-	TxnSigned TxnSignedFlag = true
+	TxnSigned TxnSignedFlag = 1
 	// TxnUnsigned is used for signed transactions
-	TxnUnsigned TxnSignedFlag = false
+	TxnUnsigned TxnSignedFlag = 2
 )
 
 // ErrTxnViolatesHardConstraint is returned when a transaction violates hard constraints
@@ -275,7 +277,8 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 	// Check for zero coin outputs
 	// Check valid looking signatures
 
-	if signed == TxnSigned {
+	switch signed {
+	case TxnSigned:
 		if err := txn.Verify(); err != nil {
 			return err
 		}
@@ -284,7 +287,7 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 		if err := txn.VerifyInputSignatures(uxIn); err != nil {
 			return err
 		}
-	} else {
+	case TxnUnsigned:
 		if err := txn.VerifyUnsigned(); err != nil {
 			return err
 		}
@@ -293,6 +296,8 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 		if err := txn.VerifyPartialInputSignatures(uxIn); err != nil {
 			return err
 		}
+	default:
+		return ErrInvalidTxnSignedFlag
 	}
 
 	uxOut := coin.CreateUnspents(head, txn)

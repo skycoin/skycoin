@@ -785,7 +785,7 @@ type RawTxnData struct {
 //      503 - network unavailable for broadcasting transaction
 func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
-	// swagger:operation POST /api/v2/injectTransaction injectTransaction
+	// swagger:operation POST /api/v2/transaction/inject transactionInject
 	//
 	// Broadcast a hex-encoded, serialized transaction to the network.
 	//
@@ -798,6 +798,7 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 	//   description: hex-encoded serialized transaction string.
 	//   required: true
 	//   type: string
+	//
 	// security:
 	// - csrfAuth: []
 	//

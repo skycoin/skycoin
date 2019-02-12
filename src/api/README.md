@@ -1981,6 +1981,74 @@ Result:
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
 ```
 
+### Inject raw transaction (v2)
+
+API sets: `TXN`, `WALLET`
+
+```
+URI: /api/v1/injectTransaction
+Method: POST
+Content-Type: application/json
+Body: {"rawtx": "hex-encoded serialized transaction string"}
+Errors:
+    400 - Bad input
+    500 - Other
+    503 - Network unavailable (transaction failed to broadcast)
+```
+
+Same description as `/api/v1/injectTransaction`.
+
+It just defer in the response with status code `200`.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/transaction/inject -H 'content-type: application/json' -d '{
+    "rawtx":"dc0000000008b507528697b11340f5a3fcccbff031c487bad59d26c2bdaea0cd8a0199a1720100000017f36c9d8bce784df96a2d6848f1b7a8f5c890986846b7c53489eb310090b91143c98fd233830055b5959f60030b3ca08d95f22f6b96ba8c20e548d62b342b5e0001000000ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106020000000072116096fe2207d857d18565e848b403807cd825c044840300000000330100000000000000575e472f8c5295e8fa644e9bc5e06ec10351c65f40420f000000000066020000000000000"
+}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "transaction": {
+            "hash": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
+            "inner_hash": "5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
+            "inputs": [
+                "bb89d4ed40d0e6e3a82c12e70b01a4bc240d2cd4f252cfac88235abe61bd3ad0",
+                "170d6fd7be1d722a1969cb3f7d45cdf4d978129c3433915dbaf098d4f075bbfc"
+            ],
+            "length": 317,
+            "outputs": [
+                {
+                    "uxid": "ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106",
+                    "dst": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+                    "coins": "60.000000",
+                    "hours": 2458
+                },
+                {
+                    "uxid": "be40210601829ba8653bac1d6ecc4049955d97fb490a48c310fd912280422bd9",
+                    "dst": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
+                    "coins": "1.000000",
+                    "hours": 2458
+                }
+            ],
+            "sigs": [
+                "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+            ],
+            "timestamp": 1524242826,
+            "type": 0
+        }
+    },
+    "error": {
+        "code": 200,
+        "message": "transaction has been injected"
+    }
+}
+```
+
 ### Get transactions for addresses
 
 API sets: `READ`

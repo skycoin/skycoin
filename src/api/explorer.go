@@ -418,9 +418,6 @@ func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 	// produces:
 	// - application/json
 	//
-	// security:
-	// - csrfAuth: []
-	//
 	// responses:
 	//   200:
 	//     description: This endpoint Returns the total number of unique address that have coins.

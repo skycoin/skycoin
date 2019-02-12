@@ -117,7 +117,6 @@ type HTTPResponse struct {
 }
 
 // HTTPError is included in an HTTPResponse
-// swagger:model httpError
 type HTTPError struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`

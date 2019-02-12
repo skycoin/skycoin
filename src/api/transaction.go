@@ -600,6 +600,9 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: include verbose transaction input data
 	//   required: false
 	//   type: boolean
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: Returns transactions that match the filters.
@@ -782,7 +785,7 @@ type RawTxnData struct {
 //      503 - network unavailable for broadcasting transaction
 func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
-	// swagger:operation POST /api/v1/injectTransaction injectTransaction
+	// swagger:operation POST /api/v2/injectTransaction injectTransaction
 	//
 	// Broadcast a hex-encoded, serialized transaction to the network.
 	//
@@ -795,10 +798,63 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 	//   description: hex-encoded serialized transaction string.
 	//   required: true
 	//   type: string
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
-	//     description: This endpoint a hex-encoded transaction to the network.
-	//     type: string
+	//     description: Ok, returns the transaction.
+	//     schema:
+	//       properties:
+	//         error:
+	//           type: object
+	//           properties:
+	//             message:
+	//               type: string
+	//             code:
+	//               type: integer
+	//               format: int64
+	//         data:
+	//           type: object
+	//           properties:
+	//             transaction:
+	//               type: object
+	//               description: Represents a readable transaction
+	//               properties:
+	//                 timestamp:
+	//                   type: integer
+	//                   format: int64
+	//                 length:
+	//                   type: integer
+	//                   format: int32
+	//                 type:
+	//                   type: integer
+	//                   format: int32
+	//                 hash:
+	//                   type: string
+	//                 inner_hash:
+	//                   type: string
+	//                 sigs:
+	//                   type: array
+	//                   items:
+	//                     type: string
+	//                 inputs:
+	//                   type: array
+	//                   items:
+	//                     type: string
+	//                 outputs:
+	//                   type: array
+	//                   items:
+	//                     properties:
+	//                       uxid:
+	//                         type: string
+	//                       dst:
+	//                         type: string
+	//                       coins:
+	//                         type: string
+	//                       hours:
+	//                         type: integer
+	//                         format: int64
 	//   default:
 	//     $ref: '#/responses/genericError'
 
@@ -889,7 +945,6 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 }
 
 // ResendResult the result of rebroadcasting transaction
-// swagger:response resendResult
 type ResendResult struct {
 	Txids []string `json:"txids"`
 }
@@ -915,21 +970,29 @@ func NewResendResult(hashes []cipher.SHA256) ResendResult {
 //      503 - network unavailable for broadcasting transaction
 func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:route POST /api/v1/resendUnconfirmedTxns resendUnconfirmedTxns
+	// swagger:operation POST /api/v1/resendUnconfirmedTxns resendUnconfirmedTxns
 	//
 	// Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
 	//
-	//     Consumes:
-	//     - application/json
+	// ---
+	// consumes:
+	// - application/json
 	//
-	//     Produces:
-	//     - application/json
+	// produces:
+	// - application/json
+	// security:
+	// - csrfAuth: []
 	//
-	//     Schemes: http, https
-	//
-	//     Responses:
-	//       default: genericError
-	//       200: resendResult
+	// responses:
+	//   default:
+	//     $ref: '#/responses/genericError'
+	//   200:
+	//     description: OK, Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
+	//     properties:
+	//       txids:
+	//         type: array
+	//         items:
+	//           type: string
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -960,7 +1023,7 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 // The transaction may be confirmed or unconfirmed.
 func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 
-	// swagger:operation GET /api/v1/rawtx rawtx
+	// swagger:operation GET /api/v1/transaction/raw transactionRaw
 	//
 	// Returns the hex-encoded byte serialization of a transaction. The transaction may be confirmed or unconfirmed.
 	//
@@ -973,13 +1036,14 @@ func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 	//   in: query
 	//   description: Transaction id hash
 	//   type: string
-	//   x-go-name: txid
 	//
 	// responses:
 	//   200:
 	//     description: Returns the hex-encoded byte serialization of a transaction
-	//     properties:
-	//       type: string
+	//     schema:
+	//       properties:
+	//         rawtx:
+	//           type: string
 	//   default:
 	//     $ref: '#/responses/genericError'
 
@@ -1058,7 +1122,6 @@ func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 }
 
 // VerifyTxnRequest represents the data struct of the request for /api/v2/transaction/verify
-// swager:parameters verifyTxnRequest
 type VerifyTxnRequest struct {
 	EncodedTransaction string `json:"encoded_transaction"`
 }

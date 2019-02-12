@@ -426,6 +426,10 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 	//   in: query
 	//   required: false
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: Returns blocks between a start and end point.

@@ -252,6 +252,10 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: command separated list of addresses
 	//   required: true
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: Returns the balance of one or more addresses
@@ -388,6 +392,10 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Wallet password.
 	//   required: true
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   '200':
 	//     description: Creates and broadcasts a transaction sending money from one of our wallets to destination address.
@@ -589,6 +597,10 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Wallet Password
 	//   required: false
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: This endpoint loads wallets from seed
@@ -752,6 +764,10 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Wallet Password
 	//   required: false
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: This endpoint generate new addresses
@@ -851,11 +867,10 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	// responses:
 	//   200:
 	//     description: This endpoint Returns the label the wallet will be updated to .
-	//     type: string
+	//     properties:
+	//       type: string
 	//   default:
 	//     $ref: '#/responses/genericError'
-
-	// TODO params to body
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1164,14 +1179,11 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	// produces:
 	// - application/json
 	//
-	// security:
-	// - csrfAuth: []
-	//
 	// responses:
 	//   default:
 	//     $ref: '#/responses/genericError'
 	//   200:
-	//     description: This endpoint return a connection struct
+	//     description: This endpoint return all loaded wallets
 	//     schema:
 	//       type: array
 	//       items:
@@ -1268,12 +1280,9 @@ func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
 	//   required: true
 	//   type: string
 	//
-	// security:
-	// - csrfAuth: []
-	//
 	// responses:
 	//   200:
-	//     description: This endpoint return a connection struct
+	//     description: This endpoint return the wallet directory path
 	//     schema:
 	//       type: object
 	//       properties:
@@ -1327,10 +1336,6 @@ func newSeedHandler() http.HandlerFunc {
 	//   required: false
 	//   type: string
 	//   enum: [128, 256]
-	//
-	// security:
-	// - csrfAuth: []
-	//
 	//
 	// responses:
 	//   200:
@@ -1509,16 +1514,21 @@ func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 	// - application/json
 	// parameters:
 	// - name: seed
-	//   in: body
+	//   in: header
 	//   description: Seed to be verified.
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
 	//
 	// responses:
 	//   200:
 	//     description: Verifies a wallet seed.
-	//     properties:
-	//       data:
-	//         description: Empty
+	//     schema:
+	//       properties:
+	//         data:
+	//           type: object
+	//           description: Empty
 	//   422:
 	//     description: Wrong Seed
 	//     properties:
@@ -1650,6 +1660,10 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Wallet password.
 	//   required: true
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: This endpoint encrypt wallets.
@@ -1757,6 +1771,10 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Wallet password.
 	//   required: true
 	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: This endpoint decrypts wallets.
@@ -1881,6 +1899,9 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Wallet password.
 	//   required: false
 	//   type: string
+	// security:
+	// - csrfAuth: []
+	//
 	// responses:
 	//   200:
 	//     description: This endpoint decrypts wallets.

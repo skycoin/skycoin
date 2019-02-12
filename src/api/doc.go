@@ -3,10 +3,10 @@
 // Skycoin is a next-generation cryptocurrency.
 //
 //     Schemes: http, https
-//     Host: staging.node.skycoin.net
+//     Host: 127.0.0.1:6420
 //     BasePath: /
-//     Version: 0.25.0
-//     Contact: Skycoin project<skycoin.doe@example.com> https://staging.node.skycoin.net
+//     Version: 0.25.1
+//     Contact: Skycoin project<skycoin.doe@example.com> https://127.0.0.1:6420
 //
 //     Consumes:
 //     - application/json

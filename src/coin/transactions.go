@@ -62,7 +62,7 @@ type TransactionOutput struct {
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (txn *Transaction) Verify() error {
-	return txn.verify(false)
+	return txn.verify(true)
 }
 
 // VerifyUnsigned attempts to determine if the transaction is well formed,
@@ -72,10 +72,10 @@ func (txn *Transaction) Verify() error {
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (txn *Transaction) VerifyUnsigned() error {
-	return txn.verify(true)
+	return txn.verify(false)
 }
 
-func (txn *Transaction) verify(unsigned bool) error {
+func (txn *Transaction) verify(signed bool) error {
 	if len(txn.In) == 0 {
 		return errors.New("No inputs")
 	}
@@ -152,22 +152,25 @@ func (txn *Transaction) verify(unsigned bool) error {
 		return errors.New("InnerHash does not match computed hash")
 	}
 
-	// Validate signature
+	// Validate signatures
 	for i, sig := range txn.Sigs {
 		if sig.Null() {
-			if unsigned {
-				continue
-			} else {
+			// Check that signed transactions do not have any null signatures
+			if signed {
 				return errors.New("Unsigned input in transaction")
 			}
+			// Ignore null signatures if the transaction is unsigned
+			continue
 		}
+
 		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
 		if err := cipher.VerifySignatureRecoverPubKey(sig, hash); err != nil {
 			return err
 		}
 	}
 
-	if unsigned {
+	// CHeck that unsigned transactions have at least one non-null signature
+	if !signed {
 		if !txn.hasNullSignature() {
 			return errors.New("Unsigned transaction must contain a null signature")
 		}
@@ -205,6 +208,10 @@ func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i := range txn.In {
+		if txn.Sigs[i].Null() {
+			return errors.New("Unsigned input in transaction")
+		}
+
 		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
 		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
 		if err != nil {

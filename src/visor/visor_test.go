@@ -2864,7 +2864,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	// create a transaction with insufficient coins
 	insufficientCoinsTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[6:], keys[:1])
 
-	// create a transaction with invalid signature
+	// create a transaction with valid signature signed by key that doesn't own the input
 	badSigTxn, badSigTxnSpentInputs := makeTxn(t, head.Time(), inputs[:2], outputs[:2], keys[1:3])
 
 	// create a transaction with an empty signature

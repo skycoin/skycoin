@@ -28,7 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
-// Error wraps wallet related errors.
+// Error wraps wallet-related errors.
 // It wraps errors caused by user input, but not errors caused by programmer input or internal issues.
 type Error struct {
 	error
@@ -1161,6 +1161,9 @@ func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {
 }
 
 func copyTransaction(txn *coin.Transaction) *coin.Transaction {
+	txnHash := txn.Hash()
+	txnInnerHash := txn.HashInner()
+
 	txn2 := *txn
 	txn2.Sigs = make([]cipher.Sig, len(txn.Sigs))
 	copy(txn2.Sigs, txn.Sigs)
@@ -1169,10 +1172,10 @@ func copyTransaction(txn *coin.Transaction) *coin.Transaction {
 	txn2.Out = make([]coin.TransactionOutput, len(txn.Out))
 	copy(txn2.Out, txn.Out)
 
-	if txn.HashInner() != txn2.HashInner() {
+	if txnInnerHash != txn2.HashInner() {
 		logger.Panic("copyTransaction copy broke InnerHash")
 	}
-	if txn.Hash() != txn2.Hash() {
+	if txnHash != txn2.Hash() {
 		logger.Panic("copyTransaction copy broke Hash")
 	}
 
@@ -1186,10 +1189,9 @@ func copyTransaction(txn *coin.Transaction) *coin.Transaction {
 // Clients should avoid signing the same transaction multiple times.
 func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) (*coin.Transaction, error) {
 	signedTxn := copyTransaction(txn)
+	txnInnerHash := signedTxn.HashInner()
 
-	// Sanity check
-	txnInnerHash := signedTxn.InnerHash
-	if signedTxn.HashInner() != txnInnerHash {
+	if txnInnerHash != signedTxn.InnerHash {
 		return nil, NewError(errors.New("Transaction inner hash does not match computed inner hash"))
 	}
 
@@ -1628,7 +1630,11 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 
 	if p.Unsigned {
 		if !txn.IsFullyUnsigned() {
-			return errors.New("Transaction is not unsigned")
+			return errors.New("Transaction is not fully unsigned")
+		}
+	} else {
+		if !txn.IsFullySigned() {
+			return errors.New("Transaction is not fully signed")
 		}
 	}
 

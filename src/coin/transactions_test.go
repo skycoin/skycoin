@@ -268,11 +268,18 @@ func TestTransactionVerifyInput(t *testing.T) {
 		_ = txn.VerifyInputSignatures(UxArray{UxOut{}}) // nolint: errcheck
 	})
 
-	// Invalid signature
+	// Unsigned txn
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs[0] = cipher.Sig{}
 	err := txn.VerifyInputSignatures(UxArray{ux})
+	testutil.RequireError(t, err, "Unsigned input in transaction")
+
+	// Signature signed by someone else
+	ux, _ = makeUxOutWithSecret(t)
+	_, s2 := makeUxOutWithSecret(t)
+	txn = makeTransactionFromUxOut(t, ux, s2)
+	err = txn.VerifyInputSignatures(UxArray{ux})
 	testutil.RequireError(t, err, "Signature not valid for output being spent")
 
 	// Valid

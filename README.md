@@ -360,7 +360,7 @@ After the skycoin node is up, run the following command to start the live tests:
 make integration-test-live
 ```
 
-The above command will run all tests except the wallet related tests. To run wallet tests, we
+The above command will run all tests except the wallet-related tests. To run wallet tests, we
 need to manually specify a wallet file, and it must have at least `2 coins` and `256 coinhours`,
 it also must have been loaded by the node.
 

@@ -62,13 +62,13 @@ func newRandomZeroLenNilGetBlocksMessageForEncodeTest(t *testing.T, rand *mathra
 }
 
 func testSkyencoderGetBlocksMessage(t *testing.T, obj *GetBlocksMessage) {
-	// EncodeSize
+	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := EncodeSizeGetBlocksMessage(obj)
+	n2 := encodeSizeGetBlocksMessage(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != EncodeSizeGetBlocksMessage() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeGetBlocksMessage() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -76,17 +76,17 @@ func testSkyencoderGetBlocksMessage(t *testing.T, obj *GetBlocksMessage) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := EncodeGetBlocksMessage(data2, obj)
+	err := encodeGetBlocksMessage(data2, obj)
 	if err != nil {
-		t.Fatalf("EncodeGetBlocksMessage failed: %v", err)
+		t.Fatalf("encodeGetBlocksMessage failed: %v", err)
 	}
 
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(EncodeGetBlocksMessage()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeGetBlocksMessage()) (%d != %d)", len(data1), len(data2))
 	}
 
 	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != EncodeGetBlocksMessage()")
+		t.Fatal("encoder.Serialize() != encode[1]s()")
 	}
 
 	// Decode
@@ -102,16 +102,16 @@ func testSkyencoderGetBlocksMessage(t *testing.T, obj *GetBlocksMessage) {
 	}
 
 	var obj3 GetBlocksMessage
-	n, err := DecodeGetBlocksMessage(data2, &obj3)
+	n, err := decodeGetBlocksMessage(data2, &obj3)
 	if err != nil {
-		t.Fatalf("DecodeGetBlocksMessage failed: %v", err)
+		t.Fatalf("decodeGetBlocksMessage failed: %v", err)
 	}
 	if n != len(data2) {
-		t.Fatalf("DecodeGetBlocksMessage bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeGetBlocksMessage bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != DecodeGetBlocksMessage()")
+		t.Fatal("encoder.DeserializeRaw() != decodeGetBlocksMessage()")
 	}
 
 	isEncodableField := func(f reflect.StructField) bool {
@@ -174,12 +174,12 @@ func testSkyencoderGetBlocksMessage(t *testing.T, obj *GetBlocksMessage) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = DecodeGetBlocksMessage(data3, &obj3)
+		n, err = decodeGetBlocksMessage(data3, &obj3)
 		if err != nil {
-			t.Fatalf("DecodeGetBlocksMessage failed: %v", err)
+			t.Fatalf("decodeGetBlocksMessage failed: %v", err)
 		}
 		if n != len(data2) {
-			t.Fatalf("DecodeGetBlocksMessage bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeGetBlocksMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
@@ -225,14 +225,14 @@ func TestSkyencoderGetBlocksMessage(t *testing.T) {
 
 func decodeGetBlocksMessageExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj GetBlocksMessage
-	_, err := DecodeGetBlocksMessage(buf, &obj)
+	_, err := decodeGetBlocksMessage(buf, &obj)
 
 	if err == nil {
-		t.Fatal("DecodeGetBlocksMessage: expected error, got nil")
+		t.Fatal("decodeGetBlocksMessage: expected error, got nil")
 	}
 
 	if err != expectedErr {
-		t.Fatalf("DecodeGetBlocksMessage: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeGetBlocksMessage: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -318,11 +318,11 @@ func testSkyencoderGetBlocksMessageDecodeErrors(t *testing.T, k int, tag string,
 		}
 	}
 
-	n := EncodeSizeGetBlocksMessage(obj)
+	n := encodeSizeGetBlocksMessage(obj)
 	buf := make([]byte, n)
-	err := EncodeGetBlocksMessage(buf, obj)
+	err := encodeGetBlocksMessage(buf, obj)
 	if err != nil {
-		t.Fatalf("EncodeGetBlocksMessage failed: %v", err)
+		t.Fatalf("encodeGetBlocksMessage failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field

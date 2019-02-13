@@ -28,11 +28,11 @@ type HashPairs struct {
 	HashPairs []coin.HashPair
 }
 
-//go:generate skyencoder -struct Block -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
-//go:generate skyencoder -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
-//go:generate skyencoder -struct HashPairs
-//go:generate skyencoder -struct Hashes
-//go:generate skyencoder -struct Sig
+//go:generate skyencoder -unexported -struct Block -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -unexported -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -unexported -struct HashPairs
+//go:generate skyencoder -unexported -struct Hashes
+//go:generate skyencoder -unexported -struct Sig
 
 var (
 	logger = logging.MustGetLogger("blockdb")

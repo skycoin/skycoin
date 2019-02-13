@@ -9,7 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-//go:generate skyencoder -struct UxOut
+//go:generate skyencoder -unexported -struct UxOut
 
 // UxOutsBkt holds unspent outputs
 var UxOutsBkt = []byte("uxouts")
@@ -49,9 +49,9 @@ type uxOuts struct{}
 func (ux *uxOuts) put(tx *dbutil.Tx, out UxOut) error {
 	hash := out.Hash()
 
-	n := EncodeSizeUxOut(&out)
+	n := encodeSizeUxOut(&out)
 	buf := make([]byte, n)
-	if err := EncodeUxOut(buf, &out); err != nil {
+	if err := encodeUxOut(buf, &out); err != nil {
 		return err
 	}
 
@@ -69,7 +69,7 @@ func (ux *uxOuts) get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 		return nil, nil
 	}
 
-	if n, err := DecodeUxOut(v, &out); err != nil {
+	if n, err := decodeUxOut(v, &out); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes

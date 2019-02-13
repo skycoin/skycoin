@@ -62,13 +62,13 @@ func newRandomZeroLenNilGivePeersMessageForEncodeTest(t *testing.T, rand *mathra
 }
 
 func testSkyencoderGivePeersMessage(t *testing.T, obj *GivePeersMessage) {
-	// EncodeSize
+	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := EncodeSizeGivePeersMessage(obj)
+	n2 := encodeSizeGivePeersMessage(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != EncodeSizeGivePeersMessage() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeGivePeersMessage() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -76,17 +76,17 @@ func testSkyencoderGivePeersMessage(t *testing.T, obj *GivePeersMessage) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := EncodeGivePeersMessage(data2, obj)
+	err := encodeGivePeersMessage(data2, obj)
 	if err != nil {
-		t.Fatalf("EncodeGivePeersMessage failed: %v", err)
+		t.Fatalf("encodeGivePeersMessage failed: %v", err)
 	}
 
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(EncodeGivePeersMessage()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeGivePeersMessage()) (%d != %d)", len(data1), len(data2))
 	}
 
 	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != EncodeGivePeersMessage()")
+		t.Fatal("encoder.Serialize() != encode[1]s()")
 	}
 
 	// Decode
@@ -102,16 +102,16 @@ func testSkyencoderGivePeersMessage(t *testing.T, obj *GivePeersMessage) {
 	}
 
 	var obj3 GivePeersMessage
-	n, err := DecodeGivePeersMessage(data2, &obj3)
+	n, err := decodeGivePeersMessage(data2, &obj3)
 	if err != nil {
-		t.Fatalf("DecodeGivePeersMessage failed: %v", err)
+		t.Fatalf("decodeGivePeersMessage failed: %v", err)
 	}
 	if n != len(data2) {
-		t.Fatalf("DecodeGivePeersMessage bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeGivePeersMessage bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != DecodeGivePeersMessage()")
+		t.Fatal("encoder.DeserializeRaw() != decodeGivePeersMessage()")
 	}
 
 	isEncodableField := func(f reflect.StructField) bool {
@@ -174,12 +174,12 @@ func testSkyencoderGivePeersMessage(t *testing.T, obj *GivePeersMessage) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = DecodeGivePeersMessage(data3, &obj3)
+		n, err = decodeGivePeersMessage(data3, &obj3)
 		if err != nil {
-			t.Fatalf("DecodeGivePeersMessage failed: %v", err)
+			t.Fatalf("decodeGivePeersMessage failed: %v", err)
 		}
 		if n != len(data2) {
-			t.Fatalf("DecodeGivePeersMessage bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeGivePeersMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
@@ -225,14 +225,14 @@ func TestSkyencoderGivePeersMessage(t *testing.T) {
 
 func decodeGivePeersMessageExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj GivePeersMessage
-	_, err := DecodeGivePeersMessage(buf, &obj)
+	_, err := decodeGivePeersMessage(buf, &obj)
 
 	if err == nil {
-		t.Fatal("DecodeGivePeersMessage: expected error, got nil")
+		t.Fatal("decodeGivePeersMessage: expected error, got nil")
 	}
 
 	if err != expectedErr {
-		t.Fatalf("DecodeGivePeersMessage: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeGivePeersMessage: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -318,11 +318,11 @@ func testSkyencoderGivePeersMessageDecodeErrors(t *testing.T, k int, tag string,
 		}
 	}
 
-	n := EncodeSizeGivePeersMessage(obj)
+	n := encodeSizeGivePeersMessage(obj)
 	buf := make([]byte, n)
-	err := EncodeGivePeersMessage(buf, obj)
+	err := encodeGivePeersMessage(buf, obj)
 	if err != nil {
-		t.Fatalf("EncodeGivePeersMessage failed: %v", err)
+		t.Fatalf("encodeGivePeersMessage failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field

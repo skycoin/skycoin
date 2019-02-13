@@ -8,8 +8,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-// EncodeSizeDisconnectMessage computes the size of an encoded object of type DisconnectMessage
-func EncodeSizeDisconnectMessage(obj *DisconnectMessage) uint64 {
+// encodeSizeDisconnectMessage computes the size of an encoded object of type DisconnectMessage
+func encodeSizeDisconnectMessage(obj *DisconnectMessage) uint64 {
 	i0 := uint64(0)
 
 	// obj.ReasonCode
@@ -21,9 +21,9 @@ func EncodeSizeDisconnectMessage(obj *DisconnectMessage) uint64 {
 	return i0
 }
 
-// EncodeDisconnectMessage encodes an object of type DisconnectMessage to the buffer in encoder.Encoder.
+// encodeDisconnectMessage encodes an object of type DisconnectMessage to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeDisconnectMessage(buf []byte, obj *DisconnectMessage) error {
+func encodeDisconnectMessage(buf []byte, obj *DisconnectMessage) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -45,9 +45,9 @@ func EncodeDisconnectMessage(buf []byte, obj *DisconnectMessage) error {
 	return nil
 }
 
-// DecodeDisconnectMessage decodes an object of type DisconnectMessage from the buffer in encoder.Decoder.
+// decodeDisconnectMessage decodes an object of type DisconnectMessage from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeDisconnectMessage(buf []byte, obj *DisconnectMessage) (int, error) {
+func decodeDisconnectMessage(buf []byte, obj *DisconnectMessage) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

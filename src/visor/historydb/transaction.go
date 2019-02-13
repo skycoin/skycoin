@@ -14,7 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-//go:generate skyencoder -struct Transaction
+//go:generate skyencoder -unexported -struct Transaction
 
 // Transaction contains transaction info and the seq of block which executed this block.
 type Transaction struct {
@@ -37,9 +37,9 @@ type transactions struct{}
 func (txs *transactions) put(tx *dbutil.Tx, txn *Transaction) error {
 	hash := txn.Hash()
 
-	n := EncodeSizeTransaction(txn)
+	n := encodeSizeTransaction(txn)
 	buf := make([]byte, n)
-	if err := EncodeTransaction(buf, txn); err != nil {
+	if err := encodeTransaction(buf, txn); err != nil {
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (txs *transactions) get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, e
 		return nil, nil
 	}
 
-	if n, err := DecodeTransaction(v, &txn); err != nil {
+	if n, err := decodeTransaction(v, &txn); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes
@@ -103,7 +103,7 @@ func (txs *transactions) forEach(tx *dbutil.Tx, f func(cipher.SHA256, *Transacti
 		}
 
 		var txn Transaction
-		if n, err := DecodeTransaction(v, &txn); err != nil {
+		if n, err := decodeTransaction(v, &txn); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes

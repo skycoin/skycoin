@@ -10,8 +10,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-// EncodeSizeUnconfirmedTransaction computes the size of an encoded object of type UnconfirmedTransaction
-func EncodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) uint64 {
+// encodeSizeUnconfirmedTransaction computes the size of an encoded object of type UnconfirmedTransaction
+func encodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) uint64 {
 	i0 := uint64(0)
 
 	// obj.Transaction.Length
@@ -80,9 +80,9 @@ func EncodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) uint64 {
 	return i0
 }
 
-// EncodeUnconfirmedTransaction encodes an object of type UnconfirmedTransaction to the buffer in encoder.Encoder.
+// encodeUnconfirmedTransaction encodes an object of type UnconfirmedTransaction to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) error {
+func encodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -183,9 +183,9 @@ func EncodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) error
 	return nil
 }
 
-// DecodeUnconfirmedTransaction decodes an object of type UnconfirmedTransaction from the buffer in encoder.Decoder.
+// decodeUnconfirmedTransaction decodes an object of type UnconfirmedTransaction from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int, error) {
+func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

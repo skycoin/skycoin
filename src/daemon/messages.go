@@ -44,15 +44,15 @@ func NewMessageConfig(prefix string, m interface{}) MessageConfig {
 	}
 }
 
-//go:generate skyencoder -struct IntroductionMessage
-//go:generate skyencoder -struct GivePeersMessage
-//go:generate skyencoder -struct GetBlocksMessage
-//go:generate skyencoder -struct GiveBlocksMessage
-//go:generate skyencoder -struct AnnounceBlocksMessage
-//go:generate skyencoder -struct GetTxnsMessage
-//go:generate skyencoder -struct GiveTxnsMessage
-//go:generate skyencoder -struct AnnounceTxnsMessage
-//go:generate skyencoder -struct DisconnectMessage
+//go:generate skyencoder -unexported -struct IntroductionMessage
+//go:generate skyencoder -unexported -struct GivePeersMessage
+//go:generate skyencoder -unexported -struct GetBlocksMessage
+//go:generate skyencoder -unexported -struct GiveBlocksMessage
+//go:generate skyencoder -unexported -struct AnnounceBlocksMessage
+//go:generate skyencoder -unexported -struct GetTxnsMessage
+//go:generate skyencoder -unexported -struct GiveTxnsMessage
+//go:generate skyencoder -unexported -struct AnnounceTxnsMessage
+//go:generate skyencoder -unexported -struct DisconnectMessage
 
 // Creates and populates the message configs
 func getMessageConfigs() []MessageConfig {
@@ -210,17 +210,17 @@ func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 
 // EncodeSize implements gnet.Serializer
 func (gpm *GivePeersMessage) EncodeSize() uint64 {
-	return EncodeSizeGivePeersMessage(gpm)
+	return encodeSizeGivePeersMessage(gpm)
 }
 
 // Encode implements gnet.Serializer
 func (gpm *GivePeersMessage) Encode(buf []byte) error {
-	return EncodeGivePeersMessage(buf, gpm)
+	return encodeGivePeersMessage(buf, gpm)
 }
 
 // Decode implements gnet.Serializer
 func (gpm *GivePeersMessage) Decode(buf []byte) (int, error) {
-	return DecodeGivePeersMessage(buf, gpm)
+	return decodeGivePeersMessage(buf, gpm)
 }
 
 // GetPeers is required by the pex.GivePeersMessage interface.
@@ -340,17 +340,17 @@ func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyP
 
 // EncodeSize implements gnet.Serializer
 func (intro *IntroductionMessage) EncodeSize() uint64 {
-	return EncodeSizeIntroductionMessage(intro)
+	return encodeSizeIntroductionMessage(intro)
 }
 
 // Encode implements gnet.Serializer
 func (intro *IntroductionMessage) Encode(buf []byte) error {
-	return EncodeIntroductionMessage(buf, intro)
+	return encodeIntroductionMessage(buf, intro)
 }
 
 // Decode implements gnet.Serializer
 func (intro *IntroductionMessage) Decode(buf []byte) (int, error) {
-	return DecodeIntroductionMessage(buf, intro)
+	return decodeIntroductionMessage(buf, intro)
 }
 
 // Handle records message event in daemon
@@ -614,17 +614,17 @@ func NewDisconnectMessage(reason gnet.DisconnectReason) *DisconnectMessage {
 
 // EncodeSize implements gnet.Serializer
 func (dm *DisconnectMessage) EncodeSize() uint64 {
-	return EncodeSizeDisconnectMessage(dm)
+	return encodeSizeDisconnectMessage(dm)
 }
 
 // Encode implements gnet.Serializer
 func (dm *DisconnectMessage) Encode(buf []byte) error {
-	return EncodeDisconnectMessage(buf, dm)
+	return encodeDisconnectMessage(buf, dm)
 }
 
 // Decode implements gnet.Serializer
 func (dm *DisconnectMessage) Decode(buf []byte) (int, error) {
-	return DecodeDisconnectMessage(buf, dm)
+	return decodeDisconnectMessage(buf, dm)
 }
 
 // Handle an event queued by Handle()
@@ -664,17 +664,17 @@ func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMes
 
 // EncodeSize implements gnet.Serializer
 func (gbm *GetBlocksMessage) EncodeSize() uint64 {
-	return EncodeSizeGetBlocksMessage(gbm)
+	return encodeSizeGetBlocksMessage(gbm)
 }
 
 // Encode implements gnet.Serializer
 func (gbm *GetBlocksMessage) Encode(buf []byte) error {
-	return EncodeGetBlocksMessage(buf, gbm)
+	return encodeGetBlocksMessage(buf, gbm)
 }
 
 // Decode implements gnet.Serializer
 func (gbm *GetBlocksMessage) Decode(buf []byte) (int, error) {
-	return DecodeGetBlocksMessage(buf, gbm)
+	return decodeGetBlocksMessage(buf, gbm)
 }
 
 // Handle handles message
@@ -730,17 +730,17 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 
 // EncodeSize implements gnet.Serializer
 func (m *GiveBlocksMessage) EncodeSize() uint64 {
-	return EncodeSizeGiveBlocksMessage(m)
+	return encodeSizeGiveBlocksMessage(m)
 }
 
 // Encode implements gnet.Serializer
 func (m *GiveBlocksMessage) Encode(buf []byte) error {
-	return EncodeGiveBlocksMessage(buf, m)
+	return encodeGiveBlocksMessage(buf, m)
 }
 
 // Decode implements gnet.Serializer
 func (m *GiveBlocksMessage) Decode(buf []byte) (int, error) {
-	return DecodeGiveBlocksMessage(buf, m)
+	return decodeGiveBlocksMessage(buf, m)
 }
 
 // Handle handle message
@@ -841,17 +841,17 @@ func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
 
 // EncodeSize implements gnet.Serializer
 func (abm *AnnounceBlocksMessage) EncodeSize() uint64 {
-	return EncodeSizeAnnounceBlocksMessage(abm)
+	return encodeSizeAnnounceBlocksMessage(abm)
 }
 
 // Encode implements gnet.Serializer
 func (abm *AnnounceBlocksMessage) Encode(buf []byte) error {
-	return EncodeAnnounceBlocksMessage(buf, abm)
+	return encodeAnnounceBlocksMessage(buf, abm)
 }
 
 // Decode implements gnet.Serializer
 func (abm *AnnounceBlocksMessage) Decode(buf []byte) (int, error) {
-	return DecodeAnnounceBlocksMessage(buf, abm)
+	return decodeAnnounceBlocksMessage(buf, abm)
 }
 
 // Handle handles message
@@ -913,17 +913,17 @@ func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
 
 // EncodeSize implements gnet.Serializer
 func (atm *AnnounceTxnsMessage) EncodeSize() uint64 {
-	return EncodeSizeAnnounceTxnsMessage(atm)
+	return encodeSizeAnnounceTxnsMessage(atm)
 }
 
 // Encode implements gnet.Serializer
 func (atm *AnnounceTxnsMessage) Encode(buf []byte) error {
-	return EncodeAnnounceTxnsMessage(buf, atm)
+	return encodeAnnounceTxnsMessage(buf, atm)
 }
 
 // Decode implements gnet.Serializer
 func (atm *AnnounceTxnsMessage) Decode(buf []byte) (int, error) {
-	return DecodeAnnounceTxnsMessage(buf, atm)
+	return decodeAnnounceTxnsMessage(buf, atm)
 }
 
 // GetFiltered returns txns
@@ -979,17 +979,17 @@ func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
 
 // EncodeSize implements gnet.Serializer
 func (gtm *GetTxnsMessage) EncodeSize() uint64 {
-	return EncodeSizeGetTxnsMessage(gtm)
+	return encodeSizeGetTxnsMessage(gtm)
 }
 
 // Encode implements gnet.Serializer
 func (gtm *GetTxnsMessage) Encode(buf []byte) error {
-	return EncodeGetTxnsMessage(buf, gtm)
+	return encodeGetTxnsMessage(buf, gtm)
 }
 
 // Decode implements gnet.Serializer
 func (gtm *GetTxnsMessage) Decode(buf []byte) (int, error) {
-	return DecodeGetTxnsMessage(buf, gtm)
+	return decodeGetTxnsMessage(buf, gtm)
 }
 
 // Handle handle message
@@ -1041,17 +1041,17 @@ func NewGiveTxnsMessage(txns []coin.Transaction) *GiveTxnsMessage {
 
 // EncodeSize implements gnet.Serializer
 func (gtm *GiveTxnsMessage) EncodeSize() uint64 {
-	return EncodeSizeGiveTxnsMessage(gtm)
+	return encodeSizeGiveTxnsMessage(gtm)
 }
 
 // Encode implements gnet.Serializer
 func (gtm *GiveTxnsMessage) Encode(buf []byte) error {
-	return EncodeGiveTxnsMessage(buf, gtm)
+	return encodeGiveTxnsMessage(buf, gtm)
 }
 
 // Decode implements gnet.Serializer
 func (gtm *GiveTxnsMessage) Decode(buf []byte) (int, error) {
-	return DecodeGiveTxnsMessage(buf, gtm)
+	return decodeGiveTxnsMessage(buf, gtm)
 }
 
 // GetFiltered returns transactions hashes

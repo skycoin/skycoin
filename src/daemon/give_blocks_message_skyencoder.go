@@ -10,8 +10,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-// EncodeSizeGiveBlocksMessage computes the size of an encoded object of type GiveBlocksMessage
-func EncodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) uint64 {
+// encodeSizeGiveBlocksMessage computes the size of an encoded object of type GiveBlocksMessage
+func encodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) uint64 {
 	i0 := uint64(0)
 
 	// obj.Blocks
@@ -108,9 +108,9 @@ func EncodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) uint64 {
 	return i0
 }
 
-// EncodeGiveBlocksMessage encodes an object of type GiveBlocksMessage to the buffer in encoder.Encoder.
+// encodeGiveBlocksMessage encodes an object of type GiveBlocksMessage to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) error {
+func encodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -259,9 +259,9 @@ func EncodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) error {
 	return nil
 }
 
-// DecodeGiveBlocksMessage decodes an object of type GiveBlocksMessage from the buffer in encoder.Decoder.
+// decodeGiveBlocksMessage decodes an object of type GiveBlocksMessage from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) (int, error) {
+func decodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

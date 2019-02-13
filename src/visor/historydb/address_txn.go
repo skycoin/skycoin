@@ -6,7 +6,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-//go:generate skyencoder -struct Hashes
+//go:generate skyencoder -unexported -struct Hashes
 
 // Hashes wraps []cipher.SHA256
 type Hashes struct {
@@ -31,7 +31,7 @@ func (atx *addressTxns) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256
 		return nil, nil
 	}
 
-	if n, err := DecodeHashes(v, &txnHashes); err != nil {
+	if n, err := decodeHashes(v, &txnHashes); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes
@@ -59,9 +59,9 @@ func (atx *addressTxns) add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA2
 	hs := &Hashes{
 		Hashes: hashes,
 	}
-	n := EncodeSizeHashes(hs)
+	n := encodeSizeHashes(hs)
 	buf := make([]byte, n)
-	if err := EncodeHashes(buf, hs); err != nil {
+	if err := encodeHashes(buf, hs); err != nil {
 		return err
 	}
 

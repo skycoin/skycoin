@@ -151,8 +151,14 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		buf, err := txn.Transaction.Serialize()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		if encoded {
-			txnStr := hex.EncodeToString(txn.Transaction.Serialize())
+			txnStr := hex.EncodeToString(buf)
 
 			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
 				EncodedTransaction: txnStr,
@@ -460,8 +466,13 @@ func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		d := txn.Transaction.Serialize()
-		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
+		buf, err := txn.Transaction.Serialize()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, hex.EncodeToString(buf))
 	}
 }
 

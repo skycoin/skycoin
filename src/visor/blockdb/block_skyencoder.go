@@ -10,8 +10,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-// EncodeSizeBlock computes the size of an encoded object of type Block
-func EncodeSizeBlock(obj *coin.Block) uint64 {
+// encodeSizeBlock computes the size of an encoded object of type Block
+func encodeSizeBlock(obj *coin.Block) uint64 {
 	i0 := uint64(0)
 
 	// obj.Head.Version
@@ -97,9 +97,9 @@ func EncodeSizeBlock(obj *coin.Block) uint64 {
 	return i0
 }
 
-// EncodeBlock encodes an object of type Block to the buffer in encoder.Encoder.
+// encodeBlock encodes an object of type Block to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeBlock(buf []byte, obj *coin.Block) error {
+func encodeBlock(buf []byte, obj *coin.Block) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -227,9 +227,9 @@ func EncodeBlock(buf []byte, obj *coin.Block) error {
 	return nil
 }
 
-// DecodeBlock decodes an object of type Block from the buffer in encoder.Decoder.
+// decodeBlock decodes an object of type Block from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeBlock(buf []byte, obj *coin.Block) (int, error) {
+func decodeBlock(buf []byte, obj *coin.Block) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

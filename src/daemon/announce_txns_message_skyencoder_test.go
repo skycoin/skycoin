@@ -62,13 +62,13 @@ func newRandomZeroLenNilAnnounceTxnsMessageForEncodeTest(t *testing.T, rand *mat
 }
 
 func testSkyencoderAnnounceTxnsMessage(t *testing.T, obj *AnnounceTxnsMessage) {
-	// EncodeSize
+	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := EncodeSizeAnnounceTxnsMessage(obj)
+	n2 := encodeSizeAnnounceTxnsMessage(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != EncodeSizeAnnounceTxnsMessage() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeAnnounceTxnsMessage() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -76,17 +76,17 @@ func testSkyencoderAnnounceTxnsMessage(t *testing.T, obj *AnnounceTxnsMessage) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := EncodeAnnounceTxnsMessage(data2, obj)
+	err := encodeAnnounceTxnsMessage(data2, obj)
 	if err != nil {
-		t.Fatalf("EncodeAnnounceTxnsMessage failed: %v", err)
+		t.Fatalf("encodeAnnounceTxnsMessage failed: %v", err)
 	}
 
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(EncodeAnnounceTxnsMessage()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeAnnounceTxnsMessage()) (%d != %d)", len(data1), len(data2))
 	}
 
 	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != EncodeAnnounceTxnsMessage()")
+		t.Fatal("encoder.Serialize() != encode[1]s()")
 	}
 
 	// Decode
@@ -102,16 +102,16 @@ func testSkyencoderAnnounceTxnsMessage(t *testing.T, obj *AnnounceTxnsMessage) {
 	}
 
 	var obj3 AnnounceTxnsMessage
-	n, err := DecodeAnnounceTxnsMessage(data2, &obj3)
+	n, err := decodeAnnounceTxnsMessage(data2, &obj3)
 	if err != nil {
-		t.Fatalf("DecodeAnnounceTxnsMessage failed: %v", err)
+		t.Fatalf("decodeAnnounceTxnsMessage failed: %v", err)
 	}
 	if n != len(data2) {
-		t.Fatalf("DecodeAnnounceTxnsMessage bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeAnnounceTxnsMessage bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != DecodeAnnounceTxnsMessage()")
+		t.Fatal("encoder.DeserializeRaw() != decodeAnnounceTxnsMessage()")
 	}
 
 	isEncodableField := func(f reflect.StructField) bool {
@@ -174,12 +174,12 @@ func testSkyencoderAnnounceTxnsMessage(t *testing.T, obj *AnnounceTxnsMessage) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = DecodeAnnounceTxnsMessage(data3, &obj3)
+		n, err = decodeAnnounceTxnsMessage(data3, &obj3)
 		if err != nil {
-			t.Fatalf("DecodeAnnounceTxnsMessage failed: %v", err)
+			t.Fatalf("decodeAnnounceTxnsMessage failed: %v", err)
 		}
 		if n != len(data2) {
-			t.Fatalf("DecodeAnnounceTxnsMessage bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeAnnounceTxnsMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
@@ -225,14 +225,14 @@ func TestSkyencoderAnnounceTxnsMessage(t *testing.T) {
 
 func decodeAnnounceTxnsMessageExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj AnnounceTxnsMessage
-	_, err := DecodeAnnounceTxnsMessage(buf, &obj)
+	_, err := decodeAnnounceTxnsMessage(buf, &obj)
 
 	if err == nil {
-		t.Fatal("DecodeAnnounceTxnsMessage: expected error, got nil")
+		t.Fatal("decodeAnnounceTxnsMessage: expected error, got nil")
 	}
 
 	if err != expectedErr {
-		t.Fatalf("DecodeAnnounceTxnsMessage: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeAnnounceTxnsMessage: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -318,11 +318,11 @@ func testSkyencoderAnnounceTxnsMessageDecodeErrors(t *testing.T, k int, tag stri
 		}
 	}
 
-	n := EncodeSizeAnnounceTxnsMessage(obj)
+	n := encodeSizeAnnounceTxnsMessage(obj)
 	buf := make([]byte, n)
-	err := EncodeAnnounceTxnsMessage(buf, obj)
+	err := encodeAnnounceTxnsMessage(buf, obj)
 	if err != nil {
-		t.Fatalf("EncodeAnnounceTxnsMessage failed: %v", err)
+		t.Fatalf("encodeAnnounceTxnsMessage failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field

@@ -23,7 +23,7 @@ func (au *addressUx) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, e
 		return nil, nil
 	}
 
-	if n, err := DecodeHashes(v, &uxHashes); err != nil {
+	if n, err := decodeHashes(v, &uxHashes); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes
@@ -51,9 +51,9 @@ func (au *addressUx) add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SH
 	hs := &Hashes{
 		Hashes: hashes,
 	}
-	n := EncodeSizeHashes(hs)
+	n := encodeSizeHashes(hs)
 	buf := make([]byte, n)
-	if err := EncodeHashes(buf, hs); err != nil {
+	if err := encodeHashes(buf, hs); err != nil {
 		return err
 	}
 

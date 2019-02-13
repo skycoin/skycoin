@@ -9,8 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-// EncodeSizeHashPairs computes the size of an encoded object of type HashPairs
-func EncodeSizeHashPairs(obj *HashPairs) uint64 {
+// encodeSizeHashPairs computes the size of an encoded object of type HashPairs
+func encodeSizeHashPairs(obj *HashPairs) uint64 {
 	i0 := uint64(0)
 
 	// obj.HashPairs
@@ -30,9 +30,9 @@ func EncodeSizeHashPairs(obj *HashPairs) uint64 {
 	return i0
 }
 
-// EncodeHashPairs encodes an object of type HashPairs to the buffer in encoder.Encoder.
+// encodeHashPairs encodes an object of type HashPairs to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeHashPairs(buf []byte, obj *HashPairs) error {
+func encodeHashPairs(buf []byte, obj *HashPairs) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -59,9 +59,9 @@ func EncodeHashPairs(buf []byte, obj *HashPairs) error {
 	return nil
 }
 
-// DecodeHashPairs decodes an object of type HashPairs from the buffer in encoder.Decoder.
+// decodeHashPairs decodes an object of type HashPairs from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeHashPairs(buf []byte, obj *HashPairs) (int, error) {
+func decodeHashPairs(buf []byte, obj *HashPairs) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

@@ -62,13 +62,13 @@ func newRandomZeroLenNilIntroductionMessageForEncodeTest(t *testing.T, rand *mat
 }
 
 func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
-	// EncodeSize
+	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := EncodeSizeIntroductionMessage(obj)
+	n2 := encodeSizeIntroductionMessage(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != EncodeSizeIntroductionMessage() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeIntroductionMessage() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -76,17 +76,17 @@ func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := EncodeIntroductionMessage(data2, obj)
+	err := encodeIntroductionMessage(data2, obj)
 	if err != nil {
-		t.Fatalf("EncodeIntroductionMessage failed: %v", err)
+		t.Fatalf("encodeIntroductionMessage failed: %v", err)
 	}
 
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(EncodeIntroductionMessage()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeIntroductionMessage()) (%d != %d)", len(data1), len(data2))
 	}
 
 	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != EncodeIntroductionMessage()")
+		t.Fatal("encoder.Serialize() != encode[1]s()")
 	}
 
 	// Decode
@@ -102,16 +102,16 @@ func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
 	}
 
 	var obj3 IntroductionMessage
-	n, err := DecodeIntroductionMessage(data2, &obj3)
+	n, err := decodeIntroductionMessage(data2, &obj3)
 	if err != nil {
-		t.Fatalf("DecodeIntroductionMessage failed: %v", err)
+		t.Fatalf("decodeIntroductionMessage failed: %v", err)
 	}
 	if n != len(data2) {
-		t.Fatalf("DecodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != DecodeIntroductionMessage()")
+		t.Fatal("encoder.DeserializeRaw() != decodeIntroductionMessage()")
 	}
 
 	isEncodableField := func(f reflect.StructField) bool {
@@ -174,12 +174,12 @@ func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = DecodeIntroductionMessage(data3, &obj3)
+		n, err = decodeIntroductionMessage(data3, &obj3)
 		if err != nil {
-			t.Fatalf("DecodeIntroductionMessage failed: %v", err)
+			t.Fatalf("decodeIntroductionMessage failed: %v", err)
 		}
 		if n != len(data2) {
-			t.Fatalf("DecodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
@@ -225,14 +225,14 @@ func TestSkyencoderIntroductionMessage(t *testing.T) {
 
 func decodeIntroductionMessageExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj IntroductionMessage
-	_, err := DecodeIntroductionMessage(buf, &obj)
+	_, err := decodeIntroductionMessage(buf, &obj)
 
 	if err == nil {
-		t.Fatal("DecodeIntroductionMessage: expected error, got nil")
+		t.Fatal("decodeIntroductionMessage: expected error, got nil")
 	}
 
 	if err != expectedErr {
-		t.Fatalf("DecodeIntroductionMessage: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeIntroductionMessage: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -318,11 +318,11 @@ func testSkyencoderIntroductionMessageDecodeErrors(t *testing.T, k int, tag stri
 		}
 	}
 
-	n := EncodeSizeIntroductionMessage(obj)
+	n := encodeSizeIntroductionMessage(obj)
 	buf := make([]byte, n)
-	err := EncodeIntroductionMessage(buf, obj)
+	err := encodeIntroductionMessage(buf, obj)
 	if err != nil {
-		t.Fatalf("EncodeIntroductionMessage failed: %v", err)
+		t.Fatalf("encodeIntroductionMessage failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field

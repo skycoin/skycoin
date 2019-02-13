@@ -3,8 +3,8 @@ package blockdb
 
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
-// EncodeSizeSig computes the size of an encoded object of type Sig
-func EncodeSizeSig(obj *Sig) uint64 {
+// encodeSizeSig computes the size of an encoded object of type Sig
+func encodeSizeSig(obj *Sig) uint64 {
 	i0 := uint64(0)
 
 	// obj.Sig
@@ -13,9 +13,9 @@ func EncodeSizeSig(obj *Sig) uint64 {
 	return i0
 }
 
-// EncodeSig encodes an object of type Sig to the buffer in encoder.Encoder.
+// encodeSig encodes an object of type Sig to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeSig(buf []byte, obj *Sig) error {
+func encodeSig(buf []byte, obj *Sig) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -26,9 +26,9 @@ func EncodeSig(buf []byte, obj *Sig) error {
 	return nil
 }
 
-// DecodeSig decodes an object of type Sig from the buffer in encoder.Decoder.
+// decodeSig decodes an object of type Sig from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeSig(buf []byte, obj *Sig) (int, error) {
+func decodeSig(buf []byte, obj *Sig) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

@@ -62,13 +62,13 @@ func newRandomZeroLenNilAnnounceBlocksMessageForEncodeTest(t *testing.T, rand *m
 }
 
 func testSkyencoderAnnounceBlocksMessage(t *testing.T, obj *AnnounceBlocksMessage) {
-	// EncodeSize
+	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := EncodeSizeAnnounceBlocksMessage(obj)
+	n2 := encodeSizeAnnounceBlocksMessage(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != EncodeSizeAnnounceBlocksMessage() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeAnnounceBlocksMessage() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -76,17 +76,17 @@ func testSkyencoderAnnounceBlocksMessage(t *testing.T, obj *AnnounceBlocksMessag
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := EncodeAnnounceBlocksMessage(data2, obj)
+	err := encodeAnnounceBlocksMessage(data2, obj)
 	if err != nil {
-		t.Fatalf("EncodeAnnounceBlocksMessage failed: %v", err)
+		t.Fatalf("encodeAnnounceBlocksMessage failed: %v", err)
 	}
 
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(EncodeAnnounceBlocksMessage()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeAnnounceBlocksMessage()) (%d != %d)", len(data1), len(data2))
 	}
 
 	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != EncodeAnnounceBlocksMessage()")
+		t.Fatal("encoder.Serialize() != encode[1]s()")
 	}
 
 	// Decode
@@ -102,16 +102,16 @@ func testSkyencoderAnnounceBlocksMessage(t *testing.T, obj *AnnounceBlocksMessag
 	}
 
 	var obj3 AnnounceBlocksMessage
-	n, err := DecodeAnnounceBlocksMessage(data2, &obj3)
+	n, err := decodeAnnounceBlocksMessage(data2, &obj3)
 	if err != nil {
-		t.Fatalf("DecodeAnnounceBlocksMessage failed: %v", err)
+		t.Fatalf("decodeAnnounceBlocksMessage failed: %v", err)
 	}
 	if n != len(data2) {
-		t.Fatalf("DecodeAnnounceBlocksMessage bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeAnnounceBlocksMessage bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != DecodeAnnounceBlocksMessage()")
+		t.Fatal("encoder.DeserializeRaw() != decodeAnnounceBlocksMessage()")
 	}
 
 	isEncodableField := func(f reflect.StructField) bool {
@@ -174,12 +174,12 @@ func testSkyencoderAnnounceBlocksMessage(t *testing.T, obj *AnnounceBlocksMessag
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = DecodeAnnounceBlocksMessage(data3, &obj3)
+		n, err = decodeAnnounceBlocksMessage(data3, &obj3)
 		if err != nil {
-			t.Fatalf("DecodeAnnounceBlocksMessage failed: %v", err)
+			t.Fatalf("decodeAnnounceBlocksMessage failed: %v", err)
 		}
 		if n != len(data2) {
-			t.Fatalf("DecodeAnnounceBlocksMessage bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeAnnounceBlocksMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
@@ -225,14 +225,14 @@ func TestSkyencoderAnnounceBlocksMessage(t *testing.T) {
 
 func decodeAnnounceBlocksMessageExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj AnnounceBlocksMessage
-	_, err := DecodeAnnounceBlocksMessage(buf, &obj)
+	_, err := decodeAnnounceBlocksMessage(buf, &obj)
 
 	if err == nil {
-		t.Fatal("DecodeAnnounceBlocksMessage: expected error, got nil")
+		t.Fatal("decodeAnnounceBlocksMessage: expected error, got nil")
 	}
 
 	if err != expectedErr {
-		t.Fatalf("DecodeAnnounceBlocksMessage: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeAnnounceBlocksMessage: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -318,11 +318,11 @@ func testSkyencoderAnnounceBlocksMessageDecodeErrors(t *testing.T, k int, tag st
 		}
 	}
 
-	n := EncodeSizeAnnounceBlocksMessage(obj)
+	n := encodeSizeAnnounceBlocksMessage(obj)
 	buf := make([]byte, n)
-	err := EncodeAnnounceBlocksMessage(buf, obj)
+	err := encodeAnnounceBlocksMessage(buf, obj)
 	if err != nil {
-		t.Fatalf("EncodeAnnounceBlocksMessage failed: %v", err)
+		t.Fatalf("encodeAnnounceBlocksMessage failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field

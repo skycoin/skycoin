@@ -99,8 +99,6 @@ func TestTransactionVerify(t *testing.T) {
 	txn = makeTransaction(t)
 	txn.Sigs = make([]cipher.Sig, math.MaxUint16+1)
 	txn.In = make([]cipher.SHA256, math.MaxUint16+1)
-	err = txn.UpdateHeader()
-	require.NoError(t, err)
 	testutil.RequireError(t, txn.Verify(), "Too many signatures and inputs")
 
 	// Duplicate inputs
@@ -343,13 +341,15 @@ func TestTransactionHashInner(t *testing.T) {
 
 func TestTransactionSerialization(t *testing.T) {
 	txn := makeTransaction(t)
-	b := txn.Serialize()
+	b, err := txn.Serialize()
+	require.NoError(t, err)
 	tx2, err := TransactionDeserialize(b)
 	require.NoError(t, err)
 	require.Equal(t, txn, tx2)
 
 	// Check reserializing deserialized txn
-	b2 := tx2.Serialize()
+	b2, err := tx2.Serialize()
+	require.NoError(t, err)
 	tx3, err := TransactionDeserialize(b2)
 	require.NoError(t, err)
 	require.Equal(t, tx2, tx3)

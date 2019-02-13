@@ -9,8 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-// EncodeSizeHashes computes the size of an encoded object of type Hashes
-func EncodeSizeHashes(obj *Hashes) uint64 {
+// encodeSizeHashes computes the size of an encoded object of type Hashes
+func encodeSizeHashes(obj *Hashes) uint64 {
 	i0 := uint64(0)
 
 	// obj.Hashes
@@ -27,9 +27,9 @@ func EncodeSizeHashes(obj *Hashes) uint64 {
 	return i0
 }
 
-// EncodeHashes encodes an object of type Hashes to the buffer in encoder.Encoder.
+// encodeHashes encodes an object of type Hashes to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeHashes(buf []byte, obj *Hashes) error {
+func encodeHashes(buf []byte, obj *Hashes) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -53,9 +53,9 @@ func EncodeHashes(buf []byte, obj *Hashes) error {
 	return nil
 }
 
-// DecodeHashes decodes an object of type Hashes from the buffer in encoder.Decoder.
+// decodeHashes decodes an object of type Hashes from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeHashes(buf []byte, obj *Hashes) (int, error) {
+func decodeHashes(buf []byte, obj *Hashes) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

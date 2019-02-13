@@ -8,7 +8,6 @@ import (
 	"sort"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
@@ -35,6 +34,9 @@ import (
 	- order created
 	- order spent (for rollbacks)
 */
+
+//go:generate skyencoder -struct UxHead -unexported
+//go:generate skyencoder -struct UxBody -unexported
 
 // UxOut represents uxout
 type UxOut struct {
@@ -65,15 +67,30 @@ func (uo *UxOut) Hash() cipher.SHA256 {
 
 // SnapshotHash returns hash of UxBody + UxHead
 func (uo *UxOut) SnapshotHash() cipher.SHA256 {
-	b1 := encoder.Serialize(uo.Body) //body
-	b2 := encoder.Serialize(uo.Head) //time, bkseq
-	b3 := append(b1, b2...)
-	return cipher.SumSHA256(b3)
+	n1 := encodeSizeUxBody(&uo.Body)
+	n2 := encodeSizeUxHead(&uo.Head)
+	buf := make([]byte, n1+n2)
+
+	err := encodeUxBody(buf[:n1], &uo.Body)
+	if err != nil {
+		log.Panicf("encodeUxBody failed: %v", err)
+	}
+	err = encodeUxHead(buf[n1:], &uo.Head)
+	if err != nil {
+		log.Panicf("encodeUxHead failed: %v", err)
+	}
+
+	return cipher.SumSHA256(buf)
 }
 
 // Hash returns hash of uxbody
 func (ub *UxBody) Hash() cipher.SHA256 {
-	return cipher.SumSHA256(encoder.Serialize(ub))
+	n := encodeSizeUxBody(ub)
+	buf := make([]byte, n)
+	if err := encodeUxBody(buf, ub); err != nil {
+		log.Panicf("encodeUxBody failed: %v", err)
+	}
+	return cipher.SumSHA256(buf)
 }
 
 /*

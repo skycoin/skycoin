@@ -45,8 +45,8 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	}
 
 	// write block into blocks bucket.
-	buf := make([]byte, EncodeSizeBlock(b))
-	if err := EncodeBlock(buf, b); err != nil {
+	buf := make([]byte, encodeSizeBlock(b))
+	if err := encodeBlock(buf, b); err != nil {
 		return err
 	}
 
@@ -141,7 +141,7 @@ func (bt *blockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, e
 		return nil, nil
 	}
 
-	if n, err := DecodeBlock(v, &b); err != nil {
+	if n, err := decodeBlock(v, &b); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes
@@ -171,7 +171,7 @@ func (bt *blockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker)
 func (bt *blockTree) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) error {
 	return dbutil.ForEach(tx, BlocksBkt, func(_, v []byte) error {
 		var b coin.Block
-		if n, err := DecodeBlock(v, &b); err != nil {
+		if n, err := decodeBlock(v, &b); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes
@@ -191,7 +191,7 @@ func (bt *blockTree) getHashInDepth(tx *dbutil.Tx, depth uint64, filter Walker) 
 		return cipher.SHA256{}, false, nil
 	}
 
-	if n, err := DecodeHashPairs(v, &pairs); err != nil {
+	if n, err := decodeHashPairs(v, &pairs); err != nil {
 		return cipher.SHA256{}, false, err
 	} else if n != len(v) {
 		return cipher.SHA256{}, false, encoder.ErrRemainingBytes
@@ -235,7 +235,7 @@ func getHashPairInDepth(tx *dbutil.Tx, depth uint64, fn func(hp coin.HashPair) b
 		return nil, nil
 	}
 
-	if n, err := DecodeHashPairs(v, &hps); err != nil {
+	if n, err := decodeHashPairs(v, &hps); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes
@@ -268,8 +268,8 @@ func setHashPairInDepth(tx *dbutil.Tx, dep uint64, hps []coin.HashPair) error {
 	hpss := &HashPairs{
 		HashPairs: hps,
 	}
-	buf := make([]byte, EncodeSizeHashPairs(hpss))
-	if err := EncodeHashPairs(buf, hpss); err != nil {
+	buf := make([]byte, encodeSizeHashPairs(hpss))
+	if err := encodeHashPairs(buf, hpss); err != nil {
 		return err
 	}
 

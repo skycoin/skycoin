@@ -9,8 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-// EncodeSizeUxArray computes the size of an encoded object of type UxArray
-func EncodeSizeUxArray(obj *UxArray) uint64 {
+// encodeSizeUxArray computes the size of an encoded object of type UxArray
+func encodeSizeUxArray(obj *UxArray) uint64 {
 	i0 := uint64(0)
 
 	// obj.UxArray
@@ -45,9 +45,9 @@ func EncodeSizeUxArray(obj *UxArray) uint64 {
 	return i0
 }
 
-// EncodeUxArray encodes an object of type UxArray to the buffer in encoder.Encoder.
+// encodeUxArray encodes an object of type UxArray to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeUxArray(buf []byte, obj *UxArray) error {
+func encodeUxArray(buf []byte, obj *UxArray) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -89,9 +89,9 @@ func EncodeUxArray(buf []byte, obj *UxArray) error {
 	return nil
 }
 
-// DecodeUxArray decodes an object of type UxArray from the buffer in encoder.Decoder.
+// decodeUxArray decodes an object of type UxArray from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeUxArray(buf []byte, obj *UxArray) (int, error) {
+func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

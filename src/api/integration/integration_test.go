@@ -439,7 +439,10 @@ func TestStableVerifyTransaction(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			encodedTxn := hex.EncodeToString(tc.txn.Serialize())
+			buf, err := tc.txn.Serialize()
+			require.NoError(t, err)
+
+			encodedTxn := hex.EncodeToString(buf)
 
 			resp, err := c.VerifyTransaction(encodedTxn)
 
@@ -4878,11 +4881,14 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 func assertEncodeTxnMatchesTxn(t *testing.T, result *api.CreateTransactionResponse) {
 	require.NotEmpty(t, result.EncodedTransaction)
 	emptyTxn := &coin.Transaction{}
-	require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
+	buf, err := emptyTxn.Serialize()
+	require.NoError(t, err)
+	require.NotEqual(t, hex.EncodeToString(buf), result.EncodedTransaction)
 	txn, err := result.Transaction.ToTransaction()
 	require.NoError(t, err)
 
-	serializedTxn := txn.Serialize()
+	serializedTxn, err := txn.Serialize()
+	require.NoError(t, err)
 	require.Equal(t, hex.EncodeToString(serializedTxn), result.EncodedTransaction)
 
 	require.Equal(t, int(txn.Length), len(serializedTxn))

@@ -172,7 +172,10 @@ func (c *Client) InjectEncodedTransaction(rawtx string) (string, error) {
 
 // InjectTransaction injects a *coin.Transaction to the network
 func (c *Client) InjectTransaction(tx *coin.Transaction) (string, error) {
-	d := tx.Serialize()
+	d, err := tx.Serialize()
+	if err != nil {
+		return "", err
+	}
 	rawTx := hex.EncodeToString(d)
 	return c.InjectEncodedTransaction(rawTx)
 }

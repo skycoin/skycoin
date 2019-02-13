@@ -9,8 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-// EncodeSizeAnnounceTxnsMessage computes the size of an encoded object of type AnnounceTxnsMessage
-func EncodeSizeAnnounceTxnsMessage(obj *AnnounceTxnsMessage) uint64 {
+// encodeSizeAnnounceTxnsMessage computes the size of an encoded object of type AnnounceTxnsMessage
+func encodeSizeAnnounceTxnsMessage(obj *AnnounceTxnsMessage) uint64 {
 	i0 := uint64(0)
 
 	// obj.Transactions
@@ -27,9 +27,9 @@ func EncodeSizeAnnounceTxnsMessage(obj *AnnounceTxnsMessage) uint64 {
 	return i0
 }
 
-// EncodeAnnounceTxnsMessage encodes an object of type AnnounceTxnsMessage to the buffer in encoder.Encoder.
+// encodeAnnounceTxnsMessage encodes an object of type AnnounceTxnsMessage to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) error {
+func encodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -58,9 +58,9 @@ func EncodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) error {
 	return nil
 }
 
-// DecodeAnnounceTxnsMessage decodes an object of type AnnounceTxnsMessage from the buffer in encoder.Decoder.
+// decodeAnnounceTxnsMessage decodes an object of type AnnounceTxnsMessage from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) (int, error) {
+func decodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

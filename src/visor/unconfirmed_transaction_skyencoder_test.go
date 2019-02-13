@@ -62,13 +62,13 @@ func newRandomZeroLenNilUnconfirmedTransactionForEncodeTest(t *testing.T, rand *
 }
 
 func testSkyencoderUnconfirmedTransaction(t *testing.T, obj *UnconfirmedTransaction) {
-	// EncodeSize
+	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := EncodeSizeUnconfirmedTransaction(obj)
+	n2 := encodeSizeUnconfirmedTransaction(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != EncodeSizeUnconfirmedTransaction() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeUnconfirmedTransaction() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -76,17 +76,17 @@ func testSkyencoderUnconfirmedTransaction(t *testing.T, obj *UnconfirmedTransact
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := EncodeUnconfirmedTransaction(data2, obj)
+	err := encodeUnconfirmedTransaction(data2, obj)
 	if err != nil {
-		t.Fatalf("EncodeUnconfirmedTransaction failed: %v", err)
+		t.Fatalf("encodeUnconfirmedTransaction failed: %v", err)
 	}
 
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(EncodeUnconfirmedTransaction()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeUnconfirmedTransaction()) (%d != %d)", len(data1), len(data2))
 	}
 
 	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != EncodeUnconfirmedTransaction()")
+		t.Fatal("encoder.Serialize() != encode[1]s()")
 	}
 
 	// Decode
@@ -102,16 +102,16 @@ func testSkyencoderUnconfirmedTransaction(t *testing.T, obj *UnconfirmedTransact
 	}
 
 	var obj3 UnconfirmedTransaction
-	n, err := DecodeUnconfirmedTransaction(data2, &obj3)
+	n, err := decodeUnconfirmedTransaction(data2, &obj3)
 	if err != nil {
-		t.Fatalf("DecodeUnconfirmedTransaction failed: %v", err)
+		t.Fatalf("decodeUnconfirmedTransaction failed: %v", err)
 	}
 	if n != len(data2) {
-		t.Fatalf("DecodeUnconfirmedTransaction bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeUnconfirmedTransaction bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != DecodeUnconfirmedTransaction()")
+		t.Fatal("encoder.DeserializeRaw() != decodeUnconfirmedTransaction()")
 	}
 
 	isEncodableField := func(f reflect.StructField) bool {
@@ -174,12 +174,12 @@ func testSkyencoderUnconfirmedTransaction(t *testing.T, obj *UnconfirmedTransact
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = DecodeUnconfirmedTransaction(data3, &obj3)
+		n, err = decodeUnconfirmedTransaction(data3, &obj3)
 		if err != nil {
-			t.Fatalf("DecodeUnconfirmedTransaction failed: %v", err)
+			t.Fatalf("decodeUnconfirmedTransaction failed: %v", err)
 		}
 		if n != len(data2) {
-			t.Fatalf("DecodeUnconfirmedTransaction bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeUnconfirmedTransaction bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
@@ -225,14 +225,14 @@ func TestSkyencoderUnconfirmedTransaction(t *testing.T) {
 
 func decodeUnconfirmedTransactionExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj UnconfirmedTransaction
-	_, err := DecodeUnconfirmedTransaction(buf, &obj)
+	_, err := decodeUnconfirmedTransaction(buf, &obj)
 
 	if err == nil {
-		t.Fatal("DecodeUnconfirmedTransaction: expected error, got nil")
+		t.Fatal("decodeUnconfirmedTransaction: expected error, got nil")
 	}
 
 	if err != expectedErr {
-		t.Fatalf("DecodeUnconfirmedTransaction: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeUnconfirmedTransaction: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -318,11 +318,11 @@ func testSkyencoderUnconfirmedTransactionDecodeErrors(t *testing.T, k int, tag s
 		}
 	}
 
-	n := EncodeSizeUnconfirmedTransaction(obj)
+	n := encodeSizeUnconfirmedTransaction(obj)
 	buf := make([]byte, n)
-	err := EncodeUnconfirmedTransaction(buf, obj)
+	err := encodeUnconfirmedTransaction(buf, obj)
 	if err != nil {
-		t.Fatalf("EncodeUnconfirmedTransaction failed: %v", err)
+		t.Fatalf("encodeUnconfirmedTransaction failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field

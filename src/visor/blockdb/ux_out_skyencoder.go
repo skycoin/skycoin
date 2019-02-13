@@ -6,8 +6,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-// EncodeSizeUxOut computes the size of an encoded object of type UxOut
-func EncodeSizeUxOut(obj *coin.UxOut) uint64 {
+// encodeSizeUxOut computes the size of an encoded object of type UxOut
+func encodeSizeUxOut(obj *coin.UxOut) uint64 {
 	i0 := uint64(0)
 
 	// obj.Head.Time
@@ -34,9 +34,9 @@ func EncodeSizeUxOut(obj *coin.UxOut) uint64 {
 	return i0
 }
 
-// EncodeUxOut encodes an object of type UxOut to the buffer in encoder.Encoder.
+// encodeUxOut encodes an object of type UxOut to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeUxOut(buf []byte, obj *coin.UxOut) error {
+func encodeUxOut(buf []byte, obj *coin.UxOut) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -65,9 +65,9 @@ func EncodeUxOut(buf []byte, obj *coin.UxOut) error {
 	return nil
 }
 
-// DecodeUxOut decodes an object of type UxOut from the buffer in encoder.Decoder.
+// decodeUxOut decodes an object of type UxOut from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeUxOut(buf []byte, obj *coin.UxOut) (int, error) {
+func decodeUxOut(buf []byte, obj *coin.UxOut) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

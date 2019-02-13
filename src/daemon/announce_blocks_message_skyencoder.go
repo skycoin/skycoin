@@ -3,8 +3,8 @@ package daemon
 
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
-// EncodeSizeAnnounceBlocksMessage computes the size of an encoded object of type AnnounceBlocksMessage
-func EncodeSizeAnnounceBlocksMessage(obj *AnnounceBlocksMessage) uint64 {
+// encodeSizeAnnounceBlocksMessage computes the size of an encoded object of type AnnounceBlocksMessage
+func encodeSizeAnnounceBlocksMessage(obj *AnnounceBlocksMessage) uint64 {
 	i0 := uint64(0)
 
 	// obj.MaxBkSeq
@@ -13,9 +13,9 @@ func EncodeSizeAnnounceBlocksMessage(obj *AnnounceBlocksMessage) uint64 {
 	return i0
 }
 
-// EncodeAnnounceBlocksMessage encodes an object of type AnnounceBlocksMessage to the buffer in encoder.Encoder.
+// encodeAnnounceBlocksMessage encodes an object of type AnnounceBlocksMessage to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) error {
+func encodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -26,9 +26,9 @@ func EncodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) error {
 	return nil
 }
 
-// DecodeAnnounceBlocksMessage decodes an object of type AnnounceBlocksMessage from the buffer in encoder.Decoder.
+// decodeAnnounceBlocksMessage decodes an object of type AnnounceBlocksMessage from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) (int, error) {
+func decodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

@@ -8,8 +8,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-// EncodeSizeIntroductionMessage computes the size of an encoded object of type IntroductionMessage
-func EncodeSizeIntroductionMessage(obj *IntroductionMessage) uint64 {
+// encodeSizeIntroductionMessage computes the size of an encoded object of type IntroductionMessage
+func encodeSizeIntroductionMessage(obj *IntroductionMessage) uint64 {
 	i0 := uint64(0)
 
 	// obj.Mirror
@@ -32,9 +32,9 @@ func EncodeSizeIntroductionMessage(obj *IntroductionMessage) uint64 {
 	return i0
 }
 
-// EncodeIntroductionMessage encodes an object of type IntroductionMessage to the buffer in encoder.Encoder.
+// encodeIntroductionMessage encodes an object of type IntroductionMessage to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeIntroductionMessage(buf []byte, obj *IntroductionMessage) error {
+func encodeIntroductionMessage(buf []byte, obj *IntroductionMessage) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -67,9 +67,9 @@ func EncodeIntroductionMessage(buf []byte, obj *IntroductionMessage) error {
 	return nil
 }
 
-// DecodeIntroductionMessage decodes an object of type IntroductionMessage from the buffer in encoder.Decoder.
+// decodeIntroductionMessage decodes an object of type IntroductionMessage from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (int, error) {
+func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

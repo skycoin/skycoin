@@ -83,9 +83,12 @@ func TestCreateTransaction(t *testing.T) {
 	createdTxn, err := NewCreatedTransaction(txn, inputs)
 	require.NoError(t, err)
 
+	buf, err := txn.Serialize()
+	require.NoError(t, err)
+
 	createTxnResponse := &CreateTransactionResponse{
 		Transaction:        *createdTxn,
-		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
+		EncodedTransaction: hex.EncodeToString(buf),
 	}
 
 	validBody := &rawRequest{

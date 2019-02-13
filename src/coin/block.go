@@ -10,8 +10,10 @@ import (
 	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
+
+//go:generate skyencoder -struct BlockHeader -unexported
+//go:generate skyencoder -struct BlockBody -unexported
 
 // MaxBlockTransactions is the maximum number of transactions in a block (see the maxlen struct tag value applied to BlockBody.Transactions)
 const MaxBlockTransactions = 65535
@@ -166,13 +168,18 @@ func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime, fee uin
 
 // Hash return hash of block header
 func (bh BlockHeader) Hash() cipher.SHA256 {
-	b1 := encoder.Serialize(bh)
-	return cipher.SumSHA256(b1)
+	return cipher.SumSHA256(bh.Bytes())
 }
 
 // Bytes serialize the blockheader and return the byte value.
 func (bh BlockHeader) Bytes() []byte {
-	return encoder.Serialize(bh)
+	n := encodeSizeBlockHeader(&bh)
+	buf := make([]byte, n)
+	err := encodeBlockHeader(buf, &bh)
+	if err != nil {
+		log.Panicf("encodeBlockHeader failed: %v", err)
+	}
+	return buf
 }
 
 // Hash returns the merkle hash of contained transactions
@@ -194,7 +201,13 @@ func (bb BlockBody) Size() (uint32, error) {
 
 // Bytes serialize block body, and return the byte value.
 func (bb BlockBody) Bytes() []byte {
-	return encoder.Serialize(bb)
+	n := encodeSizeBlockBody(&bb)
+	buf := make([]byte, n)
+	err := encodeBlockBody(buf, &bb)
+	if err != nil {
+		log.Panicf("encodeBlockBody failed: %v", err)
+	}
+	return buf
 }
 
 // CreateUnspents creates the expected outputs for a transaction.

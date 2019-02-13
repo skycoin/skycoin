@@ -73,7 +73,12 @@ func createRawTxCmd() *cobra.Command {
 				return err
 			}
 
-			rawTxn := hex.EncodeToString(txn.Serialize())
+			buf, err := txn.Serialize()
+			if err != nil {
+				return err
+			}
+
+			rawTxn := hex.EncodeToString(buf)
 
 			if jsonOutput {
 				return printJSON(struct {

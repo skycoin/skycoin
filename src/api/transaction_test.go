@@ -632,7 +632,9 @@ func TestInjectTransaction(t *testing.T) {
 		Rawtx string `json:"rawtx"`
 	}
 
-	validTxnBody := &httpBody{Rawtx: hex.EncodeToString(validTransaction.Serialize())}
+	buf, err := validTransaction.Serialize()
+	require.NoError(t, err)
+	validTxnBody := &httpBody{Rawtx: hex.EncodeToString(buf)}
 	validTxnBodyJSON, err := json.Marshal(validTxnBody)
 	require.NoError(t, err)
 
@@ -1360,7 +1362,9 @@ func TestVerifyTransaction(t *testing.T) {
 		EncodedTransaction string `json:"encoded_transaction"`
 	}
 
-	validTxnBody := &httpBody{EncodedTransaction: hex.EncodeToString(txnAndInputs.txn.Serialize())}
+	buf, err := txnAndInputs.txn.Serialize()
+	require.NoError(t, err)
+	validTxnBody := &httpBody{EncodedTransaction: hex.EncodeToString(buf)}
 	validTxnBodyJSON, err := json.Marshal(validTxnBody)
 	require.NoError(t, err)
 
@@ -1369,8 +1373,10 @@ func TestVerifyTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	invalidTxnEmptyAddress := makeTransactionWithEmptyAddressOutput(t)
+	buf, err = invalidTxnEmptyAddress.txn.Serialize()
+	require.NoError(t, err)
 	invalidTxnEmptyAddressBody := &httpBody{
-		EncodedTransaction: hex.EncodeToString(invalidTxnEmptyAddress.txn.Serialize()),
+		EncodedTransaction: hex.EncodeToString(buf),
 	}
 	invalidTxnEmptyAddressBodyJSON, err := json.Marshal(invalidTxnEmptyAddressBody)
 	require.NoError(t, err)

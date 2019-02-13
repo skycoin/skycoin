@@ -21,8 +21,8 @@ var (
 	errUpdateObjectDoesNotExist = errors.New("object does not exist in bucket")
 )
 
-//go:generate skyencoder -struct UnconfirmedTransaction
-//go:generate skyencoder -struct UxArray
+//go:generate skyencoder -unexported -struct UnconfirmedTransaction
+//go:generate skyencoder -unexported -struct UxArray
 
 // UxArray wraps coin.UxArray
 type UxArray struct {
@@ -42,7 +42,7 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 		return nil, nil
 	}
 
-	if n, err := DecodeUnconfirmedTransaction(v, &txn); err != nil {
+	if n, err := decodeUnconfirmedTransaction(v, &txn); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes
@@ -56,9 +56,9 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 }
 
 func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTransaction) error {
-	n := EncodeSizeUnconfirmedTransaction(v)
+	n := encodeSizeUnconfirmedTransaction(v)
 	buf := make([]byte, n)
-	if err := EncodeUnconfirmedTransaction(buf, v); err != nil {
+	if err := encodeUnconfirmedTransaction(buf, v); err != nil {
 		return err
 	}
 
@@ -91,7 +91,7 @@ func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTransaction, err
 
 	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
 		var txn UnconfirmedTransaction
-		if n, err := DecodeUnconfirmedTransaction(v, &txn); err != nil {
+		if n, err := decodeUnconfirmedTransaction(v, &txn); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes
@@ -118,7 +118,7 @@ func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx
 		}
 
 		var txn UnconfirmedTransaction
-		if n, err := DecodeUnconfirmedTransaction(v, &txn); err != nil {
+		if n, err := decodeUnconfirmedTransaction(v, &txn); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes
@@ -138,9 +138,9 @@ func (txus *txnUnspents) put(tx *dbutil.Tx, hash cipher.SHA256, uxs coin.UxArray
 	uxa := &UxArray{
 		UxArray: uxs,
 	}
-	n := EncodeSizeUxArray(uxa)
+	n := encodeSizeUxArray(uxa)
 	buf := make([]byte, n)
-	if err := EncodeUxArray(buf, uxa); err != nil {
+	if err := encodeUxArray(buf, uxa); err != nil {
 		return err
 	}
 
@@ -156,7 +156,7 @@ func (txus *txnUnspents) getByAddr(tx *dbutil.Tx, a cipher.Address) (coin.UxArra
 
 	if err := dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(_, v []byte) error {
 		var uxa UxArray
-		if n, err := DecodeUxArray(v, &uxa); err != nil {
+		if n, err := decodeUxArray(v, &uxa); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes

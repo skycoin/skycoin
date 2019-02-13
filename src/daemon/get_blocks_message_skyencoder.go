@@ -3,8 +3,8 @@ package daemon
 
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
-// EncodeSizeGetBlocksMessage computes the size of an encoded object of type GetBlocksMessage
-func EncodeSizeGetBlocksMessage(obj *GetBlocksMessage) uint64 {
+// encodeSizeGetBlocksMessage computes the size of an encoded object of type GetBlocksMessage
+func encodeSizeGetBlocksMessage(obj *GetBlocksMessage) uint64 {
 	i0 := uint64(0)
 
 	// obj.LastBlock
@@ -16,9 +16,9 @@ func EncodeSizeGetBlocksMessage(obj *GetBlocksMessage) uint64 {
 	return i0
 }
 
-// EncodeGetBlocksMessage encodes an object of type GetBlocksMessage to the buffer in encoder.Encoder.
+// encodeGetBlocksMessage encodes an object of type GetBlocksMessage to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) error {
+func encodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -32,9 +32,9 @@ func EncodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) error {
 	return nil
 }
 
-// DecodeGetBlocksMessage decodes an object of type GetBlocksMessage from the buffer in encoder.Decoder.
+// decodeGetBlocksMessage decodes an object of type GetBlocksMessage from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) (int, error) {
+func decodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

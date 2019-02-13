@@ -62,13 +62,13 @@ func newRandomZeroLenNilUxArrayForEncodeTest(t *testing.T, rand *mathrand.Rand) 
 }
 
 func testSkyencoderUxArray(t *testing.T, obj *UxArray) {
-	// EncodeSize
+	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := EncodeSizeUxArray(obj)
+	n2 := encodeSizeUxArray(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != EncodeSizeUxArray() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeUxArray() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -76,17 +76,17 @@ func testSkyencoderUxArray(t *testing.T, obj *UxArray) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := EncodeUxArray(data2, obj)
+	err := encodeUxArray(data2, obj)
 	if err != nil {
-		t.Fatalf("EncodeUxArray failed: %v", err)
+		t.Fatalf("encodeUxArray failed: %v", err)
 	}
 
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(EncodeUxArray()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeUxArray()) (%d != %d)", len(data1), len(data2))
 	}
 
 	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != EncodeUxArray()")
+		t.Fatal("encoder.Serialize() != encode[1]s()")
 	}
 
 	// Decode
@@ -102,16 +102,16 @@ func testSkyencoderUxArray(t *testing.T, obj *UxArray) {
 	}
 
 	var obj3 UxArray
-	n, err := DecodeUxArray(data2, &obj3)
+	n, err := decodeUxArray(data2, &obj3)
 	if err != nil {
-		t.Fatalf("DecodeUxArray failed: %v", err)
+		t.Fatalf("decodeUxArray failed: %v", err)
 	}
 	if n != len(data2) {
-		t.Fatalf("DecodeUxArray bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeUxArray bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != DecodeUxArray()")
+		t.Fatal("encoder.DeserializeRaw() != decodeUxArray()")
 	}
 
 	isEncodableField := func(f reflect.StructField) bool {
@@ -174,12 +174,12 @@ func testSkyencoderUxArray(t *testing.T, obj *UxArray) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = DecodeUxArray(data3, &obj3)
+		n, err = decodeUxArray(data3, &obj3)
 		if err != nil {
-			t.Fatalf("DecodeUxArray failed: %v", err)
+			t.Fatalf("decodeUxArray failed: %v", err)
 		}
 		if n != len(data2) {
-			t.Fatalf("DecodeUxArray bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeUxArray bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
@@ -225,14 +225,14 @@ func TestSkyencoderUxArray(t *testing.T) {
 
 func decodeUxArrayExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj UxArray
-	_, err := DecodeUxArray(buf, &obj)
+	_, err := decodeUxArray(buf, &obj)
 
 	if err == nil {
-		t.Fatal("DecodeUxArray: expected error, got nil")
+		t.Fatal("decodeUxArray: expected error, got nil")
 	}
 
 	if err != expectedErr {
-		t.Fatalf("DecodeUxArray: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeUxArray: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -318,11 +318,11 @@ func testSkyencoderUxArrayDecodeErrors(t *testing.T, k int, tag string, obj *UxA
 		}
 	}
 
-	n := EncodeSizeUxArray(obj)
+	n := encodeSizeUxArray(obj)
 	buf := make([]byte, n)
-	err := EncodeUxArray(buf, obj)
+	err := encodeUxArray(buf, obj)
 	if err != nil {
-		t.Fatalf("EncodeUxArray failed: %v", err)
+		t.Fatalf("encodeUxArray failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field

@@ -34,9 +34,14 @@ func NewCreateTransactionResponse(txn *coin.Transaction, inputs []wallet.UxBalan
 		return nil, err
 	}
 
+	buf, err := txn.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
 	return &CreateTransactionResponse{
 		Transaction:        *cTxn,
-		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
+		EncodedTransaction: hex.EncodeToString(buf),
 	}, nil
 }
 

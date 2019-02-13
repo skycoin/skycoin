@@ -8,8 +8,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-// EncodeSizeGivePeersMessage computes the size of an encoded object of type GivePeersMessage
-func EncodeSizeGivePeersMessage(obj *GivePeersMessage) uint64 {
+// encodeSizeGivePeersMessage computes the size of an encoded object of type GivePeersMessage
+func encodeSizeGivePeersMessage(obj *GivePeersMessage) uint64 {
 	i0 := uint64(0)
 
 	// obj.Peers
@@ -29,9 +29,9 @@ func EncodeSizeGivePeersMessage(obj *GivePeersMessage) uint64 {
 	return i0
 }
 
-// EncodeGivePeersMessage encodes an object of type GivePeersMessage to the buffer in encoder.Encoder.
+// encodeGivePeersMessage encodes an object of type GivePeersMessage to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeGivePeersMessage(buf []byte, obj *GivePeersMessage) error {
+func encodeGivePeersMessage(buf []byte, obj *GivePeersMessage) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -58,9 +58,9 @@ func EncodeGivePeersMessage(buf []byte, obj *GivePeersMessage) error {
 	return nil
 }
 
-// DecodeGivePeersMessage decodes an object of type GivePeersMessage from the buffer in encoder.Decoder.
+// decodeGivePeersMessage decodes an object of type GivePeersMessage from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeGivePeersMessage(buf []byte, obj *GivePeersMessage) (int, error) {
+func decodeGivePeersMessage(buf []byte, obj *GivePeersMessage) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

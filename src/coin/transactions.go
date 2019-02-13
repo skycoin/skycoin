@@ -20,6 +20,18 @@ var (
 	DebugLevel2 = true
 )
 
+//go:generate skyencoder -struct Transaction -unexported
+//go:generate skyencoder -struct transactionInputs
+//go:generate skyencoder -struct transactionOutputs
+
+type transactionInputs struct {
+	In []cipher.SHA256
+}
+
+type transactionOutputs struct {
+	Out []TransactionOutput
+}
+
 /*
 Transaction with N inputs, M ouputs is
 - 32 bytes constant
@@ -63,11 +75,6 @@ type TransactionOutput struct {
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (txn *Transaction) Verify() error {
-	h := txn.HashInner()
-	if h != txn.InnerHash {
-		return errors.New("InnerHash does not match computed hash")
-	}
-
 	if len(txn.In) == 0 {
 		return errors.New("No inputs")
 	}
@@ -148,6 +155,11 @@ func (txn *Transaction) Verify() error {
 		if err != nil {
 			return errors.New("Output coins overflow")
 		}
+	}
+
+	h := txn.HashInner()
+	if h != txn.InnerHash {
+		return errors.New("InnerHash does not match computed hash")
 	}
 
 	return nil
@@ -250,18 +262,28 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 
 // Size returns the encoded byte size of the transaction
 func (txn *Transaction) Size() (uint32, error) {
-	return mathutil.IntToUint32(len(txn.Serialize()))
+	buf, err := txn.Serialize()
+	if err != nil {
+		return 0, err
+	}
+	return mathutil.IntToUint32(len(buf))
 }
 
 // Hash an entire Transaction struct, including the TransactionHeader
 func (txn *Transaction) Hash() cipher.SHA256 {
-	b := txn.Serialize()
+	b, err := txn.Serialize()
+	if err != nil {
+		log.Panicf("txn.Serialize failed: %v", err)
+	}
 	return cipher.SumSHA256(b)
 }
 
 // SizeHash returns the encoded size and the hash of it (avoids duplicate encoding)
 func (txn *Transaction) SizeHash() (uint32, cipher.SHA256, error) {
-	b := txn.Serialize()
+	b, err := txn.Serialize()
+	if err != nil {
+		return 0, cipher.SHA256{}, err
+	}
 	s, err := mathutil.IntToUint32(len(b))
 	if err != nil {
 		return 0, cipher.SHA256{}, err
@@ -296,15 +318,35 @@ func (txn *Transaction) UpdateHeader() error {
 // This is what is signed
 // Client hashes the inner hash with hash of output being spent and signs it with private key
 func (txn *Transaction) HashInner() cipher.SHA256 {
-	b1 := encoder.Serialize(txn.In)
-	b2 := encoder.Serialize(txn.Out)
-	b3 := append(b1, b2...)
-	return cipher.SumSHA256(b3)
+	txnInputs := &transactionInputs{
+		In: txn.In,
+	}
+	txnOutputs := &transactionOutputs{
+		Out: txn.Out,
+	}
+	n1 := encodeSizeTransactionInputs(txnInputs)
+	n2 := encodeSizeTransactionOutputs(txnOutputs)
+	buf := make([]byte, n1+n2)
+
+	if err := encodeTransactionInputs(buf[:n1], txnInputs); err != nil {
+		log.Panicf("encodeTransactionInputs failed: %v", err)
+	}
+
+	if err := encodeTransactionOutputs(buf[n1:], txnOutputs); err != nil {
+		log.Panicf("encodeTransactionInputs failed: %v", err)
+	}
+
+	return cipher.SumSHA256(buf)
 }
 
 // Serialize serialize the transaction
-func (txn *Transaction) Serialize() []byte {
-	return encoder.Serialize(*txn)
+func (txn *Transaction) Serialize() ([]byte, error) {
+	n := encodeSizeTransaction(txn)
+	buf := make([]byte, n)
+	if err := encodeTransaction(buf, txn); err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
 
 // MustTransactionDeserialize deserialize transaction, panics on error
@@ -319,8 +361,10 @@ func MustTransactionDeserialize(b []byte) Transaction {
 // TransactionDeserialize deserialize transaction
 func TransactionDeserialize(b []byte) (Transaction, error) {
 	t := Transaction{}
-	if err := encoder.DeserializeRaw(b, &t); err != nil {
+	if n, err := decodeTransaction(b, &t); err != nil {
 		return t, fmt.Errorf("Invalid transaction: %v", err)
+	} else if n != len(b) {
+		return t, fmt.Errorf("Invalid transaction: %v", encoder.ErrRemainingBytes)
 	}
 	return t, nil
 }

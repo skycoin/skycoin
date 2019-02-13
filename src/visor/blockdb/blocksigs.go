@@ -34,7 +34,7 @@ func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, e
 		return cipher.Sig{}, false, nil
 	}
 
-	if n, err := DecodeSig(v, &sig); err != nil {
+	if n, err := decodeSig(v, &sig); err != nil {
 		return cipher.Sig{}, false, err
 	} else if n != len(v) {
 		return cipher.Sig{}, false, encoder.ErrRemainingBytes
@@ -48,8 +48,8 @@ func (bs *blockSigs) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) erro
 	sw := &Sig{
 		Sig: sig,
 	}
-	buf := make([]byte, EncodeSizeSig(sw))
-	if err := EncodeSig(buf, sw); err != nil {
+	buf := make([]byte, encodeSizeSig(sw))
+	if err := encodeSig(buf, sw); err != nil {
 		return err
 	}
 	return dbutil.PutBucketValue(tx, BlockSigsBkt, hash[:], buf)
@@ -64,7 +64,7 @@ func (bs *blockSigs) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) er
 		}
 
 		var sig Sig
-		if n, err := DecodeSig(v, &sig); err != nil {
+		if n, err := decodeSig(v, &sig); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes

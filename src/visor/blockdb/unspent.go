@@ -83,7 +83,7 @@ func (pl pool) get(tx *dbutil.Tx, hash cipher.SHA256) (*coin.UxOut, error) {
 		return nil, nil
 	}
 
-	if n, err := DecodeUxOut(v, &out); err != nil {
+	if n, err := decodeUxOut(v, &out); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes
@@ -97,7 +97,7 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 		var ux coin.UxOut
-		if n, err := DecodeUxOut(v, &ux); err != nil {
+		if n, err := decodeUxOut(v, &ux); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes
@@ -113,8 +113,8 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 }
 
 func (pl pool) put(tx *dbutil.Tx, hash cipher.SHA256, ux coin.UxOut) error {
-	buf := make([]byte, EncodeSizeUxOut(&ux))
-	if err := EncodeUxOut(buf, &ux); err != nil {
+	buf := make([]byte, encodeSizeUxOut(&ux))
+	if err := encodeUxOut(buf, &ux); err != nil {
 		return err
 	}
 
@@ -137,7 +137,7 @@ func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256,
 		return nil, nil
 	}
 
-	if n, err := DecodeHashes(v, &hashes); err != nil {
+	if n, err := decodeHashes(v, &hashes); err != nil {
 		return nil, err
 	} else if n != len(v) {
 		return nil, encoder.ErrRemainingBytes
@@ -163,8 +163,8 @@ func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.S
 	hs := &Hashes{
 		Hashes: hashes,
 	}
-	buf := make([]byte, EncodeSizeHashes(hs))
-	if err := EncodeHashes(buf, hs); err != nil {
+	buf := make([]byte, encodeSizeHashes(hs))
+	if err := encodeHashes(buf, hs); err != nil {
 		return err
 	}
 
@@ -289,7 +289,7 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 	var maxBlockSeq uint64
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
 		var ux coin.UxOut
-		if n, err := DecodeUxOut(v, &ux); err != nil {
+		if n, err := decodeUxOut(v, &ux); err != nil {
 			return err
 		} else if n != len(v) {
 			return encoder.ErrRemainingBytes

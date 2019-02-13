@@ -3,8 +3,8 @@ package historydb
 
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
-// EncodeSizeUxOut computes the size of an encoded object of type UxOut
-func EncodeSizeUxOut(obj *UxOut) uint64 {
+// encodeSizeUxOut computes the size of an encoded object of type UxOut
+func encodeSizeUxOut(obj *UxOut) uint64 {
 	i0 := uint64(0)
 
 	// obj.Out.Head.Time
@@ -37,9 +37,9 @@ func EncodeSizeUxOut(obj *UxOut) uint64 {
 	return i0
 }
 
-// EncodeUxOut encodes an object of type UxOut to the buffer in encoder.Encoder.
+// encodeUxOut encodes an object of type UxOut to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeUxOut(buf []byte, obj *UxOut) error {
+func encodeUxOut(buf []byte, obj *UxOut) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -74,9 +74,9 @@ func EncodeUxOut(buf []byte, obj *UxOut) error {
 	return nil
 }
 
-// DecodeUxOut decodes an object of type UxOut from the buffer in encoder.Decoder.
+// decodeUxOut decodes an object of type UxOut from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeUxOut(buf []byte, obj *UxOut) (int, error) {
+func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

@@ -1042,7 +1042,10 @@ func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.Tran
 
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
 func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
-	d := txn.Serialize()
+	d, err := txn.Serialize()
+	if err != nil {
+		return "", err
+	}
 	rawTx := hex.EncodeToString(d)
 	return c.InjectEncodedTransaction(rawTx)
 }

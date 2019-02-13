@@ -10,8 +10,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-// EncodeSizeTransaction computes the size of an encoded object of type Transaction
-func EncodeSizeTransaction(obj *Transaction) uint64 {
+// encodeSizeTransaction computes the size of an encoded object of type Transaction
+func encodeSizeTransaction(obj *Transaction) uint64 {
 	i0 := uint64(0)
 
 	// obj.Txn.Length
@@ -71,9 +71,9 @@ func EncodeSizeTransaction(obj *Transaction) uint64 {
 	return i0
 }
 
-// EncodeTransaction encodes an object of type Transaction to the buffer in encoder.Encoder.
+// encodeTransaction encodes an object of type Transaction to the buffer in encoder.Encoder.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func EncodeTransaction(buf []byte, obj *Transaction) error {
+func encodeTransaction(buf []byte, obj *Transaction) error {
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -165,9 +165,9 @@ func EncodeTransaction(buf []byte, obj *Transaction) error {
 	return nil
 }
 
-// DecodeTransaction decodes an object of type Transaction from the buffer in encoder.Decoder.
+// decodeTransaction decodes an object of type Transaction from the buffer in encoder.Decoder.
 // Returns the number of bytes used from the buffer to decode the object.
-func DecodeTransaction(buf []byte, obj *Transaction) (int, error) {
+func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}

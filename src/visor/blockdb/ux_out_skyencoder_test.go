@@ -63,13 +63,13 @@ func newRandomZeroLenNilUxOutForEncodeTest(t *testing.T, rand *mathrand.Rand) *c
 }
 
 func testSkyencoderUxOut(t *testing.T, obj *coin.UxOut) {
-	// EncodeSize
+	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := EncodeSizeUxOut(obj)
+	n2 := encodeSizeUxOut(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != EncodeSizeUxOut() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeUxOut() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -77,17 +77,17 @@ func testSkyencoderUxOut(t *testing.T, obj *coin.UxOut) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := EncodeUxOut(data2, obj)
+	err := encodeUxOut(data2, obj)
 	if err != nil {
-		t.Fatalf("EncodeUxOut failed: %v", err)
+		t.Fatalf("encodeUxOut failed: %v", err)
 	}
 
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(EncodeUxOut()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeUxOut()) (%d != %d)", len(data1), len(data2))
 	}
 
 	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != EncodeUxOut()")
+		t.Fatal("encoder.Serialize() != encode[1]s()")
 	}
 
 	// Decode
@@ -103,16 +103,16 @@ func testSkyencoderUxOut(t *testing.T, obj *coin.UxOut) {
 	}
 
 	var obj3 coin.UxOut
-	n, err := DecodeUxOut(data2, &obj3)
+	n, err := decodeUxOut(data2, &obj3)
 	if err != nil {
-		t.Fatalf("DecodeUxOut failed: %v", err)
+		t.Fatalf("decodeUxOut failed: %v", err)
 	}
 	if n != len(data2) {
-		t.Fatalf("DecodeUxOut bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeUxOut bytes read length should be %d, is %d", len(data2), n)
 	}
 
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != DecodeUxOut()")
+		t.Fatal("encoder.DeserializeRaw() != decodeUxOut()")
 	}
 
 	isEncodableField := func(f reflect.StructField) bool {
@@ -175,12 +175,12 @@ func testSkyencoderUxOut(t *testing.T, obj *coin.UxOut) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = DecodeUxOut(data3, &obj3)
+		n, err = decodeUxOut(data3, &obj3)
 		if err != nil {
-			t.Fatalf("DecodeUxOut failed: %v", err)
+			t.Fatalf("decodeUxOut failed: %v", err)
 		}
 		if n != len(data2) {
-			t.Fatalf("DecodeUxOut bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeUxOut bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
@@ -226,14 +226,14 @@ func TestSkyencoderUxOut(t *testing.T) {
 
 func decodeUxOutExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj coin.UxOut
-	_, err := DecodeUxOut(buf, &obj)
+	_, err := decodeUxOut(buf, &obj)
 
 	if err == nil {
-		t.Fatal("DecodeUxOut: expected error, got nil")
+		t.Fatal("decodeUxOut: expected error, got nil")
 	}
 
 	if err != expectedErr {
-		t.Fatalf("DecodeUxOut: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeUxOut: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -319,11 +319,11 @@ func testSkyencoderUxOutDecodeErrors(t *testing.T, k int, tag string, obj *coin.
 		}
 	}
 
-	n := EncodeSizeUxOut(obj)
+	n := encodeSizeUxOut(obj)
 	buf := make([]byte, n)
-	err := EncodeUxOut(buf, obj)
+	err := encodeUxOut(buf, obj)
 	if err != nil {
-		t.Fatalf("EncodeUxOut failed: %v", err)
+		t.Fatalf("encodeUxOut failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field

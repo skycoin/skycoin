@@ -1,1 +1,0 @@
-bash swagger generate spec -b github.com/skycoin/skycoin/src/api -o /home/maceo/goeg/src/github.com/skycoin/skycoin/swagger.yml

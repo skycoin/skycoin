@@ -401,6 +401,9 @@ func (c *Config) postProcess() error {
 	}
 
 	if c.Node.HostWhitelist != "" {
+		if c.Node.DisableHeaderCheck {
+			return errors.New("host whitelist should be empty when header check is disabled")
+		}
 		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
 	}
 

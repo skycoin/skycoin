@@ -27,7 +27,7 @@ type HealthResponse struct {
 	IncomingConnections  int                `json:"incoming_connections"`
 	Uptime               wh.Duration        `json:"uptime"`
 	CSRFEnabled          bool               `json:"csrf_enabled"`
-	HeadercheckEnabled   bool               `json:"headercheck_enabled"`
+	HeaderCheckEnabled   bool               `json:"header_check_enabled"`
 	CSPEnabled           bool               `json:"csp_enabled"`
 	WalletAPIEnabled     bool               `json:"wallet_api_enabled"`
 	GUIEnabled           bool               `json:"gui_enabled"`
@@ -77,7 +77,7 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 			IncomingConnections:  health.IncomingConnections,
 			Uptime:               wh.FromDuration(health.Uptime),
 			CSRFEnabled:          !c.disableCSRF,
-			HeadercheckEnabled:   !c.disableHeadercheck,
+			HeaderCheckEnabled:   !c.disableHeaderCheck,
 			CSPEnabled:           !c.disableCSP,
 			GUIEnabled:           c.enableGUI,
 			WalletAPIEnabled:     walletAPIEnabled,

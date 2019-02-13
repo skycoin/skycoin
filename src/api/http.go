@@ -70,7 +70,7 @@ type Server struct {
 type Config struct {
 	StaticDir          string
 	DisableCSRF        bool
-	DisableHeadercheck bool
+	DisableHeaderCheck bool
 	DisableCSP         bool
 	EnableGUI          bool
 	ReadTimeout        time.Duration
@@ -95,7 +95,7 @@ type muxConfig struct {
 	appLoc             string
 	enableGUI          bool
 	disableCSRF        bool
-	disableHeadercheck bool
+	disableHeaderCheck bool
 	disableCSP         bool
 	enabledAPISets     map[string]struct{}
 	hostWhitelist      []string
@@ -170,7 +170,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Warning("CSRF check disabled")
 	}
 
-	if c.DisableHeadercheck {
+	if c.DisableHeaderCheck {
 		logger.Warning("Header check disabled")
 	}
 
@@ -189,7 +189,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		appLoc:             appLoc,
 		enableGUI:          c.EnableGUI,
 		disableCSRF:        c.DisableCSRF,
-		disableHeadercheck: c.DisableHeadercheck,
+		disableHeaderCheck: c.DisableHeaderCheck,
 		disableCSP:         c.DisableCSP,
 		health:             c.Health,
 		enabledAPISets:     c.EnabledAPISets,
@@ -356,7 +356,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		}
 	}
 
-	webHandlerWithOptionals := func(apiVersion, endpoint string, handler http.Handler, checkCSRF bool, checkHeaders bool) {
+	webHandlerWithOptionals := func(apiVersion, endpoint string, handler http.Handler, checkCSRF, checkHeaders bool) {
 		handler = wh.ElapsedHandler(logger, handler)
 
 		handler = corsHandler.Handler(handler)
@@ -375,7 +375,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	}
 
 	webHandler := func(apiVersion, endpoint string, handler http.Handler) {
-		webHandlerWithOptionals(apiVersion, endpoint, handler, true, !c.disableHeadercheck)
+		webHandlerWithOptionals(apiVersion, endpoint, handler, true, !c.disableHeaderCheck)
 	}
 
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
@@ -415,7 +415,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
-		webHandlerWithOptionals(apiVersion1, "/api/v1"+endpoint, handler, false, !c.disableHeadercheck)
+		webHandlerWithOptionals(apiVersion1, "/api/v1"+endpoint, handler, false, !c.disableHeaderCheck)
 	}
 	csrfHandlerV1("/csrf", getCSRFToken(c.disableCSRF)) // csrf is always available, regardless of the API set
 

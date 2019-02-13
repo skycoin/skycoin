@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- Add `-disable-header-check` flag to disable host/origin/referer header checks for the node APIs and add `header_check_enabled` parameter in `/health` endpoint.
 
 ### Fixed
 
@@ -42,7 +43,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
   `-` prefix is only allowed when using shorthand notation.
 - Use an optimized `base58` library for faster address decoding and encoding.
-- Add `-disable-headercheck` flag to disable host/origin/referer header checks for the node APIs and add `headercheck_enabled` parameter in `/health` endpoint.
 
 ### Removed
 

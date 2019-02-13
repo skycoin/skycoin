@@ -26,12 +26,11 @@ var allAPISetsEnabled = map[string]struct{}{
 
 func defaultMuxConfig() muxConfig {
 	return muxConfig{
-		host:               configuredHost,
-		appLoc:             ".",
-		disableCSRF:        true,
-		disableHeadercheck: true,
-		disableCSP:         true,
-		enabledAPISets:     allAPISetsEnabled,
+		host:           configuredHost,
+		appLoc:         ".",
+		disableCSRF:    true,
+		disableCSP:     true,
+		enabledAPISets: allAPISetsEnabled,
 	}
 }
 

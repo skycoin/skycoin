@@ -55,9 +55,7 @@ type NodeConfig struct {
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
 	// Disable Host, Origin and Referer header check in the wallet API
-	DisableHeadercheck bool
-	// Enable unversioned API endpoints (without the /api/v1 prefix)
-	EnableUnversionedAPI bool
+	DisableHeaderCheck bool
 	// Disable CSP disable content-security-policy in http response
 	DisableCSP bool
 	// Comma separated list of API sets enabled on the remote web interface
@@ -225,7 +223,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
 		// Disable Host, Origin and Referer header check in the wallet API
-		DisableHeadercheck: false,
+		DisableHeaderCheck: false,
 		// DisableCSP disable content-security-policy in http response
 		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
@@ -582,7 +580,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.DisableHeadercheck, "disable-headercheck", c.DisableHeadercheck, "disables the host, origin and referer header checks.")
+	flag.BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -675,7 +673,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false
-		c.DisableHeadercheck = false
+		c.DisableHeaderCheck = false
 		c.DisableCSP = false
 		c.DownloadPeerList = true
 		c.WebInterface = true

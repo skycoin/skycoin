@@ -15,7 +15,7 @@ func TestOriginRefererCheck(t *testing.T) {
 		name              string
 		origin            string
 		referer           string
-		enableHeadercheck bool
+		enableHeaderCheck bool
 		status            int
 		errV1             string
 		errV2             string
@@ -24,7 +24,7 @@ func TestOriginRefererCheck(t *testing.T) {
 		{
 			name:              "unparseable origin header",
 			origin:            ":?4foo",
-			enableHeadercheck: true,
+			enableHeaderCheck: true,
 			status:            http.StatusForbidden,
 			errV1:             "403 Forbidden - Invalid URL in Origin or Referer header\n",
 			errV2:             "{\n    \"error\": {\n        \"message\": \"Invalid URL in Origin or Referer header\",\n        \"code\": 403\n    }\n}",
@@ -32,7 +32,7 @@ func TestOriginRefererCheck(t *testing.T) {
 		{
 			name:              "mismatched origin header",
 			origin:            "http://example.com/",
-			enableHeadercheck: true,
+			enableHeaderCheck: true,
 			status:            http.StatusForbidden,
 			errV1:             "403 Forbidden - Invalid Origin or Referer\n",
 			errV2:             "{\n    \"error\": {\n        \"message\": \"Invalid Origin or Referer\",\n        \"code\": 403\n    }\n}",
@@ -40,7 +40,7 @@ func TestOriginRefererCheck(t *testing.T) {
 		{
 			name:              "mismatched referer header",
 			referer:           "http://example.com/",
-			enableHeadercheck: true,
+			enableHeaderCheck: true,
 			status:            http.StatusForbidden,
 			errV1:             "403 Forbidden - Invalid Origin or Referer\n",
 			errV2:             "{\n    \"error\": {\n        \"message\": \"Invalid Origin or Referer\",\n        \"code\": 403\n    }\n}",
@@ -48,24 +48,24 @@ func TestOriginRefererCheck(t *testing.T) {
 		{
 			name:              "whitelisted referer header",
 			referer:           "http://example.com/",
-			enableHeadercheck: true,
+			enableHeaderCheck: true,
 			hostWhitelist:     []string{"example.com"},
 		},
 		{
 			name:              "whitelisted origin header",
 			referer:           "http://example.com/",
-			enableHeadercheck: true,
+			enableHeaderCheck: true,
 			hostWhitelist:     []string{"example.com"},
 		},
 		{
 			name:              "mismatched referer header",
 			referer:           "http://example.com/",
-			enableHeadercheck: false,
+			enableHeaderCheck: false,
 		},
 		{
 			name:              "mismatched origin header",
 			origin:            "http://example.com/",
-			enableHeadercheck: false,
+			enableHeaderCheck: false,
 		},
 	}
 
@@ -91,7 +91,7 @@ func TestOriginRefererCheck(t *testing.T) {
 
 				cfg := defaultMuxConfig()
 				cfg.disableCSRF = false
-				cfg.disableHeadercheck = !tc.enableHeadercheck
+				cfg.disableHeaderCheck = !tc.enableHeaderCheck
 				// disable all api sets to avoid mocking gateway methods
 				cfg.enabledAPISets = map[string]struct{}{}
 
@@ -108,7 +108,7 @@ func TestOriginRefererCheck(t *testing.T) {
 						require.Equal(t, tc.errV1, rr.Body.String())
 					}
 				default:
-					if tc.enableHeadercheck || tc.hostWhitelist == nil {
+					if tc.enableHeaderCheck || tc.hostWhitelist == nil {
 						// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
 						// Make sure that the request only didn't return the origin check error
 						require.False(t, strings.Contains("Invalid URL in Origin or Referer header", rr.Body.String()))
@@ -126,7 +126,7 @@ func TestHostCheck(t *testing.T) {
 		name              string
 		host              string
 		status            int
-		enableHeadercheck bool
+		enableHeaderCheck bool
 		errV1             string
 		errV2             string
 		hostWhitelist     []string
@@ -135,7 +135,7 @@ func TestHostCheck(t *testing.T) {
 			name:              "invalid host",
 			host:              "example.com",
 			status:            http.StatusForbidden,
-			enableHeadercheck: true,
+			enableHeaderCheck: true,
 			errV1:             "403 Forbidden - Invalid Host\n",
 			errV2:             "{\n    \"error\": {\n        \"message\": \"Invalid Host\",\n        \"code\": 403\n    }\n}",
 		},
@@ -143,12 +143,12 @@ func TestHostCheck(t *testing.T) {
 			name:              "invalid host is whitelisted",
 			host:              "example.com",
 			hostWhitelist:     []string{"example.com"},
-			enableHeadercheck: true,
+			enableHeaderCheck: true,
 		},
 		{
-			name:              "invalid host - headercheck disabled",
+			name:              "invalid host - header check disabled",
 			host:              "example.com",
-			enableHeadercheck: false,
+			enableHeaderCheck: false,
 		},
 	}
 
@@ -170,7 +170,7 @@ func TestHostCheck(t *testing.T) {
 					host:               configuredHost,
 					appLoc:             ".",
 					disableCSRF:        false,
-					disableHeadercheck: !tc.enableHeadercheck,
+					disableHeaderCheck: !tc.enableHeaderCheck,
 					disableCSP:         true,
 					hostWhitelist:      tc.hostWhitelist,
 				}, gateway)
@@ -186,7 +186,7 @@ func TestHostCheck(t *testing.T) {
 						require.Equal(t, tc.errV1, rr.Body.String())
 					}
 				default:
-					if tc.enableHeadercheck || tc.hostWhitelist == nil {
+					if tc.enableHeaderCheck || tc.hostWhitelist == nil {
 						// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
 						// Make sure that the request only didn't return the invalid host error
 						require.False(t, strings.Contains("Invalid Host", rr.Body.String()))

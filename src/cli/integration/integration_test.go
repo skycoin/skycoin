@@ -372,15 +372,15 @@ func useCSRF(t *testing.T) bool {
 	return useCSRF
 }
 
-func doHeadercheck(t *testing.T) bool {
-	x := os.Getenv("HEADERCHECK")
+func doHeaderCheck(t *testing.T) bool {
+	x := os.Getenv("HEADER_CHECK")
 	if x == "" {
 		return false
 	}
 
-	doHeadercheck, err := strconv.ParseBool(x)
+	doHeaderCheck, err := strconv.ParseBool(x)
 	require.NoError(t, err)
-	return doHeadercheck
+	return doHeaderCheck
 
 }
 
@@ -1467,8 +1467,8 @@ func TestStableStatus(t *testing.T) {
 	if useCSRF(t) {
 		goldenFile += "-csrf-enabled"
 	}
-	if !doHeadercheck(t) {
-		goldenFile += "-headercheck-disabled"
+	if !doHeaderCheck(t) {
+		goldenFile += "-header-check-disabled"
 	}
 	if dbNoUnconfirmed(t) {
 		goldenFile += "-no-unconfirmed"

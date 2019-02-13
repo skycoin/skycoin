@@ -64,7 +64,7 @@ func TestSeedSignatures(t *testing.T) {
 
 func traverseFiles(dir string, filenameTemplate string) ([]string, error) { // nolint: unparam
 	files := make([]string, 0)
-	if err := filepath.Walk(dir, func(path string, f os.FileInfo, _ error) error {
+	if err := filepath.Walk(dir, func(_ string, f os.FileInfo, _ error) error {
 		if !f.IsDir() {
 			r, err := regexp.MatchString(filenameTemplate, f.Name())
 			if err == nil && r {

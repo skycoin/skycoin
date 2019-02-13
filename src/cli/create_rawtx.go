@@ -56,7 +56,7 @@ func createRawTxCmd() *cobra.Command {
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`, cliConfig.FullWalletPath()),
 		SilenceUsage: true,
-		Args:         cobra.MinimumNArgs(2),
+		Args:         cobra.MinimumNArgs(0),
 		RunE: func(c *cobra.Command, args []string) error {
 			jsonOutput, err := c.Flags().GetBool("json")
 			if err != nil {
@@ -198,6 +198,10 @@ func getToAddresses(c *cobra.Command, args []string) ([]SendAmount, error) {
 			return nil, err
 		}
 		return parseSendAmountsFromCSV(fields)
+	}
+
+	if len(args) < 2 {
+		return nil, fmt.Errorf("requires at least 2 arg(s), only received %d", len(args))
 	}
 
 	toAddr := args[0]

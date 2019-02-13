@@ -87,7 +87,7 @@ func checkWltBalance(c *gcli.Command, args []string) error {
 	return printJSON(balRlt)
 }
 
-func addrBalance(c *gcli.Command, args []string) error {
+func addrBalance(_ *gcli.Command, args []string) error {
 	numArgs := len(args)
 
 	addrs := make([]string, numArgs)

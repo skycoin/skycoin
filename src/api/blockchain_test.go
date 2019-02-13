@@ -91,7 +91,7 @@ func TestGetBlockchainMetadata(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -193,7 +193,7 @@ func TestGetBlockchainProgress(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -566,7 +566,7 @@ func TestGetBlock(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -994,7 +994,7 @@ func TestGetBlocks(t *testing.T) {
 			setCSRFParameters(t, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1188,7 +1188,7 @@ func TestGetLastBlocks(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 
 			handler.ServeHTTP(rr, req)
 

@@ -1019,7 +1019,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 		return 0, ErrWalletEncrypted
 	}
 
-	if scanN <= 0 {
+	if scanN == 0 {
 		return 0, nil
 	}
 

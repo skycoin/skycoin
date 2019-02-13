@@ -56,7 +56,6 @@ scratch, to remedy the rough edges in the Bitcoin design.
 	- [Development image](#development-image)
 - [API Documentation](#api-documentation)
 	- [REST API](#rest-api)
-	- [JSON-RPC 2.0 API](#json-rpc-20-api)
 	- [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
@@ -203,12 +202,6 @@ and useful tools included in `skycoin/skycoindev-cli`.
 
 [REST API](src/api/README.md).
 
-### JSON-RPC 2.0 API
-
-*Deprecated, avoid using this*
-
-[JSON-RPC 2.0 README](src/api/webrpc/README.md).
-
 ### Skycoin command line interface
 
 [CLI command API](cmd/cli/README.md).
@@ -301,7 +294,6 @@ We have two branches: `master` and `develop`.
 ### Modules
 
 * `api` - REST API interface
-* `api/webrpc` - JSON-RPC 2.0 API [deprecated]
 * `cipher` - cryptographic library
 * `cli` - CLI library
 * `coin` - blockchain data structures
@@ -318,12 +310,7 @@ We have two branches: `master` and `develop`.
 Skycoin implements client libraries which export core functionality for usage from
 other programming languages.
 
-* `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
-
-For further details run `make docs` to generate documetation and read the corresponding README and API references.
-
-It is also possible to [build client libraries for other programming languages](lib/swig/README.md)
-using [SWIG](http://www.swig.org/).
+* [libskycoin C client library and SWIG interface](https://github.com/skycoin/libskycoin)
 
 ### Running Tests
 
@@ -389,7 +376,7 @@ If the wallet is encrypted, also set `WALLET_PASSWORD`.
 export WALLET_DIR="$HOME/.skycoin/wallets"
 export WALLET_NAME="$valid_wallet_filename"
 export WALLET_PASSWORD="$wallet_password"
-/run-client.sh -launch-browser=false -enable-all-api-sets -enable-api-sets=DEPRECATED_WALLET_SPEND
+/run-client.sh -launch-browser=false -enable-all-api-sets
 ```
 
 Then run the tests with the following command:
@@ -659,10 +646,9 @@ Instructions for doing this:
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 0. Update version strings to the new version in the following files: `electron/package-lock.json`, `electron/package.json`, `electron/skycoin/current-skycoin.json`, `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
-0. Run `make newcoin`. Compare `git diff cmd/skycoin/skycoin.go`. The only change should be the version number in the file.
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote for images `skycoin/skycoin`, `skycoin/skycoindev-cli`, and `skycoin/skycoindev-vscode`, adding a new file for the new version and adjusting any configuration text that may have changed
+0. Update the files in https://github.com/skycoin/repo-info by following the [metadata update procedure](https://github.com/skycoin/repo-info/#updating-skycoin-repository-metadate),
 0. Merge these changes to `develop`
 0. Follow the steps in [pre-release testing](#pre-release-testing)
 0. Make a PR merging `develop` into `master`

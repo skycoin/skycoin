@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/cli"
@@ -75,7 +74,7 @@ func init() {
 func TestMain(m *testing.M) {
 	abs, err := filepath.Abs(binaryName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("get binary name absolute path failed: %v\n", err))
+		fmt.Fprintf(os.Stderr, "get binary name absolute path failed: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -84,7 +83,7 @@ func TestMain(m *testing.M) {
 	// Build cli binary file.
 	args := []string{"build", "-o", binaryPath, "../../../cmd/cli/cli.go"}
 	if err := exec.Command("go", args...).Run(); err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("Make %v binary failed: %v\n", binaryName, err))
+		fmt.Fprintf(os.Stderr, "Make %v binary failed: %v\n", binaryName, err)
 		os.Exit(1)
 	}
 
@@ -92,7 +91,7 @@ func TestMain(m *testing.M) {
 
 	// Remove the generated cli binary file.
 	if err := os.Remove(binaryPath); err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("Delete %v failed: %v", binaryName, err))
+		fmt.Fprintf(os.Stderr, "Delete %v failed: %v", binaryName, err)
 		os.Exit(1)
 	}
 
@@ -754,7 +753,6 @@ func TestAddressGen(t *testing.T) {
 			check: func(t *testing.T, v []byte) {
 				// Confirms that only addresses are returned
 				v = bytes.Trim(v, "\n")
-				fmt.Println(v)
 				_, err := cipher.DecodeBase58Address(string(v))
 				require.NoError(t, err)
 			},
@@ -1266,11 +1264,11 @@ func TestStableWalletOutputs(t *testing.T) {
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
 	require.NoError(t, err)
 
-	var wltOutput webrpc.OutputsResult
+	var wltOutput cli.OutputsResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
 	require.NoError(t, err)
 
-	var expect webrpc.OutputsResult
+	var expect cli.OutputsResult
 	checkGoldenFile(t, "wallet-outputs.golden", TestData{wltOutput, &expect})
 }
 
@@ -1284,7 +1282,7 @@ func TestLiveWalletOutputs(t *testing.T) {
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
 	require.NoError(t, err)
 
-	var wltOutput webrpc.OutputsResult
+	var wltOutput cli.OutputsResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
 	require.NoError(t, err)
 
@@ -1333,11 +1331,11 @@ func TestStableAddressOutputs(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var addrOutputs webrpc.OutputsResult
+			var addrOutputs cli.OutputsResult
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
 			require.NoError(t, err)
 
-			var expect webrpc.OutputsResult
+			var expect cli.OutputsResult
 			checkGoldenFile(t, tc.goldenFile, TestData{addrOutputs, &expect})
 		})
 	}
@@ -1351,7 +1349,7 @@ func TestLiveAddressOutputs(t *testing.T) {
 	output, err := exec.Command(binaryPath, "addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt").CombinedOutput()
 	require.NoError(t, err)
 
-	var addrOutputs webrpc.OutputsResult
+	var addrOutputs cli.OutputsResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
 	require.NoError(t, err)
 }
@@ -1557,11 +1555,11 @@ func TestStableTransaction(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var tx webrpc.TxnResult
+			var tx cli.TxnResult
 			err = json.NewDecoder(bytes.NewReader(o)).Decode(&tx)
 			require.NoError(t, err)
 
-			var expect webrpc.TxnResult
+			var expect cli.TxnResult
 			checkGoldenFile(t, tc.goldenFile, TestData{tx, &expect})
 		})
 	}
@@ -1576,11 +1574,11 @@ func TestLiveTransaction(t *testing.T) {
 
 	o, err := exec.Command(binaryPath, "transaction", "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add").CombinedOutput()
 	require.NoError(t, err)
-	var tx webrpc.TxnResult
+	var tx cli.TxnResult
 	err = json.NewDecoder(bytes.NewReader(o)).Decode(&tx)
 	require.NoError(t, err)
 
-	var expect webrpc.TxnResult
+	var expect cli.TxnResult
 
 	loadGoldenFile(t, "genesis-transaction.golden", TestData{tx, &expect})
 	require.Equal(t, expect.Transaction.Transaction, tx.Transaction.Transaction)
@@ -1591,7 +1589,7 @@ func TestLiveTransaction(t *testing.T) {
 	scanPendingTransactions(t)
 }
 
-// cli doesn't have command to querying pending transactions yet.
+// TODO cli doesn't have command to querying pending transactions yet.
 func scanPendingTransactions(t *testing.T) {
 }
 
@@ -1602,14 +1600,15 @@ func scanTransactions(t *testing.T, fullTest bool) {
 	// Gets blockchain height through "status" command
 	output, err := exec.Command(binaryPath, "status").CombinedOutput()
 	require.NoError(t, err)
-	var status struct {
-		webrpc.StatusResult
-		RPCAddress string `json:"webrpc_address"`
-	}
-	err = json.NewDecoder(bytes.NewReader(output)).Decode(&status)
+
+	d := json.NewDecoder(bytes.NewReader(output))
+	d.DisallowUnknownFields()
+
+	var status cli.StatusResult
+	err = d.Decode(&status)
 	require.NoError(t, err)
 
-	txids := getTxids(t, status.BlockNum)
+	txids := getTxids(t, status.Status.BlockchainMetadata.Head.BkSeq)
 
 	l := len(txids)
 	if !fullTest && l > randomLiveTransactionNum {
@@ -1647,7 +1646,7 @@ func checkTransactions(t *testing.T, txids []string) {
 				t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
 					o, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
 					require.NoError(t, err)
-					var txRlt webrpc.TxnResult
+					var txRlt cli.TxnResult
 					err = json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt)
 					require.NoError(t, err)
 					require.Equal(t, txid, txRlt.Transaction.Transaction.Hash)
@@ -2031,7 +2030,7 @@ func TestLiveSend(t *testing.T) {
 				return []string{"send", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
 			},
-			errMsg:  []byte("See 'skycoin-cli send --help'\nTransaction has zero coinhour fee"),
+			errMsg:  []byte("See 'skycoin-cli send --help'\nError: Transaction has zero coinhour fee"),
 			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
@@ -2095,7 +2094,7 @@ func TestLiveSendNotEnoughDecimals(t *testing.T) {
 
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
-	errMsg := []byte("See 'skycoin-cli send --help'\nTransaction violates soft constraint: invalid amount, too many decimal places")
+	errMsg := []byte("See 'skycoin-cli send --help'\nError: Transaction violates soft constraint: invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -2197,7 +2196,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			// Send 0.5 coin to the second address.
 			// Send 0.5 coin to the third address.
 			// After sending, the first address should have at least 1 coin left.
-			name: "send to multiple address with -csv option",
+			name: "send to multiple address with --csv option",
 			args: func() []string {
 				fields := [][]string{
 					{w.Entries[1].Address.String(), "0.5"},
@@ -2219,7 +2218,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 				tmpCSVFile = f.Name()
 
-				return []string{"createRawTransaction", "-csv", tmpCSVFile}
+				return []string{"createRawTransaction", "--csv", tmpCSVFile}
 			},
 			checkTx: func(t *testing.T, txid string) {
 				// Confirms the first address has at least 1 coin left.
@@ -2272,7 +2271,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// Send with too small decimal value
-	errMsg := []byte("Transaction violates soft constraint: invalid amount, too many decimal places")
+	errMsg := []byte("Error: Transaction violates soft constraint: invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -2286,7 +2285,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 }
 
-func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
+func getTransaction(t *testing.T, txid string) *cli.TxnResult {
 	output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
 	if err != nil {
 		fmt.Println(string(output))
@@ -2295,7 +2294,7 @@ func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 
 	require.NoError(t, err)
 
-	var tx webrpc.TxnResult
+	var tx cli.TxnResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&tx)
 	require.NoError(t, err)
 
@@ -2311,7 +2310,7 @@ func isTxConfirmed(t *testing.T, txid string) bool {
 }
 
 // checkCoinhours checks if the address coinhours in transaction are correct
-func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr string, coins, coinhours uint64) { // nolint: unparam
+func checkCoinsAndCoinhours(t *testing.T, tx *cli.TxnResult, addr string, coins, coinhours uint64) { // nolint: unparam
 	addrCoinhoursMap := make(map[string][]readable.TransactionOutput)
 	for _, o := range tx.Transaction.Transaction.Out {
 		addrCoinhoursMap[o.Address] = append(addrCoinhoursMap[o.Address], o)
@@ -2413,7 +2412,7 @@ func getWalletOutputs(t *testing.T, walletPath string) readable.UnspentOutputs {
 	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
 	require.NoError(t, err, string(output))
 
-	var wltOutput webrpc.OutputsResult
+	var wltOutput cli.OutputsResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
 	require.NoError(t, err)
 

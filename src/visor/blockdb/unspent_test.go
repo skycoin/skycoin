@@ -933,7 +933,7 @@ func TestUnspentMaybeBuildIndexesPartialIndex(t *testing.T) {
 
 			addrHashes := make(map[cipher.Address][]cipher.SHA256)
 
-			if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
+			if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 				var ux coin.UxOut
 				if err := encoder.DeserializeRaw(v, &ux); err != nil {
 					return err

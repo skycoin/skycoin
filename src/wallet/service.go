@@ -57,13 +57,23 @@ func NewService(c Config) (*Service, error) {
 		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.walletDirectory, err)
 	}
 
-	// Loads wallets
+	// Load wallets from disk
 	w, err := LoadWallets(serv.walletDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load all wallets: %v", err)
 	}
 
-	serv.wallets = serv.removeDup(w)
+	// Abort if there are duplicate wallets on disk
+	if wltID, addr, hasDup := w.containsDuplicate(); hasDup {
+		return nil, fmt.Errorf("duplicate wallet found with initial address %s in file %q", addr, wltID)
+	}
+
+	// Abort if there are empty wallets on disk
+	if wltID, hasEmpty := w.containsEmpty(); hasEmpty {
+		return nil, fmt.Errorf("empty wallet file found: %q", wltID)
+	}
+
+	serv.setWallets(w)
 
 	return serv, nil
 }
@@ -416,45 +426,13 @@ func (serv *Service) Remove(wltID string) error {
 	return nil
 }
 
-func (serv *Service) removeDup(wlts Wallets) Wallets {
-	var rmWltIDS []string
-	// remove dup wallets
+func (serv *Service) setWallets(wlts Wallets) {
+	serv.wallets = wlts
+
 	for wltID, wlt := range wlts {
-		if len(wlt.Entries) == 0 {
-			// empty wallet
-			rmWltIDS = append(rmWltIDS, wltID)
-			continue
-		}
-
 		addr := wlt.Entries[0].Address.String()
-		id, ok := serv.firstAddrIDMap[addr]
-
-		if ok {
-			// check whose entries number is bigger
-			pw := wlts.get(id)
-
-			if len(pw.Entries) >= len(wlt.Entries) {
-				rmWltIDS = append(rmWltIDS, wltID)
-				continue
-			}
-
-			// replace the old wallet with the new one
-			// records the wallet id that need to remove
-			rmWltIDS = append(rmWltIDS, id)
-			// update wallet id
-			serv.firstAddrIDMap[addr] = wltID
-			continue
-		}
-
 		serv.firstAddrIDMap[addr] = wltID
 	}
-
-	// remove the duplicate and empty wallet
-	for _, id := range rmWltIDS {
-		wlts.remove(id)
-	}
-
-	return wlts
 }
 
 // GetWalletSeed returns seed of encrypted wallet of given wallet id

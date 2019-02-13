@@ -28,21 +28,25 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Create a wallet](#create-a-wallet)
 	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
 	- [Encrypt Wallet](#encrypt-wallet)
+	- [Examples](#examples)
 	- [Decrypt Wallet](#decrypt-wallet)
+	- [Example](#example)
 	- [Last blocks](#last-blocks)
 	- [List wallet addresses](#list-wallet-addresses)
 	- [List wallets](#list-wallets)
-    - [Rich list](#rich-list)
+	- [Rich list](#rich-list)
 	- [Send](#send)
+	- [Show Seed](#show-seed)
 	- [Show Config](#show-config)
 	- [Status](#status)
 	- [Get transaction](#get-transaction)
-    - [Get address transactions](#get-address-transactions)
+	- [Get address transactions](#get-address-transactions)
 	- [Verify address](#verify-address)
 	- [Check wallet balance](#check-wallet-balance)
 	- [See wallet directory](#see-wallet-directory)
 	- [List wallet transaction history](#list-wallet-transaction-history)
 	- [List wallet outputs](#list-wallet-outputs)
+	- [Richlist](#richlist)
 	- [CLI version](#cli-version)
 - [Note](#note)
 
@@ -75,7 +79,7 @@ The CLI uses environment variable to manage the configurations.
 
 ### RPC_ADDR
 
-CLI will connect to skycoin node RPC address `http://127.0.0.1:6420` by default.
+CLI will connect to skycoin node REST API address `http://127.0.0.1:6420` by default.
 You can change the address by setting the `RPC_ADDR` environment variable
 with the following command:
 
@@ -1861,8 +1865,6 @@ $ skycoin-cli status
         "csp_enabled": true,
         "wallet_api_enabled": true,
         "gui_enabled": true,
-        "unversioned_api_enabled": false,
-        "json_rpc_enabled": false,
         "user_verify_transaction": {
             "burn_factor": 2,
             "max_transaction_size": 32768,

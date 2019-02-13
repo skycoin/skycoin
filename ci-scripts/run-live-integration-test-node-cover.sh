@@ -27,7 +27,7 @@ go test -c -ldflags "-X ${CMDPKG}.Commit=$COMMIT -X ${CMDPKG}.Branch=${BRANCH}" 
     -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=false \
     -enable-all-api-sets=true \
-    -enable-api-sets=DEPRECATED_WALLET_SPEND,INSECURE_WALLET_SEED \
+    -enable-api-sets=INSECURE_WALLET_SEED \
     -test.run "^TestRunMain$" \
     -test.coverprofile="${COVERAGEFILE}" \
     $@

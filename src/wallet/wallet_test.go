@@ -39,6 +39,8 @@ var _ = func() int64 {
 var u = flag.Bool("u", false, "update test wallet file in ./testdata")
 
 func init() {
+	flag.Parse()
+
 	// Change the scrypt N value in cryptoTable to make test faster, otherwise
 	// it would take more than 200 seconds to finish.
 	cryptoTable[CryptoTypeScryptChacha20poly1305] = encrypt.ScryptChacha20poly1305{
@@ -57,7 +59,7 @@ func init() {
 		//     - Generate an address
 		//     - Lock the wallet with scrypt-chacha20poly1305 crypto type and password of "pwd".
 		w, err := NewWallet("scrypt-chacha20poly1305-encrypted.wlt", Options{
-			Seed:  "seed",
+			Seed:  "seed-scrypt-chacha20poly1305",
 			Label: "scrypt-chacha20poly1305",
 		})
 		if err != nil {
@@ -79,7 +81,7 @@ func init() {
 		// Update ./testdata/sha256xor-encrypted.wlt
 		//     - Create an sha256xor encrypted wallet with password: "pwd".
 		w1, err := NewWallet("sha256xor-encrypted.wlt", Options{
-			Seed:       "seed",
+			Seed:       "seed-sha256xor",
 			Label:      "sha256xor",
 			Encrypt:    true,
 			Password:   []byte("pwd"),
@@ -749,7 +751,7 @@ func TestWalletGetEntry(t *testing.T) {
 		{
 			"scrypt-chacha20poly1305 encrytped wallet",
 			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
-			"2EVNa4CK9SKosT4j1GEn8SuuUUEAXaHAMbM",
+			"LxcitUpWQZbPjgEPs6R1i3G4Xa31nPMoSG",
 			true,
 		},
 	}

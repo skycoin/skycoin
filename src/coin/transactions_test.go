@@ -334,7 +334,9 @@ func TestTransactionHashInner(t *testing.T) {
 	require.NotEqual(t, txn, txn2)
 	require.Equal(t, txn2.In[0], ux.Hash())
 	h, err = txn.HashInner()
+	require.NoError(t, err)
 	h2, err := txn2.HashInner()
+	require.NoError(t, err)
 	require.NotEqual(t, h, h2)
 
 	// If txn.Out is changed, inner hash should change
@@ -344,14 +346,18 @@ func TestTransactionHashInner(t *testing.T) {
 	require.NotEqual(t, txn, txn2)
 	require.Equal(t, txn2.Out[0].Address, a)
 	h, err = txn.HashInner()
+	require.NoError(t, err)
 	h2, err = txn2.HashInner()
+	require.NoError(t, err)
 	require.NotEqual(t, h, h2)
 
 	// If txn.Head is changed, inner hash should not change
 	txn2 = copyTransaction(txn)
 	txn.Sigs = append(txn.Sigs, cipher.Sig{})
 	h, err = txn.HashInner()
+	require.NoError(t, err)
 	h2, err = txn2.HashInner()
+	require.NoError(t, err)
 	require.Equal(t, h, h2)
 }
 

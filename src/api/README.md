@@ -1659,10 +1659,9 @@ Result:
 API sets: `FILESYSTEM`
 
 ```
-URI: /api/v2/data/save
+URI: /api/v2/data
 Method: POST
 Args:
-    filename: filename [required]
     data: arbitrary data to save [required]
     update: update existing values [optional]
 ```
@@ -1676,10 +1675,9 @@ Example:
 
 ```sh
 curl -X POST \
-  http://127.0.0.1:6420/api/v2/data/save \
+  http://127.0.0.1:6420/api/v2/data \
   -H 'Content-Type: application/json' \
   -d '{
-	"filename": "test.json",
 	"data": {"key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"}
 }'
 ```
@@ -1694,10 +1692,9 @@ Example(update):
 
 ```sh
 curl -X POST \
-  http://127.0.0.1:6420/api/v2/data/save \
+  http://127.0.0.1:6420/api/v2/data \
   -H 'Content-Type: application/json' \
   -d '{
-	"filename": "test.json",
 	"data": {"key2": "value4", "key4": "value6"},
 	"update": true
 }'
@@ -1715,21 +1712,19 @@ Result:
 API sets: `FILESYSTEM`
 
 ```
-URI: /api/v2/data/get
+URI: /api/v2/data
 Method: GET
 Args:
-    filename: filename [required]
     keys: list of keys to retrieve [required]
 ```
 
-Get data from a file on disk
+Get data from data file on disk
 
 Example:
 
 ```sh
 curl -X GET \
-  http://127.0.0.1:6420/api/v2/data/get \
-  -F filename=test.json \
+  http://127.0.0.1:6420/api/v2/data \
   -F 'keys=key1,key2,key3'
 ```
 
@@ -1748,21 +1743,19 @@ Result:
 API sets: `FILESYSTEM`
 
 ```
-URI: /api/v2/data/delete
-Method: POST
+URI: /api/v2/data
+Method: DELETE
 Args:
-    filename: filename [required]
     keys: list of keys to retrieve [required]
 ```
 
-Delete data from a file on disk
+Delete data from data file on disk
 
 Example:
 
 ```sh
 curl -X DELETE \
-  http://127.0.0.1:6420/api/v2/data/delete \
-  -F filename=test.json \
+  http://127.0.0.1:6420/api/v2/data \
   -F 'keys=key1,key2,key3'
 ```
 

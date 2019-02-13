@@ -28,9 +28,9 @@ type Gatewayer interface {
 	EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, error)
-	GetData(filename string, keys []string) (map[string]interface{}, error)
-	SaveData(filename string, data map[string]interface{}, update bool) error
-	DeleteData(filename string, keys []string) error
+	GetData(keys []string) (map[string]interface{}, error)
+	SaveData(data map[string]interface{}, update bool) error
+	DeleteData(keys []string) error
 	GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
 	GetSignedBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]visor.TransactionInput, error)
 	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)

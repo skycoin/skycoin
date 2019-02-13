@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 
@@ -17,9 +16,8 @@ import (
 
 func TestSaveData(t *testing.T) {
 	type httpBody struct {
-		Filename string
-		Data     map[string]interface{}
-		Update   bool
+		Data   map[string]interface{}
+		Update bool
 	}
 
 	tt := []struct {
@@ -40,31 +38,16 @@ func TestSaveData(t *testing.T) {
 			err:         "415 Unsupported Media Type",
 		},
 		{
-			name:   "400 - missing filename",
-			method: http.MethodPost,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing filename",
-			body: &httpBody{
-				Data: map[string]interface{}{
-					"key1": "value1",
-					"key2": "value2",
-				},
-			},
-		},
-		{
 			name:   "400 - empty data",
 			method: http.MethodPost,
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - empty data",
-			body: &httpBody{
-				Filename: "foo.json",
-			},
+			body:   &httpBody{},
 		},
 		{
 			name:   "200",
 			method: http.MethodPost,
 			body: &httpBody{
-				Filename: "foo.json",
 				Data: map[string]interface{}{
 					"key1": "value1",
 					"key2": "value2",
@@ -91,7 +74,7 @@ func TestSaveData(t *testing.T) {
 			err = json.Unmarshal(serializedBody, &body)
 
 			if err == nil {
-				gateway.On("SaveData", body.Filename, body.Data, body.Update).Return(tc.gatewaySaveDataErr)
+				gateway.On("SaveData", body.Data, body.Update).Return(tc.gatewaySaveDataErr)
 			}
 
 			requestJSON, err := json.Marshal(tc.body)
@@ -129,15 +112,13 @@ func TestSaveData(t *testing.T) {
 
 func TestGetData(t *testing.T) {
 	type httpBody struct {
-		Filename string
-		Keys     string
+		Keys string
 	}
 
 	tt := []struct {
 		name                 string
 		method               string
 		body                 *httpBody
-		filename             string
 		keys                 []string
 		status               int
 		err                  string
@@ -146,70 +127,28 @@ func TestGetData(t *testing.T) {
 		responseBody         map[string]string
 	}{
 		{
-			name:   "400 - missing filename",
-			method: http.MethodGet,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing filename",
-			body: &httpBody{
-				Keys: "key1,key2",
-			},
-		},
-		{
 			name:   "400 - missing keys",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing keys",
-			body: &httpBody{
-				Filename: "foo.json",
-			},
 		},
 		{
 			name:   "400 - empty file",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
 			body: &httpBody{
-				Filename: "foo.json",
-				Keys:     "key1,key2",
+				Keys: "key1,key2",
 			},
-			filename:          "foo.json",
 			keys:              []string{"key1", "key2"},
 			err:               "400 Bad Request - empty file",
 			gatewayGetDataErr: errors.New("empty file"),
 		},
 		{
-			name:   "404 - file not exist",
-			method: http.MethodGet,
-			status: http.StatusNotFound,
-			body: &httpBody{
-				Filename: "foo.json",
-				Keys:     "key1,key2",
-			},
-			filename:          "foo.json",
-			keys:              []string{"key1", "key2"},
-			err:               "404 Not Found - file foo.json does not exist",
-			gatewayGetDataErr: os.ErrNotExist,
-		},
-		{
-			name:   "403 - permission denied",
-			method: http.MethodGet,
-			status: http.StatusForbidden,
-			body: &httpBody{
-				Filename: "foo.json",
-				Keys:     "key1,key2",
-			},
-			filename:          "foo.json",
-			keys:              []string{"key1", "key2"},
-			err:               "403 Forbidden - cannot access foo.json: permission denied",
-			gatewayGetDataErr: os.ErrPermission,
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			body: &httpBody{
-				Filename: "foo.json",
-				Keys:     "key1,key2",
+				Keys: "key1,key2",
 			},
-			filename:          "foo.json",
 			keys:              []string{"key1", "key2"},
 			status:            http.StatusOK,
 			err:               "",
@@ -230,13 +169,10 @@ func TestGetData(t *testing.T) {
 			endpoint := "/api/v2/data"
 			gateway := &MockGatewayer{}
 
-			gateway.On("GetData", tc.filename, tc.keys).Return(tc.gatewatGetDataResult, tc.gatewayGetDataErr)
+			gateway.On("GetData", tc.keys).Return(tc.gatewatGetDataResult, tc.gatewayGetDataErr)
 
 			v := url.Values{}
 			if tc.body != nil {
-				if tc.body.Filename != "" {
-					v.Add("filename", tc.body.Filename)
-				}
 				if tc.body.Keys != "" {
 					v.Add("keys", tc.body.Keys)
 				}
@@ -275,15 +211,13 @@ func TestGetData(t *testing.T) {
 
 func TestDeleteData(t *testing.T) {
 	type httpBody struct {
-		Filename string
-		Keys     string
+		Keys string
 	}
 
 	tt := []struct {
 		name                 string
 		method               string
 		body                 *httpBody
-		filename             string
 		keys                 []string
 		status               int
 		err                  string
@@ -291,70 +225,28 @@ func TestDeleteData(t *testing.T) {
 		responseBody         string
 	}{
 		{
-			name:   "400 - missing filename",
-			method: http.MethodDelete,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing filename",
-			body: &httpBody{
-				Keys: "key1,key2",
-			},
-		},
-		{
 			name:   "400 - missing keys",
 			method: http.MethodDelete,
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing keys",
-			body: &httpBody{
-				Filename: "foo.json",
-			},
 		},
 		{
 			name:   "400 - empty file",
 			method: http.MethodDelete,
 			status: http.StatusBadRequest,
 			body: &httpBody{
-				Filename: "foo.json",
-				Keys:     "key1,key2",
+				Keys: "key1,key2",
 			},
-			filename:             "foo.json",
 			keys:                 []string{"key1", "key2"},
 			err:                  "400 Bad Request - empty file",
 			gatewayDeleteDataErr: errors.New("empty file"),
 		},
 		{
-			name:   "404 - file not exist",
-			method: http.MethodDelete,
-			status: http.StatusNotFound,
-			body: &httpBody{
-				Filename: "foo.json",
-				Keys:     "key1,key2",
-			},
-			filename:             "foo.json",
-			keys:                 []string{"key1", "key2"},
-			err:                  "404 Not Found - file foo.json does not exist",
-			gatewayDeleteDataErr: os.ErrNotExist,
-		},
-		{
-			name:   "403 - permission denied",
-			method: http.MethodDelete,
-			status: http.StatusForbidden,
-			body: &httpBody{
-				Filename: "foo.json",
-				Keys:     "key1,key2",
-			},
-			filename:             "foo.json",
-			keys:                 []string{"key1", "key2"},
-			err:                  "403 Forbidden - cannot access foo.json: permission denied",
-			gatewayDeleteDataErr: os.ErrPermission,
-		},
-		{
 			name:   "200",
 			method: http.MethodDelete,
 			body: &httpBody{
-				Filename: "foo.json",
-				Keys:     "key1,key2",
+				Keys: "key1,key2",
 			},
-			filename:             "foo.json",
 			keys:                 []string{"key1", "key2"},
 			status:               http.StatusOK,
 			err:                  "",
@@ -368,13 +260,10 @@ func TestDeleteData(t *testing.T) {
 			endpoint := "/api/v2/data"
 			gateway := &MockGatewayer{}
 
-			gateway.On("DeleteData", tc.filename, tc.keys).Return(tc.gatewayDeleteDataErr)
+			gateway.On("DeleteData", tc.keys).Return(tc.gatewayDeleteDataErr)
 
 			v := url.Values{}
 			if tc.body != nil {
-				if tc.body.Filename != "" {
-					v.Add("filename", tc.body.Filename)
-				}
 				if tc.body.Keys != "" {
 					v.Add("keys", tc.body.Keys)
 				}

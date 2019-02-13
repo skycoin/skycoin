@@ -168,6 +168,8 @@ type DaemonConfig struct { // nolint: golint
 	Port int
 	// Directory where application data is stored
 	DataDirectory string
+	// DataFilePath path of the file to store arbitrary data on disk
+	DataFilePath string
 	// How often to check and initiate an outgoing connection to a trusted connection if needed
 	OutgoingTrustedRate time.Duration
 	// How often to check and initiate an outgoing connection if needed

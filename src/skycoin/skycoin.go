@@ -374,6 +374,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.MaxConnections = c.config.Node.MaxConnections
 	dc.Daemon.MaxOutgoingConnections = c.config.Node.MaxOutgoingConnections
 	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
+	dc.Daemon.DataFilePath = c.config.Node.DataFilePath
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
 	dc.Daemon.UserAgent = c.config.Node.userAgent

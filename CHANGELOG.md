@@ -42,7 +42,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add CLI `addressTransactions` command
 - Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
 - Filter transactions in the History view in the UI
-- Add `/api/v2/data/get`, `/api/v2/data/save`, `/api/v2/data/delete` endpoints to store arbitrary data on disk.
+- Add `-data-file-path` option to set path of the arbitrary data store file. Defaults to `~/.skycoin/data.json`.
+- Add `/api/v2/data` endpoint to store/delete/update arbitrary data in a file on disk defined by the `-data-file-path` option.
+- Add new api set `FILESYSTEM` to enable `/api/v2/data` endpoint.
+
 
 ### Fixed
 

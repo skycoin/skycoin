@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -12,16 +10,14 @@ import (
 
 // saveDataRequest
 type saveDataRequest struct {
-	Filename string                 `json:"filename"`
-	Data     map[string]interface{} `json:"data"`
-	Update   bool                   `json:"update"`
+	Data   map[string]interface{} `json:"data"`
+	Update bool                   `json:"update"`
 }
 
 // Save arbitrary data to disk
 // URI: /api/v2/data
 // Method: POST
 // Args:
-//     filename: filename [required]
 //     data: arbitrary data to save [required]
 //     update: update existing values [optional]
 func dataSaveHandler(gateway Gatewayer, w http.ResponseWriter, r *http.Request) {
@@ -47,27 +43,15 @@ func dataSaveHandler(gateway Gatewayer, w http.ResponseWriter, r *http.Request) 
 	}
 	defer r.Body.Close()
 
-	if params.Filename == "" {
-		wh.Error400(w, "missing filename")
-		return
-	}
-
 	if params.Data == nil {
 		wh.Error400(w, "empty data")
 		return
 	}
 
-	err = gateway.SaveData(params.Filename, params.Data, params.Update)
+	err = gateway.SaveData(params.Data, params.Update)
 	if err != nil {
-		switch {
-		case os.IsNotExist(err):
-			wh.Error404(w, fmt.Sprintf("file %s does not exist", params.Filename))
-		case os.IsPermission(err):
-			wh.Error403(w, fmt.Sprintf("cannot access %s - permission denied", params.Filename))
-		default:
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
-			writeHTTPResponse(w, resp)
-		}
+		resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+		writeHTTPResponse(w, resp)
 		return
 	}
 
@@ -78,17 +62,10 @@ func dataSaveHandler(gateway Gatewayer, w http.ResponseWriter, r *http.Request) 
 // URI: /api/v2/data
 // Method: GET
 // Args:
-//     filename: filename [required]
 //     keys: comma separated list of keys to retrieve [required]
 func dataGetHandler(gateway Gatewayer, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		wh.Error405(w)
-		return
-	}
-
-	filename := r.FormValue("filename")
-	if filename == "" {
-		wh.Error400(w, "missing filename")
 		return
 	}
 
@@ -100,15 +77,11 @@ func dataGetHandler(gateway Gatewayer, w http.ResponseWriter, r *http.Request) {
 
 	keyArr := strings.Split(keys, ",")
 
-	data, err := gateway.GetData(filename, keyArr)
+	data, err := gateway.GetData(keyArr)
 	if err != nil {
 		switch {
 		case err.Error() == "empty file":
 			wh.Error400(w, err.Error())
-		case os.IsNotExist(err):
-			wh.Error404(w, fmt.Sprintf("file %s does not exist", filename))
-		case os.IsPermission(err):
-			wh.Error403(w, fmt.Sprintf("cannot access %s: permission denied", filename))
 		default:
 			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
 			writeHTTPResponse(w, resp)
@@ -123,17 +96,10 @@ func dataGetHandler(gateway Gatewayer, w http.ResponseWriter, r *http.Request) {
 // URI: /api/v2/data
 // Method: Delete
 // Args:
-//     filename: filename [required]
 //     keys: list of keys to retrieve [required]
 func dataDeleteHandler(gateway Gatewayer, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		wh.Error405(w)
-		return
-	}
-
-	filename := r.FormValue("filename")
-	if filename == "" {
-		wh.Error400(w, "missing filename")
 		return
 	}
 
@@ -145,15 +111,11 @@ func dataDeleteHandler(gateway Gatewayer, w http.ResponseWriter, r *http.Request
 
 	keyArr := strings.Split(keys, ",")
 
-	err := gateway.DeleteData(filename, keyArr)
+	err := gateway.DeleteData(keyArr)
 	if err != nil {
 		switch {
 		case err.Error() == "empty file":
 			wh.Error400(w, err.Error())
-		case os.IsNotExist(err):
-			wh.Error404(w, fmt.Sprintf("file %s does not exist", filename))
-		case os.IsPermission(err):
-			wh.Error403(w, fmt.Sprintf("cannot access %s: permission denied", filename))
 		default:
 			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
 			writeHTTPResponse(w, resp)

@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"errors"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -544,11 +543,11 @@ func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
 	return gw.v.Wallets.GetWalletSeed(id, password)
 }
 
-// SaveData saves arbitrary data to a file on disk
-func (gw *Gateway) SaveData(filename string, data map[string]interface{}, update bool) error {
+// SaveData saves arbitrary data to data file on disk
+func (gw *Gateway) SaveData(data map[string]interface{}, update bool) error {
 	if update {
 		var currentData = make(map[string]interface{})
-		err := file.LoadJSON(filepath.Join(gw.d.Config.DataDirectory, filename), &currentData)
+		err := file.LoadJSON(gw.d.Config.DataFilePath, &currentData)
 		if err != nil {
 			logger.WithError(err).Error("failed to load json file")
 			return err
@@ -561,13 +560,13 @@ func (gw *Gateway) SaveData(filename string, data map[string]interface{}, update
 		data = currentData
 	}
 
-	return file.SaveJSON(filepath.Join(gw.d.Config.DataDirectory, filename), data, 0644)
+	return file.SaveJSON(gw.d.Config.DataFilePath, data, 0644)
 }
 
-// GetData fetches data from a file on disk
-func (gw *Gateway) GetData(filename string, keys []string) (map[string]interface{}, error) {
+// GetData fetches data from data file on disk
+func (gw *Gateway) GetData(keys []string) (map[string]interface{}, error) {
 	var data map[string]interface{}
-	err := file.LoadJSON(filepath.Join(gw.d.Config.DataDirectory, filename), &data)
+	err := file.LoadJSON(gw.d.Config.DataFilePath, &data)
 	if err != nil {
 		logger.WithError(err).Error("failed to load json file")
 		return nil, err
@@ -587,10 +586,10 @@ func (gw *Gateway) GetData(filename string, keys []string) (map[string]interface
 	return retData, nil
 }
 
-// DeleteData deletes data from a file on disk
-func (gw *Gateway) DeleteData(filename string, keys []string) error {
+// DeleteData deletes data from data file on disk
+func (gw *Gateway) DeleteData(keys []string) error {
 	var data map[string]interface{}
-	err := file.LoadJSON(filepath.Join(gw.d.Config.DataDirectory, filename), &data)
+	err := file.LoadJSON(gw.d.Config.DataFilePath, &data)
 	if err != nil {
 		logger.WithError(err).Error("failed to load json file")
 		return err
@@ -604,7 +603,7 @@ func (gw *Gateway) DeleteData(filename string, keys []string) error {
 		delete(data, key)
 	}
 
-	return file.SaveJSON(filepath.Join(gw.d.Config.DataDirectory, filename), data, 0644)
+	return file.SaveJSON(gw.d.Config.DataFilePath, data, 0644)
 }
 
 // GetRichlist returns rich list as desc order.

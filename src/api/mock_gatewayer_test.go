@@ -61,13 +61,13 @@ func (_m *MockGatewayer) DecryptWallet(wltID string, password []byte) (*wallet.W
 	return r0, r1
 }
 
-// DeleteData provides a mock function with given fields: filename, keys
-func (_m *MockGatewayer) DeleteData(filename string, keys []string) error {
-	ret := _m.Called(filename, keys)
+// DeleteData provides a mock function with given fields: keys
+func (_m *MockGatewayer) DeleteData(keys []string) error {
+	ret := _m.Called(keys)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, []string) error); ok {
-		r0 = rf(filename, keys)
+	if rf, ok := ret.Get(0).(func([]string) error); ok {
+		r0 = rf(keys)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -413,13 +413,13 @@ func (_m *MockGatewayer) GetConnections(f func(daemon.Connection) bool) ([]daemo
 	return r0, r1
 }
 
-// GetData provides a mock function with given fields: filename, keys
-func (_m *MockGatewayer) GetData(filename string, keys []string) (map[string]interface{}, error) {
-	ret := _m.Called(filename, keys)
+// GetData provides a mock function with given fields: keys
+func (_m *MockGatewayer) GetData(keys []string) (map[string]interface{}, error) {
+	ret := _m.Called(keys)
 
 	var r0 map[string]interface{}
-	if rf, ok := ret.Get(0).(func(string, []string) map[string]interface{}); ok {
-		r0 = rf(filename, keys)
+	if rf, ok := ret.Get(0).(func([]string) map[string]interface{}); ok {
+		r0 = rf(keys)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]interface{})
@@ -427,8 +427,8 @@ func (_m *MockGatewayer) GetData(filename string, keys []string) (map[string]int
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, []string) error); ok {
-		r1 = rf(filename, keys)
+	if rf, ok := ret.Get(1).(func([]string) error); ok {
+		r1 = rf(keys)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1162,13 +1162,13 @@ func (_m *MockGatewayer) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	return r0, r1
 }
 
-// SaveData provides a mock function with given fields: filename, data, update
-func (_m *MockGatewayer) SaveData(filename string, data map[string]interface{}, update bool) error {
-	ret := _m.Called(filename, data, update)
+// SaveData provides a mock function with given fields: data, update
+func (_m *MockGatewayer) SaveData(data map[string]interface{}, update bool) error {
+	ret := _m.Called(data, update)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, map[string]interface{}, bool) error); ok {
-		r0 = rf(filename, data, update)
+	if rf, ok := ret.Get(0).(func(map[string]interface{}, bool) error); ok {
+		r0 = rf(data, update)
 	} else {
 		r0 = ret.Error(0)
 	}

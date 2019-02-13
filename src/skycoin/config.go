@@ -188,6 +188,9 @@ type NodeConfig struct {
 	LogToFile   bool
 	Version     bool // show node version
 
+	// DataFilePath path of the file to store arbitrary data on disk
+	DataFilePath string
+
 	GenesisSignatureStr string
 	GenesisAddressStr   string
 	BlockchainPubkeyStr string
@@ -367,6 +370,12 @@ func (c *Config) postProcess() error {
 		c.Node.DBPath = filepath.Join(c.Node.DataDirectory, "data.db")
 	} else {
 		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
+	}
+
+	if c.Node.DataFilePath == "" {
+		c.Node.DataFilePath = filepath.Join(c.Node.DataDirectory, "data.json")
+	} else {
+		c.Node.DataFilePath = replaceHome(c.Node.DataFilePath, home)
 	}
 
 	if c.Node.RunBlockPublisher {
@@ -625,6 +634,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
+	flag.StringVar(&c.DataFilePath, "data-file-path", c.DataFilePath, "path of the file to store arbitrary data on disk (defaults to ~/.skycoin/data.json)")
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")

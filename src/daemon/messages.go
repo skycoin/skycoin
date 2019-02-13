@@ -1055,7 +1055,7 @@ func (gtm *GiveTxnsMessage) Decode(buf []byte) (int, error) {
 }
 
 // GetFiltered returns transactions hashes
-func (gtm *GiveTxnsMessage) GetFiltered() []cipher.SHA256 {
+func (gtm *GiveTxnsMessage) GetFiltered() ([]cipher.SHA256, error) {
 	return coin.Transactions(gtm.Transactions).Hashes()
 }
 
@@ -1079,17 +1079,22 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 		// since each is independent
 		known, softErr, err := d.injectTransaction(txn)
 		if err != nil {
-			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Failed to record transaction")
+			logger.WithError(err).WithField("txid", txn).Warning("Failed to record transaction")
 			continue
 		} else if softErr != nil {
-			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
+			logger.WithError(err).WithField("txid", txn).Warning("Transaction soft violation")
 			// Allow soft txn violations to rebroadcast
 		} else if known {
-			logger.WithField("txid", txn.Hash().Hex()).Debug("Duplicate transaction")
+			logger.WithField("txid", txn).Debug("Duplicate transaction")
 			continue
 		}
 
-		hashes = append(hashes, txn.Hash())
+		txnHash, txnHashErr := txn.Hash()
+		if txnHashErr != nil {
+			logger.Critical().WithError(txnHashErr).Error("GiveTxnsMessage.process: txn.Hash failed")
+		} else {
+			hashes = append(hashes, txnHash)
+		}
 	}
 
 	if len(hashes) == 0 {

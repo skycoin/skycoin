@@ -154,7 +154,9 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 
 	require.Equal(t, len(txn.Sigs), 1)
 
-	err = cipher.VerifyAddressSignedHash(ux.Body.Address, txn.Sigs[0], cipher.AddSHA256(txn.HashInner(), txn.In[0]))
+	txnInnerHash, err := txn.HashInner()
+	require.NoError(t, err)
+	err = cipher.VerifyAddressSignedHash(ux.Body.Address, txn.Sigs[0], cipher.AddSHA256(txnInnerHash, txn.In[0]))
 	require.NoError(t, err)
 
 	err = txn.UpdateHeader()
@@ -374,7 +376,8 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	}
 
 	// create normal spending txn
-	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	uxs, err := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	require.NoError(t, err)
 	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 	err = verifySingleTxnSoftHardConstraints(txn, params.UserVerifyTxn)
 	require.NoError(t, err)
@@ -390,7 +393,8 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	requireSoftViolation(t, "Transaction size bigger than max block size", err)
 
 	// Invalid transaction fee
-	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	uxs, err = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	require.NoError(t, err)
 	hours := uint64(0)
 	for _, ux := range uxs {
 		hours += ux.Body.Hours
@@ -441,7 +445,8 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	require.Equal(t, expectedErr, err)
 
 	// Check invalid sig
-	uxs = coin.CreateUnspents(b.Head, txn)
+	uxs, err = coin.CreateUnspents(b.Head, txn)
+	require.NoError(t, err)
 	_, key := cipher.GenerateKeyPair()
 	toAddr2 := testutil.MakeAddress()
 	tx2 := makeSpendTx(t, uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
@@ -449,14 +454,16 @@ func TestVerifyTransactionSoftHardConstraints(t *testing.T) {
 	requireHardViolation(t, "Signature not valid for output being spent", err)
 
 	// Create lost coin transaction
-	uxs2 := coin.CreateUnspents(b.Head, txn)
+	uxs2, err := coin.CreateUnspents(b.Head, txn)
+	require.NoError(t, err)
 	toAddr3 := testutil.MakeAddress()
 	lostCoinTx := makeLostCoinTx(t, coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
 	err = verifySingleTxnSoftHardConstraints(lostCoinTx, params.UserVerifyTxn)
 	requireHardViolation(t, "Transactions may not destroy coins", err)
 
 	// Create transaction with duplicate UxOuts
-	uxs = coin.CreateUnspents(b.Head, txn)
+	uxs, err = coin.CreateUnspents(b.Head, txn)
+	require.NoError(t, err)
 	toAddr4 := testutil.MakeAddress()
 	dupUxOutTx := makeDuplicateUxOutTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
 	err = verifySingleTxnSoftHardConstraints(dupUxOutTx, params.UserVerifyTxn)
@@ -487,7 +494,8 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	coins := uint64(10e6)
 
 	// create normal spending txn
-	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	uxs, err := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	require.NoError(t, err)
 	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 
 	var uxIn coin.UxArray

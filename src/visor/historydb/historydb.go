@@ -131,6 +131,11 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 			BlockSeq: b.Seq(),
 		}
 
+		spentTxnID, err := t.Hash()
+		if err != nil {
+			return err
+		}
+
 		if err := hd.txns.put(tx, &txn); err != nil {
 			return err
 		}
@@ -147,19 +152,23 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 
 			// update the output's spent block seq and txid
 			o.SpentBlockSeq = b.Seq()
-			o.SpentTxnID = t.Hash()
+			o.SpentTxnID = spentTxnID
 			if err := hd.outputs.put(tx, *o); err != nil {
 				return err
 			}
 
 			// store the IN address with txid
-			if err := hd.addrTxns.add(tx, o.Out.Body.Address, t.Hash()); err != nil {
+			if err := hd.addrTxns.add(tx, o.Out.Body.Address, spentTxnID); err != nil {
 				return err
 			}
 		}
 
 		// handle the tx out
-		uxArray := coin.CreateUnspents(b.Head, t)
+		uxArray, err := coin.CreateUnspents(b.Head, t)
+		if err != nil {
+			return err
+		}
+
 		for _, ux := range uxArray {
 			if err := hd.outputs.put(tx, UxOut{
 				Out: ux,
@@ -171,7 +180,7 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 				return err
 			}
 
-			if err := hd.addrTxns.add(tx, ux.Body.Address, t.Hash()); err != nil {
+			if err := hd.addrTxns.add(tx, ux.Body.Address, spentTxnID); err != nil {
 				return err
 			}
 		}
@@ -247,7 +256,10 @@ type AddressIndexes struct {
 // Verify checks if the historydb is corrupted
 func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *IndexesMap) error {
 	for _, t := range b.Body.Transactions {
-		txnHash := t.Hash()
+		txnHash, err := t.Hash()
+		if err != nil {
+			return err
+		}
 		txn, err := hd.txns.get(tx, txnHash)
 		if err != nil {
 			return err
@@ -323,7 +335,10 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 		}
 
 		// Checks the transaction outs
-		uxArray := coin.CreateUnspents(b.Head, t)
+		uxArray, err := coin.CreateUnspents(b.Head, t)
+		if err != nil {
+			return err
+		}
 		for _, ux := range uxArray {
 			uxHash := ux.Hash()
 			out, err := hd.outputs.get(tx, uxHash)

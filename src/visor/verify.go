@@ -275,7 +275,10 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 		return err
 	}
 
-	uxOut := coin.CreateUnspents(head, txn)
+	uxOut, err := coin.CreateUnspents(head, txn)
+	if err != nil {
+		return err
+	}
 
 	// Check that there are any duplicates within this set
 	// NOTE: This should already be checked by txn.Verify()

@@ -115,7 +115,11 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 	// FIXME: If/when the blockchain is regenerated, use a real hash as the txID for the genesis block. The bkSeq argument can be removed then.
 	txID := cipher.SHA256{}
 	if !isGenesis {
-		txID = txn.Hash()
+		var err error
+		txID, err = txn.Hash()
+		if err != nil {
+			return BlockTransactionVerbose{}, err
+		}
 	}
 
 	sigs := make([]string, len(txn.Sigs))
@@ -176,10 +180,15 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 		}
 	}
 
+	txnHash, err := txn.Hash()
+	if err != nil {
+		return BlockTransactionVerbose{}, err
+	}
+
 	return BlockTransactionVerbose{
 		Length:    txn.Length,
 		Type:      txn.Type,
-		Hash:      txn.Hash().Hex(),
+		Hash:      txnHash.Hex(),
 		InnerHash: txn.InnerHash.Hex(),
 		Fee:       fee,
 

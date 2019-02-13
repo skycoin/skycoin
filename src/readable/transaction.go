@@ -107,9 +107,13 @@ func NewTransaction(txn coin.Transaction, isGenesis bool) (*Transaction, error) 
 	}
 
 	// Genesis transaction uses empty SHA256 as txid [FIXME: requires hard fork]
-	txid := cipher.SHA256{}
+	txID := cipher.SHA256{}
 	if !isGenesis {
-		txid = txn.Hash()
+		var err error
+		txID, err = txn.Hash()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	sigs := make([]string, len(txn.Sigs))
@@ -124,7 +128,7 @@ func NewTransaction(txn coin.Transaction, isGenesis bool) (*Transaction, error) 
 
 	out := make([]TransactionOutput, len(txn.Out))
 	for i := range txn.Out {
-		o, err := NewTransactionOutput(&txn.Out[i], txid)
+		o, err := NewTransactionOutput(&txn.Out[i], txID)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +139,7 @@ func NewTransaction(txn coin.Transaction, isGenesis bool) (*Transaction, error) 
 	return &Transaction{
 		Length:    txn.Length,
 		Type:      txn.Type,
-		Hash:      txn.TxIDHex(),
+		Hash:      txID.Hex(),
 		InnerHash: txn.InnerHash.Hex(),
 
 		Sigs: sigs,

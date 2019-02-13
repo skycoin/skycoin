@@ -381,7 +381,13 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, txn.Hash().Hex())
+		txnHash, err := txn.Hash()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, txnHash.Hex())
 	}
 }
 
@@ -625,10 +631,13 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 		sigs[i] = s.Hex()
 	}
 
-	txid := txn.Hash()
+	txID, err := txn.Hash()
+	if err != nil {
+		return nil, err
+	}
 	out := make([]CreatedTransactionOutput, len(txn.Out))
 	for i, o := range txn.Out {
-		co, err := NewCreatedTransactionOutput(o, txid)
+		co, err := NewCreatedTransactionOutput(o, txID)
 		if err != nil {
 			logger.WithError(err).Error("NewCreatedTransactionOutput failed")
 			continue
@@ -657,7 +666,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 	return &CreatedTransaction{
 		Length:    txn.Length,
 		Type:      txn.Type,
-		TxID:      txid.Hex(),
+		TxID:      txID.Hex(),
 		InnerHash: txn.InnerHash.Hex(),
 		Fee:       fmt.Sprint(fee),
 

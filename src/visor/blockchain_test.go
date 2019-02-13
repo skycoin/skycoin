@@ -671,7 +671,8 @@ func TestProcessTransactions(t *testing.T) {
 			head := addGenesisBlockToBlockchain(t, bc)
 			tm := head.Time()
 			for i, spend := range tc.initChain {
-				uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
+				uxs, err := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
+				require.NoError(t, err)
 				tx := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
 
 				b := newBlock(t, bc, tx, tm+uint64(i*100))
@@ -690,7 +691,8 @@ func TestProcessTransactions(t *testing.T) {
 			// create spending transactions
 			txs := make([]coin.Transaction, len(tc.spends))
 			for i, spend := range tc.spends {
-				uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
+				uxs, err := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
+				require.NoError(t, err)
 				tx := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
 				txs[i] = tx
 			}
@@ -796,7 +798,8 @@ func TestProcessBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create new block
-	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	uxs, err := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	require.NoError(t, err)
 	toAddr := testutil.MakeAddress()
 	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
 	uxHash := getUxHash(t, db, bc)
@@ -846,7 +849,8 @@ func TestExecuteBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	// new block
-	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	uxs, err := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	require.NoError(t, err)
 	toAddr := testutil.MakeAddress()
 	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
 	uxHash := getUxHash(t, db, bc)

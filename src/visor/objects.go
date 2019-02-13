@@ -102,7 +102,7 @@ type UnconfirmedTransaction struct {
 }
 
 // Hash returns the coin.Transaction's hash
-func (ut *UnconfirmedTransaction) Hash() cipher.SHA256 {
+func (ut *UnconfirmedTransaction) Hash() (cipher.SHA256, error) {
 	return ut.Transaction.Hash()
 }
 

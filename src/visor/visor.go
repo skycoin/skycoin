@@ -481,7 +481,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
-				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
+				logger.Warningf("Transaction %s violates constraints: %v", txn, err)
 			default:
 				return coin.SignedBlock{}, err
 			}
@@ -577,12 +577,16 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	}
 
 	// Remove the transactions in the Block from the unconfirmed pool
-	txHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
-	for _, tx := range b.Block.Body.Transactions {
-		txHashes = append(txHashes, tx.Hash())
+	txnHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
+	for _, txn := range b.Block.Body.Transactions {
+		txnHash, err := txn.Hash()
+		if err != nil {
+			return err
+		}
+		txnHashes = append(txnHashes, txnHash)
 	}
 
-	if err := vs.Unconfirmed.RemoveTransactions(tx, txHashes); err != nil {
+	if err := vs.Unconfirmed.RemoveTransactions(tx, txnHashes); err != nil {
 		return err
 	}
 
@@ -1222,20 +1226,24 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	// and remove duplicate txns
 	txnMap := make(map[cipher.SHA256]struct{})
 	var txns []Transaction
-	for _, txs := range addrTxns {
-		for _, tx := range txs {
-			if _, exist := txnMap[tx.Transaction.Hash()]; exist {
+	for _, aTxns := range addrTxns {
+		for _, txn := range aTxns {
+			txnHash, err := txn.Transaction.Hash()
+			if err != nil {
+				return nil, err
+			}
+			if _, exist := txnMap[txnHash]; exist {
 				continue
 			}
-			txnMap[tx.Transaction.Hash()] = struct{}{}
-			txns = append(txns, tx)
+			txnMap[txnHash] = struct{}{}
+			txns = append(txns, txn)
 		}
 	}
 
 	// Checks other filters
-	f := func(tx *Transaction, flts []TxFilter) bool {
+	f := func(txn *Transaction, flts []TxFilter) bool {
 		for _, flt := range flts {
-			if !flt.Match(tx) {
+			if !flt.Match(txn) {
 				return false
 			}
 		}
@@ -1244,9 +1252,9 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	}
 
 	var retTxns []Transaction
-	for _, tx := range txns {
-		if f(&tx, otherFlts) {
-			retTxns = append(retTxns, tx)
+	for _, txn := range txns {
+		if f(&txn, otherFlts) {
+			retTxns = append(retTxns, txn)
 		}
 	}
 
@@ -1441,7 +1449,16 @@ func sortTxns(txns []Transaction) []Transaction {
 		}
 
 		// If transactions in the same block, compare the hash string
-		return txns[i].Transaction.Hash().Hex() < txns[j].Transaction.Hash().Hex()
+		iHash, err := txns[i].Transaction.Hash()
+		if err != nil {
+			logger.Panicf("sortTxns: txns[i].Transaction.Hash() failed: %v", err)
+		}
+		jHash, err := txns[i].Transaction.Hash()
+		if err != nil {
+			logger.Panicf("sortTxns: txns[j].Transaction.Hash() failed: %v", err)
+		}
+
+		return iHash.Hex() < jHash.Hex()
 	})
 	return txns
 }
@@ -1584,7 +1601,11 @@ func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []Un
 	inputs := make([][]TransactionInput, len(txns))
 	for i, txn := range txns {
 		if len(txn.Transaction.In) == 0 {
-			logger.Critical().WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
+			txnHash, err := txn.Hash()
+			if err != nil {
+				return nil, err
+			}
+			logger.Critical().WithField("txid", txnHash.Hex()).Warning("Unconfirmed transaction has no inputs")
 			continue
 		}
 
@@ -2202,7 +2223,10 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			}
 
 			// Checks if the transaction is confirmed
-			txnHash := txn.Hash()
+			txnHash, err := txn.Hash()
+			if err != nil {
+				return err
+			}
 			historyTxn, err := vs.history.GetTransaction(tx, txnHash)
 			if err != nil {
 				return fmt.Errorf("get transaction of %v from historydb failed: %v", txnHash, err)

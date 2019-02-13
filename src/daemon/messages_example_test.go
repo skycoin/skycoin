@@ -643,6 +643,11 @@ func ExampleGiveBlocksMessage() {
 	var body2 = coin.BlockBody{
 		Transactions: make([]coin.Transaction, 0),
 	}
+	bodyHash1, err := body1.Hash()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	var block1 = coin.Block{
 		Body: body1,
 		Head: coin.BlockHeader{
@@ -651,7 +656,7 @@ func ExampleGiveBlocksMessage() {
 			BkSeq:    0,
 			Fee:      10,
 			PrevHash: hashes[0],
-			BodyHash: body1.Hash(),
+			BodyHash: bodyHash1,
 		}}
 	var block2 = coin.Block{
 		Body: body2,
@@ -661,7 +666,7 @@ func ExampleGiveBlocksMessage() {
 			BkSeq:    0,
 			Fee:      250,
 			PrevHash: hashes[1],
-			BodyHash: body1.Hash(),
+			BodyHash: bodyHash1,
 		}}
 	var sig, _ = cipher.SigFromHex(sig1hex)
 	var signedBlock = coin.SignedBlock{

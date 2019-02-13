@@ -280,10 +280,13 @@ func TestTransactionSignInputs(t *testing.T) {
 	require.Panics(t, func() { txn.SignInputs([]cipher.SecKey{s}) })
 	require.Equal(t, len(txn.Sigs), 0)
 	// Valid signing
-	h := txn.HashInner()
+	h, err := txn.HashInner()
+	require.NoError(t, err)
 	require.NotPanics(t, func() { txn.SignInputs([]cipher.SecKey{s, s2}) })
 	require.Equal(t, len(txn.Sigs), 2)
-	require.Equal(t, txn.HashInner(), h)
+	h2, err := txn.HashInner()
+	require.NoError(t, err)
+	require.Equal(t, h2, h)
 	p := cipher.MustPubKeyFromSecKey(s)
 	a := cipher.AddressFromPubKey(p)
 	p = cipher.MustPubKeyFromSecKey(s2)
@@ -296,8 +299,12 @@ func TestTransactionSignInputs(t *testing.T) {
 
 func TestTransactionHash(t *testing.T) {
 	txn := makeTransaction(t)
-	require.NotEqual(t, txn.Hash(), cipher.SHA256{})
-	require.NotEqual(t, txn.HashInner(), txn.Hash())
+	h, err := txn.Hash()
+	require.NoError(t, err)
+	h2, err := txn.HashInner()
+	require.NoError(t, err)
+	require.NotEqual(t, h, cipher.SHA256{})
+	require.NotEqual(t, h2, h)
 }
 
 func TestTransactionUpdateHeader(t *testing.T) {
@@ -308,51 +315,60 @@ func TestTransactionUpdateHeader(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEqual(t, txn.InnerHash, cipher.SHA256{})
 	require.Equal(t, txn.InnerHash, h)
-	require.Equal(t, txn.InnerHash, txn.HashInner())
+	innerHash, err := txn.HashInner()
+	require.NoError(t, err)
+	require.Equal(t, txn.InnerHash, innerHash)
 }
 
 func TestTransactionHashInner(t *testing.T) {
 	txn := makeTransaction(t)
 
-	h := txn.HashInner()
+	h, err := txn.HashInner()
+	require.NoError(t, err)
 	require.NotEqual(t, h, cipher.SHA256{})
 
-	// If txn.In is changed, hash should change
-	tx2 := copyTransaction(txn)
+	// If txn.In is changed, inner hash should change
+	txn2 := copyTransaction(txn)
 	ux := makeUxOut(t)
-	tx2.In[0] = ux.Hash()
-	require.NotEqual(t, txn, tx2)
-	require.Equal(t, tx2.In[0], ux.Hash())
-	require.NotEqual(t, txn.HashInner(), tx2.HashInner())
+	txn2.In[0] = ux.Hash()
+	require.NotEqual(t, txn, txn2)
+	require.Equal(t, txn2.In[0], ux.Hash())
+	h, err = txn.HashInner()
+	h2, err := txn2.HashInner()
+	require.NotEqual(t, h, h2)
 
-	// If txn.Out is changed, hash should change
-	tx2 = copyTransaction(txn)
+	// If txn.Out is changed, inner hash should change
+	txn2 = copyTransaction(txn)
 	a := makeAddress()
-	tx2.Out[0].Address = a
-	require.NotEqual(t, txn, tx2)
-	require.Equal(t, tx2.Out[0].Address, a)
-	require.NotEqual(t, txn.HashInner(), tx2.HashInner())
+	txn2.Out[0].Address = a
+	require.NotEqual(t, txn, txn2)
+	require.Equal(t, txn2.Out[0].Address, a)
+	h, err = txn.HashInner()
+	h2, err = txn2.HashInner()
+	require.NotEqual(t, h, h2)
 
-	// If txn.Head is changed, hash should not change
-	tx2 = copyTransaction(txn)
+	// If txn.Head is changed, inner hash should not change
+	txn2 = copyTransaction(txn)
 	txn.Sigs = append(txn.Sigs, cipher.Sig{})
-	require.Equal(t, txn.HashInner(), tx2.HashInner())
+	h, err = txn.HashInner()
+	h2, err = txn2.HashInner()
+	require.Equal(t, h, h2)
 }
 
 func TestTransactionSerialization(t *testing.T) {
 	txn := makeTransaction(t)
 	b, err := txn.Serialize()
 	require.NoError(t, err)
-	tx2, err := TransactionDeserialize(b)
+	txn2, err := TransactionDeserialize(b)
 	require.NoError(t, err)
-	require.Equal(t, txn, tx2)
+	require.Equal(t, txn, txn2)
 
 	// Check reserializing deserialized txn
-	b2, err := tx2.Serialize()
+	b2, err := txn2.Serialize()
 	require.NoError(t, err)
 	tx3, err := TransactionDeserialize(b2)
 	require.NoError(t, err)
-	require.Equal(t, tx2, tx3)
+	require.Equal(t, txn2, tx3)
 
 	// Check hex encode/decode followed by deserialize
 	s := hex.EncodeToString(b)
@@ -360,7 +376,7 @@ func TestTransactionSerialization(t *testing.T) {
 	require.NoError(t, err)
 	tx4, err := TransactionDeserialize(sb)
 	require.NoError(t, err)
-	require.Equal(t, tx2, tx4)
+	require.Equal(t, txn2, tx4)
 
 	// Invalid deserialization
 	require.Panics(t, func() { MustTransactionDeserialize([]byte{0x04}) })
@@ -407,10 +423,13 @@ func TestTransactionsHashes(t *testing.T) {
 	for i := 0; i < len(txns); i++ {
 		txns[i] = makeTransaction(t)
 	}
-	hashes := txns.Hashes()
+	hashes, err := txns.Hashes()
+	require.NoError(t, err)
 	require.Equal(t, len(hashes), 4)
 	for i, h := range hashes {
-		require.Equal(t, h, txns[i].Hash())
+		txnHash, err := txns[i].Hash()
+		require.NoError(t, err)
+		require.Equal(t, h, txnHash)
 	}
 }
 
@@ -916,8 +935,10 @@ func TestSortTransactions(t *testing.T) {
 	hashSortedTxns := append(Transactions{}, txns...)
 
 	sort.Slice(hashSortedTxns, func(i, j int) bool {
-		ihash := hashSortedTxns[i].Hash()
-		jhash := hashSortedTxns[j].Hash()
+		ihash, err := hashSortedTxns[i].Hash()
+		require.NoError(t, err)
+		jhash, err := hashSortedTxns[j].Hash()
+		require.NoError(t, err)
 		return bytes.Compare(ihash[:], jhash[:]) < 0
 	})
 
@@ -959,7 +980,11 @@ func TestSortTransactions(t *testing.T) {
 			txns:       Transactions{txns[1], txns[2], txns[0]},
 			sortedTxns: Transactions{txns[2], txns[0], txns[1]},
 			feeCalc: func(txn *Transaction) (uint64, error) {
-				if txn.Hash() == txns[2].Hash() {
+				h1, err := txn.Hash()
+				require.NoError(t, err)
+				h2, err := txns[2].Hash()
+				require.NoError(t, err)
+				if h1 == h2 {
 					return math.MaxUint64 / 2, nil
 				}
 				return 1e8 - txn.Out[0].Hours, nil
@@ -971,7 +996,11 @@ func TestSortTransactions(t *testing.T) {
 			txns:       Transactions{txns[1], txns[2], txns[0]},
 			sortedTxns: Transactions{txns[0], txns[1]},
 			feeCalc: func(txn *Transaction) (uint64, error) {
-				if txn.Hash() == txns[2].Hash() {
+				h1, err := txn.Hash()
+				require.NoError(t, err)
+				h2, err := txns[2].Hash()
+				require.NoError(t, err)
+				if h1 == h2 {
 					return 0, errors.New("fee calc failed")
 				}
 				return 1e8 - txn.Out[0].Hours, nil

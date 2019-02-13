@@ -628,6 +628,9 @@ func TestGetTransactionByID(t *testing.T) {
 
 func TestInjectTransaction(t *testing.T) {
 	validTransaction := makeTransaction(t)
+	validTransactionHash, err := validTransaction.Hash()
+	require.NoError(t, err)
+
 	type httpBody struct {
 		Rawtx string `json:"rawtx"`
 	}
@@ -729,7 +732,7 @@ func TestInjectTransaction(t *testing.T) {
 			status:               http.StatusOK,
 			httpBody:             string(validTxnBodyJSON),
 			injectTransactionArg: validTransaction,
-			httpResponse:         validTransaction.Hash().Hex(),
+			httpResponse:         validTransactionHash.Hex(),
 		},
 		{
 			name:                 "200 - csrf disabled",
@@ -737,7 +740,7 @@ func TestInjectTransaction(t *testing.T) {
 			status:               http.StatusOK,
 			httpBody:             string(validTxnBodyJSON),
 			injectTransactionArg: validTransaction,
-			httpResponse:         validTransaction.Hash().Hex(),
+			httpResponse:         validTransactionHash.Hex(),
 			csrfDisabled:         true,
 		},
 	}

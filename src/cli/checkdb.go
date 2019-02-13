@@ -42,7 +42,7 @@ func checkDBCmd() *cobra.Command {
 	}
 }
 
-func checkDB(c *cobra.Command, args []string) error {
+func checkDB(_ *cobra.Command, args []string) error {
 	// get db path
 	dbPath := ""
 	if len(args) > 0 {
@@ -99,7 +99,7 @@ func checkDBEncodingCmd() *cobra.Command {
 	}
 }
 
-func checkDBDecoding(c *cobra.Command, args []string) error {
+func checkDBDecoding(_ *cobra.Command, args []string) error {
 	// get db path
 	dbPath := ""
 	if len(args) > 0 {

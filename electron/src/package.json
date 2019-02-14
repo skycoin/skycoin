@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "electron-rebuild": "^1.8.2"
+  },
+  "scripts": {
+    "postinstall": "electron-rebuild"
   }
 }

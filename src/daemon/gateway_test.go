@@ -269,13 +269,13 @@ func TestGateway_GetWalletBalance(t *testing.T) {
 	}
 }
 
-func TestGateway_CreateTransaction(t *testing.T) {
+func TestGateway_WalletCreateTransaction(t *testing.T) {
 	tests := []struct {
 		name            string
 		enableWalletAPI bool
 		err             error
 		txn             *coin.Transaction
-		inputs          []wallet.UxBalance
+		inputs          []visor.TransactionInput
 		params          wallet.CreateTransactionParams
 	}{
 		{
@@ -294,13 +294,52 @@ func TestGateway_CreateTransaction(t *testing.T) {
 				},
 			}
 
-			txn, inputs, err := gw.CreateTransaction(tc.params)
+			txn, inputs, err := gw.WalletCreateTransaction(tc.params)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.txn, txn)
 				require.Equal(t, tc.inputs, inputs)
+			}
+		})
+	}
+}
+
+func TestGateway_WalletSignTransaction(t *testing.T) {
+	tests := []struct {
+		name            string
+		enableWalletAPI bool
+		txn             *coin.Transaction
+		wltID           string
+		password        []byte
+		signIndexes     []int
+		err             error
+		outTxn          *coin.Transaction
+		inputs          []visor.TransactionInput
+	}{
+		{
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gw := &Gateway{
+				Config: GatewayConfig{
+					EnableWalletAPI: tc.enableWalletAPI,
+				},
+			}
+
+			txn, inputs, err := gw.WalletSignTransaction(tc.wltID, tc.password, tc.txn, tc.signIndexes)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.inputs, inputs)
+				require.Equal(t, tc.outTxn, txn)
 			}
 		})
 	}

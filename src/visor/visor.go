@@ -180,8 +180,8 @@ type Blockchainer interface {
 	NewBlock(tx *dbutil.Tx, txns coin.Transactions, currentTime uint64) (*coin.Block, error)
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) (*coin.SignedBlock, coin.UxArray, error)
+	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, signed TxnSignedFlag) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn, signed TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error)
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
@@ -477,7 +477,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn); err != nil {
+		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn, TxnSigned); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
@@ -967,7 +967,7 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 		return false, nil, nil, err
 	}
 
-	head, inputs, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn)
+	head, inputs, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn, TxnSigned)
 	if err != nil {
 		return false, nil, nil, err
 	}
@@ -2162,12 +2162,12 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 
 // VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
 // transaction is confirmed, and error if any
-func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
+func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed TxnSignedFlag) ([]TransactionInput, bool, error) {
 	var uxa coin.UxArray
 	var isTxnConfirmed bool
 	var feeCalcTime uint64
 
-	err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+	verifyErr := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
 		head, err := vs.Blockchain.Head(tx)
 		if err != nil {
 			return err
@@ -2238,21 +2238,21 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa)
+		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa, signed)
 	})
 
 	// If we were able to query the inputs, return the verbose inputs to the caller
 	// even if the transaction failed validation
-	var uxs []wallet.UxBalance
+	var inputs []TransactionInput
 	if len(uxa) != 0 && feeCalcTime != 0 {
-		var otherErr error
-		uxs, otherErr = wallet.NewUxBalances(feeCalcTime, uxa)
-		if otherErr != nil {
-			return nil, isTxnConfirmed, otherErr
+		var err error
+		inputs, err = NewTransactionInputs(uxa, feeCalcTime)
+		if err != nil {
+			return nil, isTxnConfirmed, err
 		}
 	}
 
-	return uxs, isTxnConfirmed, err
+	return inputs, isTxnConfirmed, verifyErr
 }
 
 // AddressCount returns the total number of addresses with unspents

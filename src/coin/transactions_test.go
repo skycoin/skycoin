@@ -17,20 +17,42 @@ import (
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 )
 
-func makeTransactionFromUxOut(t *testing.T, ux UxOut, s cipher.SecKey) Transaction {
+func makeTransactionFromUxOuts(t *testing.T, uxs []UxOut, secs []cipher.SecKey) Transaction {
+	require.Equal(t, len(uxs), len(secs))
+
 	txn := Transaction{}
-	txn.PushInput(ux.Hash())
+
+	for _, ux := range uxs {
+		txn.PushInput(ux.Hash())
+	}
+
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(makeAddress(), 5e6, 50)
-	txn.SignInputs([]cipher.SecKey{s})
+	txn.SignInputs(secs)
+
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn
 }
 
+func makeTransactionFromUxOut(t *testing.T, ux UxOut, s cipher.SecKey) Transaction {
+	return makeTransactionFromUxOuts(t, []UxOut{ux}, []cipher.SecKey{s})
+}
+
 func makeTransaction(t *testing.T) Transaction {
 	ux, s := makeUxOutWithSecret(t)
 	return makeTransactionFromUxOut(t, ux, s)
+}
+
+func makeTransactionMultipleInputs(t *testing.T, n int) (Transaction, []cipher.SecKey) {
+	uxs := make([]UxOut, n)
+	secs := make([]cipher.SecKey, n)
+	for i := 0; i < n; i++ {
+		ux, s := makeUxOutWithSecret(t)
+		uxs[i] = ux
+		secs[i] = s
+	}
+	return makeTransactionFromUxOuts(t, uxs, secs), secs
 }
 
 func makeTransactions(t *testing.T, n int) Transactions { // nolint: unparam
@@ -120,12 +142,22 @@ func TestTransactionVerify(t *testing.T) {
 	// Invalid signature, empty
 	txn = makeTransaction(t)
 	txn.Sigs[0] = cipher.Sig{}
+	testutil.RequireError(t, txn.Verify(), "Unsigned input in transaction")
+
+	// Invalid signature, not empty
+	// A stable invalid signature must be used because random signatures could appear valid
+	// Note: Transaction.Verify() only checks that the signature is a minimally valid signature
+	badSig := "9a0f86874a4d9541f58a1de4db1c1b58765a868dc6f027445d0a2a8a7bddd1c45ea559fcd7bef45e1b76ccdaf8e50bbebd952acbbea87d1cb3f7a964bc89bf1ed5"
+	txn = makeTransaction(t)
+	txn.Sigs[0] = cipher.MustSigFromHex(badSig)
 	testutil.RequireError(t, txn.Verify(), "Failed to recover pubkey from signature")
+
 	// We can't check here for other invalid signatures:
 	//      - Signatures signed by someone else, spending coins they don't own
-	//      - Signature is for wrong hash
+	//      - Signatures signing a different message
 	// This must be done by blockchain tests, because we need the address
 	// from the unspent being spent
+	// The verification here only checks that the signature is valid at all
 
 	// Output coins are 0
 	txn = makeTransaction(t)
@@ -157,20 +189,53 @@ func TestTransactionVerify(t *testing.T) {
 	txn.Out[1].Coins = 1e6
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
-	require.Nil(t, txn.Verify())
+	require.NoError(t, txn.Verify())
+}
+
+func TestTransactionVerifyUnsigned(t *testing.T) {
+	txn, _ := makeTransactionMultipleInputs(t, 2)
+	err := txn.VerifyUnsigned()
+	testutil.RequireError(t, err, "Unsigned transaction must contain a null signature")
+
+	// Invalid signature, not empty
+	// A stable invalid signature must be used because random signatures could appear valid
+	// Note: Transaction.Verify() only checks that the signature is a minimally valid signature
+	badSig := "9a0f86874a4d9541f58a1de4db1c1b58765a868dc6f027445d0a2a8a7bddd1c45ea559fcd7bef45e1b76ccdaf8e50bbebd952acbbea87d1cb3f7a964bc89bf1ed5"
+	txn, _ = makeTransactionMultipleInputs(t, 2)
+	txn.Sigs[0] = cipher.Sig{}
+	txn.Sigs[1] = cipher.MustSigFromHex(badSig)
+	testutil.RequireError(t, txn.VerifyUnsigned(), "Failed to recover pubkey from signature")
+
+	txn.Sigs = nil
+	err = txn.VerifyUnsigned()
+	testutil.RequireError(t, err, "Invalid number of signatures")
+
+	// Transaction is unsigned if at least 1 signature is null
+	txn, _ = makeTransactionMultipleInputs(t, 3)
+	require.True(t, len(txn.Sigs) > 1)
+	txn.Sigs[0] = cipher.Sig{}
+	err = txn.VerifyUnsigned()
+	require.NoError(t, err)
+
+	// Transaction is unsigned if all signatures are null
+	for i := range txn.Sigs {
+		txn.Sigs[i] = cipher.Sig{}
+	}
+	err = txn.VerifyUnsigned()
+	require.NoError(t, err)
 }
 
 func TestTransactionVerifyInput(t *testing.T) {
 	// Invalid uxIn args
 	txn := makeTransaction(t)
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInput(nil) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(nil) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInput(UxArray{}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{}) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInput(make(UxArray, 3)) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(make(UxArray, 3)) // nolint: errcheck
 	})
 
 	// txn.In != txn.Sigs
@@ -178,14 +243,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs = []cipher.Sig{}
 	_require.PanicsWithLogMessage(t, "txn.In != txn.Sigs", func() {
-		_ = txn.VerifyInput(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
 	})
 
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs = append(txn.Sigs, cipher.Sig{})
 	_require.PanicsWithLogMessage(t, "txn.In != txn.Sigs", func() {
-		_ = txn.VerifyInput(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
 	})
 
 	// txn.InnerHash != txn.HashInner()
@@ -193,27 +258,34 @@ func TestTransactionVerifyInput(t *testing.T) {
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.InnerHash = cipher.SHA256{}
 	_require.PanicsWithLogMessage(t, "Invalid Tx Inner Hash", func() {
-		_ = txn.VerifyInput(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
 	})
 
 	// txn.In does not match uxIn hashes
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	_require.PanicsWithLogMessage(t, "Ux hash mismatch", func() {
-		_ = txn.VerifyInput(UxArray{UxOut{}}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{UxOut{}}) // nolint: errcheck
 	})
 
-	// Invalid signature
+	// Unsigned txn
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs[0] = cipher.Sig{}
-	err := txn.VerifyInput(UxArray{ux})
+	err := txn.VerifyInputSignatures(UxArray{ux})
+	testutil.RequireError(t, err, "Unsigned input in transaction")
+
+	// Signature signed by someone else
+	ux, _ = makeUxOutWithSecret(t)
+	_, s2 := makeUxOutWithSecret(t)
+	txn = makeTransactionFromUxOut(t, ux, s2)
+	err = txn.VerifyInputSignatures(UxArray{ux})
 	testutil.RequireError(t, err, "Signature not valid for output being spent")
 
 	// Valid
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
-	err = txn.VerifyInput(UxArray{ux})
+	err = txn.VerifyInputSignatures(UxArray{ux})
 	require.NoError(t, err)
 }
 
@@ -248,6 +320,54 @@ func TestTransactionPushOutput(t *testing.T) {
 			Hours:   uint64(i * 50),
 		})
 	}
+}
+
+func TestTransactionSignInput(t *testing.T) {
+	txn, seckeys := makeTransactionMultipleInputs(t, 3)
+	require.True(t, txn.IsFullySigned())
+
+	// Input is already signed
+	err := txn.SignInput(seckeys[0], 0)
+	testutil.RequireError(t, err, "Input already signed")
+	require.True(t, txn.IsFullySigned())
+
+	// Input is not signed
+	txn.Sigs[1] = cipher.Sig{}
+	require.False(t, txn.IsFullySigned())
+	err = txn.SignInput(seckeys[1], 1)
+	require.NoError(t, err)
+	require.True(t, txn.IsFullySigned())
+	err = txn.SignInput(seckeys[1], 1)
+	testutil.RequireError(t, err, "Input already signed")
+
+	// Transaction has no sigs; sigs array is initialized
+	txn.Sigs = nil
+	require.False(t, txn.IsFullySigned())
+	err = txn.SignInput(seckeys[2], 2)
+	require.NoError(t, err)
+	require.False(t, txn.IsFullySigned())
+	require.Len(t, txn.Sigs, 3)
+	require.True(t, txn.Sigs[0].Null())
+	require.True(t, txn.Sigs[1].Null())
+	require.False(t, txn.Sigs[2].Null())
+
+	// SignInputs on a partially signed transaction fails
+	require.Panics(t, func() {
+		txn.SignInputs(seckeys)
+	})
+
+	// Signing the rest of the inputs individually works
+	err = txn.SignInput(seckeys[1], 1)
+	require.NoError(t, err)
+	require.False(t, txn.IsFullySigned())
+	err = txn.SignInput(seckeys[0], 0)
+	require.NoError(t, err)
+	require.True(t, txn.IsFullySigned())
+
+	// Can use SignInputs on allocated array of empty sigs
+	txn.Sigs = make([]cipher.Sig, 3)
+	txn.SignInputs(seckeys)
+	require.True(t, txn.IsFullySigned())
 }
 
 func TestTransactionSignInputs(t *testing.T) {
@@ -964,4 +1084,30 @@ func TestSortTransactions(t *testing.T) {
 			require.Equal(t, tc.sortedTxns, txns)
 		})
 	}
+}
+
+func TestTransactionSignedUnsigned(t *testing.T) {
+	txn, _ := makeTransactionMultipleInputs(t, 2)
+	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.hasNonNullSignature())
+	require.False(t, txn.IsFullyUnsigned())
+	require.False(t, txn.hasNullSignature())
+
+	txn.Sigs[1] = cipher.Sig{}
+	require.False(t, txn.IsFullySigned())
+	require.True(t, txn.hasNonNullSignature())
+	require.False(t, txn.IsFullyUnsigned())
+	require.True(t, txn.hasNullSignature())
+
+	txn.Sigs[0] = cipher.Sig{}
+	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.hasNonNullSignature())
+	require.True(t, txn.IsFullyUnsigned())
+	require.True(t, txn.hasNullSignature())
+
+	txn.Sigs = nil
+	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.hasNonNullSignature())
+	require.True(t, txn.IsFullyUnsigned())
+	require.False(t, txn.hasNullSignature())
 }

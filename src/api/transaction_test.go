@@ -24,7 +24,6 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTransaction {
@@ -69,9 +68,10 @@ func makeTransaction(t *testing.T) coin.Transaction {
 	ux, s := makeUxOutWithSecret(t)
 
 	txn.PushInput(ux.Hash())
-	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(makeAddress(), 5e6, 50)
+
+	txn.SignInputs([]cipher.SecKey{s})
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn
@@ -1293,15 +1293,16 @@ func TestGetTransactions(t *testing.T) {
 
 type transactionAndInputs struct {
 	txn    coin.Transaction
-	inputs []wallet.UxBalance
+	inputs []visor.TransactionInput
 }
 
-func newVerifyTxnResponseJSON(t *testing.T, txn *coin.Transaction, inputs []wallet.UxBalance, isTxnConfirmed bool) VerifyTxnResponse {
+func newVerifyTxnResponseJSON(t *testing.T, txn *coin.Transaction, inputs []visor.TransactionInput, isTxnConfirmed, isUnsigned bool) VerifyTransactionResponse {
 	ctxn, err := newCreatedTransactionFuzzy(txn, inputs)
 	require.NoError(t, err)
-	return VerifyTxnResponse{
+	return VerifyTransactionResponse{
 		Transaction: *ctxn,
 		Confirmed:   isTxnConfirmed,
+		Unsigned:    isUnsigned,
 	}
 }
 
@@ -1310,18 +1311,18 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	ux, s := makeUxOutWithSecret(t)
 
 	txn.PushInput(ux.Hash())
-	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(makeAddress(), 5e6, 50)
+	txn.SignInputs([]cipher.SecKey{s})
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 
-	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
+	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix()))
 	require.NoError(t, err)
 
 	return transactionAndInputs{
 		txn:    txn,
-		inputs: []wallet.UxBalance{input},
+		inputs: []visor.TransactionInput{input},
 	}
 }
 
@@ -1330,24 +1331,25 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	ux, s := makeUxOutWithSecret(t)
 
 	txn.PushInput(ux.Hash())
-	txn.SignInputs([]cipher.SecKey{s})
 	txn.PushOutput(makeAddress(), 1e6, 50)
 	txn.PushOutput(cipher.Address{}, 5e6, 50)
+	txn.SignInputs([]cipher.SecKey{s})
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 
-	input, err := wallet.NewUxBalance(uint64(time.Now().UTC().Unix()), ux)
+	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix()))
 	require.NoError(t, err)
 
 	return transactionAndInputs{
 		txn:    txn,
-		inputs: []wallet.UxBalance{input},
+		inputs: []visor.TransactionInput{input},
 	}
 }
 
 func TestVerifyTransaction(t *testing.T) {
 	txnAndInputs := prepareTxnAndInputs(t)
 	type httpBody struct {
+		Unsigned           bool   `json:"unsigned"`
 		EncodedTransaction string `json:"encoded_transaction"`
 	}
 
@@ -1366,8 +1368,23 @@ func TestVerifyTransaction(t *testing.T) {
 	invalidTxnEmptyAddressBodyJSON, err := json.Marshal(invalidTxnEmptyAddressBody)
 	require.NoError(t, err)
 
+	unsignedTxnAndInputs := prepareTxnAndInputs(t)
+	unsignedTxnAndInputs.txn.Sigs = make([]cipher.Sig, len(unsignedTxnAndInputs.txn.Sigs))
+	err = unsignedTxnAndInputs.txn.UpdateHeader()
+	require.NoError(t, err)
+	unsignedTxnBody := &httpBody{EncodedTransaction: hex.EncodeToString(unsignedTxnAndInputs.txn.Serialize())}
+	unsignedTxnBodyJSON, err := json.Marshal(unsignedTxnBody)
+	require.NoError(t, err)
+
+	unsignedTxnBodyUnsigned := &httpBody{
+		Unsigned:           true,
+		EncodedTransaction: hex.EncodeToString(unsignedTxnAndInputs.txn.Serialize()),
+	}
+	unsignedTxnBodyUnsignedJSON, err := json.Marshal(unsignedTxnBodyUnsigned)
+	require.NoError(t, err)
+
 	type verifyTxnVerboseResult struct {
-		Uxouts         []wallet.UxBalance
+		Uxouts         []visor.TransactionInput
 		IsTxnConfirmed bool
 		Err            error
 	}
@@ -1379,6 +1396,7 @@ func TestVerifyTransaction(t *testing.T) {
 		status                        int
 		httpBody                      string
 		gatewayVerifyTxnVerboseArg    coin.Transaction
+		gatewayVerifyTxnVerboseSigned visor.TxnSignedFlag
 		gatewayVerifyTxnVerboseResult verifyTxnVerboseResult
 		httpResponse                  HTTPResponse
 		csrfDisabled                  bool
@@ -1429,18 +1447,19 @@ func TestVerifyTransaction(t *testing.T) {
 			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "decode transaction failed: Invalid transaction: Not enough buffer data to deserialize"),
 		},
 		{
-			name:                       "422 - txn sends to empty address",
-			method:                     http.MethodPost,
-			contentType:                ContentTypeJSON,
-			status:                     http.StatusUnprocessableEntity,
-			httpBody:                   string(invalidTxnEmptyAddressBodyJSON),
-			gatewayVerifyTxnVerboseArg: invalidTxnEmptyAddress.txn,
+			name:                          "422 - txn sends to empty address",
+			method:                        http.MethodPost,
+			contentType:                   ContentTypeJSON,
+			status:                        http.StatusUnprocessableEntity,
+			httpBody:                      string(invalidTxnEmptyAddressBodyJSON),
+			gatewayVerifyTxnVerboseArg:    invalidTxnEmptyAddress.txn,
+			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Uxouts: invalidTxnEmptyAddress.inputs,
 				Err:    visor.NewErrTxnViolatesUserConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
 			},
 			httpResponse: HTTPResponse{
-				Data: newVerifyTxnResponseJSON(t, &invalidTxnEmptyAddress.txn, invalidTxnEmptyAddress.inputs, false),
+				Data: newVerifyTxnResponseJSON(t, &invalidTxnEmptyAddress.txn, invalidTxnEmptyAddress.inputs, false, false),
 				Error: &HTTPError{
 					Code:    http.StatusUnprocessableEntity,
 					Message: "Transaction violates user constraint: Transaction.Out contains an output sending to an empty address",
@@ -1448,24 +1467,46 @@ func TestVerifyTransaction(t *testing.T) {
 			},
 		},
 		{
-			name:                       "500 - internal server error",
-			method:                     http.MethodPost,
-			contentType:                ContentTypeJSON,
-			status:                     http.StatusInternalServerError,
-			httpBody:                   string(validTxnBodyJSON),
-			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			name:                          "422 - txn is unsigned",
+			method:                        http.MethodPost,
+			contentType:                   ContentTypeJSON,
+			status:                        http.StatusUnprocessableEntity,
+			httpBody:                      string(unsignedTxnBodyJSON),
+			gatewayVerifyTxnVerboseArg:    unsignedTxnAndInputs.txn,
+			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Uxouts: unsignedTxnAndInputs.inputs,
+				Err:    visor.NewErrTxnViolatesUserConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
+			},
+			httpResponse: HTTPResponse{
+				Data: newVerifyTxnResponseJSON(t, &unsignedTxnAndInputs.txn, unsignedTxnAndInputs.inputs, false, true),
+				Error: &HTTPError{
+					Code:    http.StatusUnprocessableEntity,
+					Message: "Transaction violates user constraint: Transaction.Out contains an output sending to an empty address",
+				},
+			},
+		},
+		{
+			name:                          "500 - internal server error",
+			method:                        http.MethodPost,
+			contentType:                   ContentTypeJSON,
+			status:                        http.StatusInternalServerError,
+			httpBody:                      string(validTxnBodyJSON),
+			gatewayVerifyTxnVerboseArg:    txnAndInputs.txn,
+			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Err: errors.New("verify transaction failed"),
 			},
 			httpResponse: NewHTTPErrorResponse(http.StatusInternalServerError, "verify transaction failed"),
 		},
 		{
-			name:                       "422 - txn is confirmed",
-			method:                     http.MethodPost,
-			contentType:                ContentTypeJSON,
-			status:                     http.StatusUnprocessableEntity,
-			httpBody:                   string(validTxnBodyJSON),
-			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			name:                          "422 - txn is confirmed",
+			method:                        http.MethodPost,
+			contentType:                   ContentTypeJSON,
+			status:                        http.StatusUnprocessableEntity,
+			httpBody:                      string(validTxnBodyJSON),
+			gatewayVerifyTxnVerboseArg:    txnAndInputs.txn,
+			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Uxouts:         txnAndInputs.inputs,
 				IsTxnConfirmed: true,
@@ -1475,21 +1516,37 @@ func TestVerifyTransaction(t *testing.T) {
 					Message: "transaction has been spent",
 					Code:    http.StatusUnprocessableEntity,
 				},
-				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, true),
+				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, true, false),
 			},
 		},
 		{
-			name:                       "200",
-			method:                     http.MethodPost,
-			contentType:                ContentTypeJSON,
-			status:                     http.StatusOK,
-			httpBody:                   string(validTxnBodyJSON),
-			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			name:                          "200 - unsigned",
+			method:                        http.MethodPost,
+			contentType:                   ContentTypeJSON,
+			status:                        http.StatusOK,
+			httpBody:                      string(unsignedTxnBodyUnsignedJSON),
+			gatewayVerifyTxnVerboseArg:    unsignedTxnAndInputs.txn,
+			gatewayVerifyTxnVerboseSigned: visor.TxnUnsigned,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Uxouts: unsignedTxnAndInputs.inputs,
+			},
+			httpResponse: HTTPResponse{
+				Data: newVerifyTxnResponseJSON(t, &unsignedTxnAndInputs.txn, unsignedTxnAndInputs.inputs, false, true),
+			},
+		},
+		{
+			name:                          "200",
+			method:                        http.MethodPost,
+			contentType:                   ContentTypeJSON,
+			status:                        http.StatusOK,
+			httpBody:                      string(validTxnBodyJSON),
+			gatewayVerifyTxnVerboseArg:    txnAndInputs.txn,
+			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Uxouts: txnAndInputs.inputs,
 			},
 			httpResponse: HTTPResponse{
-				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, false),
+				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, false, false),
 			},
 		},
 	}
@@ -1498,7 +1555,7 @@ func TestVerifyTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/transaction/verify"
 			gateway := &MockGatewayer{}
-			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
+			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg, tc.gatewayVerifyTxnVerboseSigned).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
 
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
@@ -1533,11 +1590,11 @@ func TestVerifyTransaction(t *testing.T) {
 			} else {
 				require.NotNil(t, tc.httpResponse.Data)
 
-				var txnRsp VerifyTxnResponse
+				var txnRsp VerifyTransactionResponse
 				err := json.Unmarshal(rsp.Data, &txnRsp)
 				require.NoError(t, err)
 
-				require.Equal(t, tc.httpResponse.Data.(VerifyTxnResponse), txnRsp)
+				require.Equal(t, tc.httpResponse.Data.(VerifyTransactionResponse), txnRsp)
 			}
 		})
 	}

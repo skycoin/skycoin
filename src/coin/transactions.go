@@ -56,17 +56,26 @@ type TransactionOutput struct {
 	Hours   uint64         //amount to be sent in coin hours
 }
 
-// Verify attempts to determine if the transaction is well formed
+// Verify attempts to determine if the transaction is well formed.
 // Verify cannot check transaction signatures, it needs the address from unspents
 // Verify cannot check if outputs being spent exist
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (txn *Transaction) Verify() error {
-	h := txn.HashInner()
-	if h != txn.InnerHash {
-		return errors.New("InnerHash does not match computed hash")
-	}
+	return txn.verify(true)
+}
 
+// VerifyUnsigned attempts to determine if the transaction is well formed,
+// but requires the transaction to have at least one null signature.
+// Verify cannot check transaction signatures, it needs the address from unspents
+// Verify cannot check if outputs being spent exist
+// Verify cannot check if the transaction would create or destroy coins
+// or if the inputs have the required coin base
+func (txn *Transaction) VerifyUnsigned() error {
+	return txn.verify(false)
+}
+
+func (txn *Transaction) verify(signed bool) error {
 	if len(txn.In) == 0 {
 		return errors.New("No inputs")
 	}
@@ -119,14 +128,6 @@ func (txn *Transaction) Verify() error {
 		return errors.New("Duplicate output in transaction")
 	}
 
-	// Validate signature
-	for i, sig := range txn.Sigs {
-		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
-		if err := cipher.VerifySignedHash(sig, hash); err != nil {
-			return err
-		}
-	}
-
 	// Prevent zero coin outputs
 	// Artificial restriction to prevent spam
 	for _, txo := range txn.Out {
@@ -145,28 +146,60 @@ func (txn *Transaction) Verify() error {
 		}
 	}
 
+	// Check InnerHash
+	h := txn.HashInner()
+	if h != txn.InnerHash {
+		return errors.New("InnerHash does not match computed hash")
+	}
+
+	// Validate signatures
+	for i, sig := range txn.Sigs {
+		if sig.Null() {
+			// Check that signed transactions do not have any null signatures
+			if signed {
+				return errors.New("Unsigned input in transaction")
+			}
+			// Ignore null signatures if the transaction is unsigned
+			continue
+		}
+
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
+		if err := cipher.VerifySignatureRecoverPubKey(sig, hash); err != nil {
+			return err
+		}
+	}
+
+	// Check that unsigned transactions have at least one non-null signature
+	if !signed {
+		if !txn.hasNullSignature() {
+			return errors.New("Unsigned transaction must contain a null signature")
+		}
+	}
+
 	return nil
 }
 
-// VerifyInput verifies the input
-func (txn Transaction) VerifyInput(uxIn UxArray) error {
-	if err := func() error {
-		if len(txn.In) != len(uxIn) {
-			return errors.New("txn.In != uxIn")
+func (txn Transaction) verifyInputSignaturesPrelude(uxIn UxArray) error {
+	if len(txn.In) != len(uxIn) {
+		return errors.New("txn.In != uxIn")
+	}
+	if len(txn.In) != len(txn.Sigs) {
+		return errors.New("txn.In != txn.Sigs")
+	}
+	if txn.InnerHash != txn.HashInner() {
+		return errors.New("Invalid Tx Inner Hash")
+	}
+	for i := range txn.In {
+		if txn.In[i] != uxIn[i].Hash() {
+			return errors.New("Ux hash mismatch")
 		}
-		if len(txn.In) != len(txn.Sigs) {
-			return errors.New("txn.In != txn.Sigs")
-		}
-		if txn.InnerHash != txn.HashInner() {
-			return errors.New("Invalid Tx Inner Hash")
-		}
-		for i := range txn.In {
-			if txn.In[i] != uxIn[i].Hash() {
-				return errors.New("Ux hash mismatch")
-			}
-		}
-		return nil
-	}(); err != nil {
+	}
+	return nil
+}
+
+// VerifyInputSignatures verifies the inputs and signatures
+func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
+	if err := txn.verifyInputSignaturesPrelude(uxIn); err != nil {
 		if DebugLevel2 {
 			log.Panic(err)
 		}
@@ -175,6 +208,34 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i := range txn.In {
+		if txn.Sigs[i].Null() {
+			return errors.New("Unsigned input in transaction")
+		}
+
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
+		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
+		if err != nil {
+			return errors.New("Signature not valid for output being spent")
+		}
+	}
+
+	return nil
+}
+
+// VerifyPartialInputSignatures verifies the inputs and signatures for signatures that are not null
+func (txn Transaction) VerifyPartialInputSignatures(uxIn UxArray) error {
+	if err := txn.verifyInputSignaturesPrelude(uxIn); err != nil {
+		if DebugLevel2 {
+			log.Panic(err)
+		}
+		return err
+	}
+
+	// Check signatures against unspent address for signatures that are not null
+	for i := range txn.In {
+		if txn.Sigs[i].Null() {
+			continue
+		}
 		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
 		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
 		if err != nil {
@@ -215,13 +276,32 @@ func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 	txn.Out = append(txn.Out, to)
 }
 
+// SignInput signs a specific input in the transaction.
+// InnerHash should already be set to a valid value.
+// Returns an error if the input is already signed
+func (txn *Transaction) SignInput(key cipher.SecKey, index int) error {
+	if index < 0 || index >= len(txn.In) {
+		return errors.New("Signature index out of range")
+	}
+
+	if len(txn.Sigs) == 0 {
+		txn.Sigs = make([]cipher.Sig, len(txn.In))
+	}
+
+	if !txn.Sigs[index].Null() {
+		return errors.New("Input already signed")
+	}
+
+	h := cipher.AddSHA256(txn.InnerHash, txn.In[index])
+	txn.Sigs[index] = cipher.MustSignHash(h, key)
+
+	return nil
+}
+
 // SignInputs signs all inputs in the transaction
 func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	txn.InnerHash = txn.HashInner() // update hash
 
-	if len(txn.Sigs) != 0 {
-		log.Panic("Transaction has been signed")
-	}
 	if len(keys) != len(txn.In) {
 		log.Panic("Invalid number of keys")
 	}
@@ -230,6 +310,9 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	}
 	if len(keys) == 0 {
 		log.Panic("No keys")
+	}
+	if len(txn.Sigs) > 0 && txn.hasNonNullSignature() {
+		log.Panic("Transaction has been signed")
 	}
 
 	sigs := make([]cipher.Sig, len(txn.In))
@@ -244,6 +327,57 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 // Size returns the encoded byte size of the transaction
 func (txn *Transaction) Size() (uint32, error) {
 	return IntToUint32(len(txn.Serialize()))
+}
+
+// IsFullyUnsigned returns true if the transaction is not signed for any input.
+// Unsigned transactions have a full signature array, but the signatures are null.
+// Returns true if the signatures array is empty.
+func (txn *Transaction) IsFullyUnsigned() bool {
+	for _, s := range txn.Sigs {
+		if !s.Null() {
+			return false
+		}
+	}
+
+	return true
+}
+
+// IsFullySigned returns true if the transaction is fully signed.
+// Returns true if the signatures array is empty.
+func (txn *Transaction) IsFullySigned() bool {
+	if len(txn.Sigs) == 0 {
+		return false
+	}
+
+	for _, s := range txn.Sigs {
+		if s.Null() {
+			return false
+		}
+	}
+
+	return true
+}
+
+// hasNonNullSignature returns true if the transaction has at least one non-null signature
+func (txn *Transaction) hasNonNullSignature() bool {
+	for _, s := range txn.Sigs {
+		if !s.Null() {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hasNullSignature returns true if the transaction has at least one null signature
+func (txn *Transaction) hasNullSignature() bool {
+	for _, s := range txn.Sigs {
+		if s.Null() {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Hash an entire Transaction struct, including the TransactionHeader

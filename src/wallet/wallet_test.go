@@ -2997,15 +2997,18 @@ func makeTransaction(t *testing.T, nInputs int) (coin.Transaction, []coin.UxOut,
 	uxs := make([]coin.UxOut, 0)
 	for i := 0; i < nInputs; i++ {
 		ux, s := makeUxOutWithSecret(t)
-		txn.PushInput(ux.Hash())
+		err := txn.PushInput(ux.Hash())
+		require.NoError(t, err)
 		toSign = append(toSign, s)
 		uxs = append(uxs, ux)
 	}
 
-	txn.PushOutput(makeAddress(), 1e6, 50)
-	txn.PushOutput(makeAddress(), 5e6, 50)
+	err := txn.PushOutput(makeAddress(), 1e6, 50)
+	require.NoError(t, err)
+	err = txn.PushOutput(makeAddress(), 5e6, 50)
+	require.NoError(t, err)
 	txn.SignInputs(toSign)
-	err := txn.UpdateHeader()
+	err = txn.UpdateHeader()
 	require.NoError(t, err)
 
 	return txn, uxs, toSign

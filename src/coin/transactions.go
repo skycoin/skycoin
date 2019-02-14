@@ -107,38 +107,6 @@ func (txn *Transaction) Verify() error {
 		return errors.New("transaction type invalid")
 	}
 
-	txnSize, err := txn.Size()
-	if err != nil {
-		return err
-	}
-
-	if txn.Length != txnSize {
-		return errors.New("transaction size prefix invalid")
-	}
-
-	// Check for duplicate potential outputs
-	outputs := make(map[cipher.SHA256]struct{}, len(txn.Out))
-	uxb := UxBody{
-		SrcTransaction: txn.Hash(),
-	}
-	for _, to := range txn.Out {
-		uxb.Coins = to.Coins
-		uxb.Hours = to.Hours
-		uxb.Address = to.Address
-		outputs[uxb.Hash()] = struct{}{}
-	}
-	if len(outputs) != len(txn.Out) {
-		return errors.New("Duplicate output in transaction")
-	}
-
-	// Validate signature
-	for i, sig := range txn.Sigs {
-		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
-		if err := cipher.VerifySignedHash(sig, hash); err != nil {
-			return err
-		}
-	}
-
 	// Prevent zero coin outputs
 	// Artificial restriction to prevent spam
 	for _, txo := range txn.Out {
@@ -157,7 +125,46 @@ func (txn *Transaction) Verify() error {
 		}
 	}
 
-	if txn.HashInner() != txn.InnerHash {
+	// Check that Size and Hash can be computed
+	txnSize, txnHash, err := txn.SizeHash()
+	if err != nil {
+		return err
+	}
+
+	// Check txn Size set correctly
+	if txn.Length != txnSize {
+		return errors.New("Incorrect transaction length")
+	}
+
+	// Check for duplicate potential outputs
+	outputs := make(map[cipher.SHA256]struct{}, len(txn.Out))
+	uxb := UxBody{
+		SrcTransaction: txnHash,
+	}
+	for _, to := range txn.Out {
+		uxb.Coins = to.Coins
+		uxb.Hours = to.Hours
+		uxb.Address = to.Address
+		outputs[uxb.Hash()] = struct{}{}
+	}
+	if len(outputs) != len(txn.Out) {
+		return errors.New("Duplicate output in transaction")
+	}
+
+	// Validate signatures
+	for i, sig := range txn.Sigs {
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
+		if err := cipher.VerifySignedHash(sig, hash); err != nil {
+			return err
+		}
+	}
+
+	// Check inner hash
+	innerHash, err := txn.hashInner()
+	if err != nil {
+		return fmt.Errorf("HashInner failed: %v", err)
+	}
+	if innerHash != txn.InnerHash {
 		return errors.New("InnerHash does not match computed hash")
 	}
 
@@ -308,6 +315,14 @@ func (txn *Transaction) UpdateHeader() error {
 // This is what is signed
 // Client hashes the inner hash with hash of output being spent and signs it with private key
 func (txn *Transaction) HashInner() cipher.SHA256 {
+	h, err := txn.hashInner()
+	if err != nil {
+		log.Panicf("hashInner failed: %v", err)
+	}
+	return h
+}
+
+func (txn *Transaction) hashInner() (cipher.SHA256, error) {
 	txnInputs := &transactionInputs{
 		In: txn.In,
 	}
@@ -319,14 +334,14 @@ func (txn *Transaction) HashInner() cipher.SHA256 {
 	buf := make([]byte, n1+n2)
 
 	if err := encodeTransactionInputs(buf[:n1], txnInputs); err != nil {
-		log.Panicf("HashInner encodeTransactionInputs failed: %v", err)
+		return cipher.SHA256{}, fmt.Errorf("encodeTransactionInputs failed: %v", err)
 	}
 
 	if err := encodeTransactionOutputs(buf[n1:], txnOutputs); err != nil {
-		log.Panicf("HashInner encodeTransactionOutputs failed: %v", err)
+		return cipher.SHA256{}, fmt.Errorf("encodeTransactionOutputs failed: %v", err)
 	}
 
-	return cipher.SumSHA256(buf)
+	return cipher.SumSHA256(buf), nil
 }
 
 // Serialize serialize the transaction

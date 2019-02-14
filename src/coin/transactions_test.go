@@ -361,6 +361,7 @@ func TestTransactionSignInput(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, txn.IsFullySigned())
 	err = txn.SignInput(seckeys[0], 0)
+	require.NoError(t, err)
 	require.True(t, txn.IsFullySigned())
 
 	// Can use SignInputs on allocated array of empty sigs

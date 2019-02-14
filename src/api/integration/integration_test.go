@@ -417,7 +417,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 		errMsg   string
 	}{
 		{
-			name:    "invalid transaction empty",
+			name:    "unsigned=false invalid transaction empty",
 			txn:     coin.Transaction{},
 			golden:  "verify-transaction-invalid-empty.golden",
 			errCode: http.StatusUnprocessableEntity,
@@ -425,7 +425,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 		},
 
 		{
-			name:    "invalid transaction bad signature",
+			name:    "unsigned=false invalid transaction bad signature",
 			txn:     badSignatureTxn,
 			golden:  "verify-transaction-invalid-bad-sig.golden",
 			errCode: http.StatusUnprocessableEntity,
@@ -433,7 +433,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 		},
 
 		{
-			name:     "invalid transaction empty",
+			name:     "unsigned=true invalid transaction empty",
 			txn:      coin.Transaction{},
 			unsigned: true,
 			golden:   "verify-transaction-invalid-empty.golden",
@@ -442,7 +442,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 		},
 
 		{
-			name:     "invalid transaction bad signature",
+			name:     "unsigned=true invalid transaction bad signature",
 			txn:      badSignatureTxn,
 			unsigned: true,
 			golden:   "verify-transaction-invalid-bad-sig.golden",

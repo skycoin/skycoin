@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"reflect"
 	"testing"
 	"time"
 
@@ -2704,5 +2705,344 @@ func TestWalletValidate(t *testing.T) {
 			err := w.Validate()
 			require.Equal(t, tc.err, err)
 		})
+	}
+}
+
+func TestSignTransaction(t *testing.T) {
+	txnSigned, uxs, seckeys := makeTransaction(t, 4)
+	require.Equal(t, 4, len(uxs))
+	require.Equal(t, 4, len(seckeys))
+	txnUnsigned := txnSigned
+	txnUnsigned.Sigs = make([]cipher.Sig, len(txnSigned.Sigs))
+
+	w := &Wallet{}
+	for _, x := range seckeys {
+		p := cipher.MustPubKeyFromSecKey(x)
+		a := cipher.AddressFromPubKey(p)
+		err := w.AddEntry(Entry{
+			Address: a,
+			Public:  p,
+			Secret:  x,
+		})
+		require.NoError(t, err)
+
+		// Add unrelated entries
+		err = w.AddEntry(makeEntry())
+		require.NoError(t, err)
+	}
+
+	badTxnInnerHash, _, _ := makeTransaction(t, 2)
+	badTxnInnerHash.InnerHash = testutil.RandSHA256(t)
+
+	badTxnNoInputs, _, _ := makeTransaction(t, 2)
+	badTxnNoInputs.Sigs = make([]cipher.Sig, len(badTxnNoInputs.Sigs))
+	badTxnNoInputs.In = nil
+	err := badTxnNoInputs.UpdateHeader()
+	require.NoError(t, err)
+
+	badTxnNoSigs, _, _ := makeTransaction(t, 2)
+	badTxnNoSigs.Sigs = nil
+	err = badTxnNoSigs.UpdateHeader()
+	require.NoError(t, err)
+
+	txnOtherWallet, uxsOtherWallet, secKeysOtherWallet := makeTransaction(t, 4)
+
+	txnPartiallySigned := txnOtherWallet
+	err = txnPartiallySigned.Verify()
+	require.NoError(t, err)
+	err = txnPartiallySigned.VerifyInputSignatures(uxsOtherWallet)
+	require.NoError(t, err)
+
+	txnPartiallySigned.Sigs = make([]cipher.Sig, len(txnOtherWallet.Sigs))
+	copy(txnPartiallySigned.Sigs, txnOtherWallet.Sigs)
+	txnPartiallySigned.Sigs[1] = cipher.Sig{}
+	txnPartiallySigned.Sigs[2] = cipher.Sig{}
+	err = txnPartiallySigned.UpdateHeader()
+	require.NoError(t, err)
+
+	txnPartiallySigned2 := txnPartiallySigned
+	txnPartiallySigned2.Sigs = make([]cipher.Sig, len(txnPartiallySigned.Sigs))
+	copy(txnPartiallySigned2.Sigs, txnPartiallySigned.Sigs)
+	err = txnPartiallySigned2.UpdateHeader()
+	require.NoError(t, err)
+
+	txnOtherWallet.Sigs = make([]cipher.Sig, len(txnOtherWallet.Sigs))
+	err = txnOtherWallet.UpdateHeader()
+	require.NoError(t, err)
+
+	otherWallet := &Wallet{}
+	for i := 1; i < 3; i++ {
+		p := cipher.MustPubKeyFromSecKey(secKeysOtherWallet[i])
+		a := cipher.AddressFromPubKey(p)
+		err := otherWallet.AddEntry(Entry{
+			Address: a,
+			Public:  p,
+			Secret:  secKeysOtherWallet[i],
+		})
+		require.NoError(t, err)
+	}
+
+	cases := []struct {
+		name        string
+		w           *Wallet
+		txn         coin.Transaction
+		signIndexes []int
+		uxOuts      []coin.UxOut
+		err         error
+		partial     bool
+		complete    bool
+	}{
+		{
+			name:   "signed txn",
+			w:      w,
+			txn:    txnSigned,
+			uxOuts: uxs,
+			err:    NewError(errors.New("Transaction is fully signed")),
+		},
+
+		{
+			name: "bad txn inner hash",
+			w:    w,
+			txn:  badTxnInnerHash,
+			err:  NewError(errors.New("Transaction inner hash does not match computed inner hash")),
+		},
+
+		{
+			name: "txn no inputs",
+			w:    w,
+			txn:  badTxnNoInputs,
+			err:  NewError(errors.New("No transaction inputs to sign")),
+		},
+
+		{
+			name: "txn no sigs",
+			w:    w,
+			txn:  badTxnNoSigs,
+			err:  NewError(errors.New("Transaction signatures array is empty")),
+		},
+
+		{
+			name:   "len uxouts does not match len inputs",
+			w:      w,
+			txn:    txnUnsigned,
+			uxOuts: uxs[:2],
+			err:    errors.New("len(uxOuts) != len(txn.In)"),
+		},
+
+		{
+			name:        "too many sign indexes",
+			w:           w,
+			txn:         txnUnsigned,
+			uxOuts:      uxs,
+			signIndexes: []int{0, 1, 2, 3, 4, 5},
+			err:         NewError(errors.New("Number of signature indexes exceeds number of inputs")),
+		},
+
+		{
+			name:        "sign index out of range",
+			w:           w,
+			txn:         txnUnsigned,
+			uxOuts:      uxs,
+			signIndexes: []int{0, 1, 5, 2},
+			err:         NewError(errors.New("Signature index out of range")),
+		},
+
+		{
+			name:        "duplicate value in sign indexes",
+			w:           w,
+			txn:         txnUnsigned,
+			uxOuts:      uxs,
+			signIndexes: []int{0, 1, 1},
+			err:         NewError(errors.New("Duplicate value in signature indexes")),
+		},
+
+		{
+			name:   "wallet cannot sign any input",
+			w:      w,
+			txn:    txnOtherWallet,
+			uxOuts: uxsOtherWallet,
+			err:    NewError(errors.New("Wallet cannot sign all requested inputs")),
+		},
+
+		{
+			name:   "wallet cannot sign some inputs",
+			w:      otherWallet,
+			txn:    txnOtherWallet,
+			uxOuts: uxsOtherWallet,
+			err:    NewError(errors.New("Wallet cannot sign all requested inputs")),
+		},
+
+		{
+			name:        "wallet cannot sign all specified inputs",
+			w:           otherWallet,
+			txn:         txnOtherWallet,
+			uxOuts:      uxsOtherWallet,
+			signIndexes: []int{2, 0},
+			err:         NewError(errors.New("Wallet cannot sign all requested inputs")),
+		},
+
+		{
+			name:   "valid unsigned txn, all sigs",
+			w:      w,
+			txn:    txnUnsigned,
+			uxOuts: uxs,
+			err:    nil,
+		},
+
+		{
+			name:        "valid unsigned txn, some sigs defined",
+			w:           w,
+			txn:         txnUnsigned,
+			signIndexes: []int{1, 2},
+			uxOuts:      uxs,
+			err:         nil,
+		},
+
+		{
+			name:        "valid unsigned txn, all sigs defined",
+			w:           w,
+			txn:         txnUnsigned,
+			signIndexes: []int{0, 1, 2, 3},
+			uxOuts:      uxs,
+			err:         nil,
+		},
+
+		{
+			name:        "valid unsigned txn, all sigs defined, unordered",
+			w:           w,
+			txn:         txnUnsigned,
+			signIndexes: []int{2, 1, 3, 0},
+			uxOuts:      uxs,
+			err:         nil,
+		},
+
+		{
+			name:        "valid, wallet can sign the specified inputs, but not others",
+			w:           otherWallet,
+			txn:         txnOtherWallet,
+			uxOuts:      uxsOtherWallet,
+			signIndexes: []int{2},
+			err:         nil,
+		},
+
+		{
+			name:        "valid, transaction partially signed, unfinished signing",
+			w:           otherWallet,
+			txn:         txnPartiallySigned,
+			uxOuts:      uxsOtherWallet,
+			signIndexes: []int{2},
+			err:         nil,
+			partial:     true,
+			complete:    false,
+		},
+
+		{
+			name:        "valid, transaction partially signed, finished signing",
+			w:           otherWallet,
+			txn:         txnPartiallySigned2,
+			uxOuts:      uxsOtherWallet,
+			signIndexes: []int{1, 2},
+			err:         nil,
+			partial:     true,
+			complete:    true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			signedTxn, err := tc.w.SignTransaction(&tc.txn, tc.signIndexes, tc.uxOuts)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			// The original txn should not be modified
+			require.False(t, reflect.DeepEqual(tc.txn, *signedTxn))
+
+			if len(tc.signIndexes) == 0 || len(tc.signIndexes) == len(tc.uxOuts) || tc.complete {
+				// Transaction should be fully signed
+				require.False(t, signedTxn.IsFullyUnsigned())
+				err = signedTxn.Verify()
+				require.NoError(t, err)
+				err = signedTxn.VerifyInputSignatures(tc.uxOuts)
+				require.NoError(t, err)
+			} else {
+				// index of a valid signature should be found in the signIndexes
+				for _, x := range tc.signIndexes {
+					require.False(t, signedTxn.Sigs[x].Null())
+				}
+
+				if !tc.partial {
+					// Number of signatures should equal length of signIndexes
+					nSigned := 0
+					for _, s := range signedTxn.Sigs {
+						if !s.Null() {
+							nSigned++
+						}
+					}
+
+					require.Equal(t, len(tc.signIndexes), nSigned)
+				}
+			}
+		})
+	}
+}
+
+func makeTransaction(t *testing.T, nInputs int) (coin.Transaction, []coin.UxOut, []cipher.SecKey) {
+	txn := coin.Transaction{}
+
+	toSign := make([]cipher.SecKey, 0)
+	uxs := make([]coin.UxOut, 0)
+	for i := 0; i < nInputs; i++ {
+		ux, s := makeUxOutWithSecret(t)
+		txn.PushInput(ux.Hash())
+		toSign = append(toSign, s)
+		uxs = append(uxs, ux)
+	}
+
+	txn.PushOutput(makeAddress(), 1e6, 50)
+	txn.PushOutput(makeAddress(), 5e6, 50)
+	txn.SignInputs(toSign)
+	err := txn.UpdateHeader()
+	require.NoError(t, err)
+
+	return txn, uxs, toSign
+}
+
+func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
+	body, sec := makeUxBodyWithSecret(t)
+	return coin.UxOut{
+		Head: coin.UxHead{
+			Time:  100,
+			BkSeq: 2,
+		},
+		Body: body,
+	}, sec
+}
+
+func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
+	p, s := cipher.GenerateKeyPair()
+	return coin.UxBody{
+		SrcTransaction: testutil.RandSHA256(t),
+		Address:        cipher.AddressFromPubKey(p),
+		Coins:          1e6,
+		Hours:          100,
+	}, s
+}
+
+func makeAddress() cipher.Address {
+	p, _ := cipher.GenerateKeyPair()
+	return cipher.AddressFromPubKey(p)
+}
+
+func makeEntry() Entry {
+	p, s := cipher.GenerateKeyPair()
+	a := cipher.AddressFromPubKey(p)
+	return Entry{
+		Secret:  s,
+		Public:  p,
+		Address: a,
 	}
 }

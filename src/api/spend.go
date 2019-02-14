@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -28,7 +29,7 @@ type CreateTransactionResponse struct {
 }
 
 // NewCreateTransactionResponse creates a CreateTransactionResponse
-func NewCreateTransactionResponse(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreateTransactionResponse, error) {
+func NewCreateTransactionResponse(txn *coin.Transaction, inputs []visor.TransactionInput) (*CreateTransactionResponse, error) {
 	cTxn, err := NewCreatedTransaction(txn, inputs)
 	if err != nil {
 		return nil, err
@@ -59,7 +60,7 @@ type CreatedTransaction struct {
 }
 
 // NewCreatedTransaction returns a CreatedTransaction
-func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
+func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInput) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) {
 		return nil, errors.New("len(txn.In) != len(inputs)")
 	}
@@ -76,7 +77,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = mathutil.AddUint64(inputHours, i.Hours)
+		inputHours, err = mathutil.AddUint64(inputHours, i.CalculatedHours)
 		if err != nil {
 			return nil, err
 		}
@@ -232,35 +233,36 @@ type CreatedTransactionInput struct {
 }
 
 // NewCreatedTransactionInput creates CreatedTransactionInput
-func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput, error) {
-	coins, err := droplet.ToString(out.Coins)
+func NewCreatedTransactionInput(out visor.TransactionInput) (*CreatedTransactionInput, error) {
+	coins, err := droplet.ToString(out.UxOut.Body.Coins)
 	if err != nil {
 		return nil, err
 	}
 
-	if out.SrcTransaction.Null() {
+	if out.UxOut.Body.SrcTransaction.Null() {
 		return nil, errors.New("NewCreatedTransactionInput UxOut.SrcTransaction is not initialized")
 	}
 
-	addr := out.Address.String()
-	hours := fmt.Sprint(out.InitialHours)
-	calculatedHours := fmt.Sprint(out.Hours)
-	txID := out.SrcTransaction.Hex()
+	addr := out.UxOut.Body.Address.String()
+	hours := fmt.Sprint(out.UxOut.Body.Hours)
+	calculatedHours := fmt.Sprint(out.CalculatedHours)
+	txID := out.UxOut.Body.SrcTransaction.Hex()
 
 	return &CreatedTransactionInput{
-		UxID:            out.Hash.Hex(),
+		UxID:            out.UxOut.Hash().Hex(),
 		Address:         addr,
 		Coins:           coins,
 		Hours:           hours,
 		CalculatedHours: calculatedHours,
-		Time:            out.Time,
-		Block:           out.BkSeq,
+		Time:            out.UxOut.Head.Time,
+		Block:           out.UxOut.Head.BkSeq,
 		TxID:            txID,
 	}, nil
 }
 
 // createTransactionRequest is sent to /wallet/transaction
 type createTransactionRequest struct {
+	Unsigned          bool                           `json:"unsigned"`
 	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
 	HoursSelection    hoursSelection                 `json:"hours_selection"`
 	Wallet            createTransactionRequestWallet `json:"wallet"`
@@ -460,6 +462,7 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 	}
 
 	return wallet.CreateTransactionParams{
+		Unsigned:          r.Unsigned,
 		IgnoreUnconfirmed: r.IgnoreUnconfirmed,
 		HoursSelection: wallet.HoursSelection{
 			Type:        r.HoursSelection.Type,
@@ -502,7 +505,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, inputs, err := gateway.CreateTransaction(params.ToWalletParams())
+		txn, inputs, err := gateway.WalletCreateTransaction(params.ToWalletParams())
 		if err != nil {
 			switch err.(type) {
 			case wallet.Error:
@@ -537,5 +540,125 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, txnResp)
+	}
+}
+
+// WalletSignTransactionRequest is the request body object for /api/v2/wallet/transaction/sign
+type WalletSignTransactionRequest struct {
+	WalletID           string `json:"wallet_id"`
+	Password           string `json:"password"`
+	EncodedTransaction string `json:"encoded_transaction"`
+	SignIndexes        []int  `json:"sign_indexes"`
+}
+
+// walletSignTransactionHandler signs an unsigned transaction
+// Method: POST
+// URI: /api/v2/wallet/transaction/sign
+// Args: JSON body
+func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if r.Header.Get("Content-Type") != ContentTypeJSON {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		var req WalletSignTransactionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if req.WalletID == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "wallet_id is required")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if req.EncodedTransaction == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "encoded_transaction is required")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		txn, err := decodeTxn(req.EncodedTransaction)
+		if err != nil {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("Decode transaction failed: %v", err))
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		// Check that number of sign_indexes does not exceed number of inputs
+		if len(req.SignIndexes) > len(txn.In) {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "Too many values in sign_indexes")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		// Check that values in sign_indexes are in the range of txn inputs
+		for _, i := range req.SignIndexes {
+			if i < 0 || i >= len(txn.In) {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, "Value in sign_indexes exceeds range of transaction inputs array")
+				writeHTTPResponse(w, resp)
+				return
+			}
+		}
+
+		// Check for duplicate values in sign_indexes
+		signIndexesMap := make(map[int]struct{}, len(req.SignIndexes))
+		for _, i := range req.SignIndexes {
+			if _, ok := signIndexesMap[i]; ok {
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, "Duplicate value in sign_indexes")
+				writeHTTPResponse(w, resp)
+				return
+			}
+			signIndexesMap[i] = struct{}{}
+		}
+
+		signedTxn, inputs, err := gateway.WalletSignTransaction(req.WalletID, []byte(req.Password), txn, req.SignIndexes)
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletNotExist:
+				resp := NewHTTPErrorResponse(http.StatusNotFound, err.Error())
+				writeHTTPResponse(w, resp)
+				return
+			case wallet.ErrWalletAPIDisabled:
+				resp := NewHTTPErrorResponse(http.StatusForbidden, err.Error())
+				writeHTTPResponse(w, resp)
+				return
+			default:
+				switch err.(type) {
+				case visor.ErrTxnViolatesSoftConstraint,
+					visor.ErrTxnViolatesHardConstraint,
+					visor.ErrTxnViolatesUserConstraint,
+					wallet.Error:
+					resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+					writeHTTPResponse(w, resp)
+					return
+				default:
+					resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+					writeHTTPResponse(w, resp)
+					return
+				}
+			}
+		}
+
+		txnResp, err := NewCreateTransactionResponse(signedTxn, inputs)
+		if err != nil {
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		writeHTTPResponse(w, HTTPResponse{
+			Data: txnResp,
+		})
 	}
 }

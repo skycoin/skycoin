@@ -17,11 +17,12 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func TestCreateTransaction(t *testing.T) {
+func TestWalletCreateTransaction(t *testing.T) {
 	type rawRequestWallet struct {
 		ID        string   `json:"id"`
 		UxOuts    []string `json:"unspents,omitempty"`
@@ -67,16 +68,21 @@ func TestCreateTransaction(t *testing.T) {
 		},
 	}
 
-	inputs := []wallet.UxBalance{
+	inputs := []visor.TransactionInput{
 		{
-			Hash:           testutil.RandSHA256(t),
-			Time:           uint64(time.Now().UTC().Unix()),
-			BkSeq:          9999,
-			SrcTransaction: testutil.RandSHA256(t),
-			Address:        testutil.MakeAddress(),
-			Coins:          1e6,
-			Hours:          200,
-			InitialHours:   100,
+			UxOut: coin.UxOut{
+				Head: coin.UxHead{
+					Time:  uint64(time.Now().UTC().Unix()),
+					BkSeq: 9999,
+				},
+				Body: coin.UxBody{
+					SrcTransaction: testutil.RandSHA256(t),
+					Address:        testutil.MakeAddress(),
+					Coins:          1e6,
+					Hours:          100,
+				},
+			},
+			CalculatedHours: 200,
 		},
 	}
 
@@ -114,10 +120,11 @@ func TestCreateTransaction(t *testing.T) {
 		name                           string
 		method                         string
 		body                           *rawRequest
+		rawBody                        string
 		status                         int
 		err                            string
 		gatewayCreateTransactionResult *coin.Transaction
-		gatewayCreateTransactionInputs []wallet.UxBalance
+		gatewayCreateTransactionInputs []visor.TransactionInput
 		gatewayCreateTransactionErr    error
 		createTransactionResponse      *CreateTransactionResponse
 		csrfDisabled                   bool
@@ -815,6 +822,14 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
+			name:    "400 - invalid json",
+			method:  http.MethodPost,
+			rawBody: "{ca",
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - invalid character 'c' looking for beginning of object key string",
+		},
+
+		{
 			name:                        "400 - other wallet error",
 			method:                      http.MethodPost,
 			body:                        validBody,
@@ -846,21 +861,24 @@ func TestCreateTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 
-			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
+			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.WalletCreateTransaction
 			serializedBody, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 			var body createTransactionRequest
 			err = json.Unmarshal(serializedBody, &body)
 			if err == nil {
-				gateway.On("CreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
+				gateway.On("WalletCreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
 			}
 
 			endpoint := "/api/v1/wallet/transaction"
 
-			requestJSON, err := json.Marshal(tc.body)
-			require.NoError(t, err)
+			bodyText := []byte(tc.rawBody)
+			if len(bodyText) == 0 {
+				bodyText, err = json.Marshal(tc.body)
+				require.NoError(t, err)
+			}
 
-			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(requestJSON))
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(bodyText))
 			require.NoError(t, err)
 
 			contentType := tc.contentType
@@ -902,4 +920,353 @@ func TestCreateTransaction(t *testing.T) {
 
 func newStrPtr(s string) *string {
 	return &s
+}
+
+func TestWalletSignTransaction(t *testing.T) {
+	destinationAddress := testutil.MakeAddress()
+
+	signedTxn := coin.Transaction{
+		Length:    100,
+		Type:      0,
+		InnerHash: testutil.RandSHA256(t),
+		Sigs:      []cipher.Sig{testutil.RandSig(t), testutil.RandSig(t)},
+		In:        []cipher.SHA256{testutil.RandSHA256(t), testutil.RandSHA256(t)},
+		Out: []coin.TransactionOutput{
+			{
+				Address: destinationAddress,
+				Coins:   1e6,
+				Hours:   100,
+			},
+		},
+	}
+
+	txn := signedTxn
+	txn.Sigs = make([]cipher.Sig, len(txn.In))
+
+	inputs := []visor.TransactionInput{
+		{
+			UxOut: coin.UxOut{
+				Head: coin.UxHead{
+					Time:  uint64(time.Now().UTC().Unix()),
+					BkSeq: 9999,
+				},
+				Body: coin.UxBody{
+					SrcTransaction: testutil.RandSHA256(t),
+					Address:        testutil.MakeAddress(),
+					Coins:          1e6,
+					Hours:          100,
+				},
+			},
+			CalculatedHours: 200,
+		},
+		{
+			UxOut: coin.UxOut{
+				Head: coin.UxHead{
+					Time:  uint64(time.Now().UTC().Unix()),
+					BkSeq: 9999,
+				},
+				Body: coin.UxBody{
+					SrcTransaction: testutil.RandSHA256(t),
+					Address:        testutil.MakeAddress(),
+					Coins:          1e6,
+					Hours:          100,
+				},
+			},
+			CalculatedHours: 200,
+		},
+	}
+
+	signedTxnResp, err := NewCreateTransactionResponse(&signedTxn, inputs)
+	require.NoError(t, err)
+
+	txnBytes, err := txn.Serialize()
+	require.NoError(t, err)
+
+	validBody := &WalletSignTransactionRequest{
+		WalletID:           "foo.wlt",
+		EncodedTransaction: hex.EncodeToString(txnBytes),
+	}
+
+	tt := []struct {
+		name                         string
+		method                       string
+		body                         *WalletSignTransactionRequest
+		rawBody                      string
+		status                       int
+		gatewaySignTransactionResult *coin.Transaction
+		gatewaySignTransactionInputs []visor.TransactionInput
+		gatewaySignTransactionErr    error
+		csrfDisabled                 bool
+		contentType                  string
+		httpResponse                 HTTPResponse
+	}{
+		{
+			name:         "405",
+			method:       http.MethodGet,
+			status:       http.StatusMethodNotAllowed,
+			httpResponse: NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""),
+		},
+
+		{
+			name:         "415",
+			method:       http.MethodPost,
+			status:       http.StatusUnsupportedMediaType,
+			contentType:  ContentTypeForm,
+			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
+		},
+
+		{
+			name:   "400 wallet ID required",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			body: &WalletSignTransactionRequest{
+				EncodedTransaction: validBody.EncodedTransaction,
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "wallet_id is required"),
+		},
+
+		{
+			name:   "400 encoded_transaction is required",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			body: &WalletSignTransactionRequest{
+				WalletID: "foo.wlt",
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "encoded_transaction is required"),
+		},
+
+		{
+			name:   "400 decode transaction failed",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			body: &WalletSignTransactionRequest{
+				WalletID:           "foo.wlt",
+				EncodedTransaction: "abc",
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "Decode transaction failed: encoding/hex: odd length hex string"),
+		},
+
+		{
+			name:   "400 too many sign indexes",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			body: &WalletSignTransactionRequest{
+				WalletID:           "foo.wlt",
+				EncodedTransaction: validBody.EncodedTransaction,
+				SignIndexes:        []int{0, 1, 2},
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "Too many values in sign_indexes"),
+		},
+
+		{
+			name:   "400 sign indexes out of range",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			body: &WalletSignTransactionRequest{
+				WalletID:           "foo.wlt",
+				EncodedTransaction: validBody.EncodedTransaction,
+				SignIndexes:        []int{5},
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "Value in sign_indexes exceeds range of transaction inputs array"),
+		},
+
+		{
+			name:   "400 duplicate sign indexes",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			body: &WalletSignTransactionRequest{
+				WalletID:           "foo.wlt",
+				EncodedTransaction: validBody.EncodedTransaction,
+				SignIndexes:        []int{1, 1},
+			},
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "Duplicate value in sign_indexes"),
+		},
+
+		{
+			name:                      "500 - misc error",
+			method:                    http.MethodPost,
+			body:                      validBody,
+			status:                    http.StatusInternalServerError,
+			gatewaySignTransactionErr: errors.New("unhandled error"),
+			httpResponse:              NewHTTPErrorResponse(http.StatusInternalServerError, "unhandled error"),
+		},
+
+		{
+			name:                      "400 - wallet not encrypted",
+			method:                    http.MethodPost,
+			body:                      validBody,
+			status:                    http.StatusBadRequest,
+			gatewaySignTransactionErr: wallet.ErrWalletNotEncrypted,
+			httpResponse:              NewHTTPErrorResponse(http.StatusBadRequest, "wallet is not encrypted"),
+		},
+
+		{
+			name:                      "400 - wallet encrypted",
+			method:                    http.MethodPost,
+			body:                      validBody,
+			status:                    http.StatusBadRequest,
+			gatewaySignTransactionErr: wallet.ErrWalletEncrypted,
+			httpResponse:              NewHTTPErrorResponse(http.StatusBadRequest, "wallet is encrypted"),
+		},
+
+		{
+			name:         "400 - invalid json",
+			method:       http.MethodPost,
+			rawBody:      "{ca",
+			status:       http.StatusBadRequest,
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "invalid character 'c' looking for beginning of object key string"),
+		},
+
+		{
+			name:                      "404 - wallet not found",
+			method:                    http.MethodPost,
+			body:                      validBody,
+			status:                    http.StatusNotFound,
+			gatewaySignTransactionErr: wallet.ErrWalletNotExist,
+			httpResponse:              NewHTTPErrorResponse(http.StatusNotFound, "wallet doesn't exist"),
+		},
+
+		{
+			name:                      "403 - wallet API disabled",
+			method:                    http.MethodPost,
+			body:                      validBody,
+			status:                    http.StatusForbidden,
+			gatewaySignTransactionErr: wallet.ErrWalletAPIDisabled,
+			httpResponse:              NewHTTPErrorResponse(http.StatusForbidden, "wallet api is disabled"),
+		},
+
+		{
+			name:                         "200 - no password",
+			method:                       http.MethodPost,
+			body:                         validBody,
+			status:                       http.StatusOK,
+			gatewaySignTransactionResult: &signedTxn,
+			gatewaySignTransactionInputs: inputs,
+			httpResponse: HTTPResponse{
+				Data: *signedTxnResp,
+			},
+		},
+
+		{
+			name:                         "200 - no password csrf disabled",
+			method:                       http.MethodPost,
+			body:                         validBody,
+			status:                       http.StatusOK,
+			gatewaySignTransactionResult: &signedTxn,
+			gatewaySignTransactionInputs: inputs,
+			httpResponse: HTTPResponse{
+				Data: *signedTxnResp,
+			},
+			csrfDisabled: true,
+		},
+
+		{
+			name:   "200 - password",
+			method: http.MethodPost,
+			body: &WalletSignTransactionRequest{
+				WalletID:           "foo.wlt",
+				Password:           "foo",
+				EncodedTransaction: validBody.EncodedTransaction,
+			},
+			status:                       http.StatusOK,
+			gatewaySignTransactionResult: &signedTxn,
+			gatewaySignTransactionInputs: inputs,
+			httpResponse: HTTPResponse{
+				Data: *signedTxnResp,
+			},
+		},
+
+		{
+			name:   "200 - sign indexes",
+			method: http.MethodPost,
+			body: &WalletSignTransactionRequest{
+				WalletID:           "foo.wlt",
+				SignIndexes:        []int{1},
+				EncodedTransaction: validBody.EncodedTransaction,
+			},
+			status:                       http.StatusOK,
+			gatewaySignTransactionResult: &signedTxn,
+			gatewaySignTransactionInputs: inputs,
+			httpResponse: HTTPResponse{
+				Data: *signedTxnResp,
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+
+			var txn *coin.Transaction
+			if tc.body != nil {
+				// Decode the transaction used in the request body, but ignore an error in case the
+				// transaction is intentionally malformed
+				txnBytes, err := hex.DecodeString(tc.body.EncodedTransaction)
+				if err == nil {
+					txnx, err := coin.TransactionDeserialize([]byte(txnBytes))
+					if err == nil {
+						txn = &txnx
+					}
+				}
+			}
+
+			if tc.body != nil {
+				gateway.On("WalletSignTransaction", tc.body.WalletID, []byte(tc.body.Password), txn, tc.body.SignIndexes).Return(tc.gatewaySignTransactionResult, tc.gatewaySignTransactionInputs, tc.gatewaySignTransactionErr)
+			}
+
+			endpoint := "/api/v2/wallet/transaction/sign"
+
+			bodyText := []byte(tc.rawBody)
+			if len(bodyText) == 0 {
+				var err error
+				bodyText, err = json.Marshal(tc.body)
+				require.NoError(t, err)
+			}
+
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBuffer(bodyText))
+			require.NoError(t, err)
+
+			contentType := tc.contentType
+			if contentType == "" {
+				contentType = ContentTypeJSON
+			}
+
+			req.Header.Add("Content-Type", contentType)
+
+			if tc.csrfDisabled {
+				setCSRFParameters(t, tokenInvalid, req)
+			} else {
+				setCSRFParameters(t, tokenValid, req)
+			}
+
+			rr := httptest.NewRecorder()
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.csrfDisabled
+
+			handler := newServerMux(cfg, gateway)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+			var rsp ReceivedHTTPResponse
+			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.httpResponse.Error, rsp.Error)
+
+			if rsp.Data == nil {
+				require.Nil(t, tc.httpResponse.Data)
+			} else {
+				require.NotNil(t, tc.httpResponse.Data)
+
+				var cRsp CreateTransactionResponse
+				err := json.Unmarshal(rsp.Data, &cRsp)
+				require.NoError(t, err)
+
+				require.Equal(t, tc.httpResponse.Data.(CreateTransactionResponse), cRsp)
+			}
+		})
+	}
 }

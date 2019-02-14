@@ -260,9 +260,9 @@ func ValidateSeedData(seedData *SeedTestData, inputData *InputTestData) error {
 					return fmt.Errorf("cipher.VerifyAddressSignedHash failed: %v", err)
 				}
 
-				err = cipher.VerifySignedHash(sig, h)
+				err = cipher.VerifySignatureRecoverPubKey(sig, h)
 				if err != nil {
-					return fmt.Errorf("cipher.VerifySignedHash failed: %v", err)
+					return fmt.Errorf("cipher.VerifySignatureRecoverPubKey failed: %v", err)
 				}
 
 				p2, err := cipher.PubKeyFromSig(sig, h)

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Add CLI `checkDBDecoding` command to verify the `skyencoder`-generated binary decoders match the reflect-based decoder
+- Add `unsigned` option to `POST /api/v1/wallet/transaction` to create unsigned transactions from a wallet
+- Add `/api/v2/wallet/transaction/sign` to sign an unsigned transaction with a wallet
+- Add `unsigned` option to `POST /api/v2/transaction/verify` for verifying an unsigned transaction
 
 ### Fixed
 

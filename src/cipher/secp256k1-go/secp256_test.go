@@ -172,6 +172,49 @@ func Test_Secp256_02s(t *testing.T) {
 	} //should be 0 to 4
 }
 
+func TestVerifySignatureFailure(t *testing.T) {
+	p, s := GenerateKeyPair()
+	msg := RandByte(32)
+	sig := Sign(msg, s)
+	if sig == nil {
+		t.Fatal("Signature nil")
+	}
+
+	p2, _ := GenerateKeyPair()
+
+	if bytes.Equal(p, p2) {
+		t.Fatal("GenerateKeyPair returned the same keys twice")
+	}
+
+	// Signature has different pubkey
+	ret := VerifySignature(msg, sig, p2)
+	if ret == 1 {
+		t.Fatal("Signature unexpectedly valid")
+	}
+
+	msg2 := RandByte(32)
+	sig2 := Sign(msg2, s)
+
+	// Signature is for a different message
+	ret = VerifySignature(msg, sig2, p)
+	if ret == 1 {
+		t.Fatal("Signature unexpectedly valid")
+	}
+
+	// Signature is for a different message
+	ret = VerifySignature(msg2, sig, p)
+	if ret == 1 {
+		t.Fatal("Signature unexpectedly valid")
+	}
+
+	// Signature is for a different message
+	msg3 := RandByte(32)
+	ret = VerifySignature(msg3, sig, p)
+	if ret == 1 {
+		t.Fatal("Signature unexpectedly valid")
+	}
+}
+
 //test signing message
 func Test_Secp256_02(t *testing.T) {
 	pubkey1, seckey := GenerateKeyPair()

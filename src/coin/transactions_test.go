@@ -44,7 +44,7 @@ func makeTransaction(t *testing.T) Transaction {
 	return makeTransactionFromUxOut(t, ux, s)
 }
 
-func makeTransactionMultipleInputs(t *testing.T, n int) Transaction {
+func makeTransactionMultipleInputs(t *testing.T, n int) (Transaction, []cipher.SecKey) {
 	uxs := make([]UxOut, n)
 	secs := make([]cipher.SecKey, n)
 	for i := 0; i < n; i++ {
@@ -52,7 +52,7 @@ func makeTransactionMultipleInputs(t *testing.T, n int) Transaction {
 		uxs[i] = ux
 		secs[i] = s
 	}
-	return makeTransactionFromUxOuts(t, uxs, secs)
+	return makeTransactionFromUxOuts(t, uxs, secs), secs
 }
 
 func makeTransactions(t *testing.T, n int) Transactions { // nolint: unparam
@@ -193,7 +193,7 @@ func TestTransactionVerify(t *testing.T) {
 }
 
 func TestTransactionVerifyUnsigned(t *testing.T) {
-	txn := makeTransactionMultipleInputs(t, 2)
+	txn, _ := makeTransactionMultipleInputs(t, 2)
 	err := txn.VerifyUnsigned()
 	testutil.RequireError(t, err, "Unsigned transaction must contain a null signature")
 
@@ -201,7 +201,7 @@ func TestTransactionVerifyUnsigned(t *testing.T) {
 	// A stable invalid signature must be used because random signatures could appear valid
 	// Note: Transaction.Verify() only checks that the signature is a minimally valid signature
 	badSig := "9a0f86874a4d9541f58a1de4db1c1b58765a868dc6f027445d0a2a8a7bddd1c45ea559fcd7bef45e1b76ccdaf8e50bbebd952acbbea87d1cb3f7a964bc89bf1ed5"
-	txn = makeTransactionMultipleInputs(t, 2)
+	txn, _ = makeTransactionMultipleInputs(t, 2)
 	txn.Sigs[0] = cipher.Sig{}
 	txn.Sigs[1] = cipher.MustSigFromHex(badSig)
 	testutil.RequireError(t, txn.VerifyUnsigned(), "Failed to recover pubkey from signature")
@@ -211,7 +211,7 @@ func TestTransactionVerifyUnsigned(t *testing.T) {
 	testutil.RequireError(t, err, "Invalid number of signatures")
 
 	// Transaction is unsigned if at least 1 signature is null
-	txn = makeTransactionMultipleInputs(t, 3)
+	txn, _ = makeTransactionMultipleInputs(t, 3)
 	require.True(t, len(txn.Sigs) > 1)
 	txn.Sigs[0] = cipher.Sig{}
 	err = txn.VerifyUnsigned()
@@ -320,6 +320,53 @@ func TestTransactionPushOutput(t *testing.T) {
 			Hours:   uint64(i * 50),
 		})
 	}
+}
+
+func TestTransactionSignInput(t *testing.T) {
+	txn, seckeys := makeTransactionMultipleInputs(t, 3)
+	require.True(t, txn.IsFullySigned())
+
+	// Input is already signed
+	err := txn.SignInput(seckeys[0], 0)
+	testutil.RequireError(t, err, "Input already signed")
+	require.True(t, txn.IsFullySigned())
+
+	// Input is not signed
+	txn.Sigs[1] = cipher.Sig{}
+	require.False(t, txn.IsFullySigned())
+	err = txn.SignInput(seckeys[1], 1)
+	require.NoError(t, err)
+	require.True(t, txn.IsFullySigned())
+	err = txn.SignInput(seckeys[1], 1)
+	testutil.RequireError(t, err, "Input already signed")
+
+	// Transaction has no sigs; sigs array is initialized
+	txn.Sigs = nil
+	require.False(t, txn.IsFullySigned())
+	err = txn.SignInput(seckeys[2], 2)
+	require.NoError(t, err)
+	require.False(t, txn.IsFullySigned())
+	require.Len(t, txn.Sigs, 3)
+	require.True(t, txn.Sigs[0].Null())
+	require.True(t, txn.Sigs[1].Null())
+	require.False(t, txn.Sigs[2].Null())
+
+	// SignInputs on a partially signed transaction fails
+	require.Panics(t, func() {
+		txn.SignInputs(seckeys)
+	})
+
+	// Signing the rest of the inputs individually works
+	err = txn.SignInput(seckeys[1], 1)
+	require.NoError(t, err)
+	require.False(t, txn.IsFullySigned())
+	err = txn.SignInput(seckeys[0], 0)
+	require.True(t, txn.IsFullySigned())
+
+	// Can use SignInputs on allocated array of empty sigs
+	txn.Sigs = make([]cipher.Sig, 3)
+	txn.SignInputs(seckeys)
+	require.True(t, txn.IsFullySigned())
 }
 
 func TestTransactionSignInputs(t *testing.T) {
@@ -1039,7 +1086,7 @@ func TestSortTransactions(t *testing.T) {
 }
 
 func TestTransactionSignedUnsigned(t *testing.T) {
-	txn := makeTransactionMultipleInputs(t, 2)
+	txn, _ := makeTransactionMultipleInputs(t, 2)
 	require.True(t, txn.IsFullySigned())
 	require.True(t, txn.hasNonNullSignature())
 	require.False(t, txn.IsFullyUnsigned())
@@ -1056,4 +1103,10 @@ func TestTransactionSignedUnsigned(t *testing.T) {
 	require.False(t, txn.hasNonNullSignature())
 	require.True(t, txn.IsFullyUnsigned())
 	require.True(t, txn.hasNullSignature())
+
+	txn.Sigs = nil
+	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.hasNonNullSignature())
+	require.True(t, txn.IsFullyUnsigned())
+	require.False(t, txn.hasNullSignature())
 }

@@ -920,9 +920,7 @@ func newStrPtr(s string) *string {
 }
 
 func TestWalletSignTransaction(t *testing.T) {
-	// changeAddress := testutil.MakeAddress()
 	destinationAddress := testutil.MakeAddress()
-	// emptyAddress := cipher.Address{}
 
 	signedTxn := coin.Transaction{
 		Length:    100,

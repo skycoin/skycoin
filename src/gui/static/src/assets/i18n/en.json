@@ -2,6 +2,7 @@
   "common": {
     "coin-id": "SKY",
     "coin-hours": "Coin Hours",
+    "usd": "USD",
     "loading": "Loading...",
     "new": "New",
     "load": "Load"
@@ -167,6 +168,7 @@
     "notes-label": "Notes",
     "wallet-label": "Wallet",
     "addresses-label": "Addresses",
+    "invalid-amount": "Please enter a valid amount",
     "addresses-help": "Limit the addresses from where the coins and hours could be sent",
     "all-addresses": "All the addresses of the selected wallet",
     "outputs-label": "Unspent outputs",

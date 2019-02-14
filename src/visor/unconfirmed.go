@@ -48,10 +48,7 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 		return nil, encoder.ErrRemainingBytes
 	}
 
-	txnHash, err := txn.Hash()
-	if err != nil {
-		return nil, err
-	}
+	txnHash := txn.Hash()
 	if hash != txnHash {
 		return nil, fmt.Errorf("DB key %s does not match block hash header %s", hash, txnHash)
 	}
@@ -60,11 +57,7 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 }
 
 func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTransaction) error {
-	h, err := v.Hash()
-	if err != nil {
-		return err
-	}
-
+	h := v.Hash()
 	n := encodeSizeUnconfirmedTransaction(v)
 	buf := make([]byte, n)
 	if err := encodeUnconfirmedTransaction(buf, v); err != nil {
@@ -266,12 +259,7 @@ func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Block
 		}
 	}
 
-	hash, err := txn.Hash()
-	if err != nil {
-		logger.Critical().WithError(err).Error("InjectTransaction txn.Hash failed")
-		return false, nil, err
-	}
-
+	hash := txn.Hash()
 	known, err := utp.txns.hasKey(tx, hash)
 	if err != nil {
 		logger.Errorf("InjectTransaction check txn exists failed: %v", err)
@@ -310,11 +298,7 @@ func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Block
 	}
 
 	// update unconfirmed unspent
-	createdUnspents, err := coin.CreateUnspents(head.Head, txn)
-	if err != nil {
-		logger.WithError(err).Error("InjectTransaction coin.CreateUnspents failed")
-		return false, nil, err
-	}
+	createdUnspents := coin.CreateUnspents(head.Head, txn)
 	if err := utp.unspent.put(tx, hash, createdUnspents); err != nil {
 		logger.Errorf("InjectTransaction put new unspent outputs: %v", err)
 		return false, nil, err
@@ -379,11 +363,7 @@ func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, v
 			utxn.IsValid = 0
 		case nil:
 			if utxn.IsValid == 0 {
-				txnHash, txnHashErr := utxn.Hash()
-				if txnHashErr != nil {
-					logger.Panicf("UnconfirmedTransaction in pool failed to compute hash: %v", txnHashErr)
-				}
-				nowValid = append(nowValid, txnHash)
+				nowValid = append(nowValid, utxn.Hash())
 			}
 			utxn.IsValid = 1
 		default:
@@ -414,11 +394,7 @@ func (utp *UnconfirmedTransactionPool) RemoveInvalid(tx *dbutil.Tx, bc Blockchai
 		if err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint:
-				txnHash, txnHashErr := utxn.Hash()
-				if txnHashErr != nil {
-					logger.Panicf("UnconfirmedTransaction in pool failed to compute hash: %v", txnHashErr)
-				}
-				removeUtxns = append(removeUtxns, txnHash)
+				removeUtxns = append(removeUtxns, utxn.Hash())
 			default:
 				return nil, err
 			}
@@ -523,11 +499,7 @@ func (utp *UnconfirmedTransactionPool) GetIncomingOutputs(tx *dbutil.Tx, bh coin
 	var outs coin.UxArray
 
 	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTransaction) error {
-		uxOuts, err := coin.CreateUnspents(bh, txn.Transaction)
-		if err != nil {
-			return err
-		}
-		outs = append(outs, uxOuts...)
+		outs = append(outs, coin.CreateUnspents(bh, txn.Transaction)...)
 		return nil
 	}); err != nil {
 		return nil, err

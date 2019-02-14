@@ -321,8 +321,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create enough unspent outputs to create all of these transactions
-	uxs, err := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	require.NoError(t, err)
+	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
 	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserVerifyTxn.MaxDropletPrecision)
@@ -356,8 +355,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	v.Config.MaxBlockSize = 1024 * 4
 
 	// Create various transactions and add them to unconfirmed pool
-	uxs, err = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
-	require.NoError(t, err)
+	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 	var coins uint64 = 9e6
 	var f uint64 = 10
 	toAddr := testutil.MakeAddress()
@@ -548,8 +546,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	})
 	testutil.RequireError(t, err, "No transactions")
 
-	uxs, err := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	require.NoError(t, err)
+	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	toAddr := testutil.MakeAddress()
 	var coins uint64 = 10e6
@@ -580,8 +577,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	uxs, err = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
-	require.NoError(t, err)
+	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
 	// Check transactions with overflowing output coins fail
 	txn = makeOverflowCoinsSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
@@ -632,8 +628,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a transaction with null address output
-	uxs, err = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	require.NoError(t, err)
+	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	txn.Out[0].Address = cipher.Address{}
 	known, _, _, err = v.InjectUserTransaction(txn)
@@ -728,16 +723,12 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 func makeUncfmUxs(txns []UnconfirmedTransaction) coin.UxArray {
 	var uxs coin.UxArray
 	for i := range txns {
-		txnHash, err := txns[i].Hash()
-		if err != nil {
-			panic(err)
-		}
 		uxs = append(uxs, coin.UxOut{
 			Head: coin.UxHead{
 				Time: uint64(txns[i].Received),
 			},
 			Body: coin.UxBody{
-				SrcTransaction: txnHash,
+				SrcTransaction: txns[i].Hash(),
 			},
 		})
 	}
@@ -1870,9 +1861,7 @@ func TestGetTransactions(t *testing.T) {
 
 				uncfmTxnPool.On("GetUnspentsOfAddr", matchTxn, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
 				for i, uncfmTxn := range txns.UncfmTxns {
-					h, err := uncfmTxn.Hash()
-					require.NoError(t, err)
-					uncfmTxnPool.On("Get", matchTxn, h).Return(&txns.UncfmTxns[i], nil)
+					uncfmTxnPool.On("Get", matchTxn, uncfmTxn.Hash()).Return(&txns.UncfmTxns[i], nil)
 				}
 				uncfmTxnPool.txns = append(uncfmTxnPool.txns, txns.UncfmTxns...)
 			}
@@ -1906,8 +1895,7 @@ func TestGetTransactions(t *testing.T) {
 			uncfmTxnMap := make(map[cipher.SHA256]Transaction)
 			txnMap := make(map[cipher.SHA256]Transaction)
 			for i, txn := range retTxns {
-				h, err := txn.Transaction.Hash()
-				require.NoError(t, err)
+				h := txn.Transaction.Hash()
 				if retTxns[i].Status.Confirmed {
 					txnMap[h] = retTxns[i]
 				} else {
@@ -1917,8 +1905,7 @@ func TestGetTransactions(t *testing.T) {
 
 			// Confirms that all expected confirmed transactions must be in the txnMap
 			for _, txn := range tc.expect.txns {
-				h, err := txn.Transaction.Hash()
-				require.NoError(t, err)
+				h := txn.Transaction.Hash()
 				retTxn, ok := txnMap[h]
 				require.True(t, ok)
 				require.Equal(t, txn, retTxn)
@@ -1926,8 +1913,7 @@ func TestGetTransactions(t *testing.T) {
 
 			// Confirms that all expected unconfirmed transactions must be in the uncfmTxnMap
 			for _, txn := range tc.expect.uncfmTxns {
-				h, err := txn.Transaction.Hash()
-				require.NoError(t, err)
+				h := txn.Transaction.Hash()
 				retTxn, ok := uncfmTxnMap[h]
 				require.True(t, ok)
 				require.Equal(t, txn, retTxn)
@@ -1975,8 +1961,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, gb)
 
-	uxs, err := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	require.NoError(t, err)
+	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	toAddr := testutil.MakeAddress()
 	var coins uint64 = 10e6
@@ -2038,9 +2023,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = originalMaxUnconfirmedTxnSize
 	hashes, err := v.RefreshUnconfirmed()
 	require.NoError(t, err)
-	sometimesInvalidTxnHash, err := sometimesInvalidTxn.Hash()
-	require.NoError(t, err)
-	require.Equal(t, []cipher.SHA256{sometimesInvalidTxnHash}, hashes)
+	require.Equal(t, []cipher.SHA256{sometimesInvalidTxn.Hash()}, hashes)
 
 	// Reduce the max block size to affirm that the valid transaction becomes invalid
 	// The first txn becomes invalid,
@@ -2060,9 +2043,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	require.NoError(t, err)
 
 	// Sort hashes for deterministic comparison
-	validTxnHash, err := validTxn.Hash()
-	require.NoError(t, err)
-	expectedHashes := []cipher.SHA256{validTxnHash, sometimesInvalidTxnHash}
+	expectedHashes := []cipher.SHA256{validTxn.Hash(), sometimesInvalidTxn.Hash()}
 	sort.Slice(expectedHashes, func(i, j int) bool {
 		return bytes.Compare(expectedHashes[i][:], expectedHashes[j][:]) < 0
 	})
@@ -2113,8 +2094,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, gb)
 
-	uxs, err := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	require.NoError(t, err)
+	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	// Create two valid transactions, both spending the same inputs, one with a higher fee
 	// Then, create a block from these transactions.
@@ -2156,11 +2136,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb.Body.Transactions))
 	require.Equal(t, 2, len(sb.Body.Transactions[0].Out))
-	txnHash, err := sb.Body.Transactions[0].Hash()
-	require.NoError(t, err)
-	txnHash2, err := txn2.Hash()
-	require.NoError(t, err)
-	require.Equal(t, txnHash2.Hex(), txnHash.Hex())
+	require.Equal(t, txn2.Hash().Hex(), sb.Body.Transactions[0].Hash().Hex())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -2178,9 +2154,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	// Call RemoveInvalidUnconfirmed, the first txn will be removed because it is now a double-spend txn
 	removed, err := v.RemoveInvalidUnconfirmed()
 	require.NoError(t, err)
-	txnHash1, err := txn1.Hash()
-	require.NoError(t, err)
-	require.Equal(t, []cipher.SHA256{txnHash1}, removed)
+	require.Equal(t, []cipher.SHA256{txn1.Hash()}, removed)
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
@@ -3064,9 +3038,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 			unspent.On("GetArray", matchTxn, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
 
-			txnHash, err := tc.txn.Hash()
-			require.NoError(t, err)
-			history.On("GetTransaction", matchTxn, txnHash).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
+			history.On("GetTransaction", matchTxn, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
 			history.On("GetUxOuts", matchTxn, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
 
 			v := &Visor{
@@ -3087,7 +3059,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 			var isConfirmed bool
 			var balances []wallet.UxBalance
-			err = v.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+			err := v.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
 				var err error
 				balances, isConfirmed, err = v.VerifyTxnVerbose(&tc.txn)
 				return err
@@ -3117,11 +3089,7 @@ func newHistoryerMock2() *historyerMock2 {
 
 func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error {
 	for i := range h.txns {
-		txnHash, err := h.txns[i].Hash()
-		if err != nil {
-			return err
-		}
-		if err := f(txnHash, &h.txns[i]); err != nil {
+		if err := f(h.txns[i].Hash(), &h.txns[i]); err != nil {
 			return err
 		}
 	}

@@ -539,8 +539,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			txOuts, err := coin.CreateUnspents(block.Head, txn)
-			require.NoError(t, err)
+			txOuts := coin.CreateUnspents(block.Head, txn)
 
 			err = db.View("", func(tx *dbutil.Tx) error {
 				// check that the inputs should already been deleted from unspent pool

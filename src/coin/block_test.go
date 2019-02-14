@@ -1,5 +1,3 @@
-// build ignore
-
 package coin
 
 import (
@@ -34,13 +32,10 @@ func badFeeCalc(t *Transaction) (uint64, error) {
 	return 0, errors.New("Bad")
 }
 
-func makeNewBlock(t *testing.T, uxHash cipher.SHA256) (*Block, error) {
+func makeNewBlock(t *testing.T, uxHash cipher.SHA256) *Block {
 	body := BlockBody{
 		Transactions: Transactions{Transaction{}},
 	}
-
-	bodyHash, err := body.Hash()
-	require.NoError(t, err)
 
 	prev := Block{
 		Body: body,
@@ -50,9 +45,11 @@ func makeNewBlock(t *testing.T, uxHash cipher.SHA256) (*Block, error) {
 			BkSeq:    0,
 			Fee:      10,
 			PrevHash: cipher.SHA256{},
-			BodyHash: bodyHash,
+			BodyHash: body.Hash(),
 		}}
-	return NewBlock(prev, 100+20, uxHash, Transactions{Transaction{}}, feeCalc)
+	b, err := NewBlock(prev, 100+20, uxHash, Transactions{Transaction{}}, feeCalc)
+	require.NoError(t, err)
+	return b
 }
 
 func addTransactionToBlock(t *testing.T, b *Block) Transaction {
@@ -95,29 +92,22 @@ func TestNewBlock(t *testing.T) {
 
 func TestBlockHashHeader(t *testing.T) {
 	uxHash := testutil.RandSHA256(t)
-	b, err := makeNewBlock(t, uxHash)
-	require.NoError(t, err)
+	b := makeNewBlock(t, uxHash)
 	require.Equal(t, b.HashHeader(), b.Head.Hash())
 	require.NotEqual(t, b.HashHeader(), cipher.SHA256{})
 }
 
 func TestBlockHashBody(t *testing.T) {
 	uxHash := testutil.RandSHA256(t)
-	b, err := makeNewBlock(t, uxHash)
-	require.NoError(t, err)
-	hb, err := b.Body.Hash()
-	require.NoError(t, err)
-	hashes, err := b.Body.Transactions.Hashes()
-	require.NoError(t, err)
+	b := makeNewBlock(t, uxHash)
+	hb := b.Body.Hash()
+	hashes := b.Body.Transactions.Hashes()
 	txn := addTransactionToBlock(t, b)
-	hb2, err := b.Body.Hash()
-	require.NoError(t, err)
+	hb2 := b.Body.Hash()
 	require.NotEqual(t, hb2, hb)
-	txnHash, err := txn.Hash()
-	require.NoError(t, err)
+	txnHash := txn.Hash()
 	hashes = append(hashes, txnHash)
-	hb3, err := b.Body.Hash()
-	require.NoError(t, err)
+	hb3 := b.Body.Hash()
 	require.Equal(t, hb3, cipher.Merkle(hashes))
 }
 
@@ -189,8 +179,7 @@ func TestCreateUnspents(t *testing.T) {
 		Time:  tNow(),
 		BkSeq: uint64(1),
 	}
-	uxouts, err := CreateUnspents(bh, txn)
-	require.NoError(t, err)
+	uxouts := CreateUnspents(bh, txn)
 	require.Equal(t, len(uxouts), 1)
 	requireValidUnspents(t, bh, txn, uxouts)
 }
@@ -198,9 +187,7 @@ func TestCreateUnspents(t *testing.T) {
 func requireUnspent(t *testing.T, bh BlockHeader, txn Transaction, txIndex int, ux UxOut) {
 	require.Equal(t, bh.Time, ux.Head.Time)
 	require.Equal(t, bh.BkSeq, ux.Head.BkSeq)
-	txnHash, err := txn.Hash()
-	require.NoError(t, err)
-	require.Equal(t, txnHash, ux.Body.SrcTransaction)
+	require.Equal(t, txn.Hash(), ux.Body.SrcTransaction)
 	require.Equal(t, txn.Out[txIndex].Address, ux.Body.Address)
 	require.Equal(t, txn.Out[txIndex].Coins, ux.Body.Coins)
 	require.Equal(t, txn.Out[txIndex].Hours, ux.Body.Hours)
@@ -212,9 +199,7 @@ func requireValidUnspents(t *testing.T, bh BlockHeader, txn Transaction,
 	for i, ux := range uxo {
 		require.Equal(t, bh.Time, ux.Head.Time)
 		require.Equal(t, bh.BkSeq, ux.Head.BkSeq)
-		txnHash, err := txn.Hash()
-		require.NoError(t, err)
-		require.Equal(t, txnHash, ux.Body.SrcTransaction)
+		require.Equal(t, txn.Hash(), ux.Body.SrcTransaction)
 		require.Equal(t, txn.Out[i].Address, ux.Body.Address)
 		require.Equal(t, txn.Out[i].Coins, ux.Body.Coins)
 		require.Equal(t, txn.Out[i].Hours, ux.Body.Hours)

@@ -23,7 +23,7 @@ type Transaction struct {
 }
 
 // Hash return the Txn hash.
-func (txn *Transaction) Hash() (cipher.SHA256, error) {
+func (txn *Transaction) Hash() cipher.SHA256 {
 	return txn.Txn.Hash()
 }
 
@@ -35,11 +35,7 @@ type transactions struct{}
 
 // put transaction to the db
 func (txs *transactions) put(tx *dbutil.Tx, txn *Transaction) error {
-	hash, err := txn.Hash()
-	if err != nil {
-		return err
-	}
-
+	hash := txn.Hash()
 	n := encodeSizeTransaction(txn)
 	buf := make([]byte, n)
 	if err := encodeTransaction(buf, txn); err != nil {

@@ -29,9 +29,7 @@ func TestTransactionGet(t *testing.T) {
 
 	txnHashes := make([]cipher.SHA256, len(txns))
 	for i, x := range txns {
-		h, err := x.Hash()
-		require.NoError(t, err)
-		txnHashes[i] = h
+		txnHashes[i] = x.Hash()
 	}
 
 	testCases := []struct {
@@ -93,9 +91,7 @@ func TestTransactionGetArray(t *testing.T) {
 
 	txnHashes := make([]cipher.SHA256, len(txns))
 	for i, x := range txns {
-		h, err := x.Hash()
-		require.NoError(t, err)
-		txnHashes[i] = h
+		txnHashes[i] = x.Hash()
 	}
 
 	testCases := []struct {

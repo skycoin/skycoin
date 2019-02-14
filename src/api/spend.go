@@ -93,13 +93,10 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 		sigs[i] = s.Hex()
 	}
 
-	txid, err := txn.Hash()
-	if err != nil {
-		return nil, err
-	}
+	txID := txn.Hash()
 	out := make([]CreatedTransactionOutput, len(txn.Out))
 	for i, o := range txn.Out {
-		co, err := NewCreatedTransactionOutput(o, txid)
+		co, err := NewCreatedTransactionOutput(o, txID)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +115,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 	return &CreatedTransaction{
 		Length:    txn.Length,
 		Type:      txn.Type,
-		TxID:      txid.Hex(),
+		TxID:      txID.Hex(),
 		InnerHash: txn.InnerHash.Hex(),
 		Fee:       fmt.Sprint(fee),
 
@@ -192,11 +189,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 		return nil, err
 	}
 
-	txnHash, err := t.Hash()
-	if err != nil {
-		return nil, err
-	}
-	if txnHash != hash {
+	if t.Hash() != hash {
 		return nil, errors.New("readable.Transaction.Hash does not match parsed transaction hash")
 	}
 

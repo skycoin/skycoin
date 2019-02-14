@@ -105,24 +105,21 @@ func (fbc *fakeBlockchain) addUxOut(ux coin.UxOut) {
 func (fbc *fakeBlockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 	var uxs coin.UxArray
 	txns := b.Body.Transactions
-	for _, tx := range txns {
+	for _, txn := range txns {
 		// Remove spent outputs
-		for _, id := range tx.In {
+		for _, id := range txn.In {
 			ux := fbc.unspent[id.Hex()]
 			fbc.uxhash = fbc.uxhash.Xor(ux.SnapshotHash())
 			delete(fbc.unspent, id.Hex())
 
 		}
-		fbc.deleteUxOut(tx.In)
+		fbc.deleteUxOut(txn.In)
 		// Create new outputs
-		txUxs, err := coin.CreateUnspents(b.Head, tx)
-		if err != nil {
-			return nil, err
+		txnUxs := coin.CreateUnspents(b.Head, txn)
+		for i := range txnUxs {
+			fbc.addUxOut(txnUxs[i])
 		}
-		for i := range txUxs {
-			fbc.addUxOut(txUxs[i])
-		}
-		uxs = append(uxs, txUxs...)
+		uxs = append(uxs, txnUxs...)
 	}
 
 	b.Head.PrevHash = fbc.Head().HashHeader()
@@ -139,10 +136,7 @@ func (fbc *fakeBlockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesi
 	}
 	body := coin.BlockBody{Transactions: coin.Transactions{txn}}
 	prevHash := cipher.SHA256{}
-	bodyHash, err := body.Hash()
-	if err != nil {
-		panic(err)
-	}
+	bodyHash := body.Hash()
 	head := coin.BlockHeader{
 		Time:     timestamp,
 		BodyHash: bodyHash,
@@ -204,8 +198,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 
 	// check transactions bucket.
 	var txn Transaction
-	txnHash, err := gb.Body.Transactions[0].Hash()
-	require.NoError(t, err)
+	txnHash := gb.Body.Transactions[0].Hash()
 	mustGetBucketValue(t, db, TransactionsBkt, txnHash[:], &txn)
 	require.Equal(t, txn.Txn, gb.Body.Transactions[0])
 
@@ -247,18 +240,14 @@ type txOut struct {
 
 // findTxnInBlock looks up a coin.Transaction from a coin.Block.
 // Returns the Transaction and whether it was found or not
-func findTxnInBlock(b *coin.Block, txnHash cipher.SHA256) (coin.Transaction, bool, error) {
+func findTxnInBlock(b *coin.Block, txnHash cipher.SHA256) (coin.Transaction, bool) {
 	txns := b.Body.Transactions
 	for i := range txns {
-		h, err := txns[i].Hash()
-		if err != nil {
-			return coin.Transaction{}, false, err
-		}
-		if h == txnHash {
-			return txns[i], true, nil
+		if txns[i].Hash() == txnHash {
+			return txns[i], true
 		}
 	}
-	return coin.Transaction{}, false, nil
+	return coin.Transaction{}, false
 }
 
 func getUx(bc Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.UxOut, error) {
@@ -267,20 +256,12 @@ func getUx(bc Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.
 		return nil, fmt.Errorf("no block in depth:%v", seq)
 	}
 
-	txn, ok, err := findTxnInBlock(b, txID)
-	if err != nil {
-		return nil, err
-	}
-
+	txn, ok := findTxnInBlock(b, txID)
 	if !ok {
 		return nil, errors.New("found transaction failed")
 	}
 
-	uxs, err := coin.CreateUnspents(b.Head, txn)
-	if err != nil {
-		return nil, err
-	}
-
+	uxs := coin.CreateUnspents(b.Head, txn)
 	for _, u := range uxs {
 		if u.Body.Address.String() == addr {
 			return &u, nil
@@ -312,16 +293,13 @@ func TestProcessBlock(t *testing.T) {
 	                                                            |-222uMeCeL1PbkJGZJDgAz5sib2uisv9hYUm
 	*/
 
-	txnHash0, err := gb.Body.Transactions[0].Hash()
-	require.NoError(t, err)
-
 	testData := []testData{
 		{
 			PreBlockHash: gb.HashHeader(),
 			Vin: txIn{
 				SigKey:   genSecret.Hex(),
 				Addr:     genAddress.String(),
-				TxID:     txnHash0,
+				TxID:     gb.Body.Transactions[0].Hash(),
 				BlockSeq: 0,
 			},
 			Vouts: []txOut{
@@ -383,9 +361,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 		// update the next block test data.
 		if i+1 < len(tds) {
 			// update UxOut of next test data.
-			txnHash, err := txn.Hash()
-			require.NoError(t, err)
-			tds[i+1].Vin.TxID = txnHash
+			tds[i+1].Vin.TxID = txn.Hash()
 			tds[i+1].PreBlockHash = b.HashHeader()
 		}
 
@@ -398,17 +374,13 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 
 		// check txn
 		txnInBkt := Transaction{}
-		k, err := txn.Hash()
-		require.NoError(t, err)
+		k := txn.Hash()
 		mustGetBucketValue(t, db, TransactionsBkt, k[:], &txnInBkt)
 		require.Equal(t, &txnInBkt.Txn, txn)
 
-		txnHash, err := txn.Hash()
-		require.NoError(t, err)
-
 		// check outputs
 		for _, o := range td.Vouts {
-			ux, err := getUx(bc, uint64(i+1), txnHash, o.ToAddr)
+			ux, err := getUx(bc, uint64(i+1), txn.Hash(), o.ToAddr)
 			require.NoError(t, err)
 
 			uxInDB := UxOut{}
@@ -499,10 +471,7 @@ func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256, txns co
 
 func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime, fee uint64, body coin.BlockBody) coin.BlockHeader {
 	prevHash := prev.Hash()
-	bodyHash, err := body.Hash()
-	if err != nil {
-		panic(err)
-	}
+	bodyHash := body.Hash()
 	return coin.BlockHeader{
 		BodyHash: bodyHash,
 		Version:  prev.Version,

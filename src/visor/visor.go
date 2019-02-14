@@ -579,11 +579,7 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	// Remove the transactions in the Block from the unconfirmed pool
 	txnHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
 	for _, txn := range b.Block.Body.Transactions {
-		txnHash, err := txn.Hash()
-		if err != nil {
-			return err
-		}
-		txnHashes = append(txnHashes, txnHash)
+		txnHashes = append(txnHashes, txn.Hash())
 	}
 
 	if err := vs.Unconfirmed.RemoveTransactions(tx, txnHashes); err != nil {
@@ -1228,10 +1224,7 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	var txns []Transaction
 	for _, aTxns := range addrTxns {
 		for _, txn := range aTxns {
-			txnHash, err := txn.Transaction.Hash()
-			if err != nil {
-				return nil, err
-			}
+			txnHash := txn.Transaction.Hash()
 			if _, exist := txnMap[txnHash]; exist {
 				continue
 			}
@@ -1449,16 +1442,7 @@ func sortTxns(txns []Transaction) []Transaction {
 		}
 
 		// If transactions in the same block, compare the hash string
-		iHash, err := txns[i].Transaction.Hash()
-		if err != nil {
-			logger.Panicf("sortTxns: txns[i].Transaction.Hash() failed: %v", err)
-		}
-		jHash, err := txns[i].Transaction.Hash()
-		if err != nil {
-			logger.Panicf("sortTxns: txns[j].Transaction.Hash() failed: %v", err)
-		}
-
-		return iHash.Hex() < jHash.Hex()
+		return txns[i].Transaction.Hash().Hex() < txns[j].Transaction.Hash().Hex()
 	})
 	return txns
 }
@@ -1601,11 +1585,7 @@ func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []Un
 	inputs := make([][]TransactionInput, len(txns))
 	for i, txn := range txns {
 		if len(txn.Transaction.In) == 0 {
-			txnHash, err := txn.Hash()
-			if err != nil {
-				return nil, err
-			}
-			logger.Critical().WithField("txid", txnHash.Hex()).Warning("Unconfirmed transaction has no inputs")
+			logger.Critical().WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
 			continue
 		}
 
@@ -2223,10 +2203,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			}
 
 			// Checks if the transaction is confirmed
-			txnHash, err := txn.Hash()
-			if err != nil {
-				return err
-			}
+			txnHash := txn.Hash()
 			historyTxn, err := vs.history.GetTransaction(tx, txnHash)
 			if err != nil {
 				return fmt.Errorf("get transaction of %v from historydb failed: %v", txnHash, err)

@@ -131,10 +131,7 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 			BlockSeq: b.Seq(),
 		}
 
-		spentTxnID, err := t.Hash()
-		if err != nil {
-			return err
-		}
+		spentTxnID := t.Hash()
 
 		if err := hd.txns.put(tx, &txn); err != nil {
 			return err
@@ -164,11 +161,7 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 		}
 
 		// handle the tx out
-		uxArray, err := coin.CreateUnspents(b.Head, t)
-		if err != nil {
-			return err
-		}
-
+		uxArray := coin.CreateUnspents(b.Head, t)
 		for _, ux := range uxArray {
 			if err := hd.outputs.put(tx, UxOut{
 				Out: ux,
@@ -256,10 +249,7 @@ type AddressIndexes struct {
 // Verify checks if the historydb is corrupted
 func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *IndexesMap) error {
 	for _, t := range b.Body.Transactions {
-		txnHash, err := t.Hash()
-		if err != nil {
-			return err
-		}
+		txnHash := t.Hash()
 		txn, err := hd.txns.get(tx, txnHash)
 		if err != nil {
 			return err
@@ -335,10 +325,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 		}
 
 		// Checks the transaction outs
-		uxArray, err := coin.CreateUnspents(b.Head, t)
-		if err != nil {
-			return err
-		}
+		uxArray := coin.CreateUnspents(b.Head, t)
 		for _, ux := range uxArray {
 			uxHash := ux.Hash()
 			out, err := hd.outputs.get(tx, uxHash)

@@ -358,12 +358,9 @@ func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Trans
 		// because it relies on the unspent pool to check for existence.
 		// For remote callers such as the CLI, they'd need to download the whole
 		// unspent pool or make a separate API call to check for duplicate unspents.
-		uxOut, err := coin.CreateUnspents(head.Head, txn)
-		if err != nil {
-			return err
-		}
-		for i := range uxOut {
-			if contains, err := bc.Unspent().Contains(tx, uxOut[i].Hash()); err != nil {
+		uxOuts := coin.CreateUnspents(head.Head, txn)
+		for i := range uxOuts {
+			if contains, err := bc.Unspent().Contains(tx, uxOuts[i].Hash()); err != nil {
 				return err
 			} else if contains {
 				err := errors.New("New unspent collides with existing unspent")
@@ -438,12 +435,9 @@ func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 		// because it relies on the unspent pool to check for existence.
 		// For remote callers such as the CLI, they'd need to download the whole
 		// unspent pool or make a separate API call to check for duplicate unspents.
-		uxOut, err := coin.CreateUnspents(head.Head, txn)
-		if err != nil {
-			return err
-		}
-		for i := range uxOut {
-			if contains, err := bc.Unspent().Contains(tx, uxOut[i].Hash()); err != nil {
+		uxOuts := coin.CreateUnspents(head.Head, txn)
+		for i := range uxOuts {
+			if contains, err := bc.Unspent().Contains(tx, uxOuts[i].Hash()); err != nil {
 				return err
 			} else if contains {
 				err := errors.New("New unspent collides with existing unspent")
@@ -582,12 +576,8 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 		}
 
 		// Check that each pending unspent will be unique
-		txnHash, err := txn.Hash()
-		if err != nil {
-			return nil, err
-		}
 		uxb := coin.UxBody{
-			SrcTransaction: txnHash,
+			SrcTransaction: txn.Hash(),
 		}
 
 		for _, to := range txn.Out {
@@ -642,10 +632,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 	// Check to ensure that there are no duplicate spends in the entire block,
 	// and that we aren't creating duplicate outputs.  Duplicate outputs
 	// within a single Transaction are already checked by VerifyBlockTxnConstraints
-	hashes, err := txns.Hashes()
-	if err != nil {
-		return nil, err
-	}
+	hashes := txns.Hashes()
 	for i := 0; i < len(txns)-1; i++ {
 		s := txns[i]
 		for j := i + 1; j < len(txns); j++ {
@@ -852,12 +839,7 @@ func (bc Blockchain) verifyBlockHeader(tx *dbutil.Tx, b coin.Block) error {
 		return errors.New("PrevHash does not match current head")
 	}
 
-	bodyHash, err := b.Body.Hash()
-	if err != nil {
-		return err
-	}
-
-	if bodyHash != b.Head.BodyHash {
+	if b.Body.Hash() != b.Head.BodyHash {
 		return errors.New("Computed body hash does not match")
 	}
 	return nil

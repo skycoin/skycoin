@@ -339,11 +339,7 @@ func (up *Unspents) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 	var txnUxs coin.UxArray
 	for _, txn := range b.Body.Transactions {
 		inputs = append(inputs, txn.In...)
-		createdUnspents, err := coin.CreateUnspents(b.Head, txn)
-		if err != nil {
-			return err
-		}
-		txnUxs = append(txnUxs, createdUnspents...)
+		txnUxs = append(txnUxs, coin.CreateUnspents(b.Head, txn)...)
 	}
 
 	uxs, err := up.GetArray(tx, inputs)

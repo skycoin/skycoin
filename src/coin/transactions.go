@@ -479,17 +479,17 @@ func (txn *Transaction) Serialize() ([]byte, error) {
 	return encodeTransaction(txn)
 }
 
-// MustTransactionDeserialize deserialize transaction, panics on error
-func MustTransactionDeserialize(b []byte) Transaction {
-	t, err := TransactionDeserialize(b)
+// MustDeserializeTransaction deserialize transaction, panics on error
+func MustDeserializeTransaction(b []byte) Transaction {
+	t, err := DeserializeTransaction(b)
 	if err != nil {
 		log.Panicf("Failed to deserialize transaction: %v", err)
 	}
 	return t
 }
 
-// TransactionDeserialize deserialize transaction
-func TransactionDeserialize(b []byte) (Transaction, error) {
+// DeserializeTransaction deserialize transaction
+func DeserializeTransaction(b []byte) (Transaction, error) {
 	t := Transaction{}
 	if err := decodeTransactionExact(b, &t); err != nil {
 		return Transaction{}, fmt.Errorf("Invalid transaction: %v", err)

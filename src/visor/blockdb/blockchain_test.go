@@ -290,7 +290,7 @@ func makeGenesisBlock(t *testing.T) coin.SignedBlock {
 	}
 }
 
-func TestBlockchainAddBlockWithTx(t *testing.T) {
+func TestBlockchainAddBlock(t *testing.T) {
 	type expect struct {
 		err        error
 		sigSaved   bool

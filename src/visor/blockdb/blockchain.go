@@ -13,6 +13,19 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
+//go:generate skyencoder -unexported -struct Block -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -unexported -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -unexported -struct HashPairs
+//go:generate skyencoder -unexported -struct Hashes
+//go:generate skyencoder -unexported -struct Sig
+
+var (
+	logger = logging.MustGetLogger("blockdb")
+
+	// ErrNoHeadBlock is returned when calling Blockchain.Head() when no head block exists
+	ErrNoHeadBlock = fmt.Errorf("found no head block")
+)
+
 // Hashes wraps []cipher.SHA256
 type Hashes struct {
 	Hashes []cipher.SHA256
@@ -27,19 +40,6 @@ type Sig struct {
 type HashPairs struct {
 	HashPairs []coin.HashPair
 }
-
-//go:generate skyencoder -unexported -struct Block -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
-//go:generate skyencoder -unexported -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
-//go:generate skyencoder -unexported -struct HashPairs
-//go:generate skyencoder -unexported -struct Hashes
-//go:generate skyencoder -unexported -struct Sig
-
-var (
-	logger = logging.MustGetLogger("blockdb")
-
-	// ErrNoHeadBlock is returned when calling Blockchain.Head() when no head block exists
-	ErrNoHeadBlock = fmt.Errorf("found no head block")
-)
 
 // ErrMissingSignature is returned if a block in the db does not have a corresponding signature in the db
 type ErrMissingSignature struct {

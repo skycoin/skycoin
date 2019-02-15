@@ -790,9 +790,8 @@ func TestMessageEncodeDecode(t *testing.T) {
 			d, err := ioutil.ReadAll(f)
 			require.NoError(t, err)
 
-			n, err := encoder.DeserializeRaw(d, tc.obj)
+			err = encoder.DeserializeRawExact(d, tc.obj)
 			require.NoError(t, err)
-			require.Equal(t, n, uint64(len(d)))
 
 			require.Equal(t, tc.msg, tc.obj)
 

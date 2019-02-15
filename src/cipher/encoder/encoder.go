@@ -623,6 +623,9 @@ func (e *Encoder) ByteSlice(x []byte) {
 
 // CopyBytes copies bytes to the buffer, without a length prefix
 func (e *Encoder) CopyBytes(x []byte) {
+	if len(x) == 0 {
+		return
+	}
 	copy(e.Buffer, x)
 	e.Buffer = e.Buffer[len(x):]
 }

@@ -481,7 +481,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn, TxnSigned); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
-				logger.Warningf("Transaction %s violates constraints: %v", txn, err)
+				logger.Warningf("Transaction %s violates constraints: %v", txn.Hash().Hex(), err)
 			default:
 				return coin.SignedBlock{}, err
 			}

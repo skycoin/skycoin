@@ -365,7 +365,7 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := coin.TransactionDeserialize(b)
+		txn, err := coin.DeserializeTransaction(b)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -585,7 +585,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 		return nil, err
 	}
 
-	txn, err = coin.TransactionDeserialize(b)
+	txn, err = coin.DeserializeTransaction(b)
 	if err != nil {
 		return nil, err
 	}

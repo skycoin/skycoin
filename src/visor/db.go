@@ -302,8 +302,6 @@ func shaFileID(dbPath string) (string, error) {
 	return encodedSum, nil
 }
 
-// TODO -- cli tool to verify -- use as part of integration test
-
 // VerifyDBSkyencoderSafe verifies that the skyencoder generated code has the same result as the encoder
 // for all data in the blockchain
 func VerifyDBSkyencoderSafe(db *dbutil.DB, quit <-chan struct{}) error {

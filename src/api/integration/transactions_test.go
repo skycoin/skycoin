@@ -390,7 +390,7 @@ func TestLiveWalletSignTransaction(t *testing.T) {
 
 			txnBytes, err := hex.DecodeString(tc.req.EncodedTransaction)
 			require.NoError(t, err)
-			txn, err := coin.TransactionDeserialize(txnBytes)
+			txn, err := coin.DeserializeTransaction(txnBytes)
 			require.NoError(t, err)
 
 			// TxID should have changed

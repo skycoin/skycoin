@@ -111,11 +111,6 @@ func (b Block) HashHeader() cipher.SHA256 {
 	return b.Head.Hash()
 }
 
-// PrevHashHeader return hash of prevous block.
-func (b Block) PrevHashHeader() cipher.SHA256 {
-	return b.Head.PrevHash
-}
-
 // Time return the head time of the block.
 func (b Block) Time() uint64 {
 	return b.Head.Time

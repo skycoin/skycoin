@@ -324,7 +324,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
-	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserVerifyTxn.MaxDropletPrecision)
+	txn := makeUnspentsTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserVerifyTxn.MaxDropletPrecision)
 
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
@@ -552,7 +552,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	var coins uint64 = 10e6
 
 	// Create a transaction with valid decimal places
-	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	txn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	known, softErr, err := v.InjectForeignTransaction(txn)
 	require.False(t, known)
 	require.Nil(t, softErr)
@@ -580,7 +580,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
 	// Check transactions with overflowing output coins fail
-	txn = makeOverflowCoinsSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	txn = makeOverflowCoinsSpendTxn(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
@@ -597,7 +597,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Check transactions with overflowing output hours fail
 	// It should not be injected; when injecting a txn, the overflowing output hours is treated
 	// as a hard constraint. It is only a soft constraint when the txn is included in a signed block.
-	txn = makeOverflowHoursSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	txn = makeOverflowHoursSpendTxn(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
@@ -614,7 +614,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
 	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
-	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
+	txn = makeSpendTxn(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
 	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
@@ -629,7 +629,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with null address output
 	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	txn = makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	txn.Out[0].Address = cipher.Address{}
 	known, _, _, err = v.InjectUserTransaction(txn)
 	require.False(t, known)
@@ -637,12 +637,12 @@ func TestVisorInjectTransaction(t *testing.T) {
 	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
 }
 
-func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
-	spendTx := coin.Transaction{}
+func makeOverflowCoinsSpendTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		err := spendTx.PushInput(ux.Hash())
+		err := spendTxn.PushInput(ux.Hash())
 		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
@@ -651,23 +651,23 @@ func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	hours := totalHours / 12
 
 	// These two outputs' coins added up will overflow
-	err := spendTx.PushOutput(toAddr, 18446744073709551000, hours)
+	err := spendTxn.PushOutput(toAddr, 18446744073709551000, hours)
 	require.NoError(t, err)
-	err = spendTx.PushOutput(toAddr, totalCoins, hours)
+	err = spendTxn.PushOutput(toAddr, totalCoins, hours)
 	require.NoError(t, err)
 
-	spendTx.SignInputs(keys)
-	err = spendTx.UpdateHeader()
+	spendTxn.SignInputs(keys)
+	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
-	return spendTx
+	return spendTxn
 }
 
-func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
-	spendTx := coin.Transaction{}
+func makeOverflowHoursSpendTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		err := spendTx.PushInput(ux.Hash())
+		err := spendTxn.PushInput(ux.Hash())
 		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
@@ -676,15 +676,15 @@ func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	hours := totalHours / 12
 
 	// These two outputs' hours added up will overflow
-	err := spendTx.PushOutput(toAddr, totalCoins/2, 18446744073709551615)
+	err := spendTxn.PushOutput(toAddr, totalCoins/2, 18446744073709551615)
 	require.NoError(t, err)
-	err = spendTx.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
+	err = spendTxn.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
 	require.NoError(t, err)
 
-	spendTx.SignInputs(keys)
-	err = spendTx.UpdateHeader()
+	spendTxn.SignInputs(keys)
+	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
-	return spendTx
+	return spendTxn
 }
 
 func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { // nolint: unparam
@@ -1967,7 +1967,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	var coins uint64 = 10e6
 
 	// Create a valid transaction that will remain valid
-	validTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	validTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	known, softErr, err := v.InjectForeignTransaction(validTxn)
 	require.False(t, known)
 	require.Nil(t, softErr)
@@ -1985,7 +1985,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// It's still injected, because this is considered a soft error
 	// This transaction will stay invalid on refresh
 	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
-	alwaysInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
+	alwaysInvalidTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectForeignTransaction(alwaysInvalidTxn)
 	require.NoError(t, err)
 	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
@@ -2003,7 +2003,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// This transaction will become valid on refresh (by increasing UnconfirmedVerifyTxn.MaxTransactionSize)
 	originalMaxUnconfirmedTxnSize := v.Config.UnconfirmedVerifyTxn.MaxTransactionSize
 	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = 1
-	sometimesInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	sometimesInvalidTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 	_, softErr, err = v.InjectForeignTransaction(sometimesInvalidTxn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
@@ -2102,7 +2102,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	// A call to RemoveInvalidUnconfirmed will remove the other txn, because it would now be a double spend.
 
 	var coins uint64 = 10e6
-	txn1 := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	txn1 := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	known, softErr, err := v.InjectForeignTransaction(txn1)
 	require.False(t, known)
 	require.Nil(t, softErr)

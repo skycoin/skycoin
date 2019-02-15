@@ -1273,12 +1273,6 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 	return signedTxn, nil
 }
 
-// Validator validate if the wallet be able to create spending transaction
-type Validator interface {
-	// checks if any of the given addresses has unconfirmed spending transactions
-	HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error)
-}
-
 // CreateTransaction creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options

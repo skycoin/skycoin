@@ -1203,7 +1203,7 @@ func TestWalletSignTransaction(t *testing.T) {
 				// transaction is intentionally malformed
 				txnBytes, err := hex.DecodeString(tc.body.EncodedTransaction)
 				if err == nil {
-					txnx, err := coin.TransactionDeserialize([]byte(txnBytes))
+					txnx, err := coin.DeserializeTransaction([]byte(txnBytes))
 					if err == nil {
 						txn = &txnx
 					}

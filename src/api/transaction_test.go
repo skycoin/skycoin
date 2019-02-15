@@ -871,7 +871,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 	}
 }
 
-func TestGetRawTx(t *testing.T) {
+func TestGetRawTxn(t *testing.T) {
 	oddHash := "cafcb"
 	invalidHash := "cabrca"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"

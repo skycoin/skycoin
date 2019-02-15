@@ -2355,7 +2355,7 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase,
 
 	encodedTxnBytes, err := hex.DecodeString(encodedTxn.EncodedTransaction)
 	require.NoError(t, err)
-	decodedTxn, err := coin.TransactionDeserialize(encodedTxnBytes)
+	decodedTxn, err := coin.DeserializeTransaction(encodedTxnBytes)
 	require.NoError(t, err)
 
 	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{

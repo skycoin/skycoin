@@ -40,8 +40,8 @@ type sendAmountJSON struct {
 	Coins string `json:"coins"`
 }
 
-func createRawTxCmd() *cobra.Command {
-	createRawTxCmd := &cobra.Command{
+func createRawTxnCmd() *cobra.Command {
+	createRawTxnCmd := &cobra.Command{
 		Short: "Create a raw transaction to be broadcast to the network later",
 		Use:   "createRawTransaction [flags] [to address] [amount]",
 		Long: fmt.Sprintf(`Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
@@ -94,17 +94,17 @@ func createRawTxCmd() *cobra.Command {
 		},
 	}
 
-	createRawTxCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
-	createRawTxCmd.Flags().StringP("address", "a", "", "From address")
-	createRawTxCmd.Flags().StringP("change-address", "c", "", `Specify different change address.
+	createRawTxnCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
+	createRawTxnCmd.Flags().StringP("address", "a", "", "From address")
+	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify different change address.
 By default the from address or a wallets coinbase address will be used.`)
-	createRawTxCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
+	createRawTxnCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
-	createRawTxCmd.Flags().StringP("password", "p", "", "Wallet password")
-	createRawTxCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
-	createRawTxCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
+	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
+	createRawTxnCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	createRawTxnCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
 
-	return createRawTxCmd
+	return createRawTxnCmd
 }
 
 type walletAddress struct {
@@ -307,8 +307,8 @@ func getAmount(args []string) (uint64, error) {
 	return amt, nil
 }
 
-// createRawTxArgs are encapsulated arguments for creating a transaction
-type createRawTxArgs struct {
+// createRawTxnArgs are encapsulated arguments for creating a transaction
+type createRawTxnArgs struct {
 	WalletID      string
 	Address       string
 	ChangeAddress string
@@ -316,7 +316,7 @@ type createRawTxArgs struct {
 	Password      PasswordReader
 }
 
-func parseCreateRawTxArgs(c *cobra.Command, args []string) (*createRawTxArgs, error) {
+func parseCreateRawTxnArgs(c *cobra.Command, args []string) (*createRawTxnArgs, error) {
 	wltAddr, err := fromWalletOrAddress(c)
 	if err != nil {
 		return nil, err
@@ -345,7 +345,7 @@ func parseCreateRawTxArgs(c *cobra.Command, args []string) (*createRawTxArgs, er
 	}
 	pr := NewPasswordReader([]byte(password))
 
-	return &createRawTxArgs{
+	return &createRawTxnArgs{
 		WalletID:      wltAddr.Wallet,
 		Address:       wltAddr.Address,
 		ChangeAddress: chgAddr,
@@ -355,16 +355,16 @@ func parseCreateRawTxArgs(c *cobra.Command, args []string) (*createRawTxArgs, er
 }
 
 func createRawTxnCmdHandler(c *cobra.Command, args []string) (*coin.Transaction, error) {
-	parsedArgs, err := parseCreateRawTxArgs(c, args)
+	parsedArgs, err := parseCreateRawTxnArgs(c, args)
 	if err != nil {
 		return nil, err
 	}
 
 	if parsedArgs.Address == "" {
-		return CreateRawTxFromWallet(apiClient, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password)
+		return CreateRawTxnFromWallet(apiClient, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password)
 	}
 
-	return CreateRawTxFromAddress(apiClient, parsedArgs.Address, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password)
+	return CreateRawTxnFromAddress(apiClient, parsedArgs.Address, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password)
 }
 
 func validateSendAmounts(toAddrs []SendAmount) error {
@@ -389,8 +389,8 @@ func validateSendAmounts(toAddrs []SendAmount) error {
 
 // PUBLIC
 
-// CreateRawTxFromWallet creates a transaction from any address or combination of addresses in a wallet
-func CreateRawTxFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
+// CreateRawTxnFromWallet creates a transaction from any address or combination of addresses in a wallet
+func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
@@ -440,11 +440,11 @@ func CreateRawTxFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs [
 		addrStrArray[i] = a.String()
 	}
 
-	return CreateRawTx(c, wlt, addrStrArray, chgAddr, toAddrs, password)
+	return CreateRawTxn(c, wlt, addrStrArray, chgAddr, toAddrs, password)
 }
 
-// CreateRawTxFromAddress creates a transaction from a specific address in a wallet
-func CreateRawTxFromAddress(c GetOutputser, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
+// CreateRawTxnFromAddress creates a transaction from a specific address in a wallet
+func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
@@ -497,7 +497,7 @@ func CreateRawTxFromAddress(c GetOutputser, addr, walletFile, chgAddr string, to
 		}
 	}
 
-	return CreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs, password)
+	return CreateRawTxn(c, wlt, []string{addr}, chgAddr, toAddrs, password)
 }
 
 // GetOutputser implements unspent output querying
@@ -505,8 +505,8 @@ type GetOutputser interface {
 	OutputsForAddresses([]string) (*readable.UnspentOutputsSummary, error)
 }
 
-// CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+// CreateRawTxn creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
+func CreateRawTxn(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	if err := validateSendAmounts(toAddrs); err != nil {
 		return nil, err
 	}
@@ -522,7 +522,7 @@ func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr s
 		return nil, err
 	}
 
-	txn, err := createRawTx(outputs, wlt, chgAddr, toAddrs, password)
+	txn, err := createRawTxn(outputs, wlt, chgAddr, toAddrs, password)
 	if err != nil {
 		return nil, err
 	}
@@ -555,7 +555,7 @@ func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr s
 	return txn, nil
 }
 
-func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
@@ -585,12 +585,12 @@ func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chg
 		return NewTransaction(spendOutputs, keys, txOuts)
 	}
 
-	makeTx := func() (*coin.Transaction, error) {
+	makeTxn := func() (*coin.Transaction, error) {
 		return f(wlt)
 	}
 
 	if wlt.IsEncrypted() {
-		makeTx = func() (*coin.Transaction, error) {
+		makeTxn = func() (*coin.Transaction, error) {
 			var tx *coin.Transaction
 			if err := wlt.GuardView(password, func(w *wallet.Wallet) error {
 				var err error
@@ -604,7 +604,7 @@ func createRawTx(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chg
 		}
 	}
 
-	return makeTx()
+	return makeTxn()
 }
 
 func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]wallet.UxBalance, error) {

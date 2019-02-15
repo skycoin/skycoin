@@ -192,7 +192,7 @@ func GetBucketObjectDecoded(tx *Tx, bktName, key []byte, obj interface{}) (bool,
 	}
 
 	if err := encoder.DeserializeRawExact(v, obj); err != nil {
-		return false, fmt.Errorf("encoder.DeserializeRaw failed: %v", err)
+		return false, fmt.Errorf("encoder.DeserializeRawExact failed: %v", err)
 	}
 
 	return true, nil
@@ -226,7 +226,7 @@ func GetBucketString(tx *Tx, bktName, key []byte) (string, bool, error) {
 	return string(v), true, nil
 }
 
-// GetBucketValue returns a []byte value from a bucket. If the value does not exist,
+// GetBucketValue returns a []byte value from a bucket. If the bucket does not exist,
 // it returns an error of type ErrBucketNotExist
 func GetBucketValue(tx *Tx, bktName, key []byte) ([]byte, error) {
 	v, err := GetBucketValueNoCopy(tx, bktName, key)
@@ -244,9 +244,9 @@ func GetBucketValue(tx *Tx, bktName, key []byte) ([]byte, error) {
 	return w, nil
 }
 
-// GetBucketValueNoCopy returns a value from a bucket. If the value does not exist,
+// GetBucketValueNoCopy returns a value from a bucket. If the bucket does not exist,
 // it returns an error of type ErrBucketNotExist. The byte value is not copied so is not valid
-// outside of the database transaction.
+// outside of the database transaction
 func GetBucketValueNoCopy(tx *Tx, bktName, key []byte) ([]byte, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {

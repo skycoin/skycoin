@@ -97,7 +97,7 @@ func TestBlockSigsGet(t *testing.T) {
 	}
 }
 
-func TestBlockSigsAddWithTx(t *testing.T) {
+func TestBlockSigsAdd(t *testing.T) {
 	db, closeDB := prepareDB(t)
 	defer closeDB()
 
@@ -118,9 +118,8 @@ func TestBlockSigsAddWithTx(t *testing.T) {
 		v := bkt.Get(h[:])
 		require.NotNil(t, v)
 		var s cipher.Sig
-		n, err := encoder.DeserializeRaw(v, &s)
+		err := encoder.DeserializeRawExact(v, &s)
 		require.NoError(t, err)
-		require.Equal(t, n, uint64(len(v)))
 		require.Equal(t, sig, s)
 		return nil
 	})

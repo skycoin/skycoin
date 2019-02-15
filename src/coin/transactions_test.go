@@ -466,14 +466,14 @@ func TestTransactionSerialization(t *testing.T) {
 	txn := makeTransaction(t)
 	b, err := txn.Serialize()
 	require.NoError(t, err)
-	txn2, err := TransactionDeserialize(b)
+	txn2, err := DeserializeTransaction(b)
 	require.NoError(t, err)
 	require.Equal(t, txn, txn2)
 
 	// Check reserializing deserialized txn
 	b2, err := txn2.Serialize()
 	require.NoError(t, err)
-	tx3, err := TransactionDeserialize(b2)
+	tx3, err := DeserializeTransaction(b2)
 	require.NoError(t, err)
 	require.Equal(t, txn2, tx3)
 
@@ -481,12 +481,12 @@ func TestTransactionSerialization(t *testing.T) {
 	s := hex.EncodeToString(b)
 	sb, err := hex.DecodeString(s)
 	require.NoError(t, err)
-	tx4, err := TransactionDeserialize(sb)
+	tx4, err := DeserializeTransaction(sb)
 	require.NoError(t, err)
 	require.Equal(t, txn2, tx4)
 
 	// Invalid deserialization
-	require.Panics(t, func() { MustTransactionDeserialize([]byte{0x04}) })
+	require.Panics(t, func() { MustDeserializeTransaction([]byte{0x04}) })
 }
 
 func TestTransactionOutputHours(t *testing.T) {

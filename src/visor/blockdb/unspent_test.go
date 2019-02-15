@@ -620,9 +620,8 @@ func TestUnspentProcessBlock(t *testing.T) {
 					require.NoError(t, err)
 
 					var uxHashes []cipher.SHA256
-					n, err := encoder.DeserializeRaw(v, &uxHashes)
+					err = encoder.DeserializeRawExact(v, &uxHashes)
 					require.NoError(t, err)
-					require.Equal(t, n, uint64(len(v)))
 					require.NotEmpty(t, uxHashes)
 
 					return nil
@@ -882,9 +881,8 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 					require.NoError(t, err)
 
 					var hashes []cipher.SHA256
-					n, err := encoder.DeserializeRaw(v, &hashes)
+					err = encoder.DeserializeRawExact(v, &hashes)
 					require.NoError(t, err)
-					require.Equal(t, n, uint64(len(v)))
 
 					sort.Slice(hashes, func(i, j int) bool {
 						return bytes.Compare(hashes[i][:], hashes[j][:]) < 1
@@ -994,9 +992,8 @@ func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*
 			require.NoError(t, err)
 
 			var ux coin.UxOut
-			n, err := encoder.DeserializeRaw(v, &ux)
+			err = encoder.DeserializeRawExact(v, &ux)
 			require.NoError(t, err)
-			require.Equal(t, n, uint64(len(v)))
 
 			require.Equal(t, hash, ux.Hash())
 
@@ -1021,9 +1018,8 @@ func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*
 			require.NoError(t, err)
 
 			var hashes []cipher.SHA256
-			n, err := encoder.DeserializeRaw(v, &hashes)
+			err = encoder.DeserializeRawExact(v, &hashes)
 			require.NoError(t, err)
-			require.Equal(t, n, uint64(len(v)))
 
 			expectedHashes, ok := addrHashes[addr]
 			require.True(t, ok)

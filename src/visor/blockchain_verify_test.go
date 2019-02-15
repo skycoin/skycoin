@@ -170,7 +170,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	return txn
 }
 
-func makeLostCoinTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeLostCoinTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -196,7 +196,7 @@ func makeLostCoinTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr
 	return txn
 }
 
-func makeDuplicateUxOutTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeDuplicateUxOutTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -224,17 +224,17 @@ func makeDuplicateUxOutTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, 
 	return txn
 }
 
-// makeUnspentsTx creates a transaction that has a configurable number of outputs sent to the same address.
+// makeUnspentsTxn creates a transaction that has a configurable number of outputs sent to the same address.
 // The genesis block has only one unspent output, so only one transaction can be made from it.
 // This is useful for when multiple test transactions need to be made from the same block.
 // Coins and hours are distributed equally amongst all new outputs.
-func makeUnspentsTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDroplets uint8) coin.Transaction { // nolint: unparam
+func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDroplets uint8) coin.Transaction { // nolint: unparam
 	// Add inputs to the transaction
-	spendTx := coin.Transaction{}
+	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		err := spendTx.PushInput(ux.Hash())
+		err := spendTxn.PushInput(ux.Hash())
 		require.NoError(t, err)
 
 		totalHours, err = mathutil.AddUint64(totalHours, ux.Body.Hours)
@@ -263,31 +263,31 @@ func makeUnspentsTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr
 		// otherwise the output hashes will be duplicated and the transaction
 		// will be invalid
 		spendHours := hours - uint64(i)
-		err := spendTx.PushOutput(toAddr, coins, spendHours)
+		err := spendTxn.PushOutput(toAddr, coins, spendHours)
 		require.NoError(t, err)
 	}
 
 	// Add change output, if necessary
 	if changeCoins != 0 {
-		err := spendTx.PushOutput(uxs[0].Body.Address, changeCoins, changeHours)
+		err := spendTxn.PushOutput(uxs[0].Body.Address, changeCoins, changeHours)
 		require.NoError(t, err)
 	}
 
 	// Sign the transaction
-	spendTx.SignInputs(keys)
-	err := spendTx.UpdateHeader()
+	spendTxn.SignInputs(keys)
+	err := spendTxn.UpdateHeader()
 	require.NoError(t, err)
 
-	return spendTx
+	return spendTxn
 }
 
 // makeSpendTxWithFee creates a txn specified with the extra number of hours to burn in addition to the minimum required burn
 func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, fee uint64) coin.Transaction {
-	spendTx := coin.Transaction{}
+	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		err := spendTx.PushInput(ux.Hash())
+		err := spendTxn.PushInput(ux.Hash())
 		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
@@ -298,25 +298,25 @@ func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, to
 
 	spendHours := totalHours/2 - fee
 
-	err := spendTx.PushOutput(toAddr, coins, spendHours)
+	err := spendTxn.PushOutput(toAddr, coins, spendHours)
 	require.NoError(t, err)
 	if totalCoins != coins {
-		err := spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
+		err := spendTxn.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
 		require.NoError(t, err)
 	}
-	spendTx.SignInputs(keys)
-	err = spendTx.UpdateHeader()
+	spendTxn.SignInputs(keys)
+	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
-	return spendTx
+	return spendTxn
 }
 
 // makeSpendTxWithHoursBurned creates a txn specified with the total number of hours to burn
 func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, hoursBurned uint64) coin.Transaction { // nolint: unparam
-	spendTx := coin.Transaction{}
+	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		err := spendTx.PushInput(ux.Hash())
+		err := spendTxn.PushInput(ux.Hash())
 		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
@@ -327,16 +327,16 @@ func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.Se
 
 	spendHours := totalHours - hoursBurned
 
-	err := spendTx.PushOutput(toAddr, coins, spendHours)
+	err := spendTxn.PushOutput(toAddr, coins, spendHours)
 	require.NoError(t, err)
 	if totalCoins != coins {
-		err := spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
+		err := spendTxn.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
 		require.NoError(t, err)
 	}
-	spendTx.SignInputs(keys)
-	err = spendTx.UpdateHeader()
+	spendTxn.SignInputs(keys)
+	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
-	return spendTx
+	return spendTxn
 }
 
 func requireSoftViolation(t *testing.T, msg string, err error) {
@@ -386,7 +386,7 @@ func testVerifyTransactionSoftHardConstraints(t *testing.T, signed TxnSignedFlag
 
 	// create normal spending txn
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	txn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 	err = verifySingleTxnSoftHardConstraints(txn, params.UserVerifyTxn)
 	if signed == TxnSigned {
 		require.NoError(t, err)
@@ -488,7 +488,7 @@ func testVerifyTransactionSoftHardConstraints(t *testing.T, signed TxnSignedFlag
 	uxs = coin.CreateUnspents(b.Head, txn)
 	_, key := cipher.GenerateKeyPair()
 	toAddr2 := testutil.MakeAddress()
-	txn2 := makeSpendTx(t, uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
+	txn2 := makeSpendTxn(t, uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
 	if signed == TxnUnsigned {
 		txn2.Sigs = make([]cipher.Sig, len(txn2.Sigs))
 		err := txn2.UpdateHeader()
@@ -507,7 +507,7 @@ func testVerifyTransactionSoftHardConstraints(t *testing.T, signed TxnSignedFlag
 	// Create lost coin transaction
 	uxs2 := coin.CreateUnspents(b.Head, txn)
 	toAddr3 := testutil.MakeAddress()
-	lostCoinTxn := makeLostCoinTx(t, coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
+	lostCoinTxn := makeLostCoinTxn(t, coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
 	if signed == TxnUnsigned {
 		lostCoinTxn.Sigs = make([]cipher.Sig, len(lostCoinTxn.Sigs))
 		err := lostCoinTxn.UpdateHeader()
@@ -520,7 +520,7 @@ func testVerifyTransactionSoftHardConstraints(t *testing.T, signed TxnSignedFlag
 	// Create transaction with duplicate UxOuts
 	uxs = coin.CreateUnspents(b.Head, txn)
 	toAddr4 := testutil.MakeAddress()
-	dupUxOutTxn := makeDuplicateUxOutTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
+	dupUxOutTxn := makeDuplicateUxOutTxn(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
 	if signed == TxnUnsigned {
 		dupUxOutTxn.Sigs = make([]cipher.Sig, len(lostCoinTxn.Sigs))
 		err := dupUxOutTxn.UpdateHeader()
@@ -556,7 +556,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 
 	// create normal spending txn
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	txn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 
 	var uxIn coin.UxArray
 	var head *coin.SignedBlock

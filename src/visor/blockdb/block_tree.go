@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	emptyHash      cipher.SHA256
 	errBlockExist  = errors.New("block already exists")
 	errNoParent    = errors.New("block is not genesis and has no parent")
 	errWrongParent = errors.New("wrong parent")
@@ -31,7 +30,7 @@ type blockTree struct{}
 // AddBlock adds block with *dbutil.Tx
 func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	// can't store block if it's not genesis block and has no parent.
-	if b.Seq() > 0 && b.PrevHashHeader() == emptyHash {
+	if b.Seq() > 0 && b.Head.PrevHash.Null() {
 		return errNoParent
 	}
 
@@ -55,9 +54,8 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 
 	// the pre hash must be in depth - 1.
 	if b.Seq() > 0 {
-		preHash := b.PrevHashHeader()
 		parentHashPair, err := getHashPairInDepth(tx, b.Seq()-1, func(hp coin.HashPair) bool {
-			return hp.Hash == preHash
+			return hp.Hash == b.Head.PrevHash
 		})
 		if err != nil {
 			return err
@@ -118,7 +116,7 @@ func (bt *blockTree) RemoveBlock(tx *dbutil.Tx, b *coin.Block) error {
 	// remove block hash pair in tree.
 	ps := removePairs(hashPairs, coin.HashPair{
 		Hash:     hash,
-		PrevHash: b.PrevHashHeader(),
+		PrevHash: b.Head.PrevHash,
 	})
 
 	if len(ps) == 0 {

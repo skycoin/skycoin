@@ -264,7 +264,7 @@ func hasChild(tx *dbutil.Tx, b coin.Block) (bool, error) {
 	return len(childHashPair) > 0, nil
 }
 
-func setHashPairInDepth(tx *dbutil.Tx, dep uint64, hps []coin.HashPair) error {
+func setHashPairInDepth(tx *dbutil.Tx, depth uint64, hps []coin.HashPair) error {
 	hpss := &HashPairs{
 		HashPairs: hps,
 	}
@@ -273,7 +273,7 @@ func setHashPairInDepth(tx *dbutil.Tx, dep uint64, hps []coin.HashPair) error {
 		return err
 	}
 
-	return dbutil.PutBucketValue(tx, TreeBkt, dbutil.Itob(dep), buf)
+	return dbutil.PutBucketValue(tx, TreeBkt, dbutil.Itob(depth), buf)
 }
 
 func allPairs(hp coin.HashPair) bool {

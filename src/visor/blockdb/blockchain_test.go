@@ -90,13 +90,13 @@ func (bt *fakeBlockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Bloc
 	return bt.blocks[hash.Hex()], nil
 }
 
-func (bt *fakeBlockTree) GetBlockInDepth(tx *dbutil.Tx, dep uint64, filter Walker) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}
 
 	for _, b := range bt.blocks {
-		if b.Head.BkSeq == dep {
+		if b.Head.BkSeq == depth {
 			return b, nil
 		}
 	}

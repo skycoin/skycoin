@@ -50,6 +50,8 @@ var (
 	ErrMapDuplicateKeys = errors.New("Duplicate keys encountered while decoding a map")
 	// ErrInvalidBool is returned if the decoder encounters a value other than 0 or 1 for a bool type field
 	ErrInvalidBool = errors.New("Invalid value for bool type")
+	// ErrInvalidType is returned when an object's type is not valid for encoding
+	ErrInvalidType = errors.New("Invalid object type")
 )
 
 // SerializeUint32 serializes a uint32
@@ -187,7 +189,10 @@ func SerializeString(s string) []byte {
 	e := &Encoder{
 		Buffer: buf,
 	}
-	e.value(v)
+	if err := e.value(v); err != nil {
+		// This should not occur since we allocated a large enough buffer
+		log.Panicf("Encoder.value unexpectedly failed with: %v", err)
+	}
 	return buf
 }
 
@@ -276,7 +281,10 @@ func Serialize(data interface{}) []byte {
 	e := &Encoder{
 		Buffer: buf,
 	}
-	e.value(v)
+	if err := e.value(v); err != nil {
+		// This should not occur since we allocated a large enough buffer
+		log.Panicf("Encoder.value unexpectedly failed with: %v", err)
+	}
 	return buf
 }
 
@@ -520,13 +528,19 @@ func (d *Decoder) Bool() (bool, error) {
 }
 
 // Bool encodes bool
-func (e *Encoder) Bool(x bool) {
+func (e *Encoder) Bool(x bool) error {
+	if len(e.Buffer) < 1 {
+		return ErrBufferUnderflow
+	}
+
 	if x {
 		e.Buffer[0] = 1
 	} else {
 		e.Buffer[0] = 0
 	}
 	e.Buffer = e.Buffer[1:]
+
+	return nil
 }
 
 // Uint8 decodes uint8
@@ -541,9 +555,15 @@ func (d *Decoder) Uint8() (uint8, error) {
 }
 
 // Uint8 encodes uint8
-func (e *Encoder) Uint8(x uint8) {
+func (e *Encoder) Uint8(x uint8) error {
+	if len(e.Buffer) < 1 {
+		return ErrBufferUnderflow
+	}
+
 	e.Buffer[0] = x
 	e.Buffer = e.Buffer[1:]
+
+	return nil
 }
 
 // Uint16 decodes uint16
@@ -558,9 +578,15 @@ func (d *Decoder) Uint16() (uint16, error) {
 }
 
 // Uint16 encodes uint16
-func (e *Encoder) Uint16(x uint16) {
+func (e *Encoder) Uint16(x uint16) error {
+	if len(e.Buffer) < 2 {
+		return ErrBufferUnderflow
+	}
+
 	lePutUint16(e.Buffer[0:2], x)
 	e.Buffer = e.Buffer[2:]
+
+	return nil
 }
 
 // Uint32 decodes a Uint32
@@ -575,9 +601,15 @@ func (d *Decoder) Uint32() (uint32, error) {
 }
 
 // Uint32 encodes a Uint32
-func (e *Encoder) Uint32(x uint32) {
+func (e *Encoder) Uint32(x uint32) error {
+	if len(e.Buffer) < 4 {
+		return ErrBufferUnderflow
+	}
+
 	lePutUint32(e.Buffer[0:4], x)
 	e.Buffer = e.Buffer[4:]
+
+	return nil
 }
 
 // Uint64 decodes uint64
@@ -588,25 +620,41 @@ func (d *Decoder) Uint64() (uint64, error) {
 
 	x := leUint64(d.Buffer[0:8])
 	d.Buffer = d.Buffer[8:]
+
 	return x, nil
 }
 
 // Uint64 encodes uint64
-func (e *Encoder) Uint64(x uint64) {
+func (e *Encoder) Uint64(x uint64) error {
+	if len(e.Buffer) < 8 {
+		return ErrBufferUnderflow
+	}
+
 	lePutUint64(e.Buffer[0:8], x)
 	e.Buffer = e.Buffer[8:]
+
+	return nil
 }
 
 // ByteSlice encodes []byte
-func (e *Encoder) ByteSlice(x []byte) {
-	e.Uint32(uint32(len(x)))
-	e.CopyBytes(x)
+func (e *Encoder) ByteSlice(x []byte) error {
+	if err := e.Uint32(uint32(len(x))); err != nil {
+		return err
+	}
+
+	return e.CopyBytes(x)
 }
 
 // CopyBytes copies bytes to the buffer, without a length prefix
-func (e *Encoder) CopyBytes(x []byte) {
+func (e *Encoder) CopyBytes(x []byte) error {
+	if len(e.Buffer) < len(x) {
+		return ErrBufferUnderflow
+	}
+
 	copy(e.Buffer, x)
 	e.Buffer = e.Buffer[len(x):]
+
+	return nil
 }
 
 // Int8 decodes int8
@@ -620,8 +668,8 @@ func (d *Decoder) Int8() (int8, error) {
 }
 
 // Int8 encodes int8
-func (e *Encoder) Int8(x int8) {
-	e.Uint8(uint8(x))
+func (e *Encoder) Int8(x int8) error {
+	return e.Uint8(uint8(x))
 }
 
 // Int16 decodes int16
@@ -635,8 +683,8 @@ func (d *Decoder) Int16() (int16, error) {
 }
 
 // Int16 encodes int16
-func (e *Encoder) Int16(x int16) {
-	e.Uint16(uint16(x))
+func (e *Encoder) Int16(x int16) error {
+	return e.Uint16(uint16(x))
 }
 
 // Int32 decodes int32
@@ -650,8 +698,8 @@ func (d *Decoder) Int32() (int32, error) {
 }
 
 // Int32 encodes int32
-func (e *Encoder) Int32(x int32) {
-	e.Uint32(uint32(x))
+func (e *Encoder) Int32(x int32) error {
+	return e.Uint32(uint32(x))
 }
 
 // Int64 decodes int64
@@ -665,8 +713,8 @@ func (d *Decoder) Int64() (int64, error) {
 }
 
 // Int64 encodes int64
-func (e *Encoder) Int64(x int64) {
-	e.Uint64(uint64(x))
+func (e *Encoder) Int64(x int64) error {
+	return e.Uint64(uint64(x))
 }
 
 func (d *Decoder) value(v reflect.Value, maxlen int) error {
@@ -904,10 +952,10 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 	return nil
 }
 
-func (e *Encoder) value(v reflect.Value) {
+func (e *Encoder) value(v reflect.Value) error {
 	switch v.Kind() {
 	case reflect.Interface:
-		e.value(v.Elem())
+		return e.value(v.Elem())
 
 	case reflect.Array:
 		// Arrays are a fixed size, so the length is not written
@@ -915,33 +963,51 @@ func (e *Encoder) value(v reflect.Value) {
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8:
+			if len(e.Buffer) < v.Len() {
+				return ErrBufferUnderflow
+			}
 			reflect.Copy(reflect.ValueOf(e.Buffer), v)
 			e.Buffer = e.Buffer[v.Len():]
 		default:
 			for i := 0; i < v.Len(); i++ {
-				e.value(v.Index(i))
+				if err := e.value(v.Index(i)); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 
 	case reflect.Slice:
 		t := v.Type()
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8:
-			e.ByteSlice(v.Bytes())
+			return e.ByteSlice(v.Bytes())
 		default:
-			e.Uint32(uint32(v.Len()))
+			if err := e.Uint32(uint32(v.Len())); err != nil {
+				return err
+			}
 			for i := 0; i < v.Len(); i++ {
-				e.value(v.Index(i))
+				if err := e.value(v.Index(i)); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 
 	case reflect.Map:
-		e.Uint32(uint32(v.Len()))
-		for _, key := range v.MapKeys() {
-			e.value(key)
-			e.value(v.MapIndex(key))
+		if err := e.Uint32(uint32(v.Len())); err != nil {
+			return err
 		}
+		for _, key := range v.MapKeys() {
+			if err := e.value(key); err != nil {
+				return err
+			}
+			if err := e.value(v.MapIndex(key)); err != nil {
+				return err
+			}
+		}
+		return nil
 
 	case reflect.Struct:
 		t := v.Type()
@@ -967,49 +1033,44 @@ func (e *Encoder) value(v reflect.Value) {
 
 			fv := v.Field(i)
 			if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
-				e.value(fv)
+				if err := e.value(fv); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 
 	case reflect.Bool:
-		e.Bool(v.Bool())
+		return e.Bool(v.Bool())
 
 	case reflect.String:
-		e.ByteSlice([]byte(v.String()))
+		return e.ByteSlice([]byte(v.String()))
 
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		switch v.Type().Kind() {
-		case reflect.Int8:
-			e.Int8(int8(v.Int()))
-		case reflect.Int16:
-			e.Int16(int16(v.Int()))
-		case reflect.Int32:
-			e.Int32(int32(v.Int()))
-		case reflect.Int64:
-			e.Int64(v.Int())
-		}
+	case reflect.Int8:
+		return e.Int8(int8(v.Int()))
+	case reflect.Int16:
+		return e.Int16(int16(v.Int()))
+	case reflect.Int32:
+		return e.Int32(int32(v.Int()))
+	case reflect.Int64:
+		return e.Int64(v.Int())
 
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		switch v.Type().Kind() {
-		case reflect.Uint8:
-			e.Uint8(uint8(v.Uint()))
-		case reflect.Uint16:
-			e.Uint16(uint16(v.Uint()))
-		case reflect.Uint32:
-			e.Uint32(uint32(v.Uint()))
-		case reflect.Uint64:
-			e.Uint64(v.Uint())
-		}
+	case reflect.Uint8:
+		return e.Uint8(uint8(v.Uint()))
+	case reflect.Uint16:
+		return e.Uint16(uint16(v.Uint()))
+	case reflect.Uint32:
+		return e.Uint32(uint32(v.Uint()))
+	case reflect.Uint64:
+		return e.Uint64(v.Uint())
 
-	case reflect.Float32, reflect.Float64:
-		switch v.Type().Kind() {
-		case reflect.Float32:
-			e.Uint32(math.Float32bits(float32(v.Float())))
-		case reflect.Float64:
-			e.Uint64(math.Float64bits(v.Float()))
-		}
+	case reflect.Float32:
+		return e.Uint32(math.Float32bits(float32(v.Float())))
+	case reflect.Float64:
+		return e.Uint64(math.Float64bits(v.Float()))
 
 	default:
 		log.Panicf("Encoding unhandled type %s", v.Type().Name())
+		return ErrInvalidType
 	}
 }

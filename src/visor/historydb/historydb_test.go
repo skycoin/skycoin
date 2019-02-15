@@ -53,7 +53,7 @@ var _ = func() int64 {
 // Blockchainer interface for isolating the detail of blockchain.
 type Blockchainer interface {
 	Head() *coin.Block
-	GetBlockInDepth(dep uint64) *coin.Block
+	GetBlockInDepth(depth uint64) *coin.Block
 	ExecuteBlock(b *coin.Block) (coin.UxArray, error)
 	CreateGenesisBlock(genAddress cipher.Address, genCoins, timestamp uint64) coin.Block
 	VerifyTransaction(tx coin.Transaction) error
@@ -72,12 +72,12 @@ func newBlockchain() *fakeBlockchain {
 	}
 }
 
-func (fbc fakeBlockchain) GetBlockInDepth(dep uint64) *coin.Block {
-	if dep >= uint64(len(fbc.blocks)) {
-		panic(fmt.Sprintf("block depth: %d overflow", dep))
+func (fbc fakeBlockchain) GetBlockInDepth(depth uint64) *coin.Block {
+	if depth >= uint64(len(fbc.blocks)) {
+		panic(fmt.Sprintf("block depth: %d overflow", depth))
 	}
 
-	return &fbc.blocks[dep]
+	return &fbc.blocks[depth]
 }
 
 func (fbc fakeBlockchain) Head() *coin.Block {

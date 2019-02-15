@@ -68,18 +68,19 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir      string
-	DisableCSRF    bool
-	DisableCSP     bool
-	EnableGUI      bool
-	ReadTimeout    time.Duration
-	WriteTimeout   time.Duration
-	IdleTimeout    time.Duration
-	Health         HealthConfig
-	HostWhitelist  []string
-	EnabledAPISets map[string]struct{}
-	Username       string
-	Password       string
+	StaticDir          string
+	DisableCSRF        bool
+	DisableHeaderCheck bool
+	DisableCSP         bool
+	EnableGUI          bool
+	ReadTimeout        time.Duration
+	WriteTimeout       time.Duration
+	IdleTimeout        time.Duration
+	Health             HealthConfig
+	HostWhitelist      []string
+	EnabledAPISets     map[string]struct{}
+	Username           string
+	Password           string
 }
 
 // HealthConfig configuration data exposed in /health
@@ -90,16 +91,17 @@ type HealthConfig struct {
 }
 
 type muxConfig struct {
-	host           string
-	appLoc         string
-	enableGUI      bool
-	disableCSRF    bool
-	disableCSP     bool
-	enabledAPISets map[string]struct{}
-	hostWhitelist  []string
-	username       string
-	password       string
-	health         HealthConfig
+	host               string
+	appLoc             string
+	enableGUI          bool
+	disableCSRF        bool
+	disableHeaderCheck bool
+	disableCSP         bool
+	enabledAPISets     map[string]struct{}
+	hostWhitelist      []string
+	username           string
+	password           string
+	health             HealthConfig
 }
 
 // HTTPResponse represents the http response struct
@@ -168,6 +170,10 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Warning("CSRF check disabled")
 	}
 
+	if c.DisableHeaderCheck {
+		logger.Warning("Header check disabled")
+	}
+
 	if c.ReadTimeout == 0 {
 		c.ReadTimeout = defaultReadTimeout
 	}
@@ -179,16 +185,17 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	}
 
 	mc := muxConfig{
-		host:           host,
-		appLoc:         appLoc,
-		enableGUI:      c.EnableGUI,
-		disableCSRF:    c.DisableCSRF,
-		disableCSP:     c.DisableCSP,
-		health:         c.Health,
-		enabledAPISets: c.EnabledAPISets,
-		hostWhitelist:  c.HostWhitelist,
-		username:       c.Username,
-		password:       c.Password,
+		host:               host,
+		appLoc:             appLoc,
+		enableGUI:          c.EnableGUI,
+		disableCSRF:        c.DisableCSRF,
+		disableHeaderCheck: c.DisableHeaderCheck,
+		disableCSP:         c.DisableCSP,
+		health:             c.Health,
+		enabledAPISets:     c.EnabledAPISets,
+		hostWhitelist:      c.HostWhitelist,
+		username:           c.Username,
+		password:           c.Password,
 	}
 
 	srvMux := newServerMux(mc, gateway)
@@ -349,20 +356,26 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		}
 	}
 
-	webHandlerCSRFOptional := func(apiVersion, endpoint string, handler http.Handler, checkCSRF bool) {
+	webHandlerWithOptionals := func(apiVersion, endpoint string, handler http.Handler, checkCSRF, checkHeaders bool) {
 		handler = wh.ElapsedHandler(logger, handler)
+
 		handler = corsHandler.Handler(handler)
+
 		if checkCSRF {
 			handler = CSRFCheck(apiVersion, c.disableCSRF, handler)
 		}
-		handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+
+		if checkHeaders {
+			handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+		}
+
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 
 	webHandler := func(apiVersion, endpoint string, handler http.Handler) {
-		webHandlerCSRFOptional(apiVersion, endpoint, handler, true)
+		webHandlerWithOptionals(apiVersion, endpoint, handler, true, !c.disableHeaderCheck)
 	}
 
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
@@ -402,7 +415,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
-		webHandlerCSRFOptional(apiVersion1, "/api/v1"+endpoint, handler, false)
+		webHandlerWithOptionals(apiVersion1, "/api/v1"+endpoint, handler, false, !c.disableHeaderCheck)
 	}
 	csrfHandlerV1("/csrf", getCSRFToken(c.disableCSRF)) // csrf is always available, regardless of the API set
 

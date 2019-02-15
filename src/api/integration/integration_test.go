@@ -124,6 +124,17 @@ func useCSRF(t *testing.T) bool {
 	return useCSRF
 }
 
+func doHeaderCheck(t *testing.T) bool {
+	x := os.Getenv("HEADER_CHECK")
+	if x == "" {
+		return false
+	}
+
+	doHeaderCheck, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return doHeaderCheck
+}
+
 func doStable(t *testing.T) bool {
 	if enabled() && mode(t) == testModeStable {
 		return true
@@ -3696,6 +3707,7 @@ func TestStableHealth(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
+	require.Equal(t, doHeaderCheck(t), r.HeaderCheckEnabled)
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
 	require.False(t, r.GUIEnabled)

@@ -372,6 +372,18 @@ func useCSRF(t *testing.T) bool {
 	return useCSRF
 }
 
+func doHeaderCheck(t *testing.T) bool {
+	x := os.Getenv("HEADER_CHECK")
+	if x == "" {
+		return false
+	}
+
+	doHeaderCheck, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return doHeaderCheck
+
+}
+
 func TestWalletAddAddresses(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return
@@ -1451,10 +1463,12 @@ func TestStableStatus(t *testing.T) {
 	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
 	// StartedAt is not stable
 	ret.Status.StartedAt = 0
-
 	goldenFile := "status"
 	if useCSRF(t) {
 		goldenFile += "-csrf-enabled"
+	}
+	if !doHeaderCheck(t) {
+		goldenFile += "-header-check-disabled"
 	}
 	if dbNoUnconfirmed(t) {
 		goldenFile += "-no-unconfirmed"

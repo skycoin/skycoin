@@ -76,8 +76,7 @@ func testSkyencoderGiveTxnsMessage(t *testing.T, obj *GiveTxnsMessage) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := encodeGiveTxnsMessage(data2, obj)
-	if err != nil {
+	if err := encodeGiveTxnsMessage(data2, obj); err != nil {
 		t.Fatalf("encodeGiveTxnsMessage failed: %v", err)
 	}
 
@@ -92,9 +91,10 @@ func testSkyencoderGiveTxnsMessage(t *testing.T, obj *GiveTxnsMessage) {
 	// Decode
 
 	var obj2 GiveTxnsMessage
-	err = encoder.DeserializeRaw(data1, &obj2)
-	if err != nil {
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(data1) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
@@ -102,11 +102,9 @@ func testSkyencoderGiveTxnsMessage(t *testing.T, obj *GiveTxnsMessage) {
 	}
 
 	var obj3 GiveTxnsMessage
-	n, err := decodeGiveTxnsMessage(data2, &obj3)
-	if err != nil {
+	if n, err := decodeGiveTxnsMessage(data2, &obj3); err != nil {
 		t.Fatalf("decodeGiveTxnsMessage failed: %v", err)
-	}
-	if n != len(data2) {
+	} else if n != len(data2) {
 		t.Fatalf("decodeGiveTxnsMessage bytes read length should be %d, is %d", len(data2), n)
 	}
 
@@ -174,11 +172,9 @@ func testSkyencoderGiveTxnsMessage(t *testing.T, obj *GiveTxnsMessage) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = decodeGiveTxnsMessage(data3, &obj3)
-		if err != nil {
+		if n, err := decodeGiveTxnsMessage(data3, &obj3); err != nil {
 			t.Fatalf("decodeGiveTxnsMessage failed: %v", err)
-		}
-		if n != len(data2) {
+		} else if n != len(data2) {
 			t.Fatalf("decodeGiveTxnsMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,13 +221,9 @@ func TestSkyencoderGiveTxnsMessage(t *testing.T) {
 
 func decodeGiveTxnsMessageExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj GiveTxnsMessage
-	_, err := decodeGiveTxnsMessage(buf, &obj)
-
-	if err == nil {
+	if _, err := decodeGiveTxnsMessage(buf, &obj); err == nil {
 		t.Fatal("decodeGiveTxnsMessage: expected error, got nil")
-	}
-
-	if err != expectedErr {
+	} else if err != expectedErr {
 		t.Fatalf("decodeGiveTxnsMessage: expected error %q, got %q", expectedErr, err)
 	}
 }
@@ -320,8 +312,7 @@ func testSkyencoderGiveTxnsMessageDecodeErrors(t *testing.T, k int, tag string, 
 
 	n := encodeSizeGiveTxnsMessage(obj)
 	buf := make([]byte, n)
-	err := encodeGiveTxnsMessage(buf, obj)
-	if err != nil {
+	if err := encodeGiveTxnsMessage(buf, obj); err != nil {
 		t.Fatalf("encodeGiveTxnsMessage failed: %v", err)
 	}
 

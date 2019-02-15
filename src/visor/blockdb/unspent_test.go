@@ -620,8 +620,9 @@ func TestUnspentProcessBlock(t *testing.T) {
 					require.NoError(t, err)
 
 					var uxHashes []cipher.SHA256
-					err = encoder.DeserializeRaw(v, &uxHashes)
+					n, err := encoder.DeserializeRaw(v, &uxHashes)
 					require.NoError(t, err)
+					require.Equal(t, n, len(v))
 					require.NotEmpty(t, uxHashes)
 
 					return nil
@@ -881,8 +882,9 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 					require.NoError(t, err)
 
 					var hashes []cipher.SHA256
-					err = encoder.DeserializeRaw(v, &hashes)
+					n, err := encoder.DeserializeRaw(v, &hashes)
 					require.NoError(t, err)
+					require.Equal(t, n, len(v))
 
 					sort.Slice(hashes, func(i, j int) bool {
 						return bytes.Compare(hashes[i][:], hashes[j][:]) < 1
@@ -935,8 +937,10 @@ func TestUnspentMaybeBuildIndexesPartialIndex(t *testing.T) {
 
 			if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 				var ux coin.UxOut
-				if err := encoder.DeserializeRaw(v, &ux); err != nil {
+				if n, err := encoder.DeserializeRaw(v, &ux); err != nil {
 					return err
+				} else if n != len(v) {
+					return encoder.ErrRemainingBytes
 				}
 
 				if ux.Head.BkSeq > headHeight {
@@ -992,8 +996,9 @@ func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*
 			require.NoError(t, err)
 
 			var ux coin.UxOut
-			err = encoder.DeserializeRaw(v, &ux)
+			n, err := encoder.DeserializeRaw(v, &ux)
 			require.NoError(t, err)
+			require.Equal(t, n, len(v))
 
 			require.Equal(t, hash, ux.Hash())
 
@@ -1018,8 +1023,9 @@ func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*
 			require.NoError(t, err)
 
 			var hashes []cipher.SHA256
-			err = encoder.DeserializeRaw(v, &hashes)
+			n, err := encoder.DeserializeRaw(v, &hashes)
 			require.NoError(t, err)
+			require.Equal(t, n, len(v))
 
 			expectedHashes, ok := addrHashes[addr]
 			require.True(t, ok)

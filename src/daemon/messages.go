@@ -477,8 +477,11 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 			logger.WithFields(fields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
 			return ErrDisconnectInvalidExtraData
 		}
-		if err := encoder.DeserializeRaw(intro.Extra[i:i+9], &intro.unconfirmedVerifyTxn); err != nil {
+		if n, err := encoder.DeserializeRaw(intro.Extra[i:i+9], &intro.unconfirmedVerifyTxn); err != nil {
 			// This should not occur due to the previous length check
+			logger.Critical().WithError(err).WithFields(fields).Warning("unconfirmedVerifyTxn params could not be deserialized")
+			return ErrDisconnectInvalidExtraData
+		} else if n != len(intro.Extra[i:i+9]) {
 			logger.Critical().WithError(err).WithFields(fields).Warning("unconfirmedVerifyTxn params could not be deserialized")
 			return ErrDisconnectInvalidExtraData
 		}

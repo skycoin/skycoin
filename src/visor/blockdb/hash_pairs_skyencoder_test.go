@@ -76,8 +76,7 @@ func testSkyencoderHashPairs(t *testing.T, obj *HashPairs) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := encodeHashPairs(data2, obj)
-	if err != nil {
+	if err := encodeHashPairs(data2, obj); err != nil {
 		t.Fatalf("encodeHashPairs failed: %v", err)
 	}
 
@@ -92,9 +91,10 @@ func testSkyencoderHashPairs(t *testing.T, obj *HashPairs) {
 	// Decode
 
 	var obj2 HashPairs
-	err = encoder.DeserializeRaw(data1, &obj2)
-	if err != nil {
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(data1) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
@@ -102,11 +102,9 @@ func testSkyencoderHashPairs(t *testing.T, obj *HashPairs) {
 	}
 
 	var obj3 HashPairs
-	n, err := decodeHashPairs(data2, &obj3)
-	if err != nil {
+	if n, err := decodeHashPairs(data2, &obj3); err != nil {
 		t.Fatalf("decodeHashPairs failed: %v", err)
-	}
-	if n != len(data2) {
+	} else if n != len(data2) {
 		t.Fatalf("decodeHashPairs bytes read length should be %d, is %d", len(data2), n)
 	}
 
@@ -174,11 +172,9 @@ func testSkyencoderHashPairs(t *testing.T, obj *HashPairs) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = decodeHashPairs(data3, &obj3)
-		if err != nil {
+		if n, err := decodeHashPairs(data3, &obj3); err != nil {
 			t.Fatalf("decodeHashPairs failed: %v", err)
-		}
-		if n != len(data2) {
+		} else if n != len(data2) {
 			t.Fatalf("decodeHashPairs bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,13 +221,9 @@ func TestSkyencoderHashPairs(t *testing.T) {
 
 func decodeHashPairsExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj HashPairs
-	_, err := decodeHashPairs(buf, &obj)
-
-	if err == nil {
+	if _, err := decodeHashPairs(buf, &obj); err == nil {
 		t.Fatal("decodeHashPairs: expected error, got nil")
-	}
-
-	if err != expectedErr {
+	} else if err != expectedErr {
 		t.Fatalf("decodeHashPairs: expected error %q, got %q", expectedErr, err)
 	}
 }
@@ -320,8 +312,7 @@ func testSkyencoderHashPairsDecodeErrors(t *testing.T, k int, tag string, obj *H
 
 	n := encodeSizeHashPairs(obj)
 	buf := make([]byte, n)
-	err := encodeHashPairs(buf, obj)
-	if err != nil {
+	if err := encodeHashPairs(buf, obj); err != nil {
 		t.Fatalf("encodeHashPairs failed: %v", err)
 	}
 

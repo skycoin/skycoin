@@ -205,7 +205,7 @@ func DeserializeString(in []byte, maxlen int) (string, int, error) {
 
 	err := d1.value(v, maxlen)
 	if err != nil {
-		return "", 0, err
+		return "", inlen - len(d1.Buffer), err
 	}
 
 	return s, inlen - len(d1.Buffer), nil
@@ -214,32 +214,29 @@ func DeserializeString(in []byte, maxlen int) (string, int, error) {
 // DeserializeRaw deserializes `in` buffer into return
 // parameter. If `data` is not a Pointer or Map type an error
 // is returned. If `in` buffer can't be deserialized,
-// an error message is returned. If there are remaining
-// bytes in `in` after decoding to data, ErrRemainingBytes is returned.
-func DeserializeRaw(in []byte, data interface{}) error {
+// an error message is returned.
+// Returns number of bytes read if no error.
+func DeserializeRaw(in []byte, data interface{}) (int, error) {
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
 	case reflect.Ptr:
 		v = v.Elem()
 	case reflect.Map:
 	default:
-		return fmt.Errorf("DeserializeRaw value must be a ptr, is %s", v.Kind().String())
+		return 0, fmt.Errorf("DeserializeRaw value must be a ptr, is %s", v.Kind().String())
 	}
 
+	inlen := len(in)
 	d1 := &Decoder{
-		Buffer: make([]byte, len(in)),
+		Buffer: make([]byte, inlen),
 	}
 	copy(d1.Buffer, in)
 
 	if err := d1.value(v, 0); err != nil {
-		return err
+		return inlen - len(d1.Buffer), err
 	}
 
-	if len(d1.Buffer) != 0 {
-		return ErrRemainingBytes
-	}
-
-	return nil
+	return inlen - len(d1.Buffer), nil
 }
 
 // DeserializeRawToValue deserializes `in` buffer into

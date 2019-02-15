@@ -191,8 +191,10 @@ func GetBucketObjectDecoded(tx *Tx, bktName, key []byte, obj interface{}) (bool,
 		return false, nil
 	}
 
-	if err := encoder.DeserializeRaw(v, obj); err != nil {
+	if n, err := encoder.DeserializeRaw(v, obj); err != nil {
 		return false, fmt.Errorf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(v) {
+		return false, fmt.Errorf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	return true, nil

@@ -118,8 +118,9 @@ func TestBlockSigsAddWithTx(t *testing.T) {
 		v := bkt.Get(h[:])
 		require.NotNil(t, v)
 		var s cipher.Sig
-		err := encoder.DeserializeRaw(v, &s)
+		n, err := encoder.DeserializeRaw(v, &s)
 		require.NoError(t, err)
+		require.Equal(t, n, len(v))
 		require.Equal(t, sig, s)
 		return nil
 	})

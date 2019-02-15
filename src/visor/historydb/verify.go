@@ -36,8 +36,10 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b2 []cipher.SHA256
-		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1.Hashes, b2) {
@@ -64,8 +66,10 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b2 []cipher.SHA256
-		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1.Hashes, b2) {
@@ -92,8 +96,10 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b2 UxOut
-		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1, b2) {
@@ -120,8 +126,10 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b2 Transaction
-		if err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
 			return err
+		} else if n != len(v) {
+			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1, b2) {

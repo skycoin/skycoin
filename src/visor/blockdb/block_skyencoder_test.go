@@ -77,8 +77,7 @@ func testSkyencoderBlock(t *testing.T, obj *coin.Block) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := encodeBlock(data2, obj)
-	if err != nil {
+	if err := encodeBlock(data2, obj); err != nil {
 		t.Fatalf("encodeBlock failed: %v", err)
 	}
 
@@ -93,9 +92,10 @@ func testSkyencoderBlock(t *testing.T, obj *coin.Block) {
 	// Decode
 
 	var obj2 coin.Block
-	err = encoder.DeserializeRaw(data1, &obj2)
-	if err != nil {
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(data1) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
@@ -103,11 +103,9 @@ func testSkyencoderBlock(t *testing.T, obj *coin.Block) {
 	}
 
 	var obj3 coin.Block
-	n, err := decodeBlock(data2, &obj3)
-	if err != nil {
+	if n, err := decodeBlock(data2, &obj3); err != nil {
 		t.Fatalf("decodeBlock failed: %v", err)
-	}
-	if n != len(data2) {
+	} else if n != len(data2) {
 		t.Fatalf("decodeBlock bytes read length should be %d, is %d", len(data2), n)
 	}
 
@@ -175,11 +173,9 @@ func testSkyencoderBlock(t *testing.T, obj *coin.Block) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = decodeBlock(data3, &obj3)
-		if err != nil {
+		if n, err := decodeBlock(data3, &obj3); err != nil {
 			t.Fatalf("decodeBlock failed: %v", err)
-		}
-		if n != len(data2) {
+		} else if n != len(data2) {
 			t.Fatalf("decodeBlock bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -226,13 +222,9 @@ func TestSkyencoderBlock(t *testing.T) {
 
 func decodeBlockExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj coin.Block
-	_, err := decodeBlock(buf, &obj)
-
-	if err == nil {
+	if _, err := decodeBlock(buf, &obj); err == nil {
 		t.Fatal("decodeBlock: expected error, got nil")
-	}
-
-	if err != expectedErr {
+	} else if err != expectedErr {
 		t.Fatalf("decodeBlock: expected error %q, got %q", expectedErr, err)
 	}
 }
@@ -321,8 +313,7 @@ func testSkyencoderBlockDecodeErrors(t *testing.T, k int, tag string, obj *coin.
 
 	n := encodeSizeBlock(obj)
 	buf := make([]byte, n)
-	err := encodeBlock(buf, obj)
-	if err != nil {
+	if err := encodeBlock(buf, obj); err != nil {
 		t.Fatalf("encodeBlock failed: %v", err)
 	}
 

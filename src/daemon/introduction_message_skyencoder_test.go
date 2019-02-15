@@ -76,8 +76,7 @@ func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := encodeIntroductionMessage(data2, obj)
-	if err != nil {
+	if err := encodeIntroductionMessage(data2, obj); err != nil {
 		t.Fatalf("encodeIntroductionMessage failed: %v", err)
 	}
 
@@ -92,9 +91,10 @@ func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
 	// Decode
 
 	var obj2 IntroductionMessage
-	err = encoder.DeserializeRaw(data1, &obj2)
-	if err != nil {
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(data1) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
@@ -102,11 +102,9 @@ func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
 	}
 
 	var obj3 IntroductionMessage
-	n, err := decodeIntroductionMessage(data2, &obj3)
-	if err != nil {
+	if n, err := decodeIntroductionMessage(data2, &obj3); err != nil {
 		t.Fatalf("decodeIntroductionMessage failed: %v", err)
-	}
-	if n != len(data2) {
+	} else if n != len(data2) {
 		t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
 	}
 
@@ -174,11 +172,9 @@ func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = decodeIntroductionMessage(data3, &obj3)
-		if err != nil {
+		if n, err := decodeIntroductionMessage(data3, &obj3); err != nil {
 			t.Fatalf("decodeIntroductionMessage failed: %v", err)
-		}
-		if n != len(data2) {
+		} else if n != len(data2) {
 			t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,13 +221,9 @@ func TestSkyencoderIntroductionMessage(t *testing.T) {
 
 func decodeIntroductionMessageExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj IntroductionMessage
-	_, err := decodeIntroductionMessage(buf, &obj)
-
-	if err == nil {
+	if _, err := decodeIntroductionMessage(buf, &obj); err == nil {
 		t.Fatal("decodeIntroductionMessage: expected error, got nil")
-	}
-
-	if err != expectedErr {
+	} else if err != expectedErr {
 		t.Fatalf("decodeIntroductionMessage: expected error %q, got %q", expectedErr, err)
 	}
 }
@@ -320,8 +312,7 @@ func testSkyencoderIntroductionMessageDecodeErrors(t *testing.T, k int, tag stri
 
 	n := encodeSizeIntroductionMessage(obj)
 	buf := make([]byte, n)
-	err := encodeIntroductionMessage(buf, obj)
-	if err != nil {
+	if err := encodeIntroductionMessage(buf, obj); err != nil {
 		t.Fatalf("encodeIntroductionMessage failed: %v", err)
 	}
 

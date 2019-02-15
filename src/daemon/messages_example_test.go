@@ -366,7 +366,7 @@ func (m *EmptySliceStruct) Encode(buf []byte) error {
 
 // Decode implements gnet.Serializer
 func (m *EmptySliceStruct) Decode(buf []byte) (int, error) {
-	return len(buf), encoder.DeserializeRaw(buf, m)
+	return encoder.DeserializeRaw(buf, m)
 }
 
 func ExampleEmptySliceStruct() {
@@ -431,7 +431,7 @@ func (m *OmitEmptySliceTestStruct) Encode(buf []byte) error {
 
 // Decode implements gnet.Serializer
 func (m *OmitEmptySliceTestStruct) Decode(buf []byte) (int, error) {
-	return len(buf), encoder.DeserializeRaw(buf, m)
+	return encoder.DeserializeRaw(buf, m)
 }
 
 func ExampleOmitEmptySliceTestStruct() {

@@ -55,9 +55,9 @@ func Fuzz(b []byte) int {
 	}
 
 	var t thing
-	errC := encoder.DeserializeRaw(b, &t)
+	n, errC := encoder.DeserializeRaw(b, &t)
 
-	if errA == nil || errB == nil || errC == nil {
+	if errA == nil || errB == nil || errC == nil || n == len(b) {
 		return 1
 	}
 

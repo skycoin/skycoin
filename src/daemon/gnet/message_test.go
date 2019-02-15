@@ -160,7 +160,7 @@ func (dm *DummyMessage) Encode(buf []byte) error {
 
 // Decode implements gnet.Serializer
 func (dm *DummyMessage) Decode(buf []byte) (int, error) {
-	return len(buf), encoder.DeserializeRaw(buf, dm)
+	return encoder.DeserializeRaw(buf, dm)
 }
 
 func (dm *DummyMessage) Handle(context *MessageContext, x interface{}) error {
@@ -191,7 +191,7 @@ func (em *ErrorMessage) Encode(buf []byte) error {
 
 // Decode implements gnet.Serializer
 func (em *ErrorMessage) Decode(buf []byte) (int, error) {
-	return len(buf), encoder.DeserializeRaw(buf, em)
+	return encoder.DeserializeRaw(buf, em)
 }
 
 func (em *ErrorMessage) Handle(context *MessageContext, x interface{}) error {
@@ -221,7 +221,7 @@ func (bm *ByteMessage) Encode(buf []byte) error {
 
 // Decode implements gnet.Serializer
 func (bm *ByteMessage) Decode(buf []byte) (int, error) {
-	return len(buf), encoder.DeserializeRaw(buf, bm)
+	return encoder.DeserializeRaw(buf, bm)
 }
 
 func (bm *ByteMessage) Handle(c *MessageContext, x interface{}) error {
@@ -253,5 +253,5 @@ func (m *PointerMessage) Encode(buf []byte) error {
 
 // Decode implements gnet.Serializer
 func (m *PointerMessage) Decode(buf []byte) (int, error) {
-	return len(buf), encoder.DeserializeRaw(buf, m)
+	return encoder.DeserializeRaw(buf, m)
 }

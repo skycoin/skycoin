@@ -42,6 +42,11 @@ func encodeTransactionOutputs(buf []byte, obj *transactionOutputs) error {
 		Buffer: buf[:],
 	}
 
+	// obj.Out maxlen check
+	if len(obj.Out) > 65535 {
+		return encoder.ErrMaxLenExceeded
+	}
+
 	// obj.Out length check
 	if uint64(len(obj.Out)) > math.MaxUint32 {
 		return errors.New("obj.Out length exceeds math.MaxUint32")
@@ -88,6 +93,10 @@ func decodeTransactionOutputs(buf []byte, obj *transactionOutputs) (int, error) 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
 			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+		}
+
+		if length > 65535 {
+			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {

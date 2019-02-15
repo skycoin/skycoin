@@ -76,8 +76,7 @@ func testSkyencoderUnconfirmedTransaction(t *testing.T, obj *UnconfirmedTransact
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := encodeUnconfirmedTransaction(data2, obj)
-	if err != nil {
+	if err := encodeUnconfirmedTransaction(data2, obj); err != nil {
 		t.Fatalf("encodeUnconfirmedTransaction failed: %v", err)
 	}
 
@@ -92,9 +91,10 @@ func testSkyencoderUnconfirmedTransaction(t *testing.T, obj *UnconfirmedTransact
 	// Decode
 
 	var obj2 UnconfirmedTransaction
-	err = encoder.DeserializeRaw(data1, &obj2)
-	if err != nil {
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(data1) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
@@ -102,11 +102,9 @@ func testSkyencoderUnconfirmedTransaction(t *testing.T, obj *UnconfirmedTransact
 	}
 
 	var obj3 UnconfirmedTransaction
-	n, err := decodeUnconfirmedTransaction(data2, &obj3)
-	if err != nil {
+	if n, err := decodeUnconfirmedTransaction(data2, &obj3); err != nil {
 		t.Fatalf("decodeUnconfirmedTransaction failed: %v", err)
-	}
-	if n != len(data2) {
+	} else if n != len(data2) {
 		t.Fatalf("decodeUnconfirmedTransaction bytes read length should be %d, is %d", len(data2), n)
 	}
 
@@ -174,11 +172,9 @@ func testSkyencoderUnconfirmedTransaction(t *testing.T, obj *UnconfirmedTransact
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = decodeUnconfirmedTransaction(data3, &obj3)
-		if err != nil {
+		if n, err := decodeUnconfirmedTransaction(data3, &obj3); err != nil {
 			t.Fatalf("decodeUnconfirmedTransaction failed: %v", err)
-		}
-		if n != len(data2) {
+		} else if n != len(data2) {
 			t.Fatalf("decodeUnconfirmedTransaction bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,13 +221,9 @@ func TestSkyencoderUnconfirmedTransaction(t *testing.T) {
 
 func decodeUnconfirmedTransactionExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj UnconfirmedTransaction
-	_, err := decodeUnconfirmedTransaction(buf, &obj)
-
-	if err == nil {
+	if _, err := decodeUnconfirmedTransaction(buf, &obj); err == nil {
 		t.Fatal("decodeUnconfirmedTransaction: expected error, got nil")
-	}
-
-	if err != expectedErr {
+	} else if err != expectedErr {
 		t.Fatalf("decodeUnconfirmedTransaction: expected error %q, got %q", expectedErr, err)
 	}
 }
@@ -320,8 +312,7 @@ func testSkyencoderUnconfirmedTransactionDecodeErrors(t *testing.T, k int, tag s
 
 	n := encodeSizeUnconfirmedTransaction(obj)
 	buf := make([]byte, n)
-	err := encodeUnconfirmedTransaction(buf, obj)
-	if err != nil {
+	if err := encodeUnconfirmedTransaction(buf, obj); err != nil {
 		t.Fatalf("encodeUnconfirmedTransaction failed: %v", err)
 	}
 

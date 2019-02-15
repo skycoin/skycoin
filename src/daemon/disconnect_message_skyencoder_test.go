@@ -76,8 +76,7 @@ func testSkyencoderDisconnectMessage(t *testing.T, obj *DisconnectMessage) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := encodeDisconnectMessage(data2, obj)
-	if err != nil {
+	if err := encodeDisconnectMessage(data2, obj); err != nil {
 		t.Fatalf("encodeDisconnectMessage failed: %v", err)
 	}
 
@@ -92,9 +91,10 @@ func testSkyencoderDisconnectMessage(t *testing.T, obj *DisconnectMessage) {
 	// Decode
 
 	var obj2 DisconnectMessage
-	err = encoder.DeserializeRaw(data1, &obj2)
-	if err != nil {
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(data1) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
@@ -102,11 +102,9 @@ func testSkyencoderDisconnectMessage(t *testing.T, obj *DisconnectMessage) {
 	}
 
 	var obj3 DisconnectMessage
-	n, err := decodeDisconnectMessage(data2, &obj3)
-	if err != nil {
+	if n, err := decodeDisconnectMessage(data2, &obj3); err != nil {
 		t.Fatalf("decodeDisconnectMessage failed: %v", err)
-	}
-	if n != len(data2) {
+	} else if n != len(data2) {
 		t.Fatalf("decodeDisconnectMessage bytes read length should be %d, is %d", len(data2), n)
 	}
 
@@ -174,11 +172,9 @@ func testSkyencoderDisconnectMessage(t *testing.T, obj *DisconnectMessage) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = decodeDisconnectMessage(data3, &obj3)
-		if err != nil {
+		if n, err := decodeDisconnectMessage(data3, &obj3); err != nil {
 			t.Fatalf("decodeDisconnectMessage failed: %v", err)
-		}
-		if n != len(data2) {
+		} else if n != len(data2) {
 			t.Fatalf("decodeDisconnectMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,13 +221,9 @@ func TestSkyencoderDisconnectMessage(t *testing.T) {
 
 func decodeDisconnectMessageExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj DisconnectMessage
-	_, err := decodeDisconnectMessage(buf, &obj)
-
-	if err == nil {
+	if _, err := decodeDisconnectMessage(buf, &obj); err == nil {
 		t.Fatal("decodeDisconnectMessage: expected error, got nil")
-	}
-
-	if err != expectedErr {
+	} else if err != expectedErr {
 		t.Fatalf("decodeDisconnectMessage: expected error %q, got %q", expectedErr, err)
 	}
 }
@@ -320,8 +312,7 @@ func testSkyencoderDisconnectMessageDecodeErrors(t *testing.T, k int, tag string
 
 	n := encodeSizeDisconnectMessage(obj)
 	buf := make([]byte, n)
-	err := encodeDisconnectMessage(buf, obj)
-	if err != nil {
+	if err := encodeDisconnectMessage(buf, obj); err != nil {
 		t.Fatalf("encodeDisconnectMessage failed: %v", err)
 	}
 

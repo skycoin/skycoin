@@ -76,8 +76,7 @@ func testSkyencoderTransaction(t *testing.T, obj *Transaction) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := encodeTransaction(data2, obj)
-	if err != nil {
+	if err := encodeTransaction(data2, obj); err != nil {
 		t.Fatalf("encodeTransaction failed: %v", err)
 	}
 
@@ -92,9 +91,10 @@ func testSkyencoderTransaction(t *testing.T, obj *Transaction) {
 	// Decode
 
 	var obj2 Transaction
-	err = encoder.DeserializeRaw(data1, &obj2)
-	if err != nil {
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(data1) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
@@ -102,11 +102,9 @@ func testSkyencoderTransaction(t *testing.T, obj *Transaction) {
 	}
 
 	var obj3 Transaction
-	n, err := decodeTransaction(data2, &obj3)
-	if err != nil {
+	if n, err := decodeTransaction(data2, &obj3); err != nil {
 		t.Fatalf("decodeTransaction failed: %v", err)
-	}
-	if n != len(data2) {
+	} else if n != len(data2) {
 		t.Fatalf("decodeTransaction bytes read length should be %d, is %d", len(data2), n)
 	}
 
@@ -174,11 +172,9 @@ func testSkyencoderTransaction(t *testing.T, obj *Transaction) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = decodeTransaction(data3, &obj3)
-		if err != nil {
+		if n, err := decodeTransaction(data3, &obj3); err != nil {
 			t.Fatalf("decodeTransaction failed: %v", err)
-		}
-		if n != len(data2) {
+		} else if n != len(data2) {
 			t.Fatalf("decodeTransaction bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,13 +221,9 @@ func TestSkyencoderTransaction(t *testing.T) {
 
 func decodeTransactionExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj Transaction
-	_, err := decodeTransaction(buf, &obj)
-
-	if err == nil {
+	if _, err := decodeTransaction(buf, &obj); err == nil {
 		t.Fatal("decodeTransaction: expected error, got nil")
-	}
-
-	if err != expectedErr {
+	} else if err != expectedErr {
 		t.Fatalf("decodeTransaction: expected error %q, got %q", expectedErr, err)
 	}
 }
@@ -320,8 +312,7 @@ func testSkyencoderTransactionDecodeErrors(t *testing.T, k int, tag string, obj 
 
 	n := encodeSizeTransaction(obj)
 	buf := make([]byte, n)
-	err := encodeTransaction(buf, obj)
-	if err != nil {
+	if err := encodeTransaction(buf, obj); err != nil {
 		t.Fatalf("encodeTransaction failed: %v", err)
 	}
 

@@ -109,7 +109,7 @@ func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 func deserializeMessage(msg []byte, v reflect.Value) (n int, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Debugf("Recovering from deserializer panic: %v", r)
+			logger.Critical().Warningf("Recovering from deserializer panic: %v", r)
 			switch x := r.(type) {
 			case string:
 				err = errors.New(x)
@@ -127,8 +127,7 @@ func deserializeMessage(msg []byte, v reflect.Value) (n int, err error) {
 		return 0, errors.New("deserializeMessage object does not have Serializer interface")
 	}
 
-	n, err = x.Decode(msg)
-	return
+	return x.Decode(msg)
 }
 
 // EncodeMessage packs a Message into []byte containing length, id and data

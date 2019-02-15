@@ -76,8 +76,7 @@ func testSkyencoderUxHead(t *testing.T, obj *UxHead) {
 	data1 := encoder.Serialize(obj)
 
 	data2 := make([]byte, n2)
-	err := encodeUxHead(data2, obj)
-	if err != nil {
+	if err := encodeUxHead(data2, obj); err != nil {
 		t.Fatalf("encodeUxHead failed: %v", err)
 	}
 
@@ -92,9 +91,10 @@ func testSkyencoderUxHead(t *testing.T, obj *UxHead) {
 	// Decode
 
 	var obj2 UxHead
-	err = encoder.DeserializeRaw(data1, &obj2)
-	if err != nil {
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != len(data1) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
 	}
 
 	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
@@ -102,11 +102,9 @@ func testSkyencoderUxHead(t *testing.T, obj *UxHead) {
 	}
 
 	var obj3 UxHead
-	n, err := decodeUxHead(data2, &obj3)
-	if err != nil {
+	if n, err := decodeUxHead(data2, &obj3); err != nil {
 		t.Fatalf("decodeUxHead failed: %v", err)
-	}
-	if n != len(data2) {
+	} else if n != len(data2) {
 		t.Fatalf("decodeUxHead bytes read length should be %d, is %d", len(data2), n)
 	}
 
@@ -174,11 +172,9 @@ func testSkyencoderUxHead(t *testing.T, obj *UxHead) {
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data3 := append(data2[:], padding...)
-		n, err = decodeUxHead(data3, &obj3)
-		if err != nil {
+		if n, err := decodeUxHead(data3, &obj3); err != nil {
 			t.Fatalf("decodeUxHead failed: %v", err)
-		}
-		if n != len(data2) {
+		} else if n != len(data2) {
 			t.Fatalf("decodeUxHead bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,13 +221,9 @@ func TestSkyencoderUxHead(t *testing.T) {
 
 func decodeUxHeadExpectError(t *testing.T, buf []byte, expectedErr error) {
 	var obj UxHead
-	_, err := decodeUxHead(buf, &obj)
-
-	if err == nil {
+	if _, err := decodeUxHead(buf, &obj); err == nil {
 		t.Fatal("decodeUxHead: expected error, got nil")
-	}
-
-	if err != expectedErr {
+	} else if err != expectedErr {
 		t.Fatalf("decodeUxHead: expected error %q, got %q", expectedErr, err)
 	}
 }
@@ -320,8 +312,7 @@ func testSkyencoderUxHeadDecodeErrors(t *testing.T, k int, tag string, obj *UxHe
 
 	n := encodeSizeUxHead(obj)
 	buf := make([]byte, n)
-	err := encodeUxHead(buf, obj)
-	if err != nil {
+	if err := encodeUxHead(buf, obj); err != nil {
 		t.Fatalf("encodeUxHead failed: %v", err)
 	}
 

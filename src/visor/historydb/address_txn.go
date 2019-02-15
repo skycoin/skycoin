@@ -2,7 +2,6 @@ package historydb
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -31,10 +30,8 @@ func (atx *addressTxns) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256
 		return nil, nil
 	}
 
-	if n, err := decodeHashes(v, &txnHashes); err != nil {
+	if err := decodeHashesExact(v, &txnHashes); err != nil {
 		return nil, err
-	} else if n != len(v) {
-		return nil, encoder.ErrRemainingBytes
 	}
 
 	return txnHashes.Hashes, nil
@@ -56,12 +53,10 @@ func (atx *addressTxns) add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA2
 
 	hashes = append(hashes, hash)
 
-	hs := &Hashes{
+	buf, err := encodeHashes(&Hashes{
 		Hashes: hashes,
-	}
-	n := encodeSizeHashes(hs)
-	buf := make([]byte, n)
-	if err := encodeHashes(buf, hs); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 

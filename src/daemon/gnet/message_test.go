@@ -159,7 +159,7 @@ func (dm *DummyMessage) Encode(buf []byte) error {
 }
 
 // Decode implements gnet.Serializer
-func (dm *DummyMessage) Decode(buf []byte) (int, error) {
+func (dm *DummyMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, dm)
 }
 
@@ -190,7 +190,7 @@ func (em *ErrorMessage) Encode(buf []byte) error {
 }
 
 // Decode implements gnet.Serializer
-func (em *ErrorMessage) Decode(buf []byte) (int, error) {
+func (em *ErrorMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, em)
 }
 
@@ -220,7 +220,7 @@ func (bm *ByteMessage) Encode(buf []byte) error {
 }
 
 // Decode implements gnet.Serializer
-func (bm *ByteMessage) Decode(buf []byte) (int, error) {
+func (bm *ByteMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, bm)
 }
 
@@ -252,6 +252,6 @@ func (m *PointerMessage) Encode(buf []byte) error {
 }
 
 // Decode implements gnet.Serializer
-func (m *PointerMessage) Decode(buf []byte) (int, error) {
+func (m *PointerMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, m)
 }

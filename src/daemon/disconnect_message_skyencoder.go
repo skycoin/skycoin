@@ -21,9 +21,26 @@ func encodeSizeDisconnectMessage(obj *DisconnectMessage) uint64 {
 	return i0
 }
 
-// encodeDisconnectMessage encodes an object of type DisconnectMessage to the buffer in encoder.Encoder.
+// encodeDisconnectMessage encodes an object of type DisconnectMessage to a buffer allocated to the exact size
+// required to encode the object.
+func encodeDisconnectMessage(obj *DisconnectMessage) ([]byte, error) {
+	n := encodeSizeDisconnectMessage(obj)
+	buf := make([]byte, n)
+
+	if err := encodeDisconnectMessageToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeDisconnectMessageToBuffer encodes an object of type DisconnectMessage to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeDisconnectMessage(buf []byte, obj *DisconnectMessage) error {
+func encodeDisconnectMessageToBuffer(buf []byte, obj *DisconnectMessage) error {
+	if uint64(len(buf)) < encodeSizeDisconnectMessage(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -45,9 +62,10 @@ func encodeDisconnectMessage(buf []byte, obj *DisconnectMessage) error {
 	return nil
 }
 
-// decodeDisconnectMessage decodes an object of type DisconnectMessage from the buffer in encoder.Decoder.
+// decodeDisconnectMessage decodes an object of type DisconnectMessage from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeDisconnectMessage(buf []byte, obj *DisconnectMessage) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeDisconnectMessage(buf []byte, obj *DisconnectMessage) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -56,7 +74,7 @@ func decodeDisconnectMessage(buf []byte, obj *DisconnectMessage) (int, error) {
 		// obj.ReasonCode
 		i, err := d.Uint16()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.ReasonCode = i
 	}
@@ -66,12 +84,12 @@ func decodeDisconnectMessage(buf []byte, obj *DisconnectMessage) (int, error) {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length != 0 {
@@ -82,5 +100,18 @@ func decodeDisconnectMessage(buf []byte, obj *DisconnectMessage) (int, error) {
 		}
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeDisconnectMessageExact decodes an object of type DisconnectMessage from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeDisconnectMessageExact(buf []byte, obj *DisconnectMessage) error {
+	if n, err := decodeDisconnectMessage(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

@@ -16,9 +16,26 @@ func encodeSizeGetBlocksMessage(obj *GetBlocksMessage) uint64 {
 	return i0
 }
 
-// encodeGetBlocksMessage encodes an object of type GetBlocksMessage to the buffer in encoder.Encoder.
+// encodeGetBlocksMessage encodes an object of type GetBlocksMessage to a buffer allocated to the exact size
+// required to encode the object.
+func encodeGetBlocksMessage(obj *GetBlocksMessage) ([]byte, error) {
+	n := encodeSizeGetBlocksMessage(obj)
+	buf := make([]byte, n)
+
+	if err := encodeGetBlocksMessageToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeGetBlocksMessageToBuffer encodes an object of type GetBlocksMessage to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) error {
+func encodeGetBlocksMessageToBuffer(buf []byte, obj *GetBlocksMessage) error {
+	if uint64(len(buf)) < encodeSizeGetBlocksMessage(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -32,9 +49,10 @@ func encodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) error {
 	return nil
 }
 
-// decodeGetBlocksMessage decodes an object of type GetBlocksMessage from the buffer in encoder.Decoder.
+// decodeGetBlocksMessage decodes an object of type GetBlocksMessage from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -43,7 +61,7 @@ func decodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) (int, error) {
 		// obj.LastBlock
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.LastBlock = i
 	}
@@ -52,10 +70,23 @@ func decodeGetBlocksMessage(buf []byte, obj *GetBlocksMessage) (int, error) {
 		// obj.RequestedBlocks
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.RequestedBlocks = i
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeGetBlocksMessageExact decodes an object of type GetBlocksMessage from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeGetBlocksMessageExact(buf []byte, obj *GetBlocksMessage) error {
+	if n, err := decodeGetBlocksMessage(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

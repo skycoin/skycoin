@@ -80,9 +80,26 @@ func encodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) uint64 {
 	return i0
 }
 
-// encodeUnconfirmedTransaction encodes an object of type UnconfirmedTransaction to the buffer in encoder.Encoder.
+// encodeUnconfirmedTransaction encodes an object of type UnconfirmedTransaction to a buffer allocated to the exact size
+// required to encode the object.
+func encodeUnconfirmedTransaction(obj *UnconfirmedTransaction) ([]byte, error) {
+	n := encodeSizeUnconfirmedTransaction(obj)
+	buf := make([]byte, n)
+
+	if err := encodeUnconfirmedTransactionToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeUnconfirmedTransactionToBuffer encodes an object of type UnconfirmedTransaction to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) error {
+func encodeUnconfirmedTransactionToBuffer(buf []byte, obj *UnconfirmedTransaction) error {
+	if uint64(len(buf)) < encodeSizeUnconfirmedTransaction(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -183,9 +200,10 @@ func encodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) error
 	return nil
 }
 
-// decodeUnconfirmedTransaction decodes an object of type UnconfirmedTransaction from the buffer in encoder.Decoder.
+// decodeUnconfirmedTransaction decodes an object of type UnconfirmedTransaction from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -194,7 +212,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 		// obj.Transaction.Length
 		i, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Transaction.Length = i
 	}
@@ -203,7 +221,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 		// obj.Transaction.Type
 		i, err := d.Uint8()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Transaction.Type = i
 	}
@@ -211,7 +229,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 	{
 		// obj.Transaction.InnerHash
 		if len(d.Buffer) < len(obj.Transaction.InnerHash) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.Transaction.InnerHash[:], d.Buffer[:len(obj.Transaction.InnerHash)])
 		d.Buffer = d.Buffer[len(obj.Transaction.InnerHash):]
@@ -222,16 +240,16 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 65535 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -241,7 +259,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 				{
 					// obj.Transaction.Sigs[z2]
 					if len(d.Buffer) < len(obj.Transaction.Sigs[z2]) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.Transaction.Sigs[z2][:], d.Buffer[:len(obj.Transaction.Sigs[z2])])
 					d.Buffer = d.Buffer[len(obj.Transaction.Sigs[z2]):]
@@ -256,16 +274,16 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 65535 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -275,7 +293,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 				{
 					// obj.Transaction.In[z2]
 					if len(d.Buffer) < len(obj.Transaction.In[z2]) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.Transaction.In[z2][:], d.Buffer[:len(obj.Transaction.In[z2])])
 					d.Buffer = d.Buffer[len(obj.Transaction.In[z2]):]
@@ -290,16 +308,16 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 65535 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -310,7 +328,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 					// obj.Transaction.Out[z2].Address.Version
 					i, err := d.Uint8()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Transaction.Out[z2].Address.Version = i
 				}
@@ -318,7 +336,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 				{
 					// obj.Transaction.Out[z2].Address.Key
 					if len(d.Buffer) < len(obj.Transaction.Out[z2].Address.Key) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.Transaction.Out[z2].Address.Key[:], d.Buffer[:len(obj.Transaction.Out[z2].Address.Key)])
 					d.Buffer = d.Buffer[len(obj.Transaction.Out[z2].Address.Key):]
@@ -328,7 +346,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 					// obj.Transaction.Out[z2].Coins
 					i, err := d.Uint64()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Transaction.Out[z2].Coins = i
 				}
@@ -337,7 +355,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 					// obj.Transaction.Out[z2].Hours
 					i, err := d.Uint64()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Transaction.Out[z2].Hours = i
 				}
@@ -350,7 +368,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 		// obj.Received
 		i, err := d.Int64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Received = i
 	}
@@ -359,7 +377,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 		// obj.Checked
 		i, err := d.Int64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Checked = i
 	}
@@ -368,7 +386,7 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 		// obj.Announced
 		i, err := d.Int64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Announced = i
 	}
@@ -377,10 +395,23 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (int,
 		// obj.IsValid
 		i, err := d.Int8()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.IsValid = i
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeUnconfirmedTransactionExact decodes an object of type UnconfirmedTransaction from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeUnconfirmedTransactionExact(buf []byte, obj *UnconfirmedTransaction) error {
+	if n, err := decodeUnconfirmedTransaction(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

@@ -150,15 +150,13 @@ func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime, fee uin
 }
 
 // Hash return hash of block header
-func (bh BlockHeader) Hash() cipher.SHA256 {
+func (bh *BlockHeader) Hash() cipher.SHA256 {
 	return cipher.SumSHA256(bh.Bytes())
 }
 
 // Bytes serialize the blockheader and return the byte value.
-func (bh BlockHeader) Bytes() []byte {
-	n := encodeSizeBlockHeader(&bh)
-	buf := make([]byte, n)
-	err := encodeBlockHeader(buf, &bh)
+func (bh *BlockHeader) Bytes() []byte {
+	buf, err := encodeBlockHeader(bh)
 	if err != nil {
 		log.Panicf("encodeBlockHeader failed: %v", err)
 	}
@@ -183,10 +181,8 @@ func (bb BlockBody) Size() (uint32, error) {
 }
 
 // Bytes serialize block body, and return the byte value.
-func (bb BlockBody) Bytes() []byte {
-	n := encodeSizeBlockBody(&bb)
-	buf := make([]byte, n)
-	err := encodeBlockBody(buf, &bb)
+func (bb *BlockBody) Bytes() []byte {
+	buf, err := encodeBlockBody(bb)
 	if err != nil {
 		log.Panicf("encodeBlockBody failed: %v", err)
 	}

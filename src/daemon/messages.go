@@ -167,7 +167,7 @@ func (gpm *GetPeersMessage) Encode(buf []byte) error {
 }
 
 // Decode implements gnet.Serializer
-func (gpm *GetPeersMessage) Decode(buf []byte) (int, error) {
+func (gpm *GetPeersMessage) Decode(buf []byte) (uint64, error) {
 	return 0, nil
 }
 
@@ -215,11 +215,11 @@ func (gpm *GivePeersMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (gpm *GivePeersMessage) Encode(buf []byte) error {
-	return encodeGivePeersMessage(buf, gpm)
+	return encodeGivePeersMessageToBuffer(buf, gpm)
 }
 
 // Decode implements gnet.Serializer
-func (gpm *GivePeersMessage) Decode(buf []byte) (int, error) {
+func (gpm *GivePeersMessage) Decode(buf []byte) (uint64, error) {
 	return decodeGivePeersMessage(buf, gpm)
 }
 
@@ -345,11 +345,11 @@ func (intro *IntroductionMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (intro *IntroductionMessage) Encode(buf []byte) error {
-	return encodeIntroductionMessage(buf, intro)
+	return encodeIntroductionMessageToBuffer(buf, intro)
 }
 
 // Decode implements gnet.Serializer
-func (intro *IntroductionMessage) Decode(buf []byte) (int, error) {
+func (intro *IntroductionMessage) Decode(buf []byte) (uint64, error) {
 	return decodeIntroductionMessage(buf, intro)
 }
 
@@ -481,7 +481,7 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 			// This should not occur due to the previous length check
 			logger.Critical().WithError(err).WithFields(fields).Warning("unconfirmedVerifyTxn params could not be deserialized")
 			return ErrDisconnectInvalidExtraData
-		} else if n != len(intro.Extra[i:i+9]) {
+		} else if n != uint64(len(intro.Extra[i:i+9])) {
 			logger.Critical().WithError(err).WithFields(fields).Warning("unconfirmedVerifyTxn params could not be deserialized")
 			return ErrDisconnectInvalidExtraData
 		}
@@ -537,7 +537,7 @@ func (ping *PingMessage) Encode(buf []byte) error {
 }
 
 // Decode implements gnet.Serializer
-func (ping *PingMessage) Decode(buf []byte) (int, error) {
+func (ping *PingMessage) Decode(buf []byte) (uint64, error) {
 	return 0, nil
 }
 
@@ -577,7 +577,7 @@ func (pong *PongMessage) Encode(buf []byte) error {
 }
 
 // Decode implements gnet.Serializer
-func (pong *PongMessage) Decode(buf []byte) (int, error) {
+func (pong *PongMessage) Decode(buf []byte) (uint64, error) {
 	return 0, nil
 }
 
@@ -622,11 +622,11 @@ func (dm *DisconnectMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (dm *DisconnectMessage) Encode(buf []byte) error {
-	return encodeDisconnectMessage(buf, dm)
+	return encodeDisconnectMessageToBuffer(buf, dm)
 }
 
 // Decode implements gnet.Serializer
-func (dm *DisconnectMessage) Decode(buf []byte) (int, error) {
+func (dm *DisconnectMessage) Decode(buf []byte) (uint64, error) {
 	return decodeDisconnectMessage(buf, dm)
 }
 
@@ -672,11 +672,11 @@ func (gbm *GetBlocksMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (gbm *GetBlocksMessage) Encode(buf []byte) error {
-	return encodeGetBlocksMessage(buf, gbm)
+	return encodeGetBlocksMessageToBuffer(buf, gbm)
 }
 
 // Decode implements gnet.Serializer
-func (gbm *GetBlocksMessage) Decode(buf []byte) (int, error) {
+func (gbm *GetBlocksMessage) Decode(buf []byte) (uint64, error) {
 	return decodeGetBlocksMessage(buf, gbm)
 }
 
@@ -738,11 +738,11 @@ func (m *GiveBlocksMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (m *GiveBlocksMessage) Encode(buf []byte) error {
-	return encodeGiveBlocksMessage(buf, m)
+	return encodeGiveBlocksMessageToBuffer(buf, m)
 }
 
 // Decode implements gnet.Serializer
-func (m *GiveBlocksMessage) Decode(buf []byte) (int, error) {
+func (m *GiveBlocksMessage) Decode(buf []byte) (uint64, error) {
 	return decodeGiveBlocksMessage(buf, m)
 }
 
@@ -849,11 +849,11 @@ func (abm *AnnounceBlocksMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (abm *AnnounceBlocksMessage) Encode(buf []byte) error {
-	return encodeAnnounceBlocksMessage(buf, abm)
+	return encodeAnnounceBlocksMessageToBuffer(buf, abm)
 }
 
 // Decode implements gnet.Serializer
-func (abm *AnnounceBlocksMessage) Decode(buf []byte) (int, error) {
+func (abm *AnnounceBlocksMessage) Decode(buf []byte) (uint64, error) {
 	return decodeAnnounceBlocksMessage(buf, abm)
 }
 
@@ -921,11 +921,11 @@ func (atm *AnnounceTxnsMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (atm *AnnounceTxnsMessage) Encode(buf []byte) error {
-	return encodeAnnounceTxnsMessage(buf, atm)
+	return encodeAnnounceTxnsMessageToBuffer(buf, atm)
 }
 
 // Decode implements gnet.Serializer
-func (atm *AnnounceTxnsMessage) Decode(buf []byte) (int, error) {
+func (atm *AnnounceTxnsMessage) Decode(buf []byte) (uint64, error) {
 	return decodeAnnounceTxnsMessage(buf, atm)
 }
 
@@ -987,11 +987,11 @@ func (gtm *GetTxnsMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (gtm *GetTxnsMessage) Encode(buf []byte) error {
-	return encodeGetTxnsMessage(buf, gtm)
+	return encodeGetTxnsMessageToBuffer(buf, gtm)
 }
 
 // Decode implements gnet.Serializer
-func (gtm *GetTxnsMessage) Decode(buf []byte) (int, error) {
+func (gtm *GetTxnsMessage) Decode(buf []byte) (uint64, error) {
 	return decodeGetTxnsMessage(buf, gtm)
 }
 
@@ -1049,11 +1049,11 @@ func (gtm *GiveTxnsMessage) EncodeSize() uint64 {
 
 // Encode implements gnet.Serializer
 func (gtm *GiveTxnsMessage) Encode(buf []byte) error {
-	return encodeGiveTxnsMessage(buf, gtm)
+	return encodeGiveTxnsMessageToBuffer(buf, gtm)
 }
 
 // Decode implements gnet.Serializer
-func (gtm *GiveTxnsMessage) Decode(buf []byte) (int, error) {
+func (gtm *GiveTxnsMessage) Decode(buf []byte) (uint64, error) {
 	return decodeGiveTxnsMessage(buf, gtm)
 }
 

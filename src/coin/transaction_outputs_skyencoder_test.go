@@ -62,56 +62,6 @@ func newRandomZeroLenNilTransactionOutputsForEncodeTest(t *testing.T, rand *math
 }
 
 func testSkyencoderTransactionOutputs(t *testing.T, obj *transactionOutputs) {
-	// encodeSize
-
-	n1 := encoder.Size(obj)
-	n2 := encodeSizeTransactionOutputs(obj)
-
-	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != encodeSizeTransactionOutputs() (%d != %d)", n1, n2)
-	}
-
-	// Encode
-
-	data1 := encoder.Serialize(obj)
-
-	data2 := make([]byte, n2)
-	if err := encodeTransactionOutputs(data2, obj); err != nil {
-		t.Fatalf("encodeTransactionOutputs failed: %v", err)
-	}
-
-	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(encodeTransactionOutputs()) (%d != %d)", len(data1), len(data2))
-	}
-
-	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != encode[1]s()")
-	}
-
-	// Decode
-
-	var obj2 transactionOutputs
-	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
-		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
-	} else if n != len(data1) {
-		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
-	}
-
-	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw result wrong")
-	}
-
-	var obj3 transactionOutputs
-	if n, err := decodeTransactionOutputs(data2, &obj3); err != nil {
-		t.Fatalf("decodeTransactionOutputs failed: %v", err)
-	} else if n != len(data2) {
-		t.Fatalf("decodeTransactionOutputs bytes read length should be %d, is %d", len(data2), n)
-	}
-
-	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeTransactionOutputs()")
-	}
-
 	isEncodableField := func(f reflect.StructField) bool {
 		// Skip unexported fields
 		if f.PkgPath != "" {
@@ -168,13 +118,103 @@ func testSkyencoderTransactionOutputs(t *testing.T, obj *transactionOutputs) {
 		}
 	}
 
+	// encodeSize
+
+	n1 := encoder.Size(obj)
+	n2 := encodeSizeTransactionOutputs(obj)
+
+	if uint64(n1) != n2 {
+		t.Fatalf("encoder.Size() != encodeSizeTransactionOutputs() (%d != %d)", n1, n2)
+	}
+
+	// Encode
+
+	// encoder.Serialize
+	data1 := encoder.Serialize(obj)
+
+	// Encode
+	data2, err := encodeTransactionOutputs(obj)
+	if err != nil {
+		t.Fatalf("encodeTransactionOutputs failed: %v", err)
+	}
+	if uint64(len(data2)) != n2 {
+		t.Fatal("encodeTransactionOutputs produced bytes of unexpected length")
+	}
+	if len(data1) != len(data2) {
+		t.Fatalf("len(encoder.Serialize()) != len(encodeTransactionOutputs()) (%d != %d)", len(data1), len(data2))
+	}
+
+	// EncodeToBuffer
+	data3 := make([]byte, n2+5)
+	if err := encodeTransactionOutputsToBuffer(data3, obj); err != nil {
+		t.Fatalf("encodeTransactionOutputsToBuffer failed: %v", err)
+	}
+
+	if !bytes.Equal(data1, data2) {
+		t.Fatal("encoder.Serialize() != encode[1]s()")
+	}
+
+	// Decode
+
+	// encoder.DeserializeRaw
+	var obj2 transactionOutputs
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != uint64(len(data1)) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
+	}
+	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw result wrong")
+	}
+
+	// Decode
+	var obj3 transactionOutputs
+	if n, err := decodeTransactionOutputs(data2, &obj3); err != nil {
+		t.Fatalf("decodeTransactionOutputs failed: %v", err)
+	} else if n != uint64(len(data2)) {
+		t.Fatalf("decodeTransactionOutputs bytes read length should be %d, is %d", len(data2), n)
+	}
+	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeTransactionOutputs()")
+	}
+
+	// Decode, excess buffer
+	var obj4 transactionOutputs
+	n, err := decodeTransactionOutputs(data3, &obj4)
+	if err != nil {
+		t.Fatalf("decodeTransactionOutputs failed: %v", err)
+	}
+
+	if hasOmitEmptyField(&obj4) && omitEmptyLen(&obj4) == 0 {
+		// 4 bytes read for the omitEmpty length, which should be zero (see the 5 bytes added above)
+		if n != n2+4 {
+			t.Fatalf("decodeTransactionOutputs bytes read length should be %d, is %d", n2+4, n)
+		}
+	} else {
+		if n != n2 {
+			t.Fatalf("decodeTransactionOutputs bytes read length should be %d, is %d", n2, n)
+		}
+	}
+	if !cmp.Equal(obj2, obj4, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeTransactionOutputs()")
+	}
+
+	// DecodeExact
+	var obj5 transactionOutputs
+	if err := decodeTransactionOutputsExact(data2, &obj5); err != nil {
+		t.Fatalf("decodeTransactionOutputs failed: %v", err)
+	}
+	if !cmp.Equal(obj2, obj5, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeTransactionOutputs()")
+	}
+
 	// Check that the bytes read value is correct when providing an extended buffer
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
-		data3 := append(data2[:], padding...)
-		if n, err := decodeTransactionOutputs(data3, &obj3); err != nil {
+		data4 := append(data2[:], padding...)
+		if n, err := decodeTransactionOutputs(data4, &obj3); err != nil {
 			t.Fatalf("decodeTransactionOutputs failed: %v", err)
-		} else if n != len(data2) {
+		} else if n != uint64(len(data2)) {
 			t.Fatalf("decodeTransactionOutputs bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,6 +265,15 @@ func decodeTransactionOutputsExpectError(t *testing.T, buf []byte, expectedErr e
 		t.Fatal("decodeTransactionOutputs: expected error, got nil")
 	} else if err != expectedErr {
 		t.Fatalf("decodeTransactionOutputs: expected error %q, got %q", expectedErr, err)
+	}
+}
+
+func decodeTransactionOutputsExactExpectError(t *testing.T, buf []byte, expectedErr error) {
+	var obj transactionOutputs
+	if err := decodeTransactionOutputsExact(buf, &obj); err == nil {
+		t.Fatal("decodeTransactionOutputsExact: expected error, got nil")
+	} else if err != expectedErr {
+		t.Fatalf("decodeTransactionOutputsExact: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -311,8 +360,8 @@ func testSkyencoderTransactionOutputsDecodeErrors(t *testing.T, k int, tag strin
 	}
 
 	n := encodeSizeTransactionOutputs(obj)
-	buf := make([]byte, n)
-	if err := encodeTransactionOutputs(buf, obj); err != nil {
+	buf, err := encodeTransactionOutputs(obj)
+	if err != nil {
 		t.Fatalf("encodeTransactionOutputs failed: %v", err)
 	}
 
@@ -320,6 +369,10 @@ func testSkyencoderTransactionOutputsDecodeErrors(t *testing.T, k int, tag strin
 	if hasOmitEmptyField(obj) && numEncodableFields(obj) > 1 {
 		t.Run(fmt.Sprintf("%d %s buffer underflow nil", k, tag), func(t *testing.T) {
 			decodeTransactionOutputsExpectError(t, nil, encoder.ErrBufferUnderflow)
+		})
+
+		t.Run(fmt.Sprintf("%d %s exact buffer underflow nil", k, tag), func(t *testing.T) {
+			decodeTransactionOutputsExactExpectError(t, nil, encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -330,8 +383,13 @@ func testSkyencoderTransactionOutputsDecodeErrors(t *testing.T, k int, tag strin
 		if i == skipN {
 			continue
 		}
+
 		t.Run(fmt.Sprintf("%d %s buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
 			decodeTransactionOutputsExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
+		})
+
+		t.Run(fmt.Sprintf("%d %s exact buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
+			decodeTransactionOutputsExactExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -343,6 +401,10 @@ func testSkyencoderTransactionOutputsDecodeErrors(t *testing.T, k int, tag strin
 	} else {
 		buf = append(buf, 0)
 	}
+
+	t.Run(fmt.Sprintf("%d %s exact buffer remaining bytes", k, tag), func(t *testing.T) {
+		decodeTransactionOutputsExactExpectError(t, buf, encoder.ErrRemainingBytes)
+	})
 }
 
 func TestSkyencoderTransactionOutputsDecodeErrors(t *testing.T) {

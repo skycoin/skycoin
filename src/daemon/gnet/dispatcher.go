@@ -94,7 +94,7 @@ func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 		return nil, ErrDisconnectMalformedMessage
 	}
 
-	if used != len(msg) {
+	if used != uint64(len(msg)) {
 		logger.WithError(ErrDisconnectMessageDecodeUnderflow).WithFields(logrus.Fields{
 			"connID":      id,
 			"messageType": fmt.Sprintf("%v", t),
@@ -106,7 +106,7 @@ func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 }
 
 // Wraps Serializer.Decode and traps panics as an error
-func deserializeMessage(msg []byte, v reflect.Value) (n int, err error) {
+func deserializeMessage(msg []byte, v reflect.Value) (n uint64, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Critical().Warningf("Recovering from deserializer panic: %v", r)

@@ -9,7 +9,6 @@ import (
 	"sort"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
@@ -464,12 +463,12 @@ func (txn *Transaction) hashInner() (cipher.SHA256, error) {
 	n2 := encodeSizeTransactionOutputs(txnOutputs)
 	buf := make([]byte, n1+n2)
 
-	if err := encodeTransactionInputs(buf[:n1], txnInputs); err != nil {
-		return cipher.SHA256{}, fmt.Errorf("encodeTransactionInputs failed: %v", err)
+	if err := encodeTransactionInputsToBuffer(buf[:n1], txnInputs); err != nil {
+		return cipher.SHA256{}, fmt.Errorf("encodeTransactionInputsToBuffer failed: %v", err)
 	}
 
-	if err := encodeTransactionOutputs(buf[n1:], txnOutputs); err != nil {
-		return cipher.SHA256{}, fmt.Errorf("encodeTransactionOutputs failed: %v", err)
+	if err := encodeTransactionOutputsToBuffer(buf[n1:], txnOutputs); err != nil {
+		return cipher.SHA256{}, fmt.Errorf("encodeTransactionOutputsToBuffer failed: %v", err)
 	}
 
 	return cipher.SumSHA256(buf), nil
@@ -477,12 +476,7 @@ func (txn *Transaction) hashInner() (cipher.SHA256, error) {
 
 // Serialize serialize the transaction
 func (txn *Transaction) Serialize() ([]byte, error) {
-	n := encodeSizeTransaction(txn)
-	buf := make([]byte, n)
-	if err := encodeTransaction(buf, txn); err != nil {
-		return nil, err
-	}
-	return buf, nil
+	return encodeTransaction(txn)
 }
 
 // MustTransactionDeserialize deserialize transaction, panics on error
@@ -497,10 +491,8 @@ func MustTransactionDeserialize(b []byte) Transaction {
 // TransactionDeserialize deserialize transaction
 func TransactionDeserialize(b []byte) (Transaction, error) {
 	t := Transaction{}
-	if n, err := decodeTransaction(b, &t); err != nil {
-		return t, fmt.Errorf("Invalid transaction: %v", err)
-	} else if n != len(b) {
-		return t, fmt.Errorf("Invalid transaction: %v", encoder.ErrRemainingBytes)
+	if err := decodeTransactionExact(b, &t); err != nil {
+		return Transaction{}, fmt.Errorf("Invalid transaction: %v", err)
 	}
 	return t, nil
 }

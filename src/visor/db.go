@@ -342,17 +342,13 @@ func verifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b1 UnconfirmedTransaction
-		if n, err := decodeUnconfirmedTransaction(v, &b1); err != nil {
+		if err := decodeUnconfirmedTransactionExact(v, &b1); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		var b2 UnconfirmedTransaction
-		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1, b2) {
@@ -372,17 +368,13 @@ func verifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b1 UxArray
-		if n, err := decodeUxArray(v, &b1); err != nil {
+		if err := decodeUxArrayExact(v, &b1); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		var b2 coin.UxArray
-		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1.UxArray, b2) {

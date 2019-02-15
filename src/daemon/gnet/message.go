@@ -28,7 +28,7 @@ func MessagePrefixFromString(prefix string) MessagePrefix {
 type Serializer interface {
 	EncodeSize() uint64
 	Encode([]byte) error
-	Decode([]byte) (int, error)
+	Decode([]byte) (uint64, error)
 }
 
 // Handler message handler interface

@@ -62,56 +62,6 @@ func newRandomZeroLenNilIntroductionMessageForEncodeTest(t *testing.T, rand *mat
 }
 
 func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
-	// encodeSize
-
-	n1 := encoder.Size(obj)
-	n2 := encodeSizeIntroductionMessage(obj)
-
-	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != encodeSizeIntroductionMessage() (%d != %d)", n1, n2)
-	}
-
-	// Encode
-
-	data1 := encoder.Serialize(obj)
-
-	data2 := make([]byte, n2)
-	if err := encodeIntroductionMessage(data2, obj); err != nil {
-		t.Fatalf("encodeIntroductionMessage failed: %v", err)
-	}
-
-	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(encodeIntroductionMessage()) (%d != %d)", len(data1), len(data2))
-	}
-
-	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != encode[1]s()")
-	}
-
-	// Decode
-
-	var obj2 IntroductionMessage
-	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
-		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
-	} else if n != len(data1) {
-		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
-	}
-
-	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw result wrong")
-	}
-
-	var obj3 IntroductionMessage
-	if n, err := decodeIntroductionMessage(data2, &obj3); err != nil {
-		t.Fatalf("decodeIntroductionMessage failed: %v", err)
-	} else if n != len(data2) {
-		t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
-	}
-
-	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeIntroductionMessage()")
-	}
-
 	isEncodableField := func(f reflect.StructField) bool {
 		// Skip unexported fields
 		if f.PkgPath != "" {
@@ -168,13 +118,103 @@ func testSkyencoderIntroductionMessage(t *testing.T, obj *IntroductionMessage) {
 		}
 	}
 
+	// encodeSize
+
+	n1 := encoder.Size(obj)
+	n2 := encodeSizeIntroductionMessage(obj)
+
+	if uint64(n1) != n2 {
+		t.Fatalf("encoder.Size() != encodeSizeIntroductionMessage() (%d != %d)", n1, n2)
+	}
+
+	// Encode
+
+	// encoder.Serialize
+	data1 := encoder.Serialize(obj)
+
+	// Encode
+	data2, err := encodeIntroductionMessage(obj)
+	if err != nil {
+		t.Fatalf("encodeIntroductionMessage failed: %v", err)
+	}
+	if uint64(len(data2)) != n2 {
+		t.Fatal("encodeIntroductionMessage produced bytes of unexpected length")
+	}
+	if len(data1) != len(data2) {
+		t.Fatalf("len(encoder.Serialize()) != len(encodeIntroductionMessage()) (%d != %d)", len(data1), len(data2))
+	}
+
+	// EncodeToBuffer
+	data3 := make([]byte, n2+5)
+	if err := encodeIntroductionMessageToBuffer(data3, obj); err != nil {
+		t.Fatalf("encodeIntroductionMessageToBuffer failed: %v", err)
+	}
+
+	if !bytes.Equal(data1, data2) {
+		t.Fatal("encoder.Serialize() != encode[1]s()")
+	}
+
+	// Decode
+
+	// encoder.DeserializeRaw
+	var obj2 IntroductionMessage
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != uint64(len(data1)) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
+	}
+	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw result wrong")
+	}
+
+	// Decode
+	var obj3 IntroductionMessage
+	if n, err := decodeIntroductionMessage(data2, &obj3); err != nil {
+		t.Fatalf("decodeIntroductionMessage failed: %v", err)
+	} else if n != uint64(len(data2)) {
+		t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
+	}
+	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeIntroductionMessage()")
+	}
+
+	// Decode, excess buffer
+	var obj4 IntroductionMessage
+	n, err := decodeIntroductionMessage(data3, &obj4)
+	if err != nil {
+		t.Fatalf("decodeIntroductionMessage failed: %v", err)
+	}
+
+	if hasOmitEmptyField(&obj4) && omitEmptyLen(&obj4) == 0 {
+		// 4 bytes read for the omitEmpty length, which should be zero (see the 5 bytes added above)
+		if n != n2+4 {
+			t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", n2+4, n)
+		}
+	} else {
+		if n != n2 {
+			t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", n2, n)
+		}
+	}
+	if !cmp.Equal(obj2, obj4, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeIntroductionMessage()")
+	}
+
+	// DecodeExact
+	var obj5 IntroductionMessage
+	if err := decodeIntroductionMessageExact(data2, &obj5); err != nil {
+		t.Fatalf("decodeIntroductionMessage failed: %v", err)
+	}
+	if !cmp.Equal(obj2, obj5, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeIntroductionMessage()")
+	}
+
 	// Check that the bytes read value is correct when providing an extended buffer
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
-		data3 := append(data2[:], padding...)
-		if n, err := decodeIntroductionMessage(data3, &obj3); err != nil {
+		data4 := append(data2[:], padding...)
+		if n, err := decodeIntroductionMessage(data4, &obj3); err != nil {
 			t.Fatalf("decodeIntroductionMessage failed: %v", err)
-		} else if n != len(data2) {
+		} else if n != uint64(len(data2)) {
 			t.Fatalf("decodeIntroductionMessage bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,6 +265,15 @@ func decodeIntroductionMessageExpectError(t *testing.T, buf []byte, expectedErr 
 		t.Fatal("decodeIntroductionMessage: expected error, got nil")
 	} else if err != expectedErr {
 		t.Fatalf("decodeIntroductionMessage: expected error %q, got %q", expectedErr, err)
+	}
+}
+
+func decodeIntroductionMessageExactExpectError(t *testing.T, buf []byte, expectedErr error) {
+	var obj IntroductionMessage
+	if err := decodeIntroductionMessageExact(buf, &obj); err == nil {
+		t.Fatal("decodeIntroductionMessageExact: expected error, got nil")
+	} else if err != expectedErr {
+		t.Fatalf("decodeIntroductionMessageExact: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -311,8 +360,8 @@ func testSkyencoderIntroductionMessageDecodeErrors(t *testing.T, k int, tag stri
 	}
 
 	n := encodeSizeIntroductionMessage(obj)
-	buf := make([]byte, n)
-	if err := encodeIntroductionMessage(buf, obj); err != nil {
+	buf, err := encodeIntroductionMessage(obj)
+	if err != nil {
 		t.Fatalf("encodeIntroductionMessage failed: %v", err)
 	}
 
@@ -320,6 +369,10 @@ func testSkyencoderIntroductionMessageDecodeErrors(t *testing.T, k int, tag stri
 	if hasOmitEmptyField(obj) && numEncodableFields(obj) > 1 {
 		t.Run(fmt.Sprintf("%d %s buffer underflow nil", k, tag), func(t *testing.T) {
 			decodeIntroductionMessageExpectError(t, nil, encoder.ErrBufferUnderflow)
+		})
+
+		t.Run(fmt.Sprintf("%d %s exact buffer underflow nil", k, tag), func(t *testing.T) {
+			decodeIntroductionMessageExactExpectError(t, nil, encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -330,8 +383,13 @@ func testSkyencoderIntroductionMessageDecodeErrors(t *testing.T, k int, tag stri
 		if i == skipN {
 			continue
 		}
+
 		t.Run(fmt.Sprintf("%d %s buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
 			decodeIntroductionMessageExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
+		})
+
+		t.Run(fmt.Sprintf("%d %s exact buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
+			decodeIntroductionMessageExactExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -343,6 +401,10 @@ func testSkyencoderIntroductionMessageDecodeErrors(t *testing.T, k int, tag stri
 	} else {
 		buf = append(buf, 0)
 	}
+
+	t.Run(fmt.Sprintf("%d %s exact buffer remaining bytes", k, tag), func(t *testing.T) {
+		decodeIntroductionMessageExactExpectError(t, buf, encoder.ErrRemainingBytes)
+	})
 }
 
 func TestSkyencoderIntroductionMessageDecodeErrors(t *testing.T) {

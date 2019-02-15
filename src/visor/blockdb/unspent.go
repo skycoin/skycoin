@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -83,10 +82,8 @@ func (pl pool) get(tx *dbutil.Tx, hash cipher.SHA256) (*coin.UxOut, error) {
 		return nil, nil
 	}
 
-	if n, err := decodeUxOut(v, &out); err != nil {
+	if err := decodeUxOutExact(v, &out); err != nil {
 		return nil, err
-	} else if n != len(v) {
-		return nil, encoder.ErrRemainingBytes
 	}
 
 	return &out, nil
@@ -97,10 +94,8 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 		var ux coin.UxOut
-		if n, err := decodeUxOut(v, &ux); err != nil {
+		if err := decodeUxOutExact(v, &ux); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		uxa = append(uxa, ux)
@@ -113,8 +108,8 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 }
 
 func (pl pool) put(tx *dbutil.Tx, hash cipher.SHA256, ux coin.UxOut) error {
-	buf := make([]byte, encodeSizeUxOut(&ux))
-	if err := encodeUxOut(buf, &ux); err != nil {
+	buf, err := encodeUxOut(&ux)
+	if err != nil {
 		return err
 	}
 
@@ -137,10 +132,8 @@ func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256,
 		return nil, nil
 	}
 
-	if n, err := decodeHashes(v, &hashes); err != nil {
+	if err := decodeHashesExact(v, &hashes); err != nil {
 		return nil, err
-	} else if n != len(v) {
-		return nil, encoder.ErrRemainingBytes
 	}
 
 	return hashes.Hashes, nil
@@ -160,11 +153,10 @@ func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.S
 		hashesMap[h] = struct{}{}
 	}
 
-	hs := &Hashes{
+	buf, err := encodeHashes(&Hashes{
 		Hashes: hashes,
-	}
-	buf := make([]byte, encodeSizeHashes(hs))
-	if err := encodeHashes(buf, hs); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -289,10 +281,8 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 	var maxBlockSeq uint64
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
 		var ux coin.UxOut
-		if n, err := decodeUxOut(v, &ux); err != nil {
+		if err := decodeUxOutExact(v, &ux); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		if ux.Head.BkSeq > maxBlockSeq {

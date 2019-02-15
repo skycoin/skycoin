@@ -16,9 +16,26 @@ func encodeSizeUxHead(obj *UxHead) uint64 {
 	return i0
 }
 
-// encodeUxHead encodes an object of type UxHead to the buffer in encoder.Encoder.
+// encodeUxHead encodes an object of type UxHead to a buffer allocated to the exact size
+// required to encode the object.
+func encodeUxHead(obj *UxHead) ([]byte, error) {
+	n := encodeSizeUxHead(obj)
+	buf := make([]byte, n)
+
+	if err := encodeUxHeadToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeUxHeadToBuffer encodes an object of type UxHead to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeUxHead(buf []byte, obj *UxHead) error {
+func encodeUxHeadToBuffer(buf []byte, obj *UxHead) error {
+	if uint64(len(buf)) < encodeSizeUxHead(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -32,9 +49,10 @@ func encodeUxHead(buf []byte, obj *UxHead) error {
 	return nil
 }
 
-// decodeUxHead decodes an object of type UxHead from the buffer in encoder.Decoder.
+// decodeUxHead decodes an object of type UxHead from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeUxHead(buf []byte, obj *UxHead) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeUxHead(buf []byte, obj *UxHead) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -43,7 +61,7 @@ func decodeUxHead(buf []byte, obj *UxHead) (int, error) {
 		// obj.Time
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Time = i
 	}
@@ -52,10 +70,23 @@ func decodeUxHead(buf []byte, obj *UxHead) (int, error) {
 		// obj.BkSeq
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.BkSeq = i
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeUxHeadExact decodes an object of type UxHead from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeUxHeadExact(buf []byte, obj *UxHead) error {
+	if n, err := decodeUxHead(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

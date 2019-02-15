@@ -9,7 +9,6 @@ import (
 	"errors"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -33,12 +32,11 @@ var TransactionsBkt = []byte("transactions")
 // Transactions transaction bucket instance.
 type transactions struct{}
 
-// put transaction to the db
+// put transaction in the db
 func (txs *transactions) put(tx *dbutil.Tx, txn *Transaction) error {
 	hash := txn.Hash()
-	n := encodeSizeTransaction(txn)
-	buf := make([]byte, n)
-	if err := encodeTransaction(buf, txn); err != nil {
+	buf, err := encodeTransaction(txn)
+	if err != nil {
 		return err
 	}
 
@@ -56,10 +54,8 @@ func (txs *transactions) get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, e
 		return nil, nil
 	}
 
-	if n, err := decodeTransaction(v, &txn); err != nil {
+	if err := decodeTransactionExact(v, &txn); err != nil {
 		return nil, err
-	} else if n != len(v) {
-		return nil, encoder.ErrRemainingBytes
 	}
 
 	return &txn, nil
@@ -102,10 +98,8 @@ func (txs *transactions) forEach(tx *dbutil.Tx, f func(cipher.SHA256, *Transacti
 		}
 
 		var txn Transaction
-		if n, err := decodeTransaction(v, &txn); err != nil {
+		if err := decodeTransactionExact(v, &txn); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		return f(hash, &txn)

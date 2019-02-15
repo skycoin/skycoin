@@ -13,9 +13,26 @@ func encodeSizeSig(obj *Sig) uint64 {
 	return i0
 }
 
-// encodeSig encodes an object of type Sig to the buffer in encoder.Encoder.
+// encodeSig encodes an object of type Sig to a buffer allocated to the exact size
+// required to encode the object.
+func encodeSig(obj *Sig) ([]byte, error) {
+	n := encodeSizeSig(obj)
+	buf := make([]byte, n)
+
+	if err := encodeSigToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeSigToBuffer encodes an object of type Sig to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeSig(buf []byte, obj *Sig) error {
+func encodeSigToBuffer(buf []byte, obj *Sig) error {
+	if uint64(len(buf)) < encodeSizeSig(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -26,9 +43,10 @@ func encodeSig(buf []byte, obj *Sig) error {
 	return nil
 }
 
-// decodeSig decodes an object of type Sig from the buffer in encoder.Decoder.
+// decodeSig decodes an object of type Sig from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeSig(buf []byte, obj *Sig) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeSig(buf []byte, obj *Sig) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -36,11 +54,24 @@ func decodeSig(buf []byte, obj *Sig) (int, error) {
 	{
 		// obj.Sig
 		if len(d.Buffer) < len(obj.Sig) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.Sig[:], d.Buffer[:len(obj.Sig)])
 		d.Buffer = d.Buffer[len(obj.Sig):]
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeSigExact decodes an object of type Sig from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeSigExact(buf []byte, obj *Sig) error {
+	if n, err := decodeSig(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

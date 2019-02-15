@@ -67,9 +67,26 @@ func encodeSizeTransaction(obj *Transaction) uint64 {
 	return i0
 }
 
-// encodeTransaction encodes an object of type Transaction to the buffer in encoder.Encoder.
+// encodeTransaction encodes an object of type Transaction to a buffer allocated to the exact size
+// required to encode the object.
+func encodeTransaction(obj *Transaction) ([]byte, error) {
+	n := encodeSizeTransaction(obj)
+	buf := make([]byte, n)
+
+	if err := encodeTransactionToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeTransactionToBuffer encodes an object of type Transaction to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeTransaction(buf []byte, obj *Transaction) error {
+func encodeTransactionToBuffer(buf []byte, obj *Transaction) error {
+	if uint64(len(buf)) < encodeSizeTransaction(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -158,9 +175,10 @@ func encodeTransaction(buf []byte, obj *Transaction) error {
 	return nil
 }
 
-// decodeTransaction decodes an object of type Transaction from the buffer in encoder.Decoder.
+// decodeTransaction decodes an object of type Transaction from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeTransaction(buf []byte, obj *Transaction) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -169,7 +187,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 		// obj.Length
 		i, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Length = i
 	}
@@ -178,7 +196,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 		// obj.Type
 		i, err := d.Uint8()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Type = i
 	}
@@ -186,7 +204,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 	{
 		// obj.InnerHash
 		if len(d.Buffer) < len(obj.InnerHash) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.InnerHash[:], d.Buffer[:len(obj.InnerHash)])
 		d.Buffer = d.Buffer[len(obj.InnerHash):]
@@ -197,16 +215,16 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 65535 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -216,7 +234,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 				{
 					// obj.Sigs[z1]
 					if len(d.Buffer) < len(obj.Sigs[z1]) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.Sigs[z1][:], d.Buffer[:len(obj.Sigs[z1])])
 					d.Buffer = d.Buffer[len(obj.Sigs[z1]):]
@@ -231,16 +249,16 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 65535 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -250,7 +268,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 				{
 					// obj.In[z1]
 					if len(d.Buffer) < len(obj.In[z1]) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.In[z1][:], d.Buffer[:len(obj.In[z1])])
 					d.Buffer = d.Buffer[len(obj.In[z1]):]
@@ -265,16 +283,16 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 65535 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -285,7 +303,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 					// obj.Out[z1].Address.Version
 					i, err := d.Uint8()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Out[z1].Address.Version = i
 				}
@@ -293,7 +311,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 				{
 					// obj.Out[z1].Address.Key
 					if len(d.Buffer) < len(obj.Out[z1].Address.Key) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.Out[z1].Address.Key[:], d.Buffer[:len(obj.Out[z1].Address.Key)])
 					d.Buffer = d.Buffer[len(obj.Out[z1].Address.Key):]
@@ -303,7 +321,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 					// obj.Out[z1].Coins
 					i, err := d.Uint64()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Out[z1].Coins = i
 				}
@@ -312,7 +330,7 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 					// obj.Out[z1].Hours
 					i, err := d.Uint64()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Out[z1].Hours = i
 				}
@@ -321,5 +339,18 @@ func decodeTransaction(buf []byte, obj *Transaction) (int, error) {
 		}
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeTransactionExact decodes an object of type Transaction from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeTransactionExact(buf []byte, obj *Transaction) error {
+	if n, err := decodeTransaction(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

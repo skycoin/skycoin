@@ -76,9 +76,26 @@ func encodeSizeGiveTxnsMessage(obj *GiveTxnsMessage) uint64 {
 	return i0
 }
 
-// encodeGiveTxnsMessage encodes an object of type GiveTxnsMessage to the buffer in encoder.Encoder.
+// encodeGiveTxnsMessage encodes an object of type GiveTxnsMessage to a buffer allocated to the exact size
+// required to encode the object.
+func encodeGiveTxnsMessage(obj *GiveTxnsMessage) ([]byte, error) {
+	n := encodeSizeGiveTxnsMessage(obj)
+	buf := make([]byte, n)
+
+	if err := encodeGiveTxnsMessageToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeGiveTxnsMessageToBuffer encodes an object of type GiveTxnsMessage to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) error {
+func encodeGiveTxnsMessageToBuffer(buf []byte, obj *GiveTxnsMessage) error {
+	if uint64(len(buf)) < encodeSizeGiveTxnsMessage(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -185,9 +202,10 @@ func encodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) error {
 	return nil
 }
 
-// decodeGiveTxnsMessage decodes an object of type GiveTxnsMessage from the buffer in encoder.Decoder.
+// decodeGiveTxnsMessage decodes an object of type GiveTxnsMessage from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -197,16 +215,16 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 256 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -217,7 +235,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 					// obj.Transactions[z1].Length
 					i, err := d.Uint32()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Transactions[z1].Length = i
 				}
@@ -226,7 +244,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 					// obj.Transactions[z1].Type
 					i, err := d.Uint8()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Transactions[z1].Type = i
 				}
@@ -234,7 +252,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 				{
 					// obj.Transactions[z1].InnerHash
 					if len(d.Buffer) < len(obj.Transactions[z1].InnerHash) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.Transactions[z1].InnerHash[:], d.Buffer[:len(obj.Transactions[z1].InnerHash)])
 					d.Buffer = d.Buffer[len(obj.Transactions[z1].InnerHash):]
@@ -245,16 +263,16 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 
 					if length > 65535 {
-						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+						return 0, encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -264,7 +282,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 							{
 								// obj.Transactions[z1].Sigs[z3]
 								if len(d.Buffer) < len(obj.Transactions[z1].Sigs[z3]) {
-									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+									return 0, encoder.ErrBufferUnderflow
 								}
 								copy(obj.Transactions[z1].Sigs[z3][:], d.Buffer[:len(obj.Transactions[z1].Sigs[z3])])
 								d.Buffer = d.Buffer[len(obj.Transactions[z1].Sigs[z3]):]
@@ -279,16 +297,16 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 
 					if length > 65535 {
-						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+						return 0, encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -298,7 +316,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 							{
 								// obj.Transactions[z1].In[z3]
 								if len(d.Buffer) < len(obj.Transactions[z1].In[z3]) {
-									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+									return 0, encoder.ErrBufferUnderflow
 								}
 								copy(obj.Transactions[z1].In[z3][:], d.Buffer[:len(obj.Transactions[z1].In[z3])])
 								d.Buffer = d.Buffer[len(obj.Transactions[z1].In[z3]):]
@@ -313,16 +331,16 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 
 					if length > 65535 {
-						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+						return 0, encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -333,7 +351,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 								// obj.Transactions[z1].Out[z3].Address.Version
 								i, err := d.Uint8()
 								if err != nil {
-									return len(buf) - len(d.Buffer), err
+									return 0, err
 								}
 								obj.Transactions[z1].Out[z3].Address.Version = i
 							}
@@ -341,7 +359,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 							{
 								// obj.Transactions[z1].Out[z3].Address.Key
 								if len(d.Buffer) < len(obj.Transactions[z1].Out[z3].Address.Key) {
-									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+									return 0, encoder.ErrBufferUnderflow
 								}
 								copy(obj.Transactions[z1].Out[z3].Address.Key[:], d.Buffer[:len(obj.Transactions[z1].Out[z3].Address.Key)])
 								d.Buffer = d.Buffer[len(obj.Transactions[z1].Out[z3].Address.Key):]
@@ -351,7 +369,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 								// obj.Transactions[z1].Out[z3].Coins
 								i, err := d.Uint64()
 								if err != nil {
-									return len(buf) - len(d.Buffer), err
+									return 0, err
 								}
 								obj.Transactions[z1].Out[z3].Coins = i
 							}
@@ -360,7 +378,7 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 								// obj.Transactions[z1].Out[z3].Hours
 								i, err := d.Uint64()
 								if err != nil {
-									return len(buf) - len(d.Buffer), err
+									return 0, err
 								}
 								obj.Transactions[z1].Out[z3].Hours = i
 							}
@@ -372,5 +390,18 @@ func decodeGiveTxnsMessage(buf []byte, obj *GiveTxnsMessage) (int, error) {
 		}
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeGiveTxnsMessageExact decodes an object of type GiveTxnsMessage from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeGiveTxnsMessageExact(buf []byte, obj *GiveTxnsMessage) error {
+	if n, err := decodeGiveTxnsMessage(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

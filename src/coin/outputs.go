@@ -71,13 +71,11 @@ func (uo *UxOut) SnapshotHash() cipher.SHA256 {
 	n2 := encodeSizeUxHead(&uo.Head)
 	buf := make([]byte, n1+n2)
 
-	err := encodeUxBody(buf[:n1], &uo.Body)
-	if err != nil {
-		log.Panicf("encodeUxBody failed: %v", err)
+	if err := encodeUxBodyToBuffer(buf[:n1], &uo.Body); err != nil {
+		log.Panicf("encodeUxBodyToBuffer failed: %v", err)
 	}
-	err = encodeUxHead(buf[n1:], &uo.Head)
-	if err != nil {
-		log.Panicf("encodeUxHead failed: %v", err)
+	if err := encodeUxHeadToBuffer(buf[n1:], &uo.Head); err != nil {
+		log.Panicf("encodeUxHeadToBuffer failed: %v", err)
 	}
 
 	return cipher.SumSHA256(buf)
@@ -85,9 +83,8 @@ func (uo *UxOut) SnapshotHash() cipher.SHA256 {
 
 // Hash returns hash of uxbody
 func (ub *UxBody) Hash() cipher.SHA256 {
-	n := encodeSizeUxBody(ub)
-	buf := make([]byte, n)
-	if err := encodeUxBody(buf, ub); err != nil {
+	buf, err := encodeUxBody(ub)
+	if err != nil {
 		log.Panicf("encodeUxBody failed: %v", err)
 	}
 	return cipher.SumSHA256(buf)

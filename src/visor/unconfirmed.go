@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -42,10 +41,8 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 		return nil, nil
 	}
 
-	if n, err := decodeUnconfirmedTransaction(v, &txn); err != nil {
+	if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
 		return nil, err
-	} else if n != len(v) {
-		return nil, encoder.ErrRemainingBytes
 	}
 
 	txnHash := txn.Transaction.Hash()
@@ -58,9 +55,8 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 
 func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTransaction) error {
 	h := v.Transaction.Hash()
-	n := encodeSizeUnconfirmedTransaction(v)
-	buf := make([]byte, n)
-	if err := encodeUnconfirmedTransaction(buf, v); err != nil {
+	buf, err := encodeUnconfirmedTransaction(v)
+	if err != nil {
 		return err
 	}
 
@@ -93,10 +89,8 @@ func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTransaction, err
 
 	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
 		var txn UnconfirmedTransaction
-		if n, err := decodeUnconfirmedTransaction(v, &txn); err != nil {
+		if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		txns = append(txns, txn)
@@ -120,10 +114,8 @@ func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx
 		}
 
 		var txn UnconfirmedTransaction
-		if n, err := decodeUnconfirmedTransaction(v, &txn); err != nil {
+		if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		return f(hash, txn)
@@ -137,12 +129,10 @@ func (utb *unconfirmedTxns) len(tx *dbutil.Tx) (uint64, error) {
 type txnUnspents struct{}
 
 func (txus *txnUnspents) put(tx *dbutil.Tx, hash cipher.SHA256, uxs coin.UxArray) error {
-	uxa := &UxArray{
+	buf, err := encodeUxArray(&UxArray{
 		UxArray: uxs,
-	}
-	n := encodeSizeUxArray(uxa)
-	buf := make([]byte, n)
-	if err := encodeUxArray(buf, uxa); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -158,10 +148,8 @@ func (txus *txnUnspents) getByAddr(tx *dbutil.Tx, a cipher.Address) (coin.UxArra
 
 	if err := dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(_, v []byte) error {
 		var uxa UxArray
-		if n, err := decodeUxArray(v, &uxa); err != nil {
+		if err := decodeUxArrayExact(v, &uxa); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		for i := range uxa.UxArray {

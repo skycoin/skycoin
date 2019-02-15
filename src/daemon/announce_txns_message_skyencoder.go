@@ -27,9 +27,26 @@ func encodeSizeAnnounceTxnsMessage(obj *AnnounceTxnsMessage) uint64 {
 	return i0
 }
 
-// encodeAnnounceTxnsMessage encodes an object of type AnnounceTxnsMessage to the buffer in encoder.Encoder.
+// encodeAnnounceTxnsMessage encodes an object of type AnnounceTxnsMessage to a buffer allocated to the exact size
+// required to encode the object.
+func encodeAnnounceTxnsMessage(obj *AnnounceTxnsMessage) ([]byte, error) {
+	n := encodeSizeAnnounceTxnsMessage(obj)
+	buf := make([]byte, n)
+
+	if err := encodeAnnounceTxnsMessageToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeAnnounceTxnsMessageToBuffer encodes an object of type AnnounceTxnsMessage to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) error {
+func encodeAnnounceTxnsMessageToBuffer(buf []byte, obj *AnnounceTxnsMessage) error {
+	if uint64(len(buf)) < encodeSizeAnnounceTxnsMessage(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -58,9 +75,10 @@ func encodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) error {
 	return nil
 }
 
-// decodeAnnounceTxnsMessage decodes an object of type AnnounceTxnsMessage from the buffer in encoder.Decoder.
+// decodeAnnounceTxnsMessage decodes an object of type AnnounceTxnsMessage from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -70,16 +88,16 @@ func decodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) (int, error
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 256 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -89,7 +107,7 @@ func decodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) (int, error
 				{
 					// obj.Transactions[z1]
 					if len(d.Buffer) < len(obj.Transactions[z1]) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.Transactions[z1][:], d.Buffer[:len(obj.Transactions[z1])])
 					d.Buffer = d.Buffer[len(obj.Transactions[z1]):]
@@ -99,5 +117,18 @@ func decodeAnnounceTxnsMessage(buf []byte, obj *AnnounceTxnsMessage) (int, error
 		}
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeAnnounceTxnsMessageExact decodes an object of type AnnounceTxnsMessage from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeAnnounceTxnsMessageExact(buf []byte, obj *AnnounceTxnsMessage) error {
+	if n, err := decodeAnnounceTxnsMessage(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

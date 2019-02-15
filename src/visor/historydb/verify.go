@@ -29,17 +29,13 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b1 Hashes
-		if n, err := decodeHashes(v, &b1); err != nil {
+		if err := decodeHashesExact(v, &b1); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		var b2 []cipher.SHA256
-		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1.Hashes, b2) {
@@ -59,17 +55,13 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b1 Hashes
-		if n, err := decodeHashes(v, &b1); err != nil {
+		if err := decodeHashesExact(v, &b1); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		var b2 []cipher.SHA256
-		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1.Hashes, b2) {
@@ -89,17 +81,13 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b1 UxOut
-		if n, err := decodeUxOut(v, &b1); err != nil {
+		if err := decodeUxOutExact(v, &b1); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		var b2 UxOut
-		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1, b2) {
@@ -119,17 +107,13 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		}
 
 		var b1 Transaction
-		if n, err := decodeTransaction(v, &b1); err != nil {
+		if err := decodeTransactionExact(v, &b1); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		var b2 Transaction
-		if n, err := encoder.DeserializeRaw(v, &b2); err != nil {
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		if !reflect.DeepEqual(b1, b2) {

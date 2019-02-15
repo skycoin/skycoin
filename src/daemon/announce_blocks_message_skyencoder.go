@@ -13,9 +13,26 @@ func encodeSizeAnnounceBlocksMessage(obj *AnnounceBlocksMessage) uint64 {
 	return i0
 }
 
-// encodeAnnounceBlocksMessage encodes an object of type AnnounceBlocksMessage to the buffer in encoder.Encoder.
+// encodeAnnounceBlocksMessage encodes an object of type AnnounceBlocksMessage to a buffer allocated to the exact size
+// required to encode the object.
+func encodeAnnounceBlocksMessage(obj *AnnounceBlocksMessage) ([]byte, error) {
+	n := encodeSizeAnnounceBlocksMessage(obj)
+	buf := make([]byte, n)
+
+	if err := encodeAnnounceBlocksMessageToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeAnnounceBlocksMessageToBuffer encodes an object of type AnnounceBlocksMessage to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) error {
+func encodeAnnounceBlocksMessageToBuffer(buf []byte, obj *AnnounceBlocksMessage) error {
+	if uint64(len(buf)) < encodeSizeAnnounceBlocksMessage(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -26,9 +43,10 @@ func encodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) error {
 	return nil
 }
 
-// decodeAnnounceBlocksMessage decodes an object of type AnnounceBlocksMessage from the buffer in encoder.Decoder.
+// decodeAnnounceBlocksMessage decodes an object of type AnnounceBlocksMessage from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -37,10 +55,23 @@ func decodeAnnounceBlocksMessage(buf []byte, obj *AnnounceBlocksMessage) (int, e
 		// obj.MaxBkSeq
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.MaxBkSeq = i
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeAnnounceBlocksMessageExact decodes an object of type AnnounceBlocksMessage from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeAnnounceBlocksMessageExact(buf []byte, obj *AnnounceBlocksMessage) error {
+	if n, err := decodeAnnounceBlocksMessage(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

@@ -62,56 +62,6 @@ func newRandomZeroLenNilSigForEncodeTest(t *testing.T, rand *mathrand.Rand) *Sig
 }
 
 func testSkyencoderSig(t *testing.T, obj *Sig) {
-	// encodeSize
-
-	n1 := encoder.Size(obj)
-	n2 := encodeSizeSig(obj)
-
-	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != encodeSizeSig() (%d != %d)", n1, n2)
-	}
-
-	// Encode
-
-	data1 := encoder.Serialize(obj)
-
-	data2 := make([]byte, n2)
-	if err := encodeSig(data2, obj); err != nil {
-		t.Fatalf("encodeSig failed: %v", err)
-	}
-
-	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(encodeSig()) (%d != %d)", len(data1), len(data2))
-	}
-
-	if !bytes.Equal(data1, data2) {
-		t.Fatal("encoder.Serialize() != encode[1]s()")
-	}
-
-	// Decode
-
-	var obj2 Sig
-	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
-		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
-	} else if n != len(data1) {
-		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
-	}
-
-	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw result wrong")
-	}
-
-	var obj3 Sig
-	if n, err := decodeSig(data2, &obj3); err != nil {
-		t.Fatalf("decodeSig failed: %v", err)
-	} else if n != len(data2) {
-		t.Fatalf("decodeSig bytes read length should be %d, is %d", len(data2), n)
-	}
-
-	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeSig()")
-	}
-
 	isEncodableField := func(f reflect.StructField) bool {
 		// Skip unexported fields
 		if f.PkgPath != "" {
@@ -168,13 +118,103 @@ func testSkyencoderSig(t *testing.T, obj *Sig) {
 		}
 	}
 
+	// encodeSize
+
+	n1 := encoder.Size(obj)
+	n2 := encodeSizeSig(obj)
+
+	if uint64(n1) != n2 {
+		t.Fatalf("encoder.Size() != encodeSizeSig() (%d != %d)", n1, n2)
+	}
+
+	// Encode
+
+	// encoder.Serialize
+	data1 := encoder.Serialize(obj)
+
+	// Encode
+	data2, err := encodeSig(obj)
+	if err != nil {
+		t.Fatalf("encodeSig failed: %v", err)
+	}
+	if uint64(len(data2)) != n2 {
+		t.Fatal("encodeSig produced bytes of unexpected length")
+	}
+	if len(data1) != len(data2) {
+		t.Fatalf("len(encoder.Serialize()) != len(encodeSig()) (%d != %d)", len(data1), len(data2))
+	}
+
+	// EncodeToBuffer
+	data3 := make([]byte, n2+5)
+	if err := encodeSigToBuffer(data3, obj); err != nil {
+		t.Fatalf("encodeSigToBuffer failed: %v", err)
+	}
+
+	if !bytes.Equal(data1, data2) {
+		t.Fatal("encoder.Serialize() != encode[1]s()")
+	}
+
+	// Decode
+
+	// encoder.DeserializeRaw
+	var obj2 Sig
+	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
+	} else if n != uint64(len(data1)) {
+		t.Fatalf("encoder.DeserializeRaw failed: %v", encoder.ErrRemainingBytes)
+	}
+	if !cmp.Equal(*obj, obj2, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw result wrong")
+	}
+
+	// Decode
+	var obj3 Sig
+	if n, err := decodeSig(data2, &obj3); err != nil {
+		t.Fatalf("decodeSig failed: %v", err)
+	} else if n != uint64(len(data2)) {
+		t.Fatalf("decodeSig bytes read length should be %d, is %d", len(data2), n)
+	}
+	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeSig()")
+	}
+
+	// Decode, excess buffer
+	var obj4 Sig
+	n, err := decodeSig(data3, &obj4)
+	if err != nil {
+		t.Fatalf("decodeSig failed: %v", err)
+	}
+
+	if hasOmitEmptyField(&obj4) && omitEmptyLen(&obj4) == 0 {
+		// 4 bytes read for the omitEmpty length, which should be zero (see the 5 bytes added above)
+		if n != n2+4 {
+			t.Fatalf("decodeSig bytes read length should be %d, is %d", n2+4, n)
+		}
+	} else {
+		if n != n2 {
+			t.Fatalf("decodeSig bytes read length should be %d, is %d", n2, n)
+		}
+	}
+	if !cmp.Equal(obj2, obj4, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeSig()")
+	}
+
+	// DecodeExact
+	var obj5 Sig
+	if err := decodeSigExact(data2, &obj5); err != nil {
+		t.Fatalf("decodeSig failed: %v", err)
+	}
+	if !cmp.Equal(obj2, obj5, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
+		t.Fatal("encoder.DeserializeRaw() != decodeSig()")
+	}
+
 	// Check that the bytes read value is correct when providing an extended buffer
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
-		data3 := append(data2[:], padding...)
-		if n, err := decodeSig(data3, &obj3); err != nil {
+		data4 := append(data2[:], padding...)
+		if n, err := decodeSig(data4, &obj3); err != nil {
 			t.Fatalf("decodeSig failed: %v", err)
-		} else if n != len(data2) {
+		} else if n != uint64(len(data2)) {
 			t.Fatalf("decodeSig bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
@@ -225,6 +265,15 @@ func decodeSigExpectError(t *testing.T, buf []byte, expectedErr error) {
 		t.Fatal("decodeSig: expected error, got nil")
 	} else if err != expectedErr {
 		t.Fatalf("decodeSig: expected error %q, got %q", expectedErr, err)
+	}
+}
+
+func decodeSigExactExpectError(t *testing.T, buf []byte, expectedErr error) {
+	var obj Sig
+	if err := decodeSigExact(buf, &obj); err == nil {
+		t.Fatal("decodeSigExact: expected error, got nil")
+	} else if err != expectedErr {
+		t.Fatalf("decodeSigExact: expected error %q, got %q", expectedErr, err)
 	}
 }
 
@@ -311,8 +360,8 @@ func testSkyencoderSigDecodeErrors(t *testing.T, k int, tag string, obj *Sig) {
 	}
 
 	n := encodeSizeSig(obj)
-	buf := make([]byte, n)
-	if err := encodeSig(buf, obj); err != nil {
+	buf, err := encodeSig(obj)
+	if err != nil {
 		t.Fatalf("encodeSig failed: %v", err)
 	}
 
@@ -320,6 +369,10 @@ func testSkyencoderSigDecodeErrors(t *testing.T, k int, tag string, obj *Sig) {
 	if hasOmitEmptyField(obj) && numEncodableFields(obj) > 1 {
 		t.Run(fmt.Sprintf("%d %s buffer underflow nil", k, tag), func(t *testing.T) {
 			decodeSigExpectError(t, nil, encoder.ErrBufferUnderflow)
+		})
+
+		t.Run(fmt.Sprintf("%d %s exact buffer underflow nil", k, tag), func(t *testing.T) {
+			decodeSigExactExpectError(t, nil, encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -330,8 +383,13 @@ func testSkyencoderSigDecodeErrors(t *testing.T, k int, tag string, obj *Sig) {
 		if i == skipN {
 			continue
 		}
+
 		t.Run(fmt.Sprintf("%d %s buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
 			decodeSigExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
+		})
+
+		t.Run(fmt.Sprintf("%d %s exact buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
+			decodeSigExactExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -343,6 +401,10 @@ func testSkyencoderSigDecodeErrors(t *testing.T, k int, tag string, obj *Sig) {
 	} else {
 		buf = append(buf, 0)
 	}
+
+	t.Run(fmt.Sprintf("%d %s exact buffer remaining bytes", k, tag), func(t *testing.T) {
+		decodeSigExactExpectError(t, buf, encoder.ErrRemainingBytes)
+	})
 }
 
 func TestSkyencoderSigDecodeErrors(t *testing.T) {

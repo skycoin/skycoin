@@ -17,7 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func randBytes(t *testing.T, n int) []byte { // nolint: unparam
+func randBytes(t *testing.T, n uint64) []byte { // nolint: unparam
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
 	_, err := rand.Read(bytes)
@@ -75,7 +75,7 @@ func Test_Encode_1(t *testing.T) {
 	var ts2 TestStruct
 	n, err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	b2 := Serialize(ts2)
 
@@ -97,7 +97,7 @@ func Test_Encode_2a(t *testing.T) {
 	var ts2 TestStruct2
 	n, err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	b2 := Serialize(ts2)
 
@@ -118,7 +118,7 @@ func Test_Encode_2b(t *testing.T) {
 	var ts2 TestStruct2
 	n, err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	b2 := Serialize(ts2)
 
@@ -141,7 +141,7 @@ func Test_Encode_3a(t *testing.T) {
 	var t2 TestStruct3
 	n, err := DeserializeRaw(b, &t2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || !bytes.Equal(t1.K, t2.K))
 
@@ -161,7 +161,7 @@ func Test_Encode_3b(t *testing.T) {
 	var t2 TestStruct3
 	n, err := DeserializeRaw(b, &t2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || !bytes.Equal(t1.K, t2.K))
 
@@ -192,7 +192,7 @@ func Test_Encode_4(t *testing.T) {
 	var t2 TestStruct5
 	n, err := DeserializeRaw(b, &t2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	require.Equal(t, t1.X, t2.X, "TestStruct5.X not equal")
 
@@ -220,7 +220,7 @@ func TestDeserializeRawToValue(t *testing.T) {
 
 	n, err := DeserializeRawToValue(b1, v)
 	require.NoError(t, err)
-	require.Equal(t, len(b1), n)
+	require.Equal(t, uint64(len(b1)), n)
 
 	v = reflect.Indirect(v)
 	require.Equal(t, int64(ts.X), v.FieldByName("X").Int())
@@ -238,7 +238,7 @@ func TestDeserializeRawToValue(t *testing.T) {
 
 	var ssd []string
 	n, err = DeserializeRawToValue(b, reflect.ValueOf(&ssd))
-	require.Equal(t, expectedLen, n)
+	require.Equal(t, uint64(expectedLen), n)
 	require.NoError(t, err)
 
 	// Not a pointer
@@ -278,14 +278,14 @@ func Test_Encode_IgnoreTagSerialize(t *testing.T) {
 	ts.K = []byte("")
 	n, err := DeserializeRaw(b, &ts2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	require.Equal(t, uint8(0), ts2.Z, "Z should not deserialize. It is %d", ts2.Z)
 
 	var ts3 TestStructWithoutIgnore
 	n, err = DeserializeRaw(b, &ts3)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	b2 := Serialize(ts2)
 	c := bytes.Compare(b, b2)
@@ -304,7 +304,7 @@ type Container struct {
 }
 
 func TestEncodeNestedSlice(t *testing.T) {
-	size := 0
+	size := uint64(0)
 	elems := make([]Contained, 4)
 	for i := range elems {
 		elems[i].X = uint32(i)
@@ -315,12 +315,12 @@ func TestEncodeNestedSlice(t *testing.T) {
 		for j := range elems[i].Bytes {
 			elems[i].Bytes[j] = uint8(j)
 		}
-		size += 4 + i*1
+		size += 4 + uint64(i*1)
 		elems[i].Ints = make([]uint16, i)
 		for j := range elems[i].Ints {
 			elems[i].Ints[j] = uint16(j)
 		}
-		size += 4 + i*2
+		size += 4 + uint64(i*2)
 	}
 	c := Container{elems}
 	n := datasizeWrite(reflect.ValueOf(c))
@@ -330,7 +330,7 @@ func TestEncodeNestedSlice(t *testing.T) {
 	d := Container{}
 	n, err := DeserializeRaw(b, &d)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	for i, e := range d.Elements {
 		require.Equal(t, c.Elements[i].X, e.X)
@@ -390,7 +390,7 @@ func TestMultiArrays(t *testing.T) {
 
 	n, err := DeserializeRaw(b, &data2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	for i := 0; i < 16; i++ {
 		for j := 0; j < 16; j++ {
@@ -410,7 +410,7 @@ func TestDeserializeAtomic(t *testing.T) {
 
 	var i uint64
 	n, err := DeserializeAtomic(b, &i)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 	require.NoError(t, err)
 	require.Equal(t, sp, i)
 }
@@ -418,7 +418,7 @@ func TestDeserializeAtomic(t *testing.T) {
 func TestSerializeDeserializeAtomic(t *testing.T) {
 	var di64 int64
 	n, err := DeserializeAtomic(nil, &di64)
-	require.Equal(t, 0, n)
+	require.Equal(t, uint64(0), n)
 	require.Equal(t, ErrBufferUnderflow, err)
 
 	b := false
@@ -426,7 +426,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var bb bool
 	n, err = DeserializeAtomic(d, &bb)
 	require.NoError(t, err)
-	require.Equal(t, 1, n)
+	require.Equal(t, uint64(1), n)
 	require.Equal(t, b, bb)
 
 	b = true
@@ -434,7 +434,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	d = SerializeAtomic(b)
 	n, err = DeserializeAtomic(d, &bb)
 	require.NoError(t, err)
-	require.Equal(t, 1, n)
+	require.Equal(t, uint64(1), n)
 	require.Equal(t, b, bb)
 
 	var byt byte = 0xE4
@@ -442,7 +442,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var bytb byte
 	n, err = DeserializeAtomic(d, &bytb)
 	require.NoError(t, err)
-	require.Equal(t, 1, n)
+	require.Equal(t, uint64(1), n)
 	require.Equal(t, byt, bytb)
 
 	var u8 uint8 = 0xF7
@@ -450,7 +450,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var u8b uint8
 	n, err = DeserializeAtomic(d, &u8b)
 	require.NoError(t, err)
-	require.Equal(t, 1, n)
+	require.Equal(t, uint64(1), n)
 	require.Equal(t, u8, u8b)
 
 	var u16 uint16 = 0xF720
@@ -458,7 +458,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var u16b uint16
 	n, err = DeserializeAtomic(d, &u16b)
 	require.NoError(t, err)
-	require.Equal(t, 2, n)
+	require.Equal(t, uint64(2), n)
 	require.Equal(t, u16, u16b)
 
 	var u32 uint32 = 0x1809F720
@@ -466,7 +466,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var u32b uint32
 	n, err = DeserializeAtomic(d, &u32b)
 	require.NoError(t, err)
-	require.Equal(t, 4, n)
+	require.Equal(t, uint64(4), n)
 	require.Equal(t, u32, u32b)
 
 	var u64 uint64 = 0x000C8A9E1809F720
@@ -474,7 +474,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var u64b uint64
 	n, err = DeserializeAtomic(d, &u64b)
 	require.NoError(t, err)
-	require.Equal(t, 8, n)
+	require.Equal(t, uint64(8), n)
 	require.Equal(t, u64, u64b)
 
 	var i8 int8 = 0x69
@@ -482,7 +482,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var i8b int8
 	n, err = DeserializeAtomic(d, &i8b)
 	require.NoError(t, err)
-	require.Equal(t, 1, n)
+	require.Equal(t, uint64(1), n)
 	require.Equal(t, i8, i8b)
 
 	var i16 int16 = 0x6920
@@ -490,7 +490,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var i16b int16
 	n, err = DeserializeAtomic(d, &i16b)
 	require.NoError(t, err)
-	require.Equal(t, 2, n)
+	require.Equal(t, uint64(2), n)
 	require.Equal(t, i16, i16b)
 
 	var i32 int32 = 0x1809F720
@@ -498,7 +498,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var i32b int32
 	n, err = DeserializeAtomic(d, &i32b)
 	require.NoError(t, err)
-	require.Equal(t, 4, n)
+	require.Equal(t, uint64(4), n)
 	require.Equal(t, i32, i32b)
 
 	var i64 int64 = 0x000C8A9E1809F720
@@ -506,7 +506,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	var i64b int64
 	n, err = DeserializeAtomic(d, &i64b)
 	require.NoError(t, err)
-	require.Equal(t, 8, n)
+	require.Equal(t, uint64(8), n)
 	require.Equal(t, i64, i64b)
 }
 
@@ -567,7 +567,7 @@ func TestEncodeDictInt2Int(t *testing.T) {
 	m2 := make(map[uint8]uint64)
 	n, err := DeserializeRaw(buf, m2)
 	require.NoError(t, err)
-	require.Equal(t, len(buf), n)
+	require.Equal(t, uint64(len(buf)), n)
 
 	require.Equal(t, len(m1), len(m2), "Expected length %d but got %d", len(m1), len(m2))
 
@@ -621,7 +621,7 @@ func TestEncodeDictNested(t *testing.T) {
 	s2 := TestStructWithDict{}
 	n, err := DeserializeRaw(buf, &s2)
 	require.NoError(t, err)
-	require.Equal(t, len(buf), n)
+	require.Equal(t, uint64(len(buf)), n)
 
 	require.True(t, reflect.DeepEqual(s1, s2), "Expected %v but got %v", s1, s2)
 }
@@ -637,7 +637,7 @@ func TestEncodeDictString2Int64(t *testing.T) {
 	v2 := make(map[string]int64)
 	n, err := DeserializeRaw(b, &v2)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 
 	require.Equal(t, v, v2)
 }
@@ -680,7 +680,7 @@ func TestOmitEmptyString(t *testing.T) {
 			var y omitString
 			n, err := DeserializeRaw(b, &y)
 			require.NoError(t, err)
-			require.Equal(t, len(b), n)
+			require.Equal(t, uint64(len(b)), n)
 
 			require.Equal(t, tc.input, y)
 		})
@@ -735,7 +735,7 @@ func TestOmitEmptySlice(t *testing.T) {
 			var y omitSlice
 			n, err := DeserializeRaw(b, &y)
 			require.NoError(t, err)
-			require.Equal(t, len(b), n)
+			require.Equal(t, uint64(len(b)), n)
 
 			expect := tc.expect
 			if expect == nil {
@@ -795,7 +795,7 @@ func TestOmitEmptyMap(t *testing.T) {
 			var y omitMap
 			n, err := DeserializeRaw(b, &y)
 			require.NoError(t, err)
-			require.Equal(t, len(b), n)
+			require.Equal(t, uint64(len(b)), n)
 
 			expect := tc.expect
 			if expect == nil {
@@ -876,7 +876,7 @@ func TestOmitEmptyMixedFinalByte(t *testing.T) {
 			var y omitMixed
 			n, err := DeserializeRaw(b, &y)
 			require.NoError(t, err)
-			require.Equal(t, len(b), n)
+			require.Equal(t, uint64(len(b)), n)
 
 			require.Equal(t, tc.expect, y)
 		})
@@ -979,7 +979,7 @@ func TestPrimitiveInts(t *testing.T) {
 			var obj primitiveInts
 			n, err := DeserializeRaw(bytes, &obj)
 			require.NoError(t, err)
-			require.Equal(t, len(bytes), n)
+			require.Equal(t, uint64(len(bytes)), n)
 			require.Equal(t, tc.c, obj)
 		})
 	}
@@ -1066,7 +1066,7 @@ func TestEncodeStable(t *testing.T) {
 	var y hasEveryType
 	n, err := DeserializeRaw(d, &y)
 	require.NoError(t, err)
-	require.Equal(t, len(d), n)
+	require.Equal(t, uint64(len(d)), n)
 	require.Equal(t, x, y)
 
 	b := Serialize(x)
@@ -1125,7 +1125,7 @@ func TestEncodeEmptySlice(t *testing.T) {
 	var g foo
 	n, err := DeserializeRaw(b, &g)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 	require.Nil(t, g.X)
 	require.Nil(t, g.Y)
 }
@@ -1145,7 +1145,7 @@ func TestRandomGarbage(t *testing.T) {
 
 	var y hasEveryType
 	for j := 0; j < 100; j++ {
-		for i := 0; i < size*2; i++ {
+		for i := uint64(0); i < size*2; i++ {
 			b := randBytes(t, i)
 			_, _ = DeserializeRaw(b, &y) // nolint: errcheck
 		}
@@ -1167,7 +1167,7 @@ func TestDeserializeRawBufferRemains(t *testing.T) {
 	n, err := DeserializeRaw(b, &y)
 	require.NoError(t, err)
 	require.NotEmpty(t, n)
-	require.True(t, len(b) > n)
+	require.True(t, uint64(len(b)) > n)
 }
 
 func TestDeserializeRawNotPointer(t *testing.T) {
@@ -1211,7 +1211,7 @@ func TestDeserializeMaxLenExceeded(t *testing.T) {
 	var f Foo
 	n, err := DeserializeRaw(b, &f)
 	require.Equal(t, ErrMaxLenExceeded, err)
-	require.Equal(t, 4, n) // read length prefix before failing
+	require.Empty(t, n)
 
 	g := Foo{X: "fo"}
 	b = Serialize(g)
@@ -1220,7 +1220,7 @@ func TestDeserializeMaxLenExceeded(t *testing.T) {
 	f = Foo{}
 	n, err = DeserializeRaw(b, &f)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 	require.Equal(t, g, f)
 
 	// maxlen for slices
@@ -1234,7 +1234,7 @@ func TestDeserializeMaxLenExceeded(t *testing.T) {
 	var k Bar
 	n, err = DeserializeRaw(b, &k)
 	require.Equal(t, ErrMaxLenExceeded, err)
-	require.Equal(t, 4, n) // read length prefix before failing
+	require.Empty(t, n)
 
 	c := Bar{X: []string{"f", "o"}}
 	b = Serialize(c)
@@ -1243,7 +1243,7 @@ func TestDeserializeMaxLenExceeded(t *testing.T) {
 	k = Bar{}
 	n, err = DeserializeRaw(b, &k)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 	require.Equal(t, c, k)
 
 	// Invalid maxlen value panics
@@ -1275,7 +1275,7 @@ func TestDeserializeMaxLenExceeded(t *testing.T) {
 	var w Car
 	n, err = DeserializeRaw(b, &w)
 	require.Equal(t, ErrMaxLenExceeded, err)
-	require.Equal(t, 4+len(car.X)+4, n) // read X and length prefix of Y before failing
+	require.Empty(t, n)
 
 	v := Car{
 		X: "foo",
@@ -1287,7 +1287,7 @@ func TestDeserializeMaxLenExceeded(t *testing.T) {
 	w = Car{}
 	n, err = DeserializeRaw(b, &w)
 	require.NoError(t, err)
-	require.Equal(t, len(b), n)
+	require.Equal(t, uint64(len(b)), n)
 	require.Equal(t, v, w)
 }
 
@@ -1317,7 +1317,7 @@ func TestDeserializeString(t *testing.T) {
 	cases := []struct {
 		s      string
 		x      []byte
-		n      int
+		n      uint64
 		maxLen int
 		err    error
 	}{
@@ -1342,7 +1342,6 @@ func TestDeserializeString(t *testing.T) {
 		{
 			x:   []byte{3, 0, 0, 0, 'f'},
 			err: ErrBufferUnderflow,
-			n:   4, // read length prefix before failing
 		},
 		{
 			s: "foo",
@@ -1353,7 +1352,6 @@ func TestDeserializeString(t *testing.T) {
 			s:      "foo",
 			x:      []byte{3, 0, 0, 0, 'f', 'o', 'o', 'x'},
 			maxLen: 2,
-			n:      4, // read length prefix before failing
 			err:    ErrMaxLenExceeded,
 		},
 		{
@@ -1365,7 +1363,7 @@ func TestDeserializeString(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("s=%s err=%s", tc.s, tc.err), func(t *testing.T) {
+		t.Run(fmt.Sprintf("s=%s err=%v", tc.s, tc.err), func(t *testing.T) {
 			s, n, err := DeserializeString(tc.x, tc.maxLen)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
@@ -1412,7 +1410,7 @@ func TestSerializeUint32(t *testing.T) {
 			b := SerializeUint32(tc.x)
 			y, n, err := DeserializeUint32(b)
 			require.NoError(t, err)
-			require.Equal(t, 4, n)
+			require.Equal(t, uint64(4), n)
 			require.Equal(t, tc.x, y)
 		})
 	}
@@ -1422,7 +1420,7 @@ func TestSerializeUint32(t *testing.T) {
 
 	y, n, err := DeserializeUint32([]byte{1, 0, 0, 0, 0})
 	require.NoError(t, err)
-	require.Equal(t, 4, n)
+	require.Equal(t, uint64(4), n)
 	require.Equal(t, uint32(1), y)
 }
 
@@ -1445,7 +1443,7 @@ func TestEncodeBool(t *testing.T) {
 	var bb BoolStruct
 	n, err := DeserializeRaw(buf, &bb)
 	require.NoError(t, err)
-	require.Equal(t, len(buf), n)
+	require.Equal(t, uint64(len(buf)), n)
 	require.True(t, bb.B)
 
 	buf = Serialize(bf)
@@ -1455,11 +1453,11 @@ func TestEncodeBool(t *testing.T) {
 	require.True(t, bb.B)
 	n, err = DeserializeRaw(buf, &bb)
 	require.NoError(t, err)
-	require.Equal(t, len(buf), n)
+	require.Equal(t, uint64(len(buf)), n)
 	require.False(t, bb.B)
 
 	buf = []byte{2}
 	n, err = DeserializeRaw(buf, &bb)
 	require.Equal(t, ErrInvalidBool, err)
-	require.Equal(t, 1, n) // read invalid bool byte before failing
+	require.Empty(t, n)
 }

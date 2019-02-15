@@ -31,9 +31,26 @@ func encodeSizeBlockHeader(obj *BlockHeader) uint64 {
 	return i0
 }
 
-// encodeBlockHeader encodes an object of type BlockHeader to the buffer in encoder.Encoder.
+// encodeBlockHeader encodes an object of type BlockHeader to a buffer allocated to the exact size
+// required to encode the object.
+func encodeBlockHeader(obj *BlockHeader) ([]byte, error) {
+	n := encodeSizeBlockHeader(obj)
+	buf := make([]byte, n)
+
+	if err := encodeBlockHeaderToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeBlockHeaderToBuffer encodes an object of type BlockHeader to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeBlockHeader(buf []byte, obj *BlockHeader) error {
+func encodeBlockHeaderToBuffer(buf []byte, obj *BlockHeader) error {
+	if uint64(len(buf)) < encodeSizeBlockHeader(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -62,9 +79,10 @@ func encodeBlockHeader(buf []byte, obj *BlockHeader) error {
 	return nil
 }
 
-// decodeBlockHeader decodes an object of type BlockHeader from the buffer in encoder.Decoder.
+// decodeBlockHeader decodes an object of type BlockHeader from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeBlockHeader(buf []byte, obj *BlockHeader) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeBlockHeader(buf []byte, obj *BlockHeader) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -73,7 +91,7 @@ func decodeBlockHeader(buf []byte, obj *BlockHeader) (int, error) {
 		// obj.Version
 		i, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Version = i
 	}
@@ -82,7 +100,7 @@ func decodeBlockHeader(buf []byte, obj *BlockHeader) (int, error) {
 		// obj.Time
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Time = i
 	}
@@ -91,7 +109,7 @@ func decodeBlockHeader(buf []byte, obj *BlockHeader) (int, error) {
 		// obj.BkSeq
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.BkSeq = i
 	}
@@ -100,7 +118,7 @@ func decodeBlockHeader(buf []byte, obj *BlockHeader) (int, error) {
 		// obj.Fee
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Fee = i
 	}
@@ -108,7 +126,7 @@ func decodeBlockHeader(buf []byte, obj *BlockHeader) (int, error) {
 	{
 		// obj.PrevHash
 		if len(d.Buffer) < len(obj.PrevHash) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.PrevHash[:], d.Buffer[:len(obj.PrevHash)])
 		d.Buffer = d.Buffer[len(obj.PrevHash):]
@@ -117,7 +135,7 @@ func decodeBlockHeader(buf []byte, obj *BlockHeader) (int, error) {
 	{
 		// obj.BodyHash
 		if len(d.Buffer) < len(obj.BodyHash) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.BodyHash[:], d.Buffer[:len(obj.BodyHash)])
 		d.Buffer = d.Buffer[len(obj.BodyHash):]
@@ -126,11 +144,24 @@ func decodeBlockHeader(buf []byte, obj *BlockHeader) (int, error) {
 	{
 		// obj.UxHash
 		if len(d.Buffer) < len(obj.UxHash) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.UxHash[:], d.Buffer[:len(obj.UxHash)])
 		d.Buffer = d.Buffer[len(obj.UxHash):]
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeBlockHeaderExact decodes an object of type BlockHeader from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeBlockHeaderExact(buf []byte, obj *BlockHeader) error {
+	if n, err := decodeBlockHeader(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

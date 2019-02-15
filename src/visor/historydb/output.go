@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -49,9 +48,8 @@ type uxOuts struct{}
 func (ux *uxOuts) put(tx *dbutil.Tx, out UxOut) error {
 	hash := out.Hash()
 
-	n := encodeSizeUxOut(&out)
-	buf := make([]byte, n)
-	if err := encodeUxOut(buf, &out); err != nil {
+	buf, err := encodeUxOut(&out)
+	if err != nil {
 		return err
 	}
 
@@ -69,10 +67,8 @@ func (ux *uxOuts) get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 		return nil, nil
 	}
 
-	if n, err := decodeUxOut(v, &out); err != nil {
+	if err := decodeUxOutExact(v, &out); err != nil {
 		return nil, err
-	} else if n != len(v) {
-		return nil, encoder.ErrRemainingBytes
 	}
 
 	return &out, nil

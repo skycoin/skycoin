@@ -32,9 +32,26 @@ func encodeSizeIntroductionMessage(obj *IntroductionMessage) uint64 {
 	return i0
 }
 
-// encodeIntroductionMessage encodes an object of type IntroductionMessage to the buffer in encoder.Encoder.
+// encodeIntroductionMessage encodes an object of type IntroductionMessage to a buffer allocated to the exact size
+// required to encode the object.
+func encodeIntroductionMessage(obj *IntroductionMessage) ([]byte, error) {
+	n := encodeSizeIntroductionMessage(obj)
+	buf := make([]byte, n)
+
+	if err := encodeIntroductionMessageToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeIntroductionMessageToBuffer encodes an object of type IntroductionMessage to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeIntroductionMessage(buf []byte, obj *IntroductionMessage) error {
+func encodeIntroductionMessageToBuffer(buf []byte, obj *IntroductionMessage) error {
+	if uint64(len(buf)) < encodeSizeIntroductionMessage(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -67,9 +84,10 @@ func encodeIntroductionMessage(buf []byte, obj *IntroductionMessage) error {
 	return nil
 }
 
-// decodeIntroductionMessage decodes an object of type IntroductionMessage from the buffer in encoder.Decoder.
+// decodeIntroductionMessage decodes an object of type IntroductionMessage from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -78,7 +96,7 @@ func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (int, error
 		// obj.Mirror
 		i, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Mirror = i
 	}
@@ -87,7 +105,7 @@ func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (int, error
 		// obj.ListenPort
 		i, err := d.Uint16()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.ListenPort = i
 	}
@@ -96,7 +114,7 @@ func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (int, error
 		// obj.ProtocolVersion
 		i, err := d.Int32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.ProtocolVersion = i
 	}
@@ -105,17 +123,17 @@ func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (int, error
 		// obj.Extra
 
 		if len(d.Buffer) == 0 {
-			return len(buf) - len(d.Buffer), nil
+			return uint64(len(buf) - len(d.Buffer)), nil
 		}
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length != 0 {
@@ -126,5 +144,18 @@ func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (int, error
 		}
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeIntroductionMessageExact decodes an object of type IntroductionMessage from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeIntroductionMessageExact(buf []byte, obj *IntroductionMessage) error {
+	if n, err := decodeIntroductionMessage(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

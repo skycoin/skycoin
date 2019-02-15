@@ -75,9 +75,26 @@ func encodeSizeBlockBody(obj *BlockBody) uint64 {
 	return i0
 }
 
-// encodeBlockBody encodes an object of type BlockBody to the buffer in encoder.Encoder.
+// encodeBlockBody encodes an object of type BlockBody to a buffer allocated to the exact size
+// required to encode the object.
+func encodeBlockBody(obj *BlockBody) ([]byte, error) {
+	n := encodeSizeBlockBody(obj)
+	buf := make([]byte, n)
+
+	if err := encodeBlockBodyToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeBlockBodyToBuffer encodes an object of type BlockBody to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeBlockBody(buf []byte, obj *BlockBody) error {
+func encodeBlockBodyToBuffer(buf []byte, obj *BlockBody) error {
+	if uint64(len(buf)) < encodeSizeBlockBody(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -184,9 +201,10 @@ func encodeBlockBody(buf []byte, obj *BlockBody) error {
 	return nil
 }
 
-// decodeBlockBody decodes an object of type BlockBody from the buffer in encoder.Decoder.
+// decodeBlockBody decodes an object of type BlockBody from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeBlockBody(buf []byte, obj *BlockBody) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -196,16 +214,16 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length > 65535 {
-			return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {
@@ -216,7 +234,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 					// obj.Transactions[z1].Length
 					i, err := d.Uint32()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Transactions[z1].Length = i
 				}
@@ -225,7 +243,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 					// obj.Transactions[z1].Type
 					i, err := d.Uint8()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.Transactions[z1].Type = i
 				}
@@ -233,7 +251,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 				{
 					// obj.Transactions[z1].InnerHash
 					if len(d.Buffer) < len(obj.Transactions[z1].InnerHash) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.Transactions[z1].InnerHash[:], d.Buffer[:len(obj.Transactions[z1].InnerHash)])
 					d.Buffer = d.Buffer[len(obj.Transactions[z1].InnerHash):]
@@ -244,16 +262,16 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 
 					if length > 65535 {
-						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+						return 0, encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -263,7 +281,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 							{
 								// obj.Transactions[z1].Sigs[z3]
 								if len(d.Buffer) < len(obj.Transactions[z1].Sigs[z3]) {
-									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+									return 0, encoder.ErrBufferUnderflow
 								}
 								copy(obj.Transactions[z1].Sigs[z3][:], d.Buffer[:len(obj.Transactions[z1].Sigs[z3])])
 								d.Buffer = d.Buffer[len(obj.Transactions[z1].Sigs[z3]):]
@@ -278,16 +296,16 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 
 					if length > 65535 {
-						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+						return 0, encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -297,7 +315,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 							{
 								// obj.Transactions[z1].In[z3]
 								if len(d.Buffer) < len(obj.Transactions[z1].In[z3]) {
-									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+									return 0, encoder.ErrBufferUnderflow
 								}
 								copy(obj.Transactions[z1].In[z3][:], d.Buffer[:len(obj.Transactions[z1].In[z3])])
 								d.Buffer = d.Buffer[len(obj.Transactions[z1].In[z3]):]
@@ -312,16 +330,16 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 
 					ul, err := d.Uint32()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 
 					length := int(ul)
 					if length < 0 || length > len(d.Buffer) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 
 					if length > 65535 {
-						return len(buf) - len(d.Buffer), encoder.ErrMaxLenExceeded
+						return 0, encoder.ErrMaxLenExceeded
 					}
 
 					if length != 0 {
@@ -332,7 +350,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 								// obj.Transactions[z1].Out[z3].Address.Version
 								i, err := d.Uint8()
 								if err != nil {
-									return len(buf) - len(d.Buffer), err
+									return 0, err
 								}
 								obj.Transactions[z1].Out[z3].Address.Version = i
 							}
@@ -340,7 +358,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 							{
 								// obj.Transactions[z1].Out[z3].Address.Key
 								if len(d.Buffer) < len(obj.Transactions[z1].Out[z3].Address.Key) {
-									return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+									return 0, encoder.ErrBufferUnderflow
 								}
 								copy(obj.Transactions[z1].Out[z3].Address.Key[:], d.Buffer[:len(obj.Transactions[z1].Out[z3].Address.Key)])
 								d.Buffer = d.Buffer[len(obj.Transactions[z1].Out[z3].Address.Key):]
@@ -350,7 +368,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 								// obj.Transactions[z1].Out[z3].Coins
 								i, err := d.Uint64()
 								if err != nil {
-									return len(buf) - len(d.Buffer), err
+									return 0, err
 								}
 								obj.Transactions[z1].Out[z3].Coins = i
 							}
@@ -359,7 +377,7 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 								// obj.Transactions[z1].Out[z3].Hours
 								i, err := d.Uint64()
 								if err != nil {
-									return len(buf) - len(d.Buffer), err
+									return 0, err
 								}
 								obj.Transactions[z1].Out[z3].Hours = i
 							}
@@ -371,5 +389,18 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (int, error) {
 		}
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeBlockBodyExact decodes an object of type BlockBody from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeBlockBodyExact(buf []byte, obj *BlockBody) error {
+	if n, err := decodeBlockBody(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

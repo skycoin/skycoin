@@ -792,7 +792,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 
 			n, err := encoder.DeserializeRaw(d, tc.obj)
 			require.NoError(t, err)
-			require.Equal(t, n, len(d))
+			require.Equal(t, n, uint64(len(d)))
 
 			require.Equal(t, tc.msg, tc.obj)
 

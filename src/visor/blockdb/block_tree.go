@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -45,8 +44,8 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	}
 
 	// write block into blocks bucket.
-	buf := make([]byte, encodeSizeBlock(b))
-	if err := encodeBlock(buf, b); err != nil {
+	buf, err := encodeBlock(b)
+	if err != nil {
 		return err
 	}
 
@@ -141,10 +140,8 @@ func (bt *blockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, e
 		return nil, nil
 	}
 
-	if n, err := decodeBlock(v, &b); err != nil {
+	if err := decodeBlockExact(v, &b); err != nil {
 		return nil, err
-	} else if n != len(v) {
-		return nil, encoder.ErrRemainingBytes
 	}
 
 	if hash != b.HashHeader() {
@@ -171,10 +168,8 @@ func (bt *blockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker)
 func (bt *blockTree) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) error {
 	return dbutil.ForEach(tx, BlocksBkt, func(_, v []byte) error {
 		var b coin.Block
-		if n, err := decodeBlock(v, &b); err != nil {
+		if err := decodeBlockExact(v, &b); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		return f(&b)
@@ -191,10 +186,8 @@ func (bt *blockTree) getHashInDepth(tx *dbutil.Tx, depth uint64, filter Walker) 
 		return cipher.SHA256{}, false, nil
 	}
 
-	if n, err := decodeHashPairs(v, &pairs); err != nil {
+	if err := decodeHashPairsExact(v, &pairs); err != nil {
 		return cipher.SHA256{}, false, err
-	} else if n != len(v) {
-		return cipher.SHA256{}, false, encoder.ErrRemainingBytes
 	}
 
 	hash, ok := filter(tx, pairs.HashPairs)
@@ -235,10 +228,8 @@ func getHashPairInDepth(tx *dbutil.Tx, depth uint64, fn func(hp coin.HashPair) b
 		return nil, nil
 	}
 
-	if n, err := decodeHashPairs(v, &hps); err != nil {
+	if err := decodeHashPairsExact(v, &hps); err != nil {
 		return nil, err
-	} else if n != len(v) {
-		return nil, encoder.ErrRemainingBytes
 	}
 
 	var pairs []coin.HashPair
@@ -265,11 +256,10 @@ func hasChild(tx *dbutil.Tx, b coin.Block) (bool, error) {
 }
 
 func setHashPairInDepth(tx *dbutil.Tx, depth uint64, hps []coin.HashPair) error {
-	hpss := &HashPairs{
+	buf, err := encodeHashPairs(&HashPairs{
 		HashPairs: hps,
-	}
-	buf := make([]byte, encodeSizeHashPairs(hpss))
-	if err := encodeHashPairs(buf, hpss); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 

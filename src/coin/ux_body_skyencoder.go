@@ -25,9 +25,26 @@ func encodeSizeUxBody(obj *UxBody) uint64 {
 	return i0
 }
 
-// encodeUxBody encodes an object of type UxBody to the buffer in encoder.Encoder.
+// encodeUxBody encodes an object of type UxBody to a buffer allocated to the exact size
+// required to encode the object.
+func encodeUxBody(obj *UxBody) ([]byte, error) {
+	n := encodeSizeUxBody(obj)
+	buf := make([]byte, n)
+
+	if err := encodeUxBodyToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeUxBodyToBuffer encodes an object of type UxBody to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeUxBody(buf []byte, obj *UxBody) error {
+func encodeUxBodyToBuffer(buf []byte, obj *UxBody) error {
+	if uint64(len(buf)) < encodeSizeUxBody(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -50,9 +67,10 @@ func encodeUxBody(buf []byte, obj *UxBody) error {
 	return nil
 }
 
-// decodeUxBody decodes an object of type UxBody from the buffer in encoder.Decoder.
+// decodeUxBody decodes an object of type UxBody from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeUxBody(buf []byte, obj *UxBody) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeUxBody(buf []byte, obj *UxBody) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -60,7 +78,7 @@ func decodeUxBody(buf []byte, obj *UxBody) (int, error) {
 	{
 		// obj.SrcTransaction
 		if len(d.Buffer) < len(obj.SrcTransaction) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.SrcTransaction[:], d.Buffer[:len(obj.SrcTransaction)])
 		d.Buffer = d.Buffer[len(obj.SrcTransaction):]
@@ -70,7 +88,7 @@ func decodeUxBody(buf []byte, obj *UxBody) (int, error) {
 		// obj.Address.Version
 		i, err := d.Uint8()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Address.Version = i
 	}
@@ -78,7 +96,7 @@ func decodeUxBody(buf []byte, obj *UxBody) (int, error) {
 	{
 		// obj.Address.Key
 		if len(d.Buffer) < len(obj.Address.Key) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.Address.Key[:], d.Buffer[:len(obj.Address.Key)])
 		d.Buffer = d.Buffer[len(obj.Address.Key):]
@@ -88,7 +106,7 @@ func decodeUxBody(buf []byte, obj *UxBody) (int, error) {
 		// obj.Coins
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Coins = i
 	}
@@ -97,10 +115,23 @@ func decodeUxBody(buf []byte, obj *UxBody) (int, error) {
 		// obj.Hours
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Hours = i
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeUxBodyExact decodes an object of type UxBody from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeUxBodyExact(buf []byte, obj *UxBody) error {
+	if n, err := decodeUxBody(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

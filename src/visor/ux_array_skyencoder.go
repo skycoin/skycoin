@@ -45,9 +45,26 @@ func encodeSizeUxArray(obj *UxArray) uint64 {
 	return i0
 }
 
-// encodeUxArray encodes an object of type UxArray to the buffer in encoder.Encoder.
+// encodeUxArray encodes an object of type UxArray to a buffer allocated to the exact size
+// required to encode the object.
+func encodeUxArray(obj *UxArray) ([]byte, error) {
+	n := encodeSizeUxArray(obj)
+	buf := make([]byte, n)
+
+	if err := encodeUxArrayToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeUxArrayToBuffer encodes an object of type UxArray to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeUxArray(buf []byte, obj *UxArray) error {
+func encodeUxArrayToBuffer(buf []byte, obj *UxArray) error {
+	if uint64(len(buf)) < encodeSizeUxArray(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -89,9 +106,10 @@ func encodeUxArray(buf []byte, obj *UxArray) error {
 	return nil
 }
 
-// decodeUxArray decodes an object of type UxArray from the buffer in encoder.Decoder.
+// decodeUxArray decodes an object of type UxArray from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeUxArray(buf []byte, obj *UxArray) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -101,12 +119,12 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 
 		ul, err := d.Uint32()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 
 		if length != 0 {
@@ -117,7 +135,7 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 					// obj.UxArray[z1].Head.Time
 					i, err := d.Uint64()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.UxArray[z1].Head.Time = i
 				}
@@ -126,7 +144,7 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 					// obj.UxArray[z1].Head.BkSeq
 					i, err := d.Uint64()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.UxArray[z1].Head.BkSeq = i
 				}
@@ -134,7 +152,7 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 				{
 					// obj.UxArray[z1].Body.SrcTransaction
 					if len(d.Buffer) < len(obj.UxArray[z1].Body.SrcTransaction) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.UxArray[z1].Body.SrcTransaction[:], d.Buffer[:len(obj.UxArray[z1].Body.SrcTransaction)])
 					d.Buffer = d.Buffer[len(obj.UxArray[z1].Body.SrcTransaction):]
@@ -144,7 +162,7 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 					// obj.UxArray[z1].Body.Address.Version
 					i, err := d.Uint8()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.UxArray[z1].Body.Address.Version = i
 				}
@@ -152,7 +170,7 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 				{
 					// obj.UxArray[z1].Body.Address.Key
 					if len(d.Buffer) < len(obj.UxArray[z1].Body.Address.Key) {
-						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+						return 0, encoder.ErrBufferUnderflow
 					}
 					copy(obj.UxArray[z1].Body.Address.Key[:], d.Buffer[:len(obj.UxArray[z1].Body.Address.Key)])
 					d.Buffer = d.Buffer[len(obj.UxArray[z1].Body.Address.Key):]
@@ -162,7 +180,7 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 					// obj.UxArray[z1].Body.Coins
 					i, err := d.Uint64()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.UxArray[z1].Body.Coins = i
 				}
@@ -171,7 +189,7 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 					// obj.UxArray[z1].Body.Hours
 					i, err := d.Uint64()
 					if err != nil {
-						return len(buf) - len(d.Buffer), err
+						return 0, err
 					}
 					obj.UxArray[z1].Body.Hours = i
 				}
@@ -180,5 +198,18 @@ func decodeUxArray(buf []byte, obj *UxArray) (int, error) {
 		}
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeUxArrayExact decodes an object of type UxArray from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeUxArrayExact(buf []byte, obj *UxArray) error {
+	if n, err := decodeUxArray(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

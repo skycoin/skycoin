@@ -2,7 +2,6 @@ package blockdb
 
 import (
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -34,10 +33,8 @@ func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, e
 		return cipher.Sig{}, false, nil
 	}
 
-	if n, err := decodeSig(v, &sig); err != nil {
+	if err := decodeSigExact(v, &sig); err != nil {
 		return cipher.Sig{}, false, err
-	} else if n != len(v) {
-		return cipher.Sig{}, false, encoder.ErrRemainingBytes
 	}
 
 	return sig.Sig, true, nil
@@ -45,11 +42,10 @@ func (bs *blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, e
 
 // Add adds a signed block to the db
 func (bs *blockSigs) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
-	sw := &Sig{
+	buf, err := encodeSig(&Sig{
 		Sig: sig,
-	}
-	buf := make([]byte, encodeSizeSig(sw))
-	if err := encodeSig(buf, sw); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 	return dbutil.PutBucketValue(tx, BlockSigsBkt, hash[:], buf)
@@ -64,10 +60,8 @@ func (bs *blockSigs) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) er
 		}
 
 		var sig Sig
-		if n, err := decodeSig(v, &sig); err != nil {
+		if err := decodeSigExact(v, &sig); err != nil {
 			return err
-		} else if n != len(v) {
-			return encoder.ErrRemainingBytes
 		}
 
 		return f(hash, sig.Sig)

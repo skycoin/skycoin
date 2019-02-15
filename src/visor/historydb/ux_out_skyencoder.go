@@ -37,9 +37,26 @@ func encodeSizeUxOut(obj *UxOut) uint64 {
 	return i0
 }
 
-// encodeUxOut encodes an object of type UxOut to the buffer in encoder.Encoder.
+// encodeUxOut encodes an object of type UxOut to a buffer allocated to the exact size
+// required to encode the object.
+func encodeUxOut(obj *UxOut) ([]byte, error) {
+	n := encodeSizeUxOut(obj)
+	buf := make([]byte, n)
+
+	if err := encodeUxOutToBuffer(buf, obj); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// encodeUxOutToBuffer encodes an object of type UxOut to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeUxOut(buf []byte, obj *UxOut) error {
+func encodeUxOutToBuffer(buf []byte, obj *UxOut) error {
+	if uint64(len(buf)) < encodeSizeUxOut(obj) {
+		return encoder.ErrBufferUnderflow
+	}
+
 	e := &encoder.Encoder{
 		Buffer: buf[:],
 	}
@@ -74,9 +91,10 @@ func encodeUxOut(buf []byte, obj *UxOut) error {
 	return nil
 }
 
-// decodeUxOut decodes an object of type UxOut from the buffer in encoder.Decoder.
+// decodeUxOut decodes an object of type UxOut from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
-func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+func decodeUxOut(buf []byte, obj *UxOut) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -85,7 +103,7 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 		// obj.Out.Head.Time
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Out.Head.Time = i
 	}
@@ -94,7 +112,7 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 		// obj.Out.Head.BkSeq
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Out.Head.BkSeq = i
 	}
@@ -102,7 +120,7 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 	{
 		// obj.Out.Body.SrcTransaction
 		if len(d.Buffer) < len(obj.Out.Body.SrcTransaction) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.Out.Body.SrcTransaction[:], d.Buffer[:len(obj.Out.Body.SrcTransaction)])
 		d.Buffer = d.Buffer[len(obj.Out.Body.SrcTransaction):]
@@ -112,7 +130,7 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 		// obj.Out.Body.Address.Version
 		i, err := d.Uint8()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Out.Body.Address.Version = i
 	}
@@ -120,7 +138,7 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 	{
 		// obj.Out.Body.Address.Key
 		if len(d.Buffer) < len(obj.Out.Body.Address.Key) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.Out.Body.Address.Key[:], d.Buffer[:len(obj.Out.Body.Address.Key)])
 		d.Buffer = d.Buffer[len(obj.Out.Body.Address.Key):]
@@ -130,7 +148,7 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 		// obj.Out.Body.Coins
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Out.Body.Coins = i
 	}
@@ -139,7 +157,7 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 		// obj.Out.Body.Hours
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.Out.Body.Hours = i
 	}
@@ -147,7 +165,7 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 	{
 		// obj.SpentTxnID
 		if len(d.Buffer) < len(obj.SpentTxnID) {
-			return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
+			return 0, encoder.ErrBufferUnderflow
 		}
 		copy(obj.SpentTxnID[:], d.Buffer[:len(obj.SpentTxnID)])
 		d.Buffer = d.Buffer[len(obj.SpentTxnID):]
@@ -157,10 +175,23 @@ func decodeUxOut(buf []byte, obj *UxOut) (int, error) {
 		// obj.SpentBlockSeq
 		i, err := d.Uint64()
 		if err != nil {
-			return len(buf) - len(d.Buffer), err
+			return 0, err
 		}
 		obj.SpentBlockSeq = i
 	}
 
-	return len(buf) - len(d.Buffer), nil
+	return uint64(len(buf) - len(d.Buffer)), nil
+}
+
+// decodeUxOutExact decodes an object of type UxOut from a buffer.
+// If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
+// If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
+func decodeUxOutExact(buf []byte, obj *UxOut) error {
+	if n, err := decodeUxOut(buf, obj); err != nil {
+		return err
+	} else if n != uint64(len(buf)) {
+		return encoder.ErrRemainingBytes
+	}
+
+	return nil
 }

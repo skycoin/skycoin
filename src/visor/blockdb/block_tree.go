@@ -32,7 +32,7 @@ type blockTree struct{}
 // AddBlock adds block with *dbutil.Tx
 func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	// can't store block if it's not genesis block and has no parent.
-	if b.Seq() > 0 && b.PreHashHeader() == emptyHash {
+	if b.Seq() > 0 && b.PrevHashHeader() == emptyHash {
 		return errNoParent
 	}
 
@@ -56,7 +56,7 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 
 	// the pre hash must be in depth - 1.
 	if b.Seq() > 0 {
-		preHash := b.PreHashHeader()
+		preHash := b.PrevHashHeader()
 		parentHashPair, err := getHashPairInDepth(tx, b.Seq()-1, func(hp coin.HashPair) bool {
 			return hp.Hash == preHash
 		})
@@ -69,8 +69,8 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	}
 
 	hp := coin.HashPair{
-		Hash:    hash,
-		PreHash: b.Head.PrevHash,
+		Hash:     hash,
+		PrevHash: b.Head.PrevHash,
 	}
 
 	// get block pairs in the depth
@@ -118,8 +118,8 @@ func (bt *blockTree) RemoveBlock(tx *dbutil.Tx, b *coin.Block) error {
 
 	// remove block hash pair in tree.
 	ps := removePairs(hashPairs, coin.HashPair{
-		Hash:    hash,
-		PreHash: b.PreHashHeader(),
+		Hash:     hash,
+		PrevHash: b.PrevHashHeader(),
 	})
 
 	if len(ps) == 0 {
@@ -217,7 +217,7 @@ func containHash(hashPairs []coin.HashPair, pair coin.HashPair) bool {
 func removePairs(hps []coin.HashPair, pair coin.HashPair) []coin.HashPair {
 	pairs := []coin.HashPair{}
 	for _, p := range hps {
-		if p.Hash == pair.Hash && p.PreHash == pair.PreHash {
+		if p.Hash == pair.Hash && p.PrevHash == pair.PrevHash {
 			continue
 		}
 		pairs = append(pairs, p)
@@ -254,7 +254,7 @@ func getHashPairInDepth(tx *dbutil.Tx, depth uint64, fn func(hp coin.HashPair) b
 func hasChild(tx *dbutil.Tx, b coin.Block) (bool, error) {
 	// get the child block hash pair, whose pre hash point to current block.
 	childHashPair, err := getHashPairInDepth(tx, b.Head.BkSeq+1, func(hp coin.HashPair) bool {
-		return hp.PreHash == b.HashHeader()
+		return hp.PrevHash == b.HashHeader()
 	})
 
 	if err != nil {

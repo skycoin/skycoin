@@ -26,8 +26,8 @@ type Block struct {
 
 // HashPair including current block hash and previous block hash.
 type HashPair struct {
-	Hash    cipher.SHA256
-	PreHash cipher.SHA256
+	Hash     cipher.SHA256
+	PrevHash cipher.SHA256
 }
 
 // BlockHeader records the block header
@@ -111,8 +111,8 @@ func (b Block) HashHeader() cipher.SHA256 {
 	return b.Head.Hash()
 }
 
-// PreHashHeader return hash of prevous block.
-func (b Block) PreHashHeader() cipher.SHA256 {
+// PrevHashHeader return hash of prevous block.
+func (b Block) PrevHashHeader() cipher.SHA256 {
 	return b.Head.PrevHash
 }
 
@@ -196,7 +196,7 @@ func (bb BlockBody) Bytes() []byte {
 // CreateUnspents creates the expected outputs for a transaction.
 func CreateUnspents(bh BlockHeader, txn Transaction) UxArray {
 	var h cipher.SHA256
-	// The genesis block uses the null hash as the SrcTransaction
+	// The genesis block uses the null hash as the SrcTransaction [FIXME hardfork]
 	if bh.BkSeq != 0 {
 		h = txn.Hash()
 	}
@@ -220,12 +220,12 @@ func CreateUnspents(bh BlockHeader, txn Transaction) UxArray {
 
 // CreateUnspent creates single unspent output
 func CreateUnspent(bh BlockHeader, txn Transaction, outIndex int) (UxOut, error) {
-	if len(txn.Out) <= outIndex {
+	if outIndex < 0 || outIndex >= len(txn.Out) {
 		return UxOut{}, fmt.Errorf("Transaction out index overflows transaction outputs")
 	}
 
 	var h cipher.SHA256
-	// The genesis block uses the null hash as the SrcTransaction
+	// The genesis block uses the null hash as the SrcTransaction [FIXME hardfork]
 	if bh.BkSeq != 0 {
 		h = txn.Hash()
 	}

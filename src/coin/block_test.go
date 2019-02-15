@@ -97,18 +97,15 @@ func TestBlockHashHeader(t *testing.T) {
 	require.NotEqual(t, b.HashHeader(), cipher.SHA256{})
 }
 
-func TestBlockHashBody(t *testing.T) {
+func TestBlockBodyHash(t *testing.T) {
 	uxHash := testutil.RandSHA256(t)
 	b := makeNewBlock(t, uxHash)
 	hb := b.Body.Hash()
 	hashes := b.Body.Transactions.Hashes()
 	txn := addTransactionToBlock(t, b)
-	hb2 := b.Body.Hash()
-	require.NotEqual(t, hb2, hb)
-	txnHash := txn.Hash()
-	hashes = append(hashes, txnHash)
-	hb3 := b.Body.Hash()
-	require.Equal(t, hb3, cipher.Merkle(hashes))
+	require.NotEqual(t, hb, b.Body.Hash())
+	hashes = append(hashes, txn.Hash())
+	require.Equal(t, b.Body.Hash(), cipher.Merkle(hashes))
 }
 
 func TestNewGenesisBlock(t *testing.T) {

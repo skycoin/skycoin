@@ -21,7 +21,7 @@ func encodeSizeHashPairs(obj *HashPairs) uint64 {
 		// x.Hash
 		i1 += 32
 
-		// x.PreHash
+		// x.PrevHash
 		i1 += 32
 
 		i0 += uint64(len(obj.HashPairs)) * i1
@@ -51,8 +51,8 @@ func encodeHashPairs(buf []byte, obj *HashPairs) error {
 		// x.Hash
 		e.CopyBytes(x.Hash[:])
 
-		// x.PreHash
-		e.CopyBytes(x.PreHash[:])
+		// x.PrevHash
+		e.CopyBytes(x.PrevHash[:])
 
 	}
 
@@ -93,12 +93,12 @@ func decodeHashPairs(buf []byte, obj *HashPairs) (int, error) {
 				}
 
 				{
-					// obj.HashPairs[z1].PreHash
-					if len(d.Buffer) < len(obj.HashPairs[z1].PreHash) {
+					// obj.HashPairs[z1].PrevHash
+					if len(d.Buffer) < len(obj.HashPairs[z1].PrevHash) {
 						return len(buf) - len(d.Buffer), encoder.ErrBufferUnderflow
 					}
-					copy(obj.HashPairs[z1].PreHash[:], d.Buffer[:len(obj.HashPairs[z1].PreHash)])
-					d.Buffer = d.Buffer[len(obj.HashPairs[z1].PreHash):]
+					copy(obj.HashPairs[z1].PrevHash[:], d.Buffer[:len(obj.HashPairs[z1].PrevHash)])
+					d.Buffer = d.Buffer[len(obj.HashPairs[z1].PrevHash):]
 				}
 
 			}

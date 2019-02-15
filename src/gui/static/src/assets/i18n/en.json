@@ -213,6 +213,7 @@
     "hours": "Hours",
     "id": "Tx ID",
     "show-more": "Show more",
+    "hours-moved": "moved",
     "hours-sent": "sent",
     "hours-received": "received",
     "hours-burned": "burned",
@@ -272,6 +273,8 @@
 
   "history": {
     "tx-detail": "Transaction Detail",
+    "moving": "Internally moving",
+    "moved": "Internally moved",
     "sending": "Sending",
     "sent": "Sent",
     "received": "Received",

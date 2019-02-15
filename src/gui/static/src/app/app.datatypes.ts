@@ -31,6 +31,7 @@ export class Transaction {
   txid: string;
   hoursSent?: BigNumber;
   hoursBurned?: BigNumber;
+  coinsMovedInternally?: boolean;
 }
 
 export class PreviewTransaction extends Transaction {

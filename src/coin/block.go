@@ -196,7 +196,7 @@ func (bb BlockBody) Bytes() []byte {
 // CreateUnspents creates the expected outputs for a transaction.
 func CreateUnspents(bh BlockHeader, txn Transaction) UxArray {
 	var h cipher.SHA256
-	// The genesis block uses the null hash as the SrcTransaction [FIXME hardfork]
+	// The genesis block uses the null hash as the SrcTransaction
 	if bh.BkSeq != 0 {
 		h = txn.Hash()
 	}
@@ -225,7 +225,7 @@ func CreateUnspent(bh BlockHeader, txn Transaction, outIndex int) (UxOut, error)
 	}
 
 	var h cipher.SHA256
-	// The genesis block uses the null hash as the SrcTransaction [FIXME hardfork]
+	// The genesis block uses the null hash as the SrcTransaction
 	if bh.BkSeq != 0 {
 		h = txn.Hash()
 	}

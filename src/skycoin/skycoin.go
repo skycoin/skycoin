@@ -534,11 +534,11 @@ func (c *Coin) ParseConfig() error {
 }
 
 // InitTransaction creates the genesis transaction
-func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction {
-	var tx coin.Transaction
+func InitTransaction(uxID string, genesisSecKey cipher.SecKey) coin.Transaction {
+	var txn coin.Transaction
 
-	output := cipher.MustSHA256FromHex(UxID)
-	if err := tx.PushInput(output); err != nil {
+	output := cipher.MustSHA256FromHex(uxID)
+	if err := txn.PushInput(output); err != nil {
 		log.Panic(err)
 	}
 
@@ -555,7 +555,7 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 
 	for i := range addrs {
 		addr := cipher.MustDecodeBase58Address(addrs[i])
-		if err := tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1); err != nil {
+		if err := txn.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1); err != nil {
 			log.Panic(err)
 		}
 	}
@@ -563,18 +563,18 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 	seckeys := make([]cipher.SecKey, 1)
 	seckey := genesisSecKey.Hex()
 	seckeys[0] = cipher.MustSecKeyFromHex(seckey)
-	tx.SignInputs(seckeys)
+	txn.SignInputs(seckeys)
 
-	if err := tx.UpdateHeader(); err != nil {
+	if err := txn.UpdateHeader(); err != nil {
 		log.Panic(err)
 	}
 
-	if err := tx.Verify(); err != nil {
+	if err := txn.Verify(); err != nil {
 		log.Panic(err)
 	}
 
-	log.Printf("signature= %s", tx.Sigs[0].Hex())
-	return tx
+	log.Printf("signature= %s", txn.Sigs[0].Hex())
+	return txn
 }
 
 func createDirIfNotExist(dir string) error {

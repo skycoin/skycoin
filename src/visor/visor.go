@@ -1585,7 +1585,7 @@ func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []Un
 	inputs := make([][]TransactionInput, len(txns))
 	for i, txn := range txns {
 		if len(txn.Transaction.In) == 0 {
-			logger.Critical().WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
+			logger.Critical().WithField("txid", txn.Transaction.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
 			continue
 		}
 

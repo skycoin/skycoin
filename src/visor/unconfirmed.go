@@ -48,7 +48,7 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 		return nil, encoder.ErrRemainingBytes
 	}
 
-	txnHash := txn.Hash()
+	txnHash := txn.Transaction.Hash()
 	if hash != txnHash {
 		return nil, fmt.Errorf("DB key %s does not match block hash header %s", hash, txnHash)
 	}
@@ -57,7 +57,7 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 }
 
 func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTransaction) error {
-	h := v.Hash()
+	h := v.Transaction.Hash()
 	n := encodeSizeUnconfirmedTransaction(v)
 	buf := make([]byte, n)
 	if err := encodeUnconfirmedTransaction(buf, v); err != nil {
@@ -363,7 +363,7 @@ func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, v
 			utxn.IsValid = 0
 		case nil:
 			if utxn.IsValid == 0 {
-				nowValid = append(nowValid, utxn.Hash())
+				nowValid = append(nowValid, utxn.Transaction.Hash())
 			}
 			utxn.IsValid = 1
 		default:
@@ -394,7 +394,7 @@ func (utp *UnconfirmedTransactionPool) RemoveInvalid(tx *dbutil.Tx, bc Blockchai
 		if err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint:
-				removeUtxns = append(removeUtxns, utxn.Hash())
+				removeUtxns = append(removeUtxns, utxn.Transaction.Hash())
 			default:
 				return nil, err
 			}

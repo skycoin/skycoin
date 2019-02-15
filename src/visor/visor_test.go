@@ -728,7 +728,7 @@ func makeUncfmUxs(txns []UnconfirmedTransaction) coin.UxArray {
 				Time: uint64(txns[i].Received),
 			},
 			Body: coin.UxBody{
-				SrcTransaction: txns[i].Hash(),
+				SrcTransaction: txns[i].Transaction.Hash(),
 			},
 		})
 	}
@@ -1861,7 +1861,7 @@ func TestGetTransactions(t *testing.T) {
 
 				uncfmTxnPool.On("GetUnspentsOfAddr", matchTxn, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
 				for i, uncfmTxn := range txns.UncfmTxns {
-					uncfmTxnPool.On("Get", matchTxn, uncfmTxn.Hash()).Return(&txns.UncfmTxns[i], nil)
+					uncfmTxnPool.On("Get", matchTxn, uncfmTxn.Transaction.Hash()).Return(&txns.UncfmTxns[i], nil)
 				}
 				uncfmTxnPool.txns = append(uncfmTxnPool.txns, txns.UncfmTxns...)
 			}

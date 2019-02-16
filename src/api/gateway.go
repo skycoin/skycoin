@@ -4,6 +4,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -13,7 +14,9 @@ import (
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
-	WalletCreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	CreateTransaction(p transaction.Params, wp wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	WalletCreateTransaction(wltID string, p transaction.Params, wp wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	WalletCreateSignedTransaction(wltID string, password []byte, p transaction.Params, wp wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
 	WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error)
 	GetWallet(wltID string) (*wallet.Wallet, error)

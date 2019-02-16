@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/mathutil"
@@ -607,8 +608,8 @@ func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, ch
 	return makeTxn()
 }
 
-func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]wallet.UxBalance, error) {
-	// Convert spendable unspent outputs to []wallet.UxBalance
+func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]transaction.UxBalance, error) {
+	// Convert spendable unspent outputs to []transaction.UxBalance
 	spendableOutputs, err := readable.OutputsToUxBalances(uxouts.SpendableOutputs())
 	if err != nil {
 		return nil, err
@@ -642,7 +643,7 @@ func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]walle
 	return outs, nil
 }
 
-func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
+func makeChangeOut(outs []transaction.UxBalance, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
 	var totalInCoins, totalInHours, totalOutCoins uint64
 
 	for _, o := range outs {
@@ -713,7 +714,7 @@ func mustMakeUtxoOutput(addr string, coins, hours uint64) coin.TransactionOutput
 	return uo
 }
 
-func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, error) {
+func getKeys(wlt *wallet.Wallet, outs []transaction.UxBalance) ([]cipher.SecKey, error) {
 	keys := make([]cipher.SecKey, len(outs))
 	for i, o := range outs {
 		entry, ok := wlt.GetEntry(o.Address)
@@ -727,7 +728,7 @@ func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, erro
 }
 
 // NewTransaction creates a transaction. The transaction should be validated against hard and soft constraints before transmission.
-func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
+func NewTransaction(utxos []transaction.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
 	txn := coin.Transaction{}
 	for _, u := range utxos {
 		if err := txn.PushInput(u.Hash); err != nil {

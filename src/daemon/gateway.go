@@ -633,7 +633,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 	}, nil
 }
 
-// VerifyTxnVerbose verifies an isolated transaction and returns []wallet.UxBalance of
+// VerifyTxnVerbose verifies an isolated transaction and returns []transaction.UxBalance of
 // transaction inputs, whether the transaction is confirmed and error if any
 func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error) {
 	return gw.v.VerifyTxnVerbose(txn, signed)

@@ -310,6 +310,8 @@ func (txn *Transaction) SignInput(key cipher.SecKey, index int) error {
 
 	if len(txn.Sigs) == 0 {
 		txn.Sigs = make([]cipher.Sig, len(txn.In))
+	} else if len(txn.In) != len(txn.Sigs) {
+		return errors.New("Number of signatures does not match number of inputs")
 	}
 
 	if !txn.Sigs[index].Null() {

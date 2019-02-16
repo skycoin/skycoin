@@ -1,0 +1,264 @@
+package wallet
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/transaction"
+)
+
+var (
+	// ErrIncludesNullAddress Wallet.Addresses must not contain the null address
+	ErrIncludesNullAddress = NewError(errors.New("Wallet.Addresses must not contain the null address"))
+	// ErrDuplicateAddresses Wallet.Addresses contains duplicate values
+	ErrDuplicateAddresses = NewError(errors.New("Wallet.Addresses contains duplicate values"))
+	// ErrWalletParamsConflict Wallet.UxOuts and Wallet.Addresses cannot be combined
+	ErrWalletParamsConflict = NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
+	// ErrDuplicateUxOuts Wallet.UxOuts contains duplicate values
+	ErrDuplicateUxOuts = NewError(errors.New("Wallet.UxOuts contains duplicate values"))
+	// ErrUnknownWalletID params.Wallet.ID does not match wallet
+	ErrUnknownWalletID = NewError(errors.New("params.Wallet.ID does not match wallet"))
+)
+
+func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {
+	if len(x) > len(uxOuts) {
+		return errors.New("Number of signature indexes exceeds number of inputs")
+	}
+
+	for _, i := range x {
+		if i >= len(uxOuts) || i < 0 {
+			return errors.New("Signature index out of range")
+		}
+	}
+
+	m := make(map[int]struct{}, len(x))
+	for _, i := range x {
+		if _, ok := m[i]; ok {
+			return errors.New("Duplicate value in signature indexes")
+		}
+		m[i] = struct{}{}
+	}
+
+	return nil
+}
+
+func copyTransaction(txn *coin.Transaction) *coin.Transaction {
+	txnHash := txn.Hash()
+	txnInnerHash := txn.HashInner()
+
+	txn2 := *txn
+	txn2.Sigs = make([]cipher.Sig, len(txn.Sigs))
+	copy(txn2.Sigs, txn.Sigs)
+	txn2.In = make([]cipher.SHA256, len(txn.In))
+	copy(txn2.In, txn.In)
+	txn2.Out = make([]coin.TransactionOutput, len(txn.Out))
+	copy(txn2.Out, txn.Out)
+
+	if txnInnerHash != txn2.HashInner() {
+		logger.Panic("copyTransaction copy broke InnerHash")
+	}
+	if txnHash != txn2.Hash() {
+		logger.Panic("copyTransaction copy broke Hash")
+	}
+
+	return &txn2
+}
+
+// SignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
+// If signIndexes is empty, all inputs will be signed.
+// The transaction should already have a valid header. The transaction may be partially signed,
+// but a valid existing signature cannot be overwritten.
+// Clients should avoid signing the same transaction multiple times.
+func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) (*coin.Transaction, error) {
+	signedTxn := copyTransaction(txn)
+	txnInnerHash := signedTxn.HashInner()
+
+	if txnInnerHash != signedTxn.InnerHash {
+		return nil, NewError(errors.New("Transaction inner hash does not match computed inner hash"))
+	}
+
+	if len(signedTxn.Sigs) == 0 {
+		return nil, NewError(errors.New("Transaction signatures array is empty"))
+	}
+	if signedTxn.IsFullySigned() {
+		return nil, NewError(errors.New("Transaction is fully signed"))
+	}
+
+	if len(signedTxn.In) == 0 {
+		return nil, NewError(errors.New("No transaction inputs to sign"))
+	}
+	if len(uxOuts) != len(signedTxn.In) {
+		return nil, errors.New("len(uxOuts) != len(txn.In)")
+	}
+	if err := validateSignIndexes(signIndexes, uxOuts); err != nil {
+		return nil, NewError(err)
+	}
+
+	if w.IsEncrypted() {
+		return nil, nil, ErrWalletEncrypted
+	}
+
+	// Build a mapping of addresses to the inputs that need to be signed
+	addrs := make(map[cipher.Address][]int)
+	if len(signIndexes) > 0 {
+		for _, in := range signIndexes {
+			if !signedTxn.Sigs[in].Null() {
+				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", in))
+			}
+			addrs[uxOuts[in].Body.Address] = append(addrs[uxOuts[in].Body.Address], in)
+		}
+	} else {
+		for i, o := range uxOuts {
+			if !signedTxn.Sigs[i].Null() {
+				continue
+			}
+			addrs[o.Body.Address] = append(addrs[o.Body.Address], i)
+		}
+	}
+
+	// Check that the wallet has all addresses needed for signing
+	toSign := make(map[int][]int)
+	for i, e := range w.Entries {
+		if len(toSign) == len(addrs) {
+			break
+		}
+		addr := e.SkycoinAddress()
+		if x, ok := addrs[addr]; ok {
+			toSign[i] = x
+		}
+	}
+
+	if len(toSign) != len(addrs) {
+		return nil, NewError(errors.New("Wallet cannot sign all requested inputs"))
+	}
+
+	// Sign the selected inputs
+	for k, v := range toSign {
+		for _, x := range v {
+			if !signedTxn.Sigs[x].Null() {
+				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", x))
+			}
+			if err := signedTxn.SignInput(w.Entries[k].Secret, x); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if err := signedTxn.UpdateHeader(); err != nil {
+		return nil, err
+	}
+
+	// Sanity check
+	if txnInnerHash != signedTxn.HashInner() {
+		err := errors.New("Transaction inner hash modified in the process of signing")
+		logger.Critical().WithError(err).Error()
+		return nil, err
+	}
+
+	return signedTxn, nil
+}
+
+// CreateTransaction creates an unsigned transaction based upon transaction.Params.
+// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
+// NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options
+// Outputs to spend are chosen from the pool of outputs provided.
+// The outputs are chosen by the following procedure:
+//   - All outputs are merged into one list and are sorted coins highest, hours lowest, with the hash as a tiebreaker
+//   - Outputs are chosen from the beginning of this list, until the requested amount of coins is met.
+//     If hours are also specified, selection continues until the requested amount of hours are met.
+//   - If the total amount of coins in the chosen outputs is exactly equal to the requested amount of coins,
+//     such that there would be no change output but hours remain as change, another output will be chosen to create change,
+//     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
+// If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
+// If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
+func (w *Wallet) CreateTransaction(p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+	if err := pp.Validate(); err != nil {
+		return nil, nil, err
+	}
+
+	if err := p.Validate(); err != nil {
+		return nil, nil, err
+	}
+
+	// Check that auxs does not contain addresses that are not known to this wallet
+	for a := range auxs {
+		if !w.HasEntry(a) {
+			return nil, nil, ErrUnknownAddress
+		}
+	}
+
+	txn, spends, err := transaction.Create(p, auxs, headTime)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return txn, spends, nil
+}
+
+// CreateSignedTransaction creates and signs a transaction based upon transaction.Params.
+// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
+// NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options
+// Outputs to spend are chosen from the pool of outputs provided.
+// The outputs are chosen by the following procedure:
+//   - All outputs are merged into one list and are sorted coins highest, hours lowest, with the hash as a tiebreaker
+//   - Outputs are chosen from the beginning of this list, until the requested amount of coins is met.
+//     If hours are also specified, selection continues until the requested amount of hours are met.
+//   - If the total amount of coins in the chosen outputs is exactly equal to the requested amount of coins,
+//     such that there would be no change output but hours remain as change, another output will be chosen to create change,
+//     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
+// If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
+// If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
+func (w *Wallet) CreateSignedTransaction(p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+	txn, uxb, err := w.CreateTransaction(p, auxs, headTime)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Sign the transaction
+	entriesMap := make(map[cipher.Address]Entry)
+	for i, s := range spends {
+		entry, ok := entriesMap[s.Address]
+		if !ok {
+			entry, ok = w.GetEntry(s.Address)
+			if !ok {
+				// This should not occur because CreateTransaction should have checked it already
+				err := fmt.Errorf("Chosen spend address %s not found in wallet", spend.Address)
+				logger.Critical().WithError(err).Error()
+				return nil, nil, err
+			}
+			entriesMap[s.Address] = entry
+		}
+
+		if err := txn.SignInput(entry.Secret, i); err != nil {
+			logger.Critical().WithError(err).Error("CreateTransaction SignInput failed")
+			return nil, nil, err
+		}
+	}
+
+	// Attempt to wipe copied secrets from memory
+	emptyKey := cipher.SecKey{}
+	for k := range entriesMap {
+		copy(entriesMap[k].Secret[:], emptyKey[:])
+	}
+
+	// Sanity check the signed transaction
+	if err := verifyCreatedSignedInvariants(p, txn, inputs); err != nil {
+		return nil, nil, err
+	}
+
+	return txn, spends, nil
+}
+
+func verifyCreatedSignedInvariants(p CreateTransactionParams, txn *coin.Transaction, inputs []UxBalance) error {
+	if !txn.IsFullySigned() {
+		return errors.New("Transaction is not fully signed")
+	}
+
+	if err := transaction.VerifyCreatedInvariants(p, txn, inputs); err != nil {
+		return err
+	}
+
+	return nil
+}

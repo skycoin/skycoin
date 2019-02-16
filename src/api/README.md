@@ -2315,7 +2315,7 @@ Result:
 
 ### Resend unconfirmed transactions
 
-API sets: `TXN`
+API sets: `TXN`, `WALLET`
 
 ```
 URI: /api/v1/resendUnconfirmedTxns

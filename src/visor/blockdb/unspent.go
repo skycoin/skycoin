@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -76,10 +75,15 @@ type pool struct{}
 func (pl pool) get(tx *dbutil.Tx, hash cipher.SHA256) (*coin.UxOut, error) {
 	var out coin.UxOut
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnspentPoolBkt, hash[:], &out); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UnspentPoolBkt, hash[:])
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if err := decodeUxOutExact(v, &out); err != nil {
+		return nil, err
 	}
 
 	return &out, nil
@@ -90,7 +94,7 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+		if err := decodeUxOutExact(v, &ux); err != nil {
 			return err
 		}
 
@@ -104,7 +108,12 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 }
 
 func (pl pool) put(tx *dbutil.Tx, hash cipher.SHA256, ux coin.UxOut) error {
-	return dbutil.PutBucketValue(tx, UnspentPoolBkt, hash[:], encoder.Serialize(ux))
+	buf, err := encodeUxOut(&ux)
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnspentPoolBkt, hash[:], buf)
 }
 
 func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
@@ -114,15 +123,20 @@ func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 type poolAddrIndex struct{}
 
 func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
-	var hashes []cipher.SHA256
+	var hashes hashesWrapper
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), &hashes); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UnspentPoolAddrIndexBkt, addr.Bytes())
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
 	}
 
-	return hashes, nil
+	if err := decodeHashesWrapperExact(v, &hashes); err != nil {
+		return nil, err
+	}
+
+	return hashes.Hashes, nil
 }
 
 func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.SHA256) error {
@@ -139,8 +153,14 @@ func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.S
 		hashesMap[h] = struct{}{}
 	}
 
-	encodedHashes := encoder.Serialize(hashes)
-	return dbutil.PutBucketValue(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), encodedHashes)
+	buf, err := encodeHashesWrapper(&hashesWrapper{
+		Hashes: hashes,
+	})
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), buf)
 }
 
 // adjust adds and removes hashes from an address -> hashes index
@@ -261,7 +281,7 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 	var maxBlockSeq uint64
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
 		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+		if err := decodeUxOutExact(v, &ux); err != nil {
 			return err
 		}
 

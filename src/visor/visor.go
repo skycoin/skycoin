@@ -23,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -480,7 +481,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn, TxnSigned); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
-				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
+				logger.Warningf("Transaction %s violates constraints: %v", txn.Hash().Hex(), err)
 			default:
 				return coin.SignedBlock{}, err
 			}
@@ -518,6 +519,10 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	if err != nil {
 		logger.Critical().WithError(err).Error("TruncateBytesTo failed, no block can be made until the offending transaction is removed")
 		return coin.SignedBlock{}, err
+	}
+
+	if len(txns) > coin.MaxBlockTransactions {
+		txns = txns[:coin.MaxBlockTransactions]
 	}
 
 	if len(txns) == 0 {
@@ -572,12 +577,12 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	}
 
 	// Remove the transactions in the Block from the unconfirmed pool
-	txHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
-	for _, tx := range b.Block.Body.Transactions {
-		txHashes = append(txHashes, tx.Hash())
+	txnHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
+	for _, txn := range b.Block.Body.Transactions {
+		txnHashes = append(txnHashes, txn.Hash())
 	}
 
-	if err := vs.Unconfirmed.RemoveTransactions(tx, txHashes); err != nil {
+	if err := vs.Unconfirmed.RemoveTransactions(tx, txnHashes); err != nil {
 		return err
 	}
 
@@ -1217,20 +1222,21 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	// and remove duplicate txns
 	txnMap := make(map[cipher.SHA256]struct{})
 	var txns []Transaction
-	for _, txs := range addrTxns {
-		for _, tx := range txs {
-			if _, exist := txnMap[tx.Transaction.Hash()]; exist {
+	for _, aTxns := range addrTxns {
+		for _, txn := range aTxns {
+			txnHash := txn.Transaction.Hash()
+			if _, exist := txnMap[txnHash]; exist {
 				continue
 			}
-			txnMap[tx.Transaction.Hash()] = struct{}{}
-			txns = append(txns, tx)
+			txnMap[txnHash] = struct{}{}
+			txns = append(txns, txn)
 		}
 	}
 
 	// Checks other filters
-	f := func(tx *Transaction, flts []TxFilter) bool {
+	f := func(txn *Transaction, flts []TxFilter) bool {
 		for _, flt := range flts {
-			if !flt.Match(tx) {
+			if !flt.Match(txn) {
 				return false
 			}
 		}
@@ -1239,9 +1245,9 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	}
 
 	var retTxns []Transaction
-	for _, tx := range txns {
-		if f(&tx, otherFlts) {
-			retTxns = append(retTxns, tx)
+	for _, txn := range txns {
+		if f(&txn, otherFlts) {
+			retTxns = append(retTxns, txn)
 		}
 	}
 
@@ -1453,12 +1459,12 @@ func (vs *Visor) AddressBalances(head *coin.SignedBlock, auxs coin.AddressUxOuts
 				return 0, 0, err
 			}
 
-			coins, err = coin.AddUint64(coins, ux.Body.Coins)
+			coins, err = mathutil.AddUint64(coins, ux.Body.Coins)
 			if err != nil {
 				return 0, 0, err
 			}
 
-			hours, err = coin.AddUint64(hours, uxHours)
+			hours, err = mathutil.AddUint64(hours, uxHours)
 			if err != nil {
 				return 0, 0, err
 			}
@@ -1579,7 +1585,7 @@ func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []Un
 	inputs := make([][]TransactionInput, len(txns))
 	for i, txn := range txns {
 		if len(txn.Transaction.In) == 0 {
-			logger.Critical().WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
+			logger.Critical().WithField("txid", txn.Transaction.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
 			continue
 		}
 

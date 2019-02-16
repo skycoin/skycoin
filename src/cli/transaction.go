@@ -48,7 +48,7 @@ func transactionCmd() *cobra.Command {
 	}
 }
 
-func decodeRawTxCmd() *cobra.Command {
+func decodeRawTxnCmd() *cobra.Command {
 	return &cobra.Command{
 		Short:                 "Decode raw transaction",
 		Use:                   "decodeRawTransaction [raw transaction]",
@@ -61,7 +61,7 @@ func decodeRawTxCmd() *cobra.Command {
 				return fmt.Errorf("invalid raw transaction: %v", err)
 			}
 
-			txn, err := coin.TransactionDeserialize(b)
+			txn, err := coin.DeserializeTransaction(b)
 			if err != nil {
 				return fmt.Errorf("Unable to deserialize transaction bytes: %v", err)
 			}

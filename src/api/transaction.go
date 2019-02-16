@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -149,8 +150,14 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		buf, err := txn.Transaction.Serialize()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		if encoded {
-			txnStr := hex.EncodeToString(txn.Transaction.Serialize())
+			txnStr := hex.EncodeToString(buf)
 
 			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
 				EncodedTransaction: txnStr,
@@ -358,7 +365,7 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := coin.TransactionDeserialize(b)
+		txn, err := coin.DeserializeTransaction(b)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -458,8 +465,13 @@ func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		d := txn.Transaction.Serialize()
-		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
+		buf, err := txn.Transaction.Serialize()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, hex.EncodeToString(buf))
 	}
 }
 
@@ -573,7 +585,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 		return nil, err
 	}
 
-	txn, err = coin.TransactionDeserialize(b)
+	txn, err = coin.DeserializeTransaction(b)
 	if err != nil {
 		return nil, err
 	}
@@ -591,7 +603,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []visor.Transactio
 	var feeInvalid bool
 	for _, o := range txn.Out {
 		var err error
-		outputHours, err = coin.AddUint64(outputHours, o.Hours)
+		outputHours, err = mathutil.AddUint64(outputHours, o.Hours)
 		if err != nil {
 			feeInvalid = true
 		}
@@ -600,7 +612,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []visor.Transactio
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = coin.AddUint64(inputHours, i.CalculatedHours)
+		inputHours, err = mathutil.AddUint64(inputHours, i.CalculatedHours)
 		if err != nil {
 			feeInvalid = true
 		}
@@ -620,10 +632,10 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []visor.Transactio
 		sigs[i] = s.Hex()
 	}
 
-	txid := txn.Hash()
+	txID := txn.Hash()
 	out := make([]CreatedTransactionOutput, len(txn.Out))
 	for i, o := range txn.Out {
-		co, err := NewCreatedTransactionOutput(o, txid)
+		co, err := NewCreatedTransactionOutput(o, txID)
 		if err != nil {
 			logger.WithError(err).Error("NewCreatedTransactionOutput failed")
 			continue
@@ -652,7 +664,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []visor.Transactio
 	return &CreatedTransaction{
 		Length:    txn.Length,
 		Type:      txn.Type,
-		TxID:      txid.Hex(),
+		TxID:      txID.Hex(),
 		InnerHash: txn.InnerHash.Hex(),
 		Fee:       fmt.Sprint(fee),
 

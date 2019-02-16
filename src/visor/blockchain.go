@@ -358,9 +358,9 @@ func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Trans
 		// because it relies on the unspent pool to check for existence.
 		// For remote callers such as the CLI, they'd need to download the whole
 		// unspent pool or make a separate API call to check for duplicate unspents.
-		uxOut := coin.CreateUnspents(head.Head, txn)
-		for i := range uxOut {
-			if contains, err := bc.Unspent().Contains(tx, uxOut[i].Hash()); err != nil {
+		uxOuts := coin.CreateUnspents(head.Head, txn)
+		for i := range uxOuts {
+			if contains, err := bc.Unspent().Contains(tx, uxOuts[i].Hash()); err != nil {
 				return err
 			} else if contains {
 				err := errors.New("New unspent collides with existing unspent")
@@ -435,9 +435,9 @@ func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 		// because it relies on the unspent pool to check for existence.
 		// For remote callers such as the CLI, they'd need to download the whole
 		// unspent pool or make a separate API call to check for duplicate unspents.
-		uxOut := coin.CreateUnspents(head.Head, txn)
-		for i := range uxOut {
-			if contains, err := bc.Unspent().Contains(tx, uxOut[i].Hash()); err != nil {
+		uxOuts := coin.CreateUnspents(head.Head, txn)
+		for i := range uxOuts {
+			if contains, err := bc.Unspent().Contains(tx, uxOuts[i].Hash()); err != nil {
 				return err
 			} else if contains {
 				err := errors.New("New unspent collides with existing unspent")
@@ -838,7 +838,8 @@ func (bc Blockchain) verifyBlockHeader(tx *dbutil.Tx, b coin.Block) error {
 	if b.Head.PrevHash != head.HashHeader() {
 		return errors.New("PrevHash does not match current head")
 	}
-	if b.HashBody() != b.Head.BodyHash {
+
+	if b.Body.Hash() != b.Head.BodyHash {
 		return errors.New("Computed body hash does not match")
 	}
 	return nil

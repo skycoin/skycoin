@@ -1180,9 +1180,10 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 	var txids []cipher.SHA256
 	for i := range txns {
-		logger.WithField("txid", txns[i].Hash().Hex()).Debug("Rebroadcast transaction")
+		txnHash := txns[i].Transaction.Hash()
+		logger.WithField("txid", txnHash.Hex()).Debug("Rebroadcast transaction")
 		if _, err := dm.BroadcastTransaction(txns[i].Transaction); err == nil {
-			txids = append(txids, txns[i].Transaction.Hash())
+			txids = append(txids, txnHash)
 		}
 	}
 

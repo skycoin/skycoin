@@ -20,6 +20,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -187,7 +188,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				for _, o := range tx.Transaction.Out {
 					c, err := droplet.FromString(o.Coins)
 					require.NoError(t, err)
-					coins, err = coin.AddUint64(coins, c)
+					coins, err = mathutil.AddUint64(coins, c)
 					require.NoError(t, err)
 				}
 
@@ -389,7 +390,7 @@ func TestLiveWalletSignTransaction(t *testing.T) {
 
 			txnBytes, err := hex.DecodeString(tc.req.EncodedTransaction)
 			require.NoError(t, err)
-			txn, err := coin.TransactionDeserialize(txnBytes)
+			txn, err := coin.DeserializeTransaction(txnBytes)
 			require.NoError(t, err)
 
 			// TxID should have changed
@@ -1486,11 +1487,14 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 func assertEncodeTxnMatchesTxn(t *testing.T, result *api.CreateTransactionResponse) {
 	require.NotEmpty(t, result.EncodedTransaction)
 	emptyTxn := &coin.Transaction{}
-	require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
+	emptyTxnBytes, err := emptyTxn.Serialize()
+	require.NoError(t, err)
+	require.NotEqual(t, hex.EncodeToString(emptyTxnBytes), result.EncodedTransaction)
 	txn, err := result.Transaction.ToTransaction()
 	require.NoError(t, err)
 
-	serializedTxn := txn.Serialize()
+	serializedTxn, err := txn.Serialize()
+	require.NoError(t, err)
 	require.Equal(t, hex.EncodeToString(serializedTxn), result.EncodedTransaction)
 
 	require.Equal(t, int(txn.Length), len(serializedTxn))
@@ -1570,7 +1574,7 @@ func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction, unsig
 		require.NotNil(t, in.CalculatedHours)
 		calculatedHours, err := strconv.ParseUint(in.CalculatedHours, 10, 64)
 		require.NoError(t, err)
-		inputHours, err = coin.AddUint64(inputHours, calculatedHours)
+		inputHours, err = mathutil.AddUint64(inputHours, calculatedHours)
 		require.NoError(t, err)
 
 		require.NotNil(t, in.Hours)
@@ -1582,7 +1586,7 @@ func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction, unsig
 		require.NotNil(t, in.Coins)
 		coins, err := droplet.FromString(in.Coins)
 		require.NoError(t, err)
-		inputCoins, err = coin.AddUint64(inputCoins, coins)
+		inputCoins, err = mathutil.AddUint64(inputCoins, coins)
 		require.NoError(t, err)
 	}
 
@@ -1591,12 +1595,12 @@ func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction, unsig
 	for _, out := range r.Out {
 		hours, err := strconv.ParseUint(out.Hours, 10, 64)
 		require.NoError(t, err)
-		outputHours, err = coin.AddUint64(outputHours, hours)
+		outputHours, err = mathutil.AddUint64(outputHours, hours)
 		require.NoError(t, err)
 
 		coins, err := droplet.FromString(out.Coins)
 		require.NoError(t, err)
-		outputCoins, err = coin.AddUint64(outputCoins, coins)
+		outputCoins, err = mathutil.AddUint64(outputCoins, coins)
 		require.NoError(t, err)
 	}
 

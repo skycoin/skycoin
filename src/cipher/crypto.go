@@ -343,6 +343,10 @@ func MustSigFromHex(s string) Sig {
 	return sig
 }
 
+func (s Sig) String() string {
+	return s.Hex()
+}
+
 // Null returns true if the Sig is a null Sig
 func (s Sig) Null() bool {
 	return s == Sig{}

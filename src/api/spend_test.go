@@ -89,9 +89,12 @@ func TestWalletCreateTransaction(t *testing.T) {
 	createdTxn, err := NewCreatedTransaction(txn, inputs)
 	require.NoError(t, err)
 
+	buf, err := txn.Serialize()
+	require.NoError(t, err)
+
 	createTxnResponse := &CreateTransactionResponse{
 		Transaction:        *createdTxn,
-		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
+		EncodedTransaction: hex.EncodeToString(buf),
 	}
 
 	validBody := &rawRequest{
@@ -976,9 +979,12 @@ func TestWalletSignTransaction(t *testing.T) {
 	signedTxnResp, err := NewCreateTransactionResponse(&signedTxn, inputs)
 	require.NoError(t, err)
 
+	txnBytes, err := txn.Serialize()
+	require.NoError(t, err)
+
 	validBody := &WalletSignTransactionRequest{
 		WalletID:           "foo.wlt",
-		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
+		EncodedTransaction: hex.EncodeToString(txnBytes),
 	}
 
 	tt := []struct {
@@ -1197,7 +1203,7 @@ func TestWalletSignTransaction(t *testing.T) {
 				// transaction is intentionally malformed
 				txnBytes, err := hex.DecodeString(tc.body.EncodedTransaction)
 				if err == nil {
-					txnx, err := coin.TransactionDeserialize([]byte(txnBytes))
+					txnx, err := coin.DeserializeTransaction([]byte(txnBytes))
 					if err == nil {
 						txn = &txnx
 					}

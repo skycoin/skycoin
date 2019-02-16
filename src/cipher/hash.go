@@ -94,7 +94,11 @@ func (g *SHA256) Set(b []byte) error {
 	return nil
 }
 
-// Hex encode sha256 to hex string
+func (g SHA256) String() string {
+	return g.Hex()
+}
+
+// Hex encode SHA256 to hex string
 func (g SHA256) Hex() string {
 	return hex.EncodeToString(g[:])
 }

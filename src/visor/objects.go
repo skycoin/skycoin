@@ -3,7 +3,6 @@ package visor
 import (
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -151,11 +150,6 @@ type UnconfirmedTransaction struct {
 	Announced int64
 	// If this txn is valid
 	IsValid int8
-}
-
-// Hash returns the coin.Transaction's hash
-func (ut *UnconfirmedTransaction) Hash() cipher.SHA256 {
-	return ut.Transaction.Hash()
 }
 
 // NewUnconfirmedTransaction creates an UnconfirmedTransaction

@@ -29,6 +29,7 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -464,7 +465,10 @@ func TestStableVerifyTransaction(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			encodedTxn := hex.EncodeToString(tc.txn.Serialize())
+			buf, err := tc.txn.Serialize()
+			require.NoError(t, err)
+
+			encodedTxn := hex.EncodeToString(buf)
 
 			resp, err := c.VerifyTransaction(api.VerifyTransactionRequest{
 				EncodedTransaction: encodedTxn,
@@ -952,7 +956,7 @@ func assertVerboseBlockFee(t *testing.T, b *readable.BlockVerbose) {
 	fee := uint64(0)
 	for _, txn := range b.Body.Transactions {
 		var err error
-		fee, err = coin.AddUint64(fee, txn.Fee)
+		fee, err = mathutil.AddUint64(fee, txn.Fee)
 		require.NoError(t, err)
 	}
 
@@ -2362,7 +2366,7 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase,
 
 	encodedTxnBytes, err := hex.DecodeString(encodedTxn.EncodedTransaction)
 	require.NoError(t, err)
-	decodedTxn, err := coin.TransactionDeserialize(encodedTxnBytes)
+	decodedTxn, err := coin.DeserializeTransaction(encodedTxnBytes)
 	require.NoError(t, err)
 
 	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{

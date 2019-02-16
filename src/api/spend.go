@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -34,9 +35,14 @@ func NewCreateTransactionResponse(txn *coin.Transaction, inputs []visor.Transact
 		return nil, err
 	}
 
+	buf, err := txn.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
 	return &CreateTransactionResponse{
 		Transaction:        *cTxn,
-		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
+		EncodedTransaction: hex.EncodeToString(buf),
 	}, nil
 }
 
@@ -62,7 +68,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInpu
 	var outputHours uint64
 	for _, o := range txn.Out {
 		var err error
-		outputHours, err = coin.AddUint64(outputHours, o.Hours)
+		outputHours, err = mathutil.AddUint64(outputHours, o.Hours)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +77,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInpu
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = coin.AddUint64(inputHours, i.CalculatedHours)
+		inputHours, err = mathutil.AddUint64(inputHours, i.CalculatedHours)
 		if err != nil {
 			return nil, err
 		}
@@ -88,10 +94,10 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInpu
 		sigs[i] = s.Hex()
 	}
 
-	txid := txn.Hash()
+	txID := txn.Hash()
 	out := make([]CreatedTransactionOutput, len(txn.Out))
 	for i, o := range txn.Out {
-		co, err := NewCreatedTransactionOutput(o, txid)
+		co, err := NewCreatedTransactionOutput(o, txID)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +116,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInpu
 	return &CreatedTransaction{
 		Length:    txn.Length,
 		Type:      txn.Type,
-		TxID:      txid.Hex(),
+		TxID:      txID.Hex(),
 		InnerHash: txn.InnerHash.Hex(),
 		Fee:       fmt.Sprint(fee),
 
@@ -183,6 +189,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if t.Hash() != hash {
 		return nil, errors.New("readable.Transaction.Hash does not match parsed transaction hash")
 	}

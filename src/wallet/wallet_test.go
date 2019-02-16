@@ -23,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 var (
@@ -2439,25 +2440,25 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 			name:  "total coins too large while adding",
 			coins: []uint64{10, math.MaxUint64 - 9},
 			hours: 1,
-			err:   coin.ErrUint64AddOverflow,
+			err:   mathutil.ErrUint64AddOverflow,
 		},
 		{
 			name:  "total coins too large after adding",
 			coins: []uint64{10, math.MaxInt64},
 			hours: 1,
-			err:   coin.ErrUint64OverflowsInt64,
+			err:   mathutil.ErrUint64OverflowsInt64,
 		},
 		{
 			name:  "single coin too large",
 			coins: []uint64{10, math.MaxInt64 + 1},
 			hours: 1,
-			err:   coin.ErrUint64OverflowsInt64,
+			err:   mathutil.ErrUint64OverflowsInt64,
 		},
 		{
 			name:  "hours too large",
 			coins: []uint64{10},
 			hours: math.MaxInt64 + 1,
-			err:   coin.ErrUint64OverflowsInt64,
+			err:   mathutil.ErrUint64OverflowsInt64,
 		},
 
 		{
@@ -2559,7 +2560,7 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 			coins[i] = uint64(rand.Intn(maxCoins) + 1)
 
 			var err error
-			totalCoins, err = coin.AddUint64(totalCoins, coins[i])
+			totalCoins, err = mathutil.AddUint64(totalCoins, coins[i])
 			require.NoError(t, err)
 		}
 
@@ -2577,7 +2578,7 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 			}
 
 			var err error
-			totalHours, err = coin.AddUint64(totalHours, h)
+			totalHours, err = mathutil.AddUint64(totalHours, h)
 			require.NoError(t, err)
 		}
 
@@ -2996,15 +2997,18 @@ func makeTransaction(t *testing.T, nInputs int) (coin.Transaction, []coin.UxOut,
 	uxs := make([]coin.UxOut, 0)
 	for i := 0; i < nInputs; i++ {
 		ux, s := makeUxOutWithSecret(t)
-		txn.PushInput(ux.Hash())
+		err := txn.PushInput(ux.Hash())
+		require.NoError(t, err)
 		toSign = append(toSign, s)
 		uxs = append(uxs, ux)
 	}
 
-	txn.PushOutput(makeAddress(), 1e6, 50)
-	txn.PushOutput(makeAddress(), 5e6, 50)
+	err := txn.PushOutput(makeAddress(), 1e6, 50)
+	require.NoError(t, err)
+	err = txn.PushOutput(makeAddress(), 5e6, 50)
+	require.NoError(t, err)
 	txn.SignInputs(toSign)
-	err := txn.UpdateHeader()
+	err = txn.UpdateHeader()
 	require.NoError(t, err)
 
 	return txn, uxs, toSign

@@ -1,5 +1,3 @@
-// build ignore
-
 package gnet
 
 import (
@@ -713,6 +711,9 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 }
 
 func TestProcessConnectionBuffers(t *testing.T) {
+	assertIsMessage(t, &DummyMessage{})
+	assertIsMessage(t, &ErrorMessage{})
+
 	resetHandler()
 	EraseMessages()
 	RegisterMessage(DummyPrefix, DummyMessage{})

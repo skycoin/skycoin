@@ -20,6 +20,7 @@ paths:
       - description: address to filter by
         in: query
         name: address
+        required: true
         type: string
       produces:
       - application/json

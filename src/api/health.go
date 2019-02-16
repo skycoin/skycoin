@@ -66,7 +66,8 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 	//               type: object
 	//               properties:
 	//                 seq:
-	//                   type: string
+	//                   type: integer
+	//                   format: int64
 	//                 block_hash:
 	//                   type: string
 	//                 previous_block_hash:

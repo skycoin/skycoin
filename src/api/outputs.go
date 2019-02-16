@@ -31,11 +31,15 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 	// - name: address
 	//   in: query
 	//   required: false
-	//   type: string
+	//   type: array
+	//   items:
+	//     type: string
 	// - name: hash
 	//   in: query
 	//   required: false
-	//   type: string
+	//   type: array
+	//   items:
+	//     type: string
 	//
 	// produces:
 	// - application/json

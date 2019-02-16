@@ -2711,7 +2711,7 @@ curl http://127.0.0.1:6420/api/v1/block?seq=2760&verbose=1
 
 Result:
 
-```json
+```jsonhttp://127.0.0.1:6420/api/v1/blockchain/progress
 {
     "header": {
         "seq": 2760,

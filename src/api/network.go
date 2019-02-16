@@ -411,7 +411,7 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 //	id: ID of the connection
 func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:operation GET /api/v1/network/connection/disconnect networkConnectionsDisconnect
+	// swagger:operation POST /api/v1/network/connection/disconnect networkConnectionsDisconnect
 	//
 	// This endpoint disconnects a connection by ID or address
 	//

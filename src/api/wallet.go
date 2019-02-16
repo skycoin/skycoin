@@ -493,11 +493,11 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error400(w, `invalid "coins" value`)
 			return
 		}
-
-		if coins <= 0 {
-			wh.Error400(w, `invalid "coins" value, must > 0`)
-			return
-		}
+		//
+		//if coins <= 0 {
+		//	wh.Error400(w, `invalid "coins" value, must > 0`)
+		//	return
+		//}
 
 		tx, err := gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst)
 		switch err {
@@ -927,6 +927,7 @@ func walletHandler(gateway Gatewayer) http.HandlerFunc {
 	// parameters:
 	// - name: id
 	//   in: query
+	//   required: true
 	//   description: tags to filter by
 	//   type: string
 	//   x-go-name: Id

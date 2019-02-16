@@ -204,6 +204,9 @@ func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
 	//               label:
 	//                 type: integer
 	//                 format: int64
+	//               block_seq:
+	//                 type: integer
+	//                 format: int64
 	//           timestamp:
 	//             type: integer
 	//             format: integer
@@ -326,7 +329,7 @@ func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 	//   required: false
 	//   in: query
 	//   description: include distribution addresses or not, default value false
-	//   type: string
+	//   type: boolean
 	// - name: 'n'
 	//   required: false
 	//   in: query

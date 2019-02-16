@@ -425,7 +425,9 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 	// - name: seqs
 	//   in: query
 	//   required: false
-	//   type: string
+	//   type: array
+	//   items:
+	//     type: integer
 	//
 	// security:
 	// - csrfAuth: []
@@ -546,7 +548,9 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 	// - name: seqs
 	//   in: query
 	//   required: false
-	//   type: string
+	//   type: array
+	//   items:
+	//     type: integer
 	// responses:
 	//   200:
 	//     description: Returns blocks between a start and end point.
@@ -787,7 +791,7 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 	//   type: boolean
 	// - name: num
 	//   in: query
-	//   required: false
+	//   required: true
 	//   type: integer
 	// responses:
 	//   200:

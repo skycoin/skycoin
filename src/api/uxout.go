@@ -41,7 +41,7 @@ func uxOutHandler(gateway Gatewayer) http.HandlerFunc {
 	//         src_block_seq:
 	//           type: integer
 	//           format: int64
-	//         src_tc:
+	//         src_tx:
 	//           type: string
 	//         owner_address:
 	//           type: string
@@ -111,6 +111,7 @@ func addrUxOutsHandler(gateway Gatewayer) http.HandlerFunc {
 	// parameters:
 	// - name: address
 	//   in: query
+	//   required: true
 	//   description: address to filter by
 	//   type: string
 	// responses:
@@ -128,7 +129,7 @@ func addrUxOutsHandler(gateway Gatewayer) http.HandlerFunc {
 	//           src_block_seq:
 	//             type: integer
 	//             format: int64
-	//           src_tc:
+	//           src_tx:
 	//             type: string
 	//           owner_address:
 	//             type: string

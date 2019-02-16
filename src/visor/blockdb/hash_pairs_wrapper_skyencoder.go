@@ -9,8 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
-// encodeSizeHashPairs computes the size of an encoded object of type HashPairs
-func encodeSizeHashPairs(obj *HashPairs) uint64 {
+// encodeSizeHashPairsWrapper computes the size of an encoded object of type hashPairsWrapper
+func encodeSizeHashPairsWrapper(obj *hashPairsWrapper) uint64 {
 	i0 := uint64(0)
 
 	// obj.HashPairs
@@ -30,23 +30,23 @@ func encodeSizeHashPairs(obj *HashPairs) uint64 {
 	return i0
 }
 
-// encodeHashPairs encodes an object of type HashPairs to a buffer allocated to the exact size
+// encodeHashPairsWrapper encodes an object of type hashPairsWrapper to a buffer allocated to the exact size
 // required to encode the object.
-func encodeHashPairs(obj *HashPairs) ([]byte, error) {
-	n := encodeSizeHashPairs(obj)
+func encodeHashPairsWrapper(obj *hashPairsWrapper) ([]byte, error) {
+	n := encodeSizeHashPairsWrapper(obj)
 	buf := make([]byte, n)
 
-	if err := encodeHashPairsToBuffer(buf, obj); err != nil {
+	if err := encodeHashPairsWrapperToBuffer(buf, obj); err != nil {
 		return nil, err
 	}
 
 	return buf, nil
 }
 
-// encodeHashPairsToBuffer encodes an object of type HashPairs to a []byte buffer.
+// encodeHashPairsWrapperToBuffer encodes an object of type hashPairsWrapper to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeHashPairsToBuffer(buf []byte, obj *HashPairs) error {
-	if uint64(len(buf)) < encodeSizeHashPairs(obj) {
+func encodeHashPairsWrapperToBuffer(buf []byte, obj *hashPairsWrapper) error {
+	if uint64(len(buf)) < encodeSizeHashPairsWrapper(obj) {
 		return encoder.ErrBufferUnderflow
 	}
 
@@ -76,10 +76,10 @@ func encodeHashPairsToBuffer(buf []byte, obj *HashPairs) error {
 	return nil
 }
 
-// decodeHashPairs decodes an object of type HashPairs from a buffer.
+// decodeHashPairsWrapper decodes an object of type hashPairsWrapper from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
 // If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
-func decodeHashPairs(buf []byte, obj *HashPairs) (uint64, error) {
+func decodeHashPairsWrapper(buf []byte, obj *hashPairsWrapper) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -126,11 +126,11 @@ func decodeHashPairs(buf []byte, obj *HashPairs) (uint64, error) {
 	return uint64(len(buf) - len(d.Buffer)), nil
 }
 
-// decodeHashPairsExact decodes an object of type HashPairs from a buffer.
+// decodeHashPairsWrapperExact decodes an object of type hashPairsWrapper from a buffer.
 // If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
 // If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
-func decodeHashPairsExact(buf []byte, obj *HashPairs) error {
-	if n, err := decodeHashPairs(buf, obj); err != nil {
+func decodeHashPairsWrapperExact(buf []byte, obj *hashPairsWrapper) error {
+	if n, err := decodeHashPairsWrapper(buf, obj); err != nil {
 		return err
 	} else if n != uint64(len(buf)) {
 		return encoder.ErrRemainingBytes

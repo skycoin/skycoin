@@ -16,13 +16,13 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-func newEmptyHashesForEncodeTest() *Hashes {
-	var obj Hashes
+func newEmptyHashesWrapperForEncodeTest() *hashesWrapper {
+	var obj hashesWrapper
 	return &obj
 }
 
-func newRandomHashesForEncodeTest(t *testing.T, rand *mathrand.Rand) *Hashes {
-	var obj Hashes
+func newRandomHashesWrapperForEncodeTest(t *testing.T, rand *mathrand.Rand) *hashesWrapper {
+	var obj hashesWrapper
 	err := encodertest.PopulateRandom(&obj, rand, encodertest.PopulateRandomOptions{
 		MaxRandLen: 4,
 		MinRandLen: 1,
@@ -33,8 +33,8 @@ func newRandomHashesForEncodeTest(t *testing.T, rand *mathrand.Rand) *Hashes {
 	return &obj
 }
 
-func newRandomZeroLenHashesForEncodeTest(t *testing.T, rand *mathrand.Rand) *Hashes {
-	var obj Hashes
+func newRandomZeroLenHashesWrapperForEncodeTest(t *testing.T, rand *mathrand.Rand) *hashesWrapper {
+	var obj hashesWrapper
 	err := encodertest.PopulateRandom(&obj, rand, encodertest.PopulateRandomOptions{
 		MaxRandLen:    0,
 		MinRandLen:    0,
@@ -47,8 +47,8 @@ func newRandomZeroLenHashesForEncodeTest(t *testing.T, rand *mathrand.Rand) *Has
 	return &obj
 }
 
-func newRandomZeroLenNilHashesForEncodeTest(t *testing.T, rand *mathrand.Rand) *Hashes {
-	var obj Hashes
+func newRandomZeroLenNilHashesWrapperForEncodeTest(t *testing.T, rand *mathrand.Rand) *hashesWrapper {
+	var obj hashesWrapper
 	err := encodertest.PopulateRandom(&obj, rand, encodertest.PopulateRandomOptions{
 		MaxRandLen:    0,
 		MinRandLen:    0,
@@ -61,7 +61,7 @@ func newRandomZeroLenNilHashesForEncodeTest(t *testing.T, rand *mathrand.Rand) *
 	return &obj
 }
 
-func testSkyencoderHashes(t *testing.T, obj *Hashes) {
+func testSkyencoderHashesWrapper(t *testing.T, obj *hashesWrapper) {
 	isEncodableField := func(f reflect.StructField) bool {
 		// Skip unexported fields
 		if f.PkgPath != "" {
@@ -121,10 +121,10 @@ func testSkyencoderHashes(t *testing.T, obj *Hashes) {
 	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := encodeSizeHashes(obj)
+	n2 := encodeSizeHashesWrapper(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != encodeSizeHashes() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeHashesWrapper() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -133,21 +133,21 @@ func testSkyencoderHashes(t *testing.T, obj *Hashes) {
 	data1 := encoder.Serialize(obj)
 
 	// Encode
-	data2, err := encodeHashes(obj)
+	data2, err := encodeHashesWrapper(obj)
 	if err != nil {
-		t.Fatalf("encodeHashes failed: %v", err)
+		t.Fatalf("encodeHashesWrapper failed: %v", err)
 	}
 	if uint64(len(data2)) != n2 {
-		t.Fatal("encodeHashes produced bytes of unexpected length")
+		t.Fatal("encodeHashesWrapper produced bytes of unexpected length")
 	}
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(encodeHashes()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeHashesWrapper()) (%d != %d)", len(data1), len(data2))
 	}
 
 	// EncodeToBuffer
 	data3 := make([]byte, n2+5)
-	if err := encodeHashesToBuffer(data3, obj); err != nil {
-		t.Fatalf("encodeHashesToBuffer failed: %v", err)
+	if err := encodeHashesWrapperToBuffer(data3, obj); err != nil {
+		t.Fatalf("encodeHashesWrapperToBuffer failed: %v", err)
 	}
 
 	if !bytes.Equal(data1, data2) {
@@ -157,7 +157,7 @@ func testSkyencoderHashes(t *testing.T, obj *Hashes) {
 	// Decode
 
 	// encoder.DeserializeRaw
-	var obj2 Hashes
+	var obj2 hashesWrapper
 	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
 	} else if n != uint64(len(data1)) {
@@ -168,70 +168,70 @@ func testSkyencoderHashes(t *testing.T, obj *Hashes) {
 	}
 
 	// Decode
-	var obj3 Hashes
-	if n, err := decodeHashes(data2, &obj3); err != nil {
-		t.Fatalf("decodeHashes failed: %v", err)
+	var obj3 hashesWrapper
+	if n, err := decodeHashesWrapper(data2, &obj3); err != nil {
+		t.Fatalf("decodeHashesWrapper failed: %v", err)
 	} else if n != uint64(len(data2)) {
-		t.Fatalf("decodeHashes bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeHashesWrapper bytes read length should be %d, is %d", len(data2), n)
 	}
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeHashes()")
+		t.Fatal("encoder.DeserializeRaw() != decodeHashesWrapper()")
 	}
 
 	// Decode, excess buffer
-	var obj4 Hashes
-	n, err := decodeHashes(data3, &obj4)
+	var obj4 hashesWrapper
+	n, err := decodeHashesWrapper(data3, &obj4)
 	if err != nil {
-		t.Fatalf("decodeHashes failed: %v", err)
+		t.Fatalf("decodeHashesWrapper failed: %v", err)
 	}
 
 	if hasOmitEmptyField(&obj4) && omitEmptyLen(&obj4) == 0 {
 		// 4 bytes read for the omitEmpty length, which should be zero (see the 5 bytes added above)
 		if n != n2+4 {
-			t.Fatalf("decodeHashes bytes read length should be %d, is %d", n2+4, n)
+			t.Fatalf("decodeHashesWrapper bytes read length should be %d, is %d", n2+4, n)
 		}
 	} else {
 		if n != n2 {
-			t.Fatalf("decodeHashes bytes read length should be %d, is %d", n2, n)
+			t.Fatalf("decodeHashesWrapper bytes read length should be %d, is %d", n2, n)
 		}
 	}
 	if !cmp.Equal(obj2, obj4, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeHashes()")
+		t.Fatal("encoder.DeserializeRaw() != decodeHashesWrapper()")
 	}
 
 	// DecodeExact
-	var obj5 Hashes
-	if err := decodeHashesExact(data2, &obj5); err != nil {
-		t.Fatalf("decodeHashes failed: %v", err)
+	var obj5 hashesWrapper
+	if err := decodeHashesWrapperExact(data2, &obj5); err != nil {
+		t.Fatalf("decodeHashesWrapper failed: %v", err)
 	}
 	if !cmp.Equal(obj2, obj5, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeHashes()")
+		t.Fatal("encoder.DeserializeRaw() != decodeHashesWrapper()")
 	}
 
 	// Check that the bytes read value is correct when providing an extended buffer
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data4 := append(data2[:], padding...)
-		if n, err := decodeHashes(data4, &obj3); err != nil {
-			t.Fatalf("decodeHashes failed: %v", err)
+		if n, err := decodeHashesWrapper(data4, &obj3); err != nil {
+			t.Fatalf("decodeHashesWrapper failed: %v", err)
 		} else if n != uint64(len(data2)) {
-			t.Fatalf("decodeHashes bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeHashesWrapper bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
 
-func TestSkyencoderHashes(t *testing.T) {
+func TestSkyencoderHashesWrapper(t *testing.T) {
 	rand := mathrand.New(mathrand.NewSource(time.Now().Unix()))
 
 	type testCase struct {
 		name string
-		obj  *Hashes
+		obj  *hashesWrapper
 	}
 
 	cases := []testCase{
 		{
 			name: "empty object",
-			obj:  newEmptyHashesForEncodeTest(),
+			obj:  newEmptyHashesWrapperForEncodeTest(),
 		},
 	}
 
@@ -240,44 +240,44 @@ func TestSkyencoderHashes(t *testing.T) {
 	for i := 0; i < nRandom; i++ {
 		cases = append(cases, testCase{
 			name: fmt.Sprintf("randomly populated object %d", i),
-			obj:  newRandomHashesForEncodeTest(t, rand),
+			obj:  newRandomHashesWrapperForEncodeTest(t, rand),
 		})
 		cases = append(cases, testCase{
 			name: fmt.Sprintf("randomly populated object %d with zero length variable length contents", i),
-			obj:  newRandomZeroLenHashesForEncodeTest(t, rand),
+			obj:  newRandomZeroLenHashesWrapperForEncodeTest(t, rand),
 		})
 		cases = append(cases, testCase{
 			name: fmt.Sprintf("randomly populated object %d with zero length variable length contents set to nil", i),
-			obj:  newRandomZeroLenNilHashesForEncodeTest(t, rand),
+			obj:  newRandomZeroLenNilHashesWrapperForEncodeTest(t, rand),
 		})
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			testSkyencoderHashes(t, tc.obj)
+			testSkyencoderHashesWrapper(t, tc.obj)
 		})
 	}
 }
 
-func decodeHashesExpectError(t *testing.T, buf []byte, expectedErr error) {
-	var obj Hashes
-	if _, err := decodeHashes(buf, &obj); err == nil {
-		t.Fatal("decodeHashes: expected error, got nil")
+func decodeHashesWrapperExpectError(t *testing.T, buf []byte, expectedErr error) {
+	var obj hashesWrapper
+	if _, err := decodeHashesWrapper(buf, &obj); err == nil {
+		t.Fatal("decodeHashesWrapper: expected error, got nil")
 	} else if err != expectedErr {
-		t.Fatalf("decodeHashes: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeHashesWrapper: expected error %q, got %q", expectedErr, err)
 	}
 }
 
-func decodeHashesExactExpectError(t *testing.T, buf []byte, expectedErr error) {
-	var obj Hashes
-	if err := decodeHashesExact(buf, &obj); err == nil {
-		t.Fatal("decodeHashesExact: expected error, got nil")
+func decodeHashesWrapperExactExpectError(t *testing.T, buf []byte, expectedErr error) {
+	var obj hashesWrapper
+	if err := decodeHashesWrapperExact(buf, &obj); err == nil {
+		t.Fatal("decodeHashesWrapperExact: expected error, got nil")
 	} else if err != expectedErr {
-		t.Fatalf("decodeHashesExact: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeHashesWrapperExact: expected error %q, got %q", expectedErr, err)
 	}
 }
 
-func testSkyencoderHashesDecodeErrors(t *testing.T, k int, tag string, obj *Hashes) {
+func testSkyencoderHashesWrapperDecodeErrors(t *testing.T, k int, tag string, obj *hashesWrapper) {
 	isEncodableField := func(f reflect.StructField) bool {
 		// Skip unexported fields
 		if f.PkgPath != "" {
@@ -359,20 +359,20 @@ func testSkyencoderHashesDecodeErrors(t *testing.T, k int, tag string, obj *Hash
 		}
 	}
 
-	n := encodeSizeHashes(obj)
-	buf, err := encodeHashes(obj)
+	n := encodeSizeHashesWrapper(obj)
+	buf, err := encodeHashesWrapper(obj)
 	if err != nil {
-		t.Fatalf("encodeHashes failed: %v", err)
+		t.Fatalf("encodeHashesWrapper failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field
 	if hasOmitEmptyField(obj) && numEncodableFields(obj) > 1 {
 		t.Run(fmt.Sprintf("%d %s buffer underflow nil", k, tag), func(t *testing.T) {
-			decodeHashesExpectError(t, nil, encoder.ErrBufferUnderflow)
+			decodeHashesWrapperExpectError(t, nil, encoder.ErrBufferUnderflow)
 		})
 
 		t.Run(fmt.Sprintf("%d %s exact buffer underflow nil", k, tag), func(t *testing.T) {
-			decodeHashesExactExpectError(t, nil, encoder.ErrBufferUnderflow)
+			decodeHashesWrapperExactExpectError(t, nil, encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -385,11 +385,11 @@ func testSkyencoderHashesDecodeErrors(t *testing.T, k int, tag string, obj *Hash
 		}
 
 		t.Run(fmt.Sprintf("%d %s buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
-			decodeHashesExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
+			decodeHashesWrapperExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
 		})
 
 		t.Run(fmt.Sprintf("%d %s exact buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
-			decodeHashesExactExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
+			decodeHashesWrapperExactExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -403,18 +403,18 @@ func testSkyencoderHashesDecodeErrors(t *testing.T, k int, tag string, obj *Hash
 	}
 
 	t.Run(fmt.Sprintf("%d %s exact buffer remaining bytes", k, tag), func(t *testing.T) {
-		decodeHashesExactExpectError(t, buf, encoder.ErrRemainingBytes)
+		decodeHashesWrapperExactExpectError(t, buf, encoder.ErrRemainingBytes)
 	})
 }
 
-func TestSkyencoderHashesDecodeErrors(t *testing.T) {
+func TestSkyencoderHashesWrapperDecodeErrors(t *testing.T) {
 	rand := mathrand.New(mathrand.NewSource(time.Now().Unix()))
 	n := 10
 
 	for i := 0; i < n; i++ {
-		emptyObj := newEmptyHashesForEncodeTest()
-		fullObj := newRandomHashesForEncodeTest(t, rand)
-		testSkyencoderHashesDecodeErrors(t, i, "empty", emptyObj)
-		testSkyencoderHashesDecodeErrors(t, i, "full", fullObj)
+		emptyObj := newEmptyHashesWrapperForEncodeTest()
+		fullObj := newRandomHashesWrapperForEncodeTest(t, rand)
+		testSkyencoderHashesWrapperDecodeErrors(t, i, "empty", emptyObj)
+		testSkyencoderHashesWrapperDecodeErrors(t, i, "full", fullObj)
 	}
 }

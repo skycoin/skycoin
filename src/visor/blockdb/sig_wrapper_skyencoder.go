@@ -3,8 +3,8 @@ package blockdb
 
 import "github.com/skycoin/skycoin/src/cipher/encoder"
 
-// encodeSizeSig computes the size of an encoded object of type Sig
-func encodeSizeSig(obj *Sig) uint64 {
+// encodeSizeSigWrapper computes the size of an encoded object of type sigWrapper
+func encodeSizeSigWrapper(obj *sigWrapper) uint64 {
 	i0 := uint64(0)
 
 	// obj.Sig
@@ -13,23 +13,23 @@ func encodeSizeSig(obj *Sig) uint64 {
 	return i0
 }
 
-// encodeSig encodes an object of type Sig to a buffer allocated to the exact size
+// encodeSigWrapper encodes an object of type sigWrapper to a buffer allocated to the exact size
 // required to encode the object.
-func encodeSig(obj *Sig) ([]byte, error) {
-	n := encodeSizeSig(obj)
+func encodeSigWrapper(obj *sigWrapper) ([]byte, error) {
+	n := encodeSizeSigWrapper(obj)
 	buf := make([]byte, n)
 
-	if err := encodeSigToBuffer(buf, obj); err != nil {
+	if err := encodeSigWrapperToBuffer(buf, obj); err != nil {
 		return nil, err
 	}
 
 	return buf, nil
 }
 
-// encodeSigToBuffer encodes an object of type Sig to a []byte buffer.
+// encodeSigWrapperToBuffer encodes an object of type sigWrapper to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeSigToBuffer(buf []byte, obj *Sig) error {
-	if uint64(len(buf)) < encodeSizeSig(obj) {
+func encodeSigWrapperToBuffer(buf []byte, obj *sigWrapper) error {
+	if uint64(len(buf)) < encodeSizeSigWrapper(obj) {
 		return encoder.ErrBufferUnderflow
 	}
 
@@ -43,10 +43,10 @@ func encodeSigToBuffer(buf []byte, obj *Sig) error {
 	return nil
 }
 
-// decodeSig decodes an object of type Sig from a buffer.
+// decodeSigWrapper decodes an object of type sigWrapper from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
 // If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
-func decodeSig(buf []byte, obj *Sig) (uint64, error) {
+func decodeSigWrapper(buf []byte, obj *sigWrapper) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -63,11 +63,11 @@ func decodeSig(buf []byte, obj *Sig) (uint64, error) {
 	return uint64(len(buf) - len(d.Buffer)), nil
 }
 
-// decodeSigExact decodes an object of type Sig from a buffer.
+// decodeSigWrapperExact decodes an object of type sigWrapper from a buffer.
 // If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
 // If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
-func decodeSigExact(buf []byte, obj *Sig) error {
-	if n, err := decodeSig(buf, obj); err != nil {
+func decodeSigWrapperExact(buf []byte, obj *sigWrapper) error {
+	if n, err := decodeSigWrapper(buf, obj); err != nil {
 		return err
 	} else if n != uint64(len(buf)) {
 		return encoder.ErrRemainingBytes

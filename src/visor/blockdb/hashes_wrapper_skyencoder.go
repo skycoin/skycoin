@@ -9,8 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-// encodeSizeHashes computes the size of an encoded object of type Hashes
-func encodeSizeHashes(obj *Hashes) uint64 {
+// encodeSizeHashesWrapper computes the size of an encoded object of type hashesWrapper
+func encodeSizeHashesWrapper(obj *hashesWrapper) uint64 {
 	i0 := uint64(0)
 
 	// obj.Hashes
@@ -27,23 +27,23 @@ func encodeSizeHashes(obj *Hashes) uint64 {
 	return i0
 }
 
-// encodeHashes encodes an object of type Hashes to a buffer allocated to the exact size
+// encodeHashesWrapper encodes an object of type hashesWrapper to a buffer allocated to the exact size
 // required to encode the object.
-func encodeHashes(obj *Hashes) ([]byte, error) {
-	n := encodeSizeHashes(obj)
+func encodeHashesWrapper(obj *hashesWrapper) ([]byte, error) {
+	n := encodeSizeHashesWrapper(obj)
 	buf := make([]byte, n)
 
-	if err := encodeHashesToBuffer(buf, obj); err != nil {
+	if err := encodeHashesWrapperToBuffer(buf, obj); err != nil {
 		return nil, err
 	}
 
 	return buf, nil
 }
 
-// encodeHashesToBuffer encodes an object of type Hashes to a []byte buffer.
+// encodeHashesWrapperToBuffer encodes an object of type hashesWrapper to a []byte buffer.
 // The buffer must be large enough to encode the object, otherwise an error is returned.
-func encodeHashesToBuffer(buf []byte, obj *Hashes) error {
-	if uint64(len(buf)) < encodeSizeHashes(obj) {
+func encodeHashesWrapperToBuffer(buf []byte, obj *hashesWrapper) error {
+	if uint64(len(buf)) < encodeSizeHashesWrapper(obj) {
 		return encoder.ErrBufferUnderflow
 	}
 
@@ -70,10 +70,10 @@ func encodeHashesToBuffer(buf []byte, obj *Hashes) error {
 	return nil
 }
 
-// decodeHashes decodes an object of type Hashes from a buffer.
+// decodeHashesWrapper decodes an object of type hashesWrapper from a buffer.
 // Returns the number of bytes used from the buffer to decode the object.
 // If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
-func decodeHashes(buf []byte, obj *Hashes) (uint64, error) {
+func decodeHashesWrapper(buf []byte, obj *hashesWrapper) (uint64, error) {
 	d := &encoder.Decoder{
 		Buffer: buf[:],
 	}
@@ -111,11 +111,11 @@ func decodeHashes(buf []byte, obj *Hashes) (uint64, error) {
 	return uint64(len(buf) - len(d.Buffer)), nil
 }
 
-// decodeHashesExact decodes an object of type Hashes from a buffer.
+// decodeHashesWrapperExact decodes an object of type hashesWrapper from a buffer.
 // If the buffer not long enough to decode the object, returns encoder.ErrBufferUnderflow.
 // If the buffer is longer than required to decode the object, returns encoder.ErrRemainingBytes.
-func decodeHashesExact(buf []byte, obj *Hashes) error {
-	if n, err := decodeHashes(buf, obj); err != nil {
+func decodeHashesWrapperExact(buf []byte, obj *hashesWrapper) error {
+	if n, err := decodeHashesWrapper(buf, obj); err != nil {
 		return err
 	} else if n != uint64(len(buf)) {
 		return encoder.ErrRemainingBytes

@@ -175,7 +175,7 @@ func (bt *blockTree) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) er
 }
 
 func (bt *blockTree) getHashInDepth(tx *dbutil.Tx, depth uint64, filter Walker) (cipher.SHA256, bool, error) {
-	var pairs HashPairs
+	var pairs hashPairsWrapper
 
 	v, err := dbutil.GetBucketValueNoCopy(tx, TreeBkt, dbutil.Itob(depth))
 	if err != nil {
@@ -184,7 +184,7 @@ func (bt *blockTree) getHashInDepth(tx *dbutil.Tx, depth uint64, filter Walker) 
 		return cipher.SHA256{}, false, nil
 	}
 
-	if err := decodeHashPairsExact(v, &pairs); err != nil {
+	if err := decodeHashPairsWrapperExact(v, &pairs); err != nil {
 		return cipher.SHA256{}, false, err
 	}
 
@@ -217,7 +217,7 @@ func removePairs(hps []coin.HashPair, pair coin.HashPair) []coin.HashPair {
 }
 
 func getHashPairInDepth(tx *dbutil.Tx, depth uint64, fn func(hp coin.HashPair) bool) ([]coin.HashPair, error) {
-	var hps HashPairs
+	var hps hashPairsWrapper
 
 	v, err := dbutil.GetBucketValueNoCopy(tx, TreeBkt, dbutil.Itob(depth))
 	if err != nil {
@@ -226,7 +226,7 @@ func getHashPairInDepth(tx *dbutil.Tx, depth uint64, fn func(hp coin.HashPair) b
 		return nil, nil
 	}
 
-	if err := decodeHashPairsExact(v, &hps); err != nil {
+	if err := decodeHashPairsWrapperExact(v, &hps); err != nil {
 		return nil, err
 	}
 
@@ -254,7 +254,7 @@ func hasChild(tx *dbutil.Tx, b coin.Block) (bool, error) {
 }
 
 func setHashPairInDepth(tx *dbutil.Tx, depth uint64, hps []coin.HashPair) error {
-	buf, err := encodeHashPairs(&HashPairs{
+	buf, err := encodeHashPairsWrapper(&hashPairsWrapper{
 		HashPairs: hps,
 	})
 	if err != nil {

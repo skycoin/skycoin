@@ -123,7 +123,7 @@ func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 type poolAddrIndex struct{}
 
 func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
-	var hashes Hashes
+	var hashes hashesWrapper
 
 	v, err := dbutil.GetBucketValueNoCopy(tx, UnspentPoolAddrIndexBkt, addr.Bytes())
 	if err != nil {
@@ -132,7 +132,7 @@ func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256,
 		return nil, nil
 	}
 
-	if err := decodeHashesExact(v, &hashes); err != nil {
+	if err := decodeHashesWrapperExact(v, &hashes); err != nil {
 		return nil, err
 	}
 
@@ -153,7 +153,7 @@ func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.S
 		hashesMap[h] = struct{}{}
 	}
 
-	buf, err := encodeHashes(&Hashes{
+	buf, err := encodeHashesWrapper(&hashesWrapper{
 		Hashes: hashes,
 	})
 	if err != nil {

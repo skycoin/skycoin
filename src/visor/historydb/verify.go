@@ -28,8 +28,8 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		default:
 		}
 
-		var b1 Hashes
-		if err := decodeHashesExact(v, &b1); err != nil {
+		var b1 hashesWrapper
+		if err := decodeHashesWrapperExact(v, &b1); err != nil {
 			return err
 		}
 
@@ -54,8 +54,8 @@ func VerifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
 		default:
 		}
 
-		var b1 Hashes
-		if err := decodeHashesExact(v, &b1); err != nil {
+		var b1 hashesWrapper
+		if err := decodeHashesWrapperExact(v, &b1); err != nil {
 			return err
 		}
 

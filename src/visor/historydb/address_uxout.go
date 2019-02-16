@@ -13,7 +13,7 @@ type addressUx struct{}
 
 // get return nil on not found.
 func (au *addressUx) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
-	var uxHashes Hashes
+	var uxHashes hashesWrapper
 
 	v, err := dbutil.GetBucketValueNoCopy(tx, AddressUxBkt, addr.Bytes())
 	if err != nil {
@@ -22,7 +22,7 @@ func (au *addressUx) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, e
 		return nil, nil
 	}
 
-	if err := decodeHashesExact(v, &uxHashes); err != nil {
+	if err := decodeHashesWrapperExact(v, &uxHashes); err != nil {
 		return nil, err
 	}
 
@@ -45,7 +45,7 @@ func (au *addressUx) add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SH
 
 	hashes = append(hashes, uxHash)
 
-	buf, err := encodeHashes(&Hashes{
+	buf, err := encodeHashesWrapper(&hashesWrapper{
 		Hashes: hashes,
 	})
 	if err != nil {

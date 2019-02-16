@@ -13,12 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-//go:generate skyencoder -unexported -struct Block -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
-//go:generate skyencoder -unexported -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
-//go:generate skyencoder -unexported -struct HashPairs
-//go:generate skyencoder -unexported -struct Hashes
-//go:generate skyencoder -unexported -struct Sig
-
 var (
 	logger = logging.MustGetLogger("blockdb")
 
@@ -26,18 +20,24 @@ var (
 	ErrNoHeadBlock = fmt.Errorf("found no head block")
 )
 
-// Hashes wraps []cipher.SHA256
-type Hashes struct {
+//go:generate skyencoder -unexported -struct Block -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -unexported -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -unexported -struct hashPairsWrapper
+//go:generate skyencoder -unexported -struct hashesWrapper
+//go:generate skyencoder -unexported -struct sigWrapper
+
+// hashesWrapper wraps []cipher.SHA256 so it can be used by skyencoder
+type hashesWrapper struct {
 	Hashes []cipher.SHA256
 }
 
-// Sig wraps cipher.Sig
-type Sig struct {
+// sigWrapper wraps cipher.Sig in struct so it can be used by skyencoder
+type sigWrapper struct {
 	Sig cipher.Sig
 }
 
-// HashPairs wraps []coin.HashPair
-type HashPairs struct {
+// hashPairsWrapper wraps []coin.HashPair so it can be used by skyencoder
+type hashPairsWrapper struct {
 	HashPairs []coin.HashPair
 }
 

@@ -16,13 +16,13 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-func newEmptySigForEncodeTest() *Sig {
-	var obj Sig
+func newEmptySigWrapperForEncodeTest() *sigWrapper {
+	var obj sigWrapper
 	return &obj
 }
 
-func newRandomSigForEncodeTest(t *testing.T, rand *mathrand.Rand) *Sig {
-	var obj Sig
+func newRandomSigWrapperForEncodeTest(t *testing.T, rand *mathrand.Rand) *sigWrapper {
+	var obj sigWrapper
 	err := encodertest.PopulateRandom(&obj, rand, encodertest.PopulateRandomOptions{
 		MaxRandLen: 4,
 		MinRandLen: 1,
@@ -33,8 +33,8 @@ func newRandomSigForEncodeTest(t *testing.T, rand *mathrand.Rand) *Sig {
 	return &obj
 }
 
-func newRandomZeroLenSigForEncodeTest(t *testing.T, rand *mathrand.Rand) *Sig {
-	var obj Sig
+func newRandomZeroLenSigWrapperForEncodeTest(t *testing.T, rand *mathrand.Rand) *sigWrapper {
+	var obj sigWrapper
 	err := encodertest.PopulateRandom(&obj, rand, encodertest.PopulateRandomOptions{
 		MaxRandLen:    0,
 		MinRandLen:    0,
@@ -47,8 +47,8 @@ func newRandomZeroLenSigForEncodeTest(t *testing.T, rand *mathrand.Rand) *Sig {
 	return &obj
 }
 
-func newRandomZeroLenNilSigForEncodeTest(t *testing.T, rand *mathrand.Rand) *Sig {
-	var obj Sig
+func newRandomZeroLenNilSigWrapperForEncodeTest(t *testing.T, rand *mathrand.Rand) *sigWrapper {
+	var obj sigWrapper
 	err := encodertest.PopulateRandom(&obj, rand, encodertest.PopulateRandomOptions{
 		MaxRandLen:    0,
 		MinRandLen:    0,
@@ -61,7 +61,7 @@ func newRandomZeroLenNilSigForEncodeTest(t *testing.T, rand *mathrand.Rand) *Sig
 	return &obj
 }
 
-func testSkyencoderSig(t *testing.T, obj *Sig) {
+func testSkyencoderSigWrapper(t *testing.T, obj *sigWrapper) {
 	isEncodableField := func(f reflect.StructField) bool {
 		// Skip unexported fields
 		if f.PkgPath != "" {
@@ -121,10 +121,10 @@ func testSkyencoderSig(t *testing.T, obj *Sig) {
 	// encodeSize
 
 	n1 := encoder.Size(obj)
-	n2 := encodeSizeSig(obj)
+	n2 := encodeSizeSigWrapper(obj)
 
 	if uint64(n1) != n2 {
-		t.Fatalf("encoder.Size() != encodeSizeSig() (%d != %d)", n1, n2)
+		t.Fatalf("encoder.Size() != encodeSizeSigWrapper() (%d != %d)", n1, n2)
 	}
 
 	// Encode
@@ -133,21 +133,21 @@ func testSkyencoderSig(t *testing.T, obj *Sig) {
 	data1 := encoder.Serialize(obj)
 
 	// Encode
-	data2, err := encodeSig(obj)
+	data2, err := encodeSigWrapper(obj)
 	if err != nil {
-		t.Fatalf("encodeSig failed: %v", err)
+		t.Fatalf("encodeSigWrapper failed: %v", err)
 	}
 	if uint64(len(data2)) != n2 {
-		t.Fatal("encodeSig produced bytes of unexpected length")
+		t.Fatal("encodeSigWrapper produced bytes of unexpected length")
 	}
 	if len(data1) != len(data2) {
-		t.Fatalf("len(encoder.Serialize()) != len(encodeSig()) (%d != %d)", len(data1), len(data2))
+		t.Fatalf("len(encoder.Serialize()) != len(encodeSigWrapper()) (%d != %d)", len(data1), len(data2))
 	}
 
 	// EncodeToBuffer
 	data3 := make([]byte, n2+5)
-	if err := encodeSigToBuffer(data3, obj); err != nil {
-		t.Fatalf("encodeSigToBuffer failed: %v", err)
+	if err := encodeSigWrapperToBuffer(data3, obj); err != nil {
+		t.Fatalf("encodeSigWrapperToBuffer failed: %v", err)
 	}
 
 	if !bytes.Equal(data1, data2) {
@@ -157,7 +157,7 @@ func testSkyencoderSig(t *testing.T, obj *Sig) {
 	// Decode
 
 	// encoder.DeserializeRaw
-	var obj2 Sig
+	var obj2 sigWrapper
 	if n, err := encoder.DeserializeRaw(data1, &obj2); err != nil {
 		t.Fatalf("encoder.DeserializeRaw failed: %v", err)
 	} else if n != uint64(len(data1)) {
@@ -168,70 +168,70 @@ func testSkyencoderSig(t *testing.T, obj *Sig) {
 	}
 
 	// Decode
-	var obj3 Sig
-	if n, err := decodeSig(data2, &obj3); err != nil {
-		t.Fatalf("decodeSig failed: %v", err)
+	var obj3 sigWrapper
+	if n, err := decodeSigWrapper(data2, &obj3); err != nil {
+		t.Fatalf("decodeSigWrapper failed: %v", err)
 	} else if n != uint64(len(data2)) {
-		t.Fatalf("decodeSig bytes read length should be %d, is %d", len(data2), n)
+		t.Fatalf("decodeSigWrapper bytes read length should be %d, is %d", len(data2), n)
 	}
 	if !cmp.Equal(obj2, obj3, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeSig()")
+		t.Fatal("encoder.DeserializeRaw() != decodeSigWrapper()")
 	}
 
 	// Decode, excess buffer
-	var obj4 Sig
-	n, err := decodeSig(data3, &obj4)
+	var obj4 sigWrapper
+	n, err := decodeSigWrapper(data3, &obj4)
 	if err != nil {
-		t.Fatalf("decodeSig failed: %v", err)
+		t.Fatalf("decodeSigWrapper failed: %v", err)
 	}
 
 	if hasOmitEmptyField(&obj4) && omitEmptyLen(&obj4) == 0 {
 		// 4 bytes read for the omitEmpty length, which should be zero (see the 5 bytes added above)
 		if n != n2+4 {
-			t.Fatalf("decodeSig bytes read length should be %d, is %d", n2+4, n)
+			t.Fatalf("decodeSigWrapper bytes read length should be %d, is %d", n2+4, n)
 		}
 	} else {
 		if n != n2 {
-			t.Fatalf("decodeSig bytes read length should be %d, is %d", n2, n)
+			t.Fatalf("decodeSigWrapper bytes read length should be %d, is %d", n2, n)
 		}
 	}
 	if !cmp.Equal(obj2, obj4, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeSig()")
+		t.Fatal("encoder.DeserializeRaw() != decodeSigWrapper()")
 	}
 
 	// DecodeExact
-	var obj5 Sig
-	if err := decodeSigExact(data2, &obj5); err != nil {
-		t.Fatalf("decodeSig failed: %v", err)
+	var obj5 sigWrapper
+	if err := decodeSigWrapperExact(data2, &obj5); err != nil {
+		t.Fatalf("decodeSigWrapper failed: %v", err)
 	}
 	if !cmp.Equal(obj2, obj5, cmpopts.EquateEmpty(), encodertest.IgnoreAllUnexported()) {
-		t.Fatal("encoder.DeserializeRaw() != decodeSig()")
+		t.Fatal("encoder.DeserializeRaw() != decodeSigWrapper()")
 	}
 
 	// Check that the bytes read value is correct when providing an extended buffer
 	if !hasOmitEmptyField(&obj3) || omitEmptyLen(&obj3) > 0 {
 		padding := []byte{0xFF, 0xFE, 0xFD, 0xFC}
 		data4 := append(data2[:], padding...)
-		if n, err := decodeSig(data4, &obj3); err != nil {
-			t.Fatalf("decodeSig failed: %v", err)
+		if n, err := decodeSigWrapper(data4, &obj3); err != nil {
+			t.Fatalf("decodeSigWrapper failed: %v", err)
 		} else if n != uint64(len(data2)) {
-			t.Fatalf("decodeSig bytes read length should be %d, is %d", len(data2), n)
+			t.Fatalf("decodeSigWrapper bytes read length should be %d, is %d", len(data2), n)
 		}
 	}
 }
 
-func TestSkyencoderSig(t *testing.T) {
+func TestSkyencoderSigWrapper(t *testing.T) {
 	rand := mathrand.New(mathrand.NewSource(time.Now().Unix()))
 
 	type testCase struct {
 		name string
-		obj  *Sig
+		obj  *sigWrapper
 	}
 
 	cases := []testCase{
 		{
 			name: "empty object",
-			obj:  newEmptySigForEncodeTest(),
+			obj:  newEmptySigWrapperForEncodeTest(),
 		},
 	}
 
@@ -240,44 +240,44 @@ func TestSkyencoderSig(t *testing.T) {
 	for i := 0; i < nRandom; i++ {
 		cases = append(cases, testCase{
 			name: fmt.Sprintf("randomly populated object %d", i),
-			obj:  newRandomSigForEncodeTest(t, rand),
+			obj:  newRandomSigWrapperForEncodeTest(t, rand),
 		})
 		cases = append(cases, testCase{
 			name: fmt.Sprintf("randomly populated object %d with zero length variable length contents", i),
-			obj:  newRandomZeroLenSigForEncodeTest(t, rand),
+			obj:  newRandomZeroLenSigWrapperForEncodeTest(t, rand),
 		})
 		cases = append(cases, testCase{
 			name: fmt.Sprintf("randomly populated object %d with zero length variable length contents set to nil", i),
-			obj:  newRandomZeroLenNilSigForEncodeTest(t, rand),
+			obj:  newRandomZeroLenNilSigWrapperForEncodeTest(t, rand),
 		})
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			testSkyencoderSig(t, tc.obj)
+			testSkyencoderSigWrapper(t, tc.obj)
 		})
 	}
 }
 
-func decodeSigExpectError(t *testing.T, buf []byte, expectedErr error) {
-	var obj Sig
-	if _, err := decodeSig(buf, &obj); err == nil {
-		t.Fatal("decodeSig: expected error, got nil")
+func decodeSigWrapperExpectError(t *testing.T, buf []byte, expectedErr error) {
+	var obj sigWrapper
+	if _, err := decodeSigWrapper(buf, &obj); err == nil {
+		t.Fatal("decodeSigWrapper: expected error, got nil")
 	} else if err != expectedErr {
-		t.Fatalf("decodeSig: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeSigWrapper: expected error %q, got %q", expectedErr, err)
 	}
 }
 
-func decodeSigExactExpectError(t *testing.T, buf []byte, expectedErr error) {
-	var obj Sig
-	if err := decodeSigExact(buf, &obj); err == nil {
-		t.Fatal("decodeSigExact: expected error, got nil")
+func decodeSigWrapperExactExpectError(t *testing.T, buf []byte, expectedErr error) {
+	var obj sigWrapper
+	if err := decodeSigWrapperExact(buf, &obj); err == nil {
+		t.Fatal("decodeSigWrapperExact: expected error, got nil")
 	} else if err != expectedErr {
-		t.Fatalf("decodeSigExact: expected error %q, got %q", expectedErr, err)
+		t.Fatalf("decodeSigWrapperExact: expected error %q, got %q", expectedErr, err)
 	}
 }
 
-func testSkyencoderSigDecodeErrors(t *testing.T, k int, tag string, obj *Sig) {
+func testSkyencoderSigWrapperDecodeErrors(t *testing.T, k int, tag string, obj *sigWrapper) {
 	isEncodableField := func(f reflect.StructField) bool {
 		// Skip unexported fields
 		if f.PkgPath != "" {
@@ -359,20 +359,20 @@ func testSkyencoderSigDecodeErrors(t *testing.T, k int, tag string, obj *Sig) {
 		}
 	}
 
-	n := encodeSizeSig(obj)
-	buf, err := encodeSig(obj)
+	n := encodeSizeSigWrapper(obj)
+	buf, err := encodeSigWrapper(obj)
 	if err != nil {
-		t.Fatalf("encodeSig failed: %v", err)
+		t.Fatalf("encodeSigWrapper failed: %v", err)
 	}
 
 	// A nil buffer cannot decode, unless the object is a struct with a single omitempty field
 	if hasOmitEmptyField(obj) && numEncodableFields(obj) > 1 {
 		t.Run(fmt.Sprintf("%d %s buffer underflow nil", k, tag), func(t *testing.T) {
-			decodeSigExpectError(t, nil, encoder.ErrBufferUnderflow)
+			decodeSigWrapperExpectError(t, nil, encoder.ErrBufferUnderflow)
 		})
 
 		t.Run(fmt.Sprintf("%d %s exact buffer underflow nil", k, tag), func(t *testing.T) {
-			decodeSigExactExpectError(t, nil, encoder.ErrBufferUnderflow)
+			decodeSigWrapperExactExpectError(t, nil, encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -385,11 +385,11 @@ func testSkyencoderSigDecodeErrors(t *testing.T, k int, tag string, obj *Sig) {
 		}
 
 		t.Run(fmt.Sprintf("%d %s buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
-			decodeSigExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
+			decodeSigWrapperExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
 		})
 
 		t.Run(fmt.Sprintf("%d %s exact buffer underflow bytes=%d", k, tag, i), func(t *testing.T) {
-			decodeSigExactExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
+			decodeSigWrapperExactExpectError(t, buf[:i], encoder.ErrBufferUnderflow)
 		})
 	}
 
@@ -403,18 +403,18 @@ func testSkyencoderSigDecodeErrors(t *testing.T, k int, tag string, obj *Sig) {
 	}
 
 	t.Run(fmt.Sprintf("%d %s exact buffer remaining bytes", k, tag), func(t *testing.T) {
-		decodeSigExactExpectError(t, buf, encoder.ErrRemainingBytes)
+		decodeSigWrapperExactExpectError(t, buf, encoder.ErrRemainingBytes)
 	})
 }
 
-func TestSkyencoderSigDecodeErrors(t *testing.T) {
+func TestSkyencoderSigWrapperDecodeErrors(t *testing.T) {
 	rand := mathrand.New(mathrand.NewSource(time.Now().Unix()))
 	n := 10
 
 	for i := 0; i < n; i++ {
-		emptyObj := newEmptySigForEncodeTest()
-		fullObj := newRandomSigForEncodeTest(t, rand)
-		testSkyencoderSigDecodeErrors(t, i, "empty", emptyObj)
-		testSkyencoderSigDecodeErrors(t, i, "full", fullObj)
+		emptyObj := newEmptySigWrapperForEncodeTest()
+		fullObj := newRandomSigWrapperForEncodeTest(t, rand)
+		testSkyencoderSigWrapperDecodeErrors(t, i, "empty", emptyObj)
+		testSkyencoderSigWrapperDecodeErrors(t, i, "full", fullObj)
 	}
 }

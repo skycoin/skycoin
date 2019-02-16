@@ -5,10 +5,10 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-//go:generate skyencoder -unexported -struct Hashes
+//go:generate skyencoder -unexported -struct hashesWrapper
 
-// Hashes wraps []cipher.SHA256
-type Hashes struct {
+// hashesWrapper wraps []cipher.SHA256
+type hashesWrapper struct {
 	Hashes []cipher.SHA256
 }
 
@@ -21,7 +21,7 @@ type addressTxns struct{}
 
 // get returns the transaction hashes of given address
 func (atx *addressTxns) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
-	var txnHashes Hashes
+	var txnHashes hashesWrapper
 
 	v, err := dbutil.GetBucketValueNoCopy(tx, AddressTxnsBkt, addr.Bytes())
 	if err != nil {
@@ -30,7 +30,7 @@ func (atx *addressTxns) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256
 		return nil, nil
 	}
 
-	if err := decodeHashesExact(v, &txnHashes); err != nil {
+	if err := decodeHashesWrapperExact(v, &txnHashes); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func (atx *addressTxns) add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA2
 
 	hashes = append(hashes, hash)
 
-	buf, err := encodeHashes(&Hashes{
+	buf, err := encodeHashesWrapper(&hashesWrapper{
 		Hashes: hashes,
 	})
 	if err != nil {

@@ -280,7 +280,6 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 	//   default:
 	//     $ref: '#/responses/genericError'
 
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

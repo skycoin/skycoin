@@ -107,7 +107,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	//             type: boolean
 	//   default:
 	//     $ref: '#/responses/genericError'
-
+	
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

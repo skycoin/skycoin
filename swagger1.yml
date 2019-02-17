@@ -24,38 +24,7 @@ paths:
         type: string
       produces:
       - application/json
-      responses:
-        "200":
-          description: Response for endpoint /api/v1/address_uxouts
-          schema:
-            items:
-              properties:
-                coins:
-                  format: integer
-                  type: integer
-                hours:
-                  format: int64
-                  type: integer
-                owner_address:
-                  type: string
-                spent_block_seq:
-                  format: in64
-                  type: integer
-                spent_tx:
-                  type: string
-                src_block_seq:
-                  format: int64
-                  type: integer
-                src_tx:
-                  type: string
-                time:
-                  format: int64
-                  type: integer
-                uxid:
-                  type: string
-            type: array
-        default:
-          $ref: '#/responses/genericError'
+      responses: {}
   /api/v1/addresscount:
     get:
       operationId: addressCount
@@ -1884,6 +1853,6 @@ schemes:
 securityDefinitions:
   csrfAuth:
     in: header
-    name: X-CSRF-TOKEN
+    name: csrf_Token
     type: apiKey
 swagger: "2.0"

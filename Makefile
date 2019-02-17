@@ -199,6 +199,7 @@ install-linters: ## Install linters
 
 install-swagger: ## Install swagger
 	go get -u github.com/go-swagger/go-swagger/cmd/swagger
+	npm install swagger2openapi -g
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
 	git clone --recursive https://github.com/skycoin/Criterion $(BUILD_DIR)/usr/tmp/Criterion

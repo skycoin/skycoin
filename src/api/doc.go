@@ -20,7 +20,7 @@
 //     csrfAuth:
 //          type: apiKey
 //          in: header
-//          name: csrf_Token
+//          name: X-CSRF-TOKEN
 //
 // swagger:meta
 package api

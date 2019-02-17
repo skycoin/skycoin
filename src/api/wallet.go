@@ -1007,7 +1007,6 @@ func walletHandler(gateway Gatewayer) http.HandlerFunc {
 //	verbose: [bool] include verbose transaction input data
 func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-
 	// swagger:operation GET /api/v1/wallet/transactions walletTransactions
 	//
 	// Returns returns all unconfirmed transactions for all addresses in a given wallet.

@@ -48,9 +48,7 @@ type CreatedTransaction struct {
 	Fee       string `json:"fee"`
 
 	Sigs []string `json:"sigs"`
-	// swagger:allOf
 	In []CreatedTransactionInput `json:"inputs"`
-	// swagger:allOf
 	Out []CreatedTransactionOutput `json:"outputs"`
 }
 

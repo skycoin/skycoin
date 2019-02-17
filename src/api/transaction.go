@@ -1474,7 +1474,93 @@ type VerifyTxnResponse struct {
 // URI: /api/v2/transaction/verify
 func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:operation POST /api/v2/transaction/verify transactionVerify
+	//
+	// Decode and verify an encoded transaction
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	// security:
+	// - csrfAuth: []
+	// responses:
+	//   200:
+	//     description: Responses ok
+	//     schema:
+	//       properties:
+	//         error:
+	//           type: object
+	//           properties:
+	//             message:
+	//               type: string
+	//             code:
+	//               type: integer
+	//               format: int64
+	//         data:
+	//           type: object
+	//           properties:
+	//             confirmed:
+	//               type: boolean
+	//             transaction:
+	//               type: object
+	//               properties:
+	//                 length:
+	//                   type: integer
+	//                   format: int32
+	//                 type:
+	//                   type: integer
+	//                   format: int32
+	//                 txid:
+	//                   type: string
+	//                 inner_hash:
+	//                   type: string
+	//                 fee:
+	//                   type: string
+	//                 sigs:
+	//                   type: array
+	//                   items:
+	//                     type: string
+	//                 sigs:
+	//                   type: array
+	//                   items:
+	//                     type: string
+	//                 inputs:
+	//                   type: array
+	//                   items:
+	//                     properties:
+	//                       uxid:
+	//                         type: string
+	//                       address:
+	//                         type: string
+	//                       coins:
+	//                         type: string
+	//                       hours:
+	//                         type: string
+	//                       calculated_hours:
+	//                         type: string
+	//                       txid:
+	//                         type: string
+	//                       timestamp:
+	//                         type: integer
+	//                         format: int64
+	//                       block:
+	//                         type: integer
+	//                         format: int64
+	//                 outputs:
+	//                   type: array
+	//                   items:
+	//                     properties:
+	//                       uxid:
+	//                         type: string
+	//                       address:
+	//                         type: string
+	//                       coins:
+	//                         type: string
+	//                       hours:
+	//                         type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

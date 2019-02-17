@@ -3474,6 +3474,87 @@ paths:
           $ref: '#/responses/genericError'
       summary: Returns the hex-encoded byte serialization of a transaction. The transaction
         may be confirmed or unconfirmed.
+  /api/v2/transaction/verify:
+    post:
+      description: Decode and verify an encoded transaction
+      operationId: transactionVerify
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Responses ok
+          schema:
+            properties:
+              data:
+                properties:
+                  confirmed:
+                    type: boolean
+                  transaction:
+                    properties:
+                      fee:
+                        type: string
+                      inner_hash:
+                        type: string
+                      inputs:
+                        items:
+                          properties:
+                            address:
+                              type: string
+                            block:
+                              format: int64
+                              type: integer
+                            calculated_hours:
+                              type: string
+                            coins:
+                              type: string
+                            hours:
+                              type: string
+                            timestamp:
+                              format: int64
+                              type: integer
+                            txid:
+                              type: string
+                            uxid:
+                              type: string
+                        type: array
+                      length:
+                        format: int32
+                        type: integer
+                      outputs:
+                        items:
+                          properties:
+                            address:
+                              type: string
+                            coins:
+                              type: string
+                            hours:
+                              type: string
+                            uxid:
+                              type: string
+                        type: array
+                      sigs:
+                        items:
+                          type: string
+                        type: array
+                      txid:
+                        type: string
+                      type:
+                        format: int32
+                        type: integer
+                    type: object
+                type: object
+              error:
+                properties:
+                  code:
+                    format: int64
+                    type: integer
+                  message:
+                    type: string
+                type: object
+        default:
+          $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
   /api/v2/wallet/recover:
     post:
       operationId: walletRecover

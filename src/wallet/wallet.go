@@ -40,14 +40,6 @@ var (
 
 	logger = logging.MustGetLogger("wallet")
 
-	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
-	ErrInsufficientBalance = NewError(errors.New("balance is not sufficient"))
-	// ErrInsufficientHours is returned if a wallet does not have enough hours for a spend with requested hours
-	ErrInsufficientHours = NewError(errors.New("hours are not sufficient"))
-	// ErrZeroSpend is returned if a transaction is trying to spend 0 coins
-	ErrZeroSpend = NewError(errors.New("zero spend amount"))
-	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
-	ErrSpendingUnconfirmed = NewError(errors.New("please spend after your pending transaction is confirmed"))
 	// ErrInvalidEncryptedField is returned if a wallet's Meta.encrypted value is invalid.
 	ErrInvalidEncryptedField = NewError(errors.New(`encrypted field value is not valid, must be "true", "false" or ""`))
 	// ErrWalletEncrypted is returned when trying to generate addresses or sign tx in encrypted wallet
@@ -76,16 +68,6 @@ var (
 	ErrSeedAPIDisabled = NewError(errors.New("wallet seed api is disabled"))
 	// ErrWalletNameConflict represents the wallet name conflict error
 	ErrWalletNameConflict = NewError(errors.New("wallet name would conflict with existing wallet, renaming"))
-	// ErrInvalidHoursSelectionMode for invalid HoursSelection mode values
-	ErrInvalidHoursSelectionMode = NewError(errors.New("invalid hours selection mode"))
-	// ErrInvalidHoursSelectionType for invalid HoursSelection type values
-	ErrInvalidHoursSelectionType = NewError(errors.New("invalid hours selection type"))
-	// ErrUnknownAddress is returned if an address is not found in a wallet
-	ErrUnknownAddress = NewError(errors.New("address not found in wallet"))
-	// ErrUnknownUxOut is returned if a uxout is not owned by any address in a wallet
-	ErrUnknownUxOut = NewError(errors.New("uxout is not owned by any address in the wallet"))
-	// ErrNoUnspents is returned if a wallet has no unspents to spend
-	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
 	// ErrWalletRecoverSeedWrong is returned if the seed does not match the specified wallet when recovering
 	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed is wrong"))
 	// ErrNilBalanceGetter is returned if Options.ScanN > 0 but a nil BalanceGetter was provided

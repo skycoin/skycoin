@@ -17,7 +17,12 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/mathutil"
+)
+
+var (
+	logger = logging.MustGetLogger("txn")
 )
 
 // Create creates an unsigned transaction based upon Params.
@@ -52,7 +57,7 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 		uxbMap[u.Hash] = u
 	}
 
-	// calculate total coins and minimum hours to send
+	// Calculate total coins and minimum hours to send
 	var totalOutCoins uint64
 	var requestedHours uint64
 	for _, to := range p.To {
@@ -75,10 +80,10 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 		return nil, nil, err
 	}
 
-	// calculate total coins and hours in spends
+	// Calculate total coins and hours in spends
 	var totalInputCoins uint64
 	var totalInputHours uint64
-	for i, spend := range spends {
+	for _, spend := range spends {
 		totalInputCoins, err = mathutil.AddUint64(totalInputCoins, spend.Coins)
 		if err != nil {
 			return nil, nil, err
@@ -161,7 +166,7 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 		return nil, nil, fee.ErrTxnInsufficientCoinHours
 	}
 
-	// create change output
+	// Create change output
 	changeCoins := totalInputCoins - totalOutCoins
 	changeHours := remainingHours - totalOutHours
 
@@ -229,7 +234,9 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 			return nil, nil, errors.New("share factor is 1.0 but changeHours > 0 unexpectedly")
 		}
 		p.HoursSelection.ShareFactor = &oneDecimal
-		return w.CreateTransaction(p, auxs, headTime)
+		// TODO -- this might be the cause of the reported create transaction slowness or crashes,
+		// if the decimal package has a bug, the previous check to stop infinite looping will fail
+		return Create(p, auxs, headTime)
 	}
 
 	if changeCoins > 0 {

@@ -620,17 +620,17 @@ func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]trans
 	// application that may need to send frequently.
 	// Using fewer UxOuts will leave more available for other transactions,
 	// instead of waiting for confirmation.
-	outs, err := wallet.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins, 0)
+	outs, err := transaction.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins, 0)
 	if err != nil {
 		// If there is not enough balance in the spendable outputs,
 		// see if there is enough balance when including incoming outputs
-		if err == wallet.ErrInsufficientBalance {
+		if err == transaction.ErrInsufficientBalance {
 			expectedOutputs, otherErr := readable.OutputsToUxBalances(uxouts.ExpectedOutputs())
 			if otherErr != nil {
 				return nil, otherErr
 			}
 
-			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins, 0); otherErr != nil {
+			if _, otherErr := transaction.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins, 0); otherErr != nil {
 				return nil, err
 			}
 
@@ -660,7 +660,7 @@ func makeChangeOut(outs []transaction.UxBalance, chgAddr string, toAddrs []SendA
 	}
 
 	if totalInCoins < totalOutCoins {
-		return nil, wallet.ErrInsufficientBalance
+		return nil, transaction.ErrInsufficientBalance
 	}
 
 	outAddrs := []coin.TransactionOutput{}
@@ -668,7 +668,7 @@ func makeChangeOut(outs []transaction.UxBalance, chgAddr string, toAddrs []SendA
 
 	haveChange := changeAmount > 0
 	nAddrs := uint64(len(toAddrs))
-	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
+	changeHours, addrHours, totalOutHours := transaction.DistributeSpendHours(totalInHours, nAddrs, haveChange)
 
 	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours, params.UserVerifyTxn.BurnFactor); err != nil {
 		return nil, err

@@ -14,11 +14,9 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
 // pendingTxnsHandler returns pending (unconfirmed) transactions
@@ -176,112 +174,6 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, rTxn)
-	}
-}
-
-// createTransactionRequest is sent to POST /api/v2/transaction
-type createTransactionRequest struct {
-	IgnoreUnconfirmed bool           `json:"ignore_unconfirmed"`
-	UxOuts            []wh.SHA256    `json:"unspents"`
-	HoursSelection    hoursSelection `json:"hours_selection"`
-	ChangeAddress     *wh.Address    `json:"change_address"`
-	To                []receiver     `json:"to"`
-}
-
-func (r createTransactionRequest) Validate() error {
-	if err := r.HoursSelection.validate(); err != nil {
-		return err
-	}
-
-	if r.ChangeAddress != nil && r.ChangeAddress.Null() {
-		return errors.New("change_address must not be the null address")
-	}
-
-	if err := receivers(r.To).validate(); err != nil {
-		return err
-	}
-
-	if len(r.UxOuts) == 0 {
-		return errors.New("unspents is empty")
-	}
-
-	// Check for duplicate spending uxouts
-	uxouts := make(map[cipher.SHA256]struct{}, len(r.UxOuts))
-	for _, o := range r.UxOuts {
-		uxouts[o.SHA256] = struct{}{}
-	}
-
-	if len(uxouts) != len(r.UxOuts) {
-		return errors.New("unspents contains duplicate values")
-	}
-}
-
-// transactionHandlerV2 creates a transaction from provided outputs and parameters
-// Method: POST
-// URI: /api/v2/transaction
-// Args: JSON body
-func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		if r.Header.Get("Content-Type") != ContentTypeJSON {
-			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		var req CreateTransactionRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		if err := req.Validate(); err != nil {
-			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		txn, inputs, err := gateway.CreateTransaction(params.ToParams())
-		if err != nil {
-			// TODO -- more errors will occurs if outputs cannot create the txn
-			switch err.(type) {
-			case blockdb.ErrUnspentNotExist:
-				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
-				writeHTTPResponse(w, resp)
-				return
-			default:
-				switch err {
-				case fee.ErrTxnNoFee,
-					// ErrSpendingUnconfirmed,
-					fee.ErrTxnInsufficientCoinHours:
-					resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
-					writeHTTPResponse(w, resp)
-					return
-				default:
-					resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
-					writeHTTPResponse(w, resp)
-					return
-				}
-			}
-			return
-		}
-
-		txnResp, err := NewCreatedTransactionResponse(txn, inputs)
-		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewCreatedTransactionResponse failed: %v", err))
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		writeHTTPResponse(w, HTTPResponse{
-			Data: txnResp,
-		})
 	}
 }
 

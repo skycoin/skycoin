@@ -2265,7 +2265,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 		{
 			name:  "all addresses, unconfirmed spends",
 			addrs: allAddrs,
-			err:   wallet.ErrSpendingUnconfirmed,
+			err:   ErrSpendingUnconfirmed,
 			rawTxnsRet: coin.Transactions{
 				coin.Transaction{
 					In: hashes[0:2],
@@ -2386,7 +2386,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 				},
 			},
 			addrs: allAddrs[0:4],
-			err:   wallet.ErrSpendingUnconfirmed,
+			err:   ErrSpendingUnconfirmed,
 			rawTxnsRet: coin.Transactions{
 				coin.Transaction{
 					In: hashes[0:2],
@@ -2519,7 +2519,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 				},
 			},
 			addrs: allAddrs,
-			err:   wallet.ErrUnknownAddress,
+			err:   ErrUnknownAddress,
 		},
 
 		{
@@ -2591,7 +2591,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 					UxOuts: hashes[0:4],
 				},
 			},
-			err: wallet.ErrSpendingUnconfirmed,
+			err: ErrSpendingUnconfirmed,
 			rawTxnsRet: coin.Transactions{
 				coin.Transaction{
 					In: hashes[6:10],
@@ -2649,7 +2649,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 					UxOuts: hashes[5:10],
 				},
 			},
-			err: wallet.ErrUnknownUxOut,
+			err: ErrUnknownUxOut,
 			rawTxnsRet: coin.Transactions{
 				coin.Transaction{
 					In: hashes[0:2],

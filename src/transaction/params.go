@@ -34,6 +34,18 @@ const (
 )
 
 var (
+	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
+	ErrInsufficientBalance = NewError(errors.New("balance is not sufficient"))
+	// ErrInsufficientHours is returned if a wallet does not have enough hours for a spend with requested hours
+	ErrInsufficientHours = NewError(errors.New("hours are not sufficient"))
+	// ErrZeroSpend is returned if a transaction is trying to spend 0 coins
+	ErrZeroSpend = NewError(errors.New("zero spend amount"))
+	// ErrInvalidHoursSelectionMode for invalid HoursSelection mode values
+	ErrInvalidHoursSelectionMode = NewError(errors.New("invalid hours selection mode"))
+	// ErrInvalidHoursSelectionType for invalid HoursSelection type values
+	ErrInvalidHoursSelectionType = NewError(errors.New("invalid hours selection type"))
+	// ErrNoUnspents is returned if a wallet has no unspents to spend
+	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
 	// ErrNullChangeAddress ChangeAddress must not be the null address
 	ErrNullChangeAddress = NewError(errors.New("ChangeAddress must not be the null address"))
 	// ErrMissingTo To is required

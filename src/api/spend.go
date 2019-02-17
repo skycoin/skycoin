@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -260,57 +261,14 @@ func NewCreatedTransactionInput(out visor.TransactionInput) (*CreatedTransaction
 	}, nil
 }
 
-// walletCreateTransactionRequest is sent to POST /api/v1/wallet/transaction
-type walletCreateTransactionRequest struct {
-	Unsigned          bool                                 `json:"unsigned"`
-	IgnoreUnconfirmed bool                                 `json:"ignore_unconfirmed"`
-	HoursSelection    hoursSelection                       `json:"hours_selection"`
-	Wallet            walletCreateTransactionRequestWallet `json:"wallet"`
-	ChangeAddress     *wh.Address                          `json:"change_address,omitempty"`
-	To                []receiver                           `json:"to"`
-}
-
-// walletCreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
-type walletCreateTransactionRequestWallet struct {
-	ID        string       `json:"id"`
-	UxOuts    []wh.SHA256  `json:"unspents,omitempty"`
-	Addresses []wh.Address `json:"addresses,omitempty"`
-	Password  string       `json:"password"`
-}
-
-func (r walletCreateTransactionRequestWallet) validate() error {
-	if r.ID == "" {
-		return errors.New("missing wallet.id")
-	}
-
-	addressMap := make(map[cipher.Address]struct{}, len(r.Addresses))
-	for i, a := range r.Addresses {
-		if a.Null() {
-			return fmt.Errorf("wallet.addresses[%d] is empty", i)
-		}
-
-		addressMap[a.Address] = struct{}{}
-	}
-
-	if len(addressMap) != len(r.Addresses) {
-		return errors.New("wallet.addresses contains duplicate values")
-	}
-
-	if len(r.UxOuts) != 0 && len(r.Addresses) != 0 {
-		return errors.New("wallet.unspents and wallet.addresses cannot be combined")
-	}
-
-	// Check for duplicate spending uxouts
-	uxouts := make(map[cipher.SHA256]struct{}, len(r.UxOuts))
-	for _, o := range r.UxOuts {
-		uxouts[o.SHA256] = struct{}{}
-	}
-
-	if len(uxouts) != len(r.UxOuts) {
-		return errors.New("wallet.unspents contains duplicate values")
-	}
-
-	return nil
+// createTransactionRequest is sent to POST /api/v2/transaction
+type createTransactionRequest struct {
+	IgnoreUnconfirmed bool           `json:"ignore_unconfirmed"`
+	HoursSelection    hoursSelection `json:"hours_selection"`
+	ChangeAddress     *wh.Address    `json:"change_address,omitempty"`
+	To                []receiver     `json:"to"`
+	UxOuts            []wh.SHA256    `json:"unspents,omitempty"`
+	Addresses         []wh.Address   `json:"addresses,omitempty"`
 }
 
 // hoursSelection defines options for hours distribution
@@ -320,31 +278,43 @@ type hoursSelection struct {
 	ShareFactor *decimal.Decimal `json:"share_factor,omitempty"`
 }
 
-func (r hoursSelection) validate() error {
-	switch r.Type {
-	case wallet.HoursSelectionTypeAuto:
+// receiver specifies a spend destination
+type receiver struct {
+	Address wh.Address `json:"address"`
+	Coins   wh.Coins   `json:"coins"`
+	Hours   *wh.Hours  `json:"hours,omitempty"`
+}
+
+// Validate validates createTransactionRequest data
+func (r createTransactionRequest) Validate() error {
+	if r.ChangeAddress != nil && r.ChangeAddress.Null() {
+		return errors.New("change_address must not be the null address")
+	}
+
+	switch r.HoursSelection.Type {
+	case transaction.HoursSelectionTypeAuto:
 		for i, to := range r.To {
 			if to.Hours != nil {
 				return fmt.Errorf("to[%d].hours must not be specified for auto hours_selection.mode", i)
 			}
 		}
 
-		switch r.Mode {
-		case wallet.HoursSelectionModeShare:
+		switch r.HoursSelection.Mode {
+		case transaction.HoursSelectionModeShare:
 		case "":
 			return errors.New("missing hours_selection.mode")
 		default:
 			return errors.New("invalid hours_selection.mode")
 		}
 
-	case wallet.HoursSelectionTypeManual:
+	case transaction.HoursSelectionTypeManual:
 		for i, to := range r.To {
 			if to.Hours == nil {
 				return fmt.Errorf("to[%d].hours must be specified for manual hours_selection.mode", i)
 			}
 		}
 
-		if r.Mode != "" {
+		if r.HoursSelection.Mode != "" {
 			return errors.New("hours_selection.mode cannot be used for manual hours_selection.type")
 		}
 
@@ -354,51 +324,65 @@ func (r hoursSelection) validate() error {
 		return errors.New("invalid hours_selection.type")
 	}
 
-	if r.ShareFactor == nil {
-		if r.Mode == wallet.HoursSelectionModeShare {
+	if r.HoursSelection.ShareFactor == nil {
+		if r.HoursSelection.Mode == transaction.HoursSelectionModeShare {
 			return errors.New("missing hours_selection.share_factor when hours_selection.mode is share")
 		}
 	} else {
-		if r.Mode != wallet.HoursSelectionModeShare {
+		if r.HoursSelection.Mode != transaction.HoursSelectionModeShare {
 			return errors.New("hours_selection.share_factor can only be used when hours_selection.mode is share")
 		}
 
 		switch {
-		case r.ShareFactor.LessThan(decimal.New(0, 0)):
+		case r.HoursSelection.ShareFactor.LessThan(decimal.New(0, 0)):
 			return errors.New("hours_selection.share_factor cannot be negative")
-		case r.ShareFactor.GreaterThan(decimal.New(1, 0)):
+		case r.HoursSelection.ShareFactor.GreaterThan(decimal.New(1, 0)):
 			return errors.New("hours_selection.share_factor cannot be more than 1")
 		}
 	}
 
-	return nil
-}
+	if len(r.UxOuts) != 0 && len(r.Addresses) != 0 {
+		return errors.New("unspents and addresses cannot be combined")
+	}
 
-// receiver specifies a spend destination
-type receiver struct {
-	Address wh.Address `json:"address"`
-	Coins   wh.Coins   `json:"coins"`
-	Hours   *wh.Hours  `json:"hours,omitempty"`
-}
+	addressMap := make(map[cipher.Address]struct{}, len(r.Addresses))
+	for i, a := range r.Addresses {
+		if a.Null() {
+			return fmt.Errorf("addresses[%d] is empty", i)
+		}
 
-type receivers []receiver
+		addressMap[a.Address] = struct{}{}
+	}
 
-func (r receivers) validate() error {
+	if len(addressMap) != len(r.Addresses) {
+		return errors.New("addresses contains duplicate values")
+	}
+
+	// Check for duplicate spending uxouts
+	uxouts := make(map[cipher.SHA256]struct{}, len(r.UxOuts))
+	for _, o := range r.UxOuts {
+		uxouts[o.SHA256] = struct{}{}
+	}
+
+	if len(uxouts) != len(r.UxOuts) {
+		return errors.New("unspents contains duplicate values")
+	}
+
 	if len(r.To) == 0 {
 		return errors.New("to is empty")
 	}
 
 	for i, to := range r.To {
 		if to.Address.Null() {
-			return fmt.Errorf("to[%d].address is empty", pos)
+			return fmt.Errorf("to[%d].address is empty", i)
 		}
 
 		if to.Coins == 0 {
-			return fmt.Errorf("to[%d].coins must not be zero", pos)
+			return fmt.Errorf("to[%d].coins must not be zero", i)
 		}
 
 		if to.Coins.Value()%params.UserVerifyTxn.MaxDropletDivisor() != 0 {
-			return fmt.Errorf("to[%d].coins has too many decimal places", pos)
+			return fmt.Errorf("to[%d].coins has too many decimal places", i)
 		}
 	}
 
@@ -428,46 +412,8 @@ func (r receivers) validate() error {
 	return nil
 }
 
-// Validate validates walletCreateTransactionRequest data
-func (r walletCreateTransactionRequest) Validate() error {
-	if err := r.HoursSelection.validate(); err != nil {
-		return err
-	}
-
-	if r.ChangeAddress != nil && r.ChangeAddress.Null() {
-		return errors.New("change_address must not be the null address")
-	}
-
-	if err := r.Wallet.validate(); err != nil {
-		return err
-	}
-
-	if err := receivers(r.To).validate(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ToWalletParams converts walletCreateTransactionRequest to wallet.CreateTransactionParams
-func (r walletCreateTransactionRequest) ToWalletParams() wallet.CreateTransactionParams {
-	addresses := make([]cipher.Address, len(r.Wallet.Addresses))
-	for i, a := range r.Wallet.Addresses {
-		addresses[i] = a.Address
-	}
-
-	uxouts := make([]cipher.SHA256, len(r.Wallet.UxOuts))
-	for i, o := range r.Wallet.UxOuts {
-		uxouts[i] = o.SHA256
-	}
-
-	walletParams := wallet.CreateTransactionWalletParams{
-		ID:        r.Wallet.ID,
-		Addresses: addresses,
-		UxOuts:    uxouts,
-		Password:  []byte(r.Wallet.Password),
-	}
-
+// TransactionParams converts createTransactionRequest to transaction.Params
+func (r createTransactionRequest) TransactionParams() transaction.Params {
 	to := make([]coin.TransactionOutput, len(r.To))
 	for i, t := range r.To {
 		var hours uint64
@@ -487,18 +433,142 @@ func (r walletCreateTransactionRequest) ToWalletParams() wallet.CreateTransactio
 		changeAddress = &r.ChangeAddress.Address
 	}
 
-	return wallet.CreateTransactionParams{
-		Unsigned:          r.Unsigned,
-		IgnoreUnconfirmed: r.IgnoreUnconfirmed,
-		HoursSelection: wallet.HoursSelection{
+	return transaction.Params{
+		HoursSelection: transaction.HoursSelection{
 			Type:        r.HoursSelection.Type,
 			Mode:        r.HoursSelection.Mode,
 			ShareFactor: r.HoursSelection.ShareFactor,
 		},
-		Wallet:        walletParams,
 		ChangeAddress: changeAddress,
 		To:            to,
 	}
+}
+
+func (r createTransactionRequest) VisorParams() visor.CreateTransactionParams {
+	return visor.CreateTransactionParams{
+		IgnoreUnconfirmed: r.IgnoreUnconfirmed,
+		Addresses:         r.addresses(),
+		UxOuts:            r.uxOuts(),
+	}
+}
+
+func (r createTransactionRequest) addresses() []cipher.Address {
+	if len(r.Addresses) == 0 {
+		return nil
+	}
+	addresses := make([]cipher.Address, len(r.Addresses))
+	for i, a := range r.Addresses {
+		addresses[i] = a.Address
+	}
+	return addresses
+}
+
+func (r createTransactionRequest) uxOuts() []cipher.SHA256 {
+	if len(r.UxOuts) == 0 {
+		return nil
+	}
+	uxouts := make([]cipher.SHA256, len(r.UxOuts))
+	for i, o := range r.UxOuts {
+		uxouts[i] = o.SHA256
+	}
+	return uxouts
+}
+
+// transactionHandlerV2 creates a transaction from provided outputs and parameters
+// Method: POST
+// URI: /api/v2/transaction
+// Args: JSON body
+func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if r.Header.Get("Content-Type") != ContentTypeJSON {
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		var req createTransactionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if err := req.Validate(); err != nil {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		txn, inputs, err := gateway.CreateTransaction(req.TransactionParams(), req.VisorParams())
+		if err != nil {
+			var resp HTTPResponse
+			switch err.(type) {
+			case wallet.Error:
+				switch err {
+				case wallet.ErrWalletAPIDisabled:
+					resp = NewHTTPErrorResponse(http.StatusForbidden, "")
+				case wallet.ErrWalletNotExist:
+					resp = NewHTTPErrorResponse(http.StatusNotFound, err.Error())
+				default:
+					resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				}
+			case blockdb.ErrUnspentNotExist,
+				transaction.Error,
+				visor.UserError:
+				resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			default:
+				switch err {
+				case fee.ErrTxnNoFee,
+					fee.ErrTxnInsufficientCoinHours:
+					resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				default:
+					resp = NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+				}
+			}
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		txnResp, err := NewCreateTransactionResponse(txn, inputs)
+		if err != nil {
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewCreateTransactionResponse failed: %v", err))
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		writeHTTPResponse(w, HTTPResponse{
+			Data: txnResp,
+		})
+	}
+}
+
+// walletCreateTransactionRequest is sent to POST /api/v1/wallet/transaction
+type walletCreateTransactionRequest struct {
+	createTransactionRequest
+	Unsigned bool `json:"unsigned"`
+	Wallet   struct {
+		ID       string `json:"id"`
+		Password string `json:"password"`
+	} `json:"wallet"`
+}
+
+// Validate validates walletCreateTransactionRequest data
+func (r walletCreateTransactionRequest) Validate() error {
+	if r.Wallet.ID == "" {
+		return errors.New("missing wallet.id")
+	}
+
+	if r.Unsigned && len(r.Wallet.Password) != 0 {
+		return errors.New("wallet.password must not be used for unsigned transactions")
+	}
+
+	return r.createTransactionRequest.Validate()
 }
 
 // walletCreateTransactionHandler creates a signed transaction
@@ -517,15 +587,15 @@ func walletCreateTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var params walletCreateTransactionRequest
-		err := json.NewDecoder(r.Body).Decode(&params)
+		var req walletCreateTransactionRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			logger.WithError(err).Error("Invalid create transaction request")
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		if err := params.Validate(); err != nil {
+		if err := req.Validate(); err != nil {
 			logger.WithError(err).Error("Invalid create transaction request")
 			wh.Error400(w, err.Error())
 			return
@@ -533,12 +603,10 @@ func walletCreateTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		var txn *coin.Transaction
 		var inputs []visor.TransactionInput
-		if params.Unsigned {
-			// TODO - validate that password is empty for unsigned
-			txn, inputs, err = gateway.WalletCreateTransaction(params.ToWalletParams())
+		if req.Unsigned {
+			txn, inputs, err = gateway.WalletCreateTransaction(req.Wallet.ID, req.TransactionParams(), req.VisorParams())
 		} else {
-			// TODO -- rename WalletCreateTransactionSigned ?
-			txn, inputs, err = gateway.WalletCreateSignedTransaction(params.ToWalletParams())
+			txn, inputs, err = gateway.WalletCreateTransactionSigned(req.Wallet.ID, []byte(req.Wallet.Password), req.TransactionParams(), req.VisorParams())
 		}
 		if err != nil {
 			switch err.(type) {
@@ -551,13 +619,14 @@ func walletCreateTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 				default:
 					wh.Error400(w, err.Error())
 				}
-			case blockdb.ErrUnspentNotExist:
+			case blockdb.ErrUnspentNotExist,
+				transaction.Error,
+				visor.UserError:
 				wh.Error400(w, err.Error())
 			default:
 				switch err {
 				case fee.ErrTxnNoFee,
-					fee.ErrTxnInsufficientCoinHours,
-					wallet.ErrSpendingUnconfirmed:
+					fee.ErrTxnInsufficientCoinHours:
 					wh.Error400(w, err.Error())
 				default:
 					wh.Error500(w, err.Error())
@@ -658,30 +727,27 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		signedTxn, inputs, err := gateway.WalletSignTransaction(req.WalletID, []byte(req.Password), txn, req.SignIndexes)
 		if err != nil {
-			switch err {
-			case wallet.ErrWalletNotExist:
-				resp := NewHTTPErrorResponse(http.StatusNotFound, err.Error())
-				writeHTTPResponse(w, resp)
-				return
-			case wallet.ErrWalletAPIDisabled:
-				resp := NewHTTPErrorResponse(http.StatusForbidden, err.Error())
-				writeHTTPResponse(w, resp)
-				return
-			default:
-				switch err.(type) {
-				case visor.ErrTxnViolatesSoftConstraint,
-					visor.ErrTxnViolatesHardConstraint,
-					visor.ErrTxnViolatesUserConstraint,
-					wallet.Error:
-					resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
-					writeHTTPResponse(w, resp)
-					return
+			var resp HTTPResponse
+			switch err.(type) {
+			case wallet.Error:
+				switch err {
+				case wallet.ErrWalletNotExist:
+					resp = NewHTTPErrorResponse(http.StatusNotFound, err.Error())
+				case wallet.ErrWalletAPIDisabled:
+					resp = NewHTTPErrorResponse(http.StatusForbidden, err.Error())
 				default:
-					resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
-					writeHTTPResponse(w, resp)
-					return
+					resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 				}
+			case visor.ErrTxnViolatesSoftConstraint,
+				visor.ErrTxnViolatesHardConstraint,
+				visor.ErrTxnViolatesUserConstraint,
+				blockdb.ErrUnspentNotExist:
+				resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			default:
+				resp = NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
 			}
+			writeHTTPResponse(w, resp)
+			return
 		}
 
 		txnResp, err := NewCreateTransactionResponse(signedTxn, inputs)

@@ -9,19 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/transaction"
 )
 
-var (
-	// ErrIncludesNullAddress Wallet.Addresses must not contain the null address
-	ErrIncludesNullAddress = NewError(errors.New("Wallet.Addresses must not contain the null address"))
-	// ErrDuplicateAddresses Wallet.Addresses contains duplicate values
-	ErrDuplicateAddresses = NewError(errors.New("Wallet.Addresses contains duplicate values"))
-	// ErrWalletParamsConflict Wallet.UxOuts and Wallet.Addresses cannot be combined
-	ErrWalletParamsConflict = NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
-	// ErrDuplicateUxOuts Wallet.UxOuts contains duplicate values
-	ErrDuplicateUxOuts = NewError(errors.New("Wallet.UxOuts contains duplicate values"))
-	// ErrUnknownWalletID params.Wallet.ID does not match wallet
-	ErrUnknownWalletID = NewError(errors.New("params.Wallet.ID does not match wallet"))
-)
-
 func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {
 	if len(x) > len(uxOuts) {
 		return errors.New("Number of signature indexes exceeds number of inputs")
@@ -75,6 +62,10 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 	signedTxn := copyTransaction(txn)
 	txnInnerHash := signedTxn.HashInner()
 
+	if w.IsEncrypted() {
+		return nil, ErrWalletEncrypted
+	}
+
 	if txnInnerHash != signedTxn.InnerHash {
 		return nil, NewError(errors.New("Transaction inner hash does not match computed inner hash"))
 	}
@@ -94,10 +85,6 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 	}
 	if err := validateSignIndexes(signIndexes, uxOuts); err != nil {
 		return nil, NewError(err)
-	}
-
-	if w.IsEncrypted() {
-		return nil, nil, ErrWalletEncrypted
 	}
 
 	// Build a mapping of addresses to the inputs that need to be signed
@@ -173,11 +160,7 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 //     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
-func (w *Wallet) CreateTransaction(p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
-	if err := pp.Validate(); err != nil {
-		return nil, nil, err
-	}
-
+func (w *Wallet) CreateTransaction(p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -185,19 +168,14 @@ func (w *Wallet) CreateTransaction(p transaction.Params, auxs coin.AddressUxOuts
 	// Check that auxs does not contain addresses that are not known to this wallet
 	for a := range auxs {
 		if !w.HasEntry(a) {
-			return nil, nil, ErrUnknownAddress
+			return nil, nil, fmt.Errorf("Address %s from auxs not found in wallet", a)
 		}
 	}
 
-	txn, spends, err := transaction.Create(p, auxs, headTime)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return txn, spends, nil
+	return transaction.Create(p, auxs, headTime)
 }
 
-// CreateSignedTransaction creates and signs a transaction based upon transaction.Params.
+// CreateTransactionSigned creates and signs a transaction based upon transaction.Params.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options
 // Outputs to spend are chosen from the pool of outputs provided.
@@ -210,7 +188,7 @@ func (w *Wallet) CreateTransaction(p transaction.Params, auxs coin.AddressUxOuts
 //     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
-func (w *Wallet) CreateSignedTransaction(p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+func (w *Wallet) CreateTransactionSigned(p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
 	txn, uxb, err := w.CreateTransaction(p, auxs, headTime)
 	if err != nil {
 		return nil, nil, err
@@ -218,13 +196,13 @@ func (w *Wallet) CreateSignedTransaction(p transaction.Params, auxs coin.Address
 
 	// Sign the transaction
 	entriesMap := make(map[cipher.Address]Entry)
-	for i, s := range spends {
+	for i, s := range uxb {
 		entry, ok := entriesMap[s.Address]
 		if !ok {
 			entry, ok = w.GetEntry(s.Address)
 			if !ok {
 				// This should not occur because CreateTransaction should have checked it already
-				err := fmt.Errorf("Chosen spend address %s not found in wallet", spend.Address)
+				err := fmt.Errorf("Chosen spend address %s not found in wallet", s.Address)
 				logger.Critical().WithError(err).Error()
 				return nil, nil, err
 			}
@@ -237,21 +215,15 @@ func (w *Wallet) CreateSignedTransaction(p transaction.Params, auxs coin.Address
 		}
 	}
 
-	// Attempt to wipe copied secrets from memory
-	emptyKey := cipher.SecKey{}
-	for k := range entriesMap {
-		copy(entriesMap[k].Secret[:], emptyKey[:])
-	}
-
 	// Sanity check the signed transaction
-	if err := verifyCreatedSignedInvariants(p, txn, inputs); err != nil {
+	if err := verifyCreatedSignedInvariants(p, txn, uxb); err != nil {
 		return nil, nil, err
 	}
 
-	return txn, spends, nil
+	return txn, uxb, nil
 }
 
-func verifyCreatedSignedInvariants(p CreateTransactionParams, txn *coin.Transaction, inputs []UxBalance) error {
+func verifyCreatedSignedInvariants(p transaction.Params, txn *coin.Transaction, inputs []transaction.UxBalance) error {
 	if !txn.IsFullySigned() {
 		return errors.New("Transaction is not fully signed")
 	}

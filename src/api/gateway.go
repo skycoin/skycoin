@@ -14,9 +14,9 @@ import (
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
-	CreateTransaction(p transaction.Params, wp wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
-	WalletCreateTransaction(wltID string, p transaction.Params, wp wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
-	WalletCreateSignedTransaction(wltID string, password []byte, p transaction.Params, wp wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	CreateTransaction(p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	WalletCreateTransaction(wltID string, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
 	WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error)
 	GetWallet(wltID string) (*wallet.Wallet, error)

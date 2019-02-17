@@ -15,6 +15,38 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+// UserError wraps user input-related errors.
+// Errors caused by programmer input or internal issues should not use this wrapper.
+// Some knowledge of the HTTP API layer may be necessary to decide when to use UserError or not.
+type UserError struct {
+	error
+}
+
+// NewUserError creates an Error
+func NewUserError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return UserError{err}
+}
+
+var (
+	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
+	ErrSpendingUnconfirmed = NewUserError(errors.New("Please spend after your pending transaction is confirmed"))
+	// ErrWalletUnknownAddress is returned if an address is not found in a wallet
+	ErrWalletUnknownAddress = NewUserError(errors.New("Address not found in wallet"))
+	// ErrWalletUnknownUxOut is returned if a uxout is not owned by any address in a wallet
+	ErrWalletUnknownUxOut = NewUserError(errors.New("UxOut is not owned by any address in the wallet"))
+	// ErrDuplicateUxOuts UxOuts contains duplicate values
+	ErrDuplicateUxOuts = NewUserError(errors.New("UxOuts contains duplicate values"))
+	// ErrIncludesNullAddress Addresses must not contain the null address
+	ErrIncludesNullAddress = NewUserError(errors.New("Addresses must not contain the null address"))
+	// ErrDuplicateAddresses Addresses contains duplicate values
+	ErrDuplicateAddresses = NewUserError(errors.New("Addresses contains duplicate values"))
+	// ErrCreateTransactionParamsConflict UxOuts and Addresses cannot be combined
+	ErrCreateTransactionParamsConflict = NewUserError(errors.New("UxOuts and Addresses cannot be combined"))
+)
+
 // GetWalletBalance returns balance pairs of specific wallet
 func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error) {
 	var addressBalances wallet.AddressBalances
@@ -133,7 +165,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 
 			signedTxn, err = w.SignTransaction(txn, signIndexes, uxOuts)
 			if err != nil {
-				logger.WithError(err).Error("wallet.SignTransaction failed")
+				logger.WithError(err).Error("WalletSignTransaction failed")
 				return err
 			}
 
@@ -168,18 +200,18 @@ type CreateTransactionParams struct {
 // Validate validates params
 func (p CreateTransactionParams) Validate() error {
 	if len(p.UxOuts) != 0 && len(p.Addresses) != 0 {
-		return wallet.ErrWalletParamsConflict
+		return ErrCreateTransactionParamsConflict
 	}
 
 	// Check for duplicate addresses
 	addressMap := make(map[cipher.Address]struct{}, len(p.Addresses))
 	for _, a := range p.Addresses {
 		if a.Null() {
-			return wallet.ErrIncludesNullAddress
+			return ErrIncludesNullAddress
 		}
 
 		if _, ok := addressMap[a]; ok {
-			return wallet.ErrDuplicateAddresses
+			return ErrDuplicateAddresses
 		}
 
 		addressMap[a] = struct{}{}
@@ -189,7 +221,7 @@ func (p CreateTransactionParams) Validate() error {
 	uxOuts := make(map[cipher.SHA256]struct{}, len(p.UxOuts))
 	for _, o := range p.UxOuts {
 		if _, ok := uxOuts[o]; ok {
-			return wallet.ErrDuplicateUxOuts
+			return ErrDuplicateUxOuts
 		}
 		uxOuts[o] = struct{}{}
 	}
@@ -197,8 +229,8 @@ func (p CreateTransactionParams) Validate() error {
 	return nil
 }
 
-// WalletCreateSignedTransaction creates a signed transaction based upon the parameters in wallet.CreateTransactionParams
-func (vs *Visor) WalletCreateSignedTransaction(wltID string, password []byte, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
+// WalletCreateTransactionSigned creates a signed transaction based upon the parameters in CreateTransactionParams
+func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
@@ -211,7 +243,8 @@ func (vs *Visor) WalletCreateSignedTransaction(wltID string, password []byte, p 
 	}
 
 	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
-		txn, inputs, err = vs.walletCreateTransaction("WalletCreateSignedTransaction", w, p, TxnSigned)
+		var err error
+		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransactionSigned", w, p, wp, TxnSigned)
 		return err
 	}); err != nil {
 		return nil, nil, err
@@ -220,7 +253,7 @@ func (vs *Visor) WalletCreateSignedTransaction(wltID string, password []byte, p 
 	return txn, inputs, nil
 }
 
-// WalletCreateTransaction creates a transaction based upon the parameters in wallet.CreateTransactionParams
+// WalletCreateTransaction creates a transaction based upon the parameters in CreateTransactionParams
 func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
 	var txn *coin.Transaction
 	var inputs []TransactionInput
@@ -234,6 +267,7 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 	}
 
 	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
+		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransaction", w, p, wp, TxnUnsigned)
 		return err
 	}); err != nil {
@@ -255,7 +289,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 	}
 
 	// Get all addresses from the wallet for checking params against
-	allAddrs, err := w.GetSkycoinAddresses()
+	walletAddresses, err := w.GetSkycoinAddresses()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -273,7 +307,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 		// Check that requested addresses are in the wallet
 		for _, a := range addrs {
 			if _, ok := allAddrsMap[a]; !ok {
-				return wallet.ErrUnknownAddress
+				return nil, nil, ErrWalletUnknownAddress
 			}
 		}
 	}
@@ -289,7 +323,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 		var auxs coin.AddressUxOuts
 		if len(wp.UxOuts) != 0 {
 			var err error
-			auxs, err = vs.getCreateTransactionUxOutAuxs(tx, wp.UxOuts, wp.IgnoreUnconfirmed)
+			auxs, err = vs.getCreateTransactionAuxsUxOut(tx, wp.UxOuts, wp.IgnoreUnconfirmed)
 			if err != nil {
 				return err
 			}
@@ -297,12 +331,12 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 			// Check that UxOut addresses are in the wallet,
 			for a := range auxs {
 				if _, ok := allAddrsMap[a]; !ok {
-					return wallet.ErrUnknownUxOut
+					return ErrWalletUnknownUxOut
 				}
 			}
 		} else {
 			var err error
-			auxs, err = vs.getCreateTransactionAddressAuxs(tx, addrs, wp.IgnoreUnconfirmed)
+			auxs, err = vs.getCreateTransactionAuxsAddress(tx, addrs, wp.IgnoreUnconfirmed)
 			if err != nil {
 				return err
 			}
@@ -311,14 +345,14 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 		// Create and sign transaction
 		switch signed {
 		case TxnSigned:
-			txn, uxb, err = w.CreateSignedTransaction(p, auxs, head.Time())
+			txn, uxb, err = w.CreateTransactionSigned(p, auxs, head.Time())
 		case TxnUnsigned:
 			txn, uxb, err = w.CreateTransaction(p, auxs, head.Time())
 		default:
 			logger.Panic("Invalid TxnSignedFlag")
 		}
 		if err != nil {
-			logger.Critical().WithError(err).Error("wallet.CreateTransaction failed")
+			logger.Critical().WithError(err).Errorf("%s failed", methodName)
 			return err
 		}
 
@@ -372,9 +406,9 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 		// Get mapping of addresses to uxOuts based upon CreateTransactionParams
 		var auxs coin.AddressUxOuts
 		if len(wp.UxOuts) != 0 {
-			auxs, err = vs.getCreateTransactionUxOutAuxs(tx, wp.UxOuts, wp.IgnoreUnconfirmed)
+			auxs, err = vs.getCreateTransactionAuxsUxOut(tx, wp.UxOuts, wp.IgnoreUnconfirmed)
 		} else {
-			auxs, err = vs.getCreateTransactionAddressAuxs(tx, wp.Addresses, wp.IgnoreUnconfirmed)
+			auxs, err = vs.getCreateTransactionAuxsAddress(tx, wp.Addresses, wp.IgnoreUnconfirmed)
 		}
 		if err != nil {
 			return err
@@ -409,9 +443,9 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 	return txn, inputs, nil
 }
 
-func (vs *Visor) getCreateTransactionUxOutAuxs(tx *dbutil.Tx, uxOutHashes []cipher.SHA256, ignoreUnconfirmed bool) (coin.AddressUxOuts, error) {
+func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []cipher.SHA256, ignoreUnconfirmed bool) (coin.AddressUxOuts, error) {
 	hashesMap := make(map[cipher.SHA256]struct{}, len(uxOutHashes))
-	for i, h := range uxOutHashes {
+	for _, h := range uxOutHashes {
 		hashesMap[h] = struct{}{}
 	}
 
@@ -421,7 +455,7 @@ func (vs *Visor) getCreateTransactionUxOutAuxs(tx *dbutil.Tx, uxOutHashes []ciph
 		for _, h := range txn.Transaction.In {
 			if _, ok := hashesMap[h]; ok {
 				if !ignoreUnconfirmed {
-					return wallet.ErrSpendingUnconfirmed
+					return ErrSpendingUnconfirmed
 				}
 				unconfirmedHashesMap[h] = struct{}{}
 			}
@@ -456,12 +490,12 @@ func (vs *Visor) getCreateTransactionUxOutAuxs(tx *dbutil.Tx, uxOutHashes []ciph
 	}
 
 	// Build coin.AddressUxOuts map, and check that the address is in the wallets
-	return NewAddressUxOuts(coin.UxArray(uxOuts)), nil
+	return coin.NewAddressUxOuts(coin.UxArray(uxOuts)), nil
 }
 
-// getCreateTransactionAddressAuxs returns the unspent outputs for a set of addresses,
+// getCreateTransactionAuxsAddress returns the unspent outputs for a set of addresses,
 // but returns an error if any of the unspents are in the unconfirmed outputs pool
-func (vs *Visor) getCreateTransactionAddressAuxs(tx *dbutil.Tx, addrs []cipher.Address, ignoredUnconfirmed bool) (coin.AddressUxOuts, error) {
+func (vs *Visor) getCreateTransactionAuxsAddress(tx *dbutil.Tx, addrs []cipher.Address, ignoredUnconfirmed bool) (coin.AddressUxOuts, error) {
 	unconfirmedAuxs, err := vs.unconfirmedSpendsOfAddresses(tx, addrs)
 	if err != nil {
 		err = fmt.Errorf("UnconfirmedSpendsOfAddresses failed: %v", err)
@@ -471,7 +505,7 @@ func (vs *Visor) getCreateTransactionAddressAuxs(tx *dbutil.Tx, addrs []cipher.A
 	if !ignoredUnconfirmed {
 		// Check that this is not trying to spend unconfirmed outputs
 		if len(unconfirmedAuxs) > 0 {
-			return nil, wallet.ErrSpendingUnconfirmed
+			return nil, ErrSpendingUnconfirmed
 		}
 	}
 

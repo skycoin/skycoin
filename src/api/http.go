@@ -333,7 +333,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		return handler
 	}
 
-	forMethodAPISets := func(apiVersion string, f http.HandlerFunc, methodsAPISets map[string][]string) http.HandlerFunc {
+	forMethodAPISets := func(apiVersion string, f http.Handler, methodsAPISets map[string][]string) http.Handler {
 		if len(methodsAPISets) == 0 {
 			logger.Panic("methodsAPISets should not be empty")
 		}
@@ -344,17 +344,14 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 			logger.Panicf("Invalid API version %q", apiVersion)
 		}
 
-		isEnabled := func(method string) bool {
-		}
-
-		return func(w http.ResponseWriter, r *http.Request) {
-			apiSets := methodsAPISets[method]
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			apiSets := methodsAPISets[r.Method]
 
 			// If no API sets are specified for a given method, return 405 Method Not Allowed
 			if len(apiSets) == 0 {
 				switch apiVersion {
 				case apiVersion1:
-					wh.Error405(w, "")
+					wh.Error405(w)
 				case apiVersion2:
 					resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
 					writeHTTPResponse(w, resp)
@@ -364,7 +361,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 			for _, k := range apiSets {
 				if _, ok := c.enabledAPISets[k]; ok {
-					f(w, r)
+					f.ServeHTTP(w, r)
 					return
 				}
 			}
@@ -377,11 +374,11 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 				writeHTTPResponse(w, resp)
 			}
 			return
-		}
+		})
 	}
 
-	webHandlerWithOptionals := func(apiVersion, endpoint string, handler http.Handler, checkCSRF, checkHeaders bool) {
-		handler = wh.ElapsedHandler(logger, handler)
+	webHandlerWithOptionals := func(apiVersion, endpoint string, handlerFunc http.Handler, checkCSRF, checkHeaders bool) {
+		handler := wh.ElapsedHandler(logger, handlerFunc)
 
 		handler = corsHandler.Handler(handler)
 
@@ -399,7 +396,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	}
 
 	webHandler := func(apiVersion, endpoint string, handler http.Handler, methodAPISets map[string][]string) {
-		if methodAPISets == nil /* explicitly check nil, caller should not pass empty initialized map */ {
+		// methodAPISets can be nil to ignore the concept of API sets for an endpoint. It will always be enabled.
+		// Explicitly check nil, caller should not pass empty initialized map
+		if methodAPISets == nil {
 			handler = forMethodAPISets(apiVersion, handler, methodAPISets)
 		}
 
@@ -418,7 +417,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	if !c.disableCSP {
 		indexHandler = CSPHandler(indexHandler)
 	}
-	webHandler(apiVersion1, "/", indexHandler)
+	webHandler(apiVersion1, "/", indexHandler, nil)
 
 	if c.enableGUI {
 		fileInfos, err := ioutil.ReadDir(c.appLoc)
@@ -437,7 +436,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 				route = route + "/"
 			}
 
-			webHandler(apiVersion1, route, fs)
+			webHandler(apiVersion1, route, fs, nil)
 		}
 	}
 
@@ -490,7 +489,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV1("/wallet/seed", walletSeedHandler(gateway), map[string][]string{
 		http.MethodPost: []string{EndpointsInsecureWalletSeed},
 	})
-	webHandlerV2("/wallet/seed/verify", walletVerifySeedHandler, map[string][]string{
+	webHandlerV2("/wallet/seed/verify", http.HandlerFunc(walletVerifySeedHandler), map[string][]string{
 		http.MethodPost: []string{EndpointsWallet},
 	})
 
@@ -588,12 +587,12 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 
 	// golang process internal metrics for Prometheus
-	webHandlerV2("/metrics", promhttp.Handler().(http.HandlerFunc), map[string][]string{
+	webHandlerV2("/metrics", promhttp.Handler().(http.Handler), map[string][]string{
 		http.MethodGet: []string{EndpointsPrometheus},
 	})
 
 	// Address related endpoints
-	webHandlerV2("/address/verify", addressVerifyHandler, map[string][]string{
+	webHandlerV2("/address/verify", http.HandlerFunc(addressVerifyHandler), map[string][]string{
 		http.MethodPost: []string{EndpointsRead},
 	})
 
@@ -611,7 +610,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	return mux
 }
 
-// newIndexHandler returns a http.HandlerFunc for index.html, where index.html is in appLoc
+// newIndexHandler returns a http.Handler for index.html, where index.html is in appLoc
 func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

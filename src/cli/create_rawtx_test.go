@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -317,7 +318,7 @@ func TestChooseSpends(t *testing.T) {
 	}{
 		{
 			"Insufficient HeadOutputs",
-			wallet.ErrInsufficientBalance,
+			transaction.ErrInsufficientBalance,
 			0,
 			readable.UnspentOutputsSummary{
 				HeadOutputs: readable.UnspentOutputs{
@@ -343,7 +344,7 @@ func TestChooseSpends(t *testing.T) {
 
 		{
 			"Sufficient HeadOutputs, but insufficient after subtracting OutgoingOutputs",
-			wallet.ErrInsufficientBalance,
+			transaction.ErrInsufficientBalance,
 			0,
 			readable.UnspentOutputsSummary{
 				HeadOutputs: readable.UnspentOutputs{

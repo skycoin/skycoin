@@ -205,7 +205,8 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 	// Sort uxouts with hours lowest to highest and coins highest to lowest
 	sortSpendsCoinsHighToLow(nonzero)
 
-	var have Balance
+	var haveCoins uint64
+	var haveHours uint64
 	var spending []UxBalance
 
 	// Use the first nonzero output. This output will have the least hours possible
@@ -219,10 +220,10 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 
 	spending = append(spending, firstNonzero)
 
-	have.Coins += firstNonzero.Coins
-	have.Hours += firstNonzero.Hours
+	haveCoins += firstNonzero.Coins
+	haveHours += firstNonzero.Hours
 
-	if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserVerifyTxn.BurnFactor) >= hours {
+	if haveCoins >= coins && fee.RemainingHours(haveHours, params.UserVerifyTxn.BurnFactor) >= hours {
 		return spending, nil
 	}
 
@@ -232,15 +233,15 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 	for _, ux := range zero {
 		spending = append(spending, ux)
 
-		have.Coins += ux.Coins
-		have.Hours += ux.Hours
+		haveCoins += ux.Coins
+		haveHours += ux.Hours
 
-		if have.Coins >= coins {
+		if haveCoins >= coins {
 			break
 		}
 	}
 
-	if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserVerifyTxn.BurnFactor) >= hours {
+	if haveCoins >= coins && fee.RemainingHours(haveHours, params.UserVerifyTxn.BurnFactor) >= hours {
 		return spending, nil
 	}
 
@@ -250,15 +251,15 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 	for _, ux := range nonzero {
 		spending = append(spending, ux)
 
-		have.Coins += ux.Coins
-		have.Hours += ux.Hours
+		haveCoins += ux.Coins
+		haveHours += ux.Hours
 
-		if have.Coins >= coins && fee.RemainingHours(have.Hours, params.UserVerifyTxn.BurnFactor) >= hours {
+		if haveCoins >= coins && fee.RemainingHours(haveHours, params.UserVerifyTxn.BurnFactor) >= hours {
 			return spending, nil
 		}
 	}
 
-	if have.Coins < coins {
+	if haveCoins < coins {
 		return nil, ErrInsufficientBalance
 	}
 

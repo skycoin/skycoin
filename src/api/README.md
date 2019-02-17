@@ -1145,9 +1145,9 @@ Example request body with auto hours selection type, encrypted wallet, specified
     },
     "wallet": {
         "id": "foo.wlt",
-        "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
-        "password": "foobar",
+        "password": "foobar"
     },
+    "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
@@ -1169,9 +1169,9 @@ Example request body with manual hours selection type, unencrypted wallet and sp
         "type": "manual"
     },
     "wallet": {
-        "id": "foo.wlt",
-        "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"]
+        "id": "foo.wlt"
     },
+    "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"],
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
@@ -1258,17 +1258,17 @@ But this is an invalid value for `to`, if `hours_selection.type` is `"auto"`:
 }]
 ```
 
-To control which addresses to spend from, specify `wallet.addresses`.
+To control which addresses to spend from, specify `addresses`.
 A subset of the unspent outputs associated with these addresses will be chosen for spending,
 based upon an internal selection algorithm.
 
-To control which unspent outputs to spend from, specify `wallet.unspents`.
+To control which unspent outputs to spend from, specify `unspents`.
 A subset of these unspent outputs will be chosen for spending,
 based upon an internal selection algorithm.
 
-`wallet.addresses` and `wallets.uxouts` cannot be combined.
+`addresses` and `unspents` cannot be combined.
 
-If neither `wallet.addresses` nor `wallet.unspents` are specified,
+If neither `addresses` nor `unspents` are specified,
 then all outputs associated with all addresses in the wallet may be chosen from to spend with.
 
 `change_address` is optional.
@@ -1376,6 +1376,7 @@ Args: JSON body, see examples
 ```
 
 Signs an unsigned transaction, returning the transaction with updated signatures and the encoded, serialized transaction.
+The transaction must spendable to be signed. If the inputs of the transaction are not in the unspent pool, signing fails.
 
 Specific transaction inputs may be signed by specifying `sign_indexes`, otherwise all transaction inputs will be signed.
 `sign_indexes` is an array of positional indexes for the transaction's signature array. Indexes start at 0.

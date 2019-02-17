@@ -1007,9 +1007,9 @@ func walletHandler(gateway Gatewayer) http.HandlerFunc {
 //	verbose: [bool] include verbose transaction input data
 func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// swagger:operation GET /api/v1/wallet/transactions walletTransactions
+	// swagger:operation GET /api/v1/wallet/transactions/verbose walletTransactionsVerbose
 	//
-	// Returns returns all unconfirmed transactions for all addresses in a given wallet.
+	// Returns returns all unconfirmed transactions for all addresses in a given wallet verbose
 	//
 	// ---
 	// produces:
@@ -1020,12 +1020,86 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	//   description: Wallet id.
 	//   required: true
 	//   type: string
-	// - name: verbose
+	// responses:
+	//   200:
+	//     description: Returns returns all unconfirmed transactions for all addresses in a given wallet
+	//     schema:
+	//       properties:
+	//         transactions:
+	//           type: array
+	//           items:
+	//             properties:
+	//               transaction:
+	//                 type: object
+	//                 properties:
+	//                   length:
+	//                     type: integer
+	//                     format: int32
+	//                   type:
+	//                     type: integer
+	//                     format: int32
+	//                   fee:
+	//                     type: integer
+	//                     format: int64
+	//                   txid:
+	//                     type: string
+	//                   inner_hash:
+	//                     type: string
+	//                   sigs:
+	//                     type: array
+	//                     items:
+	//                       type: string
+	//                   inputs:
+	//                     type: object
+	//                     properties:
+	//                       uxid:
+	//                         type: string
+	//                       dst:
+	//                         type: string
+	//                       coins:
+	//                         type: string
+	//                       hours:
+	//                         type: integer
+	//                         format: int64
+	//                       calculated_hours:
+	//                         type: integer
+	//                         format: int64
+	//                   outputs:
+	//                     type: object
+	//                     properties:
+	//                       uxid:
+	//                         type: string
+	//                       dst:
+	//                         type: string
+	//                       coins:
+	//                         type: string
+	//                       hours:
+	//                         type: integer
+	//                         format: int64
+	//               received:
+	//                 type: string
+	//               checked:
+	//                 type: string
+	//               announced:
+	//                 type: string
+	//               is_valid:
+	//                 type: boolean
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// swagger:operation GET /api/v1/wallet/transactions walletTransactions
+	//
+	// Returns returns all unconfirmed transactions for all addresses in a given wallet verbose
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: id
 	//   in: query
-	//   default: true
-	//   description: include verbose transaction input data
-	//   required: false
-	//   type: boolean
+	//   description: Wallet id.
+	//   required: true
+	//   type: string
 	// responses:
 	//   200:
 	//     description: Returns returns all unconfirmed transactions for all addresses in a given wallet

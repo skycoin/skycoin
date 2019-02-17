@@ -77,9 +77,7 @@ func (bh BlockHeader) ToCoinBlockHeader() (coin.BlockHeader, error) {
 }
 
 // BlockBody represents a readable block body
-// swagger:model blockBody
 type BlockBody struct {
-	// in: body
 	Transactions []Transaction `json:"txns"`
 }
 

@@ -2757,7 +2757,7 @@ API sets: `READ`
 
 ```
 URI: /api/v1/blocks
-Method: GET
+Method: GET, POST
 Args:
     start: start seq
     end: end seq

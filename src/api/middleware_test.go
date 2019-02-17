@@ -69,7 +69,7 @@ func TestOriginRefererCheck(t *testing.T) {
 		},
 	}
 
-	for _, endpoint := range endpoints {
+	for _, endpoint := range allEndpoints() {
 		for _, tc := range cases {
 			name := fmt.Sprintf("%s %s", tc.name, endpoint)
 			t.Run(name, func(t *testing.T) {
@@ -152,47 +152,49 @@ func TestHostCheck(t *testing.T) {
 		},
 	}
 
-	for _, endpoint := range endpoints {
-		for _, tc := range cases {
-			name := fmt.Sprintf("%s %s", tc.name, endpoint)
-			t.Run(name, func(t *testing.T) {
-				gateway := &MockGatewayer{}
+	for endpoint, methods := range endpointsMethods {
+		for _, m := range methods {
+			for _, tc := range cases {
+				name := fmt.Sprintf("%s %s %s", tc.name, m, endpoint)
+				t.Run(name, func(t *testing.T) {
+					gateway := &MockGatewayer{}
 
-				req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-				require.NoError(t, err)
+					req, err := http.NewRequest(m, endpoint, nil)
+					require.NoError(t, err)
 
-				setCSRFParameters(t, tokenValid, req)
+					setCSRFParameters(t, tokenValid, req)
 
-				req.Host = "example.com"
+					req.Host = "example.com"
 
-				rr := httptest.NewRecorder()
-				handler := newServerMux(muxConfig{
-					host:               configuredHost,
-					appLoc:             ".",
-					disableCSRF:        false,
-					disableHeaderCheck: !tc.enableHeaderCheck,
-					disableCSP:         true,
-					hostWhitelist:      tc.hostWhitelist,
-				}, gateway)
+					rr := httptest.NewRecorder()
+					handler := newServerMux(muxConfig{
+						host:               configuredHost,
+						appLoc:             ".",
+						disableCSRF:        false,
+						disableHeaderCheck: !tc.enableHeaderCheck,
+						disableCSP:         true,
+						hostWhitelist:      tc.hostWhitelist,
+					}, gateway)
 
-				handler.ServeHTTP(rr, req)
+					handler.ServeHTTP(rr, req)
 
-				switch tc.status {
-				case http.StatusForbidden:
-					require.Equal(t, http.StatusForbidden, rr.Code)
-					if strings.HasPrefix(endpoint, "/api/v2") {
-						require.Equal(t, tc.errV2, rr.Body.String())
-					} else {
-						require.Equal(t, tc.errV1, rr.Body.String())
+					switch tc.status {
+					case http.StatusForbidden:
+						require.Equal(t, http.StatusForbidden, rr.Code)
+						if strings.HasPrefix(endpoint, "/api/v2") {
+							require.Equal(t, tc.errV2, rr.Body.String())
+						} else {
+							require.Equal(t, tc.errV1, rr.Body.String())
+						}
+					default:
+						if tc.enableHeaderCheck || tc.hostWhitelist == nil {
+							// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
+							// Make sure that the request only didn't return the invalid host error
+							require.False(t, strings.Contains("Invalid Host", rr.Body.String()))
+						}
 					}
-				default:
-					if tc.enableHeaderCheck || tc.hostWhitelist == nil {
-						// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
-						// Make sure that the request only didn't return the invalid host error
-						require.False(t, strings.Contains("Invalid Host", rr.Body.String()))
-					}
-				}
-			})
+				})
+			}
 		}
 	}
 }

@@ -398,7 +398,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandler := func(apiVersion, endpoint string, handler http.Handler, methodAPISets map[string][]string) {
 		// methodAPISets can be nil to ignore the concept of API sets for an endpoint. It will always be enabled.
 		// Explicitly check nil, caller should not pass empty initialized map
-		if methodAPISets == nil {
+		if methodAPISets != nil {
 			handler = forMethodAPISets(apiVersion, handler, methodAPISets)
 		}
 
@@ -517,7 +517,8 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		http.MethodGet: []string{EndpointsRead},
 	})
 	webHandlerV1("/blocks", blocksHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
 	})
 	webHandlerV1("/last_blocks", lastBlocksHandler(gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},
@@ -560,7 +561,8 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		http.MethodPost: []string{EndpointsRead},
 	})
 	webHandlerV1("/transactions", transactionsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
 	})
 	webHandlerV1("/injectTransaction", injectTransactionHandler(gateway), map[string][]string{
 		http.MethodPost: []string{EndpointsTransaction, EndpointsWallet},
@@ -574,10 +576,12 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	// Unspent output related endpoints
 	webHandlerV1("/outputs", outputsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
 	})
 	webHandlerV1("/balance", balanceHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
 	})
 	webHandlerV1("/uxout", uxOutHandler(gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},

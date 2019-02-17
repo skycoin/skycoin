@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -24,10 +25,8 @@ import (
 
 func TestWalletCreateTransaction(t *testing.T) {
 	type rawRequestWallet struct {
-		ID        string   `json:"id"`
-		UxOuts    []string `json:"unspents,omitempty"`
-		Addresses []string `json:"addresses,omitempty"`
-		Password  string   `json:"password"`
+		ID       string `json:"id"`
+		Password string `json:"password"`
 	}
 
 	type rawHoursSelection struct {
@@ -43,6 +42,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 	}
 
 	type rawRequest struct {
+		UxOuts         []string          `json:"unspents,omitempty"`
+		Addresses      []string          `json:"addresses,omitempty"`
 		HoursSelection rawHoursSelection `json:"hours_selection"`
 		Wallet         rawRequestWallet  `json:"wallet"`
 		ChangeAddress  string            `json:"change_address,omitempty"`
@@ -99,7 +100,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 	validBody := &rawRequest{
 		HoursSelection: rawHoursSelection{
-			Type: wallet.HoursSelectionTypeManual,
+			Type: transaction.HoursSelectionTypeManual,
 		},
 		To: []rawReceiver{
 			{
@@ -148,7 +149,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 		{
 			name:   "400 - missing hours selection type",
 			method: http.MethodPost,
-			body:   &rawRequest{},
+			body: &rawRequest{
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
+				},
+			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing hours_selection.type",
 		},
@@ -160,6 +165,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 				HoursSelection: rawHoursSelection{
 					Type: "foo",
 				},
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
+				},
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid hours_selection.type",
@@ -170,7 +178,10 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeAuto,
+					Type: transaction.HoursSelectionTypeAuto,
+				},
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
 				},
 			},
 			status: http.StatusBadRequest,
@@ -182,8 +193,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeAuto,
+					Type: transaction.HoursSelectionTypeAuto,
 					Mode: "foo",
+				},
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
 				},
 			},
 			status: http.StatusBadRequest,
@@ -195,8 +209,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeAuto,
-					Mode: wallet.HoursSelectionModeShare,
+					Type: transaction.HoursSelectionTypeAuto,
+					Mode: transaction.HoursSelectionModeShare,
+				},
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
 				},
 			},
 			status: http.StatusBadRequest,
@@ -208,8 +225,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeManual,
+					Type:        transaction.HoursSelectionTypeManual,
 					ShareFactor: newStrPtr("0.5"),
+				},
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
 				},
 			},
 			status: http.StatusBadRequest,
@@ -221,9 +241,12 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("-1"),
+				},
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
 				},
 			},
 			status: http.StatusBadRequest,
@@ -235,9 +258,12 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("1.1"),
+				},
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
 				},
 			},
 			status: http.StatusBadRequest,
@@ -249,12 +275,13 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				Wallet: rawRequestWallet{
-					Addresses: []string{""},
+					ID: "foo.wlt",
 				},
 				ChangeAddress: changeAddress.String(),
+				Addresses:     []string{""},
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid address: Invalid base58 string",
@@ -265,12 +292,13 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				Wallet: rawRequestWallet{
-					Addresses: []string{"xxx"},
+					ID: "foo.wlt",
 				},
 				ChangeAddress: changeAddress.String(),
+				Addresses:     []string{"xxx"},
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid address: Invalid address length",
@@ -281,7 +309,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				ChangeAddress: "xxx",
 			},
@@ -294,9 +322,12 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				ChangeAddress: emptyAddress.String(),
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
+				},
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - change_address must not be the null address",
@@ -307,8 +338,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				To: []rawReceiver{
@@ -319,6 +350,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
+				},
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to[0].hours must not be specified for auto hours_selection.mode",
@@ -329,7 +363,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -338,6 +372,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
+				},
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to[0].hours must be specified for manual hours_selection.mode",
@@ -348,8 +385,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-					Mode: wallet.HoursSelectionModeShare,
+					Type: transaction.HoursSelectionTypeManual,
+					Mode: transaction.HoursSelectionModeShare,
 				},
 				To: []rawReceiver{
 					{
@@ -359,6 +396,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
+				},
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - hours_selection.mode cannot be used for manual hours_selection.type",
@@ -369,7 +409,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -390,7 +430,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -401,12 +441,12 @@ func TestWalletCreateTransaction(t *testing.T) {
 				},
 				ChangeAddress: changeAddress.String(),
 				Wallet: rawRequestWallet{
-					ID:        "foo.wlt",
-					Addresses: []string{emptyAddress.String()},
+					ID: "foo.wlt",
 				},
+				Addresses: []string{emptyAddress.String()},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - wallet.addresses[0] is empty",
+			err:    "400 Bad Request - addresses[0] is empty",
 		},
 
 		{
@@ -414,7 +454,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -437,7 +477,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -460,7 +500,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -483,7 +523,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -506,8 +546,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				To: []rawReceiver{
@@ -531,8 +571,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				To: []rawReceiver{
@@ -555,7 +595,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				ChangeAddress: changeAddress.String(),
 				Wallet: rawRequestWallet{
@@ -571,7 +611,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				ChangeAddress: changeAddress.String(),
 				Wallet: rawRequestWallet{
@@ -599,8 +639,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				ChangeAddress: changeAddress.String(),
@@ -627,15 +667,13 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				ChangeAddress: changeAddress.String(),
 				Wallet: rawRequestWallet{
-					ID:        "foo.wlt",
-					Addresses: []string{destinationAddress.String()},
-					UxOuts:    []string{walletInput.Hex()},
+					ID: "foo.wlt",
 				},
 				To: []rawReceiver{
 					{
@@ -643,9 +681,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 						Coins:   "1.2",
 					},
 				},
+				Addresses: []string{destinationAddress.String()},
+				UxOuts:    []string{walletInput.Hex()},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - wallet.unspents and wallet.addresses cannot be combined",
+			err:    "400 Bad Request - unspents and addresses cannot be combined",
 		},
 
 		{
@@ -653,14 +693,13 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				ChangeAddress: changeAddress.String(),
 				Wallet: rawRequestWallet{
-					ID:     "foo.wlt",
-					UxOuts: []string{walletInput.Hex(), walletInput.Hex()},
+					ID: "foo.wlt",
 				},
 				To: []rawReceiver{
 					{
@@ -668,9 +707,10 @@ func TestWalletCreateTransaction(t *testing.T) {
 						Coins:   "1.2",
 					},
 				},
+				UxOuts: []string{walletInput.Hex(), walletInput.Hex()},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - wallet.unspents contains duplicate values",
+			err:    "400 Bad Request - unspents contains duplicate values",
 		},
 
 		{
@@ -678,14 +718,13 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				ChangeAddress: changeAddress.String(),
 				Wallet: rawRequestWallet{
-					ID:        "foo.wlt",
-					Addresses: []string{destinationAddress.String(), destinationAddress.String()},
+					ID: "foo.wlt",
 				},
 				To: []rawReceiver{
 					{
@@ -693,9 +732,10 @@ func TestWalletCreateTransaction(t *testing.T) {
 						Coins:   "1.2",
 					},
 				},
+				Addresses: []string{destinationAddress.String(), destinationAddress.String()},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - wallet.addresses contains duplicate values",
+			err:    "400 Bad Request - addresses contains duplicate values",
 		},
 
 		{
@@ -703,8 +743,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				To: []rawReceiver{
@@ -729,7 +769,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -754,7 +794,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
+					Type: transaction.HoursSelectionTypeManual,
 				},
 				To: []rawReceiver{
 					{
@@ -864,10 +904,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.WalletCreateTransaction
 			serializedBody, err := json.Marshal(tc.body)
 			require.NoError(t, err)
-			var body createTransactionRequest
+			var body walletCreateTransactionRequest
 			err = json.Unmarshal(serializedBody, &body)
 			if err == nil {
-				gateway.On("WalletCreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
+				x := gateway.On("WalletCreateTransactionSigned", body.Wallet.ID, []byte(body.Wallet.Password), body.TransactionParams(), body.VisorParams())
+				x.Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
 			}
 
 			endpoint := "/api/v1/wallet/transaction"

@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"math"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -13,7 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 )
 
-func TestSortSpendsLowToHigh(t *testing.T) {
+func TestSortSpendsCoinsLowToHigh(t *testing.T) {
 	// UxBalances are sorted with Coins lowest, then following other order rules
 	orderedUxb := []UxBalance{
 		{
@@ -86,12 +87,12 @@ func TestSortSpendsLowToHigh(t *testing.T) {
 	for i := 0; i < nRand; i++ {
 		uxb := makeRandomUxBalances(t)
 
-		sortSpendsCoinsHighToLow(uxb)
-		verifySortedCoinsHighToLow(t, uxb)
+		sortSpendsCoinsLowToHigh(uxb)
+		verifySortedCoinsLowToHigh(t, uxb)
 	}
 }
 
-func TestSortSpendsHighToLow(t *testing.T) {
+func TestSortSpendsCoinsHighToLow(t *testing.T) {
 	// UxBalances are sorted with Coins highest, then following other order rules
 	orderedUxb := []UxBalance{
 		{
@@ -173,6 +174,84 @@ func TestSortSpendsHighToLow(t *testing.T) {
 	}
 }
 
+func TestSortSpendsHoursLowToHigh(t *testing.T) {
+	// UxBalances are sorted with Coins lowest, then following other order rules
+	orderedUxb := []UxBalance{
+		{
+			Hash:  testutil.RandSHA256(t),
+			BkSeq: 5,
+			Coins: 1,
+			Hours: 0,
+		},
+		{
+			Hash:  testutil.RandSHA256(t),
+			BkSeq: 3,
+			Coins: 10,
+			Hours: 1,
+		},
+		{
+			Hash:  testutil.RandSHA256(t),
+			BkSeq: 1,
+			Coins: 10,
+			Hours: 10,
+		},
+		{
+			Hash:  cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			BkSeq: 2,
+			Coins: 10,
+			Hours: 10,
+		},
+		{
+			Hash:  cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			BkSeq: 2,
+			Coins: 10,
+			Hours: 10,
+		},
+		{
+			Hash:  testutil.RandSHA256(t),
+			BkSeq: 4,
+			Coins: 100,
+			Hours: 100,
+		},
+	}
+
+	shuffleWorked := false
+	nShuffle := 20
+	for i := 0; i < nShuffle; i++ {
+		// Shuffle the list
+		uxb := make([]UxBalance, len(orderedUxb))
+		copy(uxb, orderedUxb)
+
+		for i := range uxb {
+			j := rand.Intn(i + 1)
+			uxb[i], uxb[j] = uxb[j], uxb[i]
+		}
+
+		// Sanity check that shuffling produces a new result
+		if !reflect.DeepEqual(uxb, orderedUxb) {
+			shuffleWorked = true
+		}
+
+		sortSpendsHoursLowToHigh(uxb)
+
+		for i, ux := range uxb {
+			require.Equal(t, orderedUxb[i], ux, "index %d", i)
+		}
+
+		verifySortedHoursLowToHigh(t, uxb)
+	}
+
+	require.True(t, shuffleWorked)
+
+	nRand := 1000
+	for i := 0; i < nRand; i++ {
+		uxb := makeRandomUxBalances(t)
+
+		sortSpendsHoursLowToHigh(uxb)
+		verifySortedHoursLowToHigh(t, uxb)
+	}
+}
+
 func TestChooseSpendsMaximizeUxOuts(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
@@ -183,6 +262,26 @@ func TestChooseSpendsMaximizeUxOuts(t *testing.T) {
 			return a.Coins <= b.Coins
 		})
 	}
+
+	// 0 coins (error)
+	uxb := makeRandomUxBalances(t)
+	verifyChosenCoins(t, uxb, 0, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
+		return a.Coins <= b.Coins
+	})
+
+	// 0 coins in a UxBalance (panic)
+	uxb[1].Coins = 0
+	require.Panics(t, func() {
+		verifyChosenCoins(t, uxb, 10, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
+			return a.Coins <= b.Coins
+		})
+	})
+
+	// MaxUint64 coins (error)
+	uxb = makeRandomUxBalances(t)
+	verifyChosenCoins(t, uxb, math.MaxUint64, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
+		return a.Coins <= b.Coins
+	})
 }
 
 func TestChooseSpendsMinimizeUxOutsRandom(t *testing.T) {
@@ -195,6 +294,26 @@ func TestChooseSpendsMinimizeUxOutsRandom(t *testing.T) {
 			return a.Coins >= b.Coins
 		})
 	}
+
+	// 0 coins (error)
+	uxb := makeRandomUxBalances(t)
+	verifyChosenCoins(t, uxb, 0, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
+		return a.Coins >= b.Coins
+	})
+
+	// 0 coins in a UxBalance (panic)
+	uxb[1].Coins = 0
+	require.Panics(t, func() {
+		verifyChosenCoins(t, uxb, 10, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
+			return a.Coins >= b.Coins
+		})
+	})
+
+	// MaxUint64 coins (error)
+	uxb = makeRandomUxBalances(t)
+	verifyChosenCoins(t, uxb, math.MaxUint64, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
+		return a.Coins >= b.Coins
+	})
 }
 
 func makeRandomUxBalances(t *testing.T) []UxBalance {
@@ -375,5 +494,41 @@ func verifySortedCoinsLowToHigh(t *testing.T, uxb []UxBalance) {
 func verifySortedCoinsHighToLow(t *testing.T, uxb []UxBalance) {
 	verifySortedCoins(t, uxb, func(a, b UxBalance) bool {
 		return a.Coins >= b.Coins
+	})
+}
+
+func verifySortedHours(t *testing.T, uxb []UxBalance, cmpHours func(a, b UxBalance) bool) {
+	if len(uxb) <= 1 {
+		return
+	}
+
+	for i := range uxb {
+		if i == 0 {
+			continue
+		}
+
+		a := uxb[i-1]
+		b := uxb[i]
+
+		require.True(t, cmpHours(a, b))
+
+		if a.Hours == b.Hours {
+			require.True(t, a.Coins <= b.Coins)
+
+			if a.Hours == b.Hours {
+				require.True(t, a.BkSeq <= b.BkSeq)
+
+				if a.BkSeq == b.BkSeq {
+					cmp := bytes.Compare(a.Hash[:], b.Hash[:])
+					require.True(t, cmp < 0)
+				}
+			}
+		}
+	}
+}
+
+func verifySortedHoursLowToHigh(t *testing.T, uxb []UxBalance) {
+	verifySortedCoins(t, uxb, func(a, b UxBalance) bool {
+		return a.Hours <= b.Hours
 	})
 }

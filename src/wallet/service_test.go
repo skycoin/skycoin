@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
@@ -2061,29 +2059,6 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				checkNoSensitiveData(t, w)
 			}
 		})
-	}
-}
-
-func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { // nolint: unparam
-	body := makeUxBody(t, s, coins, hours)
-	tm := rand.Int31n(1000)
-	seq := rand.Int31n(100)
-	return coin.UxOut{
-		Head: coin.UxHead{
-			Time:  uint64(tm),
-			BkSeq: uint64(seq),
-		},
-		Body: body,
-	}
-}
-
-func makeUxBody(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxBody {
-	p := cipher.MustPubKeyFromSecKey(s)
-	return coin.UxBody{
-		SrcTransaction: cipher.SumSHA256(testutil.RandBytes(t, 128)),
-		Address:        cipher.AddressFromPubKey(p),
-		Coins:          coins,
-		Hours:          hours,
 	}
 }
 

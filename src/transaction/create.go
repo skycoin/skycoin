@@ -38,6 +38,10 @@ var (
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
 func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+	if err := p.Validate(); err != nil {
+		return nil, nil, err
+	}
+
 	txn := &coin.Transaction{}
 
 	// Determine which unspents to spend

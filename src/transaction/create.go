@@ -106,7 +106,11 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 
 	feeHours := fee.RequiredFee(totalInputHours, params.UserVerifyTxn.BurnFactor)
 	if feeHours == 0 {
-		return nil, nil, fee.ErrTxnNoFee
+		// feeHours can only be 0 if totalInputHours is 0, and if totalInputHours was 0
+		// then ChooseSpendsMinimizeUxOuts should have already returned an error
+		err := errors.New("Chosen spends have no coin hours, unexpectedly")
+		logger.Critical().WithError(err).WithField("totalInputHours", totalInputHours).Error()
+		return nil, nil, err
 	}
 	remainingHours := totalInputHours - feeHours
 
@@ -141,7 +145,9 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 				return nil, nil, err
 			}
 		default:
-			return nil, nil, ErrInvalidHoursSelectionType
+			// This should have been caught by params.Validate()
+			logger.Panic("Invalid HoursSelection.Mode")
+			return nil, nil, errors.New("Invalid HoursSelection.Type")
 		}
 
 		for i, out := range p.To {
@@ -150,7 +156,9 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 		}
 
 	default:
-		return nil, nil, ErrInvalidHoursSelectionMode
+		// This should have been caught by params.Validate()
+		logger.Panic("Invalid HoursSelection.Type")
+		return nil, nil, errors.New("Invalid HoursSelection.Type")
 	}
 
 	totalOutHours, err := txn.OutputHours()
@@ -161,12 +169,12 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 	// Make sure we have enough coins and coin hours
 	// If we don't, and we called ChooseSpends, then ChooseSpends has a bug, as it should have returned this error already
 	if totalOutCoins > totalInputCoins {
-		logger.WithError(ErrInsufficientBalance).Error("Insufficient coins after choosing spends, this should not occur")
+		logger.Critical().WithError(ErrInsufficientBalance).Error("Insufficient coins after choosing spends, this should not occur")
 		return nil, nil, ErrInsufficientBalance
 	}
 
 	if totalOutHours > remainingHours {
-		logger.WithError(fee.ErrTxnInsufficientCoinHours).Error("Insufficient hours after choosing spends or distributing hours, this should not occur")
+		logger.Critical().WithError(fee.ErrTxnInsufficientCoinHours).Error("Insufficient hours after choosing spends or distributing hours, this should not occur")
 		return nil, nil, fee.ErrTxnInsufficientCoinHours
 	}
 
@@ -238,8 +246,6 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 			return nil, nil, errors.New("share factor is 1.0 but changeHours > 0 unexpectedly")
 		}
 		p.HoursSelection.ShareFactor = &oneDecimal
-		// TODO -- this might be the cause of the reported create transaction slowness or crashes,
-		// if the decimal package has a bug, the previous check to stop infinite looping will fail
 		return Create(p, auxs, headTime)
 	}
 

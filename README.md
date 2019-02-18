@@ -294,12 +294,22 @@ We have two branches: `master` and `develop`.
 ### Modules
 
 * `api` - REST API interface
-* `cipher` - cryptographic library
+* `cipher` - cryptographic library (key generation, addresses, hashes)
+* `cipher/base58` - Base58 encoding
+* `cipher/encoder` - reflect-based deterministic runtime binary encoder
+* `cipher/encrypt` - at-rest data encryption (chacha20poly1305+scrypt)
+* `cipher/go-bip39` - BIP-39 seed generation
 * `cli` - CLI library
-* `coin` - blockchain data structures
+* `coin` - blockchain data structures (blocks, transactions, unspent outputs)
 * `daemon` - top-level application manager, combining all components (networking, database, wallets)
 * `daemon/gnet` - networking library
 * `daemon/pex` - peer management
+* `params` - configurable transaction verification parameters
+* `readable` - JSON-encodable representations of internal structures
+* `skycoin` - core application initialization and configuration
+* `testutil` - testing utility methods
+* `transaction` - methods for creating transactions
+* `util` - miscellaneous utilities
 * `visor` - top-level blockchain database layer
 * `visor/blockdb` - low-level blockchain database layer
 * `visor/historydb` - low-level blockchain database layer for historical blockchain metadata
@@ -311,6 +321,7 @@ Skycoin implements client libraries which export core functionality for usage fr
 other programming languages.
 
 * [libskycoin C client library and SWIG interface](https://github.com/skycoin/libskycoin)
+* [skycoin-lite: Javascript and mobile bindings](https://github.com/skycoin/skycoin-lite)
 
 ### Running Tests
 

@@ -11,6 +11,17 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 )
 
+var (
+	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
+	ErrInsufficientBalance = NewError(errors.New("balance is not sufficient"))
+	// ErrInsufficientHours is returned if a wallet does not have enough hours for a spend with requested hours
+	ErrInsufficientHours = NewError(errors.New("hours are not sufficient"))
+	// ErrZeroSpend is returned if a transaction is trying to spend 0 coins
+	ErrZeroSpend = NewError(errors.New("zero spend amount"))
+	// ErrNoUnspents is returned if a wallet has no unspents to spend
+	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
+)
+
 // UxBalance is an intermediate representation of a UxOut for sorting and spend choosing
 type UxBalance struct {
 	Hash           cipher.SHA256

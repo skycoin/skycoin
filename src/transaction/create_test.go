@@ -82,19 +82,19 @@ func TestCreate(t *testing.T) {
 
 	changeAddress := testutil.MakeAddress()
 
-	// validParams := Params{
-	// 	HoursSelection: HoursSelection{
-	// 		Type: HoursSelectionTypeManual,
-	// 	},
-	// 	ChangeAddress: &changeAddress,
-	// 	To: []coin.TransactionOutput{
-	// 		{
-	// 			Address: addrs[0],
-	// 			Hours:   10,
-	// 			Coins:   1e6,
-	// 		},
-	// 	},
-	// }
+	validParams := Params{
+		HoursSelection: HoursSelection{
+			Type: HoursSelectionTypeManual,
+		},
+		ChangeAddress: &changeAddress,
+		To: []coin.TransactionOutput{
+			{
+				Address: addrs[0],
+				Hours:   10,
+				Coins:   1e6,
+			},
+		},
+	}
 
 	newShareFactor := func(a string) *decimal.Decimal {
 		d, err := decimal.NewFromString(a)
@@ -637,6 +637,13 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			err: fee.ErrTxnNoFee,
+		},
+
+		{
+			name:     "duplicate unspent output",
+			unspents: append(uxouts, uxouts[:2]...),
+			params:   validParams,
+			err:      errors.New("Duplicate UxBalance in array"),
 		},
 	}
 

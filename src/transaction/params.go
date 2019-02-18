@@ -34,38 +34,26 @@ const (
 )
 
 var (
-	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
-	ErrInsufficientBalance = NewError(errors.New("balance is not sufficient"))
-	// ErrInsufficientHours is returned if a wallet does not have enough hours for a spend with requested hours
-	ErrInsufficientHours = NewError(errors.New("hours are not sufficient"))
-	// ErrZeroSpend is returned if a transaction is trying to spend 0 coins
-	ErrZeroSpend = NewError(errors.New("zero spend amount"))
-	// ErrInvalidHoursSelectionMode for invalid HoursSelection mode values
-	ErrInvalidHoursSelectionMode = NewError(errors.New("invalid hours selection mode"))
-	// ErrInvalidHoursSelectionType for invalid HoursSelection type values
-	ErrInvalidHoursSelectionType = NewError(errors.New("invalid hours selection type"))
-	// ErrNoUnspents is returned if a wallet has no unspents to spend
-	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
 	// ErrNullChangeAddress ChangeAddress must not be the null address
 	ErrNullChangeAddress = NewError(errors.New("ChangeAddress must not be the null address"))
-	// ErrMissingTo To is required
-	ErrMissingTo = NewError(errors.New("To is required"))
-	// ErrZeroCoinsTo To.Coins must not be zero
-	ErrZeroCoinsTo = NewError(errors.New("To.Coins must not be zero"))
-	// ErrNullAddressTo To.Address must not be the null address
-	ErrNullAddressTo = NewError(errors.New("To.Address must not be the null address"))
-	// ErrDuplicateTo To contains duplicate values
-	ErrDuplicateTo = NewError(errors.New("To contains duplicate values"))
-	// ErrZeroToHoursAuto To.Hours must be zero for auto type hours selection
-	ErrZeroToHoursAuto = NewError(errors.New("To.Hours must be zero for auto type hours selection"))
-	// ErrMissingModeAuto HoursSelection.Mode is required for auto type hours selection
-	ErrMissingModeAuto = NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
-	// ErrInvalidHoursSelMode Invalid HoursSelection.Mode
-	ErrInvalidHoursSelMode = NewError(errors.New("Invalid HoursSelection.Mode"))
-	// ErrInvalidModeManual HoursSelection.Mode cannot be used for manual type hours selection
-	ErrInvalidModeManual = NewError(errors.New("HoursSelection.Mode cannot be used for manual type hours selection"))
-	// ErrInvalidHoursSelType Invalid HoursSelection.Type
-	ErrInvalidHoursSelType = NewError(errors.New("Invalid HoursSelection.Type"))
+	// ErrMissingReceivers To is required
+	ErrMissingReceivers = NewError(errors.New("To is required"))
+	// ErrZeroCoinsReceiver To.Coins must not be zero
+	ErrZeroCoinsReceiver = NewError(errors.New("To.Coins must not be zero"))
+	// ErrNullAddressReceiver To.Address must not be the null address
+	ErrNullAddressReceiver = NewError(errors.New("To.Address must not be the null address"))
+	// ErrDuplicateReceiver To contains duplicate values
+	ErrDuplicateReceiver = NewError(errors.New("To contains duplicate values"))
+	// ErrReceiverZeroHoursAuto To.Hours must be zero for auto type hours selection
+	ErrReceiverZeroHoursAuto = NewError(errors.New("To.Hours must be zero for auto type hours selection"))
+	// ErrMissingHoursSelectionModeAuto HoursSelection.Mode is required for auto type hours selection
+	ErrMissingHoursSelectionModeAuto = NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
+	// ErrInvalidHoursSelelectionMode Invalid HoursSelection.Mode
+	ErrInvalidHoursSelelectionMode = NewError(errors.New("Invalid HoursSelection.Mode"))
+	// ErrInvalidHoursSelectionModeManual HoursSelection.Mode cannot be used for manual type hours selection
+	ErrInvalidHoursSelectionModeManual = NewError(errors.New("HoursSelection.Mode cannot be used for manual type hours selection"))
+	// ErrInvalidHoursSelectionType Invalid HoursSelection.Type
+	ErrInvalidHoursSelectionType = NewError(errors.New("Invalid HoursSelection.Type"))
 	// ErrMissingShareFactor HoursSelection.ShareFactor must be set for share mode
 	ErrMissingShareFactor = NewError(errors.New("HoursSelection.ShareFactor must be set for share mode"))
 	// ErrInvalidShareFactor HoursSelection.ShareFactor can only be used for share mode
@@ -95,16 +83,16 @@ func (c Params) Validate() error {
 	}
 
 	if len(c.To) == 0 {
-		return ErrMissingTo
+		return ErrMissingReceivers
 	}
 
 	for _, to := range c.To {
 		if to.Coins == 0 {
-			return ErrZeroCoinsTo
+			return ErrZeroCoinsReceiver
 		}
 
 		if to.Address.Null() {
-			return ErrNullAddressTo
+			return ErrNullAddressReceiver
 		}
 	}
 
@@ -119,32 +107,32 @@ func (c Params) Validate() error {
 	}
 
 	if len(outputs) != len(c.To) {
-		return ErrDuplicateTo
+		return ErrDuplicateReceiver
 	}
 
 	switch c.HoursSelection.Type {
 	case HoursSelectionTypeAuto:
 		for _, to := range c.To {
 			if to.Hours != 0 {
-				return ErrZeroToHoursAuto
+				return ErrReceiverZeroHoursAuto
 			}
 		}
 
 		switch c.HoursSelection.Mode {
 		case HoursSelectionModeShare:
 		case "":
-			return ErrMissingModeAuto
+			return ErrMissingHoursSelectionModeAuto
 		default:
-			return ErrInvalidHoursSelMode
+			return ErrInvalidHoursSelelectionMode
 		}
 
 	case HoursSelectionTypeManual:
 		if c.HoursSelection.Mode != "" {
-			return ErrInvalidModeManual
+			return ErrInvalidHoursSelectionModeManual
 		}
 
 	default:
-		return ErrInvalidHoursSelType
+		return ErrInvalidHoursSelectionType
 	}
 
 	if c.HoursSelection.ShareFactor == nil {

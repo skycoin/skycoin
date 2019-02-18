@@ -38,6 +38,27 @@ func (e ErrUnspentNotExist) Error() string {
 	return fmt.Sprintf("unspent output of %s does not exist", e.UxID)
 }
 
+// AddressHashes maps addresses to a set of hashes
+type AddressHashes map[cipher.Address][]cipher.SHA256
+
+// Flatten flattens all hash sets from AddressHashes to one slice
+func (a AddressHashes) Flatten() []cipher.SHA256 {
+	total := 0
+	for _, h := range a {
+		total += len(h)
+	}
+
+	hashes := make([]cipher.SHA256, total)
+
+	i := 0
+	for _, h := range a {
+		copy(hashes[i:], h)
+		i += len(h)
+	}
+
+	return hashes
+}
+
 type unspentMeta struct{}
 
 func (m unspentMeta) getXorHash(tx *dbutil.Tx) (cipher.SHA256, error) {
@@ -464,6 +485,22 @@ func (up *Unspents) Len(tx *dbutil.Tx) (uint64, error) {
 // Contains check if the hash of uxout does exist in the pool
 func (up *Unspents) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, error) {
 	return dbutil.BucketHasKey(tx, UnspentPoolBkt, h[:])
+}
+
+// GetUnspentHashesOfAddrs returns a map of addresses to their unspent output hashes
+func (up *Unspents) GetUnspentHashesOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (AddressHashes, error) {
+	addrHashes := make(AddressHashes, len(addrs))
+
+	for _, addr := range addrs {
+		hashes, err := up.poolAddrIndex.get(tx, addr)
+		if err != nil {
+			return nil, err
+		}
+
+		addrHashes[addr] = hashes
+	}
+
+	return addrHashes, nil
 }
 
 // GetUnspentsOfAddrs returns a map of addresses to their unspent outputs

@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"testing"
 	"time"
@@ -27,7 +28,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 const (
@@ -1849,29 +1849,29 @@ func TestGetTransactions(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+			matchDBTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 				return true
 			})
 
 			his := newHistoryerMock2()
 			uncfmTxnPool := NewUnconfirmedTransactionPoolerMock2()
 			for addr, txns := range tc.addrTxns {
-				his.On("GetTransactionsForAddress", matchTxn, addr).Return(txns.Txns, nil)
+				his.On("GetTransactionsForAddress", matchDBTx, addr).Return(txns.Txns, nil)
 				his.txns = append(his.txns, txns.Txns...)
 
-				uncfmTxnPool.On("GetUnspentsOfAddr", matchTxn, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
+				uncfmTxnPool.On("GetUnspentsOfAddr", matchDBTx, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
 				for i, uncfmTxn := range txns.UncfmTxns {
-					uncfmTxnPool.On("Get", matchTxn, uncfmTxn.Transaction.Hash()).Return(&txns.UncfmTxns[i], nil)
+					uncfmTxnPool.On("Get", matchDBTx, uncfmTxn.Transaction.Hash()).Return(&txns.UncfmTxns[i], nil)
 				}
 				uncfmTxnPool.txns = append(uncfmTxnPool.txns, txns.UncfmTxns...)
 			}
 
 			bc := &MockBlockchainer{}
 			for i, b := range tc.blocks {
-				bc.On("GetSignedBlockBySeq", matchTxn, b.Seq()).Return(&tc.blocks[i], nil)
+				bc.On("GetSignedBlockBySeq", matchDBTx, b.Seq()).Return(&tc.blocks[i], nil)
 			}
 
-			bc.On("HeadSeq", matchTxn).Return(tc.bcHeadSeq, true, nil)
+			bc.On("HeadSeq", matchDBTx).Return(tc.bcHeadSeq, true, nil)
 
 			db, shutdown := prepareDB(t)
 			defer shutdown()
@@ -2164,7 +2164,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestGetCreateTransactionAuxs(t *testing.T) {
+func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 	allAddrs := make([]cipher.Address, 10)
 	for i := range allAddrs {
 		allAddrs[i] = testutil.MakeAddress()
@@ -2181,355 +2181,22 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 	}
 
 	cases := []struct {
-		name         string
-		params       wallet.CreateTransactionParams
-		addrs        []cipher.Address
-		expectedAuxs coin.AddressUxOuts
-		err          error
+		name              string
+		ignoreUnconfirmed bool
+		uxOuts            []cipher.SHA256
+		expectedAuxs      coin.AddressUxOuts
+		err               error
 
-		rawTxnsRet            coin.Transactions
-		getArrayInputs        []cipher.SHA256
-		getArrayRet           coin.UxArray
-		getUnspentsOfAddrsRet coin.AddressUxOuts
+		forEachErr      error
+		unconfirmedTxns coin.Transactions
+		getArrayInputs  []cipher.SHA256
+		getArrayRet     coin.UxArray
+		getArrayErr     error
 	}{
 		{
-			name:  "all addresses, ok",
-			addrs: allAddrs,
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[0:4],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-			getUnspentsOfAddrsRet: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-			expectedAuxs: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name:  "all addresses, unconfirmed spends",
-			addrs: allAddrs,
-			err:   ErrSpendingUnconfirmed,
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[0:4],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[0],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[0],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        allAddrs[3],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-		},
-
-		{
-			name: "some addresses, ok",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					Addresses: allAddrs[0:4],
-				},
-			},
-			addrs: allAddrs[0:4],
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[0:4],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-			getUnspentsOfAddrsRet: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-			expectedAuxs: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name: "some addresses, unconfirmed spends",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					Addresses: allAddrs[0:4],
-				},
-			},
-			addrs: allAddrs[0:4],
-			err:   ErrSpendingUnconfirmed,
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[0:4],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[0],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[0],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        allAddrs[3],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-		},
-
-		{
-			name: "some addresses, unconfirmed spends ignored",
-			params: wallet.CreateTransactionParams{
-				IgnoreUnconfirmed: true,
-				Wallet: wallet.CreateTransactionWalletParams{
-					Addresses: allAddrs[0:5],
-				},
-			},
-			addrs: allAddrs[0:5],
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-			},
-			getArrayInputs: hashes[0:2],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[7],
-						Address:        allAddrs[4],
-					},
-				},
-			},
-			getUnspentsOfAddrsRet: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-				allAddrs[4]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[7],
-							Address:        allAddrs[4],
-						},
-					},
-				},
-			},
-			expectedAuxs: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name: "some addresses, unknown address",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					Addresses: []cipher.Address{testutil.MakeAddress()},
-				},
-			},
-			addrs: allAddrs,
-			err:   ErrUnknownAddress,
-		},
-
-		{
-			name: "uxouts specified, ok",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					UxOuts: hashes[5:10],
-				},
-			},
-			rawTxnsRet: coin.Transactions{
+			name:   "uxouts specified, ok",
+			uxOuts: hashes[5:10],
+			unconfirmedTxns: coin.Transactions{
 				coin.Transaction{
 					In: hashes[0:2],
 				},
@@ -2585,14 +2252,11 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 		},
 
 		{
-			name: "uxouts specified, unconfirmed spend",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					UxOuts: hashes[0:4],
-				},
-			},
-			err: ErrSpendingUnconfirmed,
-			rawTxnsRet: coin.Transactions{
+			name:       "uxouts specified, unconfirmed spend",
+			uxOuts:     hashes[0:4],
+			err:        ErrSpendingUnconfirmed,
+			forEachErr: ErrSpendingUnconfirmed,
+			unconfirmedTxns: coin.Transactions{
 				coin.Transaction{
 					In: hashes[6:10],
 				},
@@ -2603,14 +2267,10 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 		},
 
 		{
-			name: "uxouts specified, unconfirmed spend ignored",
-			params: wallet.CreateTransactionParams{
-				IgnoreUnconfirmed: true,
-				Wallet: wallet.CreateTransactionWalletParams{
-					UxOuts: hashes[5:10],
-				},
-			},
-			rawTxnsRet: coin.Transactions{
+			name:              "uxouts specified, unconfirmed spend ignored",
+			ignoreUnconfirmed: true,
+			uxOuts:            hashes[5:10],
+			unconfirmedTxns: coin.Transactions{
 				coin.Transaction{
 					In: hashes[0:2],
 				},
@@ -2643,14 +2303,15 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 		},
 
 		{
-			name: "uxouts specified, unknown uxout",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					UxOuts: hashes[5:10],
-				},
+			name:   "uxouts specified, unknown uxout",
+			uxOuts: hashes[5:10],
+			err: blockdb.ErrUnspentNotExist{
+				UxID: "foo",
 			},
-			err: ErrUnknownUxOut,
-			rawTxnsRet: coin.Transactions{
+			getArrayErr: blockdb.ErrUnspentNotExist{
+				UxID: "foo",
+			},
+			unconfirmedTxns: coin.Transactions{
 				coin.Transaction{
 					In: hashes[0:2],
 				},
@@ -2670,7 +2331,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 		},
 	}
 
-	matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+	matchDBTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 		return true
 	})
 
@@ -2690,38 +2351,286 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 				DB:          db,
 			}
 
-			unconfirmed.On("AllRawTransactions", matchTxn).Return(tc.rawTxnsRet, nil)
-			unspent.On("GetArray", matchTxn, mock.MatchedBy(func(args []cipher.SHA256) bool {
+			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+				return true
+			})).Return(tc.forEachErr).Run(func(args mock.Arguments) {
+				// Simulate the ForEach callback method, unless ForEach was configured to return an error
+				if tc.forEachErr != nil {
+					return
+				}
+				fn := args.Get(1).(func(cipher.SHA256, UnconfirmedTransaction) error)
+				for _, u := range tc.unconfirmedTxns {
+					fn(u.Hash(), UnconfirmedTransaction{
+						Transaction: u,
+					})
+				}
+			})
+
+			unspent.On("GetArray", matchDBTx, mock.MatchedBy(func(args []cipher.SHA256) bool {
 				// Compares two []coin.UxOuts for equality, ignoring the order of elements in the slice
 				if len(args) != len(tc.getArrayInputs) {
 					return false
 				}
 
-				inputsMap := make(map[cipher.SHA256]struct{}, len(tc.getArrayInputs))
-				for _, h := range tc.getArrayInputs {
-					_, ok := inputsMap[h]
-					require.False(t, ok)
-					inputsMap[h] = struct{}{}
-				}
+				x := make([]cipher.SHA256, len(tc.getArrayInputs))
+				copy(x, tc.getArrayInputs)
+				y := make([]cipher.SHA256, len(args))
+				copy(y, args)
 
-				for _, h := range args {
-					_, ok := inputsMap[h]
-					if !ok {
-						return false
-					}
-				}
+				sort.Slice(x, func(a, b int) bool {
+					return bytes.Compare(x[a][:], x[b][:]) < 0
+				})
+				sort.Slice(y, func(a, b int) bool {
+					return bytes.Compare(y[a][:], y[b][:]) < 0
+				})
 
-				return true
-			})).Return(tc.getArrayRet, nil)
-			if tc.getUnspentsOfAddrsRet != nil {
-				unspent.On("GetUnspentsOfAddrs", matchTxn, tc.addrs).Return(tc.getUnspentsOfAddrsRet, nil)
-			}
+				return reflect.DeepEqual(x, y)
+			})).Return(tc.getArrayRet, tc.getArrayErr)
+
 			bc.On("Unspent").Return(unspent)
 
 			var auxs coin.AddressUxOuts
 			err := v.DB.View("", func(tx *dbutil.Tx) error {
 				var err error
-				auxs, err = v.getCreateTransactionAuxs(tx, tc.params, allAddrs)
+				auxs, err = v.getCreateTransactionAuxsUxOut(tx, tc.uxOuts, tc.ignoreUnconfirmed)
+				return err
+			})
+
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expectedAuxs, auxs)
+		})
+	}
+}
+
+func TestGetCreateTransactionAuxsAddress(t *testing.T) {
+	allAddrs := make([]cipher.Address, 10)
+	for i := range allAddrs {
+		allAddrs[i] = testutil.MakeAddress()
+	}
+
+	hashes := make([]cipher.SHA256, 20)
+	for i := range hashes {
+		hashes[i] = testutil.RandSHA256(t)
+	}
+
+	srcTxns := make([]cipher.SHA256, 20)
+	for i := range srcTxns {
+		srcTxns[i] = testutil.RandSHA256(t)
+	}
+
+	cases := []struct {
+		name              string
+		ignoreUnconfirmed bool
+		addrs             []cipher.Address
+		expectedAuxs      coin.AddressUxOuts
+		err               error
+
+		forEachErr                 error
+		unconfirmedTxns            coin.Transactions
+		getArrayInputs             []cipher.SHA256
+		getArrayRet                coin.UxArray
+		getArrayErr                error
+		getUnspentHashesOfAddrsRet blockdb.AddressHashes
+	}{
+		{
+			name:           "ok",
+			addrs:          allAddrs,
+			getArrayInputs: hashes[0:4],
+			getArrayRet: coin.UxArray{
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[5],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[5],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[6],
+						Address:        allAddrs[3],
+					},
+				},
+			},
+			getUnspentHashesOfAddrsRet: blockdb.AddressHashes{
+				allAddrs[1]: hashes[0:2],
+				allAddrs[3]: hashes[2:4],
+			},
+			expectedAuxs: coin.AddressUxOuts{
+				allAddrs[1]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+				},
+				allAddrs[3]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[6],
+							Address:        allAddrs[3],
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name:       "err, unconfirmed spends",
+			addrs:      allAddrs,
+			err:        ErrSpendingUnconfirmed,
+			forEachErr: ErrSpendingUnconfirmed,
+			getUnspentHashesOfAddrsRet: blockdb.AddressHashes{
+				allAddrs[1]: hashes[0:2],
+				allAddrs[3]: hashes[2:4],
+			},
+		},
+
+		{
+			name:              "ignore unconfirmed",
+			ignoreUnconfirmed: true,
+			addrs:             allAddrs,
+			unconfirmedTxns: coin.Transactions{
+				{
+					In: []cipher.SHA256{hashes[1]},
+				},
+				{
+					In: []cipher.SHA256{hashes[2]},
+				},
+			},
+			getArrayInputs: []cipher.SHA256{hashes[0], hashes[3]},
+			getArrayRet: coin.UxArray{
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[5],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[5],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[6],
+						Address:        allAddrs[3],
+					},
+				},
+			},
+			getUnspentHashesOfAddrsRet: blockdb.AddressHashes{
+				allAddrs[1]: hashes[0:2],
+				allAddrs[3]: hashes[2:4],
+			},
+			expectedAuxs: coin.AddressUxOuts{
+				allAddrs[1]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+				},
+				allAddrs[3]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[6],
+							Address:        allAddrs[3],
+						},
+					},
+				},
+			},
+		},
+	}
+
+	matchDBTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+		return true
+	})
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, shutdown := testutil.PrepareDB(t)
+			defer shutdown()
+
+			unconfirmed := &MockUnconfirmedTransactionPooler{}
+			bc := &MockBlockchainer{}
+			unspent := &MockUnspentPooler{}
+			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
+
+			v := &Visor{
+				Unconfirmed: unconfirmed,
+				Blockchain:  bc,
+				DB:          db,
+			}
+
+			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+				return true
+			})).Return(tc.forEachErr).Run(func(args mock.Arguments) {
+				// Simulate the ForEach callback method, unless ForEach was configured to return an error
+				if tc.forEachErr != nil {
+					return
+				}
+				fn := args.Get(1).(func(cipher.SHA256, UnconfirmedTransaction) error)
+				for _, u := range tc.unconfirmedTxns {
+					fn(u.Hash(), UnconfirmedTransaction{
+						Transaction: u,
+					})
+				}
+			})
+
+			unspent.On("GetArray", matchDBTx, mock.MatchedBy(func(args []cipher.SHA256) bool {
+				// Compares two []coin.UxOuts for equality, ignoring the order of elements in the slice
+				if len(args) != len(tc.getArrayInputs) {
+					return false
+				}
+
+				x := make([]cipher.SHA256, len(tc.getArrayInputs))
+				copy(x, tc.getArrayInputs)
+				y := make([]cipher.SHA256, len(args))
+				copy(y, args)
+
+				sort.Slice(x, func(a, b int) bool {
+					return bytes.Compare(x[a][:], x[b][:]) < 0
+				})
+				sort.Slice(y, func(a, b int) bool {
+					return bytes.Compare(y[a][:], y[b][:]) < 0
+				})
+
+				return reflect.DeepEqual(x, y)
+			})).Return(tc.getArrayRet, tc.getArrayErr)
+
+			unspent.On("GetUnspentHashesOfAddrs", matchDBTx, tc.addrs).Return(tc.getUnspentHashesOfAddrsRet, nil)
+
+			bc.On("Unspent").Return(unspent)
+
+			var auxs coin.AddressUxOuts
+			err := v.DB.View("", func(tx *dbutil.Tx) error {
+				var err error
+				auxs, err = v.getCreateTransactionAuxsAddress(tx, tc.addrs, tc.ignoreUnconfirmed)
 				return err
 			})
 
@@ -3122,7 +3031,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	cases = append(cases, signedOnlyCases...)
 	cases = append(cases, unsignedOnlyCases...)
 
-	matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+	matchDBTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 		return true
 	})
 
@@ -3136,15 +3045,15 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			unspent := &MockUnspentPooler{}
 
 			bc.On("Unspent").Return(unspent)
-			bc.On("Head", matchTxn).Return(&head, nil)
+			bc.On("Head", matchDBTx).Return(&head, nil)
 			if tc.getHistoryTxnRet != nil {
-				bc.On("GetSignedBlockBySeq", matchTxn, tc.getHistoryTxnRet.BlockSeq-1).Return(tc.getSignedBlocksBySeqRet, tc.getSignedBlocksBySeqErr)
+				bc.On("GetSignedBlockBySeq", matchDBTx, tc.getHistoryTxnRet.BlockSeq-1).Return(tc.getSignedBlocksBySeqRet, tc.getSignedBlocksBySeqErr)
 			}
 
-			unspent.On("GetArray", matchTxn, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
+			unspent.On("GetArray", matchDBTx, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
 
-			history.On("GetTransaction", matchTxn, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
-			history.On("GetUxOuts", matchTxn, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
+			history.On("GetTransaction", matchDBTx, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
+			history.On("GetUxOuts", matchDBTx, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
 
 			v := &Visor{
 				Blockchain: bc,

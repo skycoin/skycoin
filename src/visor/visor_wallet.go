@@ -495,30 +495,13 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 
 // getCreateTransactionAuxsAddress returns the unspent outputs for a set of addresses,
 // but returns an error if any of the unspents are in the unconfirmed outputs pool
-func (vs *Visor) getCreateTransactionAuxsAddress(tx *dbutil.Tx, addrs []cipher.Address, ignoredUnconfirmed bool) (coin.AddressUxOuts, error) {
-	unconfirmedAuxs, err := vs.unconfirmedSpendsOfAddresses(tx, addrs)
+func (vs *Visor) getCreateTransactionAuxsAddress(tx *dbutil.Tx, addrs []cipher.Address, ignoreUnconfirmed bool) (coin.AddressUxOuts, error) {
+	// Get all address unspent hashes
+	addrHashes, err := vs.Blockchain.Unspent().GetUnspentHashesOfAddrs(tx, addrs)
 	if err != nil {
-		err = fmt.Errorf("UnconfirmedSpendsOfAddresses failed: %v", err)
+		err = fmt.Errorf("GetUnspentHashesOfAddrs failed: %v", err)
 		return nil, err
 	}
 
-	if !ignoredUnconfirmed {
-		// Check that this is not trying to spend unconfirmed outputs
-		if len(unconfirmedAuxs) > 0 {
-			return nil, ErrSpendingUnconfirmed
-		}
-	}
-
-	auxs, err := vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
-	if err != nil {
-		err = fmt.Errorf("GetUnspentsOfAddrs failed: %v", err)
-		return nil, err
-	}
-
-	// Filter unconfirmed
-	if ignoredUnconfirmed && len(unconfirmedAuxs) > 0 {
-		auxs = auxs.Sub(unconfirmedAuxs)
-	}
-
-	return auxs, nil
+	return vs.getCreateTransactionAuxsUxOut(tx, addrHashes.Flatten(), ignoreUnconfirmed)
 }

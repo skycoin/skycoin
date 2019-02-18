@@ -350,10 +350,6 @@ func VerifyCreatedInvariants(p Params, txn *coin.Transaction, inputs []UxBalance
 		return errors.New("Number of signatures does not match number of inputs")
 	}
 
-	if !txn.IsFullyUnsigned() {
-		return errors.New("Transaction is not fully unsigned")
-	}
-
 	if len(txn.In) != len(inputs) {
 		return errors.New("Number of UxOut inputs does not match number of transaction inputs")
 	}

@@ -33,10 +33,6 @@ func NewUserError(err error) error {
 var (
 	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
 	ErrSpendingUnconfirmed = NewUserError(errors.New("Please spend after your pending transaction is confirmed"))
-	// ErrWalletUnknownAddress is returned if an address is not found in a wallet
-	ErrWalletUnknownAddress = NewUserError(errors.New("Address not found in wallet"))
-	// ErrWalletUnknownUxOut is returned if a uxout is not owned by any address in a wallet
-	ErrWalletUnknownUxOut = NewUserError(errors.New("UxOut is not owned by any address in the wallet"))
 	// ErrDuplicateUxOuts UxOuts contains duplicate values
 	ErrDuplicateUxOuts = NewUserError(errors.New("UxOuts contains duplicate values"))
 	// ErrIncludesNullAddress Addresses must not contain the null address
@@ -307,7 +303,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 		// Check that requested addresses are in the wallet
 		for _, a := range addrs {
 			if _, ok := allAddrsMap[a]; !ok {
-				return nil, nil, ErrWalletUnknownAddress
+				return nil, nil, wallet.ErrUnknownAddress
 			}
 		}
 	}
@@ -331,7 +327,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 			// Check that UxOut addresses are in the wallet,
 			for a := range auxs {
 				if _, ok := allAddrsMap[a]; !ok {
-					return ErrWalletUnknownUxOut
+					return wallet.ErrUnknownUxOut
 				}
 			}
 		} else {

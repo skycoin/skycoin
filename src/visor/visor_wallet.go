@@ -227,9 +227,6 @@ func (p CreateTransactionParams) Validate() error {
 
 // WalletCreateTransactionSigned creates a signed transaction based upon the parameters in CreateTransactionParams
 func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
-	var txn *coin.Transaction
-	var inputs []TransactionInput
-
 	// Validate params before unlocking wallet
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -237,6 +234,9 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 	if err := wp.Validate(); err != nil {
 		return nil, nil, err
 	}
+
+	var txn *coin.Transaction
+	var inputs []TransactionInput
 
 	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
 		var err error
@@ -251,9 +251,6 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 
 // WalletCreateTransaction creates a transaction based upon the parameters in CreateTransactionParams
 func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
-	var txn *coin.Transaction
-	var inputs []TransactionInput
-
 	// Validate params before opening wallet
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -261,6 +258,9 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 	if err := wp.Validate(); err != nil {
 		return nil, nil, err
 	}
+
+	var txn *coin.Transaction
+	var inputs []TransactionInput
 
 	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
 		var err error
@@ -274,9 +274,6 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 }
 
 func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed TxnSignedFlag) (*coin.Transaction, []TransactionInput, error) {
-	var txn *coin.Transaction
-	var uxb []transaction.UxBalance
-
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -308,65 +305,13 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 		}
 	}
 
+	var txn *coin.Transaction
+	var uxb []transaction.UxBalance
+
 	if err := vs.DB.View(methodName, func(tx *dbutil.Tx) error {
-		head, err := vs.Blockchain.Head(tx)
-		if err != nil {
-			logger.WithError(err).Error("Blockchain.Head failed")
-			return err
-		}
-
-		// Get mapping of addresses to uxOuts based upon CreateTransactionParams
-		var auxs coin.AddressUxOuts
-		if len(wp.UxOuts) != 0 {
-			var err error
-			auxs, err = vs.getCreateTransactionAuxsUxOut(tx, wp.UxOuts, wp.IgnoreUnconfirmed)
-			if err != nil {
-				return err
-			}
-
-			// Check that UxOut addresses are in the wallet,
-			for a := range auxs {
-				if _, ok := allAddrsMap[a]; !ok {
-					return wallet.ErrUnknownUxOut
-				}
-			}
-		} else {
-			var err error
-			auxs, err = vs.getCreateTransactionAuxsAddress(tx, addrs, wp.IgnoreUnconfirmed)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Create and sign transaction
-		switch signed {
-		case TxnSigned:
-			txn, uxb, err = w.CreateTransactionSigned(p, auxs, head.Time())
-		case TxnUnsigned:
-			txn, uxb, err = w.CreateTransaction(p, auxs, head.Time())
-		default:
-			logger.Panic("Invalid TxnSignedFlag")
-		}
-		if err != nil {
-			logger.Critical().WithError(err).Errorf("%s failed", methodName)
-			return err
-		}
-
-		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-		// because the wallet is not aware of visor-level constraints.
-		// Check that the transaction is valid before returning it to the caller.
-		// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
-		if err := VerifySingleTxnUserConstraints(*txn); err != nil {
-			logger.WithError(err).Error("Created transaction violates transaction user constraints")
-			return err
-		}
-
-		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
-			logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
-			return err
-		}
-
-		return nil
+		var err error
+		txn, uxb, err = vs.walletCreateTransactionTx(tx, methodName, w, p, wp, signed, addrs, allAddrsMap)
+		return err
 	}); err != nil {
 		return nil, nil, err
 	}
@@ -376,11 +321,76 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 	return txn, inputs, nil
 }
 
-// CreateTransaction creates an unsigned transaction from requested coin.UxOut hashes
-func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
+func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
+	w *wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed TxnSignedFlag,
+	addrs []cipher.Address, allAddrsMap map[cipher.Address]struct{}) (*coin.Transaction, []transaction.UxBalance, error) {
+	// Note: assumes inputs have already been validated by walletCreateTransaction
+
+	head, err := vs.Blockchain.Head(tx)
+	if err != nil {
+		logger.WithError(err).Error("Blockchain.Head failed")
+		return nil, nil, err
+	}
+
+	// Get mapping of addresses to uxOuts based upon CreateTransactionParams
+	var auxs coin.AddressUxOuts
+	if len(wp.UxOuts) != 0 {
+		var err error
+		auxs, err = vs.getCreateTransactionAuxsUxOut(tx, wp.UxOuts, wp.IgnoreUnconfirmed)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// Check that UxOut addresses are in the wallet,
+		for a := range auxs {
+			if _, ok := allAddrsMap[a]; !ok {
+				return nil, nil, wallet.ErrUnknownUxOut
+			}
+		}
+	} else {
+		var err error
+		auxs, err = vs.getCreateTransactionAuxsAddress(tx, addrs, wp.IgnoreUnconfirmed)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	// Create and sign transaction
 	var txn *coin.Transaction
 	var uxb []transaction.UxBalance
 
+	switch signed {
+	case TxnSigned:
+		txn, uxb, err = w.CreateTransactionSigned(p, auxs, head.Time())
+	case TxnUnsigned:
+		txn, uxb, err = w.CreateTransaction(p, auxs, head.Time())
+	default:
+		logger.Panic("Invalid TxnSignedFlag")
+	}
+	if err != nil {
+		logger.Critical().WithError(err).Errorf("%s failed", methodName)
+		return nil, nil, err
+	}
+
+	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+	// because the wallet is not aware of visor-level constraints.
+	// Check that the transaction is valid before returning it to the caller.
+	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
+	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+		logger.WithError(err).Error("Created transaction violates transaction user constraints")
+		return nil, nil, err
+	}
+
+	if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
+		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
+		return nil, nil, err
+	}
+
+	return txn, uxb, nil
+}
+
+// CreateTransaction creates an unsigned transaction from requested coin.UxOut hashes
+func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
 	// Validate parameters before starting database transaction
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -392,44 +402,13 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 		return nil, nil, errors.New("UxOuts or Addresses must not be empty")
 	}
 
+	var txn *coin.Transaction
+	var uxb []transaction.UxBalance
+
 	if err := vs.DB.View("CreateTransaction", func(tx *dbutil.Tx) error {
-		head, err := vs.Blockchain.Head(tx)
-		if err != nil {
-			logger.WithError(err).Error("Blockchain.Head failed")
-			return err
-		}
-
-		// Get mapping of addresses to uxOuts based upon CreateTransactionParams
-		var auxs coin.AddressUxOuts
-		if len(wp.UxOuts) != 0 {
-			auxs, err = vs.getCreateTransactionAuxsUxOut(tx, wp.UxOuts, wp.IgnoreUnconfirmed)
-		} else {
-			auxs, err = vs.getCreateTransactionAuxsAddress(tx, wp.Addresses, wp.IgnoreUnconfirmed)
-		}
-		if err != nil {
-			return err
-		}
-
-		txn, uxb, err = transaction.Create(p, auxs, head.Time())
-		if err != nil {
-			return err
-		}
-
-		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-		// because the wallet is not aware of visor-level constraints.
-		// Check that the transaction is valid before returning it to the caller.
-		// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
-		if err := VerifySingleTxnUserConstraints(*txn); err != nil {
-			logger.WithError(err).Error("Created transaction violates transaction user constraints")
-			return err
-		}
-
-		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
-			logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
-			return err
-		}
-
-		return nil
+		var err error
+		txn, uxb, err = vs.createTransactionTx(tx, p, wp)
+		return err
 	}); err != nil {
 		return nil, nil, err
 	}
@@ -437,6 +416,47 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 	inputs := NewTransactionInputsFromUxBalance(uxb)
 
 	return txn, inputs, nil
+}
+
+func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []transaction.UxBalance, error) {
+	// Note: assumes inputs have already been validated by walletCreateTransaction
+	head, err := vs.Blockchain.Head(tx)
+	if err != nil {
+		logger.WithError(err).Error("Blockchain.Head failed")
+		return nil, nil, err
+	}
+
+	// Get mapping of addresses to uxOuts based upon CreateTransactionParams
+	var auxs coin.AddressUxOuts
+	if len(wp.UxOuts) != 0 {
+		auxs, err = vs.getCreateTransactionAuxsUxOut(tx, wp.UxOuts, wp.IgnoreUnconfirmed)
+	} else {
+		auxs, err = vs.getCreateTransactionAuxsAddress(tx, wp.Addresses, wp.IgnoreUnconfirmed)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txn, uxb, err := transaction.Create(p, auxs, head.Time())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+	// because the wallet is not aware of visor-level constraints.
+	// Check that the transaction is valid before returning it to the caller.
+	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
+	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+		logger.WithError(err).Error("Created transaction violates transaction user constraints")
+		return nil, nil, err
+	}
+
+	if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
+		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
+		return nil, nil, err
+	}
+
+	return txn, uxb, nil
 }
 
 func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []cipher.SHA256, ignoreUnconfirmed bool) (coin.AddressUxOuts, error) {

@@ -93,6 +93,10 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     this.openDialog(HwWipeDialogComponent);
   }
 
+  confirmSeed() {
+    this.openDialog(HwRestoreSeedDialogComponent);
+  }
+
   private openDialog(dialogType) {
     this.customErrorMsg = '';
 

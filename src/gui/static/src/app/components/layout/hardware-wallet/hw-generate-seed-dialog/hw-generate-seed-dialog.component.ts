@@ -3,9 +3,11 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 
 enum States {
   Initial,
+  Processing,
   ReturnedSuccess,
   ReturnedRefused,
   Failed,
@@ -20,14 +22,25 @@ export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGener
 
   currentState: States = States.Initial;
   states = States;
+  form: FormGroup;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwGenerateSeedDialogComponent>,
     private hwWalletService: HwWalletService,
+    formBuilder: FormBuilder,
   ) {
     super(hwWalletService, dialogRef);
-    this.operationSubscription = this.hwWalletService.generateMnemonic().subscribe(
+
+    this.form = formBuilder.group({
+      words: [12, Validators.required],
+    });
+  }
+
+  startOperation() {
+    this.currentState = States.Processing;
+
+    this.operationSubscription = this.hwWalletService.generateMnemonic(this.form.controls['words'].value).subscribe(
       () => {
         this.data.requestOptionsComponentRefresh();
         this.currentState = States.ReturnedSuccess;

@@ -176,16 +176,16 @@ ipcMain.on('hwChangePin', (event, requestId) => {
   );
 });
 
-ipcMain.on('hwGenerateMnemonic', (event, requestId) => {
-  const promise = deviceWallet.devGenerateMnemonic(false);
+ipcMain.on('hwGenerateMnemonic', (event, requestId, wordCount) => {
+  const promise = deviceWallet.devGenerateMnemonic(wordCount, false);
   promise.then(
     result => { console.log("Generate mnemonic promise resolved", result); event.sender.send('hwGenerateMnemonicResponse', requestId, result); },
     error => { console.log("Generate mnemonic promise errored: ", error); event.sender.send('hwGenerateMnemonicResponse', requestId, { error: error.toString() }); }
   );
 });
 
-ipcMain.on('hwRecoverMnemonic', (event, requestId) => {
-  const promise = deviceWallet.devRecoveryDevice(false, requestSeedWordEvent);
+ipcMain.on('hwRecoverMnemonic', (event, requestId, wordCount, dryRun) => {
+  const promise = deviceWallet.devRecoveryDevice(wordCount, false, requestSeedWordEvent, dryRun);
   promise.then(
     result => { console.log("Recover mnemonic promise resolved", result); event.sender.send('hwRecoverMnemonicResponse', requestId, result); },
     error => { console.log("Recover mnemonic promise errored: ", error); event.sender.send('hwRecoverMnemonicResponse', requestId, { error: error.toString() }); }

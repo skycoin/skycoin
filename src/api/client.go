@@ -677,22 +677,14 @@ func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	return &b, nil
 }
 
-// WalletCreateTransactionRequest is sent to /api/v1/wallet/transaction
-type WalletCreateTransactionRequest struct {
-	Unsigned          bool                                 `json:"unsigned"`
-	IgnoreUnconfirmed bool                                 `json:"ignore_unconfirmed"`
-	HoursSelection    HoursSelection                       `json:"hours_selection"`
-	Wallet            WalletCreateTransactionRequestWallet `json:"wallet"`
-	ChangeAddress     *string                              `json:"change_address,omitempty"`
-	To                []Receiver                           `json:"to"`
-}
-
-// WalletCreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
-type WalletCreateTransactionRequestWallet struct {
-	ID        string   `json:"id"`
-	UxOuts    []string `json:"unspents,omitempty"`
-	Addresses []string `json:"addresses,omitempty"`
-	Password  string   `json:"password"`
+// CreateTransactionRequest is sent to /api/v2/transaction
+type CreateTransactionRequest struct {
+	IgnoreUnconfirmed bool           `json:"ignore_unconfirmed"`
+	HoursSelection    HoursSelection `json:"hours_selection"`
+	ChangeAddress     *string        `json:"change_address,omitempty"`
+	To                []Receiver     `json:"to"`
+	UxOuts            []string       `json:"unspents,omitempty"`
+	Addresses         []string       `json:"addresses,omitempty"`
 }
 
 // HoursSelection defines options for hours distribution
@@ -707,6 +699,14 @@ type Receiver struct {
 	Address string `json:"address"`
 	Coins   string `json:"coins"`
 	Hours   string `json:"hours,omitempty"`
+}
+
+// WalletCreateTransactionRequest is sent to /api/v1/wallet/transaction
+type WalletCreateTransactionRequest struct {
+	Unsigned bool   `json:"unsigned"`
+	WalletID string `json:"wallet_id"`
+	Password string `json:"password"`
+	CreateTransactionRequest
 }
 
 // WalletCreateTransaction makes a request to POST /api/v1/wallet/transaction
@@ -724,6 +724,17 @@ func (c *Client) WalletCreateTransaction(req WalletCreateTransactionRequest) (*C
 func (c *Client) WalletSignTransaction(req WalletSignTransactionRequest) (*CreateTransactionResponse, error) {
 	var r CreateTransactionResponse
 	endpoint := "/api/v2/wallet/transaction/sign"
+	ok, err := c.PostJSONV2(endpoint, req, &r)
+	if ok {
+		return &r, err
+	}
+	return nil, err
+}
+
+// CreateTransaction makes a request to POST /api/v2/transaction
+func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransactionResponse, error) {
+	var r CreateTransactionResponse
+	endpoint := "/api/v2/transaction"
 	ok, err := c.PostJSONV2(endpoint, req, &r)
 	if ok {
 		return &r, err

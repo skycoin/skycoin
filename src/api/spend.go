@@ -547,22 +547,20 @@ func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
 
 // walletCreateTransactionRequest is sent to POST /api/v1/wallet/transaction
 type walletCreateTransactionRequest struct {
+	Unsigned bool   `json:"unsigned"`
+	WalletID string `json:"wallet_id"`
+	Password string `json:"password"`
 	createTransactionRequest
-	Unsigned bool `json:"unsigned"`
-	Wallet   struct {
-		ID       string `json:"id"`
-		Password string `json:"password"`
-	} `json:"wallet"`
 }
 
 // Validate validates walletCreateTransactionRequest data
 func (r walletCreateTransactionRequest) Validate() error {
-	if r.Wallet.ID == "" {
-		return errors.New("missing wallet.id")
+	if r.WalletID == "" {
+		return errors.New("missing wallet_id")
 	}
 
-	if r.Unsigned && len(r.Wallet.Password) != 0 {
-		return errors.New("wallet.password must not be used for unsigned transactions")
+	if r.Unsigned && len(r.Password) != 0 {
+		return errors.New("password must not be used for unsigned transactions")
 	}
 
 	return r.createTransactionRequest.Validate()
@@ -601,9 +599,9 @@ func walletCreateTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		var txn *coin.Transaction
 		var inputs []visor.TransactionInput
 		if req.Unsigned {
-			txn, inputs, err = gateway.WalletCreateTransaction(req.Wallet.ID, req.TransactionParams(), req.VisorParams())
+			txn, inputs, err = gateway.WalletCreateTransaction(req.WalletID, req.TransactionParams(), req.VisorParams())
 		} else {
-			txn, inputs, err = gateway.WalletCreateTransactionSigned(req.Wallet.ID, []byte(req.Wallet.Password), req.TransactionParams(), req.VisorParams())
+			txn, inputs, err = gateway.WalletCreateTransactionSigned(req.WalletID, []byte(req.Password), req.TransactionParams(), req.VisorParams())
 		}
 		if err != nil {
 			switch err.(type) {

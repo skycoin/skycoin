@@ -28,11 +28,11 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 /* Runs HTTP API tests against a running skycoin node
@@ -3613,18 +3613,18 @@ func TestDisableWalletAPI(t *testing.T) {
 			contentType: api.ContentTypeJSON,
 			json: func() interface{} {
 				return api.WalletCreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: wallet.HoursSelectionTypeManual,
-					},
-					Wallet: api.WalletCreateTransactionRequestWallet{
-						ID: "test.wlt",
-					},
-					ChangeAddress: &changeAddress,
-					To: []api.Receiver{
-						{
-							Address: changeAddress,
-							Coins:   "0.001",
-							Hours:   "1",
+					WalletID: "test.wlt",
+					CreateTransactionRequest: api.CreateTransactionRequest{
+						HoursSelection: api.HoursSelection{
+							Type: transaction.HoursSelectionTypeManual,
+						},
+						ChangeAddress: &changeAddress,
+						To: []api.Receiver{
+							{
+								Address: changeAddress,
+								Coins:   "0.001",
+								Hours:   "1",
+							},
 						},
 					},
 				}

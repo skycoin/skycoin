@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - An empty wallet in the wallets folder will prevent the application from starting
 - Use [`skyencoder`](https://github.com/skycoin/skyencoder)-generated binary encoders/decoders for network and database data, instead of the reflect-based encoders/decoders in `cipher/encoder`.
 - Add `/api/v1/resendUnconfirmedTxns` to the `WALLET` API set
-- In `POST /api/v1/wallet/transaction`, moved the `wallet.addresses` and `wallet.unspents` fields to `addresses` and `unspents`
+- In `POST /api/v1/wallet/transaction`, moved `wallet` parameters to the top level of the object
 
 ### Removed
 

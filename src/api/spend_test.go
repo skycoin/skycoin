@@ -874,15 +874,11 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func TestWalletCreateTransaction(t *testing.T) {
-	type rawRequestWallet struct {
-		ID       string `json:"id"`
-		Password string `json:"password"`
-	}
-
 	type rawWalletCreateTxnRequest struct {
 		rawCreateTxnRequest
-		Wallet   rawRequestWallet `json:"wallet"`
-		Unsigned bool             `json:"unsigned"`
+		WalletID string `json:"wallet_id"`
+		Password string `json:"password"`
+		Unsigned bool   `json:"unsigned"`
 	}
 
 	changeAddress := testutil.MakeAddress()
@@ -946,9 +942,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			},
 			ChangeAddress: changeAddress.String(),
 		},
-		Wallet: rawRequestWallet{
-			ID: "foo.wlt",
-		},
+		WalletID: "foo.wlt",
 	}
 
 	walletInput := testutil.RandSHA256(t)
@@ -990,9 +984,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			name:   "400 - missing hours selection type",
 			method: http.MethodPost,
 			body: rawWalletCreateTxnRequest{
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing hours_selection.type",
@@ -1007,9 +999,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						Type: "foo",
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid hours_selection.type",
@@ -1024,9 +1014,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						Type: transaction.HoursSelectionTypeAuto,
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing hours_selection.mode",
@@ -1042,9 +1030,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						Mode: "foo",
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid hours_selection.mode",
@@ -1060,9 +1046,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						Mode: transaction.HoursSelectionModeShare,
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing hours_selection.share_factor when hours_selection.mode is share",
@@ -1078,9 +1062,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						ShareFactor: newStrPtr("0.5"),
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - hours_selection.share_factor can only be used when hours_selection.mode is share",
@@ -1097,9 +1079,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						ShareFactor: newStrPtr("-1"),
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - hours_selection.share_factor cannot be negative",
@@ -1116,9 +1096,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						ShareFactor: newStrPtr("1.1"),
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - hours_selection.share_factor cannot be more than 1",
@@ -1135,9 +1113,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					Addresses:     []string{""},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid address: Invalid base58 string",
@@ -1154,9 +1130,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					ChangeAddress: changeAddress.String(),
 					Addresses:     []string{"xxx"},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid address: Invalid address length",
@@ -1187,9 +1161,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: emptyAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - change_address must not be the null address",
@@ -1214,9 +1186,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to[0].hours must not be specified for auto hours_selection.mode",
@@ -1238,9 +1208,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to[0].hours must be specified for manual hours_selection.mode",
@@ -1264,9 +1232,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - hours_selection.mode cannot be used for manual hours_selection.type",
@@ -1289,10 +1255,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing wallet.id",
+			err:    "400 Bad Request - missing wallet_id",
 		},
 
 		{
@@ -1313,9 +1278,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					ChangeAddress: changeAddress.String(),
 					Addresses:     []string{emptyAddress.String()},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - addresses[0] is empty",
@@ -1338,9 +1301,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to[0].address is empty",
@@ -1363,9 +1324,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to[0].coins must not be zero",
@@ -1388,9 +1347,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - can't convert 0.1a to decimal",
@@ -1413,9 +1370,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid hours value: strconv.ParseUint: parsing \"100.1\": invalid syntax",
@@ -1440,9 +1395,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - can't convert  to decimal",
@@ -1466,9 +1419,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to[0].coins has too many decimal places",
@@ -1484,9 +1435,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to is empty",
@@ -1514,9 +1463,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						},
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to contains duplicate values",
@@ -1544,9 +1491,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 						},
 					},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to contains duplicate values",
@@ -1572,9 +1517,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					Addresses: []string{destinationAddress.String()},
 					UxOuts:    []string{walletInput.Hex()},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - unspents and addresses cannot be combined",
@@ -1599,9 +1542,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					UxOuts: []string{walletInput.Hex(), walletInput.Hex()},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - unspents contains duplicate values",
@@ -1626,9 +1567,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					Addresses: []string{destinationAddress.String(), destinationAddress.String()},
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - addresses contains duplicate values",
@@ -1652,9 +1591,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status:                         http.StatusOK,
 			gatewayCreateTransactionResult: txn,
@@ -1679,9 +1616,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status:                         http.StatusOK,
 			gatewayCreateTransactionResult: txn,
@@ -1706,9 +1641,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					},
 					ChangeAddress: changeAddress.String(),
 				},
-				Wallet: rawRequestWallet{
-					ID: "foo.wlt",
-				},
+				WalletID: "foo.wlt",
 			},
 			status:                         http.StatusOK,
 			gatewayCreateTransactionResult: txn,
@@ -1824,14 +1757,12 @@ func TestWalletCreateTransaction(t *testing.T) {
 				},
 				ChangeAddress: changeAddress.String(),
 			},
-			Wallet: rawRequestWallet{
-				ID:       "foo.wlt",
-				Password: "foo",
-			},
+			WalletID: "foo.wlt",
+			Password: "foo",
 			Unsigned: true,
 		},
 		status: http.StatusBadRequest,
-		err:    "400 Bad Request - wallet.password must not be used for unsigned transactions",
+		err:    "400 Bad Request - password must not be used for unsigned transactions",
 	})
 
 	for _, tc := range cases {
@@ -1846,10 +1777,10 @@ func TestWalletCreateTransaction(t *testing.T) {
 			err = json.Unmarshal(serializedBody, &body)
 			if err == nil {
 				if tc.body.Unsigned {
-					x := gateway.On("WalletCreateTransaction", body.Wallet.ID, body.TransactionParams(), body.VisorParams())
+					x := gateway.On("WalletCreateTransaction", body.WalletID, body.TransactionParams(), body.VisorParams())
 					x.Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
 				} else {
-					x := gateway.On("WalletCreateTransactionSigned", body.Wallet.ID, []byte(body.Wallet.Password), body.TransactionParams(), body.VisorParams())
+					x := gateway.On("WalletCreateTransactionSigned", body.WalletID, []byte(body.Password), body.TransactionParams(), body.VisorParams())
 					x.Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
 
 				}

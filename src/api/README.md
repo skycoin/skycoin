@@ -1116,9 +1116,7 @@ Example request body with manual hours selection type, unencrypted wallet and al
     "hours_selection": {
         "type": "manual"
     },
-    "wallet": {
-        "id": "foo.wlt"
-    },
+    "wallet_id": "foo.wlt",
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
@@ -1143,10 +1141,8 @@ Example request body with auto hours selection type, encrypted wallet, specified
         "mode": "share",
         "share_factor": "0.5"
     },
-    "wallet": {
-        "id": "foo.wlt",
-        "password": "foobar"
-    },
+    "wallet_id": "foo.wlt",
+    "password": "foobar",
     "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
@@ -1168,9 +1164,7 @@ Example request body with manual hours selection type, unencrypted wallet and sp
     "hours_selection": {
         "type": "manual"
     },
-    "wallet": {
-        "id": "foo.wlt"
-    },
+    "wallet_id": "foo.wlt",
     "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"],
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
@@ -1299,9 +1293,7 @@ curl -X POST http://127.0.0.1:6420/api/v1/wallet/transaction -H 'content-type: a
         "mode": "share",
         "share_factor": "0.5"
     },
-    "wallet": {
-        "id": "foo.wlt"
-    },
+    "wallet_id": "foo.wlt",
     "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
     "to": [{
         "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",

@@ -476,7 +476,127 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 // Args: JSON body
 func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
-	// TODO For v3
+	// swagger:operation POST /api/v1/wallet/transaction walletTransaction
+	//
+	// Creates a signed transaction
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - in: body
+	//   required: true
+	//   name: 'body'
+	//   schema:
+	//     properties:
+	//       ignore_unconfirmed:
+	//         type: boolean
+	//       hours_selection:
+	//         type: object
+	//         properties:
+	//           type:
+	//             type: string
+	//           mode:
+	//             type: string
+	//           share_factor:
+	//             type: string
+	//       wallet:
+	//         type: object
+	//         properties:
+	//           id:
+	//             type: string
+	//           unspents:
+	//             type: array
+	//             items:
+	//               type: string
+	//           addresses:
+	//             type: array
+	//             items:
+	//               type: string
+	//           password:
+	//             type: string
+	//           id:
+	//             type: string
+	//       change_address:
+	//         type: string
+	//       to:
+	//         type: array
+	//         items:
+	//           properties:
+	//             address:
+	//               type: string
+	//             coins:
+	//               type: integer
+	//               format: int64
+	//             hours:
+	//               type: integer
+	//               format: int64
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	// responses:
+	//   200:
+	//     description: Returns blocks between a start and end point.
+	//     schema:
+	//       properties:
+	//         encoded_transaction:
+	//           type: string
+	//         transaction:
+	//           type: object
+	//           properties:
+	//             length:
+	//               type: integer
+	//               format: int64
+	//             type:
+	//               type: integer
+	//               format: int32
+	//             txid:
+	//               type: string
+	//             inner_hash:
+	//               type: string
+	//             fee:
+	//               type: string
+	//             sigs:
+	//               type: array
+	//               items:
+	//                 type: string
+    //             inputs:
+ 	//               type: array
+	//               items:
+	//                 properties:
+	//                   uxid:
+	//                     type: string
+	//                   address:
+	//                     type: string
+	//                   coins:
+	//                     type: string
+	//                   hours:
+	//                     type: string
+    //                   calculated_hours:
+	//                     type: string
+	//                   txid:
+	//                     type: string
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   block:
+	//                     type: integer
+	//                     format: int64
+	//             outputs:
+	//               type: array
+	//               items:
+	//                 properties:
+	//                   uxid:
+	//                     type: string
+	//                   address:
+	//                     type: string
+	//                   coins:
+	//                     type: string
+	//                   hours:
+	//                     type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

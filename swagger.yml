@@ -3085,6 +3085,122 @@ paths:
           $ref: '#/responses/genericError'
       security:
       - csrfAuth: []
+  /api/v1/wallet/transaction:
+    post:
+      description: Creates a signed transaction
+      operationId: walletTransaction
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            change_address:
+              type: string
+            hours_selection:
+              properties:
+                mode:
+                  type: string
+                share_factor:
+                  type: string
+                type:
+                  type: string
+              type: object
+            ignore_unconfirmed:
+              type: boolean
+            to:
+              items:
+                properties:
+                  address:
+                    type: string
+                  coins:
+                    format: int64
+                    type: integer
+                  hours:
+                    format: int64
+                    type: integer
+              type: array
+            wallet:
+              properties:
+                addresses:
+                  items:
+                    type: string
+                  type: array
+                id:
+                  type: string
+                password:
+                  type: string
+                unspents:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns blocks between a start and end point.
+          schema:
+            properties:
+              encoded_transaction:
+                type: string
+              transaction:
+                properties:
+                  fee:
+                    type: string
+                  inner_hash:
+                    type: string
+                  inputs:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        block:
+                          format: int64
+                          type: integer
+                        calculated_hours:
+                          type: string
+                        coins:
+                          type: string
+                        hours:
+                          type: string
+                        timestamp:
+                          format: int64
+                          type: integer
+                        txid:
+                          type: string
+                        uxid:
+                          type: string
+                    type: array
+                  length:
+                    format: int64
+                    type: integer
+                  outputs:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        coins:
+                          type: string
+                        hours:
+                          type: string
+                        uxid:
+                          type: string
+                    type: array
+                  sigs:
+                    items:
+                      type: string
+                    type: array
+                  txid:
+                    type: string
+                  type:
+                    format: int32
+                    type: integer
+                type: object
+        default:
+          $ref: '#/responses/genericError'
+      security:
+      - csrfAuth: []
   /api/v1/wallet/transactions:
     get:
       description: Returns returns all unconfirmed transactions for all addresses

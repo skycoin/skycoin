@@ -4,7 +4,6 @@ package visor
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -399,7 +398,7 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 		return nil, nil, err
 	}
 	if len(wp.Addresses) == 0 && len(wp.UxOuts) == 0 {
-		return nil, nil, errors.New("UxOuts or Addresses must not be empty")
+		return nil, nil, NewUserError(errors.New("UxOuts or Addresses must not be empty"))
 	}
 
 	var txn *coin.Transaction
@@ -515,7 +514,6 @@ func (vs *Visor) getCreateTransactionAuxsAddress(tx *dbutil.Tx, addrs []cipher.A
 	// Get all address unspent hashes
 	addrHashes, err := vs.Blockchain.Unspent().GetUnspentHashesOfAddrs(tx, addrs)
 	if err != nil {
-		err = fmt.Errorf("GetUnspentHashesOfAddrs failed: %v", err)
 		return nil, err
 	}
 

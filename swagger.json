@@ -1,0 +1,5664 @@
+{
+  "consumes": [
+    "application/json",
+    "application/xml"
+  ],
+  "produces": [
+    "application/json",
+    "application/xml"
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "Skycoin is a next-generation cryptocurrency.",
+    "title": "Skycoin REST API.",
+    "contact": {
+      "name": "Skycoin project",
+      "url": "http://127.0.0.1:6420",
+      "email": "skycoin.doe@example.com"
+    },
+    "version": "0.25.1"
+  },
+  "host": "127.0.0.1:6420",
+  "basePath": "/",
+  "paths": {
+    "/api/v1/address_uxouts": {
+      "get": {
+        "description": "Returns the historical, spent outputs associated with an address",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "addressUxouts",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "address to filter by",
+            "name": "address",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for endpoint /api/v1/address_uxouts",
+            "schema": {
+              "type": "array",
+              "items": {
+                "properties": {
+                  "coins": {
+                    "type": "integer",
+                    "format": "integer"
+                  },
+                  "hours": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "owner_address": {
+                    "type": "string"
+                  },
+                  "spent_block_seq": {
+                    "type": "integer",
+                    "format": "in64"
+                  },
+                  "spent_tx": {
+                    "type": "string"
+                  },
+                  "src_block_seq": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "src_tx": {
+                    "type": "string"
+                  },
+                  "time": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "uxid": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/addresscount": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns the total number of unique address that have coins.",
+        "operationId": "addressCount",
+        "responses": {
+          "200": {
+            "description": "This endpoint Returns the total number of unique address that have coins.",
+            "schema": {
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/balance": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns the balance of one or more addresses, both confirmed and predicted. The predicted balance is the confirmed balance minus the pending spends.",
+        "operationId": "balanceGet",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "command separated list of addresses",
+            "name": "addrs",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the balance of one or more addresses",
+            "schema": {
+              "properties": {
+                "addresses": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "coins": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                },
+                "confirmed": {
+                  "type": "object",
+                  "properties": {
+                    "coins": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "hours": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "predicted": {
+                  "type": "object",
+                  "properties": {
+                    "coins": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "hours": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns the balance of one or more addresses, both confirmed and predicted. The predicted balance is the confirmed balance minus the pending spends.",
+        "operationId": "balancePost",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "command separated list of addresses",
+            "name": "addrs",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the balance of one or more addresses",
+            "schema": {
+              "properties": {
+                "addresses": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "coins": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                },
+                "confirmed": {
+                  "type": "object",
+                  "properties": {
+                    "coins": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "hours": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "predicted": {
+                  "type": "object",
+                  "properties": {
+                    "coins": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "hours": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/block": {
+      "get": {
+        "description": "Returns a block by hash or seq. Note: only one of hash or seq is allowed",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "block",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "hash",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "seq",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BlockVerbose represents a readable block with verbose data.",
+            "schema": {
+              "properties": {
+                "body": {
+                  "type": "object",
+                  "properties": {
+                    "txns": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "inner_hash": {
+                            "type": "string"
+                          },
+                          "inputs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "length": {
+                            "type": "integer",
+                            "format": "int32"
+                          },
+                          "outputs": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "coins": {
+                                  "type": "string"
+                                },
+                                "dst": {
+                                  "type": "string"
+                                },
+                                "hours": {
+                                  "type": "integer",
+                                  "format": "int64"
+                                },
+                                "uxid": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "sigs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "txid": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "header": {
+                  "type": "object",
+                  "properties": {
+                    "block_hash": {
+                      "type": "string"
+                    },
+                    "fee": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "previous_block_hash": {
+                      "type": "string"
+                    },
+                    "seq": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "tx_body_hash": {
+                      "type": "string"
+                    },
+                    "ux_hash": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                },
+                "size": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/block/verbose": {
+      "get": {
+        "description": "Returns a block by hash or seq. Note: only one of hash or seq is allowed\nWith verbose.",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "blockVerbose",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "hash",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "seq",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BlockVerbose represents a readable block with verbose data.",
+            "schema": {
+              "properties": {
+                "body": {
+                  "type": "object",
+                  "properties": {
+                    "txns": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "fee": {
+                            "type": "integer",
+                            "format": "int32"
+                          },
+                          "hash": {
+                            "type": "string"
+                          },
+                          "inner_hash": {
+                            "type": "string"
+                          },
+                          "inputs": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "calculated_hours": {
+                                  "type": "integer",
+                                  "format": "int64"
+                                },
+                                "coins": {
+                                  "type": "string"
+                                },
+                                "dst": {
+                                  "type": "string"
+                                },
+                                "hours": {
+                                  "type": "integer",
+                                  "format": "int64"
+                                },
+                                "uxid": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "length": {
+                            "type": "integer",
+                            "format": "int32"
+                          },
+                          "outputs": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "coins": {
+                                  "type": "string"
+                                },
+                                "dst": {
+                                  "type": "string"
+                                },
+                                "hours": {
+                                  "type": "integer",
+                                  "format": "int64"
+                                },
+                                "uxid": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "sigs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "type": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "header": {
+                  "type": "object",
+                  "properties": {
+                    "block_hash": {
+                      "type": "string"
+                    },
+                    "fee": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "previous_block_hash": {
+                      "type": "string"
+                    },
+                    "seq": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "tx_body_hash": {
+                      "type": "string"
+                    },
+                    "ux_hash": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                },
+                "size": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/blockchain/metadata": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns the blockchain metadata.",
+        "operationId": "blockchainMetadata",
+        "responses": {
+          "200": {
+            "description": "This endpoint returns the blockchain metadata.",
+            "schema": {
+              "properties": {
+                "head": {
+                  "type": "object",
+                  "properties": {
+                    "block_hash": {
+                      "type": "string"
+                    },
+                    "fee": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "previous_block_hash": {
+                      "type": "string"
+                    },
+                    "seq": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "tx_body_hash": {
+                      "type": "string"
+                    },
+                    "ux_hash": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "unconfirmed": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "unspents": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/blockchain/progress": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns the blockchain sync progress.",
+        "operationId": "blockchainProgress",
+        "responses": {
+          "200": {
+            "description": "This endpoint returns the blockchain sync progress",
+            "schema": {
+              "properties": {
+                "current": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "highest": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "peers": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "height": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/blocks": {
+      "get": {
+        "description": "or an explicit list of sequences.\nIf using start and end, the block sequences include both the start and end point.\nExplicit sequences cannot be combined with start and end.\nWithout verbose.",
+        "produces": [
+          "application/json"
+        ],
+        "summary": "blocksHandler returns blocks between a start and end point,",
+        "operationId": "blocksGet",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "start",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "end",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "name": "seqs",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns blocks between a start and end point.",
+            "schema": {
+              "properties": {
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "body": {
+                        "type": "object",
+                        "properties": {
+                          "txns": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "inner_hash": {
+                                  "type": "string"
+                                },
+                                "inputs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "length": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "outputs": {
+                                  "type": "array",
+                                  "items": {
+                                    "properties": {
+                                      "coins": {
+                                        "type": "string"
+                                      },
+                                      "dst": {
+                                        "type": "string"
+                                      },
+                                      "hours": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                      },
+                                      "uxid": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "sigs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "timestamp": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "txid": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "header": {
+                        "type": "object",
+                        "properties": {
+                          "block_hash": {
+                            "type": "string"
+                          },
+                          "fee": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "previous_block_hash": {
+                            "type": "string"
+                          },
+                          "seq": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "tx_body_hash": {
+                            "type": "string"
+                          },
+                          "ux_hash": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      },
+                      "size": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "or an explicit list of sequences.\nIf using start and end, the block sequences include both the start and end point.\nExplicit sequences cannot be combined with start and end.\nWithout verbose",
+        "produces": [
+          "application/json"
+        ],
+        "summary": "blocksHandler returns blocks between a start and end point,",
+        "operationId": "blocksPost",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "start",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "end",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "name": "seqs",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns blocks between a start and end point.",
+            "schema": {
+              "properties": {
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "body": {
+                        "type": "object",
+                        "properties": {
+                          "txns": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "inner_hash": {
+                                  "type": "string"
+                                },
+                                "inputs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "length": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "outputs": {
+                                  "type": "array",
+                                  "items": {
+                                    "properties": {
+                                      "coins": {
+                                        "type": "string"
+                                      },
+                                      "dst": {
+                                        "type": "string"
+                                      },
+                                      "hours": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                      },
+                                      "uxid": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "sigs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "timestamp": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "txid": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "header": {
+                        "type": "object",
+                        "properties": {
+                          "block_hash": {
+                            "type": "string"
+                          },
+                          "fee": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "previous_block_hash": {
+                            "type": "string"
+                          },
+                          "seq": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "tx_body_hash": {
+                            "type": "string"
+                          },
+                          "ux_hash": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      },
+                      "size": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/blocks/verbose": {
+      "get": {
+        "description": "or an explicit list of sequences.\nIf using start and end, the block sequences include both the start and end point.\nExplicit sequences cannot be combined with start and end.\nWith verbose.",
+        "produces": [
+          "application/json"
+        ],
+        "summary": "blocksHandler returns blocks between a start and end point,",
+        "operationId": "blocksGetVerbose",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "start",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "end",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "name": "seqs",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns blocks between a start and end point.",
+            "schema": {
+              "properties": {
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "body": {
+                        "type": "object",
+                        "properties": {
+                          "txns": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "fee": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "hash": {
+                                  "type": "string"
+                                },
+                                "inner_hash": {
+                                  "type": "string"
+                                },
+                                "inputs": {
+                                  "type": "array",
+                                  "items": {
+                                    "properties": {
+                                      "calculated_hours": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                      },
+                                      "coins": {
+                                        "type": "string"
+                                      },
+                                      "dst": {
+                                        "type": "string"
+                                      },
+                                      "hours": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                      },
+                                      "uxid": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "length": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "outputs": {
+                                  "type": "array",
+                                  "items": {
+                                    "properties": {
+                                      "coins": {
+                                        "type": "string"
+                                      },
+                                      "dst": {
+                                        "type": "string"
+                                      },
+                                      "hours": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                      },
+                                      "uxid": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "sigs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "header": {
+                        "type": "object",
+                        "properties": {
+                          "block_hash": {
+                            "type": "string"
+                          },
+                          "fee": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "previous_block_hash": {
+                            "type": "string"
+                          },
+                          "seq": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "tx_body_hash": {
+                            "type": "string"
+                          },
+                          "ux_hash": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      },
+                      "size": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "or an explicit list of sequences.\nIf using start and end, the block sequences include both the start and end point.\nExplicit sequences cannot be combined with start and end.\nThis is whit verbose",
+        "produces": [
+          "application/json"
+        ],
+        "summary": "blocksHandler returns blocks between a start and end point,",
+        "operationId": "blocksPostVerbose",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "start",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "end",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "name": "seqs",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns blocks between a start and end point.",
+            "schema": {
+              "properties": {
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "body": {
+                        "type": "object",
+                        "properties": {
+                          "txns": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "fee": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "hash": {
+                                  "type": "string"
+                                },
+                                "inner_hash": {
+                                  "type": "string"
+                                },
+                                "inputs": {
+                                  "type": "array",
+                                  "items": {
+                                    "properties": {
+                                      "calculated_hours": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                      },
+                                      "coins": {
+                                        "type": "string"
+                                      },
+                                      "dst": {
+                                        "type": "string"
+                                      },
+                                      "hours": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                      },
+                                      "uxid": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "length": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "outputs": {
+                                  "type": "array",
+                                  "items": {
+                                    "properties": {
+                                      "coins": {
+                                        "type": "string"
+                                      },
+                                      "dst": {
+                                        "type": "string"
+                                      },
+                                      "hours": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                      },
+                                      "uxid": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "sigs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "header": {
+                        "type": "object",
+                        "properties": {
+                          "block_hash": {
+                            "type": "string"
+                          },
+                          "fee": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "previous_block_hash": {
+                            "type": "string"
+                          },
+                          "seq": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "tx_body_hash": {
+                            "type": "string"
+                          },
+                          "ux_hash": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      },
+                      "size": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/coinSupply": {
+      "get": {
+        "description": "coinSupplyHandler returns coin distribution supply stats",
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "http",
+          "https"
+        ],
+        "operationId": "coinSupply",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/coinSupply"
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/csrf": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Creates a new CSRF token. Previous CSRF tokens are invalidated by this call.",
+        "operationId": "csrf",
+        "responses": {
+          "200": {
+            "description": "Return a csrf Token.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "csrf_token": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/explorer/address": {
+      "get": {
+        "description": "Returns all transactions (confirmed and unconfirmed) for an address",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "explorerAddress",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "tags to filter by",
+            "name": "address",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for endpoint /api/v1/explorer/address",
+            "schema": {
+              "type": "array",
+              "items": {
+                "properties": {
+                  "fee": {
+                    "type": "integer",
+                    "format": "in64"
+                  },
+                  "inner_hash": {
+                    "type": "string"
+                  },
+                  "inputs": {
+                    "type": "array",
+                    "items": {
+                      "properties": {
+                        "calculated_hours": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "coins": {
+                          "type": "string"
+                        },
+                        "hours": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "owner": {
+                          "type": "string"
+                        },
+                        "uxid": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "length": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "outputs": {
+                    "type": "array",
+                    "items": {
+                      "properties": {
+                        "coins": {
+                          "type": "string"
+                        },
+                        "dst": {
+                          "type": "string"
+                        },
+                        "hours": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "uxid": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "sigs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "status": {
+                    "type": "object",
+                    "properties": {
+                      "block_seq": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "confirmed": {
+                        "type": "boolean"
+                      },
+                      "label": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "unconfirmed": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "timestamp": {
+                    "type": "integer",
+                    "format": "integer"
+                  },
+                  "txid": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "integer",
+                    "format": "in64"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns node health data.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "This endpoint returns node health data.",
+            "schema": {
+              "properties": {
+                "blockchain": {
+                  "type": "object",
+                  "properties": {
+                    "head": {
+                      "type": "object",
+                      "properties": {
+                        "block_hash": {
+                          "type": "string"
+                        },
+                        "fee": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "previous_block_hash": {
+                          "type": "string"
+                        },
+                        "seq": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "timestamp": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "tx_body_hash": {
+                          "type": "string"
+                        },
+                        "ux_hash": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      }
+                    },
+                    "time_since_last_block": {
+                      "type": "string"
+                    },
+                    "unconfirmed": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "unspents": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "coin": {
+                  "type": "string"
+                },
+                "csp_enabled": {
+                  "type": "boolean"
+                },
+                "csrf_enabled": {
+                  "type": "boolean"
+                },
+                "gui_enabled": {
+                  "type": "boolean"
+                },
+                "incoming_connections": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "json_rpc_enabled": {
+                  "type": "boolean"
+                },
+                "open_connections": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "outgoing_connections": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "started_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "unconfirmed_verify_transaction": {
+                  "type": "object",
+                  "properties": {
+                    "burn_factor": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "max_decimal": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "max_transaction_size": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "unversioned_api_enabled": {
+                  "type": "boolean"
+                },
+                "uptime": {
+                  "type": "string"
+                },
+                "user_agent": {
+                  "type": "string"
+                },
+                "user_verify_transaction": {
+                  "type": "object",
+                  "properties": {
+                    "burn_factor": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "max_decimal": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "max_transaction_size": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "version": {
+                  "type": "object",
+                  "properties": {
+                    "branch": {
+                      "type": "string"
+                    },
+                    "commit": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "wallet_api_enabled": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/last_blocks": {
+      "get": {
+        "description": "Returns the most recent N blocks on the blockchain",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "lastBlocks",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "num",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the most recent N blocks on the blockchain.",
+            "schema": {
+              "properties": {
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "body": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "inner_hash": {
+                              "type": "string"
+                            },
+                            "inputs": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "length": {
+                              "type": "integer",
+                              "format": "int32"
+                            },
+                            "outputs": {
+                              "type": "array",
+                              "items": {
+                                "properties": {
+                                  "coins": {
+                                    "type": "string"
+                                  },
+                                  "dst": {
+                                    "type": "string"
+                                  },
+                                  "hours": {
+                                    "type": "integer",
+                                    "format": "int64"
+                                  },
+                                  "uxid": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "sigs": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "timestamp": {
+                              "type": "integer",
+                              "format": "int32"
+                            },
+                            "txid": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "integer",
+                              "format": "int32"
+                            }
+                          }
+                        }
+                      },
+                      "header": {
+                        "type": "object",
+                        "properties": {
+                          "block_hash": {
+                            "type": "string"
+                          },
+                          "fee": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "previous_block_hash": {
+                            "type": "string"
+                          },
+                          "seq": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "tx_body_hash": {
+                            "type": "string"
+                          },
+                          "ux_hash": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      },
+                      "size": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/last_blocks/verbose": {
+      "get": {
+        "description": "Returns the most recent N blocks on the blockchain\nWith verbose.",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "lastBlocksVerbose",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "num",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the most recent N blocks on the blockchain.",
+            "schema": {
+              "properties": {
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "body": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "fee": {
+                              "type": "integer",
+                              "format": "int32"
+                            },
+                            "hash": {
+                              "type": "string"
+                            },
+                            "inner_hash": {
+                              "type": "string"
+                            },
+                            "inputs": {
+                              "type": "array",
+                              "items": {
+                                "properties": {
+                                  "calculated_hours": {
+                                    "type": "integer",
+                                    "format": "int64"
+                                  },
+                                  "coins": {
+                                    "type": "string"
+                                  },
+                                  "dst": {
+                                    "type": "string"
+                                  },
+                                  "hours": {
+                                    "type": "integer",
+                                    "format": "int64"
+                                  },
+                                  "uxid": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "length": {
+                              "type": "integer",
+                              "format": "int32"
+                            },
+                            "outputs": {
+                              "type": "array",
+                              "items": {
+                                "properties": {
+                                  "coins": {
+                                    "type": "string"
+                                  },
+                                  "dst": {
+                                    "type": "string"
+                                  },
+                                  "hours": {
+                                    "type": "integer",
+                                    "format": "int64"
+                                  },
+                                  "uxid": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "sigs": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "type": {
+                              "type": "integer",
+                              "format": "int32"
+                            }
+                          }
+                        }
+                      },
+                      "header": {
+                        "type": "object",
+                        "properties": {
+                          "block_hash": {
+                            "type": "string"
+                          },
+                          "fee": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "previous_block_hash": {
+                            "type": "string"
+                          },
+                          "seq": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "tx_body_hash": {
+                            "type": "string"
+                          },
+                          "ux_hash": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      },
+                      "size": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/network/connection": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "This endpoint returns a specific connection.",
+        "operationId": "networkConnection",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Address port",
+            "name": "addr",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint return a connection struct",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string"
+                },
+                "connected_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "height": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "is_trusted_peer": {
+                  "type": "boolean"
+                },
+                "last_received": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "last_sent": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "listen_port": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "mirror": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "outgoing": {
+                  "type": "boolean"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "connected",
+                    "introduced"
+                  ]
+                },
+                "unconfirmed_verify_transaction": {
+                  "description": "Represent unconfirmed transactions",
+                  "type": "object",
+                  "properties": {
+                    "burn_factor": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "max_decimals": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "max_transaction_size": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                },
+                "user_agent": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/network/connection/disconnect": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "This endpoint disconnects a connection by ID or address",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "networkConnectionsDisconnect",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Address id.",
+            "name": "id",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint"
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/network/connections": {
+      "get": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "This endpoint returns all outgoings connections.",
+        "operationId": "networkConnections",
+        "parameters": [
+          {
+            "enum": [
+              "pending",
+              "connected",
+              "introduced"
+            ],
+            "type": "string",
+            "description": "Connection status.",
+            "name": "states",
+            "in": "query"
+          },
+          {
+            "enum": [
+              "connected",
+              "introduced"
+            ],
+            "type": "string",
+            "description": "Direction of the connection.",
+            "name": "direction",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint return a connection struct",
+            "schema": {
+              "type": "array",
+              "items": {
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "connected_at": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "height": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "is_trusted_peer": {
+                    "type": "boolean"
+                  },
+                  "last_received": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "last_sent": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "listen_port": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "mirror": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "outgoing": {
+                    "type": "boolean"
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "connected",
+                      "introduced"
+                    ]
+                  },
+                  "unconfirmed_verify_transaction": {
+                    "description": "Represent unconfirmed transactions",
+                    "type": "object",
+                    "properties": {
+                      "burn_factor": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "max_decimals": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "max_transaction_size": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  },
+                  "user_agent": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/network/connections/exchange": {
+      "get": {
+        "description": "This endpoint returns all connections found through peer exchange",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "networkConnectionsExchange",
+        "responses": {
+          "200": {
+            "description": "This endpoint return a list of all connections found through peer exchange.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/network/connections/trust": {
+      "get": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "trustConnectionsHandler returns all trusted connections.\\n They are not necessarily connected to. In the default configuration, these will be a subset of the default hardcoded bootstrap addresses.",
+        "operationId": "networkConnectionsTrust",
+        "responses": {
+          "200": {
+            "description": "This endpoint return a list of trusted connections.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/network/defaultConnections": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "defaultConnectionsHandler returns the list of default hardcoded bootstrap addresses.\\n They are not necessarily connected to.",
+        "operationId": "defaultConnections",
+        "responses": {
+          "200": {
+            "description": "This endpoint return an list of default connections.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/outputs": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "If neither addrs nor hashes are specificed, return all unspent outputs. If only one filter is specified, then return outputs match the filter. Both filters cannot be specified.",
+        "operationId": "outputsGet",
+        "parameters": [
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "name": "address",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "name": "hash",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "UnspentOutputsSummary records unspent outputs in different status.",
+            "schema": {
+              "properties": {
+                "head": {
+                  "type": "object",
+                  "properties": {
+                    "fee": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "hash": {
+                      "type": "string"
+                    },
+                    "previous_block_hash": {
+                      "type": "string"
+                    },
+                    "seq": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "tx_body_hash": {
+                      "type": "string"
+                    },
+                    "ux_hash": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "head_outputs": {
+                  "description": "HeadOutputs are unspent outputs confirmed in the blockchain",
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "block_seq": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "calculated_hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "coins": {
+                        "type": "string"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "src_tx": {
+                        "type": "string"
+                      },
+                      "time": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                },
+                "incoming_outputs": {
+                  "description": "IncomingOutputs are unspent outputs being created by unconfirmed transactions",
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "block_seq": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "calculated_hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "coins": {
+                        "type": "string"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "src_tx": {
+                        "type": "string"
+                      },
+                      "time": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                },
+                "outgoing_outputs": {
+                  "description": "OutgoingOutputs are unspent outputs being spent in unconfirmed transactions",
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "block_seq": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "calculated_hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "coins": {
+                        "type": "string"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "src_tx": {
+                        "type": "string"
+                      },
+                      "time": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "If neither addrs nor hashes are specificed, return all unspent outputs. If only one filter is specified, then return outputs match the filter. Both filters cannot be specified.",
+        "operationId": "outputsPost",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "address",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "hash",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "UnspentOutputsSummary records unspent outputs in different status.",
+            "schema": {
+              "properties": {
+                "head": {
+                  "type": "object",
+                  "properties": {
+                    "fee": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "hash": {
+                      "type": "string"
+                    },
+                    "previous_block_hash": {
+                      "type": "string"
+                    },
+                    "seq": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "tx_body_hash": {
+                      "type": "string"
+                    },
+                    "ux_hash": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "head_outputs": {
+                  "description": "HeadOutputs are unspent outputs confirmed in the blockchain",
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "block_seq": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "calculated_hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "coins": {
+                        "type": "string"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "src_tx": {
+                        "type": "string"
+                      },
+                      "time": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                },
+                "incoming_outputs": {
+                  "description": "IncomingOutputs are unspent outputs being created by unconfirmed transactions",
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "block_seq": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "calculated_hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "coins": {
+                        "type": "string"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "src_tx": {
+                        "type": "string"
+                      },
+                      "time": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                },
+                "outgoing_outputs": {
+                  "description": "OutgoingOutputs are unspent outputs being spent in unconfirmed transactions",
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "block_seq": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "calculated_hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "coins": {
+                        "type": "string"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "src_tx": {
+                        "type": "string"
+                      },
+                      "time": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/pendingTxs": {
+      "get": {
+        "description": "Returns pending (unconfirmed) transactions without verbose",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "pendingTxs",
+        "responses": {
+          "200": {
+            "description": "Returns a transaction identified by its txid hash.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "properties": {
+                  "announced": {
+                    "type": "string"
+                  },
+                  "checked": {
+                    "type": "string"
+                  },
+                  "is_valid": {
+                    "type": "boolean"
+                  },
+                  "received": {
+                    "type": "string"
+                  },
+                  "transaction": {
+                    "description": "BlockTransactionVerbose has readable transaction data for transactions inside a block. It differs from Transaction in that it includes metadata for transaction inputs and the calculated coinhour fee spent by the block",
+                    "type": "object",
+                    "properties": {
+                      "inner_hash": {
+                        "type": "string"
+                      },
+                      "inputs": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "length": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "outputs": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "coins": {
+                              "type": "string"
+                            },
+                            "dst": {
+                              "type": "string"
+                            },
+                            "hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "uxid": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "sigs": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "timestamp": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "txid": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/pendingTxs/verbose": {
+      "get": {
+        "description": "Returns pending (unconfirmed) transactions with verbose",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "pendingTxsVerbose",
+        "responses": {
+          "200": {
+            "description": "Returns a transaction identified by its txid hash.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "properties": {
+                  "announced": {
+                    "type": "string"
+                  },
+                  "checked": {
+                    "type": "string"
+                  },
+                  "is_valid": {
+                    "type": "boolean"
+                  },
+                  "received": {
+                    "type": "string"
+                  },
+                  "transaction": {
+                    "description": "BlockTransactionVerbose has readable transaction data for transactions inside a block. It differs from Transaction in that it includes metadata for transaction inputs and the calculated coinhour fee spent by the block",
+                    "type": "object",
+                    "properties": {
+                      "fee": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "inner_hash": {
+                        "type": "string"
+                      },
+                      "inputs": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "calculated_hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "coins": {
+                              "type": "string"
+                            },
+                            "dst": {
+                              "type": "string"
+                            },
+                            "hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "uxid": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "length": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "outputs": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "coins": {
+                              "type": "string"
+                            },
+                            "dst": {
+                              "type": "string"
+                            },
+                            "hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "uxid": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "sigs": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "type": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/resendUnconfirmedTxns": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "Broadcasts all unconfirmed transactions from the unconfirmed transaction pool",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "resendUnconfirmedTxns",
+        "responses": {
+          "200": {
+            "description": "OK, Broadcasts all unconfirmed transactions from the unconfirmed transaction pool"
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/richlist": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns the top skycoin holders.",
+        "operationId": "richlist",
+        "parameters": [
+          {
+            "type": "boolean",
+            "description": "include distribution addresses or not, default value false",
+            "name": "include-distribution",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "include distribution addresses or not, default value false",
+            "name": "n",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for endpoint /api/v1/address_uxouts",
+            "schema": {
+              "properties": {
+                "richlist": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "coins": {
+                        "type": "string"
+                      },
+                      "locked": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/transaction": {
+      "get": {
+        "description": "Returns a transaction identified by its txid hash with just id",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "transaction",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "transaction hash",
+            "name": "txid",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "boolean",
+            "description": "return as a raw encoded transaction.",
+            "name": "encoded",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a transaction identified by its txid hash.",
+            "schema": {
+              "properties": {
+                "status": {
+                  "type": "object",
+                  "properties": {
+                    "block_seq": {
+                      "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "confirmed": {
+                      "type": "boolean"
+                    },
+                    "height": {
+                      "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "unconfirmed": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "time": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "txn": {
+                  "description": "TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose",
+                  "type": "object",
+                  "properties": {
+                    "inner_hash": {
+                      "type": "string"
+                    },
+                    "inputs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "length": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "coins": {
+                            "type": "string"
+                          },
+                          "dst": {
+                            "type": "string"
+                          },
+                          "hours": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "uxid": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "sigs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "txid": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/transaction/encoded": {
+      "get": {
+        "description": "Returns a transaction identified by its txid hash encoded",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "transactionEncoded",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "transaction hash",
+            "name": "txid",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a transaction identified by its txid hash.",
+            "schema": {
+              "properties": {
+                "encoded_transaction": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "object",
+                  "properties": {
+                    "block_seq": {
+                      "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "confirmed": {
+                      "type": "boolean"
+                    },
+                    "height": {
+                      "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "unconfirmed": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "time": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/transaction/verbose": {
+      "get": {
+        "description": "Returns a transaction identified by its txid hash with Verbose",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "transactionVerbose",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "transaction hash",
+            "name": "txid",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "boolean",
+            "description": "return as a raw encoded transaction.",
+            "name": "encoded",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a transaction identified by its txid hash.",
+            "schema": {
+              "properties": {
+                "status": {
+                  "type": "object",
+                  "properties": {
+                    "block_seq": {
+                      "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "confirmed": {
+                      "type": "boolean"
+                    },
+                    "height": {
+                      "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "unconfirmed": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "time": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "txn": {
+                  "description": "TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose",
+                  "type": "object",
+                  "properties": {
+                    "fee": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "hash": {
+                      "type": "string"
+                    },
+                    "inner_hash": {
+                      "type": "string"
+                    },
+                    "inputs": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "calculated_hours": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "coins": {
+                            "type": "string"
+                          },
+                          "dst": {
+                            "type": "string"
+                          },
+                          "hours": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "uxid": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "length": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "coins": {
+                            "type": "string"
+                          },
+                          "dst": {
+                            "type": "string"
+                          },
+                          "hours": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "uxid": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "sigs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "status": {
+                      "type": "object",
+                      "properties": {
+                        "block_seq": {
+                          "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "confirmed": {
+                          "type": "boolean"
+                        },
+                        "height": {
+                          "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "unconfirmed": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "type": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/transactions": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns transactions that match the filters.",
+        "operationId": "transactionsGet",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "command separated list of addresses",
+            "name": "addrs",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]",
+            "name": "confirmed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns transactions that match the filters.",
+            "schema": {
+              "properties": {
+                "txns": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "status": {
+                        "type": "object",
+                        "properties": {
+                          "block_seq": {
+                            "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "confirmed": {
+                            "type": "boolean"
+                          },
+                          "height": {
+                            "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "unconfirmed": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "time": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "txn": {
+                        "description": "TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose",
+                        "type": "object",
+                        "properties": {
+                          "inner_hash": {
+                            "type": "string"
+                          },
+                          "inputs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "length": {
+                            "type": "integer",
+                            "format": "int32"
+                          },
+                          "outputs": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "coins": {
+                                  "type": "string"
+                                },
+                                "dst": {
+                                  "type": "string"
+                                },
+                                "hours": {
+                                  "type": "integer",
+                                  "format": "int64"
+                                },
+                                "uxid": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "sigs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "txid": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns transactions that match the filters.",
+        "operationId": "transactionsPost",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "command separated list of addresses",
+            "name": "addrs",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]",
+            "name": "confirmed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns transactions that match the filters.",
+            "schema": {
+              "properties": {
+                "txns": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "status": {
+                        "type": "object",
+                        "properties": {
+                          "block_seq": {
+                            "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "confirmed": {
+                            "type": "boolean"
+                          },
+                          "height": {
+                            "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "unconfirmed": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "time": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "txn": {
+                        "description": "TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose",
+                        "type": "object",
+                        "properties": {
+                          "inner_hash": {
+                            "type": "string"
+                          },
+                          "inputs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "length": {
+                            "type": "integer",
+                            "format": "int32"
+                          },
+                          "outputs": {
+                            "type": "array",
+                            "items": {
+                              "properties": {
+                                "coins": {
+                                  "type": "string"
+                                },
+                                "dst": {
+                                  "type": "string"
+                                },
+                                "hours": {
+                                  "type": "integer",
+                                  "format": "int64"
+                                },
+                                "uxid": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "sigs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "txid": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/verbose": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns transactions that match the filters with verbose.",
+        "operationId": "transactionsVerboseGet",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "command separated list of addresses",
+            "name": "addrs",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]",
+            "name": "confirmed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns transactions that match the filters.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "properties": {
+                  "status": {
+                    "type": "object",
+                    "properties": {
+                      "block_seq": {
+                        "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "confirmed": {
+                        "type": "boolean"
+                      },
+                      "height": {
+                        "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "unconfirmed": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "time": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "txn": {
+                    "description": "TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose",
+                    "type": "object",
+                    "properties": {
+                      "fee": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "inner_hash": {
+                        "type": "string"
+                      },
+                      "inputs": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "calculated_hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "coins": {
+                              "type": "string"
+                            },
+                            "dst": {
+                              "type": "string"
+                            },
+                            "hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "uxid": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "length": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "outputs": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "coins": {
+                              "type": "string"
+                            },
+                            "dst": {
+                              "type": "string"
+                            },
+                            "hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "uxid": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "sigs": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "status": {
+                        "type": "object",
+                        "properties": {
+                          "block_seq": {
+                            "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "confirmed": {
+                            "type": "boolean"
+                          },
+                          "height": {
+                            "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "unconfirmed": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "timestamp": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "type": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns transactions that match the filters with verbose.",
+        "operationId": "transactionsVerbosePost",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "command separated list of addresses",
+            "name": "addrs",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]",
+            "name": "confirmed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns transactions that match the filters.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "properties": {
+                  "status": {
+                    "type": "object",
+                    "properties": {
+                      "block_seq": {
+                        "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "confirmed": {
+                        "type": "boolean"
+                      },
+                      "height": {
+                        "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "unconfirmed": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "time": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "txn": {
+                    "description": "TransactionVerbose has readable transaction data. It adds TransactionStatus to a BlockTransactionVerbose",
+                    "type": "object",
+                    "properties": {
+                      "fee": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "hash": {
+                        "type": "string"
+                      },
+                      "inner_hash": {
+                        "type": "string"
+                      },
+                      "inputs": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "calculated_hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "coins": {
+                              "type": "string"
+                            },
+                            "dst": {
+                              "type": "string"
+                            },
+                            "hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "uxid": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "length": {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      "outputs": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "coins": {
+                              "type": "string"
+                            },
+                            "dst": {
+                              "type": "string"
+                            },
+                            "hours": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "uxid": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "sigs": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "status": {
+                        "type": "object",
+                        "properties": {
+                          "block_seq": {
+                            "description": "If confirmed, the sequence of the block in which the transaction was executed",
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "confirmed": {
+                            "type": "boolean"
+                          },
+                          "height": {
+                            "description": "If confirmed, how many blocks deep in the chain it is. Will be at least 1 if confirmed",
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "unconfirmed": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "timestamp": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "type": {
+                        "type": "integer",
+                        "format": "int32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/uxout": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns an unspent output by ID.",
+        "operationId": "uxout",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "uxid to filter by",
+            "name": "uxid",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for endpoint /api/v1/uxout",
+            "schema": {
+              "properties": {
+                "coins": {
+                  "type": "integer",
+                  "format": "integer"
+                },
+                "hours": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "owner_address": {
+                  "type": "string"
+                },
+                "spent_block_seq": {
+                  "type": "integer",
+                  "format": "in64"
+                },
+                "spent_tx": {
+                  "type": "string"
+                },
+                "src_block_seq": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "src_tx": {
+                  "type": "string"
+                },
+                "time": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "uxid": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/version": {
+      "get": {
+        "description": "versionHandler returns the application version info",
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "http",
+          "https"
+        ],
+        "operationId": "version",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/buildInfo"
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns a wallet by id.",
+        "operationId": "wallet",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "Id",
+            "description": "tags to filter by",
+            "name": "id",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for endpoint /api/v1/wallet",
+            "schema": {
+              "properties": {
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "public_key": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "coin": {
+                      "type": "string"
+                    },
+                    "crypto_type": {
+                      "type": "string"
+                    },
+                    "encrypted": {
+                      "type": "boolean"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/balance": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns the wallet's balance, both confirmed and predicted.  The predicted balance is the confirmed balance minus the pending spends.",
+        "operationId": "walletBalance",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "Id",
+            "description": "tags to filter by",
+            "name": "id",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the wallets balance",
+            "schema": {
+              "properties": {
+                "addresses": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "coins": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                },
+                "confirmed": {
+                  "type": "object",
+                  "properties": {
+                    "coins": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "hours": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "predicted": {
+                  "type": "object",
+                  "properties": {
+                    "coins": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "hours": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/create": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "Loads wallet from seed, will scan ahead N address and\nload addresses till the last one that have coins.",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "walletCreate",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet seed.",
+            "name": "seed",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Wallet label.",
+            "name": "label",
+            "in": "header",
+            "required": true
+          },
+          {
+            "minimum": 1,
+            "type": "integer",
+            "description": "The number of addresses to scan ahead for balances.",
+            "name": "scan",
+            "in": "header"
+          },
+          {
+            "type": "boolean",
+            "description": "Encrypt wallet.",
+            "name": "encrypt",
+            "in": "header"
+          },
+          {
+            "type": "string",
+            "description": "Wallet Password",
+            "name": "password",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint loads wallets from seed",
+            "schema": {
+              "properties": {
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "public_key": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "coin": {
+                      "type": "string"
+                    },
+                    "crypto_type": {
+                      "type": "string"
+                    },
+                    "encrypted": {
+                      "type": "boolean"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/decrypt": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Decrypts wallet.",
+        "operationId": "walletDecrypt",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet id.",
+            "name": "id",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Wallet password.",
+            "name": "password",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint decrypts wallets.",
+            "schema": {
+              "properties": {
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "public_key": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "coin": {
+                      "type": "string"
+                    },
+                    "crypto_type": {
+                      "type": "string"
+                    },
+                    "encrypted": {
+                      "type": "boolean"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/encrypt": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Encrypt wallet.",
+        "operationId": "walletEncrypt",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet id.",
+            "name": "id",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Wallet password.",
+            "name": "password",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint encrypt wallets.",
+            "schema": {
+              "properties": {
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "public_key": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "coin": {
+                      "type": "string"
+                    },
+                    "crypto_type": {
+                      "type": "string"
+                    },
+                    "encrypted": {
+                      "type": "boolean"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/newAddress": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "Generates new addresses",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "walletNewAddress",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet Id",
+            "name": "id",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The number you want to generate",
+            "name": "num",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Wallet Password",
+            "name": "password",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint generate new addresses",
+            "schema": {
+              "properties": {
+                "addresses": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/newSeed": {
+      "get": {
+        "description": "Returns the wallet directory path",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "walletNewSeed",
+        "parameters": [
+          {
+            "enum": [
+              128,
+              256
+            ],
+            "type": "string",
+            "description": "Entropy bitSize.",
+            "name": "entropy",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generates wallet seed",
+            "schema": {
+              "properties": {
+                "seed": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/seed": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "This endpoint only works for encrypted wallets. If the wallet is unencrypted, The seed will be not returned.",
+        "operationId": "walletSeed",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet Id.",
+            "name": "id",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Wallet password.",
+            "name": "password",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint Returns seed of wallet of given id",
+            "schema": {
+              "properties": {
+                "seed": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/spend": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "Creates and broadcasts a transaction sending money from one of our wallets\nto destination address.",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "walletSpent",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet id",
+            "name": "id",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Recipient address",
+            "name": "dst",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Number of coins to spend, in droplets. 1 coin equals 1e6 droplets.",
+            "name": "coins",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Wallet password.",
+            "name": "password",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Creates and broadcasts a transaction sending money from one of our wallets to destination address.",
+            "schema": {
+              "properties": {
+                "balance": {
+                  "type": "object",
+                  "properties": {
+                    "confirmed": {
+                      "type": "object",
+                      "properties": {
+                        "coins": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "hours": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      }
+                    },
+                    "predicted": {
+                      "type": "object",
+                      "properties": {
+                        "coins": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "hours": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      }
+                    }
+                  }
+                },
+                "error": {
+                  "type": "string"
+                },
+                "txn": {
+                  "type": "object",
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    },
+                    "inner_hash": {
+                      "type": "string"
+                    },
+                    "inputs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "length": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "coins": {
+                            "type": "string"
+                          },
+                          "dst": {
+                            "type": "string"
+                          },
+                          "hours": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "uxid": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "sigs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "type": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/transaction": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "Creates a signed transaction",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "walletTransaction",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "change_address": {
+                  "type": "string"
+                },
+                "hours_selection": {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "type": "string"
+                    },
+                    "share_factor": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "ignore_unconfirmed": {
+                  "type": "boolean"
+                },
+                "to": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "coins": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "hours": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                },
+                "wallet": {
+                  "type": "object",
+                  "properties": {
+                    "addresses": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "password": {
+                      "type": "string"
+                    },
+                    "unspents": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns blocks between a start and end point.",
+            "schema": {
+              "properties": {
+                "encoded_transaction": {
+                  "type": "string"
+                },
+                "transaction": {
+                  "type": "object",
+                  "properties": {
+                    "fee": {
+                      "type": "string"
+                    },
+                    "inner_hash": {
+                      "type": "string"
+                    },
+                    "inputs": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "address": {
+                            "type": "string"
+                          },
+                          "block": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "calculated_hours": {
+                            "type": "string"
+                          },
+                          "coins": {
+                            "type": "string"
+                          },
+                          "hours": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "txid": {
+                            "type": "string"
+                          },
+                          "uxid": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "length": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "address": {
+                            "type": "string"
+                          },
+                          "coins": {
+                            "type": "string"
+                          },
+                          "hours": {
+                            "type": "string"
+                          },
+                          "uxid": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "sigs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "txid": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/transactions": {
+      "get": {
+        "description": "Returns returns all unconfirmed transactions for all addresses in a given wallet verbose",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "walletTransactions",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet id.",
+            "name": "id",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns returns all unconfirmed transactions for all addresses in a given wallet",
+            "schema": {
+              "properties": {
+                "transactions": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "announced": {
+                        "type": "string"
+                      },
+                      "checked": {
+                        "type": "string"
+                      },
+                      "is_valid": {
+                        "type": "boolean"
+                      },
+                      "received": {
+                        "type": "string"
+                      },
+                      "transaction": {
+                        "type": "object",
+                        "properties": {
+                          "fee": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "inner_hash": {
+                            "type": "string"
+                          },
+                          "inputs": {
+                            "type": "object",
+                            "properties": {
+                              "calculated_hours": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "coins": {
+                                "type": "string"
+                              },
+                              "dst": {
+                                "type": "string"
+                              },
+                              "hours": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "uxid": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "length": {
+                            "type": "integer",
+                            "format": "int32"
+                          },
+                          "outputs": {
+                            "type": "object",
+                            "properties": {
+                              "coins": {
+                                "type": "string"
+                              },
+                              "dst": {
+                                "type": "string"
+                              },
+                              "hours": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "uxid": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "sigs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "txid": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/transactions/verbose": {
+      "get": {
+        "description": "Returns returns all unconfirmed transactions for all addresses in a given wallet verbose",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "walletTransactionsVerbose",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet id.",
+            "name": "id",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns returns all unconfirmed transactions for all addresses in a given wallet",
+            "schema": {
+              "properties": {
+                "transactions": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "announced": {
+                        "type": "string"
+                      },
+                      "checked": {
+                        "type": "string"
+                      },
+                      "is_valid": {
+                        "type": "boolean"
+                      },
+                      "received": {
+                        "type": "string"
+                      },
+                      "transaction": {
+                        "type": "object",
+                        "properties": {
+                          "fee": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "inner_hash": {
+                            "type": "string"
+                          },
+                          "inputs": {
+                            "type": "object",
+                            "properties": {
+                              "calculated_hours": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "coins": {
+                                "type": "string"
+                              },
+                              "dst": {
+                                "type": "string"
+                              },
+                              "hours": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "uxid": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "length": {
+                            "type": "integer",
+                            "format": "int32"
+                          },
+                          "outputs": {
+                            "type": "object",
+                            "properties": {
+                              "coins": {
+                                "type": "string"
+                              },
+                              "dst": {
+                                "type": "string"
+                              },
+                              "hours": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "uxid": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "sigs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "txid": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "integer",
+                            "format": "int32"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/unload": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Unloads wallet from the wallet service.",
+        "operationId": "walletUnload",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet Id.",
+            "name": "id",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint returns nothing."
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/update": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Update the wallet.",
+        "operationId": "walletUpdate",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet Id.",
+            "name": "id",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The label the wallet will be updated to.",
+            "name": "label",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint Returns the label the wallet will be updated to ."
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallets": {
+      "get": {
+        "description": "Returns all loaded wallets",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "wallets",
+        "responses": {
+          "200": {
+            "description": "This endpoint return all loaded wallets",
+            "schema": {
+              "type": "array",
+              "items": {
+                "properties": {
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "properties": {
+                        "address": {
+                          "type": "string"
+                        },
+                        "public_key": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "meta": {
+                    "type": "object",
+                    "properties": {
+                      "coin": {
+                        "type": "string"
+                      },
+                      "crypto_type": {
+                        "type": "string"
+                      },
+                      "encrypted": {
+                        "type": "boolean"
+                      },
+                      "filename": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "integer"
+                      },
+                      "type": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/folderName": {
+      "get": {
+        "description": "Returns the wallet directory path",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "walletFolder",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Address port",
+            "name": "addr",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint return the wallet directory path",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v2/address/verify": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Verifies a Skycoin address.",
+        "operationId": "verifyAddress",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Address id.",
+            "name": "address",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response verifies a Skycoin address",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                },
+                "error": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v2/transaction/inject": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Broadcast a hex-encoded, serialized transaction to the network.",
+        "operationId": "transactionInject",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "hex-encoded serialized transaction string.",
+            "name": "rawtx",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok, returns the transaction.",
+            "schema": {
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "transaction": {
+                      "description": "Represents a readable transaction",
+                      "type": "object",
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        },
+                        "inner_hash": {
+                          "type": "string"
+                        },
+                        "inputs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "length": {
+                          "type": "integer",
+                          "format": "int32"
+                        },
+                        "outputs": {
+                          "type": "array",
+                          "items": {
+                            "properties": {
+                              "coins": {
+                                "type": "string"
+                              },
+                              "dst": {
+                                "type": "string"
+                              },
+                              "hours": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "uxid": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "sigs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "timestamp": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "type": {
+                          "type": "integer",
+                          "format": "int32"
+                        }
+                      }
+                    }
+                  }
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v2/transaction/raw": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Returns the hex-encoded byte serialization of a transaction. The transaction may be confirmed or unconfirmed.",
+        "operationId": "transactionRaw",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Transaction id hash",
+            "name": "txid",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the hex-encoded byte serialization of a transaction",
+            "schema": {
+              "properties": {
+                "rawtx": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v2/transaction/verify": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "description": "Decode and verify an encoded transaction",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "transactionVerify",
+        "responses": {
+          "200": {
+            "description": "Responses ok",
+            "schema": {
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "confirmed": {
+                      "type": "boolean"
+                    },
+                    "transaction": {
+                      "type": "object",
+                      "properties": {
+                        "fee": {
+                          "type": "string"
+                        },
+                        "inner_hash": {
+                          "type": "string"
+                        },
+                        "inputs": {
+                          "type": "array",
+                          "items": {
+                            "properties": {
+                              "address": {
+                                "type": "string"
+                              },
+                              "block": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "calculated_hours": {
+                                "type": "string"
+                              },
+                              "coins": {
+                                "type": "string"
+                              },
+                              "hours": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "integer",
+                                "format": "int64"
+                              },
+                              "txid": {
+                                "type": "string"
+                              },
+                              "uxid": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "length": {
+                          "type": "integer",
+                          "format": "int32"
+                        },
+                        "outputs": {
+                          "type": "array",
+                          "items": {
+                            "properties": {
+                              "address": {
+                                "type": "string"
+                              },
+                              "coins": {
+                                "type": "string"
+                              },
+                              "hours": {
+                                "type": "string"
+                              },
+                              "uxid": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "sigs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "txid": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "integer",
+                          "format": "int32"
+                        }
+                      }
+                    }
+                  }
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v2/wallet/recover": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Recovers an encrypted wallet by providing the seed. The first address will be generated from seed and compared to the first address of the specified wallet. If they match, the wallet will be regenerated with an optional password. If the wallet is not encrypted, an error is returned.",
+        "operationId": "walletRecover",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Wallet id.",
+            "name": "id",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Wallet seed.",
+            "name": "seed",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Wallet password.",
+            "name": "password",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This endpoint decrypts wallets.",
+            "schema": {
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "address": {
+                            "type": "string"
+                          },
+                          "public_key": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "coin": {
+                          "type": "string"
+                        },
+                        "crypto_type": {
+                          "type": "string"
+                        },
+                        "encrypted": {
+                          "type": "boolean"
+                        },
+                        "filename": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "timestamp": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/api/v2/wallet/seed/verify": {
+      "post": {
+        "security": [
+          {
+            "csrfAuth": []
+          }
+        ],
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "summary": "Verifies a wallet seed.",
+        "operationId": "walletSeedVerify",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Seed to be verified.",
+            "name": "seed",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verifies a wallet seed.",
+            "schema": {
+              "properties": {
+                "data": {
+                  "description": "Empty",
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Wrong Seed"
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    }
+  },
+  "responses": {
+    "buildInfo": {
+      "description": "BuildInfo represents the build info",
+      "headers": {
+        "branch": {
+          "type": "string",
+          "description": "git branch name"
+        },
+        "commit": {
+          "type": "string",
+          "description": "git commit id"
+        },
+        "version": {
+          "type": "string",
+          "description": "version number"
+        }
+      }
+    },
+    "coinSupply": {
+      "description": "CoinSupply records the coin supply info.",
+      "headers": {
+        "current_coinhour_supply": {
+          "type": "string",
+          "description": "CurrentCoinHourSupply is coins hours in non distribution addresses."
+        },
+        "current_supply": {
+          "type": "string",
+          "description": "Coins distributed beyond the project."
+        },
+        "locked_distribution_addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Distribution addresses which are locked and do not count towards total supply."
+        },
+        "max_supply": {
+          "type": "string",
+          "description": "MaxSupply is the maximum number of coins to be distributed ever."
+        },
+        "total_coinhour_supply": {
+          "type": "string",
+          "description": "TotalCoinHourSupply is coin hours in all addresses including unlocked distribution addresses."
+        },
+        "total_supply": {
+          "type": "string",
+          "description": "TotalSupply is CurrentSupply plus coins held by the distribution addresses that are spendable."
+        },
+        "unlocked_distribution_addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Distribution addresses which count towards total supply."
+        }
+      }
+    },
+    "genericError": {
+      "description": "A GenericError is the default error message that is generated.\nFor certain status codes there are more appropriate error structures.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "x-go-name": "Code"
+          },
+          "message": {
+            "type": "string",
+            "x-go-name": "Message"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "csrfAuth": {
+      "type": "apiKey",
+      "name": "X-CSRF-TOKEN",
+      "in": "header"
+    }
+  }
+}

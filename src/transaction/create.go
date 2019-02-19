@@ -47,7 +47,7 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 	// Determine which unspents to spend
 	uxa := auxs.Flatten()
 
-	uxb, err := NewUxBalances(headTime, uxa)
+	uxb, err := NewUxBalances(uxa, headTime)
 	if err != nil {
 		return nil, nil, err
 	}

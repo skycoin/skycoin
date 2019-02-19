@@ -505,27 +505,24 @@ func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		// Check that addresses or unspents are not empty
+		// This is not checked in Validate() because POST /api/v1/wallet/transaction
+		// allows both to be empty
+		if len(req.Addresses) == 0 && len(req.UxOuts) == 0 {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "one of addresses or unspents must not be empty")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
 		txn, inputs, err := gateway.CreateTransaction(req.TransactionParams(), req.VisorParams())
 		if err != nil {
 			var resp HTTPResponse
 			switch err.(type) {
-			case wallet.Error:
-				switch err {
-				case wallet.ErrWalletAPIDisabled:
-					resp = NewHTTPErrorResponse(http.StatusForbidden, "")
-				case wallet.ErrWalletNotExist:
-					resp = NewHTTPErrorResponse(http.StatusNotFound, err.Error())
-				default:
-					resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
-				}
-			case blockdb.ErrUnspentNotExist,
-				transaction.Error,
-				visor.UserError:
+			case blockdb.ErrUnspentNotExist, transaction.Error, visor.UserError, wallet.Error:
 				resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 			default:
 				switch err {
-				case fee.ErrTxnNoFee,
-					fee.ErrTxnInsufficientCoinHours:
+				case fee.ErrTxnNoFee, fee.ErrTxnInsufficientCoinHours:
 					resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 				default:
 					resp = NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())

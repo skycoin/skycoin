@@ -35,7 +35,7 @@ type UxBalance struct {
 }
 
 // NewUxBalances converts coin.UxArray to []UxBalance. headTime is required to calculate coin hours.
-func NewUxBalances(headTime uint64, uxa coin.UxArray) ([]UxBalance, error) {
+func NewUxBalances(uxa coin.UxArray, headTime uint64) ([]UxBalance, error) {
 	uxb := make([]UxBalance, len(uxa))
 	for i, ux := range uxa {
 		b, err := NewUxBalance(headTime, ux)

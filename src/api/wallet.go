@@ -1005,7 +1005,7 @@ func walletHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //	id: wallet id [required]
 //	verbose: [bool] include verbose transaction input data
-func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
+func walletTransactionsHandler(gateway Gatewayer, verbs bool) http.HandlerFunc {
 
 	// swagger:operation GET /api/v1/wallet/transactions/verbose walletTransactionsVerbose
 	//
@@ -1197,7 +1197,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		if verbose {
+		if verbose || verbs {
 			txns, inputs, err := gateway.GetWalletUnconfirmedTransactionsVerbose(wltID)
 			if err != nil {
 				logger.Errorf("get wallet unconfirmed transactions verbose failed: %v", err)

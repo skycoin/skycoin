@@ -448,7 +448,8 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV1("/wallet/balance", forAPISet(walletBalanceHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/spend", forAPISet(walletSpendHandler(gateway), []string{EndpointsDeprecatedWalletSpend}))
 	webHandlerV1("/wallet/transaction", forAPISet(createTransactionHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/transactions", forAPISet(walletTransactionsHandler(gateway), []string{EndpointsWallet}))
+	webHandlerV1("/wallet/transactions", forAPISet(walletTransactionsHandler(gateway, false), []string{EndpointsWallet}))
+	webHandlerV1("/wallet/transactions/verbose", forAPISet(walletTransactionsHandler(gateway, true), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/update", forAPISet(walletUpdateHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallets", forAPISet(walletsHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallets/folderName", forAPISet(walletFolderHandler(gateway), []string{EndpointsWallet}))
@@ -464,9 +465,12 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	// Blockchain interface
 	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
 	webHandlerV1("/blockchain/progress", forAPISet(blockchainProgressHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/block", forAPISet(blockHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/blocks", forAPISet(blocksHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/last_blocks", forAPISet(lastBlocksHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/block", forAPISet(blockHandler(gateway, false), []string{EndpointsRead}))
+	webHandlerV1("/block/verbose", forAPISet(blockHandler(gateway, true), []string{EndpointsRead}))
+	webHandlerV1("/blocks", forAPISet(blocksHandler(gateway, false), []string{EndpointsRead}))
+	webHandlerV1("/blocks/verbose", forAPISet(blocksHandler(gateway, true), []string{EndpointsRead}))
+	webHandlerV1("/last_blocks", forAPISet(lastBlocksHandler(gateway, false), []string{EndpointsRead}))
+	webHandlerV1("/last_blocks/verbose", forAPISet(lastBlocksHandler(gateway, true), []string{EndpointsRead}))
 
 	// Network stats endpoints
 	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
@@ -479,10 +483,14 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV1("/network/connection/disconnect", forAPISet(disconnectHandler(gateway), []string{EndpointsNetCtrl}))
 
 	// Transaction related endpoints
-	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway, false), []string{EndpointsRead}))
+	webHandlerV1("/pendingTxs/verbose", forAPISet(pendingTxnsHandler(gateway, true), []string{EndpointsRead}))
+	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway, false, false), []string{EndpointsRead}))
+	webHandlerV1("/transaction/verbose", forAPISet(transactionHandler(gateway, true, false), []string{EndpointsRead}))
+	webHandlerV1("/transaction/encoded", forAPISet(transactionHandler(gateway, false, true), []string{EndpointsRead}))
 	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway, false), []string{EndpointsRead}))
+	webHandlerV1("/transactions/verbose", forAPISet(transactionsHandler(gateway, true), []string{EndpointsRead}))
 	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway, false), []string{EndpointsTransaction, EndpointsWallet}))
 	webHandlerV2("/transaction/inject", forAPISet(injectTransactionHandler(gateway, true), []string{EndpointsTransaction, EndpointsWallet}))
 	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsTransaction}))

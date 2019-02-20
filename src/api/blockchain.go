@@ -169,7 +169,7 @@ func parseBoolFlag(v string) (bool, error) {
 //  seq [int]
 // 	Note: only one of hash or seq is allowed
 // 	verbose [bool]
-func blockHandler(gateway Gatewayer) http.HandlerFunc {
+func blockHandler(gateway Gatewayer, verbs bool) http.HandlerFunc {
 
 	// swagger:operation GET /api/v1/block/verbose blockVerbose
 	//
@@ -410,7 +410,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		if verbose {
+		if verbose || verbs {
 			var b *coin.SignedBlock
 			var inputs [][]visor.TransactionInput
 
@@ -480,7 +480,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 //	end [int]
 //  seqs [comma separated list of ints]
 //  verbose [bool]
-func blocksHandler(gateway Gatewayer) http.HandlerFunc {
+func blocksHandler(gateway Gatewayer, verbs bool) http.HandlerFunc {
 
 	// swagger:operation POST /api/v1/blocks/verbose blocksPostVerbose
 	//
@@ -1003,7 +1003,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		if verbose {
+		if verbose || verbs {
 			var blocks []coin.SignedBlock
 			var inputs [][][]visor.TransactionInput
 			var err error
@@ -1068,7 +1068,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //	num [int]
 //  verbose [bool]
-func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
+func lastBlocksHandler(gateway Gatewayer, verbs bool) http.HandlerFunc {
 
 	// swagger:operation GET /api/v1/last_blocks/verbose lastBlocksVerbose
 	//
@@ -1278,7 +1278,7 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if verbose {
+		if verbose || verbs {
 			blocks, inputs, err := gateway.GetLastBlocksVerbose(n)
 			if err != nil {
 				wh.Error500(w, err.Error())

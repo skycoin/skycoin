@@ -11,9 +11,9 @@ import (
 
 var (
 	// ErrUnknownAddress is returned if an address is not found in a wallet
-	ErrUnknownAddress = NewError(errors.New("Address not found in wallet"))
+	ErrUnknownAddress = NewError(errors.New("address not found in wallet"))
 	// ErrUnknownUxOut is returned if a uxout is not owned by any address in a wallet
-	ErrUnknownUxOut = NewError(errors.New("UxOut is not owned by any address in the wallet"))
+	ErrUnknownUxOut = NewError(errors.New("uxout is not owned by any address in the wallet"))
 )
 
 func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {

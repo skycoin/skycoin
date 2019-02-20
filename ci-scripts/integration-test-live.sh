@@ -73,6 +73,10 @@ if [ ! $? -eq 0 ]; then
     exit 1
 fi
 
+echo "checking if integraton tests compile"
+go test ./src/api/integration/...
+go test ./src/cli/integration/...
+
 if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \

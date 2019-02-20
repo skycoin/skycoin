@@ -22,6 +22,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func TestStableInjectTransaction(t *testing.T) {
@@ -451,28 +452,92 @@ func toDropletString(t *testing.T, i uint64) string {
 	return x
 }
 
-func TestLiveWalletCreateTransactionSpecificUnsigned(t *testing.T) {
-	testLiveWalletCreateTransactionSpecific(t, true)
-}
-
-func TestLiveWalletCreateTransactionSpecificSigned(t *testing.T) {
-	testLiveWalletCreateTransactionSpecific(t, false)
-}
-
-func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
-	if !doLive(t) {
+func TestStableCreateTransaction(t *testing.T) {
+	if !doStable(t) {
 		return
 	}
 
-	requireWalletEnv(t)
-
 	c := newClient()
 
-	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
+	unknownHash := testutil.RandSHA256(t).Hex()
 
+	cases := []struct {
+		name string
+		req  api.CreateTransactionRequest
+		err  string
+		code int
+	}{
+		{
+			name: "invalid no uxouts for addresses",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses: []string{testutil.MakeAddress().String()},
+				To: []api.Receiver{
+					{
+						Address: testutil.MakeAddress().String(),
+						Coins:   "1.000000",
+						Hours:   "100",
+					},
+				},
+			},
+			code: http.StatusBadRequest,
+			err:  "no unspents to spend",
+		},
+
+		{
+			name: "invalid uxouts do not exist",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				UxOuts: []string{unknownHash},
+				To: []api.Receiver{
+					{
+						Address: testutil.MakeAddress().String(),
+						Coins:   "1.000000",
+						Hours:   "100",
+					},
+				},
+			},
+			code: http.StatusBadRequest,
+			err:  fmt.Sprintf("unspent output of %s does not exist", unknownHash),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NotEmpty(t, tc.err)
+			_, err := c.CreateTransaction(tc.req)
+			assertResponseError(t, err, tc.code, tc.err)
+		})
+	}
+}
+
+type liveCreateTxnTestCase struct {
+	name                 string
+	req                  api.CreateTransactionRequest
+	outputs              []coin.TransactionOutput
+	outputsSubset        []coin.TransactionOutput
+	err                  string
+	code                 int
+	ignoreHours          bool
+	additionalRespVerify func(t *testing.T, r *api.CreateTransactionResponse)
+}
+
+func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, totalHours uint64) []liveCreateTxnTestCase {
 	remainingHours := fee.RemainingHours(totalHours, params.UserVerifyTxn.BurnFactor)
 	require.True(t, remainingHours > 1)
+	unknownOutput := testutil.RandSHA256(t)
+	defaultChangeAddress := w.Entries[0].Address.String()
 
+	// Get all outputs
+	c := newClient()
+	outputs, err := c.Outputs()
+	require.NoError(t, err)
+
+	// Split outputs into those held by the wallet and those not
 	addresses := make([]string, len(w.Entries))
 	addressMap := make(map[string]struct{}, len(w.Entries))
 	for i, e := range w.Entries {
@@ -480,142 +545,107 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 		addressMap[e.Address.String()] = struct{}{}
 	}
 
-	// Get all outputs
-	outputs, err := c.Outputs()
-	require.NoError(t, err)
-
-	// Split outputs into those held by the wallet and those not
 	var walletOutputHashes []string
 	var walletOutputs readable.UnspentOutputs
 	walletAuxs := make(map[string][]string)
-	var nonWalletOutputs readable.UnspentOutputs
 	for _, o := range outputs.HeadOutputs {
 		if _, ok := addressMap[o.Address]; ok {
 			walletOutputs = append(walletOutputs, o)
 			walletOutputHashes = append(walletOutputHashes, o.Hash)
 			walletAuxs[o.Address] = append(walletAuxs[o.Address], o.Hash)
-		} else {
-			nonWalletOutputs = append(nonWalletOutputs, o)
 		}
 	}
 
 	require.NotEmpty(t, walletOutputs)
-	require.NotEmpty(t, nonWalletOutputs)
 
-	unknownOutput := testutil.RandSHA256(t)
-	defaultChangeAddress := w.Entries[0].Address.String()
-
-	type testCase struct {
-		name                 string
-		req                  api.WalletCreateTransactionRequest
-		outputs              []coin.TransactionOutput
-		outputsSubset        []coin.TransactionOutput
-		err                  string
-		code                 int
-		ignoreHours          bool
-		additionalRespVerify func(t *testing.T, r *api.CreateTransactionResponse)
-	}
-
-	cases := []testCase{
+	return []liveCreateTxnTestCase{
 		{
 			name: "invalid decimals",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[0].Address.String(),
-							Coins:   "0.0001",
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.0001",
+						Hours:   "1",
 					},
 				},
 			},
-			err:  "400 Bad Request - to[0].coins has too many decimal places",
+			err:  "to[0].coins has too many decimal places",
 			code: http.StatusBadRequest,
 		},
 
 		{
 			name: "overflowing hours",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   "1",
 					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[0].Address.String(),
-							Coins:   "0.001",
-							Hours:   "1",
-						},
-						{
-							Address: w.Entries[0].Address.String(),
-							Coins:   "0.001",
-							Hours:   fmt.Sprint(uint64(math.MaxUint64)),
-						},
-						{
-							Address: w.Entries[0].Address.String(),
-							Coins:   "0.001",
-							Hours:   fmt.Sprint(uint64(math.MaxUint64) - 1),
-						},
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   fmt.Sprint(uint64(math.MaxUint64)),
+					},
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   fmt.Sprint(uint64(math.MaxUint64) - 1),
 					},
 				},
 			},
-			err:  "400 Bad Request - total output hours error: uint64 addition overflow",
+			err:  "total output hours error: uint64 addition overflow",
 			code: http.StatusBadRequest,
 		},
 
 		{
 			name: "insufficient coins",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[0].Address.String(),
-							Coins:   fmt.Sprint(totalCoins + 1),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   fmt.Sprint(totalCoins + 1),
+						Hours:   "1",
 					},
 				},
 			},
-			err:  "400 Bad Request - balance is not sufficient",
+			err:  "balance is not sufficient",
 			code: http.StatusBadRequest,
 		},
 
 		{
 			name: "insufficient hours",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[0].Address.String(),
-							Coins:   toDropletString(t, totalCoins),
-							Hours:   fmt.Sprint(totalHours + 1),
-						},
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   toDropletString(t, totalCoins),
+						Hours:   fmt.Sprint(totalHours + 1),
 					},
 				},
 			},
-			err:  "400 Bad Request - hours are not sufficient",
+			err:  "hours are not sufficient",
 			code: http.StatusBadRequest,
 		},
 
@@ -627,20 +657,17 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			// because then this test cannot be performed, since there is no
 			// way to use all outputs and produce change in that case.
 			name: "valid request, manual one output with change, spend all",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins-1e3),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins-1e3),
+						Hours:   "1",
 					},
 				},
 			},
@@ -666,19 +693,16 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			// because then this test cannot be performed, since there is no
 			// way to use all outputs and produce change in that case.
 			name: "valid request, manual one output with change, spend all, unspecified change address",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins-1e3),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses: addresses,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins-1e3),
+						Hours:   "1",
 					},
 				},
 			},
@@ -698,20 +722,17 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, manual one output with change, don't spend all",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, 1e3),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, 1e3),
+						Hours:   "1",
 					},
 				},
 			},
@@ -729,20 +750,17 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, manual one output no change",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins),
+						Hours:   "1",
 					},
 				},
 			},
@@ -760,21 +778,18 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			// this test only checks that if IgnoreUnconfirmed is specified,
 			// the API doesn't throw up some parsing error
 			name: "valid request, manual one output no change, ignore unconfirmed",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					IgnoreUnconfirmed: true,
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				IgnoreUnconfirmed: true,
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins),
+						Hours:   "1",
 					},
 				},
 			},
@@ -789,21 +804,18 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, auto one output no change, share factor recalculates to 1.0",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type:        transaction.HoursSelectionTypeAuto,
-						Mode:        transaction.HoursSelectionModeShare,
-						ShareFactor: "0.5",
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins),
-						},
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
+					ShareFactor: "0.5",
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins),
 					},
 				},
 			},
@@ -818,25 +830,22 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "valid request, auto two outputs with change",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type:        transaction.HoursSelectionTypeAuto,
-						Mode:        transaction.HoursSelectionModeShare,
-						ShareFactor: "0.5",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
+					ShareFactor: "0.5",
+				},
+				Addresses:     addresses,
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, 1e3),
 					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, 1e3),
-						},
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins-2e3),
-						},
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins-2e3),
 					},
 				},
 			},
@@ -859,123 +868,83 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 
 		{
 			name: "uxout does not exist",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					UxOuts: []string{unknownOutput.Hex()},
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				UxOuts: []string{unknownOutput.Hex()},
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins),
+						Hours:   "1",
 					},
 				},
 			},
-			err:  fmt.Sprintf("400 Bad Request - unspent output of %s does not exist", unknownOutput.Hex()),
-			code: http.StatusBadRequest,
-		},
-
-		{
-			name: "uxout not held by the wallet",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					UxOuts: []string{nonWalletOutputs[0].Hash},
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins),
-							Hours:   "1",
-						},
-					},
-				},
-			},
-			err:  "400 Bad Request - uxout is not owned by any address in the wallet",
+			err:  fmt.Sprintf("unspent output of %s does not exist", unknownOutput.Hex()),
 			code: http.StatusBadRequest,
 		},
 
 		{
 			name: "insufficient balance with uxouts",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					UxOuts: []string{walletOutputs[0].Hash},
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins+1e3),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				UxOuts: []string{walletOutputs[0].Hash},
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins+1e3),
+						Hours:   "1",
 					},
 				},
 			},
-			err:  "400 Bad Request - balance is not sufficient",
+			err:  "balance is not sufficient",
 			code: http.StatusBadRequest,
 		},
 
 		{
 			// NOTE: expects wallet to have multiple outputs with non-zero coins
 			name: "insufficient hours with uxouts",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					UxOuts: []string{walletOutputs[0].Hash},
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, 1e3),
-							Hours:   fmt.Sprint(totalHours + 1),
-						},
+			req: api.CreateTransactionRequest{
+				UxOuts: []string{walletOutputs[0].Hash},
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, 1e3),
+						Hours:   fmt.Sprint(totalHours + 1),
 					},
 				},
 			},
-			err:  "400 Bad Request - hours are not sufficient",
+			err:  "hours are not sufficient",
 			code: http.StatusBadRequest,
 		},
 
 		{
 			name: "valid request, uxouts specified",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					// NOTE: all uxouts are provided, which has the same behavior as
-					// not providing any uxouts or addresses.
-					// Using a subset of uxouts makes the wallet setup very
-					// difficult, especially to make deterministic, in the live test
-					// More complex cases should be covered by unit tests
-					UxOuts: walletOutputHashes,
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins-1e3),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				// NOTE: all uxouts are provided, which has the same behavior as
+				// not providing any uxouts or addresses.
+				// Using a subset of uxouts makes the wallet setup very
+				// difficult, especially to make deterministic, in the live test
+				// More complex cases should be covered by unit tests
+				UxOuts: walletOutputHashes,
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins-1e3),
+						Hours:   "1",
 					},
 				},
 			},
@@ -997,51 +966,23 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 		},
 
 		{
-			name: "specified addresses not in wallet",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					Addresses: []string{testutil.MakeAddress().String()},
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins),
-							Hours:   "1",
-						},
-					},
-				},
-			},
-			err:  "400 Bad Request - address not found in wallet",
-			code: http.StatusBadRequest,
-		},
-
-		{
 			name: "valid request, addresses specified",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					// NOTE: all addresses are provided, which has the same behavior as
-					// not providing any addresses.
-					// Using a subset of addresses makes the wallet setup very
-					// difficult, especially to make deterministic, in the live test
-					// More complex cases should be covered by unit tests
-					Addresses: addresses,
-					HoursSelection: api.HoursSelection{
-						Type: transaction.HoursSelectionTypeManual,
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, totalCoins-1e3),
-							Hours:   "1",
-						},
+			req: api.CreateTransactionRequest{
+				// NOTE: all addresses are provided, which has the same behavior as
+				// not providing any addresses.
+				// Using a subset of addresses makes the wallet setup very
+				// difficult, especially to make deterministic, in the live test
+				// More complex cases should be covered by unit tests
+				Addresses: addresses,
+				HoursSelection: api.HoursSelection{
+					Type: transaction.HoursSelectionTypeManual,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(t, totalCoins-1e3),
+						Hours:   "1",
 					},
 				},
 			},
@@ -1059,14 +1000,202 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			},
 		},
 	}
+}
+
+func TestLiveCreateTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := newClient()
+
+	w, totalCoins, totalHours, _ := prepareAndCheckWallet(t, c, 2e6, 20)
+
+	cases := makeLiveCreateTxnTestCases(t, w, totalCoins, totalHours)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
+
+			result, err := c.CreateTransaction(tc.req)
+			if tc.err != "" {
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
+
+			require.NoError(t, err)
+			if tc.err != "" {
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
+
+			require.NoError(t, err)
+			assertCreateTransactionResult(t, tc, result, true)
+		})
+	}
+}
+
+func TestLiveWalletCreateTransactionSpecificUnsigned(t *testing.T) {
+	testLiveWalletCreateTransactionSpecific(t, true)
+}
+
+func TestLiveWalletCreateTransactionSpecificSigned(t *testing.T) {
+	testLiveWalletCreateTransactionSpecific(t, false)
+}
+
+func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := newClient()
+
+	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
+
+	remainingHours := fee.RemainingHours(totalHours, params.UserVerifyTxn.BurnFactor)
+	require.True(t, remainingHours > 1)
+
+	// Split outputs into those held by the wallet and those not
+	addresses := make([]string, len(w.Entries))
+	addressMap := make(map[string]struct{}, len(w.Entries))
+	for i, e := range w.Entries {
+		addresses[i] = e.Address.String()
+		addressMap[e.Address.String()] = struct{}{}
+	}
+
+	outputs, err := c.Outputs()
+	require.NoError(t, err)
+
+	var walletOutputHashes []string
+	var walletOutputs readable.UnspentOutputs
+	walletAuxs := make(map[string][]string)
+	var nonWalletOutputs readable.UnspentOutputs
+	for _, o := range outputs.HeadOutputs {
+		if _, ok := addressMap[o.Address]; ok {
+			walletOutputs = append(walletOutputs, o)
+			walletOutputHashes = append(walletOutputHashes, o.Hash)
+			walletAuxs[o.Address] = append(walletAuxs[o.Address], o.Hash)
+		} else {
+			nonWalletOutputs = append(nonWalletOutputs, o)
+		}
+	}
+
+	require.NotEmpty(t, walletOutputs)
+	require.NotEmpty(t, nonWalletOutputs)
+
+	defaultChangeAddress := w.Entries[0].Address.String()
+
+	baseCases := makeLiveCreateTxnTestCases(t, w, totalCoins, totalHours)
+
+	type liveWalletCreateTxnTestCase struct {
+		liveCreateTxnTestCase
+		password string
+		walletID string
+	}
+
+	cases := make([]liveWalletCreateTxnTestCase, len(baseCases))
+	for i, tc := range baseCases {
+		cases[i] = liveWalletCreateTxnTestCase{
+			liveCreateTxnTestCase: tc,
+			walletID:              w.Filename(),
+			password:              password,
+		}
+	}
+
+	cases = append(cases, []liveWalletCreateTxnTestCase{
+		{
+			walletID: w.Filename(),
+			password: password,
+			liveCreateTxnTestCase: liveCreateTxnTestCase{
+				name: "uxout not held by the wallet",
+				req: api.CreateTransactionRequest{
+					UxOuts: []string{nonWalletOutputs[0].Hash},
+					HoursSelection: api.HoursSelection{
+						Type: transaction.HoursSelectionTypeManual,
+					},
+					ChangeAddress: &defaultChangeAddress,
+					To: []api.Receiver{
+						{
+							Address: w.Entries[1].Address.String(),
+							Coins:   nonWalletOutputs[0].Coins,
+							Hours:   "1",
+						},
+					},
+				},
+				err:  "uxout is not owned by any address in the wallet",
+				code: http.StatusBadRequest,
+			},
+		},
+
+		{
+			walletID: w.Filename(),
+			password: password,
+			liveCreateTxnTestCase: liveCreateTxnTestCase{
+				name: "specified addresses not in wallet",
+				req: api.CreateTransactionRequest{
+					Addresses: []string{testutil.MakeAddress().String()},
+					HoursSelection: api.HoursSelection{
+						Type: transaction.HoursSelectionTypeManual,
+					},
+					ChangeAddress: &defaultChangeAddress,
+					To: []api.Receiver{
+						{
+							Address: w.Entries[1].Address.String(),
+							Coins:   toDropletString(t, totalCoins),
+							Hours:   "1",
+						},
+					},
+				},
+				err:  "address not found in wallet",
+				code: http.StatusBadRequest,
+			},
+		},
+
+		{
+			walletID: w.Filename(),
+			password: password,
+			liveCreateTxnTestCase: liveCreateTxnTestCase{
+				name: "valid request, addresses and uxouts not specified",
+				req: api.CreateTransactionRequest{
+					HoursSelection: api.HoursSelection{
+						Type: transaction.HoursSelectionTypeManual,
+					},
+					ChangeAddress: &defaultChangeAddress,
+					To: []api.Receiver{
+						{
+							Address: w.Entries[1].Address.String(),
+							Coins:   toDropletString(t, totalCoins-1e3),
+							Hours:   "1",
+						},
+					},
+				},
+				outputs: []coin.TransactionOutput{
+					{
+						Address: w.Entries[1].SkycoinAddress(),
+						Coins:   totalCoins - 1e3,
+						Hours:   1,
+					},
+					{
+						Address: w.Entries[0].SkycoinAddress(),
+						Coins:   1e3,
+						Hours:   remainingHours - 1,
+					},
+				},
+			},
+		},
+	}...)
 
 	if w.IsEncrypted() {
-		cases = append(cases, testCase{
-			name: "invalid password",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password + "foo",
-				CreateTransactionRequest: api.CreateTransactionRequest{
+		cases = append(cases, liveWalletCreateTxnTestCase{
+			walletID: w.Filename(),
+			password: password + "foo",
+			liveCreateTxnTestCase: liveCreateTxnTestCase{
+				name: "invalid password",
+				req: api.CreateTransactionRequest{
 					HoursSelection: api.HoursSelection{
 						Type: transaction.HoursSelectionTypeManual,
 					},
@@ -1079,17 +1208,17 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 						},
 					},
 				},
+				err:  "invalid password",
+				code: http.StatusBadRequest,
 			},
-			err:  "400 Bad Request - invalid password",
-			code: http.StatusBadRequest,
 		})
 
-		cases = append(cases, testCase{
-			name: "password not provided",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: "",
-				CreateTransactionRequest: api.CreateTransactionRequest{
+		cases = append(cases, liveWalletCreateTxnTestCase{
+			walletID: w.Filename(),
+			password: "",
+			liveCreateTxnTestCase: liveCreateTxnTestCase{
+				name: "password not provided",
+				req: api.CreateTransactionRequest{
 					HoursSelection: api.HoursSelection{
 						Type: transaction.HoursSelectionTypeManual,
 					},
@@ -1102,18 +1231,23 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 						},
 					},
 				},
+				err:  "missing password",
+				code: http.StatusBadRequest,
 			},
-			err:  "400 Bad Request - missing password",
-			code: http.StatusBadRequest,
 		})
 
 	} else {
-		cases = append(cases, testCase{
-			name: "password provided for unencrypted wallet",
-			req: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password + "foo",
-				CreateTransactionRequest: api.CreateTransactionRequest{
+		err := "wallet is not encrypted"
+		if unsigned {
+			err = "password must not be used for unsigned transactions"
+		}
+
+		cases = append(cases, liveWalletCreateTxnTestCase{
+			walletID: w.Filename(),
+			password: password + "foo",
+			liveCreateTxnTestCase: liveCreateTxnTestCase{
+				name: "password provided for unencrypted wallet",
+				req: api.CreateTransactionRequest{
 					HoursSelection: api.HoursSelection{
 						Type: transaction.HoursSelectionTypeManual,
 					},
@@ -1126,9 +1260,9 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 						},
 					},
 				},
+				err:  err,
+				code: http.StatusBadRequest,
 			},
-			err:  "400 Bad Request - wallet is not encrypted",
-			code: http.StatusBadRequest,
 		})
 	}
 
@@ -1137,69 +1271,83 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 		t.Run(name, func(t *testing.T) {
 			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
 
-			tc.req.Unsigned = unsigned
-			result, err := c.WalletCreateTransaction(tc.req)
+			req := api.WalletCreateTransactionRequest{
+				CreateTransactionRequest: tc.req,
+				WalletID:                 tc.walletID,
+				Password:                 tc.password,
+				Unsigned:                 unsigned,
+			}
+
+			if tc.err != "" {
+				tc.err = fmt.Sprintf("%d %s - %s", tc.code, http.StatusText(tc.code), tc.err)
+			}
+
+			result, err := c.WalletCreateTransaction(req)
 			if tc.err != "" {
 				assertResponseError(t, err, tc.code, tc.err)
 				return
 			}
 
 			require.NoError(t, err)
-
-			if len(tc.outputsSubset) == 0 {
-				require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
-			}
-
-			for i, o := range tc.outputs {
-				// The final change output may not have the address specified,
-				// if the ChangeAddress was not specified in the wallet params.
-				// Calculate it automatically based upon the transaction inputs
-				if o.Address.Null() {
-					require.Equal(t, i, len(tc.outputs)-1)
-					require.Nil(t, tc.req.ChangeAddress)
-
-					changeAddr := result.Transaction.Out[i].Address
-					// The changeAddr must be associated with one of the transaction inputs
-					changeAddrFound := false
-					for _, x := range result.Transaction.In {
-						require.NotNil(t, x.Address)
-						if changeAddr == x.Address {
-							changeAddrFound = true
-							break
-						}
-					}
-
-					require.True(t, changeAddrFound)
-				} else {
-					require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
-				}
-
-				coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
-				require.NoError(t, err)
-				require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
-
-				if !tc.ignoreHours {
-					hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
-					require.NoError(t, err)
-					require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
-				}
-			}
-
-			assertEncodeTxnMatchesTxn(t, result)
-			assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
-			assertCreatedTransactionValid(t, result.Transaction, unsigned)
-
-			if tc.req.HoursSelection.Type == transaction.HoursSelectionTypeManual {
-				assertRequestedHours(t, tc.req.To, result.Transaction.Out)
-			}
-
-			if tc.additionalRespVerify != nil {
-				tc.additionalRespVerify(t, result)
-			}
-
-			assertVerifyTransaction(t, c, result.EncodedTransaction, unsigned)
+			assertCreateTransactionResult(t, tc.liveCreateTxnTestCase, result, unsigned)
 		})
 	}
+}
+
+func assertCreateTransactionResult(t *testing.T, tc liveCreateTxnTestCase, result *api.CreateTransactionResponse, unsigned bool) {
+	if len(tc.outputsSubset) == 0 {
+		require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
+	}
+
+	for i, o := range tc.outputs {
+		// The final change output may not have the address specified,
+		// if the ChangeAddress was not specified in the wallet params.
+		// Calculate it automatically based upon the transaction inputs
+		if o.Address.Null() {
+			require.Equal(t, i, len(tc.outputs)-1)
+			require.Nil(t, tc.req.ChangeAddress)
+
+			changeAddr := result.Transaction.Out[i].Address
+			// The changeAddr must be associated with one of the transaction inputs
+			changeAddrFound := false
+			for _, x := range result.Transaction.In {
+				require.NotNil(t, x.Address)
+				if changeAddr == x.Address {
+					changeAddrFound = true
+					break
+				}
+			}
+
+			require.True(t, changeAddrFound)
+		} else {
+			require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
+		}
+
+		coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
+		require.NoError(t, err)
+		require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
+
+		if !tc.ignoreHours {
+			hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
+			require.NoError(t, err)
+			require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
+		}
+	}
+
+	assertEncodeTxnMatchesTxn(t, result)
+	assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
+	assertCreatedTransactionValid(t, result.Transaction, unsigned)
+
+	if tc.req.HoursSelection.Type == transaction.HoursSelectionTypeManual {
+		assertRequestedHours(t, tc.req.To, result.Transaction.Out)
+	}
+
+	if tc.additionalRespVerify != nil {
+		tc.additionalRespVerify(t, result)
+	}
+
+	assertVerifyTransaction(t, result.EncodedTransaction, unsigned)
+
 }
 
 func TestLiveWalletCreateTransactionRandomUnsigned(t *testing.T) {
@@ -1399,7 +1547,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction, unsigned)
-		assertVerifyTransaction(t, c, result.EncodedTransaction, unsigned)
+		assertVerifyTransaction(t, result.EncodedTransaction, unsigned)
 
 		// Auto, share factor 0
 
@@ -1423,7 +1571,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction, unsigned)
-		assertVerifyTransaction(t, c, result.EncodedTransaction, unsigned)
+		assertVerifyTransaction(t, result.EncodedTransaction, unsigned)
 
 		// Check that the non-change outputs have 0 hours
 		for _, o := range result.Transaction.Out[:nAutoOutputs] {
@@ -1452,7 +1600,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction, unsigned)
-		assertVerifyTransaction(t, c, result.EncodedTransaction, unsigned)
+		assertVerifyTransaction(t, result.EncodedTransaction, unsigned)
 
 		// Check that the change output has 0 hours
 		if len(result.Transaction.Out) > nAutoOutputs {
@@ -1480,7 +1628,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		assertRequestedCoins(t, to, result.Transaction.Out)
 		assertRequestedHours(t, to, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction, unsigned)
-		assertVerifyTransaction(t, c, result.EncodedTransaction, unsigned)
+		assertVerifyTransaction(t, result.EncodedTransaction, unsigned)
 	}
 }
 
@@ -1529,7 +1677,8 @@ func assertRequestedHours(t *testing.T, to []api.Receiver, out []api.CreatedTran
 	}
 }
 
-func assertVerifyTransaction(t *testing.T, c *api.Client, encodedTransaction string, unsigned bool) {
+func assertVerifyTransaction(t *testing.T, encodedTransaction string, unsigned bool) {
+	c := newClient()
 	_, err := c.VerifyTransaction(api.VerifyTransactionRequest{
 		EncodedTransaction: encodedTransaction,
 		Unsigned:           false,

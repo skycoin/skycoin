@@ -286,12 +286,10 @@ export class WalletService {
       'wallet/transaction',
       {
         hours_selection: hoursSelection,
-        wallet: {
-          id: wallet.filename,
-          password,
-          addresses,
-          unspents,
-        },
+        wallet_id: wallet.filename,
+        password: password,
+        addresses: addresses,
+        unspents: unspents,
         to: destinations,
         change_address: changeAddress,
       },

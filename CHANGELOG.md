@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-disable-header-check` flag to disable host/origin/referer header checks for the node APIs and add `header_check_enabled` parameter in `/health` endpoint.
 - Add CLI `checkDBDecoding` command to verify the `skyencoder`-generated binary decoders match the reflect-based decoder
 - Add `unsigned` option to `POST /api/v1/wallet/transaction` to create unsigned transactions from a wallet
-- Add `/api/v2/wallet/transaction/sign` to sign an unsigned transaction with a wallet
+- Add `POST /api/v2/wallet/transaction/sign` to sign an unsigned transaction with a wallet
 - Add `unsigned` option to `POST /api/v2/transaction/verify` for verifying an unsigned transaction
+- Add `POST /api/v2/transaction` to create an unsigned transaction from addresses or unspent outputs without a wallet
 
 ### Fixed
 

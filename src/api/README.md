@@ -42,6 +42,7 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
 - [Transaction APIs](#transaction-apis)
 	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
+	- [Create transaction from unspent outputs or addresses](#create-transaction-from-unspent-outputs-or-addresses)
 	- [Get transaction info by id](#get-transaction-info-by-id)
 	- [Get raw transaction by id](#get-raw-transaction-by-id)
 	- [Inject raw transaction](#inject-raw-transaction)
@@ -1297,10 +1298,10 @@ curl -X POST http://127.0.0.1:6420/api/v1/wallet/transaction -H 'content-type: a
     "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
     "to": [{
         "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-        "coins": "1",
+        "coins": "1"
     }, {
         "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-        "coins": "8.99",
+        "coins": "8.99"
     }]
 }'
 ```
@@ -1756,6 +1757,151 @@ Result:
         "is_valid": true
     }
 ]
+```
+
+### Create transaction from unspent outputs or addresses
+
+API sets: `TXN`
+
+```
+URI: /api/v2/transaction
+Method: POST
+Args: JSON Body, see examples
+```
+
+Creates an unsigned transaction from a pool of unspent outputs or addresses.
+`addresses` and `unspents` cannot be combined, and at least one must have elements in their array.
+
+The transaction will choose unspent outputs from the provided pool to construct a transaction
+that satisfies the requested outputs in the `to` field. Not all unspent outputs will necessarily be used
+in the transaction.
+
+If `ignore_unconfirmed` is true, the transaction will not use any outputs which are being spent by an unconfirmed transaction.
+If `ignore_unconfirmed` is false, the endpoint returns an error if any unspent output is spent by an unconfirmed transaction.
+
+`change_address` is optional. If not provided, the change address will default
+to an address from one of the unspent outputs being spent as a transaction input.
+
+Refer to `POST /api/v1/wallet/transaction` for creating a transaction from a specific wallet.
+
+`POST /api/v2/wallet/transaction/sign` can be used to sign the transaction with a wallet,
+but `POST /api/v1/wallet/transaction` can create and sign a transaction with a wallet in one operation instead.
+Otherwise, sign the transaction separately from the API.
+
+Example request body manual hours selection type, spending from specific addresses, ignoring unconfirmed unspent outputs:
+
+```json
+{
+    "hours_selection": {
+        "type": "manual"
+    },
+    "addresses": ["g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp", "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS"],
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032",
+        "hours": "7"
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2",
+        "hours": "0"
+    }],
+    "ignore_unconfirmed": false
+}
+```
+
+Example request body with auto hours selection type, spending specific uxouts:
+
+```json
+{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"],
+    "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+    "to": [{
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "1"
+    }, {
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "8.99"
+    }]
+}
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/transaction -H 'Content-Type: application/json' -d '{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "addresses": ["g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp"],
+    "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+    "to": [{
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "1"
+    }, {
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "8.99"
+    }]
+}'
+```
+
+Result:
+
+```json
+{
+	"data": {
+	    "transaction": {
+	        "length": 257,
+	        "type": 0,
+	        "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
+	        "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+	        "fee": "437691",
+	        "sigs": [
+	            "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+	        ],
+	        "inputs": [
+	            {
+	                "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
+	                "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
+	                "coins": "10.000000",
+	                "hours": "853667",
+	                "calculated_hours": "862290",
+	                "timestamp": 1524242826,
+	                "block": 23575,
+	                "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
+	            }
+	        ],
+	        "outputs": [
+	            {
+	                "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
+	                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+	                "coins": "1.000000",
+	                "hours": "22253"
+	            },
+	            {
+	                "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
+	                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+	                "coins": "8.990000",
+	                "hours": "200046"
+	            },
+	            {
+	                "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
+	                "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+	                "coins": "0.010000",
+	                "hours": "222300"
+	            }
+	        ]
+	    },
+	    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+	}
+}
 ```
 
 ### Get transaction info by id
@@ -3920,7 +4066,7 @@ For example, `/block` would become `/api/v1/block`.
 
 ## Migrating from the JSONRPC API
 
-The JSONRPC-2.0 RPC API was deprecated with v0.25.0 and removed in v0.26.0.
+The JSONRPC-2.0 RPC API was deprecated in v0.25.0 and removed in v0.26.0.
 
 Anyone still using this can follow this guide to migrate to the REST API:
 

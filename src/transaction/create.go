@@ -38,6 +38,10 @@ var (
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
 func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+	return create(p, auxs, headTime, 0)
+}
+
+func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (*coin.Transaction, []UxBalance, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -242,11 +246,23 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 	// recalculate that share ratio at 100%
 	if changeCoins == 0 && changeHours > 0 && p.HoursSelection.Type == HoursSelectionTypeAuto && p.HoursSelection.Mode == HoursSelectionModeShare {
 		oneDecimal := decimal.New(1, 0)
+
 		if p.HoursSelection.ShareFactor.Equal(oneDecimal) {
-			return nil, nil, errors.New("share factor is 1.0 but changeHours > 0 unexpectedly")
+			err := errors.New("share factor is 1.0 but changeHours > 0 unexpectedly")
+			logger.Critical().WithError(err).Error()
+			return nil, nil, err
 		}
+
+		// Double-check that we haven't already called create() once already -
+		// if for some reason the previous check fails, we'll end up in an infinite loop
+		if callCount > 0 {
+			err := errors.New("transaction.Create already fell back to share ratio 1.0")
+			logger.Critical().WithError(err).Error()
+			return nil, nil, err
+		}
+
 		p.HoursSelection.ShareFactor = &oneDecimal
-		return Create(p, auxs, headTime)
+		return create(p, auxs, headTime, 1)
 	}
 
 	if changeCoins > 0 {

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e -o pipefail
+
 if [ -z "$VERSION" ]; then
 	echo "VERSION must be set"
 	exit 1

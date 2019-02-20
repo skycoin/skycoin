@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- #2172 Fix electron build failure for linux system
+
 ### Changed
 
 - Duplicate wallets in the wallets folder will prevent the application from starting

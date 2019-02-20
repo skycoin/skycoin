@@ -1788,6 +1788,8 @@ Refer to `POST /api/v1/wallet/transaction` for creating a transaction from a spe
 but `POST /api/v1/wallet/transaction` can create and sign a transaction with a wallet in one operation instead.
 Otherwise, sign the transaction separately from the API.
 
+The transaction must be fully valid and spendable (except for the lack of signatures) or else an error is returned.
+
 Example request body manual hours selection type, spending from specific addresses, ignoring unconfirmed unspent outputs:
 
 ```json

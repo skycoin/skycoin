@@ -20,7 +20,6 @@ require('electron-context-menu')({});
 global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
-let showErrorCalled = false;
 let splashLoaded = false
 
 // Detect if the code is running with the "dev" arg. The "dev" arg is added when running npm
@@ -157,7 +156,6 @@ function startSkycoin() {
 
 function showError() {
   if (win) {
-    showErrorCalled = true;
     win.loadURL('file://' + process.resourcesPath + '/app/dist/assets/error-alert/index.html');
     console.log('Showing the error message');
   }
@@ -199,12 +197,6 @@ function createWindow(url) {
 	if (!splashLoaded) {
 	  splashLoaded = true;
 	}
-  });
-
-  win.webContents.on('did-fail-load', function() {
-    if (!showErrorCalled) {
-      showError();
-    }
   });
 
   // patch out eval

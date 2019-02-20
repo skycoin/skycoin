@@ -1070,14 +1070,12 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 	outputs, err := c.Outputs()
 	require.NoError(t, err)
 
-	var walletOutputHashes []string
 	var walletOutputs readable.UnspentOutputs
 	walletAuxs := make(map[string][]string)
 	var nonWalletOutputs readable.UnspentOutputs
 	for _, o := range outputs.HeadOutputs {
 		if _, ok := addressMap[o.Address]; ok {
 			walletOutputs = append(walletOutputs, o)
-			walletOutputHashes = append(walletOutputHashes, o.Hash)
 			walletAuxs[o.Address] = append(walletAuxs[o.Address], o.Hash)
 		} else {
 			nonWalletOutputs = append(nonWalletOutputs, o)

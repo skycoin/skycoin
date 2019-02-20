@@ -373,7 +373,6 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 				resp := NewHTTPErrorResponse(http.StatusForbidden, "Endpoint is disabled")
 				writeHTTPResponse(w, resp)
 			}
-			return
 		})
 	}
 

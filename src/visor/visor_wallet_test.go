@@ -147,7 +147,6 @@ func TestCreateTransaction(t *testing.T) {
 		getArray       coin.UxArray
 		getArrayErr    error
 
-		addrs                      []cipher.Address
 		getUnspentHashesOfAddrs    blockdb.AddressHashes
 		getUnspentHashesOfAddrsErr error
 
@@ -473,7 +472,6 @@ func TestWalletCreateTransaction(t *testing.T) {
 		getArray       coin.UxArray
 		getArrayErr    error
 
-		addrs                      []cipher.Address
 		getUnspentHashesOfAddrs    blockdb.AddressHashes
 		getUnspentHashesOfAddrsErr error
 

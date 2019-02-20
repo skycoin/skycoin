@@ -515,7 +515,7 @@ func verifySortedHours(t *testing.T, uxb []UxBalance, cmpHours func(a, b UxBalan
 		if a.Hours == b.Hours {
 			require.True(t, a.Coins <= b.Coins)
 
-			if a.Hours == b.Hours {
+			if a.Coins == b.Coins {
 				require.True(t, a.BkSeq <= b.BkSeq)
 
 				if a.BkSeq == b.BkSeq {
@@ -528,7 +528,7 @@ func verifySortedHours(t *testing.T, uxb []UxBalance, cmpHours func(a, b UxBalan
 }
 
 func verifySortedHoursLowToHigh(t *testing.T, uxb []UxBalance) {
-	verifySortedCoins(t, uxb, func(a, b UxBalance) bool {
+	verifySortedHours(t, uxb, func(a, b UxBalance) bool {
 		return a.Hours <= b.Hours
 	})
 }

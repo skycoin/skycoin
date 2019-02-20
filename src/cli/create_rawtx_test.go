@@ -11,12 +11,11 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func TestMakeChangeOut(t *testing.T) {
 	// single destination test
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
@@ -62,7 +61,7 @@ func TestMakeChangeOut(t *testing.T) {
 	require.Exactly(t, uint64(0), spendOut.Hours)
 
 	// multiple destination test
-	uxOuts = []wallet.UxBalance{
+	uxOuts = []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
@@ -115,7 +114,7 @@ func TestMakeChangeOut(t *testing.T) {
 }
 
 func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
@@ -162,7 +161,7 @@ func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
 }
 
 func TestMakeChangeOutCoinHourCap(t *testing.T) {
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
@@ -211,7 +210,7 @@ func TestMakeChangeOutCoinHourCap(t *testing.T) {
 func TestMakeChangeOutOneCoinHour(t *testing.T) {
 	// As long as there is at least one coin hour left, creating a transaction
 	// will still succeed
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			BkSeq:   10,
@@ -259,7 +258,7 @@ func TestMakeChangeOutOneCoinHour(t *testing.T) {
 func TestMakeChangeOutInsufficientCoinHours(t *testing.T) {
 	// If there are no coin hours in the inputs, creating the txn will fail
 	// because it will not be accepted by the network
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			BkSeq:   10,

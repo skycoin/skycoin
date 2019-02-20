@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/wallet"
 
 	"github.com/skycoin/skycoin/src/visor"
@@ -274,15 +275,16 @@ func TestGateway_WalletCreateTransaction(t *testing.T) {
 		name            string
 		enableWalletAPI bool
 		err             error
+		wltID           string
+		params          transaction.Params
+		visorParams     visor.CreateTransactionParams
 		txn             *coin.Transaction
 		inputs          []visor.TransactionInput
-		params          wallet.CreateTransactionParams
 	}{
 		{
 			name:            "wallet api disabled",
 			enableWalletAPI: false,
 			err:             wallet.ErrWalletAPIDisabled,
-			params:          wallet.CreateTransactionParams{},
 		},
 	}
 
@@ -294,7 +296,46 @@ func TestGateway_WalletCreateTransaction(t *testing.T) {
 				},
 			}
 
-			txn, inputs, err := gw.WalletCreateTransaction(tc.params)
+			txn, inputs, err := gw.WalletCreateTransaction(tc.wltID, tc.params, tc.visorParams)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.txn, txn)
+				require.Equal(t, tc.inputs, inputs)
+			}
+		})
+	}
+}
+
+func TestGateway_WalletCreateTransactionSigned(t *testing.T) {
+	tests := []struct {
+		name            string
+		enableWalletAPI bool
+		err             error
+		wltID           string
+		password        []byte
+		params          transaction.Params
+		visorParams     visor.CreateTransactionParams
+		txn             *coin.Transaction
+		inputs          []visor.TransactionInput
+	}{
+		{
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gw := &Gateway{
+				Config: GatewayConfig{
+					EnableWalletAPI: tc.enableWalletAPI,
+				},
+			}
+
+			txn, inputs, err := gw.WalletCreateTransactionSigned(tc.wltID, tc.password, tc.params, tc.visorParams)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 			} else {

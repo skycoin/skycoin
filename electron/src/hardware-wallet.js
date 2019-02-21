@@ -216,6 +216,14 @@ ipcMain.on('hwSignMessage', (event, requestId, addressIndex, message) => {
   );
 });
 
+ipcMain.on('hwSignTransaction', (event, requestId, inputs, outputs) => {
+  const promise = deviceWallet.devSkycoinTransactionSign(inputs, outputs, pinEvent);
+  promise.then(
+    result => { console.log("Sign transaction promise resolved", result); event.sender.send('hwSignTransactionResponse', requestId, result); },
+    error => { console.log("Sign transaction promise errored: ", error); event.sender.send('hwSignTransactionResponse', requestId, { error: error.toString() }); }
+  );
+});
+
 module.exports = {
   setWinRef,
   setWalletsFolderPath

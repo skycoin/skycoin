@@ -37,34 +37,6 @@ sudo yum install -y git curl make gcc mercurial binutils bzr bison screen
 if [[ "$(cat /etc/redhat-release | grep -o CentOS)" == "CentOS" ]]; then sudo yum install -y build-essential libgmp3-dev; else sudo yum groupinstall -y "Development Tools" "Development Libraries" && sudo yum install -y gmp; fi;
 ```
 
-### Install Go with Gvm
-#### Install Gvm
-`gvm` need to be installed.
-
-```sh
-curl -sSL https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer > gvm-installer && chmod a+x gvm-installer &&
-source $HOME/.gvm/scripts/gvm
-```
-
-#### Install Go
-In China, use `--source=https://github.com/golang/go` to bypass firewall when fetching golang source.
-
-```sh
-gvm install go1.4 --source=https://github.com/golang/go
-gvm use go1.4
-
-gvm install go1.11.1
-gvm use go1.11.1 --default
-```
-
-#### Installation issues
-If you open up new a terminal and the `go` command is not found then add this to `.bashrc`. GVM should add this automatically.
-
-```sh
-[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-gvm use go1.11.1 >/dev/null
-```
-
 ## Install Go manually
 ### Install Go
 

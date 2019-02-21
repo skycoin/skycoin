@@ -94,6 +94,13 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 		return nil, NewError(err)
 	}
 
+	nMissingSigs := 0
+	for _, s := range signedTxn.Sigs {
+		if s.Null() {
+			nMissingSigs++
+		}
+	}
+
 	// Build a mapping of addresses to the inputs that need to be signed
 	addrs := make(map[cipher.Address][]int)
 	if len(signIndexes) > 0 {
@@ -149,6 +156,16 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 		err := errors.New("Transaction inner hash modified in the process of signing")
 		logger.Critical().WithError(err).Error()
 		return nil, err
+	}
+
+	if len(signIndexes) == 0 || len(signIndexes) == nMissingSigs {
+		if !signedTxn.IsFullySigned() {
+			return nil, errors.New("Transaction is not fully signed, but should be")
+		}
+	} else {
+		if signedTxn.IsFullySigned() {
+			return nil, errors.New("Transaction is fully signed, but shouldn't be")
+		}
 	}
 
 	return signedTxn, nil

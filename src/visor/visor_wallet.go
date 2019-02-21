@@ -135,7 +135,7 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 }
 
 // WalletSignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
-// If signIndexes is empty, all inputs will be signed.
+// If signIndexes is empty, all inputs will be signed. The transaction must be fully valid and spendable.
 func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []TransactionInput, error) {
 	var inputs []TransactionInput
 	var signedTxn *coin.Transaction
@@ -165,11 +165,16 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 			}
 
 			signed := TxnSigned
-			if !txn.IsFullySigned() {
+			if !signedTxn.IsFullySigned() {
 				signed = TxnUnsigned
 			}
 
-			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
+			if err := VerifySingleTxnUserConstraints(*signedTxn); err != nil {
+				logger.WithError(err).Error("Signed transaction violates transaction user constraints")
+				return err
+			}
+
+			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *signedTxn, params.UserVerifyTxn, signed); err != nil {
 				logger.WithError(err).Error("Signed transaction violates transaction constraints")
 				return err
 			}
@@ -371,15 +376,15 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 		return nil, nil, err
 	}
 
-	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-	// because the wallet is not aware of visor-level constraints.
-	// Check that the transaction is valid before returning it to the caller.
-	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
 	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction user constraints")
 		return nil, nil, err
 	}
 
+	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+	// because the wallet is not aware of visor-level constraints.
+	// Check that the transaction is valid before returning it to the caller.
+	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
 	if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
 		return nil, nil, err
@@ -441,15 +446,15 @@ func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp Cre
 		return nil, nil, err
 	}
 
-	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-	// because the wallet is not aware of visor-level constraints.
-	// Check that the transaction is valid before returning it to the caller.
-	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
 	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction user constraints")
 		return nil, nil, err
 	}
 
+	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+	// because the wallet is not aware of visor-level constraints.
+	// Check that the transaction is valid before returning it to the caller.
+	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
 	if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
 		return nil, nil, err

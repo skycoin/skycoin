@@ -20,7 +20,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { AppService } from './app.service';
 
 declare var Cipher: any;
-declare var CipherExtras: any;
 
 export enum HwSecurityWarnings {
   NeedsBackup,
@@ -315,12 +314,12 @@ export class WalletService {
     let hoursToSend = new BigNumber('0');
     let calculatedHours = new BigNumber('0');
 
-    let innerHash: string;
     let convertedOutputs: any[];
 
     const txOutputs = [];
     const txInputs = [];
-    const txSignatures = [];
+    const hwOutputs = [];
+    const hwInputs = [];
 
     return this.getOutputs(addresses).flatMap((outputs: Output[]) => {
         const minRequiredOutputs =  this.getMinRequiredOutputs(amount, outputs);
@@ -329,6 +328,9 @@ export class WalletService {
 
         if (totalCoins.isLessThan(amount)) {
           throw new Error(this.translate.instant('service.wallet.not-enough-hours'));
+        }
+        if (minRequiredOutputs.length > 8) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
         }
 
         minRequiredOutputs.map(output => totalHours = totalHours.plus(output.calculated_hours));
@@ -344,11 +346,19 @@ export class WalletService {
             coins: changeCoins.toNumber(),
             hours: calculatedHours.minus(hoursToSend).toNumber(),
           });
+
+          hwOutputs.push({
+            address: wallet.addresses[0].address,
+            address_index: 0,
+            coin: parseInt(changeCoins.multipliedBy(1000000).toFixed(0), 10),
+            hour: calculatedHours.minus(hoursToSend).toNumber(),
+          });
         } else {
           hoursToSend = calculatedHours;
         }
 
         txOutputs.push({ address: address, coins: amount.toNumber(), hours: hoursToSend.toNumber() });
+        hwOutputs.push({ address: address, coin: parseInt(amount.multipliedBy(1000000).toFixed(0), 10), hour: hoursToSend.toNumber() });
 
         if (address === wallet.addresses[0].address) {
           hoursToSend = calculatedHours;
@@ -363,6 +373,11 @@ export class WalletService {
             calculated_hours: input.calculated_hours.toNumber(),
             coins: input.coins.toNumber(),
           });
+
+          hwInputs.push({
+            hashIn: input.hash,
+            index: txInputs[txInputs.length - 1].address_index,
+          });
         });
 
         convertedOutputs = txOutputs.map(output => {
@@ -372,16 +387,17 @@ export class WalletService {
           };
         });
 
-        innerHash = Cipher.GetTransactionInnerHash(JSON.stringify(txInputs), JSON.stringify(convertedOutputs));
+        // Impossible at this time. Here waiting for when the possibility of sending to multiple addresses is added.
+        if (convertedOutputs.length > 8) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+        }
 
-        // Request signatures and add them to txSignatures sequentially.
-        return this.addSignatures(txInputs.length - 1, txInputs, txSignatures, innerHash);
-
-      }).flatMap(() => {
+        return this.hwWalletService.signTransaction(hwInputs, hwOutputs);
+      }).flatMap(signatures => {
         const rawTransaction = Cipher.PrepareTransactionWithSignatures(
           JSON.stringify(txInputs),
           JSON.stringify(convertedOutputs),
-          JSON.stringify(txSignatures),
+          JSON.stringify(signatures.rawResponse),
         );
 
         return Observable.of({
@@ -542,26 +558,6 @@ export class WalletService {
     const addresses = wallet.addresses.map(a => a.address).join(',');
 
     return this.getOutputs(addresses);
-  }
-
-  private addSignatures(index: number, txInputs: any[], txSignatures: string[], txInnerHash: string): Observable<any> {
-    let chain: Observable<any>;
-    if (index > 0) {
-      chain = this.addSignatures(index - 1, txInputs, txSignatures, txInnerHash).first();
-    } else {
-      chain = Observable.of(1);
-    }
-
-    chain = chain.flatMap(() => {
-      const msgToSign = CipherExtras.AddSHA256(txInnerHash, txInputs[index].hash);
-
-      return this.hwWalletService.signMessage(txInputs[index].address_index, msgToSign, index + 1, txInputs.length)
-        .map(response => {
-          txSignatures.push(response.rawResponse);
-        });
-    });
-
-    return chain;
   }
 
   private createHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean, stopShowingHwSecurityPopup: boolean): Wallet {

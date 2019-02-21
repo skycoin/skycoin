@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `/api/v2/wallet/transaction/sign` to sign an unsigned transaction with a wallet
 - Add `unsigned` option to `POST /api/v2/transaction/verify` for verifying an unsigned transaction
 - Add `-max-inc-msg-len` and `-max-out-msg-len` options to control the size of incoming and outgoing wire messages
+- Add `-data-file-path` option to set path of the arbitrary data store file. Defaults to `~/.skycoin/data.json`.
+- Add `/api/v2/data` endpoint to store, get, delete or update arbitrary data in a file on disk defined by the `-data-file-path` option.
+- Add new api set `FILESYSTEM` to enable `/api/v2/data` endpoint.
 
 ### Fixed
 
@@ -42,10 +45,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add CLI `addressTransactions` command
 - Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
 - Filter transactions in the History view in the UI
-- Add `-data-file-path` option to set path of the arbitrary data store file. Defaults to `~/.skycoin/data.json`.
-- Add `/api/v2/data` endpoint to store/delete/update arbitrary data in a file on disk defined by the `-data-file-path` option.
-- Add new api set `FILESYSTEM` to enable `/api/v2/data` endpoint.
-
 
 ### Fixed
 

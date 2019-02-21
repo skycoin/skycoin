@@ -9,6 +9,8 @@ import { Connection } from '../app.datatypes';
 
 @Injectable()
 export class NetworkService {
+  noConnections = false;
+
   private automaticPeers: Subject<Connection[]> = new BehaviorSubject<Connection[]>([]);
 
   constructor(
@@ -40,6 +42,16 @@ export class NetworkService {
 
   private retrieveConnections(): Observable<Connection[]> {
     return this.apiService.get('network/connections')
-      .map(response => response.connections.sort((a, b) =>  a.id - b.id));
+      .map(response => {
+        if (response.connections === null || response.connections.length === 0) {
+          this.noConnections = true;
+
+          return [];
+        }
+
+        this.noConnections = false;
+
+        return response.connections.sort((a, b) =>  a.id - b.id);
+      });
   }
 }

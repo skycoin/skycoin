@@ -348,6 +348,11 @@ func TestLiveWalletSignTransaction(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// Create an invalid txn with an extra null sig
+	invalidTxn := coin.MustDeserializeTransactionHex(txnResp.EncodedTransaction)
+	invalidTxn.Sigs = append(invalidTxn.Sigs, cipher.Sig{})
+	require.NotEqual(t, len(invalidTxn.In), len(invalidTxn.Sigs))
+
 	type testCase struct {
 		name        string
 		req         api.WalletSignTransactionRequest
@@ -367,6 +372,7 @@ func TestLiveWalletSignTransaction(t *testing.T) {
 			},
 			fullySigned: false,
 		},
+
 		{
 			name: "sign all inputs",
 			req: api.WalletSignTransactionRequest{
@@ -376,6 +382,18 @@ func TestLiveWalletSignTransaction(t *testing.T) {
 				EncodedTransaction: txnResp.EncodedTransaction,
 			},
 			fullySigned: true,
+		},
+
+		{
+			name: "sign invalid txn",
+			req: api.WalletSignTransactionRequest{
+				WalletID:           w.Filename(),
+				Password:           password,
+				SignIndexes:        nil,
+				EncodedTransaction: invalidTxn.MustSerializeHex(),
+			},
+			code: http.StatusBadRequest,
+			err:  "Transaction violates hard constraint: Invalid number of signatures",
 		},
 	}
 

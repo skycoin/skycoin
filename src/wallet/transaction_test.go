@@ -113,6 +113,15 @@ func TestWalletSignTransaction(t *testing.T) {
 		},
 
 		{
+			name:        "partially signed txn signing with same index",
+			w:           w,
+			txn:         txnPartiallySigned,
+			uxOuts:      uxs,
+			signIndexes: []int{3},
+			err:         NewError(errors.New("Transaction is already signed at index 3")),
+		},
+
+		{
 			name: "bad txn inner hash",
 			w:    w,
 			txn:  badTxnInnerHash,

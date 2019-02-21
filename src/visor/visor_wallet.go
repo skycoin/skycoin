@@ -140,8 +140,20 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 	var inputs []TransactionInput
 	var signedTxn *coin.Transaction
 
+	if txn.IsFullySigned() {
+		return nil, nil, NewUserError(errors.New("Transaction is already fully signed"))
+	}
+
 	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
 		return vs.DB.View("WalletSignTransaction", func(tx *dbutil.Tx) error {
+			// Verify the transaction before signing
+			if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+				return err
+			}
+			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
+				return err
+			}
+
 			headTime, err := vs.Blockchain.Time(tx)
 			if err != nil {
 				logger.WithError(err).Error("Blockchain.Time failed")

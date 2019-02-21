@@ -2,6 +2,7 @@ package coin
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -476,27 +477,72 @@ func (txn *Transaction) hashInner() (cipher.SHA256, error) {
 	return cipher.SumSHA256(buf), nil
 }
 
-// Serialize serialize the transaction
+// MustSerialize serializes the transaction to bytes, panics on error.
+// Serialization can fail if the transaction has too many elements in its arrays
+func (txn *Transaction) MustSerialize() []byte {
+	b, err := encodeTransaction(txn)
+	if err != nil {
+		log.Panicf("encodeTransaction failed: %v", err)
+	}
+	return b
+}
+
+// Serialize serializes the transaction to bytes.
+// Serialization can fail if the transaction has too many elements in its arrays
 func (txn *Transaction) Serialize() ([]byte, error) {
 	return encodeTransaction(txn)
 }
 
-// MustDeserializeTransaction deserialize transaction, panics on error
+// MustSerializeHex serializes the transaction to a hex string, panics on error.
+// Serialization can fail if the transaction has too many elements in its arrays
+func (txn *Transaction) MustSerializeHex() string {
+	return hex.EncodeToString(txn.MustSerialize())
+}
+
+// SerializeHex serializes the transaction to a hex string.
+// Serialization can fail if the transaction has too many elements in its arrays
+func (txn *Transaction) SerializeHex() (string, error) {
+	b, err := txn.Serialize()
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// MustDeserializeTransaction deserializes a transaction, panics on error
 func MustDeserializeTransaction(b []byte) Transaction {
-	t, err := DeserializeTransaction(b)
+	txn, err := DeserializeTransaction(b)
 	if err != nil {
 		log.Panicf("Failed to deserialize transaction: %v", err)
 	}
-	return t
+	return txn
 }
 
-// DeserializeTransaction deserialize transaction
+// DeserializeTransaction deserializes a transaction
 func DeserializeTransaction(b []byte) (Transaction, error) {
-	t := Transaction{}
-	if err := decodeTransactionExact(b, &t); err != nil {
+	txn := Transaction{}
+	if err := decodeTransactionExact(b, &txn); err != nil {
 		return Transaction{}, fmt.Errorf("Invalid transaction: %v", err)
 	}
-	return t, nil
+	return txn, nil
+}
+
+// MustDeserializeTransactionHex deserializes a transaction hex string, panics on error
+func MustDeserializeTransactionHex(s string) Transaction {
+	txn, err := DeserializeTransactionHex(s)
+	if err != nil {
+		log.Panicf("Failed to deserialize transaction: %v", err)
+	}
+	return txn
+}
+
+// DeserializeTransactionHex deserializes a transaction hex string
+func DeserializeTransactionHex(s string) (Transaction, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return Transaction{}, err
+	}
+	return DeserializeTransaction(b)
 }
 
 // OutputHours returns the coin hours sent as outputs. This does not include the fee.

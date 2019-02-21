@@ -502,8 +502,12 @@ func TestTransactionSerialization(t *testing.T) {
 		MustDeserializeTransactionHex("foo")
 	})
 
-	require.Equal(t, txn.Serialize(), txn.MustSerialize())
-	require.Equal(t, txn.SerializeHex(), txn.MustSerializeHex())
+	ss, err := txn.Serialize()
+	require.NoError(t, err)
+	require.Equal(t, ss, txn.MustSerialize())
+	sshh, err := txn.SerializeHex()
+	require.NoError(t, err)
+	require.Equal(t, sshh, txn.MustSerializeHex())
 }
 
 func TestTransactionOutputHours(t *testing.T) {

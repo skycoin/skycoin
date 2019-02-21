@@ -1790,7 +1790,7 @@ Otherwise, sign the transaction separately from the API.
 
 The transaction must be fully valid and spendable (except for the lack of signatures) or else an error is returned.
 
-Example request body manual hours selection type, spending from specific addresses, ignoring unconfirmed unspent outputs:
+Example request body with manual hours selection type, spending from specific addresses, ignoring unconfirmed unspent outputs:
 
 ```json
 {

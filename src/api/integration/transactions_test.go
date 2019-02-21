@@ -1,7 +1,6 @@
 package integration_test
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math"
 	"math/rand"
@@ -407,9 +406,7 @@ func TestLiveWalletSignTransaction(t *testing.T) {
 
 			require.NoError(t, err)
 
-			txnBytes, err := hex.DecodeString(tc.req.EncodedTransaction)
-			require.NoError(t, err)
-			txn, err := coin.DeserializeTransaction(txnBytes)
+			txn, err := coin.DeserializeTransactionHex(tc.req.EncodedTransaction)
 			require.NoError(t, err)
 
 			// TxID should have changed
@@ -1651,17 +1648,13 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 func assertEncodeTxnMatchesTxn(t *testing.T, result *api.CreateTransactionResponse) {
 	require.NotEmpty(t, result.EncodedTransaction)
 	emptyTxn := &coin.Transaction{}
-	emptyTxnBytes, err := emptyTxn.Serialize()
-	require.NoError(t, err)
-	require.NotEqual(t, hex.EncodeToString(emptyTxnBytes), result.EncodedTransaction)
+	require.NotEqual(t, emptyTxn.MustSerializeHex(), result.EncodedTransaction)
+
 	txn, err := result.Transaction.ToTransaction()
 	require.NoError(t, err)
 
-	serializedTxn, err := txn.Serialize()
-	require.NoError(t, err)
-	require.Equal(t, hex.EncodeToString(serializedTxn), result.EncodedTransaction)
-
-	require.Equal(t, int(txn.Length), len(serializedTxn))
+	require.Equal(t, txn.MustSerializeHex(), result.EncodedTransaction)
+	require.Equal(t, int(txn.Length), len(txn.MustSerialize()))
 }
 
 func assertRequestedCoins(t *testing.T, to []api.Receiver, out []api.CreatedTransactionOutput) {

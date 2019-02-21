@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,14 +35,14 @@ func NewCreateTransactionResponse(txn *coin.Transaction, inputs []visor.Transact
 		return nil, err
 	}
 
-	buf, err := txn.Serialize()
+	txnHex, err := txn.SerializeHex()
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateTransactionResponse{
 		Transaction:        *cTxn,
-		EncodedTransaction: hex.EncodeToString(buf),
+		EncodedTransaction: txnHex,
 	}, nil
 }
 

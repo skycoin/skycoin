@@ -465,13 +465,8 @@ func TestStableVerifyTransaction(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			buf, err := tc.txn.Serialize()
-			require.NoError(t, err)
-
-			encodedTxn := hex.EncodeToString(buf)
-
 			resp, err := c.VerifyTransaction(api.VerifyTransactionRequest{
-				EncodedTransaction: encodedTxn,
+				EncodedTransaction: tc.txn.MustSerializeHex(),
 				Unsigned:           tc.unsigned,
 			})
 
@@ -2366,9 +2361,7 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase,
 		encodedTxn.Status.Height = 0
 	}
 
-	encodedTxnBytes, err := hex.DecodeString(encodedTxn.EncodedTransaction)
-	require.NoError(t, err)
-	decodedTxn, err := coin.DeserializeTransaction(encodedTxnBytes)
+	decodedTxn, err := coin.DeserializeTransactionHex(encodedTxn.EncodedTransaction)
 	require.NoError(t, err)
 
 	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{

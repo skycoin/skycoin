@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -74,12 +73,10 @@ func createRawTxnCmd() *cobra.Command {
 				return err
 			}
 
-			buf, err := txn.Serialize()
+			rawTxn, err := txn.SerializeHex()
 			if err != nil {
 				return err
 			}
-
-			rawTxn := hex.EncodeToString(buf)
 
 			if jsonOutput {
 				return printJSON(struct {

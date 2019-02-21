@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -85,12 +84,9 @@ func TestCreateTransaction(t *testing.T) {
 	createdTxn, err := NewCreatedTransaction(txn, inputs)
 	require.NoError(t, err)
 
-	buf, err := txn.Serialize()
-	require.NoError(t, err)
-
 	createTxnResponse := CreateTransactionResponse{
 		Transaction:        *createdTxn,
-		EncodedTransaction: hex.EncodeToString(buf),
+		EncodedTransaction: txn.MustSerializeHex(),
 	}
 
 	validBody := &rawCreateTxnRequest{
@@ -920,12 +916,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 	createdTxn, err := NewCreatedTransaction(txn, inputs)
 	require.NoError(t, err)
 
-	buf, err := txn.Serialize()
-	require.NoError(t, err)
-
 	createTxnResponse := &CreateTransactionResponse{
 		Transaction:        *createdTxn,
-		EncodedTransaction: hex.EncodeToString(buf),
+		EncodedTransaction: txn.MustSerializeHex(),
 	}
 
 	validBody := rawWalletCreateTxnRequest{
@@ -1895,12 +1888,9 @@ func TestWalletSignTransaction(t *testing.T) {
 	signedTxnResp, err := NewCreateTransactionResponse(&signedTxn, inputs)
 	require.NoError(t, err)
 
-	txnBytes, err := txn.Serialize()
-	require.NoError(t, err)
-
 	validBody := &WalletSignTransactionRequest{
 		WalletID:           "foo.wlt",
-		EncodedTransaction: hex.EncodeToString(txnBytes),
+		EncodedTransaction: txn.MustSerializeHex(),
 	}
 
 	tt := []struct {
@@ -2135,12 +2125,9 @@ func TestWalletSignTransaction(t *testing.T) {
 			if tc.body != nil {
 				// Decode the transaction used in the request body, but ignore an error in case the
 				// transaction is intentionally malformed
-				txnBytes, err := hex.DecodeString(tc.body.EncodedTransaction)
+				txnx, err := coin.DeserializeTransactionHex(tc.body.EncodedTransaction)
 				if err == nil {
-					txnx, err := coin.DeserializeTransaction([]byte(txnBytes))
-					if err == nil {
-						txn = &txnx
-					}
+					txn = &txnx
 				}
 			}
 

@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1048,16 +1047,15 @@ func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.Tran
 
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
 func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
-	d, err := txn.Serialize()
+	rawTxn, err := txn.SerializeHex()
 	if err != nil {
 		return "", err
 	}
-	rawTx := hex.EncodeToString(d)
-	return c.InjectEncodedTransaction(rawTx)
+	return c.InjectEncodedTransaction(rawTxn)
 }
 
 // InjectEncodedTransaction makes a request to POST /api/v1/injectTransaction.
-// rawTx is a hex-encoded, serialized transaction
+// rawTxn is a hex-encoded, serialized transaction
 func (c *Client) InjectEncodedTransaction(rawTxn string) (string, error) {
 	v := struct {
 		Rawtxn string `json:"rawtx"`
@@ -1088,11 +1086,11 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 	v.Add("txid", txid)
 	endpoint := "/api/v1/rawtx?" + v.Encode()
 
-	var rawTx string
-	if err := c.Get(endpoint, &rawTx); err != nil {
+	var rawTxn string
+	if err := c.Get(endpoint, &rawTxn); err != nil {
 		return "", err
 	}
-	return rawTx, nil
+	return rawTxn, nil
 }
 
 // VerifyTransaction makes a request to POST /api/v2/transaction/verify.

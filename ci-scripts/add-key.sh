@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e -o pipefail
+
 KEY_CHAIN=login.keychain
 echo "security create keychain"
 security create-keychain -p travis $KEY_CHAIN

@@ -131,6 +131,8 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 			BlockSeq: b.Seq(),
 		}
 
+		spentTxnID := t.Hash()
+
 		if err := hd.txns.put(tx, &txn); err != nil {
 			return err
 		}
@@ -147,13 +149,13 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 
 			// update the output's spent block seq and txid
 			o.SpentBlockSeq = b.Seq()
-			o.SpentTxnID = t.Hash()
+			o.SpentTxnID = spentTxnID
 			if err := hd.outputs.put(tx, *o); err != nil {
 				return err
 			}
 
 			// store the IN address with txid
-			if err := hd.addrTxns.add(tx, o.Out.Body.Address, t.Hash()); err != nil {
+			if err := hd.addrTxns.add(tx, o.Out.Body.Address, spentTxnID); err != nil {
 				return err
 			}
 		}
@@ -171,7 +173,7 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 				return err
 			}
 
-			if err := hd.addrTxns.add(tx, ux.Body.Address, t.Hash()); err != nil {
+			if err := hd.addrTxns.add(tx, ux.Body.Address, spentTxnID); err != nil {
 				return err
 			}
 		}

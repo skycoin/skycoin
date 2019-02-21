@@ -34,7 +34,7 @@ func walletAddAddressesCmd() *gcli.Command {
 	return walletAddAddressesCmd
 }
 
-func generateAddrs(c *gcli.Command, args []string) error {
+func generateAddrs(c *gcli.Command, _ []string) error {
 	// get number of address that are need to be generated.
 	num, err := c.Flags().GetUint64("num")
 	if err != nil {

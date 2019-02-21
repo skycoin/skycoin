@@ -56,7 +56,7 @@ func walletHisCmd() *cobra.Command {
 	return walletHisCmd
 }
 
-func walletHistoryAction(c *cobra.Command, args []string) error {
+func walletHistoryAction(c *cobra.Command, _ []string) error {
 	walletFile, err := c.Flags().GetString("wallet-file")
 	if err != nil {
 		return err

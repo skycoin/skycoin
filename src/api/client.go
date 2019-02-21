@@ -730,8 +730,8 @@ type Receiver struct {
 	Hours   string `json:"hours,omitempty"`
 }
 
-// CreateTransaction makes a request to POST /api/v1/wallet/transaction
-func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransactionResponse, error) {
+// WalletCreateTransaction makes a request to POST /api/v1/wallet/transaction
+func (c *Client) WalletCreateTransaction(req WalletCreateTransactionRequest) (*CreateTransactionResponse, error) {
 	var r CreateTransactionResponse
 	endpoint := "/api/v1/wallet/transaction"
 	if err := c.PostJSON(endpoint, req, &r); err != nil {
@@ -739,6 +739,17 @@ func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransac
 	}
 
 	return &r, nil
+}
+
+// WalletSignTransaction makes a request to POST /api/v2/wallet/transaction/sign
+func (c *Client) WalletSignTransaction(req WalletSignTransactionRequest) (*CreateTransactionResponse, error) {
+	var r CreateTransactionResponse
+	endpoint := "/api/v2/wallet/transaction/sign"
+	ok, err := c.PostJSONV2(endpoint, req, &r)
+	if ok {
+		return &r, err
+	}
+	return nil, err
 }
 
 // WalletUnconfirmedTransactions makes a request to GET /api/v1/wallet/transactions
@@ -1047,7 +1058,10 @@ func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.Tran
 
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
 func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
-	d := txn.Serialize()
+	d, err := txn.Serialize()
+	if err != nil {
+		return "", err
+	}
 	rawTx := hex.EncodeToString(d)
 	return c.InjectEncodedTransaction(rawTx)
 }
@@ -1092,12 +1106,8 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 }
 
 // VerifyTransaction makes a request to POST /api/v2/transaction/verify.
-func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
-	req := VerifyTxnRequest{
-		EncodedTransaction: encodedTxn,
-	}
-
-	var rsp VerifyTxnResponse
+func (c *Client) VerifyTransaction(req VerifyTransactionRequest) (*VerifyTransactionResponse, error) {
+	var rsp VerifyTransactionResponse
 	ok, err := c.PostJSONV2("/api/v2/transaction/verify", req, &rsp)
 	if ok {
 		return &rsp, err
@@ -1121,19 +1131,6 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 	}
 
 	return nil, err
-}
-
-// AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]readable.TransactionVerbose, error) {
-	v := url.Values{}
-	v.Add("address", addr)
-	endpoint := "/api/v1/explorer/address?" + v.Encode()
-
-	var b []readable.TransactionVerbose
-	if err := c.Get(endpoint, &b); err != nil {
-		return nil, err
-	}
-	return b, nil
 }
 
 // RichlistParams are arguments to the /richlist endpoint

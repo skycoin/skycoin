@@ -508,11 +508,13 @@ func TestUnspentProcessBlock(t *testing.T) {
 
 			txn := coin.Transaction{}
 			for _, in := range tc.inputs {
-				txn.PushInput(in.Hash())
+				err := txn.PushInput(in.Hash())
+				require.NoError(t, err)
 			}
 
 			for _, o := range tc.outputs {
-				txn.PushOutput(o.addr, o.coins, o.hours)
+				err := txn.PushOutput(o.addr, o.coins, o.hours)
+				require.NoError(t, err)
 			}
 
 			var block *coin.Block
@@ -618,7 +620,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 					require.NoError(t, err)
 
 					var uxHashes []cipher.SHA256
-					err = encoder.DeserializeRaw(v, &uxHashes)
+					err = encoder.DeserializeRawExact(v, &uxHashes)
 					require.NoError(t, err)
 					require.NotEmpty(t, uxHashes)
 
@@ -879,7 +881,7 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 					require.NoError(t, err)
 
 					var hashes []cipher.SHA256
-					err = encoder.DeserializeRaw(v, &hashes)
+					err = encoder.DeserializeRawExact(v, &hashes)
 					require.NoError(t, err)
 
 					sort.Slice(hashes, func(i, j int) bool {
@@ -931,9 +933,9 @@ func TestUnspentMaybeBuildIndexesPartialIndex(t *testing.T) {
 
 			addrHashes := make(map[cipher.Address][]cipher.SHA256)
 
-			if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
+			if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 				var ux coin.UxOut
-				if err := encoder.DeserializeRaw(v, &ux); err != nil {
+				if err := encoder.DeserializeRawExact(v, &ux); err != nil {
 					return err
 				}
 
@@ -990,7 +992,7 @@ func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*
 			require.NoError(t, err)
 
 			var ux coin.UxOut
-			err = encoder.DeserializeRaw(v, &ux)
+			err = encoder.DeserializeRawExact(v, &ux)
 			require.NoError(t, err)
 
 			require.Equal(t, hash, ux.Hash())
@@ -1016,7 +1018,7 @@ func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*
 			require.NoError(t, err)
 
 			var hashes []cipher.SHA256
-			err = encoder.DeserializeRaw(v, &hashes)
+			err = encoder.DeserializeRawExact(v, &hashes)
 			require.NoError(t, err)
 
 			expectedHashes, ok := addrHashes[addr]

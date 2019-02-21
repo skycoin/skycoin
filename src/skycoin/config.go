@@ -54,8 +54,8 @@ type NodeConfig struct {
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable unversioned API endpoints (without the /api/v1 prefix)
-	EnableUnversionedAPI bool
+	// Disable Host, Origin and Referer header check in the wallet API
+	DisableHeaderCheck bool
 	// Disable CSP disable content-security-policy in http response
 	DisableCSP bool
 	// Comma separated list of API sets enabled on the remote web interface
@@ -88,7 +88,7 @@ type NodeConfig struct {
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
 	PeerlistSize int
 	// Wallet Address Version
-	//AddressVersion string
+	// AddressVersion string
 	// Remote web interface
 	WebInterface bool
 	// Remote web interface port
@@ -106,9 +106,6 @@ type NodeConfig struct {
 	WebInterfacePassword string
 	// Allow web interface auth without HTTPS
 	WebInterfacePlaintextAuth bool
-
-	// Enable the deprecated JSON 2.0 RPC interface
-	RPCInterface bool
 
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
@@ -223,10 +220,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		DisableNetworking: false,
 		// Enable GUI
 		EnableGUI: false,
-		// Enable unversioned API
-		EnableUnversionedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
+		// Disable Host, Origin and Referer header check in the wallet API
+		DisableHeaderCheck: false,
 		// DisableCSP disable content-security-policy in http response
 		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
@@ -234,7 +231,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Which address to serve on. Leave blank to automatically assign to a
 		// public interface
 		Address: "",
-		//gnet uses this for TCP incoming and outgoing
+		// gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
 		// MaxConnections is the maximum number of total connections allowed
 		MaxConnections: 128,
@@ -248,7 +245,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		OutgoingConnectionsRate: time.Second * 5,
 		PeerlistSize:            65535,
 		// Wallet Address Version
-		//AddressVersion: "test",
+		// AddressVersion: "test",
 		// Remote web interface
 		WebInterface:      true,
 		WebInterfacePort:  node.WebInterfacePort,
@@ -259,8 +256,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
 		DisabledAPISets:   "",
 		EnableAllAPISets:  false,
-
-		RPCInterface: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -406,6 +401,9 @@ func (c *Config) postProcess() error {
 	}
 
 	if c.Node.HostWhitelist != "" {
+		if c.Node.DisableHeaderCheck {
+			return errors.New("host whitelist should be empty when header check is disabled")
+		}
 		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
 	}
 
@@ -563,7 +561,6 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsTransaction,
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
-			api.EndpointsDeprecatedWalletSpend,
 			api.EndpointsPrometheus,
 			api.EndpointsNetCtrl:
 		case "":
@@ -585,8 +582,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
-	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
+	flag.BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -607,7 +604,6 @@ func (c *NodeConfig) RegisterFlags() {
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		api.EndpointsInsecureWalletSeed,
-		api.EndpointsDeprecatedWalletSpend,
 	}
 	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
@@ -616,8 +612,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
 	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
 	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
-
-	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
@@ -682,9 +676,9 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false
+		c.DisableHeaderCheck = false
 		c.DisableCSP = false
 		c.DownloadPeerList = true
-		c.RPCInterface = false
 		c.WebInterface = true
 		c.LogToFile = false
 		c.ResetCorruptDB = true

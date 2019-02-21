@@ -706,17 +706,17 @@ func TestVerifySignedHash(t *testing.T) {
 	h := MustSHA256FromHex("127e9b0d6b71cecd0363b366413f0f19fcd924ae033513498e7486570ff2a1c8")
 	sig := MustSigFromHex("63c035b0c95d0c5744fc1c0bdf38af02cef2d2f65a8f923732ab44e436f8a491216d9ab5ff795e3144f4daee37077b8b9db54d2ba3a3df8d4992f06bb21f724401")
 
-	err := VerifySignedHash(sig, h)
+	err := VerifySignatureRecoverPubKey(sig, h)
 	require.NoError(t, err)
 
 	// Fails with ErrInvalidHashForSig
 	badSigHex := "71f2c01516fe696328e79bcf464eb0db374b63d494f7a307d1e77114f18581d7a81eed5275a9e04a336292dd2fd16977d9bef2a54ea3161d0876603d00c53bc9dd"
 	badSig := MustSigFromHex(badSigHex)
-	err = VerifySignedHash(badSig, h)
+	err = VerifySignatureRecoverPubKey(badSig, h)
 	require.Equal(t, ErrInvalidHashForSig, err)
 
 	// Fails with ErrInvalidSigPubKeyRecovery
 	badSig = MustSigFromHex("63c035b0c95d0c5744fc1c0bdf39af02cef2d2f65a8f923732ab44e436f8a491216d9ab5ff795e3144f4daee37077b8b9db54d2ba3a3df8d4992f06bb21f724401")
-	err = VerifySignedHash(badSig, h)
+	err = VerifySignatureRecoverPubKey(badSig, h)
 	require.Equal(t, ErrInvalidSigPubKeyRecovery, err)
 }

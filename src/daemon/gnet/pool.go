@@ -710,14 +710,12 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 	for buf.Len() > messageLengthSize {
 		prefix := buf.Bytes()[:messageLengthSize]
 		// decode message length
-		tmpLength := uint32(0)
-
-		_, err := encoder.DeserializeAtomic(prefix, &tmpLength)
+		tmpLength, _, err := encoder.DeserializeUint32(prefix)
 		if err != nil {
 			// encoder.DeserializeAtomic should only return an error if there wasn't
 			// enough data in buf to read the integer, but the prefix buf length
 			// is already ensured to be long enough
-			logger.Panic("encoder.DeserializeAtomic failed unexpectedly: %v", err)
+			logger.Panicf("encoder.DeserializeUint32 failed unexpectedly: %v", err)
 		}
 
 		length := int(tmpLength)

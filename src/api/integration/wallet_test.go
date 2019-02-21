@@ -575,6 +575,10 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 		return
 	}
 
+	if mode(t) != testModeEnableSeedAPI {
+		t.Skip("Skipping because enable seed API tests is on")
+	}
+
 	c := newClient()
 
 	// Create an encrypted wallet

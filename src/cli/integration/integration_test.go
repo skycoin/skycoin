@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	binaryName = "skycoin-cli"
+	binaryName = "skycoin-cli.test"
 
 	testModeStable = "stable"
 	testModeLive   = "live"
@@ -60,6 +60,9 @@ var (
 	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
 	cryptoTypes = []wallet.CryptoType{wallet.CryptoTypeScryptChacha20poly1305, wallet.CryptoTypeSha256Xor}
+
+	validNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+	stripCoverageReport = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
 )
 
 type TestData struct {
@@ -71,7 +74,94 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
+func sanitizeName(s string) (string, error) {
+	if s == "" {
+		return "", errors.New("sanitizeName name empty")
+	}
+	s = strings.Replace(s, " ", "-", -1)
+	if !validNameRegexp.MatchString(s) {
+		return "", errors.New("sanitizeName name has invalid characters")
+	}
+	return s, nil
+}
+
+// coverprofileNames manages names for unique coverprofile outputs from invocations of the cli test binary
+type coverprofileNames struct {
+	names map[string]struct{}
+	sync.Mutex
+}
+
+func newCoverprofileNames() *coverprofileNames {
+	return &coverprofileNames{
+		names: make(map[string]struct{}),
+	}
+}
+
+func (n *coverprofileNames) makeName(name string) (string, error) {
+	name, err := sanitizeName(name)
+	if err != nil {
+		return "", err
+	}
+	coverprofile := fmt.Sprintf("cli-%s", name)
+
+	coverprofile = n.add(coverprofile)
+
+	return coverprofile, nil
+}
+
+func (n *coverprofileNames) add(s string) string {
+	n.Lock()
+	defer n.Unlock()
+
+	i := 1
+	_, ok := n.names[fmt.Sprintf("%s.coverage.out", s)]
+	for ok {
+		x := fmt.Sprintf("%s-%d.coverage.out", s, i)
+		_, ok = n.names[x]
+		if !ok {
+			s = x
+		}
+		i++
+	}
+
+	s = fmt.Sprintf("%s.coverage.out", s)
+	n.names[s] = struct{}{}
+	return s
+}
+
+var (
+	cpNames = newCoverprofileNames()
+)
+
+func execCommand(args ...string) *exec.Cmd {
+	// Add test flags to arguments to generate a coverage report
+	coverprofile, err := cpNames.makeName(args[0])
+	if err != nil {
+		panic(err)
+	}
+	args = append(args, []string{fmt.Sprintf("--test.coverprofile=../../../coverage/%s", coverprofile)}...)
+	fmt.Println("exec", binaryPath, args)
+	return exec.Command(binaryPath, args...)
+}
+
+func execCommandCombinedOutput(args ...string) ([]byte, error) {
+	cmd := execCommand(args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return output, err
+	}
+	// Remove the trailing coverage statements the the test cli binary produces does to coverage mode, e.g.
+	// PASS
+	// coverage: 8.1% of statements in github.com/skycoin/skycoin/...
+	output = stripCoverageReport.ReplaceAll(output, nil)
+	return output, nil
+}
+
 func TestMain(m *testing.M) {
+	if !enabled() {
+		return
+	}
+
 	abs, err := filepath.Abs(binaryName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "get binary name absolute path failed: %v\n", err)
@@ -80,8 +170,13 @@ func TestMain(m *testing.M) {
 
 	binaryPath = abs
 
+	fmt.Println("Building test cli binary at", binaryPath)
+
 	// Build cli binary file.
-	args := []string{"build", "-o", binaryPath, "../../../cmd/cli/cli.go"}
+	// args := []string{"build", "-o", binaryPath, "../../../cmd/cli/cli.go"}
+	// Compile the binary with test flags enabled to get a coverage report from the binary
+	args := []string{"test", "-c", "-tags", "testrunmain", "-o", binaryPath, "-coverpkg=github.com/skycoin/skycoin/...", "../../../cmd/cli/"}
+	fmt.Println("Command args", args)
 	if err := exec.Command("go", args...).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Make %v binary failed: %v\n", binaryName, err)
 		os.Exit(1)
@@ -89,11 +184,11 @@ func TestMain(m *testing.M) {
 
 	ret := m.Run()
 
-	// Remove the generated cli binary file.
-	if err := os.Remove(binaryPath); err != nil {
-		fmt.Fprintf(os.Stderr, "Delete %v failed: %v", binaryName, err)
-		os.Exit(1)
-	}
+	// // Remove the generated cli binary file.
+	// if err := os.Remove(binaryPath); err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Delete %v failed: %v", binaryName, err)
+	// 	os.Exit(1)
+	// }
 
 	os.Exit(ret)
 }
@@ -445,7 +540,7 @@ func TestWalletAddAddresses(t *testing.T) {
 			walletPath, clean := createTempWallet(t, tc.encrypted)
 			defer clean()
 
-			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
 				return
@@ -510,14 +605,15 @@ func TestVerifyAddress(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		output, err := exec.Command(binaryPath, "verifyAddress", tc.addr).CombinedOutput()
+		output, err := execCommandCombinedOutput("verifyAddress", tc.addr)
 		if err != nil {
+			require.Error(t, tc.err, "%v", err)
 			require.Equal(t, tc.err.Error(), err.Error())
 			require.Equal(t, tc.errMsg, strings.Trim(string(output), "\n"))
 			return
 		}
 
-		require.Empty(t, output)
+		require.Empty(t, output, string(output))
 	}
 }
 
@@ -546,7 +642,7 @@ func TestDecodeRawTransaction(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, "decodeRawTransaction", tc.rawTx).CombinedOutput()
+			output, err := execCommandCombinedOutput("decodeRawTransaction", tc.rawTx)
 			if err != nil {
 				require.Error(t, err, "exit status 1")
 				require.Equal(t, tc.errMsg, output)
@@ -851,7 +947,7 @@ func TestAddressGen(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args...)
 			if tc.err != nil {
 				require.Error(t, err)
 				require.Equal(t, tc.err.Error(), err.Error())
@@ -1101,7 +1197,7 @@ func TestFiberAddressGen(t *testing.T) {
 				tc.setup(t)
 			}
 
-			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args...)
 			if tc.err != nil {
 				require.Error(t, err)
 				require.Equal(t, tc.err.Error(), err.Error())
@@ -1122,7 +1218,7 @@ func TestStableListWallets(t *testing.T) {
 	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
-	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
+	output, err := execCommandCombinedOutput("listWallets")
 	require.NoError(t, err)
 
 	var wlts struct {
@@ -1145,7 +1241,7 @@ func TestLiveListWallets(t *testing.T) {
 	requireWalletEnv(t)
 	requireWalletDir(t)
 
-	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
+	output, err := execCommandCombinedOutput("listWallets")
 	require.NoError(t, err)
 
 	var wlts struct {
@@ -1164,7 +1260,7 @@ func TestStableListAddress(t *testing.T) {
 	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
-	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
+	output, err := execCommandCombinedOutput("listAddresses")
 	require.NoError(t, err)
 
 	var wltAddresses struct {
@@ -1186,7 +1282,7 @@ func TestLiveListAddresses(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
+	output, err := execCommandCombinedOutput("listAddresses")
 	require.NoError(t, err)
 
 	var wltAddresses struct {
@@ -1204,7 +1300,7 @@ func TestStableAddressBalance(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "addressBalance", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt").CombinedOutput()
+	output, err := execCommandCombinedOutput("addressBalance", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt")
 	require.NoError(t, err)
 
 	var addrBalance cli.BalanceResult
@@ -1220,7 +1316,7 @@ func TestLiveAddressBalance(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "addressBalance", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt").CombinedOutput()
+	output, err := execCommandCombinedOutput("addressBalance", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt")
 	require.NoError(t, err)
 
 	var addrBalance cli.BalanceResult
@@ -1236,7 +1332,7 @@ func TestStableWalletBalance(t *testing.T) {
 	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
-	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
+	output, err := execCommandCombinedOutput("walletBalance")
 	require.NoError(t, err)
 
 	var wltBalance cli.BalanceResult
@@ -1254,7 +1350,7 @@ func TestLiveWalletBalance(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
+	output, err := execCommandCombinedOutput("walletBalance")
 	require.NoError(t, err)
 
 	var wltBalance cli.BalanceResult
@@ -1273,7 +1369,7 @@ func TestStableWalletOutputs(t *testing.T) {
 	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
-	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
+	output, err := execCommandCombinedOutput("walletOutputs")
 	require.NoError(t, err)
 
 	var wltOutput cli.OutputsResult
@@ -1291,7 +1387,7 @@ func TestLiveWalletOutputs(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
+	output, err := execCommandCombinedOutput("walletOutputs")
 	require.NoError(t, err)
 
 	var wltOutput cli.OutputsResult
@@ -1333,7 +1429,7 @@ func TestStableAddressOutputs(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args...)
 
 			if tc.err != nil {
 				testutil.RequireError(t, err, tc.err.Error())
@@ -1358,7 +1454,7 @@ func TestLiveAddressOutputs(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt").CombinedOutput()
+	output, err := execCommandCombinedOutput("addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt")
 	require.NoError(t, err)
 
 	var addrOutputs cli.OutputsResult
@@ -1371,7 +1467,7 @@ func TestStableShowConfig(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "showConfig").CombinedOutput()
+	output, err := execCommandCombinedOutput("showConfig")
 	require.NoError(t, err)
 
 	var ret cli.Config
@@ -1412,7 +1508,7 @@ func TestLiveShowConfig(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "showConfig").CombinedOutput()
+	output, err := execCommandCombinedOutput("showConfig")
 	require.NoError(t, err)
 
 	var ret cli.Config
@@ -1448,7 +1544,7 @@ func TestStableStatus(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "status").CombinedOutput()
+	output, err := execCommandCombinedOutput("status")
 	require.NoError(t, err)
 
 	var ret cli.StatusResult
@@ -1496,7 +1592,7 @@ func TestLiveStatus(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "status").CombinedOutput()
+	output, err := execCommandCombinedOutput("status")
 	require.NoError(t, err)
 
 	var ret cli.StatusResult
@@ -1560,7 +1656,7 @@ func TestStableTransaction(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			args := append([]string{"transaction"}, tc.args...)
-			o, err := exec.Command(binaryPath, args...).CombinedOutput()
+			o, err := execCommandCombinedOutput(args...)
 			if tc.err != nil {
 				testutil.RequireError(t, err, tc.err.Error())
 				require.Equal(t, tc.errMsg, string(o))
@@ -1586,7 +1682,7 @@ func TestLiveTransaction(t *testing.T) {
 		return
 	}
 
-	o, err := exec.Command(binaryPath, "transaction", "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add").CombinedOutput()
+	o, err := execCommandCombinedOutput("transaction", "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add")
 	require.NoError(t, err)
 	var tx cli.TxnResult
 	err = json.NewDecoder(bytes.NewReader(o)).Decode(&tx)
@@ -1612,7 +1708,7 @@ func scanPendingTransactions(t *testing.T) {
 // otherwise just test random transactions.
 func scanTransactions(t *testing.T, fullTest bool) {
 	// Gets blockchain height through "status" command
-	output, err := exec.Command(binaryPath, "status").CombinedOutput()
+	output, err := execCommandCombinedOutput("status")
 	require.NoError(t, err)
 
 	d := json.NewDecoder(bytes.NewReader(output))
@@ -1658,7 +1754,7 @@ func checkTransactions(t *testing.T, txids []string) {
 			defer wg.Done()
 			for txid := range txC {
 				t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
-					o, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
+					o, err := execCommandCombinedOutput("transaction", txid)
 					require.NoError(t, err)
 					var txRlt cli.TxnResult
 					err = json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt)
@@ -1701,7 +1797,7 @@ func getTxids(t *testing.T, blockNum uint64) []string {
 func getTxidsInBlocks(t *testing.T, start, end int) []string {
 	s := strconv.Itoa(start)
 	e := strconv.Itoa(end)
-	o, err := exec.Command(binaryPath, "blocks", s, e).CombinedOutput()
+	o, err := execCommandCombinedOutput("blocks", s, e)
 	require.NoError(t, err)
 	var blocks readable.Blocks
 	err = json.NewDecoder(bytes.NewReader(o)).Decode(&blocks)
@@ -1725,7 +1821,7 @@ func TestStableBlocks(t *testing.T) {
 	testKnownBlocks(t)
 
 	// Tests blocks 180~181, should only return block 180.
-	output, err := exec.Command(binaryPath, "blocks", "180", "181").CombinedOutput()
+	output, err := execCommandCombinedOutput("blocks", "180", "181")
 	require.NoError(t, err)
 
 	var blocks readable.Blocks
@@ -1747,7 +1843,7 @@ func TestLiveBlocks(t *testing.T) {
 	blockSeqs := []int{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
 
 	for _, seq := range blockSeqs {
-		output, err := exec.Command(binaryPath, "blocks", strconv.Itoa(seq)).CombinedOutput()
+		output, err := execCommandCombinedOutput("blocks", strconv.Itoa(seq))
 		require.NoError(t, err)
 		var blocks readable.Blocks
 		err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
@@ -1775,7 +1871,7 @@ func testKnownBlocks(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args...)
 			require.NoError(t, err)
 
 			var blocks readable.Blocks
@@ -1791,7 +1887,7 @@ func testKnownBlocks(t *testing.T) {
 }
 
 func scanBlocks(t *testing.T, start, end string) { // nolint: unparam
-	outputs, err := exec.Command(binaryPath, "blocks", start, end).CombinedOutput()
+	outputs, err := execCommandCombinedOutput("blocks", start, end)
 	require.NoError(t, err)
 
 	var blocks readable.Blocks
@@ -1836,7 +1932,7 @@ func TestStableLastBlocks(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args...)
 
 			if bytes.Contains(output, []byte("Error: ")) {
 				fmt.Println(string(output))
@@ -1881,7 +1977,7 @@ func TestLiveLastBlocks(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args...)
 			require.NoError(t, err)
 
 			var blocks readable.Blocks
@@ -1900,7 +1996,7 @@ func TestStableWalletDir(t *testing.T) {
 	defer clean()
 
 	dir := filepath.Dir(walletPath)
-	output, err := exec.Command(binaryPath, "walletDir").CombinedOutput()
+	output, err := execCommandCombinedOutput("walletDir")
 	require.NoError(t, err)
 	require.Equal(t, dir, strings.TrimRight(string(output), "\n"))
 }
@@ -1914,7 +2010,7 @@ func TestLiveWalletDir(t *testing.T) {
 	requireWalletDir(t)
 
 	walletDir := os.Getenv("WALLET_DIR")
-	output, err := exec.Command(binaryPath, "walletDir").CombinedOutput()
+	output, err := execCommandCombinedOutput("walletDir")
 	require.NoError(t, err)
 
 	require.Equal(t, walletDir, strings.Trim(string(output), "\n"))
@@ -2051,7 +2147,7 @@ func TestLiveSend(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args()...)
 
 			output = bytes.TrimRight(output, "\n")
 
@@ -2114,7 +2210,7 @@ func TestLiveSendNotEnoughDecimals(t *testing.T) {
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, "send", w.Entries[0].Address.String(), v).CombinedOutput()
+			output, err := execCommandCombinedOutput("send", w.Entries[0].Address.String(), v)
 			require.Error(t, err)
 			require.Equal(t, err.Error(), "exit status 1")
 			output = bytes.TrimRight(output, "\n")
@@ -2245,7 +2341,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create raw transaction first
-			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args()...)
 			if err != nil {
 				t.Fatalf("err: %v, output: %v", err, string(output))
 				return
@@ -2258,7 +2354,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			}
 
 			// Broadcast transaction
-			output, err = exec.Command(binaryPath, "broadcastTransaction", string(output)).CombinedOutput()
+			output, err = execCommandCombinedOutput("broadcastTransaction", string(output))
 			require.NoError(t, err, string(output))
 
 			txid := string(bytes.TrimRight(output, "\n"))
@@ -2291,7 +2387,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, "createRawTransaction", w.Entries[0].Address.String(), v).CombinedOutput()
+			output, err := execCommandCombinedOutput("createRawTransaction", w.Entries[0].Address.String(), v)
 			require.Error(t, err)
 			output = bytes.Trim(output, "\n")
 			require.Equal(t, errMsg, output)
@@ -2300,7 +2396,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 }
 
 func getTransaction(t *testing.T, txid string) *cli.TxnResult {
-	output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
+	output, err := execCommandCombinedOutput("transaction", txid)
 	if err != nil {
 		fmt.Println(string(output))
 		return nil
@@ -2408,7 +2504,7 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wall
 }
 
 func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
-	output, err := exec.Command(binaryPath, "addressBalance", addr).CombinedOutput()
+	output, err := execCommandCombinedOutput("addressBalance", addr)
 	require.NoError(t, err, string(output))
 
 	var addrBalance cli.BalanceResult
@@ -2423,7 +2519,7 @@ func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
 }
 
 func getWalletOutputs(t *testing.T, walletPath string) readable.UnspentOutputs {
-	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
+	output, err := execCommandCombinedOutput("walletOutputs", walletPath)
 	require.NoError(t, err, string(output))
 
 	var wltOutput cli.OutputsResult
@@ -2441,7 +2537,7 @@ func TestStableWalletHistory(t *testing.T) {
 	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
-	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
+	output, err := execCommandCombinedOutput("walletHistory")
 	require.NoError(t, err)
 
 	var history []cli.AddrHistory
@@ -2459,7 +2555,7 @@ func TestLiveWalletHistory(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
+	output, err := execCommandCombinedOutput("walletHistory")
 	require.NoError(t, err)
 	var his []cli.AddrHistory
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&his)
@@ -2496,7 +2592,7 @@ func TestStableCheckDB(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := exec.Command(binaryPath, "checkdb", tc.dbPath).CombinedOutput()
+			output, err := execCommandCombinedOutput("checkdb", tc.dbPath)
 			if err != nil {
 				fmt.Println(string(output))
 				require.Equal(t, tc.errMsg, string(output))
@@ -2514,7 +2610,7 @@ func TestVersion(t *testing.T) {
 	}
 
 	// Gets version in json format.
-	output, err := exec.Command(binaryPath, "version", "-j").CombinedOutput()
+	output, err := execCommandCombinedOutput("version", "-j")
 	require.NoError(t, err)
 
 	var ver = struct {
@@ -2531,7 +2627,7 @@ func TestVersion(t *testing.T) {
 	require.True(t, ver.Wallet != "")
 
 	// Gets version without json format.
-	output, err = exec.Command(binaryPath, "version").CombinedOutput()
+	output, err = execCommandCombinedOutput("version")
 	require.NoError(t, err)
 
 	// Confirms the result contains 4 version componments
@@ -2678,7 +2774,7 @@ func TestStableWalletCreate(t *testing.T) {
 
 			// Run command with arguments
 			args := append([]string{"walletCreate"}, tc.args...)
-			output, err := exec.Command(binaryPath, args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
 				require.Equal(t, tc.errMsg, output)
@@ -2803,7 +2899,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create raw transaction first
-			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			output, err := execCommandCombinedOutput(tc.args()...)
 			if err != nil {
 				t.Fatalf("err: %v, output: %v", err, string(output))
 				return
@@ -2904,7 +3000,7 @@ func TestEncryptWallet(t *testing.T) {
 				clean := tc.setup(t)
 				defer clean()
 				args := append([]string{"encryptWallet", "-x", string(ct)}, tc.args[:]...)
-				output, err := exec.Command(binaryPath, args...).CombinedOutput()
+				output, err := execCommandCombinedOutput(args...)
 				if err != nil {
 					require.EqualError(t, err, "exit status 1")
 					if tc.errWithHelp {
@@ -2994,7 +3090,7 @@ func TestDecryptWallet(t *testing.T) {
 			clean := tc.setup(t)
 			defer clean()
 			args := append([]string{"decryptWallet"}, tc.args...)
-			output, err := exec.Command(binaryPath, args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
 				if tc.errWithHelp {
@@ -3090,7 +3186,7 @@ func TestShowSeed(t *testing.T) {
 			clean := tc.setup(t)
 			defer clean()
 			args := append([]string{"showSeed"}, tc.args...)
-			output, err := exec.Command(binaryPath, args...).CombinedOutput()
+			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
 				if tc.errWithHelp {

@@ -9,7 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-//go:generate go install
 //go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
 
 // Gatewayer interface for Gateway methods

@@ -27,8 +27,8 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
 	- [Create a wallet](#create-a-wallet)
 	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
-	- [Encrypt Wallet][#encrypt-wallet]
-	- [Decrypt Wallet][#decrypt-wallet]
+	- [Encrypt Wallet](#encrypt-wallet)
+	- [Decrypt Wallet](#decrypt-wallet)
 	- [Last blocks](#last-blocks)
 	- [List wallet addresses](#list-wallet-addresses)
 	- [List wallets](#list-wallets)
@@ -680,7 +680,7 @@ FLAGS:
   -a, --address string          From address
   -c, --change-address string   Specify different change address.
                                 By default the from address or a wallets coinbase address will be used.
-      --csv-file string         CSV file containing addresses and amounts to send
+      --csv  string         CSV file containing addresses and amounts to send
   -j, --json                    Returns the results in JSON format.
   -m, --many string             use JSON string to set multiple receive addresses and coins,
                                 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
@@ -1698,7 +1698,7 @@ FLAGS:
   -a, --address string          From address
   -c, --change-address string   Specify different change address.
                                 By default the from address or a wallets coinbase address will be used.
-      --csv-file string         CSV file containing addresses and amounts to send
+      --csv  string         CSV file containing addresses and amounts to send
   -j, --json                    Returns the results in JSON format.
   -m, --many string             use JSON string to set multiple receive addresses and coins,
                                 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'

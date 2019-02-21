@@ -1224,6 +1224,11 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 			return
 		}
 
+		if v.Rawtx == "" {
+			wh.Error400(w, "rawtx is required")
+			return
+		}
+
 		b, err := hex.DecodeString(v.Rawtx)
 		if err != nil {
 			if forAPIVersion2 {
@@ -1578,6 +1583,12 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 		var req VerifyTxnRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		if req.EncodedTransaction == "" {
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "encoded_transaction is required")
 			writeHTTPResponse(w, resp)
 			return
 		}

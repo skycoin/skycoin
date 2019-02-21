@@ -139,10 +139,10 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:      "valid, version has suffix",
-			userAgent: "skycoin:0.25.1-dev",
+			userAgent: "skycoin:0.25.1",
 			data: Data{
 				Coin:    "skycoin",
-				Version: "0.25.1-dev",
+				Version: "0.25.1",
 			},
 		},
 	}
@@ -235,7 +235,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, x, Sanitize(x))
 
 	// Should not have anything stripped
-	x = "Skycoin:0.25.1-dev(foo; bar)"
+	x = "Skycoin:0.25.1(foo; bar)"
 	require.Equal(t, x, Sanitize(x))
 }
 

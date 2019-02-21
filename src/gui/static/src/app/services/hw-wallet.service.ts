@@ -6,6 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
+import { environment } from '../../environments/environment';
 
 export enum ChangePinStates {
   RequestingCurrentPin,
@@ -64,7 +65,7 @@ export class HwWalletService {
   }
 
   constructor(private translate: TranslateService, dialog: MatDialog) {
-    if (window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated')) {
+    if (this.hwWalletCompatibilityActivated) {
       window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
         if (!connected) {
           this.eventsObservers.forEach((value, key) => {
@@ -133,6 +134,10 @@ export class HwWalletService {
         });
       });
     }
+  }
+
+  get hwWalletCompatibilityActivated(): boolean {
+    return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
   }
 
   get walletConnectedAsyncEvent(): Observable<boolean> {

@@ -16,7 +16,6 @@ matrix:
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq; fi
-  - eval "CC=gcc-6 && CXX=g++-6"
 
 env:
   global:
@@ -50,8 +49,6 @@ install:
   - make install-linters
   # Install pinned golangci-lint, overriding the latest version install by make install-linters
   - VERSION=1.10.2 ./ci-scripts/install-golangci-lint.sh
-  - ./ci-scripts/install-travis-gcc.sh
-  - make install-deps-libc
   - nvm install 8.11.0
   - nvm use 8.11.0
   - make install-deps-ui
@@ -82,13 +79,6 @@ script:
   - make integration-test-auth
   # Stable integration tests without unconfirmed transactions
   - make integration-test-db-no-unconfirmed
-  # libskycoin tests
-  - CC=gcc-6 make test-libc
-  # TODO: test pyskycoin
-  # - CC=gcc-6 make test-libpy
-  # TODO: test ui
-  # - make test-ui
-  # - make test-libpy
   - make lint-ui
   - make build-ui-travis
   - make test-ui

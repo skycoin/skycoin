@@ -33,7 +33,7 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get wallets](#get-wallets)
 	- [Get wallet folder name](#get-wallet-folder-name)
 	- [Generate wallet seed](#generate-wallet-seed)
-	- [Verify Wallet Seed](#verify-wallet-seed)
+	- [Verify wallet Seed](#verify-wallet-seed)
 	- [Create a wallet from seed](#create-a-wallet-from-seed)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
 	- [Updates wallet label](#updates-wallet-label)
@@ -1990,16 +1990,18 @@ If there are no available connections, the API responds with a `503 Service Unav
 Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
 This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
 
-Also, in rare cases the transaction may be broadcast but might not be saved to the database. In this case the client
-would have a window of opportunity to attempt a double spend, resulting in unexpected behavior.
-However, if the database save failed, it is likely that a subsequent call to inject transaction will also fail.
-
 The recommended way to handle transaction injections from your system is to inject the transaction then wait
 for the transaction to be confirmed.  Transactions typically confirm quickly, so if it is not confirmed after some
 timeout such as 1 minute, the application can continue to retry the broadcast with `/api/v1/resendUnconfirmedTxns`.
 Broadcast only fails without an error if the node's peers disconnect or timeout after the broadcast was initiated,
 which is a network problem that may recover, so rebroadcasting with `/api/v1/resendUnconfirmedTxns` will resolve it,
-or else the network is unavailable.  Any transactions saved to the database will be resent on startup.
+or else the network is unavailable.
+
+`POST /api/v1/transaction` accepts an `ignore_unconfirmed` option to allow transactions to be created without waiting
+for unconfirmed transactions to confirm.
+
+Any unconfirmed transactions found in the database at startup are resent. So, if the network broadcast failed but
+the transaction was saved to the database, when you restart the client, it will resend.
 
 It is safe to retry the injection after a `503` failure.
 

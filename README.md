@@ -80,6 +80,9 @@ scratch, to remedy the rough edges in the Bitcoin design.
 	- [Formatting](#formatting)
 	- [Code Linting](#code-linting)
 	- [Profiling](#profiling)
+	- [Fuzzing](#fuzzing)
+		- [base58](#base58)
+		- [encoder](#encoder)
 	- [Dependencies](#dependencies)
 		- [Rules](#rules)
 		- [Management](#management)
@@ -113,7 +116,7 @@ Skycoin supports go1.10+.
 ### Go get skycoin
 
 ```sh
-go get github.com/skycoin/skycoin/...
+go get github.com/skycoin/skycoin/cmd/...
 ```
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
@@ -276,6 +279,12 @@ Example Skycoin URIs:
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70`
 * `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70&label=friend&message=Birthday%20Gift`
+
+Additonally, if no `skycoin:` prefix is present when parsing, the string may be treated as an address:
+
+* `2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
+
+However, do not use this URI in QR codes displayed to the user, because the address can't be disambiguated from other Skyfiber coins.
 
 ## Wire protocol user agent
 
@@ -523,6 +532,29 @@ go tool pprof http://localhost:6060/debug/pprof/heap
 
 A web page interface is provided by http/pprof at http://localhost:6060/debug/pprof/.
 
+### Fuzzing
+
+Fuzz tests are run with [go-fuzz](https://github.com/dvyukov/go-fuzz).
+[Follow the instructions on the go-fuzz page](https://github.com/dvyukov/go-fuzz) to install it.
+
+Fuzz tests are written for the following packages:
+
+#### base58
+
+To fuzz the `cipher/base58` package,
+
+```sh
+make fuzz-base58
+```
+
+#### encoder
+
+To fuzz the `cipher/encoder` package,
+
+```sh
+make fuzz-encoder
+```
+
 ### Dependencies
 
 #### Rules
@@ -627,7 +659,6 @@ Instructions for doing this:
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 0. Update version strings to the new version in the following files: `electron/package-lock.json`, `electron/package.json`, `electron/skycoin/current-skycoin.json`, `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
-0. Run `make newcoin`. Compare `git diff cmd/skycoin/skycoin.go`. The only change should be the version number in the file.
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote for images `skycoin/skycoin`, `skycoin/skycoindev-cli`, and `skycoin/skycoindev-vscode`, adding a new file for the new version and adjusting any configuration text that may have changed

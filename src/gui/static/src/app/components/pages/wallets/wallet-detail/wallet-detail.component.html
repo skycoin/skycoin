@@ -48,6 +48,9 @@
           <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
             {{ 'wallet.address.outputs' | translate }}
           </button>
+          <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address }">
+            {{ 'wallet.address.history' | translate }}
+          </button>
         </mat-menu>
       </div>
     </div>

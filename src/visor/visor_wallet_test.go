@@ -169,9 +169,20 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
-			name:       "Unconfirmed.ForEach failed",
-			p:          validParams,
-			wp:         validCreateTxnParams,
+			name:                    "no unspents found for addresses",
+			p:                       validParams,
+			wp:                      validCreateTxnParams,
+			getUnspentHashesOfAddrs: nil,
+			err:                     transaction.ErrNoUnspents,
+		},
+
+		{
+			name: "Unconfirmed.ForEach failed",
+			p:    validParams,
+			wp:   validCreateTxnParams,
+			getUnspentHashesOfAddrs: blockdb.AddressHashes{
+				addrs[1]: uxOuts,
+			},
 			forEachErr: errors.New("failure"),
 			err:        errors.New("failure"),
 		},

@@ -18,7 +18,7 @@ var (
 	ErrInsufficientHours = NewError(errors.New("hours are not sufficient"))
 	// ErrZeroSpend is returned if a transaction is trying to spend 0 coins
 	ErrZeroSpend = NewError(errors.New("zero spend amount"))
-	// ErrNoUnspents is returned if a wallet has no unspents to spend
+	// ErrNoUnspents is returned if a Create is called with no unspent outputs
 	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
 )
 

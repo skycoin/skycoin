@@ -546,5 +546,10 @@ func (vs *Visor) getCreateTransactionAuxsAddress(tx *dbutil.Tx, addrs []cipher.A
 		return nil, err
 	}
 
-	return vs.getCreateTransactionAuxsUxOut(tx, addrHashes.Flatten(), ignoreUnconfirmed)
+	hashes := addrHashes.Flatten()
+	if len(hashes) == 0 {
+		return nil, transaction.ErrNoUnspents
+	}
+
+	return vs.getCreateTransactionAuxsUxOut(tx, hashes, ignoreUnconfirmed)
 }

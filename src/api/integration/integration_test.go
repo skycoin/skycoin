@@ -1219,28 +1219,26 @@ func scanUxOuts(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, ux := range outputs.HeadOutputs {
-		t.Run(ux.Hash, func(ux readable.UnspentOutput) func(t *testing.T) {
-			return func(t *testing.T) {
-				foundUx, err := c.UxOut(ux.Hash)
-				require.NoError(t, err)
+		t.Run(ux.Hash, func(t *testing.T) {
+			foundUx, err := c.UxOut(ux.Hash)
+			require.NoError(t, err)
 
-				require.Equal(t, ux.Hash, foundUx.Uxid)
-				require.Equal(t, ux.Time, foundUx.Time)
-				require.Equal(t, ux.BkSeq, foundUx.SrcBkSeq)
-				require.Equal(t, ux.SourceTransaction, foundUx.SrcTx)
-				require.Equal(t, ux.Address, foundUx.OwnerAddress)
-				require.Equal(t, ux.Hours, foundUx.Hours)
-				coinsStr, err := droplet.ToString(foundUx.Coins)
-				require.NoError(t, err)
-				require.Equal(t, ux.Coins, coinsStr)
+			require.Equal(t, ux.Hash, foundUx.Uxid)
+			require.Equal(t, ux.Time, foundUx.Time)
+			require.Equal(t, ux.BkSeq, foundUx.SrcBkSeq)
+			require.Equal(t, ux.SourceTransaction, foundUx.SrcTx)
+			require.Equal(t, ux.Address, foundUx.OwnerAddress)
+			require.Equal(t, ux.Hours, foundUx.Hours)
+			coinsStr, err := droplet.ToString(foundUx.Coins)
+			require.NoError(t, err)
+			require.Equal(t, ux.Coins, coinsStr)
 
-				if foundUx.SpentBlockSeq == 0 {
-					require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxnID)
-				} else {
-					require.NotEqual(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxnID)
-				}
+			if foundUx.SpentBlockSeq == 0 {
+				require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxnID)
+			} else {
+				require.NotEqual(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxnID)
 			}
-		}(ux))
+		})
 	}
 }
 

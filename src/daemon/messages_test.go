@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -407,7 +406,6 @@ func TestIntroductionMessage(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			fmt.Printf("TEST NAME: %s\n", tc.name)
 			mc := &gnet.MessageContext{
 				Addr:   tc.addr,
 				ConnID: tc.gnetID,

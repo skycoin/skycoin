@@ -376,9 +376,6 @@ func TestCORS(t *testing.T) {
 
 					resp := rr.Result()
 
-					fmt.Println(resp.Header)
-					fmt.Println(rr.Body.String())
-
 					allowOrigins := resp.Header.Get("Access-Control-Allow-Origin")
 					allowHeaders := resp.Header.Get("Access-Control-Allow-Headers")
 					allowMethods := resp.Header.Get("Access-Control-Allow-Methods")

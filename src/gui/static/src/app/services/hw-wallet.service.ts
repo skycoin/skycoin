@@ -4,7 +4,7 @@ import { Subscriber } from 'rxjs/Subscriber';
 import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { environment } from '../../environments/environment';
 
@@ -47,12 +47,12 @@ export class HwWalletService {
   private eventsObservers = new Map<number, Subscriber<OperationResult>>();
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
 
+  private signTransactionDialog: MatDialogRef<{}, any>;
+
   // Values to be sent to HwPinDialogComponent
   private changingPin: boolean;
   private changePinState: ChangePinStates;
   private signingTx: boolean;
-  private currentSignature: number;
-  private totalSignatures: number;
 
   // Set on AppComponent to avoid a circular reference.
   private requestPinComponentInternal;
@@ -63,8 +63,12 @@ export class HwWalletService {
   set requestWordComponent(value) {
     this.requestWordComponentInternal = value;
   }
+  private signTransactionConfirmationComponentInternal;
+  set signTransactionConfirmationComponent(value) {
+    this.signTransactionConfirmationComponentInternal = value;
+  }
 
-  constructor(private translate: TranslateService, dialog: MatDialog) {
+  constructor(private translate: TranslateService, private dialog: MatDialog) {
     if (this.hwWalletCompatibilityActivated) {
       window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
         if (!connected) {
@@ -82,8 +86,6 @@ export class HwWalletService {
             changingPin: this.changingPin,
             changePinState: this.changePinState,
             signingTx: this.signingTx,
-            currentSignature: this.currentSignature,
-            totalSignatures: this.totalSignatures,
           },
         }).afterClosed().subscribe(pin => {
           if (!pin) {
@@ -110,6 +112,15 @@ export class HwWalletService {
           }
           window['ipcRenderer'].send('hwSendSeedWord', word);
         });
+      });
+
+      window['ipcRenderer'].on('hwSignTransactionResponse', (event, requestId, result) => {
+        this.dispatchEvent(requestId, result, true);
+
+        if (this.signTransactionDialog) {
+          this.signTransactionDialog.close();
+          this.signTransactionDialog = null;
+        }
       });
 
       const data: EventData[] = [
@@ -236,13 +247,25 @@ export class HwWalletService {
     });
   }
 
-  signMessage(addressIndex: number, message: string, currentSignature: number, totalSignatures: number): Observable<OperationResult> {
+  signMessage(addressIndex: number, message: string): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
       this.signingTx = true;
-      this.currentSignature = currentSignature;
-      this.totalSignatures = totalSignatures;
       window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
+
+      return this.createRequestResponse(requestId);
+    });
+  }
+
+  signTransaction(inputs: any, outputs: any): Observable<OperationResult> {
+    this.signTransactionDialog = this.dialog.open(this.signTransactionConfirmationComponentInternal, <MatDialogConfig> {
+      width: '450px',
+    });
+
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      this.signingTx = true;
+      window['ipcRenderer'].send('hwSignTransaction', requestId, inputs, outputs);
 
       return this.createRequestResponse(requestId);
     });

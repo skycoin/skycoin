@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Return v2-style error for disabled endpoints
+- #2172 Fix electron build failure for linux system
 
 ### Changed
 

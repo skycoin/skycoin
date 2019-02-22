@@ -140,7 +140,6 @@ func execCommand(args ...string) *exec.Cmd {
 		panic(err)
 	}
 	args = append(args, []string{fmt.Sprintf("--test.coverprofile=../../../coverage/%s", coverprofile)}...)
-	fmt.Println("exec", binaryPath, args)
 	return exec.Command(binaryPath, args...)
 }
 
@@ -170,13 +169,11 @@ func TestMain(m *testing.M) {
 
 	binaryPath = abs
 
-	fmt.Println("Building test cli binary at", binaryPath)
-
 	// Build cli binary file.
+	// Args to build the cli binary without coverage:
 	// args := []string{"build", "-o", binaryPath, "../../../cmd/cli/cli.go"}
 	// Compile the binary with test flags enabled to get a coverage report from the binary
 	args := []string{"test", "-c", "-tags", "testrunmain", "-o", binaryPath, "-coverpkg=github.com/skycoin/skycoin/...", "../../../cmd/cli/"}
-	fmt.Println("Command args", args)
 	if err := exec.Command("go", args...).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Make %v binary failed: %v\n", binaryName, err)
 		os.Exit(1)
@@ -184,11 +181,11 @@ func TestMain(m *testing.M) {
 
 	ret := m.Run()
 
-	// // Remove the generated cli binary file.
-	// if err := os.Remove(binaryPath); err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Delete %v failed: %v", binaryName, err)
-	// 	os.Exit(1)
-	// }
+	// Remove the generated cli binary file.
+	if err := os.Remove(binaryPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Delete %v failed: %v", binaryName, err)
+		os.Exit(1)
+	}
 
 	os.Exit(ret)
 }
@@ -1935,7 +1932,6 @@ func TestStableLastBlocks(t *testing.T) {
 			output, err := execCommandCombinedOutput(tc.args...)
 
 			if bytes.Contains(output, []byte("Error: ")) {
-				fmt.Println(string(output))
 				require.Equal(t, string(tc.errMsg), string(output))
 				return
 			}
@@ -2398,7 +2394,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 func getTransaction(t *testing.T, txid string) *cli.TxnResult {
 	output, err := execCommandCombinedOutput("transaction", txid)
 	if err != nil {
-		fmt.Println(string(output))
+		t.Log(string(output))
 		return nil
 	}
 
@@ -2594,7 +2590,7 @@ func TestStableCheckDB(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := execCommandCombinedOutput("checkdb", tc.dbPath)
 			if err != nil {
-				fmt.Println(string(output))
+				t.Log(string(output))
 				require.Equal(t, tc.errMsg, string(output))
 				return
 			}

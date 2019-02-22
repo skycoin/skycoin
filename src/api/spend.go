@@ -350,21 +350,21 @@ func (r createTransactionRequest) Validate() error {
 			return fmt.Errorf("addresses[%d] is empty", i)
 		}
 
-		addressMap[a.Address] = struct{}{}
-	}
+		if _, ok := addressMap[a.Address]; ok {
+			return errors.New("addresses contains duplicate values")
+		}
 
-	if len(addressMap) != len(r.Addresses) {
-		return errors.New("addresses contains duplicate values")
+		addressMap[a.Address] = struct{}{}
 	}
 
 	// Check for duplicate spending uxouts
 	uxouts := make(map[cipher.SHA256]struct{}, len(r.UxOuts))
 	for _, o := range r.UxOuts {
-		uxouts[o.SHA256] = struct{}{}
-	}
+		if _, ok := uxouts[o.SHA256]; ok {
+			return errors.New("unspents contains duplicate values")
+		}
 
-	if len(uxouts) != len(r.UxOuts) {
-		return errors.New("unspents contains duplicate values")
+		uxouts[o.SHA256] = struct{}{}
 	}
 
 	if len(r.To) == 0 {
@@ -397,15 +397,17 @@ func (r createTransactionRequest) Validate() error {
 			hours = to.Hours.Value()
 		}
 
-		outputs[coin.TransactionOutput{
+		txo := coin.TransactionOutput{
 			Address: to.Address.Address,
 			Coins:   to.Coins.Value(),
 			Hours:   hours,
-		}] = struct{}{}
-	}
+		}
 
-	if len(outputs) != len(r.To) {
-		return errors.New("to contains duplicate values")
+		if _, ok := outputs[txo]; ok {
+			return errors.New("to contains duplicate values")
+		}
+
+		outputs[txo] = struct{}{}
 	}
 
 	return nil

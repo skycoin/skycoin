@@ -233,6 +233,7 @@ func TestCreateTransaction(t *testing.T) {
 			p:    transaction.Params{},
 			err:  transaction.ErrMissingReceivers,
 		},
+
 		{
 			name: "bad CreateTransactionParams",
 			p:    validParams,
@@ -242,10 +243,11 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			err: ErrCreateTransactionParamsConflict,
 		},
+
 		{
 			name: "Addresses and UxOuts both empty",
 			p:    validParams,
-			err:  NewUserError(errors.New("UxOuts or Addresses must not be empty")),
+			err:  ErrUxOutsOrAddressesRequired,
 		},
 
 		{

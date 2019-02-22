@@ -40,6 +40,10 @@ var (
 	ErrDuplicateAddresses = NewUserError(errors.New("Addresses contains duplicate values"))
 	// ErrCreateTransactionParamsConflict UxOuts and Addresses cannot be combined
 	ErrCreateTransactionParamsConflict = NewUserError(errors.New("UxOuts and Addresses cannot be combined"))
+	// ErrTransactionAlreadySigned attempted to sign a transaction that is already fully signed
+	ErrTransactionAlreadySigned = NewUserError(errors.New("Transaction is already fully signed"))
+	// ErrUxOutsOrAddressesRequired Both Addresses and UxOuts are empty
+	ErrUxOutsOrAddressesRequired = NewUserError(errors.New("UxOuts or Addresses must not be empty"))
 )
 
 // GetWalletBalance returns balance pairs of specific wallet
@@ -141,7 +145,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 	var signedTxn *coin.Transaction
 
 	if txn.IsFullySigned() {
-		return nil, nil, NewUserError(errors.New("Transaction is already fully signed"))
+		return nil, nil, ErrTransactionAlreadySigned
 	}
 
 	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
@@ -172,7 +176,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 
 			signedTxn, err = w.SignTransaction(txn, signIndexes, uxOuts)
 			if err != nil {
-				logger.WithError(err).Error("WalletSignTransaction failed")
+				logger.WithError(err).Error("wallet.SignTransaction failed")
 				return err
 			}
 
@@ -182,12 +186,14 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 			}
 
 			if err := VerifySingleTxnUserConstraints(*signedTxn); err != nil {
-				logger.WithError(err).Error("Signed transaction violates transaction user constraints")
+				// This shouldn't happen since we verified in the beginning; if it does, then wallet.SignTransaction has a bug
+				logger.Critical().WithError(err).Error("Signed transaction violates transaction user constraints")
 				return err
 			}
 
 			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *signedTxn, params.UserVerifyTxn, signed); err != nil {
-				logger.WithError(err).Error("Signed transaction violates transaction constraints")
+				// This shouldn't happen since we verified in the beginning; if it does, then wallet.SignTransaction has a bug
+				logger.Critical().WithError(err).Error("Signed transaction violates transaction constraints")
 				return err
 			}
 
@@ -303,9 +309,9 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 		return nil, nil, err
 	}
 
-	allAddrsMap := make(map[cipher.Address]struct{}, len(walletAddresses))
+	walletAddressesMap := make(map[cipher.Address]struct{}, len(walletAddresses))
 	for _, a := range walletAddresses {
-		allAddrsMap[a] = struct{}{}
+		walletAddressesMap[a] = struct{}{}
 	}
 
 	addrs := wp.Addresses
@@ -315,7 +321,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 	} else {
 		// Check that requested addresses are in the wallet
 		for _, a := range addrs {
-			if _, ok := allAddrsMap[a]; !ok {
+			if _, ok := walletAddressesMap[a]; !ok {
 				return nil, nil, wallet.ErrUnknownAddress
 			}
 		}
@@ -326,7 +332,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 
 	if err := vs.DB.View(methodName, func(tx *dbutil.Tx) error {
 		var err error
-		txn, uxb, err = vs.walletCreateTransactionTx(tx, methodName, w, p, wp, signed, addrs, allAddrsMap)
+		txn, uxb, err = vs.walletCreateTransactionTx(tx, methodName, w, p, wp, signed, addrs, walletAddressesMap)
 		return err
 	}); err != nil {
 		return nil, nil, err
@@ -339,7 +345,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 
 func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 	w *wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed TxnSignedFlag,
-	addrs []cipher.Address, allAddrsMap map[cipher.Address]struct{}) (*coin.Transaction, []transaction.UxBalance, error) {
+	addrs []cipher.Address, walletAddressesMap map[cipher.Address]struct{}) (*coin.Transaction, []transaction.UxBalance, error) {
 	// Note: assumes inputs have already been validated by walletCreateTransaction
 
 	head, err := vs.Blockchain.Head(tx)
@@ -359,7 +365,7 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 
 		// Check that UxOut addresses are in the wallet,
 		for a := range auxs {
-			if _, ok := allAddrsMap[a]; !ok {
+			if _, ok := walletAddressesMap[a]; !ok {
 				return nil, nil, wallet.ErrUnknownUxOut
 			}
 		}
@@ -415,7 +421,7 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 		return nil, nil, err
 	}
 	if len(wp.Addresses) == 0 && len(wp.UxOuts) == 0 {
-		return nil, nil, NewUserError(errors.New("UxOuts or Addresses must not be empty"))
+		return nil, nil, ErrUxOutsOrAddressesRequired
 	}
 
 	var txn *coin.Transaction

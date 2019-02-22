@@ -1133,9 +1133,23 @@ func TestAddressHashesFlatten(t *testing.T) {
 	}
 	require.Equal(t, hashes[0:2], addrHashes.Flatten())
 
+	addr1 := testutil.MakeAddress()
+	addr2 := testutil.MakeAddress()
 	addrHashes = AddressHashes{
-		testutil.MakeAddress(): hashes[0:2],
-		testutil.MakeAddress(): hashes[4:6],
+		addr1: hashes[0:2],
+		addr2: hashes[4:6],
 	}
-	require.Equal(t, append(hashes[0:2], hashes[4:6]...), addrHashes.Flatten())
+
+	expectedHashes := append(addrHashes[addr1], addrHashes[addr2]...)
+	flattenedHashes := addrHashes.Flatten()
+
+	sort.Slice(expectedHashes, func(a, b int) bool {
+		return bytes.Compare(expectedHashes[a][:], expectedHashes[b][:]) < 0
+	})
+	sort.Slice(flattenedHashes, func(a, b int) bool {
+		return bytes.Compare(flattenedHashes[a][:], flattenedHashes[b][:]) < 0
+	})
+
+	require.Equal(t, len(expectedHashes), len(flattenedHashes))
+	require.Equal(t, expectedHashes, flattenedHashes)
 }

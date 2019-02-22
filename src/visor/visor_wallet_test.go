@@ -1000,6 +1000,27 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 		},
 
 		{
+			name:              "uxouts specified, all uxouts are unconfirmed",
+			ignoreUnconfirmed: true,
+			uxOuts:            hashes[5:10],
+			unconfirmedTxns: coin.Transactions{
+				coin.Transaction{
+					In: hashes[0:2],
+				},
+				coin.Transaction{
+					In: hashes[2:4],
+				},
+				coin.Transaction{
+					In: hashes[8:10],
+				},
+				coin.Transaction{
+					In: hashes[5:8],
+				},
+			},
+			err: ErrNoSpendableOutputs,
+		},
+
+		{
 			name:   "uxouts specified, unknown uxout",
 			uxOuts: hashes[5:10],
 			err: blockdb.ErrUnspentNotExist{

@@ -44,6 +44,8 @@ var (
 	ErrTransactionAlreadySigned = NewUserError(errors.New("Transaction is already fully signed"))
 	// ErrUxOutsOrAddressesRequired Both Addresses and UxOuts are empty
 	ErrUxOutsOrAddressesRequired = NewUserError(errors.New("UxOuts or Addresses must not be empty"))
+	// ErrNoSpendableOutputs after filtering unconfirmed spend outputs, there are no remaining outputs available for transaction creation
+	ErrNoSpendableOutputs = NewUserError(errors.New("All selected outputs are unavailable for spending"))
 )
 
 // GetWalletBalance returns balance pairs of specific wallet
@@ -518,6 +520,10 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 			}
 		}
 		uxOutHashes = filteredUxOutHashes
+	}
+
+	if len(uxOutHashes) == 0 {
+		return nil, ErrNoSpendableOutputs
 	}
 
 	// Retrieve the uxouts from the pool.

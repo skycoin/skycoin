@@ -83,8 +83,6 @@ script:
   - make build-ui-travis
   - make test-ui
   - make test-ui-e2e
-  # Swagger Integration
-  - make check-swagger
   # Build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
 

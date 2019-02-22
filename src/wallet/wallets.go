@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
@@ -143,4 +144,34 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 	})
 
 	return rw
+}
+
+// containsDuplicate returns true if there is a duplicate wallet
+// (identified by the first address in the wallet) and return the ID of that wallet
+// and the first address if true
+func (wlts Wallets) containsDuplicate() (string, cipher.Address, bool) {
+	m := make(map[cipher.Address]struct{}, len(wlts))
+	for wltID, wlt := range wlts {
+		if len(wlt.Entries) == 0 {
+			continue
+		}
+		addr := wlt.Entries[0].SkycoinAddress()
+		if _, ok := m[addr]; ok {
+			return wltID, addr, true
+		}
+
+		m[addr] = struct{}{}
+	}
+
+	return "", cipher.Address{}, false
+}
+
+// containsEmpty returns true there is an empty wallet and the ID of that wallet if true
+func (wlts Wallets) containsEmpty() (string, bool) {
+	for wltID, wlt := range wlts {
+		if len(wlt.Entries) == 0 {
+			return wltID, true
+		}
+	}
+	return "", false
 }

@@ -19,9 +19,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -55,8 +53,6 @@ const (
 	EndpointsWallet = "WALLET"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
-	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
-	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 	// EndpointsPrometheus endpoints for Go application metrics
 	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
@@ -72,20 +68,19 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir            string
-	DisableCSRF          bool
-	DisableCSP           bool
-	EnableJSON20RPC      bool
-	EnableGUI            bool
-	EnableUnversionedAPI bool
-	ReadTimeout          time.Duration
-	WriteTimeout         time.Duration
-	IdleTimeout          time.Duration
-	Health               HealthConfig
-	HostWhitelist        []string
-	EnabledAPISets       map[string]struct{}
-	Username             string
-	Password             string
+	StaticDir          string
+	DisableCSRF        bool
+	DisableHeaderCheck bool
+	DisableCSP         bool
+	EnableGUI          bool
+	ReadTimeout        time.Duration
+	WriteTimeout       time.Duration
+	IdleTimeout        time.Duration
+	Health             HealthConfig
+	HostWhitelist      []string
+	EnabledAPISets     map[string]struct{}
+	Username           string
+	Password           string
 }
 
 // HealthConfig configuration data exposed in /health
@@ -96,18 +91,17 @@ type HealthConfig struct {
 }
 
 type muxConfig struct {
-	host                 string
-	appLoc               string
-	enableGUI            bool
-	enableJSON20RPC      bool
-	enableUnversionedAPI bool
-	disableCSRF          bool
-	disableCSP           bool
-	enabledAPISets       map[string]struct{}
-	hostWhitelist        []string
-	username             string
-	password             string
-	health               HealthConfig
+	host               string
+	appLoc             string
+	enableGUI          bool
+	disableCSRF        bool
+	disableHeaderCheck bool
+	disableCSP         bool
+	enabledAPISets     map[string]struct{}
+	hostWhitelist      []string
+	username           string
+	password           string
+	health             HealthConfig
 }
 
 // HTTPResponse represents the http response struct
@@ -176,15 +170,8 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Warning("CSRF check disabled")
 	}
 
-	var rpc *webrpc.WebRPC
-	if c.EnableJSON20RPC {
-		logger.Info("JSON 2.0 RPC enabled")
-		var err error
-		// TODO: change webprc to use http.Gatewayer
-		rpc, err = webrpc.New(gateway.(*daemon.Gateway))
-		if err != nil {
-			return nil, err
-		}
+	if c.DisableHeaderCheck {
+		logger.Warning("Header check disabled")
 	}
 
 	if c.ReadTimeout == 0 {
@@ -198,21 +185,20 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	}
 
 	mc := muxConfig{
-		host:                 host,
-		appLoc:               appLoc,
-		enableGUI:            c.EnableGUI,
-		enableJSON20RPC:      c.EnableJSON20RPC,
-		enableUnversionedAPI: c.EnableUnversionedAPI,
-		disableCSRF:          c.DisableCSRF,
-		disableCSP:           c.DisableCSP,
-		health:               c.Health,
-		enabledAPISets:       c.EnabledAPISets,
-		hostWhitelist:        c.HostWhitelist,
-		username:             c.Username,
-		password:             c.Password,
+		host:               host,
+		appLoc:             appLoc,
+		enableGUI:          c.EnableGUI,
+		disableCSRF:        c.DisableCSRF,
+		disableHeaderCheck: c.DisableHeaderCheck,
+		disableCSP:         c.DisableCSP,
+		health:             c.Health,
+		enabledAPISets:     c.EnabledAPISets,
+		hostWhitelist:      c.HostWhitelist,
+		username:           c.Username,
+		password:           c.Password,
 	}
 
-	srvMux := newServerMux(mc, gateway, rpc)
+	srvMux := newServerMux(mc, gateway)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -324,7 +310,7 @@ func (s *Server) Shutdown() {
 }
 
 // newServerMux creates an http.ServeMux with handlers registered
-func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.ServeMux {
+func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	allowedOrigins := []string{fmt.Sprintf("http://%s", c.host)}
@@ -370,26 +356,29 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 		}
 	}
 
-	webHandlerCSRFOptional := func(apiVersion, endpoint string, handler http.Handler, checkCSRF bool) {
+	webHandlerWithOptionals := func(apiVersion, endpoint string, handler http.Handler, checkCSRF, checkHeaders bool) {
 		handler = wh.ElapsedHandler(logger, handler)
+
 		handler = corsHandler.Handler(handler)
+
 		if checkCSRF {
 			handler = CSRFCheck(apiVersion, c.disableCSRF, handler)
 		}
-		handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+
+		if checkHeaders {
+			handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+		}
+
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 
 	webHandler := func(apiVersion, endpoint string, handler http.Handler) {
-		webHandlerCSRFOptional(apiVersion, endpoint, handler, true)
+		webHandlerWithOptionals(apiVersion, endpoint, handler, true, !c.disableHeaderCheck)
 	}
 
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
-		if c.enableUnversionedAPI {
-			webHandler(apiVersion1, endpoint, handler)
-		}
 		webHandler(apiVersion1, "/api/v1"+endpoint, handler)
 	}
 
@@ -424,16 +413,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 		}
 	}
 
-	if c.enableJSON20RPC {
-		webHandlerV1("/webrpc", http.HandlerFunc(rpc.Handler))
-	}
-
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
-		if c.enableUnversionedAPI {
-			webHandlerCSRFOptional(apiVersion1, endpoint, handler, false)
-		}
-		webHandlerCSRFOptional(apiVersion1, "/api/v1"+endpoint, handler, false)
+		webHandlerWithOptionals(apiVersion1, "/api/v1"+endpoint, handler, false, !c.disableHeaderCheck)
 	}
 	csrfHandlerV1("/csrf", getCSRFToken(c.disableCSRF)) // csrf is always available, regardless of the API set
 
@@ -446,7 +428,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV1("/wallet/create", forAPISet(walletCreateHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/newAddress", forAPISet(walletNewAddressesHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/balance", forAPISet(walletBalanceHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/spend", forAPISet(walletSpendHandler(gateway), []string{EndpointsDeprecatedWalletSpend}))
 	webHandlerV1("/wallet/transaction", forAPISet(createTransactionHandler(gateway), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/transactions", forAPISet(walletTransactionsHandler(gateway, false), []string{EndpointsWallet}))
 	webHandlerV1("/wallet/transactions/verbose", forAPISet(walletTransactionsHandler(gateway, true), []string{EndpointsWallet}))
@@ -510,7 +491,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsRead}))
 
 	// Explorer endpoints
-	webHandlerV1("/explorer/address", forAPISet(transactionsForAddressHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/coinSupply", forAPISet(coinSupplyHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/richlist", forAPISet(richlistHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsRead}))

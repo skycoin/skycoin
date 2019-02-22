@@ -9,30 +9,18 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/daemon"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-// SpendResult represents the result of spending
-type SpendResult struct {
-	Balance *readable.BalancePair `json:"balance,omitempty"`
-	Transaction *readable.Transaction `json:"txn,omitempty"`
-	Error       string                `json:"error,omitempty"`
-}
-
 // UnconfirmedTxnsResponse contains unconfirmed transaction data
-// swagger:model unconfirmedTxnsResponse
 type UnconfirmedTxnsResponse struct {
 	Transactions []readable.UnconfirmedTransactions `json:"transactions"`
 }
 
 // UnconfirmedTxnsVerboseResponse contains verbose unconfirmed transaction data
-// swagger:model unconfirmedTxnsVerboseResponse
 type UnconfirmedTxnsVerboseResponse struct {
 	Transactions []readable.UnconfirmedTransactionVerbose `json:"transactions"`
 }
@@ -146,8 +134,6 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	//                 format: int64
 	//   default:
 	//     $ref: '#/responses/genericError'
-
-	// TODO Maybe problems with response map[string]BalancePair
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -344,209 +330,6 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 			BalancePair: readable.NewBalancePair(balance),
 			Addresses:   addressBalances,
 		})
-	}
-}
-
-// Creates and broadcasts a transaction sending money from one of our wallets
-// to destination address.
-// URI: /api/v1/wallet/spend
-// Method: POST
-// Args:
-//     id: wallet id
-//     dst: recipient address
-//     coins: the number of droplet you will send
-//     password: wallet password
-// Response:
-//     balance: new balance of the wallet
-//     txn: spent transaction
-//     error: an error that may have occurred after broadcast the transaction to the network
-//         if this field is not empty, the spend succeeded, but the response data could not be prepared
-func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
-
-	// swagger:operation POST /api/v1/wallet/spend walletSpent
-	//
-	// Creates and broadcasts a transaction sending money from one of our wallets
-	// to destination address.
-	//
-	// ---
-	// produces:
-	// - application/json
-	// parameters:
-	// - name: id
-	//   in: header
-	//   description: Wallet id
-	//   required: true
-	//   type: string
-	// - name: dst
-	//   in: header
-	//   description: Recipient address
-	//   required: true
-	//   type: string
-	// - name: coins
-	//   in: header
-	//   description: Number of coins to spend, in droplets. 1 coin equals 1e6 droplets.
-	//   required: true
-	//   type: string
-	// - name: password
-	//   in: header
-	//   description: Wallet password.
-	//   required: true
-	//   type: string
-	//
-	// security:
-	// - csrfAuth: []
-	//
-	// responses:
-	//   '200':
-	//     description: Creates and broadcasts a transaction sending money from one of our wallets to destination address.
-	//     schema:
-	//       properties:
-	//         balance:
-	//           type: object
-	//           properties:
-	//             confirmed:
-	//               type: object
-	//               properties:
-	//                 coins:
-	//                   type: integer
-	//                   format: int64
-	//                 hours:
-	//                   type: integer
-	//                   format: int64
-	//             predicted:
-	//               type: object
-	//               properties:
-	//                 coins:
-	//                   type: integer
-	//                   format: int64
-	//                 hours:
-	//                   type: integer
-	//                   format: int64
-	//         txn:
-	//           type: object
-	//           properties:
-	//             timestamp:
-	//               type: integer
-	//               format: int64
-	//             length:
-	//               type: integer
-	//               format: int32
-	//             type:
-	//               type: integer
-	//               format: int32
-	//             hash:
-	//               type: string
-	//             inner_hash:
-	//               type: string
-	//             sigs:
-	//               type: array
-	//               items:
-	//                 type: string
-	//             inputs:
-	//               type: array
-	//               items:
-	//                 type: string
-	//             outputs:
-	//               type: array
-	//               items:
-	//                 properties:
-	//                   uxid:
-	//                     type: string
-	//                   dst:
-	//                     type: string
-	//                   coins:
-	//                     type: string
-	//                   hours:
-	//                     type: integer
-	//                     format: int64
-	//         error:
-	//           type: string
-	//   default:
-	//     $ref: '#/responses/genericError'
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			wh.Error405(w)
-			return
-		}
-
-		wltID := r.FormValue("id")
-		if wltID == "" {
-			wh.Error400(w, "missing wallet id")
-			return
-		}
-
-		sdst := r.FormValue("dst")
-		if sdst == "" {
-			wh.Error400(w, "missing destination address \"dst\"")
-			return
-		}
-		dst, err := cipher.DecodeBase58Address(sdst)
-		if err != nil {
-			wh.Error400(w, fmt.Sprintf("invalid destination address: %v", err))
-			return
-		}
-
-		scoins := r.FormValue("coins")
-		coins, err := strconv.ParseUint(scoins, 10, 64)
-		if err != nil {
-			wh.Error400(w, `invalid "coins" value`)
-			return
-		}
-		//
-		//if coins <= 0 {
-		//	wh.Error400(w, `invalid "coins" value, must > 0`)
-		//	return
-		//}
-
-		tx, err := gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst)
-		switch err {
-		case nil:
-		case fee.ErrTxnNoFee,
-			wallet.ErrSpendingUnconfirmed,
-			wallet.ErrInsufficientBalance,
-			wallet.ErrWalletNotEncrypted,
-			wallet.ErrMissingPassword,
-			wallet.ErrWalletEncrypted,
-			wallet.ErrInvalidPassword:
-			wh.Error400(w, err.Error())
-			return
-		case wallet.ErrWalletAPIDisabled,
-			daemon.ErrSpendMethodDisabled:
-			wh.Error403(w, "")
-			return
-		case wallet.ErrWalletNotExist:
-			wh.Error404(w, "")
-			return
-		default:
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		var ret SpendResult
-
-		ret.Transaction, err = readable.NewTransaction(*tx, false)
-		if err != nil {
-			err = fmt.Errorf("readable.NewTransaction failed: %v", err)
-			logger.Error(err)
-			ret.Error = err.Error()
-			wh.SendJSONOr500(logger, w, ret)
-			return
-		}
-
-		// Get the new wallet balance
-		walletBalance, _, err := gateway.GetWalletBalance(wltID)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetWalletBalance failed: %v", err)
-			logger.Error(err)
-			ret.Error = err.Error()
-			wh.SendJSONOr500(logger, w, ret)
-			return
-		}
-		b := readable.NewBalancePair(walletBalance)
-		ret.Balance = &b
-
-		wh.SendJSONOr500(logger, w, ret)
 	}
 }
 

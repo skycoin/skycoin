@@ -14,6 +14,20 @@ type mockDaemoner struct {
 	mock.Mock
 }
 
+// Disconnect provides a mock function with given fields: addr, r
+func (_m *mockDaemoner) Disconnect(addr string, r gnet.DisconnectReason) error {
+	ret := _m.Called(addr, r)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, gnet.DisconnectReason) error); ok {
+		r0 = rf(addr, r)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // addPeers provides a mock function with given fields: addrs
 func (_m *mockDaemoner) addPeers(addrs []string) int {
 	ret := _m.Called(addrs)
@@ -325,20 +339,6 @@ func (_m *mockDaemoner) sendRandomPeers(addr string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string) error); ok {
 		r0 = rf(addr)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// Disconnect provides a mock function with given fields: addr, r
-func (_m *mockDaemoner) Disconnect(addr string, r gnet.DisconnectReason) error {
-	ret := _m.Called(addr, r)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, gnet.DisconnectReason) error); ok {
-		r0 = rf(addr, r)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -681,35 +681,49 @@ func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	}
 	return &b, nil
 }
-
-// Spend makes a request to POST /api/v1/wallet/spend
-func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendResult, error) {
-	v := url.Values{}
-	v.Add("id", id)
-	v.Add("dst", dst)
-	v.Add("coins", fmt.Sprint(coins))
-	v.Add("password", password)
-
-	var r SpendResult
-	endpoint := "/api/v1/wallet/spend"
-	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
-		return nil, err
-	}
-
-	return &r, nil
+// TODO DELETE
+//<<<<<<< HEAD
+//// Spend makes a request to POST /api/v1/wallet/spend
+//func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendResult, error) {
+//	v := url.Values{}
+//	v.Add("id", id)
+//	v.Add("dst", dst)
+//	v.Add("coins", fmt.Sprint(coins))
+//	v.Add("password", password)
+//
+//	var r SpendResult
+//	endpoint := "/api/v1/wallet/spend"
+//	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
+//		return nil, err
+//	}
+//
+//	return &r, nil
+//}
+//
+//// CreateTransactionRequest is sent to /api/v1/wallet/transaction
+//type CreateTransactionRequest struct {
+//	IgnoreUnconfirmed bool `json:"ignore_unconfirmed"`
+//	HoursSelection HoursSelection `json:"hours_selection"`
+//	Wallet        CreateTransactionRequestWallet `json:"wallet"`
+//	ChangeAddress *string                        `json:"change_address,omitempty"`
+//	To []Receiver `json:"to"`
+//}
+//
+//// CreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
+//type CreateTransactionRequestWallet struct {
+//=======
+// WalletCreateTransactionRequest is sent to /api/v1/wallet/transaction
+type WalletCreateTransactionRequest struct {
+	Unsigned          bool                                 `json:"unsigned"`
+	IgnoreUnconfirmed bool                                 `json:"ignore_unconfirmed"`
+	HoursSelection    HoursSelection                       `json:"hours_selection"`
+	Wallet            WalletCreateTransactionRequestWallet `json:"wallet"`
+	ChangeAddress     *string                              `json:"change_address,omitempty"`
+	To                []Receiver                           `json:"to"`
 }
 
-// CreateTransactionRequest is sent to /api/v1/wallet/transaction
-type CreateTransactionRequest struct {
-	IgnoreUnconfirmed bool `json:"ignore_unconfirmed"`
-	HoursSelection HoursSelection `json:"hours_selection"`
-	Wallet        CreateTransactionRequestWallet `json:"wallet"`
-	ChangeAddress *string                        `json:"change_address,omitempty"`
-	To []Receiver `json:"to"`
-}
-
-// CreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
-type CreateTransactionRequestWallet struct {
+// WalletCreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
+type WalletCreateTransactionRequestWallet struct {
 	ID        string   `json:"id"`
 	UxOuts    []string `json:"unspents,omitempty"`
 	Addresses []string `json:"addresses,omitempty"`
@@ -730,8 +744,8 @@ type Receiver struct {
 	Hours   string `json:"hours,omitempty"`
 }
 
-// CreateTransaction makes a request to POST /api/v1/wallet/transaction
-func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransactionResponse, error) {
+// WalletCreateTransaction makes a request to POST /api/v1/wallet/transaction
+func (c *Client) WalletCreateTransaction(req WalletCreateTransactionRequest) (*CreateTransactionResponse, error) {
 	var r CreateTransactionResponse
 	endpoint := "/api/v1/wallet/transaction"
 	if err := c.PostJSON(endpoint, req, &r); err != nil {
@@ -739,6 +753,17 @@ func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransac
 	}
 
 	return &r, nil
+}
+
+// WalletSignTransaction makes a request to POST /api/v2/wallet/transaction/sign
+func (c *Client) WalletSignTransaction(req WalletSignTransactionRequest) (*CreateTransactionResponse, error) {
+	var r CreateTransactionResponse
+	endpoint := "/api/v2/wallet/transaction/sign"
+	ok, err := c.PostJSONV2(endpoint, req, &r)
+	if ok {
+		return &r, err
+	}
+	return nil, err
 }
 
 // WalletUnconfirmedTransactions makes a request to GET /api/v1/wallet/transactions
@@ -1047,7 +1072,10 @@ func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.Tran
 
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
 func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
-	d := txn.Serialize()
+	d, err := txn.Serialize()
+	if err != nil {
+		return "", err
+	}
 	rawTx := hex.EncodeToString(d)
 	return c.InjectEncodedTransaction(rawTx)
 }
@@ -1092,12 +1120,8 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 }
 
 // VerifyTransaction makes a request to POST /api/v2/transaction/verify.
-func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
-	req := VerifyTxnRequest{
-		EncodedTransaction: encodedTxn,
-	}
-
-	var rsp VerifyTxnResponse
+func (c *Client) VerifyTransaction(req VerifyTransactionRequest) (*VerifyTransactionResponse, error) {
+	var rsp VerifyTransactionResponse
 	ok, err := c.PostJSONV2("/api/v2/transaction/verify", req, &rsp)
 	if ok {
 		return &rsp, err
@@ -1121,19 +1145,6 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 	}
 
 	return nil, err
-}
-
-// AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]readable.TransactionVerbose, error) {
-	v := url.Values{}
-	v.Add("address", addr)
-	endpoint := "/api/v1/explorer/address?" + v.Encode()
-
-	var b []readable.TransactionVerbose
-	if err := c.Get(endpoint, &b); err != nil {
-		return nil, err
-	}
-	return b, nil
 }
 
 // RichlistParams are arguments to the /richlist endpoint

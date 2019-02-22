@@ -38,11 +38,11 @@ func init() {
 
 	app.Commands = commands
 	app.EnableBashCompletion = true
-	app.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
+	app.OnUsageError = func(context *cli.Context, err error, _ bool) error {
 		fmt.Fprintf(context.App.Writer, "error: %v\n\n", err)
 		return cli.ShowAppHelp(context)
 	}
-	app.CommandNotFound = func(context *cli.Context, command string) {
+	app.CommandNotFound = func(_ *cli.Context, command string) {
 		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} "+
 			"command. See '{{.HelpName}} --help'. \n", command)
 		cli.HelpPrinter(app.Writer, tmp, app)

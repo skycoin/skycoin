@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-lint check
+.PHONY: run run-help test test-386 test-amd64 check
 .PHONY: integration-test-stable integration-test-stable-disable-csrf
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
@@ -56,16 +56,22 @@ lint: ## Run linters. Use make install-linters first.
 	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
 
-check-newcoin: newcoin ## Check that make newcoin succeeds and no files are changed.
-	if [ "$(shell git diff ./ | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+check-newcoin: newcoin ## Check that make newcoin succeeds and no templated files are changed.
+	@if [ "$(shell git diff ./cmd/skycoin/skycoin.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+	@if [ "$(shell git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+	@if [ "$(shell git diff ./src/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
-check: lint clean-coverage test integration-test-stable integration-test-stable-disable-csrf \
+check: lint clean-coverage test-386 test-amd64 \
+	integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \
 	integration-test-enable-seed-api integration-test-disable-gui \
 	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -n enable-csrf
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-header-check
+
+integration-test-stable-disable-header-check: ## Run stable integration tests with header check disabled
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-header-check
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
@@ -75,6 +81,9 @@ integration-test-live: ## Run live integration tests
 
 integration-test-live-wallet: ## Run live integration tests with wallet
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -w
+
+integration-test-live-enable-header-check: ## Run live integration tests against a node with header check enabled
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
 integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
@@ -165,11 +174,15 @@ generate: ## Generate test interface mocks and struct encoders
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 
+install-generators: ## Install tools used by go generate
+	go get github.com/vektra/mockery/.../
+	go get github.com/skycoin/skyencoder/cmd/skyencoder
+
 update-golden-files: ## Run integration tests in update mode
 	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true
-	./ci-scripts/integration-test-stable.sh -c -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -x -u >/dev/null 2>&1 || true
 	./ci-scripts/integration-test-stable.sh -d -u >/dev/null 2>&1 || true
-	./ci-scripts/integration-test-stable.sh -c -d -u >/dev/null 2>&1 || true
+	./ci-scripts/integration-test-stable.sh -c -x -d -u >/dev/null 2>&1 || true
 
 merge-coverage: ## Merge coverage files and create HTML coverage output. gocovmerge is required, install with `go get github.com/wadey/gocovmerge`
 	@echo "To install gocovmerge do:"

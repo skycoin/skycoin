@@ -6,38 +6,41 @@
 			"height": 17,
 			"block_seq": 164
 		},
-		"timestamp": 1430790052,
-		"length": 220,
-		"type": 0,
-		"txid": "743bf1eede313145824db1c4f8d683b74ab5e0bc825082d986308b73fd52f1d7",
-		"inner_hash": "a0427c37a8ca9f8205630cc8d4c6d95200413d3397a0de9bf015763107b8fc80",
-		"fee": 0,
-		"sigs": [
-			"dc400e921f7f94da5f353846f1340e039b4527fff121a56579390fb4fa4154634e3b3aad44ddf0aaebea5abc1dc5ba2a00540fd2888ed5c4ab7b20c51255086a01"
-		],
-		"inputs": [
-			{
-				"uxid": "c07593d4329f82da243e4bbd7430e4b10e7b35f9ce0a3718d0e6d25d20b4939b",
-				"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-				"coins": "661314.000000",
-				"hours": 0,
-				"calculated_hours": 0
-			}
-		],
-		"outputs": [
-			{
-				"uxid": "4d52106e41dba0099549fd81fb8feb6915225b0125c53faa0f7c578ea78f213a",
-				"dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-				"coins": "660314.000000",
-				"hours": 0
-			},
-			{
-				"uxid": "bc513a68461d5c401e65a500baf7dfa163735ef63b817bb7b73c4139d5c29d18",
-				"dst": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
-				"coins": "1000.000000",
-				"hours": 0
-			}
-		]
+		"time": 1430790052,
+		"txn": {
+			"timestamp": 1430790052,
+			"length": 220,
+			"type": 0,
+			"txid": "743bf1eede313145824db1c4f8d683b74ab5e0bc825082d986308b73fd52f1d7",
+			"inner_hash": "a0427c37a8ca9f8205630cc8d4c6d95200413d3397a0de9bf015763107b8fc80",
+			"fee": 0,
+			"sigs": [
+				"dc400e921f7f94da5f353846f1340e039b4527fff121a56579390fb4fa4154634e3b3aad44ddf0aaebea5abc1dc5ba2a00540fd2888ed5c4ab7b20c51255086a01"
+			],
+			"inputs": [
+				{
+					"uxid": "c07593d4329f82da243e4bbd7430e4b10e7b35f9ce0a3718d0e6d25d20b4939b",
+					"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+					"coins": "661314.000000",
+					"hours": 0,
+					"calculated_hours": 0
+				}
+			],
+			"outputs": [
+				{
+					"uxid": "4d52106e41dba0099549fd81fb8feb6915225b0125c53faa0f7c578ea78f213a",
+					"dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+					"coins": "660314.000000",
+					"hours": 0
+				},
+				{
+					"uxid": "bc513a68461d5c401e65a500baf7dfa163735ef63b817bb7b73c4139d5c29d18",
+					"dst": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
+					"coins": "1000.000000",
+					"hours": 0
+				}
+			]
+		}
 	},
 	{
 		"status": {
@@ -46,38 +49,41 @@
 			"height": 12,
 			"block_seq": 169
 		},
-		"timestamp": 1430836392,
-		"length": 220,
-		"type": 0,
-		"txid": "acfb61f7ca39d5dfe33e8ed66f73ab181da0a3206d457bf055dcc4b9731a3ec8",
-		"inner_hash": "85c5d3963f2dce44e99500967e8b8b1943839537fb198186131459a3022d161a",
-		"fee": 421,
-		"sigs": [
-			"473114dcb42e2091f3d0396ecd16ee2685e0a6074c7de218cbd7e7c4335d89146455bc6c259c77f40d4af769e241aba1e3a102c5755946b1783c817ffafa67d101"
-		],
-		"inputs": [
-			{
-				"uxid": "bc513a68461d5c401e65a500baf7dfa163735ef63b817bb7b73c4139d5c29d18",
-				"owner": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
-				"coins": "1000.000000",
-				"hours": 0,
-				"calculated_hours": 561
-			}
-		],
-		"outputs": [
-			{
-				"uxid": "639e69c4a223b5082b9274caf3e56ecff2ab55cd90cac94fdb4c383a1013ba1f",
-				"dst": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
-				"coins": "990.000000",
-				"hours": 70
-			},
-			{
-				"uxid": "bffea1990d71311b695b2d343b9f09a216b7a8257c1cdcb01b2ab9459e1490e3",
-				"dst": "jtuSERvfzN3kUYekg8LemCQ5kF5g97N8ZL",
-				"coins": "10.000000",
-				"hours": 70
-			}
-		]
+		"time": 1430836392,
+		"txn": {
+			"timestamp": 1430836392,
+			"length": 220,
+			"type": 0,
+			"txid": "acfb61f7ca39d5dfe33e8ed66f73ab181da0a3206d457bf055dcc4b9731a3ec8",
+			"inner_hash": "85c5d3963f2dce44e99500967e8b8b1943839537fb198186131459a3022d161a",
+			"fee": 421,
+			"sigs": [
+				"473114dcb42e2091f3d0396ecd16ee2685e0a6074c7de218cbd7e7c4335d89146455bc6c259c77f40d4af769e241aba1e3a102c5755946b1783c817ffafa67d101"
+			],
+			"inputs": [
+				{
+					"uxid": "bc513a68461d5c401e65a500baf7dfa163735ef63b817bb7b73c4139d5c29d18",
+					"owner": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
+					"coins": "1000.000000",
+					"hours": 0,
+					"calculated_hours": 561
+				}
+			],
+			"outputs": [
+				{
+					"uxid": "639e69c4a223b5082b9274caf3e56ecff2ab55cd90cac94fdb4c383a1013ba1f",
+					"dst": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
+					"coins": "990.000000",
+					"hours": 70
+				},
+				{
+					"uxid": "bffea1990d71311b695b2d343b9f09a216b7a8257c1cdcb01b2ab9459e1490e3",
+					"dst": "jtuSERvfzN3kUYekg8LemCQ5kF5g97N8ZL",
+					"coins": "10.000000",
+					"hours": 70
+				}
+			]
+		}
 	},
 	{
 		"status": {
@@ -86,32 +92,35 @@
 			"height": 11,
 			"block_seq": 170
 		},
-		"timestamp": 1430836422,
-		"length": 183,
-		"type": 0,
-		"txid": "95d847102c01d071982e67b8e7dfae50715b0fc0179d33f4b050974e634905e1",
-		"inner_hash": "c13b7e1722f3616f61948ed42382d4ed41164e7e2110d2d60bf86725f32531de",
-		"fee": 62,
-		"sigs": [
-			"cb7da0e16b83f1717614c7f160580ac0048a4276682ac4046c3324ba6f4e24901d162f7ec81a8e5cdf3676df6ace9a73c77e4d3ab7f03a4f0272c75f3715665001"
-		],
-		"inputs": [
-			{
-				"uxid": "bffea1990d71311b695b2d343b9f09a216b7a8257c1cdcb01b2ab9459e1490e3",
-				"owner": "jtuSERvfzN3kUYekg8LemCQ5kF5g97N8ZL",
-				"coins": "10.000000",
-				"hours": 70,
-				"calculated_hours": 70
-			}
-		],
-		"outputs": [
-			{
-				"uxid": "be081639ea8da63d8542707e9ea9625f6afc97da132f43ed061645c359bb1e65",
-				"dst": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
-				"coins": "10.000000",
-				"hours": 8
-			}
-		]
+		"time": 1430836422,
+		"txn": {
+			"timestamp": 1430836422,
+			"length": 183,
+			"type": 0,
+			"txid": "95d847102c01d071982e67b8e7dfae50715b0fc0179d33f4b050974e634905e1",
+			"inner_hash": "c13b7e1722f3616f61948ed42382d4ed41164e7e2110d2d60bf86725f32531de",
+			"fee": 62,
+			"sigs": [
+				"cb7da0e16b83f1717614c7f160580ac0048a4276682ac4046c3324ba6f4e24901d162f7ec81a8e5cdf3676df6ace9a73c77e4d3ab7f03a4f0272c75f3715665001"
+			],
+			"inputs": [
+				{
+					"uxid": "bffea1990d71311b695b2d343b9f09a216b7a8257c1cdcb01b2ab9459e1490e3",
+					"owner": "jtuSERvfzN3kUYekg8LemCQ5kF5g97N8ZL",
+					"coins": "10.000000",
+					"hours": 70,
+					"calculated_hours": 70
+				}
+			],
+			"outputs": [
+				{
+					"uxid": "be081639ea8da63d8542707e9ea9625f6afc97da132f43ed061645c359bb1e65",
+					"dst": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
+					"coins": "10.000000",
+					"hours": 8
+				}
+			]
+		}
 	},
 	{
 		"status": {
@@ -120,37 +129,40 @@
 			"height": 0,
 			"block_seq": 0
 		},
-		"timestamp": 1535637620,
-		"length": 220,
-		"type": 0,
-		"txid": "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
-		"inner_hash": "f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124",
-		"fee": 34297581,
-		"sigs": [
-			"3981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f3200"
-		],
-		"inputs": [
-			{
-				"uxid": "fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
-				"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-				"coins": "615700.000000",
-				"hours": 5521648,
-				"calculated_hours": 45730107
-			}
-		],
-		"outputs": [
-			{
-				"uxid": "8f9c09c37e0c636178e4229e2e8212c067ef0a8c501be9e2757a97b980d7a98a",
-				"dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-				"coins": "605700.000000",
-				"hours": 5716263
-			},
-			{
-				"uxid": "32a060b2e2025cceb40f3f982c887952d3358d468db1719dd892eab575c14c14",
-				"dst": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
-				"coins": "10000.000000",
-				"hours": 5716263
-			}
-		]
+		"time": 1535637620,
+		"txn": {
+			"timestamp": 1535637620,
+			"length": 220,
+			"type": 0,
+			"txid": "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			"inner_hash": "f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124",
+			"fee": 34297581,
+			"sigs": [
+				"3981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f3200"
+			],
+			"inputs": [
+				{
+					"uxid": "fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
+					"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+					"coins": "615700.000000",
+					"hours": 5521648,
+					"calculated_hours": 45730107
+				}
+			],
+			"outputs": [
+				{
+					"uxid": "8f9c09c37e0c636178e4229e2e8212c067ef0a8c501be9e2757a97b980d7a98a",
+					"dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+					"coins": "605700.000000",
+					"hours": 5716263
+				},
+				{
+					"uxid": "32a060b2e2025cceb40f3f982c887952d3358d468db1719dd892eab575c14c14",
+					"dst": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
+					"coins": "10000.000000",
+					"hours": 5716263
+				}
+			]
+		}
 	}
 ]

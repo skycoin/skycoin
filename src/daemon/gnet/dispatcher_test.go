@@ -36,7 +36,13 @@ func TestMsgIDStringSafe(t *testing.T) {
 	require.Equal(t, "'\\\\ \\\"", msgIDStringSafe(id))
 }
 
+func assertIsMessage(t *testing.T, x interface{}) {
+	_, ok := x.(Message)
+	require.True(t, ok)
+}
+
 func TestConvertToMessage(t *testing.T) {
+	assertIsMessage(t, &ByteMessage{})
 	EraseMessages()
 	resetHandler()
 	RegisterMessage(BytePrefix, ByteMessage{})
@@ -113,11 +119,11 @@ func TestDeserializeMessageTrapsPanic(t *testing.T) {
 	resetHandler()
 	EraseMessages()
 	p := 7
-	m := PointerMessage{Ptr: &p}
+	m := &PointerMessage{Ptr: &p}
 	b := []byte{4, 4, 4, 4, 4, 4, 4, 4}
 	_, err := deserializeMessage(b, reflect.ValueOf(m))
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "DeserializeRawToValue value must be a ptr, is struct")
+	require.Equal(t, "Decode error: kind ptr not handled", err.Error())
 }
 
 func TestEncodeMessage(t *testing.T) {
@@ -126,14 +132,17 @@ func TestEncodeMessage(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 	m := NewByteMessage(7)
-	b := EncodeMessage(m)
+	b, err := EncodeMessage(m)
+	require.NoError(t, err)
 	require.True(t, bytes.Equal(b, []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}))
 }
 
 func TestEncodeMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	require.Panics(t, func() { EncodeMessage(&DummyMessage{}) })
+	require.Panics(t, func() {
+		_, _ = EncodeMessage(&DummyMessage{}) // nolint: errcheck
+	})
 }
 
 func TestSendByteMessage(t *testing.T) {

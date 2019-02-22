@@ -15,8 +15,8 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // pendingTxnsHandler returns pending (unconfirmed) transactions
@@ -525,8 +525,15 @@ func transactionHandler(gateway Gatewayer, verbs, encod bool) http.HandlerFunc {
 			return
 		}
 
+			//txnStr := hex.EncodeToString(txn.Transaction.Serialize())
+		buf, err := txn.Transaction.Serialize()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		if encoded || encod {
-			txnStr := hex.EncodeToString(txn.Transaction.Serialize())
+			txnStr := hex.EncodeToString(buf)
 
 			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
 				EncodedTransaction: txnStr,
@@ -1240,7 +1247,7 @@ func injectTransactionHandler(gateway Gatewayer, forAPIVersion2 bool) http.Handl
 			return
 		}
 
-		txn, err := coin.TransactionDeserialize(b)
+		txn, err := coin.DeserializeTransaction(b)
 		if err != nil {
 			if forAPIVersion2 {
 				resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
@@ -1449,8 +1456,15 @@ func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 			return
 		}
 
-		d := txn.Transaction.Serialize()
+		//d := txn.Transaction.Serialize()
+		d, err := txn.Transaction.Serialize()
 		d2hex := hex.EncodeToString(d)
+
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		if forAPIVersion2 {
 			var resp HTTPResponse
 			resp.Data = RawTxnData{
@@ -1460,16 +1474,19 @@ func rawTxnHandler(gateway Gatewayer, forAPIVersion2 bool) http.HandlerFunc {
 		} else {
 			wh.SendJSONOr500(logger, w, d2hex)
 		}
+
 	}
 }
 
-// VerifyTxnRequest represents the data struct of the request for /api/v2/transaction/verify
-type VerifyTxnRequest struct {
+// VerifyTransactionRequest represents the data struct of the request for /api/v2/transaction/verify
+type VerifyTransactionRequest struct {
+	Unsigned           bool   `json:"unsigned"`
 	EncodedTransaction string `json:"encoded_transaction"`
 }
 
-// VerifyTxnResponse the response data struct for /api/v2/transaction/verify
-type VerifyTxnResponse struct {
+// VerifyTransactionResponse the response data struct for /api/v2/transaction/verify
+type VerifyTransactionResponse struct {
+	Unsigned    bool               `json:"unsigned"`
 	Confirmed   bool               `json:"confirmed"`
 	Transaction CreatedTransaction `json:"transaction"`
 }
@@ -1580,7 +1597,7 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var req VerifyTxnRequest
+		var req VerifyTransactionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 			writeHTTPResponse(w, resp)
@@ -1600,8 +1617,13 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		signed := visor.TxnSigned
+		if req.Unsigned {
+			signed = visor.TxnUnsigned
+		}
+
 		var resp HTTPResponse
-		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn)
+		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn, signed)
 		if err != nil {
 			switch err.(type) {
 			case visor.ErrTxnViolatesSoftConstraint,
@@ -1618,8 +1640,9 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		verifyTxnResp := VerifyTxnResponse{
+		verifyTxnResp := VerifyTransactionResponse{
 			Confirmed: isTxnConfirmed,
+			Unsigned:  !txn.IsFullySigned(),
 		}
 
 		if len(inputs) != len(txn.In) {
@@ -1654,7 +1677,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 		return nil, err
 	}
 
-	txn, err = coin.TransactionDeserialize(b)
+	txn, err = coin.DeserializeTransaction(b)
 	if err != nil {
 		return nil, err
 	}
@@ -1663,7 +1686,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 }
 
 // newCreatedTransactionFuzzy creates a CreatedTransaction but accommodates possibly invalid txn input
-func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
+func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []visor.TransactionInput) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) && len(inputs) != 0 {
 		return nil, errors.New("len(txn.In) != len(inputs)")
 	}
@@ -1672,7 +1695,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 	var feeInvalid bool
 	for _, o := range txn.Out {
 		var err error
-		outputHours, err = coin.AddUint64(outputHours, o.Hours)
+		outputHours, err = mathutil.AddUint64(outputHours, o.Hours)
 		if err != nil {
 			feeInvalid = true
 		}
@@ -1681,7 +1704,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		inputHours, err = mathutil.AddUint64(inputHours, i.CalculatedHours)
 		if err != nil {
 			feeInvalid = true
 		}
@@ -1701,10 +1724,10 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 		sigs[i] = s.Hex()
 	}
 
-	txid := txn.Hash()
+	txID := txn.Hash()
 	out := make([]CreatedTransactionOutput, len(txn.Out))
 	for i, o := range txn.Out {
-		co, err := NewCreatedTransactionOutput(o, txid)
+		co, err := NewCreatedTransactionOutput(o, txID)
 		if err != nil {
 			logger.WithError(err).Error("NewCreatedTransactionOutput failed")
 			continue
@@ -1733,7 +1756,7 @@ func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance
 	return &CreatedTransaction{
 		Length:    txn.Length,
 		Type:      txn.Type,
-		TxID:      txid.Hex(),
+		TxID:      txID.Hex(),
 		InnerHash: txn.InnerHash.Hex(),
 		Fee:       fmt.Sprint(fee),
 

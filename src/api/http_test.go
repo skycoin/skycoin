@@ -15,14 +15,13 @@ import (
 const configuredHost = "127.0.0.1:6420"
 
 var allAPISetsEnabled = map[string]struct{}{
-	EndpointsRead:                  struct{}{},
-	EndpointsTransaction:           struct{}{},
-	EndpointsStatus:                struct{}{},
-	EndpointsWallet:                struct{}{},
-	EndpointsInsecureWalletSeed:    struct{}{},
-	EndpointsDeprecatedWalletSpend: struct{}{},
-	EndpointsPrometheus:            struct{}{},
-	EndpointsNetCtrl:               struct{}{},
+	EndpointsRead:               struct{}{},
+	EndpointsTransaction:        struct{}{},
+	EndpointsStatus:             struct{}{},
+	EndpointsWallet:             struct{}{},
+	EndpointsInsecureWalletSeed: struct{}{},
+	EndpointsPrometheus:         struct{}{},
+	EndpointsNetCtrl:            struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {
@@ -36,48 +35,6 @@ func defaultMuxConfig() muxConfig {
 }
 
 var endpoints = []string{
-	"/address_uxouts",
-	"/addresscount",
-	"/balance",
-	"/block",
-	"/blockchain/metadata",
-	"/blockchain/progress",
-	"/blocks",
-	"/coinSupply",
-	"/explorer/address",
-	"/health",
-	"/injectTransaction",
-	"/last_blocks",
-	"/version",
-	"/network/connection",
-	"/network/connection/disconnect",
-	"/network/connections",
-	"/network/connections/exchange",
-	"/network/connections/trust",
-	"/network/defaultConnections",
-	"/outputs",
-	"/pendingTxs",
-	"/rawtx",
-	"/richlist",
-	"/resendUnconfirmedTxns",
-	"/transaction",
-	"/transactions",
-	"/uxout",
-	"/wallet",
-	"/wallet/balance",
-	"/wallet/create",
-	"/wallet/newAddress",
-	"/wallet/newSeed",
-	"/wallet/seed",
-	"/wallet/spend",
-	"/wallet/transaction",
-	"/wallet/transactions",
-	"/wallet/unload",
-	"/wallet/update",
-	"/wallets",
-	"/wallets/folderName",
-	"/webrpc",
-
 	"/api/v1/address_uxouts",
 	"/api/v1/addresscount",
 	"/api/v1/balance",
@@ -86,7 +43,6 @@ var endpoints = []string{
 	"/api/v1/blockchain/progress",
 	"/api/v1/blocks",
 	"/api/v1/coinSupply",
-	"/api/v1/explorer/address",
 	"/api/v1/health",
 	"/api/v1/injectTransaction",
 	"/api/v1/last_blocks",
@@ -110,20 +66,23 @@ var endpoints = []string{
 	"/api/v1/wallet/newAddress",
 	"/api/v1/wallet/newSeed",
 	"/api/v1/wallet/seed",
-	"/api/v1/wallet/spend",
 	"/api/v1/wallet/transaction",
 	"/api/v1/wallet/transactions",
 	"/api/v1/wallet/unload",
 	"/api/v1/wallet/update",
 	"/api/v1/wallets",
 	"/api/v1/wallets/folderName",
-	"/api/v1/webrpc",
 
 	"/api/v2/transaction/verify",
 	"/api/v2/address/verify",
 	"/api/v2/wallet/recover",
+<<<<<<< HEAD
 	"/api/v2/transaction/raw",
 	"/api/v2/transaction/inject",
+=======
+	"/api/v2/wallet/seed/verify",
+	"/api/v2/wallet/transaction/sign",
+>>>>>>> 21f4760a4b1ab6ccba363e5e715af7283b77bc80
 }
 
 // TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,
@@ -181,7 +140,7 @@ func TestEnableGUI(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			cfg := defaultMuxConfig()
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			c := Config{
@@ -227,29 +186,22 @@ func TestEnableGUI(t *testing.T) {
 }
 
 func TestAPISetDisabled(t *testing.T) {
-	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
-		switch e {
-		case "/webrpc", "/api/v1/webrpc":
-			continue
-		}
-
+	for _, e := range append(endpoints, []string{"/api/v1/csrf"}...) {
 		t.Run(e, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, e, nil)
 			require.NoError(t, err)
 
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = false
-			cfg.enableUnversionedAPI = true
-			cfg.enableJSON20RPC = false
 			cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
 
-			handler := newServerMux(cfg, &MockGatewayer{}, nil)
+			handler := newServerMux(cfg, &MockGatewayer{})
 
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
 			switch e {
-			case "/csrf", "/api/v1/csrf", "/version", "/api/v1/version": // always enabled
+			case "/api/v1/csrf", "/api/v1/version": // always enabled
 				require.Equal(t, http.StatusOK, rr.Code)
 			default:
 				require.Equal(t, http.StatusForbidden, rr.Code)
@@ -308,7 +260,7 @@ func TestCORS(t *testing.T) {
 					requestHeaders := strings.ToLower(fmt.Sprintf("%s, Content-Type", CSRFHeaderName))
 					req.Header.Set("Access-Control-Request-Headers", requestHeaders)
 
-					handler := newServerMux(cfg, &MockGatewayer{}, nil)
+					handler := newServerMux(cfg, &MockGatewayer{})
 
 					rr := httptest.NewRecorder()
 					handler.ServeHTTP(rr, req)
@@ -418,7 +370,7 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 		}
 	}
 
-	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
+	for _, e := range append(endpoints, []string{"/api/v1/csrf"}...) {
 		for _, tc := range cases {
 			name := fmt.Sprintf("u=%s p=%s ru=%s rp=%s auth=%v e=%s", tc.username, tc.password, tc.reqUsername, tc.reqPassword, tc.authorized, e)
 			t.Run(name, func(t *testing.T) {
@@ -432,12 +384,10 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 
 				cfg := defaultMuxConfig()
 				cfg.disableCSRF = false
-				cfg.enableUnversionedAPI = true
-				cfg.enableJSON20RPC = false
 				cfg.username = tc.username
 				cfg.password = tc.password
 
-				handler := newServerMux(cfg, &MockGatewayer{}, nil)
+				handler := newServerMux(cfg, &MockGatewayer{})
 
 				rr := httptest.NewRecorder()
 				handler.ServeHTTP(rr, req)

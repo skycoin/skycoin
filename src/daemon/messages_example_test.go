@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -348,6 +349,26 @@ func (m *EmptySliceStruct) Handle(mc *gnet.MessageContext, daemon interface{}) e
 	return nil
 }
 
+// EncodeSize implements gnet.Serializer
+func (m *EmptySliceStruct) EncodeSize() uint64 {
+	return uint64(encoder.Size(m))
+}
+
+// Encode implements gnet.Serializer
+func (m *EmptySliceStruct) Encode(buf []byte) error {
+	buf2 := encoder.Serialize(m)
+	if len(buf) < len(buf2) {
+		return errors.New("Not enough buffer data to encode")
+	}
+	copy(buf[:], buf2[:])
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (m *EmptySliceStruct) Decode(buf []byte) (uint64, error) {
+	return encoder.DeserializeRaw(buf, m)
+}
+
 func ExampleEmptySliceStruct() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
@@ -363,8 +384,12 @@ func ExampleEmptySliceStruct() {
 	}
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	msg, err := gnet.EncodeMessage(&message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -389,6 +414,26 @@ func (m *OmitEmptySliceTestStruct) Handle(mc *gnet.MessageContext, daemon interf
 	return nil
 }
 
+// EncodeSize implements gnet.Serializer
+func (m *OmitEmptySliceTestStruct) EncodeSize() uint64 {
+	return uint64(encoder.Size(m))
+}
+
+// Encode implements gnet.Serializer
+func (m *OmitEmptySliceTestStruct) Encode(buf []byte) error {
+	buf2 := encoder.Serialize(m)
+	if len(buf) < len(buf2) {
+		return errors.New("Not enough buffer data to encode")
+	}
+	copy(buf[:], buf2[:])
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (m *OmitEmptySliceTestStruct) Decode(buf []byte) (uint64, error) {
+	return encoder.DeserializeRaw(buf, m)
+}
+
 func ExampleOmitEmptySliceTestStruct() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
@@ -402,8 +447,12 @@ func ExampleOmitEmptySliceTestStruct() {
 	}
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	msg, err := gnet.EncodeMessage(&message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -428,8 +477,12 @@ func ExampleIntroductionMessage() {
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -510,8 +563,12 @@ func ExampleGetPeersMessage() {
 	fmt.Println("GetPeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -533,8 +590,12 @@ func ExampleGivePeersMessage() {
 	fmt.Println("GivePeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -555,8 +616,12 @@ func ExampleGetBlocksMessage() {
 	fmt.Println("GetBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -614,8 +679,12 @@ func ExampleGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -659,8 +728,12 @@ func ExampleAnnounceBlocksMessage() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -681,8 +754,12 @@ func ExampleGetTxnsMessage() {
 	fmt.Println("GetTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -752,8 +829,12 @@ func ExampleGiveTxnsMessage() {
 	fmt.Println("GiveTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -811,8 +892,12 @@ func ExampleAnnounceTxnsMessage() {
 	fmt.Println("AnnounceTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// Output:
@@ -835,8 +920,12 @@ func ExampleDisconnectMessage() {
 	fmt.Println("DisconnectMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	err := NewFromIterator(gnet.EncodeMessage(message), &mai, w)
+	msg, err := gnet.EncodeMessage(message)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := NewFromIterator(msg, &mai, w); err != nil {
 		fmt.Println(err)
 	}
 	// DisconnectMessage:

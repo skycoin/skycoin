@@ -57,13 +57,23 @@ func NewService(c Config) (*Service, error) {
 		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.walletDirectory, err)
 	}
 
-	// Loads wallets
+	// Load wallets from disk
 	w, err := LoadWallets(serv.walletDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load all wallets: %v", err)
 	}
 
-	serv.wallets = serv.removeDup(w)
+	// Abort if there are duplicate wallets on disk
+	if wltID, addr, hasDup := w.containsDuplicate(); hasDup {
+		return nil, fmt.Errorf("duplicate wallet found with initial address %s in file %q", addr, wltID)
+	}
+
+	// Abort if there are empty wallets on disk
+	if wltID, hasEmpty := w.containsEmpty(); hasEmpty {
+		return nil, fmt.Errorf("empty wallet file found: %q", wltID)
+	}
+
+	serv.setWallets(w)
 
 	return serv, nil
 }
@@ -290,46 +300,10 @@ func (serv *Service) GetWallets() (Wallets, error) {
 	return wlts, nil
 }
 
-// CreateAndSignTransaction creates and signs a transaction from wallet.
+// CreateTransaction creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	serv.RLock()
-	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
-		return nil, ErrWalletAPIDisabled
-	}
-
-	w, err := serv.getWallet(wltID)
-	if err != nil {
-		return nil, err
-	}
-
-	var tx *coin.Transaction
-	f := func(wlt *Wallet) error {
-		var err error
-		tx, err = wlt.CreateAndSignTransaction(auxs, headTime, coins, dest)
-		return err
-	}
-
-	if w.IsEncrypted() {
-		if err := w.GuardView(password, f); err != nil {
-			return nil, err
-		}
-	} else {
-		if len(password) != 0 {
-			return nil, ErrWalletNotEncrypted
-		}
-
-		if err := f(w); err != nil {
-			return nil, err
-		}
-	}
-	return tx, nil
-}
-
-// CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
-// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+func (serv *Service) CreateTransaction(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+	// TODO -- remove, unused (use visor.CreateTransaction)
 	serv.RLock()
 	defer serv.RUnlock()
 
@@ -357,22 +331,22 @@ func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionPa
 		}
 	}
 
-	var tx *coin.Transaction
+	var txn *coin.Transaction
 	var inputs []UxBalance
 	if w.IsEncrypted() {
 		err = w.GuardView(params.Wallet.Password, func(wlt *Wallet) error {
 			var err error
-			tx, inputs, err = wlt.CreateAndSignTransactionAdvanced(params, auxs, headTime)
+			txn, inputs, err = wlt.CreateTransaction(params, auxs, headTime)
 			return err
 		})
 	} else {
-		tx, inputs, err = w.CreateAndSignTransactionAdvanced(params, auxs, headTime)
+		txn, inputs, err = w.CreateTransaction(params, auxs, headTime)
 	}
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return tx, inputs, nil
+	return txn, inputs, nil
 }
 
 // UpdateWalletLabel updates the wallet label
@@ -416,45 +390,13 @@ func (serv *Service) Remove(wltID string) error {
 	return nil
 }
 
-func (serv *Service) removeDup(wlts Wallets) Wallets {
-	var rmWltIDS []string
-	// remove dup wallets
+func (serv *Service) setWallets(wlts Wallets) {
+	serv.wallets = wlts
+
 	for wltID, wlt := range wlts {
-		if len(wlt.Entries) == 0 {
-			// empty wallet
-			rmWltIDS = append(rmWltIDS, wltID)
-			continue
-		}
-
 		addr := wlt.Entries[0].Address.String()
-		id, ok := serv.firstAddrIDMap[addr]
-
-		if ok {
-			// check whose entries number is bigger
-			pw := wlts.get(id)
-
-			if len(pw.Entries) >= len(wlt.Entries) {
-				rmWltIDS = append(rmWltIDS, wltID)
-				continue
-			}
-
-			// replace the old wallet with the new one
-			// records the wallet id that need to remove
-			rmWltIDS = append(rmWltIDS, id)
-			// update wallet id
-			serv.firstAddrIDMap[addr] = wltID
-			continue
-		}
-
 		serv.firstAddrIDMap[addr] = wltID
 	}
-
-	// remove the duplicate and empty wallet
-	for _, id := range rmWltIDS {
-		wlts.remove(id)
-	}
-
-	return wlts
 }
 
 // GetWalletSeed returns seed of encrypted wallet of given wallet id

@@ -24,7 +24,7 @@ func statusCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.NoArgs,
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			status, err := apiClient.Health()
 			if err != nil {
 				return err
@@ -45,7 +45,7 @@ func showConfigCmd() *cobra.Command {
 		Use:                   "showConfig",
 		Short:                 "Show cli configuration",
 		DisableFlagsInUseLine: true,
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return printJSON(cliConfig)
 		},
 	}

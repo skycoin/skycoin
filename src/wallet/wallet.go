@@ -26,9 +26,11 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
-// Error wraps wallet related errors
+// Error wraps wallet-related errors.
+// It wraps errors caused by user input, but not errors caused by programmer input or internal issues.
 type Error struct {
 	error
 }
@@ -214,6 +216,7 @@ type CreateTransactionWalletParams struct {
 
 // CreateTransactionParams defines control parameters for transaction construction
 type CreateTransactionParams struct {
+	Unsigned          bool
 	IgnoreUnconfirmed bool
 	HoursSelection    HoursSelection
 	Wallet            CreateTransactionWalletParams
@@ -1018,7 +1021,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 		return 0, ErrWalletEncrypted
 	}
 
-	if scanN <= 0 {
+	if scanN == 0 {
 		return 0, nil
 	}
 
@@ -1124,7 +1127,9 @@ func (w *Wallet) AddEntry(entry Entry) error {
 
 // clone returns the clone of self
 func (w *Wallet) clone() *Wallet {
-	wlt := Wallet{Meta: make(map[string]string)}
+	wlt := Wallet{
+		Meta: make(map[string]string),
+	}
 	for k, v := range w.Meta {
 		wlt.Meta[k] = v
 	}
@@ -1134,92 +1139,141 @@ func (w *Wallet) clone() *Wallet {
 	return &wlt
 }
 
-// Validator validate if the wallet be able to create spending transaction
-type Validator interface {
-	// checks if any of the given addresses has unconfirmed spending transactions
-	HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error)
+func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {
+	if len(x) > len(uxOuts) {
+		return errors.New("Number of signature indexes exceeds number of inputs")
+	}
+
+	for _, i := range x {
+		if i >= len(uxOuts) || i < 0 {
+			return errors.New("Signature index out of range")
+		}
+	}
+
+	m := make(map[int]struct{}, len(x))
+	for _, i := range x {
+		if _, ok := m[i]; ok {
+			return errors.New("Duplicate value in signature indexes")
+		}
+		m[i] = struct{}{}
+	}
+
+	return nil
 }
 
-// CreateAndSignTransaction Creates a Transaction
-// spending coins and hours from wallet
-func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	if w.IsEncrypted() {
-		return nil, ErrWalletEncrypted
+func copyTransaction(txn *coin.Transaction) *coin.Transaction {
+	txnHash := txn.Hash()
+	txnInnerHash := txn.HashInner()
+
+	txn2 := *txn
+	txn2.Sigs = make([]cipher.Sig, len(txn.Sigs))
+	copy(txn2.Sigs, txn.Sigs)
+	txn2.In = make([]cipher.SHA256, len(txn.In))
+	copy(txn2.In, txn.In)
+	txn2.Out = make([]coin.TransactionOutput, len(txn.Out))
+	copy(txn2.Out, txn.Out)
+
+	if txnInnerHash != txn2.HashInner() {
+		logger.Panic("copyTransaction copy broke InnerHash")
+	}
+	if txnHash != txn2.Hash() {
+		logger.Panic("copyTransaction copy broke Hash")
 	}
 
-	entriesMap := make(map[cipher.Address]Entry)
-	for a := range auxs {
-		e, ok := w.GetEntry(a)
-		// Check that auxs does not contain addresses that are not known to this wallet
-		if !ok {
-			return nil, ErrUnknownAddress
-		}
-		entriesMap[e.SkycoinAddress()] = e
-	}
-
-	// Determine which unspents to spend.
-	// Use the MaximizeUxOuts strategy, this will keep the uxout pool smaller
-	uxa := auxs.Flatten()
-	uxb, err := NewUxBalances(headTime, uxa)
-	if err != nil {
-		return nil, err
-	}
-
-	spends, err := ChooseSpendsMaximizeUxOuts(uxb, coins, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add these unspents as tx inputs
-	var txn coin.Transaction
-	toSign := make([]cipher.SecKey, len(spends))
-	spending := Balance{Coins: 0, Hours: 0}
-	for i, au := range spends {
-		entry, ok := entriesMap[au.Address]
-		if !ok {
-			return nil, NewError(fmt.Errorf("address %v does not exist in wallet %v", au.Address, w.Filename()))
-		}
-
-		txn.PushInput(au.Hash)
-
-		toSign[i] = entry.Secret
-
-		spending.Coins += au.Coins
-		spending.Hours += au.Hours
-	}
-
-	if spending.Hours == 0 {
-		return nil, fee.ErrTxnNoFee
-	}
-
-	// Calculate coin hour allocation
-	changeCoins := spending.Coins - coins
-	haveChange := changeCoins > 0
-	changeHours, addrHours, outputHours := DistributeSpendHours(spending.Hours, 1, haveChange)
-
-	logger.Infof("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d, %d)", spending.Hours, outputHours, spending.Hours-outputHours, params.UserVerifyTxn.BurnFactor)
-	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours, params.UserVerifyTxn.BurnFactor); err != nil {
-		logger.WithError(err).Warning("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed")
-		return nil, err
-	}
-
-	if haveChange {
-		changeAddr := spends[0].Address
-		txn.PushOutput(changeAddr, changeCoins, changeHours)
-	}
-
-	txn.PushOutput(dest, coins, addrHours[0])
-
-	txn.SignInputs(toSign)
-	if err := txn.UpdateHeader(); err != nil {
-		logger.Critical().WithError(err).Error("txn.UpdateHeader failed")
-		return nil, err
-	}
-
-	return &txn, nil
+	return &txn2
 }
 
-// CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
+// SignTransaction signs a transaction. Specific inputs may be signed by specifying signIndexes.
+// If signIndexes is empty, all inputs will be signed.
+// The transaction should already have a valid header. The transaction may be partially signed,
+// but a valid existing signature cannot be overwritten.
+// Clients should avoid signing the same transaction multiple times.
+func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) (*coin.Transaction, error) {
+	signedTxn := copyTransaction(txn)
+	txnInnerHash := signedTxn.HashInner()
+
+	if txnInnerHash != signedTxn.InnerHash {
+		return nil, NewError(errors.New("Transaction inner hash does not match computed inner hash"))
+	}
+
+	if len(signedTxn.Sigs) == 0 {
+		return nil, NewError(errors.New("Transaction signatures array is empty"))
+	}
+	if signedTxn.IsFullySigned() {
+		return nil, NewError(errors.New("Transaction is fully signed"))
+	}
+
+	if len(signedTxn.In) == 0 {
+		return nil, NewError(errors.New("No transaction inputs to sign"))
+	}
+	if len(uxOuts) != len(signedTxn.In) {
+		return nil, errors.New("len(uxOuts) != len(txn.In)")
+	}
+	if err := validateSignIndexes(signIndexes, uxOuts); err != nil {
+		return nil, NewError(err)
+	}
+
+	// Build a mapping of addresses to the inputs that need to be signed
+	addrs := make(map[cipher.Address][]int)
+	if len(signIndexes) > 0 {
+		for _, in := range signIndexes {
+			if !signedTxn.Sigs[in].Null() {
+				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", in))
+			}
+			addrs[uxOuts[in].Body.Address] = append(addrs[uxOuts[in].Body.Address], in)
+		}
+	} else {
+		for i, o := range uxOuts {
+			if !signedTxn.Sigs[i].Null() {
+				continue
+			}
+			addrs[o.Body.Address] = append(addrs[o.Body.Address], i)
+		}
+	}
+
+	// Check that the wallet has all addresses needed for signing
+	toSign := make(map[int][]int)
+	for i, e := range w.Entries {
+		if len(toSign) == len(addrs) {
+			break
+		}
+		addr := e.SkycoinAddress()
+		if x, ok := addrs[addr]; ok {
+			toSign[i] = x
+		}
+	}
+
+	if len(toSign) != len(addrs) {
+		return nil, NewError(errors.New("Wallet cannot sign all requested inputs"))
+	}
+
+	// Sign the selected inputs
+	for k, v := range toSign {
+		for _, x := range v {
+			if !signedTxn.Sigs[x].Null() {
+				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", x))
+			}
+			if err := signedTxn.SignInput(w.Entries[k].Secret, x); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if err := signedTxn.UpdateHeader(); err != nil {
+		return nil, err
+	}
+
+	// Sanity check
+	if txnInnerHash != signedTxn.HashInner() {
+		err := errors.New("Transaction inner hash modified in the process of signing")
+		logger.Critical().WithError(err).Error()
+		return nil, err
+	}
+
+	return signedTxn, nil
+}
+
+// CreateTransaction creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options
 // Outputs to spend are chosen from the pool of outputs provided.
@@ -1232,7 +1286,7 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 //     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
-func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+func (w *Wallet) CreateTransaction(p CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -1278,12 +1332,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 	var totalOutCoins uint64
 	var requestedHours uint64
 	for _, to := range p.To {
-		totalOutCoins, err = coin.AddUint64(totalOutCoins, to.Coins)
+		totalOutCoins, err = mathutil.AddUint64(totalOutCoins, to.Coins)
 		if err != nil {
 			return nil, nil, NewError(fmt.Errorf("total output coins error: %v", err))
 		}
 
-		requestedHours, err = coin.AddUint64(requestedHours, to.Hours)
+		requestedHours, err = mathutil.AddUint64(requestedHours, to.Hours)
 		if err != nil {
 			return nil, nil, NewError(fmt.Errorf("total output hours error: %v", err))
 		}
@@ -1300,14 +1354,17 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 	// calculate total coins and hours in spends
 	var totalInputCoins uint64
 	var totalInputHours uint64
-	toSign := make([]cipher.SecKey, len(spends))
+	var toSign []cipher.SecKey
+	if !p.Unsigned {
+		toSign = make([]cipher.SecKey, len(spends))
+	}
 	for i, spend := range spends {
-		totalInputCoins, err = coin.AddUint64(totalInputCoins, spend.Coins)
+		totalInputCoins, err = mathutil.AddUint64(totalInputCoins, spend.Coins)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		totalInputHours, err = coin.AddUint64(totalInputHours, spend.Hours)
+		totalInputHours, err = mathutil.AddUint64(totalInputHours, spend.Hours)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1317,8 +1374,13 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			return nil, nil, fmt.Errorf("spend address %s not found in entriesMap", spend.Address.String())
 		}
 
-		toSign[i] = entry.Secret
-		txn.PushInput(spend.Hash)
+		if !p.Unsigned {
+			toSign[i] = entry.Secret
+		}
+		if err := txn.PushInput(spend.Hash); err != nil {
+			logger.Critical().WithError(err).Error("PushInput failed")
+			return nil, nil, err
+		}
 	}
 
 	feeHours := fee.RequiredFee(totalInputHours, params.UserVerifyTxn.BurnFactor)
@@ -1337,13 +1399,13 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 		switch p.HoursSelection.Mode {
 		case HoursSelectionModeShare:
 			// multiply remaining hours after fee burn with share factor
-			hours, err := coin.Uint64ToInt64(remainingHours)
+			hours, err := mathutil.Uint64ToInt64(remainingHours)
 			if err != nil {
 				return nil, nil, err
 			}
 
 			allocatedHoursInt := p.HoursSelection.ShareFactor.Mul(decimal.New(hours, 0)).IntPart()
-			allocatedHours, err := coin.Int64ToUint64(allocatedHoursInt)
+			allocatedHours, err := mathutil.Int64ToUint64(allocatedHoursInt)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -1406,7 +1468,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			extra := z[0]
 
 			// Calculate the new hours being spent
-			newTotalHours, err := coin.AddUint64(totalInputHours, extra.Hours)
+			newTotalHours, err := mathutil.AddUint64(totalInputHours, extra.Hours)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -1432,7 +1494,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 				}
 
 				additionalHours := extra.Hours - additionalFee
-				changeHours, err = coin.AddUint64(changeHours, additionalHours)
+				changeHours, err = mathutil.AddUint64(changeHours, additionalHours)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -1442,8 +1504,13 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 					return nil, nil, fmt.Errorf("extra spend address %s not found in entriesMap", extra.Address.String())
 				}
 
-				toSign = append(toSign, entry.Secret)
-				txn.PushInput(extra.Hash)
+				if !p.Unsigned {
+					toSign = append(toSign, entry.Secret)
+				}
+				if err := txn.PushInput(extra.Hash); err != nil {
+					logger.Critical().WithError(err).Error("PushInput failed")
+					return nil, nil, err
+				}
 			}
 		}
 	}
@@ -1456,7 +1523,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			return nil, nil, errors.New("share factor is 1.0 but changeHours > 0 unexpectedly")
 		}
 		p.HoursSelection.ShareFactor = &oneDecimal
-		return w.CreateAndSignTransactionAdvanced(p, auxs, headTime)
+		return w.CreateTransaction(p, auxs, headTime)
 	}
 
 	if changeCoins > 0 {
@@ -1488,10 +1555,24 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			}
 		}
 
-		txn.PushOutput(changeAddress, changeCoins, changeHours)
+		if err := txn.PushOutput(changeAddress, changeCoins, changeHours); err != nil {
+			logger.Critical().WithError(err).Error("PushOutput failed")
+			return nil, nil, err
+		}
 	}
 
-	txn.SignInputs(toSign)
+	if p.Unsigned {
+		txn.Sigs = make([]cipher.Sig, len(txn.In))
+	} else {
+		txn.SignInputs(toSign)
+	}
+
+	// Attempt to zero secret keys from memory
+	var emptyKey cipher.SecKey
+	for i := range toSign {
+		copy(toSign[i][:], emptyKey[:])
+	}
+
 	if err := txn.UpdateHeader(); err != nil {
 		logger.Critical().WithError(err).Error("txn.UpdateHeader failed")
 		return nil, nil, err
@@ -1507,7 +1588,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 	}
 
 	if err := verifyCreatedTransactionInvariants(p, txn, inputs); err != nil {
-		logger.Critical().WithError(err).Error("CreateAndSignTransactionAdvanced created transaction that violates invariants, aborting")
+		logger.Critical().WithError(err).Error("CreateTransaction created transaction that violates invariants, aborting")
 		return nil, nil, fmt.Errorf("Created transaction that violates invariants, this is a bug: %v", err)
 	}
 
@@ -1551,6 +1632,16 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 		return errors.New("Number of signatures does not match number of inputs")
 	}
 
+	if p.Unsigned {
+		if !txn.IsFullyUnsigned() {
+			return errors.New("Transaction is not fully unsigned")
+		}
+	} else {
+		if !txn.IsFullySigned() {
+			return errors.New("Transaction is not fully signed")
+		}
+	}
+
 	if len(txn.In) != len(inputs) {
 		return errors.New("Number of UxOut inputs does not match number of transaction inputs")
 	}
@@ -1586,7 +1677,7 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 	var inputHours uint64
 	for _, i := range inputs {
 		var err error
-		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		inputHours, err = mathutil.AddUint64(inputHours, i.Hours)
 		if err != nil {
 			return err
 		}
@@ -1595,7 +1686,7 @@ func verifyCreatedTransactionInvariants(p CreateTransactionParams, txn *coin.Tra
 	var outputHours uint64
 	for _, i := range txn.Out {
 		var err error
-		outputHours, err = coin.AddUint64(outputHours, i.Hours)
+		outputHours, err = mathutil.AddUint64(outputHours, i.Hours)
 		if err != nil {
 			return err
 		}
@@ -1685,12 +1776,12 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		}
 
 		var err error
-		total, err = coin.AddUint64(total, c)
+		total, err = mathutil.AddUint64(total, c)
 		if err != nil {
 			return nil, err
 		}
 
-		cInt64, err := coin.Uint64ToInt64(c)
+		cInt64, err := mathutil.Uint64ToInt64(c)
 		if err != nil {
 			return nil, err
 		}
@@ -1698,13 +1789,13 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		coinsInt[i] = big.NewInt(cInt64)
 	}
 
-	totalInt64, err := coin.Uint64ToInt64(total)
+	totalInt64, err := mathutil.Uint64ToInt64(total)
 	if err != nil {
 		return nil, err
 	}
 	totalInt := big.NewInt(totalInt64)
 
-	hoursInt64, err := coin.Uint64ToInt64(hours)
+	hoursInt64, err := mathutil.Uint64ToInt64(hours)
 	if err != nil {
 		return nil, err
 	}
@@ -1729,7 +1820,7 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		fracHours := fracInt.Uint64()
 
 		addrHours[i] = fracHours
-		assignedHours, err = coin.AddUint64(assignedHours, fracHours)
+		assignedHours, err = mathutil.AddUint64(assignedHours, fracHours)
 		if err != nil {
 			return nil, err
 		}

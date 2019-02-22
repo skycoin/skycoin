@@ -23,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -180,8 +181,8 @@ type Blockchainer interface {
 	NewBlock(tx *dbutil.Tx, txns coin.Transactions, currentTime uint64) (*coin.Block, error)
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) (*coin.SignedBlock, coin.UxArray, error)
+	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, signed TxnSignedFlag) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn, signed TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error)
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
@@ -477,10 +478,10 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn); err != nil {
+		if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn, TxnSigned); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
-				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
+				logger.Warningf("Transaction %s violates constraints: %v", txn.Hash().Hex(), err)
 			default:
 				return coin.SignedBlock{}, err
 			}
@@ -518,6 +519,10 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	if err != nil {
 		logger.Critical().WithError(err).Error("TruncateBytesTo failed, no block can be made until the offending transaction is removed")
 		return coin.SignedBlock{}, err
+	}
+
+	if len(txns) > coin.MaxBlockTransactions {
+		txns = txns[:coin.MaxBlockTransactions]
 	}
 
 	if len(txns) == 0 {
@@ -572,12 +577,12 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	}
 
 	// Remove the transactions in the Block from the unconfirmed pool
-	txHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
-	for _, tx := range b.Block.Body.Transactions {
-		txHashes = append(txHashes, tx.Hash())
+	txnHashes := make([]cipher.SHA256, 0, len(b.Block.Body.Transactions))
+	for _, txn := range b.Block.Body.Transactions {
+		txnHashes = append(txnHashes, txn.Hash())
 	}
 
-	if err := vs.Unconfirmed.RemoveTransactions(tx, txHashes); err != nil {
+	if err := vs.Unconfirmed.RemoveTransactions(tx, txnHashes); err != nil {
 		return err
 	}
 
@@ -967,7 +972,7 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 		return false, nil, nil, err
 	}
 
-	head, inputs, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn)
+	head, inputs, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn, TxnSigned)
 	if err != nil {
 		return false, nil, nil, err
 	}
@@ -1217,20 +1222,21 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	// and remove duplicate txns
 	txnMap := make(map[cipher.SHA256]struct{})
 	var txns []Transaction
-	for _, txs := range addrTxns {
-		for _, tx := range txs {
-			if _, exist := txnMap[tx.Transaction.Hash()]; exist {
+	for _, aTxns := range addrTxns {
+		for _, txn := range aTxns {
+			txnHash := txn.Transaction.Hash()
+			if _, exist := txnMap[txnHash]; exist {
 				continue
 			}
-			txnMap[tx.Transaction.Hash()] = struct{}{}
-			txns = append(txns, tx)
+			txnMap[txnHash] = struct{}{}
+			txns = append(txns, txn)
 		}
 	}
 
 	// Checks other filters
-	f := func(tx *Transaction, flts []TxFilter) bool {
+	f := func(txn *Transaction, flts []TxFilter) bool {
 		for _, flt := range flts {
-			if !flt.Match(tx) {
+			if !flt.Match(txn) {
 				return false
 			}
 		}
@@ -1239,9 +1245,9 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	}
 
 	var retTxns []Transaction
-	for _, tx := range txns {
-		if f(&tx, otherFlts) {
-			retTxns = append(retTxns, tx)
+	for _, txn := range txns {
+		if f(&txn, otherFlts) {
+			retTxns = append(retTxns, txn)
 		}
 	}
 
@@ -1453,12 +1459,12 @@ func (vs *Visor) AddressBalances(head *coin.SignedBlock, auxs coin.AddressUxOuts
 				return 0, 0, err
 			}
 
-			coins, err = coin.AddUint64(coins, ux.Body.Coins)
+			coins, err = mathutil.AddUint64(coins, ux.Body.Coins)
 			if err != nil {
 				return 0, 0, err
 			}
 
-			hours, err = coin.AddUint64(hours, uxHours)
+			hours, err = mathutil.AddUint64(hours, uxHours)
 			if err != nil {
 				return 0, 0, err
 			}
@@ -1579,7 +1585,7 @@ func (vs *Visor) getTransactionInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []Un
 	inputs := make([][]TransactionInput, len(txns))
 	for i, txn := range txns {
 		if len(txn.Transaction.In) == 0 {
-			logger.Critical().WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
+			logger.Critical().WithField("txid", txn.Transaction.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
 			continue
 		}
 
@@ -2162,25 +2168,24 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 
 // VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
 // transaction is confirmed, and error if any
-func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
+func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed TxnSignedFlag) ([]TransactionInput, bool, error) {
 	var uxa coin.UxArray
 	var isTxnConfirmed bool
 	var feeCalcTime uint64
 
-	err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+	verifyErr := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
 		head, err := vs.Blockchain.Head(tx)
 		if err != nil {
 			return err
 		}
 
 		uxa, err = vs.Blockchain.Unspent().GetArray(tx, txn.In)
-		switch err.(type) {
+		switch e := err.(type) {
 		case nil:
 			// For unconfirmed transactions, use the blockchain head time to calculate hours
 			feeCalcTime = head.Time()
 
 		case blockdb.ErrUnspentNotExist:
-			uxid := err.(blockdb.ErrUnspentNotExist).UxID
 			// Gets uxouts of txn.In from historydb
 			outs, err := vs.history.GetUxOuts(tx, txn.In)
 			if err != nil {
@@ -2188,7 +2193,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			}
 
 			if len(outs) == 0 {
-				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", uxid)
+				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", e.UxID)
 				return NewErrTxnViolatesHardConstraint(err)
 			}
 
@@ -2239,21 +2244,21 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa)
+		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa, signed)
 	})
 
 	// If we were able to query the inputs, return the verbose inputs to the caller
 	// even if the transaction failed validation
-	var uxs []wallet.UxBalance
+	var inputs []TransactionInput
 	if len(uxa) != 0 && feeCalcTime != 0 {
-		var otherErr error
-		uxs, otherErr = wallet.NewUxBalances(feeCalcTime, uxa)
-		if otherErr != nil {
-			return nil, isTxnConfirmed, otherErr
+		var err error
+		inputs, err = NewTransactionInputs(uxa, feeCalcTime)
+		if err != nil {
+			return nil, isTxnConfirmed, err
 		}
 	}
 
-	return uxs, isTxnConfirmed, err
+	return inputs, isTxnConfirmed, verifyErr
 }
 
 // AddressCount returns the total number of addresses with unspents

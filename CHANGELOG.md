@@ -7,12 +7,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- Add `-disable-header-check` flag to disable host/origin/referer header checks for the node APIs and add `header_check_enabled` parameter in `/health` endpoint.
+
+- Add CLI `checkDBDecoding` command to verify the `skyencoder`-generated binary decoders match the reflect-based decoder
+- Add `unsigned` option to `POST /api/v1/wallet/transaction` to create unsigned transactions from a wallet
+- Add `/api/v2/wallet/transaction/sign` to sign an unsigned transaction with a wallet
+- Add `unsigned` option to `POST /api/v2/transaction/verify` for verifying an unsigned transaction
 
 ### Fixed
 
+- #2172 Fix electron build failure for linux system
+
 ### Changed
 
+- Duplicate wallets in the wallets folder will prevent the application from starting
+- An empty wallet in the wallets folder will prevent the application from starting
+- Use [`skyencoder`](https://github.com/skycoin/skyencoder)-generated binary encoders/decoders for network and database data, instead of the reflect-based encoders/decoders in `cipher/encoder`.
+
 ### Removed
+
+- `/api/v1/explorer/address` endpoint (use `GET /api/v1/transactions?verbose=1` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-explorer-address
+- The unversioned REST API (the `-enable-unversioned-api` is removed, prefix your API requests with `/api/v1` if they don't have an `/api/vx` prefix already). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-unversioned-api
+- JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-jsonrpc-api
+- `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-spend
 
 ## [0.25.1] - 2019-02-08
 

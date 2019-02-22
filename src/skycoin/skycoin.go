@@ -398,7 +398,6 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
 
 	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
@@ -413,17 +412,16 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 	config := api.Config{
-		StaticDir:            c.config.Node.GUIDirectory,
-		DisableCSRF:          c.config.Node.DisableCSRF,
-		DisableCSP:           c.config.Node.DisableCSP,
-		EnableJSON20RPC:      c.config.Node.RPCInterface,
-		EnableGUI:            c.config.Node.EnableGUI,
-		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,
-		ReadTimeout:          c.config.Node.HTTPReadTimeout,
-		WriteTimeout:         c.config.Node.HTTPWriteTimeout,
-		IdleTimeout:          c.config.Node.HTTPIdleTimeout,
-		EnabledAPISets:       c.config.Node.enabledAPISets,
-		HostWhitelist:        c.config.Node.hostWhitelist,
+		StaticDir:          c.config.Node.GUIDirectory,
+		DisableCSRF:        c.config.Node.DisableCSRF,
+		DisableHeaderCheck: c.config.Node.DisableHeaderCheck,
+		DisableCSP:         c.config.Node.DisableCSP,
+		EnableGUI:          c.config.Node.EnableGUI,
+		ReadTimeout:        c.config.Node.HTTPReadTimeout,
+		WriteTimeout:       c.config.Node.HTTPWriteTimeout,
+		IdleTimeout:        c.config.Node.HTTPIdleTimeout,
+		EnabledAPISets:     c.config.Node.enabledAPISets,
+		HostWhitelist:      c.config.Node.hostWhitelist,
 		Health: api.HealthConfig{
 			BuildInfo: readable.BuildInfo{
 				Version: c.config.Build.Version,
@@ -536,12 +534,14 @@ func (c *Coin) ParseConfig() error {
 	return c.config.postProcess()
 }
 
-// InitTransaction creates the initialize transaction
-func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction {
-	var tx coin.Transaction
+// InitTransaction creates the genesis transaction
+func InitTransaction(uxID string, genesisSecKey cipher.SecKey) coin.Transaction {
+	var txn coin.Transaction
 
-	output := cipher.MustSHA256FromHex(UxID)
-	tx.PushInput(output)
+	output := cipher.MustSHA256FromHex(uxID)
+	if err := txn.PushInput(output); err != nil {
+		log.Panic(err)
+	}
 
 	addrs := params.GetDistributionAddresses()
 
@@ -556,24 +556,26 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 
 	for i := range addrs {
 		addr := cipher.MustDecodeBase58Address(addrs[i])
-		tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1)
+		if err := txn.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1); err != nil {
+			log.Panic(err)
+		}
 	}
 
 	seckeys := make([]cipher.SecKey, 1)
 	seckey := genesisSecKey.Hex()
 	seckeys[0] = cipher.MustSecKeyFromHex(seckey)
-	tx.SignInputs(seckeys)
+	txn.SignInputs(seckeys)
 
-	if err := tx.UpdateHeader(); err != nil {
+	if err := txn.UpdateHeader(); err != nil {
 		log.Panic(err)
 	}
 
-	if err := tx.Verify(); err != nil {
+	if err := txn.Verify(); err != nil {
 		log.Panic(err)
 	}
 
-	log.Printf("signature= %s", tx.Sigs[0].Hex())
-	return tx
+	log.Printf("signature= %s", txn.Sigs[0].Hex())
+	return txn
 }
 
 func createDirIfNotExist(dir string) error {

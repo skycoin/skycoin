@@ -105,7 +105,9 @@ type Config struct {
 	// Maximum allowed default outgoing connection number
 	MaxDefaultPeerOutgoingConnections int
 	// Messages greater than length are rejected and the sender disconnected
-	MaxMessageLength int
+	MaxIncomingMessageLength int
+	// Messages greater than length are not sent and an error is reported in a SendResult
+	MaxOutgoingMessageLength int
 	// Timeout is the timeout for dialing new connections.  Use a
 	// timeout of 0 to ignore timeout.
 	DialTimeout time.Duration
@@ -140,7 +142,8 @@ func NewConfig() Config {
 		Address:                           "",
 		Port:                              0,
 		MaxConnections:                    128,
-		MaxMessageLength:                  1024 * 1024,
+		MaxOutgoingMessageLength:          256 * 1024,
+		MaxIncomingMessageLength:          1024 * 1024,
 		MaxDefaultPeerOutgoingConnections: 1,
 		DialTimeout:                       time.Second * 30,
 		ReadTimeout:                       time.Second * 30,
@@ -534,7 +537,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := pool.sendLoop(c, pool.Config.WriteTimeout, qc); err != nil {
+		if err := pool.sendLoop(c, pool.Config.WriteTimeout, pool.Config.MaxOutgoingMessageLength, qc); err != nil {
 			errC <- methodErr{
 				method: "sendLoop",
 				err:    err,
@@ -624,7 +627,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 			return err
 		}
 		// decode data
-		datas, err := decodeData(conn.Buffer, pool.Config.MaxMessageLength)
+		datas, err := decodeData(conn.Buffer, pool.Config.MaxIncomingMessageLength)
 		if err != nil {
 			return err
 		}
@@ -645,7 +648,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 	}
 }
 
-func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc chan struct{}) error {
+func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, maxMsgLength int, qc chan struct{}) error {
 	elapser := elapse.NewElapser(sendLoopDurationThreshold, logger)
 	defer elapser.CheckForDone()
 
@@ -662,7 +665,7 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 				continue
 			}
 
-			err := sendMessage(conn.Conn, m, timeout)
+			err := sendMessage(conn.Conn, m, timeout, maxMsgLength)
 
 			// Update last sent before writing to SendResult,
 			// this allows a write to SendResult to be used as a sync marker,

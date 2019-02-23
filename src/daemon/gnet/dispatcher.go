@@ -30,10 +30,13 @@ func newSendResult(addr string, m Message, err error) SendResult {
 }
 
 // Serializes a Message over a net.Conn
-func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
+func sendMessage(conn net.Conn, msg Message, timeout time.Duration, maxMsgLength int) error {
 	m, err := EncodeMessage(msg)
 	if err != nil {
 		return err
+	}
+	if len(m) > maxMsgLength {
+		return errors.New("Message exceeds max message length")
 	}
 	return sendByteMessage(conn, m, timeout)
 }

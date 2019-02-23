@@ -32,7 +32,7 @@
         &#x2245; {{ value | number:'1.0-2' }} {{ 'common.usd' | translate }}
       </span>
       <span *ngIf="value >= 0 && selectedCurrency === doubleButtonActive.RightButton">
-        = {{ value | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
+        &#x2245; {{ value | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
       </span>
     </div>
   </div>

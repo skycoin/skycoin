@@ -115,13 +115,13 @@
             <input formControlName="coins">
             <span>{{ (selectedCurrency === doubleButtonActive.LeftButton ? 'common.coin-id' : 'common.usd') | translate }}</span>
           </div>
-          <div class="coins-value-label" [ngClass]="{ red: value >= 0 && valueGreaterThanBalance }" *ngIf="price">
+          <div class="coins-value-label" *ngIf="price">
             <span *ngIf="values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
             <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
               &#x2245; {{ values[i] | number:'1.0-2' }} {{ 'common.usd' | translate }}
             </span>
             <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
-              = {{ values[i] | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
+              &#x2245; {{ values[i] | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
             </span>
           </div>
         </div>

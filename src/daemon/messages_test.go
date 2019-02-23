@@ -800,3 +800,174 @@ func TestMessageEncodeDecode(t *testing.T) {
 		})
 	}
 }
+
+func TestTruncateGivePeersMessage(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &GivePeersMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Peers)
+	truncateGivePeersMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Peers))
+
+	n := encodeSizeGivePeersMessage(m)
+	require.True(t, n <= maxLen)
+
+	// One peer, no truncation
+	m.Peers = append(m.Peers, IPAddr{})
+	prevLen = len(m.Peers)
+	truncateGivePeersMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Peers))
+
+	n = encodeSizeGivePeersMessage(m)
+	require.True(t, n <= maxLen)
+
+	// Too many peers, truncated
+	n = encodeSizeIPAddr(&IPAddr{})
+	m.Peers = make([]IPAddr, (maxLen/n)*2)
+	prevLen = len(m.Peers)
+	truncateGivePeersMessage(m, maxLen)
+	require.True(t, len(m.Peers) < prevLen)
+	require.NotEmpty(t, m.Peers)
+
+	n = encodeSizeGivePeersMessage(m)
+	require.True(t, n <= maxLen)
+}
+
+func TestTruncateGiveBlocksMessage(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &GiveBlocksMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Blocks)
+	truncateGiveBlocksMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Blocks))
+
+	n := encodeSizeGiveBlocksMessage(m)
+	require.True(t, n <= maxLen)
+
+	// One block, no truncation
+	m.Blocks = append(m.Blocks, coin.SignedBlock{})
+	prevLen = len(m.Blocks)
+	truncateGiveBlocksMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Blocks))
+
+	n = encodeSizeGiveBlocksMessage(m)
+	require.True(t, n <= maxLen)
+
+	// Too many blocks, truncated
+	n = encodeSizeSignedBlock(&coin.SignedBlock{})
+	m.Blocks = make([]coin.SignedBlock, (maxLen/n)*2)
+	prevLen = len(m.Blocks)
+	truncateGiveBlocksMessage(m, maxLen)
+	require.True(t, len(m.Blocks) < prevLen)
+	require.NotEmpty(t, m.Blocks)
+
+	n = encodeSizeGiveBlocksMessage(m)
+	require.True(t, n <= maxLen)
+}
+
+func TestTruncateGiveTransactionsMessage(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &GiveTxnsMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Transactions)
+	truncateGiveTxnsMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Transactions))
+
+	n := encodeSizeGiveTxnsMessage(m)
+	require.True(t, n <= maxLen)
+
+	// One block, no truncation
+	m.Transactions = append(m.Transactions, coin.Transaction{})
+	prevLen = len(m.Transactions)
+	truncateGiveTxnsMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Transactions))
+
+	n = encodeSizeGiveTxnsMessage(m)
+	require.True(t, n <= maxLen)
+
+	// Too many transactions, truncated
+	n = encodeSizeTransaction(&coin.Transaction{})
+	m.Transactions = make([]coin.Transaction, (maxLen/n)*2)
+	prevLen = len(m.Transactions)
+	truncateGiveTxnsMessage(m, maxLen)
+	require.True(t, len(m.Transactions) < prevLen)
+	require.NotEmpty(t, m.Transactions)
+
+	n = encodeSizeGiveTxnsMessage(m)
+	require.True(t, n <= maxLen)
+}
+
+func TestTruncateAnnounceTxnsHashes(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &AnnounceTxnsMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Transactions)
+	hashes := truncateAnnounceTxnsHashes(m, maxLen)
+	require.Equal(t, prevLen, len(hashes))
+
+	m.Transactions = hashes
+	n := encodeSizeAnnounceTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+
+	// One block, no truncation
+	m.Transactions = append(m.Transactions, cipher.SHA256{})
+	prevLen = len(m.Transactions)
+	hashes = truncateAnnounceTxnsHashes(m, maxLen)
+	require.Equal(t, prevLen, len(hashes))
+
+	m.Transactions = hashes
+	n = encodeSizeAnnounceTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+
+	// Too many transactions, truncated
+	n = uint64(len(cipher.SHA256{}))
+	m.Transactions = make([]cipher.SHA256, (maxLen/n)*2)
+	prevLen = len(m.Transactions)
+	hashes = truncateAnnounceTxnsHashes(m, maxLen)
+	require.True(t, len(hashes) < prevLen)
+	require.NotEmpty(t, hashes)
+
+	m.Transactions = hashes
+	n = encodeSizeAnnounceTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+}
+
+func TestTruncateGetTxnsHashes(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &GetTxnsMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Transactions)
+	hashes := truncateGetTxnsHashes(m, maxLen)
+	require.Equal(t, prevLen, len(hashes))
+
+	m.Transactions = hashes
+	n := encodeSizeGetTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+
+	// One block, no truncation
+	m.Transactions = append(m.Transactions, cipher.SHA256{})
+	prevLen = len(m.Transactions)
+	hashes = truncateGetTxnsHashes(m, maxLen)
+	require.Equal(t, prevLen, len(hashes))
+
+	m.Transactions = hashes
+	n = encodeSizeGetTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+
+	// Too many transactions, truncated
+	n = uint64(len(cipher.SHA256{}))
+	m.Transactions = make([]cipher.SHA256, (maxLen/n)*2)
+	prevLen = len(m.Transactions)
+	hashes = truncateGetTxnsHashes(m, maxLen)
+	require.True(t, len(hashes) < prevLen)
+	require.NotEmpty(t, hashes)
+
+	m.Transactions = hashes
+	n = encodeSizeGetTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+}

@@ -1090,7 +1090,14 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 // outside of the daemon run loop
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
-		logger.WithError(r.Error).WithFields(logrus.Fields{
+		var lg logrus.FieldLogger
+		if r.Error == gnet.ErrMsgExceedsMaxLen {
+			lg = logger.Critical()
+		} else {
+			lg = logger
+		}
+
+		lg.WithError(r.Error).WithFields(logrus.Fields{
 			"addr":    r.Addr,
 			"msgType": reflect.TypeOf(r.Message),
 		}).Warning("Failed to send message")

@@ -53,6 +53,11 @@ func encodeGivePeersMessageToBuffer(buf []byte, obj *GivePeersMessage) error {
 		Buffer: buf[:],
 	}
 
+	// obj.Peers maxlen check
+	if len(obj.Peers) > 512 {
+		return encoder.ErrMaxLenExceeded
+	}
+
 	// obj.Peers length check
 	if uint64(len(obj.Peers)) > math.MaxUint32 {
 		return errors.New("obj.Peers length exceeds math.MaxUint32")
@@ -94,6 +99,10 @@ func decodeGivePeersMessage(buf []byte, obj *GivePeersMessage) (uint64, error) {
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
 			return 0, encoder.ErrBufferUnderflow
+		}
+
+		if length > 512 {
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {

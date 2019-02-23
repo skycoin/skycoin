@@ -140,7 +140,7 @@ func NewConfig() Config {
 		Address:                           "",
 		Port:                              0,
 		MaxConnections:                    128,
-		MaxMessageLength:                  256 * 1024,
+		MaxMessageLength:                  1024 * 1024,
 		MaxDefaultPeerOutgoingConnections: 1,
 		DialTimeout:                       time.Second * 30,
 		ReadTimeout:                       time.Second * 30,
@@ -156,7 +156,7 @@ func NewConfig() Config {
 
 const (
 	// Byte size of the length prefix in message, sizeof(int32)
-	messageLengthSize = 4
+	messageLengthPrefixSize = 4
 )
 
 // Connection is stored by the ConnectionPool
@@ -707,8 +707,8 @@ func readData(reader io.Reader, buf []byte) ([]byte, error) {
 // decode data from buffer.
 func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 	dataArray := [][]byte{}
-	for buf.Len() > messageLengthSize {
-		prefix := buf.Bytes()[:messageLengthSize]
+	for buf.Len() > messageLengthPrefixSize {
+		prefix := buf.Bytes()[:messageLengthPrefixSize]
 		// decode message length
 		tmpLength, _, err := encoder.DeserializeUint32(prefix)
 		if err != nil {
@@ -721,15 +721,35 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		length := int(tmpLength)
 
 		// Disconnect if we received an invalid length.
-		if length < messagePrefixLength || length > maxMsgLength {
+		if length < messagePrefixLength {
+			logger.WithFields(logrus.Fields{
+				"length":              length,
+				"messagePrefixLength": messagePrefixLength,
+			}).Warningf("decodeData: length < messagePrefixLength")
 			return [][]byte{}, ErrDisconnectInvalidMessageLength
 		}
 
-		if buf.Len()-messageLengthSize < length {
+		if length > maxMsgLength {
+			msgName := ""
+			if length >= 4 && buf.Len()-messageLengthPrefixSize >= 4 {
+				var msgID [4]byte
+				copy(msgID[:], buf.Bytes()[4:8])
+				msgName = msgIDStringSafe(msgID)
+			}
+
+			logger.WithFields(logrus.Fields{
+				"length":       length,
+				"maxMsgLength": maxMsgLength,
+				"prefix":       msgName,
+			}).Warning("decodeData: length > maxMsgLength")
+			return [][]byte{}, ErrDisconnectInvalidMessageLength
+		}
+
+		if buf.Len()-messageLengthPrefixSize < length {
 			return [][]byte{}, nil
 		}
 
-		buf.Next(messageLengthSize) // strip the length prefix
+		buf.Next(messageLengthPrefixSize) // strip the length prefix
 		data := make([]byte, length)
 		_, err = buf.Read(data)
 		if err != nil {

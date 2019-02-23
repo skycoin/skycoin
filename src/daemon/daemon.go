@@ -182,8 +182,10 @@ type DaemonConfig struct { // nolint: golint
 	BlocksRequestRate time.Duration
 	// How often to announce our blocks to peers
 	BlocksAnnounceRate time.Duration
-	// How many blocks to respond with to a GetBlocksMessage
-	BlocksResponseCount uint64
+	// How many blocks to request in a GetBlocksMessage
+	GetBlocksRequestCount uint64
+	// Maximum number of blocks to respond with to a GetBlocksMessage
+	MaxGetBlocksResponseCount uint64
 	// Max announce txns hash number
 	MaxTxnAnnounceNum int
 	// How often new blocks are created by the signing node, in seconds
@@ -201,6 +203,8 @@ type DaemonConfig struct { // nolint: golint
 	UnconfirmedVerifyTxn params.VerifyTxn
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
+	// Maximum size of messages (should equal the gnet pool MaxMessageLength)
+	MaxMessageLength uint64
 }
 
 // NewDaemonConfig creates daemon config
@@ -227,13 +231,15 @@ func NewDaemonConfig() DaemonConfig {
 		LogPings:                     true,
 		BlocksRequestRate:            time.Second * 60,
 		BlocksAnnounceRate:           time.Second * 60,
-		BlocksResponseCount:          20,
+		GetBlocksRequestCount:        20,
+		MaxGetBlocksResponseCount:    20,
 		MaxTxnAnnounceNum:            16,
 		BlockCreationInterval:        10,
 		UnconfirmedRefreshRate:       time.Minute,
 		UnconfirmedRemoveInvalidRate: time.Minute,
 		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
+		MaxMessageLength:             1024 * 1024,
 	}
 }
 
@@ -637,8 +643,8 @@ loop:
 				continue
 			}
 			// Announce these transactions
-			if err := dm.announceTxns(validTxns); err != nil {
-				logger.WithError(err).Warning("announceTxns failed")
+			if err := dm.announceTxnHashes(validTxns); err != nil {
+				logger.WithError(err).Warning("announceTxnHashes failed")
 			}
 
 		case <-unconfirmedRemoveInvalidTicker.C:
@@ -1090,7 +1096,7 @@ func (dm *Daemon) requestBlocks() error {
 		return errors.New("Cannot request blocks, there is no head block")
 	}
 
-	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
+	m := NewGetBlocksMessage(headSeq, dm.Config.GetBlocksRequestCount)
 
 	if _, err := dm.broadcastMessage(m); err != nil {
 		logger.WithError(err).Debug("Broadcast GetBlocksMessage failed")
@@ -1118,26 +1124,6 @@ func (dm *Daemon) announceBlocks() error {
 
 	if _, err := dm.broadcastMessage(m); err != nil {
 		logger.WithError(err).Debug("Broadcast AnnounceBlocksMessage failed")
-		return err
-	}
-
-	return nil
-}
-
-// announceTxns announces given transaction hashes
-func (dm *Daemon) announceTxns(txns []cipher.SHA256) error {
-	if dm.Config.DisableNetworking {
-		return ErrNetworkingDisabled
-	}
-
-	if len(txns) == 0 {
-		return nil
-	}
-
-	m := NewAnnounceTxnsMessage(txns)
-
-	if _, err := dm.broadcastMessage(m); err != nil {
-		logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
 		return err
 	}
 
@@ -1196,7 +1182,11 @@ func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
 		return nil, ErrNetworkingDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{txn})
+	m := NewGiveTxnsMessage(coin.Transactions{txn}, dm.Config.MaxMessageLength)
+	if len(m.Transactions) != 1 {
+		logger.Critical().Error("NewGiveTxnsMessage truncated its only transaction")
+	}
+
 	ids, err := dm.broadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Error("Broadcast GiveTxnsMessage failed")
@@ -1340,7 +1330,7 @@ func (dm *Daemon) requestBlocksFromAddr(addr string) error {
 		return errors.New("Cannot request blocks from addr, there is no head block")
 	}
 
-	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
+	m := NewGetBlocksMessage(headSeq, dm.Config.GetBlocksRequestCount)
 	return dm.sendMessage(addr, m)
 }
 
@@ -1350,7 +1340,11 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 		return ErrNetworkingDisabled
 	}
 
-	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
+	m := NewGiveBlocksMessage([]coin.SignedBlock{sb}, dm.Config.MaxMessageLength)
+	if len(m.Blocks) != 1 {
+		logger.Critical().Error("NewGiveBlocksMessage truncated its only block")
+	}
+
 	_, err := dm.broadcastMessage(m)
 	return err
 }
@@ -1411,7 +1405,8 @@ func (dm *Daemon) sendRandomPeers(addr string) error {
 		return errors.New("No peers available")
 	}
 
-	m := NewGivePeersMessage(peers)
+	m := NewGivePeersMessage(peers, dm.Config.MaxMessageLength)
+
 	return dm.sendMessage(addr, m)
 }
 
@@ -1427,11 +1422,23 @@ func (dm *Daemon) announceAllValidTxns() error {
 		return err
 	}
 
+	return dm.announceTxnHashes(hashes)
+}
+
+// announceTxnHashes announces transaction hashes, splitting them into chunks if they exceed MaxTxnAnnounceNum
+func (dm *Daemon) announceTxnHashes(hashes []cipher.SHA256) error {
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
+	}
+
 	// Divide hashes into multiple sets of max size
 	hashesSet := divideHashes(hashes, dm.Config.MaxTxnAnnounceNum)
 
 	for _, hs := range hashesSet {
-		m := NewAnnounceTxnsMessage(hs)
+		m := NewAnnounceTxnsMessage(hs, dm.Config.MaxMessageLength)
+		if len(m.Transactions) != len(hs) {
+			logger.Critical().Error("NewAnnounceTxnsMessage truncated hashes that were already split up")
+		}
 		if _, err := dm.broadcastMessage(m); err != nil {
 			logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
 			return err

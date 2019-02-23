@@ -117,13 +117,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.closeGetOutputsSubscriptions();
+    this.closeSyncCheckSubscription();
     this.subscriptions.unsubscribe();
     this.navbarService.hideSwitch();
     this.snackbar.dismiss();
-
-    if (this.syncCheckSubscription) {
-      this.syncCheckSubscription.unsubscribe();
-    }
   }
 
   preview() {
@@ -137,6 +134,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private checkBeforeSending() {
+    this.closeSyncCheckSubscription();
     this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
       if (synchronized) {
         this.unlockAndSend();
@@ -504,6 +502,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     if (this.getOutputsSubscriptions) {
       this.getOutputsSubscriptions.unsubscribe();
+    }
+  }
+
+  private closeSyncCheckSubscription() {
+    if (this.syncCheckSubscription) {
+      this.syncCheckSubscription.unsubscribe();
     }
   }
 }

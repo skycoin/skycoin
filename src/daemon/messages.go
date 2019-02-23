@@ -221,7 +221,7 @@ func NewGivePeersMessage(peers []pex.Peer, maxMsgLength uint64) *GivePeersMessag
 	return m
 }
 
-// truncateGivePeersMessage truncates the blocks in GivePeersMessage to fit inside of MaxMessageLength
+// truncateGivePeersMessage truncates the blocks in GivePeersMessage to fit inside of MaxOutgoingMessageLength
 func truncateGivePeersMessage(m *GivePeersMessage, maxMsgLength uint64) {
 	// The message length will include a 4 byte message type prefix.
 	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
@@ -752,6 +752,10 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 	// Cap the number of requested blocks (TODO - necessary since we have size limits enforced later?)
 	requestedBlocks := gbm.RequestedBlocks
 	if requestedBlocks > dc.MaxGetBlocksResponseCount {
+		logger.WithFields(logrus.Fields{
+			"requestedBlocks":    requestedBlocks,
+			"maxRequestedBlocks": dc.MaxGetBlocksResponseCount,
+		}).Debug("GetBlocksMessage.RequestedBlocks value exceeds configured limit, reducing")
 		requestedBlocks = dc.MaxGetBlocksResponseCount
 	}
 
@@ -766,9 +770,9 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 		return
 	}
 
-	logger.WithFields(fields).Debugf("Got %d blocks since %d", len(blocks), gbm.LastBlock)
+	logger.WithFields(fields).Debugf("GetBlocksMessage: replying with %d blocks after block %d", len(blocks), gbm.LastBlock)
 
-	m := NewGiveBlocksMessage(blocks, dc.MaxMessageLength)
+	m := NewGiveBlocksMessage(blocks, dc.MaxOutgoingMessageLength)
 	if len(m.Blocks) != len(blocks) {
 		logger.WithField("startBlockSeq", blocks[0].Head.BkSeq).Warningf("NewGiveBlocksMessage truncated %d blocks to %d blocks", len(blocks), len(m.Blocks))
 	}
@@ -797,7 +801,7 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock, maxMsgLength uint64) *GiveB
 	return m
 }
 
-// truncateGiveBlocksMessage truncates the blocks in GiveBlocksMessage to fit inside of MaxMessageLength
+// truncateGiveBlocksMessage truncates the blocks in GiveBlocksMessage to fit inside of MaxOutgoingMessageLength
 func truncateGiveBlocksMessage(m *GiveBlocksMessage, maxMsgLength uint64) {
 	// The message length will include a 4 byte message type prefix.
 	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
@@ -1025,7 +1029,7 @@ func NewAnnounceTxnsMessage(txns []cipher.SHA256, maxMsgLength uint64) *Announce
 	return m
 }
 
-// truncateAnnounceTxnsHashes truncates the hashes in AnnounceTxnsMessage to fit inside of MaxMessageLength
+// truncateAnnounceTxnsHashes truncates the hashes in AnnounceTxnsMessage to fit inside of MaxOutgoingMessageLength
 func truncateAnnounceTxnsHashes(m *AnnounceTxnsMessage, maxMsgLength uint64) []cipher.SHA256 {
 	// The message length will include a 4 byte message type prefix.
 	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
@@ -1124,7 +1128,7 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 		return
 	}
 
-	m := NewGetTxnsMessage(unknown, dc.MaxMessageLength)
+	m := NewGetTxnsMessage(unknown, dc.MaxOutgoingMessageLength)
 	if len(m.Transactions) != len(unknown) {
 		logger.Warningf("NewGetTxnsMessage truncated %d hashes to %d hashes", len(unknown), len(m.Transactions))
 	}
@@ -1154,7 +1158,7 @@ func NewGetTxnsMessage(txns []cipher.SHA256, maxMsgLength uint64) *GetTxnsMessag
 	return m
 }
 
-// truncateGetTxnsHashes truncates the hashes in GetTxnsMessage to fit inside of MaxMessageLength
+// truncateGetTxnsHashes truncates the hashes in GetTxnsMessage to fit inside of MaxOutgoingMessageLength
 func truncateGetTxnsHashes(m *GetTxnsMessage, maxMsgLength uint64) []cipher.SHA256 {
 	// The message length will include a 4 byte message type prefix.
 	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
@@ -1233,7 +1237,7 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 	}
 
 	// Reply to sender with GiveTxnsMessage
-	m := NewGiveTxnsMessage(known, dc.MaxMessageLength)
+	m := NewGiveTxnsMessage(known, dc.MaxOutgoingMessageLength)
 	if len(m.Transactions) != len(known) {
 		logger.Warningf("NewGiveTxnsMessage truncated %d hashes to %d hashes", len(known), len(m.Transactions))
 	}
@@ -1262,7 +1266,7 @@ func NewGiveTxnsMessage(txns []coin.Transaction, maxMsgLength uint64) *GiveTxnsM
 	return m
 }
 
-// truncateGiveTxnsMessage truncates the transactions in GiveTxnsMessage to fit inside of MaxMessageLength
+// truncateGiveTxnsMessage truncates the transactions in GiveTxnsMessage to fit inside of MaxOutgoingMessageLength
 func truncateGiveTxnsMessage(m *GiveTxnsMessage, maxMsgLength uint64) {
 	// The message length will include a 4 byte message type prefix.
 	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
@@ -1359,7 +1363,7 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 	}
 
 	// Announce these transactions to peers
-	m := NewAnnounceTxnsMessage(hashes, dc.MaxMessageLength)
+	m := NewAnnounceTxnsMessage(hashes, dc.MaxOutgoingMessageLength)
 	if len(m.Transactions) != len(hashes) {
 		logger.Warningf("NewAnnounceTxnsMessage truncated %d hashes to %d hashes", len(hashes), len(m.Transactions))
 	}

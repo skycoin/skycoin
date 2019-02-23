@@ -720,7 +720,7 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 
 		length := int(tmpLength)
 
-		// Disconnect if we received an invalid length.
+		// Disconnect if we received an invalid length
 		if length < messagePrefixLength {
 			logger.WithFields(logrus.Fields{
 				"length":              length,
@@ -730,17 +730,9 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		}
 
 		if length > maxMsgLength {
-			msgName := ""
-			if length >= 4 && buf.Len()-messageLengthPrefixSize >= 4 {
-				var msgID [4]byte
-				copy(msgID[:], buf.Bytes()[4:8])
-				msgName = msgIDStringSafe(msgID)
-			}
-
 			logger.WithFields(logrus.Fields{
 				"length":       length,
 				"maxMsgLength": maxMsgLength,
-				"prefix":       msgName,
 			}).Warning("decodeData: length > maxMsgLength")
 			return [][]byte{}, ErrDisconnectInvalidMessageLength
 		}

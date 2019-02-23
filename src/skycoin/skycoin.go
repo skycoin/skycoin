@@ -349,6 +349,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
+	dc.Pool.MaxMessageLength = c.config.Node.MaxIncomingMessageLength
 
 	dc.Pex.DataDirectory = c.config.Node.DataDirectory
 	dc.Pex.Disabled = c.config.Node.DisablePEX
@@ -359,6 +360,9 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Pex.CustomPeersFile = c.config.Node.CustomPeersFile
 	dc.Pex.DefaultConnections = c.config.Node.DefaultConnections
 
+	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength)
+	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength)
+	dc.Daemon.MaxBlockSize = c.config.Node.MaxBlockSize
 	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections

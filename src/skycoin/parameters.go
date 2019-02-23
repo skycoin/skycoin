@@ -49,7 +49,7 @@ type NodeParameters struct {
 	CreateBlockMaxTransactionSize int `mapstructure:"create_block_max_transaction_size"`
 	// CreateBlockMaxDropletPrecision is the maximum number of decimals allowed in a transaction when publishing blocks
 	CreateBlockMaxDropletPrecision uint8 `mapstructure:"create_block_max_decimals"`
-	// MaxBlockSize is the maximum size of blocks when publishing blocks
+	// MaxBlockSize is the maximum total size of transactions in a block when publishing a block
 	MaxBlockSize int `mapstructure:"max_block_size"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file

@@ -121,6 +121,15 @@ func (cfg *Config) preprocess() (Config, error) {
 
 	config.Pool.MaxConnections = config.Daemon.MaxConnections
 	config.Pool.MaxOutgoingConnections = config.Daemon.MaxOutgoingConnections
+	config.Pool.MaxMessageLength = int(config.Daemon.MaxIncomingMessageLength)
+
+	// MaxOutgoingMessageLength must be able to fit a GiveBlocksMessage with at least one maximum-sized block,
+	// otherwise it cannot send certain blocks.
+	// Blocks are the largest object sent over the network, so MaxBlockSize is used as an upper limit
+	maxSizeGBM := maxSizeGiveBlocksMessage(config.Daemon.MaxBlockSize)
+	if config.Daemon.MaxOutgoingMessageLength < maxSizeGBM {
+		return Config{}, fmt.Errorf("MaxOutgoingMessageLength must be >= %d", maxSizeGBM)
+	}
 
 	userAgent, err := config.Daemon.UserAgent.Build()
 	if err != nil {
@@ -132,6 +141,16 @@ func (cfg *Config) preprocess() (Config, error) {
 	config.Daemon.userAgent = userAgent
 
 	return config, nil
+}
+
+// maxSizeGiveBlocksMessage return the encoded size of a GiveBlocksMessage
+// with a single signed block of the largest possible size
+func maxSizeGiveBlocksMessage(maxBlockSize uint32) uint64 {
+	size := uint64(4)                                         // message type prefix
+	size += encodeSizeGiveBlocksMessage(&GiveBlocksMessage{}) // size of an empty GiveBlocksMessage
+	size += encodeSizeSignedBlock(&coin.SignedBlock{})        // size of an empty SignedBlock
+	size += uint64(maxBlockSize)                              // maximum size of all transactions in a block
+	return size
 }
 
 // DaemonConfig configuration for the Daemon
@@ -203,8 +222,12 @@ type DaemonConfig struct { // nolint: golint
 	UnconfirmedVerifyTxn params.VerifyTxn
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
-	// Maximum size of messages (should equal the gnet pool MaxMessageLength)
-	MaxMessageLength uint64
+	// Maximum size of incoming messages
+	MaxIncomingMessageLength uint64
+	// Maximum size of incoming messages
+	MaxOutgoingMessageLength uint64
+	// Maximum total size of transactions in a block
+	MaxBlockSize uint32
 }
 
 // NewDaemonConfig creates daemon config
@@ -239,7 +262,9 @@ func NewDaemonConfig() DaemonConfig {
 		UnconfirmedRemoveInvalidRate: time.Minute,
 		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
-		MaxMessageLength:             1024 * 1024,
+		MaxOutgoingMessageLength:     256 * 1024,
+		MaxIncomingMessageLength:     1024 * 1024,
+		MaxBlockSize:                 32768,
 	}
 }
 
@@ -1182,7 +1207,7 @@ func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
 		return nil, ErrNetworkingDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{txn}, dm.Config.MaxMessageLength)
+	m := NewGiveTxnsMessage(coin.Transactions{txn}, dm.Config.MaxOutgoingMessageLength)
 	if len(m.Transactions) != 1 {
 		logger.Critical().Error("NewGiveTxnsMessage truncated its only transaction")
 	}
@@ -1340,7 +1365,7 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 		return ErrNetworkingDisabled
 	}
 
-	m := NewGiveBlocksMessage([]coin.SignedBlock{sb}, dm.Config.MaxMessageLength)
+	m := NewGiveBlocksMessage([]coin.SignedBlock{sb}, dm.Config.MaxOutgoingMessageLength)
 	if len(m.Blocks) != 1 {
 		logger.Critical().Error("NewGiveBlocksMessage truncated its only block")
 	}
@@ -1405,7 +1430,7 @@ func (dm *Daemon) sendRandomPeers(addr string) error {
 		return errors.New("No peers available")
 	}
 
-	m := NewGivePeersMessage(peers, dm.Config.MaxMessageLength)
+	m := NewGivePeersMessage(peers, dm.Config.MaxOutgoingMessageLength)
 
 	return dm.sendMessage(addr, m)
 }
@@ -1435,7 +1460,7 @@ func (dm *Daemon) announceTxnHashes(hashes []cipher.SHA256) error {
 	hashesSet := divideHashes(hashes, dm.Config.MaxTxnAnnounceNum)
 
 	for _, hs := range hashesSet {
-		m := NewAnnounceTxnsMessage(hs, dm.Config.MaxMessageLength)
+		m := NewAnnounceTxnsMessage(hs, dm.Config.MaxOutgoingMessageLength)
 		if len(m.Transactions) != len(hs) {
 			logger.Critical().Error("NewAnnounceTxnsMessage truncated hashes that were already split up")
 		}

@@ -85,6 +85,10 @@ type NodeConfig struct {
 	MaxDefaultPeerOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
+	// MaxOutgoingMessageLength maximum size of outgoing messages
+	MaxOutgoingMessageLength int
+	// MaxIncomingMessageLength maximum size of incoming messages
+	MaxIncomingMessageLength int
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
 	PeerlistSize int
 	// Wallet Address Version
@@ -143,7 +147,7 @@ type NodeConfig struct {
 	UnconfirmedVerifyTxn params.VerifyTxn
 	// Transaction verification parameters for transactions when creating blocks
 	CreateBlockVerifyTxn params.VerifyTxn
-	// Maximum block size
+	// Maximum total size of transactions in a block
 	MaxBlockSize uint32
 
 	unconfirmedBurnFactor          uint64
@@ -242,8 +246,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		DownloadPeerList:                  true,
 		PeerListURL:                       node.PeerListURL,
 		// How often to make outgoing connections, in seconds
-		OutgoingConnectionsRate: time.Second * 5,
-		PeerlistSize:            65535,
+		OutgoingConnectionsRate:  time.Second * 5,
+		MaxOutgoingMessageLength: 256 * 1024,
+		MaxIncomingMessageLength: 1024 * 1024,
+		PeerlistSize:             65535,
 		// Wallet Address Version
 		// AddressVersion: "test",
 		// Remote web interface
@@ -642,7 +648,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.createBlockBurnFactor, "burn-factor-create-block", uint64(c.CreateBlockVerifyTxn.BurnFactor), "coinhour burn factor applied when creating blocks")
 	flag.Uint64Var(&c.createBlockMaxTransactionSize, "max-txn-size-create-block", uint64(c.CreateBlockVerifyTxn.MaxTransactionSize), "maximum size of a transaction applied when creating blocks")
 	flag.Uint64Var(&c.createBlockMaxDropletPrecision, "max-decimals-create-block", uint64(c.CreateBlockVerifyTxn.MaxDropletPrecision), "max number of decimal places applied when creating blocks")
-	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockSize), "maximum size of a block")
+	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockSize), "maximum total size of transactions in a block")
 
 	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
@@ -658,6 +664,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "Max number of peers to track in peerlist")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
+	flag.IntVar(&c.MaxOutgoingMessageLength, "max-out-msg-len", c.MaxOutgoingMessageLength, "Maximum length of outgoing wire messages")
+	flag.IntVar(&c.MaxIncomingMessageLength, "max-in-msg-len", c.MaxIncomingMessageLength, "Maximum length of incoming wire messages")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")

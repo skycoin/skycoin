@@ -73,33 +73,11 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private checkBeforeSending() {
-    this.syncCheckSubscription = this.walletService.pendingTransactions().first().subscribe(txs => {
-      if (txs.length > 0) {
-        this.showPendingTransactionsWarning();
-      } else {
-        this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
-          if (synchronized) {
-            this.unlockAndSend();
-          } else {
-            this.showSynchronizingWarning();
-          }
-        });
-      }
-    });
-  }
-
-  private showPendingTransactionsWarning() {
-    const confirmationData: ConfirmationData = {
-      text: 'send.pending-warning',
-      headerText: 'confirmation.header-text',
-      confirmButtonText: 'confirmation.confirm-button',
-      cancelButtonText: 'confirmation.cancel-button',
-      checkboxText: 'send.pending-warning-check',
-    };
-
-    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
-      if (confirmationResult) {
+    this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
+      if (synchronized) {
         this.unlockAndSend();
+      } else {
+        this.showSynchronizingWarning();
       }
     });
   }

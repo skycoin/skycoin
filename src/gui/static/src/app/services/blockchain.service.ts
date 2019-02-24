@@ -1,17 +1,17 @@
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { WalletService } from './wallet.service';
 import 'rxjs/add/observable/timer';
 import 'rxjs/add/operator/retryWhen';
 import 'rxjs/add/operator/concat';
+import 'rxjs/add/operator/exhaustMap';
 
 @Injectable()
 export class BlockchainService {
-  private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
-  private synchronizedSubject: Subject<any> = new BehaviorSubject<boolean>(false);
+  private progressSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  private synchronizedSubject: BehaviorSubject<any> = new BehaviorSubject<boolean>(false);
   private refreshedBalance = false;
   private lastCurrentBlock = 0;
   private lastHighestBlock = 0;
@@ -39,26 +39,16 @@ export class BlockchainService {
 
     this.ngZone.runOutsideAngular(() => {
       Observable.timer(0, 2000)
-        .flatMap(() => this.getBlockchainProgress())
-        .takeWhile((response: any) => {
-          if (!response.current || !response.highest || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
-            return true;
-          }
-
-          if (response.current !== response.highest) {
-            this.lastCurrentBlock = response.current;
-            this.lastHighestBlock = response.highest;
-
-            return true;
-          }
-
-          return false;
-        })
+        .exhaustMap(() => this.getBlockchainProgress())
+        .retryWhen(errors => errors.delay(2000))
         .subscribe(
           response => this.ngZone.run(() => {
             if (!response.current || !response.highest || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
-              return true;
+              return;
             }
+
+            this.lastCurrentBlock = response.current;
+            this.lastHighestBlock = response.highest;
 
             this.progressSubject.next(response);
 
@@ -66,9 +56,15 @@ export class BlockchainService {
               this.walletService.refreshBalances();
               this.refreshedBalance = true;
             }
+
+            if (response.current === response.highest && !this.synchronizedSubject.value) {
+              this.synchronizedSubject.next(true);
+              this.walletService.refreshBalances();
+            } else if (response.current !== response.highest && this.synchronizedSubject.value) {
+              this.synchronizedSubject.next(false);
+            }
           }),
           error => console.log(error),
-          () => this.ngZone.run(() => this.completeLoading()),
         );
     });
   }
@@ -109,12 +105,6 @@ export class BlockchainService {
 
   coinSupply() {
     return this.apiService.get('coinSupply');
-  }
-
-  private completeLoading() {
-    this.synchronizedSubject.next(true);
-    this.progressSubject.next({ current: 999999999999, highest: 999999999999 });
-    this.walletService.refreshBalances();
   }
 
   private retrieveInputAddress(input: string) {

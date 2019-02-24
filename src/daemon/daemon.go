@@ -126,8 +126,8 @@ func (cfg *Config) preprocess() (Config, error) {
 
 	// MaxOutgoingMessageLength must be able to fit a GiveBlocksMessage with at least one maximum-sized block,
 	// otherwise it cannot send certain blocks.
-	// Blocks are the largest object sent over the network, so MaxBlockSize is used as an upper limit
-	maxSizeGBM := maxSizeGiveBlocksMessage(config.Daemon.MaxBlockSize)
+	// Blocks are the largest object sent over the network, so MaxBlockTransactionsSize is used as an upper limit
+	maxSizeGBM := maxSizeGiveBlocksMessage(config.Daemon.MaxBlockTransactionsSize)
 	if config.Daemon.MaxOutgoingMessageLength < maxSizeGBM {
 		return Config{}, fmt.Errorf("MaxOutgoingMessageLength must be >= %d", maxSizeGBM)
 	}
@@ -228,7 +228,7 @@ type DaemonConfig struct { // nolint: golint
 	// Maximum size of incoming messages
 	MaxOutgoingMessageLength uint64
 	// Maximum total size of transactions in a block
-	MaxBlockSize uint32
+	MaxBlockTransactionsSize uint32
 }
 
 // NewDaemonConfig creates daemon config
@@ -265,7 +265,7 @@ func NewDaemonConfig() DaemonConfig {
 		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
 		MaxOutgoingMessageLength:     256 * 1024,
 		MaxIncomingMessageLength:     1024 * 1024,
-		MaxBlockSize:                 32768,
+		MaxBlockTransactionsSize:     32768,
 	}
 }
 

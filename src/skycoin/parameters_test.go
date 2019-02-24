@@ -36,7 +36,7 @@ func TestNewParameters(t *testing.T) {
 			CreateBlockBurnFactor:          9,
 			CreateBlockMaxTransactionSize:  1234,
 			CreateBlockMaxDropletPrecision: 4,
-			MaxBlockSize:                   1111,
+			MaxBlockTransactionsSize:       1111,
 		},
 		Params: ParamsParameters{
 			MaxCoinSupply:              1e8,

@@ -24,7 +24,7 @@ unconfirmed_max_decimals = 3
 create_block_burn_factor = 9
 create_block_max_transaction_size = 1234
 create_block_max_decimals = 4
-max_block_size = 1111
+max_block_transactions_size = 1111
 
 [params]
 user_burn_factor = 3

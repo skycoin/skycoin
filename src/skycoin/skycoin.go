@@ -363,7 +363,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength)
 	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength)
-	dc.Daemon.MaxBlockSize = c.config.Node.MaxBlockSize
+	dc.Daemon.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
 	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections
@@ -390,7 +390,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 	dc.Visor.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 	dc.Visor.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
-	dc.Visor.MaxBlockSize = c.config.Node.MaxBlockSize
+	dc.Visor.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
 
 	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
 	dc.Visor.GenesisSignature = c.config.Node.genesisSignature

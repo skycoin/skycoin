@@ -54,9 +54,9 @@ type CreatedTransaction struct {
 	InnerHash string `json:"inner_hash"`
 	Fee       string `json:"fee"`
 
-	Sigs []string                   `json:"sigs"`
-	In   []CreatedTransactionInput  `json:"inputs"`
-	Out  []CreatedTransactionOutput `json:"outputs"`
+	Sigs []string `json:"sigs"`
+	In []CreatedTransactionInput `json:"inputs"`
+	Out []CreatedTransactionOutput `json:"outputs"`
 }
 
 // NewCreatedTransaction returns a CreatedTransaction
@@ -198,6 +198,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 }
 
 // CreatedTransactionOutput is a transaction output
+// swagger:model createdtTransactionOutput
 type CreatedTransactionOutput struct {
 	UxID    string `json:"uxid"`
 	Address string `json:"address"`
@@ -272,24 +273,28 @@ type createTransactionRequest struct {
 
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
 type createTransactionRequestWallet struct {
-	ID        string       `json:"id"`
-	UxOuts    []wh.SHA256  `json:"unspents,omitempty"`
+	ID     string      `json:"id"`
+	UxOuts []wh.SHA256 `json:"unspents,omitempty"`
 	Addresses []wh.Address `json:"addresses,omitempty"`
 	Password  string       `json:"password"`
 }
 
 // hoursSelection defines options for hours distribution
 type hoursSelection struct {
-	Type        string           `json:"type"`
-	Mode        string           `json:"mode"`
+	Type string `json:"type"`
+	Mode string `json:"mode"`
 	ShareFactor *decimal.Decimal `json:"share_factor,omitempty"`
 }
 
 // receiver specifies a spend destination
+// swagger:model receiver
 type receiver struct {
+	// swagger:allOf
 	Address wh.Address `json:"address"`
-	Coins   wh.Coins   `json:"coins"`
-	Hours   *wh.Hours  `json:"hours,omitempty"`
+	// swagger:allOf
+	Coins wh.Coins `json:"coins"`
+	// swagger:allOf
+	Hours *wh.Hours `json:"hours,omitempty"`
 }
 
 // Validate validates createTransactionRequest data
@@ -480,6 +485,129 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 // URI: /api/v1/wallet/transaction
 // Args: JSON body
 func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation POST /api/v1/wallet/transaction walletTransaction
+	//
+	// Creates a signed transaction
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - in: body
+	//   required: true
+	//   name: 'body'
+	//   schema:
+	//     properties:
+	//       ignore_unconfirmed:
+	//         type: boolean
+	//       hours_selection:
+	//         type: object
+	//         properties:
+	//           type:
+	//             type: string
+	//           mode:
+	//             type: string
+	//           share_factor:
+	//             type: string
+	//       wallet:
+	//         type: object
+	//         properties:
+	//           id:
+	//             type: string
+	//           unspents:
+	//             type: array
+	//             items:
+	//               type: string
+	//           addresses:
+	//             type: array
+	//             items:
+	//               type: string
+	//           password:
+	//             type: string
+	//           id:
+	//             type: string
+	//       change_address:
+	//         type: string
+	//       to:
+	//         type: array
+	//         items:
+	//           properties:
+	//             address:
+	//               type: string
+	//             coins:
+	//               type: integer
+	//               format: int64
+	//             hours:
+	//               type: integer
+	//               format: int64
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	// responses:
+	//   200:
+	//     description: Returns blocks between a start and end point.
+	//     schema:
+	//       properties:
+	//         encoded_transaction:
+	//           type: string
+	//         transaction:
+	//           type: object
+	//           properties:
+	//             length:
+	//               type: integer
+	//               format: int64
+	//             type:
+	//               type: integer
+	//               format: int32
+	//             txid:
+	//               type: string
+	//             inner_hash:
+	//               type: string
+	//             fee:
+	//               type: string
+	//             sigs:
+	//               type: array
+	//               items:
+	//                 type: string
+    //             inputs:
+ 	//               type: array
+	//               items:
+	//                 properties:
+	//                   uxid:
+	//                     type: string
+	//                   address:
+	//                     type: string
+	//                   coins:
+	//                     type: string
+	//                   hours:
+	//                     type: string
+    //                   calculated_hours:
+	//                     type: string
+	//                   txid:
+	//                     type: string
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   block:
+	//                     type: integer
+	//                     format: int64
+	//             outputs:
+	//               type: array
+	//               items:
+	//                 properties:
+	//                   uxid:
+	//                     type: string
+	//                   address:
+	//                     type: string
+	//                   coins:
+	//                     type: string
+	//                   hours:
+	//                     type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -578,6 +706,7 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		if req.WalletID == "" {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, "wallet_id is required")
+			writeHTTPResponse(w, resp)
 			writeHTTPResponse(w, resp)
 			return
 		}

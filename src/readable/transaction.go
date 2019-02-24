@@ -16,6 +16,7 @@ import (
 var logger = logging.MustGetLogger("readable")
 
 // TransactionStatus represents the transaction status
+// swagger:model transactionStatus
 type TransactionStatus struct {
 	Confirmed   bool `json:"confirmed"`
 	Unconfirmed bool `json:"unconfirmed"`
@@ -158,10 +159,10 @@ func NewTransactionWithTimestamp(txn coin.Transaction, isGenesis bool, timestamp
 // UnconfirmedTransactions represents a readable unconfirmed transaction
 type UnconfirmedTransactions struct {
 	Transaction Transaction `json:"transaction"`
-	Received    time.Time   `json:"received"`
-	Checked     time.Time   `json:"checked"`
-	Announced   time.Time   `json:"announced"`
-	IsValid     bool        `json:"is_valid"`
+	Received time.Time `json:"received"`
+	Checked time.Time `json:"checked"`
+	Announced time.Time `json:"announced"`
+	IsValid   bool      `json:"is_valid"`
 }
 
 // NewUnconfirmedTransaction creates a readable unconfirmed transaction
@@ -221,8 +222,8 @@ func NewTransactionWithStatus(txn *visor.Transaction) (*TransactionWithStatus, e
 
 // TransactionWithStatusVerbose represents verbose transaction result
 type TransactionWithStatusVerbose struct {
-	Status      TransactionStatus  `json:"status"`
-	Time        uint64             `json:"time"`
+	Status TransactionStatus `json:"status"`
+	Time   uint64            `json:"time"`
 	Transaction TransactionVerbose `json:"txn"`
 }
 

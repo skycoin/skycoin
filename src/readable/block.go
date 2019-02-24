@@ -99,6 +99,7 @@ func NewBlockBody(b coin.Block) (*BlockBody, error) {
 }
 
 // Block represents a readable block
+// swagger:model block
 type Block struct {
 	Head BlockHeader `json:"header"`
 	Body BlockBody   `json:"body"`

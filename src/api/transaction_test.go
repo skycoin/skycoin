@@ -742,39 +742,61 @@ func TestInjectTransaction(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/api/v1/injectTransaction"
-			gateway := &MockGatewayer{}
-			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
+	endpoints := []struct {
+		url  string
+		isV2 bool
+	}{
+		{
+			url:  "/api/v2/transaction/inject",
+			isV2: true,
+		},
+		{
+			url:  "/api/v1/injectTransaction",
+			isV2: false,
+		},
+	}
+	for _, endpointDef := range endpoints {
+		for _, tc := range tt {
+			t.Run(tc.name, func(t *testing.T) {
+				endpoint := endpointDef.url
+				isV2 := endpointDef.isV2
+				gateway := &MockGatewayer{}
+				gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
-			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
-			require.NoError(t, err)
-
-			if tc.csrfDisabled {
-				setCSRFParameters(t, tokenInvalid, req)
-			} else {
-				setCSRFParameters(t, tokenValid, req)
-
-			}
-
-			rr := httptest.NewRecorder()
-
-			handler := newServerMux(defaultMuxConfig(), gateway)
-			handler.ServeHTTP(rr, req)
-
-			status := rr.Code
-			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
-
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
-			} else {
-				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
+				req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 				require.NoError(t, err)
-				require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name)
-			}
-		})
+
+				if tc.csrfDisabled {
+					setCSRFParameters(t, tokenInvalid, req)
+				} else {
+					setCSRFParameters(t, tokenValid, req)
+				}
+
+				rr := httptest.NewRecorder()
+
+				handler := newServerMux(defaultMuxConfig(), gateway)
+				handler.ServeHTTP(rr, req)
+
+				status := rr.Code
+				require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+				if status != http.StatusOK {
+					require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+						strings.TrimSpace(rr.Body.String()), status, tc.err)
+				} else {
+					expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
+					require.NoError(t, err)
+					if isV2 {
+						var rTxn readable.Transaction
+						err = json.Unmarshal(rr.Body.Bytes(), &rTxn)
+						require.NoError(t, err)
+						require.Equal(t, expectedResponse, rTxn.Hash, tc.name+" v2")
+					} else {
+						require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name+" v1")
+					}
+				}
+			})
+		}
 	}
 }
 
@@ -959,47 +981,75 @@ func TestGetRawTxn(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/api/v1/rawtx"
-			gateway := &MockGatewayer{}
-			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
+	endpoints := []struct {
+		url  string
+		isV2 bool
+	}{
+		{
+			url:  "/api/v2/transaction/raw",
+			isV2: true,
+		},
+		{
+			url:  "/api/v1/rawtx",
+			isV2: false,
+		},
+	}
+	for _, endpointDef := range endpoints {
+		for _, tc := range tt {
+			t.Run(tc.name, func(t *testing.T) {
+				endpoint := endpointDef.url
+				isV2 := endpointDef.isV2
+				gateway := &MockGatewayer{}
+				gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
 
-			v := url.Values{}
-			if tc.httpBody != nil {
-				if tc.httpBody.txid != "" {
-					v.Add("txid", tc.httpBody.txid)
+				v := url.Values{}
+				if tc.httpBody != nil {
+					if tc.httpBody.txid != "" {
+						v.Add("txid", tc.httpBody.txid)
+					}
 				}
-			}
-			if len(v) > 0 {
-				endpoint += "?" + v.Encode()
-			}
+				if len(v) > 0 {
+					endpoint += "?" + v.Encode()
+				}
 
-			req, err := http.NewRequest(tc.method, endpoint, nil)
-			require.NoError(t, err)
+				req, err := http.NewRequest(tc.method, endpoint, nil)
+				require.NoError(t, err)
 
-			setCSRFParameters(t, tokenValid, req)
+				setCSRFParameters(t, tokenValid, req)
 
-			rr := httptest.NewRecorder()
+				rr := httptest.NewRecorder()
 
-			cfg := defaultMuxConfig()
-			cfg.disableCSRF = false
+				cfg := defaultMuxConfig()
+				cfg.disableCSRF = false
 
+//<<<<<<< HEAD
+//				handler := newServerMux(cfg, gateway, nil)
+//				handler.ServeHTTP(rr, req)
+//=======
 			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
+//>>>>>>> 21f4760a4b1ab6ccba363e5e715af7283b77bc80
 
-			status := rr.Code
-			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+				status := rr.Code
+				require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
-			} else {
-				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
-				require.NoError(t, err)
-				require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name)
-			}
-		})
+				if status != http.StatusOK {
+					require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+						strings.TrimSpace(rr.Body.String()), status, tc.err)
+				} else {
+					expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
+					require.NoError(t, err)
+					if isV2 {
+						var rTxn RawTxnData
+						err = json.Unmarshal(rr.Body.Bytes(), &rTxn)
+						require.NoError(t, err)
+						require.Equal(t, expectedResponse, rTxn.Rawtx, tc.name+" v2")
+					} else {
+						require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name+" v1")
+					}
+				}
+			})
+		}
 	}
 }
 

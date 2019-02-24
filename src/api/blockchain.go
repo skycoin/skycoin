@@ -20,6 +20,52 @@ import (
 // Method: GET
 // URI: /api/v1/blockchain/metadata
 func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/blockchain/metadata blockchainMetadata
+	//
+	// Returns the blockchain metadata.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint returns the blockchain metadata.
+	//     schema:
+	//       properties:
+	//         head:
+	//           type: object
+	//           properties:
+	//             seq:
+	//               type: string
+	//             block_hash:
+	//               type: string
+	//             previous_block_hash:
+	//               type: string
+	//             timestamp:
+	//               type: integer
+	//               format: int64
+	//             fee:
+	//               type: integer
+	//               format: int64
+	//             version:
+	//               type: integer
+	//               format: int64
+	//             tx_body_hash:
+	//               type: string
+	//             ux_hash:
+	//               type: string
+	//         unspents:
+	//           type: integer
+	//           format: int64
+	//         unconfirmed:
+	//           type: integer
+	//           format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -50,6 +96,39 @@ func blockchainMetadataHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // URI: /api/v1/blockchain/progress
 func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/blockchain/progress blockchainProgress
+	//
+	// Returns the blockchain sync progress.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint returns the blockchain sync progress
+	//     schema:
+	//       properties:
+	//         current:
+	//           type: integer
+	//           format: int64
+	//         highest:
+	//           type: integer
+	//           format: int64
+	//         peers:
+	//           type: array
+	//           items:
+	//             properties:
+	//               address:
+	//                 type: string
+	//               height:
+	//                 type: integer
+	//                 format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -89,7 +168,204 @@ func parseBoolFlag(v string) (bool, error) {
 // 	hash [transaction hash string]
 //  seq [int]
 // 	Note: only one of hash or seq is allowed
-func blockHandler(gateway Gatewayer) http.HandlerFunc {
+// 	verbose [bool]
+func blockHandler(gateway Gatewayer, verbs bool) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/block/verbose blockVerbose
+	//
+	// Returns a block by hash or seq. Note: only one of hash or seq is allowed
+	// With verbose.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: hash
+	//   in: query
+	//   required: false
+	//   type: string
+	// - name: seq
+	//   in: query
+	//   required: false
+	//   type: integer
+	// responses:
+	//   200:
+	//     description: BlockVerbose represents a readable block with verbose data.
+	//     schema:
+	//       properties:
+	//         header:
+	//           type: object
+	//           properties:
+	//             seq:
+	//               type: integer
+	//               format: int32
+	//             block_hash:
+	//               type: string
+	//             previous_block_hash:
+	//               type: string
+	//             timestamp:
+	//               type: integer
+	//               format: int64
+	//             fee:
+	//               type: integer
+	//               format: int32
+	//             version:
+	//               type: integer
+	//               format: int32
+	//             tx_body_hash:
+	//               type: string
+	//             ux_hash:
+	//               type: string
+	//         size:
+	//           type: integer
+	//           format: int32
+	//         body:
+	//           type: object
+	//           properties:
+	//             txns:
+	//               type: array
+	//               items:
+	//                 properties:
+	//                   length:
+	//                     type: integer
+	//                     format: int32
+	//                   type:
+	//                     type: integer
+	//                     format: int32
+	//                   hash:
+	//                     type: string
+	//                   inner_hash:
+	//                     type: string
+	//                   fee:
+	//                     type: integer
+	//                     format: int32
+	//                   sigs:
+	//                     type: array
+	//                     items:
+	//                       type: string
+	//                   inputs:
+	//                     type: array
+	//                     items:
+	//                       properties:
+	//                         uxid:
+	//                           type: string
+	//                         dst:
+	//                           type: string
+	//                         coins:
+	//                           type: string
+	//                         hours:
+	//                           type: integer
+	//                           format: int64
+	//                         calculated_hours:
+	//                           type: integer
+	//                           format: int64
+	//                   outputs:
+	//                     type: array
+	//                     items:
+	//                       properties:
+	//                         uxid:
+	//                           type: string
+	//                         dst:
+	//                           type: string
+	//                         coins:
+	//                           type: string
+	//                         hours:
+	//                           type: integer
+	//                           format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// swagger:operation GET /api/v1/block block
+	//
+	// Returns a block by hash or seq. Note: only one of hash or seq is allowed
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: hash
+	//   in: query
+	//   required: false
+	//   type: string
+	// - name: seq
+	//   in: query
+	//   required: false
+	//   type: integer
+	// responses:
+	//   200:
+	//     description: BlockVerbose represents a readable block with verbose data.
+	//     schema:
+	//       properties:
+	//         header:
+	//           type: object
+	//           properties:
+	//             seq:
+	//               type: integer
+	//               format: int32
+	//             block_hash:
+	//               type: string
+	//             previous_block_hash:
+	//               type: string
+	//             timestamp:
+	//               type: integer
+	//               format: int64
+	//             fee:
+	//               type: integer
+	//               format: int32
+	//             version:
+	//               type: integer
+	//               format: int32
+	//             tx_body_hash:
+	//               type: string
+	//             ux_hash:
+	//               type: string
+	//         size:
+	//           type: integer
+	//           format: int32
+	//         body:
+	//           type: object
+	//           properties:
+	//             txns:
+	//               type: array
+	//               items:
+	//                 properties:
+	//                   length:
+	//                     type: integer
+	//                     format: int32
+	//                   type:
+	//                     type: integer
+	//                     format: int32
+	//                   txid:
+	//                     type: string
+	//                   inner_hash:
+	//                     type: string
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   sigs:
+	//                     type: array
+	//                     items:
+	//                       type: string
+	//                   inputs:
+	//                     type: array
+	//                     items:
+	//                       type: string
+	//                   outputs:
+	//                     type: array
+	//                     items:
+	//                       properties:
+	//                         uxid:
+	//                           type: string
+	//                         dst:
+	//                           type: string
+	//                         coins:
+	//                           type: string
+	//                         hours:
+	//                           type: integer
+	//                           format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -134,7 +410,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		if verbose {
+		if verbose || verbs {
 			var b *coin.SignedBlock
 			var inputs [][]visor.TransactionInput
 
@@ -204,7 +480,460 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 //	end [int]
 //  seqs [comma separated list of ints]
 //  verbose [bool]
-func blocksHandler(gateway Gatewayer) http.HandlerFunc {
+func blocksHandler(gateway Gatewayer, verbs bool) http.HandlerFunc {
+
+	// swagger:operation POST /api/v1/blocks/verbose blocksPostVerbose
+	//
+	// blocksHandler returns blocks between a start and end point,
+	// or an explicit list of sequences.
+	// If using start and end, the block sequences include both the start and end point.
+	// Explicit sequences cannot be combined with start and end.
+	// This is whit verbose
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: start
+	//   in: query
+	//   required: false
+	//   type: integer
+	// - name: end
+	//   in: query
+	//   required: false
+	//   type: integer
+	// - name: seqs
+	//   in: query
+	//   required: false
+	//   type: array
+	//   items:
+	//     type: integer
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	// responses:
+	//   200:
+	//     description: Returns blocks between a start and end point.
+	//     schema:
+	//       properties:
+	//         blocks:
+	//           type: array
+	//           items:
+	//             properties:
+	//               header:
+	//                 type: object
+	//                 properties:
+	//                   seq:
+	//                     type: integer
+	//                     format: int64
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   fee:
+	//                     type: integer
+	//                     format: int64
+	//                   version:
+	//                     type: integer
+	//                     format: int32
+	//                   block_hash:
+	//                     type: string
+	//                   previous_block_hash:
+	//                     type: string
+	//                   tx_body_hash:
+	//                     type: string
+	//                   ux_hash:
+	//                     type: string
+	//               size:
+	//                 type: integer
+	//                 format: int32
+	//               body:
+	//                 type: object
+	//                 properties:
+	//                   txns:
+	//                     type: array
+	//                     items:
+	//                       properties:
+	//                         length:
+	//                           type: integer
+	//                           format: int32
+	//                         type:
+	//                           type: integer
+	//                           format: int32
+	//                         hash:
+	//                           type: string
+	//                         inner_hash:
+	//                           type: string
+	//                         fee:
+	//                           type: integer
+	//                           format: int32
+	//                         sigs:
+	//                           type: array
+	//                           items:
+	//                             type: string
+	//                         inputs:
+	//                           type: array
+	//                           items:
+	//                             properties:
+	//                               uxid:
+	//                                 type: string
+	//                               dst:
+	//                                 type: string
+	//                               coins:
+	//                                 type: string
+	//                               hours:
+	//                                 type: integer
+	//                                 format: int64
+	//                               calculated_hours:
+	//                                 type: integer
+	//                                 format: int64
+	//                         outputs:
+	//                           type: array
+	//                           items:
+	//                             properties:
+	//                               uxid:
+	//                                 type: string
+	//                               dst:
+	//                                 type: string
+	//                               coins:
+	//                                 type: string
+	//                               hours:
+	//                                 type: integer
+	//                                 format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// swagger:operation GET /api/v1/blocks/verbose blocksGetVerbose
+	//
+	// blocksHandler returns blocks between a start and end point,
+	// or an explicit list of sequences.
+	// If using start and end, the block sequences include both the start and end point.
+	// Explicit sequences cannot be combined with start and end.
+	// With verbose.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: start
+	//   in: query
+	//   required: false
+	//   type: integer
+	// - name: end
+	//   in: query
+	//   required: false
+	//   type: integer
+	// - name: seqs
+	//   in: query
+	//   required: false
+	//   type: array
+	//   items:
+	//     type: integer
+	// responses:
+	//   200:
+	//     description: Returns blocks between a start and end point.
+	//     schema:
+	//       properties:
+	//         blocks:
+	//           type: array
+	//           items:
+	//             properties:
+	//               header:
+	//                 type: object
+	//                 properties:
+	//                   seq:
+	//                     type: integer
+	//                     format: int64
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   fee:
+	//                     type: integer
+	//                     format: int64
+	//                   version:
+	//                     type: integer
+	//                     format: int32
+	//                   block_hash:
+	//                     type: string
+	//                   previous_block_hash:
+	//                     type: string
+	//                   tx_body_hash:
+	//                     type: string
+	//                   ux_hash:
+	//                     type: string
+	//               size:
+	//                 type: integer
+	//                 format: int32
+	//               body:
+	//                 type: object
+	//                 properties:
+	//                   txns:
+	//                     type: array
+	//                     items:
+	//                       properties:
+	//                         length:
+	//                           type: integer
+	//                           format: int32
+	//                         type:
+	//                           type: integer
+	//                           format: int32
+	//                         hash:
+	//                           type: string
+	//                         inner_hash:
+	//                           type: string
+	//                         fee:
+	//                           type: integer
+	//                           format: int32
+	//                         sigs:
+	//                           type: array
+	//                           items:
+	//                             type: string
+	//                         inputs:
+	//                           type: array
+	//                           items:
+	//                             properties:
+	//                               uxid:
+	//                                 type: string
+	//                               dst:
+	//                                 type: string
+	//                               coins:
+	//                                 type: string
+	//                               hours:
+	//                                 type: integer
+	//                                 format: int64
+	//                               calculated_hours:
+	//                                 type: integer
+	//                                 format: int64
+	//                         outputs:
+	//                           type: array
+	//                           items:
+	//                             properties:
+	//                               uxid:
+	//                                 type: string
+	//                               dst:
+	//                                 type: string
+	//                               coins:
+	//                                 type: string
+	//                               hours:
+	//                                 type: integer
+	//                                 format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// swagger:operation POST /api/v1/blocks blocksPost
+	//
+	// blocksHandler returns blocks between a start and end point,
+	// or an explicit list of sequences.
+	// If using start and end, the block sequences include both the start and end point.
+	// Explicit sequences cannot be combined with start and end.
+	// Without verbose
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: start
+	//   in: query
+	//   required: false
+	//   type: integer
+	// - name: end
+	//   in: query
+	//   required: false
+	//   type: integer
+	// - name: seqs
+	//   in: query
+	//   required: false
+	//   type: array
+	//   items:
+	//     type: integer
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	// responses:
+	//   200:
+	//     description: Returns blocks between a start and end point.
+	//     schema:
+	//       properties:
+	//         blocks:
+	//           type: array
+	//           items:
+	//             properties:
+	//               header:
+	//                 type: object
+	//                 properties:
+	//                   seq:
+	//                     type: integer
+	//                     format: int64
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   fee:
+	//                     type: integer
+	//                     format: int64
+	//                   version:
+	//                     type: integer
+	//                     format: int32
+	//                   block_hash:
+	//                     type: string
+	//                   previous_block_hash:
+	//                     type: string
+	//                   tx_body_hash:
+	//                     type: string
+	//                   ux_hash:
+	//                     type: string
+	//               size:
+	//                 type: integer
+	//                 format: int32
+	//               body:
+	//                 type: object
+	//                 properties:
+	//                   txns:
+	//                     type: array
+	//                     items:
+	//                       properties:
+	//                         length:
+	//                           type: integer
+	//                           format: int32
+	//                         type:
+	//                           type: integer
+	//                           format: int32
+	//                         txid:
+	//                           type: string
+	//                         inner_hash:
+	//                           type: string
+	//                         timestamp:
+	//                           type: integer
+	//                           format: int32
+	//                         sigs:
+	//                           type: array
+	//                           items:
+	//                             type: string
+	//                         inputs:
+	//                           type: array
+	//                           items:
+	//                             type: string
+	//                         outputs:
+	//                           type: array
+	//                           items:
+	//                             properties:
+	//                               uxid:
+	//                                 type: string
+	//                               dst:
+	//                                 type: string
+	//                               coins:
+	//                                 type: string
+	//                               hours:
+	//                                 type: integer
+	//                                 format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// swagger:operation GET /api/v1/blocks blocksGet
+	//
+	// blocksHandler returns blocks between a start and end point,
+	// or an explicit list of sequences.
+	// If using start and end, the block sequences include both the start and end point.
+	// Explicit sequences cannot be combined with start and end.
+	// Without verbose.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: start
+	//   in: query
+	//   required: false
+	//   type: integer
+	// - name: end
+	//   in: query
+	//   required: false
+	//   type: integer
+	// - name: seqs
+	//   in: query
+	//   required: false
+	//   type: array
+	//   items:
+	//     type: integer
+	// responses:
+	//   200:
+	//     description: Returns blocks between a start and end point.
+	//     schema:
+	//       properties:
+	//         blocks:
+	//           type: array
+	//           items:
+	//             properties:
+	//               header:
+	//                 type: object
+	//                 properties:
+	//                   seq:
+	//                     type: integer
+	//                     format: int64
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   fee:
+	//                     type: integer
+	//                     format: int64
+	//                   version:
+	//                     type: integer
+	//                     format: int32
+	//                   block_hash:
+	//                     type: string
+	//                   previous_block_hash:
+	//                     type: string
+	//                   tx_body_hash:
+	//                     type: string
+	//                   ux_hash:
+	//                     type: string
+	//               size:
+	//                 type: integer
+	//                 format: int32
+	//               body:
+	//                 type: object
+	//                 properties:
+	//                   txns:
+	//                     type: array
+	//                     items:
+	//                       properties:
+	//                         length:
+	//                           type: integer
+	//                           format: int32
+	//                         type:
+	//                           type: integer
+	//                           format: int32
+	//                         txid:
+	//                           type: string
+	//                         inner_hash:
+	//                           type: string
+	//                         timestamp:
+	//                           type: integer
+	//                           format: int32
+	//                         sigs:
+	//                           type: array
+	//                           items:
+	//                             type: string
+	//                         inputs:
+	//                           type: array
+	//                           items:
+	//                             type: string
+	//                         outputs:
+	//                           type: array
+	//                           items:
+	//                             properties:
+	//                               uxid:
+	//                                 type: string
+	//                               dst:
+	//                                 type: string
+	//                               coins:
+	//                                 type: string
+	//                               hours:
+	//                                 type: integer
+	//                                 format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -274,7 +1003,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		if verbose {
+		if verbose || verbs {
 			var blocks []coin.SignedBlock
 			var inputs [][][]visor.TransactionInput
 			var err error
@@ -339,7 +1068,197 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //	num [int]
 //  verbose [bool]
-func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
+func lastBlocksHandler(gateway Gatewayer, verbs bool) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/last_blocks/verbose lastBlocksVerbose
+	//
+	// Returns the most recent N blocks on the blockchain
+	// With verbose.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: num
+	//   in: query
+	//   required: true
+	//   type: integer
+	// responses:
+	//   200:
+	//     description: Returns the most recent N blocks on the blockchain.
+	//     schema:
+	//       properties:
+	//         blocks:
+	//           type: array
+	//           items:
+	//             properties:
+	//               header:
+	//                 type: object
+	//                 properties:
+	//                   seq:
+	//                     type: integer
+	//                     format: int64
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   fee:
+	//                     type: integer
+	//                     format: int64
+	//                   version:
+	//                     type: integer
+	//                     format: int32
+	//                   block_hash:
+	//                     type: string
+	//                   previous_block_hash:
+	//                     type: string
+	//                   tx_body_hash:
+	//                     type: string
+	//                   ux_hash:
+	//                     type: string
+	//               size:
+	//                 type: integer
+	//                 format: int32
+	//               body:
+	//                 type: array
+	//                 items:
+	//                   properties:
+	//                     length:
+	//                       type: integer
+	//                       format: int32
+	//                     type:
+	//                       type: integer
+	//                       format: int32
+	//                     hash:
+	//                       type: string
+	//                     inner_hash:
+	//                       type: string
+	//                     fee:
+	//                       type: integer
+	//                       format: int32
+	//                     sigs:
+	//                       type: array
+	//                       items:
+	//                         type: string
+	//                     inputs:
+	//                       type: array
+	//                       items:
+	//                         properties:
+	//                           uxid:
+	//                             type: string
+	//                           dst:
+	//                             type: string
+	//                           coins:
+	//                             type: string
+	//                           hours:
+	//                             type: integer
+	//                             format: int64
+	//                           calculated_hours:
+	//                             type: integer
+	//                             format: int64
+	//                     outputs:
+	//                       type: array
+	//                       items:
+	//                         properties:
+	//                           uxid:
+	//                             type: string
+	//                           dst:
+	//                             type: string
+	//                           coins:
+	//                             type: string
+	//                           hours:
+	//                             type: integer
+	//                             format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// swagger:operation GET /api/v1/last_blocks lastBlocks
+	//
+	// Returns the most recent N blocks on the blockchain
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: num
+	//   in: query
+	//   required: true
+	//   type: integer
+	// responses:
+	//   200:
+	//     description: Returns the most recent N blocks on the blockchain.
+	//     schema:
+	//       properties:
+	//         blocks:
+	//           type: array
+	//           items:
+	//             properties:
+	//               header:
+	//                 type: object
+	//                 properties:
+	//                   seq:
+	//                     type: integer
+	//                     format: int64
+	//                   timestamp:
+	//                     type: integer
+	//                     format: int64
+	//                   fee:
+	//                     type: integer
+	//                     format: int64
+	//                   version:
+	//                     type: integer
+	//                     format: int32
+	//                   block_hash:
+	//                     type: string
+	//                   previous_block_hash:
+	//                     type: string
+	//                   tx_body_hash:
+	//                     type: string
+	//                   ux_hash:
+	//                     type: string
+	//               size:
+	//                 type: integer
+	//                 format: int32
+	//               body:
+	//                 type: array
+	//                 items:
+	//                   properties:
+	//                     length:
+	//                       type: integer
+	//                       format: int32
+	//                     type:
+	//                       type: integer
+	//                       format: int32
+	//                     txid:
+	//                       type: string
+	//                     inner_hash:
+	//                       type: string
+	//                     timestamp:
+	//                       type: integer
+	//                       format: int32
+	//                     sigs:
+	//                       type: array
+	//                       items:
+	//                         type: string
+	//                     inputs:
+	//                       type: array
+	//                       items:
+	//                         type: string
+	//                     outputs:
+	//                       type: array
+	//                       items:
+	//                         properties:
+	//                           uxid:
+	//                             type: string
+	//                           dst:
+	//                             type: string
+	//                           coins:
+	//                             type: string
+	//                           hours:
+	//                             type: integer
+	//                             format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -359,7 +1278,7 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if verbose {
+		if verbose || verbs {
 			blocks, inputs, err := gateway.GetLastBlocksVerbose(n)
 			if err != nil {
 				wh.Error500(w, err.Error())

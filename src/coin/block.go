@@ -19,18 +19,23 @@ import (
 const MaxBlockTransactions = 65535
 
 // Block represents the block struct
+// swagger:model block
 type Block struct {
+	// swagger:allOf
 	Head BlockHeader
+	// swagger:allOf
 	Body BlockBody
 }
 
 // HashPair including current block hash and previous block hash.
+// swagger:model hashPair
 type HashPair struct {
 	Hash     cipher.SHA256
 	PrevHash cipher.SHA256
 }
 
 // BlockHeader records the block header
+// swagger:model blockHeader
 type BlockHeader struct {
 	Version uint32
 
@@ -38,18 +43,23 @@ type BlockHeader struct {
 	BkSeq uint64 // Increment every block
 	Fee   uint64 // Fee in block
 
+	// swagger:ignore
 	PrevHash cipher.SHA256 // Hash of header of previous block
+	// swagger:ignore
 	BodyHash cipher.SHA256 // Hash of transaction block
 
+	// swagger:ignore
 	UxHash cipher.SHA256 // XOR of sha256 of elements in unspent output set
 }
 
 // BlockBody represents the block body
+// swagger:model blockBody
 type BlockBody struct {
 	Transactions Transactions `enc:",maxlen=65535"`
 }
 
 // SignedBlock signed block
+// swagger:model signedBlock
 type SignedBlock struct {
 	Block
 	Sig cipher.Sig

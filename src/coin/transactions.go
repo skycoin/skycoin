@@ -62,6 +62,7 @@ type Transaction struct {
 }
 
 // TransactionOutput hash output/name is function of Hash
+// swagger:model transactionOutput
 type TransactionOutput struct {
 	Address cipher.Address // address to send to
 	Coins   uint64         // amount to be sent in coins
@@ -583,6 +584,7 @@ func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
 }
 
 // SortableTransactions allows sorting transactions by fee & hash
+// swagger:model sortableTransactions
 type SortableTransactions struct {
 	Transactions Transactions
 	Fees         []uint64

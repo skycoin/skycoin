@@ -630,17 +630,10 @@ API sets: `WALLET`
 URI: /api/v1/wallet/transactions
 Method: GET
 Args:
-    id: Wallet ID
-    verbose: [bool] include verbose transaction input data
+    id: Wallet ID [required]
 ```
 
 Returns all unconfirmed transactions for all addresses in a given wallet
-
-If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
-The hours are the original hours the output was created with.
-The calculated hours are based upon the current system time, and are approximately
-equal to the hours the output would have if it become confirmed immediately.
-
 
 Example:
 
@@ -691,10 +684,28 @@ Result:
 }
 ```
 
-Example (verbose):
+### Get unconfirmed transactions of a wallet Verbose
+
+API sets: `WALLET`
+
+```
+URI: /api/v1/wallet/transactions/verbose
+Method: GET
+Args:
+    id: Wallet ID [required]
+```
+
+Returns all unconfirmed transactions for all addresses in a given wallet
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
+
+Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/wallet/transactions?id=2017_11_25_e5fb.wlt&verbose=1
+curl http://127.0.0.1:6420/api/v1/wallet/transactions/verbose?id=2017_11_25_e5fb.wlt
 ```
 
 Result:
@@ -1657,14 +1668,7 @@ API sets: `READ`
 ```
 URI: /api/v1/pendingTxs
 Method: GET
-Args:
-    verbose [bool] include verbose transaction input data
 ```
-
-If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
-The hours are the original hours the output was created with.
-The calculated hours are calculated based upon the current system time, and provide an approximate
-coin hour value of the output if it were to be confirmed at that instant.
 
 Example:
 
@@ -1713,10 +1717,21 @@ Result:
 ]
 ```
 
+### Get unconfirmed transactions Verbose
+```
+URI: /api/v1/pendingTxs/verbose
+Method: GET
+```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are calculated based upon the current system time, and provide an approximate
+coin hour value of the output if it were to be confirmed at that instant.
+
 Example (verbose):
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/pendingTxs?verbose=1
+curl http://127.0.0.1:6420/api/v1/pendingTxs/verbose
 ```
 
 Result:
@@ -1773,13 +1788,8 @@ API sets: `READ`
 URI: /api/v1/transaction
 Method: GET
 Args:
-    txid: transaction id
-    verbose: [bool] include verbose transaction input data
-    encoded: [bool] return the transaction as hex-encoded serialized bytes
+    txid: transaction id [required]
 ```
-
-If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
-The hours are the original hours the output was created with.
 If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed..
 If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
 equal to the hours the output would have if it become confirmed immediately.
@@ -1824,10 +1834,25 @@ Result:
 }
 ```
 
-Example (verbose):
+### Get transaction info by id Verbose
+
+API sets: `READ`
+
+```
+URI: /api/v1/transaction/verbose
+Method: GET
+Args:
+    txid: transaction id [required]
+```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed..
+If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3&verbose=1
+curl http://127.0.0.1:6420/api/v1/transaction/verbose?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
 ```
 
 Result:
@@ -1878,10 +1903,21 @@ Result:
 }
 ```
 
-Example (encoded):
+### Get transaction info by id Encoded
+
+API sets: `READ`
+
+```
+URI: /api/v1/transaction/encoded
+Method: GET
+Args:
+    txid: transaction id [required]
+```
+
+Just like `/api/v1/transaction`, only that transaction info is returned encoded.
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3&encoded=1
+curl http://127.0.0.1:6420/api/v1/transaction/encoded?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
 ```
 
 Result:
@@ -1918,6 +1954,28 @@ Result:
 
 ```json
 "b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000009b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00010000005287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191010000000010722f061aa262381dce35193d43eceb112373c300127a0000000000a303000000000000"
+```
+### Get raw transaction by id (v2)
+
+API sets: `READ`
+
+```
+URI: /api/v2/transaction/raw
+Method: GET
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/transaction/raw?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
+```
+
+Result:
+
+```json
+{
+  "rawtx": "b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000009b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00010000005287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191010000000010722f061aa262381dce35193d43eceb112373c300127a0000000000a303000000000000"
+}
 ```
 
 ### Inject raw transaction
@@ -1973,6 +2031,74 @@ Result:
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
 ```
 
+### Inject raw transaction (v2)
+
+API sets: `TXN`, `WALLET`
+
+```
+URI: /api/v1/injectTransaction
+Method: POST
+Content-Type: application/json
+Body: {"rawtx": "hex-encoded serialized transaction string"}
+Errors:
+    400 - Bad input
+    500 - Other
+    503 - Network unavailable (transaction failed to broadcast)
+```
+
+Same description as `/api/v1/injectTransaction`.
+
+It just defer in the response with status code `200`.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/transaction/inject -H 'content-type: application/json' -d '{
+    "rawtx":"dc0000000008b507528697b11340f5a3fcccbff031c487bad59d26c2bdaea0cd8a0199a1720100000017f36c9d8bce784df96a2d6848f1b7a8f5c890986846b7c53489eb310090b91143c98fd233830055b5959f60030b3ca08d95f22f6b96ba8c20e548d62b342b5e0001000000ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106020000000072116096fe2207d857d18565e848b403807cd825c044840300000000330100000000000000575e472f8c5295e8fa644e9bc5e06ec10351c65f40420f000000000066020000000000000"
+}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "transaction": {
+            "hash": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
+            "inner_hash": "5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
+            "inputs": [
+                "bb89d4ed40d0e6e3a82c12e70b01a4bc240d2cd4f252cfac88235abe61bd3ad0",
+                "170d6fd7be1d722a1969cb3f7d45cdf4d978129c3433915dbaf098d4f075bbfc"
+            ],
+            "length": 317,
+            "outputs": [
+                {
+                    "uxid": "ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106",
+                    "dst": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+                    "coins": "60.000000",
+                    "hours": 2458
+                },
+                {
+                    "uxid": "be40210601829ba8653bac1d6ecc4049955d97fb490a48c310fd912280422bd9",
+                    "dst": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
+                    "coins": "1.000000",
+                    "hours": 2458
+                }
+            ],
+            "sigs": [
+                "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+            ],
+            "timestamp": 1524242826,
+            "type": 0
+        }
+    },
+    "error": {
+        "code": 200,
+        "message": "transaction has been injected"
+    }
+}
+```
+
 ### Get transactions for addresses
 
 API sets: `READ`
@@ -1983,14 +2109,7 @@ Method: GET, POST
 Args:
     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-    verbose: [bool] include verbose transaction input data
 ```
-
-If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
-The hours are the original hours the output was created with.
-If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed.
-If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
-equal to the hours the output would have if it become confirmed immediately.
 
 The `"time"` field at the top level of each object in the response array indicates either the confirmed timestamp of a confirmed
 transaction or the last received timestamp of an unconfirmed transaction.
@@ -2126,10 +2245,33 @@ Result:
 ]
 ```
 
+### Get transactions for addresses Verbose
+
+API sets: `READ`
+
+```
+URI: /api/v1/transactions/verbose
+Method: GET, POST
+Args:
+    addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+    confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+If the transaction is confirmed, the calculated hours are the hours the transaction had in the block in which it was executed.
+If the transaction is unconfirmed, the calculated hours are based upon the current system time, and are approximately
+equal to the hours the output would have if it become confirmed immediately.
+
+The `"time"` field at the top level of each object in the response array indicates either the confirmed timestamp of a confirmed
+transaction or the last received timestamp of an unconfirmed transaction.
+
+The `POST` method can be used if many addresses need to be queried.
+
 Example (verbose):
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT&verbose=1
+curl http://127.0.0.1:6420/api/v1/transactions/verbose?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT
 ```
 
 Result:
@@ -2615,13 +2757,7 @@ Method: GET
 Args:
     hash: get block by hash
     seq: get block by sequence number
-    verbose: [bool] return verbose transaction input data
 ```
-
-If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
-The hours are the original hours the output was created with.
-The calculated hours are the hours the transaction had in the block in which it was executed.
-
 Example:
 
 ```sh
@@ -2682,16 +2818,32 @@ Result:
 }
 ```
 
-Example (verbose):
+### Get block by hash or seq Verbose
+
+API sets: `READ`
+
+```
+URI: /api/v1/block/verbose
+Method: GET
+Args:
+    hash: get block by hash
+    seq: get block by sequence number
+```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
+
+Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30&verbose=1
+curl http://127.0.0.1:6420/api/v1/block/verbose?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30
 ```
 
 or
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/block?seq=2760&verbose=1
+curl http://127.0.0.1:6420/api/v1/block/verbose?seq=2760
 ```
 
 Result:
@@ -2761,7 +2913,6 @@ Args:
     start: start seq
     end: end seq
     seqs: comma-separated list of block seqs
-    verbose: [bool] return verbose transaction input data
 ```
 
 This endpoint has two modes: range and seqs.
@@ -2849,109 +3000,6 @@ Result:
                         ],
                         "inputs": [
                             "4e75b4bced3404590d38ca06440c275d7fd86618a84966a0a1053fb18164e898"
-                        ],
-                        "outputs": [
-                            {
-                                "uxid": "0a5603a1a5aeda575aa498cdaec5a4c893a28669dba84163eba2e90db3d9f39d",
-                                "dst": "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8",
-                                "coins": "26700.000000",
-                                "hours": 101435
-                            }
-                        ]
-                    }
-                ]
-            },
-            "size": 183
-        }
-    ]
-}
-```
-
-Example (verbose):
-
-```sh
-curl http://127.0.0.1:6420/api/v1/blocks?start=101&end=102&verbose=1
-```
-
-Result:
-
-```json
-{
-    "blocks": [
-        {
-            "header": {
-                "seq": 101,
-                "block_hash": "8156057fc823589288f66c91edb60c11ff004465bcbe3a402b1328be7f0d6ce0",
-                "previous_block_hash": "725e76907998485d367a847b0fb49f08536c592247762279fcdbd9907fee5607",
-                "timestamp": 1429274666,
-                "fee": 720335,
-                "version": 0,
-                "tx_body_hash": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
-                "ux_hash": "348989599d30d3adfaaea98577963caa419ab0276279296e7d194a9cbb8cad04"
-            },
-            "body": {
-                "txns": [
-                    {
-                        "length": 183,
-                        "type": 0,
-                        "txid": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
-                        "inner_hash": "45da31b68748eafdb08ef8bf1ebd1c07c0f14fcb0d66759d6cf4642adc956d06",
-                        "fee": 720335,
-                        "sigs": [
-                            "09bce2c888ceceeb19999005cceb1efdee254cacb60edee118b51ffd740ff6503a8f9cbd60a16c7581bfd64f7529b649d0ecc8adbe913686da97fe8c6543189001"
-                        ],
-                        "inputs": [
-                            {
-                                "uxid": "6002f3afc7054c0e1161bcf2b4c1d4d1009440751bc1fe806e0eae33291399f4",
-                                "owner": "2M1C5LSZ4Pvu5RWS44bCdY6or3R8grQw7ez",
-                                "coins": "27000.000000",
-                                "hours": 220,
-                                "calculated_hours": 823240
-                            }
-                        ],
-                        "outputs": [
-                            {
-                                "uxid": "f9bffdcbe252acb1c3a8a1e8c99829342ba1963860d5692eebaeb9bcfbcaf274",
-                                "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-                                "coins": "27000.000000",
-                                "hours": 102905
-                            }
-                        ]
-                    }
-                ]
-            },
-            "size": 183
-        },
-        {
-            "header": {
-                "seq": 102,
-                "block_hash": "311f4b83b4fdb9fd1d45648115969cf4b3aab2d1acad9e2aa735829245c525f3",
-                "previous_block_hash": "8156057fc823589288f66c91edb60c11ff004465bcbe3a402b1328be7f0d6ce0",
-                "timestamp": 1429274686,
-                "fee": 710046,
-                "version": 0,
-                "tx_body_hash": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d",
-                "ux_hash": "f7512b0718f392c7503f86e69175efd7835ea4c3dd3f71ff65c7ad8873a6a9e8"
-            },
-            "body": {
-                "txns": [
-                    {
-                        "length": 183,
-                        "type": 0,
-                        "txid": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d",
-                        "inner_hash": "73bfee3a7c8d4f8a68657ebcaf69a59639f762bfc1a6f4468f3ca4724bc5b9f8",
-                        "fee": 710046,
-                        "sigs": [
-                            "c4bcada17604a4a62baf50f929655027f2913639c27b773871f2135b72553c1959737e39d50e8349ffa5a7679de845aa6370999dbaaff4c7f9fd01260818683901"
-                        ],
-                        "inputs": [
-                            {
-                                "uxid": "4e75b4bced3404590d38ca06440c275d7fd86618a84966a0a1053fb18164e898",
-                                "owner": "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8",
-                                "coins": "26700.000000",
-                                "hours": 54,
-                                "calculated_hours": 811481
-                            }
                         ],
                         "outputs": [
                             {
@@ -3105,6 +3153,136 @@ curl http://127.0.0.1:6420/api/v1/blocks?seqs=3,5,7
 }
 ```
 
+### Get blocks in specific range Verbose
+
+API sets: `READ`
+
+```
+URI: /api/v1/blocks/verbose
+Method: GET
+Args:
+    start: start seq
+    end: end seq
+    seqs: comma-separated list of block seqs
+```
+
+This endpoint has two modes: range and seqs.
+The `seqs` parameter cannot be combined with `start`, `end`.
+
+If `start` and/or `end` are provided, returns blocks in the range [`start`, `end`].
+Both start and end sequences are included in the returned array of blocks.
+
+If `seqs` is provided, returns blocks matching the specified sequences.
+`seqs` must not contain any duplicate values.
+If a block does not exist for any of the given sequence numbers, a `404` error is returned.
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v1/blocks/verbose?start=101&end=102
+```
+
+Result:
+
+```json
+{
+    "blocks": [
+        {
+            "header": {
+                "seq": 101,
+                "block_hash": "8156057fc823589288f66c91edb60c11ff004465bcbe3a402b1328be7f0d6ce0",
+                "previous_block_hash": "725e76907998485d367a847b0fb49f08536c592247762279fcdbd9907fee5607",
+                "timestamp": 1429274666,
+                "fee": 720335,
+                "version": 0,
+                "tx_body_hash": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
+                "ux_hash": "348989599d30d3adfaaea98577963caa419ab0276279296e7d194a9cbb8cad04"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 183,
+                        "type": 0,
+                        "txid": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
+                        "inner_hash": "45da31b68748eafdb08ef8bf1ebd1c07c0f14fcb0d66759d6cf4642adc956d06",
+                        "fee": 720335,
+                        "sigs": [
+                            "09bce2c888ceceeb19999005cceb1efdee254cacb60edee118b51ffd740ff6503a8f9cbd60a16c7581bfd64f7529b649d0ecc8adbe913686da97fe8c6543189001"
+                        ],
+                        "inputs": [
+                            {
+                                "uxid": "6002f3afc7054c0e1161bcf2b4c1d4d1009440751bc1fe806e0eae33291399f4",
+                                "owner": "2M1C5LSZ4Pvu5RWS44bCdY6or3R8grQw7ez",
+                                "coins": "27000.000000",
+                                "hours": 220,
+                                "calculated_hours": 823240
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "f9bffdcbe252acb1c3a8a1e8c99829342ba1963860d5692eebaeb9bcfbcaf274",
+                                "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+                                "coins": "27000.000000",
+                                "hours": 102905
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 183
+        },
+        {
+            "header": {
+                "seq": 102,
+                "block_hash": "311f4b83b4fdb9fd1d45648115969cf4b3aab2d1acad9e2aa735829245c525f3",
+                "previous_block_hash": "8156057fc823589288f66c91edb60c11ff004465bcbe3a402b1328be7f0d6ce0",
+                "timestamp": 1429274686,
+                "fee": 710046,
+                "version": 0,
+                "tx_body_hash": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d",
+                "ux_hash": "f7512b0718f392c7503f86e69175efd7835ea4c3dd3f71ff65c7ad8873a6a9e8"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 183,
+                        "type": 0,
+                        "txid": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d",
+                        "inner_hash": "73bfee3a7c8d4f8a68657ebcaf69a59639f762bfc1a6f4468f3ca4724bc5b9f8",
+                        "fee": 710046,
+                        "sigs": [
+                            "c4bcada17604a4a62baf50f929655027f2913639c27b773871f2135b72553c1959737e39d50e8349ffa5a7679de845aa6370999dbaaff4c7f9fd01260818683901"
+                        ],
+                        "inputs": [
+                            {
+                                "uxid": "4e75b4bced3404590d38ca06440c275d7fd86618a84966a0a1053fb18164e898",
+                                "owner": "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8",
+                                "coins": "26700.000000",
+                                "hours": 54,
+                                "calculated_hours": 811481
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "0a5603a1a5aeda575aa498cdaec5a4c893a28669dba84163eba2e90db3d9f39d",
+                                "dst": "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8",
+                                "coins": "26700.000000",
+                                "hours": 101435
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 183
+        }
+    ]
+}
+```
+
 
 ### Get last N blocks
 
@@ -3115,12 +3293,7 @@ URI: /api/v1/last_blocks
 Method: GET
 Args:
     num: number of most recent blocks to return
-    verbose: [bool] return verbose transaction input data
 ```
-
-If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
-The hours are the original hours the output was created with.
-The calculated hours are the hours the transaction had in the block in which it was executed.
 
 Example:
 
@@ -3227,10 +3400,25 @@ Result:
 }
 ```
 
+### Get last N blocks Verbose
+
+API sets: `READ`
+
+```
+URI: /api/v1/last_blocks/verbose
+Method: GET
+Args:
+    num: number of most recent blocks to return
+```
+
+If verbose, the transaction inputs include the owner address, coins, hours and calculated hours.
+The hours are the original hours the output was created with.
+The calculated hours are the hours the transaction had in the block in which it was executed.
+
 Example (verbose):
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/last_blocks?num=2&verbose=1
+curl http://127.0.0.1:6420/api/v1/last_blocks/verbose?num=2
 ```
 
 Result:

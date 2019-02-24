@@ -27,6 +27,7 @@ var (
 )
 
 // Ripemd160 ripemd160
+// swagger:model ripemd160
 type Ripemd160 [20]byte
 
 // MustSet sets value, panics on error
@@ -75,6 +76,7 @@ func HashRipemd160(data []byte) Ripemd160 {
 }
 
 // SHA256 32 bytes
+// swagger:strfmt sha256
 type SHA256 [32]byte
 
 // MustSet sets value, panics on error

@@ -15,11 +15,82 @@ import (
 )
 
 // connectionHandler returns a specific connection
-// URI: /api/v1/network/connections
+// URI: /api/v1/network/connection
 // Method: GET
 // Args:
 //	addr - An IP:Port string
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/network/connection networkConnection
+	//
+	// This endpoint returns a specific connection.
+	//
+	// ---
+	//
+	//
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: addr
+	//   in: query
+	//   description: Address port
+	//   required: true
+	//   type: string
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint return a connection struct
+	//     schema:
+	//       type: object
+	//       properties:
+	//         id:
+	//           type: integer
+	//           format: int64
+	//         address:
+	//           type: string
+	//         state:
+	//           type: string
+	//           enum: [pending, connected, introduced]
+	//         user_agent:
+	//           type: string
+	//         last_sent:
+	//           type: integer
+	//           format: int64
+	//         last_received:
+	//           type: integer
+	//           format: int64
+	//         connected_at:
+	//           type: integer
+	//           format: int64
+	//         outgoing:
+	//           type: boolean
+	//         mirror:
+	//           type: integer
+	//           format: int32
+	//         listen_port:
+	//           type: integer
+	//           format: int32
+	//         height:
+	//           type: integer
+	//           format: int64
+	//         is_trusted_peer:
+	//           type: boolean
+	//         unconfirmed_verify_transaction:
+	//           description: Represent unconfirmed transactions
+	//           type: object
+	//           properties:
+	//             burn_factor:
+	//               type: integer
+	//               format: int32
+	//             max_transaction_size:
+	//               type: integer
+	//               format: int32
+	//             max_decimals:
+	//               type: integer
+	//               format: int32
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -71,6 +142,86 @@ func NewConnections(dconns []daemon.Connection) Connections {
 //	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
 //  direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/network/connections networkConnections
+	//
+	// This endpoint returns all outgoings connections.
+	//
+	// ---
+	// produces:
+	// - application/json
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	// parameters:
+	// - name: states
+	//   in: query
+	//   description: Connection status.
+	//   required: false
+	//   enum: [pending, connected, introduced]
+	//   type: string
+	// - name: direction
+	//   in: query
+	//   description: Direction of the connection.
+	//   required: false
+	//   enum: [connected, introduced]
+	//   type: string
+	// responses:
+	//   200:
+	//     description: This endpoint return a connection struct
+	//     schema:
+	//       type: array
+	//       items:
+	//         properties:
+	//           id:
+	//             type: integer
+	//             format: int64
+	//           address:
+	//             type: string
+	//           state:
+	//             type: string
+	//             enum: [pending, connected, introduced]
+	//           user_agent:
+	//             type: string
+	//           last_sent:
+	//             type: integer
+	//             format: int64
+	//           last_received:
+	//             type: integer
+	//             format: int64
+	//           connected_at:
+	//             type: integer
+	//             format: int64
+	//           outgoing:
+	//             type: boolean
+	//           mirror:
+	//             type: integer
+	//             format: int32
+	//           listen_port:
+	//             type: integer
+	//             format: int32
+	//           height:
+	//             type: integer
+	//             format: int64
+	//           is_trusted_peer:
+	//             type: boolean
+	//           unconfirmed_verify_transaction:
+	//             description: Represent unconfirmed transactions
+	//             type: object
+	//             properties:
+	//               burn_factor:
+	//                 type: integer
+	//                 format: int32
+	//               max_transaction_size:
+	//                 type: integer
+	//                 format: int32
+	//               max_decimals:
+	//                 type: integer
+	//                 format: int32
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -141,6 +292,25 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/network/defaultConnections
 // Method: GET
 func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/network/defaultConnections defaultConnections
+	//
+	// defaultConnectionsHandler returns the list of default hardcoded bootstrap addresses.\n They are not necessarily connected to.
+	//
+	// ---
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint return an list of default connections.
+	//     schema:
+	//       type: array
+	//       items:
+	//         type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -159,6 +329,30 @@ func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/network/trust
 // Method: GET
 func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/network/connections/trust networkConnectionsTrust
+	//
+	// trustConnectionsHandler returns all trusted connections.\n They are not necessarily connected to. In the default configuration, these will be a subset of the default hardcoded bootstrap addresses.
+	//
+	// ---
+	// produces:
+	// - application/json
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint return a list of trusted connections.
+	//     schema:
+	//       type: array
+	//       items:
+	//         type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// TODO Add URI: /api/v1/network/trust to README.md or Most be URI: /api/v1/network/connections/trust
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -176,6 +370,27 @@ func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/network/exchange
 // Method: GET
 func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/network/connections/exchange networkConnectionsExchange
+	//
+	// This endpoint returns all connections found through peer exchange
+	//
+	// ---
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint return a list of all connections found through peer exchange.
+	//     schema:
+	//       type: array
+	//       items:
+	//         type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
+
+	// TODO Add URI: /api/v1/network/exchange to README.md or Most be URI: /api/v1/network/connections/exchange
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -195,6 +410,32 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //	id: ID of the connection
 func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:operation POST /api/v1/network/connection/disconnect networkConnectionsDisconnect
+	//
+	// This endpoint disconnects a connection by ID or address
+	//
+	// ---
+	//
+	// parameters:
+	// - name: id
+	//   in: query
+	//   description: Address id.
+	//   required: true
+	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)

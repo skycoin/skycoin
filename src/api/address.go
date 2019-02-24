@@ -21,6 +21,43 @@ type VerifyAddressResponse struct {
 // Method: POST
 // URI: /api/v2/address/verify
 func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
+
+	// swagger:operation POST /api/v2/address/verify verifyAddress
+	//
+	// Verifies a Skycoin address.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: address
+	//   in: query
+	//   description: Address id.
+	//   required: true
+	//   type: string
+	//
+	// security:
+	// - csrfAuth: []
+	//
+	//
+	// responses:
+	//   200:
+	//     description: Response verifies a Skycoin address
+	//     schema:
+	//       type: object
+	//       properties:
+	//         error:
+	//           type: object
+	//         data:
+	//           type: object
+	//           properties:
+	//             version:
+	//               type: integer
+	//               format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
 		writeHTTPResponse(w, resp)

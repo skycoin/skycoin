@@ -6,6 +6,7 @@ import (
 )
 
 // BlockchainMetadata encapsulates useful information from the coin.Blockchain
+// swagger:model blockchainMetadataSuper
 type BlockchainMetadata struct {
 	// Most recent block's header
 	Head BlockHeader `json:"head"`

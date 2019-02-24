@@ -13,21 +13,22 @@ import (
 	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
-// CoinSupply records the coin supply info
+// CoinSupply records the coin supply info.
+// swagger:response coinSupply
 type CoinSupply struct {
-	// Coins distributed beyond the project:
+	// Coins distributed beyond the project.
 	CurrentSupply string `json:"current_supply"`
-	// TotalSupply is CurrentSupply plus coins held by the distribution addresses that are spendable
+	// TotalSupply is CurrentSupply plus coins held by the distribution addresses that are spendable.
 	TotalSupply string `json:"total_supply"`
-	// MaxSupply is the maximum number of coins to be distributed ever
+	// MaxSupply is the maximum number of coins to be distributed ever.
 	MaxSupply string `json:"max_supply"`
-	// CurrentCoinHourSupply is coins hours in non distribution addresses
+	// CurrentCoinHourSupply is coins hours in non distribution addresses.
 	CurrentCoinHourSupply string `json:"current_coinhour_supply"`
-	// TotalCoinHourSupply is coin hours in all addresses including unlocked distribution addresses
+	// TotalCoinHourSupply is coin hours in all addresses including unlocked distribution addresses.
 	TotalCoinHourSupply string `json:"total_coinhour_supply"`
-	// Distribution addresses which count towards total supply
+	// Distribution addresses which count towards total supply.
 	UnlockedAddresses []string `json:"unlocked_distribution_addresses"`
-	// Distribution addresses which are locked and do not count towards total supply
+	// Distribution addresses which are locked and do not count towards total supply.
 	LockedAddresses []string `json:"locked_distribution_addresses"`
 }
 
@@ -43,6 +44,20 @@ func newAddrSet(addrs []cipher.Address) map[cipher.Address]struct{} {
 // Method: GET
 // URI: /api/v1/coinSupply
 func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
+
+	// swagger:route GET /api/v1/coinSupply coinSupply
+	//
+	// coinSupplyHandler returns coin distribution supply stats
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: coinSupply
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -155,17 +170,57 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Richlist contains top address balances
+//
 type Richlist struct {
 	Richlist []readable.RichlistBalance `json:"richlist"`
 }
 
 // richlistHandler returns the top skycoin holders
 // Method: GET
-// URI: /richlist?n=${number}&include-distribution=${bool}
+// URI: /api/v1/richlist?n=${number}&include-distribution=${bool}
 // Args:
 //	n [int, number of results to include]
 //  include-distribution [bool, include the distribution addresses in the richlist]
 func richlistHandler(gateway Gatewayer) http.HandlerFunc {
+
+
+	// swagger:operation GET /api/v1/richlist richlist
+	//
+	// Returns the top skycoin holders.
+	//
+	// ---
+	//
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: 'include-distribution'
+	//   required: false
+	//   in: query
+	//   description: include distribution addresses or not, default value false
+	//   type: boolean
+	// - name: 'n'
+	//   required: false
+	//   in: query
+	//   description: include distribution addresses or not, default value false
+	//   type: string
+	// responses:
+	//   200:
+	//     description: Response for endpoint /api/v1/address_uxouts
+	//     schema:
+	//       properties:
+	//         richlist:
+	//           type: array
+	//           items:
+	//             properties:
+	//               address:
+	//                 type: string
+	//               coins:
+	//                 type: string
+	//               locked:
+	//                 type: boolean
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -222,8 +277,29 @@ func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 
 // addressCountHandler returns the total number of unique address that have coins
 // Method: GET
-// URI: /addresscount
+// URI: /api/v1/addresscount
 func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
+
+
+	// swagger:operation GET /api/v1/addresscount addressCount
+	//
+	// Returns the total number of unique address that have coins.
+	//
+	// ---
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: This endpoint Returns the total number of unique address that have coins.
+	//     schema:
+	//       properties:
+	//         count:
+	//           type: integer
+	//           format: int64
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

@@ -100,9 +100,9 @@ type BlockTransactionVerbose struct {
 	InnerHash string `json:"inner_hash"`
 	Fee       uint64 `json:"fee"`
 
-	Sigs []string            `json:"sigs"`
-	In   []TransactionInput  `json:"inputs"`
-	Out  []TransactionOutput `json:"outputs"`
+	Sigs []string `json:"sigs"`
+	In []TransactionInput `json:"inputs"`
+	Out []TransactionOutput `json:"outputs"`
 }
 
 // NewBlockTransactionVerbose creates BlockTransactionVerbose
@@ -215,10 +215,10 @@ func NewTransactionVerbose(txn visor.Transaction, inputs []visor.TransactionInpu
 // UnconfirmedTransactionVerbose represents a verbose readable unconfirmed transaction
 type UnconfirmedTransactionVerbose struct {
 	Transaction BlockTransactionVerbose `json:"transaction"`
-	Received    time.Time               `json:"received"`
-	Checked     time.Time               `json:"checked"`
-	Announced   time.Time               `json:"announced"`
-	IsValid     bool                    `json:"is_valid"`
+	Received time.Time `json:"received"`
+	Checked time.Time `json:"checked"`
+	Announced time.Time `json:"announced"`
+	IsValid   bool      `json:"is_valid"`
 }
 
 // NewUnconfirmedTransactionVerbose creates a verbose readable unconfirmed transaction

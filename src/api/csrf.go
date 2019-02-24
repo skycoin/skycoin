@@ -121,6 +121,26 @@ func verifyCSRFToken(headerToken string) error {
 // Response:
 //  csrf_token: CSRF token to use in POST requests
 func getCSRFToken(disabled bool) http.HandlerFunc {
+
+	// swagger:operation GET /api/v1/csrf csrf
+	//
+	// Creates a new CSRF token. Previous CSRF tokens are invalidated by this call.
+	//
+	// ---
+	// produces:
+	// - application/json
+	//
+	// responses:
+	//   200:
+	//     description: Return a csrf Token.
+	//     schema:
+	//       type: object
+	//       properties:
+	//         csrf_token:
+	//           type: string
+	//   default:
+	//     $ref: '#/responses/genericError'
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

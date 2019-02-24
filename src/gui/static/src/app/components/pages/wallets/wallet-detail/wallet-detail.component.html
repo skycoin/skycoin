@@ -29,21 +29,34 @@
     <div class="-record" *ngIf="!wallet.hideEmpty || address.coins.isGreaterThan(0)">
       <div class="id-column">{{ i + 1 }}</div>
       <div class="address-column">
-        <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
-        <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
-          {{ address.address }}
-          <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
-            {{ 'wallet.address.copy' | translate }}
-          </span>
-        </p>
+        <ng-container *ngIf="!wallet.isHardware || address.confirmed">
+          <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
+          <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
+            {{ address.address }}
+            <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+              {{ 'wallet.address.copy' | translate }}
+            </span>
+          </p>
+        </ng-container>
+        <ng-container *ngIf="wallet.isHardware && !address.confirmed">
+          <p class="click-to-copy" (click)="confirmAddress(address, i, true)">
+            <span class="truncated-address">{{ address.address }}</span>
+            <span class="copy-label unconfirmed-label">
+              {{ 'wallet.address.show' | translate }}
+            </span>
+          </p>
+        </ng-container>
       </div>
       <div class="coins-column">{{ (address.coins ? address.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
       <div class="hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
       <div class="options-column">
         <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
         <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
-          <button mat-menu-item (click)="copyAddress($event, address, 1000)">
+          <button mat-menu-item (click)="copyAddress($event, address, 1000)" *ngIf="!wallet.isHardware || address.confirmed">
             {{ 'wallet.address.' + (address.copying ? 'copied': 'copy-address') | translate }}
+          </button>
+          <button mat-menu-item (click)="confirmAddress(address, i, !address.confirmed)" *ngIf="wallet.isHardware">
+            {{ 'wallet.address.confirm' | translate }}
           </button>
           <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
             {{ 'wallet.address.outputs' | translate }}

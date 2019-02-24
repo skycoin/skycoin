@@ -151,10 +151,12 @@
     },
 
     "address": {
+      "show": "Press to show",
       "copy": "Copy",
       "copy-address": "Copy address",
       "copied": "Copied!",
-      "outputs": "Unspent Outputs",
+      "confirm": "Confirm address",
+      "outputs": "Unspent outputs",
       "history": "History"
     }
   },
@@ -411,6 +413,12 @@
     },
     "create-tx" : {
       "title": "Create transaction"
+    },
+    "confirm-address" : {
+      "title": "Confirm address",
+      "instructions": "Please confirm on the hardware wallet if the address is:",
+      "short-confirmation": "Address confirmed.",
+      "confirmation": "Address confirmed. For security, you can re-show the address in the hardware wallet using the \"Confirm address\" option, in the menu that you can display by pressing the button at the right of the address balance."
     }
   }
 }

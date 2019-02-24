@@ -38,9 +38,18 @@
       word-break: break-all;
 
       &:hover .copy-label {
-        opacity: .999;
+        opacity: .999 !important;
       }
     }
+  }
+
+  .truncated-address {
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
   }
 
   .hours-column {
@@ -223,6 +232,10 @@
     opacity: 0;
     line-height: 1;
   }
+}
+
+.unconfirmed-label {
+  opacity: 0.5 !important;
 }
 
 .copying .copy-label::after {

@@ -126,7 +126,13 @@ export class WalletService {
       });
 
       return this.wallets.first().map(wallets => {
-        const newWallet = this.createHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, lastAddressWithTx + 1), true, false);
+        const newWallet = this.createHardwareWalletData(
+          this.translate.instant('hardware-wallet.general.default-wallet-name'),
+          addresses.slice(0, lastAddressWithTx + 1).map(add => {
+            return { address: add, confirmed: false };
+          }), true, false,
+        );
+
         let lastHardwareWalletIndex = wallets.length - 1;
         for (let i = 0; i < wallets.length; i++) {
           if (!wallets[i].isHardware) {
@@ -224,8 +230,10 @@ export class WalletService {
       Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
         wallet.coins = response.coins;
         wallet.hours = response.hours;
-        wallet.addresses = wallet.addresses.map(address => {
-          return response.addresses.find(addr => addr.address === address.address);
+        wallet.addresses.map(address => {
+          const balance = response.addresses.find(addr => addr.address === address.address);
+          address.coins = balance.coins;
+          address.hours = balance.hours;
         });
 
         return wallet;
@@ -541,7 +549,9 @@ export class WalletService {
         if (wallet.isHardware) {
           hardwareWallets.push(this.createHardwareWalletData(
             wallet.label,
-            wallet.addresses.map(address => address.address),
+            wallet.addresses.map(address => {
+              return { address: address.address, confirmed: address.confirmed };
+            }),
             wallet.hasHwSecurityWarnings,
             wallet.stopShowingHwSecurityPopup,
           ));
@@ -560,7 +570,7 @@ export class WalletService {
     return this.getOutputs(addresses);
   }
 
-  private createHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean, stopShowingHwSecurityPopup: boolean): Wallet {
+  private createHardwareWalletData(label: string, addresses: {address: string, confirmed: boolean}[], hasHwSecurityWarnings: boolean, stopShowingHwSecurityPopup: boolean): Wallet {
     return {
       label: label,
       filename: '',
@@ -570,9 +580,10 @@ export class WalletService {
       hours: null,
       addresses: addresses.map(address => {
         return {
-          address: address,
+          address: address.address,
           coins: null,
           hours: null,
+          confirmed: address.confirmed,
         };
       }),
       encrypted: false,

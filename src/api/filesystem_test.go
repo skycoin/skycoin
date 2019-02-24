@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,24 +23,23 @@ func TestSaveData(t *testing.T) {
 		method             string
 		body               *httpBody
 		status             int
-		err                string
 		contentType        string
 		gatewaySaveDataErr error
-		responseBody       string
+		httpResponse       HTTPResponse
 	}{
 		{
-			name:        "415",
-			method:      http.MethodPost,
-			status:      http.StatusUnsupportedMediaType,
-			contentType: ContentTypeForm,
-			err:         "415 Unsupported Media Type",
+			name:         "415 - Unsupported Media Type",
+			method:       http.MethodPost,
+			contentType:  ContentTypeForm,
+			status:       http.StatusUnsupportedMediaType,
+			httpResponse: NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
 		},
 		{
-			name:   "400 - empty data",
-			method: http.MethodPost,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - empty data",
-			body:   &httpBody{},
+			name:         "400 - empty data",
+			method:       http.MethodPost,
+			status:       http.StatusBadRequest,
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "empty data"),
+			body:         &httpBody{},
 		},
 		{
 			name:   "200",
@@ -56,9 +53,8 @@ func TestSaveData(t *testing.T) {
 			},
 			status:             http.StatusOK,
 			contentType:        ContentTypeJSON,
-			err:                "",
 			gatewaySaveDataErr: nil,
-			responseBody:       "\"success\"",
+			httpResponse:       HTTPResponse{Data: struct{}{}},
 		},
 	}
 
@@ -100,12 +96,24 @@ func TestSaveData(t *testing.T) {
 			status := rr.Code
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
+			var rsp ReceivedHTTPResponse
+			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.httpResponse.Error, rsp.Error)
+
+			if rsp.Data == nil {
+				require.Nil(t, tc.httpResponse.Data)
 			} else {
-				require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
+				require.NotNil(t, tc.httpResponse.Data)
+
+				var saveRsp struct{}
+				err := json.Unmarshal(rsp.Data, &saveRsp)
+				require.NoError(t, err)
+
+				require.Equal(t, tc.httpResponse.Data, saveRsp)
 			}
+
 		})
 	}
 }
@@ -121,16 +129,15 @@ func TestGetData(t *testing.T) {
 		body                 *httpBody
 		keys                 []string
 		status               int
-		err                  string
 		gatewayGetDataErr    error
 		gatewatGetDataResult map[string]interface{}
-		responseBody         map[string]string
+		httpResponse         HTTPResponse
 	}{
 		{
-			name:   "400 - missing keys",
-			method: http.MethodGet,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing keys",
+			name:         "400 - missing keys",
+			method:       http.MethodGet,
+			status:       http.StatusBadRequest,
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "missing keys"),
 		},
 		{
 			name:   "400 - empty file",
@@ -140,8 +147,8 @@ func TestGetData(t *testing.T) {
 				Keys: "key1,key2",
 			},
 			keys:              []string{"key1", "key2"},
-			err:               "400 Bad Request - empty file",
 			gatewayGetDataErr: errors.New("empty file"),
+			httpResponse:      NewHTTPErrorResponse(http.StatusBadRequest, "empty file"),
 		},
 		{
 			name:   "200",
@@ -151,15 +158,16 @@ func TestGetData(t *testing.T) {
 			},
 			keys:              []string{"key1", "key2"},
 			status:            http.StatusOK,
-			err:               "",
 			gatewayGetDataErr: nil,
 			gatewatGetDataResult: map[string]interface{}{
 				"key1": "value1",
 				"key2": "value2",
 			},
-			responseBody: map[string]string{
-				"key1": "value1",
-				"key2": "value2",
+			httpResponse: HTTPResponse{
+				Data: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
 			},
 		},
 	}
@@ -194,16 +202,22 @@ func TestGetData(t *testing.T) {
 			status := rr.Code
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
-					"got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
+			var rsp ReceivedHTTPResponse
+			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.httpResponse.Error, rsp.Error)
+
+			if rsp.Data == nil {
+				require.Nil(t, tc.httpResponse.Data)
 			} else {
-				var rlt map[string]string
-				err = json.Unmarshal(rr.Body.Bytes(), &rlt)
+				require.NotNil(t, tc.httpResponse.Data)
+
+				var getRsp map[string]string
+				err := json.Unmarshal(rsp.Data, &getRsp)
 				require.NoError(t, err)
-				fmt.Println(tc.responseBody)
-				require.Equal(t, tc.responseBody, rlt)
+
+				require.Equal(t, tc.httpResponse.Data, getRsp)
 			}
 		})
 	}
@@ -220,15 +234,14 @@ func TestDeleteData(t *testing.T) {
 		body                 *httpBody
 		keys                 []string
 		status               int
-		err                  string
 		gatewayDeleteDataErr error
-		responseBody         string
+		httpResponse         HTTPResponse
 	}{
 		{
-			name:   "400 - missing keys",
-			method: http.MethodDelete,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing keys",
+			name:         "400 - missing keys",
+			method:       http.MethodDelete,
+			status:       http.StatusBadRequest,
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, "missing keys"),
 		},
 		{
 			name:   "400 - empty file",
@@ -238,8 +251,8 @@ func TestDeleteData(t *testing.T) {
 				Keys: "key1,key2",
 			},
 			keys:                 []string{"key1", "key2"},
-			err:                  "400 Bad Request - empty file",
 			gatewayDeleteDataErr: errors.New("empty file"),
+			httpResponse:         NewHTTPErrorResponse(http.StatusBadRequest, "empty file"),
 		},
 		{
 			name:   "200",
@@ -249,9 +262,8 @@ func TestDeleteData(t *testing.T) {
 			},
 			keys:                 []string{"key1", "key2"},
 			status:               http.StatusOK,
-			err:                  "",
 			gatewayDeleteDataErr: nil,
-			responseBody:         "\"success\"",
+			httpResponse:         HTTPResponse{Data: struct{}{}},
 		},
 	}
 
@@ -285,11 +297,22 @@ func TestDeleteData(t *testing.T) {
 			status := rr.Code
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
+			var rsp ReceivedHTTPResponse
+			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.httpResponse.Error, rsp.Error)
+
+			if rsp.Data == nil {
+				require.Nil(t, tc.httpResponse.Data)
 			} else {
-				require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
+				require.NotNil(t, tc.httpResponse.Data)
+
+				var deleteRsp struct{}
+				err := json.Unmarshal(rsp.Data, &deleteRsp)
+				require.NoError(t, err)
+
+				require.Equal(t, tc.httpResponse.Data, deleteRsp)
 			}
 		})
 	}

@@ -75,9 +75,9 @@ func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transac
 }
 
 // NewGenesisBlock creates genesis block
-func NewGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) (*Block, error) {
+func NewGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64, prgrmState []byte) (*Block, error) {
 	txn := Transaction{}
-	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
+	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins, prgrmState)
 	body := BlockBody{Transactions: Transactions{txn}}
 	prevHash := cipher.SHA256{}
 	head := BlockHeader{
@@ -223,6 +223,7 @@ func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
 				Address:        tx.Out[i].Address,
 				Coins:          tx.Out[i].Coins,
 				Hours:          tx.Out[i].Hours,
+				ProgramState:   tx.Out[i].ProgramState,
 			},
 		}
 	}
@@ -250,6 +251,7 @@ func CreateUnspent(bh BlockHeader, tx Transaction, outIndex int) (UxOut, error) 
 			Address:        tx.Out[outIndex].Address,
 			Coins:          tx.Out[outIndex].Coins,
 			Hours:          tx.Out[outIndex].Hours,
+			ProgramState:   tx.Out[outIndex].ProgramState,
 		},
 	}, nil
 }

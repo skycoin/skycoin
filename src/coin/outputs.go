@@ -55,6 +55,7 @@ type UxBody struct {
 	Address        cipher.Address // Address of receiver
 	Coins          uint64         // Number of coins
 	Hours          uint64         // Coin hours
+	ProgramState   []byte         // Serialized program state
 }
 
 // Hash returns the hash of UxBody

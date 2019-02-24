@@ -944,7 +944,7 @@ func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnVi
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
 func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, error) {
 	var known bool
-
+	
 	if err := vs.DB.Update("InjectUserTransaction", func(tx *dbutil.Tx) error {
 		var err error
 		known, err = vs.InjectUserTransactionTx(tx, txn)
@@ -974,7 +974,7 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 	if softErr != nil {
 		logger.WithError(softErr).Warning("InjectUserTransaction vs.Unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
-
+	
 	return known, err
 }
 

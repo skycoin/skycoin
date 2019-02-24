@@ -47,6 +47,8 @@ type Transaction struct {
 	Sigs []cipher.Sig        //list of signatures, 64+1 bytes each
 	In   []cipher.SHA256     //ouputs being spent
 	Out  []TransactionOutput //ouputs being created
+
+	MainExpressions []byte         //serialized expressions to run using the program state
 }
 
 // TransactionOutput hash output/name is function of Hash
@@ -54,6 +56,7 @@ type TransactionOutput struct {
 	Address         cipher.Address //address to send to
 	Coins           uint64         //amount to be sent in coins
 	Hours           uint64         //amount to be sent in coin hours
+	
 	ProgramState    []byte         //serialized program state
 }
 
@@ -73,6 +76,9 @@ func (txn *Transaction) Verify() error {
 	}
 	if len(txn.Out) == 0 {
 		return errors.New("No outputs")
+	}
+	if len(txn.MainExpressions) == 0 {
+		return errors.New("No expressions to execute")
 	}
 
 	// Check signature index fields
@@ -114,6 +120,7 @@ func (txn *Transaction) Verify() error {
 		uxb.Coins = to.Coins
 		uxb.Hours = to.Hours
 		uxb.Address = to.Address
+		uxb.ProgramState = to.ProgramState
 		outputs[uxb.Hash()] = struct{}{}
 	}
 	if len(outputs) != len(txn.Out) {
@@ -202,16 +209,18 @@ func (txOut TransactionOutput) UxID(txID cipher.SHA256) cipher.SHA256 {
 	x.Coins = txOut.Coins
 	x.Hours = txOut.Hours
 	x.Address = txOut.Address
+	x.ProgramState = txOut.ProgramState
 	x.SrcTransaction = txID
 	return x.Hash()
 }
 
 // PushOutput Adds a TransactionOutput, sending coins & hours to an Address
-func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
+func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64, prgrmState []byte) {
 	to := TransactionOutput{
 		Address: dst,
 		Coins:   coins,
 		Hours:   hours,
+		ProgramState: prgrmState,
 	}
 	txn.Out = append(txn.Out, to)
 }

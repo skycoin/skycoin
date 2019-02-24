@@ -755,14 +755,14 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 		logger.WithFields(logrus.Fields{
 			"requestedBlocks":    requestedBlocks,
 			"maxRequestedBlocks": dc.MaxGetBlocksResponseCount,
-		}).Debug("GetBlocksMessage.RequestedBlocks value exceeds configured limit, reducing")
+		}).WithFields(fields).Debug("GetBlocksMessage.RequestedBlocks value exceeds configured limit, reducing")
 		requestedBlocks = dc.MaxGetBlocksResponseCount
 	}
 
 	// Fetch and return signed blocks since LastBlock
-	blocks, err := d.getSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	blocks, err := d.getSignedBlocksSince(gbm.LastBlock, requestedBlocks)
 	if err != nil {
-		logger.WithError(err).Error("getSignedBlocksSince failed")
+		logger.WithFields(fields).WithError(err).Error("getSignedBlocksSince failed")
 		return
 	}
 
@@ -774,7 +774,7 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 
 	m := NewGiveBlocksMessage(blocks, dc.MaxOutgoingMessageLength)
 	if len(m.Blocks) != len(blocks) {
-		logger.WithField("startBlockSeq", blocks[0].Head.BkSeq).Warningf("NewGiveBlocksMessage truncated %d blocks to %d blocks", len(blocks), len(m.Blocks))
+		logger.WithField("startBlockSeq", blocks[0].Head.BkSeq).WithFields(fields).Warningf("NewGiveBlocksMessage truncated %d blocks to %d blocks", len(blocks), len(m.Blocks))
 	}
 
 	if err := d.sendMessage(gbm.c.Addr, m); err != nil {

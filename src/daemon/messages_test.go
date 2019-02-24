@@ -971,3 +971,38 @@ func TestTruncateGetTxnsHashes(t *testing.T) {
 	n = encodeSizeGetTxnsMessage(m)
 	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
 }
+
+func TestGetBlocksMessageProcess(t *testing.T) {
+	d := &mockDaemoner{}
+
+	m := &GetBlocksMessage{
+		LastBlock: 7,
+		// request more blocks than MaxGetBlocksResponseCount to verify capping
+		RequestedBlocks: 100,
+		c: &gnet.MessageContext{
+			ConnID: 10,
+			Addr:   "127.0.0.1:1234",
+		},
+	}
+
+	config := DaemonConfig{
+		DisableNetworking:         false,
+		MaxGetBlocksResponseCount: 20,
+		MaxOutgoingMessageLength:  1024,
+	}
+
+	// Have getSignedBlocksSince return a lot of blocks to verify truncation
+	blocks := make([]coin.SignedBlock, 256)
+
+	gbm := NewGiveBlocksMessage(blocks, config.MaxOutgoingMessageLength)
+	require.True(t, len(gbm.Blocks) < len(blocks), "blocks should be truncated")
+
+	d.On("daemonConfig").Return(config)
+	d.On("recordPeerHeight", "127.0.0.1:1234", uint64(10), uint64(7)).Return()
+	d.On("getSignedBlocksSince", uint64(7), uint64(20)).Return(blocks, nil)
+	d.On("sendMessage", "127.0.0.1:1234", gbm).Return(nil)
+
+	m.process(d)
+
+	d.AssertExpectations(t)
+}

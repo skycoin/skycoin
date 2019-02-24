@@ -996,6 +996,7 @@ func TestGetBlocksMessageProcess(t *testing.T) {
 
 	gbm := NewGiveBlocksMessage(blocks, config.MaxOutgoingMessageLength)
 	require.True(t, len(gbm.Blocks) < len(blocks), "blocks should be truncated")
+	require.NotEmpty(t, gbm.Blocks)
 
 	d.On("daemonConfig").Return(config)
 	d.On("recordPeerHeight", "127.0.0.1:1234", uint64(10), uint64(7)).Return()

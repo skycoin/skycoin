@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - #2172 Fix electron build failure for linux system
-- Don't messages that exceed the configured 256kB limit, which caused peers to disconnect from the sender
+- Don't send messages that exceed the configured 256kB limit, which caused peers to disconnect from the sender
 
 ### Changed
 
@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - An empty wallet in the wallets folder will prevent the application from starting
 - Use [`skyencoder`](https://github.com/skycoin/skyencoder)-generated binary encoders/decoders for network and database data, instead of the reflect-based encoders/decoders in `cipher/encoder`.
 - Incoming wire message size limit increased to 1024kB
+- Clients restrict the maximum number of blocks they will send in a `GiveBlocksMessage` to 20
 
 ### Removed
 

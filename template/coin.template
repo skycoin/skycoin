@@ -75,7 +75,7 @@ var (
 		CreateBlockBurnFactor:          {{.CreateBlockBurnFactor}},
 		CreateBlockMaxTransactionSize:  {{.CreateBlockMaxTransactionSize}},
 		CreateBlockMaxDropletPrecision: {{.CreateBlockMaxDropletPrecision}},
-		MaxBlockSize:                   {{.MaxBlockSize}},
+		MaxBlockTransactionsSize:       {{.MaxBlockTransactionsSize}},
 	})
 
 	parseFlags = true

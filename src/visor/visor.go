@@ -51,7 +51,7 @@ type Config struct {
 	// Transaction verification parameters used when creating a block
 	CreateBlockVerifyTxn params.VerifyTxn
 	// Maximum size of a block, in bytes for creating blocks
-	MaxBlockSize uint32
+	MaxBlockTransactionsSize uint32
 
 	// Where the blockchain is saved
 	BlockchainFile string
@@ -88,9 +88,9 @@ func NewConfig() Config {
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		UnconfirmedVerifyTxn: params.UserVerifyTxn,
-		CreateBlockVerifyTxn: params.UserVerifyTxn,
-		MaxBlockSize:         params.UserVerifyTxn.MaxTransactionSize,
+		UnconfirmedVerifyTxn:     params.UserVerifyTxn,
+		CreateBlockVerifyTxn:     params.UserVerifyTxn,
+		MaxBlockTransactionsSize: params.UserVerifyTxn.MaxTransactionSize,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -141,8 +141,8 @@ func (c Config) Verify() error {
 		return fmt.Errorf("CreateBlockVerifyTxn.MaxDropletPrecision must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
 	}
 
-	if c.MaxBlockSize < c.CreateBlockVerifyTxn.MaxTransactionSize {
-		return errors.New("MaxBlockSize must be >= CreateBlockVerifyTxn.MaxTransactionSize")
+	if c.MaxBlockTransactionsSize < c.CreateBlockVerifyTxn.MaxTransactionSize {
+		return errors.New("MaxBlockTransactionsSize must be >= CreateBlockVerifyTxn.MaxTransactionSize")
 	}
 
 	return nil
@@ -236,7 +236,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	logger.Infof("Coinhour burn factor for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.BurnFactor)
 	logger.Infof("Max transaction size for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxTransactionSize)
 	logger.Infof("Max decimals for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxDropletPrecision)
-	logger.Infof("Max block size is %d", c.MaxBlockSize)
+	logger.Infof("Max block size is %d", c.MaxBlockTransactionsSize)
 
 	// Loads wallet
 	wltServConfig := wallet.Config{
@@ -515,7 +515,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	}
 
 	// Apply block size transaction limit
-	txns, err = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+	txns, err = txns.TruncateBytesTo(vs.Config.MaxBlockTransactionsSize)
 	if err != nil {
 		logger.Critical().WithError(err).Error("TruncateBytesTo failed, no block can be made until the offending transaction is removed")
 		return coin.SignedBlock{}, err

@@ -51,6 +51,11 @@ func encodeGetTxnsMessageToBuffer(buf []byte, obj *GetTxnsMessage) error {
 		Buffer: buf[:],
 	}
 
+	// obj.Transactions maxlen check
+	if len(obj.Transactions) > 256 {
+		return encoder.ErrMaxLenExceeded
+	}
+
 	// obj.Transactions length check
 	if uint64(len(obj.Transactions)) > math.MaxUint32 {
 		return errors.New("obj.Transactions length exceeds math.MaxUint32")
@@ -89,6 +94,10 @@ func decodeGetTxnsMessage(buf []byte, obj *GetTxnsMessage) (uint64, error) {
 		length := int(ul)
 		if length < 0 || length > len(d.Buffer) {
 			return 0, encoder.ErrBufferUnderflow
+		}
+
+		if length > 256 {
+			return 0, encoder.ErrMaxLenExceeded
 		}
 
 		if length != 0 {

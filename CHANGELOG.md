@@ -7,22 +7,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
-- Add `-disable-header-check` flag to disable host/origin/referer header checks for the node APIs and add `header_check_enabled` parameter in `/health` endpoint.
 
+- Add `-disable-header-check` flag to disable host/origin/referer header checks for the node APIs and add `header_check_enabled` parameter in `/health` endpoint.
 - Add CLI `checkDBDecoding` command to verify the `skyencoder`-generated binary decoders match the reflect-based decoder
 - Add `unsigned` option to `POST /api/v1/wallet/transaction` to create unsigned transactions from a wallet
 - Add `/api/v2/wallet/transaction/sign` to sign an unsigned transaction with a wallet
 - Add `unsigned` option to `POST /api/v2/transaction/verify` for verifying an unsigned transaction
+- Add `-max-inc-msg-len` and `-max-out-msg-len` options to control the size of incoming and outgoing wire messages
 
 ### Fixed
 
 - #2172 Fix electron build failure for linux system
+- Don't send messages that exceed the configured 256kB limit, which caused peers to disconnect from the sender
 
 ### Changed
 
 - Duplicate wallets in the wallets folder will prevent the application from starting
 - An empty wallet in the wallets folder will prevent the application from starting
 - Use [`skyencoder`](https://github.com/skycoin/skyencoder)-generated binary encoders/decoders for network and database data, instead of the reflect-based encoders/decoders in `cipher/encoder`.
+- Incoming wire message size limit increased to 1024kB
+- Clients restrict the maximum number of blocks they will send in a `GiveBlocksMessage` to 20
 
 ### Removed
 

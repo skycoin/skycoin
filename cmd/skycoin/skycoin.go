@@ -82,7 +82,7 @@ var (
 		CreateBlockBurnFactor:          2,
 		CreateBlockMaxTransactionSize:  32768,
 		CreateBlockMaxDropletPrecision: 3,
-		MaxBlockSize:                   32768,
+		MaxBlockTransactionsSize:       32768,
 	})
 
 	parseFlags = true

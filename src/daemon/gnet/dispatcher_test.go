@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/testutil"
 )
 
 var (
@@ -190,8 +192,11 @@ func TestSendMessage(t *testing.T) {
 		require.True(t, bytes.Equal(msg, expect))
 		return nil
 	}
-	err := sendMessage(nil, m, 0)
+	err := sendMessage(nil, m, 0, 1024)
 	require.NoError(t, err)
+
+	err = sendMessage(nil, m, 0, 1)
+	testutil.RequireError(t, err, "Message exceeds max message length")
 }
 
 /* Helpers */

@@ -586,7 +586,7 @@ func ExampleGivePeersMessage() {
 	var peer1 = *pex.NewPeer("47.88.33.156:6000")
 	var peer2 = *pex.NewPeer("121.41.103.148:6000")
 	peers = append(peers, peer0, peer1, peer2)
-	var message = NewGivePeersMessage(peers)
+	var message = NewGivePeersMessage(peers, 1024*1024)
 	fmt.Println("GivePeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
@@ -675,7 +675,7 @@ func ExampleGiveBlocksMessage() {
 		Block: block2,
 	}
 	blocks[1] = signedBlock
-	var message = NewGiveBlocksMessage(blocks)
+	var message = NewGiveBlocksMessage(blocks, 1024*1024)
 	fmt.Println("GiveBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
@@ -750,7 +750,7 @@ func ExampleGetTxnsMessage() {
 	var shas = make([]cipher.SHA256, 0)
 
 	shas = append(shas, hashes[1], hashes[2])
-	var message = NewGetTxnsMessage(shas)
+	var message = NewGetTxnsMessage(shas, 1024*1024)
 	fmt.Println("GetTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
@@ -825,7 +825,7 @@ func ExampleGiveTxnsMessage() {
 		Sigs:      []cipher.Sig{sig2, sig3},
 	}
 	transactions = append(transactions, transaction0, transaction1)
-	var message = NewGiveTxnsMessage(transactions)
+	var message = NewGiveTxnsMessage(transactions, 1024*1024)
 	fmt.Println("GiveTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
@@ -888,7 +888,7 @@ func ExampleGiveTxnsMessage() {
 func ExampleAnnounceTxnsMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
-	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[7], hashes[8]})
+	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[7], hashes[8]}, 1024*1024)
 	fmt.Println("AnnounceTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)

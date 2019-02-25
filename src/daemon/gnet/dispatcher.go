@@ -14,6 +14,11 @@ import (
 	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
+var (
+	// ErrMsgExceedsMaxLen is returned if trying to send a message that exceeds the configured max length
+	ErrMsgExceedsMaxLen = errors.New("Message exceeds max message length")
+)
+
 // SendResult result of a single message send
 type SendResult struct {
 	Addr    string
@@ -30,10 +35,13 @@ func newSendResult(addr string, m Message, err error) SendResult {
 }
 
 // Serializes a Message over a net.Conn
-func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
+func sendMessage(conn net.Conn, msg Message, timeout time.Duration, maxMsgLength int) error {
 	m, err := EncodeMessage(msg)
 	if err != nil {
 		return err
+	}
+	if len(m) > maxMsgLength {
+		return ErrMsgExceedsMaxLen
 	}
 	return sendByteMessage(conn, m, timeout)
 }

@@ -336,7 +336,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.False(t, known)
 	require.Nil(t, softErr)
 
-	v.Config.MaxBlockSize, err = txn.Size()
+	v.Config.MaxBlockTransactionsSize, err = txn.Size()
 	require.NoError(t, err)
 	sb, err := v.CreateAndExecuteBlock()
 	require.NoError(t, err)
@@ -351,7 +351,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, uint64(0), length)
-	v.Config.MaxBlockSize = 1024 * 4
+	v.Config.MaxBlockTransactionsSize = 1024 * 4
 
 	// Create various transactions and add them to unconfirmed pool
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
@@ -362,13 +362,13 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Add more transactions than is allowed in a block, to verify truncation
 	var txns coin.Transactions
 	var i int
-	truncatedTxns, err := txns.TruncateBytesTo(v.Config.MaxBlockSize)
+	truncatedTxns, err := txns.TruncateBytesTo(v.Config.MaxBlockTransactionsSize)
 	require.NoError(t, err)
 	for len(txns) == len(truncatedTxns) {
 		tx := makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f)
 		txns = append(txns, tx)
 		i++
-		truncatedTxns, err = txns.TruncateBytesTo(v.Config.MaxBlockSize)
+		truncatedTxns, err = txns.TruncateBytesTo(v.Config.MaxBlockTransactionsSize)
 		require.NoError(t, err)
 	}
 	require.NotEqual(t, 0, len(txns))

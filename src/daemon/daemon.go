@@ -121,6 +121,16 @@ func (cfg *Config) preprocess() (Config, error) {
 
 	config.Pool.MaxConnections = config.Daemon.MaxConnections
 	config.Pool.MaxOutgoingConnections = config.Daemon.MaxOutgoingConnections
+	config.Pool.MaxIncomingMessageLength = int(config.Daemon.MaxIncomingMessageLength)
+	config.Pool.MaxOutgoingMessageLength = int(config.Daemon.MaxOutgoingMessageLength)
+
+	// MaxOutgoingMessageLength must be able to fit a GiveBlocksMessage with at least one maximum-sized block,
+	// otherwise it cannot send certain blocks.
+	// Blocks are the largest object sent over the network, so MaxBlockTransactionsSize is used as an upper limit
+	maxSizeGBM := maxSizeGiveBlocksMessage(config.Daemon.MaxBlockTransactionsSize)
+	if config.Daemon.MaxOutgoingMessageLength < maxSizeGBM {
+		return Config{}, fmt.Errorf("MaxOutgoingMessageLength must be >= %d", maxSizeGBM)
+	}
 
 	userAgent, err := config.Daemon.UserAgent.Build()
 	if err != nil {
@@ -132,6 +142,16 @@ func (cfg *Config) preprocess() (Config, error) {
 	config.Daemon.userAgent = userAgent
 
 	return config, nil
+}
+
+// maxSizeGiveBlocksMessage return the encoded size of a GiveBlocksMessage
+// with a single signed block of the largest possible size
+func maxSizeGiveBlocksMessage(maxBlockSize uint32) uint64 {
+	size := uint64(4)                                         // message type prefix
+	size += encodeSizeGiveBlocksMessage(&GiveBlocksMessage{}) // size of an empty GiveBlocksMessage
+	size += encodeSizeSignedBlock(&coin.SignedBlock{})        // size of an empty SignedBlock
+	size += uint64(maxBlockSize)                              // maximum size of all transactions in a block
+	return size
 }
 
 // DaemonConfig configuration for the Daemon
@@ -182,8 +202,10 @@ type DaemonConfig struct { // nolint: golint
 	BlocksRequestRate time.Duration
 	// How often to announce our blocks to peers
 	BlocksAnnounceRate time.Duration
-	// How many blocks to respond with to a GetBlocksMessage
-	BlocksResponseCount uint64
+	// How many blocks to request in a GetBlocksMessage
+	GetBlocksRequestCount uint64
+	// Maximum number of blocks to respond with to a GetBlocksMessage
+	MaxGetBlocksResponseCount uint64
 	// Max announce txns hash number
 	MaxTxnAnnounceNum int
 	// How often new blocks are created by the signing node, in seconds
@@ -201,6 +223,12 @@ type DaemonConfig struct { // nolint: golint
 	UnconfirmedVerifyTxn params.VerifyTxn
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
+	// Maximum size of incoming messages
+	MaxIncomingMessageLength uint64
+	// Maximum size of incoming messages
+	MaxOutgoingMessageLength uint64
+	// Maximum total size of transactions in a block
+	MaxBlockTransactionsSize uint32
 }
 
 // NewDaemonConfig creates daemon config
@@ -227,13 +255,17 @@ func NewDaemonConfig() DaemonConfig {
 		LogPings:                     true,
 		BlocksRequestRate:            time.Second * 60,
 		BlocksAnnounceRate:           time.Second * 60,
-		BlocksResponseCount:          20,
+		GetBlocksRequestCount:        20,
+		MaxGetBlocksResponseCount:    20,
 		MaxTxnAnnounceNum:            16,
 		BlockCreationInterval:        10,
 		UnconfirmedRefreshRate:       time.Minute,
 		UnconfirmedRemoveInvalidRate: time.Minute,
 		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
+		MaxOutgoingMessageLength:     256 * 1024,
+		MaxIncomingMessageLength:     1024 * 1024,
+		MaxBlockTransactionsSize:     32768,
 	}
 }
 
@@ -637,8 +669,8 @@ loop:
 				continue
 			}
 			// Announce these transactions
-			if err := dm.announceTxns(validTxns); err != nil {
-				logger.WithError(err).Warning("announceTxns failed")
+			if err := dm.announceTxnHashes(validTxns); err != nil {
+				logger.WithError(err).Warning("announceTxnHashes failed")
 			}
 
 		case <-unconfirmedRemoveInvalidTicker.C:
@@ -1058,7 +1090,14 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 // outside of the daemon run loop
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
-		logger.WithError(r.Error).WithFields(logrus.Fields{
+		var lg logrus.FieldLogger
+		if r.Error == gnet.ErrMsgExceedsMaxLen {
+			lg = logger.Critical()
+		} else {
+			lg = logger
+		}
+
+		lg.WithError(r.Error).WithFields(logrus.Fields{
 			"addr":    r.Addr,
 			"msgType": reflect.TypeOf(r.Message),
 		}).Warning("Failed to send message")
@@ -1090,7 +1129,7 @@ func (dm *Daemon) requestBlocks() error {
 		return errors.New("Cannot request blocks, there is no head block")
 	}
 
-	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
+	m := NewGetBlocksMessage(headSeq, dm.Config.GetBlocksRequestCount)
 
 	if _, err := dm.broadcastMessage(m); err != nil {
 		logger.WithError(err).Debug("Broadcast GetBlocksMessage failed")
@@ -1118,26 +1157,6 @@ func (dm *Daemon) announceBlocks() error {
 
 	if _, err := dm.broadcastMessage(m); err != nil {
 		logger.WithError(err).Debug("Broadcast AnnounceBlocksMessage failed")
-		return err
-	}
-
-	return nil
-}
-
-// announceTxns announces given transaction hashes
-func (dm *Daemon) announceTxns(txns []cipher.SHA256) error {
-	if dm.Config.DisableNetworking {
-		return ErrNetworkingDisabled
-	}
-
-	if len(txns) == 0 {
-		return nil
-	}
-
-	m := NewAnnounceTxnsMessage(txns)
-
-	if _, err := dm.broadcastMessage(m); err != nil {
-		logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
 		return err
 	}
 
@@ -1196,7 +1215,11 @@ func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
 		return nil, ErrNetworkingDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{txn})
+	m := NewGiveTxnsMessage(coin.Transactions{txn}, dm.Config.MaxOutgoingMessageLength)
+	if len(m.Transactions) != 1 {
+		logger.Critical().Error("NewGiveTxnsMessage truncated its only transaction")
+	}
+
 	ids, err := dm.broadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Error("Broadcast GiveTxnsMessage failed")
@@ -1340,7 +1363,7 @@ func (dm *Daemon) requestBlocksFromAddr(addr string) error {
 		return errors.New("Cannot request blocks from addr, there is no head block")
 	}
 
-	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
+	m := NewGetBlocksMessage(headSeq, dm.Config.GetBlocksRequestCount)
 	return dm.sendMessage(addr, m)
 }
 
@@ -1350,7 +1373,11 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 		return ErrNetworkingDisabled
 	}
 
-	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
+	m := NewGiveBlocksMessage([]coin.SignedBlock{sb}, dm.Config.MaxOutgoingMessageLength)
+	if len(m.Blocks) != 1 {
+		logger.Critical().Error("NewGiveBlocksMessage truncated its only block")
+	}
+
 	_, err := dm.broadcastMessage(m)
 	return err
 }
@@ -1411,7 +1438,8 @@ func (dm *Daemon) sendRandomPeers(addr string) error {
 		return errors.New("No peers available")
 	}
 
-	m := NewGivePeersMessage(peers)
+	m := NewGivePeersMessage(peers, dm.Config.MaxOutgoingMessageLength)
+
 	return dm.sendMessage(addr, m)
 }
 
@@ -1427,11 +1455,23 @@ func (dm *Daemon) announceAllValidTxns() error {
 		return err
 	}
 
+	return dm.announceTxnHashes(hashes)
+}
+
+// announceTxnHashes announces transaction hashes, splitting them into chunks if they exceed MaxTxnAnnounceNum
+func (dm *Daemon) announceTxnHashes(hashes []cipher.SHA256) error {
+	if dm.Config.DisableNetworking {
+		return ErrNetworkingDisabled
+	}
+
 	// Divide hashes into multiple sets of max size
 	hashesSet := divideHashes(hashes, dm.Config.MaxTxnAnnounceNum)
 
 	for _, hs := range hashesSet {
-		m := NewAnnounceTxnsMessage(hs)
+		m := NewAnnounceTxnsMessage(hs, dm.Config.MaxOutgoingMessageLength)
+		if len(m.Transactions) != len(hs) {
+			logger.Critical().Error("NewAnnounceTxnsMessage truncated hashes that were already split up")
+		}
 		if _, err := dm.broadcastMessage(m); err != nil {
 			logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
 			return err

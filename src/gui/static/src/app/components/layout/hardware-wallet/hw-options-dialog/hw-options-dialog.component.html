@@ -68,7 +68,7 @@
         <button mat-button color="primary" (click)="changePin()">
           <div class="label">{{ (!needsPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate }}</div>
         </button>
-        <button mat-button color="primary" (click)="confirmSeed()">
+        <button mat-button color="primary" (click)="confirmSeed()" *ngIf="!needsBackup">
           <div class="label">{{ 'hardware-wallet.options.confirm-seed' | translate }}</div>
         </button>
         <button mat-button color="primary" (click)="wipe()">

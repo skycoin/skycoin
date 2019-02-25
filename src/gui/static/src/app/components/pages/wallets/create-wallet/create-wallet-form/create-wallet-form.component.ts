@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ISubscription } from 'rxjs/Subscription';
 import { ApiService } from '../../../../../services/api.service';
+import { Bip39WordListService } from '../../../../../services/bip39-word-list.service';
 
 export class FormData {
   label: string;
@@ -28,6 +29,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
   constructor(
     private apiService: ApiService,
+    private bip39WordListService: Bip39WordListService,
   ) { }
 
   ngOnInit() {
@@ -109,13 +111,17 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    const NumberOfWords = seed.split(' ').length;
-    if (NumberOfWords !== 12 && NumberOfWords !== 24) {
+    const words = seed.split(' ');
+    const numberOfWords = words.length;
+    if (numberOfWords !== 12 && numberOfWords !== 24) {
       return false;
     }
 
-    if (!(/^[a-z\s]*$/).test(seed)) {
-      return false;
+    for (let i = 0; i < numberOfWords; i++) {
+      const validation = this.bip39WordListService.validateWord(words[i]);
+      if (validation != null && !validation) {
+        return false;
+      }
     }
 
     return true;

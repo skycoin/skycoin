@@ -13,7 +13,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -562,7 +562,7 @@ func TestVerifyWallet(t *testing.T) {
 
 	// check with incorrect seed
 	isBip, err = c.VerifySeed("nut ")
-	testutil.RequireError(t, err, "seed is not a valid bip39 seed")
+	require.Equal(t, bip39.ErrSurroundingWhitespace, err)
 	require.False(t, isBip)
 }
 

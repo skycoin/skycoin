@@ -177,7 +177,16 @@ export class HwWalletService {
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
+      window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex, false);
+
+      return this.createRequestResponse(requestId);
+    });
+  }
+
+  confirmAddress(index: number): Observable<OperationResult> {
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwGetAddresses', requestId, 1, index, true);
 
       return this.createRequestResponse(requestId);
     });

@@ -160,8 +160,8 @@ ipcMain.on('hwGetFeatures', (event, requestId) => {
   );
 });
 
-ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex) => {
-  const promise = deviceWallet.devAddressGen(addressN, startIndex, false, pinEvent);
+ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex, confirm) => {
+  const promise = deviceWallet.devAddressGen(addressN, startIndex, confirm, pinEvent);
   promise.then(
     addresses => { console.log("Addresses promise resolved", addresses); event.sender.send('hwGetAddressesResponse', requestId, addresses); },
     error => { console.log("Addresses promise errored: ", error); event.sender.send('hwGetAddressesResponse', requestId, { error: error.toString() }); }

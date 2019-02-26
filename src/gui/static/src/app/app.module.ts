@@ -91,6 +91,7 @@ import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/h
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { HwConfirmAddressDialogComponent } from './components/layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
 
 
 const ROUTES = [
@@ -212,6 +213,7 @@ const ROUTES = [
     HwSeedWordDialogComponent,
     HwDialogBaseComponent,
     HwConfirmTxDialogComponent,
+    HwConfirmAddressDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -237,6 +239,7 @@ const ROUTES = [
     HwRestoreSeedDialogComponent,
     HwSeedWordDialogComponent,
     HwConfirmTxDialogComponent,
+    HwConfirmAddressDialogComponent,
   ],
   imports: [
     BrowserModule,

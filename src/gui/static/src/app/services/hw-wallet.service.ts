@@ -23,6 +23,7 @@ export enum OperationResults {
   IncorrectHardwareWallet,
   WrongWord,
   InvalidSeed,
+  WrongSeed,
   UndefinedError,
   Disconnected,
 }
@@ -34,7 +35,7 @@ export class OperationResult {
 
 interface EventData {
   event: string;
-  successText?: string;
+  successTexts?: string[];
 }
 
 @Injectable()
@@ -124,11 +125,11 @@ export class HwWalletService {
       });
 
       const data: EventData[] = [
-        { event: 'hwChangePinResponse', successText: 'PIN changed' },
-        { event: 'hwGenerateMnemonicResponse', successText: 'operation completed' },
-        { event: 'hwRecoverMnemonicResponse', successText: 'Device recovered' },
-        { event: 'hwBackupDeviceResponse', successText: 'operation completed' },
-        { event: 'hwWipeResponse', successText: 'operation completed' },
+        { event: 'hwChangePinResponse', successTexts: ['PIN changed'] },
+        { event: 'hwGenerateMnemonicResponse', successTexts: ['operation completed'] },
+        { event: 'hwRecoverMnemonicResponse', successTexts: ['Device recovered', 'The seed is valid and matches the one in the device'] },
+        { event: 'hwBackupDeviceResponse', successTexts: ['operation completed'] },
+        { event: 'hwWipeResponse', successTexts: ['operation completed'] },
         { event: 'hwCancelLastActionResponse' },
         { event: 'hwGetAddressesResponse' },
         { event: 'hwGetFeaturesResponse' },
@@ -137,8 +138,8 @@ export class HwWalletService {
 
       data.forEach(item => {
         window['ipcRenderer'].on(item.event, (event, requestId, result) => {
-          const success = item.successText
-            ? typeof result === 'string' && (result as string).includes(item.successText)
+          const success = item.successTexts
+            ? typeof result === 'string' && item.successTexts.some(text => (result as string).includes(text))
             : true;
 
           this.dispatchEvent(requestId, result, success);
@@ -220,19 +221,19 @@ export class HwWalletService {
     return this.getAddressesRecursively(AppConfig.maxHardwareWalletAddresses - 1, []);
   }
 
-  generateMnemonic(): Observable<OperationResult> {
+  generateMnemonic(wordCount: number): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
+      window['ipcRenderer'].send('hwGenerateMnemonic', requestId, wordCount);
 
       return this.createRequestResponse(requestId);
     });
   }
 
-  recoverMnemonic(): Observable<OperationResult> {
+  recoverMnemonic(wordCount: number, dryRun: boolean): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwRecoverMnemonic', requestId);
+      window['ipcRenderer'].send('hwRecoverMnemonic', requestId, wordCount, dryRun);
 
       return this.createRequestResponse(requestId);
     });
@@ -367,6 +368,8 @@ export class HwWalletService {
           result = OperationResults.WithoutSeed;
         } else if (responseContent.includes('Invalid seed, are words in correct order?')) {
           result = OperationResults.InvalidSeed;
+        } else if (responseContent.includes('The seed is valid but does not match the one in the device')) {
+          result = OperationResults.WrongSeed;
         } else {
           result = OperationResults.UndefinedError;
         }

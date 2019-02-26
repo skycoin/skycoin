@@ -357,17 +357,22 @@
       "restore-backup": "Restore backup",
       "create-backup": "Create a backup",
       "wipe": "Wipe the device",
+      "confirm-seed": "Confirm seed",
       "create-pin": "Create PIN code",
       "change-pin": "Change PIN code",
       "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here."
     },
     "generate-seed" : {
+      "text": "Before proceeding, you can select the number of words you want the seed to have. The seed is a list of words that can be used to recover access to the coins in case of problems. Both values are safe, so if you do not have a special reason for selecting one or the other, you can leave the default value.",
       "configuring": "Configuring..."
     },
     "restore-seed" : {
+      "text": "Before proceeding, please select the number of words that the seed you want to recover has.",
+      "check-text": "You can use this option to enter a seed and check if it is equal to the one in the hardware wallet. Before start, select the number of words the seed you want to check has.",
       "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet.",
-      "error-invalid-seed": "Error: The seed is not valid. Please be sure to enter the correct words in the correct order."
+      "error-invalid-seed": "Error: The seed is not valid. Please be sure to enter the correct words in the correct order.",
+      "error-wrong-seed": "Error: The seed is valid but does not match the one in the device."
     },
     "added" : {
       "title": "New Hardware Wallet",

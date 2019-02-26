@@ -50,12 +50,12 @@
     <div>{{ 'header.errors.no-connections' | translate }}</div>
   </mat-toolbar>
   <mat-toolbar class="notification-bar" *ngIf="hasPendingTxs || !synchronized">
-    <div *ngIf="hasPendingTxs && synchronized">
+    <div *ngIf="hasPendingTxs">
       {{ 'header.pending-txs1' | translate }}
       <a routerLink='/settings/pending-transactions'>{{ 'header.pending-txs2' | translate }}</a>
       {{ 'header.pending-txs3' | translate }}
     </div>
-    <div *ngIf="!synchronized">
+    <div *ngIf="!synchronized && !hasPendingTxs">
       {{ 'header.synchronizing' | translate }}
     </div>
   </mat-toolbar>

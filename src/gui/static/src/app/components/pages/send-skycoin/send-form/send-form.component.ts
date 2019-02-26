@@ -35,6 +35,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   private formSubscription: ISubscription;
   private processingSubscription: ISubscription;
+  private syncCheckSubscription: ISubscription;
 
   constructor(
     public formBuilder: FormBuilder,
@@ -56,6 +57,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     if (this.processingSubscription && !this.processingSubscription.closed) {
       this.processingSubscription.unsubscribe();
     }
+    this.closeSyncCheckSubscription();
     this.formSubscription.unsubscribe();
     this.navbarService.hideSwitch();
     this.snackbar.dismiss();
@@ -72,7 +74,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private checkBeforeSending() {
-    this.blockchainService.synchronized.first().subscribe(synchronized => {
+    this.closeSyncCheckSubscription();
+    this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
       if (synchronized) {
         this.unlockAndSend();
       } else {
@@ -266,5 +269,11 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.form.get('wallet').setValue('');
     this.form.get('address').setValue('');
     this.form.get('amount').setValue('');
+  }
+
+  private closeSyncCheckSubscription() {
+    if (this.syncCheckSubscription) {
+      this.syncCheckSubscription.unsubscribe();
+    }
   }
 }

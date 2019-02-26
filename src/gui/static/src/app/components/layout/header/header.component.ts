@@ -12,6 +12,7 @@ import 'rxjs/add/operator/take';
 import { shouldUpgradeVersion } from '../../../utils/semver';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
+import { NetworkService } from '../../../services/network.service';
 
 @Component({
   selector: 'app-header',
@@ -57,6 +58,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   constructor(
     public appService: AppService,
+    public networkService: NetworkService,
     private apiService: ApiService,
     private blockchainService: BlockchainService,
     private priceService: PriceService,

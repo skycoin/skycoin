@@ -73,7 +73,7 @@ if [ ! $? -eq 0 ]; then
     exit 1
 fi
 
-echo "checking if integraton tests compile"
+echo "checking if integration tests compile"
 go test ./src/api/integration/...
 go test ./src/cli/integration/...
 

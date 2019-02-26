@@ -76,7 +76,7 @@ CMDPKG=$(go list ./cmd/${COIN})
 COVERPKG=$(dirname $(dirname ${CMDPKG}))
 GOLDFLAGS="-X ${CMDPKG}.Commit=${COMMIT} -X ${CMDPKG}.Branch=${BRANCH}"
 
-echo "checking if integraton tests compile"
+echo "checking if integration tests compile"
 go test ./src/api/integration/...
 go test ./src/cli/integration/...
 

@@ -571,11 +571,11 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 		return
 	}
 
-	if doLive(t) && !doLiveWallet(t) {
-		return
+	if mode(t) == testModeLive && !*testLiveWallet {
+		t.Skip("Skipping tests because live mode enabled but wallet tests disabled")
 	}
 
-	if mode(t) != testModeEnableSeedAPI {
+	if mode(t) == testModeEnableSeedAPI {
 		t.Skip("Skipping because enable seed API tests is on")
 	}
 

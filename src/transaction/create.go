@@ -192,12 +192,14 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 	// if the extra coin hour fee incurred by this additional input is less than
 	// the remaining coin hours, the input is added.
 	if changeCoins == 0 && changeHours > 0 {
+		logger.Debug("Trying to recover change hours by forcing an extra input")
 		// Find the output with the least coin hours
 		// If size of the fee for this output is less than the changeHours, add it
 		// Update changeCoins and changeHours
 		z := uxBalancesSub(uxb, spends)
 		sortSpendsHoursLowToHigh(z)
 		if len(z) > 0 {
+			logger.Debug("Extra input found, evaluating if it can recover change hours")
 			extra := z[0]
 
 			// Calculate the new hours being spent
@@ -218,6 +220,7 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 			// can save, use the input
 			additionalFee := newFee - feeHours
 			if additionalFee < changeHours {
+				logger.Debug("Change hours can be recovered by forcing an extra input")
 				changeCoins = extra.Coins
 
 				if extra.Hours < additionalFee {
@@ -238,13 +241,18 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 					logger.Critical().WithError(err).Error("PushInput failed")
 					return nil, nil, err
 				}
+			} else {
+				logger.Debug("Unable to recover change hours by forcing an extra input")
 			}
+		} else {
+			logger.Debug("No more inputs left to use to recover change hours")
 		}
 	}
 
 	// With auto share mode, if there are leftover hours and change couldn't be force-added,
 	// recalculate that share ratio at 100%
 	if changeCoins == 0 && changeHours > 0 && p.HoursSelection.Type == HoursSelectionTypeAuto && p.HoursSelection.Mode == HoursSelectionModeShare {
+		logger.Debug("Recalculating share factor at 1.0 to avoid burning change hours")
 		oneDecimal := decimal.New(1, 0)
 
 		if p.HoursSelection.ShareFactor.Equal(oneDecimal) {
@@ -312,7 +320,9 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 	for i, h := range txn.In {
 		uxBalance, ok := uxbMap[h]
 		if !ok {
-			return nil, nil, errors.New("Created transaction's input is not in the UxBalanceSet, this should not occur")
+			err := errors.New("Created transaction's input is not in the UxBalanceSet, this should not occur")
+			logger.Critical().WithError(err).Error()
+			return nil, nil, err
 		}
 		inputs[i] = uxBalance
 	}

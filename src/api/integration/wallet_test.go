@@ -556,14 +556,14 @@ func TestVerifyWallet(t *testing.T) {
 	c := newClient()
 
 	// check with correct seed
-	isBip, err := c.VerifySeed("nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair")
+	isValid, err := c.VerifySeed("nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair")
 	require.NoError(t, err)
-	require.True(t, isBip)
+	require.True(t, isValid)
 
 	// check with incorrect seed
-	isBip, err = c.VerifySeed("nut ")
-	require.Equal(t, bip39.ErrSurroundingWhitespace, err)
-	require.False(t, isBip)
+	isValid, err = c.VerifySeed("nut ")
+	require.False(t, isValid)
+	assertResponseError(t, err, http.StatusUnprocessableEntity, bip39.ErrSurroundingWhitespace.Error())
 }
 
 func TestGetWalletSeedDisabledAPI(t *testing.T) {

@@ -28,7 +28,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -927,8 +927,8 @@ func TestFiberAddressGen(t *testing.T) {
 			seedsMap[seed] = struct{}{}
 
 			// seed is a valid mnemoic
-			isValid := bip39.IsMnemonicValid(seed)
-			require.True(t, isValid)
+			err = bip39.ValidateMnemonic(seed)
+			require.NoError(t, err)
 
 			// seed entropy is as expected
 			switch entropy {

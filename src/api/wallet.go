@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strconv"
 
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -710,9 +710,8 @@ func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mnemonicValid := bip39.IsMnemonicValid(req.Seed)
-	if !mnemonicValid {
-		resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, "seed is not a valid bip39 seed")
+	if err := bip39.ValidateMnemonic(req.Seed); err != nil {
+		resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, err.Error())
 		writeHTTPResponse(w, resp)
 		return
 	}

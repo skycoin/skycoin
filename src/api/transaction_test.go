@@ -632,13 +632,15 @@ func TestInjectTransaction(t *testing.T) {
 		Rawtx string `json:"rawtx"`
 	}
 
-	buf, err := validTransaction.Serialize()
-	require.NoError(t, err)
-	validTxnBody := &httpBody{Rawtx: hex.EncodeToString(buf)}
+	validTxnBody := &httpBody{
+		Rawtx: validTransaction.MustSerializeHex(),
+	}
 	validTxnBodyJSON, err := json.Marshal(validTxnBody)
 	require.NoError(t, err)
 
-	b := &httpBody{Rawtx: hex.EncodeToString(testutil.RandBytes(t, 128))}
+	b := &httpBody{
+		Rawtx: hex.EncodeToString(testutil.RandBytes(t, 128)),
+	}
 	invalidTxnBodyJSON, err := json.Marshal(b)
 	require.NoError(t, err)
 
@@ -1364,21 +1366,21 @@ func TestVerifyTransaction(t *testing.T) {
 		EncodedTransaction string `json:"encoded_transaction"`
 	}
 
-	buf, err := txnAndInputs.txn.Serialize()
-	require.NoError(t, err)
-	validTxnBody := &httpBody{EncodedTransaction: hex.EncodeToString(buf)}
+	validTxnBody := &httpBody{
+		EncodedTransaction: txnAndInputs.txn.MustSerializeHex(),
+	}
 	validTxnBodyJSON, err := json.Marshal(validTxnBody)
 	require.NoError(t, err)
 
-	b := &httpBody{EncodedTransaction: hex.EncodeToString(testutil.RandBytes(t, 128))}
+	b := &httpBody{
+		EncodedTransaction: hex.EncodeToString(testutil.RandBytes(t, 128)),
+	}
 	invalidTxnBodyJSON, err := json.Marshal(b)
 	require.NoError(t, err)
 
 	invalidTxnEmptyAddress := makeTransactionWithEmptyAddressOutput(t)
-	buf, err = invalidTxnEmptyAddress.txn.Serialize()
-	require.NoError(t, err)
 	invalidTxnEmptyAddressBody := &httpBody{
-		EncodedTransaction: hex.EncodeToString(buf),
+		EncodedTransaction: invalidTxnEmptyAddress.txn.MustSerializeHex(),
 	}
 	invalidTxnEmptyAddressBodyJSON, err := json.Marshal(invalidTxnEmptyAddressBody)
 	require.NoError(t, err)
@@ -1387,15 +1389,15 @@ func TestVerifyTransaction(t *testing.T) {
 	unsignedTxnAndInputs.txn.Sigs = make([]cipher.Sig, len(unsignedTxnAndInputs.txn.Sigs))
 	err = unsignedTxnAndInputs.txn.UpdateHeader()
 	require.NoError(t, err)
-	unsignedTxnBytes, err := unsignedTxnAndInputs.txn.Serialize()
-	require.NoError(t, err)
-	unsignedTxnBody := &httpBody{EncodedTransaction: hex.EncodeToString(unsignedTxnBytes)}
+	unsignedTxnBody := &httpBody{
+		EncodedTransaction: unsignedTxnAndInputs.txn.MustSerializeHex(),
+	}
 	unsignedTxnBodyJSON, err := json.Marshal(unsignedTxnBody)
 	require.NoError(t, err)
 
 	unsignedTxnBodyUnsigned := &httpBody{
 		Unsigned:           true,
-		EncodedTransaction: hex.EncodeToString(unsignedTxnBytes),
+		EncodedTransaction: unsignedTxnAndInputs.txn.MustSerializeHex(),
 	}
 	unsignedTxnBodyUnsignedJSON, err := json.Marshal(unsignedTxnBodyUnsigned)
 	require.NoError(t, err)

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/transaction"
 )
 
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us
@@ -88,8 +88,8 @@ func NewTransactionInputs(uxa []coin.UxOut, calculateHoursTime uint64) ([]Transa
 	return inputs, nil
 }
 
-// TransactionInputFromUxBalance converts wallet.UxBalance to TransactionInput
-func TransactionInputFromUxBalance(x wallet.UxBalance) TransactionInput {
+// TransactionInputFromUxBalance converts transaction.UxBalance to TransactionInput
+func TransactionInputFromUxBalance(x transaction.UxBalance) TransactionInput {
 	var t TransactionInput
 	t.CalculatedHours = x.Hours
 	t.UxOut.Head.BkSeq = x.BkSeq
@@ -100,14 +100,14 @@ func TransactionInputFromUxBalance(x wallet.UxBalance) TransactionInput {
 	t.UxOut.Body.SrcTransaction = x.SrcTransaction
 
 	if t.UxOut.Hash() != x.Hash {
-		logger.Panic("Reconstructed coin.UxOut from wallet.UxBalance hash does not match")
+		logger.Panic("Reconstructed coin.UxOut from transaction.UxBalance hash does not match")
 	}
 
 	return t
 }
 
-// NewTransactionInputsFromUxBalance converts []wallet.UxBalance to []TransactionInput
-func NewTransactionInputsFromUxBalance(uxb []wallet.UxBalance) []TransactionInput {
+// NewTransactionInputsFromUxBalance converts []transaction.UxBalance to []TransactionInput
+func NewTransactionInputsFromUxBalance(uxb []transaction.UxBalance) []TransactionInput {
 	if len(uxb) == 0 {
 		return nil
 	}

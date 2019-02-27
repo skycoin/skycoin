@@ -60,6 +60,10 @@ COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 GOLDFLAGS="-X ${CMDPKG}.Commit=${COMMIT} -X ${CMDPKG}.Branch=${BRANCH}"
 
+echo "checking if integration tests compile"
+go test ./src/api/integration/...
+go test ./src/cli/integration/...
+
 DATA_DIR=$(mktemp -d -t ${COIN}-data-dir.XXXXXX)
 WALLET_DIR="${DATA_DIR}/wallets"
 

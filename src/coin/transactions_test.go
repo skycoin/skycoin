@@ -473,20 +473,41 @@ func TestTransactionSerialization(t *testing.T) {
 	// Check reserializing deserialized txn
 	b2, err := txn2.Serialize()
 	require.NoError(t, err)
-	tx3, err := DeserializeTransaction(b2)
+	txn3, err := DeserializeTransaction(b2)
 	require.NoError(t, err)
-	require.Equal(t, txn2, tx3)
+	require.Equal(t, txn2, txn3)
 
 	// Check hex encode/decode followed by deserialize
 	s := hex.EncodeToString(b)
 	sb, err := hex.DecodeString(s)
 	require.NoError(t, err)
-	tx4, err := DeserializeTransaction(sb)
+	txn4, err := DeserializeTransaction(sb)
 	require.NoError(t, err)
-	require.Equal(t, txn2, tx4)
+	require.Equal(t, txn2, txn4)
 
 	// Invalid deserialization
-	require.Panics(t, func() { MustDeserializeTransaction([]byte{0x04}) })
+	require.Panics(t, func() {
+		MustDeserializeTransaction([]byte{0x04})
+	})
+
+	// SerializeHex
+	x, err := txn.SerializeHex()
+	require.NoError(t, err)
+	txn5, err := DeserializeTransactionHex(x)
+	require.NoError(t, err)
+	require.Equal(t, txn, txn5)
+
+	// Invalid hex deserialization
+	require.Panics(t, func() {
+		MustDeserializeTransactionHex("foo")
+	})
+
+	ss, err := txn.Serialize()
+	require.NoError(t, err)
+	require.Equal(t, ss, txn.MustSerialize())
+	sshh, err := txn.SerializeHex()
+	require.NoError(t, err)
+	require.Equal(t, sshh, txn.MustSerializeHex())
 }
 
 func TestTransactionOutputHours(t *testing.T) {

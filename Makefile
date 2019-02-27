@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-386 test-amd64 check
+.PHONY: run run-help test test-386 test-amd64 check check-newcoin
 .PHONY: integration-test-stable integration-test-stable-disable-csrf
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
@@ -7,7 +7,7 @@
 .PHONY: integration-test-disable-gui integration-test-disable-gui
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
-.PHONY: install-deps-ui build-ui help newcoins merge-coverage
+.PHONY: install-deps-ui build-ui build-ui-travis help newcoin merge-coverage
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 
@@ -61,7 +61,7 @@ check-newcoin: newcoin ## Check that make newcoin succeeds and no templated file
 	@if [ "$(shell git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 	@if [ "$(shell git diff ./src/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
-check: lint clean-coverage test-386 test-amd64 \
+check: lint clean-coverage test test-386 \
 	integration-test-stable integration-test-stable-disable-csrf \
 	integration-test-disable-wallet-api integration-test-disable-seed-api \
 	integration-test-enable-seed-api integration-test-disable-gui \
@@ -173,6 +173,7 @@ generate: ## Generate test interface mocks and struct encoders
 	# mockery can't generate the UnspentPooler mock in package visor, patch it
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
+	sed -i "" -e 's/AddressHashes/blockdb.AddressHashes/g' ./src/visor/mock_unspent_pooler_test.go
 
 install-generators: ## Install tools used by go generate
 	go get github.com/vektra/mockery/.../

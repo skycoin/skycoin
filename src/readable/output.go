@@ -8,6 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
@@ -131,9 +132,9 @@ func (ros UnspentOutputs) ToUxArray() (coin.UxArray, error) {
 	return uxs, nil
 }
 
-// OutputsToUxBalances converts UnspentOutputs to []wallet.UxBalance
-func OutputsToUxBalances(ros UnspentOutputs) ([]wallet.UxBalance, error) {
-	uxb := make([]wallet.UxBalance, len(ros))
+// OutputsToUxBalances converts UnspentOutputs to []transaction.UxBalance
+func OutputsToUxBalances(ros UnspentOutputs) ([]transaction.UxBalance, error) {
+	uxb := make([]transaction.UxBalance, len(ros))
 	for i, ro := range ros {
 		if ro.Hash == "" {
 			return nil, errors.New("UnspentOutput missing hash")
@@ -159,7 +160,7 @@ func OutputsToUxBalances(ros UnspentOutputs) ([]wallet.UxBalance, error) {
 			return nil, fmt.Errorf("UnspentOutput src_tx is invalid: %v", err)
 		}
 
-		b := wallet.UxBalance{
+		b := transaction.UxBalance{
 			Hash:           hash,
 			Time:           ro.Time,
 			BkSeq:          ro.BkSeq,

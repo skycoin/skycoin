@@ -1117,3 +1117,39 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 		os.Remove(tmpFile.Name())
 	}
 }
+
+func TestAddressHashesFlatten(t *testing.T) {
+	addrHashes := make(AddressHashes)
+
+	require.Empty(t, addrHashes.Flatten())
+
+	hashes := make([]cipher.SHA256, 10)
+	for i := range hashes {
+		hashes[i] = testutil.RandSHA256(t)
+	}
+
+	addrHashes = AddressHashes{
+		testutil.MakeAddress(): hashes[0:2],
+	}
+	require.Equal(t, hashes[0:2], addrHashes.Flatten())
+
+	addr1 := testutil.MakeAddress()
+	addr2 := testutil.MakeAddress()
+	addrHashes = AddressHashes{
+		addr1: hashes[0:2],
+		addr2: hashes[4:6],
+	}
+
+	expectedHashes := append(addrHashes[addr1], addrHashes[addr2]...)
+	flattenedHashes := addrHashes.Flatten()
+
+	sort.Slice(expectedHashes, func(a, b int) bool {
+		return bytes.Compare(expectedHashes[a][:], expectedHashes[b][:]) < 0
+	})
+	sort.Slice(flattenedHashes, func(a, b int) bool {
+		return bytes.Compare(flattenedHashes[a][:], flattenedHashes[b][:]) < 0
+	})
+
+	require.Equal(t, len(expectedHashes), len(flattenedHashes))
+	require.Equal(t, expectedHashes, flattenedHashes)
+}

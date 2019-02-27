@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 )
 
 // BalanceGetter interface for getting the balance of given addresses
@@ -298,55 +297,6 @@ func (serv *Service) GetWallets() (Wallets, error) {
 		wlts[k] = w.clone()
 	}
 	return wlts, nil
-}
-
-// CreateTransaction creates and signs a transaction based upon CreateTransactionParams.
-// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateTransaction(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
-	// TODO -- remove, unused (use visor.CreateTransaction)
-	serv.RLock()
-	defer serv.RUnlock()
-
-	if !serv.enableWalletAPI {
-		return nil, nil, ErrWalletAPIDisabled
-	}
-
-	if err := params.Validate(); err != nil {
-		return nil, nil, err
-	}
-
-	w, err := serv.getWallet(params.Wallet.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Check if the wallet needs a password
-	if w.IsEncrypted() {
-		if len(params.Wallet.Password) == 0 {
-			return nil, nil, ErrMissingPassword
-		}
-	} else {
-		if len(params.Wallet.Password) != 0 {
-			return nil, nil, ErrWalletNotEncrypted
-		}
-	}
-
-	var txn *coin.Transaction
-	var inputs []UxBalance
-	if w.IsEncrypted() {
-		err = w.GuardView(params.Wallet.Password, func(wlt *Wallet) error {
-			var err error
-			txn, inputs, err = wlt.CreateTransaction(params, auxs, headTime)
-			return err
-		})
-	} else {
-		txn, inputs, err = w.CreateTransaction(params, auxs, headTime)
-	}
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return txn, inputs, nil
 }
 
 // UpdateWalletLabel updates the wallet label

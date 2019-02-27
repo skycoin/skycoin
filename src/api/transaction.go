@@ -150,17 +150,15 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		buf, err := txn.Transaction.Serialize()
-		if err != nil {
-			wh.Error500(w, err.Error())
-			return
-		}
-
 		if encoded {
-			txnStr := hex.EncodeToString(buf)
+			txnHex, err := txn.Transaction.SerializeHex()
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 
 			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
-				EncodedTransaction: txnStr,
+				EncodedTransaction: txnHex,
 				Status:             readable.NewTransactionStatus(txn.Status),
 				Time:               txn.Time,
 			})
@@ -359,13 +357,7 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		b, err := hex.DecodeString(v.Rawtx)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-
-		txn, err := coin.DeserializeTransaction(b)
+		txn, err := coin.DeserializeTransactionHex(v.Rawtx)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -465,13 +457,13 @@ func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		buf, err := txn.Transaction.Serialize()
+		txnHex, err := txn.Transaction.SerializeHex()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, hex.EncodeToString(buf))
+		wh.SendJSONOr500(logger, w, txnHex)
 	}
 }
 

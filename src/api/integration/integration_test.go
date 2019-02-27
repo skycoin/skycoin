@@ -28,11 +28,11 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 /* Runs HTTP API tests against a running skycoin node
@@ -465,13 +465,8 @@ func TestStableVerifyTransaction(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			buf, err := tc.txn.Serialize()
-			require.NoError(t, err)
-
-			encodedTxn := hex.EncodeToString(buf)
-
 			resp, err := c.VerifyTransaction(api.VerifyTransactionRequest{
-				EncodedTransaction: encodedTxn,
+				EncodedTransaction: tc.txn.MustSerializeHex(),
 				Unsigned:           tc.unsigned,
 			})
 
@@ -2364,9 +2359,7 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase,
 		encodedTxn.Status.Height = 0
 	}
 
-	encodedTxnBytes, err := hex.DecodeString(encodedTxn.EncodedTransaction)
-	require.NoError(t, err)
-	decodedTxn, err := coin.DeserializeTransaction(encodedTxnBytes)
+	decodedTxn, err := coin.DeserializeTransactionHex(encodedTxn.EncodedTransaction)
 	require.NoError(t, err)
 
 	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{
@@ -3613,18 +3606,18 @@ func TestDisableWalletAPI(t *testing.T) {
 			contentType: api.ContentTypeJSON,
 			json: func() interface{} {
 				return api.WalletCreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: wallet.HoursSelectionTypeManual,
-					},
-					Wallet: api.WalletCreateTransactionRequestWallet{
-						ID: "test.wlt",
-					},
-					ChangeAddress: &changeAddress,
-					To: []api.Receiver{
-						{
-							Address: changeAddress,
-							Coins:   "0.001",
-							Hours:   "1",
+					WalletID: "test.wlt",
+					CreateTransactionRequest: api.CreateTransactionRequest{
+						HoursSelection: api.HoursSelection{
+							Type: transaction.HoursSelectionTypeManual,
+						},
+						ChangeAddress: &changeAddress,
+						To: []api.Receiver{
+							{
+								Address: changeAddress,
+								Coins:   "0.001",
+								Hours:   "1",
+							},
 						},
 					},
 				}

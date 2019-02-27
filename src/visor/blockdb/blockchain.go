@@ -97,6 +97,7 @@ type UnspentPooler interface {
 	GetArray(*dbutil.Tx, []cipher.SHA256) (coin.UxArray, error)
 	GetUxHash(*dbutil.Tx) (cipher.SHA256, error)
 	GetUnspentsOfAddrs(*dbutil.Tx, []cipher.Address) (coin.AddressUxOuts, error)
+	GetUnspentHashesOfAddrs(*dbutil.Tx, []cipher.Address) (AddressHashes, error)
 	ProcessBlock(*dbutil.Tx, *coin.SignedBlock) error
 	AddressCount(*dbutil.Tx) (uint64, error)
 }

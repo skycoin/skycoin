@@ -10,6 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -391,16 +392,31 @@ func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.U
 	return gw.v.GetUnconfirmedTransactions(visor.SendsToAddresses(addrs))
 }
 
-// WalletCreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
-func (gw *Gateway) WalletCreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
+// CreateTransaction creates a transaction
+func (gw *Gateway) CreateTransaction(p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
+	return gw.v.CreateTransaction(p, wp)
+}
+
+// WalletCreateTransaction creates a transaction with a wallet
+func (gw *Gateway) WalletCreateTransaction(wltID string, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
-	return gw.v.WalletCreateTransaction(params)
+	return gw.v.WalletCreateTransaction(wltID, p, wp)
 }
 
-// WalletSignTransaction signs an unsigned transaction using a wallet. Specific inputs may be signed by specifying signIndexes.
+// WalletCreateTransactionSigned creates and signs a transaction with a wallet
+func (gw *Gateway) WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, nil, wallet.ErrWalletAPIDisabled
+	}
+
+	return gw.v.WalletCreateTransactionSigned(wltID, password, p, wp)
+}
+
+// WalletSignTransaction signs an unsigned transaction using a wallet.
+// Specific inputs may be signed by specifying signIndexes.
 // If signIndexes is empty, all inputs will be signed.
 func (gw *Gateway) WalletSignTransaction(wltName string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error) {
 	if !gw.Config.EnableWalletAPI {
@@ -633,7 +649,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 	}, nil
 }
 
-// VerifyTxnVerbose verifies an isolated transaction and returns []wallet.UxBalance of
+// VerifyTxnVerbose verifies an isolated transaction and returns []transaction.UxBalance of
 // transaction inputs, whether the transaction is confirmed and error if any
 func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error) {
 	return gw.v.VerifyTxnVerbose(txn, signed)

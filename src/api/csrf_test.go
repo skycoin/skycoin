@@ -50,7 +50,7 @@ func TestCSRFWrapper(t *testing.T) {
 	methods := []string{http.MethodPost, http.MethodPut, http.MethodDelete}
 	cases := []string{tokenInvalid, tokenExpired, tokenEmpty, tokenInvalidSignature}
 
-	for _, endpoint := range endpoints {
+	for endpoint := range endpointsMethods {
 		for _, method := range methods {
 			for _, c := range cases {
 				name := fmt.Sprintf("%s %s %s", method, endpoint, c)
@@ -117,7 +117,7 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for _, endpoint := range endpoints {
+			for endpoint := range endpointsMethods {
 				for _, method := range methods {
 					for _, c := range cases {
 						name := fmt.Sprintf("%s %s %s", method, endpoint, c)

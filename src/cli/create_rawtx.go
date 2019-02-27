@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/mathutil"
@@ -73,12 +73,10 @@ func createRawTxnCmd() *cobra.Command {
 				return err
 			}
 
-			buf, err := txn.Serialize()
+			rawTxn, err := txn.SerializeHex()
 			if err != nil {
 				return err
 			}
-
-			rawTxn := hex.EncodeToString(buf)
 
 			if jsonOutput {
 				return printJSON(struct {
@@ -607,8 +605,8 @@ func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, ch
 	return makeTxn()
 }
 
-func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]wallet.UxBalance, error) {
-	// Convert spendable unspent outputs to []wallet.UxBalance
+func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]transaction.UxBalance, error) {
+	// Convert spendable unspent outputs to []transaction.UxBalance
 	spendableOutputs, err := readable.OutputsToUxBalances(uxouts.SpendableOutputs())
 	if err != nil {
 		return nil, err
@@ -619,17 +617,17 @@ func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]walle
 	// application that may need to send frequently.
 	// Using fewer UxOuts will leave more available for other transactions,
 	// instead of waiting for confirmation.
-	outs, err := wallet.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins, 0)
+	outs, err := transaction.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins, 0)
 	if err != nil {
 		// If there is not enough balance in the spendable outputs,
 		// see if there is enough balance when including incoming outputs
-		if err == wallet.ErrInsufficientBalance {
+		if err == transaction.ErrInsufficientBalance {
 			expectedOutputs, otherErr := readable.OutputsToUxBalances(uxouts.ExpectedOutputs())
 			if otherErr != nil {
 				return nil, otherErr
 			}
 
-			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins, 0); otherErr != nil {
+			if _, otherErr := transaction.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins, 0); otherErr != nil {
 				return nil, err
 			}
 
@@ -642,7 +640,7 @@ func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]walle
 	return outs, nil
 }
 
-func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
+func makeChangeOut(outs []transaction.UxBalance, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
 	var totalInCoins, totalInHours, totalOutCoins uint64
 
 	for _, o := range outs {
@@ -659,7 +657,7 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 	}
 
 	if totalInCoins < totalOutCoins {
-		return nil, wallet.ErrInsufficientBalance
+		return nil, transaction.ErrInsufficientBalance
 	}
 
 	outAddrs := []coin.TransactionOutput{}
@@ -667,7 +665,7 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 
 	haveChange := changeAmount > 0
 	nAddrs := uint64(len(toAddrs))
-	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
+	changeHours, addrHours, totalOutHours := transaction.DistributeSpendHours(totalInHours, nAddrs, haveChange)
 
 	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours, params.UserVerifyTxn.BurnFactor); err != nil {
 		return nil, err
@@ -713,7 +711,7 @@ func mustMakeUtxoOutput(addr string, coins, hours uint64) coin.TransactionOutput
 	return uo
 }
 
-func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, error) {
+func getKeys(wlt *wallet.Wallet, outs []transaction.UxBalance) ([]cipher.SecKey, error) {
 	keys := make([]cipher.SecKey, len(outs))
 	for i, o := range outs {
 		entry, ok := wlt.GetEntry(o.Address)
@@ -727,7 +725,7 @@ func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, erro
 }
 
 // NewTransaction creates a transaction. The transaction should be validated against hard and soft constraints before transmission.
-func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
+func NewTransaction(utxos []transaction.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
 	txn := coin.Transaction{}
 	for _, u := range utxos {
 		if err := txn.PushInput(u.Hash); err != nil {

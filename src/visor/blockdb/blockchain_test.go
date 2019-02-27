@@ -213,6 +213,21 @@ func (fup *fakeUnspentPool) GetUxHash(tx *dbutil.Tx) (cipher.SHA256, error) {
 	return fup.uxHash, nil
 }
 
+func (fup *fakeUnspentPool) GetUnspentHashesOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (AddressHashes, error) {
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
+	for _, a := range addrs {
+		addrm[a] = struct{}{}
+	}
+
+	addrOutMap := make(AddressHashes)
+	for _, out := range fup.outs {
+		addr := out.Body.Address
+		addrOutMap[addr] = append(addrOutMap[addr], out.Hash())
+	}
+
+	return addrOutMap, nil
+}
+
 func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {

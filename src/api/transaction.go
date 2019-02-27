@@ -120,7 +120,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txn, inputs, err := gateway.GetTransactionVerbose(h)
+			txn, inputs, err := gateway.GetTransactionWithInputs(h)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -292,7 +292,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txns, inputs, err := gateway.GetTransactionsVerbose(flts)
+			txns, inputs, err := gateway.GetTransactionsWithInputs(flts)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return

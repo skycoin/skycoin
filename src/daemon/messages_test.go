@@ -413,7 +413,7 @@ func TestIntroductionMessage(t *testing.T) {
 			tc.intro.c = mc
 
 			d := &mockDaemoner{}
-			d.On("daemonConfig").Return(DaemonConfig{
+			d.On("DaemonConfig").Return(DaemonConfig{
 				ProtocolVersion:    int32(tc.mockValue.protocolVersion),
 				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion),
 				UserAgent: useragent.Data{
@@ -996,7 +996,7 @@ func TestGetBlocksMessageProcess(t *testing.T) {
 	require.True(t, len(gbm.Blocks) < len(blocks), "blocks should be truncated")
 	require.NotEmpty(t, gbm.Blocks)
 
-	d.On("daemonConfig").Return(config)
+	d.On("DaemonConfig").Return(config)
 	d.On("recordPeerHeight", "127.0.0.1:1234", uint64(10), uint64(7)).Return()
 	d.On("getSignedBlocksSince", uint64(7), uint64(20)).Return(blocks, nil)
 	d.On("sendMessage", "127.0.0.1:1234", gbm).Return(nil)

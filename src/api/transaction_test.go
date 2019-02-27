@@ -564,7 +564,7 @@ func TestGetTransactionByID(t *testing.T) {
 			endpoint := "/api/v1/transaction"
 			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.txid).Return(tc.getTransactionReponse, tc.getTransactionError)
-			gateway.On("GetTransactionVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse.Transaction,
+			gateway.On("GetTransactionWithInputs", tc.txid).Return(tc.getTransactionResultVerboseReponse.Transaction,
 				tc.getTransactionResultVerboseReponse.Inputs, tc.getTransactionResultVerboseError)
 
 			v := url.Values{}
@@ -1233,7 +1233,7 @@ func TestGetTransactions(t *testing.T) {
 			})
 
 			gateway.On("GetTransactions", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
-			gateway.On("GetTransactionsVerbose", matchFunc).Return(tc.getTransactionsVerboseResponse.Transactions,
+			gateway.On("GetTransactionsWithInputs", matchFunc).Return(tc.getTransactionsVerboseResponse.Transactions,
 				tc.getTransactionsVerboseResponse.Inputs, tc.getTransactionsVerboseError)
 
 			v := url.Values{}

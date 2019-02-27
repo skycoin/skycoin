@@ -14,6 +14,20 @@ type mockDaemoner struct {
 	mock.Mock
 }
 
+// DaemonConfig provides a mock function with given fields:
+func (_m *mockDaemoner) DaemonConfig() DaemonConfig {
+	ret := _m.Called()
+
+	var r0 DaemonConfig
+	if rf, ok := ret.Get(0).(func() DaemonConfig); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(DaemonConfig)
+	}
+
+	return r0
+}
+
 // Disconnect provides a mock function with given fields: addr, r
 func (_m *mockDaemoner) Disconnect(addr string, r gnet.DisconnectReason) error {
 	ret := _m.Called(addr, r)
@@ -100,20 +114,6 @@ func (_m *mockDaemoner) connectionIntroduced(addr string, gnetID uint64, m *Intr
 	}
 
 	return r0, r1
-}
-
-// daemonConfig provides a mock function with given fields:
-func (_m *mockDaemoner) daemonConfig() DaemonConfig {
-	ret := _m.Called()
-
-	var r0 DaemonConfig
-	if rf, ok := ret.Get(0).(func() DaemonConfig); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(DaemonConfig)
-	}
-
-	return r0
 }
 
 // disconnectNow provides a mock function with given fields: addr, r

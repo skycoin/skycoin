@@ -12,6 +12,7 @@ import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pi
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { Observable } from 'rxjs/Observable';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
+import { HwPassphraseActivationDialogComponent } from '../hw-passphrase-activation-dialog/hw-passphrase-activation-dialog.component';
 
 enum States {
   Disconnected,
@@ -26,6 +27,7 @@ enum States {
 export interface ChildHwDialogParams {
   wallet: Wallet;
   walletHasPin: boolean;
+  walletHasPassphrase: boolean;
   requestOptionsComponentRefresh: any;
 }
 
@@ -44,6 +46,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   customErrorMsg = '';
   needsBackup: boolean;
   needsPin: boolean;
+  hasPassphrase: boolean;
 
   private dialogSubscription: ISubscription;
 
@@ -97,6 +100,10 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     this.openDialog(HwRestoreSeedDialogComponent);
   }
 
+  changePassphraseActivation() {
+    this.openDialog(HwPassphraseActivationDialogComponent);
+  }
+
   private openDialog(dialogType) {
     this.customErrorMsg = '';
 
@@ -108,6 +115,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     config.data = <ChildHwDialogParams> {
       wallet: this.wallet,
       walletHasPin: !this.needsPin,
+      walletHasPassphrase: this.hasPassphrase,
       requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly: boolean = false) => {
         if (!error) {
           if (!recheckSecurityOnly) {
@@ -147,6 +155,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     return this.walletService.updateWalletHasHwSecurityWarnings(this.wallet).map(warnings => {
       this.needsBackup = warnings.includes(HwSecurityWarnings.NeedsBackup);
       this.needsPin = warnings.includes(HwSecurityWarnings.NeedsPin);
+      this.hasPassphrase = warnings.includes(HwSecurityWarnings.HasPassphrase);
 
       return warnings;
     });

@@ -1,14 +1,17 @@
 import { Component, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { WalletService } from '../../../../services/wallet.service';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Wallet } from '../../../../app.datatypes';
+import { HwPassphraseHelpDialogComponent } from '../hw-passphrase-help-dialog/hw-passphrase-help-dialog.component';
 
 enum States {
   Initial,
+  PassphraseWarning,
+  Adding,
   Finished,
   Failed,
 }
@@ -20,7 +23,7 @@ enum States {
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> {
 
-  closeIfHwDisconnected = false;
+  closeIfHwDisconnected = true;
 
   currentState: States = States.Initial;
   states = States;
@@ -34,8 +37,26 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     private walletService: WalletService,
     hwWalletService: HwWalletService,
     private formBuilder: FormBuilder,
+    private dialog: MatDialog,
   ) {
     super(hwWalletService, dialogRef);
+    this.operationSubscription = hwWalletService.getFeatures().subscribe(features => {
+      if (features.rawResponse.passphraseProtection) {
+        this.currentState = States.PassphraseWarning;
+      } else {
+        this.startAdding();
+      }
+    });
+  }
+
+  cancel() {
+    this.data.requestOptionsComponentRefresh('hardware-wallet.added.canceled');
+    this.closeModal();
+  }
+
+  startAdding() {
+    this.currentState = States.Adding;
+
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
       this.walletService.updateWalletHasHwSecurityWarnings(wallet).subscribe(() => {
         this.wallet = wallet;
@@ -44,6 +65,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
           label: [wallet.label, Validators.required],
         });
 
+        this.closeIfHwDisconnected = false;
         this.currentState = States.Finished;
         this.data.requestOptionsComponentRefresh();
       });
@@ -57,5 +79,11 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     this.wallet.label = this.form.value.label;
     this.walletService.saveHardwareWallets();
     this.closeModal();
+  }
+
+  openHelp() {
+    this.dialog.open(HwPassphraseHelpDialogComponent, <MatDialogConfig> {
+      width: '450px',
+    });
   }
 }

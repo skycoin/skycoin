@@ -9,6 +9,7 @@ import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { HwPassphraseDialogComponent } from './components/layout/hardware-wallet/hw-passphrase-dialog/hw-passphrase-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +28,7 @@ export class AppComponent implements OnInit {
     translateService.use('en');
 
     hwWalletService.requestPinComponent = HwPinDialogComponent;
+    hwWalletService.requestPassphraseComponent = HwPassphraseDialogComponent;
     hwWalletService.requestWordComponent = HwSeedWordDialogComponent;
     hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
 

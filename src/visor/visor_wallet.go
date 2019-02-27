@@ -483,6 +483,10 @@ func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp Cre
 	return txn, uxb, nil
 }
 
+// getCreateTransactionAuxsUxOut returns a map of addresses to their unspent outputs,
+// given a list of unspent output hashes.
+// If ignoreUnconfirmed is true, outputs being spent by unconfirmed transactions are ignored and excluded from the return value.
+// If ignoreUnconfirmed is false, an error is return if any of the specified unspent outputs are spent by an unconfirmed transaction.
 func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []cipher.SHA256, ignoreUnconfirmed bool) (coin.AddressUxOuts, error) {
 	hashesMap := make(map[cipher.SHA256]struct{}, len(uxOutHashes))
 	for _, h := range uxOutHashes {
@@ -533,12 +537,12 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 		return nil, err
 	}
 
-	// Build coin.AddressUxOuts map, and check that the address is in the wallets
+	// Build coin.AddressUxOuts map
 	return coin.NewAddressUxOuts(coin.UxArray(uxOuts)), nil
 }
 
-// getCreateTransactionAuxsAddress returns the unspent outputs for a set of addresses,
-// but returns an error if any of the unspents are in the unconfirmed outputs pool
+// getCreateTransactionAuxsAddress returns a map of the addresses to their unspent outputs,
+// filtering or erroring on unconfirmed outputs depending on the value of ignoreUnconfirmed
 func (vs *Visor) getCreateTransactionAuxsAddress(tx *dbutil.Tx, addrs []cipher.Address, ignoreUnconfirmed bool) (coin.AddressUxOuts, error) {
 	// Get all address unspent hashes
 	addrHashes, err := vs.Blockchain.Unspent().GetUnspentHashesOfAddrs(tx, addrs)

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/pprof"
 	"sync"
 	"time"
@@ -131,6 +132,8 @@ func (c *Coin) Run() error {
 	}
 
 	c.logger.Infof("App version: %s", appVersion)
+	c.logger.Infof("OS: %s", runtime.GOOS)
+	c.logger.Infof("Arch: %s", runtime.GOARCH)
 
 	// Open the database
 	dconf := c.ConfigureDaemon()

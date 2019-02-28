@@ -420,6 +420,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 	dc.Pex.DataDirectory = c.config.Node.DataDirectory
 	dc.Pex.Disabled = c.config.Node.DisablePEX
+	dc.Pex.NetworkDisabled = c.config.Node.DisableNetworking
 	dc.Pex.Max = c.config.Node.PeerlistSize
 	dc.Pex.DownloadPeerList = c.config.Node.DownloadPeerList
 	dc.Pex.PeerListURL = c.config.Node.PeerListURL

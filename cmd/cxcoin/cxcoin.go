@@ -36,7 +36,7 @@ var (
 	CoinName = "cxcoin"
 
 	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = "3411e26770ee8b43018583f3a12f4ec97c3b2f27f67111537cf86810d407c167011383e5d66df405f517ac5cee1cc64b3d016fd3dc9fbba8d0a75a6d6892609c00"
+	GenesisSignatureStr = "9043250618603506aad2d4e54b748d3adff525f0b27010b86d70d3d8ea28c65518c25c379d5419f18cb9c6033a2c097e5355b5d356f56f89824df1a4f5d9cf2701"
 	// GenesisAddressStr genesis address string
 	GenesisAddressStr = "23v7mT1uLpViNKZHh9aww4VChxizqKsNq4E"
 	// BlockchainPubkeyStr pubic key string
@@ -67,12 +67,12 @@ var (
 		WebInterfacePort:               6420,
 		DataDirectory:                  "$HOME/.cxcoin",
 		UnconfirmedBurnFactor:          2,
-		UnconfirmedMaxTransactionSize:  1024,
+		UnconfirmedMaxTransactionSize:  65535,
 		UnconfirmedMaxDropletPrecision: 3,
 		CreateBlockBurnFactor:          2,
-		CreateBlockMaxTransactionSize:  1024,
+		CreateBlockMaxTransactionSize:  65535,
 		CreateBlockMaxDropletPrecision: 3,
-		MaxBlockSize:                   1024,
+		MaxBlockSize:                   65535,
 	})
 
 	parseFlags = true

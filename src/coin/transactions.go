@@ -206,8 +206,8 @@ func (txOut TransactionOutput) UxID(txID cipher.SHA256) cipher.SHA256 {
 	x.Coins = txOut.Coins
 	x.Hours = txOut.Hours
 	x.Address = txOut.Address
-	x.ProgramState = txOut.ProgramState
 	x.SrcTransaction = txID
+	x.ProgramState = txOut.ProgramState
 	return x.Hash()
 }
 

@@ -2,21 +2,9 @@
 # Defaults are shown, commented out
 # Some values have no defaults and must be filled in
 [node]
-# 925a19c54b14ede35b8712058ea0f2a08597d47a1c74ed8d52fc3443e9d80e28626c51c4586a975a6f07684e8de43c8c7e4c02a6a5770667734ba796833b197201
-# ae745c74d88085611b123cb39ddc164aa019c0263d7911f30fa0d75087a91e02
-
-# 925a19c54b14ede35b8712058ea0f2a08597d47a1c74ed8d52fc3443e9d80e28626c51c4586a975a6f07684e8de43c8c7e4c02a6a5770667734ba796833b197201
-# dc35435a182b6ff62f5221e14e1a89c6e037debe522dec67654147fa323a5500
-
-# 57d8660da35c1a9a4ea8d2fd5edbcfedf29947486f940f275f0435eef7afed8e1513f5462811c66cc8b403d459f9239da9ee5796724ba532d0c9c3eae4320a5f00
-# ae745c74d88085611b123cb39ddc164aa019c0263d7911f30fa0d75087a91e02
-
-# cbe3dfca4dacd23203493b06069859ed807ef1b2cf7ac8026251a90294ae4d3a65923ad5d81fe6ec82fee22d6601ef8396a566b37bc7d22c83d2b7867c42970f01
-# dc35435a182b6ff62f5221e14e1a89c6e037debe522dec67654147fa323a5500
-
-genesis_signature_str = "9043250618603506aad2d4e54b748d3adff525f0b27010b86d70d3d8ea28c65518c25c379d5419f18cb9c6033a2c097e5355b5d356f56f89824df1a4f5d9cf2701"
-genesis_address_str = "23v7mT1uLpViNKZHh9aww4VChxizqKsNq4E"
-blockchain_pubkey_str = "02583e5ebbf85522474e0f17e681e62ca37910db6b8792763af4e97663c31a7984"
+genesis_signature_str = ""
+genesis_address_str = "2UeRP2FQmWg5HnF1p6gcKdfQQge5BtcLgbL"
+blockchain_pubkey_str = "035832e31a06fe5bc48d3e974ac078326ab65d82429b8b313835a122f4e573d792"
 blockchain_seckey_str = ""
 genesis_timestamp = 1426562704
 genesis_coin_volume = 100e12
@@ -34,15 +22,11 @@ port = 6000
 web_interface_port = 6420
 # unconfirmed_burn_factor = 2
 # unconfirmed_max_transaction_size = 32 * 1024
-# unconfirmed_max_transaction_size = 1024
-unconfirmed_max_transaction_size = 65535
 # unconfirmed_max_decimals = 3
 # create_block_burn_factor = 2
 # create_block_max_transaction_size = 32 * 1024
-create_block_max_transaction_size = 65535
 # create_block_max_decimals = 3
 # max_block_size = 32 * 1024
-max_block_size = 65535
 
 [params]
 max_coin_supply = 1e8

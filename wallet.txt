@@ -1,0 +1,22 @@
+{
+    "meta": {
+        "coin": "skycoin",
+        "cryptoType": "",
+        "encrypted": "false",
+        "filename": "cxcoin_cli.wlt",
+        "label": "",
+        "lastSeed": "9df7164dee9418f57763e2e7d97ac1a3afac329ef40379526388ab7282bc2493",
+        "secrets": "",
+        "seed": "reward script piano phone build august rug genre future horror height upgrade",
+        "tm": "1550994761",
+        "type": "deterministic",
+        "version": "0.2"
+    },
+    "entries": [
+        {
+            "address": "vxw9LkDrKdnpfnJzWzmHwejDooeAFn2rcm",
+            "public_key": "02a91adb54723801a973f5ba6809adf2ef7179fa447d665822c5dde319a8173fe7",
+            "secret_key": "f0011eb96619b9ffff9c8ef5388039c70714fd930509774ffdb3d8eb1ce78899"
+        }
+    ]
+}

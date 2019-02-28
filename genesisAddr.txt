@@ -1,0 +1,22 @@
+{
+    "meta": {
+        "coin": "skycoin",
+        "cryptoType": "",
+        "encrypted": "false",
+        "filename": "2019_02_26_9fc2.wlt",
+        "label": "",
+        "lastSeed": "2de501a50824e00cb78ae2f4d834a079a2fef6bc5357621ddda4b80290749666",
+        "secrets": "",
+        "seed": "slush outdoor extra lake hobby often question confirm breeze keen equip vacant",
+        "tm": "1551246998",
+        "type": "deterministic",
+        "version": "0.2"
+    },
+    "entries": [
+        {
+            "address": "23v7mT1uLpViNKZHh9aww4VChxizqKsNq4E",
+            "public_key": "02583e5ebbf85522474e0f17e681e62ca37910db6b8792763af4e97663c31a7984",
+            "secret_key": "1414535274594b23ca0090cdc01e6b7b31702525583eb01c8650a650d4a8c99d"
+        }
+    ]
+}

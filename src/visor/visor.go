@@ -406,6 +406,8 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx, prgrmState []byte) error
 		return err
 	}
 
+	fmt.Printf("NewGenesisBlock %+v \n", b)
+
 	var sb coin.SignedBlock
 	// record the signature of genesis block
 	if vs.Config.IsBlockPublisher {
@@ -417,6 +419,10 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx, prgrmState []byte) error
 			Sig:   vs.Config.GenesisSignature,
 		}
 	}
+
+	fmt.Printf("genesisblocksig %v \v", sb.Sig.Hex())
+	fmt.Printf("signature %v \n", vs.Config.GenesisSignature.Hex())
+	fmt.Printf("signedBlock %+v \n", sb)
 
 	return vs.executeSignedBlock(tx, sb)
 }

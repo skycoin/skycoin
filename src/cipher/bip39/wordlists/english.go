@@ -1,24 +1,26 @@
-package bip39
+package wordlists
 
 import (
+	"fmt"
+	"hash/crc32"
 	"strings"
 )
 
-// WordList The wordlist to use
-var WordList = EnglishWordList
-
-// ReverseWordMap reverse word map
-var ReverseWordMap = map[string]int{}
-
 func init() {
-	for i, v := range WordList {
-		ReverseWordMap[v] = i
+	// Ensure word list is correct
+	// $ wget https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt
+	// $ crc32 english.txt
+	// c1dbd296
+	checksum := crc32.ChecksumIEEE([]byte(english))
+	if fmt.Sprintf("%x", checksum) != "c1dbd296" {
+		panic("english checksum invalid")
 	}
 }
 
-// EnglishWordList Language-specific wordlists
-var EnglishWordList = strings.Split(englishWordList, "\n")
-var englishWordList = `abandon
+// English is a slice of mnemonic words taken from the bip39 specification
+// https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt
+var English = strings.Split(strings.TrimSpace(english), "\n")
+var english = `abandon
 ability
 able
 about
@@ -2065,4 +2067,5 @@ youth
 zebra
 zero
 zone
-zoo`
+zoo
+`

@@ -13,7 +13,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -556,14 +556,14 @@ func TestVerifyWallet(t *testing.T) {
 	c := newClient()
 
 	// check with correct seed
-	isBip, err := c.VerifySeed("nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair")
+	isValid, err := c.VerifySeed("nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair")
 	require.NoError(t, err)
-	require.True(t, isBip)
+	require.True(t, isValid)
 
 	// check with incorrect seed
-	isBip, err = c.VerifySeed("nut ")
-	testutil.RequireError(t, err, "seed is not a valid bip39 seed")
-	require.False(t, isBip)
+	isValid, err = c.VerifySeed("nut ")
+	require.False(t, isValid)
+	assertResponseError(t, err, http.StatusUnprocessableEntity, bip39.ErrSurroundingWhitespace.Error())
 }
 
 func TestGetWalletSeedDisabledAPI(t *testing.T) {

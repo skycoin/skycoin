@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -1314,7 +1315,7 @@ func TestVerifySeed(t *testing.T) {
 			httpBody: toJSON(t, VerifySeedRequest{
 				Seed: "bag attitude butter flock slab desk ship brain famous scheme clerk",
 			}),
-			httpResponse: NewHTTPErrorResponse(http.StatusUnprocessableEntity, "seed is not a valid bip39 seed"),
+			httpResponse: NewHTTPErrorResponse(http.StatusUnprocessableEntity, bip39.ErrInvalidNumberOfWords.Error()),
 		},
 		{
 			name:   "200",

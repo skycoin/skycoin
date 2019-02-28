@@ -888,7 +888,7 @@ Result:
 ```json
 {
     "error": {
-        "message": "seed is not a valid bip39 seed",
+        "message": "Mnemonic must have 12, 15, 18, 21 or 24 words",
         "code": 422
     }
 }

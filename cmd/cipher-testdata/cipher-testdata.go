@@ -16,7 +16,7 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/cipher/testsuite"
 	"github.com/skycoin/skycoin/src/util/file"
 )

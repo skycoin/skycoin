@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -165,8 +165,10 @@ func resolveSeed(c *cobra.Command) (string, error) {
 	}
 
 	if seed != "" {
-		if strictSeed && !bip39.IsMnemonicValid(seed) {
-			return "", errors.New("seed is not a valid bip39 seed")
+		if strictSeed {
+			if err := bip39.ValidateMnemonic(seed); err != nil {
+				return "", fmt.Errorf("seed is not a valid bip39 seed: %v", err)
+			}
 		}
 
 		return seed, nil

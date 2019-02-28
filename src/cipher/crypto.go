@@ -698,9 +698,9 @@ func init() {
 	// Do not allow program to start if crypto tests fail
 	pubkey, seckey := GenerateKeyPair()
 	if err := CheckSecKey(seckey); err != nil {
-		log.Fatalf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)
+		log.Panicf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)
 	}
 	if MustPubKeyFromSecKey(seckey) != pubkey {
-		log.Fatal("DebugLevel1, GenerateKeyPair, public key does not match private key")
+		log.Panic("DebugLevel1, GenerateKeyPair, public key does not match private key")
 	}
 }

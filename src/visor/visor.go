@@ -312,7 +312,7 @@ func (vs *Visor) Init() error {
 	}
 
 	return vs.DB.Update("visor init", func(tx *dbutil.Tx) error {
-		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
+		if err := vs.maybeCreateGenesisBlock(tx, []byte{}); err != nil {
 			return err
 		}
 
@@ -385,9 +385,13 @@ func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc *Blockchain,
 }
 
 // maybeCreateGenesisBlock creates a genesis block if necessary
-func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
+func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx, prgrmState []byte) error {
 	logger.Info("Visor maybeCreateGenesisBlock")
 	gb, err := vs.Blockchain.GetGenesisBlock(tx)
+
+	fmt.Printf("huehue %v %v %+v\n", gb, err, vs.Config.BlockchainPubkey.Hex())
+	fmt.Printf("houhou %+v\n %+v\n", tx, vs.Blockchain)
+	
 	if err != nil {
 		return err
 	}
@@ -397,7 +401,7 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 
 	logger.Info("Create genesis block")
 	vs.GenesisPreconditions()
-	b, err := coin.NewGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp)
+	b, err := coin.NewGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp, prgrmState)
 	if err != nil {
 		return err
 	}

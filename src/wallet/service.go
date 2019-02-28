@@ -292,7 +292,7 @@ func (serv *Service) GetWallets() (Wallets, error) {
 
 // CreateAndSignTransaction creates and signs a transaction from wallet.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address, mainExprs []byte) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	if !serv.enableWalletAPI {
@@ -307,7 +307,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, aux
 	var tx *coin.Transaction
 	f := func(wlt *Wallet) error {
 		var err error
-		tx, err = wlt.CreateAndSignTransaction(auxs, headTime, coins, dest)
+		tx, err = wlt.CreateAndSignTransaction(auxs, headTime, coins, dest, []byte{})
 		return err
 	}
 
@@ -329,7 +329,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, aux
 
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64, mainExprs []byte) (*coin.Transaction, []UxBalance, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 

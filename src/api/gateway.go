@@ -14,7 +14,7 @@ import (
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
-	Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error)
+	Spend(wltID string, password []byte, coins uint64, dest cipher.Address, mainExprs []byte) (*coin.Transaction, error)
 	CreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error)
 	GetWallet(wltID string) (*wallet.Wallet, error)

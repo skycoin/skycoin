@@ -161,7 +161,7 @@ func (vs *Visor) CreateTransaction(p wallet.CreateTransactionParams) (*coin.Tran
 
 // CreateTransactionDeprecated creates a transaction using an entire wallet,
 // specifying only coins and one destination.
-func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coins uint64, dest cipher.Address, mainExprs []byte) (*coin.Transaction, error) {
 	var txn *coin.Transaction
 
 	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
@@ -188,7 +188,7 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 			}
 
 			// Create and sign transaction
-			txn, err = w.CreateAndSignTransaction(auxs, head.Time(), coins, dest)
+			txn, err = w.CreateAndSignTransaction(auxs, head.Time(), coins, dest, mainExprs)
 			if err != nil {
 				logger.WithError(err).Error("CreateAndSignTransaction failed")
 				return err

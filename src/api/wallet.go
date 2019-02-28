@@ -242,7 +242,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst)
+		tx, err := gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst, []byte(r.FormValue("mainExprs")))
 		switch err {
 		case nil:
 		case fee.ErrTxnNoFee,

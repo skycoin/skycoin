@@ -596,7 +596,7 @@ func (gw *Gateway) GetUnconfirmedTransactions(addrs []cipher.Address) ([]visor.U
 // Spend spends coins from given wallet and broadcasts it,
 // set password as nil if wallet is not encrypted, otherwise the password must be provied.
 // return transaction or error.
-func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address, mainExprs []byte) (*coin.Transaction, error) {
 	logger.Warning("Calling deprecated method Gateway.Spend")
 
 	if !gw.Config.EnableSpendMethod {
@@ -610,7 +610,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	var txn *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
-		txn, err = gw.v.CreateTransactionDeprecated(wltID, password, coins, dest)
+		txn, err = gw.v.CreateTransactionDeprecated(wltID, password, coins, dest, mainExprs)
 		if err != nil {
 			logger.WithError(err).Error("CreateTransactionDeprecated failed")
 			return

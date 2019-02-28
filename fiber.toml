@@ -2,9 +2,9 @@
 # Defaults are shown, commented out
 # Some values have no defaults and must be filled in
 [node]
-genesis_signature_str = "119132c194b532b3b7160e3185d18785ffd600c1df55e0a7d90778f0c954bc6400e12e7609800621cdd4688c68014a4a3acfcb420ee87d49bb4380387bfa0e2200"
-genesis_address_str = "2UeRP2FQmWg5HnF1p6gcKdfQQge5BtcLgbL"
-blockchain_pubkey_str = "035832e31a06fe5bc48d3e974ac078326ab65d82429b8b313835a122f4e573d792"
+genesis_signature_str = "3411e26770ee8b43018583f3a12f4ec97c3b2f27f67111537cf86810d407c167011383e5d66df405f517ac5cee1cc64b3d016fd3dc9fbba8d0a75a6d6892609c00"
+genesis_address_str = "23v7mT1uLpViNKZHh9aww4VChxizqKsNq4E"
+blockchain_pubkey_str = "02583e5ebbf85522474e0f17e681e62ca37910db6b8792763af4e97663c31a7984"
 blockchain_seckey_str = ""
 genesis_timestamp = 1426562704
 genesis_coin_volume = 100e12
@@ -22,11 +22,14 @@ port = 6000
 web_interface_port = 6420
 # unconfirmed_burn_factor = 2
 # unconfirmed_max_transaction_size = 32 * 1024
+unconfirmed_max_transaction_size = 1024
 # unconfirmed_max_decimals = 3
 # create_block_burn_factor = 2
 # create_block_max_transaction_size = 32 * 1024
+create_block_max_transaction_size = 1024
 # create_block_max_decimals = 3
 # max_block_size = 32 * 1024
+max_block_size = 1024
 
 [params]
 max_coin_supply = 1e8

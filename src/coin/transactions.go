@@ -77,9 +77,6 @@ func (txn *Transaction) Verify() error {
 	if len(txn.Out) == 0 {
 		return errors.New("No outputs")
 	}
-	if len(txn.MainExpressions) == 0 {
-		return errors.New("No expressions to execute")
-	}
 
 	// Check signature index fields
 	if len(txn.Sigs) != len(txn.In) {

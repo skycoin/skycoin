@@ -537,7 +537,7 @@ func (c *Coin) ParseConfig() error {
 }
 
 // InitTransaction creates the initialize transaction
-func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction {
+func InitTransaction(UxID string, genesisSecKey cipher.SecKey, prgrmState []byte) coin.Transaction {
 	var tx coin.Transaction
 
 	output := cipher.MustSHA256FromHex(UxID)
@@ -556,7 +556,7 @@ func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 
 	for i := range addrs {
 		addr := cipher.MustDecodeBase58Address(addrs[i])
-		tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1)
+		tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1, prgrmState)
 	}
 
 	seckeys := make([]cipher.SecKey, 1)

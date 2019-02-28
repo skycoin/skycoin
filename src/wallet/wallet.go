@@ -218,6 +218,7 @@ type CreateTransactionParams struct {
 	HoursSelection    HoursSelection
 	Wallet            CreateTransactionWalletParams
 	ChangeAddress     *cipher.Address
+	MainExpressions   []byte
 	To                []coin.TransactionOutput
 }
 
@@ -1142,7 +1143,7 @@ type Validator interface {
 
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
-func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address, mainExprs []byte) (*coin.Transaction, error) {
 	if w.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
@@ -1205,10 +1206,10 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 
 	if haveChange {
 		changeAddr := spends[0].Address
-		txn.PushOutput(changeAddr, changeCoins, changeHours)
+		txn.PushOutput(changeAddr, changeCoins, changeHours, []byte{})
 	}
 
-	txn.PushOutput(dest, coins, addrHours[0])
+	txn.PushOutput(dest, coins, addrHours[0], []byte{})
 
 	txn.SignInputs(toSign)
 	if err := txn.UpdateHeader(); err != nil {
@@ -1488,7 +1489,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			}
 		}
 
-		txn.PushOutput(changeAddress, changeCoins, changeHours)
+		txn.PushOutput(changeAddress, changeCoins, changeHours, []byte{})
 	}
 
 	txn.SignInputs(toSign)

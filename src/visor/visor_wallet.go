@@ -55,7 +55,7 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 	var addrsBalanceList []wallet.BalancePair
 	var addrs []cipher.Address
 
-	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
+	if err := vs.wallets.View(wltID, func(w *wallet.Wallet) error {
 		var err error
 		addrs, err = w.GetSkycoinAddresses()
 		if err != nil {
@@ -105,7 +105,7 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 func (vs *Visor) GetWalletUnconfirmedTransactions(wltID string) ([]UnconfirmedTransaction, error) {
 	var txns []UnconfirmedTransaction
 
-	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
+	if err := vs.wallets.View(wltID, func(w *wallet.Wallet) error {
 		addrs, err := w.GetSkycoinAddresses()
 		if err != nil {
 			return err
@@ -125,7 +125,7 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 	var txns []UnconfirmedTransaction
 	var inputs [][]TransactionInput
 
-	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
+	if err := vs.wallets.View(wltID, func(w *wallet.Wallet) error {
 		addrs, err := w.GetSkycoinAddresses()
 		if err != nil {
 			return err
@@ -150,19 +150,19 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 		return nil, nil, ErrTransactionAlreadySigned
 	}
 
-	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
-		return vs.DB.View("WalletSignTransaction", func(tx *dbutil.Tx) error {
+	if err := vs.wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
+		return vs.db.View("WalletSignTransaction", func(tx *dbutil.Tx) error {
 			// Verify the transaction before signing
 			if err := VerifySingleTxnUserConstraints(*txn); err != nil {
 				return err
 			}
-			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
+			if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
 				return err
 			}
 
-			headTime, err := vs.Blockchain.Time(tx)
+			headTime, err := vs.blockchain.Time(tx)
 			if err != nil {
-				logger.WithError(err).Error("Blockchain.Time failed")
+				logger.WithError(err).Error("blockchain.Time failed")
 				return err
 			}
 
@@ -193,7 +193,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 				return err
 			}
 
-			if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *signedTxn, params.UserVerifyTxn, signed); err != nil {
+			if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *signedTxn, params.UserVerifyTxn, signed); err != nil {
 				// This shouldn't happen since we verified in the beginning; if it does, then wallet.SignTransaction has a bug
 				logger.Critical().WithError(err).Error("Signed transaction violates transaction constraints")
 				return err
@@ -262,7 +262,7 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
-	if err := vs.Wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
+	if err := vs.wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransactionSigned", w, p, wp, TxnSigned)
 		return err
@@ -286,7 +286,7 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
-	if err := vs.Wallets.View(wltID, func(w *wallet.Wallet) error {
+	if err := vs.wallets.View(wltID, func(w *wallet.Wallet) error {
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransaction", w, p, wp, TxnUnsigned)
 		return err
@@ -332,7 +332,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 	var txn *coin.Transaction
 	var uxb []transaction.UxBalance
 
-	if err := vs.DB.View(methodName, func(tx *dbutil.Tx) error {
+	if err := vs.db.View(methodName, func(tx *dbutil.Tx) error {
 		var err error
 		txn, uxb, err = vs.walletCreateTransactionTx(tx, methodName, w, p, wp, signed, addrs, walletAddressesMap)
 		return err
@@ -350,9 +350,9 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 	addrs []cipher.Address, walletAddressesMap map[cipher.Address]struct{}) (*coin.Transaction, []transaction.UxBalance, error) {
 	// Note: assumes inputs have already been validated by walletCreateTransaction
 
-	head, err := vs.Blockchain.Head(tx)
+	head, err := vs.blockchain.Head(tx)
 	if err != nil {
-		logger.WithError(err).Error("Blockchain.Head failed")
+		logger.WithError(err).Error("blockchain.Head failed")
 		return nil, nil, err
 	}
 
@@ -405,7 +405,7 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 	// because the wallet is not aware of visor-level constraints.
 	// Check that the transaction is valid before returning it to the caller.
 	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
-	if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
+	if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
 		return nil, nil, err
 	}
@@ -429,7 +429,7 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 	var txn *coin.Transaction
 	var uxb []transaction.UxBalance
 
-	if err := vs.DB.View("CreateTransaction", func(tx *dbutil.Tx) error {
+	if err := vs.db.View("CreateTransaction", func(tx *dbutil.Tx) error {
 		var err error
 		txn, uxb, err = vs.createTransactionTx(tx, p, wp)
 		return err
@@ -444,9 +444,9 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 
 func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []transaction.UxBalance, error) {
 	// Note: assumes inputs have already been validated by walletCreateTransaction
-	head, err := vs.Blockchain.Head(tx)
+	head, err := vs.blockchain.Head(tx)
 	if err != nil {
-		logger.WithError(err).Error("Blockchain.Head failed")
+		logger.WithError(err).Error("blockchain.Head failed")
 		return nil, nil, err
 	}
 
@@ -475,7 +475,7 @@ func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp Cre
 	// because the wallet is not aware of visor-level constraints.
 	// Check that the transaction is valid before returning it to the caller.
 	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
-	if _, _, err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
+	if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
 		return nil, nil, err
 	}
@@ -495,7 +495,7 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 
 	// Check if any of the outputs are spent by an unconfirmed transaction
 	unconfirmedHashesMap := make(map[cipher.SHA256]struct{})
-	if err := vs.Unconfirmed.ForEach(tx, func(_ cipher.SHA256, txn UnconfirmedTransaction) error {
+	if err := vs.unconfirmed.ForEach(tx, func(_ cipher.SHA256, txn UnconfirmedTransaction) error {
 		for _, h := range txn.Transaction.In {
 			if _, ok := hashesMap[h]; ok {
 				if !ignoreUnconfirmed {
@@ -532,7 +532,7 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 
 	// Retrieve the uxouts from the pool.
 	// An error is returned if any do not exist
-	uxOuts, err := vs.Blockchain.Unspent().GetArray(tx, uxOutHashes)
+	uxOuts, err := vs.blockchain.Unspent().GetArray(tx, uxOutHashes)
 	if err != nil {
 		return nil, err
 	}
@@ -545,7 +545,7 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 // filtering or erroring on unconfirmed outputs depending on the value of ignoreUnconfirmed
 func (vs *Visor) getCreateTransactionAuxsAddress(tx *dbutil.Tx, addrs []cipher.Address, ignoreUnconfirmed bool) (coin.AddressUxOuts, error) {
 	// Get all address unspent hashes
-	addrHashes, err := vs.Blockchain.Unspent().GetUnspentHashesOfAddrs(tx, addrs)
+	addrHashes, err := vs.blockchain.Unspent().GetUnspentHashesOfAddrs(tx, addrs)
 	if err != nil {
 		return nil, err
 	}

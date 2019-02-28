@@ -26,16 +26,15 @@ import (
 
 func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *Blockchain) *Visor {
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 
 	pool, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	return &Visor{
 		Config:      cfg,
-		Unconfirmed: pool,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: pool,
+		blockchain:  bc,
+		db:          db,
 	}
 }
 

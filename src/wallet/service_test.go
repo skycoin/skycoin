@@ -48,7 +48,7 @@ func TestNewService(t *testing.T) {
 			_, err = os.Stat(dir)
 			require.NoError(t, err)
 
-			require.Equal(t, dir, s.walletDirectory)
+			require.Equal(t, dir, s.config.WalletDir)
 
 			require.Equal(t, 0, len(s.wallets))
 
@@ -1556,7 +1556,7 @@ func TestServiceView(t *testing.T) {
 			w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
 			require.NoError(t, err)
 
-			s.enableWalletAPI = !tc.disableWalletAPI
+			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
 			var action func(*Wallet) error
 			if tc.action != nil {
@@ -1569,7 +1569,7 @@ func TestServiceView(t *testing.T) {
 				return
 			}
 
-			s.enableWalletAPI = true
+			s.config.EnableWalletAPI = true
 
 			// Check that the wallet is unmodified
 			w2, err := s.GetWallet(tc.wltName)
@@ -1717,7 +1717,7 @@ func TestServiceViewSecrets(t *testing.T) {
 			w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
 			require.NoError(t, err)
 
-			s.enableWalletAPI = !tc.disableWalletAPI
+			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
 			var action func(*Wallet) error
 			if tc.action != nil {
@@ -1730,7 +1730,7 @@ func TestServiceViewSecrets(t *testing.T) {
 				return
 			}
 
-			s.enableWalletAPI = true
+			s.config.EnableWalletAPI = true
 
 			// Check that the wallet is unmodified
 			w2, err := s.GetWallet(tc.wltName)
@@ -1851,7 +1851,7 @@ func TestServiceUpdate(t *testing.T) {
 			_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
 			require.NoError(t, err)
 
-			s.enableWalletAPI = !tc.disableWalletAPI
+			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
 			var action func(*Wallet) error
 			if tc.action != nil {
@@ -1864,7 +1864,7 @@ func TestServiceUpdate(t *testing.T) {
 				return
 			}
 
-			s.enableWalletAPI = true
+			s.config.EnableWalletAPI = true
 
 			// Check that the wallet was modified as expected
 			w, err := s.GetWallet(tc.wltName)
@@ -2033,7 +2033,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 			_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
 			require.NoError(t, err)
 
-			s.enableWalletAPI = !tc.disableWalletAPI
+			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
 			var action func(*Wallet) error
 			if tc.action != nil {
@@ -2046,7 +2046,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				return
 			}
 
-			s.enableWalletAPI = true
+			s.config.EnableWalletAPI = true
 
 			// Check that the wallet was modified as expected
 			w, err := s.GetWallet(tc.wltName)

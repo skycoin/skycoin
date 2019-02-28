@@ -315,9 +315,9 @@ func TestCreateTransaction(t *testing.T) {
 			defer shutdown()
 
 			v := &Visor{
-				DB:          db,
-				Blockchain:  b,
-				Unconfirmed: ut,
+				db:          db,
+				blockchain:  b,
+				unconfirmed: ut,
 			}
 
 			txn, inputs, err := v.CreateTransaction(tc.p, tc.wp)
@@ -714,10 +714,10 @@ func TestWalletCreateTransaction(t *testing.T) {
 			defer shutdown()
 
 			v := &Visor{
-				DB:          db,
-				Blockchain:  b,
-				Unconfirmed: ut,
-				Wallets:     ws,
+				db:          db,
+				blockchain:  b,
+				unconfirmed: ut,
+				wallets:     ws,
 			}
 
 			var txn *coin.Transaction
@@ -1071,9 +1071,9 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
 
 			v := &Visor{
-				Unconfirmed: unconfirmed,
-				Blockchain:  bc,
-				DB:          db,
+				unconfirmed: unconfirmed,
+				blockchain:  bc,
+				db:          db,
 			}
 
 			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
@@ -1085,7 +1085,7 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 			bc.On("Unspent").Return(unspent)
 
 			var auxs coin.AddressUxOuts
-			err := v.DB.View("", func(tx *dbutil.Tx) error {
+			err := v.db.View("", func(tx *dbutil.Tx) error {
 				var err error
 				auxs, err = v.getCreateTransactionAuxsUxOut(tx, tc.uxOuts, tc.ignoreUnconfirmed)
 				return err
@@ -1273,9 +1273,9 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
 
 			v := &Visor{
-				Unconfirmed: unconfirmed,
-				Blockchain:  bc,
-				DB:          db,
+				unconfirmed: unconfirmed,
+				blockchain:  bc,
+				db:          db,
 			}
 			unspent.On("GetUnspentHashesOfAddrs", matchDBTx, tc.addrs).Return(tc.getUnspentHashesOfAddrs, nil)
 
@@ -1288,7 +1288,7 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 			bc.On("Unspent").Return(unspent)
 
 			var auxs coin.AddressUxOuts
-			err := v.DB.View("", func(tx *dbutil.Tx) error {
+			err := v.db.View("", func(tx *dbutil.Tx) error {
 				var err error
 				auxs, err = v.getCreateTransactionAuxsAddress(tx, tc.addrs, tc.ignoreUnconfirmed)
 				return err

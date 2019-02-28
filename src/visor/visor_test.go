@@ -101,7 +101,7 @@ func addGenesisBlockToVisor(t *testing.T, vs *Visor) *coin.SignedBlock {
 	}
 
 	// add genesis block to blockchain
-	err = vs.DB.Update("", func(tx *dbutil.Tx) error {
+	err = vs.db.Update("", func(tx *dbutil.Tx) error {
 		return vs.executeSignedBlock(tx, sb)
 	})
 	require.NoError(t, err)
@@ -276,16 +276,15 @@ func TestVisorCreateBlock(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
 	v := &Visor{
 		Config:      cfg,
-		Unconfirmed: unconfirmed,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: unconfirmed,
+		blockchain:  bc,
+		db:          db,
 		history:     his,
 	}
 
@@ -305,7 +304,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	var gb *coin.SignedBlock
 	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
-		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		gb, err = v.blockchain.GetGenesisBlock(tx)
 		return err
 	})
 	require.NoError(t, err)
@@ -457,13 +456,13 @@ func TestVisorCreateBlock(t *testing.T) {
 
 	// Check fee ordering
 	err = db.View("", func(tx *dbutil.Tx) error {
-		inUxs, err := v.Blockchain.Unspent().GetArray(tx, blockTxns[0].In)
+		inUxs, err := v.blockchain.Unspent().GetArray(tx, blockTxns[0].In)
 		require.NoError(t, err)
 		prevFee, err := fee.TransactionFee(&blockTxns[0], sb.Head.Time, inUxs)
 		require.NoError(t, err)
 
 		for i := 1; i < len(blockTxns); i++ {
-			inUxs, err := v.Blockchain.Unspent().GetArray(tx, blockTxns[i].In)
+			inUxs, err := v.blockchain.Unspent().GetArray(tx, blockTxns[i].In)
 			require.NoError(t, err)
 			f, err := fee.TransactionFee(&blockTxns[i], sb.Head.Time, inUxs)
 			require.NoError(t, err)
@@ -502,16 +501,15 @@ func TestVisorInjectTransaction(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
 	v := &Visor{
 		Config:      cfg,
-		Unconfirmed: unconfirmed,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: unconfirmed,
+		blockchain:  bc,
+		db:          db,
 		history:     his,
 	}
 
@@ -532,7 +530,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	var gb *coin.SignedBlock
 	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
-		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		gb, err = v.blockchain.GetGenesisBlock(tx)
 		return err
 	})
 	require.NoError(t, err)
@@ -1876,10 +1874,10 @@ func TestGetTransactions(t *testing.T) {
 			defer shutdown()
 
 			v := &Visor{
-				DB:          db,
+				db:          db,
 				history:     his,
-				Unconfirmed: uncfmTxnPool,
-				Blockchain:  bc,
+				unconfirmed: uncfmTxnPool,
+				blockchain:  bc,
 			}
 
 			retTxns, err := v.GetTransactions(tc.filters)
@@ -1936,7 +1934,6 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 	cfg.IsBlockPublisher = true
 	cfg.BlockchainSeckey = genSecret
 	cfg.BlockchainPubkey = genPublic
@@ -1944,9 +1941,9 @@ func TestRefreshUnconfirmed(t *testing.T) {
 
 	v := &Visor{
 		Config:      cfg,
-		Unconfirmed: unconfirmed,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: unconfirmed,
+		blockchain:  bc,
+		db:          db,
 		history:     his,
 	}
 
@@ -1954,7 +1951,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	var gb *coin.SignedBlock
 	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
-		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		gb, err = v.blockchain.GetGenesisBlock(tx)
 		return err
 	})
 	require.NoError(t, err)
@@ -2068,7 +2065,6 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 	cfg.IsBlockPublisher = true
 	cfg.Arbitrating = true
 	cfg.BlockchainPubkey = genPublic
@@ -2077,9 +2073,9 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	v := &Visor{
 		Config:      cfg,
-		Unconfirmed: unconfirmed,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: unconfirmed,
+		blockchain:  bc,
+		db:          db,
 		history:     his,
 	}
 
@@ -2087,7 +2083,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	var gb *coin.SignedBlock
 	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
-		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		gb, err = v.blockchain.GetGenesisBlock(tx)
 		return err
 	})
 	require.NoError(t, err)
@@ -2573,8 +2569,8 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			history.On("GetUxOuts", matchDBTx, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
 
 			v := &Visor{
-				Blockchain: bc,
-				DB:         db,
+				blockchain: bc,
+				db:         db,
 				history:    history,
 				Config:     Config{},
 			}
@@ -2590,7 +2586,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 			var isConfirmed bool
 			var inputs []TransactionInput
-			err := v.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+			err := v.db.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
 				var err error
 				inputs, isConfirmed, err = v.VerifyTxnVerbose(&tc.txn, tc.signed)
 				return err

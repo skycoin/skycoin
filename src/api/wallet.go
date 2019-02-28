@@ -253,7 +253,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			Encrypt:  encrypt,
 			Password: []byte(password),
 			ScanN:    scanN,
-		})
+		}, gateway)
 		if err != nil {
 			switch err.(type) {
 			case wallet.Error:
@@ -549,14 +549,14 @@ type WalletFolder struct {
 // Returns the wallet directory path
 // URI: /api/v1/wallets/folderName
 // Method: GET
-func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
+func walletFolderHandler(s Walleter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		addr, err := gateway.GetWalletDir()
+		addr, err := s.WalletDir()
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletAPIDisabled:

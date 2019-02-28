@@ -230,7 +230,7 @@ func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		addrCount, err := gateway.GetAddressCount()
+		addrCount, err := gateway.AddressCount()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return

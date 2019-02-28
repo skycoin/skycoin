@@ -119,8 +119,9 @@ func TestGetBlockchainProgress(t *testing.T) {
 		method                      string
 		status                      int
 		err                         string
+		headBkSeq                   uint64
+		headBkSeqErr                error
 		getBlockchainProgressResult *daemon.BlockchainProgress
-		getBlockchainProgressErr    error
 		result                      readable.BlockchainProgress
 	}{
 		{
@@ -129,23 +130,27 @@ func TestGetBlockchainProgress(t *testing.T) {
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
+
 		{
-			name:                     "500 - GetBlockchainProgress error",
-			method:                   http.MethodGet,
-			status:                   http.StatusInternalServerError,
-			err:                      "500 Internal Server Error - gateway.GetBlockchainProgress failed: GetBlockchainProgress error",
-			getBlockchainProgressErr: errors.New("GetBlockchainProgress error"),
+			name:         "500 - HeadBkSeq error",
+			method:       http.MethodGet,
+			status:       http.StatusInternalServerError,
+			err:          "500 Internal Server Error - gateway.HeadBkSeq failed: HeadBkSeq error",
+			headBkSeqErr: errors.New("HeadBkSeq error"),
 		},
+
 		{
 			name:   "500 - nil daemon.BlockchainProgress",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error - gateway.GetBlockchainProgress progress is nil",
 		},
+
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
+			name:      "200",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			headBkSeq: 99,
 			getBlockchainProgressResult: &daemon.BlockchainProgress{
 				Peers: []daemon.PeerBlockchainHeight{
 					{
@@ -180,7 +185,8 @@ func TestGetBlockchainProgress(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("GetBlockchainProgress").Return(tc.getBlockchainProgressResult, tc.getBlockchainProgressErr)
+			gateway.On("HeadBkSeq").Return(tc.headBkSeq, true, tc.headBkSeqErr)
+			gateway.On("GetBlockchainProgress", tc.headBkSeq).Return(tc.getBlockchainProgressResult)
 
 			endpoint := "/api/v1/blockchain/progress"
 			req, err := http.NewRequest(tc.method, endpoint, nil)

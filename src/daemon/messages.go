@@ -484,7 +484,7 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 		"gnetID": intro.c.ConnID,
 	}
 
-	dc := d.daemonConfig()
+	dc := d.DaemonConfig()
 
 	// Disconnect if this is a self connection (we have the same mirror value)
 	if intro.Mirror == dc.Mirror {
@@ -602,7 +602,7 @@ func (ping *PingMessage) process(d daemoner) {
 		"gnetID": ping.c.ConnID,
 	}
 
-	if d.daemonConfig().LogPings {
+	if d.DaemonConfig().LogPings {
 		logger.WithFields(fields).Debug("Replying to ping")
 	}
 	if err := d.sendMessage(ping.c.Addr, &PongMessage{}); err != nil {
@@ -633,7 +633,7 @@ func (pong *PongMessage) Decode(buf []byte) (uint64, error) {
 func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	// There is nothing to do; gnet updates Connection.LastMessage internally
 	// when this is received
-	if daemon.(*Daemon).Config.LogPings {
+	if daemon.(daemoner).DaemonConfig().LogPings {
 		logger.WithFields(logrus.Fields{
 			"addr":   mc.Addr,
 			"gnetID": mc.ConnID,
@@ -736,7 +736,7 @@ func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // process should send number to be requested, with request
 func (gbm *GetBlocksMessage) process(d daemoner) {
-	dc := d.daemonConfig()
+	dc := d.DaemonConfig()
 	if dc.DisableNetworking {
 		return
 	}
@@ -862,7 +862,7 @@ func (m *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) 
 
 // process process message
 func (m *GiveBlocksMessage) process(d daemoner) {
-	if d.daemonConfig().DisableNetworking {
+	if d.DaemonConfig().DisableNetworking {
 		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
@@ -930,7 +930,7 @@ func (m *GiveBlocksMessage) process(d daemoner) {
 	}
 
 	// Request more blocks
-	gbm := NewGetBlocksMessage(headBkSeq, d.daemonConfig().GetBlocksRequestCount)
+	gbm := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().GetBlocksRequestCount)
 	if _, err := d.broadcastMessage(gbm); err != nil {
 		logger.WithError(err).Warning("Broadcast GetBlocksMessage failed")
 	}
@@ -973,7 +973,7 @@ func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 // process process message
 func (abm *AnnounceBlocksMessage) process(d daemoner) {
-	if d.daemonConfig().DisableNetworking {
+	if d.DaemonConfig().DisableNetworking {
 		return
 	}
 
@@ -998,7 +998,7 @@ func (abm *AnnounceBlocksMessage) process(d daemoner) {
 
 	// TODO: Should this be block get request for current sequence?
 	// If client is not caught up, won't attempt to get block
-	m := NewGetBlocksMessage(headBkSeq, d.daemonConfig().GetBlocksRequestCount)
+	m := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().GetBlocksRequestCount)
 	if err := d.sendMessage(abm.c.Addr, m); err != nil {
 		logger.WithError(err).WithFields(fields).Error("Send GetBlocksMessage")
 	}
@@ -1108,7 +1108,7 @@ func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface
 
 // process process message
 func (atm *AnnounceTxnsMessage) process(d daemoner) {
-	dc := d.daemonConfig()
+	dc := d.DaemonConfig()
 	if dc.DisableNetworking {
 		return
 	}
@@ -1216,7 +1216,7 @@ func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) e
 
 // process process message
 func (gtm *GetTxnsMessage) process(d daemoner) {
-	dc := d.daemonConfig()
+	dc := d.DaemonConfig()
 	if dc.DisableNetworking {
 		return
 	}
@@ -1332,7 +1332,7 @@ func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) 
 
 // process process message
 func (gtm *GiveTxnsMessage) process(d daemoner) {
-	dc := d.daemonConfig()
+	dc := d.DaemonConfig()
 	if dc.DisableNetworking {
 		return
 	}

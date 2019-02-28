@@ -598,7 +598,7 @@ func TestDisconnect(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("Disconnect", tc.gnetID).Return(tc.disconnectErr)
+			gateway.On("DisconnectByGnetID", tc.gnetID).Return(tc.disconnectErr)
 
 			endpoint := "/api/v1/network/connection/disconnect"
 			v := url.Values{}

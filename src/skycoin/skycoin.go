@@ -49,7 +49,10 @@ type Coin struct {
 // Run starts the node
 func (c *Coin) Run() error {
 	var db *dbutil.DB
+	var w *wallet.Service
+	var v *visor.Visor
 	var d *daemon.Daemon
+	var gw *api.Gateway
 	var webInterface *api.Server
 	var retErr error
 	errC := make(chan error, 10)
@@ -132,10 +135,13 @@ func (c *Coin) Run() error {
 
 	c.logger.Infof("App version: %s", appVersion)
 
-	// Open the database
+	wconf := c.ConfigureWallet()
 	dconf := c.ConfigureDaemon()
-	c.logger.Infof("Opening database %s", dconf.Visor.DBPath)
-	db, err = visor.OpenDB(dconf.Visor.DBPath, c.config.Node.DBReadOnly)
+	vconf := c.ConfigureVisor()
+
+	// Open the database
+	c.logger.Infof("Opening database %s", c.config.Node.DBPath)
+	db, err = visor.OpenDB(c.config.Node.DBPath, c.config.Node.DBReadOnly)
 	if err != nil {
 		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return err
@@ -205,15 +211,31 @@ func (c *Coin) Run() error {
 	c.logger.Infof("Max transaction size for user transactions is %d", params.UserVerifyTxn.MaxTransactionSize)
 	c.logger.Infof("Max decimals for user transactions is %d", params.UserVerifyTxn.MaxDropletPrecision)
 
-	d, err = daemon.NewDaemon(dconf, db)
+	w, err = wallet.NewService(wconf)
 	if err != nil {
 		c.logger.Error(err)
 		retErr = err
 		goto earlyShutdown
 	}
 
+	v, err = visor.New(vconf, db, w)
+	if err != nil {
+		c.logger.Error(err)
+		retErr = err
+		goto earlyShutdown
+	}
+
+	d, err = daemon.New(dconf, v)
+	if err != nil {
+		c.logger.Error(err)
+		retErr = err
+		goto earlyShutdown
+	}
+
+	gw = api.NewGateway(d, v, w)
+
 	if c.config.Node.WebInterface {
-		webInterface, err = c.createGUI(d, host)
+		webInterface, err = c.createGUI(gw, host)
 		if err != nil {
 			c.logger.Error(err)
 			retErr = err
@@ -227,7 +249,7 @@ func (c *Coin) Run() error {
 		}
 	}
 
-	if err := d.Init(); err != nil {
+	if err := v.Init(); err != nil {
 		c.logger.Error(err)
 		retErr = err
 		goto earlyShutdown
@@ -343,6 +365,47 @@ func (c *Coin) initLogFile() (*os.File, error) {
 	return f, nil
 }
 
+// ConfigureVisor sets the visor config values
+func (c *Coin) ConfigureVisor() visor.Config {
+	vc := visor.NewConfig()
+
+	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
+
+	vc.BlockchainPubkey = c.config.Node.blockchainPubkey
+	vc.BlockchainSeckey = c.config.Node.blockchainSeckey
+
+	vc.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
+	vc.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
+	vc.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
+
+	vc.GenesisAddress = c.config.Node.genesisAddress
+	vc.GenesisSignature = c.config.Node.genesisSignature
+	vc.GenesisTimestamp = c.config.Node.GenesisTimestamp
+	vc.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
+	vc.Arbitrating = c.config.Node.Arbitrating
+
+	return vc
+}
+
+// ConfigureWallet sets the wallet config values
+func (c *Coin) ConfigureWallet() wallet.Config {
+	wc := wallet.NewConfig()
+
+	wc.WalletDir = c.config.Node.WalletDirectory
+	_, wc.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
+	_, wc.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
+
+	// Initialize wallet default crypto type
+	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	wc.CryptoType = cryptoType
+
+	return wc
+}
+
 // ConfigureDaemon sets the daemon config values
 func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc := daemon.NewConfig()
@@ -383,39 +446,11 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.config.Node.OutgoingConnectionsRate
-	dc.Visor.IsBlockPublisher = c.config.Node.RunBlockPublisher
-
-	dc.Visor.BlockchainPubkey = c.config.Node.blockchainPubkey
-	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey
-
-	dc.Visor.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
-	dc.Visor.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
-	dc.Visor.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
-
-	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
-	dc.Visor.GenesisSignature = c.config.Node.genesisSignature
-	dc.Visor.GenesisTimestamp = c.config.Node.GenesisTimestamp
-	dc.Visor.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
-	dc.Visor.DBPath = c.config.Node.DBPath
-	dc.Visor.Arbitrating = c.config.Node.Arbitrating
-	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
-	_, dc.Visor.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
-
-	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-
-	// Initialize wallet default crypto type
-	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	dc.Visor.WalletCryptoType = cryptoType
 
 	return dc
 }
 
-func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
+func (c *Coin) createGUI(gw *api.Gateway, host string) (*api.Server, error) {
 	config := api.Config{
 		StaticDir:          c.config.Node.GUIDirectory,
 		DisableCSRF:        c.config.Node.DisableCSRF,
@@ -460,14 +495,14 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 			c.logger.Infof("Created key file %s", c.config.Node.WebInterfaceKey)
 		}
 
-		s, err = api.CreateHTTPS(host, config, d.Gateway, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
+		s, err = api.CreateHTTPS(host, config, gw, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
 		if err != nil {
 			c.logger.Errorf("Failed to start web GUI: %v", err)
 			return nil, err
 		}
 	} else {
 		var err error
-		s, err = api.Create(host, config, d.Gateway)
+		s, err = api.Create(host, config, gw)
 		if err != nil {
 			c.logger.Errorf("Failed to start web GUI: %v", err)
 			return nil, err

@@ -2,20 +2,12 @@ package secp256k1go
 
 import (
 	"bytes"
-	"encoding/hex"
-	"fmt"
 	"log"
 )
 
 // Signature represents the signature
 type Signature struct {
 	R, S Number
-}
-
-// Print prints the signature
-func (sig *Signature) Print(lab string) {
-	fmt.Println(lab+".R:", hex.EncodeToString(sig.R.Bytes()))
-	fmt.Println(lab+".S:", hex.EncodeToString(sig.S.Bytes()))
 }
 
 // Verify verify the signature
@@ -65,7 +57,7 @@ func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
 		}
 	}
 
-	fx.SetB32(rx.getBin(32))
+	fx.SetB32(LeftPadBytes(rx.Bytes(), 32))
 
 	X.SetXO(&fx, (recid&1) != 0)
 	if !X.IsValid() {

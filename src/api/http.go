@@ -51,6 +51,8 @@ const (
 	EndpointsTransaction = "TXN"
 	// EndpointsWallet endpoints implement wallet interface
 	EndpointsWallet = "WALLET"
+	// EndpointsNote endpoints implement note interface
+	EndpointsNote = "NOTE"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
 	// EndpointsPrometheus endpoints for Go application metrics
@@ -587,6 +589,16 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 	webHandlerV1("/address_uxouts", addrUxOutsHandler(gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},
+	})
+
+	// Note related endpoints
+	webHandlerV2("/notes", notesHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV2("/note", noteHandler(gateway), map[string][]string{
+		http.MethodGet:    []string{EndpointsRead},
+		http.MethodPost:   []string{EndpointsNote},
+		http.MethodDelete: []string{EndpointsNote},
 	})
 
 	// golang process internal metrics for Prometheus

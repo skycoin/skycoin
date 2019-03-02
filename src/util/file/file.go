@@ -116,6 +116,11 @@ func LoadJSON(filename string, thing interface{}) error {
 	return dec.Decode(thing)
 }
 
+// LoadBinary load binary file
+func LoadBinary(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
+}
+
 // SaveJSON write value into json file
 func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
 	data, err := json.MarshalIndent(thing, "", "    ")
@@ -165,6 +170,12 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 
 	// Remove the tmp file
 	return os.Remove(tmpname)
+}
+
+// RewriteBinary persists data into given file in binary,
+// overwrites, if there was one
+func RewriteBinary(filename string, data []byte, mode os.FileMode) error {
+	return ioutil.WriteFile(filename, data, mode)
 }
 
 //TODO: require file named after application and then hashcode, in static directory
@@ -287,4 +298,9 @@ func CopyFile(dst string, src io.Reader) (n int64, err error) {
 
 	n, err = io.Copy(out, src)
 	return
+}
+
+// RemoveFile removes file
+func RemoveFile(path string) error {
+	return os.Remove(path)
 }

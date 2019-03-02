@@ -164,6 +164,10 @@ type NodeConfig struct {
 	// Wallet crypto type
 	WalletCryptoType string
 
+	// Notes
+	// Defaults to ${DataDirectory}/notes/
+	NoteDirectory string
+
 	// Disable the hardcoded default peers
 	DisableDefaultPeers bool
 	// Load custom peers from disk
@@ -259,9 +263,13 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
-		DisabledAPISets:   "",
-		EnableAllAPISets:  false,
+		EnabledAPISets: strings.Join([]string{
+			api.EndpointsRead,
+			api.EndpointsTransaction,
+			api.EndpointsNote,
+		}, ","),
+		DisabledAPISets:  "",
+		EnableAllAPISets: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -285,6 +293,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Wallets
 		WalletDirectory:  "",
 		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
+
+		// Notes
+		NoteDirectory: "",
 
 		// Timeout settings for http.Server
 		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
@@ -361,6 +372,12 @@ func (c *Config) postProcess() error {
 		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")
 	} else {
 		c.Node.WalletDirectory = replaceHome(c.Node.WalletDirectory, home)
+	}
+
+	if c.Node.NoteDirectory == "" {
+		c.Node.NoteDirectory = filepath.Join(c.Node.DataDirectory, "notes")
+	} else {
+		c.Node.NoteDirectory = replaceHome(c.Node.NoteDirectory, home)
 	}
 
 	if c.Node.DBPath == "" {
@@ -533,6 +550,7 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsStatus,
 		api.EndpointsWallet,
 		api.EndpointsTransaction,
+		api.EndpointsNote,
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		// Do not include insecure or deprecated API sets, they must always
@@ -565,6 +583,7 @@ func validateAPISets(opt string, apiSets []string) error {
 		case api.EndpointsRead,
 			api.EndpointsStatus,
 			api.EndpointsTransaction,
+			api.EndpointsNote,
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
 			api.EndpointsPrometheus,
@@ -607,6 +626,7 @@ func (c *NodeConfig) RegisterFlags() {
 		api.EndpointsStatus,
 		api.EndpointsWallet,
 		api.EndpointsTransaction,
+		api.EndpointsNote,
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		api.EndpointsInsecureWalletSeed,
@@ -659,6 +679,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
+	flag.StringVar(&c.NoteDirectory, "note-dir", c.NoteDirectory, "location of the note files. Defaults to ~/.skycoin/notes/")
 	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")

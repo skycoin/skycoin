@@ -6,6 +6,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/note"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -19,14 +20,16 @@ type Gateway struct {
 	*daemon.Daemon
 	*visor.Visor
 	*wallet.Service
+	*note.Manager
 }
 
 // NewGateway creates a Gateway
-func NewGateway(d *daemon.Daemon, v *visor.Visor, w *wallet.Service) *Gateway {
+func NewGateway(d *daemon.Daemon, v *visor.Visor, w *wallet.Service, n *note.Manager) *Gateway {
 	return &Gateway{
 		Daemon:  d,
 		Visor:   v,
 		Service: w,
+		Manager: n,
 	}
 }
 
@@ -35,6 +38,7 @@ type Gatewayer interface {
 	Daemoner
 	Visorer
 	Walleter
+	Noter
 }
 
 // Daemoner interface for daemon.Daemon methods used by the API
@@ -102,4 +106,12 @@ type Walleter interface {
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	WalletDir() (string, error)
+}
+
+// Noter interface for note.Manager methods used by the API
+type Noter interface {
+	GetNotes() (map[string]string, error)
+	GetNote(txID string) (string, error)
+	AddNote(txID, note string) error
+	RemoveNote(txID string) error
 }

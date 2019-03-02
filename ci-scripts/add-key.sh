@@ -4,7 +4,7 @@ set -e -o pipefail
 
 KEY_CHAIN=login.keychain
 echo "security create keychain"
-security create-keychain -p travis $KEY_CHAIN
+security create-keychain -p travis $KEY_CHAIN || { if [[ "$?" != "48" ]]; then true ; else exit $? ; fi }
 # Make the keychain the default so identities are found
 echo "security default-keychain"
 security default-keychain -s $KEY_CHAIN

@@ -4,7 +4,7 @@ set -e -o pipefail
 
 KEY_CHAIN=login.keychain
 echo "security create keychain"
-if ! security show-keychain-info ; then 
+if ! security show-keychain-info $KEY_CHAIN ; then 
 	security create-keychain -p travis $KEY_CHAIN ;
 fi
 # Make the keychain the default so identities are found

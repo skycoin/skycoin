@@ -2,7 +2,7 @@
   <div class="form-field">
     <label for="wallet">{{ 'send.from-label' | translate }}</label>
     <div class="-select">
-      <select formControlName="wallet" id="wallet" [attr.disabled]="busy ? 'true' : null">
+      <select formControlName="wallet" id="wallet" [attr.disabled]="busy ? 'true' : null" [ngClass]="{'element-disabled' : busy}">
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
           {{ wallet.label }} -

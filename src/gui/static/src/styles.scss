@@ -421,3 +421,8 @@ On-boarding components
 .mouse-disabled {
   pointer-events: none;
 }
+
+.element-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

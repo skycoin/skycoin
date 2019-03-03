@@ -4,7 +4,7 @@ import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { showSnackbarError } from '../../../../utils/errors';
+import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { Subscription, ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
@@ -16,6 +16,8 @@ import 'rxjs/add/operator/concat';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { showConfirmationModal } from '../../../../utils';
 import { AppService } from '../../../../services/app.service';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -41,10 +43,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   autoOptions = false;
   autoShareValue = '0.5';
   previewTx: boolean;
+  busy = false;
 
   private subscriptions: Subscription;
   private getOutputsSubscriptions: ISubscription;
   private syncCheckSubscription: ISubscription;
+  private processingSubscription: ISubscription;
 
   constructor(
     public walletService: WalletService,
@@ -54,6 +58,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private snackbar: MatSnackBar,
     private navbarService: NavBarService,
     private blockchainService: BlockchainService,
+    private hwWalletService: HwWalletService,
+    private translate: TranslateService,
   ) { }
 
   ngOnInit() {
@@ -116,6 +122,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.processingSubscription && !this.processingSubscription.closed) {
+      this.processingSubscription.unsubscribe();
+    }
     this.closeGetOutputsSubscriptions();
     this.closeSyncCheckSubscription();
     this.subscriptions.unsubscribe();
@@ -134,10 +143,14 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private checkBeforeSending() {
+    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
+      return;
+    }
+
     this.closeSyncCheckSubscription();
     this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
       if (synchronized) {
-        this.unlockAndSend();
+        this.prepareTransaction();
       } else {
         this.showSynchronizingWarning();
       }
@@ -154,24 +167,20 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
-        this.unlockAndSend();
+        this.prepareTransaction();
       }
     });
   }
 
-  unlockAndSend() {
-    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
-      return;
-    }
-
+  private prepareTransaction() {
     this.snackbar.dismiss();
     this.previewButton.resetState();
     this.sendButton.resetState();
 
-    if (this.form.get('wallet').value.encrypted) {
+    if (this.form.value.wallet.encrypted && !this.form.value.wallet.isHardware && !this.previewTx) {
       const config = new MatDialogConfig();
       config.data = {
-        wallet: this.form.get('wallet').value,
+        wallet: this.form.value.wallet,
       };
 
       this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
@@ -179,7 +188,15 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           this.createTransaction(passwordDialog);
         });
     } else {
-      this.createTransaction();
+      if (!this.form.value.wallet.isHardware || this.previewTx) {
+        this.createTransaction();
+      } else {
+        this.showBusy();
+        this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected((this.form.value.wallet as Wallet).addresses[0].address).subscribe(
+          () => this.createTransaction(),
+          err => this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, err)),
+        );
+      }
     }
   }
 
@@ -341,11 +358,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
   }
 
-  private createTransaction(passwordDialog?: any) {
-    if (passwordDialog) {
-      passwordDialog.close();
-    }
-
+  private showBusy() {
     if (this.previewTx) {
       this.previewButton.setLoading();
       this.sendButton.setDisabled();
@@ -353,6 +366,15 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.sendButton.setLoading();
       this.previewButton.setDisabled();
     }
+    this.busy = true;
+  }
+
+  private createTransaction(passwordDialog?: any) {
+    if (passwordDialog) {
+      passwordDialog.close();
+    }
+
+    this.showBusy();
 
     const selectedAddresses = this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0 ?
       this.form.get('addresses').value.map(addr => addr.address) : null;
@@ -360,21 +382,20 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     const selectedOutputs = this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0 ?
       this.form.get('outputs').value.map(addr => addr.hash) : null;
 
-    this.walletService.createTransaction(
-      this.form.get('wallet').value,
-      selectedAddresses,
+      this.processingSubscription = this.walletService.createTransaction(
+        this.form.value.wallet,
+        selectedAddresses ? selectedAddresses : (this.form.value.wallet as Wallet).addresses.map(address => address.address),
       selectedOutputs,
       this.destinations,
       this.hoursSelection,
       this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
       passwordDialog ? passwordDialog.password : null,
-    )
-      .toPromise()
-      .then(transaction => {
+        this.previewTx,
+      ).subscribe(transaction => {
         if (!this.previewTx) {
-          return this.walletService.injectTransaction(transaction.encoded).toPromise();
-        }
-
+            this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
+              .subscribe(() => this.showSuccess(), error => this.showError(error));
+          } else {
         let amount = new BigNumber('0');
         this.destinations.map(destination => amount = amount.plus(destination.coins));
 
@@ -393,21 +414,17 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           to: this.destinations.map(d => d.address),
           transaction,
         });
-      })
-      .then(() => {
-        this.sendButton.setSuccess();
-        this.resetForm();
-
-        setTimeout(() => {
-          this.sendButton.resetState();
-        }, 3000);
-      })
-      .catch(error => {
-        showSnackbarError(this.snackbar, error);
-
-        this.previewButton.resetState().setEnabled();
-        this.sendButton.resetState().setEnabled();
-      });
+            this.busy = false;
+          }
+        },
+        error => {
+          if (error && error.result) {
+            this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
+          } else {
+            this.showError(error);
+          }
+        },
+      );
   }
 
   private resetForm() {
@@ -475,16 +492,21 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         this.availableCoins = this.availableCoins.plus(control.coins);
         this.availableHours = this.availableHours.plus(control.hours);
       });
-    } else {
+    } else if (this.form.get('wallet').value) {
       const wallet: Wallet = this.form.get('wallet').value;
       this.availableCoins = wallet.coins;
       this.availableHours = wallet.hours;
     }
 
-    const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.appService.burnRate));
-    const sendableHours = this.availableHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
-    this.minimumFee = this.availableHours.minus(sendableHours);
-    this.availableHours = sendableHours;
+    if (this.availableCoins.isGreaterThan(0)) {
+      const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.appService.burnRate));
+      const sendableHours = this.availableHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
+      this.minimumFee = this.availableHours.minus(sendableHours);
+      this.availableHours = sendableHours;
+    } else {
+      this.minimumFee = new BigNumber(0);
+      this.availableHours = new BigNumber(0);
+    }
   }
 
   private filterUnspentOutputs(): UnspentOutput[] {
@@ -509,5 +531,22 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     if (this.syncCheckSubscription) {
       this.syncCheckSubscription.unsubscribe();
     }
+  }
+
+  private showSuccess() {
+    this.busy = false;
+    this.sendButton.setSuccess();
+    this.resetForm();
+
+    setTimeout(() => {
+      this.sendButton.resetState();
+    }, 3000);
+  }
+
+  private showError(error) {
+    this.busy = false;
+    showSnackbarError(this.snackbar, error);
+    this.previewButton.resetState().setEnabled();
+    this.sendButton.resetState().setEnabled();
   }
 }

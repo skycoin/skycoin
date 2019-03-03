@@ -1642,6 +1642,126 @@ Result:
 }
 ```
 
+## Transaction Note APIs
+
+### Get all existing notes
+
+API sets: `READ`
+
+```
+URI: /api/v2/notes
+Method: GET
+```
+
+Gets all the existing notes to all of the transactions.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/notes
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "a5cf149da9cab9fdff681cec9fe83983aada218a46e26292a2c977ceff5bb1a5": "note1",
+        "db6fec68266296fcf6bf98a26cf25d86c83bfc31b8248575724977d90426addd": "note2",
+        "fef07801a566c3eafd680c9d29ccc18657c600e8b9d8f2c0eb89e3c98f5019c4": "note3"
+    }
+}
+```
+
+### Get transaction note by transaction id
+
+API sets: `READ`
+
+```
+URI: /api/v2/note
+Method: GET
+Args:
+	txid: transaction id
+```
+
+Gets the transaction note by transaction id.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/note?txid=a5cf149da9cab9fdff681cec9fe83983aada218a46e26292a2c977ceff5bb1a5
+```
+
+Result:
+
+```json
+{
+    "data": "note1"
+}
+```
+
+### Add transaction note
+
+API sets: `NOTE`
+
+```
+URI: /api/v2/note
+Method: POST
+Args:
+    JSON Body, see examples
+```
+
+Adds the note to the transaction.
+
+Example request body:
+
+```json
+{
+    "txid": "e887de1c58eb180f2f0805867fedd05114facfb99c17f63dc0e74c072ca7a4cc",
+    "note": "note5"
+}
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/note -H 'Content-Type: application/json' -d '{
+    "txid": "e887de1c58eb180f2f0805867fedd05114facfb99c17f63dc0e74c072ca7a4cc",
+    "note": "note5"
+}'
+```
+
+Result:
+
+```json
+{}
+```
+
+### Remove transaction note
+
+API sets: `NOTE`
+
+```
+URI: /api/v2/note
+Method: DELETE
+Args:
+    txid: transaction id
+```
+
+Removes the transaction note by transaction id.
+
+Example
+
+```sh
+curl -X DELETE http://127.0.0.1:6420/api/v2/note?txid=fef07801a566c3eafd680c9d29ccc18657c600e8b9d8f2c0eb89e3c98f5019c4
+```
+
+Result:
+
+```json
+{}
+```
+
 ## Transaction APIs
 
 ### Get unconfirmed transactions

@@ -3,16 +3,15 @@ package file
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"encoding/json"
+	"github.com/skycoin/skycoin/src/testutil"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/skycoin/skycoin/src/testutil"
 )
 
 func requireFileMode(t *testing.T, filename string, mode os.FileMode) {
@@ -127,6 +126,27 @@ func TestLoadJSON(t *testing.T) {
 	require.Equal(t, obj.Key, "value")
 }
 
+func TestLoadBinary(t *testing.T) {
+	fn := "test.bin"
+	defer cleanup(fn)
+
+	// Loading nonexistant file
+	testutil.RequireFileNotExists(t, fn)
+	_, err := LoadBinary(fn)
+	require.Error(t, err)
+	require.True(t, os.IsNotExist(err))
+
+	f, err := os.Create(fn)
+	require.NoError(t, err)
+	_, err = f.WriteString("test")
+	require.NoError(t, err)
+	f.Close()
+
+	obj, err := LoadBinary(fn)
+	require.NoError(t, err)
+	require.Equal(t, string(obj), "test")
+}
+
 func TestSaveJSON(t *testing.T) {
 	fn := "test.json"
 	defer cleanup(fn)
@@ -211,4 +231,39 @@ func TestSaveBinary(t *testing.T) {
 	// requireFileContentsBinary(t, fn+".bak", b)
 	requireFileMode(t, fn, 0644)
 	// requireFileMode(t, fn+".bak", 0644)
+}
+
+func TestRewriteBinary(t *testing.T) {
+	fn := "test.bin"
+	defer cleanup(fn)
+
+	t1 := []byte("test1")
+	err := RewriteBinary(fn, t1, 0644)
+	require.NoError(t, err)
+	requireIsRegularFile(t, fn)
+	requireFileContentsBinary(t, fn, t1)
+	requireFileMode(t, fn, 0644)
+
+	t2 := []byte("test2")
+	err = RewriteBinary(fn, t2, 0644)
+	require.NoError(t, err)
+	requireIsRegularFile(t, fn)
+	requireFileContentsBinary(t, fn, t2)
+	requireFileMode(t, fn, 0644)
+}
+
+func TestRemoveFile(t *testing.T) {
+	fn := "test.bin"
+	defer cleanup(fn)
+
+	testutil.RequireFileNotExists(t, fn)
+	f, err := os.Create(fn)
+	require.NoError(t, err)
+	_, err = f.WriteString("test")
+	require.NoError(t, err)
+	f.Close()
+
+	err = RemoveFile(fn)
+	require.NoError(t, err)
+	testutil.RequireFileNotExists(t, fn)
 }

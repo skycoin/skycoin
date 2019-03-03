@@ -19,6 +19,7 @@ var allAPISetsEnabled = map[string]struct{}{
 	EndpointsTransaction:        struct{}{},
 	EndpointsStatus:             struct{}{},
 	EndpointsWallet:             struct{}{},
+	EndpointsNote:               struct{}{},
 	EndpointsInsecureWalletSeed: struct{}{},
 	EndpointsPrometheus:         struct{}{},
 	EndpointsNetCtrl:            struct{}{},
@@ -171,6 +172,14 @@ var endpointsMethods = map[string][]string{
 	},
 	"/api/v2/transaction": []string{
 		http.MethodPost,
+	},
+	"/api/v2/notes": []string{
+		http.MethodGet,
+	},
+	"/api/v2/note": []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodDelete,
 	},
 }
 

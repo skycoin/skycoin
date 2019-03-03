@@ -33,7 +33,7 @@ export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGener
     super(hwWalletService, dialogRef);
 
     this.form = formBuilder.group({
-      words: [12, Validators.required],
+      words: [24, Validators.required],
     });
   }
 

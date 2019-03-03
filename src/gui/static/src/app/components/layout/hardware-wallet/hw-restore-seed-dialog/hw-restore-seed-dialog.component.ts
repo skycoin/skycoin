@@ -37,7 +37,7 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
     super(hwWalletService, dialogRef);
 
     this.form = formBuilder.group({
-      words: [12, Validators.required],
+      words: [24, Validators.required],
     });
 
     this.justCheckingSeed = !!this.data.wallet;

@@ -312,6 +312,15 @@ export class WalletService {
     ).map(transaction => {
       const data = useV2Endpoint ? transaction.data : transaction;
 
+      if (wallet.isHardware) {
+        if (data.transaction.inputs.length > 8) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
+        }
+        if (data.transaction.outputs.length > 8) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+        }
+      }
+
       return {
         ...data.transaction,
         hoursBurned: new BigNumber(data.transaction.fee),

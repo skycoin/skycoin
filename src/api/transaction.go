@@ -323,6 +323,42 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Returns transactions that match the filters.
+// Method: GET, POST
+// URI: /api/v1/transactions
+// Args:
+//     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
+//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+//	   verbose: [bool] include verbose transaction input data
+func programStateHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		// Gets 'addrs' parameter value
+		addrs, err := parseAddressesFromStr(r.FormValue("addrs"))
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("parse parameter: 'addrs' failed: %v", err))
+			return
+		}
+
+		// Initialize transaction filters
+		flts := []visor.TxFilter{visor.NewAddrsFilter(addrs)}
+
+		flts = append(flts, visor.NewConfirmedTxFilter(true))
+
+		prgrmState, err := gateway.GetProgramState(flts)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+		
+		wh.SendJSONOr500(logger, w, prgrmState)
+	}
+}
+
 // parseAddressesFromStr parses comma separated addresses string into []cipher.Address
 func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 	addrsStr := splitCommaString(s)

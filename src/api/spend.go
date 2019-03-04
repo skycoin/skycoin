@@ -278,9 +278,10 @@ type hoursSelection struct {
 
 // receiver specifies a spend destination
 type receiver struct {
-	Address wh.Address `json:"address"`
-	Coins   wh.Coins   `json:"coins"`
-	Hours   *wh.Hours  `json:"hours,omitempty"`
+	Address           wh.Address `json:"address"`
+	Coins             wh.Coins   `json:"coins"`
+	Hours             *wh.Hours  `json:"hours,omitempty"`
+	MainExpressions   []byte
 }
 
 // Validate validates createTransactionRequest data
@@ -441,9 +442,10 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 		}
 
 		to[i] = coin.TransactionOutput{
-			Address: t.Address.Address,
-			Coins:   t.Coins.Value(),
-			Hours:   hours,
+			Address:       t.Address.Address,
+			Coins:         t.Coins.Value(),
+			Hours:         hours,
+			ProgramState:  ueoueoueo,
 		}
 	}
 

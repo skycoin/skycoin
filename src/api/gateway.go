@@ -55,6 +55,7 @@ type Gatewayer interface {
 	GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
 	GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error)
 	GetTransactionsVerbose(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error)
+	GetProgramState(flts []visor.TxFilter) ([]byte, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() ([]cipher.SHA256, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)

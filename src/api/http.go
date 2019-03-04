@@ -481,6 +481,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
 	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/programState", forAPISet(programStateHandler(gateway), []string{EndpointsRead}))
 	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsTransaction, EndpointsWallet}))
 	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsTransaction}))
 	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsRead}))

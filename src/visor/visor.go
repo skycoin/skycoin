@@ -388,9 +388,6 @@ func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc *Blockchain,
 func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx, prgrmState []byte) error {
 	logger.Info("Visor maybeCreateGenesisBlock")
 	gb, err := vs.Blockchain.GetGenesisBlock(tx)
-
-	fmt.Printf("huehue %v %v %+v\n", gb, err, vs.Config.BlockchainPubkey.Hex())
-	fmt.Printf("houhou %+v\n %+v\n", tx, vs.Blockchain)
 	
 	if err != nil {
 		return err
@@ -406,8 +403,6 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx, prgrmState []byte) error
 		return err
 	}
 
-	fmt.Printf("NewGenesisBlock %+v \n", b)
-
 	var sb coin.SignedBlock
 	// record the signature of genesis block
 	if vs.Config.IsBlockPublisher {
@@ -419,10 +414,6 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx, prgrmState []byte) error
 			Sig:   vs.Config.GenesisSignature,
 		}
 	}
-
-	fmt.Printf("genesisblocksig %v \v", sb.Sig.Hex())
-	fmt.Printf("signature %v \n", vs.Config.GenesisSignature.Hex())
-	fmt.Printf("signedBlock %+v \n", sb)
 
 	return vs.executeSignedBlock(tx, sb)
 }
@@ -1156,6 +1147,21 @@ func (vs *Visor) GetTransactions(flts []TxFilter) ([]Transaction, error) {
 	return txns, nil
 }
 
+// GetProgramState returns the last program state of a CX program
+func (vs *Visor) GetProgramState(flts []TxFilter) ([]byte, error) {
+	var prgrmState []byte
+
+	if err := vs.DB.View("GetProgramState", func(tx *dbutil.Tx) error {
+		var err error
+		prgrmState, err = vs.getProgramState(tx, flts)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return prgrmState, nil
+}
+
 // GetTransactionsWithInputs is the same as GetTransactions but also returns verbose transaction input data
 func (vs *Visor) GetTransactionsWithInputs(flts []TxFilter) ([]Transaction, [][]TransactionInput, error) {
 	var txns []Transaction
@@ -1254,6 +1260,69 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	}
 
 	return retTxns, nil
+}
+
+func (vs *Visor) getProgramState(tx *dbutil.Tx, flts []TxFilter) ([]byte, error) {
+	var addrFlts []AddrsFilter
+	var otherFlts []TxFilter
+	// Splits the filters into AddrsFilter and other filters
+	for _, f := range flts {
+		switch v := f.(type) {
+		case AddrsFilter:
+			addrFlts = append(addrFlts, v)
+		default:
+			otherFlts = append(otherFlts, f)
+		}
+	}
+
+	// Accumulates all addresses in address filters
+	addrs := accumulateAddressInFilter(addrFlts)
+
+	// Traverses all transactions to do collection if there's no address filter.
+	if len(addrs) == 0 {
+		txns, err := vs.traverseTxns(tx, otherFlts)
+		return txns[len(txns)-1].Transaction.Out[0].ProgramState, err
+	}
+
+	// Gets addresses related transactions
+	addrTxns, err := vs.getTransactionsForAddresses(tx, addrs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Converts address transactions map into []Transaction,
+	// and remove duplicate txns
+	txnMap := make(map[cipher.SHA256]struct{})
+	var txns []Transaction
+	for _, txs := range addrTxns {
+		for _, tx := range txs {
+			if _, exist := txnMap[tx.Transaction.Hash()]; exist {
+				continue
+			}
+			txnMap[tx.Transaction.Hash()] = struct{}{}
+			txns = append(txns, tx)
+		}
+	}
+
+	// Checks other filters
+	f := func(tx *Transaction, flts []TxFilter) bool {
+		for _, flt := range flts {
+			if !flt.Match(tx) {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	var retTxns []Transaction
+	for _, tx := range txns {
+		if f(&tx, otherFlts) {
+			retTxns = append(retTxns, tx)
+		}
+	}
+	
+	return retTxns[len(retTxns)-1].Transaction.Out[0].ProgramState, nil
 }
 
 func accumulateAddressInFilter(afs []AddrsFilter) []cipher.Address {

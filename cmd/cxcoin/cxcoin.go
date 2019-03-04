@@ -36,7 +36,7 @@ var (
 	CoinName = "cxcoin"
 
 	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = "9043250618603506aad2d4e54b748d3adff525f0b27010b86d70d3d8ea28c65518c25c379d5419f18cb9c6033a2c097e5355b5d356f56f89824df1a4f5d9cf2701"
+	GenesisSignatureStr = "5acccead5a5bf19f293a5f7eaf5b9804826dcad76eaf4348dfb82d565933c1f56b232d184d8be7dcffe9403030f132ad2cd2b454b6ac58c0eca89f7da55d53ed00"
 	// GenesisAddressStr genesis address string
 	GenesisAddressStr = "23v7mT1uLpViNKZHh9aww4VChxizqKsNq4E"
 	// BlockchainPubkeyStr pubic key string

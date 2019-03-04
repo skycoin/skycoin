@@ -531,6 +531,16 @@ func (gw *Gateway) GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, 
 	return txns, err
 }
 
+// GetProgramState returns the last program state of a CX program
+func (gw *Gateway) GetProgramState(flts []visor.TxFilter) ([]byte, error) {
+	var prgrmState []byte
+	var err error
+	gw.strand("GetProgramState", func() {
+		prgrmState, err = gw.v.GetProgramState(flts)
+	})
+	return prgrmState, err
+}
+
 // GetTransactionsVerbose returns transactions filtered by zero or more visor.TxFilter
 func (gw *Gateway) GetTransactionsVerbose(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error) {
 	var txns []visor.Transaction

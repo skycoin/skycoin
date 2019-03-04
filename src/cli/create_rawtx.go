@@ -732,7 +732,7 @@ func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.
 	}
 
 	for _, o := range outs {
-		txn.PushOutput(o.Address, o.Coins, o.Hours)
+		txn.PushOutput(o.Address, o.Coins, o.Hours, o.ProgramState)
 	}
 
 	txn.SignInputs(keys)

@@ -288,21 +288,13 @@ func VerifySeckey(seckey []byte) int {
 // Returns 1 on success
 func VerifyPubkey(pubkey []byte) int {
 	if len(pubkey) != 33 {
-		return -1
+		return -2
 	}
 
 	if secp.PubkeyIsValid(pubkey) != 1 {
-		return -3 //tests parse and validity
+		return -1 // tests parse and validity
 	}
 
-	var pubkey1 secp.XY
-	if err := pubkey1.ParsePubkey(pubkey); err != nil {
-		return -2 //invalid, parse fail
-	}
-
-	if !pubkey1.IsValid() {
-		return -4 //invalid, validation fail
-	}
 	return 1 //valid
 }
 

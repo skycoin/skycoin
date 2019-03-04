@@ -186,12 +186,18 @@ func PubkeyIsValid(pubkey []byte) int {
 		log.Panic("public key length must be 33 bytes")
 		return -2
 	}
-	var pubTest XY
-	if err := pubTest.ParsePubkey(pubkey); err != nil {
+	var pubkey1 XY
+	if err := pubkey1.ParsePubkey(pubkey); err != nil {
 		return -1
 	}
-	if !bytes.Equal(pubTest.Bytes(), pubkey) {
+
+	if !bytes.Equal(pubkey1.Bytes(), pubkey) {
 		log.Panic("pubkey parses but serialize/deserialize roundtrip fails")
 	}
+
+	if !pubkey1.IsValid() {
+		return -3 // invalid, point is infinity or some other problem
+	}
+
 	return 1
 }

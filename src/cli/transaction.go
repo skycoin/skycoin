@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/api"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
@@ -18,8 +20,8 @@ type TxnResult struct {
 
 func transactionCmd() *cobra.Command {
 	return &cobra.Command{
-		Short:                 "Show detail info of specific transaction",
-		Use:                   "transaction [transaction id]",
+		Short: "Show detail info of specific transaction",
+		Use:   "transaction [transaction id]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.MaximumNArgs(1),
@@ -49,8 +51,8 @@ func transactionCmd() *cobra.Command {
 
 func decodeRawTxnCmd() *cobra.Command {
 	return &cobra.Command{
-		Short:                 "Decode raw transaction",
-		Use:                   "decodeRawTransaction [raw transaction]",
+		Short: "Decode raw transaction",
+		Use:   "decodeRawTransaction [raw transaction]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
@@ -107,4 +109,42 @@ func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 	}
 
 	return fmt.Errorf("at least one address must be specified. Example: %s addr1 addr2 addr3", c.Name())
+}
+
+func verifyTransactionCmd() *cobra.Command {
+	return &cobra.Command{
+		Short: "Verify if the specific transaction is spendable",
+		Use:   "verifyTransaction [transaction id]",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.MaximumNArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			txid := args[0]
+			if txid == "" {
+				return errors.New("txid is empty")
+			}
+
+			// validate the txid
+			_, err := cipher.SHA256FromHex(txid)
+			if err != nil {
+				return errors.New("invalid txid")
+			}
+
+			encodedTxn, err := apiClient.TransactionEncoded(txid)
+			if err != nil {
+				return err
+			}
+
+			txn, err := apiClient.VerifyTransaction(api.VerifyTransactionRequest{
+				EncodedTransaction: encodedTxn.EncodedTransaction,
+			})
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(!txn.Confirmed)
+
+			return nil
+		},
+	}
 }

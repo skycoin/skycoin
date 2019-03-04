@@ -593,10 +593,10 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	// Note related endpoints
 	webHandlerV2("/notes", notesHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: []string{EndpointsRead, EndpointsNote},
 	})
 	webHandlerV2("/note", noteHandler(gateway), map[string][]string{
-		http.MethodGet:    []string{EndpointsRead},
+		http.MethodGet:    []string{EndpointsRead, EndpointsNote},
 		http.MethodPost:   []string{EndpointsNote},
 		http.MethodDelete: []string{EndpointsNote},
 	})

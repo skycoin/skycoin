@@ -1646,7 +1646,7 @@ Result:
 
 ### Get all existing notes
 
-API sets: `READ`
+API sets: `READ`, `NOTE`
 
 ```
 URI: /api/v2/notes
@@ -1675,7 +1675,7 @@ Result:
 
 ### Get transaction note by transaction id
 
-API sets: `READ`
+API sets: `READ`, `NOTE`
 
 ```
 URI: /api/v2/note

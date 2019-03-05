@@ -135,7 +135,7 @@ func verifyTransactionCmd() *cobra.Command {
 				return err
 			}
 
-			txn, err := apiClient.VerifyTransaction(api.VerifyTransactionRequest{
+			_, err = apiClient.VerifyTransaction(api.VerifyTransactionRequest{
 				EncodedTransaction: encodedTxn.EncodedTransaction,
 			})
 			if err != nil {

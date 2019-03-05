@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/api"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
@@ -20,8 +19,8 @@ type TxnResult struct {
 
 func transactionCmd() *cobra.Command {
 	return &cobra.Command{
-		Short: "Show detail info of specific transaction",
-		Use:   "transaction [transaction id]",
+		Short:                 "Show detail info of specific transaction",
+		Use:                   "transaction [transaction id]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.MaximumNArgs(1),
@@ -51,8 +50,8 @@ func transactionCmd() *cobra.Command {
 
 func decodeRawTxnCmd() *cobra.Command {
 	return &cobra.Command{
-		Short: "Decode raw transaction",
-		Use:   "decodeRawTransaction [raw transaction]",
+		Short:                 "Decode raw transaction",
+		Use:                   "decodeRawTransaction [raw transaction]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
@@ -113,8 +112,8 @@ func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 
 func verifyTransactionCmd() *cobra.Command {
 	return &cobra.Command{
-		Short: "Verify if the specific transaction is spendable",
-		Use:   "verifyTransaction [transaction id]",
+		Short:                 "Verify if the specific transaction is spendable",
+		Use:                   "verifyTransaction [transaction id]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.MaximumNArgs(1),

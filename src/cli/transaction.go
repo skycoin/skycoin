@@ -142,7 +142,7 @@ func verifyTransactionCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Println(!txn.Confirmed)
+			fmt.Println("transaction is spendable")
 
 			return nil
 		},

@@ -30,6 +30,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -49,14 +50,18 @@ type Coin struct {
 
 // Run starts the node
 func (c *Coin) Run() error {
-	var db *dbutil.DB
-	var w *wallet.Service
-	var v *visor.Visor
-	var d *daemon.Daemon
-	var gw *api.Gateway
-	var webInterface *api.Server
-	var retErr error
-	errC := make(chan error, 10)
+	var (
+		db *dbutil.DB
+		w  *wallet.Service
+		v  *visor.Visor
+		d  *daemon.Daemon
+		gw *api.Gateway
+		wi *api.Server
+
+		errC = make(chan error, 10)
+
+		retErr error
+	)
 
 	if c.config.Node.Version {
 		fmt.Println(c.config.Build.Version)
@@ -138,123 +143,47 @@ func (c *Coin) Run() error {
 	c.logger.Infof("OS: %s", runtime.GOOS)
 	c.logger.Infof("Arch: %s", runtime.GOARCH)
 
-	wconf := c.ConfigureWallet()
-	dconf := c.ConfigureDaemon()
-	vconf := c.ConfigureVisor()
-
-	// Open the database
-	c.logger.Infof("Opening database %s", c.config.Node.DBPath)
-	db, err = visor.OpenDB(c.config.Node.DBPath, c.config.Node.DBReadOnly)
-	if err != nil {
-		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
-		return err
-	}
-
-	// Look for saved app version
-	dbVersion, err := visor.GetDBVersion(db)
-	if err != nil {
-		c.logger.WithError(err).Error("visor.GetDBVersion failed")
-		retErr = err
-		goto earlyShutdown
-	}
-
-	if dbVersion == nil {
-		c.logger.Info("DB version not found in DB")
-	} else {
-		c.logger.Infof("DB version: %s", dbVersion)
-	}
-
-	c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
-
-	// If the saved DB version is higher than the app version, abort.
-	// Otherwise DB corruption could occur.
-	if dbVersion != nil && dbVersion.GT(*appVersion) {
-		err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, appVersion)
-		c.logger.WithError(err).Error()
-		retErr = err
-		goto earlyShutdown
-	}
-
-	// Verify the DB if the version detection says to, or if it was requested on the command line
-	if shouldVerifyDB(appVersion, dbVersion) || c.config.Node.VerifyDB {
-		if c.config.Node.ResetCorruptDB {
-			// Check the database integrity and recreate it if necessary
-			c.logger.Info("Checking database and resetting if corrupted")
-			if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
-				if err != visor.ErrVerifyStopped {
-					c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
-					retErr = err
-				}
-				goto earlyShutdown
-			} else {
-				db = newDB
-			}
-		} else {
-			c.logger.Info("Checking database")
-			if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
-				if err != visor.ErrVerifyStopped {
-					c.logger.Errorf("visor.CheckDatabase failed: %v", err)
-					retErr = err
-				}
-				goto earlyShutdown
-			}
-		}
-	}
-
-	// Update the DB version
-	if !db.IsReadOnly() {
-		if err := visor.SetDBVersion(db, *appVersion); err != nil {
-			c.logger.WithError(err).Error("visor.SetDBVersion failed")
-			retErr = err
-			goto earlyShutdown
-		}
-	}
-
 	c.logger.Infof("Coinhour burn factor for user transactions is %d", params.UserVerifyTxn.BurnFactor)
 	c.logger.Infof("Max transaction size for user transactions is %d", params.UserVerifyTxn.MaxTransactionSize)
 	c.logger.Infof("Max decimals for user transactions is %d", params.UserVerifyTxn.MaxDropletPrecision)
 
-	w, err = wallet.NewService(wconf)
-	if err != nil {
+	if db, retErr = c.initDB(appVersion, quit); retErr != nil {
 		c.logger.Error(err)
-		retErr = err
 		goto earlyShutdown
 	}
 
-	v, err = visor.New(vconf, db, w)
-	if err != nil {
-		c.logger.Error(err)
-		retErr = err
+	if w, retErr = c.initWallet(); retErr != nil {
+		c.logger.Error(retErr)
 		goto earlyShutdown
 	}
 
-	d, err = daemon.New(dconf, v)
-	if err != nil {
-		c.logger.Error(err)
-		retErr = err
+	if v, retErr = c.initVisor(db, w); retErr != nil {
+		c.logger.Error(retErr)
+		goto earlyShutdown
+	}
+
+	if d, retErr = c.initDaemon(v); retErr != nil {
+		c.logger.Error(retErr)
 		goto earlyShutdown
 	}
 
 	gw = api.NewGateway(d, v, w)
 
 	if c.config.Node.WebInterface {
-		webInterface, err = c.createGUI(gw, host)
-		if err != nil {
-			c.logger.Error(err)
-			retErr = err
+		if wi, retErr = c.createGUI(gw, host); retErr != nil {
+			c.logger.Error(retErr)
 			goto earlyShutdown
 		}
 
-		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
+		fullAddress = fmt.Sprintf("%s://%s", scheme, wi.Addr())
 		c.logger.Critical().Infof("Full address: %s", fullAddress)
 		if c.config.Node.PrintWebInterfaceAddress {
 			fmt.Println(fullAddress)
 		}
 	}
 
-	if err := v.Init(); err != nil {
-		c.logger.Error(err)
-		retErr = err
+	if retErr = v.Init(); retErr != nil {
+		c.logger.Error(retErr)
 		goto earlyShutdown
 	}
 
@@ -275,7 +204,7 @@ func (c *Coin) Run() error {
 		go func() {
 			defer wg.Done()
 
-			if err := webInterface.Serve(); err != nil {
+			if err := wi.Serve(); err != nil {
 				close(cancelLaunchBrowser)
 				c.logger.Error(err)
 				errC <- err
@@ -307,9 +236,9 @@ func (c *Coin) Run() error {
 
 	c.logger.Info("Shutting down...")
 
-	if webInterface != nil {
+	if wi != nil {
 		c.logger.Info("Closing web interface")
-		webInterface.Shutdown()
+		wi.Shutdown()
 	}
 
 	c.logger.Info("Closing daemon")
@@ -368,8 +297,176 @@ func (c *Coin) initLogFile() (*os.File, error) {
 	return f, nil
 }
 
-// ConfigureVisor sets the visor config values
-func (c *Coin) ConfigureVisor() visor.Config {
+// initDB creates and initlializes new instance of *dbutil.DB
+func (c *Coin) initDB(
+	appVersion *semver.Version, quit chan struct{}) (*dbutil.DB, error) {
+
+	// Open the database
+	c.logger.Infof("Opening database %s", c.config.Node.DBPath)
+	db, err := visor.OpenDB(c.config.Node.DBPath, c.config.Node.DBReadOnly)
+	if err != nil {
+		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
+		return nil, err
+	}
+
+	// Look for saved app version
+	dbVersion, err := visor.GetDBVersion(db)
+	if err != nil {
+		c.logger.WithError(err).Error("visor.GetDBVersion failed")
+		return nil, err
+	}
+
+	if dbVersion == nil {
+		c.logger.Info("DB version not found in DB")
+	} else {
+		c.logger.Infof("DB version: %s", dbVersion)
+	}
+
+	c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
+
+	// If the saved DB version is higher than the app version, abort.
+	// Otherwise DB corruption could occur.
+	if dbVersion != nil && dbVersion.GT(*appVersion) {
+		err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, appVersion)
+		c.logger.WithError(err).Error()
+		return nil, err
+	}
+
+	// Verify the DB if the version detection says to, or if it was requested on the command line
+	if shouldVerifyDB(appVersion, dbVersion) || c.config.Node.VerifyDB {
+		if c.config.Node.ResetCorruptDB {
+			// Check the database integrity and recreate it if necessary
+			c.logger.Info("Checking database and resetting if corrupted")
+			newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit)
+			if err != nil {
+				if err != visor.ErrVerifyStopped {
+					c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+				}
+				return nil, err
+			}
+			db = newDB
+		} else {
+			c.logger.Info("Checking database")
+			if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
+				if err != visor.ErrVerifyStopped {
+					c.logger.Errorf("visor.CheckDatabase failed: %v", err)
+				}
+				return nil, err
+			}
+		}
+	}
+
+	// Update the DB version
+	if db.IsReadOnly() {
+		if err := visor.SetDBVersion(db, *appVersion); err != nil {
+			c.logger.WithError(err).Error("visor.SetDBVersion failed")
+			return nil, err
+		}
+	}
+
+	return db, nil
+}
+
+func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
+	// If the dbVersion is not set, verify
+	if dbVersion == nil {
+		return true
+	}
+
+	// If the dbVersion is less than the verification checkpoint version
+	// and the appVersion is greater than or equal to the checkpoint version,
+	// verify
+	if dbVersion.LT(dbVerifyCheckpointVersionParsed) && appVersion.GTE(dbVerifyCheckpointVersionParsed) {
+		return true
+	}
+
+	return false
+}
+
+// initWallet creates new instance of *wallets.Servcie
+func (c *Coin) initWallet() (*wallet.Service, error) {
+	cfg := c.configureWallet()
+
+	s, err := wallet.NewService(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+// configureWallet sets the wallet config values
+func (c *Coin) configureWallet() wallet.Config {
+	wc := wallet.NewConfig()
+
+	wc.WalletDir = c.config.Node.WalletDirectory
+	_, wc.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
+	_, wc.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
+
+	// Initialize wallet default crypto type
+	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	wc.CryptoType = cryptoType
+
+	return wc
+}
+
+// initVisor creates new instance of *visor.Visor
+func (c *Coin) initVisor(
+	db *dbutil.DB, ws *wallet.Service) (*visor.Visor, error) {
+
+	cfg := c.configureVisor()
+
+	if err := visor.CreateBuckets(db); err != nil {
+		c.logger.WithError(err).Error("CreateBuckets failed")
+		return nil, err
+	}
+
+	bc, err := visor.NewBlockchain(db, visor.BlockchainConfig{
+		Pubkey:      cfg.BlockchainPubkey,
+		Arbitrating: cfg.Arbitrating,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	history := historydb.New()
+
+	if !db.IsReadOnly() {
+		if err := db.Update("build unspent indexes and init history", func(tx *dbutil.Tx) error {
+			headSeq, _, err := bc.HeadSeq(tx)
+			if err != nil {
+				return err
+			}
+
+			if err := bc.Unspent().MaybeBuildIndexes(tx, headSeq); err != nil {
+				return err
+			}
+
+			return initHistory(tx, bc, history)
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	utp, err := visor.NewUnconfirmedTransactionPool(db)
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := visor.New(cfg, db, utp, bc, history, ws)
+	if err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// configureVisor sets the visor config values
+func (c *Coin) configureVisor() visor.Config {
 	vc := visor.NewConfig()
 
 	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
@@ -390,27 +487,34 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	return vc
 }
 
-// ConfigureWallet sets the wallet config values
-func (c *Coin) ConfigureWallet() wallet.Config {
-	wc := wallet.NewConfig()
+// initHistory
+func initHistory(
+	tx *dbutil.Tx, bc *visor.Blockchain, history *historydb.HistoryDB) error {
 
-	wc.WalletDir = c.config.Node.WalletDirectory
-	_, wc.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, wc.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
-
-	// Initialize wallet default crypto type
-	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	wc.CryptoType = cryptoType
-
-	return wc
+	return nil
 }
 
-// ConfigureDaemon sets the daemon config values
-func (c *Coin) ConfigureDaemon() daemon.Config {
+// parseHistoryTo
+func parseHistoryTo(
+	tx *dbutil.Tx, history *historydb.HistoryDB, bc visor.Blockchainer, height uint64) error {
+
+	return nil
+}
+
+// initDaemon creates new instance of *daemon.Daemon
+func (c *Coin) initDaemon(v *visor.Visor) (*daemon.Daemon, error) {
+	cfg := c.configureDaemon()
+
+	d, err := daemon.New(cfg, v)
+	if err != nil {
+		return nil, err
+	}
+
+	return d, nil
+}
+
+// configureDaemon sets the daemon config values
+func (c *Coin) configureDaemon() daemon.Config {
 	dc := daemon.NewConfig()
 
 	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
@@ -628,22 +732,6 @@ func createDirIfNotExist(dir string) error {
 	}
 
 	return os.Mkdir(dir, 0750)
-}
-
-func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
-	// If the dbVersion is not set, verify
-	if dbVersion == nil {
-		return true
-	}
-
-	// If the dbVersion is less than the verification checkpoint version
-	// and the appVersion is greater than or equal to the checkpoint version,
-	// verify
-	if dbVersion.LT(dbVerifyCheckpointVersionParsed) && appVersion.GTE(dbVerifyCheckpointVersionParsed) {
-		return true
-	}
-
-	return false
 }
 
 func init() {

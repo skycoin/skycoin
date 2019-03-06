@@ -46,7 +46,9 @@ type Visor struct {
 }
 
 // New creates a Visor for managing the blockchain database
-func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
+func New(c Config, db *dbutil.DB, utp UnconfirmedTransactionPooler,
+	bc Blockchainer, history Historyer, wltServ *wallet.Service) (*Visor, error) {
+
 	logger.Info("Creating new visor")
 	if c.IsBlockPublisher {
 		logger.Info("Visor running in block publisher mode")
@@ -63,45 +65,6 @@ func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
 	logger.Infof("Max transaction size for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxTransactionSize)
 	logger.Infof("Max decimals for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxDropletPrecision)
 	logger.Infof("Max block size is %d", c.MaxBlockTransactionsSize)
-
-	if !db.IsReadOnly() {
-		if err := CreateBuckets(db); err != nil {
-			logger.WithError(err).Error("CreateBuckets failed")
-			return nil, err
-		}
-	}
-
-	bc, err := NewBlockchain(db, BlockchainConfig{
-		Pubkey:      c.BlockchainPubkey,
-		Arbitrating: c.Arbitrating,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	history := historydb.New()
-
-	if !db.IsReadOnly() {
-		if err := db.Update("build unspent indexes and init history", func(tx *dbutil.Tx) error {
-			headSeq, _, err := bc.HeadSeq(tx)
-			if err != nil {
-				return err
-			}
-
-			if err := bc.Unspent().MaybeBuildIndexes(tx, headSeq); err != nil {
-				return err
-			}
-
-			return initHistory(tx, bc, history)
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	utp, err := NewUnconfirmedTransactionPool(db)
-	if err != nil {
-		return nil, err
-	}
 
 	v := &Visor{
 		Config:      c,

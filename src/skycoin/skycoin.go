@@ -357,7 +357,7 @@ func (c *Coin) initDB(
 	}
 
 	// Update the DB version
-	if db.IsReadOnly() {
+	if !db.IsReadOnly() {
 		if err := visor.SetDBVersion(db, *appVersion); err != nil {
 			c.logger.WithError(err).Error("visor.SetDBVersion failed")
 			return nil, err

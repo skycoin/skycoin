@@ -446,7 +446,7 @@ func (c *Coin) initVisor(
 				return err
 			}
 
-			return initHistory(tx, bc, history)
+			return c.initHistory(tx, bc, history)
 		}); err != nil {
 			return nil, err
 		}
@@ -488,15 +488,63 @@ func (c *Coin) configureVisor() visor.Config {
 }
 
 // initHistory
-func initHistory(
+func (c *Coin) initHistory(
 	tx *dbutil.Tx, bc *visor.Blockchain, history *historydb.HistoryDB) error {
+
+	shouldReset, err := history.NeedsReset(tx)
+	if err != nil {
+		return err
+	}
+
+	if !shouldReset {
+		return nil
+	}
+
+	c.logger.Info("Resetting historyDB")
+
+	if err := history.Erase(tx); err != nil {
+		return err
+	}
+
+	// Reparse the history up to the blockchain head
+	headSeq, _, err := bc.HeadSeq(tx)
+	if err != nil {
+		return err
+	}
+
+	if err := c.parseHistoryTo(tx, history, bc, headSeq); err != nil {
+		c.logger.WithError(err).Error("parseHistoryTo failed")
+		return err
+	}
 
 	return nil
 }
 
 // parseHistoryTo
-func parseHistoryTo(
+func (c *Coin) parseHistoryTo(
 	tx *dbutil.Tx, history *historydb.HistoryDB, bc visor.Blockchainer, height uint64) error {
+
+	c.logger.Info("Visor parseHistoryTo")
+
+	parsedBlockSeq, _, err := history.ParsedBlockSeq(tx)
+	if err != nil {
+		return err
+	}
+
+	for i := uint64(0); i < height-parsedBlockSeq; i++ {
+		b, err := bc.GetSignedBlockBySeq(tx, parsedBlockSeq+i+1)
+		if err != nil {
+			return err
+		}
+
+		if b == nil {
+			return fmt.Errorf("no block exists in depth: %d", parsedBlockSeq+i+1)
+		}
+
+		if err := history.ParseBlock(tx, b.Block); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

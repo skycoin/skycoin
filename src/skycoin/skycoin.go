@@ -420,9 +420,11 @@ func (c *Coin) initVisor(
 
 	cfg := c.configureVisor()
 
-	if err := visor.CreateBuckets(db); err != nil {
-		c.logger.WithError(err).Error("CreateBuckets failed")
-		return nil, err
+	if !db.IsReadOnly() {
+		if err := visor.CreateBuckets(db); err != nil {
+			c.logger.WithError(err).Error("CreateBuckets failed")
+			return nil, err
+		}
 	}
 
 	bc, err := visor.NewBlockchain(db, visor.BlockchainConfig{

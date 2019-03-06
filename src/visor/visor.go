@@ -102,64 +102,6 @@ func (vs *Visor) Init() error {
 	})
 }
 
-func initHistory(tx *dbutil.Tx, bc *Blockchain, history *historydb.HistoryDB) error {
-	logger.Info("Visor initHistory")
-
-	shouldReset, err := history.NeedsReset(tx)
-	if err != nil {
-		return err
-	}
-
-	if !shouldReset {
-		return nil
-	}
-
-	logger.Info("Resetting historyDB")
-
-	if err := history.Erase(tx); err != nil {
-		return err
-	}
-
-	// Reparse the history up to the blockchain head
-	headSeq, _, err := bc.HeadSeq(tx)
-	if err != nil {
-		return err
-	}
-
-	if err := parseHistoryTo(tx, history, bc, headSeq); err != nil {
-		logger.WithError(err).Error("parseHistoryTo failed")
-		return err
-	}
-
-	return nil
-}
-
-func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc *Blockchain, height uint64) error {
-	logger.Info("Visor parseHistoryTo")
-
-	parsedBlockSeq, _, err := history.ParsedBlockSeq(tx)
-	if err != nil {
-		return err
-	}
-
-	for i := uint64(0); i < height-parsedBlockSeq; i++ {
-		b, err := bc.GetSignedBlockBySeq(tx, parsedBlockSeq+i+1)
-		if err != nil {
-			return err
-		}
-
-		if b == nil {
-			return fmt.Errorf("no block exists in depth: %d", parsedBlockSeq+i+1)
-		}
-
-		if err := history.ParseBlock(tx, b.Block); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // maybeCreateGenesisBlock creates a genesis block if necessary
 func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 	logger.Info("Visor maybeCreateGenesisBlock")

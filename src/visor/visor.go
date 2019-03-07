@@ -46,16 +46,71 @@ type Visor struct {
 }
 
 // New creates a Visor for managing the blockchain database
-func New(c Config, db *dbutil.DB, utp UnconfirmedTransactionPooler,
-	bc Blockchainer, history Historyer, wltServ *wallet.Service) (*Visor, error) {
+func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
+	if err := onVisorCreate(c); err != nil {
+		return nil, err
+	}
 
+	if !db.IsReadOnly() {
+		if err := CreateBuckets(db); err != nil {
+			logger.WithError(err).Error("CreateBuckets failed")
+			return nil, err
+		}
+	}
+
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey:      c.BlockchainPubkey,
+		Arbitrating: c.Arbitrating,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	history := historydb.New()
+
+	if !db.IsReadOnly() {
+		if err := db.Update("build unspent indexes and init history", func(tx *dbutil.Tx) error {
+			headSeq, _, err := bc.HeadSeq(tx)
+			if err != nil {
+				return err
+			}
+
+			if err := bc.Unspent().MaybeBuildIndexes(tx, headSeq); err != nil {
+				return err
+			}
+
+			return InitHistory(tx, bc, history)
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	utp, err := NewUnconfirmedTransactionPool(db)
+	if err != nil {
+		return nil, err
+	}
+
+	v := &Visor{
+		Config:      c,
+		startedAt:   time.Now(),
+		db:          db,
+		blockchain:  bc,
+		unconfirmed: utp,
+		history:     history,
+		wallets:     wltServ,
+	}
+
+	return v, nil
+}
+
+func onVisorCreate(c Config) error {
 	logger.Info("Creating new visor")
 	if c.IsBlockPublisher {
 		logger.Info("Visor running in block publisher mode")
 	}
 
 	if err := c.Verify(); err != nil {
-		return nil, err
+		return err
 	}
 
 	logger.Infof("Coinhour burn factor for unconfirmed transactions is %d", c.UnconfirmedVerifyTxn.BurnFactor)
@@ -65,6 +120,75 @@ func New(c Config, db *dbutil.DB, utp UnconfirmedTransactionPooler,
 	logger.Infof("Max transaction size for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxTransactionSize)
 	logger.Infof("Max decimals for transactions when creating blocks is %d", c.CreateBlockVerifyTxn.MaxDropletPrecision)
 	logger.Infof("Max block size is %d", c.MaxBlockTransactionsSize)
+
+	return nil
+}
+
+func InitHistory(tx *dbutil.Tx, bc *Blockchain, history *historydb.HistoryDB) error {
+	shouldReset, err := history.NeedsReset(tx)
+	if err != nil {
+		return err
+	}
+
+	if !shouldReset {
+		return nil
+	}
+
+	logger.Info("Resetting historyDB")
+
+	if err := history.Erase(tx); err != nil {
+		return err
+	}
+
+	// Reparse the history up to the blockchain head
+	headSeq, _, err := bc.HeadSeq(tx)
+	if err != nil {
+		return err
+	}
+
+	if err := parseHistoryTo(tx, history, bc, headSeq); err != nil {
+		logger.WithError(err).Error("parseHistoryTo failed")
+		return err
+	}
+
+	return nil
+}
+
+func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc Blockchainer, height uint64) error {
+	logger.Info("Visor parseHistoryTo")
+
+	parsedBlockSeq, _, err := history.ParsedBlockSeq(tx)
+	if err != nil {
+		return err
+	}
+
+	for i := uint64(0); i < height-parsedBlockSeq; i++ {
+		b, err := bc.GetSignedBlockBySeq(tx, parsedBlockSeq+i+1)
+		if err != nil {
+			return err
+		}
+
+		if b == nil {
+			return fmt.Errorf("no block exists in depth: %d", parsedBlockSeq+i+1)
+		}
+
+		if err := history.ParseBlock(tx, b.Block); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// NewWith creates new Visor with specifed instances of UnconfirmedTransactionPooler,
+// Blockchainer and Historyer. Method caller is expected to create those instances and
+// initialized them correclty (for example, see New() method above).
+func NewWith(c Config, db *dbutil.DB, utp UnconfirmedTransactionPooler,
+	bc Blockchainer, history Historyer, wltServ *wallet.Service) (*Visor, error) {
+
+	if err := onVisorCreate(c); err != nil {
+		return nil, err
+	}
 
 	v := &Visor{
 		Config:      c,

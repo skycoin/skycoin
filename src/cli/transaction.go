@@ -113,29 +113,18 @@ func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 func verifyTransactionCmd() *cobra.Command {
 	return &cobra.Command{
 		Short:                 "Verify if the specific transaction is spendable",
-		Use:                   "verifyTransaction [transaction id]",
+		Use:                   "verifyTransaction [encoded transaction]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			txid := args[0]
-			if txid == "" {
-				return errors.New("txid is empty")
+			encodedTxn := args[0]
+			if encodedTxn == "" {
+				return errors.New("transaction is empty")
 			}
 
-			// validate the txid
-			_, err := cipher.SHA256FromHex(txid)
-			if err != nil {
-				return errors.New("invalid txid")
-			}
-
-			encodedTxn, err := apiClient.TransactionEncoded(txid)
-			if err != nil {
-				return err
-			}
-
-			_, err = apiClient.VerifyTransaction(api.VerifyTransactionRequest{
-				EncodedTransaction: encodedTxn.EncodedTransaction,
+			_, err := apiClient.VerifyTransaction(api.VerifyTransactionRequest{
+				EncodedTransaction: encodedTxn,
 			})
 			if err != nil {
 				return err

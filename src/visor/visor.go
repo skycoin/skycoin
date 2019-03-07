@@ -124,6 +124,7 @@ func onVisorCreate(c Config) error {
 	return nil
 }
 
+// InitHistory initialized instance of HistoryDB. After that HistoryDB can be used by Visor.
 func InitHistory(tx *dbutil.Tx, bc *Blockchain, history *historydb.HistoryDB) error {
 	shouldReset, err := history.NeedsReset(tx)
 	if err != nil {
@@ -180,9 +181,9 @@ func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc Blockchainer
 	return nil
 }
 
-// NewWith creates new Visor with specifed instances of UnconfirmedTransactionPooler,
+// NewWith creates new Visor with specified instances of UnconfirmedTransactionPooler,
 // Blockchainer and Historyer. Method caller is expected to create those instances and
-// initialized them correclty (for example, see New() method above).
+// initialized them correctly (for example, see New() method above).
 func NewWith(c Config, db *dbutil.DB, utp UnconfirmedTransactionPooler,
 	bc Blockchainer, history Historyer, wltServ *wallet.Service) (*Visor, error) {
 

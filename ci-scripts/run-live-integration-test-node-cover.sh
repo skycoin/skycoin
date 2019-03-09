@@ -3,7 +3,7 @@
 # Runs the node with configuration necessary for running the live integration tests,
 # with coverage enabled
 
-set -xu
+set -exu
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$DIR/.." >/dev/null

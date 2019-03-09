@@ -9,6 +9,7 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/skycoin/skycoin/src/api"
@@ -227,9 +229,10 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
-		checkdbCmd(),
-		createRawTxCmd(),
-		decodeRawTxCmd(),
+		checkDBCmd(),
+		checkDBEncodingCmd(),
+		createRawTxnCmd(),
+		decodeRawTxnCmd(),
 		decryptWalletCmd(),
 		encryptWalletCmd(),
 		lastBlocksCmd(),
@@ -258,6 +261,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 
 	skyCLI.SetHelpTemplate(helpTemplate)
 	skyCLI.SetUsageTemplate(helpTemplate)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	return skyCLI, nil
 }

@@ -20,7 +20,6 @@ require('electron-context-menu')({});
 global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
-let showErrorCalled = false;
 let splashLoaded = false
 
 // Detect if the code is running with the "dev" arg. The "dev" arg is added when running npm
@@ -31,7 +30,7 @@ let splashLoaded = false
 let dev = process.argv.find(arg => arg === 'dev') ? true : false;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinpaprika.com');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');
@@ -157,7 +156,6 @@ function startSkycoin() {
 
 function showError() {
   if (win) {
-    showErrorCalled = true;
     win.loadURL('file://' + process.resourcesPath + '/app/dist/assets/error-alert/index.html');
     console.log('Showing the error message');
   }
@@ -177,6 +175,7 @@ function createWindow(url) {
   win = new BrowserWindow({
     width: 1200,
     height: 900,
+    backgroundColor: '#000000',
     title: 'Skycoin',
     icon: iconPath,
     nodeIntegration: false,
@@ -199,12 +198,6 @@ function createWindow(url) {
 	if (!splashLoaded) {
 	  splashLoaded = true;
 	}
-  });
-
-  win.webContents.on('did-fail-load', function() {
-    if (!showErrorCalled) {
-      showError();
-    }
   });
 
   // patch out eval

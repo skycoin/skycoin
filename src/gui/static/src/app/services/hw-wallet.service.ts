@@ -4,7 +4,7 @@ import { Subscriber } from 'rxjs/Subscriber';
 import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { environment } from '../../environments/environment';
 
@@ -23,6 +23,7 @@ export enum OperationResults {
   IncorrectHardwareWallet,
   WrongWord,
   InvalidSeed,
+  WrongSeed,
   UndefinedError,
   Disconnected,
 }
@@ -34,7 +35,7 @@ export class OperationResult {
 
 interface EventData {
   event: string;
-  successText?: string;
+  successTexts?: string[];
 }
 
 @Injectable()
@@ -47,12 +48,12 @@ export class HwWalletService {
   private eventsObservers = new Map<number, Subscriber<OperationResult>>();
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
 
+  private signTransactionDialog: MatDialogRef<{}, any>;
+
   // Values to be sent to HwPinDialogComponent
   private changingPin: boolean;
   private changePinState: ChangePinStates;
   private signingTx: boolean;
-  private currentSignature: number;
-  private totalSignatures: number;
 
   // Set on AppComponent to avoid a circular reference.
   private requestPinComponentInternal;
@@ -63,8 +64,12 @@ export class HwWalletService {
   set requestWordComponent(value) {
     this.requestWordComponentInternal = value;
   }
+  private signTransactionConfirmationComponentInternal;
+  set signTransactionConfirmationComponent(value) {
+    this.signTransactionConfirmationComponentInternal = value;
+  }
 
-  constructor(private translate: TranslateService, dialog: MatDialog) {
+  constructor(private translate: TranslateService, private dialog: MatDialog) {
     if (this.hwWalletCompatibilityActivated) {
       window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
         if (!connected) {
@@ -82,8 +87,6 @@ export class HwWalletService {
             changingPin: this.changingPin,
             changePinState: this.changePinState,
             signingTx: this.signingTx,
-            currentSignature: this.currentSignature,
-            totalSignatures: this.totalSignatures,
           },
         }).afterClosed().subscribe(pin => {
           if (!pin) {
@@ -112,12 +115,21 @@ export class HwWalletService {
         });
       });
 
+      window['ipcRenderer'].on('hwSignTransactionResponse', (event, requestId, result) => {
+        this.dispatchEvent(requestId, result, true);
+
+        if (this.signTransactionDialog) {
+          this.signTransactionDialog.close();
+          this.signTransactionDialog = null;
+        }
+      });
+
       const data: EventData[] = [
-        { event: 'hwChangePinResponse', successText: 'PIN changed' },
-        { event: 'hwGenerateMnemonicResponse', successText: 'operation completed' },
-        { event: 'hwRecoverMnemonicResponse', successText: 'Device recovered' },
-        { event: 'hwBackupDeviceResponse', successText: 'operation completed' },
-        { event: 'hwWipeResponse', successText: 'operation completed' },
+        { event: 'hwChangePinResponse', successTexts: ['PIN changed'] },
+        { event: 'hwGenerateMnemonicResponse', successTexts: ['operation completed'] },
+        { event: 'hwRecoverMnemonicResponse', successTexts: ['Device recovered', 'The seed is valid and matches the one in the device'] },
+        { event: 'hwBackupDeviceResponse', successTexts: ['operation completed'] },
+        { event: 'hwWipeResponse', successTexts: ['operation completed'] },
         { event: 'hwCancelLastActionResponse' },
         { event: 'hwGetAddressesResponse' },
         { event: 'hwGetFeaturesResponse' },
@@ -126,8 +138,8 @@ export class HwWalletService {
 
       data.forEach(item => {
         window['ipcRenderer'].on(item.event, (event, requestId, result) => {
-          const success = item.successText
-            ? typeof result === 'string' && (result as string).includes(item.successText)
+          const success = item.successTexts
+            ? typeof result === 'string' && item.successTexts.some(text => (result as string).includes(text))
             : true;
 
           this.dispatchEvent(requestId, result, success);
@@ -166,7 +178,16 @@ export class HwWalletService {
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex);
+      window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex, false);
+
+      return this.createRequestResponse(requestId);
+    });
+  }
+
+  confirmAddress(index: number): Observable<OperationResult> {
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwGetAddresses', requestId, 1, index, true);
 
       return this.createRequestResponse(requestId);
     });
@@ -200,19 +221,19 @@ export class HwWalletService {
     return this.getAddressesRecursively(AppConfig.maxHardwareWalletAddresses - 1, []);
   }
 
-  generateMnemonic(): Observable<OperationResult> {
+  generateMnemonic(wordCount: number): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwGenerateMnemonic', requestId);
+      window['ipcRenderer'].send('hwGenerateMnemonic', requestId, wordCount);
 
       return this.createRequestResponse(requestId);
     });
   }
 
-  recoverMnemonic(): Observable<OperationResult> {
+  recoverMnemonic(wordCount: number, dryRun: boolean): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwRecoverMnemonic', requestId);
+      window['ipcRenderer'].send('hwRecoverMnemonic', requestId, wordCount, dryRun);
 
       return this.createRequestResponse(requestId);
     });
@@ -236,13 +257,25 @@ export class HwWalletService {
     });
   }
 
-  signMessage(addressIndex: number, message: string, currentSignature: number, totalSignatures: number): Observable<OperationResult> {
+  signMessage(addressIndex: number, message: string): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
       this.signingTx = true;
-      this.currentSignature = currentSignature;
-      this.totalSignatures = totalSignatures;
       window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
+
+      return this.createRequestResponse(requestId);
+    });
+  }
+
+  signTransaction(inputs: any, outputs: any): Observable<OperationResult> {
+    this.signTransactionDialog = this.dialog.open(this.signTransactionConfirmationComponentInternal, <MatDialogConfig> {
+      width: '450px',
+    });
+
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      this.signingTx = true;
+      window['ipcRenderer'].send('hwSignTransaction', requestId, inputs, outputs);
 
       return this.createRequestResponse(requestId);
     });
@@ -335,6 +368,8 @@ export class HwWalletService {
           result = OperationResults.WithoutSeed;
         } else if (responseContent.includes('Invalid seed, are words in correct order?')) {
           result = OperationResults.InvalidSeed;
+        } else if (responseContent.includes('The seed is valid but does not match the one in the device')) {
+          result = OperationResults.WrongSeed;
         } else {
           result = OperationResults.UndefinedError;
         }

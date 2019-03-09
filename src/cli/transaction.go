@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -48,7 +47,7 @@ func transactionCmd() *cobra.Command {
 	}
 }
 
-func decodeRawTxCmd() *cobra.Command {
+func decodeRawTxnCmd() *cobra.Command {
 	return &cobra.Command{
 		Short:                 "Decode raw transaction",
 		Use:                   "decodeRawTransaction [raw transaction]",
@@ -56,14 +55,9 @@ func decodeRawTxCmd() *cobra.Command {
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			b, err := hex.DecodeString(args[0])
+			txn, err := coin.DeserializeTransactionHex(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid raw transaction: %v", err)
-			}
-
-			txn, err := coin.TransactionDeserialize(b)
-			if err != nil {
-				return fmt.Errorf("Unable to deserialize transaction bytes: %v", err)
 			}
 
 			// Assume the transaction is not malformed and if it has no inputs

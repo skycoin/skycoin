@@ -61,6 +61,7 @@ export class ApiService {
                 address: entry.address,
                 coins: null,
                 hours: null,
+                confirmed: true,
               };
             }),
             encrypted: wallet.meta.encrypted,
@@ -90,7 +91,7 @@ export class ApiService {
           filename: response.meta.filename,
           coins: null,
           hours: null,
-          addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null })),
+          addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null, confirmed: true })),
           encrypted: response.meta.encrypted,
         }));
   }

@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strconv"
 
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -253,7 +253,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			Encrypt:  encrypt,
 			Password: []byte(password),
 			ScanN:    scanN,
-		})
+		}, gateway)
 		if err != nil {
 			switch err.(type) {
 			case wallet.Error:
@@ -549,14 +549,14 @@ type WalletFolder struct {
 // Returns the wallet directory path
 // URI: /api/v1/wallets/folderName
 // Method: GET
-func walletFolderHandler(gateway Gatewayer) http.HandlerFunc {
+func walletFolderHandler(s Walleter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		addr, err := gateway.GetWalletDir()
+		addr, err := s.WalletDir()
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletAPIDisabled:
@@ -710,9 +710,8 @@ func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mnemonicValid := bip39.IsMnemonicValid(req.Seed)
-	if !mnemonicValid {
-		resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, "seed is not a valid bip39 seed")
+	if err := bip39.ValidateMnemonic(req.Seed); err != nil {
+		resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, err.Error())
 		writeHTTPResponse(w, resp)
 		return
 	}

@@ -226,7 +226,7 @@ func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
 	return seed1, pubkey, seckey
 }
 
-// Sign sign hash
+// Sign sign hash, returns a compact recoverable signature
 func Sign(msg []byte, seckey []byte) []byte {
 	if len(seckey) != 32 {
 		log.Panic("Sign, Invalid seckey length")
@@ -239,7 +239,7 @@ func Sign(msg []byte, seckey []byte) []byte {
 	}
 	var nonce = RandByte(32)
 	var sig = make([]byte, 65)
-	var recid int
+	var recid int // recovery byte, used to recover pubkey from sig
 
 	var cSig secp.Signature
 
@@ -262,11 +262,11 @@ func Sign(msg []byte, seckey []byte) []byte {
 		sig[i] = sigBytes[i]
 	}
 	if len(sigBytes) != 64 {
-		log.Fatalf("Invalid signature byte count: %d", len(sigBytes))
+		log.Panicf("Invalid signature byte count: %d", len(sigBytes))
 	}
-	sig[64] = byte(int(recid)) // nolint: unconvert
+	sig[64] = byte(recid)
 
-	if int(recid) > 4 { // nolint: unconvert
+	if recid > 4 {
 		log.Panic()
 	}
 
@@ -303,7 +303,7 @@ func SignDeterministic(msg []byte, seckey []byte, nonceSeed []byte) []byte {
 	sig[64] = byte(recid)
 
 	if len(sigBytes) != 64 {
-		log.Fatalf("Invalid signature byte count: %d", len(sigBytes))
+		log.Panicf("Invalid signature byte count: %d", len(sigBytes))
 	}
 
 	if int(recid) > 4 { // nolint: unconvert
@@ -368,19 +368,19 @@ func VerifyPubkey(pubkey []byte) int {
 func VerifySignatureValidity(sig []byte) int {
 	//64+1
 	if len(sig) != 65 {
-		log.Fatal("1")
+		log.Panic("VerifySignatureValidity: sig len is not 65 bytes")
 		return 0
 	}
 	//malleability check:
 	//highest bit of 32nd byte must be 1
-	//0x7f us 126 or 0b01111111
+	//0x7f is 126 or 0b01111111
 	if (sig[32] >> 7) == 1 {
-		log.Fatal("2")
+		log.Panic("VerifySignatureValidity: signature is malleable")
 		return 0
 	}
 	//recovery id check
 	if sig[64] >= 4 {
-		log.Fatal("3")
+		log.Panic("VerifySignatureValidity: recovery ID >= 4")
 		return 0
 	}
 	return 1

@@ -14,6 +14,7 @@ import { Observable } from 'rxjs/Observable';
 import { showConfirmationModal } from '../../../../utils';
 import { AppConfig } from '../../../../app.config';
 import { Router } from '@angular/router';
+import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -130,6 +131,23 @@ export class WalletDetailComponent implements OnDestroy {
           passwordDialog.close();
         }, e => passwordDialog.error(e));
       });
+  }
+
+  confirmAddress(address, addressIndex, showCompleteConfirmation) {
+    this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).subscribe(response => {
+      const data = new AddressConfirmationParams();
+      data.address = address;
+      data.addressIndex = addressIndex;
+      data.showCompleteConfirmation = showCompleteConfirmation;
+
+      const config = new MatDialogConfig();
+      config.width = '566px';
+      config.autoFocus = false;
+      config.data = data;
+      this.dialog.open(HwConfirmAddressDialogComponent, config);
+    }, err => {
+      showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+    });
   }
 
   copyAddress(event, address, duration = 500) {

@@ -294,12 +294,22 @@ We have two branches: `master` and `develop`.
 ### Modules
 
 * `api` - REST API interface
-* `cipher` - cryptographic library
+* `cipher` - cryptographic library (key generation, addresses, hashes)
+* `cipher/base58` - Base58 encoding
+* `cipher/encoder` - reflect-based deterministic runtime binary encoder
+* `cipher/encrypt` - at-rest data encryption (chacha20poly1305+scrypt)
+* `cipher/go-bip39` - BIP-39 seed generation
 * `cli` - CLI library
-* `coin` - blockchain data structures
+* `coin` - blockchain data structures (blocks, transactions, unspent outputs)
 * `daemon` - top-level application manager, combining all components (networking, database, wallets)
 * `daemon/gnet` - networking library
 * `daemon/pex` - peer management
+* `params` - configurable transaction verification parameters
+* `readable` - JSON-encodable representations of internal structures
+* `skycoin` - core application initialization and configuration
+* `testutil` - testing utility methods
+* `transaction` - methods for creating transactions
+* `util` - miscellaneous utilities
 * `visor` - top-level blockchain database layer
 * `visor/blockdb` - low-level blockchain database layer
 * `visor/historydb` - low-level blockchain database layer for historical blockchain metadata
@@ -311,6 +321,7 @@ Skycoin implements client libraries which export core functionality for usage fr
 other programming languages.
 
 * [libskycoin C client library and SWIG interface](https://github.com/skycoin/libskycoin)
+* [skycoin-lite: Javascript and mobile bindings](https://github.com/skycoin/skycoin-lite)
 
 ### Running Tests
 
@@ -360,7 +371,7 @@ After the skycoin node is up, run the following command to start the live tests:
 make integration-test-live
 ```
 
-The above command will run all tests except the wallet related tests. To run wallet tests, we
+The above command will run all tests except the wallet-related tests. To run wallet tests, we
 need to manually specify a wallet file, and it must have at least `2 coins` and `256 coinhours`,
 it also must have been loaded by the node.
 
@@ -671,7 +682,8 @@ Performs these actions before releasing:
 * `make integration-test-live-disable-networking` (requires node run with `-disable-networking`)
 * `make integration-test-live-disable-csrf` (requires node run with `-disable-csrf`)
 * `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet
-* `go run cmd/cli/cli.go checkdb` against a synced node
+* `go run cmd/cli/cli.go checkdb` against a fully synced database
+* `go run cmd/cli/cli.go checkDBDecoding` against a fully synced database
 * On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
     * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.

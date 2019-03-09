@@ -5,7 +5,11 @@
       <select formControlName="wallet" id="wallet" [attr.disabled]="busy ? 'true' : null">
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
-          {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          {{ wallet.label }} -
+          <span *ngIf="wallet.coins && wallet.hours">
+            {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+            ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+          </span>
         </option>
       </select>
     </div>

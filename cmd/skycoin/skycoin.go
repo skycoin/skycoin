@@ -53,7 +53,6 @@ var (
 	DefaultConnections = []string{
 		"118.178.135.93:6000",
 		"47.88.33.156:6000",
-		"121.41.103.148:6000",
 		"104.237.142.206:6000",
 		"176.58.126.224:6000",
 		"172.104.85.6:6000",
@@ -83,7 +82,7 @@ var (
 		CreateBlockBurnFactor:          2,
 		CreateBlockMaxTransactionSize:  32768,
 		CreateBlockMaxDropletPrecision: 3,
-		MaxBlockSize:                   32768,
+		MaxBlockTransactionsSize:       32768,
 	})
 
 	parseFlags = true

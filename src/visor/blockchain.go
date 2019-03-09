@@ -358,9 +358,9 @@ func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Trans
 		// because it relies on the unspent pool to check for existence.
 		// For remote callers such as the CLI, they'd need to download the whole
 		// unspent pool or make a separate API call to check for duplicate unspents.
-		uxOut := coin.CreateUnspents(head.Head, txn)
-		for i := range uxOut {
-			if contains, err := bc.Unspent().Contains(tx, uxOut[i].Hash()); err != nil {
+		uxOuts := coin.CreateUnspents(head.Head, txn)
+		for i := range uxOuts {
+			if contains, err := bc.Unspent().Contains(tx, uxOuts[i].Hash()); err != nil {
 				return err
 			} else if contains {
 				err := errors.New("New unspent collides with existing unspent")
@@ -374,7 +374,7 @@ func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Trans
 
 // VerifySingleTxnHardConstraints checks that the transaction does not violate hard constraints.
 // for transactions that are not included in a block.
-func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error {
+func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, signed TxnSignedFlag) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
@@ -392,13 +392,13 @@ func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 		return err
 	}
 
-	return bc.verifySingleTxnHardConstraints(tx, txn, head, uxIn)
+	return bc.verifySingleTxnHardConstraints(tx, txn, head, uxIn, signed)
 }
 
 // VerifySingleTxnSoftHardConstraints checks that the transaction does not violate hard or soft constraints,
 // for transactions that are not included in a block.
 // Hard constraints are checked before soft constraints.
-func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn) (*coin.SignedBlock, coin.UxArray, error) {
+func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn, signed TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error) {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
@@ -412,7 +412,7 @@ func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.
 	}
 
 	// Hard constraints must be checked before soft constraints
-	if err := bc.verifySingleTxnHardConstraints(tx, txn, head, uxIn); err != nil {
+	if err := bc.verifySingleTxnHardConstraints(tx, txn, head, uxIn, signed); err != nil {
 		return nil, nil, err
 	}
 
@@ -423,8 +423,8 @@ func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.
 	return head, uxIn, nil
 }
 
-func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
-	if err := VerifySingleTxnHardConstraints(txn, head.Head, uxIn); err != nil {
+func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray, signed TxnSignedFlag) error {
+	if err := VerifySingleTxnHardConstraints(txn, head.Head, uxIn, signed); err != nil {
 		return err
 	}
 
@@ -435,9 +435,9 @@ func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 		// because it relies on the unspent pool to check for existence.
 		// For remote callers such as the CLI, they'd need to download the whole
 		// unspent pool or make a separate API call to check for duplicate unspents.
-		uxOut := coin.CreateUnspents(head.Head, txn)
-		for i := range uxOut {
-			if contains, err := bc.Unspent().Contains(tx, uxOut[i].Hash()); err != nil {
+		uxOuts := coin.CreateUnspents(head.Head, txn)
+		for i := range uxOuts {
+			if contains, err := bc.Unspent().Contains(tx, uxOuts[i].Hash()); err != nil {
 				return err
 			} else if contains {
 				err := errors.New("New unspent collides with existing unspent")
@@ -838,7 +838,8 @@ func (bc Blockchain) verifyBlockHeader(tx *dbutil.Tx, b coin.Block) error {
 	if b.Head.PrevHash != head.HashHeader() {
 		return errors.New("PrevHash does not match current head")
 	}
-	if b.HashBody() != b.Head.BodyHash {
+
+	if b.Body.Hash() != b.Head.BodyHash {
 		return errors.New("Computed body hash does not match")
 	}
 	return nil

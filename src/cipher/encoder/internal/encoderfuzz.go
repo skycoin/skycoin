@@ -41,7 +41,7 @@ func Fuzz(b []byte) int {
 
 	s, x, errA := encoder.DeserializeString(b, 8)
 	if errA == nil {
-		if x != len(s)+4 {
+		if x != uint64(len(s)+4) {
 			panic(fmt.Sprintf("DeserializeString x != len(s) + 4 (%d = %d, %q)", x, len(s)+4, s))
 		}
 	}
@@ -55,7 +55,7 @@ func Fuzz(b []byte) int {
 	}
 
 	var t thing
-	errC := encoder.DeserializeRaw(b, &t)
+	errC := encoder.DeserializeRawExact(b, &t)
 
 	if errA == nil || errB == nil || errC == nil {
 		return 1

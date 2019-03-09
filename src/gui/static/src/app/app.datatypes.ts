@@ -9,6 +9,7 @@ export class Address {
   hours: BigNumber = new BigNumber('0');
   copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
   outputs?: any;
+  confirmed?: boolean; // Optional parameter for hardware wallets only
 }
 
 export class PurchaseOrder {
@@ -31,6 +32,7 @@ export class Transaction {
   txid: string;
   hoursSent?: BigNumber;
   hoursBurned?: BigNumber;
+  coinsMovedInternally?: boolean;
 }
 
 export class PreviewTransaction extends Transaction {

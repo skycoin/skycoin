@@ -54,6 +54,8 @@ type NodeConfig struct {
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
+	// Disable Host, Origin and Referer header check in the wallet API
+	DisableHeaderCheck bool
 	// Disable CSP disable content-security-policy in http response
 	DisableCSP bool
 	// Comma separated list of API sets enabled on the remote web interface
@@ -83,10 +85,14 @@ type NodeConfig struct {
 	MaxDefaultPeerOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
+	// MaxOutgoingMessageLength maximum size of outgoing messages
+	MaxOutgoingMessageLength int
+	// MaxIncomingMessageLength maximum size of incoming messages
+	MaxIncomingMessageLength int
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
 	PeerlistSize int
 	// Wallet Address Version
-	//AddressVersion string
+	// AddressVersion string
 	// Remote web interface
 	WebInterface bool
 	// Remote web interface port
@@ -141,8 +147,8 @@ type NodeConfig struct {
 	UnconfirmedVerifyTxn params.VerifyTxn
 	// Transaction verification parameters for transactions when creating blocks
 	CreateBlockVerifyTxn params.VerifyTxn
-	// Maximum block size
-	MaxBlockSize uint32
+	// Maximum total size of transactions in a block
+	MaxBlockTransactionsSize uint32
 
 	unconfirmedBurnFactor          uint64
 	maxUnconfirmedTransactionSize  uint64
@@ -220,6 +226,8 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnableGUI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
+		// Disable Host, Origin and Referer header check in the wallet API
+		DisableHeaderCheck: false,
 		// DisableCSP disable content-security-policy in http response
 		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
@@ -227,7 +235,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Which address to serve on. Leave blank to automatically assign to a
 		// public interface
 		Address: "",
-		//gnet uses this for TCP incoming and outgoing
+		// gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
 		// MaxConnections is the maximum number of total connections allowed
 		MaxConnections: 128,
@@ -238,10 +246,12 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		DownloadPeerList:                  true,
 		PeerListURL:                       node.PeerListURL,
 		// How often to make outgoing connections, in seconds
-		OutgoingConnectionsRate: time.Second * 5,
-		PeerlistSize:            65535,
+		OutgoingConnectionsRate:  time.Second * 5,
+		MaxOutgoingMessageLength: 256 * 1024,
+		MaxIncomingMessageLength: 1024 * 1024,
+		PeerlistSize:             65535,
 		// Wallet Address Version
-		//AddressVersion: "test",
+		// AddressVersion: "test",
 		// Remote web interface
 		WebInterface:      true,
 		WebInterfacePort:  node.WebInterfacePort,
@@ -268,9 +278,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		ResetCorruptDB: false,
 
 		// Blockchain/transaction validation
-		UnconfirmedVerifyTxn: params.UserVerifyTxn,
-		CreateBlockVerifyTxn: params.UserVerifyTxn,
-		MaxBlockSize:         params.UserVerifyTxn.MaxTransactionSize,
+		UnconfirmedVerifyTxn:     params.UserVerifyTxn,
+		CreateBlockVerifyTxn:     params.UserVerifyTxn,
+		MaxBlockTransactionsSize: params.UserVerifyTxn.MaxTransactionSize,
 
 		// Wallets
 		WalletDirectory:  "",
@@ -397,6 +407,9 @@ func (c *Config) postProcess() error {
 	}
 
 	if c.Node.HostWhitelist != "" {
+		if c.Node.DisableHeaderCheck {
+			return errors.New("host whitelist should be empty when header check is disabled")
+		}
 		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
 	}
 
@@ -439,7 +452,7 @@ func (c *Config) postProcess() error {
 	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)
 	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)
 	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision)
-	c.Node.MaxBlockSize = uint32(c.Node.maxBlockSize)
+	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)
 
 	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
@@ -454,16 +467,16 @@ func (c *Config) postProcess() error {
 		return fmt.Errorf("-max-txn-size-create-block must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
 	}
 
-	if c.Node.MaxBlockSize < params.MinTransactionSize {
+	if c.Node.MaxBlockTransactionsSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-block-size must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
-	if c.Node.MaxBlockSize < params.UserVerifyTxn.MaxTransactionSize {
+	if c.Node.MaxBlockTransactionsSize < params.UserVerifyTxn.MaxTransactionSize {
 		return fmt.Errorf("-max-block-size must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
 	}
-	if c.Node.MaxBlockSize < c.Node.UnconfirmedVerifyTxn.MaxTransactionSize {
+	if c.Node.MaxBlockTransactionsSize < c.Node.UnconfirmedVerifyTxn.MaxTransactionSize {
 		return errors.New("-max-block-size must be >= -max-txn-size-unconfirmed")
 	}
-	if c.Node.MaxBlockSize < c.Node.CreateBlockVerifyTxn.MaxTransactionSize {
+	if c.Node.MaxBlockTransactionsSize < c.Node.CreateBlockVerifyTxn.MaxTransactionSize {
 		return errors.New("-max-block-size must be >= -max-txn-size-create-block")
 	}
 
@@ -576,6 +589,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
+	flag.BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -634,7 +648,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.createBlockBurnFactor, "burn-factor-create-block", uint64(c.CreateBlockVerifyTxn.BurnFactor), "coinhour burn factor applied when creating blocks")
 	flag.Uint64Var(&c.createBlockMaxTransactionSize, "max-txn-size-create-block", uint64(c.CreateBlockVerifyTxn.MaxTransactionSize), "maximum size of a transaction applied when creating blocks")
 	flag.Uint64Var(&c.createBlockMaxDropletPrecision, "max-decimals-create-block", uint64(c.CreateBlockVerifyTxn.MaxDropletPrecision), "max number of decimal places applied when creating blocks")
-	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockSize), "maximum size of a block")
+	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockTransactionsSize), "maximum total size of transactions in a block")
 
 	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
@@ -650,6 +664,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "Max number of peers to track in peerlist")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
+	flag.IntVar(&c.MaxOutgoingMessageLength, "max-out-msg-len", c.MaxOutgoingMessageLength, "Maximum length of outgoing wire messages")
+	flag.IntVar(&c.MaxIncomingMessageLength, "max-in-msg-len", c.MaxIncomingMessageLength, "Maximum length of incoming wire messages")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
@@ -668,6 +684,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false
+		c.DisableHeaderCheck = false
 		c.DisableCSP = false
 		c.DownloadPeerList = true
 		c.WebInterface = true

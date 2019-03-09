@@ -8,6 +8,7 @@ import { HwWalletService } from './services/hw-wallet.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
+import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +28,7 @@ export class AppComponent implements OnInit {
 
     hwWalletService.requestPinComponent = HwPinDialogComponent;
     hwWalletService.requestWordComponent = HwSeedWordDialogComponent;
+    hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
 
     walletService.initialLoadFailed.subscribe(failed => {
       if (failed) {

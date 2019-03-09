@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -27,6 +28,7 @@ type HealthResponse struct {
 	IncomingConnections  int                `json:"incoming_connections"`
 	Uptime               wh.Duration        `json:"uptime"`
 	CSRFEnabled          bool               `json:"csrf_enabled"`
+	HeaderCheckEnabled   bool               `json:"header_check_enabled"`
 	CSPEnabled           bool               `json:"csp_enabled"`
 	WalletAPIEnabled     bool               `json:"wallet_api_enabled"`
 	GUIEnabled           bool               `json:"gui_enabled"`
@@ -45,14 +47,33 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		health, err := gateway.GetHealth()
+		metadata, err := gateway.GetBlockchainMetadata()
 		if err != nil {
-			err = fmt.Errorf("gateway.GetHealth failed: %v", err)
+			err = fmt.Errorf("gateway.GetBlockchainMetadata failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.HeadBlock.Head.Time)
+		conns, err := gateway.GetConnections(func(c daemon.Connection) bool {
+			return c.State != daemon.ConnectionStatePending
+		})
+		if err != nil {
+			err = fmt.Errorf("gateway.GetConnections failed: %v", err)
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		outgoingConns := 0
+		incomingConns := 0
+		for _, c := range conns {
+			if c.Outgoing {
+				outgoingConns++
+			} else {
+				incomingConns++
+			}
+		}
+
+		elapsedBlockTime := time.Now().UTC().Unix() - int64(metadata.HeadBlock.Head.Time)
 		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
 
 		_, walletAPIEnabled := c.enabledAPISets[EndpointsWallet]
@@ -65,23 +86,24 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
-				BlockchainMetadata: readable.NewBlockchainMetadata(health.BlockchainMetadata),
+				BlockchainMetadata: readable.NewBlockchainMetadata(*metadata),
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
 			Version:              c.health.BuildInfo,
 			CoinName:             c.health.CoinName,
 			DaemonUserAgent:      userAgent,
-			OpenConnections:      health.OutgoingConnections + health.IncomingConnections,
-			OutgoingConnections:  health.OutgoingConnections,
-			IncomingConnections:  health.IncomingConnections,
-			Uptime:               wh.FromDuration(health.Uptime),
+			OpenConnections:      len(conns),
+			OutgoingConnections:  outgoingConns,
+			IncomingConnections:  incomingConns,
 			CSRFEnabled:          !c.disableCSRF,
+			HeaderCheckEnabled:   !c.disableHeaderCheck,
 			CSPEnabled:           !c.disableCSP,
 			GUIEnabled:           c.enableGUI,
 			WalletAPIEnabled:     walletAPIEnabled,
 			UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
-			UnconfirmedVerifyTxn: readable.NewVerifyTxn(health.UnconfirmedVerifyTxn),
-			StartedAt:            health.StartedAt.Unix(),
+			UnconfirmedVerifyTxn: readable.NewVerifyTxn(gateway.DaemonConfig().UnconfirmedVerifyTxn),
+			Uptime:               wh.FromDuration(time.Since(gateway.StartedAt())),
+			StartedAt:            gateway.StartedAt().Unix(),
 		})
 	}
 }

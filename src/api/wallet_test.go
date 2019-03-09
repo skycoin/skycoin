@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -1084,7 +1085,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			if tc.options.ScanN == 0 {
 				tc.options.ScanN = 1
 			}
-			gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
+			gateway.On("CreateWallet", "", tc.options, gateway).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 
 			endpoint := "/api/v1/wallet/create"
 
@@ -1314,7 +1315,7 @@ func TestVerifySeed(t *testing.T) {
 			httpBody: toJSON(t, VerifySeedRequest{
 				Seed: "bag attitude butter flock slab desk ship brain famous scheme clerk",
 			}),
-			httpResponse: NewHTTPErrorResponse(http.StatusUnprocessableEntity, "seed is not a valid bip39 seed"),
+			httpResponse: NewHTTPErrorResponse(http.StatusUnprocessableEntity, bip39.ErrInvalidNumberOfWords.Error()),
 		},
 		{
 			name:   "200",
@@ -1794,7 +1795,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		gateway := &MockGatewayer{}
-		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
+		gateway.On("WalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
 
 		endpoint := "/api/v1/wallets/folderName"
 
@@ -2524,7 +2525,7 @@ func TestWalletRecover(t *testing.T) {
 		Seed:       "fooseed",
 		Encrypt:    true,
 		Password:   []byte("foopassword"),
-		CryptoType: wallet.CryptoTypeScryptChacha20poly1305,
+		CryptoType: wallet.CryptoTypeScryptChacha20poly1305Insecure,
 		GenerateN:  10,
 	})
 	require.NoError(t, err)

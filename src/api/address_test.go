@@ -143,7 +143,6 @@ func TestVerifyAddress(t *testing.T) {
 
 				require.Equal(t, tc.httpResponse.Data.(VerifyAddressResponse), addrRsp)
 			}
-
 		})
 	}
 }

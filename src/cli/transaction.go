@@ -116,7 +116,7 @@ func pendingTransactionsCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			pendingTxns, err := apiClient.PendingTransactions()
 			if err != nil {
 				return err

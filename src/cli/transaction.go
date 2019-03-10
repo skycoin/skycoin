@@ -18,8 +18,8 @@ type TxnResult struct {
 
 func transactionCmd() *cobra.Command {
 	return &cobra.Command{
-		Short: "Show detail info of specific transaction",
-		Use:   "transaction [transaction id]",
+		Short:                 "Show detail info of specific transaction",
+		Use:                   "transaction [transaction id]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.MaximumNArgs(1),
@@ -49,8 +49,8 @@ func transactionCmd() *cobra.Command {
 
 func decodeRawTxnCmd() *cobra.Command {
 	return &cobra.Command{
-		Short: "Decode raw transaction",
-		Use:   "decodeRawTransaction [raw transaction]",
+		Short:                 "Decode raw transaction",
+		Use:                   "decodeRawTransaction [raw transaction]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
@@ -111,8 +111,8 @@ func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 
 func pendingTransactionsCmd() *cobra.Command {
 	return &cobra.Command{
-		Short: "Get all unconfirmed transactions",
-		Use:   "pendingTransactions",
+		Short:                 "Get all unconfirmed transactions",
+		Use:                   "pendingTransactions",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.NoArgs,

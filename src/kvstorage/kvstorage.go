@@ -37,7 +37,7 @@ func GetAll(fileName string) (map[string]string, error) {
 }
 
 // Add adds the value with the associated `key` and save to the
-// file with the `fileName`
+// file with the `fileName`. Replaces the value if such key already exists
 func Add(fileName, key, val string) error {
 	var data map[string]string
 	if err := file.LoadJSON(fileName, &data); err != nil {

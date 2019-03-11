@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
@@ -107,6 +108,33 @@ func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 	}
 
 	return fmt.Errorf("at least one address must be specified. Example: %s addr1 addr2 addr3", c.Name())
+}
+
+func verifyTransactionCmd() *cobra.Command {
+	return &cobra.Command{
+		Short:                 "Verify if the specific transaction is spendable",
+		Use:                   "verifyTransaction [encoded transaction]",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.MaximumNArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			encodedTxn := args[0]
+			if encodedTxn == "" {
+				return errors.New("transaction is empty")
+			}
+
+			_, err := apiClient.VerifyTransaction(api.VerifyTransactionRequest{
+				EncodedTransaction: encodedTxn,
+			})
+			if err != nil {
+				return err
+			}
+
+			fmt.Println("transaction is spendable")
+
+			return nil
+		},
+	}
 }
 
 func pendingTransactionsCmd() *cobra.Command {

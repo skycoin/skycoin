@@ -243,6 +243,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		showSeedCmd(),
 		statusCmd(),
 		transactionCmd(),
+		verifyTransactionCmd(),
 		verifyAddressCmd(),
 		versionCmd(),
 		walletCreateCmd(),

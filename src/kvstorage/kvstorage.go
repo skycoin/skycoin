@@ -2,23 +2,45 @@ package kvstorage
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/maputil"
 )
 
 var (
-	ErrNoSuchKey = errors.New("no such key exists in the storage")
+	// ErrNoSuchKey is returned when the specified key does not exist
+	// in the storage instance
+	ErrNoSuchKey = NewError(errors.New("no such key exists in the storage"))
 )
 
-// Get gets the value associated with the `key` stored in the file
-// with the `fileName`
-func Get(fileName, key string) (string, error) {
-	var data map[string]string
-	if err := file.LoadJSON(fileName, &data); err != nil {
-		return "", err
+// kvStorage is a key-value storage for storing arbitrary data
+type kvStorage struct {
+	fileName string
+	data     map[string]string
+	sync.RWMutex
+}
+
+// newKVStorage constructs new storage instance using the file with the `fileName`
+// to persist data
+func newKVStorage(fileName string) (*kvStorage, error) {
+	storage := kvStorage{
+		fileName: fileName,
 	}
 
-	val, ok := data[key]
+	if err := file.LoadJSON(fileName, &storage.data); err != nil {
+		return nil, err
+	}
+
+	return &storage, nil
+}
+
+// get gets the value associated with the `key`. Returns `ErrNoSuchKey`
+func (s *kvStorage) get(key string) (string, error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	val, ok := s.data[key]
 	if !ok {
 		return "", ErrNoSuchKey
 	}
@@ -26,42 +48,63 @@ func Get(fileName, key string) (string, error) {
 	return val, nil
 }
 
-// GetAll get all the values stored in the file with the `fileName`
-func GetAll(fileName string) (map[string]string, error) {
-	var data map[string]string
-	if err := file.LoadJSON(fileName, &data); err != nil {
-		return nil, err
-	}
+// getAll gets the snapshot of the current storage contents
+func (s *kvStorage) getAll() map[string]string {
+	s.RLock()
+	defer s.RUnlock()
 
-	return data, nil
+	return maputil.Copy(s.data)
 }
 
-// Add adds the value with the associated `key` and save to the
-// file with the `fileName`. Replaces the value if such key already exists
-func Add(fileName, key, val string) error {
-	var data map[string]string
-	if err := file.LoadJSON(fileName, &data); err != nil {
-		// either the file doesn't exist or the data is corrupt
-		data = make(map[string]string)
-	}
+// add adds the `val` value to the storage with the specified `key`
+func (s *kvStorage) add(key, val string) error {
+	s.Lock()
+	defer s.Unlock()
 
-	data[key] = val
+	// save original data
+	oldVal, oldOk := s.data[key]
 
-	return file.SaveJSON(fileName, data, 0644)
-}
+	s.data[key] = val
 
-// Removes the `key` from the data stored in the file with the `fileName`
-func Remove(fileName, key string) error {
-	var data map[string]string
-	if err := file.LoadJSON(fileName, &data); err != nil {
+	// try to persist data, fall back to original data on error
+	if err := s.flush(); err != nil {
+		if !oldOk {
+			delete(s.data, key)
+		} else {
+			s.data[key] = oldVal
+		}
+
 		return err
 	}
 
-	if _, ok := data[key]; !ok {
+	return nil
+}
+
+// remove removes the value associated with the `key`. Returns `ErrNoSuchKey`
+func (s *kvStorage) remove(key string) error {
+	s.Lock()
+	defer s.Unlock()
+
+	if _, ok := s.data[key]; !ok {
 		return ErrNoSuchKey
 	}
 
-	delete(data, key)
+	// save original data
+	oldVal := s.data[key]
 
-	return file.SaveJSON(fileName, data, 0644)
+	delete(s.data, key)
+
+	// try to persist data, fall back to original data on error
+	if err := s.flush(); err != nil {
+		s.data[key] = oldVal
+
+		return err
+	}
+
+	return nil
+}
+
+// flush persists data to file
+func (s *kvStorage) flush() error {
+	return file.SaveJSON(s.fileName, s.data, 0644)
 }

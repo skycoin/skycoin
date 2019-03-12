@@ -26,6 +26,8 @@ var (
 	ErrNoSuchStorage = NewError(errors.New("storage with such type does not exist or is not loaded"))
 	// ErrStorageAlreadyLoaded is returned while trying to load already loaded storage
 	ErrStorageAlreadyLoaded = NewError(errors.New("storage with such type is already loaded"))
+	// ErrUnknownKVStorageType is returned while trying to access the storage of the unknown type
+	ErrUnknownKVStorageType = NewError(errors.New("unknown storage type"))
 )
 
 // Manager is a manager for key-value storage instances
@@ -44,8 +46,13 @@ func NewManager(c Config) *Manager {
 }
 
 // LoadStorage loads a new storage instance for the `storageType`
-// into the manager. Returns `ErrStorageAlreadyLoaded`
+// into the manager. Returns `ErrStorageAlreadyLoaded`, `ErrStorageAPIDisabled`,
+// `ErrUnknownKVStorageType`
 func (m *Manager) LoadStorage(storageType KVStorageType) error {
+	if !isStorageTypeValid(storageType) {
+		return ErrUnknownKVStorageType
+	}
+
 	m.Lock()
 	defer m.Unlock()
 
@@ -54,9 +61,6 @@ func (m *Manager) LoadStorage(storageType KVStorageType) error {
 	}
 
 	if m.storageExists(storageType) {
-		return ErrStorageAlreadyLoaded
-	}
-	if _, ok := m.storages[storageType]; ok {
 		return ErrStorageAlreadyLoaded
 	}
 
@@ -74,8 +78,12 @@ func (m *Manager) LoadStorage(storageType KVStorageType) error {
 }
 
 // RemoveStorage removes the storage for the given `storageType`.
-// Returns `ErrNoSuchStorage`
+// Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
 func (m *Manager) RemoveStorage(storageType KVStorageType) error {
+	if !isStorageTypeValid(storageType) {
+		return ErrUnknownKVStorageType
+	}
+
 	m.Lock()
 	defer m.Unlock()
 
@@ -93,8 +101,12 @@ func (m *Manager) RemoveStorage(storageType KVStorageType) error {
 }
 
 // Get gets the value associated with the `key` from the storage of `storageType.
-// Returns `ErrNoSuchStorage`
+// Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
 func (m *Manager) Get(storageType KVStorageType, key string) (string, error) {
+	if !isStorageTypeValid(storageType) {
+		return "", ErrUnknownKVStorageType
+	}
+
 	m.RLock()
 	defer m.RUnlock()
 
@@ -110,8 +122,12 @@ func (m *Manager) Get(storageType KVStorageType, key string) (string, error) {
 }
 
 // GetAll gets the snapshot of the current contents from storage of `storageType`.
-// Returns `ErrNoSuchStorage`
+// Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
 func (m *Manager) GetAll(storageType KVStorageType) (map[string]string, error) {
+	if !isStorageTypeValid(storageType) {
+		return nil, ErrUnknownKVStorageType
+	}
+
 	m.RLock()
 	defer m.RUnlock()
 
@@ -127,8 +143,12 @@ func (m *Manager) GetAll(storageType KVStorageType) (map[string]string, error) {
 }
 
 // Add adds the `val` with the associated `key` to the storage of `storageType`.
-// Returns `ErrNoSuchStorage`
+// Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
 func (m *Manager) Add(storageType KVStorageType, key, val string) error {
+	if !isStorageTypeValid(storageType) {
+		return ErrUnknownKVStorageType
+	}
+
 	m.RLock()
 	defer m.RUnlock()
 
@@ -144,8 +164,12 @@ func (m *Manager) Add(storageType KVStorageType, key, val string) error {
 }
 
 // Remove removes the value with the associated `key` from the storage of `storageType`.
-// Returns `ErrNoSuchStorage`
+// Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
 func (m *Manager) Remove(storageType KVStorageType, key string) error {
+	if !isStorageTypeValid(storageType) {
+		return ErrUnknownKVStorageType
+	}
+
 	m.RLock()
 	defer m.RUnlock()
 
@@ -165,4 +189,15 @@ func (m *Manager) storageExists(storageType KVStorageType) bool {
 	_, ok := m.storages[storageType]
 
 	return ok
+}
+
+// isStorageTypeValid validates the given `storageType` against the predefined available types
+func isStorageTypeValid(storageType KVStorageType) bool {
+	switch storageType {
+	case KVStorageTypeNotes:
+	case KVStorageTypeGeneral:
+		return true
+	default:
+		return false
+	}
 }

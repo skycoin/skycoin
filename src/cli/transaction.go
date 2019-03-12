@@ -136,3 +136,43 @@ func verifyTransactionCmd() *cobra.Command {
 		},
 	}
 }
+
+func pendingTransactionsCmd() *cobra.Command {
+	pendingTxnsCmd := &cobra.Command{
+		Short:                 "Get all unconfirmed transactions",
+		Use:                   "pendingTransactions",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.NoArgs,
+		RunE: func(c *cobra.Command, _ []string) error {
+			isVerbose, err := c.Flags().GetBool("verbose")
+			if err != nil {
+				return err
+			}
+
+			if isVerbose {
+				pendingTxns, err := apiClient.PendingTransactionsVerbose()
+				if err != nil {
+					return err
+				}
+
+				return printJSON(pendingTxns)
+			}
+
+			pendingTxns, err := apiClient.PendingTransactions()
+			if err != nil {
+				return err
+			}
+
+			return printJSON(pendingTxns)
+		},
+	}
+
+	pendingTxnsCmd.Flags().BoolP("verbose", "v", false,
+		`Require the transaction inputs to include the owner address, coins, hours and calculated hours.
+	The hours are the original hours the output was created with.
+	The calculated hours are calculated based upon the current system time, and provide an approximate 
+	coin hour value of the output if it were to be confirmed at that instant.`)
+
+	return pendingTxnsCmd
+}

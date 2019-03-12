@@ -23,7 +23,7 @@ const storageFileExtension = ".json"
 var (
 	// ErrStorageAPIDisabled is returned while trying to do storage actions while
 	// the EnableStorageAPI option is false
-	ErrStorageAPIDisabled = NewError(errors.New("wallet api is disabled"))
+	ErrStorageAPIDisabled = NewError(errors.New("storage api is disabled"))
 	// ErrNoSuchStorage is returned if no storage with the specified storage type exists
 	ErrNoSuchStorage = NewError(errors.New("storage with such type does not exist or is not loaded"))
 	// ErrStorageAlreadyLoaded is returned while trying to load already loaded storage
@@ -202,12 +202,11 @@ func (m *Manager) storageExists(storageType KVStorageType) bool {
 // isStorageTypeValid validates the given `storageType` against the predefined available types
 func isStorageTypeValid(storageType KVStorageType) bool {
 	switch storageType {
-	case KVStorageTypeNotes:
-	case KVStorageTypeGeneral:
+	case KVStorageTypeNotes, KVStorageTypeGeneral:
 		return true
-	default:
-		return false
 	}
+
+	return false
 }
 
 // initEmptyStorage creates a file to persist data

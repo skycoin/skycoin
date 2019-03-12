@@ -85,9 +85,9 @@ func (m *Manager) LoadStorage(storageType KVStorageType) error {
 	return nil
 }
 
-// RemoveStorage removes the storage for the given `storageType`.
+// UnloadStorage unloads the storage instance for the given `storageType` from the manager.
 // Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
-func (m *Manager) RemoveStorage(storageType KVStorageType) error {
+func (m *Manager) UnloadStorage(storageType KVStorageType) error {
 	if !isStorageTypeValid(storageType) {
 		return ErrUnknownKVStorageType
 	}

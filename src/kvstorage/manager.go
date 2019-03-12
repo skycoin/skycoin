@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // KVStorageType is a type of a key-value storage
@@ -66,6 +68,12 @@ func (m *Manager) LoadStorage(storageType KVStorageType) error {
 
 	fileName := fmt.Sprintf("%s%s%s", m.config.StorageDir,
 		storageType, storageFileExtension)
+
+	if !file.Exists(fileName) {
+		if err := initEmptyStorage(fileName); err != nil {
+			return err
+		}
+	}
 
 	storage, err := newKVStorage(fileName)
 	if err != nil {
@@ -200,4 +208,11 @@ func isStorageTypeValid(storageType KVStorageType) bool {
 	default:
 		return false
 	}
+}
+
+// initEmptyStorage creates a file to persist data
+func initEmptyStorage(fileName string) error {
+	emptyData := make(map[string]string)
+
+	return file.SaveJSON(fileName, emptyData, 0644)
 }

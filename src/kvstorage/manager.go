@@ -19,8 +19,9 @@ const (
 const storageFileExtension = ".json"
 
 var (
-	// ErrNoteAPIDisabled is returned when trying to do note actions while the EnableNoteAPI option is false
-	ErrNoteAPIDisabled = NewError(errors.New("wallet api is disabled"))
+	// ErrStorageAPIDisabled is returned while trying to do storage actions while
+	// the EnableStorageAPI option is false
+	ErrStorageAPIDisabled = NewError(errors.New("wallet api is disabled"))
 	// ErrNoSuchStorage is returned if no storage with the specified storage type exists
 	ErrNoSuchStorage = NewError(errors.New("storage with such type does not exist or is not loaded"))
 	// ErrStorageAlreadyLoaded is returned while trying to load already loaded storage
@@ -48,6 +49,10 @@ func (m *Manager) LoadStorage(storageType KVStorageType) error {
 	m.Lock()
 	defer m.Unlock()
 
+	if !m.config.EnableStorageAPI {
+		return ErrStorageAPIDisabled
+	}
+
 	if m.storageExists(storageType) {
 		return ErrStorageAlreadyLoaded
 	}
@@ -74,6 +79,10 @@ func (m *Manager) RemoveStorage(storageType KVStorageType) error {
 	m.Lock()
 	defer m.Unlock()
 
+	if !m.config.EnableStorageAPI {
+		return ErrStorageAPIDisabled
+	}
+
 	if !m.storageExists(storageType) {
 		return ErrNoSuchStorage
 	}
@@ -89,6 +98,10 @@ func (m *Manager) Get(storageType KVStorageType, key string) (string, error) {
 	m.RLock()
 	defer m.RUnlock()
 
+	if !m.config.EnableStorageAPI {
+		return "", ErrStorageAPIDisabled
+	}
+
 	if !m.storageExists(storageType) {
 		return "", ErrNoSuchStorage
 	}
@@ -101,6 +114,10 @@ func (m *Manager) Get(storageType KVStorageType, key string) (string, error) {
 func (m *Manager) GetAll(storageType KVStorageType) (map[string]string, error) {
 	m.RLock()
 	defer m.RUnlock()
+
+	if !m.config.EnableStorageAPI {
+		return nil, ErrStorageAPIDisabled
+	}
 
 	if !m.storageExists(storageType) {
 		return nil, ErrNoSuchStorage
@@ -115,6 +132,10 @@ func (m *Manager) Add(storageType KVStorageType, key, val string) error {
 	m.RLock()
 	defer m.RUnlock()
 
+	if !m.config.EnableStorageAPI {
+		return ErrStorageAPIDisabled
+	}
+
 	if !m.storageExists(storageType) {
 		return ErrNoSuchStorage
 	}
@@ -127,6 +148,10 @@ func (m *Manager) Add(storageType KVStorageType, key, val string) error {
 func (m *Manager) Remove(storageType KVStorageType, key string) error {
 	m.RLock()
 	defer m.RUnlock()
+
+	if !m.config.EnableStorageAPI {
+		return ErrStorageAPIDisabled
+	}
 
 	if !m.storageExists(storageType) {
 		return ErrNoSuchStorage

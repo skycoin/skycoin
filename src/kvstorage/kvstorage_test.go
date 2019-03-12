@@ -8,6 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testDataFilePath  = "./testdata/data" + storageFileExtension
+	testEmptyFilePath = "./testdata/empty" + storageFileExtension
+)
+
 func formTestFile(fileName string) error {
 	data := map[string]string{
 		"test1": "some value",
@@ -17,46 +22,105 @@ func formTestFile(fileName string) error {
 	return file.SaveJSON(fileName, data, 0644)
 }
 
+func formEmptyTestFile(fileName string) error {
+	data := make(map[string]string)
+
+	return file.SaveJSON(fileName, data, 0644)
+}
+
+func TestNewKVStorage(t *testing.T) {
+	type expect struct {
+		storage     *kvStorage
+		expectError bool
+	}
+
+	err := formTestFile(testDataFilePath)
+	require.NoError(t, err)
+
+	tt := []struct {
+		name     string
+		fileName string
+		expect   expect
+	}{
+		{
+			name:     "no such file",
+			fileName: "nofile.json",
+			expect: expect{
+				storage:     nil,
+				expectError: true,
+			},
+		},
+		{
+			name:     "file exists",
+			fileName: testDataFilePath,
+			expect: expect{
+				storage: &kvStorage{
+					fileName: testDataFilePath,
+					data: map[string]string{
+						"test1": "some value",
+						"test2": "{\"key\":\"val\",\"key2\":2}",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			storage, err := newKVStorage(tc.fileName)
+			if tc.expect.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			if err != nil {
+				return
+			}
+
+			require.Equal(t, tc.expect.storage, storage)
+		})
+	}
+}
+
 func TestGet(t *testing.T) {
 	type expect struct {
 		val string
 		err error
 	}
 
+	err := formTestFile(testDataFilePath)
+	require.NoError(t, err)
+
+	storage, err := newKVStorage(testDataFilePath)
+	require.NoError(t, err)
+
 	tt := []struct {
-		name     string
-		fileName string
-		key      string
-		expect   expect
+		name    string
+		storage *kvStorage
+		key     string
+		expect  expect
 	}{
 		{
-			name:     "no such file",
-			fileName: "nofile.txt",
-			key:      "key",
-			expect:   expect{},
-		},
-		{
-			name:     "no such key",
-			fileName: "./testdata/data.dat",
-			key:      "no such key",
+			name:    "no such key",
+			storage: storage,
+			key:     "key",
 			expect: expect{
-				val: "",
 				err: ErrNoSuchKey,
 			},
 		},
 		{
-			name:     "simple string value",
-			fileName: "./testdata/data.dat",
-			key:      "test1",
+			name:    "simple string value",
+			storage: storage,
+			key:     "test1",
 			expect: expect{
 				val: "some value",
 				err: nil,
 			},
 		},
 		{
-			name:     "complex marshaled data",
-			fileName: "./testdata/data.dat",
-			key:      "test2",
+			name:    "complex marshaled data",
+			storage: storage,
+			key:     "test2",
 			expect: expect{
 				val: "{\"key\":\"val\",\"key2\":2}",
 				err: nil,
@@ -64,21 +128,9 @@ func TestGet(t *testing.T) {
 		},
 	}
 
-	err := formTestFile("./testdata/data.dat")
-	require.NoError(t, err)
-
-	// run separately to control the error value which might be dependent
-	// on the OS, so we just check if the err is not nil in this case
-	t.Run(tt[0].name, func(t *testing.T) {
-		_, err := Get(tt[0].fileName, tt[0].key)
-		require.Error(t, err)
-	})
-
-	for i := 1; i < len(tt); i++ {
-		tc := tt[i]
-
+	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			val, err := Get(tc.fileName, tc.key)
+			val, err := tc.storage.get(tc.key)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return
@@ -92,22 +144,26 @@ func TestGet(t *testing.T) {
 func TestGetAll(t *testing.T) {
 	type expect struct {
 		data map[string]string
-		err  error
 	}
 
+	err := formTestFile(testDataFilePath)
+	require.NoError(t, err)
+	err = formEmptyTestFile(testEmptyFilePath)
+	require.NoError(t, err)
+
+	filledStorage, err := newKVStorage(testDataFilePath)
+	require.NoError(t, err)
+	emptyStorage, err := newKVStorage(testEmptyFilePath)
+	require.NoError(t, err)
+
 	tt := []struct {
-		name     string
-		fileName string
-		expect   expect
+		name    string
+		storage *kvStorage
+		expect  expect
 	}{
 		{
-			name:     "no such file",
-			fileName: "nofile.txt",
-			expect:   expect{},
-		},
-		{
-			name:     "file is ok",
-			fileName: "./testdata/data.dat",
+			name:    "filled storage",
+			storage: filledStorage,
 			expect: expect{
 				data: map[string]string{
 					"test1": "some value",
@@ -115,28 +171,18 @@ func TestGetAll(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "empty storage",
+			storage: emptyStorage,
+			expect: expect{
+				data: map[string]string{},
+			},
+		},
 	}
 
-	err := formTestFile("./testdata/data.dat")
-	require.NoError(t, err)
-
-	// run separately to control the error value which might be dependent
-	// on the OS, so we just check if the err is not nil in this case
-	t.Run(tt[0].name, func(t *testing.T) {
-		_, err := GetAll(tt[0].fileName)
-		require.Error(t, err)
-	})
-
-	for i := 1; i < len(tt); i++ {
-		tc := tt[i]
-
+	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			data, err := GetAll(tc.fileName)
-			require.Equal(t, tc.expect.err, err)
-			if err != nil {
-				return
-			}
-
+			data := tc.storage.getAll()
 			require.Equal(t, tc.expect.data, data)
 		})
 	}
@@ -144,28 +190,20 @@ func TestGetAll(t *testing.T) {
 
 func TestAdd(t *testing.T) {
 	type expect struct {
-		newData map[string]string
-		err     error
+		newData     map[string]string
+		expectError bool
 	}
 
 	tt := []struct {
-		name     string
-		fileName string
-		key      string
-		val      string
-		expect   expect
+		name   string
+		key    string
+		val    string
+		expect expect
 	}{
 		{
-			name:     "no such file",
-			fileName: "nofile.txt",
-			key:      "key",
-			val:      "val",
-		},
-		{
-			name:     "file is ok, add new value",
-			fileName: "./testdata/data.dat",
-			key:      "new key",
-			val:      "new value",
+			name: "add new value",
+			key:  "new key",
+			val:  "new value",
 			expect: expect{
 				newData: map[string]string{
 					"test1":   "some value",
@@ -175,10 +213,9 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name:     "file is ok, replace old value",
-			fileName: "./testdata/data.dat",
-			key:      "test1",
-			val:      "oiuy",
+			name: "replace old value",
+			key:  "test1",
+			val:  "oiuy",
 			expect: expect{
 				newData: map[string]string{
 					"test1": "oiuy",
@@ -188,35 +225,31 @@ func TestAdd(t *testing.T) {
 		},
 	}
 
-	err := formTestFile("./testdata/data.dat")
-	require.NoError(t, err)
-
-	// run separately to control the error value which might be dependent
-	// on the OS, so we just check if the err is not nil in this case
-	t.Run(tt[0].name, func(t *testing.T) {
-		_, err := GetAll(tt[0].fileName)
-		require.Error(t, err)
-	})
-
-	for i := 1; i < len(tt); i++ {
-		tc := tt[i]
-
+	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			// acquire the original data
-			originalData, err := GetAll(tc.fileName)
+			err := formTestFile(testDataFilePath)
 			require.NoError(t, err)
 
-			err = Add(tc.fileName, tc.key, tc.val)
-			require.Equal(t, tc.expect.err, err)
+			storage, err := newKVStorage(testDataFilePath)
+			require.NoError(t, err)
+
+			// acquire the original data
+			originalData := storage.getAll()
+
+			err = storage.add(tc.key, tc.val)
+			if tc.expect.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			if err != nil {
 				return
 			}
 
-			modifiedData, err := GetAll(tc.fileName)
-			require.NoError(t, err)
+			modifiedData := storage.getAll()
 
 			// resave the original data back to file
-			err = file.SaveJSON(tc.fileName, originalData, 0644)
+			err = file.SaveJSON(storage.fileName, originalData, 0644)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expect.newData, modifiedData)
@@ -226,37 +259,31 @@ func TestAdd(t *testing.T) {
 
 func TestRemove(t *testing.T) {
 	type expect struct {
-		newData map[string]string
-		err     error
+		newData     map[string]string
+		expectError bool
+		err         error
 	}
 
 	tt := []struct {
-		name     string
-		fileName string
-		key      string
-		expect   expect
+		name   string
+		key    string
+		expect expect
 	}{
 		{
-			name:     "no such file",
-			fileName: "nofile.txt",
-			key:      "key",
-		},
-		{
-			name:     "file is ok, no such key",
-			fileName: "./testdata/data.dat",
-			key:      "no key",
+			name: "no such key",
+			key:  "no key",
 			expect: expect{
 				newData: map[string]string{
 					"test1": "some value",
 					"test2": "{\"key\":\"val\",\"key2\":2}",
 				},
-				err: ErrNoSuchKey,
+				expectError: true,
+				err:         ErrNoSuchKey,
 			},
 		},
 		{
-			name:     "file is ok, removed",
-			fileName: "./testdata/data.dat",
-			key:      "test1",
+			name: "removed",
+			key:  "test1",
 			expect: expect{
 				newData: map[string]string{
 					"test2": "{\"key\":\"val\",\"key2\":2}",
@@ -265,35 +292,31 @@ func TestRemove(t *testing.T) {
 		},
 	}
 
-	err := formTestFile("./testdata/data.dat")
-	require.NoError(t, err)
-
-	// run separately to control the error value which might be dependent
-	// on the OS, so we just check if the err is not nil in this case
-	t.Run(tt[0].name, func(t *testing.T) {
-		_, err := GetAll(tt[0].fileName)
-		require.Error(t, err)
-	})
-
-	for i := 1; i < len(tt); i++ {
-		tc := tt[i]
-
+	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			// acquire the original data
-			originalData, err := GetAll(tc.fileName)
+			err := formTestFile(testDataFilePath)
 			require.NoError(t, err)
 
-			err = Remove(tc.fileName, tc.key)
-			require.Equal(t, tc.expect.err, err)
+			storage, err := newKVStorage(testDataFilePath)
+			require.NoError(t, err)
+
+			// acquire the original data
+			originalData := storage.getAll()
+
+			err = storage.remove(tc.key)
+			if tc.expect.expectError {
+				require.Equal(t, tc.expect.err, err)
+			} else {
+				require.NoError(t, err)
+			}
 			if err != nil {
 				return
 			}
 
-			newData, err := GetAll(tc.fileName)
-			require.NoError(t, err)
+			newData := storage.getAll()
 
 			// resave the original data back to file
-			err = file.SaveJSON(tc.fileName, originalData, 0644)
+			err = file.SaveJSON(storage.fileName, originalData, 0644)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expect.newData, newData)

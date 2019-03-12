@@ -56,7 +56,8 @@ func (s *kvStorage) getAll() map[string]string {
 	return maputil.Copy(s.data)
 }
 
-// add adds the `val` value to the storage with the specified `key`
+// add adds the `val` value to the storage with the specified `key`. Replaces the
+// original value if `key` already exists
 func (s *kvStorage) add(key, val string) error {
 	s.Lock()
 	defer s.Unlock()

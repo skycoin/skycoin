@@ -24,8 +24,8 @@ var (
 	// ErrStorageAPIDisabled is returned while trying to do storage actions while
 	// the EnableStorageAPI option is false
 	ErrStorageAPIDisabled = NewError(errors.New("storage api is disabled"))
-	// ErrNoSuchStorage is returned if no storage with the specified storage type exists
-	ErrNoSuchStorage = NewError(errors.New("storage with such type does not exist or is not loaded"))
+	// ErrNoSuchStorage is returned if no storage with the specified storage type loaded
+	ErrNoSuchStorage = NewError(errors.New("storage with such type is not loaded"))
 	// ErrStorageAlreadyLoaded is returned while trying to load already loaded storage
 	ErrStorageAlreadyLoaded = NewError(errors.New("storage with such type is already loaded"))
 	// ErrUnknownKVStorageType is returned while trying to access the storage of the unknown type
@@ -66,8 +66,7 @@ func (m *Manager) LoadStorage(storageType KVStorageType) error {
 		return ErrStorageAlreadyLoaded
 	}
 
-	fileName := fmt.Sprintf("%s%s%s", m.config.StorageDir,
-		storageType, storageFileExtension)
+	fileName := m.getStorageFilePath(storageType)
 
 	if !file.Exists(fileName) {
 		if err := initEmptyStorage(fileName); err != nil {
@@ -197,6 +196,10 @@ func (m *Manager) storageExists(storageType KVStorageType) bool {
 	_, ok := m.storages[storageType]
 
 	return ok
+}
+
+func (m *Manager) getStorageFilePath(storageType KVStorageType) string {
+	return fmt.Sprintf("%s%s%s", m.config.StorageDir, KVStorageTypeNotes, storageFileExtension)
 }
 
 // isStorageTypeValid validates the given `storageType` against the predefined available types

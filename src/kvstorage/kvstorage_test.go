@@ -82,7 +82,7 @@ func TestNewKVStorage(t *testing.T) {
 	}
 }
 
-func TestGet(t *testing.T) {
+func TestKVStorageGet(t *testing.T) {
 	type expect struct {
 		val string
 		err error
@@ -141,7 +141,7 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestGetAll(t *testing.T) {
+func TestKVStorageGetAll(t *testing.T) {
 	type expect struct {
 		data map[string]string
 	}
@@ -188,7 +188,7 @@ func TestGetAll(t *testing.T) {
 	}
 }
 
-func TestAdd(t *testing.T) {
+func TestKVStorageAdd(t *testing.T) {
 	type expect struct {
 		newData     map[string]string
 		expectError bool
@@ -257,7 +257,7 @@ func TestAdd(t *testing.T) {
 	}
 }
 
-func TestRemove(t *testing.T) {
+func TestKVStorageRemove(t *testing.T) {
 	type expect struct {
 		newData     map[string]string
 		expectError bool

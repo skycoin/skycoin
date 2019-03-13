@@ -6,6 +6,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/kvstorage"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -14,19 +15,21 @@ import (
 
 //go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
 
-// Gateway bundles daemon.Daemon, Visor and wallet.Service into a single object
+// Gateway bundles daemon.Daemon, Visor, wallet.Service and kvstorage.Manager into a single object
 type Gateway struct {
 	*daemon.Daemon
 	*visor.Visor
 	*wallet.Service
+	*kvstorage.Manager
 }
 
 // NewGateway creates a Gateway
-func NewGateway(d *daemon.Daemon, v *visor.Visor, w *wallet.Service) *Gateway {
+func NewGateway(d *daemon.Daemon, v *visor.Visor, w *wallet.Service, m *kvstorage.Manager) *Gateway {
 	return &Gateway{
 		Daemon:  d,
 		Visor:   v,
 		Service: w,
+		Manager: m,
 	}
 }
 
@@ -35,6 +38,7 @@ type Gatewayer interface {
 	Daemoner
 	Visorer
 	Walleter
+	Storer
 }
 
 // Daemoner interface for daemon.Daemon methods used by the API
@@ -102,4 +106,12 @@ type Walleter interface {
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	WalletDir() (string, error)
+}
+
+// Storer interface for kvstorage.Manager methods used by the API
+type Storer interface {
+	GetStorageValue(storageType kvstorage.Type, key string) (string, error)
+	GetAllStorageValues(storageType kvstorage.Type) (map[string]string, error)
+	AddStorageValue(storageType kvstorage.Type, key, val string) error
+	RemoveStorageValue(storageType kvstorage.Type, key string) error
 }

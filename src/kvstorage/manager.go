@@ -8,14 +8,14 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
-// KVStorageType is a type of a key-value storage
-type KVStorageType string
+// Type is a type of a key-value storage
+type Type string
 
 const (
-	// KVStorageTypeNotes is a type of storage containing transaction notes
-	KVStorageTypeNotes KVStorageType = "notes"
-	// KVStorageTypeGeneral is a type of storage for general user data
-	KVStorageTypeGeneral KVStorageType = "general"
+	// TypeNotes is a type of storage containing transaction notes
+	TypeNotes Type = "txid"
+	// TypeGeneral is a type of storage for general user data
+	TypeGeneral Type = "client"
 )
 
 const storageFileExtension = ".json"
@@ -35,22 +35,30 @@ var (
 // Manager is a manager for key-value storage instances
 type Manager struct {
 	config   Config
-	storages map[KVStorageType]*kvStorage
+	storages map[Type]*kvStorage
 	sync.RWMutex
 }
 
 // NewManager constructs new manager according to the config
-func NewManager(c Config) *Manager {
-	return &Manager{
+func NewManager(c Config) (*Manager, error) {
+	m := &Manager{
 		config:   c,
-		storages: make(map[KVStorageType]*kvStorage),
+		storages: make(map[Type]*kvStorage),
 	}
+
+	for _, t := range m.config.EnabledStorages {
+		if err := m.LoadStorage(t); err != nil {
+			return nil, err
+		}
+	}
+
+	return m, nil
 }
 
 // LoadStorage loads a new storage instance for the `storageType`
 // into the manager. Returns `ErrStorageAlreadyLoaded`, `ErrStorageAPIDisabled`,
 // `ErrUnknownKVStorageType`
-func (m *Manager) LoadStorage(storageType KVStorageType) error {
+func (m *Manager) LoadStorage(storageType Type) error {
 	if !isStorageTypeValid(storageType) {
 		return ErrUnknownKVStorageType
 	}
@@ -86,7 +94,7 @@ func (m *Manager) LoadStorage(storageType KVStorageType) error {
 
 // UnloadStorage unloads the storage instance for the given `storageType` from the manager.
 // Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
-func (m *Manager) UnloadStorage(storageType KVStorageType) error {
+func (m *Manager) UnloadStorage(storageType Type) error {
 	if !isStorageTypeValid(storageType) {
 		return ErrUnknownKVStorageType
 	}
@@ -107,9 +115,9 @@ func (m *Manager) UnloadStorage(storageType KVStorageType) error {
 	return nil
 }
 
-// Get gets the value associated with the `key` from the storage of `storageType.
+// GetStorageValue gets the value associated with the `key` from the storage of `storageType.
 // Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
-func (m *Manager) Get(storageType KVStorageType, key string) (string, error) {
+func (m *Manager) GetStorageValue(storageType Type, key string) (string, error) {
 	if !isStorageTypeValid(storageType) {
 		return "", ErrUnknownKVStorageType
 	}
@@ -128,9 +136,9 @@ func (m *Manager) Get(storageType KVStorageType, key string) (string, error) {
 	return m.storages[storageType].get(key)
 }
 
-// GetAll gets the snapshot of the current contents from storage of `storageType`.
+// GetAllStorageValues gets the snapshot of the current contents from storage of `storageType`.
 // Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
-func (m *Manager) GetAll(storageType KVStorageType) (map[string]string, error) {
+func (m *Manager) GetAllStorageValues(storageType Type) (map[string]string, error) {
 	if !isStorageTypeValid(storageType) {
 		return nil, ErrUnknownKVStorageType
 	}
@@ -149,9 +157,9 @@ func (m *Manager) GetAll(storageType KVStorageType) (map[string]string, error) {
 	return m.storages[storageType].getAll(), nil
 }
 
-// Add adds the `val` with the associated `key` to the storage of `storageType`.
+// AddStorageValue adds the `val` with the associated `key` to the storage of `storageType`.
 // Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
-func (m *Manager) Add(storageType KVStorageType, key, val string) error {
+func (m *Manager) AddStorageValue(storageType Type, key, val string) error {
 	if !isStorageTypeValid(storageType) {
 		return ErrUnknownKVStorageType
 	}
@@ -170,9 +178,9 @@ func (m *Manager) Add(storageType KVStorageType, key, val string) error {
 	return m.storages[storageType].add(key, val)
 }
 
-// Remove removes the value with the associated `key` from the storage of `storageType`.
+// RemoveStorageValue removes the value with the associated `key` from the storage of `storageType`.
 // Returns `ErrNoSuchStorage`, `ErrStorageAPIDisabled`, `ErrUnknownKVStorageType`
-func (m *Manager) Remove(storageType KVStorageType, key string) error {
+func (m *Manager) RemoveStorageValue(storageType Type, key string) error {
 	if !isStorageTypeValid(storageType) {
 		return ErrUnknownKVStorageType
 	}
@@ -192,20 +200,21 @@ func (m *Manager) Remove(storageType KVStorageType, key string) error {
 }
 
 // storageExists checks whether the storage of `storageType` exists in the manager
-func (m *Manager) storageExists(storageType KVStorageType) bool {
+func (m *Manager) storageExists(storageType Type) bool {
 	_, ok := m.storages[storageType]
 
 	return ok
 }
 
-func (m *Manager) getStorageFilePath(storageType KVStorageType) string {
-	return fmt.Sprintf("%s%s%s", m.config.StorageDir, KVStorageTypeNotes, storageFileExtension)
+// getStorageFilePath creates the path to the storage of `storageType` in file system
+func (m *Manager) getStorageFilePath(storageType Type) string {
+	return fmt.Sprintf("%s%s%s", m.config.StorageDir, storageType, storageFileExtension)
 }
 
 // isStorageTypeValid validates the given `storageType` against the predefined available types
-func isStorageTypeValid(storageType KVStorageType) bool {
+func isStorageTypeValid(storageType Type) bool {
 	switch storageType {
-	case KVStorageTypeNotes, KVStorageTypeGeneral:
+	case TypeNotes, TypeGeneral:
 		return true
 	}
 

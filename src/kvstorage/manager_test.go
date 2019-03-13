@@ -19,7 +19,7 @@ func TestLoadStorage(t *testing.T) {
 	tt := []struct {
 		name        string
 		manager     *Manager
-		storageType KVStorageType
+		storageType Type
 		expect      expect
 	}{
 		{
@@ -28,9 +28,9 @@ func TestLoadStorage(t *testing.T) {
 				config: Config{
 					StorageDir: "./testdata/",
 				},
-				storages: make(map[KVStorageType]*kvStorage),
+				storages: make(map[Type]*kvStorage),
 			},
-			storageType: KVStorageTypeNotes,
+			storageType: TypeNotes,
 			expect: expect{
 				expectError: true,
 				err:         ErrStorageAPIDisabled,
@@ -43,7 +43,7 @@ func TestLoadStorage(t *testing.T) {
 					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
-				storages: make(map[KVStorageType]*kvStorage),
+				storages: make(map[Type]*kvStorage),
 			},
 			storageType: "unknown",
 			expect: expect{
@@ -58,11 +58,11 @@ func TestLoadStorage(t *testing.T) {
 					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
-				storages: map[KVStorageType]*kvStorage{
-					KVStorageTypeNotes: nil,
+				storages: map[Type]*kvStorage{
+					TypeNotes: nil,
 				},
 			},
-			storageType: KVStorageTypeNotes,
+			storageType: TypeNotes,
 			expect: expect{
 				expectError: true,
 				err:         ErrStorageAlreadyLoaded,
@@ -75,9 +75,9 @@ func TestLoadStorage(t *testing.T) {
 					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
-				storages: make(map[KVStorageType]*kvStorage),
+				storages: make(map[Type]*kvStorage),
 			},
-			storageType: KVStorageTypeNotes,
+			storageType: TypeNotes,
 		},
 	}
 
@@ -97,7 +97,7 @@ func TestLoadStorage(t *testing.T) {
 		})
 	}
 
-	err := os.Remove("./testdata/notes.json")
+	err := os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 }
 
@@ -110,13 +110,17 @@ func TestUnloadStorage(t *testing.T) {
 	tt := []struct {
 		name        string
 		manager     *Manager
-		storageType KVStorageType
+		storageType Type
 		expect      expect
 	}{
 		{
-			name:        "API disabled",
-			manager:     NewManager(NewConfig()),
-			storageType: KVStorageTypeGeneral,
+			name: "API disabled",
+			manager: &Manager{
+				config: Config{
+					StorageDir: "./testdata/",
+				},
+			},
+			storageType: TypeGeneral,
 			expect: expect{
 				expectError: true,
 				err:         ErrStorageAPIDisabled,
@@ -129,7 +133,7 @@ func TestUnloadStorage(t *testing.T) {
 					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
-				storages: make(map[KVStorageType]*kvStorage),
+				storages: make(map[Type]*kvStorage),
 			},
 			storageType: "unknown",
 			expect: expect{
@@ -144,9 +148,9 @@ func TestUnloadStorage(t *testing.T) {
 					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
-				storages: make(map[KVStorageType]*kvStorage),
+				storages: make(map[Type]*kvStorage),
 			},
-			storageType: KVStorageTypeGeneral,
+			storageType: TypeGeneral,
 			expect: expect{
 				expectError: true,
 				err:         ErrNoSuchStorage,
@@ -159,11 +163,11 @@ func TestUnloadStorage(t *testing.T) {
 					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
-				storages: map[KVStorageType]*kvStorage{
-					KVStorageTypeNotes: nil,
+				storages: map[Type]*kvStorage{
+					TypeNotes: nil,
 				},
 			},
-			storageType: KVStorageTypeNotes,
+			storageType: TypeNotes,
 		},
 	}
 
@@ -173,9 +177,9 @@ func TestUnloadStorage(t *testing.T) {
 			EnableStorageAPI: true,
 			StorageDir:       "./testdata/",
 		},
-		storages: make(map[KVStorageType]*kvStorage),
+		storages: make(map[Type]*kvStorage),
 	}
-	err := manager.LoadStorage(KVStorageTypeNotes)
+	err := manager.LoadStorage(TypeNotes)
 	require.NoError(t, err)
 
 	for _, tc := range tt {
@@ -194,11 +198,11 @@ func TestUnloadStorage(t *testing.T) {
 		})
 	}
 
-	err = os.Remove("./testdata/notes.json")
+	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 }
 
-func TestManagerGet(t *testing.T) {
+func TestManagerGetStorageValue(t *testing.T) {
 	type expect struct {
 		val string
 		err error
@@ -209,15 +213,15 @@ func TestManagerGet(t *testing.T) {
 		enableAPI         bool
 		storageDataDir    string
 		loadStorage       bool
-		storageTypeToLoad KVStorageType
-		storageType       KVStorageType
+		storageTypeToLoad Type
+		storageType       Type
 		key               string
 		expect            expect
 	}{
 		{
 			name:           "API disabled",
 			storageDataDir: "./testdata/",
-			storageType:    KVStorageTypeNotes,
+			storageType:    TypeNotes,
 			key:            "key",
 			expect: expect{
 				err: ErrStorageAPIDisabled,
@@ -236,7 +240,7 @@ func TestManagerGet(t *testing.T) {
 			name:           "no such storage",
 			enableAPI:      true,
 			storageDataDir: "./testdata/",
-			storageType:    KVStorageTypeNotes,
+			storageType:    TypeNotes,
 			expect: expect{
 				err: ErrNoSuchStorage,
 			},
@@ -246,8 +250,8 @@ func TestManagerGet(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: KVStorageTypeNotes,
-			storageType:       KVStorageTypeNotes,
+			storageTypeToLoad: TypeNotes,
+			storageType:       TypeNotes,
 			key:               "unknown",
 			expect: expect{
 				err: ErrNoSuchKey,
@@ -258,8 +262,8 @@ func TestManagerGet(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: KVStorageTypeNotes,
-			storageType:       KVStorageTypeNotes,
+			storageTypeToLoad: TypeNotes,
+			storageType:       TypeNotes,
 			key:               "test1",
 			expect: expect{
 				val: "some value",
@@ -270,8 +274,8 @@ func TestManagerGet(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: KVStorageTypeNotes,
-			storageType:       KVStorageTypeNotes,
+			storageTypeToLoad: TypeNotes,
+			storageType:       TypeNotes,
 			key:               "test2",
 			expect: expect{
 				val: "{\"key\":\"val\",\"key2\":2}",
@@ -279,12 +283,13 @@ func TestManagerGet(t *testing.T) {
 		},
 	}
 
-	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", KVStorageTypeNotes, storageFileExtension))
+	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			m := NewManager(NewConfig())
+			m, err := NewManager(NewConfig())
+			require.NoError(t, err)
 			m.config.EnableStorageAPI = tc.enableAPI
 			m.config.StorageDir = tc.storageDataDir
 
@@ -293,7 +298,7 @@ func TestManagerGet(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			val, err := m.Get(tc.storageType, tc.key)
+			val, err := m.GetStorageValue(tc.storageType, tc.key)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return
@@ -303,11 +308,11 @@ func TestManagerGet(t *testing.T) {
 		})
 	}
 
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", KVStorageTypeNotes, storageFileExtension))
+	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 }
 
-func TestManagerGetAll(t *testing.T) {
+func TestManagerGetAllStorageValues(t *testing.T) {
 	type expect struct {
 		data map[string]string
 		err  error
@@ -318,14 +323,14 @@ func TestManagerGetAll(t *testing.T) {
 		enableAPI         bool
 		storageDataDir    string
 		loadStorage       bool
-		storageTypeToLoad KVStorageType
-		storageType       KVStorageType
+		storageTypeToLoad Type
+		storageType       Type
 		expect            expect
 	}{
 		{
 			name:           "API disabled",
 			storageDataDir: "./testdata/",
-			storageType:    KVStorageTypeNotes,
+			storageType:    TypeNotes,
 			expect: expect{
 				err: ErrStorageAPIDisabled,
 			},
@@ -343,7 +348,7 @@ func TestManagerGetAll(t *testing.T) {
 			name:           "no such storage",
 			enableAPI:      true,
 			storageDataDir: "./testdata/",
-			storageType:    KVStorageTypeNotes,
+			storageType:    TypeNotes,
 			expect: expect{
 				err: ErrNoSuchStorage,
 			},
@@ -353,8 +358,8 @@ func TestManagerGetAll(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: KVStorageTypeNotes,
-			storageType:       KVStorageTypeNotes,
+			storageTypeToLoad: TypeNotes,
+			storageType:       TypeNotes,
 			expect: expect{
 				data: map[string]string{
 					"test1": "some value",
@@ -364,12 +369,13 @@ func TestManagerGetAll(t *testing.T) {
 		},
 	}
 
-	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", KVStorageTypeNotes, storageFileExtension))
+	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			m := NewManager(NewConfig())
+			m, err := NewManager(NewConfig())
+			require.NoError(t, err)
 			m.config.EnableStorageAPI = tc.enableAPI
 			m.config.StorageDir = tc.storageDataDir
 
@@ -378,7 +384,7 @@ func TestManagerGetAll(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			data, err := m.GetAll(tc.storageType)
+			data, err := m.GetAllStorageValues(tc.storageType)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return
@@ -388,11 +394,11 @@ func TestManagerGetAll(t *testing.T) {
 		})
 	}
 
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", KVStorageTypeNotes, storageFileExtension))
+	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 }
 
-func TestManagerAdd(t *testing.T) {
+func TestManagerAddStorageValue(t *testing.T) {
 	type expect struct {
 		expectErr bool
 		err       error
@@ -403,8 +409,8 @@ func TestManagerAdd(t *testing.T) {
 		enableAPI         bool
 		storageDataDir    string
 		loadStorage       bool
-		storageTypeToLoad KVStorageType
-		storageType       KVStorageType
+		storageTypeToLoad Type
+		storageType       Type
 		key               string
 		val               string
 		expect            expect
@@ -412,7 +418,7 @@ func TestManagerAdd(t *testing.T) {
 		{
 			name:           "API disabled",
 			storageDataDir: "./testdata/",
-			storageType:    KVStorageTypeNotes,
+			storageType:    TypeNotes,
 			key:            "key",
 			val:            "val",
 			expect: expect{
@@ -436,7 +442,7 @@ func TestManagerAdd(t *testing.T) {
 			name:           "no such storage",
 			enableAPI:      true,
 			storageDataDir: "./testdata/",
-			storageType:    KVStorageTypeNotes,
+			storageType:    TypeNotes,
 			key:            "key",
 			val:            "val",
 			expect: expect{
@@ -449,8 +455,8 @@ func TestManagerAdd(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: KVStorageTypeNotes,
-			storageType:       KVStorageTypeNotes,
+			storageTypeToLoad: TypeNotes,
+			storageType:       TypeNotes,
 			key:               "key",
 			val:               "val",
 		},
@@ -459,19 +465,20 @@ func TestManagerAdd(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: KVStorageTypeNotes,
-			storageType:       KVStorageTypeNotes,
+			storageTypeToLoad: TypeNotes,
+			storageType:       TypeNotes,
 			key:               "test1",
 			val:               "oiuy",
 		},
 	}
 
-	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", KVStorageTypeNotes, storageFileExtension))
+	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			m := NewManager(NewConfig())
+			m, err := NewManager(NewConfig())
+			require.NoError(t, err)
 			m.config.EnableStorageAPI = tc.enableAPI
 			m.config.StorageDir = tc.storageDataDir
 
@@ -480,7 +487,7 @@ func TestManagerAdd(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err := m.Add(tc.storageType, tc.key, tc.val)
+			err = m.AddStorageValue(tc.storageType, tc.key, tc.val)
 			if tc.expect.expectErr {
 				require.Equal(t, tc.expect.err, err)
 			} else {
@@ -489,11 +496,11 @@ func TestManagerAdd(t *testing.T) {
 		})
 	}
 
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", KVStorageTypeNotes, storageFileExtension))
+	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 }
 
-func TestManagerRemove(t *testing.T) {
+func TestManagerRemoveStorageValue(t *testing.T) {
 	type expect struct {
 		expectErr bool
 		err       error
@@ -504,15 +511,15 @@ func TestManagerRemove(t *testing.T) {
 		enableAPI         bool
 		storageDataDir    string
 		loadStorage       bool
-		storageTypeToLoad KVStorageType
-		storageType       KVStorageType
+		storageTypeToLoad Type
+		storageType       Type
 		key               string
 		expect            expect
 	}{
 		{
 			name:           "API disabled",
 			storageDataDir: "./testdata/",
-			storageType:    KVStorageTypeNotes,
+			storageType:    TypeNotes,
 			key:            "key",
 			expect: expect{
 				expectErr: true,
@@ -534,7 +541,7 @@ func TestManagerRemove(t *testing.T) {
 			name:           "no such storage",
 			enableAPI:      true,
 			storageDataDir: "./testdata/",
-			storageType:    KVStorageTypeNotes,
+			storageType:    TypeNotes,
 			key:            "key",
 			expect: expect{
 				expectErr: true,
@@ -546,8 +553,8 @@ func TestManagerRemove(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: KVStorageTypeNotes,
-			storageType:       KVStorageTypeNotes,
+			storageTypeToLoad: TypeNotes,
+			storageType:       TypeNotes,
 			key:               "key",
 			expect: expect{
 				expectErr: true,
@@ -559,18 +566,19 @@ func TestManagerRemove(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: KVStorageTypeNotes,
-			storageType:       KVStorageTypeNotes,
+			storageTypeToLoad: TypeNotes,
+			storageType:       TypeNotes,
 			key:               "test1",
 		},
 	}
 
-	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", KVStorageTypeNotes, storageFileExtension))
+	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			m := NewManager(NewConfig())
+			m, err := NewManager(NewConfig())
+			require.NoError(t, err)
 			m.config.EnableStorageAPI = tc.enableAPI
 			m.config.StorageDir = tc.storageDataDir
 
@@ -579,7 +587,7 @@ func TestManagerRemove(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err := m.Remove(tc.storageType, tc.key)
+			err = m.RemoveStorageValue(tc.storageType, tc.key)
 			if tc.expect.expectErr {
 				require.Equal(t, tc.expect.err, err)
 			} else {
@@ -588,6 +596,6 @@ func TestManagerRemove(t *testing.T) {
 		})
 	}
 
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", KVStorageTypeNotes, storageFileExtension))
+	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
 	require.NoError(t, err)
 }

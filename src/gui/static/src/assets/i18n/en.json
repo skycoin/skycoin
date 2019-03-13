@@ -113,6 +113,7 @@
     "delete-confirmation": "WARNING: The wallet \"{{ name }}\" will be removed from the list. To add it again, you will have to reconnect the device and open the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list). Do you want to continue?",
     "delete-confirmation-check": "Yeah, I want to delete the wallet.",
     "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the hardware wallet.",
+    "add-many-confirmation": "WARNING: If you add too many addresses without using the previous ones or if you use the last ones and not the first ones, some addresses may not be recovered automatically if you try to restore the wallet using the seed (you will have to add them manually). Do you want to continue?",
 
     "new": {
       "create-title": "Create Wallet",

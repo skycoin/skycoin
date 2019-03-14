@@ -1642,6 +1642,121 @@ Result:
 }
 ```
 
+## Key-value storage APIs
+
+Endpoints interact with the key-value storage. Each request require the `type` argument to 
+be passed. Currently allowed types: `txid`, `client`
+
+### Get all storage values
+
+API sets: `READ`, `STORAGE`
+
+```
+Method: GET
+URI: /api/v2/data
+Args:
+    type: storage type
+    key [string]: key of the specific value to get
+```
+
+If key is passed, only the specific value will be returned from the storage. Otherwise the whole dataset 
+will be returned.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "key1": "value",
+        "key2": "{\"key\":\"value\"}",
+    }
+}
+```
+
+Example (key):
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid&key=key1
+```
+
+Result:
+
+```json
+{
+    "data": "value"
+}
+```
+
+### Add value to storage
+
+API sets: `STORAGE`
+
+```
+Method: POST
+URI: /api/v2/data
+Args: JSON Body, see examples
+```
+
+Example request body:
+
+```json
+{
+    "type": "txid",
+    "key": "key1",
+    "val": "val1"
+}
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/data -H 'Content-Type: application/json' -d '{
+    "type": "txid",
+    "key": "key1,
+    "val": "val1"
+}'
+```
+
+Result:
+
+```json
+{
+
+}
+```
+
+### Remove value from storage
+
+API sets: `STORAGE`
+
+```
+Method: DELETE
+URI: /api/v2/data
+Args:
+    type: storage type
+    key: key of the specific value to get
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid&key=key1
+```
+
+Result:
+
+```json
+{
+
+}
+```
+
 ## Transaction APIs
 
 ### Get unconfirmed transactions

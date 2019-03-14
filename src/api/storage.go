@@ -45,16 +45,16 @@ func getStorageValuesHandler(w http.ResponseWriter, r *http.Request, gateway Gat
 	key := r.FormValue("key")
 
 	if key == "" {
-		getAllStorageValuesHandler(w, r, gateway, kvstorage.Type(storageType))
+		getAllStorageValuesHandler(w, gateway, kvstorage.Type(storageType))
 	} else {
-		getStorageValueHandler(w, r, gateway, kvstorage.Type(storageType), key)
+		getStorageValueHandler(w, gateway, kvstorage.Type(storageType), key)
 	}
 }
 
 // Returns all existing storage values of a given storage type.
 // Args:
 //     type: storage type to get values from
-func getAllStorageValuesHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer, storageType kvstorage.Type) {
+func getAllStorageValuesHandler(w http.ResponseWriter, gateway Gatewayer, storageType kvstorage.Type) {
 	data, err := gateway.GetAllStorageValues(kvstorage.Type(storageType))
 	if err != nil {
 		var resp HTTPResponse
@@ -80,8 +80,7 @@ func getAllStorageValuesHandler(w http.ResponseWriter, r *http.Request, gateway 
 // Returns value from storage of a given type by key.
 // Args:
 //     key: key for a value to be retrieved
-func getStorageValueHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer,
-	storageType kvstorage.Type, key string) {
+func getStorageValueHandler(w http.ResponseWriter, gateway Gatewayer, storageType kvstorage.Type, key string) {
 	val, err := gateway.GetStorageValue(storageType, key)
 	if err != nil {
 		var resp HTTPResponse

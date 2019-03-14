@@ -16,8 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/kvstorage"
-
 	"github.com/blang/semver"
 	"github.com/toqueteos/webbrowser"
 
@@ -25,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/kvstorage"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"

@@ -23,7 +23,6 @@ func storageHandler(gateway Gatewayer) http.HandlerFunc {
 
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
 		writeHTTPResponse(w, resp)
-		return
 	}
 }
 

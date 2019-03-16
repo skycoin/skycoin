@@ -77,7 +77,7 @@ export class WalletDetailComponent implements OnDestroy {
             let lastWithBalance = 0;
             this.wallet.addresses.forEach((address, i) => {
               if (address.coins.isGreaterThan(0)) {
-                lastWithBalance = 1;
+                lastWithBalance = i;
               }
             });
 

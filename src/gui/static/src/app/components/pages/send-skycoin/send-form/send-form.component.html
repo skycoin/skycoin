@@ -33,10 +33,10 @@
     <div class="coins-value-label" [ngClass]="{ red: value >= 0 && valueGreaterThanBalance }" *ngIf="price">
       <span *ngIf="value < 0">{{ 'send.invalid-amount' | translate }}</span>
       <span *ngIf="value >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
-        &#x2245; {{ value | number:'1.0-2' }} {{ 'common.usd' | translate }}
+        &#x007e; {{ value | number:'1.0-2' }} {{ 'common.usd' | translate }}
       </span>
       <span *ngIf="value >= 0 && selectedCurrency === doubleButtonActive.RightButton">
-        &#x2245; {{ value | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
+        &#x007e; {{ value | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
       </span>
     </div>
   </div>

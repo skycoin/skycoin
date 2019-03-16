@@ -118,10 +118,10 @@
           <div class="coins-value-label" *ngIf="price">
             <span *ngIf="values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
             <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
-              &#x2245; {{ values[i] | number:'1.0-2' }} {{ 'common.usd' | translate }}
+              &#x007e; {{ values[i] | number:'1.0-2' }} {{ 'common.usd' | translate }}
             </span>
             <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
-              &#x2245; {{ values[i] | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
+              &#x007e; {{ values[i] | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
             </span>
           </div>
         </div>

@@ -37,7 +37,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   ) {
     super(hwWalletService, dialogRef);
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
-      this.walletService.updateWalletHasHwSecurityWarnings(wallet).subscribe(() => {
+      this.walletService.getHwFeaturesAndUpdateData(wallet).subscribe(result => {
         this.wallet = wallet;
 
         this.form = this.formBuilder.group({

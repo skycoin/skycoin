@@ -3,7 +3,7 @@ import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angu
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
 import { ISubscription } from 'rxjs/Subscription';
-import { WalletService, HwSecurityWarnings } from '../../../../services/wallet.service';
+import { WalletService, HwSecurityWarnings, HwFeaturesResponse } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
@@ -127,7 +127,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         if (this.completeRecheckRequested) {
           this.checkWallet();
         } else if (this.recheckSecurityOnlyRequested) {
-          this.updateSecurityWarnings().subscribe();
+          this.updateSecurityWarningsAndData().subscribe();
         } else if (this.showErrorRequested) {
           this.currentState = States.Error;
         }
@@ -143,12 +143,14 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     }
   }
 
-  private updateSecurityWarnings(): Observable<HwSecurityWarnings[]> {
-    return this.walletService.updateWalletHasHwSecurityWarnings(this.wallet).map(warnings => {
-      this.needsBackup = warnings.includes(HwSecurityWarnings.NeedsBackup);
-      this.needsPin = warnings.includes(HwSecurityWarnings.NeedsPin);
+  private updateSecurityWarningsAndData(): Observable<HwFeaturesResponse> {
+    return this.walletService.getHwFeaturesAndUpdateData(this.wallet).map(response => {
+      this.needsBackup = response.securityWarnings.includes(HwSecurityWarnings.NeedsBackup);
+      this.needsPin = response.securityWarnings.includes(HwSecurityWarnings.NeedsPin);
 
-      return warnings;
+      this.walletName = this.wallet.label;
+
+      return response;
     });
   }
 
@@ -177,7 +179,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
               return found;
             });
             if (alreadySaved) {
-              this.updateSecurityWarnings().subscribe(() => {
+              this.updateSecurityWarningsAndData().subscribe(() => {
                 if (!this.onboarding) {
                   this.currentState = States.ConfiguredConnected;
                 } else {

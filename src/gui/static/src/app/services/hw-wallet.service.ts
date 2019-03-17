@@ -130,6 +130,7 @@ export class HwWalletService {
         { event: 'hwRecoverMnemonicResponse', successTexts: ['Device recovered', 'The seed is valid and matches the one in the device'] },
         { event: 'hwBackupDeviceResponse', successTexts: ['operation completed'] },
         { event: 'hwWipeResponse', successTexts: ['operation completed'] },
+        { event: 'hwChangeLabelResponse', successTexts: ['Settings applied'] },
         { event: 'hwCancelLastActionResponse' },
         { event: 'hwGetAddressesResponse' },
         { event: 'hwGetFeaturesResponse' },
@@ -276,6 +277,15 @@ export class HwWalletService {
       const requestId = this.createRandomIdAndPrepare();
       this.signingTx = true;
       window['ipcRenderer'].send('hwSignTransaction', requestId, inputs, outputs);
+
+      return this.createRequestResponse(requestId);
+    });
+  }
+
+  changeLabel(label: string): Observable<OperationResult> {
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwChangeLabel', requestId, label);
 
       return this.createRequestResponse(requestId);
     });

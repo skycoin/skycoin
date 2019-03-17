@@ -26,6 +26,11 @@ export enum HwSecurityWarnings {
   NeedsPin,
 }
 
+export interface HwFeaturesResponse {
+  features: any;
+  securityWarnings: HwSecurityWarnings[];
+}
+
 @Injectable()
 export class WalletService {
 
@@ -149,9 +154,11 @@ export class WalletService {
     });
   }
 
-  updateWalletHasHwSecurityWarnings(wallet: Wallet): Observable<HwSecurityWarnings[]> {
+  getHwFeaturesAndUpdateData(wallet: Wallet): Observable<HwFeaturesResponse> {
     if (wallet.isHardware) {
       return this.hwWalletService.getFeatures().map(result => {
+        wallet.label = result.rawResponse.label;
+
         const warnings: HwSecurityWarnings[] = [];
 
         wallet.hasHwSecurityWarnings = false;
@@ -165,10 +172,15 @@ export class WalletService {
         }
         this.saveHardwareWallets();
 
-        return warnings;
+        const response = {
+          features: result.rawResponse,
+          securityWarnings: warnings,
+        };
+
+        return response;
       });
     } else {
-      return Observable.of([]);
+      return null;
     }
   }
 

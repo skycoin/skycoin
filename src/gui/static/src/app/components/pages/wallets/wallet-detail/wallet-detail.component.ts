@@ -27,6 +27,7 @@ export class WalletDetailComponent implements OnDestroy {
   creatingAddress = false;
 
   private howManyAddresses: number;
+  private preparingToEdit = false;
 
   constructor(
     private dialog: MatDialog,
@@ -42,10 +43,29 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   editWallet() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.data = this.wallet;
-    this.dialog.open(ChangeNameComponent, config);
+    this.snackbar.dismiss();
+
+    if (this.wallet.isHardware ) {
+      if (this.preparingToEdit) {
+        return;
+      }
+
+      this.preparingToEdit = true;
+      this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address)
+        .flatMap(() => this.walletService.getHwFeaturesAndUpdateData(this.wallet))
+        .subscribe(
+          () => {
+            this.continueEditWallet();
+            this.preparingToEdit = false;
+          },
+          err => {
+            showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+            this.preparingToEdit = false;
+          },
+        );
+    } else {
+      this.continueEditWallet();
+    }
   }
 
   newAddress() {
@@ -226,5 +246,12 @@ export class WalletDetailComponent implements OnDestroy {
         },
       );
     }
+  }
+
+  private continueEditWallet() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    config.data = this.wallet;
+    this.dialog.open(ChangeNameComponent, config);
   }
 }

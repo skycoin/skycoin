@@ -23,8 +23,8 @@ func DecompressPoint(X []byte, off bool, Y []byte) {
 }
 
 // RecoverPublicKey recovers a public key from a signature and the message it signed.
-// Returns nil on error with an int error code
-func RecoverPublicKey(sigByte []byte, h []byte, recid int) ([]byte, int) {
+// Returns nil on error with an int error code. Returns 1 on success.
+func RecoverPublicKey(sigByte, h []byte, recid int) ([]byte, int) {
 	if len(sigByte) != 64 {
 		log.Panic("must pass in 64 byte pubkey")
 	}

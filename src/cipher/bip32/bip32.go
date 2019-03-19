@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
+	"encoding/binary"
 	"errors"
 	"log"
 
@@ -11,7 +12,7 @@ import (
 )
 
 const (
-	// FirstHardenedChild is the index of the firxt "harded" child key as per the
+	// FirstHardenedChild is the index of the firxt "hardened" child key as per the
 	// bip32 spec
 	FirstHardenedChild = uint32(0x80000000)
 
@@ -37,37 +38,55 @@ var (
 	// of the public key
 	ErrHardenedChildPublicKey = errors.New("Can't create hardened child for public key")
 
-	// ErrInvalidChecksum is returned when deserializing a key with an incorrect
-	// checksum
+	// ErrInvalidChecksum is returned when deserializing a key with an incorrect checksum
 	ErrInvalidChecksum = errors.New("Checksum doesn't match")
 
-	// ErrInvalidPrivateKey is returned when a derived private key is invalid
-	ErrInvalidPrivateKey = errors.New("Invalid private key")
+	// ErrDerivedInvalidPrivateKey is returned when an invalid private key was derived
+	ErrDerivedInvalidPrivateKey = errors.New("Derived invalid private key")
 
-	// ErrInvalidPublicKey is returned when a derived public key is invalid
-	ErrInvalidPublicKey = errors.New("Invalid public key")
+	// ErrDerivedInvalidPublicKey is returned when an invalid public key was derived
+	ErrDerivedInvalidPublicKey = errors.New("Derived invalid public key")
+
+	// ErrInvalidPrivateKeyVersion is returned when a deserializing a private key without the 'xprv' prefix
+	ErrInvalidPrivateKeyVersion = errors.New("Invalid private key version")
+
+	// ErrInvalidPublicKeyVersion is returned when a deserializing a public key without the 'xpub' prefix
+	ErrInvalidPublicKeyVersion = errors.New("Invalid public key version")
 
 	// ErrInvalidSeedLength is returned when generating a master key with an invalid number of seed bits
 	ErrInvalidSeedLength = errors.New("Invalid master key seed length")
 
-	// ErrInvalidPublicKeyBytesLength deserialize public key from bytes length was not 33
-	ErrInvalidPublicKeyBytesLength = errors.New("Public keys have 33 bytes")
-
-	// ErrInvalidPrivateKeyBytesLength deserialize private key from bytes length was not 32
-	ErrInvalidPrivateKeyBytesLength = errors.New("Private keys have 32 bytes")
-
 	// ErrDeserializePrivateFromPublic attempted to deserialize a private key from an encoded public key
 	ErrDeserializePrivateFromPublic = errors.New("Cannot deserialize a private key from a public key")
+
+	// ErrInvalidKeyVersion is returned if the key version is not 'xpub' or 'xprv'
+	ErrInvalidKeyVersion = errors.New("Invalid key version")
+
+	// ErrInvalidFingerprint is returned if a deserialized key has an invalid fingerprint
+	ErrInvalidFingerprint = errors.New("Invalid key fingerprint")
+
+	// ErrInvalidChildNumber is returned if a deserialized key has an invalid child number
+	ErrInvalidChildNumber = errors.New("Invalid key child number")
+
+	// ErrInvalidPrivateKey is returned if a deserialized xprv key's private key is invalid
+	ErrInvalidPrivateKey = errors.New("Invalid private key")
+
+	// ErrInvalidPublicKey is returned if a deserialized xpub key's public key is invalid
+	ErrInvalidPublicKey = errors.New("Invalid public key")
 )
 
 // key represents a bip32 extended key
 type key struct {
-	Version     []byte // 4 bytes
-	Depth       byte   // 1 bytes
-	Fingerprint []byte // 4 bytes
-	ChildNumber []byte // 4 bytes
-	ChainCode   []byte // 32 bytes
-	Key         []byte // 33 bytes for public keys; 32 bytes for private keys
+	Version           []byte // 4 bytes
+	Depth             byte   // 1 bytes
+	ParentFingerprint []byte // 4 bytes
+	childNumber       []byte // 4 bytes
+	ChainCode         []byte // 32 bytes
+	Key               []byte // 33 bytes for public keys; 32 bytes for private keys
+}
+
+func (k key) ChildNumber() uint32 {
+	return binary.BigEndian.Uint32(k.childNumber)
 }
 
 // PrivateKey represents a bip32 extended private key
@@ -111,13 +130,12 @@ func newMasterKey(seed []byte) (*PrivateKey, error) {
 	// Create the key struct
 	key := &PrivateKey{
 		key: key{
-			Version:     PrivateWalletVersion,
-			ChainCode:   chainCode,
-			Key:         keyBytes,
-			Depth:       0x0,
-			ChildNumber: []byte{0x00, 0x00, 0x00, 0x00},
-			// Master key fingerprint specified to be 0x00000000 since it has no parent
-			Fingerprint: []byte{0x00, 0x00, 0x00, 0x00},
+			Version:           PrivateWalletVersion,
+			ChainCode:         chainCode,
+			Key:               keyBytes,
+			Depth:             0x0,
+			childNumber:       []byte{0x00, 0x00, 0x00, 0x00},
+			ParentFingerprint: []byte{0x00, 0x00, 0x00, 0x00},
 		},
 	}
 
@@ -135,35 +153,50 @@ func (k *PrivateKey) PublicKey() *PublicKey {
 	}
 	return &PublicKey{
 		key: key{
-			Version:     PublicWalletVersion,
-			Key:         pubKey,
-			Depth:       k.Depth,
-			ChildNumber: k.ChildNumber,
-			Fingerprint: k.Fingerprint,
-			ChainCode:   k.ChainCode,
+			Version:           PublicWalletVersion,
+			Key:               pubKey,
+			Depth:             k.Depth,
+			childNumber:       k.childNumber,
+			ChainCode:         k.ChainCode,
+			ParentFingerprint: k.ParentFingerprint,
 		},
 	}
 }
 
-func (k *PrivateKey) fingerprint() []byte {
+// Fingerprint returns the key fingerprint
+func (k *PrivateKey) Fingerprint() []byte {
 	// "Extended keys can be identified by the Hash160 (RIPEMD160 after SHA256)
 	// of the serialized ECDSA public key K, ignoring the chain code."
-	return k.PublicKey().fingerprint()
+	return k.PublicKey().Fingerprint()
 }
 
-func (k *PublicKey) fingerprint() []byte {
+// Identifier returns the key ID
+func (k *PrivateKey) Identifier() []byte {
+	return k.PublicKey().Identifier()
+}
+
+// Fingerprint returns the key fingerprint
+func (k *PublicKey) Fingerprint() []byte {
 	return fingerprint(k.Key)
 }
 
-func fingerprint(k []byte) []byte {
+// Identifier returns the key ID
+func (k *PublicKey) Identifier() []byte {
+	return identifier(k.Key)
+}
+
+func identifier(key []byte) []byte {
 	// "Extended keys can be identified by the Hash160 (RIPEMD160 after SHA256)
 	// of the serialized ECDSA public key K, ignoring the chain code."
 
 	// ripemd160(sha256(key))
-	fp := hash160(k)
+	return hash160(key)
+}
 
+func fingerprint(key []byte) []byte {
+	id := identifier(key)
 	// "The first 32 bits of the identifier are called the key fingerprint."
-	return fp[:4]
+	return id[:4]
 }
 
 // NewPrivateChildKey derives a private child key from a given parent as outlined by bip32, CDKpriv().
@@ -183,18 +216,14 @@ func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
 		return nil, err
 	}
 
-	// Precalculate the fingerprint and cache it.
-	// It could be calculated on demand, instead of doing it here.
-	fp := k.fingerprint()
-
 	return &PrivateKey{
 		key: key{
-			Version:     PrivateWalletVersion,
-			ChildNumber: uint32Bytes(childIdx),
-			ChainCode:   chainCode,
-			Depth:       k.Depth + 1,
-			Fingerprint: fp,
-			Key:         newKey,
+			Version:           PrivateWalletVersion,
+			childNumber:       uint32Bytes(childIdx),
+			ChainCode:         chainCode,
+			Depth:             k.Depth + 1,
+			Key:               newKey,
+			ParentFingerprint: k.Fingerprint(),
 		},
 	}, nil
 }
@@ -239,19 +268,15 @@ func (k *PublicKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 		return nil, err
 	}
 
-	// Precalculate the fingerprint and cache it.
-	// It could be calculated on demand, instead of doing it here.
-	fp := k.fingerprint()
-
 	// Create child Key with data common to all both scenarios
 	return &PublicKey{
 		key: key{
-			Version:     PublicWalletVersion,
-			ChildNumber: uint32Bytes(childIdx),
-			ChainCode:   chainCode,
-			Depth:       k.Depth + 1,
-			Fingerprint: fp,
-			Key:         newKey,
+			Version:           PublicWalletVersion,
+			childNumber:       uint32Bytes(childIdx),
+			ChainCode:         chainCode,
+			Depth:             k.Depth + 1,
+			Key:               newKey,
+			ParentFingerprint: k.Fingerprint(),
 		},
 	}, nil
 }
@@ -338,13 +363,13 @@ func (k *PublicKey) Serialize() []byte {
 }
 
 // serialize a Key to a 78 byte byte slice
-func (k *key) serialize(keyBytes []byte) []byte {
+func (k *key) serialize(key []byte) []byte {
 	n := len(k.Version)
 	n++ // k.Depth
-	n += len(k.Fingerprint)
-	n += len(k.ChildNumber)
+	n += len(k.ParentFingerprint)
+	n += len(k.childNumber)
 	n += len(k.ChainCode)
-	n += len(keyBytes)
+	n += len(key)
 
 	buffer := &bytes.Buffer{}
 	buffer.Grow(n)
@@ -352,44 +377,39 @@ func (k *key) serialize(keyBytes []byte) []byte {
 	// Write fields to buffer in order
 	buffer.Write(k.Version)
 	buffer.WriteByte(k.Depth)
-	buffer.Write(k.Fingerprint)
-	buffer.Write(k.ChildNumber)
+	buffer.Write(k.ParentFingerprint)
+	buffer.Write(k.childNumber)
 	buffer.Write(k.ChainCode)
-	buffer.Write(keyBytes)
+	buffer.Write(key)
 
 	// Append the standard doublesha256 checksum
 	return addChecksumToBytes(buffer.Bytes())
 }
 
-// B58Serialize encodes the Key in the standard Bitcoin base58 encoding
-func (k *PrivateKey) B58Serialize() string {
-	return base58.Encode(k.Serialize())
-}
-
 // String encodes the Key in the standard Bitcoin base58 encoding
 func (k *PrivateKey) String() string {
-	return k.B58Serialize()
-}
-
-// B58Serialize encodes the Key in the standard Bitcoin base58 encoding
-func (k *PublicKey) B58Serialize() string {
 	return base58.Encode(k.Serialize())
 }
 
 // String encodes the Key in the standard Bitcoin base58 encoding
 func (k *PublicKey) String() string {
-	return k.B58Serialize()
+	return base58.Encode(k.Serialize())
 }
 
 // DeserializePrivate deserializes a byte slice into a PrivateKey
 func DeserializePrivate(data []byte) (*PrivateKey, error) {
-	k, err := deserialize(data)
+	k, err := deserialize(data, true)
 	if err != nil {
 		return nil, err
 	}
+
 	if len(k.Key) != 32 {
-		return nil, ErrInvalidPrivateKeyBytesLength
+		log.Panic("DeserializePrivate expected 32 bytes key length")
 	}
+	if !bytes.Equal(k.Version, PrivateWalletVersion) {
+		log.Panic("DeserializePrivate expected xprv prefix")
+	}
+
 	return &PrivateKey{
 		key: *k,
 	}, nil
@@ -397,13 +417,18 @@ func DeserializePrivate(data []byte) (*PrivateKey, error) {
 
 // DeserializePublic deserializes a byte slice into a PublicKey
 func DeserializePublic(data []byte) (*PublicKey, error) {
-	k, err := deserialize(data)
+	k, err := deserialize(data, false)
 	if err != nil {
 		return nil, err
 	}
+
 	if len(k.Key) != 33 {
-		return nil, ErrInvalidPublicKeyBytesLength
+		log.Panic("DeserializePublic expected 33 bytes key length")
 	}
+	if !bytes.Equal(k.Version, PublicWalletVersion) {
+		log.Panic("DeserializePublic expected xpub prefix")
+	}
+
 	return &PublicKey{
 		key: *k,
 	}, nil
@@ -411,29 +436,66 @@ func DeserializePublic(data []byte) (*PublicKey, error) {
 
 // deserialize a byte slice into a Key.
 // If the Key.Key length is 32 bytes it is a private key, otherwise it is a public key.
-func deserialize(data []byte) (*key, error) {
+func deserialize(data []byte, wantPrivate bool) (*key, error) {
 	if len(data) != 82 {
 		return nil, ErrSerializedKeyWrongSize
+	}
+
+	// Validate checksum
+	cs1 := checksum(data[0 : len(data)-4])
+	cs2 := data[len(data)-4:]
+	if !bytes.Equal(cs1, cs2) {
+		return nil, ErrInvalidChecksum
 	}
 
 	k := &key{}
 	k.Version = data[0:4]
 	k.Depth = data[4]
-	k.Fingerprint = data[5:9]
-	k.ChildNumber = data[9:13]
+	k.ParentFingerprint = data[5:9]
+	k.childNumber = data[9:13]
 	k.ChainCode = data[13:45]
 
-	if data[45] == byte(0) {
-		k.Key = data[46:78]
-	} else {
-		k.Key = data[45:78]
+	isPrivate := bytes.Equal(k.Version, PrivateWalletVersion)
+	isPublic := bytes.Equal(k.Version, PublicWalletVersion)
+
+	if !isPrivate && !isPublic {
+		return nil, ErrInvalidKeyVersion
 	}
 
-	// validate checksum
-	cs1 := checksum(data[0 : len(data)-4])
-	cs2 := data[len(data)-4:]
-	if !bytes.Equal(cs1, cs2) {
-		return nil, ErrInvalidChecksum
+	if wantPrivate && !isPrivate {
+		return nil, ErrInvalidPrivateKeyVersion
+	}
+
+	if !wantPrivate && !isPublic {
+		return nil, ErrInvalidPublicKeyVersion
+	}
+
+	// Master keys (depth=0) have an empty fingerprint and a ChildNumber of 0
+	if k.Depth == 0 {
+		var emptyBytes [4]byte
+		if !bytes.Equal(k.ParentFingerprint, emptyBytes[:]) {
+			return nil, ErrInvalidFingerprint
+		}
+
+		if k.ChildNumber() != 0 {
+			return nil, ErrInvalidChildNumber
+		}
+	}
+
+	// Private keys must have a 0 byte prefix padding
+	if isPrivate {
+		if data[45] != 0 {
+			return nil, ErrInvalidPrivateKey
+		}
+		k.Key = data[46:78]
+		if err := validatePrivateKey(k.Key); err != nil {
+			return nil, ErrInvalidPrivateKey
+		}
+	} else {
+		k.Key = data[45:78]
+		if err := validatePublicKey(k.Key); err != nil {
+			return nil, ErrInvalidPublicKey
+		}
 	}
 
 	return k, nil

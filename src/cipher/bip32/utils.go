@@ -8,16 +8,9 @@ import (
 	"log"
 	"math/big"
 
-	btcutil "github.com/FactomProject/btcutilecc"
-
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	secp256k1go "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
-)
-
-var (
-	curve       = btcutil.Secp256k1()
-	curveParams = curve.Params()
 )
 
 //
@@ -155,12 +148,12 @@ var emptyPrivateKey [32]byte
 func validatePrivateKey(key []byte) error {
 	// VerifySeckey checks that the key is > 0 and inside the curve
 	if secp256k1.VerifySeckey(key) != 1 {
-		return ErrInvalidPrivateKey
+		return ErrDerivedInvalidPrivateKey
 	}
 
-	// TODO -- possibly redundant; VerifySeckey checks if the key is 0
+	// This is probably redundant; VerifySeckey checks if the key is 0
 	if bytes.Equal(key, emptyPrivateKey[:]) {
-		return ErrInvalidPrivateKey
+		return ErrDerivedInvalidPrivateKey
 	}
 
 	return nil
@@ -171,7 +164,7 @@ func validatePublicKey(key []byte) error {
 	// Is the Sign() check something special to bip32 child public keys,
 	// or is it a general check for all public keys?
 	if secp256k1.VerifyPubkey(key) != 1 {
-		return ErrInvalidPublicKey
+		return ErrDerivedInvalidPublicKey
 	}
 
 	return nil

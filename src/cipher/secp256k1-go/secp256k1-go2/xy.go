@@ -217,7 +217,8 @@ int static secp256k1_ge_set_xo(secp256k1_ge_t *r, const secp256k1_fe_t *x, int o
 }
 */
 
-// SetXO sets
+// SetXO sets the X and Y field from an X value and flag indicating whether or
+// not Y is odd.
 func (xy *XY) SetXO(X *Field, odd bool) {
 	var c, x2, x3 Field
 	xy.X = *X

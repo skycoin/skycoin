@@ -19,6 +19,7 @@ export interface HwPinDialogParams {
 export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogComponent> implements OnInit {
   form: FormGroup;
   changePinStates = ChangePinStates;
+  buttonsContent = '•';
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: HwPinDialogParams,

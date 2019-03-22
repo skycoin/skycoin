@@ -16,7 +16,7 @@ func addresscountCmd() *cobra.Command {
 	}
 }
 
-func getAddresscount(_ *cobra.Command, args []string) error {
+func getAddresscount(_ *cobra.Command, _ []string) error {
 	addresscount, err := apiClient.AddressCount()
 	if err != nil {
 		return err

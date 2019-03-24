@@ -7,7 +7,7 @@
     "electron-context-menu": "^0.9.1",
     "electron-debug": "^1.5.0",
     "rxjs": "^5.5.12",
-    "hardware-wallet-js": "git+https://git@github.com/skycoin/hardware-wallet-js.git#b56e7f5"
+    "hardware-wallet-js": "git+https://git@github.com/skycoin/hardware-wallet-js.git#953ffc8"
   },
   "devDependencies": {
     "electron-rebuild": "^1.8.2"

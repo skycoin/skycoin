@@ -29,16 +29,16 @@ var (
 	// ErrPathChildMaster HD wallet path contains m in a child node
 	ErrPathChildMaster = errors.New("Path contains m as a child node")
 	// ErrPathNodeNotNumber HD wallet path node is not a valid uint32 number
-	ErrPathNodeNotNumber = errors.new("Path node is not a valid uint32 number")
+	ErrPathNodeNotNumber = errors.New("Path node is not a valid uint32 number")
 	// ErrPathNodeNumberTooLarge HD wallet path node is >= 2^31
 	ErrPathNodeNumberTooLarge = errors.New("Path node must be less than 2^31")
 )
 
-// ParsePath parses a bip32 HD wallet path
+// ParsePath parses a bip32 HD wallet path. The path must start with m/.
 func ParsePath(p string) (*Path, error) {
 	pts := strings.Split(p, "/")
 
-	out := &Path{
+	path := &Path{
 		Elements: []PathNode{
 			{
 				Master:      true,
@@ -63,7 +63,7 @@ func ParsePath(p string) (*Path, error) {
 			return nil, err
 		}
 
-		out.Elements = append(out.Elements, n)
+		path.Elements = append(path.Elements, n)
 	}
 
 	return path, nil
@@ -84,23 +84,25 @@ func parseNode(x string) (PathNode, error) {
 	}
 
 	// Node number must be <2^31. If hardened, 2^31 will be added to it
-	if n >= FirstHardenedChild {
+	if n >= uint64(FirstHardenedChild) {
 		return PathNode{}, ErrPathNodeNumberTooLarge
 	}
 
+	nn := uint32(n)
+
 	// Add 2^31 to the base number for hardened nodes
 	if hardened {
-		nn := n + FirstHardenedChild
+		nnn := nn + FirstHardenedChild
 
 		// Sanity check
-		if nn < n {
+		if nnn < nn {
 			log.Panic("Unexpected overflow of path number when adjusting hardened child number")
 		}
-		n = nn
+		nn = nnn
 	}
 
 	return PathNode{
 		Master:      false,
-		ChildNumber: n,
+		ChildNumber: nn,
 	}, nil
 }

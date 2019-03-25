@@ -143,6 +143,57 @@ func newMasterKey(seed []byte) (*PrivateKey, error) {
 
 }
 
+// NewPrivateKeyFromPath returns a private key at a given bip32 path.
+// The path must be a full path starting with m/, and the initial seed
+// must be provided.
+func NewPrivateKeyFromPath(seed []byte, p string) (*PrivateKey, error) {
+	path, err := ParsePath(p)
+	if err != nil {
+		return nil, err
+	}
+
+	k, err := NewMasterKey(seed)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(path.Elements) > 1 {
+		return k.DeriveSubpath(path.Elements[1:])
+	}
+
+	return k, nil
+}
+
+// DeriveSubpath derives a PrivateKey at at bip32 subpath, e.g. `0'/1'/0`.
+// The nodes argument must not be empty.
+func (k *PrivateKey) DeriveSubpath(nodes []PathNode) (*PrivateKey, error) {
+	if len(nodes) == 0 {
+		return nil, errors.New("Path nodes array empty when deriving a bip32 subpath")
+	}
+
+	ck, err := k.newPrivateChildKeyFromPathNode(nodes[0])
+	if err != nil {
+		return nil, err
+	}
+
+	for _, e := range nodes[1:] {
+		ck, err = ck.newPrivateChildKeyFromPathNode(e)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ck, nil
+}
+
+func (k *PrivateKey) newPrivateChildKeyFromPathNode(n PathNode) (*PrivateKey, error) {
+	if n.Master {
+		return nil, errors.New("PathNode is Master at a non-zero depth")
+	}
+
+	return k.NewPrivateChildKey(n.ChildNumber)
+}
+
 // PublicKey returns the public version of key or return a copy
 // The 'Neuter' function from the bip32 spec, N((k, c) -> (K, c).
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#private-parent-key--public-child-key

@@ -308,7 +308,7 @@ func testVectorKeyPairs(t *testing.T, vector testMasterKey) {
 	require.Equal(t, privKey, privKey2)
 
 	// Iterate over the entire child chain and test the given keys
-	for i, testChildKey := range vector.children {
+	for _, testChildKey := range vector.children {
 		t.Run(testChildKey.path, func(t *testing.T) {
 			// Get the private key at the given key tree path
 			privKey, err := NewPrivateKeyFromPath(seed, testChildKey.path)

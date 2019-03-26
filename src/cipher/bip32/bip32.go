@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/skycoin/skycoin/src/cipher/base58"
@@ -23,6 +24,27 @@ const (
 	masterKey = "Bitcoin seed"
 )
 
+// Error wraps bip32 errors
+type Error struct {
+	error
+}
+
+// NewError creates an Error
+func NewError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return Error{err}
+}
+
+// NewImpossibleChildError creates an error for the case where a given child number
+// cannot produce a valid key.
+// If the caller receives this error, they should skip this child and go to the next number.
+// The probability of this happening is less than 1 in 2^127.
+func NewImpossibleChildError(err error, childNumber uint32) error {
+	return NewError(fmt.Errorf("childNumber=%d %v", childNumber, err))
+}
+
 var (
 	// PrivateWalletVersion is the version flag for serialized private keys ("xpriv")
 	PrivateWalletVersion = []byte{0x04, 0x88, 0xAD, 0xE4}
@@ -32,47 +54,47 @@ var (
 
 	// ErrSerializedKeyWrongSize is returned when trying to deserialize a key that
 	// has an incorrect length
-	ErrSerializedKeyWrongSize = errors.New("Serialized keys should by exactly 82 bytes")
+	ErrSerializedKeyWrongSize = NewError(errors.New("Serialized keys should by exactly 82 bytes"))
 
 	// ErrHardenedChildPublicKey is returned when trying to create a harded child
 	// of the public key
-	ErrHardenedChildPublicKey = errors.New("Can't create hardened child for public key")
+	ErrHardenedChildPublicKey = NewError(errors.New("Can't create hardened child for public key"))
 
 	// ErrInvalidChecksum is returned when deserializing a key with an incorrect checksum
-	ErrInvalidChecksum = errors.New("Checksum doesn't match")
+	ErrInvalidChecksum = NewError(errors.New("Checksum doesn't match"))
 
 	// ErrDerivedInvalidPrivateKey is returned when an invalid private key was derived
-	ErrDerivedInvalidPrivateKey = errors.New("Derived invalid private key")
+	ErrDerivedInvalidPrivateKey = NewError(errors.New("Derived invalid private key"))
 
 	// ErrDerivedInvalidPublicKey is returned when an invalid public key was derived
-	ErrDerivedInvalidPublicKey = errors.New("Derived invalid public key")
+	ErrDerivedInvalidPublicKey = NewError(errors.New("Derived invalid public key"))
 
 	// ErrInvalidPrivateKeyVersion is returned when a deserializing a private key without the 'xprv' prefix
-	ErrInvalidPrivateKeyVersion = errors.New("Invalid private key version")
+	ErrInvalidPrivateKeyVersion = NewError(errors.New("Invalid private key version"))
 
 	// ErrInvalidPublicKeyVersion is returned when a deserializing a public key without the 'xpub' prefix
-	ErrInvalidPublicKeyVersion = errors.New("Invalid public key version")
+	ErrInvalidPublicKeyVersion = NewError(errors.New("Invalid public key version"))
 
 	// ErrInvalidSeedLength is returned when generating a master key with an invalid number of seed bits
-	ErrInvalidSeedLength = errors.New("Invalid master key seed length")
+	ErrInvalidSeedLength = NewError(errors.New("Invalid master key seed length"))
 
 	// ErrDeserializePrivateFromPublic attempted to deserialize a private key from an encoded public key
-	ErrDeserializePrivateFromPublic = errors.New("Cannot deserialize a private key from a public key")
+	ErrDeserializePrivateFromPublic = NewError(errors.New("Cannot deserialize a private key from a public key"))
 
 	// ErrInvalidKeyVersion is returned if the key version is not 'xpub' or 'xprv'
-	ErrInvalidKeyVersion = errors.New("Invalid key version")
+	ErrInvalidKeyVersion = NewError(errors.New("Invalid key version"))
 
 	// ErrInvalidFingerprint is returned if a deserialized key has an invalid fingerprint
-	ErrInvalidFingerprint = errors.New("Invalid key fingerprint")
+	ErrInvalidFingerprint = NewError(errors.New("Invalid key fingerprint"))
 
 	// ErrInvalidChildNumber is returned if a deserialized key has an invalid child number
-	ErrInvalidChildNumber = errors.New("Invalid key child number")
+	ErrInvalidChildNumber = NewError(errors.New("Invalid key child number"))
 
 	// ErrInvalidPrivateKey is returned if a deserialized xprv key's private key is invalid
-	ErrInvalidPrivateKey = errors.New("Invalid private key")
+	ErrInvalidPrivateKey = NewError(errors.New("Invalid private key"))
 
 	// ErrInvalidPublicKey is returned if a deserialized xpub key's public key is invalid
-	ErrInvalidPublicKey = errors.New("Invalid public key")
+	ErrInvalidPublicKey = NewError(errors.New("Invalid public key"))
 )
 
 // key represents a bip32 extended key
@@ -140,7 +162,6 @@ func newMasterKey(seed []byte) (*PrivateKey, error) {
 	}
 
 	return key, nil
-
 }
 
 // NewPrivateKeyFromPath returns a private key at a given bip32 path.
@@ -260,11 +281,9 @@ func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
 
 	// ki = parse256(IL) + kpar (mod n)
 	// In case parse256(IL) ≥ n or ki = 0, the resulting key is invalid
-	// TODO -- bip32 says we should move to the next childIdx if this fails, need to return a value
-	// that can be identified as this particular failure so the caller knows to retrys
 	newKey, err := addPrivateKeys(iL, k.Key)
 	if err != nil {
-		return nil, err
+		return nil, NewImpossibleChildError(err, childIdx)
 	}
 
 	return &PrivateKey{
@@ -304,11 +323,9 @@ func (k *PublicKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 
 	// CKDPub step 3: Ki = point(parse256(IL)) + Kpar
 	// CKDPub step 5: In case parse256(IL) ≥ n or Ki is the point at infinity, the resulting key is invalid
-	// TODO -- bip32 says we should move to the next childIdx if this fails, need to return a value
-	// that can be identified as this particular failure so the caller knows to retrys
 	keyBytes, err := publicKeyForPrivateKey(iL)
 	if err != nil {
-		return nil, err
+		return nil, NewImpossibleChildError(err, childIdx)
 	}
 
 	// CKDPub step 4

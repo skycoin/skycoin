@@ -17,9 +17,6 @@ const (
 	// bip32 spec
 	FirstHardenedChild = uint32(0x80000000)
 
-	// publicKeyCompressedLength is the byte count of a compressed public key
-	publicKeyCompressedLength = 33
-
 	// masterKey is the "Key" value specified by bip32 for the master key
 	masterKey = "Bitcoin seed"
 )

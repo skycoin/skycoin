@@ -87,7 +87,9 @@ func TestSigVerify(t *testing.T) {
 		t.Fail()
 	}
 
-	key.ParsePubkey(xy)
+	if err := key.ParsePubkey(xy); err != nil {
+		t.Errorf("ParsePubkey failed: %v", err)
+	}
 	if !sig.Verify(&key, &msg) {
 		t.Error("sig.Verify 2")
 	}

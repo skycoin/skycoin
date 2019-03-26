@@ -305,7 +305,7 @@ func testVectorKeyPairs(t *testing.T, vector testMasterKey) {
 
 	b58pk, err := base58.Decode(vector.privKey)
 	require.NoError(t, err)
-	privKey2, err := DeserializePrivate(b58pk)
+	privKey2, err := DeserializePrivateKey(b58pk)
 	require.NoError(t, err)
 	require.Equal(t, privKey, privKey2)
 
@@ -319,10 +319,10 @@ func testVectorKeyPairs(t *testing.T, vector testMasterKey) {
 			// Get this private key's public key
 			pubKey := privKey.PublicKey()
 
-			// Test DeserializePrivate
+			// Test DeserializePrivateKey
 			ppk, err := base58.Decode(testChildKey.privKey)
 			require.NoError(t, err)
-			xx, err := DeserializePrivate(ppk)
+			xx, err := DeserializePrivateKey(ppk)
 			require.NoError(t, err)
 
 			require.Equal(t, xx, privKey)
@@ -364,13 +364,13 @@ func TestParentPublicChildDerivation(t *testing.T) {
 	extendedMasterPublicBytes, err := base58.Decode("xpub6DxSCdWu6jKqr4isjo7bsPeDD6s3J4YVQV1JSHZg12Eagdqnf7XX4fxqyW2sLhUoFWutL7tAELU2LiGZrEXtjVbvYptvTX5Eoa4Mamdjm9u")
 	require.NoError(t, err)
 
-	extendedMasterPublic, err := DeserializePublic(extendedMasterPublicBytes)
+	extendedMasterPublic, err := DeserializePublicKey(extendedMasterPublicBytes)
 	require.NoError(t, err)
 
 	extendedMasterPrivateBytes, err := base58.Decode("xprv9zy5o7z1GMmYdaeQdmabWFhUf52Ytbpe3G5hduA4SghboqWe7aDGWseN8BJy1GU72wPjkCbBE1hvbXYqpCecAYdaivxjNnBoSNxwYD4wHpW")
 	require.NoError(t, err)
 
-	extendedMasterPrivate, err := DeserializePrivate(extendedMasterPrivateBytes)
+	extendedMasterPrivate, err := DeserializePrivateKey(extendedMasterPrivateBytes)
 	require.NoError(t, err)
 
 	expectedChildren := []testChildKey{
@@ -600,7 +600,7 @@ func TestDeserializePrivateInvalidStrings(t *testing.T) {
 			b, err := base58.Decode(test.base58)
 			require.NoError(t, err)
 
-			_, err = DeserializePrivate(b)
+			_, err = DeserializePrivateKey(b)
 			require.Equal(t, test.err, err)
 		})
 	}
@@ -656,7 +656,7 @@ func TestDeserializePublicInvalidStrings(t *testing.T) {
 			b, err := base58.Decode(test.base58)
 			require.NoError(t, err)
 
-			_, err = DeserializePublic(b)
+			_, err = DeserializePublicKey(b)
 			require.Equal(t, test.err, err)
 		})
 	}
@@ -693,7 +693,7 @@ func assertPrivateKeySerialization(t *testing.T, key *PrivateKey, expected strin
 
 	require.Equal(t, expectedBytes, serialized)
 
-	key2, err := DeserializePrivate(serialized)
+	key2, err := DeserializePrivateKey(serialized)
 	require.NoError(t, err)
 
 	require.Equal(t, key, key2)
@@ -707,7 +707,7 @@ func assertPublicKeySerialization(t *testing.T, key *PublicKey, expected string)
 
 	require.Equal(t, expectedBytes, serialized)
 
-	key2, err := DeserializePublic(serialized)
+	key2, err := DeserializePublicKey(serialized)
 	require.NoError(t, err)
 
 	require.Equal(t, key, key2)

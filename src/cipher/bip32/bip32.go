@@ -1,3 +1,6 @@
+/*
+Package bip32 implements the bip32 spec https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
+*/
 package bip32
 
 import (
@@ -494,18 +497,18 @@ func (k *PublicKey) String() string {
 	return base58.Encode(k.Serialize())
 }
 
-// DeserializePrivate deserializes a byte slice into a PrivateKey
-func DeserializePrivate(data []byte) (*PrivateKey, error) {
+// DeserializePrivateKey deserializes a byte slice into a PrivateKey
+func DeserializePrivateKey(data []byte) (*PrivateKey, error) {
 	k, err := deserialize(data, true)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(k.Key) != 32 {
-		log.Panic("DeserializePrivate expected 32 bytes key length")
+		log.Panic("DeserializePrivateKey expected 32 bytes key length")
 	}
 	if !bytes.Equal(k.Version, PrivateWalletVersion) {
-		log.Panic("DeserializePrivate expected xprv prefix")
+		log.Panic("DeserializePrivateKey expected xprv prefix")
 	}
 
 	return &PrivateKey{
@@ -513,18 +516,18 @@ func DeserializePrivate(data []byte) (*PrivateKey, error) {
 	}, nil
 }
 
-// DeserializePublic deserializes a byte slice into a PublicKey
-func DeserializePublic(data []byte) (*PublicKey, error) {
+// DeserializePublicKey deserializes a byte slice into a PublicKey
+func DeserializePublicKey(data []byte) (*PublicKey, error) {
 	k, err := deserialize(data, false)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(k.Key) != 33 {
-		log.Panic("DeserializePublic expected 33 bytes key length")
+		log.Panic("DeserializePublicKey expected 33 bytes key length")
 	}
 	if !bytes.Equal(k.Version, PublicWalletVersion) {
-		log.Panic("DeserializePublic expected xpub prefix")
+		log.Panic("DeserializePublicKey expected xpub prefix")
 	}
 
 	return &PublicKey{

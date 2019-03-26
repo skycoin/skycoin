@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add metric from health info (`health_head_seq`, `health_head_fee`, `health_unspents`, `health_unconfirmed`, `health_open_connections`, `health_outgoing_connections`, `health_incoming_connections`, `health_user_verify_burn_factor`, `health_user_verify_max_transaction_size`, `health_user_verify_max_decimals`, `health_unconfirmed_verify_burn_factor`, `health_unconfirmed_verify_max_transaction_size`, `health_unconfirmed_verify_max_decimals`).
 - Add `-disable-header-check` flag to disable host/origin/referer header checks for the node APIs and add `header_check_enabled` parameter in `/health` endpoint.
 - Add CLI `checkDBDecoding` command to verify the `skyencoder`-generated binary decoders match the reflect-based decoder
 - Add `unsigned` option to `POST /api/v1/wallet/transaction` to create unsigned transactions from a wallet

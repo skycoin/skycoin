@@ -152,9 +152,6 @@ func validatePrivateKey(key []byte) error {
 }
 
 func validatePublicKey(key []byte) error {
-	// TODO -- does this check that the Sign() of each coordinate is not zero?
-	// Is the Sign() check something special to bip32 child public keys,
-	// or is it a general check for all public keys?
 	if secp256k1.VerifyPubkey(key) != 1 {
 		return ErrDerivedInvalidPublicKey
 	}

@@ -37,6 +37,63 @@ type HealthResponse struct {
 	StartedAt            int64              `json:"started_at"`
 }
 
+func getHealthData(c muxConfig, gateway Gatewayer) (HealthResponse,  error) {
+	metadata, err := gateway.GetBlockchainMetadata()
+	if err != nil {
+		err = fmt.Errorf("gateway.GetBlockchainMetadata failed: %v", err)
+		return HealthResponse{}, err
+	}
+
+	conns, err := gateway.GetConnections(func(c daemon.Connection) bool {
+		return c.State != daemon.ConnectionStatePending
+	})
+	if err != nil {
+		err = fmt.Errorf("gateway.GetConnections failed: %v", err)
+		return HealthResponse{}, err
+	}
+
+	outgoingConns := 0
+	incomingConns := 0
+	for _, c := range conns {
+		if c.Outgoing {
+			outgoingConns++
+		} else {
+			incomingConns++
+		}
+	}
+
+	elapsedBlockTime := time.Now().UTC().Unix() - int64(metadata.HeadBlock.Head.Time)
+	timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
+
+	_, walletAPIEnabled := c.enabledAPISets[EndpointsWallet]
+
+	userAgent, err := c.health.DaemonUserAgent.Build()
+	if err != nil {
+		return HealthResponse{}, err
+	}
+	return HealthResponse{
+		BlockchainMetadata: BlockchainMetadata{
+			BlockchainMetadata: readable.NewBlockchainMetadata(*metadata),
+			TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
+		},
+		Version:              c.health.BuildInfo,
+		CoinName:             c.health.CoinName,
+		DaemonUserAgent:      userAgent,
+		OpenConnections:      len(conns),
+		OutgoingConnections:  outgoingConns,
+		IncomingConnections:  incomingConns,
+		CSRFEnabled:          !c.disableCSRF,
+		HeaderCheckEnabled:   !c.disableHeaderCheck,
+		CSPEnabled:           !c.disableCSP,
+		GUIEnabled:           c.enableGUI,
+		WalletAPIEnabled:     walletAPIEnabled,
+		UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
+		UnconfirmedVerifyTxn: readable.NewVerifyTxn(gateway.DaemonConfig().UnconfirmedVerifyTxn),
+		Uptime:               wh.FromDuration(time.Since(gateway.StartedAt())),
+		StartedAt:            gateway.StartedAt().Unix(),
+	}, nil
+}
+
 // healthHandler returns node health data
 // URI: /api/v1/health
 // Method: GET
@@ -46,64 +103,10 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
-
-		metadata, err := gateway.GetBlockchainMetadata()
-		if err != nil {
-			err = fmt.Errorf("gateway.GetBlockchainMetadata failed: %v", err)
+		if health, err := getHealthData(c, gateway); err != nil {
 			wh.Error500(w, err.Error())
-			return
+		} else {
+			wh.SendJSONOr500(logger, w, health)
 		}
-
-		conns, err := gateway.GetConnections(func(c daemon.Connection) bool {
-			return c.State != daemon.ConnectionStatePending
-		})
-		if err != nil {
-			err = fmt.Errorf("gateway.GetConnections failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		outgoingConns := 0
-		incomingConns := 0
-		for _, c := range conns {
-			if c.Outgoing {
-				outgoingConns++
-			} else {
-				incomingConns++
-			}
-		}
-
-		elapsedBlockTime := time.Now().UTC().Unix() - int64(metadata.HeadBlock.Head.Time)
-		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
-
-		_, walletAPIEnabled := c.enabledAPISets[EndpointsWallet]
-
-		userAgent, err := c.health.DaemonUserAgent.Build()
-		if err != nil {
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		wh.SendJSONOr500(logger, w, HealthResponse{
-			BlockchainMetadata: BlockchainMetadata{
-				BlockchainMetadata: readable.NewBlockchainMetadata(*metadata),
-				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
-			},
-			Version:              c.health.BuildInfo,
-			CoinName:             c.health.CoinName,
-			DaemonUserAgent:      userAgent,
-			OpenConnections:      len(conns),
-			OutgoingConnections:  outgoingConns,
-			IncomingConnections:  incomingConns,
-			CSRFEnabled:          !c.disableCSRF,
-			HeaderCheckEnabled:   !c.disableHeaderCheck,
-			CSPEnabled:           !c.disableCSP,
-			GUIEnabled:           c.enableGUI,
-			WalletAPIEnabled:     walletAPIEnabled,
-			UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
-			UnconfirmedVerifyTxn: readable.NewVerifyTxn(gateway.DaemonConfig().UnconfirmedVerifyTxn),
-			Uptime:               wh.FromDuration(time.Since(gateway.StartedAt())),
-			StartedAt:            gateway.StartedAt().Unix(),
-		})
 	}
 }

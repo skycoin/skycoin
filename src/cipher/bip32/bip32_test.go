@@ -1175,10 +1175,16 @@ func TestImpossibleChildError(t *testing.T) {
 		t.Fatal("Expected err type Error")
 	}
 
+	require.True(t, IsImpossibleChildError(err))
+
 	switch x := ErrHardenedChildPublicKey.(type) {
 	case Error:
 		require.False(t, x.ImpossibleChild())
 	default:
 		t.Fatal("Expected err type Error")
 	}
+
+	require.False(t, IsImpossibleChildError(ErrHardenedChildPublicKey))
+
+	require.False(t, IsImpossibleChildError(nil))
 }

@@ -59,6 +59,20 @@ func NewImpossibleChildError(err error, childNumber uint32) error {
 	}
 }
 
+// IsImpossibleChildError returns true if the error is an ImpossibleChild Error
+func IsImpossibleChildError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	switch t := err.(type) {
+	case Error:
+		return t.ImpossibleChild()
+	default:
+		return false
+	}
+}
+
 var (
 	// PrivateWalletVersion is the version flag for serialized private keys ("xpriv")
 	PrivateWalletVersion = []byte{0x04, 0x88, 0xAD, 0xE4}
@@ -181,6 +195,7 @@ func newMasterKey(seed []byte) (*PrivateKey, error) {
 // NewPrivateKeyFromPath returns a private key at a given bip32 path.
 // The path must be a full path starting with m/, and the initial seed
 // must be provided.
+// This method can return an ImpossibleChild error.
 func NewPrivateKeyFromPath(seed []byte, p string) (*PrivateKey, error) {
 	path, err := ParsePath(p)
 	if err != nil {
@@ -201,6 +216,7 @@ func NewPrivateKeyFromPath(seed []byte, p string) (*PrivateKey, error) {
 
 // DeriveSubpath derives a PrivateKey at at bip32 subpath, e.g. `0'/1'/0`.
 // The nodes argument must not be empty.
+// This method can return an ImpossibleChild error.
 func (k *PrivateKey) DeriveSubpath(nodes []PathNode) (*PrivateKey, error) {
 	if len(nodes) == 0 {
 		return nil, errors.New("Path nodes array empty when deriving a bip32 subpath")
@@ -287,6 +303,7 @@ func fingerprint(key []byte) []byte {
 
 // NewPrivateChildKey derives a private child key from a given parent as outlined by bip32, CDKpriv().
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#private-parent-key--private-child-key
+// This method can return an ImpossibleChild error.
 func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
 	intermediary := k.ckdPrivHMAC(childIdx)
 
@@ -314,6 +331,7 @@ func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
 
 // NewPublicChildKey derives a public child key from an extended public key, N(CKDpriv()).
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#private-parent-key--public-child-key
+// This method can return an ImpossibleChild error.
 func (k *PrivateKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 	k2, err := k.NewPrivateChildKey(childIdx)
 	if err != nil {
@@ -325,6 +343,7 @@ func (k *PrivateKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 // NewPublicChildKey derives a public child key from an extended public key, CKDpub().
 // Hardened child keys cannot be derived; the value of childIdx must be less than 2^31.
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#public-parent-key--public-child-key
+// This method can return an ImpossibleChild error.
 func (k *PublicKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 	// CKDPub step 1
 	intermediary, err := k.ckdPubHMAC(childIdx)

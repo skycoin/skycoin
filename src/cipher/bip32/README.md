@@ -9,7 +9,8 @@ Modified for use in Skycoin, derived from https://github.com/tyler-smith/go-bip3
 ## Example
 
 It's very unlikely, but possible, that a given index does not produce a valid
-private key. Error checking is skipped in this example for brevity but should be handled in real code. In such a case, a ErrInvalidPrivateKey is returned.
+private key. Error checking is skipped in this example for brevity but should be
+handled in real code. In such a case, an error of type  `ImpossibleChildError` is returned.
 
 ErrInvalidPrivateKey should be handled by trying the next index for a child key.
 

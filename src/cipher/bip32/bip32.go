@@ -27,22 +27,36 @@ const (
 // Error wraps bip32 errors
 type Error struct {
 	error
+	impossibleChild bool
 }
 
 // NewError creates an Error
 func NewError(err error) error {
 	if err == nil {
-		return nil
+		log.Panic("NewError called with nil error")
 	}
-	return Error{err}
+	return Error{
+		error: err,
+	}
 }
 
-// NewImpossibleChildError creates an error for the case where a given child number
-// cannot produce a valid key.
+// ImpossibleChild returns true if this error indicates
+// that a given child number cannot produce a valid key.
 // If the caller receives this error, they should skip this child and go to the next number.
 // The probability of this happening is less than 1 in 2^127.
+func (err Error) ImpossibleChild() bool {
+	return err.impossibleChild
+}
+
+// NewImpossibleChildError creates an Error flagged as an ImpossibleChild error
 func NewImpossibleChildError(err error, childNumber uint32) error {
-	return NewError(fmt.Errorf("childNumber=%d %v", childNumber, err))
+	if err == nil {
+		log.Panic("NewImpossibleChildError called with nil error")
+	}
+	return Error{
+		error:           fmt.Errorf("childNumber=%d %v", childNumber, err),
+		impossibleChild: true,
+	}
 }
 
 var (

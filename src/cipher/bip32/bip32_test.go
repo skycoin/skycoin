@@ -2,6 +2,7 @@ package bip32
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -1158,5 +1159,26 @@ func TestParsePath(t *testing.T) {
 				require.Equal(t, ok, n.Hardened())
 			}
 		})
+	}
+}
+
+func TestImpossibleChildError(t *testing.T) {
+	baseErr := errors.New("foo")
+	childNumber := uint32(4)
+
+	err := NewImpossibleChildError(baseErr, childNumber)
+
+	switch x := err.(type) {
+	case Error:
+		require.True(t, x.ImpossibleChild())
+	default:
+		t.Fatal("Expected err type Error")
+	}
+
+	switch x := ErrHardenedChildPublicKey.(type) {
+	case Error:
+		require.False(t, x.ImpossibleChild())
+	default:
+		t.Fatal("Expected err type Error")
 	}
 }

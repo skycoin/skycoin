@@ -1,7 +1,6 @@
 package bip32
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
@@ -80,20 +79,20 @@ func publicKeyForPrivateKey(key []byte) ([]byte, error) {
 	return b, nil
 }
 
-func addPublicKeys(key1, key2 []byte) ([]byte, error) {
-	if err := validatePublicKey(key1); err != nil {
-		return nil, fmt.Errorf("addPublicKeys: invalid key1: %v", err)
+func addPublicKeys(key, keyPar []byte) ([]byte, error) {
+	if code := secp256k1.VerifyPubkey(key); code != 1 {
+		return nil, fmt.Errorf("addPublicKeys: key is invalid, secp256k1.VerifyPubkey error code %d", code)
 	}
-	if err := validatePublicKey(key2); err != nil {
-		return nil, fmt.Errorf("addPublicKeys: invalid key2: %v", err)
+	if code := secp256k1.VerifyPubkey(keyPar); code != 1 {
+		return nil, fmt.Errorf("addPublicKeys: keyPar is invalid, secp256k1.VerifyPubkey error code %d", code)
 	}
 
 	// expandPublicKey
 	var pk1, pk2 secp256k1go.XY
-	if err := pk1.ParsePubkey(key1); err != nil {
+	if err := pk1.ParsePubkey(key); err != nil {
 		log.Panicf("addPublicKeys: invalid pubkey1: %v", err)
 	}
-	if err := pk2.ParsePubkey(key2); err != nil {
+	if err := pk2.ParsePubkey(keyPar); err != nil {
 		log.Panicf("addPublicKeys: invalid pubkey1: %v", err)
 	}
 
@@ -103,8 +102,8 @@ func addPublicKeys(key1, key2 []byte) ([]byte, error) {
 	// compress
 	newKey := pk1.Bytes()
 
-	if err := validatePublicKey(newKey); err != nil {
-		return nil, fmt.Errorf("addPublicKeys: invalid newKey: %v", err)
+	if code := secp256k1.VerifyPubkey(newKey); code != 1 {
+		return nil, fmt.Errorf("addPublicKeys: newKey is invalid, secp256k1.VerifyPubkey error code %d", code)
 	}
 
 	return newKey, nil
@@ -114,11 +113,11 @@ func addPublicKeys(key1, key2 []byte) ([]byte, error) {
 // and verifies the result
 func addPrivateKeys(key, keyPar []byte) ([]byte, error) {
 	// From bip32: If parse256(IL) ≥ n, fail
-	if err := validatePrivateKey(key); err != nil {
-		return nil, fmt.Errorf("addPrivateKeys: key is invalid: %v", err)
+	if code := secp256k1.VerifySeckey(key); code != 1 {
+		return nil, fmt.Errorf("addPrivateKeys: key is invalid, secp256k1.VerifySeckey error code %d", code)
 	}
-	if err := validatePrivateKey(keyPar); err != nil {
-		return nil, fmt.Errorf("addPrivateKeys: keyPar is invalid: %v", err)
+	if code := secp256k1.VerifySeckey(keyPar); code != 1 {
+		return nil, fmt.Errorf("addPrivateKeys: keyPar is invalid, secp256k1.VerifySeckey error code %d", code)
 	}
 
 	var keyInt big.Int
@@ -131,28 +130,21 @@ func addPrivateKeys(key, keyPar []byte) ([]byte, error) {
 	keyInt.Add(&keyInt, &keyParInt)
 	keyInt.Mod(&keyInt, &secp256k1go.TheCurve.Order.Int)
 
-	k := secp256k1go.LeftPadBytes(keyInt.Bytes(), 32)
+	newKey := secp256k1go.LeftPadBytes(keyInt.Bytes(), 32)
 
 	// From bip32: If ki == 0 fail
-	if err := validatePrivateKey(k); err != nil {
-		return nil, err
+	if code := secp256k1.VerifySeckey(newKey); code != 1 {
+		return nil, fmt.Errorf("addPrivateKeys: newKey is invalid, secp256k1.VerifySeckey error code %d", code)
 	}
 
-	return k, nil
+	return newKey, nil
 }
-
-var emptyPrivateKey [32]byte
 
 // validatePrivateKey verifies that the secret key is not zero and that it is inside the curve
 // Corresponds to bip32 spec constraints `parse256(IL) < n && ki != 0`
 func validatePrivateKey(key []byte) error {
 	// VerifySeckey checks that the key is > 0 and inside the curve
 	if secp256k1.VerifySeckey(key) != 1 {
-		return ErrDerivedInvalidPrivateKey
-	}
-
-	// This is probably redundant; VerifySeckey checks if the key is 0
-	if bytes.Equal(key, emptyPrivateKey[:]) {
 		return ErrDerivedInvalidPrivateKey
 	}
 

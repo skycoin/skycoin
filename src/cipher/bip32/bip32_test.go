@@ -3,6 +3,7 @@ package bip32
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -709,4 +710,453 @@ func assertPublicKeySerialization(t *testing.T, key *PublicKey, expected string)
 	require.NoError(t, err)
 
 	require.Equal(t, key, key2)
+}
+
+func TestValidatePrivateKey(t *testing.T) {
+	cases := []struct {
+		name string
+		key  []byte
+	}{
+		{
+			name: "null key",
+			key:  make([]byte, 32),
+		},
+
+		{
+			name: "nil key",
+			key:  nil,
+		},
+
+		{
+			name: "invalid length key",
+			key:  make([]byte, 30),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validatePrivateKey(tc.key)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestValidatePublicKey(t *testing.T) {
+	cases := []struct {
+		name string
+		key  []byte
+	}{
+		{
+			name: "null key",
+			key:  make([]byte, 33),
+		},
+
+		{
+			name: "nil key",
+			key:  nil,
+		},
+
+		{
+			name: "invalid length key",
+			key:  make([]byte, 30),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validatePublicKey(tc.key)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestAddPrivateKeys(t *testing.T) {
+	_, validKey := cipher.GenerateKeyPair()
+
+	cases := []struct {
+		name          string
+		key           []byte
+		keyPar        []byte
+		keyInvalid    bool
+		keyParInvalid bool
+	}{
+		{
+			name:       "null key",
+			key:        make([]byte, 32),
+			keyPar:     validKey[:],
+			keyInvalid: true,
+		},
+
+		{
+			name:       "nil key",
+			key:        nil,
+			keyPar:     validKey[:],
+			keyInvalid: true,
+		},
+
+		{
+			name:       "invalid length key",
+			key:        make([]byte, 30),
+			keyPar:     validKey[:],
+			keyInvalid: true,
+		},
+
+		{
+			name:          "null keyPar",
+			key:           validKey[:],
+			keyPar:        make([]byte, 32),
+			keyParInvalid: true,
+		},
+
+		{
+			name:          "nil keyPar",
+			key:           validKey[:],
+			keyPar:        nil,
+			keyParInvalid: true,
+		},
+
+		{
+			name:          "invalid length keyPar",
+			key:           validKey[:],
+			keyPar:        make([]byte, 30),
+			keyParInvalid: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := addPrivateKeys(tc.key, tc.keyPar)
+			require.Error(t, err)
+
+			if tc.keyInvalid && tc.keyParInvalid {
+				t.Fatal("keyInvalid and keyParInvalid can't both be true")
+			}
+
+			if tc.keyInvalid {
+				require.True(t, strings.HasPrefix(err.Error(), "addPrivateKeys: key is invalid"), err.Error())
+			} else {
+				require.True(t, strings.HasPrefix(err.Error(), "addPrivateKeys: keyPar is invalid"), err.Error())
+			}
+		})
+	}
+}
+
+func TestAddPublicKeys(t *testing.T) {
+	validKey, _ := cipher.GenerateKeyPair()
+
+	cases := []struct {
+		name          string
+		key           []byte
+		keyPar        []byte
+		keyInvalid    bool
+		keyParInvalid bool
+	}{
+		{
+			name:       "null key",
+			key:        make([]byte, 33),
+			keyPar:     validKey[:],
+			keyInvalid: true,
+		},
+
+		{
+			name:       "nil key",
+			key:        nil,
+			keyPar:     validKey[:],
+			keyInvalid: true,
+		},
+
+		{
+			name:       "invalid length key",
+			key:        make([]byte, 30),
+			keyPar:     validKey[:],
+			keyInvalid: true,
+		},
+
+		{
+			name:          "null keyPar",
+			key:           validKey[:],
+			keyPar:        make([]byte, 33),
+			keyParInvalid: true,
+		},
+
+		{
+			name:          "nil keyPar",
+			key:           validKey[:],
+			keyPar:        nil,
+			keyParInvalid: true,
+		},
+
+		{
+			name:          "invalid length keyPar",
+			key:           validKey[:],
+			keyPar:        make([]byte, 30),
+			keyParInvalid: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := addPublicKeys(tc.key, tc.keyPar)
+			require.Error(t, err)
+
+			if tc.keyInvalid && tc.keyParInvalid {
+				t.Fatal("keyInvalid and keyParInvalid can't both be true")
+			}
+
+			if tc.keyInvalid {
+				require.True(t, strings.HasPrefix(err.Error(), "addPublicKeys: key is invalid"), err.Error())
+			} else {
+				require.True(t, strings.HasPrefix(err.Error(), "addPublicKeys: keyPar is invalid"), err.Error())
+			}
+		})
+	}
+}
+
+func TestPublicKeyForPrivateKey(t *testing.T) {
+
+	cases := []struct {
+		name string
+		key  []byte
+	}{
+		{
+			name: "null key",
+			key:  make([]byte, 33),
+		},
+
+		{
+			name: "nil key",
+			key:  nil,
+		},
+
+		{
+			name: "invalid length key",
+			key:  make([]byte, 30),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := publicKeyForPrivateKey(tc.key)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestNewPrivateKeyFromPath(t *testing.T) {
+	cases := []struct {
+		seed string
+		path string
+		key  string
+		err  error
+	}{
+		{
+			seed: "6162636465666768696A6B6C6D6E6F707172737475767778797A",
+			path: "m",
+			key:  "xprv9s21ZrQH143K3GfuLFf1UxUB4GzmFav1hrzTG1bPorBTejryu4YfYVxZn6LNmwfvsi6uj1Wyv9vLDPsfKDuuqwEqYier1ZsbgWVd9NCieNv",
+		},
+
+		{
+			seed: "6162636465666768696A6B6C6D6E6F707172737475767778797A",
+			path: "m/1'",
+			key:  "xprv9uWf8oyvCHcAUg3kSjSroz67s7M3qJRWmNcdVwYGf91GFsaAatsVVp1bjH7z3WiWevqB7WK92B415oBwcahjoMvvb4mopPyqZUDeVW4168c",
+		},
+
+		{
+			seed: "6162636465666768696A6B6C6D6E6F707172737475767778797A",
+			path: "m/1'/foo",
+			err:  ErrPathNodeNotNumber,
+		},
+
+		{
+			seed: "6162",
+			path: "m/1'",
+			err:  ErrInvalidSeedLength,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.path, func(t *testing.T) {
+			seed, err := hex.DecodeString(tc.seed)
+			require.NoError(t, err)
+
+			k, err := NewPrivateKeyFromPath(seed, tc.path)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.key, k.String())
+		})
+	}
+}
+
+func TestParsePath(t *testing.T) {
+	cases := []struct {
+		path           string
+		err            error
+		p              *Path
+		hardenedDepths []int
+	}{
+		{
+			path: "m",
+			p: &Path{
+				Elements: []PathNode{{
+					Master:      true,
+					ChildNumber: 0,
+				}},
+			},
+		},
+
+		{
+			path: "m/0",
+			p: &Path{
+				Elements: []PathNode{{
+					Master:      true,
+					ChildNumber: 0,
+				}, {
+					ChildNumber: 0,
+				}},
+			},
+		},
+
+		{
+			path: "m/0'",
+			p: &Path{
+				Elements: []PathNode{{
+					Master:      true,
+					ChildNumber: 0,
+				}, {
+					ChildNumber: FirstHardenedChild,
+				}},
+			},
+			hardenedDepths: []int{1},
+		},
+
+		{
+			path: "m/2147483647",
+			p: &Path{
+				Elements: []PathNode{{
+					Master:      true,
+					ChildNumber: 0,
+				}, {
+					ChildNumber: 2147483647,
+				}},
+			},
+		},
+
+		{
+			path: "m/2147483647'",
+			p: &Path{
+				Elements: []PathNode{{
+					Master:      true,
+					ChildNumber: 0,
+				}, {
+					ChildNumber: 4294967295,
+				}},
+			},
+			hardenedDepths: []int{1},
+		},
+
+		{
+			path: "m/1'/1",
+			p: &Path{
+				Elements: []PathNode{{
+					Master:      true,
+					ChildNumber: 0,
+				}, {
+					ChildNumber: FirstHardenedChild + 1,
+				}, {
+					ChildNumber: 1,
+				}},
+			},
+			hardenedDepths: []int{1},
+		},
+
+		{
+			path: "m/44'/0'/0'/0/0'",
+			p: &Path{
+				Elements: []PathNode{{
+					Master:      true,
+					ChildNumber: 0,
+				}, {
+					ChildNumber: FirstHardenedChild + 44,
+				}, {
+					ChildNumber: FirstHardenedChild,
+				}, {
+					ChildNumber: FirstHardenedChild,
+				}, {
+					ChildNumber: 0,
+				}, {
+					ChildNumber: FirstHardenedChild,
+				}},
+			},
+			hardenedDepths: []int{1, 2, 3, 5},
+		},
+
+		{
+			path: "m'/1'/1",
+			err:  ErrPathNoMaster,
+		},
+
+		{
+			path: "foo",
+			err:  ErrPathNoMaster,
+		},
+
+		{
+			path: "1'/1",
+			err:  ErrPathNoMaster,
+		},
+
+		{
+			path: "m/1\"/1",
+			err:  ErrPathNodeNotNumber,
+		},
+
+		{
+			path: "m/1'/f/1",
+			err:  ErrPathNodeNotNumber,
+		},
+
+		{
+			path: "m/1'/m/1",
+			err:  ErrPathChildMaster,
+		},
+
+		{
+			path: "m/1'/1/4294967296", // maxuint32+1
+			err:  ErrPathNodeNotNumber,
+		},
+
+		{
+			path: "m/1'/1/2147483648", // maxint32+1
+			err:  ErrPathNodeNumberTooLarge,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.path, func(t *testing.T) {
+
+			p, err := ParsePath(tc.path)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.p, p)
+
+			hardenedDepthsMap := make(map[int]struct{}, len(tc.hardenedDepths))
+			for _, x := range tc.hardenedDepths {
+				hardenedDepthsMap[x] = struct{}{}
+			}
+
+			for i, n := range p.Elements {
+				_, ok := hardenedDepthsMap[i]
+				require.Equal(t, ok, n.Hardened())
+			}
+		})
+	}
 }

@@ -1,14 +1,16 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	wh "github.com/skycoin/skycoin/src/util/http"
-	"net/http"
 )
 
 var (
-	promMetricHealthSeq = prometheus.NewCounter(prometheus.CounterOpts{
+	promMetricHealthSeq = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "health_head_seq",
 		Help: "Health -> head sequence in the block chain",
 	})

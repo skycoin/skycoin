@@ -37,7 +37,7 @@ type HealthResponse struct {
 	StartedAt            int64              `json:"started_at"`
 }
 
-func getHealthData(c muxConfig, gateway Gatewayer) (HealthResponse,  error) {
+func getHealthData(c muxConfig, gateway Gatewayer) (HealthResponse, error) {
 	metadata, err := gateway.GetBlockchainMetadata()
 	if err != nil {
 		err = fmt.Errorf("gateway.GetBlockchainMetadata failed: %v", err)

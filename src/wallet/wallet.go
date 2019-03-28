@@ -26,6 +26,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
+
+	"github.com/skycoin/cx/cx"
 )
 
 // Error wraps wallet related errors
@@ -1257,6 +1259,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 	}
 
 	txn := &coin.Transaction{}
+	txn.MainExpressions = p.MainExpressions
 
 	// Determine which unspents to spend
 	uxa := auxs.Flatten()
@@ -1489,7 +1492,33 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			}
 		}
 
-		txn.PushOutput(changeAddress, changeCoins, changeHours, []byte{})
+		// for _, spend := range spends {
+		// 	for _, ux := range auxs[spend.Address] {
+		// 		logger.Info("HEREEEEE")
+		// 		logger.Info(ux.Body.ProgramState)
+		// 		logger.Info(p.MainExpressions)
+
+		// 		prgrm := cx.Deserialize(cx.MergeTransactionAndBlockchain(ux.Body.ProgramState, p.MainExpressions))
+		// 		prgrm.RunCompiled(0, nil)
+		// 		s := cx.Serialize(prgrm, 1)
+		// 		cx.ExtractBlockchainProgram(ux.Body.ProgramState, s)
+
+		// 		// cx.Deserialize(cx.MergeTransactionAndBlockchain(
+		// 		// 	cx.ExtractBlockchainProgram(sPrgrm, s),
+		// 		// 	cx.ExtractTransactionProgram(sPrgrm, s))).RunCompiled(0, nil)
+		// 	}
+		// }
+
+		ux := auxs[spends[0].Address][0]
+		prgrm := cx.Deserialize(cx.MergeTransactionAndBlockchain(ux.Body.ProgramState, p.MainExpressions))
+		prgrm.RunCompiled(0, nil)
+		s := cx.Serialize(prgrm, 1)
+		updatedPS := cx.ExtractBlockchainProgram(ux.Body.ProgramState, s)
+
+		for i := range txn.Out {
+			txn.Out[i].ProgramState = updatedPS
+		}
+		txn.PushOutput(changeAddress, changeCoins, changeHours, updatedPS)
 	}
 
 	txn.SignInputs(toSign)

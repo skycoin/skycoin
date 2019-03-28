@@ -1,0 +1,32 @@
+package garbage2
+
+func coco () {
+	var cucu i32
+	// i32.print(111)
+}
+
+package garbage
+
+// var pad1 i32
+// var pad2 i32
+// var pad3 i32
+
+package main
+import "bc"
+
+// var pad1 i32
+// var pad2 i32
+// var pad3 i32
+
+func main () {
+	// pad1 = 111
+	// i32.print(pad1)
+	bc.incCounter()
+	bc.incCounter()
+
+	// var slc []i32
+	// slc = append(slc, 123)
+	// slc = append(slc, 231)
+	// i32.print(slc[0])
+	// i32.print(slc[1])
+}

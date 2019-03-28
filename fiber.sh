@@ -5,7 +5,7 @@
 
 GENESIS_ADDRESS=23v7mT1uLpViNKZHh9aww4VChxizqKsNq4E
 BLOCKCHAIN_PUBKEY=02583e5ebbf85522474e0f17e681e62ca37910db6b8792763af4e97663c31a7984
-GENESIS_SIGNATURE=5acccead5a5bf19f293a5f7eaf5b9804826dcad76eaf4348dfb82d565933c1f56b232d184d8be7dcffe9403030f132ad2cd2b454b6ac58c0eca89f7da55d53ed00
+GENESIS_SIGNATURE=1041d799198bdc0c9167a26c26c3a51d130ddc6b5e42a1abbf1d65f9be9083515fa8ff5ef66dee3588038b4f790d8a2661afdbee17ed778e5924fbb6c105ecaa01
 
 if [ "$1" == "update" ]; then
     # go install -gcflags=all=-e ../fiber-init/cmd/fiber-init/...
@@ -34,7 +34,6 @@ fi
 if [ "$1" == "master" ]; then
     cxcoin -enable-all-api-sets \
            -block-publisher=true \
-           -blockchain-secret-key=$FIBERCOIN_GENESIS_SECKEY \
            -localhost-only \
 	   -disable-default-peers \
 	   -custom-peers-file=localhost-peers.txt \
@@ -42,6 +41,7 @@ if [ "$1" == "master" ]; then
 	   -launch-browser=false \
            -genesis-address $GENESIS_ADDRESS \
 	   -genesis-signature $GENESIS_SIGNATURE \
+	   -blockchain-secret-key=$FIBERCOIN_GENESIS_SECKEY \
 	   -blockchain-public-key $BLOCKCHAIN_PUBKEY \
 	   -max-txn-size-unconfirmed=200000 \
 	   -max-txn-size-create-block=200000 \
@@ -71,6 +71,10 @@ if [ "$1" == "ccx" ]; then
 fi
 
 if [ "$1" == "cxProgram" ]; then
+    rm -R ~/.cxcoin/
+    rm -R /tmp/6001/
+    rm -R /tmp/6002/
+    rm -R /tmp/6003/
     cx --blockchain --heap-initial 100 --stack-size 100 ../cx/bcTest.cx
 fi
 
@@ -136,9 +140,7 @@ if [ "$1" == "txn" ]; then
         "mode": "share",
         "share_factor": "0.5"
     },
-    "wallet": {
-        "id": "'$WALLET'"
-    },
+    "wallet_id": "2019_03_20_0307.wlt",
     "change_address": "TkyD4wD64UE6M5BkNQA17zaf7Xcg4AufwX",
     "to": [{
         "address": "2PBcLADETphmqWV7sujRZdh3UcabssgKAEB",
@@ -147,7 +149,7 @@ if [ "$1" == "txn" ]; then
         "address": "2PBcLADETphmqWV7sujRZdh3UcabssgKAEB",
         "coins": "8.99"
     }],
-    "mainExprs": "foo()"
+    "mainExprs": ""
 }')
 
     echo $TXN

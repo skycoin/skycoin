@@ -659,6 +659,7 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 	gw.strand("CreateTransaction", func() {
 		txn, inputs, err = gw.v.CreateTransaction(params)
 	})
+
 	return txn, inputs, err
 }
 

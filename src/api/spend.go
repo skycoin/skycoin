@@ -89,6 +89,9 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 
 	txid := txn.Hash()
 	out := make([]CreatedTransactionOutput, len(txn.Out))
+	logger.Info("huehue")
+	logger.Info(len(txn.Out))
+	logger.Info("haha", len(txn.Out))
 	for i, o := range txn.Out {
 		co, err := NewCreatedTransactionOutput(o, txid)
 		if err != nil {
@@ -191,10 +194,11 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 
 // CreatedTransactionOutput is a transaction output
 type CreatedTransactionOutput struct {
-	UxID    string `json:"uxid"`
-	Address string `json:"address"`
-	Coins   string `json:"coins"`
-	Hours   string `json:"hours"`
+	UxID         string       `json:"uxid"`
+	Address      string       `json:"address"`
+	Coins        string       `json:"coins"`
+	Hours        string       `json:"hours"`
+	ProgramState []byte       `json:"prgrmState"`
 }
 
 // NewCreatedTransactionOutput creates CreatedTransactionOutput
@@ -209,6 +213,7 @@ func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256)
 		Address: out.Address.String(),
 		Coins:   coins,
 		Hours:   fmt.Sprint(out.Hours),
+		ProgramState: out.ProgramState,
 	}, nil
 }
 
@@ -259,6 +264,7 @@ type createTransactionRequest struct {
 	Wallet            createTransactionRequestWallet `json:"wallet"`
 	ChangeAddress     *wh.Address                    `json:"change_address,omitempty"`
 	To                []receiver                     `json:"to"`
+	MainExpressions   []byte                         `json:"mainExprs"`
 }
 
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
@@ -281,7 +287,7 @@ type receiver struct {
 	Address           wh.Address `json:"address"`
 	Coins             wh.Coins   `json:"coins"`
 	Hours             *wh.Hours  `json:"hours,omitempty"`
-	MainExpressions   []byte
+	ProgramState      []byte     `json:"prgrmState"`
 }
 
 // Validate validates createTransactionRequest data
@@ -445,13 +451,18 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 			Address:       t.Address.Address,
 			Coins:         t.Coins.Value(),
 			Hours:         hours,
-			ProgramState:  ueoueoueo,
+			ProgramState:  t.ProgramState,
 		}
 	}
 
 	var changeAddress *cipher.Address
 	if r.ChangeAddress != nil {
 		changeAddress = &r.ChangeAddress.Address
+	}
+
+	logger.Info("WOOOOO")
+	for _, t := range to {
+		logger.Info(t.ProgramState)
 	}
 
 	return wallet.CreateTransactionParams{
@@ -461,9 +472,10 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 			Mode:        r.HoursSelection.Mode,
 			ShareFactor: r.HoursSelection.ShareFactor,
 		},
-		Wallet:        walletParams,
-		ChangeAddress: changeAddress,
-		To:            to,
+		Wallet:          walletParams,
+		ChangeAddress:   changeAddress,
+		To:              to,
+		MainExpressions: r.MainExpressions,
 	}
 }
 
@@ -498,6 +510,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		txn, inputs, err := gateway.CreateTransaction(params.ToWalletParams())
+		
 		if err != nil {
 			switch err.(type) {
 			case wallet.Error:

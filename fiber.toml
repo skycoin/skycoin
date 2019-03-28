@@ -2,7 +2,7 @@
 # Defaults are shown, commented out
 # Some values have no defaults and must be filled in
 [node]
-genesis_signature_str = "5acccead5a5bf19f293a5f7eaf5b9804826dcad76eaf4348dfb82d565933c1f56b232d184d8be7dcffe9403030f132ad2cd2b454b6ac58c0eca89f7da55d53ed00"
+genesis_signature_str = "1041d799198bdc0c9167a26c26c3a51d130ddc6b5e42a1abbf1d65f9be9083515fa8ff5ef66dee3588038b4f790d8a2661afdbee17ed778e5924fbb6c105ecaa01"
 genesis_address_str = "23v7mT1uLpViNKZHh9aww4VChxizqKsNq4E"
 blockchain_pubkey_str = "02583e5ebbf85522474e0f17e681e62ca37910db6b8792763af4e97663c31a7984"
 blockchain_seckey_str = ""

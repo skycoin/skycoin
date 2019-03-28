@@ -162,7 +162,7 @@ func createCoinCommand() cli.Command {
 			}
 			defer coinTestFile.Close()
 
-			paramsFilePath := "./src/params/params.go"
+			paramsFilePath := fmt.Sprintf("%s%s", os.Getenv("GOPATH"), "/src/github.com/skycoin/skycoin/src/params/params.go")
 			paramsFile, err := os.Create(paramsFilePath)
 			if err != nil {
 				log.Errorf("failed to create new file %s", paramsFilePath)

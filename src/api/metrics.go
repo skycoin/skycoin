@@ -50,6 +50,11 @@ var (
 			Name: "uptime_seconds",
 			Help: "Uptime of the node",
 		})
+	promLastBlockSeq = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "last_block_seq",
+			Help: "Last block sequence number",
+		})
 )
 
 func init() {
@@ -61,6 +66,7 @@ func init() {
 	prometheus.MustRegister(promIncomingConns)
 	prometheus.MustRegister(promStartedAt)
 	prometheus.MustRegister(promUptime)
+	prometheus.MustRegister(promLastBlockSeq)
 }
 
 func metricsHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
@@ -79,6 +85,7 @@ func metricsHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 		promIncomingConns.Set(float64(health.IncomingConnections))
 		promStartedAt.Set(float64(gateway.StartedAt().Unix()))
 		promUptime.Set(wh.FromDuration(time.Since(gateway.StartedAt())).Seconds())
+		promLastBlockSeq.Set(float64(health.BlockchainMetadata.Head.BkSeq))
 
 		promhttp.Handler().ServeHTTP(w, r)
 	}

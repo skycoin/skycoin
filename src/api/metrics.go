@@ -20,8 +20,8 @@ var (
 			Name: "unconfirmed_txns",
 			Help: "Number of unconfirmed transactions",
 		})
-	promTimeSinceLastBlock = prometheus.NewGauge(
-		prometheus.GaugeOpts{
+	promTimeSinceLastBlock = prometheus.NewCounter(
+		prometheus.CounterOpts{
 			Name: "time_since_last_block_seconds",
 			Help: "Time since the last block created",
 		})

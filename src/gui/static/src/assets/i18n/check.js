@@ -202,7 +202,7 @@ for (let i = 0; i < baseFileOnly.length; i++) {
       if (idx === 0) {
         console.log('The \"' + baseFileOnly[i].lang + '_base.json\" base file has elements that are not present in \"' + baseFileOnly[i].lang + '.json\":');
       } else if (idx === 1) {
-        console.log(translatedFileOnly[i].lang + '.json\" has elements that are not present in the \"' + baseFileOnly[i].lang + '_base.json\" base file:');
+        console.log("\"" + translatedFileOnly[i].lang + '.json\" has elements that are not present in the \"' + baseFileOnly[i].lang + '_base.json\" base file:');
       } else if (idx === 2) {
         console.log('The \"en.json\" file has elements that are not present in the \"' + enOnly[i].lang + '_base.json\" base file:');
       } else if (idx === 3) {

@@ -2,10 +2,10 @@ package api
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
@@ -40,18 +40,13 @@ var (
 			Name: "incoming_connections",
 			Help: "Number of incoming connections",
 		})
-	promStartedAt = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "start_at",
-			Help: "Unix timestamp when started",
+	promStartedAt = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "started_at",
+			Help: "Node start time, in unixtime",
 		})
-	promUptime = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "uptime_seconds",
-			Help: "Uptime of the node",
-		})
-	promLastBlockSeq = prometheus.NewCounter(
-		prometheus.CounterOpts{
+	promLastBlockSeq = prometheus.NewGauge(
+		prometheus.GaugeOpts{
 			Name: "last_block_seq",
 			Help: "Last block sequence number",
 		})
@@ -65,7 +60,6 @@ func init() {
 	prometheus.MustRegister(promOutgoingConns)
 	prometheus.MustRegister(promIncomingConns)
 	prometheus.MustRegister(promStartedAt)
-	prometheus.MustRegister(promUptime)
 	prometheus.MustRegister(promLastBlockSeq)
 }
 
@@ -84,7 +78,6 @@ func metricsHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 		promOutgoingConns.Set(float64(health.OutgoingConnections))
 		promIncomingConns.Set(float64(health.IncomingConnections))
 		promStartedAt.Set(float64(gateway.StartedAt().Unix()))
-		promUptime.Set(wh.FromDuration(time.Since(gateway.StartedAt())).Seconds())
 		promLastBlockSeq.Set(float64(health.BlockchainMetadata.Head.BkSeq))
 
 		promhttp.Handler().ServeHTTP(w, r)

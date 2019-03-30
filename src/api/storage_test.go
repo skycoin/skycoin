@@ -53,19 +53,6 @@ func TestGetAllStorageValuesHandler(t *testing.T) {
 			httpResponse:              NewHTTPErrorResponse(http.StatusForbidden, ""),
 		},
 		{
-			name:        "415",
-			method:      http.MethodGet,
-			contentType: ContentTypeJSON,
-			query: url.Values{
-				"type": []string{string(kvstorage.TypeNotes)},
-			}.Encode(),
-			status:                    http.StatusUnsupportedMediaType,
-			storageType:               kvstorage.TypeNotes,
-			getAllStorageValuesResult: make(map[string]string),
-			getAllStorageValuesErr:    nil,
-			httpResponse:              NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
-		},
-		{
 			name:                      "400 - missing type",
 			method:                    http.MethodGet,
 			contentType:               ContentTypeForm,
@@ -244,21 +231,6 @@ func TestGetStorageValueHandler(t *testing.T) {
 			getStorageValueResult: "",
 			getStorageValueErr:    kvstorage.ErrStorageAPIDisabled,
 			httpResponse:          NewHTTPErrorResponse(http.StatusForbidden, ""),
-		},
-		{
-			name:        "415",
-			method:      http.MethodGet,
-			contentType: ContentTypeJSON,
-			query: url.Values{
-				"type": []string{string(kvstorage.TypeNotes)},
-				"key":  []string{"test1"},
-			}.Encode(),
-			status:                http.StatusUnsupportedMediaType,
-			storageType:           kvstorage.TypeNotes,
-			key:                   "test1",
-			getStorageValueResult: "some value",
-			getStorageValueErr:    nil,
-			httpResponse:          NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
 		},
 		{
 			name:        "400 - missing type",

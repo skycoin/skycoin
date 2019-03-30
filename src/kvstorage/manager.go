@@ -76,7 +76,11 @@ func (m *Manager) LoadStorage(storageType Type) error {
 
 	fileName := m.getStorageFilePath(storageType)
 
-	if !file.Exists(fileName) {
+	exists, err := file.Exists(fileName)
+	if err != nil {
+		return err
+	}
+	if !exists {
 		if err := initEmptyStorage(fileName); err != nil {
 			return err
 		}

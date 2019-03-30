@@ -290,7 +290,13 @@ func CopyFile(dst string, src io.Reader) (n int64, err error) {
 }
 
 // Exists checks whether the file exists in the file system
-func Exists(fn string) bool {
+func Exists(fn string) (bool, error) {
 	_, err := os.Stat(fn)
-	return err == nil
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

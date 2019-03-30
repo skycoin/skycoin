@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/maputil"
 )
 
 var (
@@ -53,7 +52,7 @@ func (s *kvStorage) getAll() map[string]string {
 	s.RLock()
 	defer s.RUnlock()
 
-	return maputil.Copy(s.data)
+	return copyMap(s.data)
 }
 
 // add adds the `val` value to the storage with the specified `key`. Replaces the

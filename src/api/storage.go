@@ -28,12 +28,6 @@ func storageHandler(gateway Gatewayer) http.HandlerFunc {
 
 // serves GET requests for /data enpdoint
 func getStorageValuesHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer) {
-	if r.Header.Get("Content-Type") != ContentTypeForm {
-		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-		writeHTTPResponse(w, resp)
-		return
-	}
-
 	storageType := r.FormValue("type")
 	if storageType == "" {
 		resp := NewHTTPErrorResponse(http.StatusBadRequest, "type is required")

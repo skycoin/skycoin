@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 // Type is a type of a key-value storage
@@ -23,13 +24,15 @@ const storageFileExtension = ".json"
 var (
 	// ErrStorageAPIDisabled is returned while trying to do storage actions while
 	// the EnableStorageAPI option is false
-	ErrStorageAPIDisabled = NewError(errors.New("storage api is disabled"))
+	ErrStorageAPIDisabled = NewError(errors.New("Storage API is disabled"))
 	// ErrNoSuchStorage is returned if no storage with the specified storage type loaded
-	ErrNoSuchStorage = NewError(errors.New("storage with such type is not loaded"))
+	ErrNoSuchStorage = NewError(errors.New("Storage with such type is not loaded"))
 	// ErrStorageAlreadyLoaded is returned while trying to load already loaded storage
-	ErrStorageAlreadyLoaded = NewError(errors.New("storage with such type is already loaded"))
+	ErrStorageAlreadyLoaded = NewError(errors.New("Storage with such type is already loaded"))
 	// ErrUnknownKVStorageType is returned while trying to access the storage of the unknown type
-	ErrUnknownKVStorageType = NewError(errors.New("unknown storage type"))
+	ErrUnknownKVStorageType = NewError(errors.New("Unknown storage type"))
+
+	logger = logging.MustGetLogger("storagemanager")
 )
 
 // Manager is a manager for key-value storage instances
@@ -44,6 +47,11 @@ func NewManager(c Config) (*Manager, error) {
 	m := &Manager{
 		config:   c,
 		storages: make(map[Type]*kvStorage),
+	}
+
+	if !m.config.EnableStorageAPI {
+		logger.Info("Networking is disabled")
+		return m, nil
 	}
 
 	for _, t := range m.config.EnabledStorages {

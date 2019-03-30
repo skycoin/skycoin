@@ -269,7 +269,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		EnabledAPISets: strings.Join([]string{
 			api.EndpointsRead,
 			api.EndpointsTransaction,
-			api.EndpointsStorage,
 		}, ","),
 		DisabledAPISets:  "",
 		EnableAllAPISets: false,

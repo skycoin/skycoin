@@ -47,6 +47,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [List wallet transaction history](#list-wallet-transaction-history)
 	- [List wallet outputs](#list-wallet-outputs)
 	- [Richlist](#richlist)
+    - [Address Count](#address-count)
 	- [CLI version](#cli-version)
 - [Note](#note)
 
@@ -2720,6 +2721,31 @@ $ skycoin-cli richlist 2 true
 }
 ```
 </details>
+
+### Address Count
+Returns the count of all addresses that currenty have unspent outputs (coins) associated with them.
+
+```bash
+$ skycoin-cli addresscount
+```
+
+```
+FLAGS:
+  -h, --help   help for richlist
+```
+
+#### Example
+```bash
+$ skycoin-cli addresscount 
+```
+<details>
+ <summary>View Output</summary>
+
+```json
+12961
+```
+</details>
+
 
 ### CLI version
 Get version of current skycoin cli.

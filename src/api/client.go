@@ -131,7 +131,7 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 	return c.makeRequestWithoutBody(endpoint, http.MethodGet)
 }
 
-// get makes a DELETE request to an endpoint. Caller must close response body.
+// delete makes a DELETE request to an endpoint. Caller must close response body.
 func (c *Client) delete(endpoint string) (*http.Response, error) {
 	return c.makeRequestWithoutBody(endpoint, http.MethodDelete)
 }
@@ -151,7 +151,7 @@ func (c *Client) makeRequestWithoutBody(endpoint, method string) (*http.Response
 	return c.HTTPClient.Do(req)
 }
 
-// Get makes a DELETE request to an endpoint and unmarshals the response to obj.
+// Delete makes a DELETE request to an endpoint and unmarshals the response to obj.
 // If the response is not 200 OK, returns an error.
 func (c *Client) Delete(endpoint string, obj interface{}) error {
 	resp, err := c.delete(endpoint)

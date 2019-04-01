@@ -19,8 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skycoin/skycoin/src/kvstorage"
-
 	"github.com/andreyvit/diff"
 	"github.com/stretchr/testify/require"
 
@@ -57,12 +55,11 @@ When update flag is set to true all tests pass
 */
 
 const (
-	testModeStable            = "stable"
-	testModeLive              = "live"
-	testModeDisableWalletAPI  = "disable-wallet-api"
-	testModeEnableSeedAPI     = "enable-seed-api"
-	testModeDisableGUI        = "disable-gui"
-	testModeDisableStorageAPI = "disable-storage-api"
+	testModeStable           = "stable"
+	testModeLive             = "live"
+	testModeDisableWalletAPI = "disable-wallet-api"
+	testModeEnableSeedAPI    = "enable-seed-api"
+	testModeDisableGUI       = "disable-gui"
 
 	testFixturesDir = "testdata"
 )
@@ -74,7 +71,6 @@ type TestData struct {
 
 var update = flag.Bool("update", false, "update golden files")
 var testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
-var testLiveStorage = flag.Bool("test-live-storage", false, "run live storage tests")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
@@ -107,8 +103,7 @@ func mode(t *testing.T) string {
 		testModeStable,
 		testModeDisableWalletAPI,
 		testModeEnableSeedAPI,
-		testModeDisableGUI,
-		testModeDisableStorageAPI:
+		testModeDisableGUI:
 	default:
 		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
@@ -168,15 +163,6 @@ func doDisableWalletAPI(t *testing.T) bool {
 	return false
 }
 
-func doDisableStorageAPI(t *testing.T) bool {
-	if enabled() && mode(t) == testModeDisableStorageAPI {
-		return true
-	}
-
-	t.Skip("DisableStorageApi tests disabled")
-	return false
-}
-
 func doEnableSeedAPI(t *testing.T) bool {
 	if enabled() && mode(t) == testModeEnableSeedAPI {
 		return true
@@ -213,15 +199,6 @@ func doLiveWallet(t *testing.T) bool {
 	}
 
 	t.Skip("Tests requiring wallet envvars are disabled")
-	return false
-}
-
-func doLiveStorage(t *testing.T) bool {
-	if *testLiveStorage {
-		return true
-	}
-
-	t.Skip("Live tests of storage are disabled")
 	return false
 }
 
@@ -3462,94 +3439,6 @@ func TestLivePendingTransactionsVerbose(t *testing.T) {
 
 	_, err := c.PendingTransactionsVerbose()
 	require.NoError(t, err)
-}
-
-func TestDisableStorageAPI(t *testing.T) {
-	if !doDisableStorageAPI(t) {
-		return
-	}
-
-	type testCase struct {
-		name        string
-		method      string
-		endpoint    string
-		contentType string
-		json        func() interface{}
-		expectErr   string
-		code        int
-	}
-
-	tt := []testCase{
-		{
-			name:        "get all storage values",
-			method:      http.MethodGet,
-			endpoint:    "/api/v2/data?type=txid",
-			contentType: api.ContentTypeForm,
-			expectErr:   "403 Forbidden - Endpoint is disabled",
-			code:        http.StatusForbidden,
-		},
-		{
-			name:        "get storage value",
-			method:      http.MethodGet,
-			endpoint:    "/api/v2/data?type=txid&key=key",
-			contentType: api.ContentTypeForm,
-			expectErr:   "403 Forbidden - Endpoint is disabled",
-			code:        http.StatusForbidden,
-		},
-		{
-			name:        "add storage value",
-			method:      http.MethodPost,
-			endpoint:    "/api/v2/data",
-			contentType: api.ContentTypeJSON,
-			json: func() interface{} {
-				return api.StorageRequest{
-					StorageType: kvstorage.TypeNotes,
-					Key:         "key",
-					Val:         "val",
-				}
-			},
-			expectErr: "403 Forbidden - Endpoint is disabled",
-			code:      http.StatusForbidden,
-		},
-		{
-			name:        "remove storage value",
-			method:      http.MethodDelete,
-			endpoint:    "/api/v2/data?type=txid&key=key",
-			contentType: api.ContentTypeForm,
-			expectErr:   "403 Forbidden - Endpoint is disabled",
-			code:        http.StatusForbidden,
-		},
-	}
-
-	c := newClient()
-	for _, tc := range tt {
-		f := func(tc testCase) func(t *testing.T) {
-			return func(t *testing.T) {
-				var err error
-				switch tc.method {
-				case http.MethodGet:
-					err = c.Get(tc.endpoint, nil)
-				case http.MethodPost:
-					_, err = c.PostJSONV2(tc.endpoint, tc.json(), nil)
-				case http.MethodDelete:
-					err = c.Delete(tc.endpoint, nil)
-				}
-				assertResponseError(t, err, tc.code, tc.expectErr)
-			}
-		}
-
-		t.Run(tc.name, f(tc))
-	}
-
-	// Confirms that no new wallet is created
-	// DATA_DIR environment variable is set in ci-scripts/integration-test-disable-storage-api.sh
-	storageDir := os.Getenv("STORAGE_DIR")
-	if storageDir == "" {
-		t.Fatal("STORAGE_DIR is not set")
-	}
-
-	// Confirms that the wallet directory does not exist
-	testutil.RequireFileNotExists(t, storageDir)
 }
 
 func TestDisableWalletAPI(t *testing.T) {

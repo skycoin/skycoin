@@ -2,7 +2,7 @@
 .PHONY: run run-help test test-386 test-amd64 check check-newcoin
 .PHONY: integration-test-stable integration-test-stable-disable-csrf
 .PHONY: integration-test-live integration-test-live-wallet
-.PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
+.PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-disable-storage-api
 .PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
 .PHONY: integration-test-disable-gui integration-test-disable-gui
 .PHONY: integration-test-db-no-unconfirmed integration-test-auth
@@ -63,7 +63,7 @@ check-newcoin: newcoin ## Check that make newcoin succeeds and no templated file
 
 check: lint clean-coverage test test-386 \
 	integration-test-stable integration-test-stable-disable-csrf \
-	integration-test-disable-wallet-api integration-test-disable-seed-api \
+	integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-disable-storage-api \
 	integration-test-enable-seed-api integration-test-disable-gui \
 	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters
 
@@ -93,6 +93,9 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
+
+integration-test-disable-storage-api: ## Run disable storage api integration tests
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-storage-api.sh
 
 integration-test-enable-seed-api: ## Run enable seed api integration test
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-enable-seed-api.sh

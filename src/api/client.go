@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/kvstorage"
+
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
@@ -98,6 +100,56 @@ func (c *Client) applyAuth(req *http.Request) {
 	req.SetBasicAuth(c.Username, c.Password)
 }
 
+// GetV2 makes a GET request to an endpoint and unmarshals the response to respObj.
+// If the response is not 200 OK, returns an error
+func (c *Client) GetV2(endpoint string, respObj interface{}) (bool, error) {
+	resp, err := c.get(endpoint)
+	if err != nil {
+		return false, err
+	}
+
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(respBody))
+	decoder.DisallowUnknownFields()
+
+	var wrapObj ReceivedHTTPResponse
+	if err := decoder.Decode(&wrapObj); err != nil {
+		// In some cases, the server can send an error response in a non-JSON format,
+		// such as a 404 when the endpoint is not registered, or if a 500 error
+		// occurs in the go HTTP stack, outside of the application's control.
+		// If this happens, treat the entire response body as the error message.
+		if resp.StatusCode != http.StatusOK {
+			return false, NewClientError(resp.Status, resp.StatusCode, string(respBody))
+		}
+
+		return false, err
+	}
+
+	var rspErr error
+	if resp.StatusCode != http.StatusOK {
+		rspErr = NewClientError(resp.Status, resp.StatusCode, wrapObj.Error.Message)
+	}
+
+	if wrapObj.Data == nil {
+		return false, rspErr
+	}
+
+	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(respObj); err != nil {
+		return false, err
+	}
+
+	return true, rspErr
+}
+
 // Get makes a GET request to an endpoint and unmarshals the response to obj.
 // If the response is not 200 OK, returns an error
 func (c *Client) Get(endpoint string, obj interface{}) error {
@@ -149,6 +201,56 @@ func (c *Client) makeRequestWithoutBody(endpoint, method string) (*http.Response
 	c.applyAuth(req)
 
 	return c.HTTPClient.Do(req)
+}
+
+// DeleteV2 makes a DELETE request to an endpoint with body of json data,
+// and parses the standard JSON response.
+func (c *Client) DeleteV2(endpoint string, respObj interface{}) (bool, error) {
+	resp, err := c.delete(endpoint)
+	if err != nil {
+		return false, err
+	}
+
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(respBody))
+	decoder.DisallowUnknownFields()
+
+	var wrapObj ReceivedHTTPResponse
+	if err := decoder.Decode(&wrapObj); err != nil {
+		// In some cases, the server can send an error response in a non-JSON format,
+		// such as a 404 when the endpoint is not registered, or if a 500 error
+		// occurs in the go HTTP stack, outside of the application's control.
+		// If this happens, treat the entire response body as the error message.
+		if resp.StatusCode != http.StatusOK {
+			return false, NewClientError(resp.Status, resp.StatusCode, string(respBody))
+		}
+
+		return false, err
+	}
+
+	var rspErr error
+	if resp.StatusCode != http.StatusOK {
+		rspErr = NewClientError(resp.Status, resp.StatusCode, wrapObj.Error.Message)
+	}
+
+	if wrapObj.Data == nil {
+		return false, rspErr
+	}
+
+	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(respObj); err != nil {
+		return false, err
+	}
+
+	return true, rspErr
 }
 
 // Delete makes a DELETE request to an endpoint and unmarshals the response to obj.
@@ -1264,4 +1366,48 @@ func (c *Client) Disconnect(id uint64) error {
 
 	var obj struct{}
 	return c.PostForm("/api/v1/network/connection/disconnect", strings.NewReader(v.Encode()), &obj)
+}
+
+// GetAllStorageValues makes a GET request to /api/v2/data to get all the values from the storage of
+// `storageType` type
+func (c *Client) GetAllStorageValues(storageType kvstorage.Type) (map[string]string, error) {
+	var values map[string]string
+	ok, err := c.GetV2(fmt.Sprintf("/api/v2/data?type=%s", storageType), &values)
+	if !ok {
+		return nil, err
+	}
+
+	return values, err
+}
+
+// GetStorageValue makes a GET request to /api/v2/data to get the value associated with `key` from storage
+// of `storageType` type
+func (c *Client) GetStorageValue(storageType kvstorage.Type, key string) (string, error) {
+	var value string
+	ok, err := c.GetV2(fmt.Sprintf("/api/v2/data?type=%s&key=%s", storageType, key), &value)
+	if !ok {
+		return "", err
+	}
+
+	return value, err
+}
+
+// AddStorageValue make a POST request to /api/v2/data to add a value with the key to the storage
+// of `storageType` type
+func (c *Client) AddStorageValue(storageType kvstorage.Type, key, val string) error {
+	_, err := c.PostJSONV2("/api/v2/data", StorageRequest{
+		StorageType: storageType,
+		Key:         key,
+		Val:         val,
+	}, nil)
+
+	return err
+}
+
+// DeleteStorageValue makes a DELETE request to /api/v2/data to remove a value associated with the `key`
+// from the storage of `storageType` type
+func (c *Client) DeleteStorageValue(storageType kvstorage.Type, key string) error {
+	_, err := c.DeleteV2(fmt.Sprintf("/api/v2/data?type=%s&key=%s", storageType, key), nil)
+
+	return err
 }

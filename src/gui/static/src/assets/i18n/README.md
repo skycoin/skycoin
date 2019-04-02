@@ -154,3 +154,78 @@ in the
 [Checking if a languaje file needs to be updated](#Checking-if-a-languaje-file-needs-to-be-updated)
 section. The script should not return errors. If the script returns errors,
 please solve them before continuing.
+
+# How to edit the translation files
+
+The translation files are in json format (.json files). It is possible to
+open these files in a text editor and edit them like normal text files.
+However, the json files are used for coding and have a very strict format.
+Because of this, **editing the files manually is not recommended** unless
+you know exactly what you are doing.
+
+If you do not know the json format, this section includes useful
+information to be able to edit the files easily.
+
+## Which application should be used for editing the files
+
+There are several application that allow editing json files, including
+some text editors. However, it is recommended to use the Json Editor app
+for Google Chrome. Among the advantages of this application are that it
+is multiplatform, it allows editing the contents without having to
+directly modify the json code and has a relatively simple interface. You
+can add it to your Chrome browser from here:
+https://chrome.google.com/webstore/detail/json-editor/lhkmoheomjbkfloacpgllgjcamhihfaj
+
+The app looks like this:
+
+![app](app1.png)
+
+As you can see, you can load/save files on the upper-right corner of
+the app. The left part shows the source code and the right part shows
+a tree view of the elements of the file and its contents. You can
+ignore the source code and work with the tree view only.
+
+![app](app2.png)
+
+As you will not be editing the soutce code, you can hide it by presing
+and draging the 3-dot button (1). While editing the file, you can use
+the arrows (2) to expand/contract the different sections in which the
+elements are organized. Once you find an item that you want to edit,
+click on the content and modify the text (3). Please, do not make any
+changes to the name of the element (4).
+
+You can use the 6-dot buttons (5) to move the elements to a different
+location, but please avoid doing it, as that could alter the order of
+the file in a way that would make it stop working. Also, as you will
+not be working with the source code, avoid using the arrow
+buttons (6).
+
+## Special codes
+
+Some texts in the language files have special codes that are not
+shown in the user interface of the wallet, but serve special purposes.
+The codes are:
+
+- **\\"**: due to how json files work, it is not possible to write
+double quotes directly in the texts, the ccorrect way to add double
+quotes to a json file is **\\"** (note that the 2 characters must not
+be separated by a white space). If you use the Json Editor app for
+Google Chrome, you can write double quotes normally and the app will
+automatically add the **\\** character behind them, but that is just
+a convenience for when you are writing, you could still find the
+**\\"** code in files you are editing and have to work with it.
+
+- **{{ }}**: any text block similar to **{{ something }}** is a
+special identifier that the code will replace with a different value
+when the app is running. For example, if you find a text like "Your
+balance is {{ value }} coins", the application will show something
+like "Your balance is 21 coins". In that example the "21" is a value
+that the app has to calculate, so it is not possible to add it directly
+into the languaje file. If you find a **{{ }}** text block, please do
+not translate it, just move the whole **{{ }}** text block to where the
+value should be displayed. If you want to leave a while space before the
+value, simply add a white space before the **{{ }}** text block, and do
+the same after it if you want a white space after the value.
+
+- **\<br>**: this code means "new line". It is just a way to tell
+the code that the text after it should be added in a new line.

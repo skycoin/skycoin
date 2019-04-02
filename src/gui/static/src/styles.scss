@@ -266,7 +266,6 @@ Alerts
   background-color: #ffdede;
   padding: 15px;
   display: flex;
-  align-items: center;
   margin-bottom: 20px;
 
   .title {
@@ -274,6 +273,7 @@ Alerts
   }
 
   mat-icon {
+    margin-top: 5px;
     margin-right: 10px;
     animation: alert-blinking 1s linear infinite;
   }

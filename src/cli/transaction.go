@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
@@ -107,4 +108,71 @@ func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 	}
 
 	return fmt.Errorf("at least one address must be specified. Example: %s addr1 addr2 addr3", c.Name())
+}
+
+func verifyTransactionCmd() *cobra.Command {
+	return &cobra.Command{
+		Short:                 "Verify if the specific transaction is spendable",
+		Use:                   "verifyTransaction [encoded transaction]",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.MaximumNArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			encodedTxn := args[0]
+			if encodedTxn == "" {
+				return errors.New("transaction is empty")
+			}
+
+			_, err := apiClient.VerifyTransaction(api.VerifyTransactionRequest{
+				EncodedTransaction: encodedTxn,
+			})
+			if err != nil {
+				return err
+			}
+
+			fmt.Println("transaction is spendable")
+
+			return nil
+		},
+	}
+}
+
+func pendingTransactionsCmd() *cobra.Command {
+	pendingTxnsCmd := &cobra.Command{
+		Short:                 "Get all unconfirmed transactions",
+		Use:                   "pendingTransactions",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.NoArgs,
+		RunE: func(c *cobra.Command, _ []string) error {
+			isVerbose, err := c.Flags().GetBool("verbose")
+			if err != nil {
+				return err
+			}
+
+			if isVerbose {
+				pendingTxns, err := apiClient.PendingTransactionsVerbose()
+				if err != nil {
+					return err
+				}
+
+				return printJSON(pendingTxns)
+			}
+
+			pendingTxns, err := apiClient.PendingTransactions()
+			if err != nil {
+				return err
+			}
+
+			return printJSON(pendingTxns)
+		},
+	}
+
+	pendingTxnsCmd.Flags().BoolP("verbose", "v", false,
+		`Require the transaction inputs to include the owner address, coins, hours and calculated hours.
+	The hours are the original hours the output was created with.
+	The calculated hours are calculated based upon the current system time, and provide an approximate 
+	coin hour value of the output if it were to be confirmed at that instant.`)
+
+	return pendingTxnsCmd
 }

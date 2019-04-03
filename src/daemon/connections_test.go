@@ -3,6 +3,7 @@ package daemon
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -510,4 +511,13 @@ func TestConnectionsStateTransitionErrors(t *testing.T) {
 	// introduced -> introduced fails
 	_, err = conns.introduced(addr, 1, &IntroductionMessage{})
 	require.Equal(t, ErrConnectionAlreadyIntroduced, err)
+}
+
+func TestConnectionsCheckStatus(t *testing.T) {
+	conns := NewConnections()
+	addr := "127.0.0.1:6060"
+	timeout := 1 * time.Second
+
+	status := conns.CheckStatus(addr, timeout)
+	require.Equal(t, ConnectionStateIntroduced, status)
 }

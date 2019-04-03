@@ -3,6 +3,8 @@ package daemon
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -548,4 +550,58 @@ func (c *Connections) all() []connection {
 	}
 
 	return conns
+}
+
+// CheckStatus checks a status of the peer with address `addr`.
+// If `timeout` is exceeded, it returns the last state.
+func (c *Connections) CheckStatus(addr string, timeout time.Duration) ConnectionState {
+	currentState := ConnectionStatePending
+
+	timeoutChan := time.After(timeout)
+	stateChan := make(chan ConnectionState, 2)
+
+	go func(addr string) {
+		defer close(stateChan)
+
+		_, err := c.pending(addr)
+		if err != nil {
+			return
+		}
+
+		_, err = c.connected(addr, 1)
+		if err != nil {
+			return
+		}
+
+		stateChan <- ConnectionStateConnected
+
+		hostPort := strings.Split(addr, ":")
+		if len(hostPort) < 2 {
+			return
+		}
+
+		port, err := strconv.ParseUint(hostPort[1], 10, 16)
+		if err != nil {
+			return
+		}
+
+		_, err = c.introduced(addr, 1, &IntroductionMessage{ListenPort: uint16(port)})
+		if err != nil {
+			return
+		}
+
+		stateChan <- ConnectionStateIntroduced
+	}(addr)
+
+	for {
+		select {
+		case newState := <-stateChan:
+			if newState == ConnectionStateIntroduced {
+				return ConnectionStateIntroduced
+			}
+			currentState = newState
+		case <-timeoutChan:
+			return currentState
+		}
+	}
 }

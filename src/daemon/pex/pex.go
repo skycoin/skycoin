@@ -755,3 +755,17 @@ func parseLocalPeerList(body string, allowLocalhost bool) ([]string, error) {
 
 	return peers, nil
 }
+
+// GetPeerListFromURL downloads a remote peers.txt file from url and parses it, returning a peer list.
+func GetPeerListFromURL(url string) ([]string, error) {
+	body, err := backoffDownloadText(url)
+	if err != nil {
+		logger.WithError(err).WithField("url", url).Error("Failed to download peers")
+		return nil, err
+	}
+
+	peers := parseRemotePeerList(body)
+	logger.WithField("url", url).Infof("Downloaded peers list, got %d peers", len(peers))
+
+	return peers, nil
+}

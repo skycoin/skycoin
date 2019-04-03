@@ -201,5 +201,8 @@ fuzz-encoder: ## Fuzz the encoder package. Requires https://github.com/dvyukov/g
 	go-fuzz-build github.com/skycoin/skycoin/src/cipher/encoder/internal
 	go-fuzz -bin=encoderfuzz-fuzz.zip -workdir=src/cipher/encoder/internal
 
+monitor-peers: ## Run the tool for monitoring peers.
+	go run cmd/monitor-peers/monitor-peers.go
+
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

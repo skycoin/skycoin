@@ -13,10 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skycoin/src/kvstorage"
-
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/kvstorage"
 	"github.com/skycoin/skycoin/src/readable"
 )
 
@@ -103,7 +102,28 @@ func (c *Client) applyAuth(req *http.Request) {
 // GetV2 makes a GET request to an endpoint and unmarshals the response to respObj.
 // If the response is not 200 OK, returns an error
 func (c *Client) GetV2(endpoint string, respObj interface{}) (bool, error) {
-	resp, err := c.get(endpoint)
+	csrf, err := c.CSRF()
+	if err != nil {
+		return false, err
+	}
+
+	endpoint = strings.TrimLeft(endpoint, "/")
+	endpoint = c.Addr + endpoint
+
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return false, err
+	}
+
+	c.applyAuth(req)
+
+	req.Header.Set("Content-Type", ContentTypeForm)
+
+	if csrf != "" {
+		req.Header.Set(CSRFHeaderName, csrf)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return false, err
 	}
@@ -206,7 +226,28 @@ func (c *Client) makeRequestWithoutBody(endpoint, method string) (*http.Response
 // DeleteV2 makes a DELETE request to an endpoint with body of json data,
 // and parses the standard JSON response.
 func (c *Client) DeleteV2(endpoint string, respObj interface{}) (bool, error) {
-	resp, err := c.delete(endpoint)
+	csrf, err := c.CSRF()
+	if err != nil {
+		return false, err
+	}
+
+	endpoint = strings.TrimLeft(endpoint, "/")
+	endpoint = c.Addr + endpoint
+
+	req, err := http.NewRequest(http.MethodDelete, endpoint, nil)
+	if err != nil {
+		return false, err
+	}
+
+	c.applyAuth(req)
+
+	req.Header.Set("Content-Type", ContentTypeForm)
+
+	if csrf != "" {
+		req.Header.Set(CSRFHeaderName, csrf)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return false, err
 	}
@@ -1404,9 +1445,9 @@ func (c *Client) AddStorageValue(storageType kvstorage.Type, key, val string) er
 	return err
 }
 
-// DeleteStorageValue makes a DELETE request to /api/v2/data to remove a value associated with the `key`
+// RemoveStorageValue makes a DELETE request to /api/v2/data to remove a value associated with the `key`
 // from the storage of `storageType` type
-func (c *Client) DeleteStorageValue(storageType kvstorage.Type, key string) error {
+func (c *Client) RemoveStorageValue(storageType kvstorage.Type, key string) error {
 	_, err := c.DeleteV2(fmt.Sprintf("/api/v2/data?type=%s&key=%s", storageType, key), nil)
 
 	return err

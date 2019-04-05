@@ -16,16 +16,18 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/cipher/testsuite"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
 const (
-	inputTestDataFilename = "input-hashes.golden"
-	manyAddressesFilename = "many-addresses.golden"
-	seedFilenameFormat    = "seed-%04d.golden"
-	randomSeedLength      = 1024
+	inputTestDataFilename   = "input-hashes.golden"
+	manyAddressesFilename   = "many-addresses.golden"
+	seedFilenameFormat      = "seed-%04d.golden"
+	bip32SeedFilenameFormat = "seed-bip32-%04d.golden"
+	randomSeedLength        = 1024
 )
 
 var help = fmt.Sprintf(`cipher-testdata generates testdata to be used by the cipher test suite in src/cipher/testsuite.
@@ -89,8 +91,15 @@ func main() {
 	fmt.Println("Generating", manyAddressesFilename)
 
 	// Generate the many-addresses testdata
+
+	seed, err := bip39.NewSeed(bip39.MustNewDefaultMnemonic(), "")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	manyAddressesData := generateSeedTestData(job{
-		seed:         []byte(bip39.MustNewDefaultMnemonic()),
+		seed:         seed,
 		addressCount: *manyAddressesCount,
 	})
 	fn := filepath.Join(*outputDir, manyAddressesFilename)
@@ -126,7 +135,12 @@ func main() {
 		}
 
 		if i%2 == 0 {
-			j.seed = []byte(bip39.MustNewDefaultMnemonic())
+			seed, err := bip39.NewSeed(bip39.MustNewDefaultMnemonic(), "")
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			j.seed = seed
 		} else {
 			hash := cipher.SumSHA256(cipher.RandByte(randomSeedLength))
 			j.seed = hash[:]
@@ -135,6 +149,11 @@ func main() {
 		jobs = append(jobs, j)
 	}
 
+	writeSeedTestDataFiles(*outputDir, jobs)
+	writeBip32SeedTestDataFiles(*outputDir, jobs)
+}
+
+func writeSeedTestDataFiles(outputDir string, jobs []job) {
 	seedTestData := make(chan *testsuite.SeedTestData, len(jobs))
 	writeDone := make(chan struct{})
 
@@ -143,7 +162,7 @@ func main() {
 
 		var i int
 		for data := range seedTestData {
-			filename := filepath.Join(*outputDir, fmt.Sprintf(seedFilenameFormat, i))
+			filename := filepath.Join(outputDir, fmt.Sprintf(seedFilenameFormat, i))
 			if err := file.SaveJSON(filename, data.ToJSON(), 0644); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -160,6 +179,42 @@ func main() {
 			defer wg.Done()
 			data := generateSeedTestData(jb)
 			signSeedTestData(data, inputs.Hashes)
+			seedTestData <- data
+		}(j)
+	}
+	wg.Wait()
+
+	close(seedTestData)
+
+	<-writeDone
+}
+
+func writeBip32SeedTestDataFiles(outputDir string, jobs []job) {
+	seedTestData := make(chan *testsuite.Bip32SeedTestData, len(jobs))
+	writeDone := make(chan struct{})
+
+	go func() {
+		defer close(writeDone)
+
+		var i int
+		for data := range seedTestData {
+			filename := filepath.Join(outputDir, fmt.Sprintf(bip32SeedFilenameFormat, i))
+			if err := file.SaveJSON(filename, data.ToJSON(), 0644); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			i++
+		}
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(len(jobs))
+	for i, j := range jobs {
+		j.jobID = i
+		go func(jb job) {
+			defer wg.Done()
+			data := generateBip32SeedTestData(jb)
+			signBip32SeedTestData(data, inputs.Hashes)
 			seedTestData <- data
 		}(j)
 	}
@@ -212,6 +267,72 @@ func generateSeedTestData(j job) *testsuite.SeedTestData {
 }
 
 func signSeedTestData(data *testsuite.SeedTestData, hashes []cipher.SHA256) {
+	for i := range data.Keys {
+		for _, h := range hashes {
+			sig := cipher.MustSignHash(h, data.Keys[i].Secret)
+			data.Keys[i].Signatures = append(data.Keys[i].Signatures, sig)
+		}
+	}
+}
+
+func generateBip32SeedTestData(j job) *testsuite.Bip32SeedTestData {
+	basePath := "m/44'/0'/0'/0"
+
+	// Generate paths 0-4, 100, FirstHardenedChild-1
+	childNumbers := []uint32{
+		0,
+		1,
+		2,
+		3,
+		4,
+		100,
+		1024,
+		bip32.FirstHardenedChild - 100,
+		bip32.FirstHardenedChild - 1,
+	}
+
+	data := &testsuite.Bip32SeedTestData{
+		Seed:         j.seed,
+		BasePath:     basePath,
+		ChildNumbers: childNumbers,
+		Keys:         make([]testsuite.Bip32KeysTestData, len(childNumbers)),
+	}
+
+	mk, err := bip32.NewPrivateKeyFromPath(basePath)
+	if err != nil {
+		panic(err)
+	}
+
+	// Generate child addresses for various indices
+	for i, n := range childNumbers {
+		pk, err := mk.NewPrivateChildKey(i)
+		if err != nil {
+			panic(err)
+		}
+
+		secKey := cipher.MustNewSecKey(pk.Key)
+		pubKey := cipher.MustPubKeyFromSecKey(secKey)
+
+		data.Keys[i] = testsuite.Bip32KeysTestData{
+			Path:        fmt.Sprintf("%s/%d", basePath, n),
+			XPriv:       pk.String(),
+			XPub:        pk.PublicKey().String(),
+			Identifier:  pk.Identifier(),
+			ChildNumber: n,
+			Depth:       pk.Depth,
+			testsuite.KeysTestData{
+				Secret:         secKey,
+				Public:         pubKey,
+				Address:        cipher.AddressFromPubKey(pubKey),
+				BitcoinAddress: cipher.BitcoinAddressFromPubkey(pubKey),
+			},
+		}
+	}
+
+	return data
+}
+
+func signBip32SeedTestData(data *testsuite.Bip32SeedTestData, hashes []cipher.SHA256) {
 	for i := range data.Keys {
 		for _, h := range hashes {
 			sig := cipher.MustSignHash(h, data.Keys[i].Secret)

@@ -57,7 +57,7 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh; fi
 
 services:
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then xvfb; fi
+  - xvfb
 
 script:
   - make check-newcoin

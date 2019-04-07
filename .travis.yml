@@ -1,5 +1,5 @@
 sudo: required
-dist: trusty
+dist: xenial
 language: go
 go:
   - "1.11.x"
@@ -55,7 +55,9 @@ install:
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh; fi
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start; fi
+
+services:
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then xvfb; fi
 
 script:
   - make check-newcoin

@@ -52,6 +52,7 @@ export class HwWalletService {
 
   // Values to be sent to HwPinDialogComponent
   private changingPin: boolean;
+  private removingPin: boolean;
   private changePinState: ChangePinStates;
   private signingTx: boolean;
 
@@ -80,28 +81,33 @@ export class HwWalletService {
         this.walletConnectedSubject.next(connected);
       });
       window['ipcRenderer'].on('hwPinRequested', (event) => {
-        dialog.open(this.requestPinComponentInternal, <MatDialogConfig> {
-          width: '350px',
-          autoFocus: false,
-          data : <HwPinDialogParams> {
-            changingPin: this.changingPin,
-            changePinState: this.changePinState,
-            signingTx: this.signingTx,
-          },
-        }).afterClosed().subscribe(pin => {
-          if (!pin) {
-            this.cancelAllOperations();
-          } else {
-            if (this.changingPin) {
-              if (this.changePinState === ChangePinStates.RequestingCurrentPin) {
-                this.changePinState = ChangePinStates.RequestingNewPin;
-              } else if (this.changePinState === ChangePinStates.RequestingNewPin) {
-                this.changePinState = ChangePinStates.ConfirmingNewPin;
+        if (!this.removingPin || this.changePinState === ChangePinStates.RequestingCurrentPin) {
+          dialog.open(this.requestPinComponentInternal, <MatDialogConfig> {
+            width: '350px',
+            autoFocus: false,
+            data : <HwPinDialogParams> {
+              changingPin: this.changingPin,
+              changePinState: this.changePinState,
+              signingTx: this.signingTx,
+            },
+          }).afterClosed().subscribe(pin => {
+            if (!pin) {
+              this.cancelAllOperations();
+              window['ipcRenderer'].send('hwCancelPin');
+            } else {
+              if (this.changingPin) {
+                if (this.changePinState === ChangePinStates.RequestingCurrentPin) {
+                  this.changePinState = ChangePinStates.RequestingNewPin;
+                } else if (this.changePinState === ChangePinStates.RequestingNewPin) {
+                  this.changePinState = ChangePinStates.ConfirmingNewPin;
+                }
               }
+              window['ipcRenderer'].send('hwSendPin', pin);
             }
-          }
-          window['ipcRenderer'].send('hwSendPin', pin);
-        });
+          });
+        } else {
+          window['ipcRenderer'].send('hwSendPin', null);
+        }
       });
       window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
         dialog.open(this.requestWordComponentInternal, <MatDialogConfig> {
@@ -202,12 +208,15 @@ export class HwWalletService {
     });
   }
 
-  changePin(changingCurrentPin: boolean): Observable<OperationResult> {
+  changePin(changingCurrentPin: boolean, removeCurrentPin: boolean = false): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
       this.changingPin = true;
       if (changingCurrentPin) {
         this.changePinState = ChangePinStates.RequestingCurrentPin;
+        if (removeCurrentPin) {
+          this.removingPin = true;
+        }
       } else {
         this.changePinState = ChangePinStates.RequestingNewPin;
       }
@@ -333,6 +342,7 @@ export class HwWalletService {
 
   private createRandomIdAndPrepare() {
     this.changingPin = false;
+    this.removingPin = false;
     this.signingTx = false;
 
     return this.requestSequence++;

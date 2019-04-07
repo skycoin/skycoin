@@ -360,6 +360,7 @@
       "confirm-seed": "Confirm seed",
       "create-pin": "Create PIN code",
       "change-pin": "Change PIN code",
+      "delete-pin": "Delete PIN code",
       "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here."
     },
@@ -399,6 +400,10 @@
     },
     "change-pin" : {
       "pin-mismatch": "Unable to perform the operation. Two PINs you have entered do not match."
+    },
+    "remove-pin" : {
+      "warning": "WARNING: It is not recommended to remove the PIN code from your hardware wallet, as it will be vulnerable to being used by unauthorized persons",
+      "check": "I understand the risks and want to continue"
     },
     "enter-pin" : {
       "title": "Enter PIN",

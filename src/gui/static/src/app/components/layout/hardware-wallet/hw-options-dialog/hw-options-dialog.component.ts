@@ -12,6 +12,7 @@ import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pi
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { Observable } from 'rxjs/Observable';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
+import { HwRemovePinDialogComponent } from '../hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 
 enum States {
   Disconnected,
@@ -83,6 +84,10 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
   changePin() {
     this.openDialog(HwChangePinDialogComponent);
+  }
+
+  removePin() {
+    this.openDialog(HwRemovePinDialogComponent);
   }
 
   backup() {

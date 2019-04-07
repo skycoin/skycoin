@@ -92,6 +92,7 @@ import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { HwConfirmAddressDialogComponent } from './components/layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
+import { HwRemovePinDialogComponent } from './components/layout/hardware-wallet/hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 
 
 const ROUTES = [
@@ -214,6 +215,7 @@ const ROUTES = [
     HwDialogBaseComponent,
     HwConfirmTxDialogComponent,
     HwConfirmAddressDialogComponent,
+    HwRemovePinDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -240,6 +242,7 @@ const ROUTES = [
     HwSeedWordDialogComponent,
     HwConfirmTxDialogComponent,
     HwConfirmAddressDialogComponent,
+    HwRemovePinDialogComponent,
   ],
   imports: [
     BrowserModule,

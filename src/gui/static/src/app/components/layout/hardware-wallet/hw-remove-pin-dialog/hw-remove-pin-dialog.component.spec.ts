@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { HwRemovePinComponent } from './hw-remove-pin-dialog.component';
+import { HwRemovePinDialogComponent } from './hw-remove-pin-dialog.component';
 
-describe('HwRemovePinComponent', () => {
-  let component: HwRemovePinComponent;
-  let fixture: ComponentFixture<HwRemovePinComponent>;
+describe('HwRemovePinDialogComponent', () => {
+  let component: HwRemovePinDialogComponent;
+  let fixture: ComponentFixture<HwRemovePinDialogComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ HwRemovePinComponent ],
+      declarations: [ HwRemovePinDialogComponent ],
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(HwRemovePinComponent);
+    fixture = TestBed.createComponent(HwRemovePinDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

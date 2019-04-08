@@ -370,6 +370,7 @@
     "restore-seed" : {
       "text": "Before proceeding, please select the number of words that the seed you want to recover has.",
       "check-text": "You can use this option to enter a seed and check if it is equal to the one in the hardware wallet. Before start, select the number of words the seed you want to check has.",
+      "warning" : "WARNING: to avoid potential problems, use only seeds created with a hardware wallet from the same brand/model.",
       "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet.",
       "error-invalid-seed": "Error: The seed is not valid. Please be sure to enter the correct words in the correct order.",
       "error-wrong-seed": "Error: The seed is valid but does not match the one in the device."

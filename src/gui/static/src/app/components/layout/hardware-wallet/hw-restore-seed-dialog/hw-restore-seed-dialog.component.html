@@ -21,6 +21,8 @@
       </div>
     </div>
 
+    <div class="warning" *ngIf="!justCheckingSeed">{{ 'hardware-wallet.restore-seed.warning' | translate }}</div>
+
     <div class="-buttons">
       <app-button (action)="closeModal()">
         {{ 'hardware-wallet.general.cancel' | translate }}

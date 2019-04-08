@@ -37,7 +37,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `POST /api/v2/wallet/seed/verify` returns an error if the seed's checksum is invalid
 - Increase the detail of error messages for invalid seeds sent to `POST /api/v2/wallet/seed/verify`
 - Move package `github.com/skycoin/skycoin/src/cipher/go-bip39` to `github.com/skycoin/skycoin/src/cipher/bip39`
-- Change travis-ci linux dist to `xenial` from `trusty`
 
 ### Removed
 

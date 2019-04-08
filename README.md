@@ -387,7 +387,7 @@ If the wallet is encrypted, also set `WALLET_PASSWORD`.
 $ export WALLET_DIR="$HOME/.skycoin/wallets"
 $ export WALLET_NAME="$valid_wallet_filename"
 $ export WALLET_PASSWORD="$wallet_password"
-$ /run-client.sh -launch-browser=false -enable-all-api-sets
+$ ./run-client.sh -launch-browser=false -enable-all-api-sets
 ```
 
 Then run the tests with the following command:

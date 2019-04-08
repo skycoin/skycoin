@@ -9,18 +9,20 @@ Introduction_parameters were added in v0.25.0 so will be absent for earlier peer
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"net"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/util/logging"
-
 	"github.com/skycoin/skycoin/src/daemon"
-
-	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 // Report contains remote `peers.txt` report data.
@@ -33,17 +35,30 @@ type ReportEntry struct {
 }
 
 const (
-	defaultTimeout = "1s"
-	defaultURL     = pex.DefaultPeerListURL
-	addrWidth      = "48"
-	reportFormat   = "%-" + addrWidth + "s\t%s\n"
+	defaultTimeout   = "1s"
+	defaultPeersFile = "peers.txt"
+	addrWidth        = "48"
+	reportFormat     = "%-" + addrWidth + "s\t%s\n"
+)
+
+var (
+	// ErrInvalidAddress is returned when an address appears malformed
+	ErrInvalidAddress = errors.New("invalid address")
+	// ErrNoLocalhost is returned if a localhost addresses are not allowed
+	ErrNoLocalhost = errors.New("localhost address is not allowed")
+	// ErrNotExternalIP is returned if an IP address is not a global unicast address
+	ErrNotExternalIP = errors.New("IP is not a valid external IP")
+	// ErrPortTooLow is returned if a port is less than 1024
+	ErrPortTooLow = errors.New("port must be >= 1024")
 )
 
 var (
 	logger = logging.MustGetLogger("main")
-	help   = fmt.Sprintf(`monitor-peers checks the status of peers.
+	// For removing inadvertent whitespace from addresses
+	whitespaceFilter = regexp.MustCompile(`\s`)
+	help             = fmt.Sprintf(`monitor-peers checks the status of peers.
 
-By default it downloads a peer list from %s. May be overridden with -peersurl flag.
+By default it gets peers list from %s. May be overridden with -f flag.
 
 The default timeout is %s. May be overridden with -timeout flag. The timeout is parsed by time.ParseDuration.
 
@@ -57,7 +72,7 @@ Connection made, no introduction message received.
 
 - introduced
 Connection made, introduction message received.
-`, defaultURL, defaultTimeout)
+`, defaultPeersFile, defaultTimeout)
 )
 
 func init() {
@@ -68,7 +83,7 @@ func init() {
 }
 
 func main() {
-	peersURL := flag.String("peersurl", defaultURL, "URL to fetch peers.txt")
+	peersFile := flag.String("f", defaultPeersFile, "file containing peers")
 	timeoutStr := flag.String("timeout", defaultTimeout, "timeout for each peer")
 
 	flag.Parse()
@@ -80,7 +95,7 @@ func main() {
 	}
 
 	logger.Infof("Peer connection threshold is %v", timeout)
-	peers, err := pex.GetPeerListFromURL(*peersURL)
+	peers, err := getPeersListFromFile(*peersFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -88,6 +103,42 @@ func main() {
 
 	report := getPeersReport(peers, timeout)
 	logger.Infof("Report:\n%v", buildReport(report))
+}
+
+// getPeersListFromFile parses a local `filePath` file
+// The peers list format is newline separated list of ip:port strings
+// Empty lines and lines that begin with # are treated as comment lines
+// Otherwise, the line is parsed as an ip:port
+// If the line fails to parse, an error is returned
+// Localhost addresses are allowed if allowLocalhost is true
+func getPeersListFromFile(filePath string) ([]string, error) {
+	body, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var peers []string
+	for _, addr := range strings.Split(string(body), "\n") {
+		addr = whitespaceFilter.ReplaceAllString(addr, "")
+		if addr == "" {
+			continue
+		}
+
+		if strings.HasPrefix(addr, "#") {
+			continue
+		}
+
+		a, err := validateAddress(addr, true)
+		if err != nil {
+			err = fmt.Errorf("peers list has invalid address %s: %v", addr, err)
+			logger.WithError(err).Error()
+			return nil, err
+		}
+
+		peers = append(peers, a)
+	}
+
+	return peers, nil
 }
 
 func getPeersReport(peers []string, timeout time.Duration) Report {
@@ -127,4 +178,35 @@ func buildReport(report Report) string {
 	}
 
 	return sb.String()
+}
+
+// validateAddress returns a sanitized address if valid, otherwise an error
+func validateAddress(ipPort string, allowLocalhost bool) (string, error) {
+	ipPort = whitespaceFilter.ReplaceAllString(ipPort, "")
+	pts := strings.Split(ipPort, ":")
+	if len(pts) != 2 {
+		return "", ErrInvalidAddress
+	}
+
+	ip := net.ParseIP(pts[0])
+	if ip == nil {
+		return "", ErrInvalidAddress
+	} else if ip.IsLoopback() {
+		if !allowLocalhost {
+			return "", ErrNoLocalhost
+		}
+	} else if !ip.IsGlobalUnicast() {
+		return "", ErrNotExternalIP
+	}
+
+	port, err := strconv.ParseUint(pts[1], 10, 16)
+	if err != nil {
+		return "", ErrInvalidAddress
+	}
+
+	if port < 1024 {
+		return "", ErrPortTooLow
+	}
+
+	return ipPort, nil
 }

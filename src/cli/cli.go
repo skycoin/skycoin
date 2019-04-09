@@ -243,6 +243,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		showSeedCmd(),
 		statusCmd(),
 		transactionCmd(),
+		verifyTransactionCmd(),
 		verifyAddressCmd(),
 		versionCmd(),
 		walletCreateCmd(),
@@ -253,6 +254,8 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		walletOutputsCmd(),
 		richlistCmd(),
 		addressTransactionsCmd(),
+		pendingTransactionsCmd(),
+		addresscountCmd(),
 	}
 
 	skyCLI.Version = Version

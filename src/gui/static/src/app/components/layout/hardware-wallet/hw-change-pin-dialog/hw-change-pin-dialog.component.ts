@@ -3,6 +3,7 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
+import { AppConfig } from '../../../../app.config';
 
 enum States {
   Initial,
@@ -34,7 +35,11 @@ export class HwChangePinDialogComponent extends HwDialogBaseComponent<HwChangePi
     this.changingExistingPin = data.walletHasPin;
 
     this.operationSubscription = this.hwWalletService.getFeatures().flatMap(features => {
-      return this.hwWalletService.changePin(features.rawResponse.pinProtection);
+      if (!AppConfig.useHwWalletDaemon) {
+        return this.hwWalletService.changePin(features.rawResponse.pinProtection);
+      } else {
+        return this.hwWalletService.changePin(features.rawResponse.pin_protection);
+      }
     }).subscribe(
       () => {
         this.currentState = States.ReturnedSuccess;

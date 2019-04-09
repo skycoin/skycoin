@@ -5,14 +5,11 @@ import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
-import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { environment } from '../../environments/environment';
-
-export enum ChangePinStates {
-  RequestingCurrentPin,
-  RequestingNewPin,
-  ConfirmingNewPin,
-}
+import { HwWalletDaemonService, ConnectionMethod } from './hw-wallet-daemon.service';
+import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
+import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
+import BigNumber from 'bignumber.js';
 
 export enum OperationResults {
   Success,
@@ -50,63 +47,45 @@ export class HwWalletService {
 
   private signTransactionDialog: MatDialogRef<{}, any>;
 
-  // Values to be sent to HwPinDialogComponent
-  private changingPin: boolean;
-  private changePinState: ChangePinStates;
-  private signingTx: boolean;
-
   // Set on AppComponent to avoid a circular reference.
-  private requestPinComponentInternal;
-  set requestPinComponent(value) {
-    this.requestPinComponentInternal = value;
-  }
-  private requestWordComponentInternal;
-  set requestWordComponent(value) {
-    this.requestWordComponentInternal = value;
-  }
   private signTransactionConfirmationComponentInternal;
   set signTransactionConfirmationComponent(value) {
     this.signTransactionConfirmationComponentInternal = value;
   }
 
-  constructor(private translate: TranslateService, private dialog: MatDialog) {
+  constructor(
+    private translate: TranslateService,
+    private dialog: MatDialog,
+    private hwWalletDaemonService: HwWalletDaemonService,
+    private hwWalletPinService: HwWalletPinService,
+    private hwWalletSeedWordService: HwWalletSeedWordService) {
+
     if (this.hwWalletCompatibilityActivated) {
-      window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
-        if (!connected) {
-          this.eventsObservers.forEach((value, key) => {
-            this.dispatchError(key, OperationResults.Disconnected, this.translate.instant('hardware-wallet.general.error-disconnected'));
-          });
-        }
-        this.walletConnectedSubject.next(connected);
-      });
+      if (!AppConfig.useHwWalletDaemon) {
+        window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
+          if (!connected) {
+            this.eventsObservers.forEach((value, key) => {
+              this.dispatchError(key, OperationResults.Disconnected, this.translate.instant('hardware-wallet.general.error-disconnected'));
+            });
+          }
+          this.walletConnectedSubject.next(connected);
+        });
+      } else {
+        hwWalletDaemonService.connectionEvent.subscribe(connected => {
+          this.walletConnectedSubject.next(connected);
+        });
+      }
+
       window['ipcRenderer'].on('hwPinRequested', (event) => {
-        dialog.open(this.requestPinComponentInternal, <MatDialogConfig> {
-          width: '350px',
-          autoFocus: false,
-          data : <HwPinDialogParams> {
-            changingPin: this.changingPin,
-            changePinState: this.changePinState,
-            signingTx: this.signingTx,
-          },
-        }).afterClosed().subscribe(pin => {
+        this.hwWalletPinService.requestPin().subscribe(pin => {
           if (!pin) {
             this.cancelAllOperations();
-          } else {
-            if (this.changingPin) {
-              if (this.changePinState === ChangePinStates.RequestingCurrentPin) {
-                this.changePinState = ChangePinStates.RequestingNewPin;
-              } else if (this.changePinState === ChangePinStates.RequestingNewPin) {
-                this.changePinState = ChangePinStates.ConfirmingNewPin;
-              }
-            }
           }
           window['ipcRenderer'].send('hwSendPin', pin);
         });
       });
       window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
-        dialog.open(this.requestWordComponentInternal, <MatDialogConfig> {
-          width: '350px',
-        }).afterClosed().subscribe(word => {
+        this.hwWalletSeedWordService.requestWord().subscribe(word => {
           if (!word) {
             this.cancelAllOperations();
             window['ipcRenderer'].send('hwCancelLastAction');
@@ -117,11 +96,7 @@ export class HwWalletService {
 
       window['ipcRenderer'].on('hwSignTransactionResponse', (event, requestId, result) => {
         this.dispatchEvent(requestId, result, true);
-
-        if (this.signTransactionDialog) {
-          this.signTransactionDialog.close();
-          this.signTransactionDialog = null;
-        }
+        this.closeTransactionDialog();
       });
 
       const data: EventData[] = [
@@ -169,51 +144,130 @@ export class HwWalletService {
   }
 
   cancelLastAction(): Observable<OperationResult> {
-    const requestId = this.createRandomIdAndPrepare();
-    window['ipcRenderer'].send('hwCancelLastAction', requestId);
+    if (!AppConfig.useHwWalletDaemon) {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwCancelLastAction', requestId);
 
-    return this.createRequestResponse(requestId);
+      return this.createRequestResponse(requestId);
+    } else {
+      this.prepare();
+
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.callFunction(
+          '/cancel',
+          ConnectionMethod.Put,
+        ),
+      );
+    }
   }
 
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex, false);
+      if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex, false);
 
-      return this.createRequestResponse(requestId);
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
+
+        const params = {
+          address_n: addressN,
+          start_index: startIndex,
+          confirm_address: false,
+        };
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/generateAddresses',
+            ConnectionMethod.Post,
+            params,
+          ),
+          ['addresses'],
+        );
+      }
     });
   }
 
   confirmAddress(index: number): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwGetAddresses', requestId, 1, index, true);
+      if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        window['ipcRenderer'].send('hwGetAddresses', requestId, 1, index, true);
 
-      return this.createRequestResponse(requestId);
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
+
+        const params = {
+          address_n: 1,
+          start_index: index,
+          confirm_address: true,
+        };
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/generateAddresses',
+            ConnectionMethod.Post,
+            params,
+          ),
+          ['addresses'],
+        );
+      }
     });
   }
 
   getFeatures(): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwGetFeatures', requestId);
+      if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        window['ipcRenderer'].send('hwGetFeatures', requestId);
 
-      return this.createRequestResponse(requestId);
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/features',
+            ConnectionMethod.Get,
+          ),
+          ['features'],
+        );
+      }
     });
   }
 
   changePin(changingCurrentPin: boolean): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      this.changingPin = true;
-      if (changingCurrentPin) {
-        this.changePinState = ChangePinStates.RequestingCurrentPin;
+      let requestId = 0;
+      if (!AppConfig.useHwWalletDaemon) {
+        requestId = this.createRandomIdAndPrepare();
       } else {
-        this.changePinState = ChangePinStates.RequestingNewPin;
+        this.prepare();
       }
-      window['ipcRenderer'].send('hwChangePin', requestId);
 
-      return this.createRequestResponse(requestId);
+      this.hwWalletPinService.changingPin = true;
+      if (changingCurrentPin) {
+        this.hwWalletPinService.changePinState = ChangePinStates.RequestingCurrentPin;
+      } else {
+        this.hwWalletPinService.changePinState = ChangePinStates.RequestingNewPin;
+      }
+
+      if (!AppConfig.useHwWalletDaemon) {
+        window['ipcRenderer'].send('hwChangePin', requestId);
+
+        return this.createRequestResponse(requestId);
+      } else {
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/setPinCode',
+            ConnectionMethod.Post,
+          ),
+          null,
+          ['PIN changed'],
+        );
+      }
     });
   }
 
@@ -223,47 +277,102 @@ export class HwWalletService {
 
   generateMnemonic(wordCount: number): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwGenerateMnemonic', requestId, wordCount);
+       if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        window['ipcRenderer'].send('hwGenerateMnemonic', requestId, wordCount);
 
-      return this.createRequestResponse(requestId);
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
+
+        const params = {};
+        params['word-count'] = wordCount;
+        params['use-passphrase'] = false;
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/generateMnemonic',
+            ConnectionMethod.Post,
+            params,
+            true,
+          ),
+          null,
+          ['Mnemonic successfully configured'],
+        );
+      }
     });
   }
 
   recoverMnemonic(wordCount: number, dryRun: boolean): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwRecoverMnemonic', requestId, wordCount, dryRun);
+      if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        window['ipcRenderer'].send('hwRecoverMnemonic', requestId, wordCount, dryRun);
 
-      return this.createRequestResponse(requestId);
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
+
+        const params = {};
+        params['word-count'] = wordCount;
+        params['use-passphrase'] = false;
+        params['dry-run'] = dryRun;
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/recovery',
+            ConnectionMethod.Post,
+            params,
+            true,
+          ),
+          null,
+          ['Device recovered', 'The seed is valid and matches the one in the device'],
+        );
+      }
     });
   }
 
   backup(): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwBackupDevice', requestId);
+      if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        window['ipcRenderer'].send('hwBackupDevice', requestId);
 
-      return this.createRequestResponse(requestId);
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/backup',
+            ConnectionMethod.Post,
+          ),
+          null,
+          ['Device backed up!'],
+        );
+      }
     });
   }
 
   wipe(): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwWipe', requestId);
+      if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        window['ipcRenderer'].send('hwWipe', requestId);
 
-      return this.createRequestResponse(requestId);
-    });
-  }
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
 
-  signMessage(addressIndex: number, message: string): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      this.signingTx = true;
-      window['ipcRenderer'].send('hwSignMessage', requestId, addressIndex, message);
-
-      return this.createRequestResponse(requestId);
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/wipe',
+            ConnectionMethod.Delete,
+          ),
+          null,
+          ['Device wiped'],
+        );
+      }
     });
   }
 
@@ -273,11 +382,50 @@ export class HwWalletService {
     });
 
     return this.cancelLastAction().flatMap(() => {
-      const requestId = this.createRandomIdAndPrepare();
-      this.signingTx = true;
-      window['ipcRenderer'].send('hwSignTransaction', requestId, inputs, outputs);
+      if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        this.hwWalletPinService.signingTx = true;
+        window['ipcRenderer'].send('hwSignTransaction', requestId, inputs, outputs);
 
-      return this.createRequestResponse(requestId);
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
+
+        const returnIndexes = [];
+        for (let i = 0; i < (outputs as any[]).length; i++) {
+          if ((outputs as any[])[i].address_index !== null && (outputs as any[])[i].address_index !== undefined) {
+            returnIndexes.push((outputs as any[])[i].address_index);
+          } else {
+            break;
+          }
+        }
+
+        const params = {
+          inputs: (inputs as any[]).map(val => val.hashIn),
+          input_indexes: (inputs as any[]).map(val => val.index),
+          output_addresses: (outputs as any[]).map(val => val.address),
+          coins: (outputs as any[]).map(val => new BigNumber(val.coin).dividedBy(1000000).toFixed(6)),
+          hours: (outputs as any[]).map(val => val.hour.toString()),
+          address_indexes: returnIndexes,
+        };
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.callFunction(
+            '/transactionSign',
+            ConnectionMethod.Post,
+            params,
+          ),
+          ['signatures'],
+        ).map(response => {
+          this.closeTransactionDialog();
+
+          return response;
+        }).catch(error => {
+          this.closeTransactionDialog();
+
+          return Observable.throw(error);
+        });
+      }
     });
   }
 
@@ -302,6 +450,43 @@ export class HwWalletService {
       }
 
       return Observable.throw(error);
+    });
+  }
+
+  private closeTransactionDialog() {
+    if (this.signTransactionDialog) {
+      this.signTransactionDialog.close();
+      this.signTransactionDialog = null;
+    }
+  }
+
+  private processDaemonResponse(daemonResponse: Observable<any>, internalElements: string[] = null, successTexts: string[] = null) {
+    return daemonResponse.catch((error: any) => {
+
+      return Observable.throw(this.dispatchEvent(0, error['_body'], false, true));
+    }).flatMap(result => {
+
+      if (result !== HwWalletDaemonService.cancelled) {
+        let resultContents = result.data;
+        if (internalElements) {
+          internalElements.forEach(internalElement => {
+            resultContents = resultContents[internalElement];
+          });
+        }
+
+        const response = this.dispatchEvent(0,
+          resultContents,
+          !successTexts ? true : typeof resultContents === 'string' && successTexts.some(text => (resultContents as string).includes(text)),
+          true);
+
+          if (response.result === OperationResults.Success) {
+            return Observable.of(response);
+          } else {
+            return Observable.throw(response);
+          }
+      } else {
+        return Observable.throw(this.dispatchEvent(0, 'cancelled by user', false, true));
+      }
     });
   }
 
@@ -331,20 +516,30 @@ export class HwWalletService {
     return chain;
   }
 
-  private createRandomIdAndPrepare() {
-    this.changingPin = false;
-    this.signingTx = false;
+  private createRandomIdAndPrepare(): number {
+    this.prepare();
 
     return this.requestSequence++;
   }
 
-  private dispatchEvent(requestId: number, rawResponse: any, success: boolean) {
-    if (this.eventsObservers.has(requestId)) {
+  private prepare() {
+    this.hwWalletPinService.changingPin = false;
+    this.hwWalletPinService.signingTx = false;
+  }
+
+  private dispatchEvent(requestId: number, rawResponse: any, success: boolean, justReturnTheEvent = false) {
+    if (this.eventsObservers.has(requestId) || justReturnTheEvent) {
       if (!rawResponse.error && success) {
-        this.eventsObservers.get(requestId).next({
+        const response: OperationResult = {
           result: OperationResults.Success,
           rawResponse: rawResponse,
-        });
+        };
+
+        if (justReturnTheEvent) {
+          return response;
+        } else {
+          this.eventsObservers.get(requestId).next(response);
+        }
       } else {
         let responseContent: string = rawResponse.error ? rawResponse.error : rawResponse;
         if (typeof responseContent !== 'string') {
@@ -373,13 +568,22 @@ export class HwWalletService {
         } else {
           result = OperationResults.UndefinedError;
         }
-        this.eventsObservers.get(requestId).error({
+
+        const response: OperationResult = {
           result: result,
           rawResponse: responseContent,
-        });
+        };
+
+        if (justReturnTheEvent) {
+          return response;
+        } else {
+          this.eventsObservers.get(requestId).error(response);
+        }
       }
-      this.eventsObservers.get(requestId).complete();
-      this.eventsObservers.delete(requestId);
+      if (!justReturnTheEvent) {
+        this.eventsObservers.get(requestId).complete();
+        this.eventsObservers.delete(requestId);
+      }
     }
   }
 

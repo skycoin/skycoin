@@ -166,7 +166,7 @@ export class ApiService {
     return headers;
   }
 
-  private getQueryString(parameters = null) {
+  getQueryString(parameters = null) {
     if (!parameters) {
       return '';
     }
@@ -182,7 +182,7 @@ export class ApiService {
     return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
   }
 
-  private processConnectionError(error: any): Observable<void> {
+  processConnectionError(error: any): Observable<void> {
     if (error) {
       if (typeof error['_body'] === 'string') {
 

@@ -92,6 +92,9 @@ import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { HwConfirmAddressDialogComponent } from './components/layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
+import { HwWalletDaemonService } from './services/hw-wallet-daemon.service';
+import { HwWalletPinService } from './services/hw-wallet-pin.service';
+import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 
 
 const ROUTES = [
@@ -286,6 +289,9 @@ const ROUTES = [
     WizardGuardService,
     HwWalletService,
     Bip39WordListService,
+    HwWalletDaemonService,
+    HwWalletPinService,
+    HwWalletSeedWordService,
   ],
   bootstrap: [AppComponent],
 })

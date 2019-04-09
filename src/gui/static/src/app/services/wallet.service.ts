@@ -18,6 +18,7 @@ import { BigNumber } from 'bignumber.js';
 import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { AppService } from './app.service';
+import { AppConfig } from '../app.config';
 
 declare var Cipher: any;
 
@@ -155,13 +156,24 @@ export class WalletService {
         const warnings: HwSecurityWarnings[] = [];
 
         wallet.hasHwSecurityWarnings = false;
-        if (result.rawResponse.needsBackup) {
-          warnings.push(HwSecurityWarnings.NeedsBackup);
-          wallet.hasHwSecurityWarnings = true;
-        }
-        if (!result.rawResponse.pinProtection) {
-          warnings.push(HwSecurityWarnings.NeedsPin);
-          wallet.hasHwSecurityWarnings = true;
+        if (!AppConfig.useHwWalletDaemon) {
+          if (result.rawResponse.needsBackup) {
+            warnings.push(HwSecurityWarnings.NeedsBackup);
+            wallet.hasHwSecurityWarnings = true;
+          }
+          if (!result.rawResponse.pinProtection) {
+            warnings.push(HwSecurityWarnings.NeedsPin);
+            wallet.hasHwSecurityWarnings = true;
+          }
+        } else {
+          if (result.rawResponse.needs_backup) {
+            warnings.push(HwSecurityWarnings.NeedsBackup);
+            wallet.hasHwSecurityWarnings = true;
+          }
+          if (!result.rawResponse.pin_protection) {
+            warnings.push(HwSecurityWarnings.NeedsPin);
+            wallet.hasHwSecurityWarnings = true;
+          }
         }
         this.saveHardwareWallets();
 

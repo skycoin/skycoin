@@ -1,0 +1,145 @@
+import { Injectable } from '@angular/core';
+import { ApiService } from './api.service';
+import { Http, RequestOptions, Headers } from '@angular/http';
+import { Observable } from 'rxjs/Observable';
+import { HwWalletPinService } from './hw-wallet-pin.service';
+import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
+import { ISubscription } from 'rxjs/Subscription';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+
+export enum ConnectionMethod {
+  Get,
+  Post,
+  Put,
+  Delete,
+}
+
+@Injectable()
+export class HwWalletDaemonService {
+
+  public static readonly cancelled = 'Cancelled';
+  private readonly url = '/hw-daemon/api/v1';
+
+  private checkHwSubscription: ISubscription;
+  private hwConnected = false;
+  private connectionEventSubject = new BehaviorSubject<boolean>(false);
+
+  get connectionEvent() {
+    return this.connectionEventSubject.asObservable();
+  }
+
+  constructor(
+    private http: Http,
+    private apiService: ApiService,
+    private hwWalletPinService: HwWalletPinService,
+    private hwWalletSeedWordService: HwWalletSeedWordService,
+  ) {
+    this.checkHw(false);
+  }
+
+  callFunction(route: string, connectionMethod: ConnectionMethod, params = {}, useFormEncoding = false) {
+    if (connectionMethod === ConnectionMethod.Post) {
+      return this.post(route, params, useFormEncoding);
+    } else if (connectionMethod === ConnectionMethod.Get) {
+      return this.get(route);
+    } else if (connectionMethod === ConnectionMethod.Put) {
+      return this.put(route);
+    } else if (connectionMethod === ConnectionMethod.Delete) {
+      return this.delete(route);
+    }
+  }
+
+  private get(route: string) {
+    return this.checkResponse(this.http.get(
+      this.url + route,
+      this.returnRequestOptions(),
+    ));
+  }
+
+  private post(route: string, params = {}, useFormEncoding) {
+    return this.checkResponse(this.http.post(
+      this.url + route,
+      !useFormEncoding ? JSON.stringify(params) : this.apiService.getQueryString(params),
+      this.returnRequestOptions(useFormEncoding),
+    ));
+  }
+
+  private put(route: string) {
+    return this.checkResponse(this.http.put(
+      this.url + route,
+      null,
+      this.returnRequestOptions(),
+    ));
+  }
+
+  private delete(route: string) {
+    return this.checkResponse(this.http.delete(
+      this.url + route,
+      this.returnRequestOptions(),
+    ));
+  }
+
+  private checkResponse(response: Observable<any>) {
+    return response
+      .flatMap((res: any) => {
+        const finalResponse = res.json();
+
+        if (typeof finalResponse.data === 'string' && (finalResponse.data as string).indexOf('PinMatrixRequest') !== -1) {
+          return this.hwWalletPinService.requestPin().flatMap(pin => {
+            if (!pin) {
+              return this.put('/cancel').map(() => HwWalletDaemonService.cancelled);
+            }
+
+            return this.post('/intermediate/pinMatrix', {pin: pin}, false);
+          });
+        }
+
+        if (typeof finalResponse.data === 'string' && (finalResponse.data as string).indexOf('WordRequest') !== -1) {
+          return this.hwWalletSeedWordService.requestWord().flatMap(word => {
+            if (!word) {
+              return this.put('/cancel').map(() => HwWalletDaemonService.cancelled);
+            }
+
+            return this.post('/intermediate/word', {word: word}, false);
+          });
+        }
+
+        return Observable.of(finalResponse);
+      })
+      .catch((error: any) => this.apiService.processConnectionError(error));
+  }
+
+  private returnRequestOptions(useFormEncoding = false) {
+    const options = new RequestOptions();
+    options.headers = new Headers();
+    options.headers.append('Content-Type', !useFormEncoding ? 'application/json' : 'application/x-www-form-urlencoded');
+
+    return options;
+  }
+
+  private checkHw(wait: boolean) {
+    if (this.checkHwSubscription) {
+      this.checkHwSubscription.unsubscribe();
+    }
+
+    this.checkHwSubscription = Observable.of(1)
+      .delay(wait ? (this.hwConnected ? 2000 : 10000) : 0)
+      .flatMap(() => this.get('/features'))
+      .subscribe(
+        (response: any) => this.updateHwConnected(!!response.data && !!response.data.features),
+        (error: any) => this.updateHwConnected(error && error.message && typeof error.message === 'string' && error.message.indexOf('Unknown message read_tiny') !== -1),
+      );
+  }
+
+  private updateHwConnected(connected: boolean) {
+    if (connected && !this.hwConnected) {
+      this.hwConnected = true;
+      this.connectionEventSubject.next(this.hwConnected);
+    } else if (!connected && this.hwConnected) {
+      this.hwConnected = false;
+      this.connectionEventSubject.next(this.hwConnected);
+    }
+    this.checkHw(true);
+  }
+
+}

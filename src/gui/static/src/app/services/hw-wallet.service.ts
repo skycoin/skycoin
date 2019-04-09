@@ -149,7 +149,7 @@ export class HwWalletService {
   }
 
   get hwWalletCompatibilityActivated(): boolean {
-    //return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
+    // return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
     return false;
   }
 

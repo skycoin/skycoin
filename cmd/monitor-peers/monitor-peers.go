@@ -9,7 +9,6 @@ Introduction_parameters were added in v0.25.0 so will be absent for earlier peer
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -18,10 +17,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/cmd/monitor-peers/connection"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
@@ -31,25 +30,15 @@ type Report []ReportEntry
 // ReportEntry contains report data of a peer.
 type ReportEntry struct {
 	Address string
-	Status  daemon.ConnectionState
+	State   connection.PeerState
 }
 
 const (
-	defaultTimeout   = "1s"
-	defaultPeersFile = "peers.txt"
-	addrWidth        = "48"
-	reportFormat     = "%-" + addrWidth + "s\t%s\n"
-)
-
-var (
-	// ErrInvalidAddress is returned when an address appears malformed
-	ErrInvalidAddress = errors.New("invalid address")
-	// ErrNoLocalhost is returned if a localhost addresses are not allowed
-	ErrNoLocalhost = errors.New("localhost address is not allowed")
-	// ErrNotExternalIP is returned if an IP address is not a global unicast address
-	ErrNotExternalIP = errors.New("IP is not a valid external IP")
-	// ErrPortTooLow is returned if a port is less than 1024
-	ErrPortTooLow = errors.New("port must be >= 1024")
+	defaultConnectTimeout = "1s"
+	defaultReadTimeout    = "1s"
+	defaultPeersFile      = "peers.txt"
+	addrWidth             = "48"
+	reportFormat          = "%-" + addrWidth + "s\t%s\n"
 )
 
 var (
@@ -60,19 +49,21 @@ var (
 
 By default it gets peers list from %s. May be overridden with -f flag.
 
-The default timeout is %s. May be overridden with -timeout flag. The timeout is parsed by time.ParseDuration.
+The default connect timeout is %s. May be overridden with -ctimeout flag. The timeout is parsed by time.ParseDuration.
+
+The default read timeout is %s. May be overridden with -rtimeout flag. The timeout is parsed by time.ParseDuration.
 
 It generates a report for each peer which contains the peer address and status. Status may be one of the following:
 
-- pending
+- unreachable
 No connection made.
 
-- connected
+- reachable
 Connection made, no introduction message received.
 
 - introduced
 Connection made, introduction message received.
-`, defaultPeersFile, defaultTimeout)
+`, defaultPeersFile, defaultConnectTimeout, defaultReadTimeout)
 )
 
 func init() {
@@ -84,24 +75,34 @@ func init() {
 
 func main() {
 	peersFile := flag.String("f", defaultPeersFile, "file containing peers")
-	timeoutStr := flag.String("timeout", defaultTimeout, "timeout for each peer")
+	connectTimeoutStr := flag.String("ctimeout", defaultConnectTimeout, "connect timeout for each peer")
+	readTimeoutStr := flag.String("rtimeout", defaultReadTimeout, "read timeout for each peer")
 
 	flag.Parse()
 
-	timeout, err := time.ParseDuration(*timeoutStr)
+	connectTimeout, err := time.ParseDuration(*connectTimeoutStr)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Bad timeout:", *timeoutStr)
+		fmt.Fprintln(os.Stderr, "Bad connect timeout: ", *connectTimeoutStr)
 		os.Exit(1)
 	}
 
-	logger.Infof("Peer connection threshold is %v", timeout)
+	logger.Infof("Peer connection threshold is %v", connectTimeout)
+
+	readTimeout, err := time.ParseDuration(*readTimeoutStr)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Bad read timeout: ", *readTimeoutStr)
+		os.Exit(1)
+	}
+
+	logger.Infof("Peer read threshold is %v", readTimeout)
+
 	peers, err := getPeersListFromFile(*peersFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	report := getPeersReport(peers, timeout)
+	report := getPeersReport(peers, connectTimeout, readTimeout)
 	logger.Infof("Report:\n%v", buildReport(report))
 }
 
@@ -141,40 +142,53 @@ func getPeersListFromFile(filePath string) ([]string, error) {
 	return peers, nil
 }
 
-func getPeersReport(peers []string, timeout time.Duration) Report {
-	c := daemon.NewConnections()
-
-	var wg sync.WaitGroup
-
-	var reportMu sync.Mutex
+// getPeersReport loops through `peers`, connects to each and tries to read the introduction
+// message. Builds and returns the report
+func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) Report {
 	report := make(Report, 0, len(peers))
 
+	conns := make([]*connection.Connection, 0, len(peers))
+
 	for _, addr := range peers {
-		wg.Add(1)
-		go func(addr string) {
-			defer wg.Done()
+		conn, err := connection.NewConnection(addr, connectTimeout, readTimeout)
+		if err != nil {
+			logger.WithError(err).Error()
+			continue
+		}
 
-			entry := ReportEntry{
-				Address: addr,
-				Status:  c.CheckStatus(addr, timeout),
-			}
+		conns = append(conns, conn)
 
-			reportMu.Lock()
-			defer reportMu.Unlock()
-			report = append(report, entry)
-		}(addr)
+		if err := conn.Connect(); err != nil {
+			continue
+		}
+
+		_, err = conn.TryReadIntroductionMessage()
+		if err == nil {
+			// TODO: write introduction message to report
+		}
+
+		if err := conn.Disconnect(); err != nil {
+			logger.WithError(err).Error()
+		}
 	}
-	wg.Wait()
+
+	for _, c := range conns {
+		report = append(report, ReportEntry{
+			Address: fmt.Sprintf("%s:%v", c.IP, c.Port),
+			State:   c.State,
+		})
+	}
 
 	return report
 }
 
+// buildReport builds a report to a string output
 func buildReport(report Report) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf(reportFormat, "Address", "Status"))
 	for _, entry := range report {
-		sb.WriteString(fmt.Sprintf(reportFormat, entry.Address, entry.Status))
+		sb.WriteString(fmt.Sprintf(reportFormat, entry.Address, entry.State))
 	}
 
 	return sb.String()
@@ -185,27 +199,27 @@ func validateAddress(ipPort string, allowLocalhost bool) (string, error) {
 	ipPort = whitespaceFilter.ReplaceAllString(ipPort, "")
 	pts := strings.Split(ipPort, ":")
 	if len(pts) != 2 {
-		return "", ErrInvalidAddress
+		return "", pex.ErrInvalidAddress
 	}
 
 	ip := net.ParseIP(pts[0])
 	if ip == nil {
-		return "", ErrInvalidAddress
+		return "", pex.ErrInvalidAddress
 	} else if ip.IsLoopback() {
 		if !allowLocalhost {
-			return "", ErrNoLocalhost
+			return "", pex.ErrNoLocalhost
 		}
 	} else if !ip.IsGlobalUnicast() {
-		return "", ErrNotExternalIP
+		return "", pex.ErrNotExternalIP
 	}
 
 	port, err := strconv.ParseUint(pts[1], 10, 16)
 	if err != nil {
-		return "", ErrInvalidAddress
+		return "", pex.ErrInvalidAddress
 	}
 
 	if port < 1024 {
-		return "", ErrPortTooLow
+		return "", pex.ErrPortTooLow
 	}
 
 	return ipPort, nil

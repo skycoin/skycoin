@@ -422,7 +422,10 @@ func (intro *IntroductionMessage) process(d daemoner) {
 
 	logger.WithFields(fields).Debug("IntroductionMessage.process")
 
-	if err := intro.verify(d); err != nil {
+	if err := intro.Verify(d.DaemonConfig(), logrus.Fields{
+		"addr":   addr,
+		"gnetID": intro.c.ConnID,
+	}); err != nil {
 		if err := d.Disconnect(addr, err); err != nil {
 			logger.WithError(err).WithFields(fields).Warning("Disconnect")
 		}
@@ -476,32 +479,24 @@ func (intro *IntroductionMessage) process(d daemoner) {
 	}
 }
 
-func (intro *IntroductionMessage) verify(d daemoner) error {
-	addr := intro.c.Addr
-
-	fields := logrus.Fields{
-		"addr":   addr,
-		"gnetID": intro.c.ConnID,
-	}
-
-	dc := d.DaemonConfig()
-
+// Verify checks if the introduction message is valid returning the appropriate error
+func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Fields) error {
 	// Disconnect if this is a self connection (we have the same mirror value)
 	if intro.Mirror == dc.Mirror {
-		logger.WithFields(fields).WithField("mirror", intro.Mirror).Info("Remote mirror value matches ours")
+		logger.WithFields(logFields).WithField("mirror", intro.Mirror).Info("Remote mirror value matches ours")
 		return ErrDisconnectSelf
 	}
 
 	// Disconnect if peer version is not within the supported range
 	if intro.ProtocolVersion < dc.MinProtocolVersion {
-		logger.WithFields(fields).WithFields(logrus.Fields{
+		logger.WithFields(logFields).WithFields(logrus.Fields{
 			"protocolVersion":    intro.ProtocolVersion,
 			"minProtocolVersion": dc.MinProtocolVersion,
 		}).Info("protocol version below minimum supported protocol version")
 		return ErrDisconnectVersionNotSupported
 	}
 
-	logger.WithFields(fields).WithField("protocolVersion", intro.ProtocolVersion).Debug("Peer protocol version accepted")
+	logger.WithFields(logFields).WithField("protocolVersion", intro.ProtocolVersion).Debug("Peer protocol version accepted")
 
 	// v24 does not send blockchain pubkey or user agent
 	// v25 sends blockchain pubkey and user agent
@@ -510,13 +505,13 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 	if len(intro.Extra) > 0 {
 		var bcPubKey cipher.PubKey
 		if len(intro.Extra) < len(bcPubKey) {
-			logger.WithFields(fields).Warning("Extra data length does not meet the minimum requirement")
+			logger.WithFields(logFields).Warning("Extra data length does not meet the minimum requirement")
 			return ErrDisconnectInvalidExtraData
 		}
 		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
 		if dc.BlockchainPubkey != bcPubKey {
-			logger.WithFields(fields).WithFields(logrus.Fields{
+			logger.WithFields(logFields).WithFields(logrus.Fields{
 				"pubkey":       bcPubKey.Hex(),
 				"daemonPubkey": dc.BlockchainPubkey.Hex(),
 			}).Warning("Blockchain pubkey does not match")
@@ -525,17 +520,17 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 
 		i := len(bcPubKey)
 		if len(intro.Extra) < i+9 {
-			logger.WithFields(fields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
+			logger.WithFields(logFields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
 			return ErrDisconnectInvalidExtraData
 		}
 		if err := encoder.DeserializeRawExact(intro.Extra[i:i+9], &intro.unconfirmedVerifyTxn); err != nil {
 			// This should not occur due to the previous length check
-			logger.Critical().WithError(err).WithFields(fields).Warning("unconfirmedVerifyTxn params could not be deserialized")
+			logger.Critical().WithError(err).WithFields(logFields).Warning("unconfirmedVerifyTxn params could not be deserialized")
 			return ErrDisconnectInvalidExtraData
 		}
 
 		if err := intro.unconfirmedVerifyTxn.Validate(); err != nil {
-			logger.WithError(err).WithFields(fields).WithFields(logrus.Fields{
+			logger.WithError(err).WithFields(logFields).WithFields(logrus.Fields{
 				"burnFactor":          intro.unconfirmedVerifyTxn.BurnFactor,
 				"maxTransactionSize":  intro.unconfirmedVerifyTxn.MaxTransactionSize,
 				"maxDropletPrecision": intro.unconfirmedVerifyTxn.MaxDropletPrecision,
@@ -555,13 +550,13 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 		userAgentSerialized := intro.Extra[len(bcPubKey)+9:]
 		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 		if err != nil {
-			logger.WithError(err).WithFields(fields).Warning("Extra data user agent string could not be deserialized")
+			logger.WithError(err).WithFields(logFields).Warning("Extra data user agent string could not be deserialized")
 			return ErrDisconnectInvalidExtraData
 		}
 
 		intro.userAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
-			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Warning("User agent is invalid")
+			logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
 			return ErrDisconnectInvalidUserAgent
 		}
 	}

@@ -179,11 +179,10 @@ export class HwWalletService {
 
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
-            '/generateAddresses',
+            '/generate_addresses',
             ConnectionMethod.Post,
             params,
           ),
-          ['addresses'],
         );
       }
     });
@@ -207,11 +206,10 @@ export class HwWalletService {
 
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
-            '/generateAddresses',
+            '/generate_addresses',
             ConnectionMethod.Post,
             params,
           ),
-          ['addresses'],
         );
       }
     });
@@ -232,7 +230,6 @@ export class HwWalletService {
             '/features',
             ConnectionMethod.Get,
           ),
-          ['features'],
         );
       }
     });
@@ -261,10 +258,9 @@ export class HwWalletService {
       } else {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
-            '/setPinCode',
+            '/set_pin_code',
             ConnectionMethod.Post,
           ),
-          null,
           ['PIN changed'],
         );
       }
@@ -282,17 +278,15 @@ export class HwWalletService {
         this.prepare();
 
         const params = {};
-        params['word-count'] = wordCount;
-        params['use-passphrase'] = false;
+        params['word_count'] = wordCount;
+        params['use_passphrase'] = false;
 
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
-            '/generateMnemonic',
+            '/generate_mnemonic',
             ConnectionMethod.Post,
             params,
-            true,
           ),
-          null,
           ['Mnemonic successfully configured'],
         );
       }
@@ -310,18 +304,16 @@ export class HwWalletService {
         this.prepare();
 
         const params = {};
-        params['word-count'] = wordCount;
-        params['use-passphrase'] = false;
-        params['dry-run'] = dryRun;
+        params['word_count'] = wordCount;
+        params['use_passphrase'] = false;
+        params['dry_run'] = dryRun;
 
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/recovery',
             ConnectionMethod.Post,
             params,
-            true,
           ),
-          null,
           ['Device recovered', 'The seed is valid and matches the one in the device'],
         );
       }
@@ -343,7 +335,6 @@ export class HwWalletService {
             '/backup',
             ConnectionMethod.Post,
           ),
-          null,
           ['Device backed up!'],
         );
       }
@@ -365,7 +356,6 @@ export class HwWalletService {
             '/wipe',
             ConnectionMethod.Delete,
           ),
-          null,
           ['Device wiped'],
         );
       }
@@ -397,21 +387,28 @@ export class HwWalletService {
         }
 
         const params = {
-          inputs: (inputs as any[]).map(val => val.hashIn),
-          input_indexes: (inputs as any[]).map(val => val.index),
-          output_addresses: (outputs as any[]).map(val => val.address),
-          coins: (outputs as any[]).map(val => new BigNumber(val.coin).dividedBy(1000000).toFixed(6)),
-          hours: (outputs as any[]).map(val => val.hour.toString()),
-          address_indexes: returnIndexes,
+          transaction_inputs: (inputs as any[]).map(val => {
+            return {
+              index: val.index,
+              hash: val.hashIn
+            }
+          }),
+          transaction_outputs : (outputs as any[]).map(val => {
+            return {
+              address_index: val.address_index,
+              address: val.address,
+              coins: new BigNumber(val.coin).dividedBy(1000000).toFixed(6),
+              hours: val.hour.toString(),
+            }
+          }),
         };
 
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
-            '/transactionSign',
+            '/transaction_sign',
             ConnectionMethod.Post,
             params,
           ),
-          ['signatures'],
         ).map(response => {
           this.closeTransactionDialog();
 
@@ -456,23 +453,15 @@ export class HwWalletService {
     }
   }
 
-  private processDaemonResponse(daemonResponse: Observable<any>, internalElements: string[] = null, successTexts: string[] = null) {
+  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null) {
     return daemonResponse.catch((error: any) => {
-
       return Observable.throw(this.dispatchEvent(0, error['_body'], false, true));
     }).flatMap(result => {
 
       if (result !== HwWalletDaemonService.cancelled) {
-        let resultContents = result.data;
-        if (internalElements) {
-          internalElements.forEach(internalElement => {
-            resultContents = resultContents[internalElement];
-          });
-        }
-
         const response = this.dispatchEvent(0,
-          resultContents,
-          !successTexts ? true : typeof resultContents === 'string' && successTexts.some(text => (resultContents as string).includes(text)),
+          result.data,
+          !successTexts ? true : typeof result.data === 'string' && successTexts.some(text => (result.data as string).includes(text)),
           true);
 
           if (response.result === OperationResults.Success) {
@@ -536,6 +525,8 @@ export class HwWalletService {
         } else if (responseContent.includes('PIN mismatch')) {
           result = OperationResults.PinMismatch;
         } else if (responseContent.includes('Mnemonic not set')) {
+          result = OperationResults.WithoutSeed;
+        } else if (responseContent.includes('Mnemonic required')) {
           result = OperationResults.WithoutSeed;
         } else if (responseContent.includes('Invalid seed, are words in correct order?')) {
           result = OperationResults.InvalidSeed;

@@ -37,9 +37,9 @@ export class HwWalletDaemonService {
     this.checkHw(false);
   }
 
-  callFunction(route: string, connectionMethod: ConnectionMethod, params = {}, useFormEncoding = false) {
+  callFunction(route: string, connectionMethod: ConnectionMethod, params = {}) {
     if (connectionMethod === ConnectionMethod.Post) {
-      return this.post(route, params, useFormEncoding);
+      return this.post(route, params);
     } else if (connectionMethod === ConnectionMethod.Get) {
       return this.get(route);
     } else if (connectionMethod === ConnectionMethod.Put) {
@@ -56,11 +56,11 @@ export class HwWalletDaemonService {
     ));
   }
 
-  private post(route: string, params = {}, useFormEncoding) {
+  private post(route: string, params = {}) {
     return this.checkResponse(this.http.post(
       this.url + route,
-      !useFormEncoding ? JSON.stringify(params) : this.apiService.getQueryString(params),
-      this.returnRequestOptions(useFormEncoding),
+      JSON.stringify(params),
+      this.returnRequestOptions(),
     ));
   }
 
@@ -90,7 +90,7 @@ export class HwWalletDaemonService {
               return this.put('/cancel').map(() => HwWalletDaemonService.cancelled);
             }
 
-            return this.post('/intermediate/pinMatrix', {pin: pin}, false);
+            return this.post('/intermediate/pin_matrix', {pin: pin});
           });
         }
 
@@ -100,7 +100,7 @@ export class HwWalletDaemonService {
               return this.put('/cancel').map(() => HwWalletDaemonService.cancelled);
             }
 
-            return this.post('/intermediate/word', {word: word}, false);
+            return this.post('/intermediate/word', {word: word});
           });
         }
 
@@ -109,15 +109,17 @@ export class HwWalletDaemonService {
       .catch((error: any) => this.apiService.processConnectionError(error));
   }
 
-  private returnRequestOptions(useFormEncoding = false) {
+  private returnRequestOptions() {
     const options = new RequestOptions();
     options.headers = new Headers();
-    options.headers.append('Content-Type', !useFormEncoding ? 'application/json' : 'application/x-www-form-urlencoded');
+    options.headers.append('Content-Type', 'application/json');
 
     return options;
   }
 
   private checkHw(wait: boolean) {
+    // Reactivate this when having a more reliable method for detecting if the device is connected.
+    /*
     if (this.checkHwSubscription) {
       this.checkHwSubscription.unsubscribe();
     }
@@ -129,6 +131,7 @@ export class HwWalletDaemonService {
         (response: any) => this.updateHwConnected(!!response.data && !!response.data.features),
         (error: any) => this.updateHwConnected(error && error.message && typeof error.message === 'string' && error.message.indexOf('Unknown message read_tiny') !== -1),
       );
+      */
   }
 
   private updateHwConnected(connected: boolean) {

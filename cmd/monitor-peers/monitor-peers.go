@@ -19,9 +19,28 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/skycoin/skycoin/src/daemon"
+
 	"github.com/skycoin/skycoin/cmd/monitor-peers/connection"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/logging"
+)
+
+// PeerState is a current state of the peer
+type PeerState string
+
+const (
+	// StateUnreachable is set when a peer couldn't be reached
+	StateUnreachable = "unreachable"
+	// StateReachable is set when a connection to the peer was successful
+	StateReachable = "reachable"
+	// StateSentIntroduction is set when an introduction message was received from the peer
+	// and successfully parsed
+	StateSentIntroduction = "introduced"
 )
 
 // Report contains remote `peers.txt` report data.
@@ -29,16 +48,34 @@ type Report []ReportEntry
 
 // ReportEntry contains report data of a peer.
 type ReportEntry struct {
-	Address string
-	State   connection.PeerState
+	Address            string
+	State              PeerState
+	Introduction       daemon.IntroductionMessage
+	IntroValidationErr error
+}
+
+func (r Report) Append(addr string, state PeerState, introduction *daemon.IntroductionMessage,
+	introValidationErr error) Report {
+	entry := ReportEntry{
+		Address:            addr,
+		State:              state,
+		IntroValidationErr: introValidationErr,
+	}
+	if introduction != nil {
+		entry.Introduction = *introduction
+	}
+
+	return append(r, entry)
 }
 
 const (
+	blockchainPubKey      = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 	defaultConnectTimeout = "1s"
 	defaultReadTimeout    = "1s"
 	defaultPeersFile      = "peers.txt"
-	addrWidth             = "48"
-	reportFormat          = "%-" + addrWidth + "s\t%s\n"
+	addrWidth             = "25"
+	stateWidth            = "15"
+	reportFormat          = "%-" + addrWidth + "s\t%-" + stateWidth + "s\t%v\n"
 )
 
 var (
@@ -145,9 +182,10 @@ func getPeersListFromFile(filePath string) ([]string, error) {
 // getPeersReport loops through `peers`, connects to each and tries to read the introduction
 // message. Builds and returns the report
 func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) Report {
-	report := make(Report, 0, len(peers))
+	dc := daemon.NewDaemonConfig()
+	dc.BlockchainPubkey = cipher.MustPubKeyFromHex(blockchainPubKey)
 
-	conns := make([]*connection.Connection, 0, len(peers))
+	report := make(Report, 0, len(peers))
 
 	for _, addr := range peers {
 		conn, err := connection.NewConnection(addr, connectTimeout, readTimeout)
@@ -156,27 +194,30 @@ func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) R
 			continue
 		}
 
-		conns = append(conns, conn)
-
 		if err := conn.Connect(); err != nil {
+			report = report.Append(addr, StateUnreachable, nil, nil)
 			continue
 		}
 
-		_, err = conn.TryReadIntroductionMessage()
-		if err == nil {
-			// TODO: write introduction message to report
+		introduction, err := conn.TryReadIntroductionMessage()
+		if err != nil {
+			report = report.Append(addr, StateReachable, nil, nil)
+			continue
 		}
+
+		if err := introduction.Verify(dc, logrus.Fields{
+			"addr":   addr,
+			"gnetID": "1",
+		}); err != nil {
+			report = report.Append(addr, StateSentIntroduction, introduction, err)
+			continue
+		}
+
+		report = report.Append(addr, StateSentIntroduction, introduction, nil)
 
 		if err := conn.Disconnect(); err != nil {
 			logger.WithError(err).Error()
 		}
-	}
-
-	for _, c := range conns {
-		report = append(report, ReportEntry{
-			Address: fmt.Sprintf("%s:%v", c.IP, c.Port),
-			State:   c.State,
-		})
 	}
 
 	return report
@@ -186,9 +227,13 @@ func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) R
 func buildReport(report Report) string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf(reportFormat, "Address", "Status"))
+	sb.WriteString(fmt.Sprintf(reportFormat, "Address", "Status", "Intro validation error"))
 	for _, entry := range report {
-		sb.WriteString(fmt.Sprintf(reportFormat, entry.Address, entry.State))
+		if entry.IntroValidationErr == nil {
+			sb.WriteString(fmt.Sprintf(reportFormat, entry.Address, entry.State, "-"))
+		} else {
+			sb.WriteString(fmt.Sprintf(reportFormat, entry.Address, entry.State, entry.IntroValidationErr))
+		}
 	}
 
 	return sb.String()

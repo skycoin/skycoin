@@ -10,25 +10,10 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/util/iputil"
-)
-
-// PeerState is a current state of the peer
-type PeerState string
-
-const (
-	// StateUnreachable is set when a peer couldn't be reached
-	StateUnreachable = "unreachable"
-	// StateReachable is set when a connection to the peer was successful
-	StateReachable = "reachable"
-	// StateSentIntroduction is set when an introduction message was received from the peer
-	// and successfully parsed
-	StateSentIntroduction = "introduced"
 )
 
 const (
@@ -46,7 +31,6 @@ type Connection struct {
 	Port           uint16
 	ConnectTimeout time.Duration
 	ReadTimeout    time.Duration
-	State          PeerState
 	conn           net.Conn
 }
 
@@ -66,7 +50,6 @@ func NewConnection(addr string, connectTimeout, readTimeout time.Duration) (*Con
 		Port:           port,
 		ConnectTimeout: connectTimeout,
 		ReadTimeout:    readTimeout,
-		State:          StateUnreachable,
 	}, nil
 }
 
@@ -78,7 +61,6 @@ func (c *Connection) Connect() error {
 		return err
 	}
 
-	c.State = StateReachable
 	c.conn = conn
 
 	return nil
@@ -120,15 +102,6 @@ func (c *Connection) TryReadIntroductionMessage() (*daemon.IntroductionMessage, 
 			if !ok {
 				// TODO: fix error message
 				return nil, fmt.Errorf("wrong message")
-			}
-
-			c.State = StateSentIntroduction
-
-			if err := introductionMessage.Verify(daemon.NewDaemonConfig(), logrus.Fields{
-				"addr":   fmt.Sprintf("%s:%v", c.IP, c.Port),
-				"gnetID": "1",
-			}); err != nil {
-				return nil, fmt.Errorf("error validating introduction params")
 			}
 
 			return introductionMessage, nil

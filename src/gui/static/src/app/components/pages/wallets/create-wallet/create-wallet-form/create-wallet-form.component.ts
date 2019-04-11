@@ -2,6 +2,9 @@ import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ISubscription } from 'rxjs/Subscription';
 import { ApiService } from '../../../../../services/api.service';
+import { Bip39WordListService } from '../../../../../services/bip39-word-list.service';
+import { Subject } from 'rxjs/Subject';
+import 'rxjs/add/operator/switchMap';
 
 export class FormData {
   label: string;
@@ -24,10 +27,13 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   customSeedAccepted = false;
   encrypt = true;
 
+  private seed: Subject<string> = new Subject<string>();
   private statusSubscription: ISubscription;
+  private seedValiditySubscription: ISubscription;
 
   constructor(
     private apiService: ApiService,
+    private bip39WordListService: Bip39WordListService,
   ) { }
 
   ngOnInit() {
@@ -40,6 +46,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.statusSubscription.unsubscribe();
+    this.seedValiditySubscription.unsubscribe();
   }
 
   get isValid(): boolean {
@@ -86,7 +93,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     }
 
     if (data) {
-      this.normalSeed = this.isNormalSeed(data['seed']);
+      this.seed.next(data['seed']);
       this.customSeedAccepted = true;
     }
 
@@ -95,30 +102,33 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     }
     this.statusSubscription = this.form.statusChanges.subscribe(() => {
       this.customSeedAccepted = false;
-      this.normalSeed = this.isNormalSeed(this.form.get('seed').value);
+      this.seed.next(this.form.get('seed').value);
     });
+
+    this.subscribeToSeedValidation();
   }
 
   generateSeed(entropy: number) {
     this.apiService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
   }
 
-  private isNormalSeed(seed: string): boolean {
-    const processedSeed = seed.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' ').trim();
-    if (seed !== processedSeed) {
-      return false;
+  private subscribeToSeedValidation() {
+    if (this.seedValiditySubscription) {
+      this.seedValiditySubscription.unsubscribe();
     }
 
-    const NumberOfWords = seed.split(' ').length;
-    if (NumberOfWords !== 12 && NumberOfWords !== 24) {
-      return false;
-    }
-
-    if (!(/^[a-z\s]*$/).test(seed)) {
-      return false;
-    }
-
-    return true;
+    this.seedValiditySubscription = this.seed.asObservable().switchMap(seed => {
+      return this.apiService.post('wallet/seed/verify', {seed}, {}, true);
+    }).subscribe(() => {
+      this.normalSeed = true;
+    }, error => {
+      if (error.status && error.status === 422) {
+        this.normalSeed = false;
+      } else {
+        this.normalSeed = true;
+      }
+      this.subscribeToSeedValidation();
+    });
   }
 
   private validatePasswords() {

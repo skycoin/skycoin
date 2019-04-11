@@ -1,4 +1,4 @@
 export const AppConfig = {
   otcEnabled: false,
-  maxHardwareWalletAddresses: 8,
+  maxHardwareWalletAddresses: 1,
 };

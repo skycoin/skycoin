@@ -16,7 +16,6 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -592,7 +591,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 
 	// golang process internal metrics for Prometheus
-	webHandlerV2("/metrics", promhttp.Handler().(http.Handler), map[string][]string{
+	webHandlerV2("/metrics", metricsHandler(c, gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsPrometheus},
 	})
 

@@ -1492,23 +1492,6 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(p CreateTransactionParams, aux
 			}
 		}
 
-		// for _, spend := range spends {
-		// 	for _, ux := range auxs[spend.Address] {
-		// 		logger.Info("HEREEEEE")
-		// 		logger.Info(ux.Body.ProgramState)
-		// 		logger.Info(p.MainExpressions)
-
-		// 		prgrm := cx.Deserialize(cx.MergeTransactionAndBlockchain(ux.Body.ProgramState, p.MainExpressions))
-		// 		prgrm.RunCompiled(0, nil)
-		// 		s := cx.Serialize(prgrm, 1)
-		// 		cx.ExtractBlockchainProgram(ux.Body.ProgramState, s)
-
-		// 		// cx.Deserialize(cx.MergeTransactionAndBlockchain(
-		// 		// 	cx.ExtractBlockchainProgram(sPrgrm, s),
-		// 		// 	cx.ExtractTransactionProgram(sPrgrm, s))).RunCompiled(0, nil)
-		// 	}
-		// }
-
 		ux := auxs[spends[0].Address][0]
 		prgrm := cx.Deserialize(cx.MergeTransactionAndBlockchain(ux.Body.ProgramState, p.MainExpressions))
 		prgrm.RunCompiled(0, nil)

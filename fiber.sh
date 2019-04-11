@@ -5,7 +5,7 @@
 
 GENESIS_ADDRESS=23v7mT1uLpViNKZHh9aww4VChxizqKsNq4E
 BLOCKCHAIN_PUBKEY=02583e5ebbf85522474e0f17e681e62ca37910db6b8792763af4e97663c31a7984
-GENESIS_SIGNATURE=1041d799198bdc0c9167a26c26c3a51d130ddc6b5e42a1abbf1d65f9be9083515fa8ff5ef66dee3588038b4f790d8a2661afdbee17ed778e5924fbb6c105ecaa01
+GENESIS_SIGNATURE=db7cb62e8c85fdbaaa329c265ef6f39c0015ba0e408aab488afec5d2acf3f62c728fb7efc3333a14b918aa0b2d8297658dec76810c3943c6af375f1e6d9ecfc000
 
 if [ "$1" == "update" ]; then
     # go install -gcflags=all=-e ../fiber-init/cmd/fiber-init/...
@@ -90,13 +90,13 @@ if [ "$1" == "remWallet" ]; then
 fi
 
 if [ "$1" == "createWallet" ]; then
-    # rm ~/.cxcoin/wallets/*
+    # rm -r ~/.cxcoin/wallets/
     ADDRESS="TkyD4wD64UE6M5BkNQA17zaf7Xcg4AufwX"
     SEED="museum nothing practice weird wheel dignity economy attend mask recipe minor dress"
     LABEL="cxcoin"
-    CSRF_TOKEN=$(curl -s http://127.0.0.1:6421/api/v1/csrf | jq -r '.csrf_token')
+    CSRF_TOKEN=$(curl -s http://127.0.0.1:6420/api/v1/csrf | jq -r '.csrf_token')
     
-    WALLET=$(curl -s -X POST http://127.0.0.1:6421/api/v1/wallet/create \
+    WALLET=$(curl -s -X POST http://127.0.0.1:6420/api/v1/wallet/create \
          -H "X-CSRF-Token: $CSRF_TOKEN" \
          -H "Content-Type: application/x-www-form-urlencoded" \
          -d "seed=$SEED" \
@@ -114,25 +114,25 @@ if [ "$1" == "createWallet" ]; then
 fi
 
 if [ "$1" == "wallet" ]; then
-    curl http://127.0.0.1:6421/api/v1/wallet?id=$WALLET
+    curl http://127.0.0.1:6420/api/v1/wallet?id=$WALLET
 fi
 
 if [ "$1" == "balance" ]; then
-    curl http://127.0.0.1:6421/api/v1/balance\?addrs\=$ADDRESS
+    curl http://127.0.0.1:6420/api/v1/balance\?addrs\=$ADDRESS
 fi
 
 if [ "$1" == "transactions" ]; then
-    curl http://127.0.0.1:6421/api/v1/transactions\?addrs\=$ADDRESS&confirmed=1
+    curl http://127.0.0.1:6420/api/v1/transactions\?addrs\=$ADDRESS&confirmed=1
 fi
 
 if [ "$1" == "programState" ]; then
-    curl -s http://127.0.0.1:6421/api/v1/programState\?addrs\=$ADDRESS | jq -r '.'
+    curl -s http://127.0.0.1:6420/api/v1/programState\?addrs\=$ADDRESS | jq -r '.'
 fi
 
 if [ "$1" == "txn" ]; then
     # CSRF_TOKEN=$(curl -s http://127.0.0.1:6420/api/v1/csrf | jq -r '.csrf_token')
-    CSRF_TOKEN_PEER=$(curl -s http://127.0.0.1:6421/api/v1/csrf | jq -r '.csrf_token')
-    TXN=$(curl -s -X POST http://127.0.0.1:6421/api/v1/wallet/transaction \
+    CSRF_TOKEN_PEER=$(curl -s http://127.0.0.1:6420/api/v1/csrf | jq -r '.csrf_token')
+    TXN=$(curl -s -X POST http://127.0.0.1:6420/api/v1/wallet/transaction \
 	 -H "X-CSRF-Token: $CSRF_TOKEN_PEER" \
 	 -H 'content-type: application/json' -d '{
     "hours_selection": {
@@ -156,7 +156,7 @@ if [ "$1" == "txn" ]; then
     TXN=$(echo $TXN | jq -r '.encoded_transaction')
     echo $TXN
 
-    curl -X POST http://127.0.0.1:6421/api/v1/injectTransaction \
+    curl -X POST http://127.0.0.1:6420/api/v1/injectTransaction \
     	 -H "X-CSRF-Token: $CSRF_TOKEN_PEER" \
     	 -H 'content-type: application/json' -d '{"rawtx": "'$TXN'"}'
 
@@ -166,7 +166,7 @@ if [ "$1" == "txn" ]; then
     # 	 -H "X-CSRF-Token: $CSRF_TOKEN" \
     # 	 -H 'content-type: application/json' -d "{\"rawtx\": \"$TXN\"}"
 
-    # curl -X POST http://127.0.0.1:6421/api/v2/wallet/transaction/sign \
+    # curl -X POST http://127.0.0.1:6420/api/v2/wallet/transaction/sign \
 # 	 -H "X-CSRF-Token: $CSRF_TOKEN_PEER" \
 # 	 -H 'content-type: application/json' -d '{
 #     "wallet_id": "2019_03_01_db2c.wlt",

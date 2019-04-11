@@ -1321,7 +1321,7 @@ func (vs *Visor) getProgramState(tx *dbutil.Tx, flts []TxFilter) ([]byte, error)
 			retTxns = append(retTxns, tx)
 		}
 	}
-	
+
 	return retTxns[len(retTxns)-1].Transaction.Out[0].ProgramState, nil
 }
 

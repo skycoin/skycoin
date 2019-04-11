@@ -14,7 +14,7 @@ GOLDFLAGS="${GOLDFLAGS} -X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 
 GORUNFLAGS=${GORUNFLAGS:-}
 
-go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/cxcoin/cxcoin.go \
+go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS ../cx/cmd/cxcoin/cxcoin.go \
     -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=true \
     -enable-all-api-sets=true \

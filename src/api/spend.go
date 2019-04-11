@@ -89,9 +89,6 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 
 	txid := txn.Hash()
 	out := make([]CreatedTransactionOutput, len(txn.Out))
-	logger.Info("huehue")
-	logger.Info(len(txn.Out))
-	logger.Info("haha", len(txn.Out))
 	for i, o := range txn.Out {
 		co, err := NewCreatedTransactionOutput(o, txid)
 		if err != nil {
@@ -458,11 +455,6 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 	var changeAddress *cipher.Address
 	if r.ChangeAddress != nil {
 		changeAddress = &r.ChangeAddress.Address
-	}
-
-	logger.Info("WOOOOO")
-	for _, t := range to {
-		logger.Info(t.ProgramState)
 	}
 
 	return wallet.CreateTransactionParams{

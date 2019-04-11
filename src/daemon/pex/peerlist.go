@@ -235,7 +235,7 @@ func (pl *peerlist) setUserAgent(addr string, userAgent useragent.Data) error {
 		return nil
 	}
 
-	return fmt.Errorf("set peer.UserAgent failed: %v does not exist in peer list", addr)
+	return fmt.Errorf("set peer.userAgent failed: %v does not exist in peer list", addr)
 }
 
 // len returns number of peers

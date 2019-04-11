@@ -50,32 +50,73 @@ type Report []ReportEntry
 type ReportEntry struct {
 	Address            string
 	State              PeerState
-	Introduction       daemon.IntroductionMessage
+	Introduction       *daemon.IntroductionMessage
 	IntroValidationErr error
 }
 
+func (re ReportEntry) String() string {
+	uaCoin := "-"
+	uaVersion := "-"
+	uaRemark := "-"
+	verifyTxBurnFactor := "-"
+	verifyTxMaxTxSize := "-"
+	verifyTxMaxDropletPrecision := "-"
+	introValidationErr := "-"
+
+	if re.Introduction != nil {
+		if re.Introduction.UserAgent.Coin != "" {
+			uaCoin = re.Introduction.UserAgent.Coin
+		}
+		if re.Introduction.UserAgent.Version != "" {
+			uaVersion = re.Introduction.UserAgent.Version
+		}
+		if re.Introduction.UserAgent.Remark != "" {
+			uaRemark = re.Introduction.UserAgent.Remark
+		}
+
+		verifyTxBurnFactor = strconv.FormatUint(uint64(re.Introduction.UnconfirmedVerifyTxn.BurnFactor), 10)
+		verifyTxMaxTxSize = strconv.FormatUint(uint64(re.Introduction.UnconfirmedVerifyTxn.MaxTransactionSize), 10)
+		verifyTxMaxDropletPrecision = strconv.
+			FormatUint(uint64(re.Introduction.UnconfirmedVerifyTxn.MaxDropletPrecision), 10)
+	}
+
+	if re.IntroValidationErr != nil {
+		introValidationErr = re.IntroValidationErr.Error()
+	}
+
+	return fmt.Sprintf(reportFormat, re.Address, re.State, uaCoin, uaVersion, uaRemark,
+		verifyTxBurnFactor, verifyTxMaxTxSize, verifyTxMaxDropletPrecision, introValidationErr)
+}
+
+// Append constructs the new report entry and appends it to the report
 func (r Report) Append(addr string, state PeerState, introduction *daemon.IntroductionMessage,
 	introValidationErr error) Report {
 	entry := ReportEntry{
 		Address:            addr,
 		State:              state,
 		IntroValidationErr: introValidationErr,
-	}
-	if introduction != nil {
-		entry.Introduction = *introduction
+		Introduction:       introduction,
 	}
 
 	return append(r, entry)
 }
 
 const (
-	blockchainPubKey      = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
-	defaultConnectTimeout = "1s"
-	defaultReadTimeout    = "1s"
-	defaultPeersFile      = "peers.txt"
-	addrWidth             = "25"
-	stateWidth            = "15"
-	reportFormat          = "%-" + addrWidth + "s\t%-" + stateWidth + "s\t%v\n"
+	blockchainPubKey                 = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+	defaultConnectTimeout            = "1s"
+	defaultReadTimeout               = "1s"
+	defaultPeersFile                 = "peers.txt"
+	addrWidth                        = "25"
+	stateWidth                       = "15"
+	uaCoinWidth                      = "10"
+	uaVersionWidth                   = "10"
+	uaRemarkWidth                    = "10"
+	verifyTxBurnFactorWidth          = "10"
+	verifyTxMaxTxSizeWidth           = "10"
+	verifyTxMaxDropletPrecisionWidth = "20"
+	reportFormat                     = "%-" + addrWidth + "s\t%-" + stateWidth + "s\t%-" + uaCoinWidth + "s\t%-" +
+		uaVersionWidth + "s\t%-" + uaRemarkWidth + "s\t%-" + verifyTxBurnFactorWidth + "s\t%-" +
+		verifyTxMaxTxSizeWidth + "s\t%-" + verifyTxMaxDropletPrecisionWidth + "s\t%v\n"
 )
 
 var (
@@ -206,8 +247,7 @@ func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) R
 		}
 
 		if err := introduction.Verify(dc, logrus.Fields{
-			"addr":   addr,
-			"gnetID": "1",
+			"addr": addr,
 		}); err != nil {
 			report = report.Append(addr, StateSentIntroduction, introduction, err)
 			continue
@@ -227,13 +267,10 @@ func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) R
 func buildReport(report Report) string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf(reportFormat, "Address", "Status", "Intro validation error"))
+	sb.WriteString(fmt.Sprintf(reportFormat, "Address", "Status", "Coin", "Version", "Remark",
+		"Burn factor", "Max tx size", "Max droplet precision", "Intro validation error"))
 	for _, entry := range report {
-		if entry.IntroValidationErr == nil {
-			sb.WriteString(fmt.Sprintf(reportFormat, entry.Address, entry.State, "-"))
-		} else {
-			sb.WriteString(fmt.Sprintf(reportFormat, entry.Address, entry.State, entry.IntroValidationErr))
-		}
+		sb.WriteString(entry.String())
 	}
 
 	return sb.String()

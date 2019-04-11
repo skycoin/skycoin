@@ -326,8 +326,8 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 // IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
 	c                    *gnet.MessageContext `enc:"-"`
-	userAgent            useragent.Data       `enc:"-"`
-	unconfirmedVerifyTxn params.VerifyTxn     `enc:"-"`
+	UserAgent            useragent.Data       `enc:"-"`
+	UnconfirmedVerifyTxn params.VerifyTxn     `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -362,7 +362,7 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
-			"userAgent": userAgent,
+			"UserAgent": userAgent,
 			"maxLen":    useragent.MaxLen,
 		}).Panic("user agent exceeds max len")
 	}
@@ -523,18 +523,18 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 			logger.WithFields(logFields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
 			return ErrDisconnectInvalidExtraData
 		}
-		if err := encoder.DeserializeRawExact(intro.Extra[i:i+9], &intro.unconfirmedVerifyTxn); err != nil {
+		if err := encoder.DeserializeRawExact(intro.Extra[i:i+9], &intro.UnconfirmedVerifyTxn); err != nil {
 			// This should not occur due to the previous length check
-			logger.Critical().WithError(err).WithFields(logFields).Warning("unconfirmedVerifyTxn params could not be deserialized")
+			logger.Critical().WithError(err).WithFields(logFields).Warning("UnconfirmedVerifyTxn params could not be deserialized")
 			return ErrDisconnectInvalidExtraData
 		}
 
-		if err := intro.unconfirmedVerifyTxn.Validate(); err != nil {
+		if err := intro.UnconfirmedVerifyTxn.Validate(); err != nil {
 			logger.WithError(err).WithFields(logFields).WithFields(logrus.Fields{
-				"burnFactor":          intro.unconfirmedVerifyTxn.BurnFactor,
-				"maxTransactionSize":  intro.unconfirmedVerifyTxn.MaxTransactionSize,
-				"maxDropletPrecision": intro.unconfirmedVerifyTxn.MaxDropletPrecision,
-			}).Warning("Invalid unconfirmedVerifyTxn params")
+				"burnFactor":          intro.UnconfirmedVerifyTxn.BurnFactor,
+				"maxTransactionSize":  intro.UnconfirmedVerifyTxn.MaxTransactionSize,
+				"maxDropletPrecision": intro.UnconfirmedVerifyTxn.MaxDropletPrecision,
+			}).Warning("Invalid UnconfirmedVerifyTxn params")
 			switch err {
 			case params.ErrInvalidBurnFactor:
 				return ErrDisconnectInvalidBurnFactor
@@ -554,9 +554,9 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 			return ErrDisconnectInvalidExtraData
 		}
 
-		intro.userAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
+		intro.UserAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
-			logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
+			logger.WithError(err).WithFields(logFields).WithField("UserAgent", userAgent).Warning("User agent is invalid")
 			return ErrDisconnectInvalidUserAgent
 		}
 	}

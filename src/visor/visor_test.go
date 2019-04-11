@@ -1994,9 +1994,9 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Create a transaction that exceeds UnconfirmedVerifyTxn.MaxTransactionSize
+	// Create a transaction that exceeds unconfirmedVerifyTxn.MaxTransactionSize
 	// It's still injected, because this is considered a soft error
-	// This transaction will become valid on refresh (by increasing UnconfirmedVerifyTxn.MaxTransactionSize)
+	// This transaction will become valid on refresh (by increasing unconfirmedVerifyTxn.MaxTransactionSize)
 	originalMaxUnconfirmedTxnSize := v.Config.UnconfirmedVerifyTxn.MaxTransactionSize
 	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = 1
 	sometimesInvalidTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
@@ -2412,9 +2412,9 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:                   "transaction violate soft constraints, transaction size bigger than max block size",
 			signed:                 TxnSigned,
 			maxUserTransactionSize: 1,
-			txn:                    txn,
-			inputs:                 spentInputs[:],
-			err:                    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
+			txn:    txn,
+			inputs: spentInputs[:],
+			err:    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
 
 			getArrayRet: inputs[:1],
 		},

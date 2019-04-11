@@ -182,7 +182,7 @@ export class ApiService {
     return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
   }
 
-  processConnectionError(error: any): Observable<void> {
+  processConnectionError(error: any, connectingToHwWalletDaemon = false): Observable<void> {
     if (error) {
       if (typeof error['_body'] === 'string') {
 
@@ -200,7 +200,7 @@ export class ApiService {
       }
     }
 
-    const err = Error(this.translate.instant('service.api.server-error'));
+    const err = Error(this.translate.instant(!connectingToHwWalletDaemon ? 'hardware-wallet.errors.daemon-connection' : 'service.api.server-error'));
     err['_body'] = err.message;
 
     return Observable.throw(err);

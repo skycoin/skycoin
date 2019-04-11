@@ -12,6 +12,7 @@ enum States {
   Failed,
   WrongPin,
   PinMismatch,
+  DaemonError,
 }
 
 @Component({
@@ -52,6 +53,8 @@ export class HwChangePinDialogComponent extends HwDialogBaseComponent<HwChangePi
           this.currentState = States.ReturnedRefused;
         } else if (err.result && err.result === OperationResults.WrongPin) {
           this.currentState = States.WrongPin;
+        } else if (err.result && err.result === OperationResults.DaemonError) {
+          this.currentState = States.DaemonError;
         } else {
           this.currentState = States.Failed;
         }

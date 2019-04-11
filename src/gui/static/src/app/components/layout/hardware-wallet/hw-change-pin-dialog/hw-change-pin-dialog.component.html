@@ -32,6 +32,11 @@
     [icon]="msgIcons.Error"
   ></app-hw-message>
 
+  <app-hw-message *ngIf="currentState === states.DaemonError"
+      [text]="'hardware-wallet.errors.daemon-connection' | translate"
+      [icon]="msgIcons.Error"
+    ></app-hw-message>
+
   <div class="-buttons" *ngIf="currentState !== states.Initial">
     <app-button (action)="closeModal()" class="primary">
       {{ 'hardware-wallet.general.close' | translate }}

@@ -44,6 +44,8 @@ export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, tran
         return translateService.instant('hardware-wallet.general.error-incorrect-pin');
       } else if (error.result === OperationResults.IncorrectHardwareWallet) {
         return translateService.instant('hardware-wallet.general.error-incorrect-wallet');
+      } else if (error.result === OperationResults.DaemonError) {
+        return translateService.instant('hardware-wallet.errors.daemon-connection');
       }
     }
 

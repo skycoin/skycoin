@@ -23,6 +23,7 @@ export enum OperationResults {
   WrongSeed,
   UndefinedError,
   Disconnected,
+  DaemonError,
 }
 
 export class OperationResult {
@@ -390,8 +391,8 @@ export class HwWalletService {
           transaction_inputs: (inputs as any[]).map(val => {
             return {
               index: val.index,
-              hash: val.hashIn
-            }
+              hash: val.hashIn,
+            };
           }),
           transaction_outputs : (outputs as any[]).map(val => {
             return {
@@ -399,7 +400,7 @@ export class HwWalletService {
               address: val.address,
               coins: new BigNumber(val.coin).dividedBy(1000000).toFixed(6),
               hours: val.hour.toString(),
-            }
+            };
           }),
         };
 
@@ -532,6 +533,8 @@ export class HwWalletService {
           result = OperationResults.InvalidSeed;
         } else if (responseContent.includes('The seed is valid but does not match the one in the device')) {
           result = OperationResults.WrongSeed;
+        } else if (responseContent.includes(HwWalletDaemonService.errorConnectingWithTheDaemon)) {
+          result = OperationResults.DaemonError;
         } else {
           result = OperationResults.UndefinedError;
         }

@@ -11,6 +11,7 @@ enum States {
   ReturnedSuccess,
   ReturnedRefused,
   Failed,
+  DaemonError,
 }
 
 @Component({
@@ -57,6 +58,8 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
       err => {
         if (err.result && err.result === OperationResults.FailedOrRefused) {
           this.currentState = States.ReturnedRefused;
+        } else if (err.result && err.result === OperationResults.DaemonError) {
+          this.currentState = States.DaemonError;
         } else {
           this.currentState = States.Failed;
         }

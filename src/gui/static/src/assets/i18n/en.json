@@ -336,7 +336,8 @@
     },
     "errors": {
       "too-many-inputs": "The transaction has too many inputs and can not be processed. Please contact technical support.",
-      "too-many-outputs": "The transaction has too many outputs and can not be processed. Please contact technical support."
+      "too-many-outputs": "The transaction has too many outputs and can not be processed. Please contact technical support.",
+      "daemon-connection": "Problem connecting to the hardware wallet service."
     },
     "security-warning" : {
       "title": "Security warning",

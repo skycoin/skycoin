@@ -18,6 +18,7 @@ export enum ConnectionMethod {
 export class HwWalletDaemonService {
 
   public static readonly cancelled = 'Cancelled';
+  public static readonly errorConnectingWithTheDaemon = 'Error connecting with the hw wallet service';
   private readonly url = '/hw-daemon/api/v1';
 
   private checkHwSubscription: ISubscription;
@@ -106,7 +107,25 @@ export class HwWalletDaemonService {
 
         return Observable.of(finalResponse);
       })
-      .catch((error: any) => this.apiService.processConnectionError(error));
+      .catch((error: any) => {
+        if (error && error._body)  {
+          let errorContent: string;
+
+          if (error._body.error)  {
+            errorContent = error._body.error;
+          } else {
+            try {
+              errorContent = JSON.parse(error._body).error;
+            } catch (e) {}
+          }
+
+          if (errorContent) {
+            return this.apiService.processConnectionError(error, true);
+          }
+        }
+
+        return Observable.throw({_body: HwWalletDaemonService.errorConnectingWithTheDaemon });
+      });
   }
 
   private returnRequestOptions() {

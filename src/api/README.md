@@ -1650,7 +1650,12 @@ Result:
 ## Key-value storage APIs
 
 Endpoints interact with the key-value storage. Each request require the `type` argument to
-be passed. Currently allowed types: `txid`, `client`
+be passed.
+
+Currently allowed types:
+
+* `txid`: used for transaction notes
+* `client`: used for generic client data, instead of using e.g. LocalStorage in the browser
 
 ### Get all storage values
 

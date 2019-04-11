@@ -138,11 +138,6 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 	return c.makeRequestWithoutBody(endpoint, http.MethodGet)
 }
 
-// delete makes a DELETE request to an endpoint. Caller must close response body.
-func (c *Client) delete(endpoint string) (*http.Response, error) {
-	return c.makeRequestWithoutBody(endpoint, http.MethodDelete)
-}
-
 // makeRequestWithoutBody makes a `method` request to an endpoint. Caller must close response body.
 func (c *Client) makeRequestWithoutBody(endpoint, method string) (*http.Response, error) {
 	endpoint = strings.TrimLeft(endpoint, "/")
@@ -162,34 +157,6 @@ func (c *Client) makeRequestWithoutBody(endpoint, method string) (*http.Response
 // and parses the standard JSON response.
 func (c *Client) DeleteV2(endpoint string, respObj interface{}) (bool, error) {
 	return c.requestV2(http.MethodDelete, endpoint, nil, respObj)
-}
-
-// Delete makes a DELETE request to an endpoint and unmarshals the response to obj.
-// If the response is not 200 OK, returns an error.
-func (c *Client) Delete(endpoint string, obj interface{}) error {
-	resp, err := c.delete(endpoint)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		return NewClientError(resp.Status, resp.StatusCode, string(body))
-	}
-
-	if obj == nil {
-		return nil
-	}
-
-	d := json.NewDecoder(resp.Body)
-	d.DisallowUnknownFields()
-	return d.Decode(obj)
 }
 
 // PostForm makes a POST request to an endpoint with body of ContentTypeForm formated data.
@@ -289,8 +256,6 @@ func (c *Client) requestV2(method, endpoint string, body io.Reader, respObj inte
 	switch method {
 	case http.MethodPost:
 		req.Header.Set("Content-Type", ContentTypeJSON)
-	default:
-		req.Header.Set("Content-Type", ContentTypeForm)
 	}
 
 	req.Header.Set("Accept", ContentTypeJSON)

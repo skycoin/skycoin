@@ -601,7 +601,6 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 	tt := []struct {
 		name                  string
 		method                string
-		contentType           string
 		query                 string
 		status                int
 		storageType           kvstorage.Type
@@ -611,9 +610,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 		csrfDisabled          bool
 	}{
 		{
-			name:        "405",
-			method:      http.MethodPut,
-			contentType: ContentTypeForm,
+			name:   "405",
+			method: http.MethodPut,
 			query: url.Values{
 				"type": []string{string(kvstorage.TypeTxIDNotes)},
 				"key":  []string{"test"},
@@ -625,9 +623,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 			httpResponse:          NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""),
 		},
 		{
-			name:        "403",
-			method:      http.MethodDelete,
-			contentType: ContentTypeForm,
+			name:   "403",
+			method: http.MethodDelete,
 			query: url.Values{
 				"type": []string{string(kvstorage.TypeTxIDNotes)},
 				"key":  []string{"test"},
@@ -639,23 +636,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 			httpResponse:          NewHTTPErrorResponse(http.StatusForbidden, ""),
 		},
 		{
-			name:        "415",
-			method:      http.MethodDelete,
-			contentType: ContentTypeJSON,
-			query: url.Values{
-				"type": []string{string(kvstorage.TypeTxIDNotes)},
-				"key":  []string{"test"},
-			}.Encode(),
-			status:                http.StatusUnsupportedMediaType,
-			storageType:           kvstorage.TypeTxIDNotes,
-			key:                   "test",
-			removeStorageValueErr: nil,
-			httpResponse:          NewHTTPErrorResponse(http.StatusUnsupportedMediaType, ""),
-		},
-		{
-			name:        "400 - missing type",
-			method:      http.MethodDelete,
-			contentType: ContentTypeForm,
+			name:   "400 - missing type",
+			method: http.MethodDelete,
 			query: url.Values{
 				"key": []string{"test"},
 			}.Encode(),
@@ -666,9 +648,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 			httpResponse:          NewHTTPErrorResponse(http.StatusBadRequest, "type is required"),
 		},
 		{
-			name:        "400 - unknown type",
-			method:      http.MethodDelete,
-			contentType: ContentTypeForm,
+			name:   "400 - unknown type",
+			method: http.MethodDelete,
 			query: url.Values{
 				"type": []string{"unknown"},
 				"key":  []string{"test"},
@@ -680,9 +661,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 			httpResponse:          NewHTTPErrorResponse(http.StatusBadRequest, "unknown storage"),
 		},
 		{
-			name:        "404 - storage not loaded",
-			method:      http.MethodDelete,
-			contentType: ContentTypeForm,
+			name:   "404 - storage not loaded",
+			method: http.MethodDelete,
 			query: url.Values{
 				"type": []string{string(kvstorage.TypeTxIDNotes)},
 				"key":  []string{"test"},
@@ -694,9 +674,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 			httpResponse:          NewHTTPErrorResponse(http.StatusNotFound, "storage is not loaded"),
 		},
 		{
-			name:        "400 - missing key",
-			method:      http.MethodDelete,
-			contentType: ContentTypeForm,
+			name:   "400 - missing key",
+			method: http.MethodDelete,
 			query: url.Values{
 				"type": []string{string(kvstorage.TypeTxIDNotes)},
 			}.Encode(),
@@ -706,9 +685,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 			httpResponse:          NewHTTPErrorResponse(http.StatusBadRequest, "key is required"),
 		},
 		{
-			name:        "404 - not found",
-			method:      http.MethodDelete,
-			contentType: ContentTypeForm,
+			name:   "404 - not found",
+			method: http.MethodDelete,
 			query: url.Values{
 				"type": []string{string(kvstorage.TypeTxIDNotes)},
 				"key":  []string{"test"},
@@ -720,9 +698,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 			httpResponse:          NewHTTPErrorResponse(http.StatusNotFound, ""),
 		},
 		{
-			name:        "200",
-			method:      http.MethodDelete,
-			contentType: ContentTypeForm,
+			name:   "200",
+			method: http.MethodDelete,
 			query: url.Values{
 				"type": []string{string(kvstorage.TypeTxIDNotes)},
 				"key":  []string{"test"},
@@ -734,9 +711,8 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 			httpResponse:          HTTPResponse{},
 		},
 		{
-			name:        "403 - csrf disabled",
-			method:      http.MethodDelete,
-			contentType: ContentTypeForm,
+			name:   "403 - csrf disabled",
+			method: http.MethodDelete,
 			query: url.Values{
 				"type": []string{string(kvstorage.TypeTxIDNotes)},
 				"key":  []string{"test"},
@@ -763,8 +739,6 @@ func TestRemoveStorageValueHandler(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(""))
 			require.NoError(t, err)
-
-			req.Header.Set("Content-Type", tc.contentType)
 
 			if tc.csrfDisabled {
 				setCSRFParameters(t, tokenInvalid, req)

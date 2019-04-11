@@ -160,12 +160,6 @@ func addStorageValueHandler(w http.ResponseWriter, r *http.Request, gateway Gate
 //     type: storage type
 //     key: key
 func removeStorageValueHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer) {
-	if r.Header.Get("Content-Type") != ContentTypeForm {
-		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-		writeHTTPResponse(w, resp)
-		return
-	}
-
 	storageType := r.FormValue("type")
 	if storageType == "" {
 		resp := NewHTTPErrorResponse(http.StatusBadRequest, "type is required")

@@ -614,7 +614,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	// Storage endpoint
 	webHandlerV2("/data", storageHandler(gateway), map[string][]string{
-		http.MethodGet:    []string{EndpointsStorage, EndpointsRead},
+		http.MethodGet:    []string{EndpointsStorage},
 		http.MethodPost:   []string{EndpointsStorage},
 		http.MethodDelete: []string{EndpointsStorage},
 	})

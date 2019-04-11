@@ -1,6 +1,9 @@
 package kvstorage
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,23 +12,38 @@ import (
 )
 
 const (
-	testDataFilePath  = "./testdata/data" + storageFileExtension
-	testEmptyFilePath = "./testdata/empty" + storageFileExtension
+	testDataFilename  = "data" + storageFileExtension
+	testEmptyFilename = "empty" + storageFileExtension
 )
 
-func formTestFile(fileName string) error {
+func setupTmpDir(t *testing.T) (string, func()) {
+	tmpDir, err := ioutil.TempDir("", "kvstoragetest")
+	require.NoError(t, err)
+
+	if err != nil {
+		return "", func() {}
+	}
+
+	return tmpDir, func() {
+		_ = os.RemoveAll(tmpDir) // nolint: errcheck
+	}
+}
+
+func setupTestFile(t *testing.T, fileName string) {
 	data := map[string]string{
 		"test1": "some value",
 		"test2": "{\"key\":\"val\",\"key2\":2}",
 	}
 
-	return file.SaveJSON(fileName, data, 0644)
+	err := file.SaveJSON(fileName, data, 0644)
+	require.NoError(t, err)
 }
 
-func formEmptyTestFile(fileName string) error {
+func setupEmptyTestFile(t *testing.T, fileName string) {
 	data := make(map[string]string)
 
-	return file.SaveJSON(fileName, data, 0644)
+	err := file.SaveJSON(fileName, data, 0644)
+	require.NoError(t, err)
 }
 
 func TestNewKVStorage(t *testing.T) {
@@ -34,8 +52,11 @@ func TestNewKVStorage(t *testing.T) {
 		expectError bool
 	}
 
-	err := formTestFile(testDataFilePath)
-	require.NoError(t, err)
+	tmpDir, cleanup := setupTmpDir(t)
+	defer cleanup()
+
+	dataFilename := filepath.Join(tmpDir, testDataFilename)
+	setupTestFile(t, dataFilename)
 
 	tt := []struct {
 		name     string
@@ -52,10 +73,10 @@ func TestNewKVStorage(t *testing.T) {
 		},
 		{
 			name:     "file exists",
-			fileName: testDataFilePath,
+			fileName: dataFilename,
 			expect: expect{
 				storage: &kvStorage{
-					fileName: testDataFilePath,
+					fileName: dataFilename,
 					data: map[string]string{
 						"test1": "some value",
 						"test2": "{\"key\":\"val\",\"key2\":2}",
@@ -88,10 +109,13 @@ func TestKVStorageGet(t *testing.T) {
 		err error
 	}
 
-	err := formTestFile(testDataFilePath)
-	require.NoError(t, err)
+	tmpDir, cleanup := setupTmpDir(t)
+	defer cleanup()
 
-	storage, err := newKVStorage(testDataFilePath)
+	dataFilename := filepath.Join(tmpDir, testDataFilename)
+	setupTestFile(t, dataFilename)
+
+	storage, err := newKVStorage(dataFilename)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -146,14 +170,18 @@ func TestKVStorageGetAll(t *testing.T) {
 		data map[string]string
 	}
 
-	err := formTestFile(testDataFilePath)
-	require.NoError(t, err)
-	err = formEmptyTestFile(testEmptyFilePath)
-	require.NoError(t, err)
+	tmpDir, cleanup := setupTmpDir(t)
+	defer cleanup()
 
-	filledStorage, err := newKVStorage(testDataFilePath)
+	dataFilename := filepath.Join(tmpDir, testDataFilename)
+	emptyFilename := filepath.Join(tmpDir, testEmptyFilename)
+
+	setupTestFile(t, dataFilename)
+	setupEmptyTestFile(t, emptyFilename)
+
+	filledStorage, err := newKVStorage(dataFilename)
 	require.NoError(t, err)
-	emptyStorage, err := newKVStorage(testEmptyFilePath)
+	emptyStorage, err := newKVStorage(emptyFilename)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -227,10 +255,13 @@ func TestKVStorageAdd(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			err := formTestFile(testDataFilePath)
-			require.NoError(t, err)
+			tmpDir, cleanup := setupTmpDir(t)
+			defer cleanup()
 
-			storage, err := newKVStorage(testDataFilePath)
+			dataFilename := filepath.Join(tmpDir, testDataFilename)
+			setupTestFile(t, dataFilename)
+
+			storage, err := newKVStorage(dataFilename)
 			require.NoError(t, err)
 
 			// acquire the original data
@@ -294,10 +325,13 @@ func TestKVStorageRemove(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			err := formTestFile(testDataFilePath)
-			require.NoError(t, err)
+			tmpDir, cleanup := setupTmpDir(t)
+			defer cleanup()
 
-			storage, err := newKVStorage(testDataFilePath)
+			dataFilename := filepath.Join(tmpDir, testDataFilename)
+			setupTestFile(t, dataFilename)
+
+			storage, err := newKVStorage(dataFilename)
 			require.NoError(t, err)
 
 			// acquire the original data

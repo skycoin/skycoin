@@ -102,72 +102,7 @@ func (c *Client) applyAuth(req *http.Request) {
 // GetV2 makes a GET request to an endpoint and unmarshals the response to respObj.
 // If the response is not 200 OK, returns an error
 func (c *Client) GetV2(endpoint string, respObj interface{}) (bool, error) {
-	csrf, err := c.CSRF()
-	if err != nil {
-		return false, err
-	}
-
-	endpoint = strings.TrimLeft(endpoint, "/")
-	endpoint = c.Addr + endpoint
-
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-	if err != nil {
-		return false, err
-	}
-
-	c.applyAuth(req)
-
-	req.Header.Set("Content-Type", ContentTypeForm)
-
-	if csrf != "" {
-		req.Header.Set(CSRFHeaderName, csrf)
-	}
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return false, err
-	}
-
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return false, err
-	}
-
-	decoder := json.NewDecoder(bytes.NewReader(respBody))
-	decoder.DisallowUnknownFields()
-
-	var wrapObj ReceivedHTTPResponse
-	if err := decoder.Decode(&wrapObj); err != nil {
-		// In some cases, the server can send an error response in a non-JSON format,
-		// such as a 404 when the endpoint is not registered, or if a 500 error
-		// occurs in the go HTTP stack, outside of the application's control.
-		// If this happens, treat the entire response body as the error message.
-		if resp.StatusCode != http.StatusOK {
-			return false, NewClientError(resp.Status, resp.StatusCode, string(respBody))
-		}
-
-		return false, err
-	}
-
-	var rspErr error
-	if resp.StatusCode != http.StatusOK {
-		rspErr = NewClientError(resp.Status, resp.StatusCode, wrapObj.Error.Message)
-	}
-
-	if wrapObj.Data == nil {
-		return false, rspErr
-	}
-
-	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(respObj); err != nil {
-		return false, err
-	}
-
-	return true, rspErr
+	return c.requestV2(http.MethodGet, endpoint, nil, respObj)
 }
 
 // Get makes a GET request to an endpoint and unmarshals the response to obj.
@@ -226,72 +161,7 @@ func (c *Client) makeRequestWithoutBody(endpoint, method string) (*http.Response
 // DeleteV2 makes a DELETE request to an endpoint with body of json data,
 // and parses the standard JSON response.
 func (c *Client) DeleteV2(endpoint string, respObj interface{}) (bool, error) {
-	csrf, err := c.CSRF()
-	if err != nil {
-		return false, err
-	}
-
-	endpoint = strings.TrimLeft(endpoint, "/")
-	endpoint = c.Addr + endpoint
-
-	req, err := http.NewRequest(http.MethodDelete, endpoint, nil)
-	if err != nil {
-		return false, err
-	}
-
-	c.applyAuth(req)
-
-	req.Header.Set("Content-Type", ContentTypeForm)
-
-	if csrf != "" {
-		req.Header.Set(CSRFHeaderName, csrf)
-	}
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return false, err
-	}
-
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return false, err
-	}
-
-	decoder := json.NewDecoder(bytes.NewReader(respBody))
-	decoder.DisallowUnknownFields()
-
-	var wrapObj ReceivedHTTPResponse
-	if err := decoder.Decode(&wrapObj); err != nil {
-		// In some cases, the server can send an error response in a non-JSON format,
-		// such as a 404 when the endpoint is not registered, or if a 500 error
-		// occurs in the go HTTP stack, outside of the application's control.
-		// If this happens, treat the entire response body as the error message.
-		if resp.StatusCode != http.StatusOK {
-			return false, NewClientError(resp.Status, resp.StatusCode, string(respBody))
-		}
-
-		return false, err
-	}
-
-	var rspErr error
-	if resp.StatusCode != http.StatusOK {
-		rspErr = NewClientError(resp.Status, resp.StatusCode, wrapObj.Error.Message)
-	}
-
-	if wrapObj.Data == nil {
-		return false, rspErr
-	}
-
-	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(respObj); err != nil {
-		return false, err
-	}
-
-	return true, rspErr
+	return c.requestV2(http.MethodDelete, endpoint, nil, respObj)
 }
 
 // Delete makes a DELETE request to an endpoint and unmarshals the response to obj.
@@ -393,6 +263,10 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, err
 	}
 
+	return c.requestV2(http.MethodPost, endpoint, bytes.NewReader(body), respObj)
+}
+
+func (c *Client) requestV2(method, endpoint string, body io.Reader, respObj interface{}) (bool, error) {
 	csrf, err := c.CSRF()
 	if err != nil {
 		return false, err
@@ -401,7 +275,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 	endpoint = strings.TrimLeft(endpoint, "/")
 	endpoint = c.Addr + endpoint
 
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	req, err := http.NewRequest(method, endpoint, body)
 	if err != nil {
 		return false, err
 	}
@@ -412,7 +286,13 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		req.Header.Set(CSRFHeaderName, csrf)
 	}
 
-	req.Header.Set("Content-Type", ContentTypeJSON)
+	switch method {
+	case http.MethodPost:
+		req.Header.Set("Content-Type", ContentTypeJSON)
+	default:
+		req.Header.Set("Content-Type", ContentTypeForm)
+	}
+
 	req.Header.Set("Accept", ContentTypeJSON)
 
 	resp, err := c.HTTPClient.Do(req)
@@ -437,7 +317,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		// occurs in the go HTTP stack, outside of the application's control.
 		// If this happens, treat the entire response body as the error message.
 		if resp.StatusCode != http.StatusOK {
-			return false, NewClientError(resp.Status, resp.StatusCode, string(body))
+			return false, NewClientError(resp.Status, resp.StatusCode, string(respBody))
 		}
 
 		return false, err

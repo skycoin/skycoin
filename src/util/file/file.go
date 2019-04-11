@@ -266,18 +266,25 @@ func DetermineResourcePath(staticDir string, resourceDir string, devDir string) 
 	return appLoc, nil
 }
 
-// CopyFile copy file
-func CopyFile(dst string, src io.Reader) (n int64, err error) {
-	// check the existence of dst file.
-	if _, err := os.Stat(dst); err == nil {
-		return 0, nil
+// Copy copies file. Will overwrite dst if dst exists.
+func Copy(dst, src string) (err error) {
+	f, err := os.Open(src)
+	if err != nil {
+		return err
 	}
-	err = nil
+
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	out, err := os.Create(dst)
 	if err != nil {
-		return 0, err
+		return err
 	}
+
 	defer func() {
 		cerr := out.Close()
 		if err == nil {
@@ -285,7 +292,7 @@ func CopyFile(dst string, src io.Reader) (n int64, err error) {
 		}
 	}()
 
-	n, err = io.Copy(out, src)
+	_, err = io.Copy(out, f)
 	return
 }
 

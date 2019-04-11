@@ -8,7 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/kvstorage"
 )
 
-func TestGetAllStorageValues(t *testing.T) {
+func TestStableStorageGetAllValues(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -19,15 +19,15 @@ func TestGetAllStorageValues(t *testing.T) {
 
 	c := newClient()
 
-	err := c.AddStorageValue(kvstorage.TypeNotes, "key", "val")
+	err := c.AddStorageValue(kvstorage.TypeTxIDNotes, "key", "val")
 	require.NoError(t, err)
 
-	vals, err := c.GetAllStorageValues(kvstorage.TypeNotes)
+	vals, err := c.GetAllStorageValues(kvstorage.TypeTxIDNotes)
 	require.NoError(t, err)
 	require.Equal(t, wantVals, vals)
 }
 
-func TestGetStorageValue(t *testing.T) {
+func TestStableStorageGetValue(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -36,26 +36,26 @@ func TestGetStorageValue(t *testing.T) {
 
 	c := newClient()
 
-	err := c.AddStorageValue(kvstorage.TypeNotes, "key", "val")
+	err := c.AddStorageValue(kvstorage.TypeTxIDNotes, "key", "val")
 	require.NoError(t, err)
 
-	val, err := c.GetStorageValue(kvstorage.TypeNotes, "key")
+	val, err := c.GetStorageValue(kvstorage.TypeTxIDNotes, "key")
 	require.NoError(t, err)
 	require.Equal(t, wantVal, val)
 }
 
-func TestAddStorageValue(t *testing.T) {
+func TestStableStorageAddValue(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
 
 	c := newClient()
 
-	err := c.AddStorageValue(kvstorage.TypeNotes, "key", "val")
+	err := c.AddStorageValue(kvstorage.TypeTxIDNotes, "key", "val")
 	require.NoError(t, err)
 }
 
-func TestRemoveStorageValue(t *testing.T) {
+func TestStableStorageRemoveValue(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -66,15 +66,15 @@ func TestRemoveStorageValue(t *testing.T) {
 
 	c := newClient()
 
-	err := c.AddStorageValue(kvstorage.TypeNotes, "key", "val")
+	err := c.AddStorageValue(kvstorage.TypeTxIDNotes, "key", "val")
 	require.NoError(t, err)
-	err = c.AddStorageValue(kvstorage.TypeNotes, "key2", "val2")
-	require.NoError(t, err)
-
-	err = c.RemoveStorageValue(kvstorage.TypeNotes, "key2")
+	err = c.AddStorageValue(kvstorage.TypeTxIDNotes, "key2", "val2")
 	require.NoError(t, err)
 
-	vals, err := c.GetAllStorageValues(kvstorage.TypeNotes)
+	err = c.RemoveStorageValue(kvstorage.TypeTxIDNotes, "key2")
+	require.NoError(t, err)
+
+	vals, err := c.GetAllStorageValues(kvstorage.TypeTxIDNotes)
 	require.NoError(t, err)
 	require.Equal(t, wantVals, vals)
 }

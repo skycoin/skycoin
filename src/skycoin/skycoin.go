@@ -423,7 +423,7 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 func (c *Coin) ConfigureStorage() kvstorage.Config {
 	sc := kvstorage.NewConfig()
 
-	sc.StorageDir = c.config.Node.StorageDataDirectory
+	sc.StorageDir = c.config.Node.KVStorageDirectory
 	_, sc.EnableStorageAPI = c.config.Node.enabledAPISets[api.EndpointsStorage]
 	sc.EnabledStorages = c.config.Node.EnabledStorageTypes
 

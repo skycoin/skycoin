@@ -168,8 +168,8 @@ type NodeConfig struct {
 
 	// Key-value storage
 	// Default to ${DataDirectory}/data
-	StorageDataDirectory string
-	EnabledStorageTypes  []kvstorage.Type
+	KVStorageDirectory  string
+	EnabledStorageTypes []kvstorage.Type
 
 	// Disable the hardcoded default peers
 	DisableDefaultPeers bool
@@ -297,9 +297,9 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
 
 		// Key-value storage
-		StorageDataDirectory: "",
+		KVStorageDirectory: "",
 		EnabledStorageTypes: []kvstorage.Type{
-			kvstorage.TypeNotes,
+			kvstorage.TypeTxIDNotes,
 			kvstorage.TypeGeneral,
 		},
 
@@ -380,15 +380,15 @@ func (c *Config) postProcess() error {
 		c.Node.WalletDirectory = replaceHome(c.Node.WalletDirectory, home)
 	}
 
-	if c.Node.StorageDataDirectory == "" {
-		c.Node.StorageDataDirectory = filepath.Join(c.Node.DataDirectory, "data")
+	if c.Node.KVStorageDirectory == "" {
+		c.Node.KVStorageDirectory = filepath.Join(c.Node.DataDirectory, "data")
 	} else {
-		c.Node.StorageDataDirectory = replaceHome(c.Node.StorageDataDirectory, home)
+		c.Node.KVStorageDirectory = replaceHome(c.Node.KVStorageDirectory, home)
 	}
 	if len(c.Node.EnabledStorageTypes) == 0 {
 		c.Node.EnabledStorageTypes = []kvstorage.Type{
 			kvstorage.TypeGeneral,
-			kvstorage.TypeNotes,
+			kvstorage.TypeTxIDNotes,
 		}
 	}
 
@@ -691,7 +691,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.StringVar(&c.StorageDataDirectory, "storage-dir", c.StorageDataDirectory, "location of the storage data files. Defaults to ~/.skycoin/data/")
+	flag.StringVar(&c.KVStorageDirectory, "storage-dir", c.KVStorageDirectory, "location of the storage data files. Defaults to ~/.skycoin/data/")
 	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")

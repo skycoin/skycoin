@@ -2,12 +2,13 @@ package kvstorage
 
 import (
 	"fmt"
-	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 func TestLoadStorage(t *testing.T) {
@@ -25,12 +26,9 @@ func TestLoadStorage(t *testing.T) {
 		{
 			name: "API disabled",
 			manager: &Manager{
-				config: Config{
-					StorageDir: "./testdata/",
-				},
 				storages: make(map[Type]*kvStorage),
 			},
-			storageType: TypeNotes,
+			storageType: TypeTxIDNotes,
 			expect: expect{
 				expectError: true,
 				err:         ErrStorageAPIDisabled,
@@ -40,7 +38,6 @@ func TestLoadStorage(t *testing.T) {
 			name: "unknown storage type",
 			manager: &Manager{
 				config: Config{
-					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
 				storages: make(map[Type]*kvStorage),
@@ -55,14 +52,13 @@ func TestLoadStorage(t *testing.T) {
 			name: "storage already loaded",
 			manager: &Manager{
 				config: Config{
-					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
 				storages: map[Type]*kvStorage{
-					TypeNotes: nil,
+					TypeTxIDNotes: nil,
 				},
 			},
-			storageType: TypeNotes,
+			storageType: TypeTxIDNotes,
 			expect: expect{
 				expectError: true,
 				err:         ErrStorageAlreadyLoaded,
@@ -72,17 +68,21 @@ func TestLoadStorage(t *testing.T) {
 			name: "OK",
 			manager: &Manager{
 				config: Config{
-					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
 				storages: make(map[Type]*kvStorage),
 			},
-			storageType: TypeNotes,
+			storageType: TypeTxIDNotes,
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			tmpDir, cleanup := setupTmpDir(t)
+			defer cleanup()
+
+			tc.manager.config.StorageDir = tmpDir
+
 			err := tc.manager.LoadStorage(tc.storageType)
 			if tc.expect.expectError {
 				require.Equal(t, tc.expect.err, err)
@@ -96,9 +96,6 @@ func TestLoadStorage(t *testing.T) {
 			testutil.RequireFileExists(t, tc.manager.getStorageFilePath(tc.storageType))
 		})
 	}
-
-	err := os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
 }
 
 func TestUnloadStorage(t *testing.T) {
@@ -114,12 +111,8 @@ func TestUnloadStorage(t *testing.T) {
 		expect      expect
 	}{
 		{
-			name: "API disabled",
-			manager: &Manager{
-				config: Config{
-					StorageDir: "./testdata/",
-				},
-			},
+			name:        "API disabled",
+			manager:     &Manager{},
 			storageType: TypeGeneral,
 			expect: expect{
 				expectError: true,
@@ -130,7 +123,6 @@ func TestUnloadStorage(t *testing.T) {
 			name: "unknown storage type",
 			manager: &Manager{
 				config: Config{
-					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
 				storages: make(map[Type]*kvStorage),
@@ -145,7 +137,6 @@ func TestUnloadStorage(t *testing.T) {
 			name: "no such storage",
 			manager: &Manager{
 				config: Config{
-					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
 				storages: make(map[Type]*kvStorage),
@@ -160,30 +151,33 @@ func TestUnloadStorage(t *testing.T) {
 			name: "OK",
 			manager: &Manager{
 				config: Config{
-					StorageDir:       "./testdata/",
 					EnableStorageAPI: true,
 				},
 				storages: map[Type]*kvStorage{
-					TypeNotes: nil,
+					TypeTxIDNotes: nil,
 				},
 			},
-			storageType: TypeNotes,
+			storageType: TypeTxIDNotes,
 		},
 	}
+
+	tmpDir, cleanup := setupTmpDir(t)
+	defer cleanup()
 
 	// init file for tests
 	manager := &Manager{
 		config: Config{
+			StorageDir:       tmpDir,
 			EnableStorageAPI: true,
-			StorageDir:       "./testdata/",
 		},
 		storages: make(map[Type]*kvStorage),
 	}
-	err := manager.LoadStorage(TypeNotes)
+	err := manager.LoadStorage(TypeTxIDNotes)
 	require.NoError(t, err)
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			tc.manager.config.StorageDir = tmpDir
 			err := tc.manager.UnloadStorage(tc.storageType)
 			if tc.expect.expectError {
 				require.Equal(t, tc.expect.err, err)
@@ -197,9 +191,6 @@ func TestUnloadStorage(t *testing.T) {
 			testutil.RequireFileExists(t, tc.manager.getStorageFilePath(tc.storageType))
 		})
 	}
-
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
 }
 
 func TestManagerGetStorageValue(t *testing.T) {
@@ -221,7 +212,7 @@ func TestManagerGetStorageValue(t *testing.T) {
 		{
 			name:           "API disabled",
 			storageDataDir: "./testdata/",
-			storageType:    TypeNotes,
+			storageType:    TypeTxIDNotes,
 			key:            "key",
 			expect: expect{
 				err: ErrStorageAPIDisabled,
@@ -240,7 +231,7 @@ func TestManagerGetStorageValue(t *testing.T) {
 			name:           "no such storage",
 			enableAPI:      true,
 			storageDataDir: "./testdata/",
-			storageType:    TypeNotes,
+			storageType:    TypeTxIDNotes,
 			expect: expect{
 				err: ErrNoSuchStorage,
 			},
@@ -250,8 +241,8 @@ func TestManagerGetStorageValue(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: TypeNotes,
-			storageType:       TypeNotes,
+			storageTypeToLoad: TypeTxIDNotes,
+			storageType:       TypeTxIDNotes,
 			key:               "unknown",
 			expect: expect{
 				err: ErrNoSuchKey,
@@ -262,8 +253,8 @@ func TestManagerGetStorageValue(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: TypeNotes,
-			storageType:       TypeNotes,
+			storageTypeToLoad: TypeTxIDNotes,
+			storageType:       TypeTxIDNotes,
 			key:               "test1",
 			expect: expect{
 				val: "some value",
@@ -274,8 +265,8 @@ func TestManagerGetStorageValue(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: TypeNotes,
-			storageType:       TypeNotes,
+			storageTypeToLoad: TypeTxIDNotes,
+			storageType:       TypeTxIDNotes,
 			key:               "test2",
 			expect: expect{
 				val: "{\"key\":\"val\",\"key2\":2}",
@@ -283,15 +274,13 @@ func TestManagerGetStorageValue(t *testing.T) {
 		},
 	}
 
-	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
-
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			m, err := NewManager(NewConfig())
+			c := NewConfig()
+			c.EnableStorageAPI = tc.enableAPI
+			c.StorageDir = "./testdata/"
+			m, err := NewManager(c)
 			require.NoError(t, err)
-			m.config.EnableStorageAPI = tc.enableAPI
-			m.config.StorageDir = tc.storageDataDir
 
 			if tc.loadStorage {
 				err := m.LoadStorage(tc.storageTypeToLoad)
@@ -307,9 +296,6 @@ func TestManagerGetStorageValue(t *testing.T) {
 			require.Equal(t, tc.expect.val, val)
 		})
 	}
-
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
 }
 
 func TestManagerGetAllStorageValues(t *testing.T) {
@@ -320,8 +306,8 @@ func TestManagerGetAllStorageValues(t *testing.T) {
 
 	tt := []struct {
 		name              string
-		enableAPI         bool
 		storageDataDir    string
+		enableAPI         bool
 		loadStorage       bool
 		storageTypeToLoad Type
 		storageType       Type
@@ -330,7 +316,7 @@ func TestManagerGetAllStorageValues(t *testing.T) {
 		{
 			name:           "API disabled",
 			storageDataDir: "./testdata/",
-			storageType:    TypeNotes,
+			storageType:    TypeTxIDNotes,
 			expect: expect{
 				err: ErrStorageAPIDisabled,
 			},
@@ -348,7 +334,7 @@ func TestManagerGetAllStorageValues(t *testing.T) {
 			name:           "no such storage",
 			enableAPI:      true,
 			storageDataDir: "./testdata/",
-			storageType:    TypeNotes,
+			storageType:    TypeTxIDNotes,
 			expect: expect{
 				err: ErrNoSuchStorage,
 			},
@@ -358,8 +344,8 @@ func TestManagerGetAllStorageValues(t *testing.T) {
 			enableAPI:         true,
 			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: TypeNotes,
-			storageType:       TypeNotes,
+			storageTypeToLoad: TypeTxIDNotes,
+			storageType:       TypeTxIDNotes,
 			expect: expect{
 				data: map[string]string{
 					"test1": "some value",
@@ -369,15 +355,13 @@ func TestManagerGetAllStorageValues(t *testing.T) {
 		},
 	}
 
-	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
-
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			m, err := NewManager(NewConfig())
+			c := NewConfig()
+			c.EnableStorageAPI = tc.enableAPI
+			c.StorageDir = "./testdata/"
+			m, err := NewManager(c)
 			require.NoError(t, err)
-			m.config.EnableStorageAPI = tc.enableAPI
-			m.config.StorageDir = tc.storageDataDir
 
 			if tc.loadStorage {
 				err := m.LoadStorage(tc.storageTypeToLoad)
@@ -393,9 +377,6 @@ func TestManagerGetAllStorageValues(t *testing.T) {
 			require.Equal(t, tc.expect.data, data)
 		})
 	}
-
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
 }
 
 func TestManagerAddStorageValue(t *testing.T) {
@@ -407,7 +388,6 @@ func TestManagerAddStorageValue(t *testing.T) {
 	tt := []struct {
 		name              string
 		enableAPI         bool
-		storageDataDir    string
 		loadStorage       bool
 		storageTypeToLoad Type
 		storageType       Type
@@ -416,35 +396,32 @@ func TestManagerAddStorageValue(t *testing.T) {
 		expect            expect
 	}{
 		{
-			name:           "API disabled",
-			storageDataDir: "./testdata/",
-			storageType:    TypeNotes,
-			key:            "key",
-			val:            "val",
+			name:        "API disabled",
+			storageType: TypeTxIDNotes,
+			key:         "key",
+			val:         "val",
 			expect: expect{
 				expectErr: true,
 				err:       ErrStorageAPIDisabled,
 			},
 		},
 		{
-			name:           "unknown storage type",
-			enableAPI:      true,
-			storageDataDir: "./testdata",
-			storageType:    "unknown",
-			key:            "key",
-			val:            "val",
+			name:        "unknown storage type",
+			enableAPI:   true,
+			storageType: "unknown",
+			key:         "key",
+			val:         "val",
 			expect: expect{
 				expectErr: true,
 				err:       ErrUnknownKVStorageType,
 			},
 		},
 		{
-			name:           "no such storage",
-			enableAPI:      true,
-			storageDataDir: "./testdata/",
-			storageType:    TypeNotes,
-			key:            "key",
-			val:            "val",
+			name:        "no such storage",
+			enableAPI:   true,
+			storageType: TypeTxIDNotes,
+			key:         "key",
+			val:         "val",
 			expect: expect{
 				expectErr: true,
 				err:       ErrNoSuchStorage,
@@ -453,34 +430,34 @@ func TestManagerAddStorageValue(t *testing.T) {
 		{
 			name:              "add new value",
 			enableAPI:         true,
-			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: TypeNotes,
-			storageType:       TypeNotes,
+			storageTypeToLoad: TypeTxIDNotes,
+			storageType:       TypeTxIDNotes,
 			key:               "key",
 			val:               "val",
 		},
 		{
 			name:              "replace old value",
 			enableAPI:         true,
-			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: TypeNotes,
-			storageType:       TypeNotes,
+			storageTypeToLoad: TypeTxIDNotes,
+			storageType:       TypeTxIDNotes,
 			key:               "test1",
 			val:               "oiuy",
 		},
 	}
 
-	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
+	tmpDir, cleanup := setupTmpDir(t)
+	defer cleanup()
+
+	setupTestFile(t, filepath.Join(tmpDir, fmt.Sprintf("%s%s", TypeTxIDNotes, storageFileExtension)))
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			m, err := NewManager(NewConfig())
 			require.NoError(t, err)
 			m.config.EnableStorageAPI = tc.enableAPI
-			m.config.StorageDir = tc.storageDataDir
+			m.config.StorageDir = tmpDir
 
 			if tc.loadStorage {
 				err := m.LoadStorage(tc.storageTypeToLoad)
@@ -495,9 +472,6 @@ func TestManagerAddStorageValue(t *testing.T) {
 			}
 		})
 	}
-
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
 }
 
 func TestManagerRemoveStorageValue(t *testing.T) {
@@ -509,7 +483,6 @@ func TestManagerRemoveStorageValue(t *testing.T) {
 	tt := []struct {
 		name              string
 		enableAPI         bool
-		storageDataDir    string
 		loadStorage       bool
 		storageTypeToLoad Type
 		storageType       Type
@@ -517,32 +490,29 @@ func TestManagerRemoveStorageValue(t *testing.T) {
 		expect            expect
 	}{
 		{
-			name:           "API disabled",
-			storageDataDir: "./testdata/",
-			storageType:    TypeNotes,
-			key:            "key",
+			name:        "API disabled",
+			storageType: TypeTxIDNotes,
+			key:         "key",
 			expect: expect{
 				expectErr: true,
 				err:       ErrStorageAPIDisabled,
 			},
 		},
 		{
-			name:           "unknown storage type",
-			enableAPI:      true,
-			storageDataDir: "./testdata/",
-			storageType:    "unknown",
-			key:            "key",
+			name:        "unknown storage type",
+			enableAPI:   true,
+			storageType: "unknown",
+			key:         "key",
 			expect: expect{
 				expectErr: true,
 				err:       ErrUnknownKVStorageType,
 			},
 		},
 		{
-			name:           "no such storage",
-			enableAPI:      true,
-			storageDataDir: "./testdata/",
-			storageType:    TypeNotes,
-			key:            "key",
+			name:        "no such storage",
+			enableAPI:   true,
+			storageType: TypeTxIDNotes,
+			key:         "key",
 			expect: expect{
 				expectErr: true,
 				err:       ErrNoSuchStorage,
@@ -551,10 +521,9 @@ func TestManagerRemoveStorageValue(t *testing.T) {
 		{
 			name:              "no such key",
 			enableAPI:         true,
-			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: TypeNotes,
-			storageType:       TypeNotes,
+			storageTypeToLoad: TypeTxIDNotes,
+			storageType:       TypeTxIDNotes,
 			key:               "key",
 			expect: expect{
 				expectErr: true,
@@ -564,23 +533,30 @@ func TestManagerRemoveStorageValue(t *testing.T) {
 		{
 			name:              "OK",
 			enableAPI:         true,
-			storageDataDir:    "./testdata/",
 			loadStorage:       true,
-			storageTypeToLoad: TypeNotes,
-			storageType:       TypeNotes,
+			storageTypeToLoad: TypeTxIDNotes,
+			storageType:       TypeTxIDNotes,
 			key:               "test1",
 		},
 	}
 
-	err := formTestFile(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
+	tmpDir, cleanup := setupTmpDir(t)
+	defer cleanup()
+
+	// Copy the testdata/txid.json file to a tmp dir, so it can be operated on
+	filename := fmt.Sprintf("%s%s", TypeTxIDNotes, storageFileExtension)
+	srcFilename := filepath.Join("./testdata/", filename)
+	dstFilename := filepath.Join(tmpDir, filename)
+	err := file.Copy(dstFilename, srcFilename)
 	require.NoError(t, err)
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			m, err := NewManager(NewConfig())
+			c := NewConfig()
+			c.EnableStorageAPI = tc.enableAPI
+			c.StorageDir = tmpDir
+			m, err := NewManager(c)
 			require.NoError(t, err)
-			m.config.EnableStorageAPI = tc.enableAPI
-			m.config.StorageDir = tc.storageDataDir
 
 			if tc.loadStorage {
 				err := m.LoadStorage(tc.storageTypeToLoad)
@@ -595,7 +571,4 @@ func TestManagerRemoveStorageValue(t *testing.T) {
 			}
 		})
 	}
-
-	err = os.Remove(fmt.Sprintf("%s%s%s", "./testdata/", TypeNotes, storageFileExtension))
-	require.NoError(t, err)
 }

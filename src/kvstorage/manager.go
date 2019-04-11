@@ -3,6 +3,9 @@ package kvstorage
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/util/file"
@@ -13,8 +16,8 @@ import (
 type Type string
 
 const (
-	// TypeNotes is a type of storage containing transaction notes
-	TypeNotes Type = "txid"
+	// TypeTxIDNotes is a type of storage containing transaction notes
+	TypeTxIDNotes Type = "txid"
 	// TypeGeneral is a type of storage for general user data
 	TypeGeneral Type = "client"
 )
@@ -32,26 +35,36 @@ var (
 	// ErrUnknownKVStorageType is returned while trying to access the storage of the unknown type
 	ErrUnknownKVStorageType = NewError(errors.New("Unknown storage type"))
 
-	logger = logging.MustGetLogger("storagemanager")
+	logger = logging.MustGetLogger("kvstorage")
 )
 
 // Manager is a manager for key-value storage instances
 type Manager struct {
 	config   Config
 	storages map[Type]*kvStorage
-	sync.RWMutex
+	sync.Mutex
 }
 
 // NewManager constructs new manager according to the config
 func NewManager(c Config) (*Manager, error) {
+	logger.Info("Creating new KVStorage manager")
+
 	m := &Manager{
 		config:   c,
 		storages: make(map[Type]*kvStorage),
 	}
 
+	if !strings.HasSuffix(m.config.StorageDir, "/") {
+		m.config.StorageDir += "/"
+	}
+
 	if !m.config.EnableStorageAPI {
-		logger.Info("Networking is disabled")
+		logger.Info("KVStorage is disabled")
 		return m, nil
+	}
+
+	if err := os.MkdirAll(m.config.StorageDir, os.FileMode(0700)); err != nil {
+		return nil, fmt.Errorf("failed to create kvstorage directory %s: %v", m.config.StorageDir, err)
 	}
 
 	for _, t := range m.config.EnabledStorages {
@@ -82,19 +95,19 @@ func (m *Manager) LoadStorage(storageType Type) error {
 		return ErrStorageAlreadyLoaded
 	}
 
-	fileName := m.getStorageFilePath(storageType)
+	fn := m.getStorageFilePath(storageType)
 
-	exists, err := file.Exists(fileName)
+	exists, err := file.Exists(fn)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		if err := initEmptyStorage(fileName); err != nil {
+		if err := initEmptyStorage(fn); err != nil {
 			return err
 		}
 	}
 
-	storage, err := newKVStorage(fileName)
+	storage, err := newKVStorage(fn)
 	if err != nil {
 		return err
 	}
@@ -134,8 +147,8 @@ func (m *Manager) GetStorageValue(storageType Type, key string) (string, error) 
 		return "", ErrUnknownKVStorageType
 	}
 
-	m.RLock()
-	defer m.RUnlock()
+	m.Lock()
+	defer m.Unlock()
 
 	if !m.config.EnableStorageAPI {
 		return "", ErrStorageAPIDisabled
@@ -155,8 +168,8 @@ func (m *Manager) GetAllStorageValues(storageType Type) (map[string]string, erro
 		return nil, ErrUnknownKVStorageType
 	}
 
-	m.RLock()
-	defer m.RUnlock()
+	m.Lock()
+	defer m.Unlock()
 
 	if !m.config.EnableStorageAPI {
 		return nil, ErrStorageAPIDisabled
@@ -176,8 +189,8 @@ func (m *Manager) AddStorageValue(storageType Type, key, val string) error {
 		return ErrUnknownKVStorageType
 	}
 
-	m.RLock()
-	defer m.RUnlock()
+	m.Lock()
+	defer m.Unlock()
 
 	if !m.config.EnableStorageAPI {
 		return ErrStorageAPIDisabled
@@ -197,8 +210,8 @@ func (m *Manager) RemoveStorageValue(storageType Type, key string) error {
 		return ErrUnknownKVStorageType
 	}
 
-	m.RLock()
-	defer m.RUnlock()
+	m.Lock()
+	defer m.Unlock()
 
 	if !m.config.EnableStorageAPI {
 		return ErrStorageAPIDisabled
@@ -220,13 +233,13 @@ func (m *Manager) storageExists(storageType Type) bool {
 
 // getStorageFilePath creates the path to the storage of `storageType` in file system
 func (m *Manager) getStorageFilePath(storageType Type) string {
-	return fmt.Sprintf("%s%s%s", m.config.StorageDir, storageType, storageFileExtension)
+	return filepath.Join(m.config.StorageDir, fmt.Sprintf("%s%s", storageType, storageFileExtension))
 }
 
 // isStorageTypeValid validates the given `storageType` against the predefined available types
 func isStorageTypeValid(storageType Type) bool {
 	switch storageType {
-	case TypeNotes, TypeGeneral:
+	case TypeTxIDNotes, TypeGeneral:
 		return true
 	}
 
@@ -234,8 +247,6 @@ func isStorageTypeValid(storageType Type) bool {
 }
 
 // initEmptyStorage creates a file to persist data
-func initEmptyStorage(fileName string) error {
-	emptyData := make(map[string]string)
-
-	return file.SaveJSON(fileName, emptyData, 0644)
+func initEmptyStorage(fn string) error {
+	return file.SaveJSON(fn, map[string]string{}, 0644)
 }

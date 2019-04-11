@@ -19,13 +19,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
-
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/daemon"
-
 	"github.com/skycoin/skycoin/cmd/monitor-peers/connection"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/logging"
 )

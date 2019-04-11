@@ -2412,9 +2412,9 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:                   "transaction violate soft constraints, transaction size bigger than max block size",
 			signed:                 TxnSigned,
 			maxUserTransactionSize: 1,
-			txn:    txn,
-			inputs: spentInputs[:],
-			err:    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
+			txn:                    txn,
+			inputs:                 spentInputs[:],
+			err:                    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
 
 			getArrayRet: inputs[:1],
 		},

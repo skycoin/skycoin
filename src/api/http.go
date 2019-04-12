@@ -56,6 +56,8 @@ const (
 	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
 	EndpointsNetCtrl = "NET_CTRL"
+	// EndpointsStorage endpoints implement interface for key-value storage for arbitrary data
+	EndpointsStorage = "STORAGE"
 )
 
 // Server exposes an HTTP API
@@ -607,6 +609,13 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 	webHandlerV1("/addresscount", addressCountHandler(gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},
+	})
+
+	// Storage endpoint
+	webHandlerV2("/data", storageHandler(gateway), map[string][]string{
+		http.MethodGet:    []string{EndpointsStorage},
+		http.MethodPost:   []string{EndpointsStorage},
+		http.MethodDelete: []string{EndpointsStorage},
 	})
 
 	return mux

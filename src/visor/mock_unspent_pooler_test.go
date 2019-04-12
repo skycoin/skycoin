@@ -3,11 +3,10 @@
 package visor
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-	coin "github.com/skycoin/skycoin/src/coin"
-
 	mock "github.com/stretchr/testify/mock"
 
+	cipher "github.com/skycoin/skycoin/src/cipher"
+	coin "github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	dbutil "github.com/skycoin/skycoin/src/visor/dbutil"
 )

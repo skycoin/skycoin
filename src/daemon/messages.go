@@ -362,7 +362,7 @@ func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey ci
 func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
-			"UserAgent": userAgent,
+			"userAgent": userAgent,
 			"maxLen":    useragent.MaxLen,
 		}).Panic("user agent exceeds max len")
 	}
@@ -525,7 +525,7 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 		}
 		if err := encoder.DeserializeRawExact(intro.Extra[i:i+9], &intro.UnconfirmedVerifyTxn); err != nil {
 			// This should not occur due to the previous length check
-			logger.Critical().WithError(err).WithFields(logFields).Warning("UnconfirmedVerifyTxn params could not be deserialized")
+			logger.Critical().WithError(err).WithFields(logFields).Warning("unconfirmedVerifyTxn params could not be deserialized")
 			return ErrDisconnectInvalidExtraData
 		}
 
@@ -534,7 +534,7 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 				"burnFactor":          intro.UnconfirmedVerifyTxn.BurnFactor,
 				"maxTransactionSize":  intro.UnconfirmedVerifyTxn.MaxTransactionSize,
 				"maxDropletPrecision": intro.UnconfirmedVerifyTxn.MaxDropletPrecision,
-			}).Warning("Invalid UnconfirmedVerifyTxn params")
+			}).Warning("Invalid unconfirmedVerifyTxn params")
 			switch err {
 			case params.ErrInvalidBurnFactor:
 				return ErrDisconnectInvalidBurnFactor
@@ -556,7 +556,7 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 
 		intro.UserAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
 		if err != nil {
-			logger.WithError(err).WithFields(logFields).WithField("UserAgent", userAgent).Warning("User agent is invalid")
+			logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
 			return ErrDisconnectInvalidUserAgent
 		}
 	}

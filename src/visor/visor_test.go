@@ -1994,9 +1994,9 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Create a transaction that exceeds unconfirmedVerifyTxn.MaxTransactionSize
+	// Create a transaction that exceeds UnconfirmedVerifyTxn.MaxTransactionSize
 	// It's still injected, because this is considered a soft error
-	// This transaction will become valid on refresh (by increasing unconfirmedVerifyTxn.MaxTransactionSize)
+	// This transaction will become valid on refresh (by increasing UnconfirmedVerifyTxn.MaxTransactionSize)
 	originalMaxUnconfirmedTxnSize := v.Config.UnconfirmedVerifyTxn.MaxTransactionSize
 	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = 1
 	sometimesInvalidTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)

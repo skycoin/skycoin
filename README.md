@@ -91,6 +91,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 		- [Electron Desktop Client Mode](#electron-desktop-client-mode)
 		- [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
 	- [Wallet GUI Development](#wallet-gui-development)
+		- [Translations](#translations)
 	- [Releases](#releases)
 		- [Update the version](#update-the-version)
 		- [Pre-release testing](#pre-release-testing)
@@ -649,6 +650,10 @@ The compiled wallet source should be checked in to the repo, so that others do n
 Instructions for doing this:
 
 [Wallet GUI Development README](src/gui/static/README.md)
+
+#### Translations
+
+You can find information about how to work with translation files in the [Translations README](/src/gui/static/src/assets/i18n/README.md).
 
 ### Releases
 

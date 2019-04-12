@@ -34,22 +34,22 @@ For more information about the `xx.json` and `xx_base.json`, please check the
 Several parts of this file uses "xx" as part of file names or scripts, like
 `xx.json` and `xx_base.json`. In fact, no file in this folder should be called
 `xx.json` or `xx_base.json`, the "xx" part must be replaces with the two
-characters code of the languaje. For example, if you are working with the Chinese
-translation, the files will be `cn.json` and `cn_base.json`, instead of `xx.json`
+characters code of the language. For example, if you are working with the Chinese
+translation, the files will be `zh.json` and `zh_base.json`, instead of `xx.json`
 and `xx_base.json`. The same if true for the scripts, if you are working with the
 Chinese translation, instead of running `node check.js xx` you must run
-`node check.js cn`.
+`node check.js zh`.
 
 # Add a new translation
 
 First you must create in this folder two copies of the `en.json` file. The first
 copy must be called `xx.json`, where the `xx` part must be the two characters code
-of the new languaje. For example, for Chinese the name of the file should be
-`cn.json`; for Spanish, `es.json`; for French, `fr.json`, etc.
+of the new language. For example, for Chinese the name of the file should be
+`zh.json`; for Spanish, `es.json`; for French, `fr.json`, etc.
 
 The second copy of `en.json` must be renamed to `xx_base.json`, where the `xx` part
-must be the two characters code of the new languaje. This means that if the first
-copy is named `cn.json`, the second one should be named `cn_base.json`.
+must be the two characters code of the new language. This means that if the first
+copy is named `zh.json`, the second one should be named `zh_base.json`.
 
 It is not necessary to follow a specific standard for the two characters code, but
 it must be limited to two letters and be a recognizable code for the language.
@@ -83,7 +83,7 @@ For using it, your computer must have `Node.js` installed.
 For detecting basic problems on the translation files, open a command line window
 in this folder and run `node check.js`. This will check the following:
 
-- The `en.json` must exist, as it is the main languaje file for the app.
+- The `en.json` must exist, as it is the main language file for the app.
 
 - For every `xx.json` file (except `en.json`) an `xx_base.json` file must exist
 and viceversa.
@@ -105,11 +105,11 @@ Note: at this time the script does not check if the elements of the files are
 in the same order, but this could be added in the future, so it is recomended
 not to change the order of the elements.
 
-## Checking if a languaje file needs to be updated
+## Checking if a language file needs to be updated
 
-To detect if an specific languaje needs updating, run `node check.js xx`,
-where xx is the two characters code of the languaje you want to check. If you
-want to check all languajes, run `node check.js all`.
+To detect if an specific language needs updating, run `node check.js xx`,
+where xx is the two characters code of the language you want to check. If you
+want to check all languages, run `node check.js all`.
 
 By doing this, the script will perform all the checks described in the
 [Checking for problems](#checking-for-problems) section, plus this:
@@ -133,7 +133,7 @@ errors found, if any.
 # Update a translation
 
 Before updating a translation file, you should follow the steps of the
-[Checking if a languaje file needs to be updated](#Checking-if-a-languaje-file-needs-to-be-updated)
+[Checking if a language file needs to be updated](#Checking-if-a-language-file-needs-to-be-updated)
 section. By doing so you will quikly know exactly what texts must be added,
 deleted or edited.
 
@@ -149,9 +149,9 @@ simply update the `xx_base.json` file to the current state of `en.json`.
 this will make possible to check in the future if more updates are nedded,
 due to new changes in `en.json`.
 
-Once all the changes are made, check again the languaje file as indicated
+Once all the changes are made, check again the language file as indicated
 in the
-[Checking if a languaje file needs to be updated](#Checking-if-a-languaje-file-needs-to-be-updated)
+[Checking if a language file needs to be updated](#Checking-if-a-language-file-needs-to-be-updated)
 section. The script should not return errors. If the script returns errors,
 please solve them before continuing.
 
@@ -221,7 +221,7 @@ when the app is running. For example, if you find a text like "Your
 balance is {{ value }} coins", the application will show something
 like "Your balance is 21 coins". In that example the "21" is a value
 that the app has to calculate, so it is not possible to add it directly
-into the languaje file. If you find a **{{ }}** text block, please do
+into the language file. If you find a **{{ }}** text block, please do
 not translate it, just move the whole **{{ }}** text block to where the
 value should be displayed. If you want to leave a while space before the
 value, simply add a white space before the **{{ }}** text block, and do

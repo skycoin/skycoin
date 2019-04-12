@@ -1,0 +1,4 @@
+{
+    "test1": "some value",
+    "test2": "{\"key\":\"val\",\"key2\":2}"
+}

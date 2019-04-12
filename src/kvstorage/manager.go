@@ -248,5 +248,5 @@ func isStorageTypeValid(storageType Type) bool {
 
 // initEmptyStorage creates a file to persist data
 func initEmptyStorage(fn string) error {
-	return file.SaveJSON(fn, map[string]string{}, 0644)
+	return file.SaveJSON(fn, map[string]string{}, 0600)
 }

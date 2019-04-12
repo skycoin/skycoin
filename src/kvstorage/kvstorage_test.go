@@ -35,14 +35,14 @@ func setupTestFile(t *testing.T, fileName string) {
 		"test2": "{\"key\":\"val\",\"key2\":2}",
 	}
 
-	err := file.SaveJSON(fileName, data, 0644)
+	err := file.SaveJSON(fileName, data, 0600)
 	require.NoError(t, err)
 }
 
 func setupEmptyTestFile(t *testing.T, fileName string) {
 	data := make(map[string]string)
 
-	err := file.SaveJSON(fileName, data, 0644)
+	err := file.SaveJSON(fileName, data, 0600)
 	require.NoError(t, err)
 }
 
@@ -280,7 +280,7 @@ func TestKVStorageAdd(t *testing.T) {
 			modifiedData := storage.getAll()
 
 			// resave the original data back to file
-			err = file.SaveJSON(storage.fileName, originalData, 0644)
+			err = file.SaveJSON(storage.fileName, originalData, 0600)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expect.newData, modifiedData)
@@ -350,7 +350,7 @@ func TestKVStorageRemove(t *testing.T) {
 			newData := storage.getAll()
 
 			// resave the original data back to file
-			err = file.SaveJSON(storage.fileName, originalData, 0644)
+			err = file.SaveJSON(storage.fileName, originalData, 0600)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expect.newData, newData)

@@ -106,5 +106,5 @@ func (s *kvStorage) remove(key string) error {
 
 // flush persists data to file
 func (s *kvStorage) flush() error {
-	return file.SaveJSON(s.fileName, s.data, 0644)
+	return file.SaveJSON(s.fileName, s.data, 0600)
 }

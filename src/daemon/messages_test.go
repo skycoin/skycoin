@@ -426,15 +426,15 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, mock.MatchedBy(func(m *IntroductionMessage) bool {
-				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.unconfirmedVerifyTxn.BurnFactor)
+				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.UnconfirmedVerifyTxn.BurnFactor)
 				if m == nil {
 					return false
 				}
 
-				if tc.userAgent != m.userAgent {
+				if tc.userAgent != m.UserAgent {
 					return false
 				}
-				if tc.unconfirmedVerifyTxn != m.unconfirmedVerifyTxn {
+				if tc.unconfirmedVerifyTxn != m.UnconfirmedVerifyTxn {
 					return false
 				}
 
@@ -1004,4 +1004,10 @@ func TestGetBlocksMessageProcess(t *testing.T) {
 	m.process(d)
 
 	d.AssertExpectations(t)
+}
+
+func setupMsgEncoding() {
+	gnet.EraseMessages()
+	var messagesConfig = NewMessagesConfig()
+	messagesConfig.Register()
 }

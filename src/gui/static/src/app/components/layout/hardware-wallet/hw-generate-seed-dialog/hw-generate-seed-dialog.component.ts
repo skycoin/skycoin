@@ -12,6 +12,7 @@ enum States {
   ReturnedRefused,
   Failed,
   DaemonError,
+  Timeout,
 }
 
 @Component({
@@ -51,6 +52,8 @@ export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGener
           this.currentState = States.ReturnedRefused;
         } else if (err.result && err.result === OperationResults.DaemonError) {
           this.currentState = States.DaemonError;
+        } else if (err.result && err.result === OperationResults.Timeout) {
+          this.currentState = States.Timeout;
         } else {
           this.currentState = States.Failed;
         }

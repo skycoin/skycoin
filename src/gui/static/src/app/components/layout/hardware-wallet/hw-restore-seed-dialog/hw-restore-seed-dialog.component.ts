@@ -15,6 +15,7 @@ enum States {
   WrongSeed,
   InvalidSeed,
   DaemonError,
+  Timeout,
 }
 
 @Component({
@@ -65,6 +66,8 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
           this.currentState = States.DaemonError;
         } else if (err.result && err.result === OperationResults.WrongSeed) {
           this.currentState = States.WrongSeed;
+        } else if (err.result && err.result === OperationResults.Timeout) {
+          this.currentState = States.Timeout;
         } else {
           this.currentState = States.Failed;
         }

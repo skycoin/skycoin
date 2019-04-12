@@ -199,8 +199,7 @@ export class ApiService {
         return Observable.throw(error);
       }
     }
-
-    const err = Error(this.translate.instant(!connectingToHwWalletDaemon ? 'hardware-wallet.errors.daemon-connection' : 'service.api.server-error'));
+    const err = Error(this.translate.instant(connectingToHwWalletDaemon ? 'hardware-wallet.errors.daemon-connection' : 'service.api.server-error'));
     err['_body'] = err.message;
 
     return Observable.throw(err);

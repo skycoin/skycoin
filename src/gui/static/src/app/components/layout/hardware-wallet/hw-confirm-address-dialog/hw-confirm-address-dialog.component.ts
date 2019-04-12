@@ -11,6 +11,7 @@ enum States {
   ReturnedRefused,
   Failed,
   DaemonError,
+  Timeout,
 }
 
 export class AddressConfirmationParams {
@@ -47,6 +48,8 @@ export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwCon
           this.currentState = States.ReturnedRefused;
         } else if (err.result && err.result === OperationResults.DaemonError) {
           this.currentState = States.DaemonError;
+        } else if (err.result && err.result === OperationResults.Timeout) {
+          this.currentState = States.Timeout;
         } else {
           this.currentState = States.Failed;
         }

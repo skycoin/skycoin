@@ -46,6 +46,10 @@ export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, tran
         return translateService.instant('hardware-wallet.general.error-incorrect-wallet');
       } else if (error.result === OperationResults.DaemonError) {
         return translateService.instant('hardware-wallet.errors.daemon-connection');
+      } else if (error.result === OperationResults.InvalidAddress) {
+        return translateService.instant('hardware-wallet.errors.invalid-address');
+      } else if (error.result === OperationResults.Timeout) {
+        return translateService.instant('hardware-wallet.errors.timeout');
       }
     }
 

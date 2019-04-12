@@ -6,6 +6,7 @@ import { HwWalletPinService } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import 'rxjs/add/operator/timeout';
 
 export enum ConnectionMethod {
   Get,
@@ -17,8 +18,9 @@ export enum ConnectionMethod {
 @Injectable()
 export class HwWalletDaemonService {
 
-  public static readonly cancelled = 'Cancelled';
+  public static readonly errorCancelled = 'Cancelled';
   public static readonly errorConnectingWithTheDaemon = 'Error connecting with the hw wallet service';
+  public static readonly errorTimeout = 'The operation was cancelled due to inactivity';
   private readonly url = '/hw-daemon/api/v1';
 
   private checkHwSubscription: ISubscription;
@@ -82,13 +84,14 @@ export class HwWalletDaemonService {
 
   private checkResponse(response: Observable<any>) {
     return response
+      .timeout(5000)
       .flatMap((res: any) => {
         const finalResponse = res.json();
 
         if (typeof finalResponse.data === 'string' && (finalResponse.data as string).indexOf('PinMatrixRequest') !== -1) {
           return this.hwWalletPinService.requestPin().flatMap(pin => {
             if (!pin) {
-              return this.put('/cancel').map(() => HwWalletDaemonService.cancelled);
+              return this.put('/cancel').map(() => HwWalletDaemonService.errorCancelled);
             }
 
             return this.post('/intermediate/pin_matrix', {pin: pin});
@@ -98,7 +101,7 @@ export class HwWalletDaemonService {
         if (typeof finalResponse.data === 'string' && (finalResponse.data as string).indexOf('WordRequest') !== -1) {
           return this.hwWalletSeedWordService.requestWord().flatMap(word => {
             if (!word) {
-              return this.put('/cancel').map(() => HwWalletDaemonService.cancelled);
+              return this.put('/cancel').map(() => HwWalletDaemonService.errorCancelled);
             }
 
             return this.post('/intermediate/word', {word: word});
@@ -108,6 +111,12 @@ export class HwWalletDaemonService {
         return Observable.of(finalResponse);
       })
       .catch((error: any) => {
+        if (error && error.name && error.name === 'TimeoutError') {
+          this.put('/cancel').map(() => HwWalletDaemonService.errorCancelled).subscribe();
+
+          return Observable.throw({_body: HwWalletDaemonService.errorTimeout });
+        }
+
         if (error && error._body)  {
           let errorContent: string;
 

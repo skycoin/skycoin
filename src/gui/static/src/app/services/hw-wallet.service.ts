@@ -24,6 +24,8 @@ export enum OperationResults {
   UndefinedError,
   Disconnected,
   DaemonError,
+  InvalidAddress,
+  Timeout,
 }
 
 export class OperationResult {
@@ -459,7 +461,7 @@ export class HwWalletService {
       return Observable.throw(this.dispatchEvent(0, error['_body'], false, true));
     }).flatMap(result => {
 
-      if (result !== HwWalletDaemonService.cancelled) {
+      if (result !== HwWalletDaemonService.errorCancelled) {
         const response = this.dispatchEvent(0,
           result.data,
           !successTexts ? true : typeof result.data === 'string' && successTexts.some(text => (result.data as string).includes(text)),
@@ -533,8 +535,14 @@ export class HwWalletService {
           result = OperationResults.InvalidSeed;
         } else if (responseContent.includes('The seed is valid but does not match the one in the device')) {
           result = OperationResults.WrongSeed;
+        } else if (responseContent.includes('Invalid base58 character')) {
+          result = OperationResults.InvalidAddress;
+        } else if (responseContent.includes('Invalid address length')) {
+          result = OperationResults.InvalidAddress;
         } else if (responseContent.includes(HwWalletDaemonService.errorConnectingWithTheDaemon)) {
           result = OperationResults.DaemonError;
+        } else if (responseContent.includes(HwWalletDaemonService.errorTimeout)) {
+          result = OperationResults.Timeout;
         } else {
           result = OperationResults.UndefinedError;
         }

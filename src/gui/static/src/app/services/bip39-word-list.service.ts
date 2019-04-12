@@ -17,10 +17,14 @@ export class Bip39WordListService {
   private lastSearchTerm = '';
   private searchResultsSubject: Subject<string> = new Subject<string>();
   private wordList: string[] = [];
+  private wordMap: Map<string, boolean> = new Map<string, boolean>();
 
   constructor() {
     System.import(`../../assets/bip39-word-list.json`).then (result => {
       this.wordList = result.list;
+      this.wordList.forEach(word => {
+        this.wordMap.set(word, true);
+      });
       this.searchResultsSubject.next(this.lastSearchTerm);
     });
   }
@@ -32,7 +36,7 @@ export class Bip39WordListService {
 
   validateWord(word: string): boolean | null {
     if (this.wordList.length > 0) {
-      if (!this.wordList.includes(word)) {
+      if (!this.wordMap.has(word)) {
         return false;
       }
 

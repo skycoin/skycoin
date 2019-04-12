@@ -2,7 +2,8 @@
 
 API default service port is `6420`. However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
-A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
+A REST API implemented in Go is available,
+see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
 The API has two versions, `/api/v1` and `/api/v2`.
 
@@ -40,6 +41,10 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Decrypt wallet](#decrypt-wallet)
 	- [Get wallet seed](#get-wallet-seed)
 	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
+- [Key-value storage APIs](#key-value-storage-apis)
+	- [Get all storage values](#get-all-storage-values)
+	- [Add value to storage](#add-value-to-storage)
+	- [Remove value from storage](#remove-value-from-storage)
 - [Transaction APIs](#transaction-apis)
 	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
 	- [Create transaction from unspent outputs or addresses](#create-transaction-from-unspent-outputs-or-addresses)
@@ -1642,6 +1647,128 @@ Result:
 }
 ```
 
+## Key-value storage APIs
+
+Endpoints interact with the key-value storage. Each request require the `type` argument to
+be passed.
+
+Currently allowed types:
+
+* `txid`: used for transaction notes
+* `client`: used for generic client data, instead of using e.g. LocalStorage in the browser
+
+### Get all storage values
+
+API sets: `STORAGE`
+
+```
+Method: GET
+URI: /api/v2/data
+Args:
+    type: storage type
+    key [string]: key of the specific value to get
+```
+
+If key is passed, only the specific value will be returned from the storage.
+Otherwise the whole dataset will be returned.
+
+If the key does not exist, a 404 error is returned.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "key1": "value",
+        "key2": "{\"key\":\"value\"}",
+    }
+}
+```
+
+Example (key):
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid&key=key1
+```
+
+Result:
+
+```json
+{
+    "data": "value"
+}
+```
+
+### Add value to storage
+
+API sets: `STORAGE`
+
+```
+Method: POST
+URI: /api/v2/data
+Args: JSON Body, see examples
+```
+
+Sets one or more values by key. Existing values will be overwritten.
+
+Example request body:
+
+```json
+{
+    "type": "txid",
+    "key": "key1",
+    "val": "val1"
+}
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/data -H 'Content-Type: application/json' -d '{
+    "type": "txid",
+    "key": "key1",
+    "val": "val1"
+}'
+```
+
+Result:
+
+```json
+{}
+```
+
+### Remove value from storage
+
+API sets: `STORAGE`
+
+```
+Method: DELETE
+URI: /api/v2/data
+Args:
+    type: storage type
+    key: key of the specific value to get
+```
+
+Deletes a value by key. Returns a 404 error if the key does not exist.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid&key=key1
+```
+
+Result:
+
+```json
+{}
+```
+
 ## Transaction APIs
 
 ### Get unconfirmed transactions
@@ -2086,7 +2213,7 @@ Note that in some circumstances the transaction can fail to broadcast but this e
 This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
 
 The recommended way to handle transaction injections from your system is to inject the transaction then wait
-for the transaction to be confirmed.  Transactions typically confirm quickly, so if it is not confirmed after some
+for the transaction to be confirmed. Transactions typically confirm quickly, so if it is not confirmed after some
 timeout such as 1 minute, the application can continue to retry the broadcast with `/api/v1/resendUnconfirmedTxns`.
 Broadcast only fails without an error if the node's peers disconnect or timeout after the broadcast was initiated,
 which is a network problem that may recover, so rebroadcasting with `/api/v1/resendUnconfirmedTxns` will resolve it,
@@ -4115,7 +4242,7 @@ Some examples:
 
 Extra zeros on the `"coins"` string are ok, for example `"1"` is the same as `"1.0"` or `"1.000000"`.
 
-Only provide `"password"` if the wallet is encrypted.  Note that decryption can take a few seconds, and this can impact
+Only provide `"password"` if the wallet is encrypted. Note that decryption can take a few seconds, and this can impact
 throughput.
 
 The request header `Content-Type` must be `application/json`.
@@ -4226,5 +4353,5 @@ The response data is the same but the structure is slightly different. Compare t
 ]
 ```
 
-The transaction data is wrapped in a `"txn"` field.  A `"time"` field is present at the top level. This `"time"` field
+The transaction data is wrapped in a `"txn"` field. A `"time"` field is present at the top level. This `"time"` field
 is either the confirmation timestamp of a confirmed transaction or the last received time of an unconfirmed transaction.

@@ -23,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/kvstorage"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
@@ -53,6 +54,7 @@ func (c *Coin) Run() error {
 	var w *wallet.Service
 	var v *visor.Visor
 	var d *daemon.Daemon
+	var s *kvstorage.Manager
 	var gw *api.Gateway
 	var webInterface *api.Server
 	var retErr error
@@ -141,6 +143,7 @@ func (c *Coin) Run() error {
 	wconf := c.ConfigureWallet()
 	dconf := c.ConfigureDaemon()
 	vconf := c.ConfigureVisor()
+	sconf := c.ConfigureStorage()
 
 	// Open the database
 	c.logger.Infof("Opening database %s", c.config.Node.DBPath)
@@ -235,7 +238,14 @@ func (c *Coin) Run() error {
 		goto earlyShutdown
 	}
 
-	gw = api.NewGateway(d, v, w)
+	s, err = kvstorage.NewManager(sconf)
+	if err != nil {
+		c.logger.Error(err)
+		retErr = err
+		goto earlyShutdown
+	}
+
+	gw = api.NewGateway(d, v, w, s)
 
 	if c.config.Node.WebInterface {
 		webInterface, err = c.createGUI(gw, host)
@@ -407,6 +417,17 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 	wc.CryptoType = cryptoType
 
 	return wc
+}
+
+// ConfigureStorage sets the key-value storage config values
+func (c *Coin) ConfigureStorage() kvstorage.Config {
+	sc := kvstorage.NewConfig()
+
+	sc.StorageDir = c.config.Node.KVStorageDirectory
+	_, sc.EnableStorageAPI = c.config.Node.enabledAPISets[api.EndpointsStorage]
+	sc.EnabledStorages = c.config.Node.EnabledStorageTypes
+
+	return sc
 }
 
 // ConfigureDaemon sets the daemon config values

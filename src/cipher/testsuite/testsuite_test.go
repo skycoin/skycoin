@@ -13,8 +13,8 @@ import (
 
 const (
 	testdataDir           = "./testdata/"
-	manyAddressesFilename = "^many-addresses.golden$"
-	inputHashesFilename   = "^input-hashes.golden$"
+	manyAddressesFilename = "many-addresses.golden"
+	inputHashesFilename   = "input-hashes.golden"
 	seedFileRegex         = `^seed-\d+.golden$`
 	bip32SeedFileRegex    = `^seed-bip32-\d+.golden$`
 )

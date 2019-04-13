@@ -82,7 +82,7 @@ var (
 
 	// ErrSerializedKeyWrongSize is returned when trying to deserialize a key that
 	// has an incorrect length
-	ErrSerializedKeyWrongSize = NewError(errors.New("Serialized keys should by exactly 82 bytes"))
+	ErrSerializedKeyWrongSize = NewError(errors.New("Serialized keys should be exactly 82 bytes"))
 
 	// ErrHardenedChildPublicKey is returned when trying to create a harded child
 	// of the public key

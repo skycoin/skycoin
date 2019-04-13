@@ -69,9 +69,16 @@ func init() {
 	}
 }
 
-func main() {
-	var j job
+func readInputs(outputDir string) (*testsuite.InputTestData, error) {
+	var data testsuite.InputTestDataJSON
+	if err := file.LoadJSON(filepath.Join(outputDir, inputTestDataFilename), &data); err != nil {
+		return nil, err
+	}
 
+	return testsuite.InputTestDataFromJSON(&data)
+}
+
+func main() {
 	seedsCount := flag.Int("seeds", 10, "number of seeds to generate")
 	inputsCount := flag.Int("hashes", 8, "number of random hashes for input-hashes.golden")
 	addressCount := flag.Int("addresses", 10, "number of addresses to generate per seed")
@@ -120,18 +127,25 @@ func main() {
 
 	fmt.Println("Generating seed data times", *seedsCount)
 
-	jobs := make([]job, 0, *seedsCount+1)
+	jobs := createJobs(*seedsCount, *addressCount)
+
+	writeSeedTestDataFiles(*outputDir, inputs, jobs)
+	writeBip32SeedTestDataFiles(*outputDir, inputs, jobs)
+}
+
+func createJobs(seedsCount, addressCount int) []job {
+	jobs := make([]job, 0, seedsCount+1)
 
 	// Generate seed with 1 byte length
 	jobs = append(jobs, job{
 		seed:         cipher.RandByte(1),
-		addressCount: *addressCount,
+		addressCount: addressCount,
 	})
 
 	// Generate random and mnemonic seeds
-	for i := 0; i < *seedsCount; i++ {
-		j = job{
-			addressCount: *addressCount,
+	for i := 0; i < seedsCount; i++ {
+		j := job{
+			addressCount: addressCount,
 		}
 
 		if i%2 == 0 {
@@ -149,11 +163,10 @@ func main() {
 		jobs = append(jobs, j)
 	}
 
-	writeSeedTestDataFiles(*outputDir, jobs)
-	writeBip32SeedTestDataFiles(*outputDir, jobs)
+	return jobs
 }
 
-func writeSeedTestDataFiles(outputDir string, jobs []job) {
+func writeSeedTestDataFiles(outputDir string, inputs *testsuite.InputTestData, jobs []job) {
 	seedTestData := make(chan *testsuite.SeedTestData, len(jobs))
 	writeDone := make(chan struct{})
 
@@ -189,7 +202,7 @@ func writeSeedTestDataFiles(outputDir string, jobs []job) {
 	<-writeDone
 }
 
-func writeBip32SeedTestDataFiles(outputDir string, jobs []job) {
+func writeBip32SeedTestDataFiles(outputDir string, inputs *testsuite.InputTestData, jobs []job) {
 	seedTestData := make(chan *testsuite.Bip32SeedTestData, len(jobs))
 	writeDone := make(chan struct{})
 
@@ -210,6 +223,12 @@ func writeBip32SeedTestDataFiles(outputDir string, jobs []job) {
 	var wg sync.WaitGroup
 	wg.Add(len(jobs))
 	for i, j := range jobs {
+		// seeds for bip32 master keys must be in this range
+		if len(j.seed) < 16 || len(j.seed) > 64 {
+			wg.Done()
+			continue
+		}
+
 		j.jobID = i
 		go func(jb job) {
 			defer wg.Done()
@@ -298,14 +317,14 @@ func generateBip32SeedTestData(j job) *testsuite.Bip32SeedTestData {
 		Keys:         make([]testsuite.Bip32KeysTestData, len(childNumbers)),
 	}
 
-	mk, err := bip32.NewPrivateKeyFromPath(basePath)
+	mk, err := bip32.NewPrivateKeyFromPath(j.seed, basePath)
 	if err != nil {
 		panic(err)
 	}
 
 	// Generate child addresses for various indices
 	for i, n := range childNumbers {
-		pk, err := mk.NewPrivateChildKey(i)
+		pk, err := mk.NewPrivateChildKey(n)
 		if err != nil {
 			panic(err)
 		}
@@ -314,17 +333,13 @@ func generateBip32SeedTestData(j job) *testsuite.Bip32SeedTestData {
 		pubKey := cipher.MustPubKeyFromSecKey(secKey)
 
 		data.Keys[i] = testsuite.Bip32KeysTestData{
-			Path:        fmt.Sprintf("%s/%d", basePath, n),
-			XPriv:       pk.String(),
-			XPub:        pk.PublicKey().String(),
-			Identifier:  pk.Identifier(),
-			ChildNumber: n,
-			Depth:       pk.Depth,
-			testsuite.KeysTestData{
+			Path:  fmt.Sprintf("%s/%d", basePath, n),
+			XPriv: pk,
+			KeysTestData: testsuite.KeysTestData{
 				Secret:         secKey,
 				Public:         pubKey,
 				Address:        cipher.AddressFromPubKey(pubKey),
-				BitcoinAddress: cipher.BitcoinAddressFromPubkey(pubKey),
+				BitcoinAddress: cipher.BitcoinAddressFromPubKey(pubKey),
 			},
 		}
 	}

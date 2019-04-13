@@ -4,12 +4,14 @@ Package testsuite is the cipher testdata testsuite
 package testsuite
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/bip32"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
@@ -322,12 +324,6 @@ func validateKeyTestData(inputData *InputTestData, s cipher.SecKey, data KeysTes
 type Bip32KeysTestData struct {
 	Path  string
 	XPriv *bip32.PrivateKey
-	// XPriv       string
-	// XPub        string
-	// Identifier  []byte
-	// ChildNumber uint32
-	// Depth       byte
-
 	KeysTestData
 }
 
@@ -358,11 +354,6 @@ func (k *Bip32KeysTestData) ToJSON() *Bip32KeysTestDataJSON {
 
 // Bip32KeysTestDataFromJSON converts Bip32KeysTestDataJSON to Bip32KeysTestData
 func Bip32KeysTestDataFromJSON(d *Bip32KeysTestDataJSON) (*Bip32KeysTestData, error) {
-	// identifier, err := hex.DecodeString(d.Identifier)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	addr, err := cipher.DecodeBase58Address(d.Address)
 	if err != nil {
 		return nil, err
@@ -395,23 +386,40 @@ func Bip32KeysTestDataFromJSON(d *Bip32KeysTestDataJSON) (*Bip32KeysTestData, er
 		}
 	}
 
-	xPriv, err := bip32.DeserializePrivateKey([]byte(d.XPriv))
+	xPrivBytes, err := base58.Decode(d.XPriv)
 	if err != nil {
 		return nil, err
 	}
 
-	// xPub, err := bip32.DeserializePublicKey([]byte(d.XPub))
-	// if err != nil {
-	// 	return nil, err
-	// }
+	xPriv, err := bip32.DeserializePrivateKey(xPrivBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	identifier, err := hex.DecodeString(d.Identifier)
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(xPriv.Identifier(), identifier) {
+		return nil, errors.New("xpriv identifier does not match identifier")
+	}
+
+	if xPriv.Depth != d.Depth {
+		return nil, errors.New("xpriv depth does not match depth")
+	}
+
+	if xPriv.PublicKey().String() != d.XPub {
+		return nil, errors.New("xpub derived from xpriv does not match xpub")
+	}
+
+	if xPriv.ChildNumber() != d.ChildNumber {
+		return nil, errors.New("xpriv child number does not match child number")
+	}
 
 	return &Bip32KeysTestData{
 		Path:  d.Path,
 		XPriv: xPriv,
-		// XPub:        xPub,
-		// Identifier:  identifier,
-		// ChildNumber: d.ChildNumber,
-		// Depth:       d.Depth,
 
 		KeysTestData: KeysTestData{
 			Address:        addr,
@@ -489,7 +497,7 @@ func ValidateBip32SeedData(seedData *Bip32SeedTestData, inputData *InputTestData
 			return err
 		}
 
-		if err := validateBip32KeyTestData(inputData, seedData, k, n, seedData.Keys[i]); err != nil {
+		if err := validateBip32KeyTestData(inputData, seedData.BasePath, seedData.Seed, k, n, seedData.Keys[i]); err != nil {
 			return err
 		}
 	}
@@ -497,9 +505,9 @@ func ValidateBip32SeedData(seedData *Bip32SeedTestData, inputData *InputTestData
 	return nil
 }
 
-func validateBip32KeyTestData(inputData *InputTestData, seedData *Bip32SeedTestData, s *bip32.PrivateKey, childNumber uint32, data Bip32KeysTestData) error {
-	path := fmt.Sprintf("%s/%d", seedData.BasePath, childNumber)
-	pathXPriv, err := bip32.NewPrivateKeyFromPath(seedData.Seed, path)
+func validateBip32KeyTestData(inputData *InputTestData, basePath string, seed []byte, s *bip32.PrivateKey, childNumber uint32, data Bip32KeysTestData) error {
+	path := fmt.Sprintf("%s/%d", basePath, childNumber)
+	pathXPriv, err := bip32.NewPrivateKeyFromPath(seed, path)
 	if err != nil {
 		return err
 	}
@@ -507,44 +515,6 @@ func validateBip32KeyTestData(inputData *InputTestData, seedData *Bip32SeedTestD
 	if s.String() != pathXPriv.String() {
 		return errors.New("xpriv generated with NewPrivateChildKey differs from xpriv generated with NewPrivateKeyFromPath")
 	}
-
-	// xPriv, err := bip32.DeserializePrivateKey(data.XPriv)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if xPriv.String() != data.XPriv {
-	// 	return errors.New("Deserialized xpriv does not match expected xpriv after reserializing")
-	// }
-
-	// if pathXPriv.String() != xPriv.String() {
-	// 	return errors.New("xpriv derived from path does not match deserialized xpriv")
-	// }
-
-	// xPub, err := bip32.DeserializePublicKey(data.XPub)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if xPub.String() != data.XPub {
-	// 	return errors.New("Deserialized xpub does not match expected xpub after reserializing")
-	// }
-
-	// if xPriv.PublicKey().String() != xPub.String() {
-	// 	return errors.New("Deserialized xpub does not match deserialized xpriv.PublicKey()")
-	// }
-
-	// if xPriv.Depth != data.Depth {
-	// 	return errors.New("xpriv depth does not match expected depth")
-	// }
-
-	// if !bytes.Equal(xPriv.Identifier(), data.Identifier) {
-	// 	return errors.New("xPriv.Identifier() does not match expected Identifier")
-	// }
-
-	// if xPriv.ChildNumber() != data.ChildNumber {
-	// 	return errors.New("xPriv.ChildNumber() does not match expected ChildNumber")
-	// }
 
 	pubKey := cipher.MustNewPubKey(s.PublicKey().Key)
 	secKey := cipher.MustNewSecKey(s.Key)

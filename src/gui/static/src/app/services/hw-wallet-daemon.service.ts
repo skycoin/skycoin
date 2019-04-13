@@ -8,7 +8,7 @@ import { ISubscription } from 'rxjs/Subscription';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/timeout';
 
-export enum ConnectionMethod {
+export enum ConnectionMethods {
   Get,
   Post,
   Put,
@@ -40,14 +40,14 @@ export class HwWalletDaemonService {
     this.checkHw(false);
   }
 
-  callFunction(route: string, connectionMethod: ConnectionMethod, params = {}) {
-    if (connectionMethod === ConnectionMethod.Post) {
+  callFunction(route: string, connectionMethod: ConnectionMethods, params = {}) {
+    if (connectionMethod === ConnectionMethods.Post) {
       return this.post(route, params);
-    } else if (connectionMethod === ConnectionMethod.Get) {
+    } else if (connectionMethod === ConnectionMethods.Get) {
       return this.get(route);
-    } else if (connectionMethod === ConnectionMethod.Put) {
+    } else if (connectionMethod === ConnectionMethods.Put) {
       return this.put(route);
-    } else if (connectionMethod === ConnectionMethod.Delete) {
+    } else if (connectionMethod === ConnectionMethods.Delete) {
       return this.delete(route);
     }
   }

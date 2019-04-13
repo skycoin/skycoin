@@ -6,7 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { environment } from '../../environments/environment';
-import { HwWalletDaemonService, ConnectionMethod } from './hw-wallet-daemon.service';
+import { HwWalletDaemonService, ConnectionMethods } from './hw-wallet-daemon.service';
 import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import BigNumber from 'bignumber.js';
@@ -158,7 +158,7 @@ export class HwWalletService {
       return this.processDaemonResponse(
         this.hwWalletDaemonService.callFunction(
           '/cancel',
-          ConnectionMethod.Put,
+          ConnectionMethods.Put,
         ),
       );
     }
@@ -183,7 +183,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/generate_addresses',
-            ConnectionMethod.Post,
+            ConnectionMethods.Post,
             params,
           ),
         );
@@ -210,7 +210,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/generate_addresses',
-            ConnectionMethod.Post,
+            ConnectionMethods.Post,
             params,
           ),
         );
@@ -231,7 +231,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/features',
-            ConnectionMethod.Get,
+            ConnectionMethods.Get,
           ),
         );
       }
@@ -262,7 +262,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/set_pin_code',
-            ConnectionMethod.Post,
+            ConnectionMethods.Post,
           ),
           ['PIN changed'],
         );
@@ -287,7 +287,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/generate_mnemonic',
-            ConnectionMethod.Post,
+            ConnectionMethods.Post,
             params,
           ),
           ['Mnemonic successfully configured'],
@@ -314,7 +314,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/recovery',
-            ConnectionMethod.Post,
+            ConnectionMethods.Post,
             params,
           ),
           ['Device recovered', 'The seed is valid and matches the one in the device'],
@@ -336,7 +336,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/backup',
-            ConnectionMethod.Post,
+            ConnectionMethods.Post,
           ),
           ['Device backed up!'],
         );
@@ -357,7 +357,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/wipe',
-            ConnectionMethod.Delete,
+            ConnectionMethods.Delete,
           ),
           ['Device wiped'],
         );
@@ -409,7 +409,7 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.callFunction(
             '/transaction_sign',
-            ConnectionMethod.Post,
+            ConnectionMethods.Post,
             params,
           ),
         ).map(response => {

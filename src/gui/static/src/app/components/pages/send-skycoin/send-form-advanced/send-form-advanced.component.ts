@@ -429,10 +429,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private createTransaction(passwordDialog?: any) {
-    if (passwordDialog) {
-      passwordDialog.close();
-    }
-
     if (this.previewTx) {
       this.previewButton.setLoading();
       this.sendButton.setDisabled();
@@ -458,6 +454,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     )
       .toPromise()
       .then(transaction => {
+        if (passwordDialog) {
+          passwordDialog.close();
+        }
+
         if (!this.previewTx) {
           return this.walletService.injectTransaction(transaction.encoded).toPromise();
         }
@@ -491,6 +491,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         }, 3000);
       })
       .catch(error => {
+        if (passwordDialog) {
+          passwordDialog.error(error);
+        }
+
         showSnackbarError(this.snackbar, error);
 
         this.previewButton.resetState().setEnabled();

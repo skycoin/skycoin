@@ -193,10 +193,6 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private createTransaction(passwordDialog?: any) {
-    if (passwordDialog) {
-      passwordDialog.close();
-    }
-
     this.showBusy();
 
     let createTxRequest: Observable<PreviewTransaction>;
@@ -226,7 +222,12 @@ export class SendFormComponent implements OnInit, OnDestroy {
       );
     }
 
-     this.processingSubscription = createTxRequest.subscribe(transaction => {
+     this.processingSubscription = createTxRequest.subscribe(
+       transaction => {
+        if (passwordDialog) {
+          passwordDialog.close();
+        }
+
         if (!this.previewTx) {
           this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
             .subscribe(() => this.showSuccess(), error => this.showError(error));
@@ -246,6 +247,10 @@ export class SendFormComponent implements OnInit, OnDestroy {
         }
       },
       error => {
+        if (passwordDialog) {
+          passwordDialog.error(error);
+        }
+
         if (error && error.result) {
           this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
         } else {

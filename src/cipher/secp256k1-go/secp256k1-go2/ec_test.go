@@ -123,8 +123,8 @@ func TestECmult(t *testing.T) {
 	pubkeyj.ECmult(&pr, &u2, &u1)
 	if !pr.Equals(&expres) {
 		t.Error("ECmult failed")
-		pr.Print("got")
-		expres.Print("exp")
+		t.Logf("Got: %s", pr)
+		t.Logf("Exp: %s", expres)
 	}
 }
 

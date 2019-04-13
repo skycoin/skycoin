@@ -1,25 +1,16 @@
 package secp256k1go
 
-import (
-	"fmt"
-	//	"encoding/hex"
-)
-
 // XYZ contains xyz fields
 type XYZ struct {
 	X, Y, Z  Field
 	Infinity bool
 }
 
-// Print prints xyz
-func (xyz XYZ) Print(lab string) {
+func (xyz XYZ) String() string {
 	if xyz.Infinity {
-		fmt.Println(lab + " - INFINITY")
-		return
+		return "INFINITY"
 	}
-	fmt.Println(lab+".X", xyz.X.String())
-	fmt.Println(lab+".Y", xyz.Y.String())
-	fmt.Println(lab+".Z", xyz.Z.String())
+	return xyz.X.String() + "," + xyz.Y.String() + "," + xyz.Z.String()
 }
 
 // SetXY sets xy

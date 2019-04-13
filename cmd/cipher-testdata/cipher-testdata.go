@@ -69,15 +69,6 @@ func init() {
 	}
 }
 
-func readInputs(outputDir string) (*testsuite.InputTestData, error) {
-	var data testsuite.InputTestDataJSON
-	if err := file.LoadJSON(filepath.Join(outputDir, inputTestDataFilename), &data); err != nil {
-		return nil, err
-	}
-
-	return testsuite.InputTestDataFromJSON(&data)
-}
-
 func main() {
 	seedsCount := flag.Int("seeds", 10, "number of seeds to generate")
 	inputsCount := flag.Int("hashes", 8, "number of random hashes for input-hashes.golden")

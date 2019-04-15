@@ -337,7 +337,7 @@ export class WalletService {
           throw new Error(this.translate.instant('service.wallet.not-enough-hours'));
         }
         if (minRequiredOutputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
 
         minRequiredOutputs.map(output => totalHours = totalHours.plus(output.calculated_hours));
@@ -396,7 +396,7 @@ export class WalletService {
 
         // Impossible at this time. Here waiting for when the possibility of sending to multiple addresses is added.
         if (convertedOutputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
 
         return this.hwWalletService.signTransaction(hwInputs, hwOutputs);

@@ -2,7 +2,6 @@ package secp256k1go
 
 import (
 	"encoding/hex"
-	"fmt"
 	"math/big"
 )
 
@@ -18,11 +17,6 @@ func (fd *Field) String() string {
 	b.Normalize()
 	b.GetB32(tmp[:])
 	return hex.EncodeToString(tmp[:])
-}
-
-// Print shows the hex string of the field
-func (fd *Field) Print(lab string) {
-	fmt.Println(lab+":", fd.String())
 }
 
 // GetBig returns big int

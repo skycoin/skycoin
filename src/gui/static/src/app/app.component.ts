@@ -9,6 +9,7 @@ import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { LanguageService } from './services/language.service';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,7 @@ import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/
 export class AppComponent implements OnInit {
   constructor(
     private appService: AppService,
+    private languageService: LanguageService,
     walletService: WalletService,
     translateService: TranslateService,
     hwWalletService: HwWalletService,
@@ -40,5 +42,6 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.appService.testBackend();
+    this.languageService.loadLanguageSettings();
   }
 }

@@ -376,6 +376,8 @@ export class HwWalletService {
           result = OperationResults.PinMismatch;
         } else if (responseContent.includes('Mnemonic not set')) {
           result = OperationResults.WithoutSeed;
+        } else if (responseContent.includes('Mnemonic required')) {
+          result = OperationResults.WithoutSeed;
         } else if (responseContent.includes('Invalid seed, are words in correct order?')) {
           result = OperationResults.InvalidSeed;
         } else if (responseContent.includes('The seed is valid but does not match the one in the device')) {

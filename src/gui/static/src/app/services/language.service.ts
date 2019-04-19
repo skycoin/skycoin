@@ -4,6 +4,7 @@ import { ReplaySubject } from 'rxjs/ReplaySubject';
 
 import { AppConfig } from '../app.config';
 import { ApiService } from './api.service';
+import { ISubscription } from 'rxjs/Subscription';
 
 export class LanguageData {
   code: string;
@@ -18,10 +19,12 @@ export class LanguageData {
 @Injectable()
 export class LanguageService {
   currentLanguage = new ReplaySubject<LanguageData>();
+  selectedLanguageLoaded = new ReplaySubject<boolean>();
 
   private readonly storageKey = 'lang';
-
+  private subscription: ISubscription;
   private languagesInternal: LanguageData[] = [];
+
   get languages(): LanguageData[] {
     return this.languagesInternal;
   }
@@ -56,10 +59,31 @@ export class LanguageService {
   private onLanguageChanged(event: LangChangeEvent) {
     this.currentLanguage.next(this.languages.find(val => val.code === event.lang));
 
-    // TODO: save the selected language.
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+
+    const data = {
+      type: 'client',
+      key: this.storageKey,
+      val: event.lang,
+    };
+    this.subscription = this.apiService.post('/data', data, {}, true).subscribe();
   }
 
   private loadCurrentLanguage() {
-    // TODO: load the language.
+    const data = {
+      type: 'client',
+    };
+    this.apiService.get('/data', data, {}, true).subscribe(response => {
+      if (response.data && response.data[this.storageKey]) {
+        this.translate.use(response.data[this.storageKey]);
+        this.selectedLanguageLoaded.next(true);
+      } else {
+        this.selectedLanguageLoaded.next(false);
+      }
+    }, () => {
+      this.selectedLanguageLoaded.next(false);
+    });
   }
 }

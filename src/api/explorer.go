@@ -6,11 +6,11 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 // CoinSupply records the coin supply info
@@ -31,11 +31,10 @@ type CoinSupply struct {
 	LockedAddresses []string `json:"locked_distribution_addresses"`
 }
 
-// newStringSet returns a map-based set for string lookup
-func newStringSet(keys []string) map[string]struct{} {
-	s := make(map[string]struct{}, len(keys))
-	for _, k := range keys {
-		s[k] = struct{}{}
+func newAddrSet(addrs []cipher.Address) map[cipher.Address]struct{} {
+	s := make(map[cipher.Address]struct{}, len(addrs))
+	for _, a := range addrs {
+		s[a] = struct{}{}
 	}
 	return s
 }
@@ -57,18 +56,17 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		unlockedAddrs := params.GetUnlockedDistributionAddresses()
-		// Search map of unlocked addresses
-		// used to filter unspents
-		unlockedAddrSet := newStringSet(unlockedAddrs)
+		unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
+		// Search map of unlocked addresses, used to filter unspents
+		unlockedAddrSet := newAddrSet(unlockedAddrs)
 
 		var unlockedSupply uint64
 		// check confirmed unspents only
 		for _, u := range allUnspents.Confirmed {
 			// check if address is an unlocked distribution address
-			if _, ok := unlockedAddrSet[u.Body.Address.String()]; ok {
+			if _, ok := unlockedAddrSet[u.Body.Address]; ok {
 				var err error
-				unlockedSupply, err = coin.AddUint64(unlockedSupply, u.Body.Coins)
+				unlockedSupply, err = mathutil.AddUint64(unlockedSupply, u.Body.Coins)
 				if err != nil {
 					err = fmt.Errorf("uint64 overflow while adding up unlocked supply coins: %v", err)
 					wh.Error500(w, err.Error())
@@ -107,15 +105,15 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// locked distribution addresses
-		lockedAddrs := params.GetLockedDistributionAddresses()
-		lockedAddrSet := newStringSet(lockedAddrs)
+		lockedAddrs := params.GetLockedDistributionAddressesDecoded()
+		lockedAddrSet := newAddrSet(lockedAddrs)
 
 		// get total coins hours which excludes locked distribution addresses
 		var totalCoinHours uint64
 		for _, out := range allUnspents.Confirmed {
-			if _, ok := lockedAddrSet[out.Body.Address.String()]; !ok {
+			if _, ok := lockedAddrSet[out.Body.Address]; !ok {
 				var err error
-				totalCoinHours, err = coin.AddUint64(totalCoinHours, out.CalculatedHours)
+				totalCoinHours, err = mathutil.AddUint64(totalCoinHours, out.CalculatedHours)
 				if err != nil {
 					err = fmt.Errorf("uint64 overflow while adding up total coin hours: %v", err)
 					wh.Error500(w, err.Error())
@@ -128,9 +126,9 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		var currentCoinHours uint64
 		for _, out := range allUnspents.Confirmed {
 			// check if address not in locked distribution addresses
-			if _, ok := lockedAddrSet[out.Body.Address.String()]; !ok {
+			if _, ok := lockedAddrSet[out.Body.Address]; !ok {
 				// check if address not in unlocked distribution addresses
-				if _, ok := unlockedAddrSet[out.Body.Address.String()]; !ok {
+				if _, ok := unlockedAddrSet[out.Body.Address]; !ok {
 					currentCoinHours += out.CalculatedHours
 				}
 			}
@@ -148,59 +146,11 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			MaxSupply:             maxSupplyStr,
 			CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 			TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
-			UnlockedAddresses:     unlockedAddrs,
+			UnlockedAddresses:     params.GetUnlockedDistributionAddresses(),
 			LockedAddresses:       params.GetLockedDistributionAddresses(),
 		}
 
 		wh.SendJSONOr500(logger, w, cs)
-	}
-}
-
-// transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
-// Method: GET
-// URI: /explorer/address
-// Args:
-//	address [string]
-func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Critical().Warning("Call to deprecated /api/v1/explorer/address endpoint")
-
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		addr := r.FormValue("address")
-		if addr == "" {
-			wh.Error400(w, "address is empty")
-			return
-		}
-
-		cipherAddr, err := cipher.DecodeBase58Address(addr)
-		if err != nil {
-			wh.Error400(w, "invalid address")
-			return
-		}
-
-		txns, inputs, err := gateway.GetVerboseTransactionsForAddress(cipherAddr)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetVerboseTransactionsForAddress failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		vb := make([]readable.TransactionVerbose, len(txns))
-		for i, txn := range txns {
-			v, err := readable.NewTransactionVerbose(txn, inputs[i])
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-
-			vb[i] = v
-		}
-
-		wh.SendJSONOr500(logger, w, vb)
 	}
 }
 
@@ -258,8 +208,14 @@ func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 			richlist = richlist[:topn]
 		}
 
+		readableRichlist, err := readable.NewRichlistBalances(richlist)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		wh.SendJSONOr500(logger, w, Richlist{
-			Richlist: readable.NewRichlistBalances(richlist),
+			Richlist: readableRichlist,
 		})
 	}
 }
@@ -274,7 +230,7 @@ func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		addrCount, err := gateway.GetAddressCount()
+		addrCount, err := gateway.AddressCount()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return

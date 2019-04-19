@@ -21,6 +21,22 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
     this.subscription = this.priceService.price.subscribe(price => this.price = price);
   }
 
+  get hoursText(): string {
+    if (!this.transaction) {
+      return '';
+    }
+
+    if (!this.isPreview) {
+      if ((this.transaction as any).coinsMovedInternally) {
+        return 'tx.hours-moved';
+      } else if (this.transaction.balance.isGreaterThan(0)) {
+        return 'tx.hours-received';
+      }
+    }
+
+    return 'tx.hours-sent';
+  }
+
   ngOnInit() {
     if (this.isPreview) {
       this.transaction.hoursSent = new BigNumber('0');

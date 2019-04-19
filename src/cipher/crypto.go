@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
-	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
 var (
@@ -62,10 +62,10 @@ var (
 	ErrInvalidHashForSig = errors.New("Signature not valid for hash")
 	// ErrPubKeyRecoverMismatch Recovered pubkey does not match pubkey
 	ErrPubKeyRecoverMismatch = errors.New("Recovered pubkey does not match pubkey")
-	// ErrInvalidSigInvalidPubKey VerifySignedHash, secp256k1.VerifyPubkey failed
-	ErrInvalidSigInvalidPubKey = errors.New("VerifySignedHash, secp256k1.VerifyPubkey failed")
-	// ErrInvalidSigValidity  VerifySignedHash, VerifySignatureValidity failed
-	ErrInvalidSigValidity = errors.New("VerifySignedHash, VerifySignatureValidity failed")
+	// ErrInvalidSigInvalidPubKey VerifySignatureRecoverPubKey, secp256k1.VerifyPubkey failed
+	ErrInvalidSigInvalidPubKey = errors.New("VerifySignatureRecoverPubKey, secp256k1.VerifyPubkey failed")
+	// ErrInvalidSigValidity  VerifySignatureRecoverPubKey, VerifySignatureValidity failed
+	ErrInvalidSigValidity = errors.New("VerifySignatureRecoverPubKey, VerifySignatureValidity failed")
 	// ErrInvalidSigForMessage Invalid signature for this message
 	ErrInvalidSigForMessage = errors.New("Invalid signature for this message")
 	// ErrInvalidSecKyVerification Seckey secp256k1 verification failed
@@ -343,6 +343,15 @@ func MustSigFromHex(s string) Sig {
 	return sig
 }
 
+func (s Sig) String() string {
+	return s.Hex()
+}
+
+// Null returns true if the Sig is a null Sig
+func (s Sig) Null() bool {
+	return s == Sig{}
+}
+
 // Hex converts signature to hex string
 func (s Sig) Hex() string {
 	return hex.EncodeToString(s[:])
@@ -444,15 +453,16 @@ func VerifyPubKeySignedHash(pubkey PubKey, sig Sig, hash SHA256) error {
 	return nil
 }
 
-// VerifySignedHash this only checks that the signature can be converted to a public key
-// Since there is no pubkey or address argument, it cannot check that the
-// signature is valid in that context.
-func VerifySignedHash(sig Sig, hash SHA256) error {
+// VerifySignatureRecoverPubKey this only checks that the signature can be converted to a public key.
+// It does not check that the signature signed the hash.
+// The original public key or address is required to verify that the signature signed the hash.
+func VerifySignatureRecoverPubKey(sig Sig, hash SHA256) error {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
 		return ErrInvalidSigPubKeyRecovery
 	}
 	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
+		// This should always pass; the recovered pubkey should always be valid
 		return ErrInvalidHashForSig
 	}
 	return nil
@@ -665,10 +675,10 @@ func CheckSecKeyHash(seckey SecKey, hash SHA256) error {
 		return fmt.Errorf("impossible error CheckSecKeyHash, VerifyAddressSignedHash Failed, should not get this far: %v", err)
 	}
 
-	// verify VerifySignedHash
-	err = VerifySignedHash(sig, hash)
+	// verify VerifySignatureRecoverPubKey
+	err = VerifySignatureRecoverPubKey(sig, hash)
 	if err != nil {
-		return fmt.Errorf("VerifySignedHash failed: %v", err)
+		return fmt.Errorf("VerifySignatureRecoverPubKey failed: %v", err)
 	}
 
 	return nil
@@ -688,9 +698,9 @@ func init() {
 	// Do not allow program to start if crypto tests fail
 	pubkey, seckey := GenerateKeyPair()
 	if err := CheckSecKey(seckey); err != nil {
-		log.Fatalf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)
+		log.Panicf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)
 	}
 	if MustPubKeyFromSecKey(seckey) != pubkey {
-		log.Fatal("DebugLevel1, GenerateKeyPair, public key does not match private key")
+		log.Panic("DebugLevel1, GenerateKeyPair, public key does not match private key")
 	}
 }

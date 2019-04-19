@@ -38,6 +38,7 @@
     "syncing-blocks": "Syncing blocks",
     "update1": "Wallet update",
     "update2": "available.",
+    "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
     "pending-txs1": "There are some",
     "pending-txs2": "pending transactions.",
     "pending-txs3": "Data you see may not be updated.",
@@ -153,18 +154,28 @@
       "copy": "Copy",
       "copy-address": "Copy address",
       "copied": "Copied!",
-      "outputs": "Unspent Outputs"
+      "outputs": "Unspent Outputs",
+      "history": "History"
     }
   },
 
   "send": {
+    "synchronizing-warning": "The wallet is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
     "from-label": "Send from",
     "to-label": "Send to",
     "amount-label": "Amount",
     "notes-label": "Notes",
     "wallet-label": "Wallet",
     "addresses-label": "Addresses",
-    "addresses-help": "Wallet addresses to send from",
+    "addresses-help": "Limit the addresses from where the coins and hours could be sent",
+    "all-addresses": "All the addresses of the selected wallet",
+    "outputs-label": "Unspent outputs",
+    "outputs-help": "Limit the unspent outputs from where the coins and hours could be sent. Only the outputs from the selected addresses are shown",
+    "all-outputs": "All the outputs of the selected addresses",
+    "available-msg-part1": "With your current selection you can send up to",
+    "available-msg-part2": "and",
+    "available-msg-part3": "(at least",
+    "available-msg-part4": "must be used for the transaction fee).",
     "change-address-label": "Custom change address",
     "change-address-select": "Select",
     "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets",
@@ -202,6 +213,7 @@
     "hours": "Hours",
     "id": "Tx ID",
     "show-more": "Show more",
+    "hours-moved": "moved",
     "hours-sent": "sent",
     "hours-received": "received",
     "hours-burned": "burned",
@@ -261,12 +273,19 @@
 
   "history": {
     "tx-detail": "Transaction Detail",
+    "moving": "Internally moving",
+    "moved": "Internally moved",
     "sending": "Sending",
     "sent": "Sent",
     "received": "Received",
     "receiving": "Receiving",
     "pending": "Pending",
-    "no-txs": "You have no transaction history"
+    "no-txs": "You have no transaction history",
+    "no-txs-filter": "There are no transactions matching the current filter criteria",
+    "no-filter": "No filter active (press to select wallets/addresses)",
+    "filter": "Active filter: ",
+    "filters": "Active filters: ",
+    "all-addresses": "All addresses"
   },
 
   "teller": {

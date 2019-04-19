@@ -5,10 +5,20 @@ import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { showSnackbarError } from '../../../../utils/errors';
-import { Subscription } from 'rxjs/Subscription';
+import { Subscription, ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
+import { Output as UnspentOutput, Wallet, Address, ConfirmationData } from '../../../../app.datatypes';
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/retryWhen';
+import 'rxjs/add/operator/concat';
+import { BlockchainService } from '../../../../services/blockchain.service';
+import { showConfirmationModal } from '../../../../utils';
+import { AppService } from '../../../../services/app.service';
+import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
+import { PriceService } from '../../../../services/price.service';
+import { SendFormComponent } from '../send-form/send-form.component';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -22,20 +32,37 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   @Output() onFormSubmitted = new EventEmitter<any>();
 
   form: FormGroup;
+  wallet: Wallet;
   addresses = [];
+  allUnspentOutputs: UnspentOutput[] = [];
+  unspentOutputs: UnspentOutput[] = [];
+  loadingUnspentOutputs = false;
+  availableCoins = new BigNumber(0);
+  availableHours = new BigNumber(0);
+  minimumFee = new BigNumber(0);
   autoHours = true;
   autoOptions = false;
   autoShareValue = '0.5';
   previewTx: boolean;
+  doubleButtonActive = DoubleButtonActive;
+  selectedCurrency = DoubleButtonActive.LeftButton;
+  values: number[];
+  price: number;
 
   private subscriptions: Subscription;
+  private getOutputsSubscriptions: ISubscription;
+  private destinationSubscriptions: ISubscription[] = [];
+  private syncCheckSubscription: ISubscription;
 
   constructor(
+    public blockchainService: BlockchainService,
     public walletService: WalletService,
+    private appService: AppService,
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
     private navbarService: NavBarService,
+    private priceService: PriceService,
   ) { }
 
   ngOnInit() {
@@ -43,7 +70,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
-      addresses: ['', Validators.required],
+      addresses: [null],
+      outputs: [null],
       changeAddress: [''],
       destinations: this.formBuilder.array(
         [this.createDestinationFormGroup()],
@@ -52,14 +80,49 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions = this.form.get('wallet').valueChanges.subscribe(wallet => {
+      this.wallet = wallet;
+
+      this.closeGetOutputsSubscriptions();
+      this.allUnspentOutputs = [];
+      this.unspentOutputs = [];
+      this.loadingUnspentOutputs = true;
+
+      this.getOutputsSubscriptions = this.walletService.getWalletUnspentOutputs(wallet)
+        .retryWhen(errors => errors.delay(1000).take(10).concat(Observable.throw('')))
+        .subscribe(
+          result => {
+            this.loadingUnspentOutputs = false;
+            this.allUnspentOutputs = result;
+            this.unspentOutputs = this.filterUnspentOutputs();
+          },
+          () => this.loadingUnspentOutputs = false,
+        );
+
       this.addresses = wallet.addresses.filter(addr => addr.coins > 0);
-      this.form.get('addresses').setValue([]);
+      this.form.get('addresses').setValue(null);
+      this.form.get('outputs').setValue(null);
+
+      this.updateAvailableBalance();
       this.form.get('destinations').updateValueAndValidity();
     });
 
     this.subscriptions.add(this.form.get('addresses').valueChanges.subscribe(() => {
+      this.form.get('outputs').setValue(null);
+      this.unspentOutputs = this.filterUnspentOutputs();
+
+      this.updateAvailableBalance();
       this.form.get('destinations').updateValueAndValidity();
     }));
+
+    this.subscriptions.add(this.form.get('outputs').valueChanges.subscribe(() => {
+      this.updateAvailableBalance();
+      this.form.get('destinations').updateValueAndValidity();
+    }));
+
+    this.subscriptions = this.priceService.price.subscribe(price => {
+      this.price = price;
+      this.updateValues();
+    });
 
     if (this.formData) {
       this.fillForm();
@@ -67,19 +130,95 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.closeGetOutputsSubscriptions();
+    this.closeSyncCheckSubscription();
     this.subscriptions.unsubscribe();
     this.navbarService.hideSwitch();
     this.snackbar.dismiss();
+    this.destinationSubscriptions.forEach(s => s.unsubscribe());
   }
 
   preview() {
     this.previewTx = true;
-    this.unlockAndSend();
+    this.checkBeforeSending();
   }
 
   send() {
     this.previewTx = false;
-    this.unlockAndSend();
+    this.checkBeforeSending();
+  }
+
+  changeActiveCurrency(value) {
+    this.selectedCurrency = value;
+    this.updateValues();
+    (this.form.get('destinations') as FormArray).updateValueAndValidity();
+  }
+
+  private updateValues() {
+    if (!this.price) {
+      this.values = null;
+
+      return;
+    }
+
+    this.values = [];
+
+    this.destControls.forEach((dest, i) => {
+      const value = dest.get('coins').value !== undefined ? dest.get('coins').value.replace(' ', '=') : '';
+
+      if (isNaN(value) || value.trim() === '' || parseFloat(value) <= 0 || value * 1 === 0) {
+        this.values[i] = -1;
+
+        return;
+      }
+
+      const parts = value.split('.');
+      if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+        if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
+          this.values[i] = -1;
+
+          return;
+        }
+      } else {
+        if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimal) {
+          this.values[i] = -1;
+
+          return;
+        }
+      }
+
+      if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+        this.values[i] = new BigNumber(value).multipliedBy(this.price).decimalPlaces(2).toNumber();
+      } else {
+        this.values[i] = new BigNumber(value).dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals).toNumber();
+      }
+    });
+  }
+
+  private checkBeforeSending() {
+    this.closeSyncCheckSubscription();
+    this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
+      if (synchronized) {
+        this.unlockAndSend();
+      } else {
+        this.showSynchronizingWarning();
+      }
+    });
+  }
+
+  private showSynchronizingWarning() {
+    const confirmationData: ConfirmationData = {
+      text: 'send.synchronizing-warning',
+      headerText: 'confirmation.header-text',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+    };
+
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
+        this.unlockAndSend();
+      }
+    });
   }
 
   unlockAndSend() {
@@ -109,11 +248,16 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   addDestination() {
     const destinations = this.form.get('destinations') as FormArray;
     destinations.push(this.createDestinationFormGroup());
+    this.updateValues();
   }
 
   removeDestination(index) {
     const destinations = this.form.get('destinations') as FormArray;
     destinations.removeAt(index);
+
+    this.destinationSubscriptions[index].unsubscribe();
+    this.destinationSubscriptions.splice(index, 1);
+    this.updateValues();
   }
 
   setShareValue(event) {
@@ -159,9 +303,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     this.destControls.forEach((destControl, i) => {
-      ['address', 'coins', 'hours'].forEach(name => {
+      ['address', 'hours'].forEach(name => {
         destControl.get(name).setValue(this.formData.form.destinations[i][name]);
       });
+      destControl.get('coins').setValue(this.formData.form.destinations[i].originalAmount);
     });
 
     if (this.formData.form.hoursSelection.type === 'auto') {
@@ -172,10 +317,25 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     this.autoOptions = this.formData.form.autoOptions;
+
+    if (this.formData.form.allUnspentOutputs) {
+      this.closeGetOutputsSubscriptions();
+
+      this.allUnspentOutputs = this.formData.form.allUnspentOutputs;
+      this.unspentOutputs = this.filterUnspentOutputs();
+
+      this.form.get('outputs').setValue(this.formData.form.outputs);
+    }
+
+    this.selectedCurrency = this.formData.form.currency;
   }
 
   addressCompare(a, b) {
-    return a.address === b.address;
+    return a && b && a.address === b.address;
+  }
+
+  outputCompare(a, b) {
+    return a && b && a.hash === b.hash;
   }
 
   get destControls() {
@@ -183,7 +343,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private validateDestinations() {
-    if (!this.form || !Array.isArray(this.form.get('addresses').value)) {
+    if (!this.form) {
       return { Required: true };
     }
 
@@ -210,8 +370,14 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         if (name === 'coins') {
           const parts = value.split('.');
 
-          if (parts.length === 2 && parts[1].length > 6) {
-            return true;
+          if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+            if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
+              return true;
+            }
+          } else {
+            if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimal) {
+              return true;
+            }
           }
         } else if (name === 'hours') {
           if (value < 1 || parseInt(value, 10) !== parseFloat(value)) {
@@ -227,17 +393,21 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       return { Invalid: true };
     }
 
-    let coins = new BigNumber(0);
-    this.form.get('addresses').value.map(control => coins = coins.plus(control.coins));
+    this.updateAvailableBalance();
+
     let destinationsCoins = new BigNumber(0);
-    this.destControls.map(control => destinationsCoins = destinationsCoins.plus(control.value.coins));
-
-    let hours = new BigNumber(0);
-    this.form.get('addresses').value.map(control => hours = hours.plus(control.hours));
+    if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+      this.destControls.map(control => destinationsCoins = destinationsCoins.plus(control.value.coins));
+    } else {
+      this.updateValues();
+      this.values.map(value => destinationsCoins = destinationsCoins.plus(value));
+    }
     let destinationsHours = new BigNumber(0);
-    this.destControls.map(control => destinationsHours = destinationsHours.plus(control.value.hours));
+    if (!this.autoHours) {
+      this.destControls.map(control => destinationsHours = destinationsHours.plus(control.value.hours));
+    }
 
-    if (destinationsCoins.isGreaterThan(coins) || destinationsHours.isGreaterThan(hours)) {
+    if (destinationsCoins.isGreaterThan(this.availableCoins) || destinationsHours.isGreaterThan(this.availableHours)) {
       return { Invalid: true };
     }
 
@@ -245,11 +415,17 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private createDestinationFormGroup() {
-    return this.formBuilder.group({
+    const group = this.formBuilder.group({
       address: '',
       coins: '',
       hours: '',
     });
+
+    this.destinationSubscriptions.push(group.get('coins').valueChanges.subscribe(value => {
+      this.updateValues();
+    }));
+
+    return group;
   }
 
   private createTransaction(passwordDialog?: any) {
@@ -265,9 +441,16 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.previewButton.setDisabled();
     }
 
+    const selectedAddresses = this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0 ?
+      this.form.get('addresses').value.map(addr => addr.address) : null;
+
+    const selectedOutputs = this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0 ?
+      this.form.get('outputs').value.map(addr => addr.hash) : null;
+
     this.walletService.createTransaction(
       this.form.get('wallet').value,
-      this.form.get('addresses').value.map(addr => addr.address),
+      selectedAddresses,
+      selectedOutputs,
       this.destinations,
       this.hoursSelection,
       this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
@@ -290,6 +473,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             destinations: this.destinations,
             hoursSelection: this.hoursSelection,
             autoOptions: this.autoOptions,
+            allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
+            outputs: this.form.get('outputs').value,
+            currency: this.selectedCurrency,
           },
           amount: amount,
           to: this.destinations.map(d => d.address),
@@ -314,7 +500,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private resetForm() {
     this.form.get('wallet').setValue('', { emitEvent: false });
-    this.form.get('addresses').setValue([]);
+    this.form.get('addresses').setValue(null);
+    this.form.get('outputs').setValue(null);
     this.form.get('changeAddress').setValue('');
 
     while (this.destControls.length > 0) {
@@ -329,10 +516,11 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private get destinations() {
-    return this.destControls.map(destControl => {
+    return this.destControls.map((destControl, i) => {
       const destination = {
         address: destControl.get('address').value,
-        coins: destControl.get('coins').value,
+        coins: this.selectedCurrency === DoubleButtonActive.LeftButton ? destControl.get('coins').value : this.values[i].toString(),
+        originalAmount: destControl.get('coins').value,
       };
 
       if (!this.autoHours) {
@@ -357,5 +545,60 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     return hoursSelection;
+  }
+
+  private updateAvailableBalance() {
+    if (this.form.get('wallet').value) {
+      this.availableCoins = new BigNumber(0);
+      this.availableHours = new BigNumber(0);
+
+      const outputs: UnspentOutput[] = this.form.get('outputs').value;
+      const addresses: Address[] = this.form.get('addresses').value;
+
+      if (outputs && outputs.length > 0) {
+        outputs.map(control => {
+          this.availableCoins = this.availableCoins.plus(control.coins);
+          this.availableHours = this.availableHours.plus(control.calculated_hours);
+        });
+      } else if (addresses && addresses.length > 0) {
+        addresses.map(control => {
+          this.availableCoins = this.availableCoins.plus(control.coins);
+          this.availableHours = this.availableHours.plus(control.hours);
+        });
+      } else {
+        const wallet: Wallet = this.form.get('wallet').value;
+        this.availableCoins = wallet.coins;
+        this.availableHours = wallet.hours;
+      }
+
+      const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.appService.burnRate));
+      const sendableHours = this.availableHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
+      this.minimumFee = this.availableHours.minus(sendableHours);
+      this.availableHours = sendableHours;
+    }
+  }
+
+  private filterUnspentOutputs(): UnspentOutput[] {
+    if (this.allUnspentOutputs.length === 0) {
+      return [];
+    } else if (!this.form.get('addresses').value || (this.form.get('addresses').value as Address[]).length === 0) {
+      return this.allUnspentOutputs;
+    } else {
+      return this.allUnspentOutputs.filter(out => (this.form.get('addresses').value as Address[]).some(addr => addr.address === out.address));
+    }
+  }
+
+  private closeGetOutputsSubscriptions() {
+    this.loadingUnspentOutputs = false;
+
+    if (this.getOutputsSubscriptions) {
+      this.getOutputsSubscriptions.unsubscribe();
+    }
+  }
+
+  private closeSyncCheckSubscription() {
+    if (this.syncCheckSubscription) {
+      this.syncCheckSubscription.unsubscribe();
+    }
   }
 }

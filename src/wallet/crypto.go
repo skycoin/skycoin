@@ -22,6 +22,8 @@ func CryptoTypeFromString(s string) (CryptoType, error) {
 		return CryptoTypeSha256Xor, nil
 	case CryptoTypeScryptChacha20poly1305:
 		return CryptoTypeScryptChacha20poly1305, nil
+	case CryptoTypeScryptChacha20poly1305Insecure:
+		return CryptoTypeScryptChacha20poly1305Insecure, nil
 	default:
 		return "", errors.New("unknown crypto type")
 	}
@@ -29,8 +31,12 @@ func CryptoTypeFromString(s string) (CryptoType, error) {
 
 // Crypto types
 const (
-	CryptoTypeSha256Xor              = CryptoType("sha256-xor")
+	// CryptoTypeSha256Xor uses the SHA256-XOR encryption method (unsafe - no key derivation)
+	CryptoTypeSha256Xor = CryptoType("sha256-xor")
+	// CryptoTypeScryptChacha20poly1305 uses chacha20poly1305 + scrypt key derivation (use this)
 	CryptoTypeScryptChacha20poly1305 = CryptoType("scrypt-chacha20poly1305")
+	// CryptoTypeScryptChacha20poly1305Insecure uses chacha20poly1305 + scrypt key derivation with a weak work factor (unsafe)
+	CryptoTypeScryptChacha20poly1305Insecure = CryptoType("scrypt-chacha20poly1305-insecure")
 )
 
 // cryptoTable records all supported wallet crypto methods
@@ -38,6 +44,12 @@ const (
 var cryptoTable = map[CryptoType]cryptor{
 	CryptoTypeSha256Xor:              encrypt.DefaultSha256Xor,
 	CryptoTypeScryptChacha20poly1305: encrypt.DefaultScryptChacha20poly1305,
+	CryptoTypeScryptChacha20poly1305Insecure: encrypt.ScryptChacha20poly1305{
+		N:      1 << 15,
+		R:      encrypt.ScryptR,
+		P:      encrypt.ScryptP,
+		KeyLen: encrypt.ScryptKeyLen,
+	},
 }
 
 // getCrypto gets crypto of given type

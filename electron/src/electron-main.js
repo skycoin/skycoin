@@ -20,7 +20,7 @@ require('electron-context-menu')({});
 global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
-let showErrorCalled = false;
+let splashLoaded = false
 
 // Detect if the code is running with the "dev" arg. The "dev" arg is added when running npm
 // start. If this is true, a local node will not be started, but one is expected to be running,
@@ -30,7 +30,7 @@ let showErrorCalled = false;
 let dev = process.argv.find(arg => arg === 'dev') ? true : false;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com, api.github.com');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinpaprika.com');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');
@@ -82,7 +82,6 @@ function startSkycoin() {
       '-download-peerlist=true',
       '-enable-all-api-sets=true',
       '-enable-api-sets=INSECURE_WALLET_SEED',
-      '-rpc-interface=false',
       '-disable-csrf=false',
       '-reset-corrupt-db=true',
       '-enable-gui=true',
@@ -111,7 +110,13 @@ function startSkycoin() {
       data.toString().split('\n').forEach(line => {
         if (line.indexOf(marker) !== -1) {
           currentURL = 'http://' + line.split(marker)[1].trim();
-          app.emit('skycoin-ready', { url: currentURL });
+		  var id = setInterval(function() {
+			// wait till the splash page loading is finished
+			if (splashLoaded) {
+			  app.emit('skycoin-ready', { url: currentURL });
+			  clearInterval(id);
+			}
+		  }, 500);
         }
       });
     });
@@ -151,7 +156,6 @@ function startSkycoin() {
 
 function showError() {
   if (win) {
-    showErrorCalled = true;
     win.loadURL('file://' + process.resourcesPath + '/app/dist/assets/error-alert/index.html');
     console.log('Showing the error message');
   }
@@ -171,6 +175,7 @@ function createWindow(url) {
   win = new BrowserWindow({
     width: 1200,
     height: 900,
+    backgroundColor: '#000000',
     title: 'Skycoin',
     icon: iconPath,
     nodeIntegration: false,
@@ -189,10 +194,10 @@ function createWindow(url) {
   });
   hwCode.setWinRef(win);
 
-  win.webContents.on('did-fail-load', function() {
-    if (!showErrorCalled) {
-      showError();
-    }
+  win.webContents.on('did-finish-load', function() {
+	if (!splashLoaded) {
+	  splashLoaded = true;
+	}
   });
 
   // patch out eval

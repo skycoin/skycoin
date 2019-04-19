@@ -59,3 +59,17 @@
     display: block;
   }
 }
+
+.small {
+  &.-buttons-container {
+    padding: 2px;
+    line-height: 0px;
+  }
+
+  .-small-button ::ng-deep button {
+    padding: 0 10px 0 10px;
+    min-width: 70px;
+    font-size: 9px;
+    min-height: 16px;
+  }
+}

@@ -1,11 +1,14 @@
-import { Component, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Component, Inject, OnDestroy } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogConfig, MatDialog } from '@angular/material/dialog';
 import { WalletService } from '../../../../services/wallet.service';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Wallet } from '../../../../app.datatypes';
+import { ChangeNameData, ChangeNameComponent } from '../../../pages/wallets/change-name/change-name.component';
+import { MatSnackBar } from '@angular/material';
+import { showSnackbarError } from '../../../../utils/errors';
 
 enum States {
   Initial,
@@ -18,7 +21,7 @@ enum States {
   templateUrl: './hw-added-dialog.component.html',
   styleUrls: ['./hw-added-dialog.component.scss'],
 })
-export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> {
+export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
 
   closeIfHwDisconnected = false;
 
@@ -28,17 +31,22 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   wallet: Wallet;
   form: FormGroup;
 
+  private initialLabel: string;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwAddedDialogComponent>,
     private walletService: WalletService,
     hwWalletService: HwWalletService,
     private formBuilder: FormBuilder,
+    private dialog: MatDialog,
+    private snackbar: MatSnackBar,
   ) {
     super(hwWalletService, dialogRef);
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
       this.walletService.getHwFeaturesAndUpdateData(wallet).subscribe(result => {
         this.wallet = wallet;
+        this.initialLabel = wallet.label;
 
         this.form = this.formBuilder.group({
           label: [wallet.label, Validators.required],
@@ -53,9 +61,28 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     });
   }
 
+  ngOnDestroy() {
+    this.snackbar.dismiss();
+  }
+
   saveNameAndCloseModal() {
-    this.wallet.label = this.form.value.label;
-    this.walletService.saveHardwareWallets();
-    this.closeModal();
+    if (this.form.value.label === this.initialLabel) {
+      this.closeModal();
+    } else {
+      this.snackbar.dismiss();
+
+      const config = new MatDialogConfig();
+      config.width = '400px';
+      config.data = new ChangeNameData();
+      (config.data as ChangeNameData).wallet = this.wallet;
+      (config.data as ChangeNameData).newName = this.form.value.label;
+      this.dialog.open(ChangeNameComponent, config).afterClosed().subscribe(result => {
+        if (result && !result.errorMsg) {
+          this.closeModal();
+        } else if (result.errorMsg) {
+          showSnackbarError(this.snackbar, result.errorMsg);
+        }
+      });
+    }
   }
 }

@@ -2,7 +2,7 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
-import { ChangeNameComponent } from '../change-name/change-name.component';
+import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatSnackBar } from '@angular/material';
@@ -274,7 +274,8 @@ export class WalletDetailComponent implements OnDestroy {
   private continueEditWallet() {
     const config = new MatDialogConfig();
     config.width = '566px';
-    config.data = this.wallet;
+    config.data = new ChangeNameData();
+    (config.data as ChangeNameData).wallet = this.wallet;
     this.dialog.open(ChangeNameComponent, config);
   }
 }

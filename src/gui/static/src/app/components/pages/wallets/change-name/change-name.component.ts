@@ -15,6 +15,15 @@ enum States {
   WaitingForConfirmation,
 }
 
+export class ChangeNameData {
+  wallet: Wallet;
+  newName: string;
+}
+
+export class ChangeNameErrorResponse {
+  errorMsg: string;
+}
+
 @Component({
   selector: 'app-change-name',
   templateUrl: './change-name.component.html',
@@ -31,7 +40,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
 
   constructor(
     public dialogRef: MatDialogRef<ChangeNameComponent>,
-    @Inject(MAT_DIALOG_DATA) private data: Wallet,
+    @Inject(MAT_DIALOG_DATA) private data: ChangeNameData,
     private formBuilder: FormBuilder,
     private walletService: WalletService,
     private hwWalletService: HwWalletService,
@@ -40,9 +49,13 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.form = this.formBuilder.group({
-      label: [this.data.label, Validators.required],
-    });
+    if (!this.data.newName) {
+      this.form = this.formBuilder.group({
+        label: [this.data.newName ? this.data.newName : this.data.wallet.label, Validators.required],
+      });
+    } else {
+      this.finishRenaming(this.data.newName);
+    }
   }
 
   ngOnDestroy() {
@@ -61,13 +74,21 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     this.snackbar.dismiss();
     this.button.setLoading();
 
-    this.newLabel = this.form.value.label;
+    this.finishRenaming(this.form.value.label);
+  }
 
-    if (!this.data.isHardware) {
-      this.walletService.renameWallet(this.data, this.newLabel)
+  private finishRenaming(newLabel) {
+    this.newLabel = newLabel;
+
+    if (!this.data.wallet.isHardware) {
+      this.walletService.renameWallet(this.data.wallet, this.newLabel)
         .subscribe(() => this.dialogRef.close(this.newLabel));
     } else {
-      this.hwWalletService.checkIfCorrectHwConnected(this.data.addresses[0].address)
+      if (this.data.newName) {
+        this.currentState = States.WaitingForConfirmation;
+      }
+
+      this.hwWalletService.checkIfCorrectHwConnected(this.data.wallet.addresses[0].address)
         .flatMap(() => {
           this.currentState = States.WaitingForConfirmation;
 
@@ -75,15 +96,21 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
         })
         .subscribe(
           () => {
-            this.data.label = this.newLabel;
+            this.data.wallet.label = this.newLabel;
             this.walletService.saveHardwareWallets();
             this.dialogRef.close(this.newLabel);
           },
           err => {
-            showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
-            this.currentState = States.Initial;
-            if (this.button) {
-              this.button.resetState();
+            if (this.data.newName) {
+              const response = new ChangeNameErrorResponse();
+              response.errorMsg = getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err);
+              this.dialogRef.close(response);
+            } else {
+              showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+              this.currentState = States.Initial;
+              if (this.button) {
+                this.button.resetState();
+              }
             }
           },
         );

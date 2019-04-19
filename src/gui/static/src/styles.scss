@@ -266,7 +266,6 @@ Alerts
   background-color: #ffdede;
   padding: 15px;
   display: flex;
-  align-items: center;
   margin-bottom: 20px;
 
   .title {
@@ -274,6 +273,7 @@ Alerts
   }
 
   mat-icon {
+    margin-top: 5px;
     margin-right: 10px;
     animation: alert-blinking 1s linear infinite;
   }
@@ -420,4 +420,31 @@ On-boarding components
 
 .mouse-disabled {
   pointer-events: none;
+}
+
+.coin-selector-container {
+  display: inline-block;
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.coins-value-label {
+  font-size: 10px;
+  margin-top: 1px;
+  padding: 3px 10px;
+  background-color: $grey-lightest;
+  border-radius: 4px;
+
+  span {
+    opacity: 0.5;
+  }
+}
+
+.red {
+  color: $red;
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.5;
 }

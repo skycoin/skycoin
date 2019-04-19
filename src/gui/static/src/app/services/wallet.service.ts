@@ -18,6 +18,7 @@ import { BigNumber } from 'bignumber.js';
 import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { AppService } from './app.service';
+import { AppConfig } from '../app.config';
 
 declare var Cipher: any;
 
@@ -106,8 +107,8 @@ export class WalletService {
     const addressesMap: Map<string, boolean> = new Map<string, boolean>();
     const addressesWithTxMap: Map<string, boolean> = new Map<string, boolean>();
 
-    return this.hwWalletService.getMaxAddresses().flatMap(response => {
-      addresses = response;
+    return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0).flatMap(response => {
+      addresses = response.rawResponse;
       addresses.forEach(address => {
         addressesMap.set(address, true);
       });

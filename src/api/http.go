@@ -16,7 +16,6 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -57,6 +56,8 @@ const (
 	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
 	EndpointsNetCtrl = "NET_CTRL"
+	// EndpointsStorage endpoints implement interface for key-value storage for arbitrary data
+	EndpointsStorage = "STORAGE"
 )
 
 // Server exposes an HTTP API
@@ -590,7 +591,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 
 	// golang process internal metrics for Prometheus
-	webHandlerV2("/metrics", promhttp.Handler().(http.Handler), map[string][]string{
+	webHandlerV2("/metrics", metricsHandler(c, gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsPrometheus},
 	})
 
@@ -608,6 +609,13 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 	webHandlerV1("/addresscount", addressCountHandler(gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},
+	})
+
+	// Storage endpoint
+	webHandlerV2("/data", storageHandler(gateway), map[string][]string{
+		http.MethodGet:    []string{EndpointsStorage},
+		http.MethodPost:   []string{EndpointsStorage},
+		http.MethodDelete: []string{EndpointsStorage},
 	})
 
 	return mux

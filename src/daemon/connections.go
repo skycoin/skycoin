@@ -295,8 +295,8 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 	conn.Mirror = m.Mirror
 	conn.ProtocolVersion = m.ProtocolVersion
 	conn.ListenPort = listenPort
-	conn.UserAgent = m.userAgent
-	conn.UnconfirmedVerifyTxn = m.unconfirmedVerifyTxn
+	conn.UserAgent = m.UserAgent
+	conn.UnconfirmedVerifyTxn = m.UnconfirmedVerifyTxn
 
 	if !conn.Outgoing {
 		listenAddr := conn.ListenAddr()

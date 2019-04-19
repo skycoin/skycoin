@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/kvstorage"
+
 	"log"
 
 	"github.com/skycoin/skycoin/src/api"
@@ -164,6 +166,11 @@ type NodeConfig struct {
 	// Wallet crypto type
 	WalletCryptoType string
 
+	// Key-value storage
+	// Default to ${DataDirectory}/data
+	KVStorageDirectory  string
+	EnabledStorageTypes []kvstorage.Type
+
 	// Disable the hardcoded default peers
 	DisableDefaultPeers bool
 	// Load custom peers from disk
@@ -259,9 +266,12 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
-		DisabledAPISets:   "",
-		EnableAllAPISets:  false,
+		EnabledAPISets: strings.Join([]string{
+			api.EndpointsRead,
+			api.EndpointsTransaction,
+		}, ","),
+		DisabledAPISets:  "",
+		EnableAllAPISets: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -285,6 +295,13 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Wallets
 		WalletDirectory:  "",
 		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
+
+		// Key-value storage
+		KVStorageDirectory: "",
+		EnabledStorageTypes: []kvstorage.Type{
+			kvstorage.TypeTxIDNotes,
+			kvstorage.TypeGeneral,
+		},
 
 		// Timeout settings for http.Server
 		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
@@ -361,6 +378,18 @@ func (c *Config) postProcess() error {
 		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")
 	} else {
 		c.Node.WalletDirectory = replaceHome(c.Node.WalletDirectory, home)
+	}
+
+	if c.Node.KVStorageDirectory == "" {
+		c.Node.KVStorageDirectory = filepath.Join(c.Node.DataDirectory, "data")
+	} else {
+		c.Node.KVStorageDirectory = replaceHome(c.Node.KVStorageDirectory, home)
+	}
+	if len(c.Node.EnabledStorageTypes) == 0 {
+		c.Node.EnabledStorageTypes = []kvstorage.Type{
+			kvstorage.TypeGeneral,
+			kvstorage.TypeTxIDNotes,
+		}
 	}
 
 	if c.Node.DBPath == "" {
@@ -535,6 +564,7 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsTransaction,
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
+		api.EndpointsStorage,
 		// Do not include insecure or deprecated API sets, they must always
 		// be explicitly enabled through -enable-api-sets
 	}
@@ -568,7 +598,8 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
 			api.EndpointsPrometheus,
-			api.EndpointsNetCtrl:
+			api.EndpointsNetCtrl,
+			api.EndpointsStorage:
 		case "":
 			continue
 		default:
@@ -610,6 +641,7 @@ func (c *NodeConfig) RegisterFlags() {
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		api.EndpointsInsecureWalletSeed,
+		api.EndpointsStorage,
 	}
 	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
@@ -659,6 +691,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
+	flag.StringVar(&c.KVStorageDirectory, "storage-dir", c.KVStorageDirectory, "location of the storage data files. Defaults to ~/.skycoin/data/")
 	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")

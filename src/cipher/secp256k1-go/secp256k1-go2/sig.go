@@ -2,20 +2,12 @@ package secp256k1go
 
 import (
 	"bytes"
-	"encoding/hex"
-	"fmt"
 	"log"
 )
 
 // Signature represents the signature
 type Signature struct {
 	R, S Number
-}
-
-// Print prints the signature
-func (sig *Signature) Print(lab string) {
-	fmt.Println(lab+".R:", hex.EncodeToString(sig.R.Bytes()))
-	fmt.Println(lab+".S:", hex.EncodeToString(sig.S.Bytes()))
 }
 
 // Verify verify the signature
@@ -50,11 +42,13 @@ func (sig *Signature) recompute(r2 *Number, pubkey *XY, message *Number) (ret bo
 	return
 }
 
-// Recover TODO: return type, or nil on failure
+// Recover recovers a pubkey XY point given the message that was signed to create
+// this signature.
+// TODO: return type, or nil on failure
 func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
 	var rx, rn, u1, u2 Number
 	var fx Field
-	var X XY
+	var x XY
 	var xj, qj XYZ
 
 	rx.Set(&sig.R.Int)
@@ -65,14 +59,14 @@ func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
 		}
 	}
 
-	fx.SetB32(rx.getBin(32))
+	fx.SetB32(LeftPadBytes(rx.Bytes(), 32))
 
-	X.SetXO(&fx, (recid&1) != 0)
-	if !X.IsValid() {
+	x.SetXO(&fx, (recid&1) != 0)
+	if !x.IsValid() {
 		return false
 	}
 
-	xj.SetXY(&X)
+	xj.SetXY(&x)
 	rn.modInv(&sig.R, &TheCurve.Order)
 	u1.modMul(&rn, m, &TheCurve.Order)
 	u1.Sub(&TheCurve.Order.Int, &u1.Int)
@@ -131,57 +125,11 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 	return 1
 }
 
-/*
-//uncompressed Signature Parsing in DER
-func (r *Signature) ParseBytes(sig []byte) int {
-	if sig[0] != 0x30 || len(sig) < 5 {
-		return -1
-	}
-
-	lenr := int(sig[3])
-	if lenr == 0 || 5+lenr >= len(sig) || sig[lenr+4] != 0x02 {
-		return -1
-	}
-
-	lens := int(sig[lenr+5])
-	if lens == 0 || int(sig[1]) != lenr+lens+4 || lenr+lens+6 > len(sig) || sig[2] != 0x02 {
-		return -1
-	}
-
-	r.R.SetBytes(sig[4 : 4+lenr])
-	r.S.SetBytes(sig[6+lenr : 6+lenr+lens])
-	return 6 + lenr + lens
-}
-*/
-
-/*
-//uncompressed Signature parsing in DER
-func (sig *Signature) Bytes() []byte {
-	r := sig.R.Bytes()
-	if r[0] >= 0x80 {
-		r = append([]byte{0}, r...)
-	}
-	s := sig.S.Bytes()
-	if s[0] >= 0x80 {
-		s = append([]byte{0}, s...)
-	}
-	res := new(bytes.Buffer)
-	res.WriteByte(0x30)
-	res.WriteByte(byte(4 + len(r) + len(s)))
-	res.WriteByte(0x02)
-	res.WriteByte(byte(len(r)))
-	res.Write(r)
-	res.WriteByte(0x02)
-	res.WriteByte(byte(len(s)))
-	res.Write(s)
-	return res.Bytes()
-}
-*/
-
-// ParseBytes compressed signature parsing
+// ParseBytes parses a serialized R||S pair to Signature.
+// R and S should be in big-endian encoding.
 func (sig *Signature) ParseBytes(v []byte) {
 	if len(v) != 64 {
-		log.Panic()
+		log.Panic("Signature.ParseBytes requires 64 bytes")
 	}
 	sig.R.SetBytes(v[0:32])
 	sig.S.SetBytes(v[32:64])
@@ -190,10 +138,12 @@ func (sig *Signature) ParseBytes(v []byte) {
 //secp256k1_num_get_bin(sig64, 32, &sig.r);
 //secp256k1_num_get_bin(sig64 + 32, 32, &sig.s);
 
-// Bytes compressed signature parsing
+// Bytes serializes compressed signatures as bytes.
+// The serialization format is R||S. R and S bytes are big-endian.
+// R and S are left-padded with the NUL byte to ensure their length is 32 bytes.
 func (sig *Signature) Bytes() []byte {
-	r := sig.R.Bytes() //endianess
-	s := sig.S.Bytes() //endianess
+	r := sig.R.Bytes() // big-endian
+	s := sig.S.Bytes() // big-endian
 
 	for len(r) < 32 {
 		r = append([]byte{0}, r...)

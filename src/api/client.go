@@ -288,6 +288,15 @@ func (c *Client) requestV2(method, endpoint string, body io.Reader, respObj inte
 		return false, err
 	}
 
+	// The JSON decoder stops at the end of the first valid JSON object.
+	// Check that there is no trailing data after the end of the first valid JSON object.
+	// This could occur if an endpoint mistakenly wrote an object twice, for example.
+	// This line returns the decoder's underlying read buffer. Read(nil) will return io.EOF
+	// if the buffer was completely consumed.
+	if _, err := decoder.Buffered().Read(nil); err != io.EOF {
+		return false, NewClientError(resp.Status, resp.StatusCode, "Response has additional bytes after the first JSON object: "+string(respBody))
+	}
+
 	var rspErr error
 	if resp.StatusCode != http.StatusOK {
 		rspErr = NewClientError(resp.Status, resp.StatusCode, wrapObj.Error.Message)

@@ -46,6 +46,10 @@ export class ApiService {
     return this.get('wallet/newSeed', { entropy }).map(response => response.seed);
   }
 
+  getHealth() {
+    return this.get('health');
+  }
+
   getWallets(): Observable<Wallet[]> {
     return this.get('wallets')
       .map((response: GetWalletsResponseWallet[]) => {

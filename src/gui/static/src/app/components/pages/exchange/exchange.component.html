@@ -4,6 +4,7 @@
     <app-exchange-create
       *ngIf="!order"
       (submitted)="showStatus($event)"
+      (shownLast)="showLast()"
     ></app-exchange-create>
 
     <app-exchange-status
@@ -12,11 +13,6 @@
     ></app-exchange-status>
   </div>
   <div class="-contact">
-    <div>
-      <span *ngIf="!order && hasLast()" (click)="showLast()">
-        <a (click)="showLast($event)" href="#">{{ 'exchange.show-last' | translate }}</a>
-      </span>
-    </div>
     <div>
       <span>
         {{ 'exchange.need-help' | translate }}
@@ -27,7 +23,7 @@
       <span>|</span>
       <span>
         {{ 'exchange.powered-by' | translate }}
-        <a href="https://swaplab.cc">SWAPLAB.CC</a>
+        <a href="https://swaplab.cc" target="_blank" rel="noreferrer nofollow">SWAPLAB.CC</a>
       </span>
     </div>
   </div>

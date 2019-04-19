@@ -49,3 +49,13 @@
     }
   }
 }
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .-buttons-container.light {
+    background: inherit !important;
+  }
+
+  app-button ::ng-deep .button-container {
+    display: block;
+  }
+}

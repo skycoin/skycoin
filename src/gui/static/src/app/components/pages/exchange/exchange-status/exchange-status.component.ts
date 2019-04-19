@@ -4,6 +4,7 @@ import { ExchangeService } from '../../../../services/exchange.service';
 import { TranslateService } from '@ngx-translate/core';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { MatDialog, MatDialogConfig } from '@angular/material';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-exchange-status',
@@ -23,6 +24,8 @@ export class ExchangeStatusComponent implements OnInit {
     'error',
   ];
 
+  private subscription: ISubscription;
+
   get fromCoin() {
     return this.order.pair.split('/')[0].toUpperCase();
   }
@@ -39,7 +42,10 @@ export class ExchangeStatusComponent implements OnInit {
       to: this.toCoin,
     };
 
-    return this.translateService.instant(`exchange.statuses.${status}`, params);
+    return {
+      text: `exchange.statuses.${status}`,
+      params,
+    };
   }
 
   get statusIcon() {
@@ -71,14 +77,17 @@ export class ExchangeStatusComponent implements OnInit {
   ngOnInit() {
     const fromAmount = this.order.fromAmount;
 
-    this.exchangeService.status(this.order.id).subscribe(order => {
+    this.subscription = this.exchangeService.status('4729821d-390d-4ef8-a31e-2465d82a142f').subscribe(order => {
       this.order = { ...order, fromAmount };
+      this.exchangeService.lastOrder = order;
+
+      if (['complete', 'error'].indexOf(order.status) !== -1) {
+        this.subscription.unsubscribe();
+      }
     });
   }
 
-  showQrCode(event, address) {
-    event.stopPropagation();
-
+  showQrCode(address) {
     const config = new MatDialogConfig();
     config.data = { address };
     this.dialog.open(QrCodeComponent, config);

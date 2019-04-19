@@ -7,7 +7,7 @@
 <div class="-create" *ngIf="activeTradingPair">
   <div [formGroup]="form" class="-form">
     <div class="form-field">
-      <label>
+      <label for="fromAmount">
         {{ 'exchange.you-send' | translate }}
         <span *ngIf="form.hasError('min')" class="-error">
           {{ 'exchange.min-amount' | translate }} {{ form.getError('min') }}
@@ -17,7 +17,7 @@
         </span>
       </label>
       <div class="-inputs">
-        <input type="text" formControlName="fromAmount">
+        <input type="text" formControlName="fromAmount" id="fromAmount">
         <div class="-select">
           <select formControlName="fromCoin">
             <option *ngFor="let pair of tradingPairs" [value]="pair.from">{{ pair.from }}</option>
@@ -26,22 +26,22 @@
       </div>
     </div>
     <div class="form-field">
-      <label>{{ 'exchange.you-get' | translate }}</label>
+      <label for="toAmount">{{ 'exchange.you-get' | translate }}</label>
       <div class="-inputs">
-        <input type="text" [value]="toAmount" readonly>
+        <input type="text" [value]="toAmount" readonly id="toAmount">
         <div class="-input">
           <input type="text" [value]="toCoin" readonly>
         </div>
       </div>
     </div>
     <div class="form-field">
-      <label>
+      <label for="toAddress">
         <span>{{ 'exchange.to-address' | translate:{coin: toCoin} }}</span>
         <span class="-select-address" (click)="selectAddress()">
           {{ 'exchange.select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
         </span>
       </label>
-      <input type="text" formControlName="toAddress">
+      <input type="text" formControlName="toAddress" id="toAddress">
     </div>
 
     <div class="-buttons">
@@ -58,6 +58,10 @@
 
       <app-button class="primary" #exchangeButton (action)="exchange()" [disabled]="!form.valid">
         {{ 'exchange.exchange-button' | translate }}
+      </app-button>
+
+      <app-button *ngIf="hasLast()" (action)="showLast()">
+        {{ 'exchange.last-order' | translate }}
       </app-button>
     </div>
   </div>

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ExchangeOrder } from '../../../app.datatypes';
 import { ExchangeService } from '../../../services/exchange.service';
 
@@ -7,24 +7,28 @@ import { ExchangeService } from '../../../services/exchange.service';
   templateUrl: './exchange.component.html',
   styleUrls: ['./exchange.component.scss'],
 })
-export class ExchangeComponent {
+export class ExchangeComponent implements OnInit {
   order: ExchangeOrder;
 
   constructor(
     private exchangeService: ExchangeService,
   ) { }
 
+  ngOnInit() {
+    const lastOrder = this.exchangeService.lastOrder;
+
+    if (lastOrder) {
+      if (this.exchangeService.isOrderFinished(lastOrder)) {
+        this.showLast();
+      }
+    }
+  }
+
+  showLast() {
+    this.order = this.exchangeService.lastOrder;
+  }
+
   showStatus(lastOrder) {
     this.order = lastOrder;
-  }
-
-  hasLast() {
-    return !!this.exchangeService.getLastOrder();
-  }
-
-  showLast(event) {
-    event.preventDefault();
-
-    this.order = this.exchangeService.getLastOrder();
   }
 }

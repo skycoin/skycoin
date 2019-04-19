@@ -17,6 +17,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { BigNumber } from 'bignumber.js';
 import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { catchError, map } from 'rxjs/operators';
 
 declare var Cipher: any;
 declare var CipherExtras: any;
@@ -492,6 +493,11 @@ export class WalletService {
 
       this.wallets.next(wallets);
     });
+  }
+
+  verifyAddress(address: string) {
+    return this.apiService.post('address/verify', { address }, {}, true)
+      .pipe(map(() => true), catchError(() => Observable.of(false)));
   }
 
   private addSignatures(index: number, txInputs: any[], txSignatures: string[], txInnerHash: string): Observable<any> {

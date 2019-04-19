@@ -15,6 +15,10 @@ import 'rxjs/add/observable/merge';
 import { MatDialog, MatDialogConfig, MatSnackBar } from '@angular/material';
 import { showSnackbarError } from '../../../../utils/errors';
 import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
+import { WalletService } from '../../../../services/wallet.service';
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/switchMap';
+import { ApiService } from '../../../../services/api.service';
 
 @Component({
   selector: 'app-exchange-create',
@@ -28,18 +32,21 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
   @Output() submitted = new EventEmitter<ExchangeOrder>();
+  @Output() shownLast = new EventEmitter();
   form: FormGroup;
   tradingPairs: TradingPair[];
   activeTradingPair: TradingPair;
-  agreement = false;
-  subscription: ISubscription;
+
+  private agreement = false;
+  private subscription: ISubscription;
+  private decimals = 0;
 
   get toAmount() {
     if (!this.activeTradingPair) {
       return 0;
     }
 
-    return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(6);
+    return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(this.decimals);
   }
 
   get sendAmount() {
@@ -50,6 +57,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   constructor(
     private exchangeService: ExchangeService,
+    private walletService: WalletService,
+    private apiService: ApiService,
     private formBuilder: FormBuilder,
     private snackbar: MatSnackBar,
     private dialog: MatDialog,
@@ -94,7 +103,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       amount,
       this.form.get('toAddress').value,
     ).subscribe((order: ExchangeOrder) => {
-      this.exchangeService.setLastOrder(order);
+      this.exchangeService.lastOrder = order;
       this.submitted.emit(order);
     }, err => {
       this.exchangeButton.resetState();
@@ -104,6 +113,14 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     });
   }
 
+  hasLast() {
+    return !!this.exchangeService.lastOrder;
+  }
+
+  showLast() {
+    return this.shownLast.emit();
+  }
+
   private createForm() {
     this.form = this.formBuilder.group({
       fromCoin: [this.defaultFromCoin, Validators.required],
@@ -111,6 +128,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       toAddress: ['', Validators.required],
     }, {
       validator: this.validate.bind(this),
+      asyncValidator: this.validateAddress.bind(this),
     });
 
     this.subscription = this.form.get('fromCoin').valueChanges.subscribe(() => {
@@ -130,11 +148,15 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
       this.updateActiveTradingPair();
     });
+
+    this.apiService.getHealth().subscribe(res => {
+      this.decimals = res.user_verify_transaction.max_decimals;
+    });
   }
 
   private updateActiveTradingPair() {
     this.activeTradingPair = this.tradingPairs.find(p => {
-      return p.from === this.defaultFromCoin || p.from === this.form.get('fromCoin').value;
+      return p.from === this.form.get('fromCoin').value;
     });
   }
 
@@ -145,11 +167,11 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
     const fromAmount = group.get('fromAmount').value;
 
-    if (isNaN(parseFloat(fromAmount))) {
+    if (isNaN(fromAmount)) {
       return { invalid: true };
     }
 
-    if (fromAmount < this.activeTradingPair.min) {
+    if (fromAmount < this.activeTradingPair.min || fromAmount === '') {
       return { min: this.activeTradingPair.min };
     }
 
@@ -157,10 +179,29 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       return { max: this.activeTradingPair.max };
     }
 
+    const parts = (fromAmount as string).split('.');
+
+    if (parts.length > 1 && parts[1].length > 6) {
+      return { decimals: true };
+    }
+
     if (!this.agreement) {
       return { agreement: true };
     }
 
     return null;
+  }
+
+  private validateAddress() {
+    const address = this.form.get('toAddress').value;
+
+    if (!address) {
+      return Observable.create({ address: true });
+    }
+
+    return Observable
+      .timer(500)
+      .switchMap(() => this.walletService.verifyAddress(address))
+      .map(res => res ? null : { address : true });
   }
 }

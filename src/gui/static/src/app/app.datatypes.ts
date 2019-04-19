@@ -91,7 +91,7 @@ export class ExchangeOrder {
   id: string;
   exchangeAddress: string;
   exchangeTag: string|null;
-  toTx: string;
+  toTx?: string|null;
   status: string;
   message?: string;
 }

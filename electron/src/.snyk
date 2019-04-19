@@ -1,9 +1,25 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
-version: v1.13.1
+version: v1.13.3
 # ignores vulnerabilities until expiry date; change duration by modifying expiry date
 ignore:
   'npm:chownr:20180731':
     - '*':
         reason: No fix available
         expires: '2019-06-25T15:35:33.473Z'
-patch: {}
+  'npm:ms:20170412':
+    - '*':
+        reason: DoS attack. Not relevant for this application
+        expires: 2020-01-01T00:00:00.000Z
+  'npm:debug:20170905':
+    - '*':
+        reason: DoS attack. Not relevant for this application
+        expires: 2020-01-01T00:00:00.000Z
+  'npm:growl:20160721':
+    - hardware-wallet-js > serial-mocha > mocha > growl:
+        reason: No fix path or Snyk patch available at this moment
+        expires: '2019-05-19T17:34:05.816Z'
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  'npm:minimatch:20160620':
+    - hardware-wallet-js > serial-mocha > mocha > glob > minimatch:
+        patched: '2019-04-19T17:30:48.344Z'

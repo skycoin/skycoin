@@ -7,9 +7,16 @@
     "electron-context-menu": "^0.9.1",
     "electron-debug": "^1.5.0",
     "rxjs": "^5.5.12",
-    "hardware-wallet-js": "git+https://git@github.com/skycoin/hardware-wallet-js.git#8c188fa"
+    "hardware-wallet-js": "git+https://git@github.com/skycoin/hardware-wallet-js.git#528740f",
+    "js-yaml": "^3.13.1",
+    "snyk": "^1.136.2"
   },
   "devDependencies": {
     "electron-rebuild": "^1.8.2"
-  }
+  },
+  "scripts": {
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
+  },
+  "snyk": true
 }

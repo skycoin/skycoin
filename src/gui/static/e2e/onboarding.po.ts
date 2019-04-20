@@ -19,6 +19,7 @@ export class OnboardingCreatePage {
 
       return element.all(by.css('.e2e-language-modal .button')).first().click().then(() => {
         const el = element(by.css('.e2e-language-modal'));
+
         return browser.wait(protractor.ExpectedConditions.invisibilityOf(el), 5000).then(() => true);
       });
     });

@@ -49,6 +49,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Richlist](#richlist)
     - [Address Count](#address-count)
 	- [CLI version](#cli-version)
+    - [Generate Key Pair](#generate-key-pair)
 - [Note](#note)
 
 <!-- /MarkdownTOC -->
@@ -2791,6 +2792,35 @@ $ skycoin-cli version --json
     "rpc": "0.23.0",
     "wallet": "0.23.0"
 }
+```
+</details>
+
+### Generate Key Pair
+Generates a new key pair (Public and Private) based on the Skycoin crypto library and returns them as Hex strings. 
+If these are intended for actual use, ensure they are kept secure.
+
+```bash
+$ skycoin-cli generateKeyPair
+```
+
+```
+FLAGS:
+  -h, --help   help for richlist
+```
+
+#### Examples
+##### Text output
+```bash
+$ skycoin-cli generateKeyPair
+```
+
+<details>
+ <summary>View Output</summary>
+
+```
+New key pair generated. If you intend to use these, ensure they are kept secure.
+Public:  02e5c1f35cf082822a37d50a478905d63afd46de3cc82caf6d99534a4dc5fbf757
+Private: 3a8e1f6b9ee2603d91f7f1d8d4546122bb9c2337e9492c4fcd965ed0aedd7bb0
 ```
 </details>
 

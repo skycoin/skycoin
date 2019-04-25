@@ -27,6 +27,9 @@
   <div class="row justify-content-center" *ngIf="hwCompatibilityActivated">
     <span class="hw-link" (click)="useHardwareWallet()">{{ 'wizard.hardware-wallet-link' | translate }}</span>
   </div>
+  <div class="row justify-content-center" *ngIf="walletService.hasHiddenWallets()">
+    <span class="hw-link" (click)="showWallet()">{{ 'wizard.hidden-wallet-link' | translate }}</span>
+  </div>
   <div class="row -buttons-footer">
     <app-button class="dark -button-min-margin" [disabled]="!formControl.isValid"
                 (action)="showNewForm?createWallet():loadWallet()">

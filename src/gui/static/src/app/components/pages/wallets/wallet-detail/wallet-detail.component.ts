@@ -133,6 +133,30 @@ export class WalletDetailComponent implements OnDestroy {
     });
   }
 
+  hideWallet() {
+    const confirmationData: ConfirmationData = {
+      text: this.translateService.instant('wallet.hide-confirmation', {name: this.wallet.label}),
+      headerText: 'confirmation.header-text',
+      checkboxText: 'wallet.hide-confirmation-check',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+    };
+
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
+        this.walletService.hideWallet(this.wallet.filename).subscribe(result => {
+          if (result) {
+            this.walletService.all().first().subscribe(wallets => {
+              if (wallets.length === 0) {
+                setTimeout(() => this.router.navigate(['/wizard']), 500);
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
   toggleEncryption() {
     const config = new MatDialogConfig();
     config.data = {

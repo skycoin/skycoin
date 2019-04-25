@@ -46,6 +46,9 @@
       <button mat-button (click)="addWallet(false)">
         <img src="../../../../assets/img/load-gold.png"> {{ 'wallet.load' | translate }}
       </button>
+      <button mat-button (click)="showWallet()" *ngIf="walletService.hasHiddenWallets()">
+        <img src="../../../../assets/img/hidden-gold.png"> {{ 'wallet.show' | translate }}
+      </button>
       <button mat-button *ngIf="hwCompatibilityActivated" (click)="adminHwWallet()">
         <img src="../../../../assets/img/hw-gold.png"> {{ 'wallet.hardware-wallet' | translate }}
       </button>

@@ -7,6 +7,8 @@ import { CreateWalletFormComponent } from '../../wallets/create-wallet/create-wa
 import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { WalletService } from '../../../../services/wallet.service';
+import { ShowWalletComponent } from '../../wallets/show-wallet/show-wallet.component';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -23,6 +25,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
   hwCompatibilityActivated = false;
 
   constructor(
+    public walletService: WalletService,
     private dialog: MatDialog,
     private router: Router,
     hwWalletService: HwWalletService,
@@ -66,6 +69,25 @@ export class OnboardingCreateWalletComponent implements OnInit {
     this.dialog.open(HwOptionsDialogComponent, config).afterClosed().subscribe(result => {
       if (result) {
         this.router.navigate(['/wallets']);
+      }
+    });
+  }
+
+  showWallet() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+
+    this.dialog.open(ShowWalletComponent, config).afterClosed().subscribe(modalResult => {
+      if (modalResult) {
+        modalResult.subscribe(result => {
+          if (result) {
+            this.walletService.all().first().subscribe(wallets => {
+              if (wallets.length > 0) {
+                this.router.navigate(['/wallets']);
+              }
+            });
+          }
+        });
       }
     });
   }

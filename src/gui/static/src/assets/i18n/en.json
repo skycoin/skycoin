@@ -83,6 +83,7 @@
     "wallet-desc": "If you don't have a Skycoin wallet, use the generated seed to create a new one. If you already have a wallet, toggle over to \"Load Wallet\" and enter your seed.",
     "encrypt-desc": "Increase security of your wallet by encrypting it. By entering a password below, your wallet will be encrypted. Only those with the password will be able access the wallet and remove funds.",
     "hardware-wallet-link": "Using a hardware wallet?",
+    "hidden-wallet-link": "Want to recover a hidden wallet?",
     "finish-button": "Finish",
     "back-button": "Back",
 
@@ -103,9 +104,11 @@
     "decrypt": "Decrypt Wallet",
     "decrypt-warning": "Warning: for security reasons, it is not recommended to keep the wallets unencrypted. Caution is advised.",
     "delete": "Delete Wallet",
+    "hide": "Hide Wallet",
     "edit": "Edit Wallet",
     "add": "Add Wallet",
     "load": "Load Wallet",
+    "show": "Hidden Wallets",
     "encryption-enabled": "Encryption enabled",
     "encryption-disabled": "Encryption disabled",
     "hw-security-warning": "Possible security risk. Access the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list) while the device is connected for more information.",
@@ -113,6 +116,8 @@
     "hardware-wallet": "Hardware Wallet",
     "delete-confirmation": "WARNING: The wallet \"{{ name }}\" will be removed from the list. To add it again, you will have to reconnect the device and open the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list). Do you want to continue?",
     "delete-confirmation-check": "Yeah, I want to delete the wallet.",
+    "hide-confirmation": "WARNING: The wallet \"{{ name }}\" will be removed from the list. To add it again, you will have to use the \"Hidden Wallets\" option below the wallets list (the option is only visible if there are hidden wallets). Do you want to continue?",
+    "hide-confirmation-check": "Yeah, I want to hide the wallet.",
     "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the hardware wallet.",
     "add-many-confirmation": "WARNING: If you add too many addresses without using the previous ones or if you use the last ones and not the first ones, some addresses may not be recovered automatically if you try to restore the wallet using the seed (you will have to add them manually). Do you want to continue?",
 
@@ -160,6 +165,11 @@
       "confirm": "Confirm address",
       "outputs": "Unspent outputs",
       "history": "History"
+    },
+
+    "show-wallet": {
+      "file-name": "File name",
+      "show-confirmation": "The wallet \"{{ name }}\" will be added to the wallets list again. Do you want to continue?"
     }
   },
 

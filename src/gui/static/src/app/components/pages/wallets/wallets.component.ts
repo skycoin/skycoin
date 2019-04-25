@@ -8,6 +8,7 @@ import { ISubscription } from 'rxjs/Subscription';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { showConfirmationModal } from '../../../utils';
+import { ShowWalletComponent } from './show-wallet/show-wallet.component';
 
 @Component({
   selector: 'app-wallets',
@@ -24,7 +25,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
   private subscription: ISubscription;
 
   constructor(
-    private walletService: WalletService,
+    public walletService: WalletService,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private router: Router,
@@ -62,6 +63,16 @@ export class WalletsComponent implements OnInit, OnDestroy {
     config.width = '566px';
     config.data = { create };
     this.dialog.open(CreateWalletComponent, config);
+  }
+
+  showWallet() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    this.dialog.open(ShowWalletComponent, config).afterClosed().subscribe(result => {
+      if (result) {
+        result.subscribe();
+      }
+    });
   }
 
   adminHwWallet() {

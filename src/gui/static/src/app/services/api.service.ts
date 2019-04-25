@@ -119,8 +119,8 @@ export class ApiService {
     return this.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.filename, password });
   }
 
-  get(url, params = null, options = {}) {
-    return this.http.get(this.getUrl(url, params), this.returnRequestOptions(options))
+  get(url, params = null, options = {}, useV2 = false) {
+    return this.http.get(this.getUrl(url, params, useV2), this.returnRequestOptions(options))
       .map((res: any) => res.json())
       .catch((error: any) => this.processConnectionError(error));
   }

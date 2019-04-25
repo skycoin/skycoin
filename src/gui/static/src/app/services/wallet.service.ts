@@ -31,11 +31,14 @@ export enum HwSecurityWarnings {
 export class WalletService {
 
   addresses: Address[];
-  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
-  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
+  hiddenWalletsMap: Map<string, boolean> = new Map<string, boolean>();
+  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>(1);
+  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>(1);
   dataRefreshSubscription: Subscription;
 
   initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+
+  private readonly hiddenWalletsStorageKey = 'hiddenWallets';
 
   constructor(
     private appService: AppService,
@@ -191,6 +194,22 @@ export class WalletService {
     }
 
     return null;
+  }
+
+  hideWallet(id: string): Observable<boolean> {
+    this.hiddenWalletsMap.set(id, true);
+
+    return this.updateHiddenWalletsPersistentData();
+  }
+
+  unhideWallet(id: string): Observable<boolean> {
+    this.hiddenWalletsMap.delete(id);
+
+    return this.updateHiddenWalletsPersistentData();
+  }
+
+  hasHiddenWallets(): boolean {
+    return this.hiddenWalletsMap.size > 0;
   }
 
   folder(): Observable<string> {
@@ -590,17 +609,72 @@ export class WalletService {
     };
   }
 
-  private loadData(): void {
-    this.apiService.getWallets().first().subscribe(
-      recoveredWallets => {
-        let wallets: Wallet[] = [];
-        if (this.hwWalletService.hwWalletCompatibilityActivated) {
-          this.loadHardwareWallets(wallets);
+  private updateHiddenWalletsPersistentData(): Observable<boolean> {
+    const hiddenWallets = [];
+    this.hiddenWalletsMap.forEach((value, key) => hiddenWallets.push(key));
+
+    const data = {
+      type: 'client',
+      key: this.hiddenWalletsStorageKey,
+      val: JSON.stringify(hiddenWallets),
+    };
+
+    return this.apiService.post('/data', data, {}, true)
+      .catch(() => this.getWallets(true, true))
+      .flatMap(() => this.getWallets(true, false));
+  }
+
+  private getWallets(refreshBalances: boolean, shouldReturnFalse = false): Observable<boolean> {
+    let recoveredWallets: Wallet[];
+    const data = {
+      type: 'client',
+      key: this.hiddenWalletsStorageKey,
+    };
+
+    return this.apiService.getWallets().first().flatMap(recovered => {
+      recoveredWallets = recovered;
+
+      return this.apiService.get('/data', data, {}, true);
+    }).catch(error => {
+      if (typeof error['_body'] === 'string' && error['_body'].indexOf('404') !== -1) {
+        return Observable.of({data: '[]'});
+      } else {
+        return Observable.throw(error);
+      }
+    }).map(response => {
+      return JSON.parse(response.data);
+    })
+    .map(hiddenWallets => {
+      this.hiddenWalletsMap.clear();
+      hiddenWallets.forEach(element => {
+        this.hiddenWalletsMap.set(element, true);
+      });
+
+      recoveredWallets = recoveredWallets.filter(wallet => !this.hiddenWalletsMap.has(wallet.filename));
+
+      let wallets: Wallet[] = [];
+      if (this.hwWalletService.hwWalletCompatibilityActivated) {
+        this.loadHardwareWallets(wallets);
+      }
+      wallets = wallets.concat(recoveredWallets);
+
+      this.wallets.next(wallets);
+
+      if (refreshBalances) {
+        this.refreshBalances();
+      }
+
+      return !shouldReturnFalse;
+    });
+  }
+
+  private loadData(refreshBalances = false): void {
+    this.getWallets(false).subscribe(null,
+      () => {
+        if (!refreshBalances) {
+          this.initialLoadFailed.next(true);
         }
-        wallets = wallets.concat(recoveredWallets);
-        this.wallets.next(wallets);
       },
-      () => this.initialLoadFailed.next(true),
     );
   }
 

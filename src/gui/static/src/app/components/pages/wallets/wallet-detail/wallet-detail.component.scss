@@ -170,6 +170,10 @@
         background-image: url(../../../../../assets/img/delete-grey.png);
       }
 
+      &.-btn-hide::before {
+        background-image: url(../../../../../assets/img/hide-grey.png);
+      }
+
       &:hover {
         color: $grey;
 
@@ -199,6 +203,10 @@
 
         &.-btn-delete::before {
           background-image: url(../../../../../assets/img/delete-red.png);
+        }
+
+        &.-btn-hide::before {
+          background-image: url(../../../../../assets/img/hide-red.png);
         }
       }
     }

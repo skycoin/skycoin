@@ -1,0 +1,11 @@
+<app-modal [headline]="'wallet.show' | translate" [dialog]="dialogRef">
+  <div class="wallet-container select-address-theme" *ngFor="let wallet of wallets">
+    <button mat-button color="primary" (click)="unhide(wallet)">
+      <div class="wallet-name">{{ wallet.label }}</div>
+      <div class="wallet-file">
+        <span class="grey">{{ 'wallet.show-wallet.file-name' | translate }}: </span>
+        {{ wallet.filename }}
+      </div>
+    </button>
+  </div>
+</app-modal>

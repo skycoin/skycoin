@@ -80,3 +80,13 @@ mat-progress-bar {
     transform: rotate(359deg);
   }
 }
+
+.-external mat-icon {
+  line-height: 13px;
+  height: 13px;
+  width: 13px;
+  font-size: 16px;
+  vertical-align: middle;
+  color: $blue;
+  margin-left: 10px;
+}

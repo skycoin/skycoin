@@ -4,7 +4,6 @@
     <app-exchange-create
       *ngIf="!order"
       (submitted)="showStatus($event)"
-      (shownLast)="showLast()"
     ></app-exchange-create>
 
     <app-exchange-status
@@ -13,6 +12,11 @@
     ></app-exchange-status>
   </div>
   <div class="-contact">
+    <div>
+      <span *ngIf="hasHistory">
+        <a href="#" (click)="showHistory($event)">{{ 'exchange.history' | translate }}</a>
+      </span>
+    </div>
     <div>
       <span>
         {{ 'exchange.need-help' | translate }}

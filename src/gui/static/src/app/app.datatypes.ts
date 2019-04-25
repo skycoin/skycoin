@@ -98,6 +98,13 @@ export class ExchangeOrder {
   message?: string;
 }
 
+export class StoredExchangeOrder {
+  id: string;
+  pair: string;
+  fromAmount: number;
+  timestamp: number;
+}
+
 export interface Output {
   address: string;
   coins: BigNumber;

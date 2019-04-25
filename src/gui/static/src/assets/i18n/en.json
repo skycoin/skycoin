@@ -34,7 +34,8 @@
     "qrcode": "QR Code",
     "reset": "Reset Password",
     "exchange": "Exchange",
-    "select-address": "Select Address"
+    "select-address": "Select Address",
+    "order-history": "Order history"
   },
 
   "header": {
@@ -449,7 +450,9 @@
     "powered-by": "Powered by",
     "need-help": "Need help?",
     "support-portal": "Support portal",
-    "last-order": "Last order",
+    "history": "Order history",
+    "history-details": "Details",
+    "order-not-found": "Order not found",
     "status": "Status",
     "exchanging": "Exchanging {{from}} for {{to}}",
     "select": "Select",

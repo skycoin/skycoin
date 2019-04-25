@@ -32,7 +32,6 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
   @Output() submitted = new EventEmitter<ExchangeOrder>();
-  @Output() shownLast = new EventEmitter();
   form: FormGroup;
   tradingPairs: TradingPair[];
   activeTradingPair: TradingPair;
@@ -103,7 +102,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       amount,
       this.form.get('toAddress').value,
     ).subscribe((order: ExchangeOrder) => {
-      this.exchangeService.lastOrder = order;
+      this.exchangeService.lastOrder = { ...order, fromAmount: amount };
       this.submitted.emit(order);
     }, err => {
       this.exchangeButton.resetState();
@@ -111,14 +110,6 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       this.exchangeButton.setError(err);
       showSnackbarError(this.snackbar, err);
     });
-  }
-
-  hasLast() {
-    return !!this.exchangeService.lastOrder;
-  }
-
-  showLast() {
-    return this.shownLast.emit();
   }
 
   private createForm() {

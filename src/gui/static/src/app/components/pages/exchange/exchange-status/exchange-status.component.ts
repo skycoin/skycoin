@@ -1,7 +1,6 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { ExchangeOrder } from '../../../../app.datatypes';
 import { ExchangeService } from '../../../../services/exchange.service';
-import { TranslateService } from '@ngx-translate/core';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { ISubscription } from 'rxjs/Subscription';
@@ -11,7 +10,7 @@ import { ISubscription } from 'rxjs/Subscription';
   templateUrl: './exchange-status.component.html',
   styleUrls: ['./exchange-status.component.scss'],
 })
-export class ExchangeStatusComponent implements OnInit {
+export class ExchangeStatusComponent implements OnInit, OnDestroy {
   @Input() order: ExchangeOrder;
 
   readonly statuses = [
@@ -70,21 +69,24 @@ export class ExchangeStatusComponent implements OnInit {
 
   constructor(
     private exchangeService: ExchangeService,
-    private translateService: TranslateService,
     private dialog: MatDialog,
   ) { }
 
   ngOnInit() {
     const fromAmount = this.order.fromAmount;
 
-    this.subscription = this.exchangeService.status('4729821d-390d-4ef8-a31e-2465d82a142f').subscribe(order => {
+    this.subscription = this.exchangeService.status(this.order.id).subscribe(order => {
       this.order = { ...order, fromAmount };
-      this.exchangeService.lastOrder = order;
+      this.exchangeService.lastOrder = this.order;
 
-      if (['complete', 'error'].indexOf(order.status) !== -1) {
+      if (this.exchangeService.isOrderFinished(order)) {
         this.subscription.unsubscribe();
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
   }
 
   showQrCode(address) {

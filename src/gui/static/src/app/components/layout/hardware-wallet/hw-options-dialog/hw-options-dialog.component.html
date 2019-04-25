@@ -28,6 +28,11 @@
     [icon]="msgIcons.Usb"
   ></app-hw-message>
 
+  <app-hw-message *ngIf="currentState === states.DaemonError"
+    [text]="'hardware-wallet.errors.daemon-connection' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
   <div *ngIf="currentState === states.NewConnected || currentState === states.ConfiguredConnected">
     <app-hw-message *ngIf="currentState === states.NewConnected"
       [upperBigText]="'hardware-wallet.options.unconfigured-detected-title' | translate"

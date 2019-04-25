@@ -6,7 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { environment } from '../../environments/environment';
-import { HwWalletDaemonService, ConnectionMethods } from './hw-wallet-daemon.service';
+import { HwWalletDaemonService } from './hw-wallet-daemon.service';
 import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import BigNumber from 'bignumber.js';
@@ -134,8 +134,16 @@ export class HwWalletService {
     return this.walletConnectedSubject.asObservable();
   }
 
-  getDeviceConnectedSync() {
-    return window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync');
+  getDeviceConnected(): Observable<boolean> {
+    if (!AppConfig.useHwWalletDaemon) {
+      return Observable.of(window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync'));
+    } else {
+      return this.hwWalletDaemonService.get('/available').map(response => {
+        this.hwWalletDaemonService.checkHw(false);
+
+        return response.data;
+      });
+    }
   }
 
   getSavedWalletsDataSync(): string {
@@ -156,10 +164,7 @@ export class HwWalletService {
       this.prepare();
 
       return this.processDaemonResponse(
-        this.hwWalletDaemonService.callFunction(
-          '/cancel',
-          ConnectionMethods.Put,
-        ),
+        this.hwWalletDaemonService.put('/cancel'),
       );
     }
   }
@@ -181,9 +186,8 @@ export class HwWalletService {
         };
 
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
+          this.hwWalletDaemonService.post(
             '/generate_addresses',
-            ConnectionMethods.Post,
             params,
           ),
         );
@@ -208,9 +212,8 @@ export class HwWalletService {
         };
 
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
+          this.hwWalletDaemonService.post(
             '/generate_addresses',
-            ConnectionMethods.Post,
             params,
           ),
         );
@@ -229,10 +232,7 @@ export class HwWalletService {
         this.prepare();
 
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
-            '/features',
-            ConnectionMethods.Get,
-          ),
+          this.hwWalletDaemonService.get('/features'),
         );
       }
     });
@@ -260,10 +260,7 @@ export class HwWalletService {
         return this.createRequestResponse(requestId);
       } else {
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
-            '/set_pin_code',
-            ConnectionMethods.Post,
-          ),
+          this.hwWalletDaemonService.post('/configure_pin_code'),
           ['PIN changed'],
         );
       }
@@ -285,9 +282,8 @@ export class HwWalletService {
         params['use_passphrase'] = false;
 
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
+          this.hwWalletDaemonService.post(
             '/generate_mnemonic',
-            ConnectionMethods.Post,
             params,
           ),
           ['Mnemonic successfully configured'],
@@ -312,9 +308,8 @@ export class HwWalletService {
         params['dry_run'] = dryRun;
 
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
+          this.hwWalletDaemonService.post(
             '/recovery',
-            ConnectionMethods.Post,
             params,
           ),
           ['Device recovered', 'The seed is valid and matches the one in the device'],
@@ -334,9 +329,8 @@ export class HwWalletService {
         this.prepare();
 
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
+          this.hwWalletDaemonService.post(
             '/backup',
-            ConnectionMethods.Post,
           ),
           ['Device backed up!'],
         );
@@ -355,10 +349,7 @@ export class HwWalletService {
         this.prepare();
 
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
-            '/wipe',
-            ConnectionMethods.Delete,
-          ),
+          this.hwWalletDaemonService.delete('/wipe'),
           ['Device wiped'],
         );
       }
@@ -407,9 +398,8 @@ export class HwWalletService {
         };
 
         return this.processDaemonResponse(
-          this.hwWalletDaemonService.callFunction(
+          this.hwWalletDaemonService.post(
             '/transaction_sign',
-            ConnectionMethods.Post,
             params,
           ),
         ).map(response => {
@@ -539,6 +529,13 @@ export class HwWalletService {
           result = OperationResults.InvalidAddress;
         } else if (responseContent.includes('Invalid address length')) {
           result = OperationResults.InvalidAddress;
+        } else if (responseContent.toLocaleLowerCase().includes('LIBUSB'.toLocaleLowerCase())) {
+          result = OperationResults.DaemonError;
+        } else if (responseContent.toLocaleLowerCase().includes('hidapi'.toLocaleLowerCase())) {
+          result = OperationResults.Disconnected;
+          if (AppConfig.useHwWalletDaemon) {
+            setTimeout(() => this.hwWalletDaemonService.checkHw(false));
+          }
         } else if (responseContent.includes(HwWalletDaemonService.errorConnectingWithTheDaemon)) {
           result = OperationResults.DaemonError;
         } else if (responseContent.includes(HwWalletDaemonService.errorTimeout)) {

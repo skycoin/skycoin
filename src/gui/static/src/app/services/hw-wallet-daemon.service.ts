@@ -8,13 +8,6 @@ import { ISubscription } from 'rxjs/Subscription';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/timeout';
 
-export enum ConnectionMethods {
-  Get,
-  Post,
-  Put,
-  Delete,
-}
-
 @Injectable()
 export class HwWalletDaemonService {
 
@@ -40,26 +33,14 @@ export class HwWalletDaemonService {
     this.checkHw(false);
   }
 
-  callFunction(route: string, connectionMethod: ConnectionMethods, params = {}) {
-    if (connectionMethod === ConnectionMethods.Post) {
-      return this.post(route, params);
-    } else if (connectionMethod === ConnectionMethods.Get) {
-      return this.get(route);
-    } else if (connectionMethod === ConnectionMethods.Put) {
-      return this.put(route);
-    } else if (connectionMethod === ConnectionMethods.Delete) {
-      return this.delete(route);
-    }
-  }
-
-  private get(route: string) {
+  get(route: string) {
     return this.checkResponse(this.http.get(
       this.url + route,
       this.returnRequestOptions(),
     ));
   }
 
-  private post(route: string, params = {}) {
+  post(route: string, params = {}) {
     return this.checkResponse(this.http.post(
       this.url + route,
       JSON.stringify(params),
@@ -67,7 +48,7 @@ export class HwWalletDaemonService {
     ));
   }
 
-  private put(route: string) {
+  put(route: string) {
     return this.checkResponse(this.http.put(
       this.url + route,
       null,
@@ -75,7 +56,7 @@ export class HwWalletDaemonService {
     ));
   }
 
-  private delete(route: string) {
+  delete(route: string) {
     return this.checkResponse(this.http.delete(
       this.url + route,
       this.returnRequestOptions(),
@@ -145,21 +126,18 @@ export class HwWalletDaemonService {
     return options;
   }
 
-  private checkHw(wait: boolean) {
-    // Reactivate this when having a more reliable method for detecting if the device is connected.
-    /*
+  checkHw(wait: boolean) {
     if (this.checkHwSubscription) {
       this.checkHwSubscription.unsubscribe();
     }
 
     this.checkHwSubscription = Observable.of(1)
       .delay(wait ? (this.hwConnected ? 2000 : 10000) : 0)
-      .flatMap(() => this.get('/features'))
+      .flatMap(() => this.get('/available'))
       .subscribe(
-        (response: any) => this.updateHwConnected(!!response.data && !!response.data.features),
-        (error: any) => this.updateHwConnected(error && error.message && typeof error.message === 'string' && error.message.indexOf('Unknown message read_tiny') !== -1),
+        (response: any) => this.updateHwConnected(!!response.data),
+        () => this.updateHwConnected(false),
       );
-      */
   }
 
   private updateHwConnected(connected: boolean) {

@@ -12,6 +12,7 @@ import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pi
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { Observable } from 'rxjs/Observable';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
+import { HwWalletDaemonService } from '../../../../services/hw-wallet-daemon.service';
 
 enum States {
   Disconnected,
@@ -21,6 +22,7 @@ enum States {
   Error,
   ReturnedRefused,
   WrongPin,
+  DaemonError,
 }
 
 export interface ChildHwDialogParams {
@@ -154,54 +156,61 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
   private checkWallet() {
     this.wallet = null;
+    this.currentState = States.Processing;
 
-    if (!this.hwWalletService.getDeviceConnectedSync()) {
-      this.currentState = States.Disconnected;
-    } else {
-      this.currentState = States.Processing;
+    this.hwWalletService.getDeviceConnected().subscribe(connected => {
+      if (!connected) {
+        this.currentState = States.Disconnected;
+      } else {
+        if (this.operationSubscription) {
+          this.operationSubscription.unsubscribe();
+        }
 
-      if (this.operationSubscription) {
-        this.operationSubscription.unsubscribe();
-      }
-
-      this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
-        response => {
-          this.walletService.wallets.first().subscribe(wallets => {
-            const alreadySaved = wallets.some(wallet => {
-              const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
-              if (found) {
-                this.wallet = wallet;
-                this.walletName = wallet.label;
-              }
-
-              return found;
-            });
-            if (alreadySaved) {
-              this.updateSecurityWarnings().subscribe(() => {
-                if (!this.onboarding) {
-                  this.currentState = States.ConfiguredConnected;
-                } else {
-                  this.hwWalletService.showOptionsWhenPossible = true;
-                  this.dialogRef.close(true);
+        this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
+          response => {
+            this.walletService.wallets.first().subscribe(wallets => {
+              const alreadySaved = wallets.some(wallet => {
+                const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
+                if (found) {
+                  this.wallet = wallet;
+                  this.walletName = wallet.label;
                 }
+
+                return found;
               });
+              if (alreadySaved) {
+                this.updateSecurityWarnings().subscribe(() => {
+                  if (!this.onboarding) {
+                    this.currentState = States.ConfiguredConnected;
+                  } else {
+                    this.hwWalletService.showOptionsWhenPossible = true;
+                    this.dialogRef.close(true);
+                  }
+                });
+              } else {
+                this.openDialog(HwAddedDialogComponent);
+              }
+            });
+          },
+          err => {
+            if (err.result && err.result === OperationResults.WithoutSeed) {
+              this.currentState = States.NewConnected;
+            } else if (err.result && err.result === OperationResults.FailedOrRefused) {
+              this.currentState = States.ReturnedRefused;
+            } else if (err.result && err.result === OperationResults.WrongPin) {
+              this.currentState = States.WrongPin;
             } else {
-              this.openDialog(HwAddedDialogComponent);
+              this.currentState = States.Error;
             }
-          });
-        },
-        err => {
-          if (err.result && err.result === OperationResults.WithoutSeed) {
-            this.currentState = States.NewConnected;
-          } else if (err.result && err.result === OperationResults.FailedOrRefused) {
-            this.currentState = States.ReturnedRefused;
-          } else if (err.result && err.result === OperationResults.WrongPin) {
-            this.currentState = States.WrongPin;
-          } else {
-            this.currentState = States.Error;
-          }
-        },
-      );
-    }
+          },
+        );
+      }
+    }, err => {
+      if (err['_body'] && err['_body'] === HwWalletDaemonService.errorConnectingWithTheDaemon) {
+        this.currentState = States.DaemonError;
+      } else {
+        this.currentState = States.Error;
+      }
+    });
   }
 }

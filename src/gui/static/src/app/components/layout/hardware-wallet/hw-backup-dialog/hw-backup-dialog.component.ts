@@ -47,6 +47,8 @@ export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialo
           this.currentState = States.DaemonError;
         } else if (err.result && err.result === OperationResults.Timeout) {
           this.currentState = States.Timeout;
+        } else if (err.result && err.result === OperationResults.Disconnected) {
+          this.closeModal();
         } else {
           this.currentState = States.Failed;
         }

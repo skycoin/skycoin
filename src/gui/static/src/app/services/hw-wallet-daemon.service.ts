@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Http, RequestOptions, Headers } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
@@ -29,6 +29,7 @@ export class HwWalletDaemonService {
     private apiService: ApiService,
     private hwWalletPinService: HwWalletPinService,
     private hwWalletSeedWordService: HwWalletSeedWordService,
+    private ngZone: NgZone,
   ) {
     this.checkHw(false);
   }
@@ -131,13 +132,15 @@ export class HwWalletDaemonService {
       this.checkHwSubscription.unsubscribe();
     }
 
-    this.checkHwSubscription = Observable.of(1)
-      .delay(wait ? (this.hwConnected ? 2000 : 10000) : 0)
-      .flatMap(() => this.get('/available'))
-      .subscribe(
-        (response: any) => this.updateHwConnected(!!response.data),
-        () => this.updateHwConnected(false),
-      );
+    this.ngZone.runOutsideAngular(() => {
+      this.checkHwSubscription = Observable.of(1)
+        .delay(wait ? (this.hwConnected ? 2000 : 10000) : 0)
+        .flatMap(() => this.get('/available'))
+        .subscribe(
+          (response: any) => this.ngZone.run(() => this.updateHwConnected(!!response.data)),
+          () => this.ngZone.run(() => this.updateHwConnected(false)),
+        );
+    });
   }
 
   private updateHwConnected(connected: boolean) {

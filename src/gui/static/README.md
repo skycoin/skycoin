@@ -51,3 +51,7 @@ Similar as the solution for the above CORS issue, you can circumvent CORS issues
 ## Style guide
 
 As an Angular application, we try to follow the [Angular style guide](https://angular.io/guide/styleguide).
+
+## Translations
+
+You can find information about how to work with translation files in the [Translations README](/src/gui/static/src/assets/i18n/README.md).

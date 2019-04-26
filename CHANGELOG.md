@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `bip32` package
 - Add `-disable-header-check` flag to disable host/origin/referer header checks for the node APIs and add `header_check_enabled` parameter in `/health` endpoint.
 - Add CLI `checkDBDecoding` command to verify the `skyencoder`-generated binary decoders match the reflect-based decoder
 - Add `unsigned` option to `POST /api/v1/wallet/transaction` to create unsigned transactions from a wallet
@@ -16,8 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `POST /api/v2/transaction` to create an unsigned transaction from addresses or unspent outputs without a wallet
 - Add `-max-inc-msg-len` and `-max-out-msg-len` options to control the size of incoming and outgoing wire messages
 - Add CLI `addresscount` command to return the count of addresses that currently have unspent outputs (coins) associated with them.
+- Add `/api/v2/data` APIs for transaction notes and generic key-value storage.
 - Update `/metrics` endpoint to add metrics from `/health`: `unspent_outputs`, `unconfirmed_txns`, `time_since_last_block_seconds`, `open_connections`, `outgoing_connections`, `incoming_connections`, `start_at`, `uptime_seconds`, `last_block_seq`.
-
 
 ### Fixed
 
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `POST /api/v2/wallet/seed/verify` returns an error if the seed's checksum is invalid
 - Increase the detail of error messages for invalid seeds sent to `POST /api/v2/wallet/seed/verify`
 - Move package `github.com/skycoin/skycoin/src/cipher/go-bip39` to `github.com/skycoin/skycoin/src/cipher/bip39`
+- The Content-Security-Policy header was modified to make it stricter
 
 ### Removed
 

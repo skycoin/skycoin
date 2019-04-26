@@ -127,7 +127,7 @@ func TestVerifyAddress(t *testing.T) {
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			var rsp ReceivedHTTPResponse
-			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			err = json.Unmarshal(rr.Body.Bytes(), &rsp)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.httpResponse.Error, rsp.Error)

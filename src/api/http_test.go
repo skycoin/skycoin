@@ -22,6 +22,7 @@ var allAPISetsEnabled = map[string]struct{}{
 	EndpointsInsecureWalletSeed: struct{}{},
 	EndpointsPrometheus:         struct{}{},
 	EndpointsNetCtrl:            struct{}{},
+	EndpointsStorage:            struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {
@@ -171,6 +172,12 @@ var endpointsMethods = map[string][]string{
 	},
 	"/api/v2/transaction": []string{
 		http.MethodPost,
+	},
+
+	"/api/v2/data": []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodDelete,
 	},
 }
 

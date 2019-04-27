@@ -7,6 +7,7 @@ import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/timeout';
+import { AppConfig } from '../app.config';
 
 @Injectable()
 export class HwWalletDaemonService {
@@ -31,7 +32,9 @@ export class HwWalletDaemonService {
     private hwWalletSeedWordService: HwWalletSeedWordService,
     private ngZone: NgZone,
   ) {
-    this.checkHw(false);
+    if (AppConfig.useHwWalletDaemon) {
+      this.checkHw(false);
+    }
   }
 
   get(route: string) {

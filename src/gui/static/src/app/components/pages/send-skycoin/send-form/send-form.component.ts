@@ -211,6 +211,10 @@ export class SendFormComponent implements OnInit, OnDestroy {
       passwordDialog ? passwordDialog.password : null,
       this.previewTx,
     ).subscribe(transaction => {
+        if (passwordDialog) {
+          passwordDialog.close();
+        }
+
         if (!this.previewTx) {
           this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
             .subscribe(() => this.showSuccess(), error => this.showError(error));

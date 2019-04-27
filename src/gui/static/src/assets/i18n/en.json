@@ -363,6 +363,8 @@
       "confirm-seed": "Confirm seed",
       "create-pin": "Create PIN code",
       "change-pin": "Change PIN code",
+      "activate-passphrase": "Activate passphrase protection",
+      "deactivate-passphrase": "Deactivate passphrase protection",
       "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here."
     },
@@ -380,6 +382,9 @@
     },
     "added" : {
       "title": "New Hardware Wallet",
+      "wait": "Please wait...",
+      "canceled": "Operation cancelled",
+      "passphrase-warning": "A new hardware wallet has been detected and is about to be added to your wallet list. If your hardware wallet is already in the wallet list using the current passphrase, this may be because you entered your passphrase incorrectly, so it is advisable to unplug the device now and try again. If not, you can ignore this warning.",
       "configuring": "New hardware wallet detected. Configuring...",
       "done": "Done",
       "added1": "The connected hardware wallet has been added to the wallets list with the following name:",
@@ -392,6 +397,10 @@
     "create-backup" : {
       "warning": "WARNING: You can only use this option to backup your hardware wallet seed once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") will be able access the wallet balance, so extreme caution is advised.",
       "instructions": "Write down the word list that appear on the screen of the hardware wallet. Make sure you respect the order and write each word correctly."
+    },
+    "activate-passphrase" : {
+      "warning-activate": "When activating this option the addresses of the hardware wallet will change depending on the secret passphrase used, so you will not have access to the current addresses. You will recover access to the current addresses after deactivating this option.",
+      "warning-deactivate": "When deactivating this option you will not have access to the addresses you would have created using a passphrase. You will have access to them again after reactivating this option."
     },
     "seed-word" : {
       "title": "Enter word",
@@ -419,6 +428,18 @@
       "part1": "When it is necessary to enter the PIN to continue, the hardware wallet screen will display a matrix of 9 boxes with numbers in random order (the order changes each time) and you will be asked to enter the PIN in the software wallet using a matrix of 9 buttons that simply show the symbol #.",
       "part2": "To enter the PIN, look at the position of the PIN numbers in numbers matrix on the screen of the hardware wallet and press the corresponding buttons in the software wallet. For example, if the PIN is \"23\" and the number 2 is in the upper left, number 3 in the middle of the hardware wallet numbers matrix, press the upper left and middle button in that order in the software wallet.",
       "part3": "If you wish, you can also use the numpad on your keyboard to enter the PIN. However, as in the previous example, if the PIN is \"23\", you can not simply type \"23\" with the numpad, but you will have to press the keys that are in the position where the numbers 2 and 3 are shown on the screen of the hardware wallet."
+    },
+    "passphrase" : {
+      "title": "Passphrase",
+      "info": "Please enter your passphrase. The passphrase will be saved until you disconnect the device.",
+      "passphrase": "Passphrase"
+    },
+    "passphrase-help" : {
+      "link": "More info.",
+      "title": "Help",
+      "part1": "The passphrase is a mechanism that serves both to protect your hardware wallet and to make it more versatile. If you activate the passphrase option, when you connect your hardware wallet and try to do certain operations you will be asked to enter a text (it may be what you want) which will be mixed with the seed on the hardware wallet before creating addresses and transactions.",
+      "part2": "When using a different passphrase the hardware wallet will behave like a totally different wallet, with different addresses and without the possibility of accessing any address created with the same hardware wallet but with a different passphrase. This means that you can use the passphrase both to keep funds in different accounts and to prevent anyone from accessing the funds without having the passphrase.",
+      "part3": "WARNING: note that for two passphrases must be exactly the same to be considered equal, respecting uppercases, numbers, spaces and any special characters. For example, \"word\" is different than \"Word\"."
     },
     "create-tx" : {
       "title": "Create transaction"

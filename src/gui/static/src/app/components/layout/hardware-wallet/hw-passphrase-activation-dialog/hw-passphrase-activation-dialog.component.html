@@ -1,0 +1,50 @@
+<app-modal class="modal"
+  [headline]="(activating ? 'hardware-wallet.options.activate-passphrase' : 'hardware-wallet.options.deactivate-passphrase') | translate"
+  [dialog]="dialogRef"
+  [disableDismiss]="currentState === states.Processing">
+  <div *ngIf="currentState === states.Initial">
+    <app-hw-message
+      [text]="(activating ? 'hardware-wallet.activate-passphrase.warning-activate' : 'hardware-wallet.activate-passphrase.warning-deactivate') | translate"
+      [linkText]="'hardware-wallet.passphrase-help.link' | translate"
+      [icon]="msgIcons.Warning"
+      (linkClicked)="openHelp()"
+    ></app-hw-message>
+
+    <div class="-buttons">
+      <app-button (action)="closeModal()">
+        {{ 'hardware-wallet.general.cancel' | translate }}
+      </app-button>
+      <app-button (action)="changeConfig()" class="primary">
+        {{ 'hardware-wallet.general.continue' | translate }}
+      </app-button>
+    </div>
+  </div>
+
+  <div *ngIf="currentState !== states.Initial">
+    <app-hw-message *ngIf="currentState === states.Processing"
+      [text]="'hardware-wallet.general.confirm' | translate"
+      [icon]="msgIcons.Confirm"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.ReturnedSuccess"
+      [text]="'hardware-wallet.general.completed' | translate"
+      [icon]="msgIcons.Success"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.ReturnedRefused"
+      [text]="'hardware-wallet.general.refused' | translate"
+      [icon]="msgIcons.Error"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.Failed"
+      [text]="'hardware-wallet.general.generic-error' | translate"
+      [icon]="msgIcons.Error"
+    ></app-hw-message>
+
+    <div class="-buttons" *ngIf="currentState !== states.Processing">
+      <app-button (action)="closeModal()" class="primary">
+        {{ 'hardware-wallet.general.close' | translate }}
+      </app-button>
+    </div>
+  </div>
+</app-modal>

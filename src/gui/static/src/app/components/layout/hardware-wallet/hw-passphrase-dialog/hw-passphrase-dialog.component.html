@@ -1,0 +1,19 @@
+<app-modal class="modal" [headline]="'hardware-wallet.passphrase.title' | translate" [dialog]="dialogRef">
+  <app-hw-message
+    [text]="'hardware-wallet.passphrase.info' | translate"
+    [linkText]="'hardware-wallet.passphrase-help.link' | translate"
+    [icon]="msgIcons.None"
+    (linkClicked)="openHelp()"
+  ></app-hw-message>
+  <div [formGroup]="form" class="form-container">
+    <div class="form-field">
+      <label for="passphrase">{{ 'hardware-wallet.passphrase.passphrase' | translate }}</label>
+      <input formControlName="passphrase" id="passphrase" (keydown.enter)="sendPassphrase()">
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="sendPassphrase()" class="primary" [disabled]="!form.valid">
+      {{ 'hardware-wallet.general.continue' | translate }}
+    </app-button>
+  </div>
+</app-modal>

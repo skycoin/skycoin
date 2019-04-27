@@ -60,6 +60,10 @@ export class HwWalletService {
   set requestPinComponent(value) {
     this.requestPinComponentInternal = value;
   }
+  private requestPassphraseComponentInternal;
+  set requestPassphraseComponent(value) {
+    this.requestPassphraseComponentInternal = value;
+  }
   private requestWordComponentInternal;
   set requestWordComponent(value) {
     this.requestWordComponentInternal = value;
@@ -103,6 +107,16 @@ export class HwWalletService {
           window['ipcRenderer'].send('hwSendPin', pin);
         });
       });
+      window['ipcRenderer'].on('hwPassphraseRequested', (event) => {
+        dialog.open(this.requestPassphraseComponentInternal, <MatDialogConfig> {
+          width: '350px',
+        }).afterClosed().subscribe(passphrase => {
+          if (!passphrase) {
+            this.cancelAllOperations();
+          }
+          window['ipcRenderer'].send('hwSendPassphrase', passphrase);
+        });
+      });
       window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
         dialog.open(this.requestWordComponentInternal, <MatDialogConfig> {
           width: '350px',
@@ -134,6 +148,7 @@ export class HwWalletService {
         { event: 'hwGetAddressesResponse' },
         { event: 'hwGetFeaturesResponse' },
         { event: 'hwSignMessageResponse' },
+        { event: 'hwApplySettingsResponse' },
       ];
 
       data.forEach(item => {
@@ -272,6 +287,15 @@ export class HwWalletService {
       const requestId = this.createRandomIdAndPrepare();
       this.signingTx = true;
       window['ipcRenderer'].send('hwSignTransaction', requestId, inputs, outputs);
+
+      return this.createRequestResponse(requestId);
+    });
+  }
+
+  applySettings(usePassphrase: boolean): Observable<OperationResult> {
+    return this.cancelLastAction().flatMap(() => {
+      const requestId = this.createRandomIdAndPrepare();
+      window['ipcRenderer'].send('hwApplySettings', requestId, usePassphrase);
 
       return this.createRequestResponse(requestId);
     });

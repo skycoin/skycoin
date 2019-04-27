@@ -24,6 +24,7 @@ declare var Cipher: any;
 export enum HwSecurityWarnings {
   NeedsBackup,
   NeedsPin,
+  HasPassphrase,
 }
 
 @Injectable()
@@ -161,6 +162,9 @@ export class WalletService {
         if (!result.rawResponse.pinProtection) {
           warnings.push(HwSecurityWarnings.NeedsPin);
           wallet.hasHwSecurityWarnings = true;
+        }
+        if (result.rawResponse.passphraseProtection) {
+          warnings.push(HwSecurityWarnings.HasPassphrase);
         }
         this.saveHardwareWallets();
 

@@ -92,6 +92,9 @@ import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { HwConfirmAddressDialogComponent } from './components/layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
+import { HwPassphraseDialogComponent } from './components/layout/hardware-wallet/hw-passphrase-dialog/hw-passphrase-dialog.component';
+import { HwPassphraseActivationDialogComponent } from './components/layout/hardware-wallet/hw-passphrase-activation-dialog/hw-passphrase-activation-dialog.component';
+import { HwPassphraseHelpDialogComponent } from './components/layout/hardware-wallet/hw-passphrase-help-dialog/hw-passphrase-help-dialog.component';
 
 
 const ROUTES = [
@@ -214,6 +217,9 @@ const ROUTES = [
     HwDialogBaseComponent,
     HwConfirmTxDialogComponent,
     HwConfirmAddressDialogComponent,
+    HwPassphraseDialogComponent,
+    HwPassphraseActivationDialogComponent,
+    HwPassphraseHelpDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -240,6 +246,9 @@ const ROUTES = [
     HwSeedWordDialogComponent,
     HwConfirmTxDialogComponent,
     HwConfirmAddressDialogComponent,
+    HwPassphraseDialogComponent,
+    HwPassphraseActivationDialogComponent,
+    HwPassphraseHelpDialogComponent,
   ],
   imports: [
     BrowserModule,

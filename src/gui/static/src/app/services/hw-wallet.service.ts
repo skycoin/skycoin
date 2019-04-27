@@ -98,8 +98,8 @@ export class HwWalletService {
       });
 
       window['ipcRenderer'].on('hwSignTransactionResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, true);
         this.closeTransactionDialog();
+        this.dispatchEvent(requestId, result, true);
       });
 
       const data: EventData[] = [

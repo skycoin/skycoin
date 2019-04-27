@@ -315,10 +315,10 @@ export class WalletService {
 
       if (wallet.isHardware) {
         if (data.transaction.inputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
         if (data.transaction.outputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
       }
 

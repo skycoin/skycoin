@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ISubscription } from 'rxjs/Subscription';
 import { ApiService } from '../../../../../services/api.service';
-import { Bip39WordListService } from '../../../../../services/bip39-word-list.service';
 import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/switchMap';
 
@@ -33,7 +32,6 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
   constructor(
     private apiService: ApiService,
-    private bip39WordListService: Bip39WordListService,
   ) { }
 
   ngOnInit() {

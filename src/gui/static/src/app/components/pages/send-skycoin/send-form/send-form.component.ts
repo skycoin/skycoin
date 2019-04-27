@@ -10,8 +10,7 @@ import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/
 import { ISubscription, Subscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
-import { Observable } from 'rxjs/Observable';
-import { PreviewTransaction, Wallet, ConfirmationData } from '../../../../app.datatypes';
+import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { BlockchainService } from '../../../../services/blockchain.service';
@@ -124,10 +123,14 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private checkBeforeSending() {
+    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
+      return;
+    }
+
     this.closeSyncCheckSubscription();
     this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
       if (synchronized) {
-        this.unlockAndSend();
+        this.prepareTransaction();
       } else {
         this.showSynchronizingWarning();
       }
@@ -144,21 +147,17 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
-        this.unlockAndSend();
+        this.prepareTransaction();
       }
     });
   }
 
-  private unlockAndSend() {
-    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
-      return;
-    }
-
+  private prepareTransaction() {
     this.snackbar.dismiss();
     this.previewButton.resetState();
     this.sendButton.resetState();
 
-    if (this.form.value.wallet.encrypted && !this.form.value.wallet.isHardware) {
+    if (this.form.value.wallet.encrypted && !this.form.value.wallet.isHardware && !this.previewTx) {
       const config = new MatDialogConfig();
       config.data = {
         wallet: this.form.value.wallet,
@@ -169,7 +168,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
           this.createTransaction(passwordDialog);
         });
     } else {
-      if (!this.form.value.wallet.isHardware) {
+      if (!this.form.value.wallet.isHardware || this.previewTx) {
         this.createTransaction();
       } else {
         this.showBusy();
@@ -195,39 +194,23 @@ export class SendFormComponent implements OnInit, OnDestroy {
   private createTransaction(passwordDialog?: any) {
     this.showBusy();
 
-    let createTxRequest: Observable<PreviewTransaction>;
-
-    if (!this.form.value.wallet.isHardware) {
-      createTxRequest = this.walletService.createTransaction(
-        this.form.value.wallet,
-        null,
-        null,
-        [{
-          address: this.form.value.address,
-          coins: this.selectedCurrency === DoubleButtonActive.LeftButton ? this.form.value.amount : this.value.toString(),
-        }],
-        {
-          type: 'auto',
-          mode: 'share',
-          share_factor: '0.5',
-        },
-        null,
-        passwordDialog ? passwordDialog.password : null,
-      );
-    } else {
-      createTxRequest = this.walletService.createHwTransaction(
-        this.form.value.wallet,
-        this.form.value.address,
-        new BigNumber(this.form.value.amount),
-      );
-    }
-
-     this.processingSubscription = createTxRequest.subscribe(
-       transaction => {
-        if (passwordDialog) {
-          passwordDialog.close();
-        }
-
+    this.processingSubscription = this.walletService.createTransaction(
+      this.form.value.wallet,
+      (this.form.value.wallet as Wallet).addresses.map(address => address.address),
+      null,
+      [{
+        address: this.form.value.address,
+        coins: this.selectedCurrency === DoubleButtonActive.LeftButton ? this.form.value.amount : this.value.toString(),
+      }],
+      {
+        type: 'auto',
+        mode: 'share',
+        share_factor: '0.5',
+      },
+      null,
+      passwordDialog ? passwordDialog.password : null,
+      this.previewTx,
+    ).subscribe(transaction => {
         if (!this.previewTx) {
           this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
             .subscribe(() => this.showSuccess(), error => this.showError(error));

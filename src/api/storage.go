@@ -19,10 +19,10 @@ func storageHandler(gateway Gatewayer) http.HandlerFunc {
 			addStorageValueHandler(w, r, gateway)
 		case http.MethodDelete:
 			removeStorageValueHandler(w, r, gateway)
+		default:
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 		}
-
-		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
-		writeHTTPResponse(w, resp)
 	}
 }
 

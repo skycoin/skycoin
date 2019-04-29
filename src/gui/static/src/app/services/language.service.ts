@@ -77,7 +77,7 @@ export class LanguageService {
     };
     this.apiService.get('/data', data, {}, true).subscribe(response => {
       if (response.data && response.data[this.storageKey]) {
-        this.translate.use(response.data[this.storageKey]);
+        setTimeout(() => { this.translate.use(response.data[this.storageKey]); }, 16);
         this.selectedLanguageLoaded.next(true);
       } else {
         this.selectedLanguageLoaded.next(false);

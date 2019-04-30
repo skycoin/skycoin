@@ -28,7 +28,7 @@
             {{ transaction.hoursBurned.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
-        <div class="-data" *ngIf="transaction.txid">
+        <div class="-data" *ngIf="!isPreview">
           <span>{{ 'tx.id' | translate }}:</span> <span>{{ transaction.txid }}</span>
         </div>
       </div>

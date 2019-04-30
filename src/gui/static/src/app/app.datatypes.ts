@@ -39,6 +39,7 @@ export class PreviewTransaction extends Transaction {
   from: string;
   to: string[];
   encoded: string;
+  wallet?: Wallet;
 }
 
 export class NormalTransaction extends Transaction {

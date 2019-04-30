@@ -13,7 +13,7 @@ export class ExchangeHistoryComponent implements OnInit {
   orders: StoredExchangeOrder[];
 
   constructor(
-    private dialogRef: MatDialogRef<ExchangeHistoryComponent>,
+    public dialogRef: MatDialogRef<ExchangeHistoryComponent>,
     private exchangeService: ExchangeService,
   ) { }
 

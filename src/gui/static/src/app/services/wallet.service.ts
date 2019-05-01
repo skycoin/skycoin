@@ -17,6 +17,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { BigNumber } from 'bignumber.js';
 import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { catchError, map } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
 
 declare var Cipher: any;
@@ -575,6 +576,11 @@ export class WalletService {
 
       this.wallets.next(wallets);
     });
+  }
+
+  verifyAddress(address: string) {
+    return this.apiService.post('address/verify', { address }, {}, true)
+      .pipe(map(() => true), catchError(() => Observable.of(false)));
   }
 
   getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {

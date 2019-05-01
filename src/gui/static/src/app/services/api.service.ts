@@ -179,6 +179,10 @@ export class ApiService {
   }
 
   private getUrl(url, options = null, useV2 = false) {
+    if ((url as string).startsWith('/')) {
+      url = (url as string).substr(1, (url as string).length - 1);
+    }
+
     return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
   }
 

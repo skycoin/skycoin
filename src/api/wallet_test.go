@@ -1371,7 +1371,7 @@ func TestVerifySeed(t *testing.T) {
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			var rsp ReceivedHTTPResponse
-			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			err = json.Unmarshal(rr.Body.Bytes(), &rsp)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.httpResponse.Error, rsp.Error)
@@ -2284,10 +2284,10 @@ func TestEncryptWallet(t *testing.T) {
 				return
 			}
 
-			var rlt WalletResponse
-			err = json.NewDecoder(rr.Body).Decode(&rlt)
+			var rsp WalletResponse
+			err = json.Unmarshal(rr.Body.Bytes(), &rsp)
 			require.NoError(t, err)
-			require.Equal(t, tc.expectWallet, rlt)
+			require.Equal(t, tc.expectWallet, rsp)
 		})
 	}
 }
@@ -2467,10 +2467,10 @@ func TestDecryptWallet(t *testing.T) {
 				return
 			}
 
-			var r WalletResponse
-			err = json.NewDecoder(rr.Body).Decode(&r)
+			var rsp WalletResponse
+			err = json.Unmarshal(rr.Body.Bytes(), &rsp)
 			require.NoError(t, err)
-			require.Equal(t, tc.expectWallet, r)
+			require.Equal(t, tc.expectWallet, rsp)
 		})
 	}
 }
@@ -2731,7 +2731,7 @@ func TestWalletRecover(t *testing.T) {
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			var rsp ReceivedHTTPResponse
-			err = json.NewDecoder(rr.Body).Decode(&rsp)
+			err = json.Unmarshal(rr.Body.Bytes(), &rsp)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.httpResponse.Error, rsp.Error)

@@ -1,0 +1,59 @@
+<div class="-wrapper">
+  <div class="-status">
+    <mat-icon [ngClass]="{'-spin': statusIcon === 'refresh'}">{{ statusIcon }}</mat-icon>
+    <div class="-item">
+      <div class="-key">{{ 'exchange.status' | translate }}</div>
+      <div class="-value">{{ translatedStatus.text | translate:translatedStatus.params }}</div>
+    </div>
+  </div>
+  <span>{{ 'exchange.exchanging' | translate:{from: fromCoin, to: toCoin} }}</span>
+</div>
+
+<mat-progress-bar [value]="progress"></mat-progress-bar>
+
+<div class="-details">
+  <div class="-box">
+    <div class="-img"></div>
+    <div class="-item">
+      <div class="-key">{{ 'exchange.details.order-id' | translate }}</div>
+      <div class="-value">{{ order.id }}</div>
+    </div>
+  </div>
+
+  <div class="-box" *ngIf="order.status === statuses[0]">
+    <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeAddress)" class="qr-code-button -img">
+    <div class="-item">
+      <div class="-key">{{ 'exchange.details.exchange-addr' | translate }}</div>
+      <div class="-value">{{ order.exchangeAddress }}</div>
+    </div>
+  </div>
+
+  <div class="-box" *ngIf="order.status === statuses[0] && order.exchangeTag">
+    <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeTag)" class="qr-code-button -img">
+    <div class="-item">
+      <div class="-key">{{ 'exchange.details.exchange-addr-tag' | translate }}</div>
+      <div class="-value">{{ order.exchangeTag }}</div>
+    </div>
+  </div>
+
+  <div class="-box" *ngIf="order.status === statuses[5]">
+    <div class="-img"></div>
+    <div class="-item">
+      <div class="-key">{{ 'exchange.details.tx-id' | translate }}</div>
+      <div class="-value">
+        {{ order.toTx }}
+        <a [href]="'https://explorer.skycoin.net/app/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow">
+          <mat-icon>launch</mat-icon>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="-box" *ngIf="order.status === statuses[6]">
+    <div class="-img"></div>
+    <div class="-item">
+      <div class="-key">{{ 'exchange.details.error-msg' | translate }}</div>
+      <div class="-value">{{ order.message }}</div>
+    </div>
+  </div>
+</div>

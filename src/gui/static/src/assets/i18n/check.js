@@ -21,14 +21,14 @@ const langs = [];
 // in the elements and contents of the base files and the current English file.
 let checkFull = false;
 
-// If a param was send, it must be "full" or the 2 charaters code of the languaje that must be checked.
+// If a param was send, it must be "all" or the 2 charaters code of the languaje that must be checked.
 // If a param is provided, checkFull is set to true.
 if (process.argv.length > 2) {
   if (process.argv.length > 3) {
     exitWithError('Invalid number of parameters.');
   }
 
-  if (process.argv[2] != 'full') {
+  if (process.argv[2] != 'all') {
     if (process.argv[2].length !== 2) {
       exitWithError('You can only send as parameter to this script the 2-letter code of one of the language files in this folder, or "all".');
     }

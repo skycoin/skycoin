@@ -39,6 +39,7 @@ export class PreviewTransaction extends Transaction {
   from: string;
   to: string[];
   encoded: string;
+  wallet?: Wallet;
 }
 
 export class NormalTransaction extends Transaction {
@@ -71,6 +72,38 @@ export class Connection {
   address: string;
   listen_port: number;
   source?: string;
+}
+
+export class TradingPair {
+  from: string;
+  to: string;
+  price: number;
+  pair: string;
+  min: number;
+  max: number;
+}
+
+export class ExchangeOrder {
+  pair: string;
+  fromAmount: number|null;
+  toAmount: number;
+  toAddress: string;
+  toTag: string|null;
+  refundAddress: string|null;
+  refundTag: string|null;
+  id: string;
+  exchangeAddress: string;
+  exchangeTag: string|null;
+  toTx?: string|null;
+  status: string;
+  message?: string;
+}
+
+export class StoredExchangeOrder {
+  id: string;
+  pair: string;
+  fromAmount: number;
+  timestamp: number;
 }
 
 export interface Output {

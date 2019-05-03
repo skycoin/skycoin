@@ -17,7 +17,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
   passwordSubmit = new Subject<any>();
-  disableDismiss = false;
+  working = false;
 
   private subscriptions: ISubscription[] = [];
   private errors: any;
@@ -66,6 +66,8 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.snackbar.dismiss();
+
     this.form.get('password').setValue('');
     this.form.get('confirm_password').setValue('');
 
@@ -79,8 +81,10 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.snackbar.dismiss();
+
     this.button.setLoading();
-    this.disableDismiss = true;
+    this.working = true;
 
     this.passwordSubmit.next({
       password: this.form.get('password').value,
@@ -109,6 +113,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
 
   private error(error: any) {
     if (typeof error === 'object') {
+      if (error.status) {
       switch (error.status) {
         case 400:
           error = parseResponseMessage(error['_body']);
@@ -123,11 +128,17 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
           error = this.errors['errors.no-wallet'];
           break;
         default:
-          showSnackbarError(this.snackbar, error, 5000);
+            error = this.errors['errors.error-decrypting'];
+        }
+      } else {
+        error = this.errors['errors.error-decrypting'];
       }
     }
 
-    this.button.setError(error ? error : this.errors['errors.incorrect-password']);
-    this.disableDismiss = false;
+    error = error ? error : this.errors['errors.error-decrypting'];
+
+    showSnackbarError(this.snackbar, error, 5000);
+    this.button.setError(error);
+    this.working = false;
   }
 }

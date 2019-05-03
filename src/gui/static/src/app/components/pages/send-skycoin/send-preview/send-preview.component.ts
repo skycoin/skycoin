@@ -79,10 +79,6 @@ export class SendVerifyComponent implements OnDestroy {
   }
 
   private finishSending(passwordDialog?: any) {
-    if (passwordDialog) {
-      passwordDialog.close();
-    }
-
     this.showBusy();
 
     this.sendSubscription = this.walletService.signTransaction(
@@ -90,6 +86,10 @@ export class SendVerifyComponent implements OnDestroy {
       passwordDialog ? passwordDialog.password : null,
       this.transaction,
     ).flatMap(result => {
+      if (passwordDialog) {
+        passwordDialog.close();
+      }
+
       return this.walletService.injectTransaction(result.encoded);
     }).subscribe(() => {
       this.sendButton.setSuccess();
@@ -101,6 +101,10 @@ export class SendVerifyComponent implements OnDestroy {
         this.onBack.emit(true);
       }, 3000);
     }, error => {
+      if (passwordDialog) {
+        passwordDialog.error(error);
+      }
+
       if (error && error.result) {
         this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
       } else {

@@ -2,13 +2,13 @@
 <div class="container">
   <div class="-paper">
     <app-exchange-create
-      *ngIf="!previewOrderDetails && !loading"
+      *ngIf="!currentOrderDetails && !loading"
       (submitted)="showStatus($event)"
     ></app-exchange-create>
 
     <app-exchange-status
-      *ngIf="previewOrderDetails && !loading"
-      [orderDetails]="previewOrderDetails"
+      *ngIf="currentOrderDetails && !loading"
+      [orderDetails]="currentOrderDetails"
       (goBack)="goBack()"
     ></app-exchange-status>
   </div>

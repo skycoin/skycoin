@@ -26,8 +26,6 @@ export class ExchangeStatusComponent implements OnDestroy {
     'error',
   ];
 
-  readonly coinName = 'SKY';
-
   loading = true;
   showError = false;
   expanded = false;
@@ -147,7 +145,7 @@ export class ExchangeStatusComponent implements OnDestroy {
     this.subscription = Observable.of(0).delay(delay).flatMap(() => {
       return this.exchangeService.status(
         !AppConfig.swaplabTests.activateTestMode ? this._orderDetails.id : '4729821d-390d-4ef8-a31e-2465d82a142f',
-        this.statuses[this.testStatusIndex++],
+        !AppConfig.swaplabTests.activateTestMode ? null : this.statuses[this.testStatusIndex++],
       );
     }).subscribe(order => {
       this.order = { ...order, fromAmount };

@@ -40,6 +40,22 @@ As a work-around, the development server will create a proxy from `http://localh
 
 You can route all calls to this address by changing the url property on the ApiService class.
 
+## Swaplab integration
+
+The wallet has a section for buying coins using the Swaplab service and, during development, it is possible to configure its operation,
+in order to test its different parts without having to make a real exchange. The configuration is done by modifying the properties of
+the `swaplabTests` object in [app.config.ts](/src/gui/static/src/app/app.config.ts).
+
+If you set `swaplabTests.activateTestMode` to `true`, all operations made with the Swaplab integration will be faked. When creating a new
+operation or opening an old one using the history, the system will show the operation progressing every few seconds, from the state in
+which the user is expected to make the initial deposit to the moment in which the operation is completed. However, keep in mind that the
+value of `swaplabTests.activateTestMode` will only be respected in development builds, in production buils it will always be automatically
+changed to `false`. If `swaplabTests.activateTestMode` is `false`, the integration will work as it should and you will be able to make real
+exchange transactions.
+
+Also `swaplabTests` has a property called `endStatusInError`. If you set it to `true` and `swaplabTests.activateTestMode` is also `true`,
+all the faked operations will end in an error, instead of success.
+
 ## Purchase API (teller)
 
 Please note that at the moment the Purchase API (teller) is both offline and not supporting CORS headers.

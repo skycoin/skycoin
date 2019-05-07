@@ -192,7 +192,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   private updatePrices() {
-    this.priceUpdateSubscription = Observable.of(1).delay(15000).flatMap(() => this.exchangeService.tradingPairs())
+    this.priceUpdateSubscription = Observable.of(1).delay(60000).flatMap(() => this.exchangeService.tradingPairs())
       .retryWhen(errors => errors.delay(60000))
       .subscribe(pairs => {
         pairs.forEach(pair => {

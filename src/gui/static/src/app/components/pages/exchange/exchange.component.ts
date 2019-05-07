@@ -1,5 +1,4 @@
-import * as moment from 'moment';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { StoredExchangeOrder } from '../../../app.datatypes';
 import { ExchangeService } from '../../../services/exchange.service';
 import { MatDialog, MatDialogConfig } from '@angular/material';
@@ -11,10 +10,13 @@ import { ISubscription } from 'rxjs/Subscription';
   templateUrl: './exchange.component.html',
   styleUrls: ['./exchange.component.scss'],
 })
-export class ExchangeComponent implements OnInit {
-  previewOrderDetails: StoredExchangeOrder;
+export class ExchangeComponent implements OnInit, OnDestroy {
+  currentOrderDetails: StoredExchangeOrder;
   hasHistory = false;
   loading = true;
+
+  private lastViewedSubscription: ISubscription;
+  private historySubscription: ISubscription;
 
   constructor(
     private exchangeService: ExchangeService,
@@ -22,23 +24,28 @@ export class ExchangeComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    const sub = this.exchangeService.lastViewedOrderLoaded.subscribe(response => {
+    this.lastViewedSubscription = this.exchangeService.lastViewedOrderLoaded.subscribe(response => {
       if (response) {
         const lastViewedOrder = this.exchangeService.lastViewedOrder;
         if (lastViewedOrder) {
-          this.previewOrderDetails = lastViewedOrder;
+          this.currentOrderDetails = lastViewedOrder;
         }
 
-        setTimeout(() => sub.unsubscribe());
+        setTimeout(() => this.lastViewedSubscription.unsubscribe());
         this.loading = false;
       }
     });
 
-    this.exchangeService.history().subscribe(() => this.hasHistory = true);
+    this.historySubscription = this.exchangeService.history().subscribe(() => this.hasHistory = true);
+  }
+
+  ngOnDestroy() {
+    this.lastViewedSubscription.unsubscribe();
+    this.historySubscription.unsubscribe();
   }
 
   showStatus(order) {
-    this.previewOrderDetails = order;
+    this.currentOrderDetails = order;
   }
 
   showHistory(event) {
@@ -50,13 +57,13 @@ export class ExchangeComponent implements OnInit {
 
     this.dialog.open(ExchangeHistoryComponent, config).afterClosed().subscribe((oldOrder: StoredExchangeOrder) => {
       if (oldOrder) {
-        this.previewOrderDetails = oldOrder;
+        this.currentOrderDetails = oldOrder;
       }
     });
   }
 
   goBack() {
-    this.previewOrderDetails = null;
+    this.currentOrderDetails = null;
     this.exchangeService.lastViewedOrder = null;
   }
 }

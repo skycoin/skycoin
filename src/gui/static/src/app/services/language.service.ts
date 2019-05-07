@@ -3,8 +3,8 @@ import { TranslateService, LangChangeEvent } from '@ngx-translate/core';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 
 import { AppConfig } from '../app.config';
-import { ApiService } from './api.service';
 import { ISubscription } from 'rxjs/Subscription';
+import { StorageService, StorageType } from './storage.service';
 
 export class LanguageData {
   code: string;
@@ -31,7 +31,7 @@ export class LanguageService {
 
   constructor(
     private translate: TranslateService,
-    private apiService: ApiService,
+    private storageService: StorageService,
   ) { }
 
   loadLanguageSettings() {
@@ -62,22 +62,13 @@ export class LanguageService {
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
-
-    const data = {
-      type: 'client',
-      key: this.storageKey,
-      val: event.lang,
-    };
-    this.subscription = this.apiService.post('/data', data, {}, true).subscribe();
+    this.subscription = this.storageService.store(StorageType.CLIENT, this.storageKey, event.lang).subscribe();
   }
 
   private loadCurrentLanguage() {
-    const data = {
-      type: 'client',
-    };
-    this.apiService.get('/data', data, {}, true).subscribe(response => {
-      if (response.data && response.data[this.storageKey]) {
-        setTimeout(() => { this.translate.use(response.data[this.storageKey]); }, 16);
+    this.storageService.get(StorageType.CLIENT, this.storageKey).subscribe(response => {
+      if (response.data && this.translate.getLangs().indexOf(response.data) !== -1) {
+        setTimeout(() => { this.translate.use(response.data); }, 16);
         this.selectedLanguageLoaded.next(true);
       } else {
         this.selectedLanguageLoaded.next(false);

@@ -12,6 +12,7 @@
     "error": "Error",
     "fetch-version": "Unable to fetch latest release version from Github",
     "incorrect-password": "Incorrect password",
+    "error-decrypting": "Error decrypting the wallet",
     "api-disabled": "API disabled",
     "no-wallet": "Wallet does not exist",
     "no-outputs": "No unspent outputs",
@@ -33,7 +34,10 @@
     "explorer": "Skycoin Explorer",
     "seed": "Wallet Seed",
     "qrcode": "QR Code",
-    "reset": "Reset Password"
+    "reset": "Reset Password",
+    "exchange": "Exchange",
+    "select-address": "Select Address",
+    "order-history": "Order history"
   },
 
   "header": {
@@ -429,6 +433,47 @@
       "instructions": "Please confirm on the hardware wallet if the address is:",
       "short-confirmation": "Address confirmed.",
       "confirmation": "Address confirmed. For security, you can re-show the address in the hardware wallet using the \"Confirm address\" option, in the menu that you can display by pressing the button at the right of the address balance."
+    }
+  },
+
+  "exchange": {
+    "you-send": "You send",
+    "you-get": "You get",
+    "to-address": "To {{coin}} address",
+    "price": "Exchange rate",
+    "time-15": "Exchange time",
+    "exchange-button": "Exchange",
+    "min-amount": "Minimum amount:",
+    "max-amount": "Maximum amount:",
+    "agree-1": "I agree with",
+    "agree-2": "Terms of Use",
+    "agree-3": "and",
+    "agree-4": "Privacy Policy",
+    "powered-by": "Powered by",
+    "need-help": "Need help?",
+    "support-portal": "Support portal",
+    "history": "Order history",
+    "history-details": "Details",
+    "order-not-found": "Order not found",
+    "status": "Status",
+    "exchanging": "Exchanging {{from}} for {{to}}",
+    "select": "Select",
+    "offline": "Exchange is temporarily offline",
+    "statuses": {
+      "user-waiting": "Waiting for deposit. Please send {{amount}} {{from}} to the exchange address",
+      "market-waiting-confirmations": "Waiting for transaction confirmations",
+      "market-confirmed": "Transaction accepted",
+      "market-exchanged": "Traded {{from}} for {{to}}",
+      "market-withdraw-waiting": "Sending {{to}} to your address",
+      "complete": "Exchange completed!",
+      "error": "Error occurred"
+    },
+    "details": {
+      "exchange-addr": "Exchange address",
+      "exchange-addr-tag": "Tag which must be attached to transaction",
+      "tx-id": "Transaction ID",
+      "order-id": "Order ID",
+      "error-msg": "Error message"
     }
   }
 }

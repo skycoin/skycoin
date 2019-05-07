@@ -15,7 +15,7 @@ import (
 // ContentSecurityPolicy represents the value of content-security-policy
 // header in http response
 const ContentSecurityPolicy = "default-src 'self'" +
-	"; connect-src 'self' https://api.coinpaprika.com" +
+	"; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc" +
 	"; img-src 'self' 'unsafe-inline' data:" +
 	"; style-src 'self' 'unsafe-inline'" +
 	"; object-src	'none'" +

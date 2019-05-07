@@ -224,7 +224,7 @@ export class WalletDetailComponent implements OnDestroy {
       dialogRef.componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.walletService.addAddress(this.wallet, this.howManyAddresses, passwordDialog.password)
-            .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
+            .subscribe(() => passwordDialog.close(), error => passwordDialog.error(error));
         });
     } else {
 

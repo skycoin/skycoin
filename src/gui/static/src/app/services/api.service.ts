@@ -46,6 +46,10 @@ export class ApiService {
     return this.get('wallet/newSeed', { entropy }).map(response => response.seed);
   }
 
+  getHealth() {
+    return this.get('health');
+  }
+
   getWallets(): Observable<Wallet[]> {
     return this.get('wallets')
       .map((response: GetWalletsResponseWallet[]) => {
@@ -119,8 +123,8 @@ export class ApiService {
     return this.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.filename, password });
   }
 
-  get(url, params = null, options = {}, useV2 = false) {
-    return this.http.get(this.getUrl(url, params, useV2), this.returnRequestOptions(options))
+  get(url, params = null, options: any = {}) {
+    return this.http.get(this.getUrl(url, params, !!options.v2), this.returnRequestOptions(options))
       .map((res: any) => res.json())
       .catch((error: any) => this.processConnectionError(error));
   }
@@ -179,6 +183,10 @@ export class ApiService {
   }
 
   private getUrl(url, options = null, useV2 = false) {
+    if ((url as string).startsWith('/')) {
+      url = (url as string).substr(1, (url as string).length - 1);
+    }
+
     return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
   }
 

@@ -1,65 +1,87 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
 import {
   ExchangeOrder,
   StoredExchangeOrder,
   TradingPair,
 } from '../app.datatypes';
-import { environment } from '../../environments/environment';
 import { StorageService, StorageType } from './storage.service';
 import * as moment from 'moment';
+import 'rxjs/add/operator/repeatWhen';
+import { AppConfig } from '../app.config';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { ISubscription } from 'rxjs/Subscription';
+import { ApiService } from './api.service';
 
 @Injectable()
 export class ExchangeService {
   private readonly API_ENDPOINT = 'https://swaplab.cc/api/v3';
   private readonly API_KEY = 'w4bxe2tbf9beb72r';
   private readonly STORAGE_KEY = 'exchange-orders';
+  private readonly LAST_VIEWED_STORAGE_KEY = 'last-viewed-order';
 
-  private _lastOrder: ExchangeOrder;
+  lastViewedOrderLoaded: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-  set lastOrder(order) {
-    this._lastOrder = order;
+  private saveLastViewedSubscription: ISubscription;
+  private _lastViewedOrder: StoredExchangeOrder;
+
+  set lastViewedOrder(order) {
+    this._lastViewedOrder = order;
+
+    if (this.saveLastViewedSubscription) {
+      this.saveLastViewedSubscription.unsubscribe();
+    }
+    this.saveLastViewedSubscription = this.storageService.store(StorageType.CLIENT, this.LAST_VIEWED_STORAGE_KEY, JSON.stringify(order)).subscribe();
   }
 
-  get lastOrder() {
-    return this._lastOrder;
+  get lastViewedOrder() {
+    return this._lastViewedOrder;
   }
 
   constructor(
     private http: HttpClient,
     private storageService: StorageService,
-  ) { }
+    private apiService: ApiService,
+  ) {
+    storageService.get(StorageType.CLIENT, this.LAST_VIEWED_STORAGE_KEY).subscribe(result => {
+      this.lastViewedOrder = JSON.parse(result.data);
+      this.lastViewedOrderLoaded.next(true);
+    }, () => {
+      this.lastViewedOrderLoaded.next(true);
+    });
+  }
 
   tradingPairs(): Observable<TradingPair[]> {
     return this.post('trading_pairs').map(data => data.result);
   }
 
-  exchange(pair: string, fromAmount: number, toAddress: string): Observable<ExchangeOrder> {
+  exchange(pair: string, fromAmount: number, toAddress: string, price: number): Observable<ExchangeOrder> {
+    let response: ExchangeOrder;
+
     return this.post('orders', { pair, fromAmount, toAddress })
-      .map(data => data.result)
-      .do(result => this.storeOrder(result));
+      .flatMap(data => {
+        response = data.result;
+
+        return this.storeOrder(response, price);
+      }).map(() => response);
   }
 
-  status(id: string): Observable<ExchangeOrder> {
-    let lastKnownStatus = null;
+  status(id: string, devForceState?: string): Observable<ExchangeOrder> {
+    if (AppConfig.swaplabTests.activateTestMode && !devForceState) {
+      devForceState = 'user_waiting';
+    }
 
-    return Observable
-      .timer(0, 30 * 1000)
-      .flatMap(() => this.post('orders/status', { id }))
-      .map(data => data.result)
-      .do(response => lastKnownStatus = response)
-      .filter(response => response !== null)
-      .retryWhen((error$) => {
-        return error$
-          .do(error => {
-            if (!(error.error instanceof ProgressEvent)) {
-              throw error;
-            }
-          })
-          .delay(3000);
-      });
+    return this.post('orders/status', { id }, AppConfig.swaplabTests.activateTestMode ? { status: devForceState } : null)
+      .retryWhen((err) => {
+        return err.flatMap(response => {
+          if (response instanceof HttpErrorResponse && response.status === 404) {
+            return Observable.throw(response);
+          }
 
+          return Observable.of(response);
+        }).delay(3000);
+      }).map(data => data.result);
   }
 
   history() {
@@ -79,38 +101,50 @@ export class ExchangeService {
         'Accept': 'application/json',
         ...headers,
       }),
-    });
+    }).catch((error: any) => this.apiService.processConnectionError(error));
   }
 
   private buildUrl(url: string) {
-    if (environment.production || url === 'trading_pairs') {
+    if (!AppConfig.swaplabTests.activateTestMode || url === 'trading_pairs') {
       return `${this.API_ENDPOINT}/${url}`;
     }
 
     return `${this.API_ENDPOINT}sandbox/${url}`;
   }
 
-  private storeOrder(order: ExchangeOrder) {
-    this.history().subscribe(
-      (oldOrders: StoredExchangeOrder[]) => {
-        this.storeOrderEntry(oldOrders, order);
-      },
-      () => {
-        this.storeOrderEntry([], order);
-      },
-    );
+  private storeOrder(order: ExchangeOrder, price: number) {
+    return this.history()
+      .catch(err => {
+        try {
+          if (err['_body']) {
+            const errorBody = JSON.parse(err['_body']);
+            if (errorBody && errorBody.error && errorBody.error.code === 404) {
+              return Observable.of([]);
+            }
+          }
+        } catch (e) {}
+
+        return Observable.throw(err);
+      })
+      .flatMap((oldOrders: StoredExchangeOrder[]) => this.storeOrderEntry(oldOrders, order, price));
   }
 
-  private storeOrderEntry(orders: StoredExchangeOrder[], order: ExchangeOrder) {
-    orders.push({
+  private storeOrderEntry(orders: StoredExchangeOrder[], order: ExchangeOrder, price: number): Observable<any> {
+    const newOrder = {
       id: order.id,
       pair: order.pair,
       fromAmount: order.fromAmount,
+      toAmount: order.toAmount,
+      address: order.toAddress,
       timestamp: moment().unix(),
-    });
+      price: price,
+    };
 
+    orders.push(newOrder);
     const data = JSON.stringify(orders);
+    orders.pop();
 
-    this.storageService.store(StorageType.CLIENT, this.STORAGE_KEY, data).subscribe();
+    return this.storageService.store(StorageType.CLIENT, this.STORAGE_KEY, data)
+      .do(() => orders.push(newOrder));
   }
 }

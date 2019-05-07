@@ -9,6 +9,8 @@ import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { AppConfig } from './app.config';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +25,10 @@ export class AppComponent implements OnInit {
     hwWalletService: HwWalletService,
     private bip38WordList: Bip39WordListService,
   ) {
+    if (environment.production) {
+      AppConfig.swaplabTests.activateTestMode = false;
+    }
+
     translateService.setDefaultLang('en');
     translateService.use('en');
 

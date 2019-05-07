@@ -1,6 +1,6 @@
 <app-loading-content
-  [isLoading]="!tradingPairs"
-  noDataText="exchange.offline"
+  [isLoading]="!tradingPairs && !problemGettingPairs"
+  [noDataText]="problemGettingPairs ? 'exchange.problem-connecting' : 'exchange.offline'"
   *ngIf="!activeTradingPair"
 ></app-loading-content>
 
@@ -27,7 +27,7 @@
     </div>
     <div class="form-field">
       <label for="toAmount">{{ 'exchange.you-get' | translate }}</label>
-      <div class="-inputs">
+      <div class="-inputs -not-allowed">
         <input type="text" [value]="toAmount" readonly id="toAmount">
         <div class="-input">
           <input type="text" [value]="toCoin" readonly>

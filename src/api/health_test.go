@@ -242,7 +242,7 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
-			require.Equal(t, uint32(2), r.UserVerifyTxn.BurnFactor)
+			require.Equal(t, uint32(10), r.UserVerifyTxn.BurnFactor)
 			require.Equal(t, uint32(32*1024), r.UserVerifyTxn.MaxTransactionSize)
 			require.Equal(t, uint8(3), r.UserVerifyTxn.MaxDropletPrecision)
 

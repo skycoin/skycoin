@@ -32,12 +32,12 @@
 		"wallet_api_enabled": true,
 		"gui_enabled": false,
 		"user_verify_transaction": {
-			"burn_factor": 2,
+			"burn_factor": 10,
 			"max_transaction_size": 32768,
 			"max_decimals": 3
 		},
 		"unconfirmed_verify_transaction": {
-			"burn_factor": 2,
+			"burn_factor": 10,
 			"max_transaction_size": 32768,
 			"max_decimals": 3
 		},

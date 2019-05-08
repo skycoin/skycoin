@@ -108,7 +108,7 @@ func TestMakeChangeOut(t *testing.T) {
 		require.Exactly(t, spendAmt[i].Coins, txOuts[i].Coins)
 	}
 
-	require.Exactly(t, uint64(9), chgOut.Hours)
+	require.Exactly(t, uint64(18), chgOut.Hours)
 	require.Exactly(t, uint64(1), txOuts[0].Hours)
 	require.Exactly(t, uint64(2), txOuts[1].Hours)
 }
@@ -156,7 +156,7 @@ func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
 	require.Equal(t, spendAmt[0].Addr, spendOut.Address.String())
 	require.Exactly(t, spendAmt[0].Coins, spendOut.Coins)
 
-	require.Exactly(t, uint64(149), chgOut.Hours)
+	require.Exactly(t, uint64(269), chgOut.Hours)
 	require.Exactly(t, uint64(1), spendOut.Hours)
 }
 
@@ -203,7 +203,7 @@ func TestMakeChangeOutCoinHourCap(t *testing.T) {
 	require.Equal(t, spendAmt[0].Addr, spendOut.Address.String())
 	require.Exactly(t, spendAmt[0].Coins, spendOut.Coins)
 
-	require.Exactly(t, uint64(900), chgOut.Hours)
+	require.Exactly(t, uint64(2100), chgOut.Hours)
 	require.Exactly(t, uint64(600), spendOut.Hours)
 }
 

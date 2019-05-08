@@ -14,7 +14,15 @@ import (
 
 // ContentSecurityPolicy represents the value of content-security-policy
 // header in http response
-const ContentSecurityPolicy = "script-src 'self' 127.0.0.1"
+const ContentSecurityPolicy = "default-src 'self'" +
+	"; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc" +
+	"; img-src 'self' 'unsafe-inline' data:" +
+	"; style-src 'self' 'unsafe-inline'" +
+	"; object-src	'none'" +
+	"; form-action 'none'" +
+	"; frame-ancestors 'none'" +
+	"; block-all-mixed-content" +
+	"; base-uri 'self'"
 
 // CSPHandler enables CSP
 func CSPHandler(handler http.Handler) http.Handler {

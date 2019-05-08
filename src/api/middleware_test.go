@@ -209,12 +209,12 @@ func TestContentSecurityPolicy(t *testing.T) {
 		enableGUI       bool
 	}{
 		{
-			name:            "enable CSP GET /",
-			endpoint:        "/",
-			enableCSP:       true,
-			appLoc:          "../gui/static/dist",
-			expectCSPHeader: "script-src 'self' 127.0.0.1",
-			enableGUI:       true,
+			name:      "enable CSP GET /",
+			endpoint:  "/",
+			enableCSP: true,
+			appLoc:    "../gui/static/dist",
+			expectCSPHeader: "default-src 'self'; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc; img-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline'; object-src	'none'; form-action 'none'; frame-ancestors 'none'; block-all-mixed-content; base-uri 'self'",
+			enableGUI: true,
 		},
 		{
 			name:            "disable CSP GET /",

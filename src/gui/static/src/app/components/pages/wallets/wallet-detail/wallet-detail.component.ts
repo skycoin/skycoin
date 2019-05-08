@@ -73,7 +73,30 @@ export class WalletDetailComponent implements OnDestroy {
         .subscribe(response => {
           if (response) {
             this.howManyAddresses = response;
-            this.continueNewAddress();
+
+            let lastWithBalance = 0;
+            this.wallet.addresses.forEach((address, i) => {
+              if (address.coins.isGreaterThan(0)) {
+                lastWithBalance = i;
+              }
+            });
+
+            if ((this.wallet.addresses.length - (lastWithBalance + 1)) + response < 20) {
+              this.continueNewAddress();
+            } else {
+              const confirmationData: ConfirmationData = {
+                text: 'wallet.add-many-confirmation',
+                headerText: 'confirmation.header-text',
+                confirmButtonText: 'confirmation.confirm-button',
+                cancelButtonText: 'confirmation.cancel-button',
+              };
+
+              showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+                if (confirmationResult) {
+                  this.continueNewAddress();
+                }
+              });
+            }
           }
         });
     } else {
@@ -201,7 +224,7 @@ export class WalletDetailComponent implements OnDestroy {
       dialogRef.componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.walletService.addAddress(this.wallet, this.howManyAddresses, passwordDialog.password)
-            .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
+            .subscribe(() => passwordDialog.close(), error => passwordDialog.error(error));
         });
     } else {
 

@@ -7,15 +7,16 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
 import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { ISubscription } from 'rxjs/Subscription';
+import { ISubscription, Subscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
-import { Observable } from 'rxjs/Observable';
-import { PreviewTransaction, Wallet, ConfirmationData } from '../../../../app.datatypes';
+import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { showConfirmationModal } from '../../../../utils';
+import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
+import { PriceService } from '../../../../services/price.service';
 
 @Component({
   selector: 'app-send-form',
@@ -23,6 +24,9 @@ import { showConfirmationModal } from '../../../../utils';
   styleUrls: ['./send-form.component.scss'],
 })
 export class SendFormComponent implements OnInit, OnDestroy {
+
+  public static readonly MaxUsdDecimal = 6;
+
   @ViewChild('previewButton') previewButton: ButtonComponent;
   @ViewChild('sendButton') sendButton: ButtonComponent;
   @Input() formData: any;
@@ -32,21 +36,32 @@ export class SendFormComponent implements OnInit, OnDestroy {
   transactions = [];
   previewTx: boolean;
   busy = false;
+  doubleButtonActive = DoubleButtonActive;
+  selectedCurrency = DoubleButtonActive.LeftButton;
+  value: number;
+  valueGreaterThanBalance = false;
+  price: number;
 
-  private formSubscription: ISubscription;
+  private subscriptions: Subscription;
   private processingSubscription: ISubscription;
   private syncCheckSubscription: ISubscription;
 
   constructor(
     public formBuilder: FormBuilder,
+    public blockchainService: BlockchainService,
     public walletService: WalletService,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
     private navbarService: NavBarService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
-    private blockchainService: BlockchainService,
-  ) {}
+    priceService: PriceService,
+  ) {
+    this.subscriptions = priceService.price.subscribe(price => {
+      this.price = price;
+      this.updateValue();
+    });
+  }
 
   ngOnInit() {
     this.navbarService.showSwitch('send.simple', 'send.advanced');
@@ -57,8 +72,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
     if (this.processingSubscription && !this.processingSubscription.closed) {
       this.processingSubscription.unsubscribe();
     }
+    this.subscriptions.unsubscribe();
     this.closeSyncCheckSubscription();
-    this.formSubscription.unsubscribe();
     this.navbarService.hideSwitch();
     this.snackbar.dismiss();
   }
@@ -73,11 +88,49 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.checkBeforeSending();
   }
 
+  changeActiveCurrency(value) {
+    this.selectedCurrency = value;
+    this.updateValue();
+    this.form.get('amount').updateValueAndValidity();
+  }
+
+  private updateValue() {
+    if (!this.price) {
+      this.value = null;
+
+      return;
+    }
+    if (!this.form || this.validateAmount(this.form.get('amount') as FormControl) !== null || this.form.get('amount').value * 1 === 0) {
+      this.value = -1;
+
+      return;
+    }
+
+    const coinsInWallet = this.form.get('wallet').value && this.form.get('wallet').value.coins ? this.form.get('wallet').value.coins : -1;
+
+    this.valueGreaterThanBalance = false;
+    if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+      this.value = new BigNumber(this.form.get('amount').value).multipliedBy(this.price).decimalPlaces(2).toNumber();
+      if (coinsInWallet > 0 && parseFloat(this.form.get('amount').value) > coinsInWallet) {
+        this.valueGreaterThanBalance = true;
+      }
+    } else {
+      this.value = new BigNumber(this.form.get('amount').value).dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals).toNumber();
+      if (coinsInWallet > 0 && this.value > coinsInWallet) {
+        this.valueGreaterThanBalance = true;
+      }
+    }
+  }
+
   private checkBeforeSending() {
+    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
+      return;
+    }
+
     this.closeSyncCheckSubscription();
     this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
       if (synchronized) {
-        this.unlockAndSend();
+        this.prepareTransaction();
       } else {
         this.showSynchronizingWarning();
       }
@@ -94,21 +147,17 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
-        this.unlockAndSend();
+        this.prepareTransaction();
       }
     });
   }
 
-  private unlockAndSend() {
-    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
-      return;
-    }
-
+  private prepareTransaction() {
     this.snackbar.dismiss();
     this.previewButton.resetState();
     this.sendButton.resetState();
 
-    if (this.form.value.wallet.encrypted && !this.form.value.wallet.isHardware) {
+    if (this.form.value.wallet.encrypted && !this.form.value.wallet.isHardware && !this.previewTx) {
       const config = new MatDialogConfig();
       config.data = {
         wallet: this.form.value.wallet,
@@ -119,7 +168,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
           this.createTransaction(passwordDialog);
         });
     } else {
-      if (!this.form.value.wallet.isHardware) {
+      if (!this.form.value.wallet.isHardware || this.previewTx) {
         this.createTransaction();
       } else {
         this.showBusy();
@@ -143,40 +192,29 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private createTransaction(passwordDialog?: any) {
-    if (passwordDialog) {
-      passwordDialog.close();
-    }
-
     this.showBusy();
 
-    let createTxRequest: Observable<PreviewTransaction>;
+    this.processingSubscription = this.walletService.createTransaction(
+      this.form.value.wallet,
+      (this.form.value.wallet as Wallet).addresses.map(address => address.address),
+      null,
+      [{
+        address: this.form.value.address,
+        coins: this.selectedCurrency === DoubleButtonActive.LeftButton ? this.form.value.amount : this.value.toString(),
+      }],
+      {
+        type: 'auto',
+        mode: 'share',
+        share_factor: '0.5',
+      },
+      null,
+      passwordDialog ? passwordDialog.password : null,
+      this.previewTx,
+    ).subscribe(transaction => {
+        if (passwordDialog) {
+          passwordDialog.close();
+        }
 
-    if (!this.form.value.wallet.isHardware) {
-      createTxRequest = this.walletService.createTransaction(
-        this.form.value.wallet,
-        null,
-        null,
-        [{
-          address: this.form.value.address,
-          coins: this.form.value.amount,
-        }],
-        {
-          type: 'auto',
-          mode: 'share',
-          share_factor: '0.5',
-        },
-        null,
-        passwordDialog ? passwordDialog.password : null,
-      );
-    } else {
-      createTxRequest = this.walletService.createHwTransaction(
-        this.form.value.wallet,
-        this.form.value.address,
-        new BigNumber(this.form.value.amount),
-      );
-    }
-
-     this.processingSubscription = createTxRequest.subscribe(transaction => {
         if (!this.previewTx) {
           this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
             .subscribe(() => this.showSuccess(), error => this.showError(error));
@@ -186,6 +224,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
               wallet: this.form.value.wallet,
               address: this.form.value.address,
               amount: this.form.value.amount,
+              currency: this.selectedCurrency,
             },
             amount: new BigNumber(this.form.value.amount),
             to: [this.form.value.address],
@@ -195,6 +234,10 @@ export class SendFormComponent implements OnInit, OnDestroy {
         }
       },
       error => {
+        if (passwordDialog) {
+          passwordDialog.error(error);
+        }
+
         if (error && error.result) {
           this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
         } else {
@@ -228,21 +271,26 @@ export class SendFormComponent implements OnInit, OnDestroy {
       amount: ['', Validators.required],
     });
 
-    this.formSubscription = this.form.get('wallet').valueChanges.subscribe(value => {
-      const balance = value && value.coins ? value.coins : 0;
-
+    this.subscriptions.add(this.form.get('wallet').valueChanges.subscribe(value => {
       this.form.get('amount').setValidators([
         Validators.required,
-        Validators.max(balance),
-        this.validateAmount.bind(this),
+        this.validateAmountWithValue.bind(this),
       ]);
 
       this.form.get('amount').updateValueAndValidity();
-    });
+    }));
+
+    this.subscriptions.add(this.form.get('amount').valueChanges.subscribe(value => {
+      this.updateValue();
+    }));
 
     if (this.formData) {
       Object.keys(this.form.controls).forEach(control => {
-        this.form.get(control).setValue(this.formData.form[control]);
+        if (this.form.get(control)) {
+          this.form.get(control).setValue(this.formData.form[control]);
+        }
+
+        this.selectedCurrency = this.formData.form.currency;
       });
     }
   }
@@ -258,8 +306,35 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     const parts = amountControl.value.split('.');
 
-    if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
-      return { Invalid: true };
+    if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+      if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
+        return { Invalid: true };
+      }
+    } else {
+      if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimal) {
+        return { Invalid: true };
+      }
+    }
+
+    return null;
+  }
+
+  private validateAmountWithValue(amountControl: FormControl) {
+    const firstValidation = this.validateAmount(amountControl);
+    if (firstValidation) {
+      return firstValidation;
+    }
+
+    const coinsInWallet = this.form.get('wallet').value && this.form.get('wallet').value.coins ? this.form.get('wallet').value.coins : 0;
+    if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+      if (parseFloat(amountControl.value) > coinsInWallet) {
+        return { Invalid: true };
+      }
+    } else {
+      this.updateValue();
+      if (this.value > coinsInWallet) {
+        return { Invalid: true };
+      }
     }
 
     return null;
@@ -269,6 +344,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.form.get('wallet').setValue('');
     this.form.get('address').setValue('');
     this.form.get('amount').setValue('');
+    this.selectedCurrency = DoubleButtonActive.LeftButton;
   }
 
   private closeSyncCheckSubscription() {

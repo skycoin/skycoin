@@ -1,17 +1,13 @@
 package wallet
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // Wallets wallets map
@@ -76,28 +72,6 @@ func loadWallet(fn string) (*Wallet, error) {
 	w.setFilename(filepath.Base(fn))
 
 	return w, nil
-}
-
-func backupWltFile(src, dst string) error { // nolint: deadcode,unused,megacheck
-	if _, err := os.Stat(dst); err == nil {
-		return fmt.Errorf("%v file already exist", dst)
-	}
-
-	b, err := ioutil.ReadFile(src)
-	if err != nil {
-		return err
-	}
-
-	n, err := file.CopyFile(dst, bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-
-	// check if the content bytes are equal.
-	if n != int64(len(b)) {
-		return errors.New("copy file failed")
-	}
-	return nil
 }
 
 // add add walet to current wallet

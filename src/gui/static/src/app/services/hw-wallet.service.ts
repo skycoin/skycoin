@@ -122,12 +122,12 @@ export class HwWalletService {
       });
 
       window['ipcRenderer'].on('hwSignTransactionResponse', (event, requestId, result) => {
-        this.dispatchEvent(requestId, result, true);
-
         if (this.signTransactionDialog) {
           this.signTransactionDialog.close();
           this.signTransactionDialog = null;
         }
+
+        this.dispatchEvent(requestId, result, true);
       });
 
       const data: EventData[] = [
@@ -226,10 +226,6 @@ export class HwWalletService {
     });
   }
 
-  getMaxAddresses(): Observable<string[]> {
-    return this.getAddressesRecursively(AppConfig.maxHardwareWalletAddresses - 1, []);
-  }
-
   generateMnemonic(wordCount: number): Observable<OperationResult> {
     return this.cancelLastAction().flatMap(() => {
       const requestId = this.createRandomIdAndPrepare();
@@ -318,26 +314,6 @@ export class HwWalletService {
     return new Observable(observer => {
       this.eventsObservers.set(requestId, observer);
     });
-  }
-
-  private getAddressesRecursively(index: number, addresses: string[]): Observable<string[]> {
-    let chain: Observable<any>;
-    if (index > 0) {
-      chain = this.getAddressesRecursively(index - 1, addresses).first();
-    } else {
-      chain = Observable.of(1);
-    }
-
-    chain = chain.flatMap(() => {
-      return this.getAddresses(1, index)
-      .map(response => {
-        addresses.push(response.rawResponse[0]);
-
-        return addresses;
-      });
-    });
-
-    return chain;
   }
 
   private createRandomIdAndPrepare() {

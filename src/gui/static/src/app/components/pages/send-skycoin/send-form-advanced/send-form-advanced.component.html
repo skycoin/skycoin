@@ -2,10 +2,10 @@
   <div class="form-field">
     <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
     <div class="-select">
-      <select formControlName="wallet" id="wallets">
+      <select formControlName="wallet" id="wallets" [attr.disabled]="busy ? 'true' : null" [ngClass]="{'element-disabled' : busy}">
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
         <ng-container *ngFor="let wallet of walletService.all() | async">
-          <option *ngIf="!wallet.isHardware" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
+          <option [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
             {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
             ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
           </option>
@@ -16,7 +16,7 @@
 
   <ng-container *ngIf="wallet">
     <div class="form-field">
-      <label for="addresses" (click)="selectAddresses.open()">
+      <label [for]="!busy ? 'addresses' : ''" (click)="!busy ? selectAddresses.open() : null">
         {{ 'send.addresses-label' | translate }}
         <mat-icon [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
       </label>
@@ -26,7 +26,9 @@
           formControlName="addresses"
           [compareWith]="addressCompare"
           id="addresses"
-          [placeholder]="'send.all-addresses' | translate">
+          [placeholder]="'send.all-addresses' | translate"
+          [attr.disabled]="busy ? 'true' : null"
+          [ngClass]="{'element-disabled' : busy}">
           <mat-option *ngFor="let addr of addresses" [value]="addr">
             {{ addr.address }} - {{ (addr.coins ? addr.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
             ({{ addr.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
@@ -42,7 +44,7 @@
     </div>
 
     <div class="form-field">
-      <label for="outputs" (click)="selectOutputs.open()">
+      <label [for]="!busy ? 'outputs' : null" (click)="!busy ? selectOutputs.open() : null">
         {{ 'send.outputs-label' | translate }}
         <mat-icon [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
         <mat-spinner *ngIf="loadingUnspentOutputs"></mat-spinner>
@@ -53,7 +55,9 @@
           formControlName="outputs"
           [compareWith]="outputCompare"
           id="outputs"
-          [placeholder]="'send.all-outputs' | translate">
+          [placeholder]="'send.all-outputs' | translate"
+          [attr.disabled]="busy ? 'true' : null"
+          [ngClass]="{'element-disabled' : busy}">
           <mat-option *ngFor="let out of unspentOutputs" [value]="out">
             {{ out.hash }} - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
             ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
@@ -91,29 +95,47 @@
   </ng-container>
 
   <div class="form-field">
-    <label for="destination">
+    <label for="destination" class="destinations-label">
       {{ 'send.destinations-label' | translate }}
       <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
     </label>
+    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ disabled: busy }">
+      <app-double-button
+        [leftButtonText]="'common.coin-id' | translate"
+        [rightButtonText]="'common.usd' | translate"
+        className="light small"
+        [activeButton]="selectedCurrency"
+        (onStateChange)="changeActiveCurrency($event)"
+      ></app-double-button>
+    </div>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
         <div class="col-lg-5 col-md-4">
-          <input formControlName="address" [id]="i === 0 ? 'destination' : ''">
+          <input formControlName="address" [id]="i === 0 ? 'destination' : ''" [attr.disabled]="busy ? 'true' : null">
         </div>
         <div class="col-md-3">
           <div class="-input-addon">
-            <input formControlName="coins">
-            <span>{{ 'common.coin-id' | translate }}</span>
+            <input formControlName="coins" [attr.disabled]="busy ? 'true' : null">
+            <span>{{ (selectedCurrency === doubleButtonActive.LeftButton ? 'common.coin-id' : 'common.usd') | translate }}</span>
+          </div>
+          <div class="coins-value-label" *ngIf="price">
+            <span *ngIf="values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
+            <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
+              &#x007e; {{ values[i] | number:'1.0-2' }} {{ 'common.usd' | translate }}
+            </span>
+            <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
+              &#x007e; {{ values[i] | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
+            </span>
           </div>
         </div>
         <div class="col-lg-3 col-md-4">
           <div [ngClass]="{ '-input-addon': true, '-hidden': autoHours }">
-            <input formControlName="hours">
+            <input formControlName="hours" [attr.disabled]="busy ? 'true' : null">
             <span>{{ 'common.coin-hours' | translate }}</span>
           </div>
         </div>
-        <div class="col-md-1 -icons">
+        <div class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
           <img *ngIf="i === 0" (click)="addDestination()" src="../../../../../assets/img/plus-green.png" alt="plus">
           <img *ngIf="i !== 0" (click)="removeDestination(i)" src="../../../../../assets/img/minus-grey.png" alt="minus">
         </div>
@@ -125,17 +147,17 @@
     <label for="change-address">
       {{ 'send.change-address-label' | translate }}
       <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
-      <span class="-options" (click)="selectChangeAddress($event)">
+      <span class="-options" (click)="selectChangeAddress($event)" [ngClass]="{'element-disabled' : busy}">
         {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
       </span>
     </label>
-    <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()">
+    <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()" [attr.disabled]="busy ? 'true' : null">
   </div>
 
-  <div class="-autohours">
+  <div class="-autohours" [ngClass]="{'element-disabled' : busy}">
     <div class="row">
       <div class="col-xl-4 col-lg-5 col-md-7">
-        <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
+        <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours" [attr.disabled]="busy ? 'true' : null">
           <div class="-space-between">
             <span>{{ 'send.hours-allocation-label' | translate }}</span>
             <span class="-options" (mousedown)="$event.stopPropagation();" (click)="toggleOptions($event)" *ngIf="autoHours">
@@ -158,6 +180,7 @@
           </label>
           <mat-slider class="-slider" min="0.1" max="1" step="0.01" id="value"
                       (input)="setShareValue($event)" [value]="autoShareValue"
+                      [attr.disabled]="busy ? 'true' : null"
           ></mat-slider>
         </div>
       </div>

@@ -1,0 +1,13 @@
+<app-modal [headline]="'title.order-history' | translate" [dialog]="dialogRef">
+  <div class="wallet-container select-address-theme" *ngFor="let order of orders">
+    <button mat-button color="primary" (click)="select(order)">
+      <div class="wrapper">
+        <div class="info">
+          <div>{{ order.fromAmount }} {{ order.pair }}</div>
+          <div class="grey">{{ order.timestamp | dateTime }}</div>
+        </div>
+        <div class="action">{{ 'exchange.history-details' | translate }}</div>
+      </div>
+    </button>
+  </div>
+</app-modal>

@@ -457,10 +457,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private createTransaction(passwordDialog?: any) {
-    if (passwordDialog) {
-      passwordDialog.close();
-    }
-
     this.showBusy();
 
     const selectedAddresses = this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0 ?
@@ -472,47 +468,53 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.processingSubscription = this.walletService.createTransaction(
         this.form.value.wallet,
         selectedAddresses ? selectedAddresses : (this.form.value.wallet as Wallet).addresses.map(address => address.address),
-      selectedOutputs,
-      this.destinations,
-      this.hoursSelection,
-      this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
-      passwordDialog ? passwordDialog.password : null,
+        selectedOutputs,
+        this.destinations,
+        this.hoursSelection,
+        this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
+        passwordDialog ? passwordDialog.password : null,
         this.previewTx,
       ).subscribe(transaction => {
+        if (passwordDialog) {
+          passwordDialog.close();
+        }
+
         if (!this.previewTx) {
             this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
               .subscribe(() => this.showSuccess(), error => this.showError(error));
           } else {
-        let amount = new BigNumber('0');
-        this.destinations.map(destination => amount = amount.plus(destination.coins));
+          let amount = new BigNumber('0');
+          this.destinations.map(destination => amount = amount.plus(destination.coins));
 
-        this.onFormSubmitted.emit({
-          form: {
-            wallet: this.form.get('wallet').value,
-            addresses: this.form.get('addresses').value,
-            changeAddress: this.form.get('changeAddress').value,
-            destinations: this.destinations,
-            hoursSelection: this.hoursSelection,
-            autoOptions: this.autoOptions,
-            allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
-            outputs: this.form.get('outputs').value,
-            currency: this.selectedCurrency,
-          },
-          amount: amount,
-          to: this.destinations.map(d => d.address),
-          transaction,
-        });
-            this.busy = false;
-          }
-        },
-        error => {
-          if (error && error.result) {
-            this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
-          } else {
-            this.showError(error);
-          }
-        },
-      );
+          this.onFormSubmitted.emit({
+            form: {
+              wallet: this.form.get('wallet').value,
+              addresses: this.form.get('addresses').value,
+              changeAddress: this.form.get('changeAddress').value,
+              destinations: this.destinations,
+              hoursSelection: this.hoursSelection,
+              autoOptions: this.autoOptions,
+              allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
+              outputs: this.form.get('outputs').value,
+              currency: this.selectedCurrency,
+            },
+            amount: amount,
+            to: this.destinations.map(d => d.address),
+            transaction,
+          });
+          this.busy = false;
+        }
+      }, error => {
+        if (passwordDialog) {
+          passwordDialog.error(error);
+        }
+
+        if (error && error.result) {
+          this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
+        } else {
+          this.showError(error);
+        }
+      });
   }
 
   private resetForm() {

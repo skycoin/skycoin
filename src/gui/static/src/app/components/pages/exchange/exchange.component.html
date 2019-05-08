@@ -1,0 +1,34 @@
+<app-header [headline]="'title.exchange' | translate"></app-header>
+<div class="container">
+  <div class="-paper">
+    <app-exchange-create
+      *ngIf="!order"
+      (submitted)="showStatus($event)"
+    ></app-exchange-create>
+
+    <app-exchange-status
+      *ngIf="order"
+      [order]="order"
+    ></app-exchange-status>
+  </div>
+  <div class="-contact">
+    <div>
+      <span *ngIf="hasHistory">
+        <a href="#" (click)="showHistory($event)">{{ 'exchange.history' | translate }}</a>
+      </span>
+    </div>
+    <div>
+      <span>
+        {{ 'exchange.need-help' | translate }}
+        <a href="https://swaplabcc.freshdesk.com/support/home" target="_blank" rel="noreferrer nofollow">
+          {{ 'exchange.support-portal' | translate }}
+        </a>
+      </span>
+      <span>|</span>
+      <span>
+        {{ 'exchange.powered-by' | translate }}
+        <a href="https://swaplab.cc" target="_blank" rel="noreferrer nofollow">SWAPLAB.CC</a>
+      </span>
+    </div>
+  </div>
+</div>

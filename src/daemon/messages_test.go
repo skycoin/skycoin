@@ -53,15 +53,9 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message without extra bytes",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:          10000,
-				protocolVersion: 1,
-				connectionIntroduced: &connection{
-					Addr: "121.121.121.121:6000",
-					ConnectionDetails: ConnectionDetails{
-						ListenPort: 6000,
-						Outgoing:   true,
-					},
-				},
+				mirror:           10000,
+				protocolVersion:  1,
+				disconnectReason: ErrDisconnectBlockchainPubkeyNotProvided,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -377,12 +371,37 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey:                  pubkey,
 				disconnectReason:        ErrDisconnectConnectedTwice,
 				connectionIntroducedErr: ErrConnectionIPMirrorExists,
-				connectionIntroduced:    nil,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:12345",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.26.0",
+							Remark:  "foo",
+						},
+					},
+				},
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.26.0",
+				Remark:  "foo",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 		{
@@ -394,12 +413,37 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey:                  pubkey,
 				disconnectReason:        ErrDisconnectPeerlistFull,
 				connectionIntroducedErr: pex.ErrPeerlistFull,
-				connectionIntroduced:    nil,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:12345",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.26.0",
+							Remark:  "foo",
+						},
+					},
+				},
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.26.0",
+				Remark:  "foo",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}),
 			},
 		},
 	}

@@ -229,3 +229,45 @@ the same after it if you want a white space after the value.
 
 - **\<br>**: this code means "new line". It is just a way to tell
 the code that the text after it should be added in a new line.
+
+# Make a translation available in the application
+
+Although creating the translation files is the most important step, it is
+necessary to make some additional changes before a translation is
+available in the application.
+
+The first thing to do is to add a bitmap in
+[src/gui/static/src/assets/img/lang](src/gui/static/src/assets/img/lang),
+with the flag that will be used to identify the language. The bitmap
+should be a .png file with transparent background and a size of 64x64
+pixels. However, the flag does not have to occupy all the space of the
+bitmap, but it should be 64 pixels wide and only 42 pixels high,
+centered. Please use as a reference the flags that are already in
+the folder.
+
+After adding the flag, you must modify the
+[src/gui/static/src/app/app.config.ts](src/gui/static/src/app/app.config.ts)
+file. In particular, you must add a new entry to the `languages` array,
+with the data about the language. The object you must add is similar
+to this:
+
+```
+{
+  code: 'en',
+  name: 'English',
+  iconName: 'en.png'
+}
+```
+
+The properties are:
+
+- `code`: 2 letter code that was assigned to the language. It must match
+the name given to the translation file.
+
+- `name`: Name of the language.
+
+- `iconName`: Name of the file with the flag, which was added in the
+previous step.
+
+Please use as a reference the data of the languages that have already
+been added to the `languages` array.

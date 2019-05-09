@@ -14,6 +14,11 @@
   <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
     <button mat-menu-item [routerLink]="['/settings/backup']">{{ 'title.backup' | translate }}</button>
     <a mat-menu-item href="https://explorer.skycoin.net" class="color-primary">{{ 'title.explorer' | translate }}</a>
+    <div class="separator"></div>
+    <div mat-menu-item *ngIf="language" (click)="changelanguage()">
+      <img [src]="'assets/img/lang/' + language.iconName" class="flag">
+      {{ language.name }}
+    </div>
   </mat-menu>
 
   <button mat-icon-button [matMenuTriggerFor]="settingsMenu">

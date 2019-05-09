@@ -1,4 +1,4 @@
-import { browser, by, element } from 'protractor';
+import { browser, by, element, protractor } from 'protractor';
 
 export class OnboardingCreatePage {
   navigateTo() {
@@ -7,6 +7,22 @@ export class OnboardingCreatePage {
 
   getHeaderText() {
     return element(by.css('.-header span')).getText();
+  }
+
+  selectLanguage() {
+    browser.sleep(1000);
+
+    return element(by.css('.e2e-language-modal')).isPresent().then(languageSelectionIsShown => {
+      if (!languageSelectionIsShown) {
+        return true;
+      }
+
+      return element.all(by.css('.e2e-language-modal .button')).first().click().then(() => {
+        const el = element(by.css('.e2e-language-modal'));
+
+        return browser.wait(protractor.ExpectedConditions.invisibilityOf(el), 5000).then(() => true);
+      });
+    });
   }
 
   getSafeguardIsShown() {

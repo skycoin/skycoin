@@ -8,6 +8,10 @@ describe('Onboarding', () => {
     expect<any>(page.getHeaderText()).toEqual('Create Wallet');
   });
 
+  it('should select language', () => {
+    expect<any>(page.selectLanguage()).toEqual(true);
+  });
+
   it('should load wallet', () => {
     expect<any>(page.loadWallet()).toEqual(true);
   });

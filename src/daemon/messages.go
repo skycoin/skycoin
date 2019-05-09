@@ -328,7 +328,6 @@ type IntroductionMessage struct {
 	c                    *gnet.MessageContext `enc:"-"`
 	UserAgent            useragent.Data       `enc:"-"`
 	UnconfirmedVerifyTxn params.VerifyTxn     `enc:"-"`
-	BcPubkey             cipher.PubKey        `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -347,7 +346,7 @@ type IntroductionMessage struct {
 	// MaxTxnSize          uint32 // max txn size for announced txns
 	// MaxDropletPrecision uint8 // maximum number of decimal places for announced txns
 	// UserAgent           string `enc:",maxlen=256"`
-	Extra []byte
+	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message

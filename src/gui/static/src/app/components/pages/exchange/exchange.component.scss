@@ -18,6 +18,7 @@
     margin: 0 5px;
     opacity: .5;
     display: inline-block;
+    vertical-align: middle;
 
     a {
       text-decoration: none;
@@ -30,14 +31,14 @@
   }
 
   mat-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
     vertical-align: middle;
   }
 
   .history-text {
+    font-size: 14px;
     opacity: 1;
-    vertical-align: middle;
   }
 }

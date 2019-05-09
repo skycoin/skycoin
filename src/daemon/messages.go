@@ -502,63 +502,66 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 	// v25 sends blockchain pubkey and user agent
 	// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
 	// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
-	if len(intro.Extra) > 0 {
-		var bcPubKey cipher.PubKey
-		if len(intro.Extra) < len(bcPubKey) {
-			logger.WithFields(logFields).Warning("Extra data length does not meet the minimum requirement")
-			return ErrDisconnectInvalidExtraData
-		}
-		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
+	if len(intro.Extra) == 0 {
+		logger.WithFields(logFields).Warning("Blockchain pubkey is not provided")
+		return ErrDisconnectBlockchainPubkeyNotProvided
+	}
 
-		if dc.BlockchainPubkey != bcPubKey {
-			logger.WithFields(logFields).WithFields(logrus.Fields{
-				"pubkey":       bcPubKey.Hex(),
-				"daemonPubkey": dc.BlockchainPubkey.Hex(),
-			}).Warning("Blockchain pubkey does not match")
-			return ErrDisconnectBlockchainPubkeyNotMatched
-		}
+	var bcPubKey cipher.PubKey
+	if len(intro.Extra) < len(bcPubKey) {
+		logger.WithFields(logFields).Warning("Extra data length does not meet the minimum requirement")
+		return ErrDisconnectInvalidExtraData
+	}
+	copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
-		i := len(bcPubKey)
-		if len(intro.Extra) < i+9 {
-			logger.WithFields(logFields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
-			return ErrDisconnectInvalidExtraData
-		}
-		if err := encoder.DeserializeRawExact(intro.Extra[i:i+9], &intro.UnconfirmedVerifyTxn); err != nil {
-			// This should not occur due to the previous length check
-			logger.Critical().WithError(err).WithFields(logFields).Warning("unconfirmedVerifyTxn params could not be deserialized")
-			return ErrDisconnectInvalidExtraData
-		}
+	if dc.BlockchainPubkey != bcPubKey {
+		logger.WithFields(logFields).WithFields(logrus.Fields{
+			"pubkey":       bcPubKey.Hex(),
+			"daemonPubkey": dc.BlockchainPubkey.Hex(),
+		}).Warning("Blockchain pubkey does not match")
+		return ErrDisconnectBlockchainPubkeyNotMatched
+	}
 
-		if err := intro.UnconfirmedVerifyTxn.Validate(); err != nil {
-			logger.WithError(err).WithFields(logFields).WithFields(logrus.Fields{
-				"burnFactor":          intro.UnconfirmedVerifyTxn.BurnFactor,
-				"maxTransactionSize":  intro.UnconfirmedVerifyTxn.MaxTransactionSize,
-				"maxDropletPrecision": intro.UnconfirmedVerifyTxn.MaxDropletPrecision,
-			}).Warning("Invalid unconfirmedVerifyTxn params")
-			switch err {
-			case params.ErrInvalidBurnFactor:
-				return ErrDisconnectInvalidBurnFactor
-			case params.ErrInvalidMaxTransactionSize:
-				return ErrDisconnectInvalidMaxTransactionSize
-			case params.ErrInvalidMaxDropletPrecision:
-				return ErrDisconnectInvalidMaxDropletPrecision
-			default:
-				return ErrDisconnectUnexpectedError
-			}
-		}
+	i := len(bcPubKey)
+	if len(intro.Extra) < i+9 {
+		logger.WithFields(logFields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
+		return ErrDisconnectInvalidExtraData
+	}
+	if err := encoder.DeserializeRawExact(intro.Extra[i:i+9], &intro.UnconfirmedVerifyTxn); err != nil {
+		// This should not occur due to the previous length check
+		logger.Critical().WithError(err).WithFields(logFields).Warning("unconfirmedVerifyTxn params could not be deserialized")
+		return ErrDisconnectInvalidExtraData
+	}
 
-		userAgentSerialized := intro.Extra[len(bcPubKey)+9:]
-		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
-		if err != nil {
-			logger.WithError(err).WithFields(logFields).Warning("Extra data user agent string could not be deserialized")
-			return ErrDisconnectInvalidExtraData
+	if err := intro.UnconfirmedVerifyTxn.Validate(); err != nil {
+		logger.WithError(err).WithFields(logFields).WithFields(logrus.Fields{
+			"burnFactor":          intro.UnconfirmedVerifyTxn.BurnFactor,
+			"maxTransactionSize":  intro.UnconfirmedVerifyTxn.MaxTransactionSize,
+			"maxDropletPrecision": intro.UnconfirmedVerifyTxn.MaxDropletPrecision,
+		}).Warning("Invalid unconfirmedVerifyTxn params")
+		switch err {
+		case params.ErrInvalidBurnFactor:
+			return ErrDisconnectInvalidBurnFactor
+		case params.ErrInvalidMaxTransactionSize:
+			return ErrDisconnectInvalidMaxTransactionSize
+		case params.ErrInvalidMaxDropletPrecision:
+			return ErrDisconnectInvalidMaxDropletPrecision
+		default:
+			return ErrDisconnectUnexpectedError
 		}
+	}
 
-		intro.UserAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
-		if err != nil {
-			logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
-			return ErrDisconnectInvalidUserAgent
-		}
+	userAgentSerialized := intro.Extra[len(bcPubKey)+9:]
+	userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
+	if err != nil {
+		logger.WithError(err).WithFields(logFields).Warning("Extra data user agent string could not be deserialized")
+		return ErrDisconnectInvalidExtraData
+	}
+
+	intro.UserAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
+	if err != nil {
+		logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
+		return ErrDisconnectInvalidUserAgent
 	}
 
 	return nil

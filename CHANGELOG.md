@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Increase the detail of error messages for invalid seeds sent to `POST /api/v2/wallet/seed/verify`
 - Move package `github.com/skycoin/skycoin/src/cipher/go-bip39` to `github.com/skycoin/skycoin/src/cipher/bip39`
 - The Content-Security-Policy header was modified to make it stricter
+- Update INTR message verify logic to reject connection if blockchain pubkey not matched or provided
 
 ### Removed
 

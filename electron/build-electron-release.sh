@@ -60,7 +60,7 @@ if [ -e "mac" ]; then
         mv "${PDT_NAME}-${APP_VERSION}.dmg" "../${PKG_NAME}-${APP_VERSION}-gui-electron-osx-x64.dmg"
     elif [ -e "${PDT_NAME}.app" ]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            tar czf "../${PKG_NAME}-${APP_VERSION}-gui-electron-osx-x64.zip" "${PDT_NAME}.app"
+            rm -rf "${PDT_NAME}.app"
         elif [[ "$OSTYPE" == "linux"* ]]; then
             tar czf "../${PKG_NAME}-${APP_VERSION}-gui-electron-osx-x64.zip" --owner=0 --group=0 "${PDT_NAME}.app"
         fi

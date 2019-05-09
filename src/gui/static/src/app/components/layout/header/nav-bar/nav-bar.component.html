@@ -13,7 +13,7 @@
       <span>{{ 'title.history' | translate }}</span>
     </div>
     <div class="flex-fill"></div>
-    <div class="-button -low-opacity" routerLink="/exchange" routerLinkActive="no-opacity">
+    <div class="-button -low-opacity" routerLink="/exchange" routerLinkActive="no-opacity" *ngIf="exchangeEnabled">
       <img src="../../../../../assets/img/money-gold.png">
       <span>{{ 'title.buy-coin' | translate }}</span>
     </div>

@@ -9,17 +9,18 @@ import {
 import { StorageService, StorageType } from './storage.service';
 import * as moment from 'moment';
 import 'rxjs/add/operator/repeatWhen';
-import { AppConfig } from '../app.config';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { ISubscription } from 'rxjs/Subscription';
 import { ApiService } from './api.service';
+import { environment } from '../../environments/environment';
 
 @Injectable()
 export class ExchangeService {
   private readonly API_ENDPOINT = 'https://swaplab.cc/api/v3';
-  private readonly API_KEY = 'w4bxe2tbf9beb72r';
   private readonly STORAGE_KEY = 'exchange-orders';
   private readonly LAST_VIEWED_STORAGE_KEY = 'last-viewed-order';
+  private readonly API_KEY = environment.swaplab.apiKey;
+  private readonly TEST_MODE = environment.swaplab.activateTestMode;
 
   lastViewedOrderLoaded: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
@@ -68,11 +69,11 @@ export class ExchangeService {
   }
 
   status(id: string, devForceState?: string): Observable<ExchangeOrder> {
-    if (AppConfig.swaplabTests.activateTestMode && !devForceState) {
+    if (this.TEST_MODE && !devForceState) {
       devForceState = 'user_waiting';
     }
 
-    return this.post('orders/status', { id }, AppConfig.swaplabTests.activateTestMode ? { status: devForceState } : null)
+    return this.post('orders/status', { id }, this.TEST_MODE ? { status: devForceState } : null)
       .retryWhen((err) => {
         return err.flatMap(response => {
           if (response instanceof HttpErrorResponse && response.status === 404) {
@@ -105,7 +106,7 @@ export class ExchangeService {
   }
 
   private buildUrl(url: string) {
-    if (!AppConfig.swaplabTests.activateTestMode || url === 'trading_pairs') {
+    if (!this.TEST_MODE || url === 'trading_pairs') {
       return `${this.API_ENDPOINT}/${url}`;
     }
 

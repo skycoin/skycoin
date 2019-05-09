@@ -5,9 +5,9 @@ import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { ISubscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
-import { AppConfig } from '../../../../app.config';
 import { showConfirmationModal } from '../../../../utils';
 import { BlockchainService } from '../../../../services/blockchain.service';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-exchange-status',
@@ -15,7 +15,8 @@ import { BlockchainService } from '../../../../services/blockchain.service';
   styleUrls: ['./exchange-status.component.scss'],
 })
 export class ExchangeStatusComponent implements OnDestroy {
-
+  private readonly TEST_MODE = environment.swaplab.activateTestMode;
+  private readonly TEST_ERROR = environment.swaplab.endStatusInError;
   readonly statuses = [
     'user_waiting',
     'market_waiting_confirmations',
@@ -138,14 +139,14 @@ export class ExchangeStatusComponent implements OnDestroy {
 
     const fromAmount = this._orderDetails.fromAmount;
 
-    if (AppConfig.swaplabTests.activateTestMode && AppConfig.swaplabTests.endStatusInError && this.testStatusIndex === this.statuses.length - 2) {
+    if (this.TEST_MODE && this.TEST_ERROR && this.testStatusIndex === this.statuses.length - 2) {
       this.testStatusIndex = this.statuses.length - 1;
     }
 
     this.subscription = Observable.of(0).delay(delay).flatMap(() => {
       return this.exchangeService.status(
-        !AppConfig.swaplabTests.activateTestMode ? this._orderDetails.id : '4729821d-390d-4ef8-a31e-2465d82a142f',
-        !AppConfig.swaplabTests.activateTestMode ? null : this.statuses[this.testStatusIndex++],
+        !this.TEST_MODE ? this._orderDetails.id : '4729821d-390d-4ef8-a31e-2465d82a142f',
+        !this.TEST_MODE ? null : this.statuses[this.testStatusIndex++],
       );
     }).subscribe(order => {
       this.order = { ...order, fromAmount };
@@ -153,7 +154,7 @@ export class ExchangeStatusComponent implements OnDestroy {
       this.exchangeService.lastViewedOrder = this._orderDetails;
 
       if (!this.exchangeService.isOrderFinished(order)) {
-        this.getStatus(AppConfig.swaplabTests.activateTestMode ? 3000 : 30000);
+        this.getStatus(this.TEST_MODE ? 3000 : 30000);
       } else {
         this.exchangeService.lastViewedOrder = null;
       }

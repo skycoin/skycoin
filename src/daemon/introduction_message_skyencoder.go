@@ -21,13 +21,8 @@ func encodeSizeIntroductionMessage(obj *IntroductionMessage) uint64 {
 	// obj.ProtocolVersion
 	i0 += 4
 
-	// omitempty
-	if len(obj.Extra) != 0 {
-
-		// obj.Extra
-		i0 += 4 + uint64(len(obj.Extra))
-
-	}
+	// obj.Extra
+	i0 += 4 + uint64(len(obj.Extra))
 
 	return i0
 }
@@ -65,21 +60,16 @@ func encodeIntroductionMessageToBuffer(buf []byte, obj *IntroductionMessage) err
 	// obj.ProtocolVersion
 	e.Int32(obj.ProtocolVersion)
 
-	// omitempty
-	if len(obj.Extra) != 0 {
-
-		// obj.Extra length check
-		if uint64(len(obj.Extra)) > math.MaxUint32 {
-			return errors.New("obj.Extra length exceeds math.MaxUint32")
-		}
-
-		// obj.Extra length
-		e.Uint32(uint32(len(obj.Extra)))
-
-		// obj.Extra copy
-		e.CopyBytes(obj.Extra)
-
+	// obj.Extra length check
+	if uint64(len(obj.Extra)) > math.MaxUint32 {
+		return errors.New("obj.Extra length exceeds math.MaxUint32")
 	}
+
+	// obj.Extra length
+	e.Uint32(uint32(len(obj.Extra)))
+
+	// obj.Extra copy
+	e.CopyBytes(obj.Extra)
 
 	return nil
 }
@@ -121,10 +111,6 @@ func decodeIntroductionMessage(buf []byte, obj *IntroductionMessage) (uint64, er
 
 	{
 		// obj.Extra
-
-		if len(d.Buffer) == 0 {
-			return uint64(len(buf) - len(d.Buffer)), nil
-		}
 
 		ul, err := d.Uint32()
 		if err != nil {

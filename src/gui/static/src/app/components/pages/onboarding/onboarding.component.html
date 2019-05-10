@@ -1,3 +1,7 @@
+<button mat-icon-button (click)="changelanguage()">
+  <img [src]="'assets/img/lang/' + language.iconName" class="flag">
+</button>
+
 <app-onboarding-create-wallet
   *ngIf="step === 1"
   (onLabelAndSeedCreated)="onLabelAndSeedCreated($event)"

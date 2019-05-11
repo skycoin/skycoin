@@ -20,7 +20,7 @@ export class StorageService {
       params.key = key;
     }
 
-    return this.apiService.get('data', params, { v2: true });
+    return this.apiService.get('data', params, { }, true);
   }
 
   store(type: StorageType, key: string, value: string) {

@@ -6,11 +6,12 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
+import * as moment from 'moment';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ExchangeService } from '../../../../services/exchange.service';
-import { ExchangeOrder, TradingPair } from '../../../../app.datatypes';
-import { ISubscription } from 'rxjs/Subscription';
+import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
+import { ISubscription, Subscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/merge';
 import { MatDialog, MatDialogConfig, MatSnackBar } from '@angular/material';
 import { showSnackbarError } from '../../../../utils/errors';
@@ -18,7 +19,8 @@ import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/se
 import { WalletService } from '../../../../services/wallet.service';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/switchMap';
-import { ApiService } from '../../../../services/api.service';
+import { BlockchainService } from '../../../../services/blockchain.service';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-exchange-create',
@@ -31,21 +33,28 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   readonly toCoin = 'SKY';
 
   @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
-  @Output() submitted = new EventEmitter<ExchangeOrder>();
+  @Output() submitted = new EventEmitter<StoredExchangeOrder>();
   form: FormGroup;
   tradingPairs: TradingPair[];
   activeTradingPair: TradingPair;
+  problemGettingPairs = false;
 
   private agreement = false;
-  private subscription: ISubscription;
-  private decimals = 0;
+  private subscriptions: Subscription;
+  private exchangeSubscription: ISubscription;
+  private priceUpdateSubscription: ISubscription;
 
   get toAmount() {
     if (!this.activeTradingPair) {
       return 0;
     }
 
-    return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(this.decimals);
+    const fromAmount = this.form.get('fromAmount').value;
+    if (isNaN(fromAmount)) {
+      return 0;
+    } else {
+      return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(this.blockchainService.currentMaxDecimals);
+    }
   }
 
   get sendAmount() {
@@ -57,10 +66,11 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   constructor(
     private exchangeService: ExchangeService,
     private walletService: WalletService,
-    private apiService: ApiService,
     private formBuilder: FormBuilder,
     private snackbar: MatSnackBar,
     private dialog: MatDialog,
+    private blockchainService: BlockchainService,
+    private translateService: TranslateService,
   ) { }
 
   ngOnInit() {
@@ -69,8 +79,13 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.subscription.unsubscribe();
+    this.subscriptions.unsubscribe();
+    this.removeExchangeSubscription();
     this.snackbar.dismiss();
+
+    if (this.priceUpdateSubscription) {
+      this.priceUpdateSubscription.unsubscribe();
+    }
   }
 
   setAgreement(event) {
@@ -91,25 +106,55 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   exchange() {
+    if (!this.form.valid || this.exchangeButton.isLoading()) {
+      return;
+    }
+
     this.exchangeButton.resetState();
     this.exchangeButton.setLoading();
     this.exchangeButton.setDisabled();
 
     const amount = parseFloat(this.form.get('fromAmount').value);
 
-    this.exchangeService.exchange(
-      this.activeTradingPair.pair,
-      amount,
-      this.form.get('toAddress').value,
-    ).subscribe((order: ExchangeOrder) => {
-      this.exchangeService.lastOrder = { ...order, fromAmount: amount };
-      this.submitted.emit(order);
-    }, err => {
-      this.exchangeButton.resetState();
-      this.exchangeButton.setEnabled();
-      this.exchangeButton.setError(err);
-      showSnackbarError(this.snackbar, err);
+    this.removeExchangeSubscription();
+    this.exchangeSubscription = this.walletService.verifyAddress(this.form.get('toAddress').value).subscribe(addressIsValid => {
+      if (addressIsValid) {
+        this.exchangeSubscription = this.exchangeService.exchange(
+          this.activeTradingPair.pair,
+          amount,
+          this.form.get('toAddress').value,
+          this.activeTradingPair.price,
+        ).subscribe((order: ExchangeOrder) => {
+          this.submitted.emit({
+            id: order.id,
+            pair: order.pair,
+            fromAmount: order.fromAmount,
+            toAmount: order.toAmount,
+            address: order.toAddress,
+            timestamp: moment().unix(),
+            price: this.activeTradingPair.price,
+          });
+        }, err => {
+          this.exchangeButton.resetState();
+          this.exchangeButton.setEnabled();
+          this.exchangeButton.setError(err);
+          showSnackbarError(this.snackbar, err);
+        });
+      } else {
+        this.showInvalidAddress();
+      }
+    }, () => {
+      this.showInvalidAddress();
     });
+  }
+
+  private showInvalidAddress() {
+    this.exchangeButton.resetState();
+    this.exchangeButton.setEnabled();
+
+    const errMsg = this.translateService.instant('exchange.invalid-address');
+    this.exchangeButton.setError(errMsg);
+    showSnackbarError(this.snackbar, errMsg);
   }
 
   private createForm() {
@@ -119,36 +164,58 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       toAddress: ['', Validators.required],
     }, {
       validator: this.validate.bind(this),
-      asyncValidator: this.validateAddress.bind(this),
     });
 
-    this.subscription = this.form.get('fromCoin').valueChanges.subscribe(() => {
+    this.subscriptions = this.form.get('fromCoin').valueChanges.subscribe(() => {
       this.updateActiveTradingPair();
     });
   }
 
   private loadData() {
-    this.exchangeService.tradingPairs().subscribe(pairs => {
-      this.tradingPairs = [];
+    this.subscriptions.add(this.exchangeService.tradingPairs()
+      .retryWhen(errors => errors.delay(2000).take(10).concat(Observable.throw('')))
+      .subscribe(pairs => {
+        this.tradingPairs = [];
 
-      pairs.forEach(pair => {
-        if (pair.to === this.toCoin) {
-          this.tradingPairs.push(pair);
-        }
+        pairs.forEach(pair => {
+          if (pair.to === this.toCoin) {
+            this.tradingPairs.push(pair);
+          }
+        });
+
+        this.updateActiveTradingPair();
+        this.updatePrices();
+      }, () => {
+        this.problemGettingPairs = true;
+      }),
+    );
+  }
+
+  private updatePrices() {
+    this.priceUpdateSubscription = Observable.of(1).delay(60000).flatMap(() => this.exchangeService.tradingPairs())
+      .retryWhen(errors => errors.delay(60000))
+      .subscribe(pairs => {
+        pairs.forEach(pair => {
+          if (pair.to === this.toCoin) {
+            const alreadySavedPair = this.tradingPairs.find(oldPair => oldPair.from === pair.from);
+            if (alreadySavedPair) {
+              alreadySavedPair.price = pair.price;
+            }
+          }
+        });
+        this.updatePrices();
       });
-
-      this.updateActiveTradingPair();
-    });
-
-    this.apiService.getHealth().subscribe(res => {
-      this.decimals = res.user_verify_transaction.max_decimals;
-    });
   }
 
   private updateActiveTradingPair() {
     this.activeTradingPair = this.tradingPairs.find(p => {
       return p.from === this.form.get('fromCoin').value;
     });
+
+    if (!this.activeTradingPair && this.tradingPairs.length > 0) {
+      this.activeTradingPair = this.tradingPairs[0];
+      this.form.get('fromCoin').setValue(this.activeTradingPair.from);
+    }
   }
 
   private validate(group: FormGroup) {
@@ -183,16 +250,9 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  private validateAddress() {
-    const address = this.form.get('toAddress').value;
-
-    if (!address) {
-      return Observable.create({ address: true });
+  private removeExchangeSubscription() {
+    if (this.exchangeSubscription) {
+      this.exchangeSubscription.unsubscribe();
     }
-
-    return Observable
-      .timer(500)
-      .switchMap(() => this.walletService.verifyAddress(address))
-      .map(res => res ? null : { address : true });
   }
 }

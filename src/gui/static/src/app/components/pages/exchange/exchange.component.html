@@ -2,19 +2,20 @@
 <div class="container">
   <div class="-paper">
     <app-exchange-create
-      *ngIf="!order"
+      *ngIf="!currentOrderDetails && !loading"
       (submitted)="showStatus($event)"
     ></app-exchange-create>
 
     <app-exchange-status
-      *ngIf="order"
-      [order]="order"
+      *ngIf="currentOrderDetails && !loading"
+      [orderDetails]="currentOrderDetails"
+      (goBack)="goBack()"
     ></app-exchange-status>
   </div>
   <div class="-contact">
     <div>
-      <span *ngIf="hasHistory">
-        <a href="#" (click)="showHistory($event)">{{ 'exchange.history' | translate }}</a>
+      <span *ngIf="hasHistory" class="history">
+        <a href="#" (click)="showHistory($event)"><mat-icon>history</mat-icon> <span class="history-text">{{ 'exchange.history' | translate }}</span></a>
       </span>
     </div>
     <div>

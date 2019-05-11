@@ -103,7 +103,10 @@ export class StoredExchangeOrder {
   id: string;
   pair: string;
   fromAmount: number;
+  toAmount: number;
+  address: string;
   timestamp: number;
+  price: number;
 }
 
 export interface Output {

@@ -1,4 +1,4 @@
-<button mat-icon-button (click)="changelanguage()">
+<button mat-icon-button (click)="changelanguage()" *ngIf="language">
   <img [src]="'assets/img/lang/' + language.iconName" class="flag">
 </button>
 

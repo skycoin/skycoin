@@ -720,3 +720,26 @@ func TestVerifySignedHash(t *testing.T) {
 	err = VerifySignatureRecoverPubKey(badSig, h)
 	require.Equal(t, ErrInvalidSigPubKeyRecovery, err)
 }
+
+func TestHighSPointSigInvalid(t *testing.T) {
+	// Verify that signatures that were generated with forceLowS=false
+	// are not accepted as valid, to avoid a signature malleability case.
+	// Refer to secp256k1go's TestSigForceLowS for the reference test inputs
+
+	h := MustSHA256FromHex("DD72CBF2203C1A55A411EEC4404AF2AFB2FE942C434B23EFE46E9F04DA8433CA")
+
+	// This signature has a high S point (the S point is above the half-order of the curve)
+	sigHexHighS := "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bffadf317cc256cec28d90d5b2b7e1ce6a45cd5f3b10880ab5f99c389c66177d39a01"
+	s := MustSigFromHex(sigHexHighS)
+	err := VerifySignatureRecoverPubKey(s, h)
+
+	require.Error(t, err)
+	require.Equal(t, "Signature not valid for hash", err.Error())
+
+	// This signature has a low S point (the S point is below the half-order of the curve).
+	// It is equal to forceLowS(sigHighS).
+	sigHexLowS := "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bff520ce833da9313d726f2a4d481e3195a5dd8e935a6c7f4dc260ed4c66ebe6da700"
+	s2 := MustSigFromHex(sigHexLowS)
+	err = VerifySignatureRecoverPubKey(s2, h)
+	require.NoError(t, err)
+}

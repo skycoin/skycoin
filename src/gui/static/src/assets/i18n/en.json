@@ -436,6 +436,16 @@
     }
   },
 
+  "time-from-now": {
+    "few-seconds": "a few seconds ago",
+    "minute": "one minute ago",
+    "minutes": "{{time}} minutes ago",
+    "hour": "one hour ago",
+    "hours": "{{time}} hours ago",
+    "day": "one day ago",
+    "days": "{{time}} days ago"
+  },
+
   "exchange": {
     "you-send": "You send",
     "you-get": "You get (approx.)",

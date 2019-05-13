@@ -244,7 +244,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
 				require.Equal(t, totalCoins, coins)
 			},
-			code: 200,
+			code: http.StatusOK,
 		},
 		{
 			// send 0.003 coin to the second address,
@@ -288,7 +288,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				// Confirms the change coins are matched.
 				require.Equal(t, expectChangeCoins, changeCoins)
 			},
-			code: 200,
+			code: http.StatusOK,
 		},
 		{
 			name: "send to null address",
@@ -299,7 +299,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.Out[0].Address = cipher.Address{}
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates user constraint: Transaction output is sent to the null address",
 		},
 		{
@@ -313,7 +313,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.In[0] = hash
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: unspent output of 2f842b0fbf5ef2dd59c8b5127795f1e88bfa6b510a41c62eac28fc2006d279e3 does not exist",
 		},
 		{
@@ -327,7 +327,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Transaction output hours overflow",
 		},
 		{
@@ -339,7 +339,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: No inputs",
 		},
 		{
@@ -351,7 +351,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: No outputs",
 		},
 		{
@@ -362,7 +362,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Invalid number of signatures",
 		},
 		{
@@ -376,7 +376,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Duplicate spend",
 		},
 		{
@@ -386,7 +386,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.Type = 1
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: transaction type invalid",
 		},
 		{
@@ -397,7 +397,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Zero coin output",
 		},
 		{
@@ -408,7 +408,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.Out[1].Coins = 2
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Output coins overflow",
 		},
 		{
@@ -419,7 +419,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Incorrect transaction length",
 		},
 		{
@@ -433,7 +433,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.Length = size
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Duplicate output in transaction",
 		},
 		{
@@ -443,7 +443,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = testutil.RandSHA256(t)
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: InnerHash does not match computed hash",
 		},
 		{
@@ -454,7 +454,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Unsigned input in transaction",
 		},
 		{
@@ -466,7 +466,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Failed to recover pubkey from signature",
 		},
 		{
@@ -480,7 +480,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Signature not valid for output being spent",
 		},
 		{
@@ -495,7 +495,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Insufficient coins",
 		},
 		{
@@ -509,7 +509,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn = reSignTxnFunc(t, txn, txnRsp, w)
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Transactions may not destroy coins",
 		},
 		{
@@ -524,7 +524,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn = reSignTxnFunc(t, txn, txnRsp, w)
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates hard constraint: Insufficient coin hours",
 		},
 		{
@@ -543,7 +543,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn = reSignTxnFunc(t, txn, txnRsp, w)
 				return &txn
 			},
-			code: 400,
+			code: http.StatusBadRequest,
 			err:  "400 Bad Request - Transaction violates soft constraint: invalid amount, too many decimal places",
 		},
 	}
@@ -566,7 +566,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			txn := tc.createTxn(t)
 			txid, err := c.InjectTransaction(txn)
-			if tc.code != 200 {
+			if tc.code != http.StatusOK {
 				assertResponseError(t, err, tc.code, tc.err)
 				return
 			}

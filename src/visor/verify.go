@@ -80,7 +80,7 @@ type TxnSignedFlag int
 const (
 	// TxnSigned is used for signed transactions
 	TxnSigned TxnSignedFlag = 1
-	// TxnUnsigned is used for signed transactions
+	// TxnUnsigned is used for unsigned transactions
 	TxnUnsigned TxnSignedFlag = 2
 )
 

@@ -522,8 +522,6 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				txn.InnerHash = txn.HashInner()
 				// Sign the txn again
 				txn = reSignTxnFunc(t, txn, txnRsp, w)
-				l, _ := txn.Size()
-				t.Log("txn size:", l)
 				return &txn
 			},
 			code: 400,

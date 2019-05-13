@@ -304,7 +304,7 @@ export class WalletService {
       unspents: unspents,
       to: destinations,
       change_address: changeAddress,
-    }
+    };
 
     if (!useV2Endpoint) {
       params['unsigned'] = unsigned;

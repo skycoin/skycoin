@@ -100,6 +100,9 @@ import { LanguageService } from './services/language.service';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { ExchangeHistoryComponent } from './components/pages/exchange/exchange-history/exchange-history.component';
 import { StorageService } from './services/storage.service';
+import { CommonTextPipe } from './pipes/common-text.pipe';
+import { AmountPipe } from './pipes/amount.pipe';
+import { DecimalPipe } from '@angular/common';
 
 
 const ROUTES = [
@@ -232,6 +235,8 @@ const ROUTES = [
     HwConfirmAddressDialogComponent,
     SelectLanguageComponent,
     ExchangeHistoryComponent,
+    CommonTextPipe,
+    AmountPipe,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -309,6 +314,7 @@ const ROUTES = [
     Bip39WordListService,
     LanguageService,
     StorageService,
+    DecimalPipe,
   ],
   bootstrap: [AppComponent],
 })

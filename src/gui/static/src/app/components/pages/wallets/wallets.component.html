@@ -7,8 +7,8 @@
         <div class="-headers">
           <div class="-width-250">{{ (i === 0 ? 'wallet.hardware-wallet' : 'wallet.wallet') | translate }}</div>
           <div class="-flex-fill"></div>
-          <div class="-width-130 -text-right">{{ 'common.coin-id' | translate }}</div>
-          <div class="-width-130 -text-right">{{ 'common.coin-hours' | translate }}</div>
+          <div class="-width-130 -text-right">{{ 'coin' | commonText }}</div>
+          <div class="-width-130 -text-right">{{ 'hours' | commonText }}</div>
         </div>
 
         <div class="-wallets" *ngFor="let wallet of (i === 0 ? hardwareWallets : wallets)">

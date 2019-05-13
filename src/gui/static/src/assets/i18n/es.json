@@ -12,6 +12,7 @@
     "error": "Error",
     "fetch-version": "No ha sido posible verificar la última versión desde Github",
     "incorrect-password": "Contraseña incorrecta",
+    "error-decrypting": "Error al desencriptar la billetera",
     "api-disabled": "API desabilitada",
     "no-wallet": "La billetera no existe",
     "no-outputs": "No hay salidas no gastadas",
@@ -33,7 +34,10 @@
     "explorer": "Explorador de Skycoin",
     "seed": "Semilla de la Billetera",
     "qrcode": "Código QR",
-    "reset": "Restablecer contraseña"
+    "reset": "Restablecer contraseña",
+    "exchange": "Intercambiar",
+    "select-address": "Seleccionar Dirección",
+    "order-history": "Historial de órdenes"
   },
 
   "header": {
@@ -429,6 +433,57 @@
       "instructions": "Por favor confirme en la billetera de hardware si la dirección es:",
       "short-confirmation": "Dirección confirmada.",
       "confirmation": "Dirección confirmada. Por seguridad, puede volver a mostrar la dirección en la billetera de hardware usando la opción \"Confirmar dirección\", en el menú que puede mostrar presionando el botón a la derecha del balance de la direccion."
+    }
+  },
+
+  "time-from-now": {
+    "few-seconds": "hace pocos segundos",
+    "minute": "hace un minuto",
+    "minutes": "hace {{time}} minutos",
+    "hour": "hace una hora",
+    "hours": "hace {{time}} horas",
+    "day": "hace un día",
+    "days": "hace {{time}} días"
+  },
+
+  "exchange": {
+    "you-send": "Usted envía",
+    "you-get": "Usted recibe",
+    "to-address": "A la dirección de {{coin}}",
+    "price": "Tasa de cambio",
+    "time-15": "Duración del intercambio",
+    "exchange-button": "Intercambiar",
+    "min-amount": "Monto minimo:",
+    "max-amount": "Monto maximo:",
+    "agree-1": "Acepto los",
+    "agree-2": "Términos de Uso",
+    "agree-3": "y la ",
+    "agree-4": "Política de Privacidad",
+    "powered-by": "Manejado por",
+    "need-help": "¿Necesita ayuda?",
+    "support-portal": "Portal de soporte",
+    "history": "Historial de órdenes",
+    "history-details": "Detalles",
+    "order-not-found": "Orden no encontrada",
+    "status": "Estado",
+    "exchanging": "Intercambiando {{from}} por {{to}}",
+    "select": "Seleccionar",
+    "offline": "El servicio está temporalmente offline",
+    "statuses": {
+      "user-waiting": "Esperando el deposito. Por favor, envíe {{amount}} {{from}} a la dirección de intercambio",
+      "market-waiting-confirmations": "Esperando las confirmaciones de la transacción",
+      "market-confirmed": "Transacción aceptada",
+      "market-exchanged": "{{from}} intercambiado por {{to}}",
+      "market-withdraw-waiting": "Enviando {{to}} a su dirección",
+      "complete": "¡Intercambio completado!",
+      "error": "Se produjo un error"
+    },
+    "details": {
+      "exchange-addr": "Dirección de intercambio",
+      "exchange-addr-tag": "Tag que debe adjuntarse a la transacción",
+      "tx-id": "ID de la transacción",
+      "order-id": "ID de la orden",
+      "error-msg": "Mensaje de error"
     }
   }
 }

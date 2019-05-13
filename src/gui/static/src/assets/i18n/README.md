@@ -138,7 +138,7 @@ section. By doing so you will quikly know exactly what texts must be added,
 deleted or edited.
 
 After doing that, make all the required modifications in the `xx.json` file,
-this menans adding, deleting and modifying all the elements indicated by the
+this means adding, deleting and modifying all the elements indicated by the
 script. Please be sure to modify only what is required and to add any new
 element in the same position that it is in the `en.json` file. This process
 is manual, so be sure check all the changes before finishing.

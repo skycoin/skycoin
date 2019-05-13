@@ -6,22 +6,22 @@ const fs = require('fs');
 // Initial configuration
 /////////////////////////////////////////////
 
-console.log('Starting to check the languaje files.', '\n');
+console.log('Starting to check the language files.', '\n');
 
 // Load the current English file.
 if (!fs.existsSync('en.json')) {
-  exitWithError('Unable to find the English languaje file.');
+  exitWithError('Unable to find the English language file.');
 }
 let currentData = JSON.parse(fs.readFileSync('en.json', 'utf8'));
 
-// 2 charaters code of the languajes that will be checked.
+// 2 charaters code of the languages that will be checked.
 const langs = [];
 // If false, the code will only verify the differences in the elements (ignoring its contents) of the
 // base files and the files with the translations. If not, the code will also verify the differences
 // in the elements and contents of the base files and the current English file.
 let checkFull = false;
 
-// If a param was send, it must be "all" or the 2 charaters code of the languaje that must be checked.
+// If a param was send, it must be "all" or the 2 charaters code of the language that must be checked.
 // If a param is provided, checkFull is set to true.
 if (process.argv.length > 2) {
   if (process.argv.length > 3) {
@@ -38,7 +38,7 @@ if (process.argv.length > 2) {
   checkFull = true;
 }
 
-// If no languaje code was send as param, the code will check all languajes.
+// If no language code was send as param, the code will check all languages.
 if (langs.length === 0) {
   let localFiles = fs.readdirSync('./');
 
@@ -69,11 +69,11 @@ if (langs.length === 0) {
   });
 
   if (langs.length === 0) {
-    exitWithError('No languaje files to check.');
+    exitWithError('No language files to check.');
   }
 }
 
-console.log('Checking the following languajes:');
+console.log('Checking the following languages:');
 langs.forEach(lang => {
   console.log(lang);
 });
@@ -119,7 +119,7 @@ langs.forEach(lang => {
   let translationData = JSON.parse(fs.readFileSync(lang + '.json', 'utf8'));
 
   if (!fs.existsSync(lang + '_base.json')) {
-    exitWithError('Unable to find the ' + lang +  '_base.json languaje file.');
+    exitWithError('Unable to find the ' + lang +  '_base.json language file.');
   }
   let baseTranslationData = JSON.parse(fs.readFileSync(lang + '_base.json', 'utf8'));
 
@@ -189,7 +189,7 @@ function updateErrorSumary() {
   }
 }
 
-// Checks all arrays for errors. This loop is for the languajes.
+// Checks all arrays for errors. This loop is for the languages.
 for (let i = 0; i < baseFileOnly.length; i++) {
 
   // This loop if for checking all the arrays.
@@ -197,7 +197,7 @@ for (let i = 0; i < baseFileOnly.length; i++) {
     // If the array has elements, it means that errors were found.
     if (array[i].elements.length > 0) {
       updateErrorSumary();
-  
+
       // Show the appropriate error text according to the current array.
       if (idx === 0) {
         console.log('The \"' + baseFileOnly[i].lang + '_base.json\" base file has elements that are not present in \"' + baseFileOnly[i].lang + '.json\":');

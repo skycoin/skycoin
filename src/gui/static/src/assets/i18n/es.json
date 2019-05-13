@@ -448,7 +448,7 @@
 
   "exchange": {
     "you-send": "Usted envía",
-    "you-get": "Usted recibe",
+    "you-get": "Usted recibe (aprox.)",
     "to-address": "A la dirección de {{coin}}",
     "price": "Tasa de cambio",
     "time-15": "Duración del intercambio",
@@ -463,27 +463,44 @@
     "need-help": "¿Necesita ayuda?",
     "support-portal": "Portal de soporte",
     "history": "Historial de órdenes",
-    "history-details": "Detalles",
     "order-not-found": "Orden no encontrada",
     "status": "Estado",
     "exchanging": "Intercambiando {{from}} por {{to}}",
     "select": "Seleccionar",
     "offline": "El servicio está temporalmente offline",
+    "problem-connecting": "No se puede conectar con el servicio. Por favor, compruebe su conexión a Internet y vuelva a intentarlo más tarde.",
+    "invalid-address": "Dirección inválida.",
     "statuses": {
-      "user-waiting": "Esperando el deposito. Por favor, envíe {{amount}} {{from}} a la dirección de intercambio",
+      "user-waiting": "Esperando el deposito. Por favor, envíe {{amount}} {{from}} a la dirección de intercambio indicada más abajo",
+      "user-waiting-info": "El sistema está a la espera de que realice el depósito en la dirección de intercambio. El proceso de intercambio comenzará después de que se detecte el depósito y sea confirmado en la cadena de bloques. Si ya ha realizado el depósito, debería ser detectado en breve.",
       "market-waiting-confirmations": "Esperando las confirmaciones de la transacción",
+      "market-waiting-confirmations-info": "El depósito ya ha sido detectado y el sistema está esperando que sea confirmado en la cadena de bloques.",
       "market-confirmed": "Transacción aceptada",
+      "market-confirmed-info": "La transacción ya ha sido confirmada en la cadena de bloques. Haciendo los preparativos para realizar el intercambio pronto.",
       "market-exchanged": "{{from}} intercambiado por {{to}}",
+      "market-exchanged-info": "El intercambio se ha realizado. Los fondos serán transferidos a su dirección en un momento.",
       "market-withdraw-waiting": "Enviando {{to}} a su dirección",
+      "market-withdraw-waiting-info": "Se ha iniciado el proceso para enviar las monedas a su dirección.",
       "complete": "¡Intercambio completado!",
-      "error": "Se produjo un error"
+      "complete-info": "Los fondos han sido enviados con éxito a su dirección.",
+      "error": "Se produjo un error",
+      "error-info": "Hubo un error en la operación, puede encontrar más información más abajo. Si necesita ayuda, por favor guarde todos los datos de operación que se muestran más abajo y comuníquese con soporte técnico utilizando el enlace que se encuentra en la parte inferior derecha de esta página."
+    },
+    "history-window": {
+      "address": "Dirección",
+      "date": "Fecha"
     },
     "details": {
       "exchange-addr": "Dirección de intercambio",
-      "exchange-addr-tag": "Tag que debe adjuntarse a la transacción",
+      "exchange-addr-tag": "Payment ID o Destination Tag que debe usarse para la transacción",
       "tx-id": "ID de la transacción",
       "order-id": "ID de la orden",
-      "error-msg": "Mensaje de error"
+      "initial-price": "Tasa de cambio inicial",
+      "error-msg": "Mensaje de error",
+      "details": "Detalles",
+      "start-date": "Fecha de inicio",
+      "back": "Volver",
+      "back-alert": "La operación aún está en progreso. ¿Realmente desea volver al formulario? Puede ver el progreso de esta operación nuevamente presionando el botón \"Historial de pedidos\""
     }
   }
 }

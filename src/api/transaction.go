@@ -366,7 +366,8 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
 			switch err.(type) {
 			case visor.ErrTxnViolatesUserConstraint,
-				visor.ErrTxnViolatesHardConstraint:
+				visor.ErrTxnViolatesHardConstraint,
+				visor.ErrTxnViolatesSoftConstraint:
 				wh.Error400(w, err.Error())
 			default:
 				if daemon.IsBroadcastFailure(err) {

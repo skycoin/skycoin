@@ -2,6 +2,7 @@
   "common": {
     "coin-id": "SKY",
     "coin-hours": "币时",
+    "usd": "美元",
     "loading": "加载中...",
     "new": "新",
     "load": "加载"
@@ -11,6 +12,7 @@
     "error": "错误",
     "fetch-version": "无法从Github获取最新版本",
     "incorrect-password": "密码错误",
+    "error-decrypting": "解密钱包时出错",
     "api-disabled": "API禁用",
     "no-wallet": "无可支付钱包",
     "no-outputs": "无有效输出",
@@ -18,6 +20,7 @@
   },
 
   "title": {
+    "language": "选择语言",
     "wallets": "钱包",
     "send": "发送",
     "history": "历史",
@@ -31,7 +34,10 @@
     "explorer": "Skycoin探索",
     "seed": "钱包种子",
     "qrcode": "QR代码",
-    "reset": "重置密码"
+    "reset": "重置密码",
+    "exchange": "交易",
+    "select-address": "选择地址",
+    "order-history": "订单历史"
   },
 
   "header": {
@@ -113,6 +119,7 @@
     "delete-confirmation": "警告:钱包\"{{ name }}\"将从列表中删除。如你要再添加它,你将需要重新连接设备并打开硬件钱包的选项列表(按下面钱包列表中的\"硬件钱包\"按钮)。你想继续吗？",
     "delete-confirmation-check": "是的, 我想要删除钱包.",
     "max-hardware-wallets-error": "你的硬件钱包里的地址已经达到允许的最大值。",
+    "add-many-confirmation": "警告: 如果您想使用种子恢复钱包（您必须添加它们），如果您不使用以前的钱包，那么你必须手动添加）。你想继续吗？",
 
     "new": {
       "create-title": "创建钱包",
@@ -169,6 +176,7 @@
     "notes-label": "标注",
     "wallet-label": "钱包",
     "addresses-label": "地址",
+    "invalid-amount": "请输入一个有效数值",
     "addresses-help": "限制来自币和币时可以被发送到的地址",
     "all-addresses": "所选择钱包的所有地址",
     "outputs-label": "未耗尽 输出",
@@ -370,6 +378,7 @@
     "restore-seed" : {
       "text": "在开始前,请选择你想要恢复种子的单词数量。",
       "check-text": "您可以使用此选项进入种子，并检查它是否与硬件钱包中的种子一致。在开始之前,选择你的种子希望的单词数。",
+      "warning" : "警告: 为了避免可能发生的错误，请仅使用同一品牌/型号的硬件钱包创建种子.",
       "error-wrong-word": "错误:重新键入的单词与硬件钱包请求的单词不匹配。",
       "error-invalid-seed": "错误:种子无效。请务必按正确的顺序输入正确的单词。",
       "error-wrong-seed": "错误:种子是有效的，但与设备中的种子不匹配。"
@@ -424,6 +433,74 @@
       "instructions": "请确认硬件钱包，如果地址为:",
       "short-confirmation": "地址已确认",
       "confirmation": "地址已确认。为了安全, 你可以在硬件钱包上再次显示地址，选择 \"确认 地址\" 选项, 选项按钮在地址余额的右侧。"
+    }
+  },
+
+  "time-from-now": {
+    "few-seconds": "几秒钟之前",
+    "minute": "一分钟之前",
+    "minutes": "{{time}} 分钟之前",
+    "hour": "一小时之前",
+    "hours": "{{time}} 小时之前",
+    "day": "一天之前",
+    "days": "{{time}} 天之前"
+  },
+
+  "exchange": {
+    "you-send": "你发送",
+    "you-get": "你收到 (大约)",
+    "to-address": "到 {{coin}} 地址",
+    "price": "交易费率",
+    "time-15": "交易时间",
+    "exchange-button": "交易",
+    "min-amount": "最小数额:",
+    "max-amount": "最大数额:",
+    "agree-1": "我同意",
+    "agree-2": "使用条款",
+    "agree-3": "和",
+    "agree-4": "隐私政策",
+    "powered-by": "由 授权",
+    "need-help": "需要帮助?",
+    "support-portal": "支持版面",
+    "history": "订单历史",
+    "order-not-found": "未找到订单",
+    "status": "状态",
+    "exchanging": "{{from}}交易到 {{to}}",
+    "select": "选择",
+    "offline": "交易暂时下线",
+    "problem-connecting": "未能连接到服务器.请检查您的网络连接并稍后再试.",
+    "invalid-address": "无效地址.",
+    "statuses": {
+      "user-waiting": "等待存款. 请将{{amount}} {{from}}发送到下面显示的交易地址",
+      "user-waiting-info": "系统正在等待您将存款存入交易地址. 在检测到存款并在区块中确认后，交易过程将开始。如果您已经存入，应该很快就会检测到.",
+      "market-waiting-confirmations": "等待交易确认",
+      "market-waiting-confirmations-info": "已经检测到存款并且系统正在等待在区块链上被确认.",
+      "market-confirmed": "交易被接受",
+      "market-confirmed-info": "交易已经在区块链上被确认.准备马上执行交易.",
+      "market-exchanged": "已为{{to}} 交易 {{from}}",
+      "market-exchanged-info": "交易已经完成. 资金将很快转移到你的地址.",
+      "market-withdraw-waiting": "将 {{to}} 发送到你的地址",
+      "market-withdraw-waiting-info": "将币发送到你的地址的行为已经被发起.",
+      "complete": "交易已完成!",
+      "complete-info": "资金已经成功被发送到你的地址.",
+      "error": "发生错误",
+      "error-info": "运转过程中出现错误，你可以在下面找到更多信息.如果你需要帮助，请保存下面显示的所有数据并使用页面右下角的连接来联系技术支持."
+    },
+    "history-window": {
+      "address": "地址",
+      "date": "日期"
+    },
+    "details": {
+      "exchange-addr": "交易地址",
+      "exchange-addr-tag": "支付ID或交易必须用到的目的地标签",
+      "tx-id": "交易 ID",
+      "order-id": "订单 ID",
+      "initial-price": "初始交易率",
+      "error-msg": "错误信息 ",
+      "details": "详情",
+      "start-date": "开始日期",
+      "back": "返回",
+      "back-alert": "操作正在执行. 你真的想要返回到表格吗？你可以通过点击\"订单历史\"再次看到执行过程"
     }
   }
 }

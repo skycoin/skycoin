@@ -436,7 +436,17 @@
     }
   },
 
-"exchange": {
+  "time-from-now": {
+    "few-seconds": "几秒钟之前",
+    "minute": "一分钟之前",
+    "minutes": "{{time}} 分钟之前",
+    "hour": "一小时之前",
+    "hours": "{{time}} 小时之前",
+    "day": "一天之前",
+    "days": "{{time}} 天之前"
+  },
+
+  "exchange": {
     "you-send": "你发送",
     "you-get": "你收到 (大约)",
     "to-address": "到 {{coin}} 地址",

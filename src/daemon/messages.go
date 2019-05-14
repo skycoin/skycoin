@@ -1346,7 +1346,7 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Failed to record transaction")
 			continue
 		} else if softErr != nil {
-			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
+			logger.WithError(softErr).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
 			// Allow soft txn violations to rebroadcast
 		} else if known {
 			logger.WithField("txid", txn.Hash().Hex()).Debug("Duplicate transaction")

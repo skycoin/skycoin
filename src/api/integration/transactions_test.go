@@ -1,10 +1,12 @@
 package integration_test
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -157,30 +159,76 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 
 	defaultChangeAddress := w.Entries[0].Address.String()
 
+	// prepareTxnFunc prepares a valid transaction
+	prepareTxnFunc := func(t *testing.T, toAddr string, coins uint64, shareFactor string) (coin.Transaction, *api.CreateTransactionResponse) {
+		createTxnReq := api.WalletCreateTransactionRequest{
+			WalletID: w.Filename(),
+			Password: password,
+			CreateTransactionRequest: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type:        transaction.HoursSelectionTypeAuto,
+					Mode:        transaction.HoursSelectionModeShare,
+					ShareFactor: shareFactor,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						// Address: w.Entries[1].Address.String(),
+						Address: toAddr,
+						Coins:   toDropletString(t, coins),
+					},
+				},
+			},
+		}
+
+		txnResp, err := c.WalletCreateTransaction(createTxnReq)
+		require.NoError(t, err)
+
+		txn, err := coin.DeserializeTransactionHex(txnResp.EncodedTransaction)
+		require.NoError(t, err)
+		return txn, txnResp
+	}
+
+	reSignTxnFunc := func(t *testing.T, txn coin.Transaction, txnRsp *api.CreateTransactionResponse, wlt *wallet.Wallet) coin.Transaction {
+		walletPassword := os.Getenv("WALLET_PASSWORD")
+		err := wlt.GuardView([]byte(walletPassword), func(unlockWlt *wallet.Wallet) error {
+			keyMap := make(map[string]cipher.SecKey, len(unlockWlt.Entries))
+			for _, e := range unlockWlt.Entries {
+				addr := cipher.MustAddressFromSecKey(e.Secret)
+				keyMap[addr.String()] = e.Secret
+			}
+
+			// Get seckeys in wallet of input addresses
+			keys := make([]cipher.SecKey, len(txnRsp.Transaction.In))
+			for i, in := range txnRsp.Transaction.In {
+				k, ok := keyMap[in.Address]
+				if !ok {
+					t.Fatal("seckey does not exist")
+					return errors.New("seckey does not exist")
+				}
+				keys[i] = k
+			}
+			// clear the old signatures
+			txn.Sigs = []cipher.Sig{}
+			txn.SignInputs(keys)
+			return nil
+		})
+		require.NoError(t, err)
+		return txn
+	}
+
 	tt := []struct {
-		name         string
-		createTxnReq api.WalletCreateTransactionRequest
-		checkTxn     func(t *testing.T, tx *readable.TransactionWithStatus)
+		name      string
+		createTxn func(t *testing.T) *coin.Transaction
+		code      int
+		err       string
+		checkTxn  func(t *testing.T, tx *readable.TransactionWithStatus)
 	}{
 		{
 			name: "send all coins to the first address",
-			createTxnReq: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type:        transaction.HoursSelectionTypeAuto,
-						Mode:        transaction.HoursSelectionModeShare,
-						ShareFactor: "1",
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[0].Address.String(),
-							Coins:   toDropletString(t, totalCoins),
-						},
-					},
-				},
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				return &txn
 			},
 			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
 				// Confirms the total output coins are equal to the totalCoins
@@ -196,28 +244,15 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
 				require.Equal(t, totalCoins, coins)
 			},
+			code: http.StatusOK,
 		},
 		{
 			// send 0.003 coin to the second address,
 			// this amount is chosen to not interfere with TestLiveWalletCreateTransaction
 			name: "send 0.003 coin to second address",
-			createTxnReq: api.WalletCreateTransactionRequest{
-				WalletID: w.Filename(),
-				Password: password,
-				CreateTransactionRequest: api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type:        transaction.HoursSelectionTypeAuto,
-						Mode:        transaction.HoursSelectionModeShare,
-						ShareFactor: "0.5",
-					},
-					ChangeAddress: &defaultChangeAddress,
-					To: []api.Receiver{
-						{
-							Address: w.Entries[1].Address.String(),
-							Coins:   toDropletString(t, 3e3),
-						},
-					},
-				},
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[1].Address.String(), 3e3, "0.5")
+				return &txn
 			},
 			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
 				// Confirms there're two outputs, one to the second address, one as change output to the first address.
@@ -253,35 +288,314 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				// Confirms the change coins are matched.
 				require.Equal(t, expectChangeCoins, changeCoins)
 			},
+			code: http.StatusOK,
+		},
+		{
+			name: "send to null address",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+
+				// set the transaction output address as null
+				txn.Out[0].Address = cipher.Address{}
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates user constraint: Transaction output is sent to the null address",
+		},
+		{
+			// Use an input from block 1024: 2f842b0fbf5ef2dd59c8b5127795f1e88bfa6b510a41c62eac28fc2006d279e3
+			name: "double spend",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+
+				hash, err := cipher.SHA256FromHex("2f842b0fbf5ef2dd59c8b5127795f1e88bfa6b510a41c62eac28fc2006d279e3")
+				require.NoError(t, err)
+				txn.In[0] = hash
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: unspent output of 2f842b0fbf5ef2dd59c8b5127795f1e88bfa6b510a41c62eac28fc2006d279e3 does not exist",
+		},
+		{
+			name: "output hours overflow",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[1].Address.String(), 1e6, "1")
+
+				// set one output hours as math.MaxUint64
+				txn.Out[0].Hours = math.MaxUint64 - 1
+				txn.Out[1].Hours = 100
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Transaction output hours overflow",
+		},
+		{
+			name: "no inputs",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+
+				txn.In = []cipher.SHA256{}
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: No inputs",
+		},
+		{
+			name: "no outputs",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+
+				txn.Out = []coin.TransactionOutput{}
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: No outputs",
+		},
+		{
+			name: "invalid number of signatures",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn.Sigs = []cipher.Sig{}
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Invalid number of signatures",
+		},
+		{
+			name: "duplicate spend",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				// Make duplicate inputs
+				txn.In = append(txn.In, txn.In[0])
+				// Make duplicate sigs
+				txn.Sigs = append(txn.Sigs, txn.Sigs[0])
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Duplicate spend",
+		},
+		{
+			name: "transaction type invalid",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn.Type = 1
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: transaction type invalid",
+		},
+		{
+			name: "zero coin output",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn.Out[0].Coins = 0
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Zero coin output",
+		},
+		{
+			name: "output coins overflow",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), 1e6, "1")
+				txn.Out[0].Coins = math.MaxUint64 - 1
+				txn.Out[1].Coins = 2
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Output coins overflow",
+		},
+		{
+			name: "incorrect transaction length",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn.Length = 1
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Incorrect transaction length",
+		},
+		{
+			name: "duplicate output",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn.Out = append(txn.Out, txn.Out[0])
+				txn.InnerHash = txn.HashInner()
+				size, _, err := txn.SizeHash()
+				require.NoError(t, err)
+				txn.Length = size
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Duplicate output in transaction",
+		},
+		{
+			name: "inner hash does not match",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn.InnerHash = testutil.RandSHA256(t)
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: InnerHash does not match computed hash",
+		},
+		{
+			name: "unsigned input",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn.Sigs[0] = cipher.Sig{}
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Unsigned input in transaction",
+		},
+		{
+			name: "invalid sig",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn.Sigs[0] = testutil.RandSig(t)
+
+				txn.InnerHash = txn.HashInner()
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Failed to recover pubkey from signature",
+		},
+		{
+			name: "signature not valid for output being spent",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				// Use a wrong private key to sign txn.In[0] and change txn.Sigs[0]
+				_, seckey := cipher.GenerateKeyPair()
+				h := cipher.AddSHA256(txn.InnerHash, txn.In[0])
+				txn.Sigs[0] = cipher.MustSignHash(h, seckey)
+
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Signature not valid for output being spent",
+		},
+		{
+			name: "insufficient coins",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, txnRsp := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				// Make output coins > input coins
+				txn.Out[0].Coins = txn.Out[0].Coins + 1
+				txn.InnerHash = txn.HashInner()
+				// Sign txn again as the inner hash is changed
+				txn = reSignTxnFunc(t, txn, txnRsp, w)
+
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Insufficient coins",
+		},
+		{
+			name: "transaction may not destry coins",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, txnRsp := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				// Make output coins < input coins
+				txn.Out[0].Coins = txn.Out[0].Coins - 1
+				txn.InnerHash = txn.HashInner()
+				// Sign the txn again as the inner hash is changed
+				txn = reSignTxnFunc(t, txn, txnRsp, w)
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Transactions may not destroy coins",
+		},
+		{
+			name: "insufficient coin hours",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				txn, txnRsp := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				// Make up more output coin hours
+				txn.Out[0].Hours = txn.Out[0].Hours + 1e6
+				// Recalculate inner hash
+				txn.InnerHash = txn.HashInner()
+				// Sign the txn again
+				txn = reSignTxnFunc(t, txn, txnRsp, w)
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates hard constraint: Insufficient coin hours",
+		},
+		{
+			name: "invalid amount, too many decimal places",
+			createTxn: func(t *testing.T) *coin.Transaction {
+				// Make a txn with txn.Out[0].Coins equal 1e3, as we have at least 2e6 coins
+				// so there will have at least two outputs.
+				txn, txnRsp := prepareTxnFunc(t, w.Entries[0].Address.String(), 1e3, "1")
+				// Make txn.Out[0].Coins too many decimal places
+				txn.Out[0].Coins = 5e2
+				// Move the remaining 5e2 from the first output to the second output, so that
+				// we won't lose coins
+				txn.Out[1].Coins = txn.Out[1].Coins + 5e2
+				txn.InnerHash = txn.HashInner()
+
+				txn = reSignTxnFunc(t, txn, txnRsp, w)
+				return &txn
+			},
+			code: http.StatusBadRequest,
+			err:  "400 Bad Request - Transaction violates soft constraint: invalid amount, too many decimal places",
 		},
 	}
+	// TODO:
+	// The following test cases can not be added here, as we cannot use the big size
+	// transaction is not allowed in encoder/decoder, which will fail the test
+	// in building transaction step.
+	//
+	// 1. Make up a txn which exceeds max block size to violate the soft constraint
+	// 2. Make up a transaction that can exceed max block size
+	// 		expected err: "400 Bad Request - Transaction violates hard constraint: Transaction size bigger than max block size"
+	// 3. Make up a transaction that has inputs/outputs exceed max
+	//		expected err:
+	// 		- "400 Bad Request - Transaction violates hard constraint: Too many signatures and inputs"
+	// 		- "400 Bad Request - Transaction violates hard constraint: Too many outputs"
+	// TODO:
+	// 1. Add test case to inject transaction who has inputs locked.
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			txnResp, err := c.WalletCreateTransaction(tc.createTxnReq)
-			require.NoError(t, err)
+			txn := tc.createTxn(t)
+			txid, err := c.InjectTransaction(txn)
+			if tc.code != http.StatusOK {
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
 
-			txid, err := c.InjectEncodedTransaction(txnResp.EncodedTransaction)
 			require.NoError(t, err)
-			require.Equal(t, txnResp.Transaction.TxID, txid)
+			require.Equal(t, txn.Hash().Hex(), txid)
 
 			tk := time.NewTicker(time.Second)
-			var txn *readable.TransactionWithStatus
+			var txnStatus *readable.TransactionWithStatus
 		loop:
 			for {
 				select {
 				case <-time.After(30 * time.Second):
 					t.Fatal("Waiting for transaction to be confirmed timeout")
 				case <-tk.C:
-					txn = getTransaction(t, c, txnResp.Transaction.TxID)
-					if txn.Status.Confirmed {
+					txnStatus = getTransaction(t, c, txn.Hash().Hex())
+					if txnStatus.Status.Confirmed {
 						break loop
 					}
 				}
 			}
-			tc.checkTxn(t, txn)
+			tc.checkTxn(t, txnStatus)
 		})
 	}
+
+	// Test to inject invalid rawtx
+	_, err := c.InjectEncodedTransaction("invalidrawtx")
+	assertResponseError(t, err, 400, "400 Bad Request - Transaction violates user constraint: Transaction output is sent to the null address")
+
 }
 
 func TestLiveWalletSignTransaction(t *testing.T) {

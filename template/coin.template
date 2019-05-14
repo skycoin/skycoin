@@ -69,13 +69,6 @@ var (
 		Port:                           {{.Port}},
 		WebInterfacePort:               {{.WebInterfacePort}},
 		DataDirectory:                  "{{.DataDirectory}}",
-		UnconfirmedBurnFactor:          {{.UnconfirmedBurnFactor}},
-		UnconfirmedMaxTransactionSize:  {{.UnconfirmedMaxTransactionSize}},
-		UnconfirmedMaxDropletPrecision: {{.UnconfirmedMaxDropletPrecision}},
-		CreateBlockBurnFactor:          {{.CreateBlockBurnFactor}},
-		CreateBlockMaxTransactionSize:  {{.CreateBlockMaxTransactionSize}},
-		CreateBlockMaxDropletPrecision: {{.CreateBlockMaxDropletPrecision}},
-		MaxBlockTransactionsSize:       {{.MaxBlockTransactionsSize}},
 	})
 
 	parseFlags = true

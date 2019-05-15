@@ -100,7 +100,7 @@ import { LanguageService } from './services/language.service';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { ExchangeHistoryComponent } from './components/pages/exchange/exchange-history/exchange-history.component';
 import { StorageService } from './services/storage.service';
-import { AppErrorHandler } from './app-error-handler.config';
+import { AppErrorHandler } from './app-error-handler';
 
 
 const ROUTES = [

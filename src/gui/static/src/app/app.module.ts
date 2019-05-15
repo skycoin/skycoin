@@ -1,5 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { NgModule, ErrorHandler } from '@angular/core';
 import { AppComponent } from './app.component';
 import { HttpModule } from '@angular/http';
 import { ApiService } from './services/api.service';
@@ -100,6 +100,7 @@ import { LanguageService } from './services/language.service';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { ExchangeHistoryComponent } from './components/pages/exchange/exchange-history/exchange-history.component';
 import { StorageService } from './services/storage.service';
+import { AppErrorHandler } from './app-error-handler.config';
 
 
 const ROUTES = [
@@ -295,6 +296,10 @@ const ROUTES = [
     }),
   ],
   providers: [
+    {
+      provide: ErrorHandler,
+      useClass: AppErrorHandler,
+    },
     ApiService,
     AppService,
     BlockchainService,

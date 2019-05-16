@@ -12,11 +12,11 @@
       <img src="../../../../../assets/img/transactions-black.png">
       <span>{{ 'title.history' | translate }}</span>
     </div>
-    <div class="flex-fill"></div>
     <div class="-button -low-opacity" routerLink="/exchange" routerLinkActive="no-opacity" *ngIf="exchangeEnabled">
-      <img src="../../../../../assets/img/money-gold.png">
+      <img src="../../../../../assets/img/money-black.png">
       <span>{{ 'title.buy-coin' | translate }}</span>
     </div>
+    <div class="flex-fill"></div>
     <div class="-button" *ngIf="otcEnabled">
       <img src="../../../../../assets/img/money-gold.png">
       <span class="secondary-color">{{ 'title.buy-coin' | translate }}</span>

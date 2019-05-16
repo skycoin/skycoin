@@ -702,10 +702,52 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{uxoutsSmallHours[0], uxoutsSmallHours[1], uxoutsSmallHours[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   0,
+				Hours:   1,
 				Coins:   1e6 - 1e3,
 			},
-			toExpectedHours: []uint64{1, 1, 1, 0},
+			toExpectedHours: []uint64{1, 1, 0, 0},
+		},
+
+		{
+			name: "1 hour to change, 0 to outputs",
+			params: Params{
+				ChangeAddress: &changeAddress,
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: newShareFactor("0.5"),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[1],
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[1],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e3,
+					},
+				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				addrs[0]: uxoutsSmallHours[1:2],
+				addrs[1]: uxoutsNoHours[0:1],
+				addrs[2]: uxoutsNoHours[1:2],
+			},
+			chosenUnspents: []coin.UxOut{uxoutsSmallHours[1], uxoutsNoHours[0], uxoutsNoHours[1]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   1,
+				Coins:   1e6 - 1e3,
+			},
+			toExpectedHours: []uint64{0, 0, 0, 0},
 		},
 
 		{

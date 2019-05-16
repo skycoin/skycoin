@@ -117,6 +117,7 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 		return nil, nil, err
 	}
 	remainingHours := totalInputHours - feeHours
+	changeCoins := totalInputCoins - totalOutCoins
 
 	switch p.HoursSelection.Type {
 	case HoursSelectionTypeManual:
@@ -131,6 +132,11 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 			hours, err := mathutil.Uint64ToInt64(remainingHours)
 			if err != nil {
 				return nil, nil, err
+			}
+
+			// Save 1 coin hour if there is a change and share factor < 1
+			if p.HoursSelection.ShareFactor.LessThan(decimal.New(1, 0)) && changeCoins > 0 && hours >= 1 {
+				hours--
 			}
 
 			allocatedHoursInt := p.HoursSelection.ShareFactor.Mul(decimal.New(hours, 0)).IntPart()
@@ -196,7 +202,6 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 	}
 
 	// Create change output
-	changeCoins := totalInputCoins - totalOutCoins
 	changeHours := remainingHours - totalOutHours
 
 	// If there are no change coins but there are change hours, try to add another

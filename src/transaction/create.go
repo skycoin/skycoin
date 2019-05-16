@@ -144,6 +144,19 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 				toCoins[i] = to.Coins
 			}
 
+			// If sharefactor > 0 and sharehours < len(p.To), the sharehours cannot ensure each destination
+			// address has at least 1 coin hour. In this case, if we have enough hours, i.e the hours >= len(p.To),
+			// set the sharehours as len(p.To). If we don't have enough hours, i.e. hours < len(p.To),
+			// share all hours we have.
+			toNum := uint64(len(p.To))
+			if p.HoursSelection.ShareFactor.GreaterThan(decimal.New(0, 0)) && allocatedHours < toNum {
+				if hours < int64(toNum) {
+					allocatedHours = uint64(hours)
+				} else {
+					allocatedHours = toNum
+				}
+			}
+
 			addrHours, err = DistributeCoinHoursProportional(toCoins, allocatedHours)
 			if err != nil {
 				return nil, nil, err

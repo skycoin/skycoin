@@ -80,6 +80,14 @@ func TestCreate(t *testing.T) {
 		uxoutsNoHours[i], uxoutsNoHours[j] = uxoutsNoHours[j], uxoutsNoHours[i]
 	})
 
+	// Create unspents outputs with only 1 hour
+	var uxoutsSmallHours []coin.UxOut
+	for i := uint64(0); i < 10; i++ {
+		uxout := makeUxOut(t, secKey, 2e6, 1+i)
+		uxout.Head.Time = headTime
+		uxoutsSmallHours = append(uxoutsSmallHours, uxout)
+	}
+
 	changeAddress := testutil.MakeAddress()
 
 	validParams := Params{
@@ -504,7 +512,7 @@ func TestCreate(t *testing.T) {
 				Hours:   76,
 				Coins:   2e6 - (1e6 + 1e3),
 			},
-			toExpectedHours: []uint64{15, 30, 29, 1},
+			toExpectedHours: []uint64{16, 29, 29, 1},
 		},
 
 		{
@@ -541,7 +549,7 @@ func TestCreate(t *testing.T) {
 			},
 			unspents:        []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			chosenUnspents:  []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
-			toExpectedHours: []uint64{25, 50, 50, 25, 1},
+			toExpectedHours: []uint64{26, 50, 49, 25, 1},
 		},
 
 		{
@@ -617,7 +625,87 @@ func TestCreate(t *testing.T) {
 				Hours:   0,
 				Coins:   2e6 - (1e6 + 1e3),
 			},
-			toExpectedHours: []uint64{30, 60, 60, 1},
+			toExpectedHours: []uint64{31, 60, 59, 1},
+		},
+
+		{
+			name: "auto, multiple outputs, enough hours, sharehours < len(destinations)",
+			params: Params{
+				ChangeAddress: &changeAddress,
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: newShareFactor("0.026"),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[1],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e3,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   147,
+				Coins:   2e6 - (1e6 + 1e3),
+			},
+			toExpectedHours: []uint64{1, 1, 1, 1},
+		},
+
+		{
+			name: "auto, multiple outputs, not enough hours, sharehours < len(destinations)",
+			params: Params{
+				ChangeAddress: &changeAddress,
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: newShareFactor("0.5"),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[1],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e3,
+					},
+				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				addrs[0]: uxoutsSmallHours[:1],
+				addrs[1]: uxoutsSmallHours[1:2],
+				addrs[2]: uxoutsSmallHours[2:3],
+			},
+			chosenUnspents: []coin.UxOut{uxoutsSmallHours[0], uxoutsSmallHours[1], uxoutsSmallHours[2]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   0,
+				Coins:   1e6 - 1e3,
+			},
+			toExpectedHours: []uint64{1, 1, 1, 0},
 		},
 
 		{

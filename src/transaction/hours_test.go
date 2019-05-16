@@ -54,7 +54,7 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 		{
 			name:  "hours too large",
 			coins: []uint64{10},
-			hours: math.MaxInt64 + 1,
+			hours: math.MaxInt64 + 2,
 			err:   mathutil.ErrUint64OverflowsInt64,
 		},
 
@@ -73,45 +73,38 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 		},
 
 		{
-			name:   "valid, multiple inputs, all equal",
+			name:   "valid, multiple inputs",
 			coins:  []uint64{2, 4, 8, 16},
 			hours:  30,
-			output: []uint64{2, 4, 8, 16},
-		},
-
-		{
-			name:   "valid, multiple inputs, rational division in coins and hours",
-			coins:  []uint64{2, 4, 8, 16},
-			hours:  30,
-			output: []uint64{2, 4, 8, 16},
+			output: []uint64{3, 5, 8, 14},
 		},
 
 		{
 			name:   "valid, multiple inputs, rational division in coins, irrational in hours",
 			coins:  []uint64{2, 4, 8, 16},
 			hours:  31,
-			output: []uint64{3, 4, 8, 16},
+			output: []uint64{3, 5, 8, 15},
 		},
 
 		{
 			name:   "valid, multiple inputs, irrational division in coins, rational in hours",
 			coins:  []uint64{2, 3, 5, 7, 11, 13},
 			hours:  41,
-			output: []uint64{2, 3, 5, 7, 11, 13},
+			output: []uint64{3, 4, 6, 6, 10, 12},
 		},
 
 		{
 			name:   "valid, multiple inputs, irrational division in coins and hours",
 			coins:  []uint64{2, 3, 5, 7, 11, 13},
 			hours:  50,
-			output: []uint64{3, 4, 7, 8, 13, 15},
+			output: []uint64{4, 5, 7, 8, 12, 14},
 		},
 
 		{
 			name:   "valid, multiple inputs that would receive 0 hours but get compensated from remainder as priority",
 			coins:  []uint64{16, 8, 4, 2, 1, 1},
 			hours:  14,
-			output: []uint64{7, 3, 1, 1, 1, 1},
+			output: []uint64{6, 3, 2, 1, 1, 1},
 		},
 
 		{
@@ -126,6 +119,13 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 			coins:  []uint64{1, 1, 1, 1, 1},
 			hours:  3,
 			output: []uint64{1, 1, 1, 0, 0},
+		},
+
+		{
+			name:   "valid, multiple inputs, hours equal number of outputs",
+			coins:  []uint64{1, 2, 3, 4},
+			hours:  4,
+			output: []uint64{1, 1, 1, 1},
 		},
 	}
 

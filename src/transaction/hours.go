@@ -95,6 +95,20 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		coinsInt[i] = big.NewInt(cInt64)
 	}
 
+	addrHours := make([]uint64, len(coins))
+	// When total hours > the number of outputs, assign each output 1 hour, then
+	// assign the remaining hours proportionally.
+	if hours > uint64(len(coins)) {
+		for i := 0; i < len(coins); i++ {
+			addrHours[i] = uint64(1)
+			hours--
+		}
+	}
+
+	if hours == 0 {
+		return addrHours, nil
+	}
+
 	totalInt64, err := mathutil.Uint64ToInt64(total)
 	if err != nil {
 		return nil, err
@@ -108,7 +122,6 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 	hoursInt := big.NewInt(hoursInt64)
 
 	var assignedHours uint64
-	addrHours := make([]uint64, len(coins))
 	for i, c := range coinsInt {
 		// Scale the ratio of coins to total coins proportionally by calculating
 		// (coins * totalHours) / totalCoins
@@ -125,7 +138,7 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 
 		fracHours := fracInt.Uint64()
 
-		addrHours[i] = fracHours
+		addrHours[i] = addrHours[i] + fracHours
 		assignedHours, err = mathutil.AddUint64(assignedHours, fracHours)
 		if err != nil {
 			return nil, err

@@ -80,7 +80,7 @@ func TestCreate(t *testing.T) {
 		uxoutsNoHours[i], uxoutsNoHours[j] = uxoutsNoHours[j], uxoutsNoHours[i]
 	})
 
-	// Create unspents outputs with only 1 hour
+	// Create unspents outputs with small coin hours
 	var uxoutsSmallHours []coin.UxOut
 	for i := uint64(0); i < 10; i++ {
 		uxout := makeUxOut(t, secKey, 2e6, 1+i)

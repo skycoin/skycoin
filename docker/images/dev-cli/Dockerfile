@@ -62,6 +62,8 @@ RUN set -ex; \
     xz-utils \
     zlib1g-dev \
     build-essential \
+    ruby \
+    ruby-dev \
     \
 # No need for MySQL client
 #
@@ -212,10 +214,13 @@ RUN cd /tmp/; \
     cd swig-3.0.12 ;\
     ./configure --prefix=/usr && make && make install && \
     rm -rf /tmp/swig-*
-
+# Install Travis CLI
 # Install golangci-lint
 ENV GOLANGCI_LINT 1.12.3
 RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v$GOLANGCI_LINT
+
+# Install Travis CLI
+RUN gem install travis
 
 WORKDIR $GOPATH/src/github.com/skycoin
 VOLUME $GOPATH/src/

@@ -539,8 +539,7 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 		logger.Critical().WithError(err).WithFields(logFields).Warning("unconfirmedVerifyTxn params could not be deserialized")
 		return ErrDisconnectInvalidExtraData
 	}
-
-	i = i + 9
+	i += 9
 
 	if err := intro.UnconfirmedVerifyTxn.Validate(); err != nil {
 		logger.WithError(err).WithFields(logFields).WithFields(logrus.Fields{
@@ -572,8 +571,8 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 		logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
 		return ErrDisconnectInvalidUserAgent
 	}
+	i += int(userAgentLen)
 
-	i = i + int(userAgentLen)
 	// var genesisHash cipher.SHA256
 	remainingLen := extraLen - i
 	if remainingLen > 0 && remainingLen < len(intro.GenesisHash) {

@@ -39,6 +39,8 @@ var (
 	GenesisSignatureStr = "{{.GenesisSignatureStr}}"
 	// GenesisAddressStr genesis address string
 	GenesisAddressStr = "{{.GenesisAddressStr}}"
+	// GenesisHashStr genesis block hash string
+	GenesisHashStr = "{{ .GenesisHashStr }}"
 	// BlockchainPubkeyStr pubic key string
 	BlockchainPubkeyStr = "{{.BlockchainPubkeyStr}}"
 	// BlockchainSeckeyStr empty private key string
@@ -60,6 +62,7 @@ var (
 		CoinName:                       CoinName,
 		GenesisSignatureStr:            GenesisSignatureStr,
 		GenesisAddressStr:              GenesisAddressStr,
+		GenesisHashStr:                 GenesisHashStr,
 		GenesisCoinVolume:              GenesisCoinVolume,
 		GenesisTimestamp:               GenesisTimestamp,
 		BlockchainPubkeyStr:            BlockchainPubkeyStr,

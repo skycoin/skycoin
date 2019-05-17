@@ -24,6 +24,8 @@ type NodeParameters struct {
 	GenesisSignatureStr string `mapstructure:"genesis_signature_str"`
 	// GenesisAddressStr is the skycoin address that the genesis coins were sent to in the genesis block
 	GenesisAddressStr string `mapstructure:"genesis_address_str"`
+	// GenesisHashStr is hex-encoded hash of genesis block
+	GenesisHashStr string `mapstructure:"genesis_hash_str"`
 	// BlockchainPubkeyStr is a hex-encoded public key used to validate published blocks
 	BlockchainPubkeyStr string `mapstructure:"blockchain_pubkey_str"`
 	// BlockchainSeckey is a hex-encoded secret key required for block publishing.

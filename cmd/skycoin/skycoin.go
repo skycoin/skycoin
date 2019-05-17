@@ -39,6 +39,8 @@ var (
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
 	// GenesisAddressStr genesis address string
 	GenesisAddressStr = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
+	// GenesisHashStr genesis block hash string
+	GenesisHashStr = "0551a1e5af999fe8fff529f6f2ab341e1e33db95135eef1b2be44fe6981349f3"
 	// BlockchainPubkeyStr pubic key string
 	BlockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 	// BlockchainSeckeyStr empty private key string
@@ -67,6 +69,7 @@ var (
 		CoinName:                       CoinName,
 		GenesisSignatureStr:            GenesisSignatureStr,
 		GenesisAddressStr:              GenesisAddressStr,
+		GenesisHashStr:                 GenesisHashStr,
 		GenesisCoinVolume:              GenesisCoinVolume,
 		GenesisTimestamp:               GenesisTimestamp,
 		BlockchainPubkeyStr:            BlockchainPubkeyStr,

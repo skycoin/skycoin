@@ -20,7 +20,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.26.0-dev"
+	Version = "0.26.0"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -64,18 +64,18 @@ var (
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-		CoinName:                       CoinName,
-		GenesisSignatureStr:            GenesisSignatureStr,
-		GenesisAddressStr:              GenesisAddressStr,
-		GenesisCoinVolume:              GenesisCoinVolume,
-		GenesisTimestamp:               GenesisTimestamp,
-		BlockchainPubkeyStr:            BlockchainPubkeyStr,
-		BlockchainSeckeyStr:            BlockchainSeckeyStr,
-		DefaultConnections:             DefaultConnections,
-		PeerListURL:                    "https://downloads.skycoin.net/blockchain/peers.txt",
-		Port:                           6000,
-		WebInterfacePort:               6420,
-		DataDirectory:                  "$HOME/.skycoin",
+		CoinName:            CoinName,
+		GenesisSignatureStr: GenesisSignatureStr,
+		GenesisAddressStr:   GenesisAddressStr,
+		GenesisCoinVolume:   GenesisCoinVolume,
+		GenesisTimestamp:    GenesisTimestamp,
+		BlockchainPubkeyStr: BlockchainPubkeyStr,
+		BlockchainSeckeyStr: BlockchainSeckeyStr,
+		DefaultConnections:  DefaultConnections,
+		PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
+		Port:                6000,
+		WebInterfacePort:    6420,
+		DataDirectory:       "$HOME/.skycoin",
 	})
 
 	parseFlags = true

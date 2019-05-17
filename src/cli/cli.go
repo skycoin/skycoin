@@ -28,7 +28,7 @@ import (
 
 var (
 	// Version is the CLI Version
-	Version = "0.26.0-dev"
+	Version = "0.26.0"
 )
 
 const (

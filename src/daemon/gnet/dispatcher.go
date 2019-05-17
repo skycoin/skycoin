@@ -9,7 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/amherag/skycoin/src/cipher/encoder"
 )
 
 // SendResult result of a single message send

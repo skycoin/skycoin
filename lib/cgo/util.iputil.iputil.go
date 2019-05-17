@@ -1,6 +1,6 @@
 package main
 
-import iputil "github.com/skycoin/skycoin/src/util/iputil"
+import iputil "github.com/amherag/skycoin/src/util/iputil"
 
 /*
 

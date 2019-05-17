@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/util/droplet"
+	"github.com/amherag/skycoin/src/util/logging"
 )
 
 // SendJSONOr500 writes an object as JSON, writing a 500 error if it fails

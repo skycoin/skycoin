@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/testutil"
+	"github.com/amherag/skycoin/src/util/useragent"
 )
 
 var userAgent = useragent.MustParse("skycoin:0.24.1(foo)")

@@ -15,12 +15,12 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	api "github.com/skycoin/skycoin/src/api"
-	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
-	cli "github.com/skycoin/skycoin/src/cli"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/readable"
-	wallet "github.com/skycoin/skycoin/src/wallet"
+	api "github.com/amherag/skycoin/src/api"
+	webrpc "github.com/amherag/skycoin/src/api/webrpc"
+	cli "github.com/amherag/skycoin/src/cli"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/readable"
+	wallet "github.com/amherag/skycoin/src/wallet"
 )
 
 type Handle uint64

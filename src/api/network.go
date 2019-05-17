@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/readable"
-	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/amherag/skycoin/src/daemon"
+	"github.com/amherag/skycoin/src/readable"
+	wh "github.com/amherag/skycoin/src/util/http"
 )
 
 // connectionHandler returns a specific connection

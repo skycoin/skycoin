@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/amherag/skycoin/src/util/file"
 )
 
 // Wallets wallets map

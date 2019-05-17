@@ -8,10 +8,10 @@ import (
 	"github.com/boltdb/bolt"
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/apputil"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/util/apputil"
+	"github.com/amherag/skycoin/src/visor"
+	"github.com/amherag/skycoin/src/visor/dbutil"
 )
 
 const (

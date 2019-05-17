@@ -10,14 +10,14 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/util/fee"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/util/droplet"
+	"github.com/amherag/skycoin/src/util/fee"
+	wh "github.com/amherag/skycoin/src/util/http"
+	"github.com/amherag/skycoin/src/visor/blockdb"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 // CreateTransactionResponse is returned by /wallet/transaction

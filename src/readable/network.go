@@ -1,9 +1,9 @@
 package readable
 
 import (
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/amherag/skycoin/src/daemon"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/util/useragent"
 )
 
 // Connection a connection's state within the daemon

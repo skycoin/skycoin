@@ -8,10 +8,10 @@ package historydb
 import (
 	"errors"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher/encoder"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/visor/dbutil"
 )
 
 // Transaction contains transaction info and the seq of block which executed this block.

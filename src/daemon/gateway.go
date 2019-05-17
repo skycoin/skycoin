@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/daemon/strand"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
-	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/daemon/gnet"
+	"github.com/amherag/skycoin/src/daemon/pex"
+	"github.com/amherag/skycoin/src/daemon/strand"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/visor"
+	"github.com/amherag/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/visor/historydb"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 var (

@@ -1,7 +1,7 @@
 package historydb
 
 import (
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/visor/dbutil"
 )
 
 var (

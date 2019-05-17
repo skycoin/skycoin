@@ -3,11 +3,11 @@ package visor
 // This file contains Visor method that require wallet access
 
 import (
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 // GetWalletBalance returns balance pairs of specific wallet

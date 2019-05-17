@@ -6,10 +6,10 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/util/droplet"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 // Balance represents an coin and hours balance

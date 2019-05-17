@@ -14,7 +14,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/amherag/skycoin/src/util/logging"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 func decryptWalletCmd(cfg Config) gcli.Command {

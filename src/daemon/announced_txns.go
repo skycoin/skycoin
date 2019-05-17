@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher"
 )
 
 type announcedTxnsCache struct {

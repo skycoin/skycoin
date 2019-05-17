@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/timeutil"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/util/timeutil"
+	"github.com/amherag/skycoin/src/visor"
 )
 
 // BlockBodyVerbose represents a verbose readable block body

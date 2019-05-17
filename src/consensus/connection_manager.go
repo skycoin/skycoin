@@ -4,7 +4,7 @@
 // 20161025 - Code revision by user johnstuartmill.
 package consensus
 
-//"github.com/skycoin/skycoin/src/cipher"
+//"github.com/amherag/skycoin/src/cipher"
 
 ////////////////////////////////////////////////////////////////////////////////
 type ConnectionManagerInterface interface {

@@ -9,14 +9,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/iputil"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher/encoder"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/daemon/gnet"
+	"github.com/amherag/skycoin/src/daemon/pex"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/util/iputil"
+	"github.com/amherag/skycoin/src/util/useragent"
 )
 
 // Message represent a packet to be serialized over the network by

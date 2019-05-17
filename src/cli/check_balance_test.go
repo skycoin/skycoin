@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/testutil"
 )
 
 func TestGetBalanceOfAddresses(t *testing.T) {

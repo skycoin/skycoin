@@ -3,7 +3,7 @@ package main
 import (
 	"unsafe"
 
-	testutil "github.com/skycoin/skycoin/src/testutil"
+	testutil "github.com/amherag/skycoin/src/testutil"
 )
 
 /*

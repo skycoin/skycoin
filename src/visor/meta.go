@@ -5,7 +5,7 @@ import (
 
 	"github.com/blang/semver"
 
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/visor/dbutil"
 )
 
 var (

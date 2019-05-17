@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/api"
+	"github.com/amherag/skycoin/src/api"
 	gcli "github.com/urfave/cli"
 )
 

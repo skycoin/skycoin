@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
-	cli "github.com/skycoin/skycoin/src/cli"
+	"github.com/amherag/skycoin/src/api/webrpc"
+	cli "github.com/amherag/skycoin/src/cli"
 )
 
 /*

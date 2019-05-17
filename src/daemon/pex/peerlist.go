@@ -10,8 +10,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/amherag/skycoin/src/util/file"
+	"github.com/amherag/skycoin/src/util/useragent"
 )
 
 // Peers peer list

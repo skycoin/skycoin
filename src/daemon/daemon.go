@@ -14,17 +14,17 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/elapse"
-	"github.com/skycoin/skycoin/src/util/iputil"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/useragent"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/daemon/gnet"
+	"github.com/amherag/skycoin/src/daemon/pex"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/util/elapse"
+	"github.com/amherag/skycoin/src/util/iputil"
+	"github.com/amherag/skycoin/src/util/logging"
+	"github.com/amherag/skycoin/src/util/useragent"
+	"github.com/amherag/skycoin/src/visor"
+	"github.com/amherag/skycoin/src/visor/dbutil"
 )
 
 var (

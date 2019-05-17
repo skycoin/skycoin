@@ -5,10 +5,10 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/api/webrpc"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 func walletOutputsCmd(cfg Config) gcli.Command {

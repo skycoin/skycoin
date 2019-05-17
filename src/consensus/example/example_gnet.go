@@ -22,10 +22,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/amherag/skycoin/src/daemon/gnet"
 	//
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/consensus"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/consensus"
 )
 
 var Cfg_print_config bool = true

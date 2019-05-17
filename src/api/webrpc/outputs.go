@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/visor"
 )
 
 // OutputsResult the output json format

@@ -17,10 +17,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/daemon/strand"
-	"github.com/skycoin/skycoin/src/util/elapse"
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/amherag/skycoin/src/cipher/encoder"
+	"github.com/amherag/skycoin/src/daemon/strand"
+	"github.com/amherag/skycoin/src/util/elapse"
+	"github.com/amherag/skycoin/src/util/logging"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback

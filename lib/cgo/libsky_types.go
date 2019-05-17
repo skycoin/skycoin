@@ -1,7 +1,7 @@
 package main
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
+	cipher "github.com/amherag/skycoin/src/cipher"
 )
 
 /*

@@ -1,6 +1,6 @@
 package main
 
-import apputil "github.com/skycoin/skycoin/src/util/apputil"
+import apputil "github.com/amherag/skycoin/src/util/apputil"
 
 /*
 

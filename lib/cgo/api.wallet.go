@@ -1,6 +1,6 @@
 package main
 
-import api "github.com/skycoin/skycoin/src/api"
+import api "github.com/amherag/skycoin/src/api"
 
 /*
 

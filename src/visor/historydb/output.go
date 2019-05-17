@@ -3,10 +3,10 @@ package historydb
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher/encoder"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/visor/dbutil"
 )
 
 // UxOutsBkt holds unspent outputs

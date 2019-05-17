@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/amherag/skycoin/src/api/webrpc"
 )
 
 func TestWebRPC(t *testing.T) {

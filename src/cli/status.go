@@ -3,7 +3,7 @@ package cli
 import (
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/api"
+	"github.com/amherag/skycoin/src/api"
 )
 
 // StatusResult is printed by cli status command

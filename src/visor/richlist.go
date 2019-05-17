@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/amherag/skycoin/src/util/droplet"
 )
 
 // RichlistBalance holds info an address balance holder

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/readable"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/readable"
+	wh "github.com/amherag/skycoin/src/util/http"
+	"github.com/amherag/skycoin/src/visor"
 )
 
 // outputsHandler returns UxOuts filtered by a set of addresses or a set of hashes

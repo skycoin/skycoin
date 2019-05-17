@@ -9,9 +9,9 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/cipher"
+	bip39 "github.com/amherag/skycoin/src/cipher/go-bip39"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 func addressGenCmd() gcli.Command {

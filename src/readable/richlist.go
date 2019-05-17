@@ -1,6 +1,6 @@
 package readable
 
-import "github.com/skycoin/skycoin/src/visor"
+import "github.com/amherag/skycoin/src/visor"
 
 // RichlistBalance holds info an address balance holder
 type RichlistBalance struct {

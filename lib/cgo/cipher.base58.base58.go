@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	base58 "github.com/skycoin/skycoin/src/cipher/base58"
+	base58 "github.com/amherag/skycoin/src/cipher/base58"
 )
 
 /*

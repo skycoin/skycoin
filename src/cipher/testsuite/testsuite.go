@@ -8,8 +8,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+	"github.com/amherag/skycoin/src/cipher"
+	secp256k1 "github.com/amherag/skycoin/src/cipher/secp256k1-go"
 )
 
 // InputTestDataJSON contains hashes to be signed

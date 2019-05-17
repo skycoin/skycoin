@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/util/file"
 )
 
 // ReadableEntry wallet entry with json tags

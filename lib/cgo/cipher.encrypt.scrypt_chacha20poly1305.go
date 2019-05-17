@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	encrypt "github.com/skycoin/skycoin/src/cipher/encrypt"
+	encrypt "github.com/amherag/skycoin/src/cipher/encrypt"
 )
 
 /*

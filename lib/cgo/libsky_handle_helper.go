@@ -16,9 +16,9 @@ import (
 	"sort"
 	"unsafe"
 
-	api "github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/readable"
+	api "github.com/amherag/skycoin/src/api"
+	"github.com/amherag/skycoin/src/daemon"
+	"github.com/amherag/skycoin/src/readable"
 )
 
 //export SKY_JsonEncode_Handle

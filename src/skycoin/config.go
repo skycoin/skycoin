@@ -13,14 +13,14 @@ import (
 
 	"log"
 
-	"github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/useragent"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/api"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/util/droplet"
+	"github.com/amherag/skycoin/src/util/file"
+	"github.com/amherag/skycoin/src/util/useragent"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 var (

@@ -1,7 +1,7 @@
 package webrpc
 
 import (
-	"github.com/skycoin/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/readable"
 )
 
 // request params: [seq1, seq2, seq3...]

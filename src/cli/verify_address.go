@@ -3,7 +3,7 @@ package cli
 import (
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher"
 )
 
 func verifyAddressCmd() gcli.Command {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	params "github.com/skycoin/skycoin/src/params"
+	params "github.com/amherag/skycoin/src/params"
 )
 
 /*

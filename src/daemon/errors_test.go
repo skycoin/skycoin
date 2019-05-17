@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/amherag/skycoin/src/daemon/gnet"
 )
 
 func TestDisconnectReasonCode(t *testing.T) {

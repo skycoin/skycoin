@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unsafe"
 
-	api "github.com/skycoin/skycoin/src/api"
-	daemon "github.com/skycoin/skycoin/src/daemon"
+	api "github.com/amherag/skycoin/src/api"
+	daemon "github.com/amherag/skycoin/src/daemon"
 )
 
 /*

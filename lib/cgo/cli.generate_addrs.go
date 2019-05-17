@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"unsafe"
 
-	cipher "github.com/skycoin/skycoin/src/cipher"
-	cli "github.com/skycoin/skycoin/src/cli"
+	cipher "github.com/amherag/skycoin/src/cipher"
+	cli "github.com/amherag/skycoin/src/cli"
 )
 
 /*

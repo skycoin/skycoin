@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/amherag/skycoin/src/api/webrpc"
 )
 
 /*

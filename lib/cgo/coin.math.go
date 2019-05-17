@@ -1,6 +1,6 @@
 package main
 
-import coin "github.com/skycoin/skycoin/src/coin"
+import coin "github.com/amherag/skycoin/src/coin"
 
 /*
 

@@ -3,7 +3,7 @@ package main
 import (
 	"reflect"
 
-	cert "github.com/skycoin/skycoin/src/util/certutil"
+	cert "github.com/amherag/skycoin/src/util/certutil"
 )
 
 /*

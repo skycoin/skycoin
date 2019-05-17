@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	gobip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	gobip39 "github.com/amherag/skycoin/src/cipher/go-bip39"
 )
 
 /*

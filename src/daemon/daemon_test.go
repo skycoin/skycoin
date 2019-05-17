@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher"
 )
 
 func TestDivideHashes(t *testing.T) {

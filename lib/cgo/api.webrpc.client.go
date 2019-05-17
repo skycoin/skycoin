@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
+	webrpc "github.com/amherag/skycoin/src/api/webrpc"
 )
 
 /*

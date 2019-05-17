@@ -6,7 +6,7 @@ package fee
 import (
 	"errors"
 
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/coin"
 )
 
 var (

@@ -10,10 +10,10 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher/go-bip39"
+	secp256k1 "github.com/amherag/skycoin/src/cipher/secp256k1-go"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 const (

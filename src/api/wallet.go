@@ -9,13 +9,13 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/fee"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher/go-bip39"
+	"github.com/amherag/skycoin/src/daemon"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/util/fee"
+	wh "github.com/amherag/skycoin/src/util/http"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 // SpendResult represents the result of spending

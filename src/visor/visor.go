@@ -19,15 +19,15 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/timeutil"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
-	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/params"
+	"github.com/amherag/skycoin/src/util/logging"
+	"github.com/amherag/skycoin/src/util/timeutil"
+	"github.com/amherag/skycoin/src/visor/blockdb"
+	"github.com/amherag/skycoin/src/visor/dbutil"
+	"github.com/amherag/skycoin/src/visor/historydb"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 var (

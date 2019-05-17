@@ -13,11 +13,11 @@ import (
 	"reflect"
 	"unsafe"
 
-	cipher "github.com/skycoin/skycoin/src/cipher"
+	cipher "github.com/amherag/skycoin/src/cipher"
 )
 
 /**
- * Functions in github.com/skycoin/skycoin/src/cipher/bitcoin.go
+ * Functions in github.com/amherag/skycoin/src/cipher/bitcoin.go
  */
 
 //export SKY_cipher_DecodeBase58BitcoinAddress

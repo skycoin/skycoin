@@ -13,9 +13,9 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/skycoin"
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/skycoin"
+	"github.com/amherag/skycoin/src/util/logging"
 )
 
 var (

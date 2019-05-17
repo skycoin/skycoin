@@ -19,13 +19,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/file"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/amherag/skycoin/src/api/webrpc"
+	"github.com/amherag/skycoin/src/daemon"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/util/file"
+	wh "github.com/amherag/skycoin/src/util/http"
+	"github.com/amherag/skycoin/src/util/logging"
+	"github.com/amherag/skycoin/src/util/useragent"
 )
 
 var (

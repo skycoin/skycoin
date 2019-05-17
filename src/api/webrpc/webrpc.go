@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/util/logging"
+	wh "github.com/amherag/skycoin/src/util/http"
+	"github.com/amherag/skycoin/src/util/logging"
 )
 
 var (

@@ -26,16 +26,16 @@ import (
 	"github.com/andreyvit/diff"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/cli"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/amherag/skycoin/src/api"
+	"github.com/amherag/skycoin/src/api/webrpc"
+	"github.com/amherag/skycoin/src/cipher"
+	bip39 "github.com/amherag/skycoin/src/cipher/go-bip39"
+	"github.com/amherag/skycoin/src/cli"
+	"github.com/amherag/skycoin/src/readable"
+	"github.com/amherag/skycoin/src/testutil"
+	"github.com/amherag/skycoin/src/util/droplet"
+	wh "github.com/amherag/skycoin/src/util/http"
+	"github.com/amherag/skycoin/src/wallet"
 )
 
 const (

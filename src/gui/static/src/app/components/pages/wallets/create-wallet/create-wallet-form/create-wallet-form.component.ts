@@ -4,6 +4,7 @@ import { ISubscription } from 'rxjs/Subscription';
 import { ApiService } from '../../../../../services/api.service';
 import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/switchMap';
+import { Observable } from 'rxjs/Observable';
 
 export class FormData {
   label: string;
@@ -22,7 +23,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   @Input() onboarding: boolean;
 
   form: FormGroup;
-  normalSeed = false;
+  normalSeed = true;
   customSeedAccepted = false;
   encrypt = true;
 
@@ -91,7 +92,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     }
 
     if (data) {
-      this.seed.next(data['seed']);
+      setTimeout(() => { this.seed.next(data['seed']); });
       this.customSeedAccepted = true;
     }
 
@@ -116,7 +117,11 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     }
 
     this.seedValiditySubscription = this.seed.asObservable().switchMap(seed => {
-      return this.apiService.post('wallet/seed/verify', {seed}, {}, true);
+      if (!this.seedMatchValidator() || !this.create) {
+        return this.apiService.post('wallet/seed/verify', {seed}, {}, true);
+      } else {
+        return Observable.of(0);
+      }
     }).subscribe(() => {
       this.normalSeed = true;
     }, error => {
@@ -147,6 +152,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     if (this.form && this.form.get('seed') && this.form.get('confirm_seed')) {
       return this.form.get('seed').value === this.form.get('confirm_seed').value ? null : { NotEqual: true };
     } else {
+      this.normalSeed = true;
+
       return { NotEqual: true };
     }
   }

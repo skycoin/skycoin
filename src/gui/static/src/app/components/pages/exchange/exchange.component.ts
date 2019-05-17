@@ -46,6 +46,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
 
   showStatus(order) {
     this.currentOrderDetails = order;
+    this.hasHistory = true;
   }
 
   showHistory(event) {

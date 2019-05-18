@@ -360,10 +360,10 @@ func createRawTxnCmdHandler(c *cobra.Command, args []string) (*coin.Transaction,
 
 	// TODO -- load distribution params from config? Need to allow fiber chains to be used easily
 	if parsedArgs.Address == "" {
-		return CreateRawTxnFromWallet(apiClient, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password, params.MainnetDistribution)
+		return CreateRawTxnFromWallet(apiClient, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password, params.MainNetDistribution)
 	}
 
-	return CreateRawTxnFromAddress(apiClient, parsedArgs.Address, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password, params.MainnetDistribution)
+	return CreateRawTxnFromAddress(apiClient, parsedArgs.Address, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password, params.MainNetDistribution)
 }
 
 func validateSendAmounts(toAddrs []SendAmount) error {

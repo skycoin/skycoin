@@ -20,7 +20,7 @@ func sanityCheck() {
 		panic(err)
 	}
 
-	MainnetDistribution.MustValidate()
+	MainNetDistribution.MustValidate()
 }
 
 func loadUserBurnFactor() {

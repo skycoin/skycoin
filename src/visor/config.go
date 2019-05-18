@@ -111,5 +111,9 @@ func (c Config) Verify() error {
 		return errors.New("MaxBlockTransactionsSize must be >= CreateBlockVerifyTxn.MaxTransactionSize")
 	}
 
+	if err := c.Distribution.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }

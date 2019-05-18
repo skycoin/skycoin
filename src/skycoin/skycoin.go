@@ -383,6 +383,8 @@ func (c *Coin) initLogFile() (*os.File, error) {
 func (c *Coin) ConfigureVisor() visor.Config {
 	vc := visor.NewConfig()
 
+	vc.Distribution = params.MainNetDistribution
+
 	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
 
 	vc.BlockchainPubkey = c.config.Node.blockchainPubkey

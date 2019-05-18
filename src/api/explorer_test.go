@@ -39,7 +39,7 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 	}
 	// "total supply" is the number of coins unlocked.
 	// Each distribution address was allocated params.MainNetDistribution.AddressInitialBalance coins.
-	totalSupply := uint64(len(unlockedAddrs)) * params.MainNetDistribution.AddressInitialBalance
+	totalSupply := uint64(len(unlockedAddrs)) * params.MainNetDistribution.AddressInitialBalance()
 	totalSupply *= droplet.Multiplier
 
 	// "current supply" is the number of coins distribution from the unlocked pool

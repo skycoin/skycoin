@@ -25,7 +25,7 @@ type Distribution struct {
 	addressesDecoded []cipher.Address
 }
 
-// MustValidates validates Distribution parameters, panics on error
+// MustValidate validates Distribution parameters, panics on error
 func (d *Distribution) MustValidate() {
 	if err := d.Validate(); err != nil {
 		panic(err)

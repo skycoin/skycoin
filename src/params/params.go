@@ -8,11 +8,10 @@ AVOID EDITING THIS MANUALLY
 var (
 	// MainNetDistribution Skycoin mainnet coin distribution parameters
 	MainNetDistribution = Distribution{
-		MaxCoinSupply:         1e8,
-		AddressInitialBalance: 1e6,
-		InitialUnlockedCount:  25,
-		UnlockAddressRate:     5,
-		UnlockTimeInterval:    31536000,
+		MaxCoinSupply:        1e8,
+		InitialUnlockedCount: 25,
+		UnlockAddressRate:    5,
+		UnlockTimeInterval:   31536000,
 		Addresses: []string{
 			"R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 			"2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",

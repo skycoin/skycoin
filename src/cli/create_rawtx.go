@@ -359,11 +359,18 @@ func createRawTxnCmdHandler(c *cobra.Command, args []string) (*coin.Transaction,
 	}
 
 	// TODO -- load distribution params from config? Need to allow fiber chains to be used easily
+	// There's too many distribution parameters to put them in command line, but we could read them from a file.
+	// We could also have multiple hardcoded known distribution parameters for fiber coins, in the source,
+	// but this wouldn't work for new fiber coins that hadn't been hardcoded yet.
 	if parsedArgs.Address == "" {
-		return CreateRawTxnFromWallet(apiClient, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password, params.MainNetDistribution)
+		return CreateRawTxnFromWallet(apiClient, parsedArgs.WalletID,
+			parsedArgs.ChangeAddress, parsedArgs.SendAmounts,
+			parsedArgs.Password, params.MainNetDistribution)
 	}
 
-	return CreateRawTxnFromAddress(apiClient, parsedArgs.Address, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password, params.MainNetDistribution)
+	return CreateRawTxnFromAddress(apiClient, parsedArgs.Address,
+		parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts,
+		parsedArgs.Password, params.MainNetDistribution)
 }
 
 func validateSendAmounts(toAddrs []SendAmount) error {

@@ -6,11 +6,10 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
+// Distribution parameters define the initial coin distribution and unlocking schedule
 type Distribution struct {
 	// MaxCoinSupply is the maximum supply of coins
 	MaxCoinSupply uint64
-	// AddressInitialBalance is the initial balance of each distribution address
-	AddressInitialBalance uint64
 	// InitialUnlockedCount is the initial number of unlocked addresses
 	InitialUnlockedCount uint64
 	// UnlockAddressRate is the number of addresses to unlock per unlock time interval
@@ -26,19 +25,17 @@ type Distribution struct {
 	addressesDecoded []cipher.Address
 }
 
+// MustValidates validates Distribution parameters, panics on error
 func (d *Distribution) MustValidate() {
 	if err := d.Validate(); err != nil {
 		panic(err)
 	}
 }
 
+// Validate validates Distribution parameters
 func (d *Distribution) Validate() error {
 	if d.InitialUnlockedCount > uint64(len(d.Addresses)) {
 		return errors.New("unlocked addresses > total distribution addresses")
-	}
-
-	if d.AddressInitialBalance*uint64(len(d.Addresses)) != d.MaxCoinSupply {
-		return errors.New("total balance in distribution addresses != max coin supply")
 	}
 
 	if d.MaxCoinSupply%uint64(len(d.Addresses)) != 0 {
@@ -50,6 +47,11 @@ func (d *Distribution) Validate() error {
 	}
 
 	return nil
+}
+
+// AddressInitialBalance is the initial balance of each distribution address
+func (d *Distribution) AddressInitialBalance() uint64 {
+	return d.MaxCoinSupply / len(d.Addresses)
 }
 
 // UnlockedAddresses returns distribution addresses that are unlocked, i.e. they have spendable outputs
@@ -149,82 +151,3 @@ func (d *Distribution) mustDecodeAddresses() {
 		panic(err)
 	}
 }
-
-// addressesDecoded is initialized in init.go from params.go's addresses
-// var addressesDecoded []cipher.Address
-
-// // GetDistributionAddresses returns a copy of the hardcoded distribution addresses array.
-// // Each address has 1,000,000 coins. There are 100 addresses.
-// func GetDistributionAddresses(p *Params) []string {
-// 	addrs := make([]string, len(p.DistributionAddresses))
-// 	for i := range p.DistributionAddresses {
-// 		addrs[i] = p.DistributionAddresses[i]
-// 	}
-// 	return addrs
-// }
-
-// // GetUnlockedDistributionAddresses returns distribution addresses that are unlocked, i.e. they have spendable outputs
-// func GetUnlockedDistributionAddresses(p *Params) []string {
-// 	// The first InitialUnlockedCount (25) addresses are unlocked by default.
-// 	// Subsequent addresses will be unlocked at a rate of UnlockAddressRate (5) per year,
-// 	// after the InitialUnlockedCount (25) addresses have no remaining balance.
-// 	// The unlock timer will be enabled manually once the
-// 	// p.InitialUnlockedCount (25) addresses are distributed.
-
-// 	// NOTE: To have automatic unlocking, transaction verification would have
-// 	// to be handled in visor rather than in coin.Transactions.Visor(), because
-// 	// the coin package is agnostic to the state of the blockchain and cannot reference it.
-// 	// Instead of automatic unlocking, we can hardcode the timestamp at which the first 30%
-// 	// is distributed, then compute the unlocked addresses easily here.
-
-// 	addrs := make([]string, p.InitialUnlockedCount)
-// 	copy(addrs[:], p.DistributionAddresses[:p.InitialUnlockedCount])
-// 	return addrs
-// }
-
-// // GetLockedDistributionAddresses returns distribution addresses that are locked, i.e. they have unspendable outputs
-// func GetLockedDistributionAddresses(p *Params) []string {
-// 	// TODO -- once we reach 30% distribution, we can hardcode the
-// 	// initial timestamp for releasing more coins
-// 	addrs := make([]string, p.DistributionAddressesTotal-p.InitialUnlockedCount)
-// 	for i := range addresses[p.InitialUnlockedCount:] {
-// 		addrs[i] = addresses[p.InitialUnlockedCount+uint64(i)]
-// 	}
-// 	return addrs
-// }
-
-// // GetDistributionAddressesDecoded returns a copy of the hardcoded distribution addresses array.
-// // Each address has 1,000,000 coins. There are 100 addresses.
-// func GetDistributionAddressesDecoded(p *Params) []cipher.Address {
-// 	addrs := make([]cipher.Address, len(p.addressesDecoded))
-// 	copy(addrs, p.addressesDecoded)
-// 	return addrs
-// }
-
-// // GetUnlockedDistributionAddressesDecoded returns distribution addresses that are unlocked, i.e. they have spendable outputs
-// func GetUnlockedDistributionAddressesDecoded(p *Params) []cipher.Address {
-// 	// The first p.InitialUnlockedCount (25) addresses are unlocked by default.
-// 	// Subsequent addresses will be unlocked at a rate of UnlockAddressRate (5) per year,
-// 	// after the p.InitialUnlockedCount (25) addresses have no remaining balance.
-// 	// The unlock timer will be enabled manually once the
-// 	// p.InitialUnlockedCount (25) addresses are distributed.
-
-// 	// NOTE: To have automatic unlocking, transaction verification would have
-// 	// to be handled in visor rather than in coin.Transactions.Visor(), because
-// 	// the coin package is agnostic to the state of the blockchain and cannot reference it.
-// 	// Instead of automatic unlocking, we can hardcode the timestamp at which the first 30%
-// 	// is distributed, then compute the unlocked addresses easily here.
-
-// 	addrs := make([]cipher.Address, p.InitialUnlockedCount)
-// 	copy(addrs[:], p.addressesDecoded[:p.InitialUnlockedCount])
-// 	return addrs
-// }
-
-// // GetLockedDistributionAddressesDecoded returns distribution addresses that are locked, i.e. they have unspendable outputs
-// func GetLockedDistributionAddressesDecoded(p *Params) []cipher.Address {
-// 	// TODO -- once we reach 30% distribution, we can hardcode the
-// 	// initial timestamp for releasing more coins
-// 	addrs := make([]cipher.Address, p.DistributionAddressesTotal-p.InitialUnlockedCount)
-// 	copy(addrs, p.addressesDecoded[p.InitialUnlockedCount:])
-// 	return addrs
-// }

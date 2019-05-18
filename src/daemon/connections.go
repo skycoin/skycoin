@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/useragent"
@@ -63,6 +64,7 @@ type ConnectionDetails struct {
 	Height               uint64
 	UserAgent            useragent.Data
 	UnconfirmedVerifyTxn params.VerifyTxn
+	GenesisHash          cipher.SHA256
 }
 
 // HasIntroduced returns true if the connection has introduced
@@ -297,6 +299,7 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 	conn.ListenPort = listenPort
 	conn.UserAgent = m.UserAgent
 	conn.UnconfirmedVerifyTxn = m.UnconfirmedVerifyTxn
+	conn.GenesisHash = m.GenesisHash
 
 	if !conn.Outgoing {
 		listenAddr := conn.ListenAddr()

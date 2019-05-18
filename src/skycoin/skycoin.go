@@ -464,6 +464,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
+	dc.Daemon.GenesisHash = c.config.Node.genesisHash
 	dc.Daemon.UserAgent = c.config.Node.userAgent
 	dc.Daemon.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 

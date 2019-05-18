@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/kvstorage"
 
 	"log"
@@ -205,6 +206,7 @@ type NodeConfig struct {
 
 	genesisSignature cipher.Sig
 	genesisAddress   cipher.Address
+	genesisHash      cipher.SHA256
 
 	blockchainPubkey cipher.PubKey
 	blockchainSeckey cipher.SecKey
@@ -345,6 +347,14 @@ func (c *Config) postProcess() error {
 		c.Node.genesisAddress, err = cipher.DecodeBase58Address(c.Node.GenesisAddressStr)
 		panicIfError(err, "Invalid Address")
 	}
+
+	// Compute genesis block hash
+	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp)
+	if err != nil {
+		panicIfError(err, "Create genesis hash failed")
+	}
+	c.Node.genesisHash = gb.HashHeader()
+
 	if c.Node.BlockchainPubkeyStr != "" {
 		c.Node.blockchainPubkey, err = cipher.PubKeyFromHex(c.Node.BlockchainPubkeyStr)
 		panicIfError(err, "Invalid Pubkey")

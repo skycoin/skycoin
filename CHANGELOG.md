@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Update `/metrics` endpoint to add metrics from `/health`: `unspent_outputs`, `unconfirmed_txns`, `time_since_last_block_seconds`, `open_connections`, `outgoing_connections`, `incoming_connections`, `start_at`, `uptime_seconds`, `last_block_seq`.
 - Add the option for changing the language of the GUI.
 - Add Spanish and Simplified Chinese language options
+- Add genesis block hash in `INTR` message
 
 ### Fixed
 

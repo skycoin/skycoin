@@ -358,6 +358,46 @@ _skycoin-cli_addressOutputs()
     noun_aliases=()
 }
 
+_skycoin-cli_addressTransactions()
+{
+    last_command="skycoin-cli_addressTransactions"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_addresscount()
+{
+    last_command="skycoin-cli_addresscount"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _skycoin-cli_blocks()
 {
     last_command="skycoin-cli_blocks"
@@ -398,6 +438,26 @@ _skycoin-cli_broadcastTransaction()
     noun_aliases=()
 }
 
+_skycoin-cli_checkDBDecoding()
+{
+    last_command="skycoin-cli_checkDBDecoding"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _skycoin-cli_checkdb()
 {
     last_command="skycoin-cli_checkdb"
@@ -405,6 +465,71 @@ _skycoin-cli_checkdb()
     command_aliases=()
 
     commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_completion_bash()
+{
+    last_command="skycoin-cli_completion_bash"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--help")
+    flags+=("-h")
+    local_nonpersistent_flags+=("--help")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_completion_zsh()
+{
+    last_command="skycoin-cli_completion_zsh"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_completion()
+{
+    last_command="skycoin-cli_completion"
+
+    command_aliases=()
+
+    commands=()
+    commands+=("bash")
+    commands+=("zsh")
 
     flags=()
     two_word_flags=()
@@ -622,6 +747,49 @@ _skycoin-cli_listWallets()
     noun_aliases=()
 }
 
+_skycoin-cli_pendingTransactions()
+{
+    last_command="skycoin-cli_pendingTransactions"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--verbose")
+    flags+=("-v")
+    local_nonpersistent_flags+=("--verbose")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_richlist()
+{
+    last_command="skycoin-cli_richlist"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _skycoin-cli_send()
 {
     last_command="skycoin-cli_send"
@@ -751,6 +919,26 @@ _skycoin-cli_transaction()
 _skycoin-cli_verifyAddress()
 {
     last_command="skycoin-cli_verifyAddress"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_verifyTransaction()
+{
+    last_command="skycoin-cli_verifyTransaction"
 
     command_aliases=()
 
@@ -967,9 +1155,13 @@ _skycoin-cli_root_command()
     commands+=("addressBalance")
     commands+=("addressGen")
     commands+=("addressOutputs")
+    commands+=("addressTransactions")
+    commands+=("addresscount")
     commands+=("blocks")
     commands+=("broadcastTransaction")
+    commands+=("checkDBDecoding")
     commands+=("checkdb")
+    commands+=("completion")
     commands+=("createRawTransaction")
     commands+=("decodeRawTransaction")
     commands+=("decryptWallet")
@@ -978,12 +1170,15 @@ _skycoin-cli_root_command()
     commands+=("lastBlocks")
     commands+=("listAddresses")
     commands+=("listWallets")
+    commands+=("pendingTransactions")
+    commands+=("richlist")
     commands+=("send")
     commands+=("showConfig")
     commands+=("showSeed")
     commands+=("status")
     commands+=("transaction")
     commands+=("verifyAddress")
+    commands+=("verifyTransaction")
     commands+=("version")
     commands+=("walletAddAddresses")
     commands+=("walletBalance")

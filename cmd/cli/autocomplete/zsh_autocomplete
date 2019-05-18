@@ -1,20 +1,1368 @@
-#compdef skycoin-cli
 
-_arguments \
-  '1: :->level1' \
-  '2: :_files'
-case $state in
-  level1)
-    case $words[1] in
-      skycoin-cli)
-        _arguments '1: :(addPrivateKey addressBalance addressGen addressOutputs blocks broadcastTransaction checkdb createRawTransaction decodeRawTransaction decryptWallet encryptWallet fiberAddressGen lastBlocks listAddresses listWallets send showConfig showSeed status transaction verifyAddress version walletAddAddresses walletBalance walletCreate walletDir walletHistory walletOutputs)'
-      ;;
-      *)
-        _arguments '*: :_files'
-      ;;
+__skycoin-cli_bash_source() {
+	alias shopt=':'
+	alias _expand=_bash_expand
+	alias _complete=_bash_comp
+	emulate -L sh
+	setopt kshglob noshglob braceexpand
+	source "$@"
+}
+__skycoin-cli_type() {
+	# -t is not supported by zsh
+	if [ "$1" == "-t" ]; then
+		shift
+		# fake Bash 4 to disable "complete -o nospace". Instead
+		# "compopt +-o nospace" is used in the code to toggle trailing
+		# spaces. We don't support that, but leave trailing spaces on
+		# all the time
+		if [ "$1" = "__skycoin-cli_compopt" ]; then
+			echo builtin
+			return 0
+		fi
+	fi
+	type "$@"
+}
+__skycoin-cli_compgen() {
+	local completions w
+	completions=( $(compgen "$@") ) || return $?
+	# filter by given word as prefix
+	while [[ "$1" = -* && "$1" != -- ]]; do
+		shift
+		shift
+	done
+	if [[ "$1" == -- ]]; then
+		shift
+	fi
+	for w in "${completions[@]}"; do
+		if [[ "${w}" = "$1"* ]]; then
+			echo "${w}"
+		fi
+	done
+}
+__skycoin-cli_compopt() {
+	true # don't do anything. Not supported by bashcompinit in zsh
+}
+__skycoin-cli_declare() {
+	if [ "$1" == "-F" ]; then
+		whence -w "$@"
+	else
+		builtin declare "$@"
+	fi
+}
+__skycoin-cli_ltrim_colon_completions()
+{
+	if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
+		# Remove colon-word prefix from COMPREPLY items
+		local colon_word=${1%${1##*:}}
+		local i=${#COMPREPLY[*]}
+		while [[ $((--i)) -ge 0 ]]; do
+			COMPREPLY[$i]=${COMPREPLY[$i]#"$colon_word"}
+		done
+	fi
+}
+__skycoin-cli_get_comp_words_by_ref() {
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[${COMP_CWORD}-1]}"
+	words=("${COMP_WORDS[@]}")
+	cword=("${COMP_CWORD[@]}")
+}
+__skycoin-cli_filedir() {
+	local RET OLD_IFS w qw
+	__debug "_filedir $@ cur=$cur"
+	if [[ "$1" = \~* ]]; then
+		# somehow does not work. Maybe, zsh does not call this at all
+		eval echo "$1"
+		return 0
+	fi
+	OLD_IFS="$IFS"
+	IFS=$'\n'
+	if [ "$1" = "-d" ]; then
+		shift
+		RET=( $(compgen -d) )
+	else
+		RET=( $(compgen -f) )
+	fi
+	IFS="$OLD_IFS"
+	IFS="," __debug "RET=${RET[@]} len=${#RET[@]}"
+	for w in ${RET[@]}; do
+		if [[ ! "${w}" = "${cur}"* ]]; then
+			continue
+		fi
+		if eval "[[ \"\${w}\" = *.$1 || -d \"\${w}\" ]]"; then
+			qw="$(__skycoin-cli_quote "${w}")"
+			if [ -d "${w}" ]; then
+				COMPREPLY+=("${qw}/")
+			else
+				COMPREPLY+=("${qw}")
+			fi
+		fi
+	done
+}
+__skycoin-cli_quote() {
+    if [[ $1 == \'* || $1 == \"* ]]; then
+        # Leave out first character
+        printf %q "${1:1}"
+    else
+    	printf %q "$1"
+    fi
+}
+autoload -U +X bashcompinit && bashcompinit
+# use word boundary patterns for BSD or GNU sed
+LWORD='[[:<:]]'
+RWORD='[[:>:]]'
+if sed --help 2>&1 | grep -q GNU; then
+	LWORD='\<'
+	RWORD='\>'
+fi
+__skycoin-cli_convert_bash_to_zsh() {
+	sed \
+	-e 's/declare -F/whence -w/' \
+	-e 's/local \([a-zA-Z0-9_]*\)=/local \1; \1=/' \
+	-e 's/flags+=("\(--.*\)=")/flags+=("\1"); two_word_flags+=("\1")/' \
+	-e 's/must_have_one_flag+=("\(--.*\)=")/must_have_one_flag+=("\1")/' \
+	-e "s/${LWORD}_filedir${RWORD}/__skycoin-cli_filedir/g" \
+	-e "s/${LWORD}_get_comp_words_by_ref${RWORD}/__skycoin-cli_get_comp_words_by_ref/g" \
+	-e "s/${LWORD}__ltrim_colon_completions${RWORD}/__skycoin-cli_ltrim_colon_completions/g" \
+	-e "s/${LWORD}compgen${RWORD}/__skycoin-cli_compgen/g" \
+	-e "s/${LWORD}compopt${RWORD}/__skycoin-cli_compopt/g" \
+	-e "s/${LWORD}declare${RWORD}/__skycoin-cli_declare/g" \
+	-e "s/\\\$(type${RWORD}/\$(__skycoin-cli_type/g" \
+	<<'BASH_COMPLETION_EOF'
+# bash completion for skycoin-cli                          -*- shell-script -*-
+
+__skycoin-cli_debug()
+{
+    if [[ -n ${BASH_COMP_DEBUG_FILE} ]]; then
+        echo "$*" >> "${BASH_COMP_DEBUG_FILE}"
+    fi
+}
+
+# Homebrew on Macs have version 1.3 of bash-completion which doesn't include
+# _init_completion. This is a very minimal version of that function.
+__skycoin-cli_init_completion()
+{
+    COMPREPLY=()
+    _get_comp_words_by_ref "$@" cur prev words cword
+}
+
+__skycoin-cli_index_of_word()
+{
+    local w word=$1
+    shift
+    index=0
+    for w in "$@"; do
+        [[ $w = "$word" ]] && return
+        index=$((index+1))
+    done
+    index=-1
+}
+
+__skycoin-cli_contains_word()
+{
+    local w word=$1; shift
+    for w in "$@"; do
+        [[ $w = "$word" ]] && return
+    done
+    return 1
+}
+
+__skycoin-cli_handle_reply()
+{
+    __skycoin-cli_debug "${FUNCNAME[0]}"
+    case $cur in
+        -*)
+            if [[ $(type -t compopt) = "builtin" ]]; then
+                compopt -o nospace
+            fi
+            local allflags
+            if [ ${#must_have_one_flag[@]} -ne 0 ]; then
+                allflags=("${must_have_one_flag[@]}")
+            else
+                allflags=("${flags[*]} ${two_word_flags[*]}")
+            fi
+            COMPREPLY=( $(compgen -W "${allflags[*]}" -- "$cur") )
+            if [[ $(type -t compopt) = "builtin" ]]; then
+                [[ "${COMPREPLY[0]}" == *= ]] || compopt +o nospace
+            fi
+
+            # complete after --flag=abc
+            if [[ $cur == *=* ]]; then
+                if [[ $(type -t compopt) = "builtin" ]]; then
+                    compopt +o nospace
+                fi
+
+                local index flag
+                flag="${cur%=*}"
+                __skycoin-cli_index_of_word "${flag}" "${flags_with_completion[@]}"
+                COMPREPLY=()
+                if [[ ${index} -ge 0 ]]; then
+                    PREFIX=""
+                    cur="${cur#*=}"
+                    ${flags_completion[${index}]}
+                    if [ -n "${ZSH_VERSION}" ]; then
+                        # zsh completion needs --flag= prefix
+                        eval "COMPREPLY=( \"\${COMPREPLY[@]/#/${flag}=}\" )"
+                    fi
+                fi
+            fi
+            return 0;
+            ;;
     esac
-  ;;
-  *)
-    _arguments '*: :_files'
-  ;;
-esac
+
+    # check if we are handling a flag with special work handling
+    local index
+    __skycoin-cli_index_of_word "${prev}" "${flags_with_completion[@]}"
+    if [[ ${index} -ge 0 ]]; then
+        ${flags_completion[${index}]}
+        return
+    fi
+
+    # we are parsing a flag and don't have a special handler, no completion
+    if [[ ${cur} != "${words[cword]}" ]]; then
+        return
+    fi
+
+    local completions
+    completions=("${commands[@]}")
+    if [[ ${#must_have_one_noun[@]} -ne 0 ]]; then
+        completions=("${must_have_one_noun[@]}")
+    fi
+    if [[ ${#must_have_one_flag[@]} -ne 0 ]]; then
+        completions+=("${must_have_one_flag[@]}")
+    fi
+    COMPREPLY=( $(compgen -W "${completions[*]}" -- "$cur") )
+
+    if [[ ${#COMPREPLY[@]} -eq 0 && ${#noun_aliases[@]} -gt 0 && ${#must_have_one_noun[@]} -ne 0 ]]; then
+        COMPREPLY=( $(compgen -W "${noun_aliases[*]}" -- "$cur") )
+    fi
+
+    if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
+        declare -F __custom_func >/dev/null && __custom_func
+    fi
+
+    # available in bash-completion >= 2, not always present on macOS
+    if declare -F __ltrim_colon_completions >/dev/null; then
+        __ltrim_colon_completions "$cur"
+    fi
+
+    # If there is only 1 completion and it is a flag with an = it will be completed
+    # but we don't want a space after the =
+    if [[ "${#COMPREPLY[@]}" -eq "1" ]] && [[ $(type -t compopt) = "builtin" ]] && [[ "${COMPREPLY[0]}" == --*= ]]; then
+       compopt -o nospace
+    fi
+}
+
+# The arguments should be in the form "ext1|ext2|extn"
+__skycoin-cli_handle_filename_extension_flag()
+{
+    local ext="$1"
+    _filedir "@(${ext})"
+}
+
+__skycoin-cli_handle_subdirs_in_dir_flag()
+{
+    local dir="$1"
+    pushd "${dir}" >/dev/null 2>&1 && _filedir -d && popd >/dev/null 2>&1
+}
+
+__skycoin-cli_handle_flag()
+{
+    __skycoin-cli_debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
+
+    # if a command required a flag, and we found it, unset must_have_one_flag()
+    local flagname=${words[c]}
+    local flagvalue
+    # if the word contained an =
+    if [[ ${words[c]} == *"="* ]]; then
+        flagvalue=${flagname#*=} # take in as flagvalue after the =
+        flagname=${flagname%=*} # strip everything after the =
+        flagname="${flagname}=" # but put the = back
+    fi
+    __skycoin-cli_debug "${FUNCNAME[0]}: looking for ${flagname}"
+    if __skycoin-cli_contains_word "${flagname}" "${must_have_one_flag[@]}"; then
+        must_have_one_flag=()
+    fi
+
+    # if you set a flag which only applies to this command, don't show subcommands
+    if __skycoin-cli_contains_word "${flagname}" "${local_nonpersistent_flags[@]}"; then
+      commands=()
+    fi
+
+    # keep flag value with flagname as flaghash
+    # flaghash variable is an associative array which is only supported in bash > 3.
+    if [[ -z "${BASH_VERSION}" || "${BASH_VERSINFO[0]}" -gt 3 ]]; then
+        if [ -n "${flagvalue}" ] ; then
+            flaghash[${flagname}]=${flagvalue}
+        elif [ -n "${words[ $((c+1)) ]}" ] ; then
+            flaghash[${flagname}]=${words[ $((c+1)) ]}
+        else
+            flaghash[${flagname}]="true" # pad "true" for bool flag
+        fi
+    fi
+
+    # skip the argument to a two word flag
+    if __skycoin-cli_contains_word "${words[c]}" "${two_word_flags[@]}"; then
+        c=$((c+1))
+        # if we are looking for a flags value, don't show commands
+        if [[ $c -eq $cword ]]; then
+            commands=()
+        fi
+    fi
+
+    c=$((c+1))
+
+}
+
+__skycoin-cli_handle_noun()
+{
+    __skycoin-cli_debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
+
+    if __skycoin-cli_contains_word "${words[c]}" "${must_have_one_noun[@]}"; then
+        must_have_one_noun=()
+    elif __skycoin-cli_contains_word "${words[c]}" "${noun_aliases[@]}"; then
+        must_have_one_noun=()
+    fi
+
+    nouns+=("${words[c]}")
+    c=$((c+1))
+}
+
+__skycoin-cli_handle_command()
+{
+    __skycoin-cli_debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
+
+    local next_command
+    if [[ -n ${last_command} ]]; then
+        next_command="_${last_command}_${words[c]//:/__}"
+    else
+        if [[ $c -eq 0 ]]; then
+            next_command="_skycoin-cli_root_command"
+        else
+            next_command="_${words[c]//:/__}"
+        fi
+    fi
+    c=$((c+1))
+    __skycoin-cli_debug "${FUNCNAME[0]}: looking for ${next_command}"
+    declare -F "$next_command" >/dev/null && $next_command
+}
+
+__skycoin-cli_handle_word()
+{
+    if [[ $c -ge $cword ]]; then
+        __skycoin-cli_handle_reply
+        return
+    fi
+    __skycoin-cli_debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
+    if [[ "${words[c]}" == -* ]]; then
+        __skycoin-cli_handle_flag
+    elif __skycoin-cli_contains_word "${words[c]}" "${commands[@]}"; then
+        __skycoin-cli_handle_command
+    elif [[ $c -eq 0 ]]; then
+        __skycoin-cli_handle_command
+    elif __skycoin-cli_contains_word "${words[c]}" "${command_aliases[@]}"; then
+        # aliashash variable is an associative array which is only supported in bash > 3.
+        if [[ -z "${BASH_VERSION}" || "${BASH_VERSINFO[0]}" -gt 3 ]]; then
+            words[c]=${aliashash[${words[c]}]}
+            __skycoin-cli_handle_command
+        else
+            __skycoin-cli_handle_noun
+        fi
+    else
+        __skycoin-cli_handle_noun
+    fi
+    __skycoin-cli_handle_word
+}
+
+_skycoin-cli_addPrivateKey()
+{
+    last_command="skycoin-cli_addPrivateKey"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--password=")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--password=")
+    flags+=("--wallet-file=")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--wallet-file=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_addressBalance()
+{
+    last_command="skycoin-cli_addressBalance"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_addressGen()
+{
+    last_command="skycoin-cli_addressGen"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--coin=")
+    two_word_flags+=("-c")
+    local_nonpersistent_flags+=("--coin=")
+    flags+=("--encrypt")
+    flags+=("-x")
+    local_nonpersistent_flags+=("--encrypt")
+    flags+=("--entropy=")
+    two_word_flags+=("-e")
+    local_nonpersistent_flags+=("--entropy=")
+    flags+=("--hex")
+    local_nonpersistent_flags+=("--hex")
+    flags+=("--hide-secrets")
+    flags+=("-i")
+    local_nonpersistent_flags+=("--hide-secrets")
+    flags+=("--label=")
+    two_word_flags+=("-l")
+    local_nonpersistent_flags+=("--label=")
+    flags+=("--mode=")
+    two_word_flags+=("-m")
+    local_nonpersistent_flags+=("--mode=")
+    flags+=("--num=")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--num=")
+    flags+=("--seed=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--seed=")
+    flags+=("--strict-seed")
+    flags+=("-t")
+    local_nonpersistent_flags+=("--strict-seed")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_addressOutputs()
+{
+    last_command="skycoin-cli_addressOutputs"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_addressTransactions()
+{
+    last_command="skycoin-cli_addressTransactions"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_addresscount()
+{
+    last_command="skycoin-cli_addresscount"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_blocks()
+{
+    last_command="skycoin-cli_blocks"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_broadcastTransaction()
+{
+    last_command="skycoin-cli_broadcastTransaction"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_checkDBDecoding()
+{
+    last_command="skycoin-cli_checkDBDecoding"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_checkdb()
+{
+    last_command="skycoin-cli_checkdb"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_completion_bash()
+{
+    last_command="skycoin-cli_completion_bash"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_completion_zsh()
+{
+    last_command="skycoin-cli_completion_zsh"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--help")
+    flags+=("-h")
+    local_nonpersistent_flags+=("--help")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_completion()
+{
+    last_command="skycoin-cli_completion"
+
+    command_aliases=()
+
+    commands=()
+    commands+=("bash")
+    commands+=("zsh")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_createRawTransaction()
+{
+    last_command="skycoin-cli_createRawTransaction"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--address=")
+    two_word_flags+=("-a")
+    local_nonpersistent_flags+=("--address=")
+    flags+=("--change-address=")
+    two_word_flags+=("-c")
+    local_nonpersistent_flags+=("--change-address=")
+    flags+=("--csv=")
+    local_nonpersistent_flags+=("--csv=")
+    flags+=("--json")
+    flags+=("-j")
+    local_nonpersistent_flags+=("--json")
+    flags+=("--many=")
+    two_word_flags+=("-m")
+    local_nonpersistent_flags+=("--many=")
+    flags+=("--password=")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--password=")
+    flags+=("--wallet-file=")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--wallet-file=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_decodeRawTransaction()
+{
+    last_command="skycoin-cli_decodeRawTransaction"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_decryptWallet()
+{
+    last_command="skycoin-cli_decryptWallet"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--password=")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--password=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_encryptWallet()
+{
+    last_command="skycoin-cli_encryptWallet"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--crypto-type=")
+    two_word_flags+=("-x")
+    local_nonpersistent_flags+=("--crypto-type=")
+    flags+=("--password=")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--password=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_fiberAddressGen()
+{
+    last_command="skycoin-cli_fiberAddressGen"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--addrs-file=")
+    two_word_flags+=("-a")
+    local_nonpersistent_flags+=("--addrs-file=")
+    flags+=("--entropy=")
+    two_word_flags+=("-e")
+    local_nonpersistent_flags+=("--entropy=")
+    flags+=("--num=")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--num=")
+    flags+=("--overwrite")
+    flags+=("-o")
+    local_nonpersistent_flags+=("--overwrite")
+    flags+=("--seeds-file=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--seeds-file=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_lastBlocks()
+{
+    last_command="skycoin-cli_lastBlocks"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_listAddresses()
+{
+    last_command="skycoin-cli_listAddresses"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_listWallets()
+{
+    last_command="skycoin-cli_listWallets"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_pendingTransactions()
+{
+    last_command="skycoin-cli_pendingTransactions"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--verbose")
+    flags+=("-v")
+    local_nonpersistent_flags+=("--verbose")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_richlist()
+{
+    last_command="skycoin-cli_richlist"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_send()
+{
+    last_command="skycoin-cli_send"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--address=")
+    two_word_flags+=("-a")
+    local_nonpersistent_flags+=("--address=")
+    flags+=("--change-address=")
+    two_word_flags+=("-c")
+    local_nonpersistent_flags+=("--change-address=")
+    flags+=("--csv=")
+    local_nonpersistent_flags+=("--csv=")
+    flags+=("--json")
+    flags+=("-j")
+    local_nonpersistent_flags+=("--json")
+    flags+=("--many=")
+    two_word_flags+=("-m")
+    local_nonpersistent_flags+=("--many=")
+    flags+=("--password=")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--password=")
+    flags+=("--wallet-file=")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--wallet-file=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_showConfig()
+{
+    last_command="skycoin-cli_showConfig"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_showSeed()
+{
+    last_command="skycoin-cli_showSeed"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--json")
+    flags+=("-j")
+    local_nonpersistent_flags+=("--json")
+    flags+=("--password=")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--password=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_status()
+{
+    last_command="skycoin-cli_status"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_transaction()
+{
+    last_command="skycoin-cli_transaction"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_verifyAddress()
+{
+    last_command="skycoin-cli_verifyAddress"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_verifyTransaction()
+{
+    last_command="skycoin-cli_verifyTransaction"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_version()
+{
+    last_command="skycoin-cli_version"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--json")
+    flags+=("-j")
+    local_nonpersistent_flags+=("--json")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_walletAddAddresses()
+{
+    last_command="skycoin-cli_walletAddAddresses"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--json")
+    flags+=("-j")
+    local_nonpersistent_flags+=("--json")
+    flags+=("--num=")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--num=")
+    flags+=("--password=")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--password=")
+    flags+=("--wallet-file=")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--wallet-file=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_walletBalance()
+{
+    last_command="skycoin-cli_walletBalance"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_walletCreate()
+{
+    last_command="skycoin-cli_walletCreate"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--crypto-type=")
+    two_word_flags+=("-x")
+    local_nonpersistent_flags+=("--crypto-type=")
+    flags+=("--encrypt")
+    flags+=("-e")
+    local_nonpersistent_flags+=("--encrypt")
+    flags+=("--label=")
+    two_word_flags+=("-l")
+    local_nonpersistent_flags+=("--label=")
+    flags+=("--mnemonic")
+    flags+=("-m")
+    local_nonpersistent_flags+=("--mnemonic")
+    flags+=("--num=")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--num=")
+    flags+=("--password=")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--password=")
+    flags+=("--random")
+    flags+=("-r")
+    local_nonpersistent_flags+=("--random")
+    flags+=("--seed=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--seed=")
+    flags+=("--wallet-file=")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--wallet-file=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_walletDir()
+{
+    last_command="skycoin-cli_walletDir"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--json")
+    flags+=("-j")
+    local_nonpersistent_flags+=("--json")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_walletHistory()
+{
+    last_command="skycoin-cli_walletHistory"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--wallet-file=")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--wallet-file=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_walletOutputs()
+{
+    last_command="skycoin-cli_walletOutputs"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_skycoin-cli_root_command()
+{
+    last_command="skycoin-cli"
+
+    command_aliases=()
+
+    commands=()
+    commands+=("addPrivateKey")
+    commands+=("addressBalance")
+    commands+=("addressGen")
+    commands+=("addressOutputs")
+    commands+=("addressTransactions")
+    commands+=("addresscount")
+    commands+=("blocks")
+    commands+=("broadcastTransaction")
+    commands+=("checkDBDecoding")
+    commands+=("checkdb")
+    commands+=("completion")
+    commands+=("createRawTransaction")
+    commands+=("decodeRawTransaction")
+    commands+=("decryptWallet")
+    commands+=("encryptWallet")
+    commands+=("fiberAddressGen")
+    commands+=("lastBlocks")
+    commands+=("listAddresses")
+    commands+=("listWallets")
+    commands+=("pendingTransactions")
+    commands+=("richlist")
+    commands+=("send")
+    commands+=("showConfig")
+    commands+=("showSeed")
+    commands+=("status")
+    commands+=("transaction")
+    commands+=("verifyAddress")
+    commands+=("verifyTransaction")
+    commands+=("version")
+    commands+=("walletAddAddresses")
+    commands+=("walletBalance")
+    commands+=("walletCreate")
+    commands+=("walletDir")
+    commands+=("walletHistory")
+    commands+=("walletOutputs")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+__start_skycoin-cli()
+{
+    local cur prev words cword
+    declare -A flaghash 2>/dev/null || :
+    declare -A aliashash 2>/dev/null || :
+    if declare -F _init_completion >/dev/null 2>&1; then
+        _init_completion -s || return
+    else
+        __skycoin-cli_init_completion -n "=" || return
+    fi
+
+    local c=0
+    local flags=()
+    local two_word_flags=()
+    local local_nonpersistent_flags=()
+    local flags_with_completion=()
+    local flags_completion=()
+    local commands=("skycoin-cli")
+    local must_have_one_flag=()
+    local must_have_one_noun=()
+    local last_command
+    local nouns=()
+
+    __skycoin-cli_handle_word
+}
+
+if [[ $(type -t compopt) = "builtin" ]]; then
+    complete -o default -F __start_skycoin-cli skycoin-cli
+else
+    complete -o default -o nospace -F __start_skycoin-cli skycoin-cli
+fi
+
+# ex: ts=4 sw=4 et filetype=sh
+
+BASH_COMPLETION_EOF
+}
+__skycoin-cli_bash_source <(__skycoin-cli_convert_bash_to_zsh)

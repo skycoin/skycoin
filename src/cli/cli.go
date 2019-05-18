@@ -40,6 +40,8 @@ const (
 	defaultDataDir    = "$HOME/.$COIN/"
 )
 
+var skyCLI *cobra.Command
+
 var (
 	envVarsHelp = fmt.Sprintf(`ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "%s"
@@ -216,7 +218,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 
 	cliConfig = cfg
 
-	skyCLI := &cobra.Command{
+	skyCLI = &cobra.Command{
 		Short: fmt.Sprintf("The %s command line interface", cfg.Coin),
 		Use:   fmt.Sprintf("%s-cli", cfg.Coin),
 	}
@@ -256,6 +258,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		addressTransactionsCmd(),
 		pendingTransactionsCmd(),
 		addresscountCmd(),
+		completionCmd(),
 	}
 
 	skyCLI.Version = Version

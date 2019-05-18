@@ -76,10 +76,3 @@ func loadUserMaxDecimals() {
 
 	UserVerifyTxn.MaxDropletPrecision = uint8(x)
 }
-
-// func decodeDistributionAddresses() {
-// 	distributionAddressesDecoded = make([]cipher.Address, len(distributionAddresses))
-// 	for i, a := range distributionAddresses {
-// 		distributionAddressesDecoded[i] = cipher.MustDecodeBase58Address(a)
-// 	}
-// }

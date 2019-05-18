@@ -63,16 +63,27 @@ $ ./install.sh
 
 ### Enable command autocomplete
 
-If you are in `bash`, run the following command:
+**Bash**
+```bash
+$ source <(skycoin-cli completion bash)
+```
+This will load the skycoin-cli completion code for bash. Note that this depends on the
+bash-completion framework. It must be sourced before sourcing the skycoin-cli
+completion, e.g. on macOS:
 
 ```bash
-$ PROG=skycoin-cli source $GOPATH/src/github.com/skycoin/skycoin/cmd/cli/autocomplete/bash_autocomplete
+$ brew install bash-completion
+$ source $(brew --prefix)/etc/bash_completion
+$ source <(skycoin-cli completion bash)
+(or, if you want to preserve completion within new terminal sessions)
+$ echo 'source <(skycoin-cli completion bash)' >> ~/.bashrc
 ```
 
-If you are in `zsh`, please replace the `bash_autocomplete` with `zsh_autocomplete` in the previous command.
+**Zsh**
 
-To avoid run the command everytime when you start a new terminal session, you can copy the script into
-you `~/.bashrc` or `~/.zshrc` file.
+	$ source <(skycoin-cli completion zsh)
+	(or, if you want to preserve completion within new terminal sessions)
+	$ echo 'source <(skycoin-cli completion zsh)' >> ~/.zshrc
 
 ## Environment Setting
 
@@ -143,9 +154,12 @@ COMMANDS:
   addressGen           Generate skycoin or bitcoin addresses
   addressOutputs       Display outputs of specific addresses
   addressTransactions  Show detail for transaction associated with one or more specified addresses
+  addresscount         Get the count of addresses with unspent outputs (coins).
   blocks               Lists the content of a single block or a range of blocks
   broadcastTransaction Broadcast a raw transaction to the network
+  checkDBDecoding      Verify the database data encoding
   checkdb              Verify the database
+  completion           Output shell completion code for the given shell (bash or zsh)
   createRawTransaction Create a raw transaction to be broadcast to the network later
   decodeRawTransaction Decode raw transaction
   decryptWallet        Decrypt wallet
@@ -155,6 +169,7 @@ COMMANDS:
   lastBlocks           Displays the content of the most recently N generated blocks
   listAddresses        Lists all addresses in a given wallet
   listWallets          Lists all wallets stored in the wallet directory
+  pendingTransactions  Get all unconfirmed transactions
   richlist             Get skycoin richlist
   send                 Send skycoin from a wallet or an address to a recipient address
   showConfig           Show cli configuration
@@ -162,6 +177,7 @@ COMMANDS:
   status               Check the status of current skycoin node
   transaction          Show detail info of specific transaction
   verifyAddress        Verify a skycoin address
+  verifyTransaction    Verify if the specific transaction is spendable
   version              List the current version of Skycoin components
   walletAddAddresses   Generate additional addresses for a wallet
   walletBalance        Check the balance of a wallet

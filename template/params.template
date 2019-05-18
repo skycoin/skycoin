@@ -8,10 +8,10 @@ AVOID EDITING THIS MANUALLY
 var (
 	// MainNetDistribution Skycoin mainnet coin distribution parameters
 	MainNetDistribution = Distribution{
-		MaxCoinSupply:         {{.MaxCoinSupply}},
-		InitialUnlockedCount:  {{.InitialUnlockedCount}},
-		UnlockAddressRate:     {{.UnlockAddressRate}},
-		UnlockTimeInterval:    {{.UnlockTimeInterval}},
+		MaxCoinSupply:        {{.MaxCoinSupply}},
+		InitialUnlockedCount: {{.InitialUnlockedCount}},
+		UnlockAddressRate:    {{.UnlockAddressRate}},
+		UnlockTimeInterval:   {{.UnlockTimeInterval}},
 		Addresses: []string{
 		{{- range $index, $address := .DistributionAddresses}}
 			"{{$address -}}",

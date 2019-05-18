@@ -51,7 +51,7 @@ func (d *Distribution) Validate() error {
 
 // AddressInitialBalance is the initial balance of each distribution address
 func (d *Distribution) AddressInitialBalance() uint64 {
-	return d.MaxCoinSupply / len(d.Addresses)
+	return d.MaxCoinSupply / uint64(len(d.Addresses))
 }
 
 // UnlockedAddresses returns distribution addresses that are unlocked, i.e. they have spendable outputs

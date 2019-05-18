@@ -78,7 +78,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 
 		// "total supply" is the number of coins unlocked.
 		// Each distribution address was allocated distribution.AddressInitialBalance coins.
-		totalSupply := uint64(len(unlockedAddrs)) * dist.AddressInitialBalance
+		totalSupply := uint64(len(unlockedAddrs)) * dist.AddressInitialBalance()
 		totalSupply *= droplet.Multiplier
 
 		// "current supply" is the number of coins distributed from the unlocked pool

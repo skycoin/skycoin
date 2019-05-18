@@ -612,7 +612,7 @@ func InitTransaction(uxID string, genesisSecKey cipher.SecKey, dist params.Distr
 	}
 
 	for _, addr := range dist.AddressesDecoded() {
-		if err := txn.PushOutput(addr, dist.AddressInitialBalance*droplet.Multiplier, 1); err != nil {
+		if err := txn.PushOutput(addr, dist.AddressInitialBalance()*droplet.Multiplier, 1); err != nil {
 			log.Panic(err)
 		}
 	}

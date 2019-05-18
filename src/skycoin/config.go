@@ -348,7 +348,7 @@ func (c *Config) postProcess() error {
 		panicIfError(err, "Invalid Address")
 	}
 
-	// Calcualte genesis block hash
+	// Compute genesis block hash
 	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp)
 	if err != nil {
 		panicIfError(err, "Create genesis hash failed")

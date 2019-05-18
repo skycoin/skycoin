@@ -506,7 +506,7 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 	// v25 sends blockchain pubkey and user agent
 	// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
 	// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
-	// v26 addes genesis hash
+	// v26 adds genesis hash
 	// v27 would require and check the genesis hash
 	extraLen := len(intro.Extra)
 	if extraLen == 0 {
@@ -573,10 +573,9 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 	}
 	i += int(userAgentLen)
 
-	// var genesisHash cipher.SHA256
 	remainingLen := extraLen - i
 	if remainingLen > 0 && remainingLen < len(intro.GenesisHash) {
-		logger.WithFields(logFields).Warning("Extra data genesis hash string could not be deserialized: not enough data")
+		logger.WithFields(logFields).Warning("Extra data genesis hash could not be deserialized: not enough data")
 		return ErrDisconnectInvalidExtraData
 	}
 	copy(intro.GenesisHash[:], intro.Extra[i:])

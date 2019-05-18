@@ -21,15 +21,15 @@ func TestTransactionIsLocked(t *testing.T) {
 		}
 		uxArray := coin.UxArray{uxOut}
 
-		isLocked := TransactionIsLocked(uxArray)
+		isLocked := TransactionIsLocked(params.MainnetDistribution, uxArray)
 		require.Equal(t, expectedIsLocked, isLocked)
 	}
 
-	for _, a := range params.GetLockedDistributionAddresses() {
+	for _, a := range params.MainnetDistribution.LockedAddresses() {
 		test(a, true)
 	}
 
-	for _, a := range params.GetUnlockedDistributionAddresses() {
+	for _, a := range params.MainnetDistribution.UnlockedAddresses() {
 		test(a, false)
 	}
 

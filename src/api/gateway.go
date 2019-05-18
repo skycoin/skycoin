@@ -56,6 +56,7 @@ type Daemoner interface {
 
 // Visorer interface for visor.Visor methods used by the API
 type Visorer interface {
+	VisorConfig() visor.Config
 	StartedAt() time.Time
 	HeadBkSeq() (uint64, bool, error)
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)

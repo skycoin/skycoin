@@ -174,6 +174,7 @@ generate: ## Generate test interface mocks and struct encoders
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/AddressHashes/blockdb.AddressHashes/g' ./src/visor/mock_unspent_pooler_test.go
+	goimports -w -local github.com/skycoin/skycoin ./src/visor/mock_unspent_pooler_test.go
 
 install-generators: ## Install tools used by go generate
 	go get github.com/vektra/mockery/.../

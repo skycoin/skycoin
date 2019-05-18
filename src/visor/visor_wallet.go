@@ -156,7 +156,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 			if err := VerifySingleTxnUserConstraints(*txn); err != nil {
 				return err
 			}
-			if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
+			if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.Distribution, params.UserVerifyTxn, TxnUnsigned); err != nil {
 				return err
 			}
 
@@ -193,7 +193,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 				return err
 			}
 
-			if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *signedTxn, params.UserVerifyTxn, signed); err != nil {
+			if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *signedTxn, vs.Config.Distribution, params.UserVerifyTxn, signed); err != nil {
 				// This shouldn't happen since we verified in the beginning; if it does, then wallet.SignTransaction has a bug
 				logger.Critical().WithError(err).Error("Signed transaction violates transaction constraints")
 				return err
@@ -405,7 +405,7 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 	// because the wallet is not aware of visor-level constraints.
 	// Check that the transaction is valid before returning it to the caller.
 	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
-	if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, signed); err != nil {
+	if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.Distribution, params.UserVerifyTxn, signed); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
 		return nil, nil, err
 	}
@@ -475,7 +475,7 @@ func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp Cre
 	// because the wallet is not aware of visor-level constraints.
 	// Check that the transaction is valid before returning it to the caller.
 	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
-	if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, params.UserVerifyTxn, TxnUnsigned); err != nil {
+	if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.Distribution, params.UserVerifyTxn, TxnUnsigned); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
 		return nil, nil, err
 	}

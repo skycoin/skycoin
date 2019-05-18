@@ -308,7 +308,7 @@ func TestCreateTransaction(t *testing.T) {
 			b.On("Unspent").Return(up)
 
 			if tc.txn != nil {
-				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, *tc.txn, params.UserVerifyTxn, TxnUnsigned).Return(nil, nil, tc.verifyErr)
+				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, *tc.txn, params.MainnetDistribution, params.UserVerifyTxn, TxnUnsigned).Return(nil, nil, tc.verifyErr)
 			}
 
 			db, shutdown := prepareDB(t)
@@ -318,6 +318,9 @@ func TestCreateTransaction(t *testing.T) {
 				db:          db,
 				blockchain:  b,
 				unconfirmed: ut,
+				Config: Config{
+					Distribution: params.MainnetDistribution,
+				},
 			}
 
 			txn, inputs, err := v.CreateTransaction(tc.p, tc.wp)
@@ -707,7 +710,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			})
 
 			if tc.txn != nil {
-				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, matchTxnIgnoreSigs, params.UserVerifyTxn, tc.signed).Return(nil, nil, tc.verifyErr)
+				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, matchTxnIgnoreSigs, params.MainnetDistribution, params.UserVerifyTxn, tc.signed).Return(nil, nil, tc.verifyErr)
 			}
 
 			db, shutdown := prepareDB(t)
@@ -718,6 +721,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 				blockchain:  b,
 				unconfirmed: ut,
 				wallets:     ws,
+				Config: Config{
+					Distribution: params.MainnetDistribution,
+				},
 			}
 
 			var txn *coin.Transaction

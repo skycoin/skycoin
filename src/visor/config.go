@@ -26,6 +26,9 @@ type Config struct {
 	// Maximum size of a block, in bytes for creating blocks
 	MaxBlockTransactionsSize uint32
 
+	// Coin distribution parameters (necessary for txn verification)
+	Distribution params.Distribution
+
 	// Where the blockchain is saved
 	BlockchainFile string
 	// Where the block signatures are saved

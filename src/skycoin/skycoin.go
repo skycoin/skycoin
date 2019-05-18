@@ -28,6 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/certutil"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -600,7 +601,9 @@ func (c *Coin) ParseConfig() error {
 }
 
 // InitTransaction creates the genesis transaction
-func InitTransaction(uxID string, genesisSecKey cipher.SecKey) coin.Transaction {
+func InitTransaction(uxID string, genesisSecKey cipher.SecKey, dist params.Distribution) coin.Transaction {
+	dist.MustValidate()
+
 	var txn coin.Transaction
 
 	output := cipher.MustSHA256FromHex(uxID)
@@ -608,20 +611,8 @@ func InitTransaction(uxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 		log.Panic(err)
 	}
 
-	addrs := params.GetDistributionAddresses()
-
-	if len(addrs) != 100 {
-		log.Panic("Should have 100 distribution addresses")
-	}
-
-	// 1 million per address, measured in droplets
-	if params.DistributionAddressInitialBalance != 1e6 {
-		log.Panic("params.DistributionAddressInitialBalance expected to be 1e6*1e6")
-	}
-
-	for i := range addrs {
-		addr := cipher.MustDecodeBase58Address(addrs[i])
-		if err := txn.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1); err != nil {
+	for _, addr := range dist.AddressesDecoded() {
+		if err := txn.PushOutput(addr, dist.AddressInitialBalance*droplet.Multiplier, 1); err != nil {
 			log.Panic(err)
 		}
 	}

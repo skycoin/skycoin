@@ -65,8 +65,8 @@ type ParamsParameters struct {
 	MaxCoinSupply uint64 `mapstructure:"max_coin_supply"`
 	// DistributionAddressesTotal is the number of distribution addresses
 	DistributionAddressesTotal uint64 `mapstructure:"distribution_addresses_total"`
-	// DistributionAddressInitialBalance is the initial balance of each distribution address
-	DistributionAddressInitialBalance uint64
+	// AddressInitialBalance is the initial balance of each distribution address
+	AddressInitialBalance uint64
 	// InitialUnlockedCount is the initial number of unlocked addresses
 	InitialUnlockedCount uint64 `mapstructure:"initial_unlocked_count"`
 	// UnlockAddressRate is the number of addresses to unlock per unlock time interval

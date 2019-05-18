@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/kvstorage"
 
 	"log"
@@ -197,7 +198,6 @@ type NodeConfig struct {
 
 	GenesisSignatureStr string
 	GenesisAddressStr   string
-	GenesisHashStr      string
 	BlockchainPubkeyStr string
 	BlockchainSeckeyStr string
 	GenesisTimestamp    uint64
@@ -218,7 +218,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
 		GenesisAddressStr:   node.GenesisAddressStr,
-		GenesisHashStr:      node.GenesisHashStr,
 		GenesisCoinVolume:   node.GenesisCoinVolume,
 		GenesisTimestamp:    node.GenesisTimestamp,
 		BlockchainPubkeyStr: node.BlockchainPubkeyStr,
@@ -349,10 +348,12 @@ func (c *Config) postProcess() error {
 		panicIfError(err, "Invalid Address")
 	}
 
-	if c.Node.GenesisHashStr != "" {
-		c.Node.genesisHash, err = cipher.SHA256FromHex(c.Node.GenesisHashStr)
-		panicIfError(err, "Invalid Genesis Hash")
+	// Calcualte genesis block hash
+	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp)
+	if err != nil {
+		panicIfError(err, "Create genesis hash failed")
 	}
+	c.Node.genesisHash = gb.HashHeader()
 
 	if c.Node.BlockchainPubkeyStr != "" {
 		c.Node.blockchainPubkey, err = cipher.PubKeyFromHex(c.Node.BlockchainPubkeyStr)
@@ -697,7 +698,6 @@ func (c *NodeConfig) RegisterFlags() {
 
 	flag.StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
 	flag.StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
-	flag.StringVar(&c.GenesisHashStr, "genesis-hash", c.GenesisHashStr, "genesis block hash")
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")

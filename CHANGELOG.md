@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Update `/metrics` endpoint to add metrics from `/health`: `unspent_outputs`, `unconfirmed_txns`, `time_since_last_block_seconds`, `open_connections`, `outgoing_connections`, `incoming_connections`, `start_at`, `uptime_seconds`, `last_block_seq`.
 - Add the option for changing the language of the GUI.
 - Add Spanish and Simplified Chinese language options
-- Add genesis block hash in `INTR` message and `genesis-hash` cli flag to update it.
+- Add genesis block hash in `INTR` message
 
 ### Fixed
 
@@ -44,7 +44,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - The Content-Security-Policy header was modified to make it stricter
 - Update INTR message verify logic to reject connection if blockchain pubkey not matched or provided
 - Change the coinhour burn rate to 10%
-- Update fiber config and template files to add genesis hash
 
 ### Removed
 

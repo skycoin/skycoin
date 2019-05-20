@@ -23,7 +23,7 @@ func transactionCmd() *cobra.Command {
 		Use:                   "transaction [transaction id]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
-		Args:                  cobra.MaximumNArgs(1),
+		Args:                  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			txid := args[0]
 			if txid == "" {

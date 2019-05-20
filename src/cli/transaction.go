@@ -97,7 +97,7 @@ func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 		}
 	}
 
-	// If one or more addresses have beeb provided, request their transactions - otherwise report an error
+	// If one or more addresses have been provided, request their transactions - otherwise report an error
 	if len(addrs) > 0 {
 		outputs, err := apiClient.TransactionsVerbose(addrs)
 		if err != nil {

@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Return a v2-style error for disabled API endpoints
 - #2172 Fix electron build failure for linux systems
 - Don't send wire protocol messages that exceed the configured 256kB limit, which caused peers to disconnect from the sender
+- #2348 Fix panic in `skycoin-cli` `transaction` command if no (zero) arguments are passed. Exactly one argument is expected.
 
 ### Changed
 

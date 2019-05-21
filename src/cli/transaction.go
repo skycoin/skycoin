@@ -23,7 +23,7 @@ func transactionCmd() *cobra.Command {
 		Use:                   "transaction [transaction id]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
-		Args:                  cobra.MaximumNArgs(1),
+		Args:                  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			txid := args[0]
 			if txid == "" {
@@ -97,7 +97,7 @@ func getAddressTransactionsCmd(c *cobra.Command, args []string) error {
 		}
 	}
 
-	// If one or more addresses have beeb provided, request their transactions - otherwise report an error
+	// If one or more addresses have been provided, request their transactions - otherwise report an error
 	if len(addrs) > 0 {
 		outputs, err := apiClient.TransactionsVerbose(addrs)
 		if err != nil {

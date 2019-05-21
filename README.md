@@ -699,6 +699,8 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
+* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.net
+  and test all operations to ensure it will work with the new node version.
 
 #### Creating release builds
 

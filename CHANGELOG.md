@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- When sending coins in the UI, the user can choose to send in SKY, or the equivalent amount of SKY in USD
 - Add the option for changing the language of the GUI.
 - Add Spanish and Simplified Chinese language options
 - Add genesis block hash in `INTR` message

@@ -257,9 +257,6 @@ func (c *Coin) Run() error {
 
 		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
 		c.logger.Critical().Infof("Full address: %s", fullAddress)
-		if c.config.Node.PrintWebInterfaceAddress {
-			fmt.Println(fullAddress)
-		}
 	}
 
 	if err := v.Init(); err != nil {
@@ -383,6 +380,7 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc := visor.NewConfig()
 
 	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
+	vc.Arbitrating = c.config.Node.RunBlockPublisher
 
 	vc.BlockchainPubkey = c.config.Node.blockchainPubkey
 	vc.BlockchainSeckey = c.config.Node.blockchainSeckey
@@ -395,7 +393,6 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc.GenesisSignature = c.config.Node.genesisSignature
 	vc.GenesisTimestamp = c.config.Node.GenesisTimestamp
 	vc.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
-	vc.Arbitrating = c.config.Node.Arbitrating
 
 	return vc
 }

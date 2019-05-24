@@ -117,9 +117,6 @@ type NodeConfig struct {
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
 
-	// If true, print the configured client web interface address and exit
-	PrintWebInterfaceAddress bool
-
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
 	// GUI directory contains assets for the HTML interface
@@ -190,11 +187,10 @@ type NodeConfig struct {
 	// Expose HTTP profiling on this interface
 	HTTPProfHost string
 
-	DBPath      string
-	DBReadOnly  bool
-	Arbitrating bool
-	LogToFile   bool
-	Version     bool // show node version
+	DBPath     string
+	DBReadOnly bool
+	LogToFile  bool
+	Version    bool // show node version
 
 	GenesisSignatureStr string
 	GenesisAddressStr   string
@@ -406,11 +402,6 @@ func (c *Config) postProcess() error {
 		c.Node.DBPath = filepath.Join(c.Node.DataDirectory, "data.db")
 	} else {
 		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
-	}
-
-	if c.Node.RunBlockPublisher {
-		// Run in arbitrating mode if the node is block publisher
-		c.Node.Arbitrating = true
 	}
 
 	userAgentData := useragent.Data{
@@ -662,7 +653,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
-	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
@@ -710,7 +700,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.IntVar(&c.MaxOutgoingMessageLength, "max-out-msg-len", c.MaxOutgoingMessageLength, "Maximum length of outgoing wire messages")
 	flag.IntVar(&c.MaxIncomingMessageLength, "max-in-msg-len", c.MaxIncomingMessageLength, "Maximum length of incoming wire messages")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
-	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 	flag.BoolVar(&c.Version, "version", false, "show node version")
 }

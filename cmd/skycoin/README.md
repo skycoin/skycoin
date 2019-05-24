@@ -4,20 +4,80 @@
 
 - [Preface](#preface)
 - [Scenarios](#scenarios)
-	- [Running a public API node](#running-a-public-api-node)
+	- [Control which API endpoints are exposed](#control-which-api-endpoints-are-exposed)
+	- [Run a public API node](#run-a-public-api-node)
+	- [Run a public API node with a self-signed cert](#run-a-public-api-node-with-a-self-signed-cert)
 	- [Control which peers the node connects to](#control-which-peers-the-node-connects-to)
 	- [Add Basic auth to the REST API interface](#add-basic-auth-to-the-rest-api-interface)
 - [Options](#options)
+	- [address](#address)
+	- [block-publisher](#block-publisher)
+	- [blockchain-public-key](#blockchain-public-key)
+	- [blockchain-secret-key](#blockchain-secret-key)
+	- [burn-factor-create-block](#burn-factor-create-block)
+	- [burn-factor-unconfirmed](#burn-factor-unconfirmed)
+	- [color-log](#color-log)
+	- [connection-rate](#connection-rate)
+	- [custom-peers-file](#custom-peers-file)
 	- [data-dir](#data-dir)
+	- [db-path](#db-path)
+	- [db-read-only](#db-read-only)
+	- [disable-api-sets](#disable-api-sets)
+	- [disable-csp](#disable-csp)
+	- [disable-csrf](#disable-csrf)
+	- [disable-default-peers](#disable-default-peers)
+	- [disable-header-check](#disable-header-check)
+	- [disable-incoming](#disable-incoming)
+	- [disable-outgoing](#disable-outgoing)
+	- [disable-pex](#disable-pex)
+	- [download-peerlist](#download-peerlist)
+	- [enable-all-api-sets](#enable-all-api-sets)
+	- [enable-api-sets](#enable-api-sets)
+	- [enable-gui](#enable-gui)
+	- [genesis-address](#genesis-address)
+	- [genesis-signature](#genesis-signature)
+	- [genesis-timestamp](#genesis-timestamp)
+	- [gui-dir](#gui-dir)
+	- [host-whitelist](#host-whitelist)
+	- [http-prof](#http-prof)
+	- [http-prof-host](#http-prof-host)
+	- [launch-browser](#launch-browser)
+	- [localhost-only](#localhost-only)
+	- [log-level](#log-level)
+	- [logtofile](#logtofile)
+	- [max-block-size](#max-block-size)
+	- [max-connections](#max-connections)
+	- [max-decimals-create-block](#max-decimals-create-block)
+	- [max-decimals-unconfirmed](#max-decimals-unconfirmed)
+	- [max-default-peer-outgoing-connections](#max-default-peer-outgoing-connections)
+	- [max-incoming-connections](#max-incoming-connections)
+	- [max-in-msg-len](#max-in-msg-len)
+	- [max-out-msg-len](#max-out-msg-len)
+	- [max-outgoing-connections](#max-outgoing-connections)
+	- [max-txn-size-create-block](#max-txn-size-create-block)
+	- [max-txn-size-unconfirmed](#max-txn-size-unconfirmed)
+	- [no-ping-log](#no-ping-log)
+	- [peerlist-size](#peerlist-size)
+	- [peerlist-url](#peerlist-url)
+	- [port](#port)
+	- [profile-cpu](#profile-cpu)
+	- [profile-cpu-file](#profile-cpu-file)
+	- [reset-corrupt-db](#reset-corrupt-db)
+	- [storage-dir](#storage-dir)
+	- [user-agent-remark](#user-agent-remark)
+	- [verify-db](#verify-db)
+	- [version](#version)
+	- [wallet-crypto-type](#wallet-crypto-type)
+	- [wallet-dir](#wallet-dir)
 	- [web-interface](#web-interface)
 	- [web-interface-addr](#web-interface-addr)
-	- [web-interface-port](#web-interface-port)
-	- [web-interface-https](#web-interface-https)
 	- [web-interface-cert](#web-interface-cert)
+	- [web-interface-https](#web-interface-https)
 	- [web-interface-key](#web-interface-key)
-	- [web-interface-plaintext-auth](#web-interface-plaintext-auth)
-	- [web-interface-username](#web-interface-username)
 	- [web-interface-password](#web-interface-password)
+	- [web-interface-plaintext-auth](#web-interface-plaintext-auth)
+	- [web-interface-port](#web-interface-port)
+	- [web-interface-username](#web-interface-username)
 - [Environment Variables](#environment-variables)
 	- [USER_BURN_FACTOR](#userburnfactor)
 	- [USER_MAX_TXN_SIZE](#usermax_txnsize)
@@ -28,14 +88,14 @@
 
 ## Preface
 
+*Note: The defaults shown below can vary depending on the build configuration.*
+
 ```
 » go run cmd/skycoin/skycoin.go --help
 
 Usage:
   -address string
     	IP Address to run application on. Leave empty to default to a public interface
-  -arbitrating
-    	Run node in arbitrating mode
   -block-publisher
     	run the daemon as a block publisher
   -blockchain-public-key string
@@ -136,8 +196,6 @@ Usage:
     	with -download-peerlist=true, download a peers.txt file from this url (default "https://downloads.skycoin.net/blockchain/peers.txt")
   -port int
     	Port to run application on (default 6000)
-  -print-web-interface-address
-    	print configured web interface address and exit
   -profile-cpu
     	enable cpu profiling
   -profile-cpu-file string
@@ -182,17 +240,141 @@ Additional environment variables:
 
 ## Scenarios
 
-### Running a public API node
+### Control which API endpoints are exposed
 
-TODO
+API endpoints are grouped into "API sets", and can be toggled on or off through CLI options.
+
+There are three options for controlling the API sets that are enabled:
+
+* `--enable-api-sets`
+* `--enable-all-api-sets`
+* `--disable-api-sets`
+
+To blacklist specific API sets, combine `--enable-all-api-sets` with `--disable-api-sets`.
+
+To whitelist specific API sets, use `--enable-api-sets`.
+
+Note that certain API sets must be explicitly enabled. These API sets are either deprecated or have security implications.
+
+Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
+
+### Run a public API node
+
+This example does not use HTTPS. We recommend you follow the nginx guide below
+to add HTTPS to your API node.
+
+```sh
+$ go run cmd/skycoin/skycoin.go \
+  --web-interface-addr=0.0.0.0 \
+  --enable-api-sets=READ,TXN
+```
+
+This will expose your node's API on your server's public IP and on the default port 6420.
+
+### Run a public API node with a self-signed cert
+
+When you run with the HTTPS option, the daemon will use a cert and key file from the `data-dir`.
+This cert and key file will be autogenerated if they are missing from the `data-dir`.
+
+```sh
+go run cmd/skycoin/skycoin.go \
+  --web-interface-https \
+  --web-interface-addr=0.0.0.0 \
+  --enable-api-sets=READ,TXN
+```
+
+Alternatively, you can specify the cert and key files to be some other location. If specified, they will not be autogenerated.
+The specified files must exist:
+
+```sh
+go run cmd/skycoin/skycoin.go \
+  --web-interface-https \
+  --web-interface-key=/var/local/skycoind.key \
+  --web-interface-cert=/var/local/skycoind.cert \
+  --enable-api-sets=READ,TXN
+```
+
+If you want to use a signed cert, we recommend handling that with nginx, which will also help you bind to port 80/443.
 
 ### Control which peers the node connects to
 
-TODO
+First, make sure the `peers.json` file in the `data-dir` is empty or does not exist.
+
+Provide a `custom-peers-file`, which is a newline separated list of ip:port entries.
+
+Disable the default bootstrap peers, and disable the remote peerlist bootstrap.
+
+There is no explicit setting for max incoming connections; it is equal to the difference between `--max-connections` and `--max-outgoing-connections`,
+so set these two options to the same value.
+
+```sh
+go run cmd/skycoin/skycoin.go \
+  --custom-peers-file=peers-whitelist.txt \
+  --disable-default-peers \
+  --download-peerlist=false \
+  --max-connections=8 \
+  --max-outgoing-connections=8 \
+  --disable-pex \
+  --disable-incoming
+```
 
 ### Add Basic auth to the REST API interface
 
+This will enable `Basic` auth on the REST API interface. It will use HTTPS with an autogenerated self-signed cert.
+Your client will need to be configured to accept this cert in requests.
+
+*TODO - describe how to configure the cli client to use the self-signed cert*
+
+```sh
+$ go run cmd/skycoin/skycoin.go \
+  --web-interface-https \
+  --web-interface-username=abcdef \
+  --web-interface-password='aCN@9xA)(CZasdmc'
+```
+
 ## Options
+
+### address
+
+The bind interface address for the wire protocol. Binds to a public interface by default.
+
+### block-publisher
+
+Runs the node as a block publisher. Must set `blockchain-secret-key`.
+
+### blockchain-public-key
+
+The public key of the block signer
+
+### blockchain-secret-key
+
+The secret key of the block signer. Required for `block-publisher` mode.
+
+### burn-factor-create-block
+
+The coin hour burn factor applied to transactions when creating blocks.
+Transactions that don't satisfy this burn factor will not be included in blocks.
+Only applies when running in `block-publisher` mode.
+
+### burn-factor-unconfirmed
+
+The coin hour burn factor applied to unconfirmed transactions received over the network.
+Transactions that don't satisfy this burn factor will not be propagated to peers.
+
+### color-log
+
+Use color highlighting in the log output. Disable this when logging to a file.
+
+### connection-rate
+
+How often an outgoing connection attempt is made.
+A faster rate will establish a stable connection sooner, but if it is too fast
+it can overconnect and churn connections.
+
+### custom-peers-file
+
+Load peers from this file into the peer database. The file format is a newline-separated list of ip:port entries.
+These peers are *added* to any existing peer database; it does not restrict the peers to those in this file.
 
 ### data-dir
 
@@ -203,6 +385,256 @@ On Linux and MacOS, this folder defaults to `$HOME/.skycoin` (`~/.skycoin`).
 On Windows release builds, this folder defaults to `%HOMEPATH%\.skycoin` (`C:\Users\{user}\.skycoin`).
 On Windows development builds, this folder defaults to `C:\.skycoin`. *(Note: this is a bug and will change in the future)*
 
+### db-path
+
+The path of the blockchain database file. Defaults to a file named `data.db` in `data-dir`.
+
+### db-read-only
+
+Open the database file in read-only mode.
+
+### disable-api-sets
+
+Disable one or more API sets. Possible API sets are:
+`READ`, `STATUS`, `WALLET`, `TXN`, `PROMETHEUS`, `NET_CTRL`, `INSECURE_WALLET_SEED`, `STORAGE`.
+Multiple values should be separated by comma. Combine with `enable-all-api-sets` to blacklist specific API sets.
+
+Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
+
+### disable-csp
+
+Disable the Content Security Policy header sent in REST API responses.
+
+### disable-csrf
+
+Disable the CSRF check for the REST API. The REST API requires a CSRF token for all `POST` and `DELETE` requests.
+This is to protect the wallet client from certain attacks. If you do not have a hot wallet or do not expose your node
+to a browser, it is safe to disable CSRF.
+
+### disable-default-peers
+
+Disable the default hardcoded peer list. These peers are treated differently than others; the node will always try to maintain
+at least `max-default-peer-outgoing-connections` connections to peers in this list. These peers should be disabled when configuring the
+node for network isolation.
+
+### disable-header-check
+
+As a security policy, the REST API will require certain values for the
+`Host`, `Origin` and `Referer` headers in requests unless disabled by this option.
+
+### disable-incoming
+
+Disable all incoming connections on the wire interface.  The listener will not bind to the configured `address`.
+
+### disable-outgoing
+
+Don't make any outgoing connections.
+
+### disable-pex
+
+Don't request or accept peers over the wire.
+
+### download-peerlist
+
+If true, a peer list will be downloaded from `--peerlist-url`. The peer list file format is a newline-separated list of
+ip:port entries. This list helps to bootstrap the initial peer database. These peers are considered "regular" peers, as opposed
+to the peers from the hardcoded default peer list which are handled slightly differently.
+
+### enable-all-api-sets
+
+Enable all API sets except for those marked `INSECURE` or `DEPRECATED`.
+Combine with `disable-api-sets` to blacklist specific API sets.
+Use `enable-api-sets` in addition to `enable-all-api-sets` in order to enable specific `INSECURE` or `DEPRECATED` API sets.
+
+Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
+
+### enable-api-sets
+
+Enable one or more API sets. Possible API sets are:
+`READ`, `STATUS`, `WALLET`, `TXN`, `PROMETHEUS`, `NET_CTRL`, `INSECURE_WALLET_SEED`, `STORAGE`.
+Multiple values should be separated by comma.
+
+Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
+
+### enable-gui
+
+Serve the wallet GUI pages over the `web-interface-addr` and `web-interface-port` on the root path `/`.
+
+### genesis-address
+
+The genesis address in the genesis block.  This is used to reconstruct the genesis block, which is hardcoded in every client.
+
+### genesis-signature
+
+After the genesis block was created, it should have been signed by the `blockchain-secret-key`. This signature is configured here.
+
+### genesis-timestamp
+
+The timestamp of the genesis block. This is used to reconstruct the genesis, which is hardcoded in every client.
+
+### gui-dir
+
+The static content directory for the wallet GUI interface.
+
+### host-whitelist
+
+A comma separated list of hostnames to allow in the `Host`, `Origin` and `Referer` headers.
+Use this when hosting the web interface on a domain name or proxying it through another IP address.
+Or, these header checks can be disabled entirely with `disable-header-check`.
+
+### http-prof
+
+Enables go's http profiler interface, `pprof`.
+
+Read more about `pprof`: https://github.com/skycoin/skycoin/wiki/Profiling-with-pprof
+
+### http-prof-host
+
+The interface address to bind the http profiler to.
+
+### launch-browser
+
+Open the web interface in the user's default browser.
+
+### localhost-only
+
+Bind the wire protocol `address` to localhost and only make connections to other localhost peers.
+
+### log-level
+
+Choose the log level verbosity.  Choices are: `debug`, `info`, `warn`, `error`, `fatal`, `panic`.
+
+### logtofile
+
+Write the log output to a file in `data-dir`. The logs will still be written to stdout.
+
+### max-block-size
+
+Maximum total size of transactions allowed when creating a new block. This value does not affect existing blocks.
+The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/skycoin/skycoin/wiki/Skycoin-Binary-Encoding-Format).
+Note that `max-block-size` is only the size limit of the transactions portion of a block; this limit does not include block metadata.
+Only applies when running in `block-publisher` mode.
+
+### max-connections
+
+The maximum total number of connections to make over the wire protocol.
+
+### max-decimals-create-block
+
+The maximum number of decimal places applied to transactions when creating blocks.
+Transactions that create outputs that exceed the decimal place limit will not be included in blocks.
+Only applies when running in `block-publisher` mode.
+
+### max-decimals-unconfirmed
+
+The maximum number of decimal places applied to unconfirmed transactions received over the network.
+Transactions that create outputs that exceed the decimal place limit will not be propagated to peers.
+
+### max-default-peer-outgoing-connections
+
+The maximum number of connections to maintain to peers from the hardcoded default peer list.
+The peers in the hardcoded default peer list are maintained by Skycoin and are kept up to date with current
+configurations. This value is 1 by default, to ensure at least one known stable connection is held.
+More than 1 connections are not typically made, to avoid saturating the default peer connections.
+
+### max-incoming-connections
+
+**This is not an option.** This value is equal to `max-connections` minus `max-outgoing-connections`.
+
+### max-in-msg-len
+
+Maximum length of incoming wire messages. Wire messages can include block and transaction data, so this limit should
+be in accordance with `max-txn-size` and `max-block-size`.
+If a peer sends a message that exceeds this limit, we disconnect from that peer.
+
+### max-out-msg-len
+
+Maximum length of outgoing wire messages. Wire messages can include block and transaction data, so this limit should
+be in accordance with `max-txn-size` and `max-block-size`.
+If we send a message that exceeds a peer's `max-in-msg-len`, they'll disconnect from us.
+
+### max-outgoing-connections
+
+The maximum total number of outgoing connections to make over the wire protocol.
+
+### max-txn-size-create-block
+
+The maximum transaction size applied to transactions when creating blocks.
+The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/skycoin/skycoin/wiki/Skycoin-Binary-Encoding-Format).
+Transactions that exceed this size will not be included in blocks.
+Only applies when running in `block-publisher` mode.
+
+### max-txn-size-unconfirmed
+
+The maximum transaction size applied to unconfirmed transactions received over the network.
+The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/skycoin/skycoin/wiki/Skycoin-Binary-Encoding-Format).
+Transactions that exceed this size will not be propagated to peers.
+
+### no-ping-log
+
+Disable the "reply to ping" and "received pong" debug log messages.
+These are particularly noisy, and unfortunately we only have one log level for debug,
+so this option was added to disable them explicitly.
+
+### peerlist-size
+
+Maximum number of peers to track in the local peer database.
+
+### peerlist-url
+
+The URL of the remote peer list bootstrap file. Defaults to https://downloads.skycoin.net/blockchain/peers.txt.
+
+### port
+
+Port to bind for the wire protocol interface.
+
+### profile-cpu
+
+Enable the CPU profiler with `pprof`.
+
+Read more about `pprof`: https://github.com/skycoin/skycoin/wiki/Profiling-with-pprof
+
+### profile-cpu-file
+
+Where to write the CPU profile data to, on exit.
+
+### reset-corrupt-db
+
+If the database is detected to be corrupted during startup, reset the database and continue running.
+Otherwise, the application will abort if it detect a corrupted database.
+
+The database is not always checked for corruption; it is only checked when upgrading the software and
+if the upgraded version determines a corruption check is necessary.  However, if `verify-db` is enabled,
+then the database is always checked for corruption.
+
+### storage-dir
+
+Location where the generic data storage files are saved. Defaults to a folder named `data` inside of the `data-dir`.
+
+### user-agent-remark
+
+An additional remark to include in the user agent that is sent in the introduction packet over the wire protocol
+
+### verify-db
+
+Unconditionally check the database for corruption on start.
+
+The database is not always checked for corruption; it is only checked when upgrading the software and
+if the upgraded version determines a corruption check is necessary.
+
+### version
+
+Print the node version and exit.
+
+### wallet-crypto-type
+
+Choose the encryption method for encrypted wallet data. Options are `sha256-xor` or `scrypt-chacha20poly1305`.
+Do not use this option unless you know exactly what you are choosing; not every option provides meaningful encryption.
+
+### wallet-dir
+
+Location where the wallet files are saved. Defaults to a folder named `wallet` inside of the `data-dir`.
+
 ### web-interface
 
 Enable the REST API interface. By default, it serves on http://127.0.0.1:6420.
@@ -211,23 +643,23 @@ Enable the REST API interface. By default, it serves on http://127.0.0.1:6420.
 
 Address to bind the REST API interface to. Default `127.0.0.1`. Use `0.0.0.0` to bind to the machine's public IP interface.
 
-### web-interface-port
+### web-interface-cert
 
-Port number for the REST API interface. Default `6420`.
+The certificate file for the HTTPS REST API. If not provided and HTTPS is enabled, the cert defaults to a file named `skycoind.cert`
+in the `--data-directory`. If this file does not exist, it will be autogenerated.
 
 ### web-interface-https
 
 Use HTTPS for the REST API interface.
 
-### web-interface-cert
-
-The certificate file for the HTTPS REST API. If not provided and HTTPS is enabled, the cert defaults to a file named `skycoind.cert`
-in the `--data-directory`.  If this file does not exist, it will be autogenerated.
-
 ### web-interface-key
 
 The key file for the HTTPS REST API. If not provided and HTTPS is enabled, the cert defaults to a file named `skycoind.key`
-in the `--data-directory`.  If this file does not exist, it will be autogenerated.
+in the `--data-directory`. If this file does not exist, it will be autogenerated.
+
+### web-interface-password
+
+Optional password for the REST API. Used in `Basic` authentication.
 
 ### web-interface-plaintext-auth
 
@@ -237,13 +669,13 @@ is configured to use a username and/or password
 This is to avoid sending authorization credentials in plaintext accidentally. The user must enable this setting explicitly to
 send credentials in plain text.
 
+### web-interface-port
+
+Port number for the REST API interface. Default `6420`.
+
 ### web-interface-username
 
 Optional username for the REST API. Used in `Basic` authentication.
-
-### web-interface-password
-
-Optional password for the REST API. Used in `Basic` authentication.
 
 ## Environment Variables
 

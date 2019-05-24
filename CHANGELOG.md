@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
+- Remove `-arbitrating` option from the daemon CLI options
+- Remove `-print-web-interface-address` option from the daemon CLI options
+
 ## [0.26.0] - 2019-05-21
 
 ### Added

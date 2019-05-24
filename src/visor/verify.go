@@ -74,6 +74,16 @@ var (
 	ErrTxnIsLocked = errors.New("Transaction has locked address inputs")
 )
 
+// TxnSignedFlag indicates if the transaction is unsigned or not
+type TxnSignedFlag int
+
+const (
+	// TxnSigned is used for signed transactions
+	TxnSigned TxnSignedFlag = 1
+	// TxnUnsigned is used for unsigned transactions
+	TxnUnsigned TxnSignedFlag = 2
+)
+
 // ErrTxnViolatesHardConstraint is returned when a transaction violates hard constraints
 type ErrTxnViolatesHardConstraint struct {
 	Err error
@@ -195,7 +205,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 //      * That the transaction input and output coins do not overflow uint64
 //      * That the transaction input and output hours do not overflow uint64
 // NOTE: Double spends are checked against the unspent output pool when querying for uxIn
-func VerifySingleTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray) error {
+func VerifySingleTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray, signed TxnSignedFlag) error {
 	// Check for output hours overflow
 	// When verifying a single transaction, this is considered a hard constraint.
 	// For transactions inside of a block, it is a soft constraint.
@@ -213,7 +223,7 @@ func VerifySingleTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader,
 		}
 	}
 
-	if err := verifyTxnHardConstraints(txn, head, uxIn); err != nil {
+	if err := verifyTxnHardConstraints(txn, head, uxIn, signed); err != nil {
 		return NewErrTxnViolatesHardConstraint(err)
 	}
 
@@ -236,14 +246,14 @@ func VerifySingleTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader,
 // NOTE: output hours overflow is treated as a soft constraint for transactions inside of a block, due to a bug
 //       which allowed some blocks to be published with overflowing output hours.
 func VerifyBlockTxnConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray) error {
-	if err := verifyTxnHardConstraints(txn, head, uxIn); err != nil {
+	if err := verifyTxnHardConstraints(txn, head, uxIn, TxnSigned); err != nil {
 		return NewErrTxnViolatesHardConstraint(err)
 	}
 
 	return nil
 }
 
-func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray) error {
+func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray, signed TxnSignedFlag) error {
 	//CHECKLIST: DONE: check for duplicate ux inputs/double spending
 	//     NOTE: Double spends are checked against the unspent output pool when querying for uxIn
 
@@ -265,14 +275,27 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 	// Check for zero coin outputs
 	// Check valid looking signatures
 
-	if err := txn.Verify(); err != nil {
-		return err
-	}
+	switch signed {
+	case TxnSigned:
+		if err := txn.Verify(); err != nil {
+			return err
+		}
 
-	// Checks whether ux inputs exist,
-	// Check that signatures are allowed to spend inputs
-	if err := txn.VerifyInput(uxIn); err != nil {
-		return err
+		// Check that signatures are allowed to spend inputs
+		if err := txn.VerifyInputSignatures(uxIn); err != nil {
+			return err
+		}
+	case TxnUnsigned:
+		if err := txn.VerifyUnsigned(); err != nil {
+			return err
+		}
+
+		// Check that signatures are allowed to spend inputs for signatures that are not null
+		if err := txn.VerifyPartialInputSignatures(uxIn); err != nil {
+			return err
+		}
+	default:
+		logger.Panic("Invalid TxnSignedFlag")
 	}
 
 	uxOut := coin.CreateUnspents(head, txn)

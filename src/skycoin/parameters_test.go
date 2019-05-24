@@ -21,7 +21,6 @@ func TestNewParameters(t *testing.T) {
 			DefaultConnections: []string{
 				"118.178.135.93:6000",
 				"47.88.33.156:6000",
-				"121.41.103.148:6000",
 				"104.237.142.206:6000",
 				"176.58.126.224:6000",
 				"172.104.85.6:6000",
@@ -36,7 +35,7 @@ func TestNewParameters(t *testing.T) {
 			CreateBlockBurnFactor:          9,
 			CreateBlockMaxTransactionSize:  1234,
 			CreateBlockMaxDropletPrecision: 4,
-			MaxBlockSize:                   1111,
+			MaxBlockTransactionsSize:       1111,
 		},
 		Params: ParamsParameters{
 			MaxCoinSupply:              1e8,

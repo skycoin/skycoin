@@ -55,3 +55,29 @@ $select-address-theme: mat-light-theme($select-address-primary, $candy-app-accen
 .select-address-theme {
   @include angular-material-theme($select-address-theme);
 }
+
+$mat-subtle-primary: (
+  100: white,
+  500: white,
+  contrast: (
+    100: white,
+    500: white,
+  )
+);
+
+$mat-subtle-accent: (
+  100: #cccccc,
+  500: #cccccc,
+  contrast: (
+    100: #cccccc,
+    500: #cccccc,
+  )
+);
+
+$subtle-primary: mat-palette($mat-subtle-primary);
+$subtle-accent: mat-palette($mat-subtle-accent);
+$subtle-theme:   mat-light-theme($subtle-primary, $subtle-accent);
+
+.subtle-theme {
+  @include angular-material-theme($subtle-theme);
+}

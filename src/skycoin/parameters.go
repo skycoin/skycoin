@@ -49,8 +49,8 @@ type NodeParameters struct {
 	CreateBlockMaxTransactionSize int `mapstructure:"create_block_max_transaction_size"`
 	// CreateBlockMaxDropletPrecision is the maximum number of decimals allowed in a transaction when publishing blocks
 	CreateBlockMaxDropletPrecision uint8 `mapstructure:"create_block_max_decimals"`
-	// MaxBlockSize is the maximum size of blocks when publishing blocks
-	MaxBlockSize int `mapstructure:"max_block_size"`
+	// MaxBlockTransactionsSize is the maximum total size of transactions in a block when publishing a block
+	MaxBlockTransactionsSize int `mapstructure:"max_block_transactions_size"`
 
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
 	CoinName      string
@@ -127,13 +127,13 @@ func setDefaults() {
 	viper.SetDefault("node.genesis_coin_volume", 100e12)
 	viper.SetDefault("node.port", 6000)
 	viper.SetDefault("node.web_interface_port", 6420)
-	viper.SetDefault("node.unconfirmed_burn_factor", 2)
+	viper.SetDefault("node.unconfirmed_burn_factor", 10)
 	viper.SetDefault("node.unconfirmed_max_transaction_size", 32*1024)
 	viper.SetDefault("node.unconfirmed_max_decimals", 3)
-	viper.SetDefault("node.create_block_burn_factor", 2)
+	viper.SetDefault("node.create_block_burn_factor", 10)
 	viper.SetDefault("node.create_block_max_transaction_size", 32*1024)
 	viper.SetDefault("node.create_block_max_decimals", 3)
-	viper.SetDefault("node.max_block_size", 32*1024)
+	viper.SetDefault("node.max_block_transactions_size", 32*1024)
 
 	// build defaults
 	viper.SetDefault("build.commit", "")
@@ -146,6 +146,6 @@ func setDefaults() {
 	viper.SetDefault("params.unlock_address_rate", 5)
 	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)
 	viper.SetDefault("params.user_max_decimals", 3)
-	viper.SetDefault("params.user_burn_factor", 2)
+	viper.SetDefault("params.user_burn_factor", 10)
 	viper.SetDefault("params.user_max_transaction_size", 32*1024)
 }

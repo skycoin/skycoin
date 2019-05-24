@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 )
 
 // BalanceGetter interface for getting the balance of given addresses
@@ -17,12 +16,10 @@ type BalanceGetter interface {
 // Service wallet service struct
 type Service struct {
 	sync.RWMutex
-	wallets         Wallets
-	firstAddrIDMap  map[string]string // Key: first address in wallet; Value: wallet id
-	walletDirectory string
-	cryptoType      CryptoType
-	enableWalletAPI bool
-	enableSeedAPI   bool
+	wallets Wallets
+	config  Config
+	// firstAddrIDMap Key: first address in wallet; Value: wallet id
+	firstAddrIDMap map[string]string
 }
 
 // Config wallet service config
@@ -33,16 +30,24 @@ type Config struct {
 	EnableSeedAPI   bool
 }
 
+// NewConfig creates a default Config
+func NewConfig() Config {
+	return Config{
+		WalletDir:       "./",
+		CryptoType:      CryptoTypeScryptChacha20poly1305,
+		EnableWalletAPI: false,
+		EnableSeedAPI:   false,
+	}
+}
+
 // NewService new wallet service
 func NewService(c Config) (*Service, error) {
 	serv := &Service{
-		firstAddrIDMap:  make(map[string]string),
-		cryptoType:      c.CryptoType,
-		enableWalletAPI: c.EnableWalletAPI,
-		enableSeedAPI:   c.EnableSeedAPI,
+		config:         c,
+		firstAddrIDMap: make(map[string]string),
 	}
 
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return serv, nil
 	}
 
@@ -50,22 +55,40 @@ func NewService(c Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to create wallet directory %s: %v", c.WalletDir, err)
 	}
 
-	serv.walletDirectory = c.WalletDir
-
 	// Removes .wlt.bak files before loading wallets
-	if err := removeBackupFiles(serv.walletDirectory); err != nil {
-		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.walletDirectory, err)
+	if err := removeBackupFiles(serv.config.WalletDir); err != nil {
+		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.config.WalletDir, err)
 	}
 
-	// Loads wallets
-	w, err := LoadWallets(serv.walletDirectory)
+	// Load wallets from disk
+	w, err := LoadWallets(serv.config.WalletDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load all wallets: %v", err)
 	}
 
-	serv.wallets = serv.removeDup(w)
+	// Abort if there are duplicate wallets on disk
+	if wltID, addr, hasDup := w.containsDuplicate(); hasDup {
+		return nil, fmt.Errorf("duplicate wallet found with initial address %s in file %q", addr, wltID)
+	}
+
+	// Abort if there are empty wallets on disk
+	if wltID, hasEmpty := w.containsEmpty(); hasEmpty {
+		return nil, fmt.Errorf("empty wallet file found: %q", wltID)
+	}
+
+	serv.setWallets(w)
 
 	return serv, nil
+}
+
+// WalletDir returns the configured wallet directory
+func (serv *Service) WalletDir() (string, error) {
+	serv.Lock()
+	defer serv.Unlock()
+	if !serv.config.EnableWalletAPI {
+		return "", ErrWalletAPIDisabled
+	}
+	return serv.config.WalletDir, nil
 }
 
 // CreateWallet creates a wallet with the given wallet file name and options.
@@ -73,7 +96,7 @@ func NewService(c Config) (*Service, error) {
 func (serv *Service) CreateWallet(wltName string, options Options, bg BalanceGetter) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 	if wltName == "" {
@@ -87,7 +110,7 @@ func (serv *Service) CreateWallet(wltName string, options Options, bg BalanceGet
 func (serv *Service) loadWallet(wltName string, options Options, bg BalanceGetter) (*Wallet, error) {
 	// service decides what crypto type the wallet should use.
 	if options.Encrypt {
-		options.CryptoType = serv.cryptoType
+		options.CryptoType = serv.config.CryptoType
 	}
 
 	w, err := NewWalletScanAhead(wltName, options, bg)
@@ -104,7 +127,7 @@ func (serv *Service) loadWallet(wltName string, options Options, bg BalanceGette
 		return nil, err
 	}
 
-	if err := w.Save(serv.walletDirectory); err != nil {
+	if err := w.Save(serv.config.WalletDir); err != nil {
 		// If save fails, remove the added wallet
 		serv.wallets.remove(w.Filename())
 		return nil, err
@@ -131,7 +154,7 @@ func (serv *Service) generateUniqueWalletFilename() string {
 func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -144,12 +167,12 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, erro
 		return nil, ErrWalletEncrypted
 	}
 
-	if err := w.Lock(password, serv.cryptoType); err != nil {
+	if err := w.Lock(password, serv.config.CryptoType); err != nil {
 		return nil, err
 	}
 
 	// Save to disk first
-	if err := w.Save(serv.walletDirectory); err != nil {
+	if err := w.Save(serv.config.WalletDir); err != nil {
 		return nil, err
 	}
 
@@ -162,7 +185,7 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, erro
 func (serv *Service) DecryptWallet(wltID string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -183,7 +206,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) (*Wallet, erro
 	}
 
 	// Updates the wallet file
-	if err := unlockWlt.Save(serv.walletDirectory); err != nil {
+	if err := unlockWlt.Save(serv.config.WalletDir); err != nil {
 		return nil, err
 	}
 
@@ -199,7 +222,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	serv.Lock()
 	defer serv.Unlock()
 
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -230,7 +253,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	}
 
 	// Save the wallet first
-	if err := w.Save(serv.walletDirectory); err != nil {
+	if err := w.Save(serv.config.WalletDir); err != nil {
 		return nil, err
 	}
 
@@ -243,7 +266,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -259,7 +282,7 @@ func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error)
 func (serv *Service) GetWallet(wltID string) (*Wallet, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -279,7 +302,7 @@ func (serv *Service) getWallet(wltID string) (*Wallet, error) {
 func (serv *Service) GetWallets() (Wallets, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -290,96 +313,11 @@ func (serv *Service) GetWallets() (Wallets, error) {
 	return wlts, nil
 }
 
-// CreateAndSignTransaction creates and signs a transaction from wallet.
-// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	serv.RLock()
-	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
-		return nil, ErrWalletAPIDisabled
-	}
-
-	w, err := serv.getWallet(wltID)
-	if err != nil {
-		return nil, err
-	}
-
-	var tx *coin.Transaction
-	f := func(wlt *Wallet) error {
-		var err error
-		tx, err = wlt.CreateAndSignTransaction(auxs, headTime, coins, dest)
-		return err
-	}
-
-	if w.IsEncrypted() {
-		if err := w.GuardView(password, f); err != nil {
-			return nil, err
-		}
-	} else {
-		if len(password) != 0 {
-			return nil, ErrWalletNotEncrypted
-		}
-
-		if err := f(w); err != nil {
-			return nil, err
-		}
-	}
-	return tx, nil
-}
-
-// CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
-// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
-	serv.RLock()
-	defer serv.RUnlock()
-
-	if !serv.enableWalletAPI {
-		return nil, nil, ErrWalletAPIDisabled
-	}
-
-	if err := params.Validate(); err != nil {
-		return nil, nil, err
-	}
-
-	w, err := serv.getWallet(params.Wallet.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Check if the wallet needs a password
-	if w.IsEncrypted() {
-		if len(params.Wallet.Password) == 0 {
-			return nil, nil, ErrMissingPassword
-		}
-	} else {
-		if len(params.Wallet.Password) != 0 {
-			return nil, nil, ErrWalletNotEncrypted
-		}
-	}
-
-	var tx *coin.Transaction
-	var inputs []UxBalance
-	if w.IsEncrypted() {
-		err = w.GuardView(params.Wallet.Password, func(wlt *Wallet) error {
-			var err error
-			tx, inputs, err = wlt.CreateAndSignTransactionAdvanced(params, auxs, headTime)
-			return err
-		})
-	} else {
-		tx, inputs, err = w.CreateAndSignTransactionAdvanced(params, auxs, headTime)
-	}
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return tx, inputs, nil
-}
-
 // UpdateWalletLabel updates the wallet label
 func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	serv.Lock()
 	defer serv.Unlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 
@@ -390,7 +328,7 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 
 	w.setLabel(label)
 
-	if err := w.Save(serv.walletDirectory); err != nil {
+	if err := w.Save(serv.config.WalletDir); err != nil {
 		return err
 	}
 
@@ -398,11 +336,11 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	return nil
 }
 
-// Remove removes wallet of given wallet id from the service
-func (serv *Service) Remove(wltID string) error {
+// UnloadWallet removes wallet of given wallet id from the service
+func (serv *Service) UnloadWallet(wltID string) error {
 	serv.Lock()
 	defer serv.Unlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 
@@ -416,45 +354,13 @@ func (serv *Service) Remove(wltID string) error {
 	return nil
 }
 
-func (serv *Service) removeDup(wlts Wallets) Wallets {
-	var rmWltIDS []string
-	// remove dup wallets
+func (serv *Service) setWallets(wlts Wallets) {
+	serv.wallets = wlts
+
 	for wltID, wlt := range wlts {
-		if len(wlt.Entries) == 0 {
-			// empty wallet
-			rmWltIDS = append(rmWltIDS, wltID)
-			continue
-		}
-
 		addr := wlt.Entries[0].Address.String()
-		id, ok := serv.firstAddrIDMap[addr]
-
-		if ok {
-			// check whose entries number is bigger
-			pw := wlts.get(id)
-
-			if len(pw.Entries) >= len(wlt.Entries) {
-				rmWltIDS = append(rmWltIDS, wltID)
-				continue
-			}
-
-			// replace the old wallet with the new one
-			// records the wallet id that need to remove
-			rmWltIDS = append(rmWltIDS, id)
-			// update wallet id
-			serv.firstAddrIDMap[addr] = wltID
-			continue
-		}
-
 		serv.firstAddrIDMap[addr] = wltID
 	}
-
-	// remove the duplicate and empty wallet
-	for _, id := range rmWltIDS {
-		wlts.remove(id)
-	}
-
-	return wlts
 }
 
 // GetWalletSeed returns seed of encrypted wallet of given wallet id
@@ -462,11 +368,11 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return "", ErrWalletAPIDisabled
 	}
 
-	if !serv.enableSeedAPI {
+	if !serv.config.EnableSeedAPI {
 		return "", ErrSeedAPIDisabled
 	}
 
@@ -494,7 +400,7 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error
 func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(*Wallet) error) error {
 	serv.Lock()
 	defer serv.Unlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 
@@ -516,7 +422,7 @@ func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(*Wallet
 	}
 
 	// Save the wallet first
-	if err := w.Save(serv.walletDirectory); err != nil {
+	if err := w.Save(serv.config.WalletDir); err != nil {
 		return err
 	}
 
@@ -529,7 +435,7 @@ func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(*Wallet
 func (serv *Service) Update(wltID string, f func(*Wallet) error) error {
 	serv.Lock()
 	defer serv.Unlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 
@@ -543,7 +449,7 @@ func (serv *Service) Update(wltID string, f func(*Wallet) error) error {
 	}
 
 	// Save the wallet first
-	if err := w.Save(serv.walletDirectory); err != nil {
+	if err := w.Save(serv.config.WalletDir); err != nil {
 		return err
 	}
 
@@ -556,7 +462,7 @@ func (serv *Service) Update(wltID string, f func(*Wallet) error) error {
 func (serv *Service) ViewSecrets(wltID string, password []byte, f func(*Wallet) error) error {
 	serv.RLock()
 	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 
@@ -578,7 +484,7 @@ func (serv *Service) ViewSecrets(wltID string, password []byte, f func(*Wallet) 
 func (serv *Service) View(wltID string, f func(*Wallet) error) error {
 	serv.RLock()
 	defer serv.RUnlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 
@@ -595,7 +501,7 @@ func (serv *Service) View(wltID string, f func(*Wallet) error) error {
 func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	if !serv.enableWalletAPI {
+	if !serv.config.EnableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -643,7 +549,7 @@ func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (*Wall
 	w2.setTimestamp(w.timestamp())
 
 	// Save to disk
-	if err := w2.Save(serv.walletDirectory); err != nil {
+	if err := w2.Save(serv.config.WalletDir); err != nil {
 		return nil, err
 	}
 

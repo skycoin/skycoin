@@ -75,6 +75,10 @@ import { NumberOfAddressesComponent } from './components/pages/wallets/number-of
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
+import { ExchangeComponent } from './components/pages/exchange/exchange.component';
+import { ExchangeService } from './services/exchange.service';
+import { ExchangeCreateComponent } from './components/pages/exchange/exchange-create/exchange-create.component';
+import { ExchangeStatusComponent } from './components/pages/exchange/exchange-status/exchange-status.component';
 import { HwWalletService } from './services/hw-wallet.service';
 import { HwOptionsDialogComponent } from './components/layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { HwWipeDialogComponent } from './components/layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog.component';
@@ -90,6 +94,12 @@ import { HwRestoreSeedDialogComponent } from './components/layout/hardware-walle
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
+import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { HwConfirmAddressDialogComponent } from './components/layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
+import { LanguageService } from './services/language.service';
+import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
+import { ExchangeHistoryComponent } from './components/pages/exchange/exchange-history/exchange-history.component';
+import { StorageService } from './services/storage.service';
 
 
 const ROUTES = [
@@ -116,6 +126,11 @@ const ROUTES = [
   {
     path: 'buy',
     component: BuyComponent,
+    canActivate: [WizardGuardService],
+  },
+  {
+    path: 'exchange',
+    component: ExchangeComponent,
     canActivate: [WizardGuardService],
   },
   {
@@ -197,6 +212,9 @@ const ROUTES = [
     SelectAddressComponent,
     CreateWalletFormComponent,
     ResetPasswordComponent,
+    ExchangeComponent,
+    ExchangeCreateComponent,
+    ExchangeStatusComponent,
     HwOptionsDialogComponent,
     HwWipeDialogComponent,
     HwAddedDialogComponent,
@@ -210,6 +228,10 @@ const ROUTES = [
     HwRestoreSeedDialogComponent,
     HwSeedWordDialogComponent,
     HwDialogBaseComponent,
+    HwConfirmTxDialogComponent,
+    HwConfirmAddressDialogComponent,
+    SelectLanguageComponent,
+    ExchangeHistoryComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -234,6 +256,10 @@ const ROUTES = [
     HwPinHelpDialogComponent,
     HwRestoreSeedDialogComponent,
     HwSeedWordDialogComponent,
+    HwConfirmTxDialogComponent,
+    HwConfirmAddressDialogComponent,
+    SelectLanguageComponent,
+    ExchangeHistoryComponent,
   ],
   imports: [
     BrowserModule,
@@ -272,6 +298,7 @@ const ROUTES = [
     ApiService,
     AppService,
     BlockchainService,
+    ExchangeService,
     NavBarService,
     NetworkService,
     PriceService,
@@ -280,6 +307,8 @@ const ROUTES = [
     WizardGuardService,
     HwWalletService,
     Bip39WordListService,
+    LanguageService,
+    StorageService,
   ],
   bootstrap: [AppComponent],
 })

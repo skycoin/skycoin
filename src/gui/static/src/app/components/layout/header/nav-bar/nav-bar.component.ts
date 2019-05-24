@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { AppConfig } from '../../../../app.config';
 import { NavBarService } from '../../../../services/nav-bar.service';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-nav-bar',
@@ -9,6 +10,7 @@ import { NavBarService } from '../../../../services/nav-bar.service';
 })
 export class NavBarComponent {
   otcEnabled = AppConfig.otcEnabled;
+  exchangeEnabled = !!environment.swaplab.apiKey;
 
   constructor(
     public navbarService: NavBarService,

@@ -13,7 +13,7 @@ func verifyAddressCmd() *cobra.Command {
 		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			_, err := cipher.DecodeBase58Address(args[0])
 			return err
 		},

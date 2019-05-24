@@ -1,6 +1,6 @@
 #!/bin/bash
 # Runs "disable-wallet-api"-mode tests against a skycoin node configured with the wallet API disabled.
-# "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page
+# "disable-wallet-api"-mode confirms that no wallet-related apis work, that the main index.html page
 # does not load, and that a new wallet file is not created.
 
 # Set Script Name variable
@@ -60,6 +60,10 @@ COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 GOLDFLAGS="-X ${CMDPKG}.Commit=${COMMIT} -X ${CMDPKG}.Branch=${BRANCH}"
 
+echo "checking if integration tests compile"
+go test ./src/api/integration/...
+go test ./src/cli/integration/...
+
 DATA_DIR=$(mktemp -d -t ${COIN}-data-dir.XXXXXX)
 WALLET_DIR="${DATA_DIR}/wallets"
 
@@ -86,7 +90,6 @@ echo "starting $COIN node in background with http listener on $HOST"
             -launch-browser=false \
             -data-dir="$DATA_DIR" \
             -wallet-dir="$WALLET_DIR" \
-            -enable-unversioned-api=true \
             -enable-all-api-sets=true \
             -disable-api-sets=WALLET \
             -test.run "^TestRunMain$" \

@@ -20,7 +20,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.25.1"
+	Version = "0.26.0"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -53,7 +53,6 @@ var (
 	DefaultConnections = []string{
 		"118.178.135.93:6000",
 		"47.88.33.156:6000",
-		"121.41.103.148:6000",
 		"104.237.142.206:6000",
 		"176.58.126.224:6000",
 		"172.104.85.6:6000",
@@ -77,13 +76,6 @@ var (
 		Port:                           6000,
 		WebInterfacePort:               6420,
 		DataDirectory:                  "$HOME/.skycoin",
-		UnconfirmedBurnFactor:          2,
-		UnconfirmedMaxTransactionSize:  32768,
-		UnconfirmedMaxDropletPrecision: 3,
-		CreateBlockBurnFactor:          2,
-		CreateBlockMaxTransactionSize:  32768,
-		CreateBlockMaxDropletPrecision: 3,
-		MaxBlockSize:                   32768,
 	})
 
 	parseFlags = true

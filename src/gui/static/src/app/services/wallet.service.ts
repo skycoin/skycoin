@@ -17,9 +17,10 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { BigNumber } from 'bignumber.js';
 import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { catchError, map } from 'rxjs/operators';
+import { AppConfig } from '../app.config';
 
 declare var Cipher: any;
-declare var CipherExtras: any;
 
 export enum HwSecurityWarnings {
   NeedsBackup,
@@ -100,8 +101,8 @@ export class WalletService {
     const addressesMap: Map<string, boolean> = new Map<string, boolean>();
     const addressesWithTxMap: Map<string, boolean> = new Map<string, boolean>();
 
-    return this.hwWalletService.getMaxAddresses().flatMap(response => {
-      addresses = response;
+    return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0).flatMap(response => {
+      addresses = response.rawResponse;
       addresses.forEach(address => {
         addressesMap.set(address, true);
       });
@@ -125,7 +126,13 @@ export class WalletService {
       });
 
       return this.wallets.first().map(wallets => {
-        const newWallet = this.createHardwareWalletData(this.translate.instant('hardware-wallet.general.default-wallet-name'), addresses.slice(0, lastAddressWithTx + 1), true, false);
+        const newWallet = this.createHardwareWalletData(
+          this.translate.instant('hardware-wallet.general.default-wallet-name'),
+          addresses.slice(0, lastAddressWithTx + 1).map(add => {
+            return { address: add, confirmed: false };
+          }), true, false,
+        );
+
         let lastHardwareWalletIndex = wallets.length - 1;
         for (let i = 0; i < wallets.length; i++) {
           if (!wallets[i].isHardware) {
@@ -223,8 +230,10 @@ export class WalletService {
       Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
         wallet.coins = response.coins;
         wallet.hours = response.hours;
-        wallet.addresses = wallet.addresses.map(address => {
-          return response.addresses.find(addr => addr.address === address.address);
+        wallet.addresses.map(address => {
+          const balance = response.addresses.find(addr => addr.address === address.address);
+          address.coins = balance.coins;
+          address.hours = balance.hours;
         });
 
         return wallet;
@@ -267,125 +276,170 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, addresses: string[]|null, destinations: any[], hoursSelection: any, changeAddress: string|null, password: string|null): Observable<PreviewTransaction> {
-    return this.apiService.post(
-      'wallet/transaction',
-      {
-        hours_selection: hoursSelection,
-        wallet: {
-          id: wallet.filename,
-          password,
-          addresses,
-        },
-        to: destinations,
-        change_address: changeAddress,
-      },
+  createTransaction(
+    wallet: Wallet|null,
+    addresses: string[]|null,
+    unspents: string[]|null,
+    destinations: any[],
+    hoursSelection: any,
+    changeAddress: string|null,
+    password: string|null,
+    unsigned: boolean): Observable<PreviewTransaction> {
+
+    if (unspents) {
+      addresses = null;
+    }
+
+    if (wallet.isHardware && !changeAddress) {
+      changeAddress = wallet.addresses[0].address;
+    }
+
+    const useV2Endpoint = !!wallet.isHardware;
+
+    const params = {
+      hours_selection: hoursSelection,
+      wallet_id: wallet ? wallet.filename : null,
+      password: password,
+      addresses: addresses,
+      unspents: unspents,
+      to: destinations,
+      change_address: changeAddress,
+    };
+
+    if (!useV2Endpoint) {
+      params['unsigned'] = unsigned;
+    }
+
+    let response: Observable<PreviewTransaction> = this.apiService.post(
+      useV2Endpoint ? 'transaction' : 'wallet/transaction',
+      params,
       {
         json: true,
       },
-    ).map(response => {
+      useV2Endpoint,
+    ).map(transaction => {
+      const data = useV2Endpoint ? transaction.data : transaction;
+
+      if (wallet.isHardware) {
+        if (data.transaction.inputs.length > 8) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
+        }
+        if (data.transaction.outputs.length > 8) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+        }
+      }
+
       return {
-        ...response.transaction,
-        hoursBurned: new BigNumber(response.transaction.fee),
-        encoded: response.encoded_transaction,
+        ...data.transaction,
+        hoursBurned: new BigNumber(data.transaction.fee),
+        encoded: data.encoded_transaction,
       };
     });
+
+    if (wallet.isHardware && !unsigned) {
+      let unsignedTx: PreviewTransaction;
+
+      response = response.flatMap(transaction => {
+        unsignedTx = transaction;
+
+        return this.signTransaction(wallet, null, transaction);
+      }).map(signedTx => {
+        unsignedTx.encoded = signedTx.encoded;
+
+        return unsignedTx;
+      });
+    }
+
+    return response;
   }
 
-  createHwTransaction(wallet: Wallet, address: string, amount: BigNumber): Observable<PreviewTransaction> {
-   let unburnedHoursRatio: BigNumber;
+  signTransaction(
+    wallet: Wallet,
+    password: string|null,
+    transaction: PreviewTransaction): Observable<PreviewTransaction> {
 
-    const addresses = wallet.addresses.map(a => a.address).join(',');
+    if (!wallet.isHardware) {
+      return this.apiService.post(
+        'wallet/transaction/sign',
+        {
+          wallet_id: wallet ? wallet.filename : null,
+          password: password,
+          encoded_transaction: transaction.encoded,
+        },
+        {
+          json: true,
+        },
+        true,
+      ).map(response => {
+        return {
+          ...response.data.transaction,
+          hoursBurned: new BigNumber(response.data.transaction.fee),
+          encoded: response.data.encoded_transaction,
+        };
+      });
 
-    let totalHours = new BigNumber('0');
-    let hoursToSend = new BigNumber('0');
-    let calculatedHours = new BigNumber('0');
+    } else {
 
-    let innerHash: string;
-    let convertedOutputs: any[];
+      const txOutputs = [];
+      const txInputs = [];
+      const hwOutputs = [];
+      const hwInputs = [];
 
-    const txOutputs = [];
-    const txInputs = [];
-    const txSignatures = [];
-
-    return this.apiService.get('health').flatMap(response => {
-        unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(response.user_verify_transaction.burn_factor));
-
-        return this.getOutputs(addresses);
-      }).flatMap((outputs: Output[]) => {
-        const minRequiredOutputs =  this.getMinRequiredOutputs(amount, outputs);
-        let totalCoins = new BigNumber('0');
-        minRequiredOutputs.map(output => totalCoins = totalCoins.plus(output.coins));
-
-        if (totalCoins.isLessThan(amount)) {
-          throw new Error(this.translate.instant('service.wallet.not-enough-hours'));
-        }
-
-        minRequiredOutputs.map(output => totalHours = totalHours.plus(output.calculated_hours));
-        hoursToSend = totalHours.multipliedBy(unburnedHoursRatio).dividedBy(2).decimalPlaces(0, BigNumber.ROUND_FLOOR);
-
-        calculatedHours = totalHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
-
-        const changeCoins = totalCoins.minus(amount).decimalPlaces(6);
-
-        if (changeCoins.isGreaterThan(0)) {
-          txOutputs.push({
-            address: wallet.addresses[0].address,
-            coins: changeCoins.toNumber(),
-            hours: calculatedHours.minus(hoursToSend).toNumber(),
-          });
-        } else {
-          hoursToSend = calculatedHours;
-        }
-
-        txOutputs.push({ address: address, coins: amount.toNumber(), hours: hoursToSend.toNumber() });
-
-        if (address === wallet.addresses[0].address) {
-          hoursToSend = calculatedHours;
-        }
-
-        minRequiredOutputs.forEach(input => {
-          txInputs.push({
-            hash: input.hash,
-            secret: '',
-            address: input.address,
-            address_index: wallet.addresses.findIndex(a => a.address === input.address),
-            calculated_hours: input.calculated_hours.toNumber(),
-            coins: input.coins.toNumber(),
-          });
+      transaction.outputs.forEach(output => {
+        txOutputs.push({
+          address: output.address,
+          coins: parseInt(new BigNumber(output.coins).multipliedBy(1000000).toFixed(0), 10),
+          hours: parseInt(output.hours, 10),
         });
 
-        convertedOutputs = txOutputs.map(output => {
-          return {
-            ...output,
-            coins: parseInt(new BigNumber(output.coins).multipliedBy(1000000).toFixed(0), 10),
-          };
+        hwOutputs.push({
+          address: output.address,
+          coin: parseInt(new BigNumber(output.coins).multipliedBy(1000000).toFixed(0), 10),
+          hour: parseInt(output.hours, 10),
+        });
+      });
+
+      if (hwOutputs.length > 1) {
+        for (let i = txOutputs.length - 1; i >= 0; i--) {
+          if (hwOutputs[i].address === wallet.addresses[0].address) {
+            hwOutputs[i].address_index = 0;
+            break;
+          }
+        }
+      }
+
+      const addressesMap: Map<string, number> = new Map<string, number>();
+      wallet.addresses.forEach((address, i) => addressesMap.set(address.address, i));
+
+      transaction.inputs.forEach(input => {
+        txInputs.push({
+          hash: input.uxid,
+          secret: '',
+          address: input.address,
+          address_index: addressesMap.get(input.address),
+          calculated_hours: parseInt(input.calculated_hours, 10),
+          coins: parseInt(input.coins, 10),
         });
 
-        innerHash = Cipher.GetTransactionInnerHash(JSON.stringify(txInputs), JSON.stringify(convertedOutputs));
+        hwInputs.push({
+          hashIn: input.uxid,
+          index: addressesMap.get(input.address),
+        });
+      });
 
-        // Request signatures and add them to txSignatures sequentially.
-        return this.addSignatures(txInputs.length - 1, txInputs, txSignatures, innerHash);
-
-      }).flatMap(() => {
+      return this.hwWalletService.signTransaction(hwInputs, hwOutputs).flatMap(signatures => {
         const rawTransaction = Cipher.PrepareTransactionWithSignatures(
           JSON.stringify(txInputs),
-          JSON.stringify(convertedOutputs),
-          JSON.stringify(txSignatures),
+          JSON.stringify(txOutputs),
+          JSON.stringify(signatures.rawResponse),
         );
 
-        return Observable.of({
-          balance: amount,
-          inputs: txInputs,
-          outputs: txOutputs,
-          txid: null,
-          from: '',
-          to: [],
-          hoursSent: hoursToSend,
-          hoursBurned: totalHours.minus(calculatedHours),
+        return Observable.of( {
+          ...transaction,
           encoded: rawTransaction,
         });
       });
+    }
   }
 
   injectTransaction(encodedTx: string) {
@@ -409,44 +463,78 @@ export class WalletService {
   }
 
   transactions(): Observable<NormalTransaction[]> {
-    return this.allAddresses().first().flatMap(addresses => {
+    let wallets: Wallet[];
+    const addressesMap: Map<string, boolean> = new Map<string, boolean>();
+
+
+    return this.wallets.first().flatMap(w => {
+      wallets = w;
+
+      return this.allAddresses().first();
+    }).flatMap(addresses => {
       this.addresses = addresses;
+      addresses.map(add => addressesMap.set(add.address, true));
 
       return this.apiService.getTransactions(addresses);
     }).map(transactions => {
       return transactions
         .sort((a, b) =>  b.timestamp - a.timestamp)
         .map(transaction => {
-          const outgoing = this.addresses.some(address => {
-            return transaction.inputs.some(input => input.owner === address.address);
-          });
+          const outgoing = transaction.inputs.some(input => addressesMap.has(input.owner));
 
-          const relevantOutputs = transaction.outputs.reduce((array, output) => {
-            const isMyOutput = this.addresses.some(address => address.address === output.dst);
-
-            if ((outgoing && !isMyOutput) || (!outgoing && isMyOutput)) {
-              array.push(output);
-            }
-
-            return array;
-          }, []);
-
-          const calculatedOutputs = (outgoing && relevantOutputs.length === 0)
-          || (!outgoing && relevantOutputs.length === transaction.outputs.length)
-            ? transaction.outputs
-            : relevantOutputs;
-
-          transaction.addresses.push(
-            ...calculatedOutputs
-              .map(output => output.dst)
-              .filter((dst, i, self) => self.indexOf(dst) === i),
-          );
-
-          calculatedOutputs.map (output => transaction.balance = transaction.balance.plus(output.coins));
-          transaction.balance = (outgoing ? transaction.balance.negated() : transaction.balance);
-
+          const relevantAddresses: Map<string, boolean> = new Map<string, boolean>();
+          transaction.balance = new BigNumber('0');
           transaction.hoursSent = new BigNumber('0');
-          calculatedOutputs.map(output => transaction.hoursSent = transaction.hoursSent.plus(new BigNumber(output.hours)));
+
+          if (!outgoing) {
+            transaction.outputs.map(output => {
+              if (addressesMap.has(output.dst)) {
+                relevantAddresses.set(output.dst, true);
+                transaction.balance = transaction.balance.plus(output.coins);
+                transaction.hoursSent = transaction.hoursSent.plus(output.hours);
+              }
+            });
+          } else {
+            const possibleReturnAddressesMap: Map<string, boolean> = new Map<string, boolean>();
+            transaction.inputs.map(input => {
+              if (addressesMap.has(input.owner)) {
+                relevantAddresses.set(input.owner, true);
+                wallets.map(wallet => {
+                  if (wallet.addresses.some(add => add.address === input.owner)) {
+                    wallet.addresses.map(add => possibleReturnAddressesMap.set(add.address, true));
+                  }
+                });
+              }
+            });
+
+            transaction.outputs.map(output => {
+              if (!possibleReturnAddressesMap.has(output.dst)) {
+                transaction.balance = transaction.balance.minus(output.coins);
+                transaction.hoursSent = transaction.hoursSent.plus(output.hours);
+              }
+            });
+
+            if (transaction.balance.isEqualTo(0)) {
+              transaction.coinsMovedInternally = true;
+              const inputAddressesMap: Map<string, boolean> = new Map<string, boolean>();
+
+              transaction.inputs.map(input => {
+                inputAddressesMap.set(input.owner, true);
+              });
+
+              transaction.outputs.map(output => {
+                if (!inputAddressesMap.has(output.dst)) {
+                  relevantAddresses.set(output.dst, true);
+                  transaction.balance = transaction.balance.plus(output.coins);
+                  transaction.hoursSent = transaction.hoursSent.plus(output.hours);
+                }
+              });
+            }
+          }
+
+          relevantAddresses.forEach((value, key) => {
+            transaction.addresses.push(key);
+          });
 
           let inputsHours = new BigNumber('0');
           transaction.inputs.map(input => inputsHours = inputsHours.plus(new BigNumber(input.calculated_hours)));
@@ -481,7 +569,9 @@ export class WalletService {
         if (wallet.isHardware) {
           hardwareWallets.push(this.createHardwareWalletData(
             wallet.label,
-            wallet.addresses.map(address => address.address),
+            wallet.addresses.map(address => {
+              return { address: address.address, confirmed: address.confirmed };
+            }),
             wallet.hasHwSecurityWarnings,
             wallet.stopShowingHwSecurityPopup,
           ));
@@ -494,27 +584,18 @@ export class WalletService {
     });
   }
 
-  private addSignatures(index: number, txInputs: any[], txSignatures: string[], txInnerHash: string): Observable<any> {
-    let chain: Observable<any>;
-    if (index > 0) {
-      chain = this.addSignatures(index - 1, txInputs, txSignatures, txInnerHash).first();
-    } else {
-      chain = Observable.of(1);
-    }
-
-    chain = chain.flatMap(() => {
-      const msgToSign = CipherExtras.AddSHA256(txInnerHash, txInputs[index].hash);
-
-      return this.hwWalletService.signMessage(txInputs[index].address_index, msgToSign, index + 1, txInputs.length)
-        .map(response => {
-          txSignatures.push(response.rawResponse);
-        });
-    });
-
-    return chain;
+  verifyAddress(address: string) {
+    return this.apiService.post('address/verify', { address }, {}, true)
+      .pipe(map(() => true), catchError(() => Observable.of(false)));
   }
 
-  private createHardwareWalletData(label: string, addresses: string[], hasHwSecurityWarnings: boolean, stopShowingHwSecurityPopup: boolean): Wallet {
+  getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
+    const addresses = wallet.addresses.map(a => a.address).join(',');
+
+    return this.getOutputs(addresses);
+  }
+
+  private createHardwareWalletData(label: string, addresses: {address: string, confirmed: boolean}[], hasHwSecurityWarnings: boolean, stopShowingHwSecurityPopup: boolean): Wallet {
     return {
       label: label,
       filename: '',
@@ -524,9 +605,10 @@ export class WalletService {
       hours: null,
       addresses: addresses.map(address => {
         return {
-          address: address,
+          address: address.address,
           coins: null,
           hours: null,
+          confirmed: address.confirmed,
         };
       }),
       encrypted: false,

@@ -8,7 +8,7 @@ const childProcess = require('child_process');
 
 const axios = require('axios');
 
-const hwCode = require('./hardware-wallet');
+//const hwCode = require('./hardware-wallet');
 
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
@@ -20,7 +20,6 @@ require('electron-context-menu')({});
 global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
-let showErrorCalled = false;
 let splashLoaded = false
 
 // Detect if the code is running with the "dev" arg. The "dev" arg is added when running npm
@@ -31,7 +30,7 @@ let splashLoaded = false
 let dev = process.argv.find(arg => arg === 'dev') ? true : false;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinpaprika.com, EXCLUDE swaplab.cc');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');
@@ -83,7 +82,6 @@ function startSkycoin() {
       '-download-peerlist=true',
       '-enable-all-api-sets=true',
       '-enable-api-sets=INSECURE_WALLET_SEED',
-      '-rpc-interface=false',
       '-disable-csrf=false',
       '-reset-corrupt-db=true',
       '-enable-gui=true',
@@ -150,7 +148,7 @@ function startSkycoin() {
       .get('http://localhost:4200/api/v1/wallets/folderName')
       .then(response => {
         walletsFolder = response.data.address;
-        hwCode.setWalletsFolderPath(walletsFolder);
+        //hwCode.setWalletsFolderPath(walletsFolder);
       })
       .catch(() => {});
   }
@@ -158,7 +156,6 @@ function startSkycoin() {
 
 function showError() {
   if (win) {
-    showErrorCalled = true;
     win.loadURL('file://' + process.resourcesPath + '/app/dist/assets/error-alert/index.html');
     console.log('Showing the error message');
   }
@@ -178,6 +175,7 @@ function createWindow(url) {
   win = new BrowserWindow({
     width: 1200,
     height: 900,
+    backgroundColor: '#000000',
     title: 'Skycoin',
     icon: iconPath,
     nodeIntegration: false,
@@ -194,18 +192,12 @@ function createWindow(url) {
       preload: __dirname + '/electron-api.js',
     },
   });
-  hwCode.setWinRef(win);
+  //hwCode.setWinRef(win);
 
   win.webContents.on('did-finish-load', function() {
 	if (!splashLoaded) {
 	  splashLoaded = true;
 	}
-  });
-
-  win.webContents.on('did-fail-load', function() {
-    if (!showErrorCalled) {
-      showError();
-    }
   });
 
   // patch out eval
@@ -232,7 +224,7 @@ function createWindow(url) {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
-    hwCode.setWinRef(win);
+    //hwCode.setWinRef(win);
   });
 
   // If in dev mode, allow to open URLs.
@@ -242,6 +234,12 @@ function createWindow(url) {
       require('electron').shell.openExternal(url);
     });
   }
+
+  // Open links with target='_blank' in the default browser.
+  win.webContents.on('new-window', function(e, url) {
+    e.preventDefault();
+    require('electron').shell.openExternal(url);
+  });
 
   // create application's main menu
   var template = [{
@@ -340,7 +338,7 @@ app.on('skycoin-ready', (e) => {
     .get(e.url + '/api/v1/wallets/folderName')
     .then(response => {
       walletsFolder = response.data.address;
-      hwCode.setWalletsFolderPath(walletsFolder);
+      //hwCode.setWalletsFolderPath(walletsFolder);
     })
     .catch(() => {});
 });

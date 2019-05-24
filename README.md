@@ -56,7 +56,6 @@ scratch, to remedy the rough edges in the Bitcoin design.
 	- [Development image](#development-image)
 - [API Documentation](#api-documentation)
 	- [REST API](#rest-api)
-	- [JSON-RPC 2.0 API](#json-rpc-20-api)
 	- [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
@@ -92,6 +91,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 		- [Electron Desktop Client Mode](#electron-desktop-client-mode)
 		- [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
 	- [Wallet GUI Development](#wallet-gui-development)
+		- [Translations](#translations)
 	- [Releases](#releases)
 		- [Update the version](#update-the-version)
 		- [Pre-release testing](#pre-release-testing)
@@ -116,7 +116,7 @@ Skycoin supports go1.10+.
 ### Go get skycoin
 
 ```sh
-go get github.com/skycoin/skycoin/cmd/...
+$ go get github.com/skycoin/skycoin/cmd/...
 ```
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
@@ -127,15 +127,15 @@ but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 ### Run Skycoin from the command line
 
 ```sh
-cd $GOPATH/src/github.com/skycoin/skycoin
-make run-client
+$ cd $GOPATH/src/github.com/skycoin/skycoin
+$ make run-client
 ```
 
 ### Show Skycoin node options
 
 ```sh
-cd $GOPATH/src/github.com/skycoin/skycoin
-make run-help
+$ cd $GOPATH/src/github.com/skycoin/skycoin
+$ make run-help
 ```
 
 ### Run Skycoin with options
@@ -143,8 +143,8 @@ make run-help
 Example:
 
 ```sh
-cd $GOPATH/src/github.com/skycoin/skycoin
-make ARGS="--launch-browser=false -data-dir=/custom/path" run
+$ cd $GOPATH/src/github.com/skycoin/skycoin
+$ make ARGS="--launch-browser=false -data-dir=/custom/path" run
 ```
 
 ### Docker image
@@ -172,7 +172,7 @@ by just appending flags at the end of the `docker run` command. The following
 example will show you the available options.
 
 ```sh
-docker run --rm skycoin/skycoin -help
+$ docker run --rm skycoin/skycoin -help
 ```
 
 Access the dashboard: [http://localhost:6420](http://localhost:6420).
@@ -203,12 +203,6 @@ and useful tools included in `skycoin/skycoindev-cli`.
 
 [REST API](src/api/README.md).
 
-### JSON-RPC 2.0 API
-
-*Deprecated, avoid using this*
-
-[JSON-RPC 2.0 README](src/api/webrpc/README.md).
-
 ### Skycoin command line interface
 
 [CLI command API](cmd/cli/README.md).
@@ -238,7 +232,7 @@ For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor
 The coin hour burn factor can be configured with a `USER_BURN_FACTOR` envvar. It cannot be configured through the command line.
 
 ```sh
-USER_BURN_FACTOR=999 ./run-client.sh
+$ USER_BURN_FACTOR=999 ./run-client.sh
 ```
 
 This burn factor applies to user-created transactions.
@@ -248,7 +242,7 @@ To control the burn factor in other scenarios, use `-burn-factor-unconfirmed` an
 ## Running with a custom max transaction size
 
 ```sh
-USER_MAX_TXN_SIZE=1024 ./run-client.sh
+$ USER_MAX_TXN_SIZE=1024 ./run-client.sh
 ```
 
 This maximum transaction size applies to user-created transactions.
@@ -262,7 +256,7 @@ Transaction and block size are measured in bytes.
 ## Running with a custom max decimal places
 
 ```sh
-USER_MAX_DECIMALS=4 ./run-client.sh
+$ USER_MAX_DECIMALS=4 ./run-client.sh
 ```
 
 This maximum transaction size applies to user-created transactions.
@@ -301,13 +295,22 @@ We have two branches: `master` and `develop`.
 ### Modules
 
 * `api` - REST API interface
-* `api/webrpc` - JSON-RPC 2.0 API [deprecated]
-* `cipher` - cryptographic library
+* `cipher` - cryptographic library (key generation, addresses, hashes)
+* `cipher/base58` - Base58 encoding
+* `cipher/encoder` - reflect-based deterministic runtime binary encoder
+* `cipher/encrypt` - at-rest data encryption (chacha20poly1305+scrypt)
+* `cipher/go-bip39` - BIP-39 seed generation
 * `cli` - CLI library
-* `coin` - blockchain data structures
+* `coin` - blockchain data structures (blocks, transactions, unspent outputs)
 * `daemon` - top-level application manager, combining all components (networking, database, wallets)
 * `daemon/gnet` - networking library
 * `daemon/pex` - peer management
+* `params` - configurable transaction verification parameters
+* `readable` - JSON-encodable representations of internal structures
+* `skycoin` - core application initialization and configuration
+* `testutil` - testing utility methods
+* `transaction` - methods for creating transactions
+* `util` - miscellaneous utilities
 * `visor` - top-level blockchain database layer
 * `visor/blockdb` - low-level blockchain database layer
 * `visor/historydb` - low-level blockchain database layer for historical blockchain metadata
@@ -318,23 +321,19 @@ We have two branches: `master` and `develop`.
 Skycoin implements client libraries which export core functionality for usage from
 other programming languages.
 
-* `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
-
-For further details run `make docs` to generate documetation and read the corresponding README and API references.
-
-It is also possible to [build client libraries for other programming languages](lib/swig/README.md)
-using [SWIG](http://www.swig.org/).
+* [libskycoin C client library and SWIG interface](https://github.com/skycoin/libskycoin)
+* [skycoin-lite: Javascript and mobile bindings](https://github.com/skycoin/skycoin-lite)
 
 ### Running Tests
 
 ```sh
-make test
+$ make test
 ```
 
 ### Running Integration Tests
 
 There are integration tests for the CLI and HTTP API interfaces. They have two
-run modes, "stable" and "live.
+run modes, "stable" and "live".
 
 The stable integration tests will use a skycoin daemon
 whose blockchain is synced to a specific point and has networking disabled so that the internal
@@ -345,13 +344,13 @@ The live integration tests should be run against a synced or syncing node with n
 #### Stable Integration Tests
 
 ```sh
-make integration-test-stable
+$ make integration-test-stable
 ```
 
 or
 
 ```sh
-./ci-scripts/integration-test-stable.sh -v -w
+$ ./ci-scripts/integration-test-stable.sh -v -w
 ```
 
 The `-w` option, run wallet integrations tests.
@@ -364,16 +363,16 @@ The live integration tests run against a live runnning skycoin node, so before r
 need to start a skycoin node:
 
 ```sh
-./run-daemon.sh
+$ ./run-daemon.sh
 ```
 
 After the skycoin node is up, run the following command to start the live tests:
 
 ```sh
-make integration-test-live
+$ make integration-test-live
 ```
 
-The above command will run all tests except the wallet related tests. To run wallet tests, we
+The above command will run all tests except the wallet-related tests. To run wallet tests, we
 need to manually specify a wallet file, and it must have at least `2 coins` and `256 coinhours`,
 it also must have been loaded by the node.
 
@@ -386,16 +385,16 @@ configured wallet directory, which can be controlled with `-wallet-dir` when run
 If the wallet is encrypted, also set `WALLET_PASSWORD`.
 
 ```sh
-export WALLET_DIR="$HOME/.skycoin/wallets"
-export WALLET_NAME="$valid_wallet_filename"
-export WALLET_PASSWORD="$wallet_password"
-/run-client.sh -launch-browser=false -enable-all-api-sets -enable-api-sets=DEPRECATED_WALLET_SPEND
+$ export WALLET_DIR="$HOME/.skycoin/wallets"
+$ export WALLET_NAME="$valid_wallet_filename"
+$ export WALLET_PASSWORD="$wallet_password"
+$ ./run-client.sh -launch-browser=false -enable-all-api-sets
 ```
 
 Then run the tests with the following command:
 
 ```sh
-make integration-test-live-wallet
+$ make integration-test-live-wallet
 ```
 
 There are two other live integration test modes for CSRF disabled and networking disabled.
@@ -403,24 +402,24 @@ There are two other live integration test modes for CSRF disabled and networking
 To run the CSRF disabled tests:
 
 ```sh
-./run-daemon.sh -disable-csrf
+$ ./run-daemon.sh -disable-csrf
 ```
 
 ```sh
-make integration-test-live-disable-csrf
+$ make integration-test-live-disable-csrf
 ```
 
 To run the networking disabled tests, which requires a live wallet:
 
 ```sh
-./run-client.sh -disable-networking -launch-browser=false
+$ ./run-client.sh -disable-networking -launch-browser=false
 ```
 
 ```sh
-export WALLET_DIR="$HOME/.skycoin/wallets"
-export WALLET_NAME="$valid_wallet_filename"
-export WALLET_PASSWORD="$wallet_password"
-make integration-test-live-disable-networking
+$ export WALLET_DIR="$HOME/.skycoin/wallets"
+$ export WALLET_NAME="$valid_wallet_filename"
+$ export WALLET_PASSWORD="$wallet_password"
+$ make integration-test-live-disable-networking
 ```
 
 #### Debugging Integration Tests
@@ -429,10 +428,10 @@ Run specific test case:
 
 It's annoying and a waste of time to run all tests to see if the test we real care
 is working correctly. There's an option: `-r`, which can be used to run specific test case.
-For exampe: if we only want to test `TestStableAddressBalance` and see the result, we can run:
+For example: if we only want to test `TestStableAddressBalance` and see the result, we can run:
 
 ```sh
-./ci-scripts/integration-test-stable.sh -v -r TestStableAddressBalance
+$ ./ci-scripts/integration-test-stable.sh -v -r TestStableAddressBalance
 ```
 
 #### Update golden files in integration testdata
@@ -440,14 +439,17 @@ For exampe: if we only want to test `TestStableAddressBalance` and see the resul
 Golden files are expected data responses from the CLI or HTTP API saved to disk.
 When the tests are run, their output is compared to the golden files.
 
-To update golden files, use the `-u` option:
+To update golden files, use the provided `make` command:
 
 ```sh
-./ci-scripts/integration-test-live.sh -v -u
-./ci-scripts/integration-test-stable.sh -v -u
+$ make update-golden-files
 ```
 
 We can also update a specific test case's golden file with the `-r` option.
+For example:
+```sh
+$ ./ci-scripts/integration-test-stable.sh -v -u -r TestStableAddressBalance
+```
 
 ### Test coverage
 
@@ -457,8 +459,8 @@ This includes integration test coverage. The coverage output files are placed in
 To merge coverage from all tests into a single HTML file for viewing:
 
 ```sh
-make check
-make merge-coverage
+$ make check
+$ make merge-coverage
 ```
 
 Then open `coverage/all-coverage.html` in the browser.
@@ -471,13 +473,13 @@ To generate coverage for this, build and run the skycoin node in test mode befor
 In one shell:
 
 ```sh
-make run-integration-test-live-cover
+$ make run-integration-test-live-cover
 ```
 
 In another shell:
 
 ```sh
-make integration-test-live
+$ make integration-test-live
 ```
 
 After the tests have run, CTRL-C to exit the process from the first shell.
@@ -491,7 +493,7 @@ or generate the HTML coverage in isolation with `go tool cover -html`
 All `.go` source files should be formatted `goimports`.  You can do this with:
 
 ```sh
-make format
+$ make format
 ```
 
 ### Code Linting
@@ -499,13 +501,13 @@ make format
 Install prerequisites:
 
 ```sh
-make install-linters
+$ make install-linters
 ```
 
 Run linters:
 
 ```sh
-make lint
+$ make lint
 ```
 
 ### Profiling
@@ -515,19 +517,19 @@ Once the node terminates, a profile file is written to `-profile-cpu-file` (defa
 This profile can be analyzed with
 
 ```sh
-go tool pprof cpu.prof
+$ go tool pprof cpu.prof
 ```
 
 The HTTP interface for obtaining more profiling data or obtaining data while running can be enabled with `-http-prof`.
-The HTTP profiling interface can be controlling with `-http-prof-host` and listens on `localhost:6060` by default.
+The HTTP profiling interface can be controlled with `-http-prof-host` and listens on `localhost:6060` by default.
 
 See https://golang.org/pkg/net/http/pprof/ for guidance on using the HTTP profiler.
 
 Some useful examples include:
 
 ```sh
-go tool pprof http://localhost:6060/debug/pprof/profile?seconds=10
-go tool pprof http://localhost:6060/debug/pprof/heap
+$ go tool pprof http://localhost:6060/debug/pprof/profile?seconds=10
+$ go tool pprof http://localhost:6060/debug/pprof/heap
 ```
 
 A web page interface is provided by http/pprof at http://localhost:6060/debug/pprof/.
@@ -544,7 +546,7 @@ Fuzz tests are written for the following packages:
 To fuzz the `cipher/base58` package,
 
 ```sh
-make fuzz-base58
+$ make fuzz-base58
 ```
 
 #### encoder
@@ -552,7 +554,7 @@ make fuzz-base58
 To fuzz the `cipher/encoder` package,
 
 ```sh
-make fuzz-encoder
+$ make fuzz-encoder
 ```
 
 ### Dependencies
@@ -573,7 +575,7 @@ Dependencies are managed with [dep](https://github.com/golang/dep).
 To [install `dep` for development](https://github.com/golang/dep/blob/master/docs/installation.md#development):
 
 ```sh
-go get -u github.com/golang/dep/cmd/dep
+$ go get -u github.com/golang/dep/cmd/dep
 ```
 
 `dep` vendors all dependencies into the repo.
@@ -589,25 +591,25 @@ Examples:
 Initialize all dependencies:
 
 ```sh
-dep init
+$ dep init
 ```
 
 Update all dependencies:
 
 ```sh
-dep ensure -update -v
+$ dep ensure -update -v
 ```
 
 Add a single dependency (latest version):
 
 ```sh
-dep ensure github.com/foo/bar
+$ dep ensure github.com/foo/bar
 ```
 
 Add a single dependency (more specific version), or downgrade an existing dependency:
 
 ```sh
-dep ensure github.com/foo/bar@tag
+$ dep ensure github.com/foo/bar@tag
 ```
 
 ### Configuration Modes
@@ -652,16 +654,21 @@ Instructions for doing this:
 
 [Wallet GUI Development README](src/gui/static/README.md)
 
+#### Translations
+
+You can find information about how to work with translation files in the [Translations README](./src/gui/static/src/assets/i18n/README.md).
+
 ### Releases
 
 #### Update the version
 
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
+0. Make sure the translations are up to date. See the [i18n README](./src/gui/static/src/assets/i18n/README.md) for instructions on how to update translations and how to check if they are up to date.
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 0. Update version strings to the new version in the following files: `electron/package-lock.json`, `electron/package.json`, `electron/skycoin/current-skycoin.json`, `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-0. Update files in https://github.com/skycoin/repo-info/tree/master/repos/skycoin/remote for images `skycoin/skycoin`, `skycoin/skycoindev-cli`, and `skycoin/skycoindev-vscode`, adding a new file for the new version and adjusting any configuration text that may have changed
+0. Update the files in https://github.com/skycoin/repo-info by following the [metadata update procedure](https://github.com/skycoin/repo-info/#updating-skycoin-repository-metadate),
 0. Merge these changes to `develop`
 0. Follow the steps in [pre-release testing](#pre-release-testing)
 0. Make a PR merging `develop` into `master`
@@ -684,13 +691,16 @@ Performs these actions before releasing:
 * `make integration-test-live-disable-networking` (requires node run with `-disable-networking`)
 * `make integration-test-live-disable-csrf` (requires node run with `-disable-csrf`)
 * `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet
-* `go run cmd/cli/cli.go checkdb` against a synced node
+* `go run cmd/cli/cli.go checkdb` against a fully synced database
+* `go run cmd/cli/cli.go checkDBDecoding` against a fully synced database
 * On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
     * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
+* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.net
+  and test all operations to ensure it will work with the new node version.
 
 #### Creating release builds
 

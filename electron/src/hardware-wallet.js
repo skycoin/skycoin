@@ -1,3 +1,4 @@
+/*
 'use strict'
 
 const { ipcMain } = require('electron');
@@ -160,8 +161,8 @@ ipcMain.on('hwGetFeatures', (event, requestId) => {
   );
 });
 
-ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex) => {
-  const promise = deviceWallet.devAddressGen(addressN, startIndex, false, pinEvent);
+ipcMain.on('hwGetAddresses', (event, requestId, addressN, startIndex, confirm) => {
+  const promise = deviceWallet.devAddressGen(addressN, startIndex, confirm, pinEvent);
   promise.then(
     addresses => { console.log("Addresses promise resolved", addresses); event.sender.send('hwGetAddressesResponse', requestId, addresses); },
     error => { console.log("Addresses promise errored: ", error); event.sender.send('hwGetAddressesResponse', requestId, { error: error.toString() }); }
@@ -176,16 +177,16 @@ ipcMain.on('hwChangePin', (event, requestId) => {
   );
 });
 
-ipcMain.on('hwGenerateMnemonic', (event, requestId) => {
-  const promise = deviceWallet.devGenerateMnemonic(false);
+ipcMain.on('hwGenerateMnemonic', (event, requestId, wordCount) => {
+  const promise = deviceWallet.devGenerateMnemonic(wordCount, false);
   promise.then(
     result => { console.log("Generate mnemonic promise resolved", result); event.sender.send('hwGenerateMnemonicResponse', requestId, result); },
     error => { console.log("Generate mnemonic promise errored: ", error); event.sender.send('hwGenerateMnemonicResponse', requestId, { error: error.toString() }); }
   );
 });
 
-ipcMain.on('hwRecoverMnemonic', (event, requestId) => {
-  const promise = deviceWallet.devRecoveryDevice(false, requestSeedWordEvent);
+ipcMain.on('hwRecoverMnemonic', (event, requestId, wordCount, dryRun) => {
+  const promise = deviceWallet.devRecoveryDevice(wordCount, false, requestSeedWordEvent, dryRun);
   promise.then(
     result => { console.log("Recover mnemonic promise resolved", result); event.sender.send('hwRecoverMnemonicResponse', requestId, result); },
     error => { console.log("Recover mnemonic promise errored: ", error); event.sender.send('hwRecoverMnemonicResponse', requestId, { error: error.toString() }); }
@@ -216,7 +217,16 @@ ipcMain.on('hwSignMessage', (event, requestId, addressIndex, message) => {
   );
 });
 
+ipcMain.on('hwSignTransaction', (event, requestId, inputs, outputs) => {
+  const promise = deviceWallet.devSkycoinTransactionSign(inputs, outputs, pinEvent);
+  promise.then(
+    result => { console.log("Sign transaction promise resolved", result); event.sender.send('hwSignTransactionResponse', requestId, result); },
+    error => { console.log("Sign transaction promise errored: ", error); event.sender.send('hwSignTransactionResponse', requestId, { error: error.toString() }); }
+  );
+});
+
 module.exports = {
   setWinRef,
   setWalletsFolderPath
 }
+*/

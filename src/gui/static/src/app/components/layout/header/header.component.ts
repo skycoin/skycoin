@@ -12,6 +12,7 @@ import 'rxjs/add/operator/take';
 import { shouldUpgradeVersion } from '../../../utils/semver';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
+import { NetworkService } from '../../../services/network.service';
 
 @Component({
   selector: 'app-header',
@@ -35,7 +36,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   private subscription: Subscription;
   private synchronizedSubscription: ISubscription;
-  private fetchVersionError: string;
+  // This should be deleted. View the comment in the constructor.
+  // private fetchVersionError: string;
 
   get loading() {
     return !this.current || !this.highest || this.current !== this.highest || !this.coins || this.coins === 'NaN' || !this.hours || this.hours === 'NaN';
@@ -57,6 +59,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   constructor(
     public appService: AppService,
+    public networkService: NetworkService,
     private apiService: ApiService,
     private blockchainService: BlockchainService,
     private priceService: PriceService,
@@ -64,9 +67,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private http: Http,
     private translateService: TranslateService,
   ) {
+    // This should not be used anymore, as this does not allow to update the text if the user changes the language.
+    /*
     this.translateService.get('errors.fetch-version').subscribe(msg => {
       this.fetchVersionError = msg;
     });
+    */
   }
 
   ngOnInit() {
@@ -126,6 +132,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     /*
     // Old method for checking if an update is available. Must be replaced after adding the
     // number of the lastest version in a Skycoin domain.
+    // Also, note that the catch block does not seem to do anything relevant.
     this.http.get('https://api.github.com/repos/skycoin/skycoin/tags')
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || this.fetchVersionError))

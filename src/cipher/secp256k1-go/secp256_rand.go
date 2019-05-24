@@ -1,8 +1,8 @@
 package secp256k1
 
 import (
-	crand "crypto/rand"
-	"crypto/sha256" //secure, system random number generator
+	crand "crypto/rand" // secure, system random number generator
+	"crypto/sha256"
 	"hash"
 	"io"
 	"log"

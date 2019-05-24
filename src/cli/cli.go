@@ -9,6 +9,7 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/skycoin/skycoin/src/api"
@@ -26,7 +28,7 @@ import (
 
 var (
 	// Version is the CLI Version
-	Version = "0.25.1"
+	Version = "0.26.0"
 )
 
 const (
@@ -227,9 +229,10 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
-		checkdbCmd(),
-		createRawTxCmd(),
-		decodeRawTxCmd(),
+		checkDBCmd(),
+		checkDBEncodingCmd(),
+		createRawTxnCmd(),
+		decodeRawTxnCmd(),
 		decryptWalletCmd(),
 		encryptWalletCmd(),
 		lastBlocksCmd(),
@@ -240,6 +243,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		showSeedCmd(),
 		statusCmd(),
 		transactionCmd(),
+		verifyTransactionCmd(),
 		verifyAddressCmd(),
 		versionCmd(),
 		walletCreateCmd(),
@@ -250,6 +254,8 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		walletOutputsCmd(),
 		richlistCmd(),
 		addressTransactionsCmd(),
+		pendingTransactionsCmd(),
+		addresscountCmd(),
 	}
 
 	skyCLI.Version = Version
@@ -258,6 +264,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 
 	skyCLI.SetHelpTemplate(helpTemplate)
 	skyCLI.SetUsageTemplate(helpTemplate)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	return skyCLI, nil
 }

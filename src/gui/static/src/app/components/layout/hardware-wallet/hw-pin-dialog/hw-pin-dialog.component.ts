@@ -7,8 +7,6 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
 export interface HwPinDialogParams {
   signingTx: boolean;
-  currentSignature: number;
-  totalSignatures: number;
   changingPin: boolean;
   changePinState: ChangePinStates;
 }

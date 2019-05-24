@@ -6,11 +6,11 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 // CoinSupply records the coin supply info
@@ -66,7 +66,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			// check if address is an unlocked distribution address
 			if _, ok := unlockedAddrSet[u.Body.Address]; ok {
 				var err error
-				unlockedSupply, err = coin.AddUint64(unlockedSupply, u.Body.Coins)
+				unlockedSupply, err = mathutil.AddUint64(unlockedSupply, u.Body.Coins)
 				if err != nil {
 					err = fmt.Errorf("uint64 overflow while adding up unlocked supply coins: %v", err)
 					wh.Error500(w, err.Error())
@@ -113,7 +113,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		for _, out := range allUnspents.Confirmed {
 			if _, ok := lockedAddrSet[out.Body.Address]; !ok {
 				var err error
-				totalCoinHours, err = coin.AddUint64(totalCoinHours, out.CalculatedHours)
+				totalCoinHours, err = mathutil.AddUint64(totalCoinHours, out.CalculatedHours)
 				if err != nil {
 					err = fmt.Errorf("uint64 overflow while adding up total coin hours: %v", err)
 					wh.Error500(w, err.Error())
@@ -151,54 +151,6 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, cs)
-	}
-}
-
-// transactionsForAddressHandler returns all transactions (confirmed and unconfirmed) for an address
-// Method: GET
-// URI: /explorer/address
-// Args:
-//	address [string]
-func transactionsForAddressHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Critical().Warning("Call to deprecated /api/v1/explorer/address endpoint")
-
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		addr := r.FormValue("address")
-		if addr == "" {
-			wh.Error400(w, "address is empty")
-			return
-		}
-
-		cipherAddr, err := cipher.DecodeBase58Address(addr)
-		if err != nil {
-			wh.Error400(w, "invalid address")
-			return
-		}
-
-		txns, inputs, err := gateway.GetVerboseTransactionsForAddress(cipherAddr)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetVerboseTransactionsForAddress failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		vb := make([]readable.TransactionVerbose, len(txns))
-		for i, txn := range txns {
-			v, err := readable.NewTransactionVerbose(txn, inputs[i])
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-
-			vb[i] = v
-		}
-
-		wh.SendJSONOr500(logger, w, vb)
 	}
 }
 
@@ -278,7 +230,7 @@ func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		addrCount, err := gateway.GetAddressCount()
+		addrCount, err := gateway.AddressCount()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return

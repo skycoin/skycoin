@@ -127,8 +127,7 @@ export class HwWalletService {
   }
 
   get hwWalletCompatibilityActivated(): boolean {
-    // return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
-    return false;
+    return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
   }
 
   get walletConnectedAsyncEvent(): Observable<boolean> {

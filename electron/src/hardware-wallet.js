@@ -1,4 +1,3 @@
-/*
 'use strict'
 
 const { ipcMain } = require('electron');
@@ -229,4 +228,3 @@ module.exports = {
   setWinRef,
   setWalletsFolderPath
 }
-*/

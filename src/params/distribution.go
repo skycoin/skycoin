@@ -60,7 +60,7 @@ func (d *Distribution) UnlockedAddresses() []string {
 	// Subsequent addresses will be unlocked at a rate of UnlockAddressRate (5) per year,
 	// after the InitialUnlockedCount (25) addresses have no remaining balance.
 	// The unlock timer will be enabled manually once the
-	// d.InitialUnlockedCount (25) addresses are distributed.
+	// InitialUnlockedCount (25) addresses are distributed.
 
 	// NOTE: To have automatic unlocking, transaction verification would have
 	// to be handled in visor rather than in coin.Transactions.Visor(), because

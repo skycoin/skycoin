@@ -63,8 +63,6 @@ type NodeParameters struct {
 type ParamsParameters struct {
 	// MaxCoinSupply is the maximum supply of coins
 	MaxCoinSupply uint64 `mapstructure:"max_coin_supply"`
-	// AddressInitialBalance is the initial balance of each distribution address
-	AddressInitialBalance uint64
 	// InitialUnlockedCount is the initial number of unlocked addresses
 	InitialUnlockedCount uint64 `mapstructure:"initial_unlocked_count"`
 	// UnlockAddressRate is the number of addresses to unlock per unlock time interval

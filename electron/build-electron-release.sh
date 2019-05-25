@@ -46,8 +46,6 @@ if [ ! -z "$OSX64_ELN" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "run dist-mac"
         npm run dist-mac
-    elif [[ "$OSTYPE" == "linux"* ]]; then
-        npm run pack-mac
     else
         echo "Can not run build script in $OSTYPE"
     fi
@@ -59,11 +57,7 @@ if [ -e "mac" ]; then
     if [ -e "${PDT_NAME}-${APP_VERSION}.dmg" ]; then
         mv "${PDT_NAME}-${APP_VERSION}.dmg" "../${PKG_NAME}-${APP_VERSION}-gui-electron-osx-x64.dmg"
     elif [ -e "${PDT_NAME}.app" ]; then
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            tar czf "../${PKG_NAME}-${APP_VERSION}-gui-electron-osx-x64.zip" "${PDT_NAME}.app"
-        elif [[ "$OSTYPE" == "linux"* ]]; then
-            tar czf "../${PKG_NAME}-${APP_VERSION}-gui-electron-osx-x64.zip" --owner=0 --group=0 "${PDT_NAME}.app"
-        fi
+        rm -rf "${PDT_NAME}.app"
     fi
     popd >/dev/null
     rm -rf "mac"

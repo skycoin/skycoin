@@ -328,7 +328,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	var softErr *ErrTxnViolatesSoftConstraint
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
+		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, params.MainNetDistribution, v.Config.UnconfirmedVerifyTxn)
 		return err
 	})
 	require.NoError(t, err)
@@ -417,7 +417,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		var softErr *ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
-			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
+			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, params.MainNetDistribution, v.Config.UnconfirmedVerifyTxn)
 			return err
 		})
 		require.False(t, known)
@@ -2290,7 +2290,19 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	coinHourOverflowTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[4:], keys[:1])
 
 	// create a transaction with insufficient fee
-	insufficientFeeTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[2:3], keys[:1])
+	insufficientFeeOuts := []coin.UxOut{
+		coin.UxOut{
+			Head: coin.UxHead{
+				Time: head.Time(),
+			},
+			Body: coin.UxBody{
+				Address: testutil.MakeAddress(),
+				Coins:   1e6,
+				Hours:   950,
+			},
+		},
+	}
+	insufficientFeeTxn, _ := makeTxn(t, head.Time(), inputs[:1], insufficientFeeOuts[:], keys[:1])
 
 	// create a transaction with insufficient coins
 	insufficientCoinsTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[6:], keys[:1])

@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
@@ -24,6 +25,14 @@ func TestIntroductionMessage(t *testing.T) {
 
 	pubkey, _ := cipher.GenerateKeyPair()
 	pubkey2, _ := cipher.GenerateKeyPair()
+	genesisHash := testutil.RandSHA256(t)
+
+	invalidGenesisHashExtra := newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
+		BurnFactor:          4,
+		MaxTransactionSize:  32768,
+		MaxDropletPrecision: 3,
+	}, genesisHash)
+	invalidGenesisHashExtra = invalidGenesisHashExtra[:len(invalidGenesisHashExtra)-2]
 
 	type daemonMockValue struct {
 		protocolVersion          uint32
@@ -53,15 +62,9 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message without extra bytes",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:          10000,
-				protocolVersion: 1,
-				connectionIntroduced: &connection{
-					Addr: "121.121.121.121:6000",
-					ConnectionDetails: ConnectionDetails{
-						ListenPort: 6000,
-						Outgoing:   true,
-					},
-				},
+				mirror:           10000,
+				protocolVersion:  1,
+				disconnectReason: ErrDisconnectBlockchainPubkeyNotProvided,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -114,7 +117,7 @@ func TestIntroductionMessage(t *testing.T) {
 						ListenPort: 6000,
 						UserAgent: useragent.Data{
 							Coin:    "skycoin",
-							Version: "0.24.1",
+							Version: "0.26.0",
 						},
 						UnconfirmedVerifyTxn: params.VerifyTxn{
 							BurnFactor:          4,
@@ -126,7 +129,7 @@ func TestIntroductionMessage(t *testing.T) {
 			},
 			userAgent: useragent.Data{
 				Coin:    "skycoin",
-				Version: "0.24.1",
+				Version: "0.26.0",
 			},
 			unconfirmedVerifyTxn: params.VerifyTxn{
 				BurnFactor:          4,
@@ -137,11 +140,11 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", params.VerifyTxn{
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}),
+				}, genesisHash),
 			},
 		},
 		{
@@ -157,7 +160,7 @@ func TestIntroductionMessage(t *testing.T) {
 						ListenPort: 6000,
 						UserAgent: useragent.Data{
 							Coin:    "skycoin",
-							Version: "0.24.1",
+							Version: "0.26.0",
 						},
 						UnconfirmedVerifyTxn: params.VerifyTxn{
 							BurnFactor:          4,
@@ -169,7 +172,7 @@ func TestIntroductionMessage(t *testing.T) {
 			},
 			userAgent: useragent.Data{
 				Coin:    "skycoin",
-				Version: "0.24.1",
+				Version: "0.26.0",
 			},
 			unconfirmedVerifyTxn: params.VerifyTxn{
 				BurnFactor:          4,
@@ -180,11 +183,36 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: append(newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", params.VerifyTxn{
+				Extra: append(newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}), []byte("additional data")...),
+				}, genesisHash), []byte("additional data")...),
+			},
+		},
+		{
+			name: "INTR message with extra fields but invalid genesis hash data",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidExtraData,
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.26.0",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           invalidGenesisHashExtra,
 			},
 		},
 		{
@@ -200,11 +228,11 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: newIntroductionMessageExtra(pubkey2, "skycoin:0.24.1", params.VerifyTxn{
+				Extra: newIntroductionMessageExtra(pubkey2, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}),
+				}, genesisHash),
 			},
 		},
 		{
@@ -364,7 +392,7 @@ func TestIntroductionMessage(t *testing.T) {
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}),
+				}, genesisHash),
 			},
 		},
 		{
@@ -377,12 +405,37 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey:                  pubkey,
 				disconnectReason:        ErrDisconnectConnectedTwice,
 				connectionIntroducedErr: ErrConnectionIPMirrorExists,
-				connectionIntroduced:    nil,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:12345",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.26.0",
+							Remark:  "foo",
+						},
+					},
+				},
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.26.0",
+				Remark:  "foo",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}, genesisHash),
 			},
 		},
 		{
@@ -394,12 +447,37 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey:                  pubkey,
 				disconnectReason:        ErrDisconnectPeerlistFull,
 				connectionIntroducedErr: pex.ErrPeerlistFull,
-				connectionIntroduced:    nil,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:12345",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.26.0",
+							Remark:  "foo",
+						},
+					},
+				},
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.26.0",
+				Remark:  "foo",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}, genesisHash),
 			},
 		},
 	}
@@ -453,6 +531,7 @@ func TestIntroductionMessage(t *testing.T) {
 				d.AssertCalled(t, "Disconnect", tc.addr, tc.mockValue.disconnectReason)
 			} else {
 				d.AssertNotCalled(t, "Disconnect", mock.Anything, mock.Anything)
+				require.Equal(t, genesisHash, tc.intro.GenesisHash)
 			}
 		})
 	}
@@ -462,6 +541,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 	update := false
 
 	introPubKey := cipher.MustPubKeyFromHex("03cd7dfcd8c3452d1bb5d9d9e34dd95d6848cb9f66c2aad127b60578f4be7498f2")
+	introGenesisHash := cipher.MustSHA256FromHex("9afa0004c0ae04fae7c48e3bc0a324c51100de9508ae6048ebdb6652dc94f0e2")
 
 	cases := []struct {
 		goldenFile string
@@ -484,11 +564,11 @@ func TestMessageEncodeDecode(t *testing.T) {
 				Mirror:          99998888,
 				ListenPort:      8888,
 				ProtocolVersion: 12341234,
-				Extra: newIntroductionMessageExtra(introPubKey, "skycoin:0.25.0(foo)", params.VerifyTxn{
+				Extra: newIntroductionMessageExtra(introPubKey, "skycoin:0.26.0(foo)", params.VerifyTxn{
 					BurnFactor:          2,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}),
+				}, introGenesisHash),
 			},
 		},
 		{

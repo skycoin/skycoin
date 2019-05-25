@@ -567,7 +567,7 @@ func (r walletCreateTransactionRequest) Validate() error {
 	return r.createTransactionRequest.Validate()
 }
 
-// walletCreateTransactionHandler creates a signed transaction
+// walletCreateTransactionHandler creates a transaction
 // Method: POST
 // URI: /api/v1/wallet/transaction
 // Args: JSON body

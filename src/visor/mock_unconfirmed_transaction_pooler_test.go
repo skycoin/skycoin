@@ -211,20 +211,20 @@ func (_m *MockUnconfirmedTransactionPooler) GetUnspentsOfAddr(tx *dbutil.Tx, add
 	return r0, r1
 }
 
-// InjectTransaction provides a mock function with given fields: tx, bc, t, verifyParams
-func (_m *MockUnconfirmedTransactionPooler) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error) {
-	ret := _m.Called(tx, bc, t, verifyParams)
+// InjectTransaction provides a mock function with given fields: tx, bc, t, distParams, verifyParams
+func (_m *MockUnconfirmedTransactionPooler) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error) {
+	ret := _m.Called(tx, bc, t, distParams, verifyParams)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, Blockchainer, coin.Transaction, params.VerifyTxn) bool); ok {
-		r0 = rf(tx, bc, t, verifyParams)
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, Blockchainer, coin.Transaction, params.Distribution, params.VerifyTxn) bool); ok {
+		r0 = rf(tx, bc, t, distParams, verifyParams)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 *ErrTxnViolatesSoftConstraint
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx, Blockchainer, coin.Transaction, params.VerifyTxn) *ErrTxnViolatesSoftConstraint); ok {
-		r1 = rf(tx, bc, t, verifyParams)
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, Blockchainer, coin.Transaction, params.Distribution, params.VerifyTxn) *ErrTxnViolatesSoftConstraint); ok {
+		r1 = rf(tx, bc, t, distParams, verifyParams)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*ErrTxnViolatesSoftConstraint)
@@ -232,8 +232,8 @@ func (_m *MockUnconfirmedTransactionPooler) InjectTransaction(tx *dbutil.Tx, bc 
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func(*dbutil.Tx, Blockchainer, coin.Transaction, params.VerifyTxn) error); ok {
-		r2 = rf(tx, bc, t, verifyParams)
+	if rf, ok := ret.Get(2).(func(*dbutil.Tx, Blockchainer, coin.Transaction, params.Distribution, params.VerifyTxn) error); ok {
+		r2 = rf(tx, bc, t, distParams, verifyParams)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -285,13 +285,13 @@ func (_m *MockUnconfirmedTransactionPooler) RecvOfAddresses(tx *dbutil.Tx, bh co
 	return r0, r1
 }
 
-// Refresh provides a mock function with given fields: tx, bc, verifyParams
-func (_m *MockUnconfirmedTransactionPooler) Refresh(tx *dbutil.Tx, bc Blockchainer, verifyParams params.VerifyTxn) ([]cipher.SHA256, error) {
-	ret := _m.Called(tx, bc, verifyParams)
+// Refresh provides a mock function with given fields: tx, bc, distParams, verifyParams
+func (_m *MockUnconfirmedTransactionPooler) Refresh(tx *dbutil.Tx, bc Blockchainer, distParams params.Distribution, verifyParams params.VerifyTxn) ([]cipher.SHA256, error) {
+	ret := _m.Called(tx, bc, distParams, verifyParams)
 
 	var r0 []cipher.SHA256
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, Blockchainer, params.VerifyTxn) []cipher.SHA256); ok {
-		r0 = rf(tx, bc, verifyParams)
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, Blockchainer, params.Distribution, params.VerifyTxn) []cipher.SHA256); ok {
+		r0 = rf(tx, bc, distParams, verifyParams)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]cipher.SHA256)
@@ -299,8 +299,8 @@ func (_m *MockUnconfirmedTransactionPooler) Refresh(tx *dbutil.Tx, bc Blockchain
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx, Blockchainer, params.VerifyTxn) error); ok {
-		r1 = rf(tx, bc, verifyParams)
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, Blockchainer, params.Distribution, params.VerifyTxn) error); ok {
+		r1 = rf(tx, bc, distParams, verifyParams)
 	} else {
 		r1 = ret.Error(1)
 	}

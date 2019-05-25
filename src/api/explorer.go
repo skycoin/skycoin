@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -56,7 +55,9 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
+		dist := gateway.VisorConfig().Distribution
+
+		unlockedAddrs := dist.UnlockedAddressesDecoded()
 		// Search map of unlocked addresses, used to filter unspents
 		unlockedAddrSet := newAddrSet(unlockedAddrs)
 
@@ -76,8 +77,8 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// "total supply" is the number of coins unlocked.
-		// Each distribution address was allocated params.DistributionAddressInitialBalance coins.
-		totalSupply := uint64(len(unlockedAddrs)) * params.DistributionAddressInitialBalance
+		// Each distribution address was allocated distribution.AddressInitialBalance coins.
+		totalSupply := uint64(len(unlockedAddrs)) * dist.AddressInitialBalance()
 		totalSupply *= droplet.Multiplier
 
 		// "current supply" is the number of coins distributed from the unlocked pool
@@ -97,7 +98,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		maxSupplyStr, err := droplet.ToString(params.MaxCoinSupply * droplet.Multiplier)
+		maxSupplyStr, err := droplet.ToString(dist.MaxCoinSupply * droplet.Multiplier)
 		if err != nil {
 			err = fmt.Errorf("Failed to convert coins to string: %v", err)
 			wh.Error500(w, err.Error())
@@ -105,7 +106,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// locked distribution addresses
-		lockedAddrs := params.GetLockedDistributionAddressesDecoded()
+		lockedAddrs := dist.LockedAddressesDecoded()
 		lockedAddrSet := newAddrSet(lockedAddrs)
 
 		// get total coins hours which excludes locked distribution addresses
@@ -146,8 +147,8 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			MaxSupply:             maxSupplyStr,
 			CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 			TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
-			UnlockedAddresses:     params.GetUnlockedDistributionAddresses(),
-			LockedAddresses:       params.GetLockedDistributionAddresses(),
+			UnlockedAddresses:     dist.UnlockedAddresses(),
+			LockedAddresses:       dist.LockedAddresses(),
 		}
 
 		wh.SendJSONOr500(logger, w, cs)

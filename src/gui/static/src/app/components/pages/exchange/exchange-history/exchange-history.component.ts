@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { StoredExchangeOrder, Wallet } from '../../../../app.datatypes';
 import { MatDialogRef } from '@angular/material';
-import { WalletService } from '../../../../services/wallet.service';
 import { ExchangeService } from '../../../../services/exchange.service';
+import { BlockchainService } from '../../../../services/blockchain.service';
 
 @Component({
   selector: 'app-exchange-history',
@@ -14,12 +14,13 @@ export class ExchangeHistoryComponent implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<ExchangeHistoryComponent>,
+    public blockchainService: BlockchainService,
     private exchangeService: ExchangeService,
   ) { }
 
   ngOnInit() {
     this.exchangeService.history().subscribe(
-      (orders: StoredExchangeOrder[]) => this.orders = orders,
+      (orders: StoredExchangeOrder[]) => this.orders = orders.reverse(),
       () => this.orders = [],
     );
   }
@@ -30,5 +31,13 @@ export class ExchangeHistoryComponent implements OnInit {
 
   select(value) {
     this.dialogRef.close(value);
+  }
+
+  getFromCoin(pair: string) {
+    return pair.split('/')[0].toUpperCase();
+  }
+
+  getToCoin(pair: string) {
+    return pair.split('/')[1].toUpperCase();
   }
 }

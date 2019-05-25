@@ -99,6 +99,8 @@ import { HwConfirmAddressDialogComponent } from './components/layout/hardware-wa
 import { HwWalletDaemonService } from './services/hw-wallet-daemon.service';
 import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
+import { LanguageService } from './services/language.service';
+import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { ExchangeHistoryComponent } from './components/pages/exchange/exchange-history/exchange-history.component';
 import { StorageService } from './services/storage.service';
 
@@ -231,6 +233,7 @@ const ROUTES = [
     HwDialogBaseComponent,
     HwConfirmTxDialogComponent,
     HwConfirmAddressDialogComponent,
+    SelectLanguageComponent,
     ExchangeHistoryComponent,
   ],
   entryComponents: [
@@ -258,6 +261,7 @@ const ROUTES = [
     HwSeedWordDialogComponent,
     HwConfirmTxDialogComponent,
     HwConfirmAddressDialogComponent,
+    SelectLanguageComponent,
     ExchangeHistoryComponent,
   ],
   imports: [
@@ -309,6 +313,7 @@ const ROUTES = [
     HwWalletDaemonService,
     HwWalletPinService,
     HwWalletSeedWordService,
+    LanguageService,
     StorageService,
   ],
   bootstrap: [AppComponent],

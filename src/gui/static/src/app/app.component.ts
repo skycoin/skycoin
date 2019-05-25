@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import 'rxjs/add/operator/takeWhile';
-import { TranslateService } from '@ngx-translate/core';
+import { MatDialog } from '@angular/material';
 
 import { AppService } from './services/app.service';
 import { WalletService } from './services/wallet.service';
@@ -11,6 +11,8 @@ import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
+import { LanguageService } from './services/language.service';
+import { openChangeLanguageModal } from './utils';
 
 @Component({
   selector: 'app-root',
@@ -20,16 +22,14 @@ import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service'
 export class AppComponent implements OnInit {
   constructor(
     private appService: AppService,
+    private languageService: LanguageService,
     walletService: WalletService,
-    translateService: TranslateService,
     hwWalletService: HwWalletService,
     hwWalletPinService: HwWalletPinService,
     hwWalletSeedWordService: HwWalletSeedWordService,
     private bip38WordList: Bip39WordListService,
+    private dialog: MatDialog,
   ) {
-    translateService.setDefaultLang('en');
-    translateService.use('en');
-
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;
     hwWalletSeedWordService.requestWordComponent = HwSeedWordDialogComponent;
     hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
@@ -44,5 +44,18 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.appService.testBackend();
+    this.languageService.loadLanguageSettings();
+
+    const subscription = this.languageService.selectedLanguageLoaded.subscribe(selectedLanguageLoaded => {
+      if (!selectedLanguageLoaded) {
+        openChangeLanguageModal(this.dialog, true).subscribe(response => {
+          if (response) {
+            this.languageService.changeLanguage(response);
+          }
+        });
+      }
+
+      subscription.unsubscribe();
+    });
   }
 }

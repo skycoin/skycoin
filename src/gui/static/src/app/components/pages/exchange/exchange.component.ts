@@ -1,10 +1,9 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ExchangeOrder, StoredExchangeOrder } from '../../../app.datatypes';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { StoredExchangeOrder } from '../../../app.datatypes';
 import { ExchangeService } from '../../../services/exchange.service';
-import { MatDialog, MatDialogConfig, MatSnackBar } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material';
 import { ExchangeHistoryComponent } from './exchange-history/exchange-history.component';
-import { showSnackbarError } from '../../../utils/errors';
-import { TranslateService } from '@ngx-translate/core';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-exchange',
@@ -12,38 +11,42 @@ import { TranslateService } from '@ngx-translate/core';
   styleUrls: ['./exchange.component.scss'],
 })
 export class ExchangeComponent implements OnInit, OnDestroy {
-  order: ExchangeOrder;
+  currentOrderDetails: StoredExchangeOrder;
   hasHistory = false;
+  loading = true;
+
+  private lastViewedSubscription: ISubscription;
+  private historySubscription: ISubscription;
 
   constructor(
     private exchangeService: ExchangeService,
     private dialog: MatDialog,
-    private snackbar: MatSnackBar,
-    private translate: TranslateService,
   ) { }
 
   ngOnInit() {
-    const lastOrder = this.exchangeService.lastOrder;
+    this.lastViewedSubscription = this.exchangeService.lastViewedOrderLoaded.subscribe(response => {
+      if (response) {
+        const lastViewedOrder = this.exchangeService.lastViewedOrder;
+        if (lastViewedOrder) {
+          this.currentOrderDetails = lastViewedOrder;
+        }
 
-    if (lastOrder) {
-      if (!this.exchangeService.isOrderFinished(lastOrder)) {
-        this.showLast();
+        setTimeout(() => this.lastViewedSubscription.unsubscribe());
+        this.loading = false;
       }
-    }
+    });
 
-    this.exchangeService.history().subscribe(() => this.hasHistory = true);
+    this.historySubscription = this.exchangeService.history().subscribe(() => this.hasHistory = true);
   }
 
   ngOnDestroy() {
-    this.snackbar.dismiss();
+    this.lastViewedSubscription.unsubscribe();
+    this.historySubscription.unsubscribe();
   }
 
-  showLast() {
-    this.order = this.exchangeService.lastOrder;
-  }
-
-  showStatus(lastOrder) {
-    this.order = lastOrder;
+  showStatus(order) {
+    this.currentOrderDetails = order;
+    this.hasHistory = true;
   }
 
   showHistory(event) {
@@ -55,12 +58,13 @@ export class ExchangeComponent implements OnInit, OnDestroy {
 
     this.dialog.open(ExchangeHistoryComponent, config).afterClosed().subscribe((oldOrder: StoredExchangeOrder) => {
       if (oldOrder) {
-        this.exchangeService.status(oldOrder.id).first()
-          .subscribe(
-            order => this.order = { ...order, fromAmount: oldOrder.fromAmount },
-            () => showSnackbarError(this.snackbar, this.translate.instant('exchange.order-not-found'), 3000),
-          );
+        this.currentOrderDetails = oldOrder;
       }
     });
+  }
+
+  goBack() {
+    this.currentOrderDetails = null;
+    this.exchangeService.lastViewedOrder = null;
   }
 }

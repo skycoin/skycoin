@@ -358,11 +358,19 @@ func createRawTxnCmdHandler(c *cobra.Command, args []string) (*coin.Transaction,
 		return nil, err
 	}
 
+	// TODO -- load distribution params from config? Need to allow fiber chains to be used easily
+	// There's too many distribution parameters to put them in command line, but we could read them from a file.
+	// We could also have multiple hardcoded known distribution parameters for fiber coins, in the source,
+	// but this wouldn't work for new fiber coins that hadn't been hardcoded yet.
 	if parsedArgs.Address == "" {
-		return CreateRawTxnFromWallet(apiClient, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password)
+		return CreateRawTxnFromWallet(apiClient, parsedArgs.WalletID,
+			parsedArgs.ChangeAddress, parsedArgs.SendAmounts,
+			parsedArgs.Password, params.MainNetDistribution)
 	}
 
-	return CreateRawTxnFromAddress(apiClient, parsedArgs.Address, parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts, parsedArgs.Password)
+	return CreateRawTxnFromAddress(apiClient, parsedArgs.Address,
+		parsedArgs.WalletID, parsedArgs.ChangeAddress, parsedArgs.SendAmounts,
+		parsedArgs.Password, params.MainNetDistribution)
 }
 
 func validateSendAmounts(toAddrs []SendAmount) error {
@@ -388,7 +396,7 @@ func validateSendAmounts(toAddrs []SendAmount) error {
 // PUBLIC
 
 // CreateRawTxnFromWallet creates a transaction from any address or combination of addresses in a wallet
-func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
+func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader, distParams params.Distribution) (*coin.Transaction, error) {
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
@@ -438,11 +446,11 @@ func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs 
 		addrStrArray[i] = a.String()
 	}
 
-	return CreateRawTxn(c, wlt, addrStrArray, chgAddr, toAddrs, password)
+	return CreateRawTxn(c, wlt, addrStrArray, chgAddr, toAddrs, password, distParams)
 }
 
 // CreateRawTxnFromAddress creates a transaction from a specific address in a wallet
-func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
+func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader, distParams params.Distribution) (*coin.Transaction, error) {
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
@@ -495,7 +503,7 @@ func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, t
 		}
 	}
 
-	return CreateRawTxn(c, wlt, []string{addr}, chgAddr, toAddrs, password)
+	return CreateRawTxn(c, wlt, []string{addr}, chgAddr, toAddrs, password, distParams)
 }
 
 // GetOutputser implements unspent output querying
@@ -504,7 +512,7 @@ type GetOutputser interface {
 }
 
 // CreateRawTxn creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTxn(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+func CreateRawTxn(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution) (*coin.Transaction, error) {
 	if err := validateSendAmounts(toAddrs); err != nil {
 		return nil, err
 	}
@@ -540,7 +548,7 @@ func CreateRawTxn(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr 
 		return nil, err
 	}
 
-	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, params.UserVerifyTxn); err != nil {
+	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, distParams, params.UserVerifyTxn); err != nil {
 		return nil, err
 	}
 	if err := visor.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered, visor.TxnSigned); err != nil {

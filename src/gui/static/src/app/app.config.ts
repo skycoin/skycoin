@@ -1,7 +1,7 @@
 export const AppConfig = {
   otcEnabled: false,
   maxHardwareWalletAddresses: 1,
-  useHwWalletDaemon: false,
+  useHwWalletDaemon: true,
 
   languages: [{
       code: 'en',

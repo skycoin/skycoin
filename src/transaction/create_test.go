@@ -256,7 +256,7 @@ func TestCreate(t *testing.T) {
 				To: []coin.TransactionOutput{
 					{
 						Address: addrs[0],
-						Hours:   50,
+						Hours:   90,
 						Coins:   2e6,
 					},
 				},
@@ -298,7 +298,7 @@ func TestCreate(t *testing.T) {
 				To: []coin.TransactionOutput{
 					{
 						Address: addrs[0],
-						Hours:   50,
+						Hours:   130,
 						Coins:   2e6 + 1,
 					},
 				},
@@ -330,7 +330,7 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1]},
 			changeOutput: &coin.TransactionOutput{
 				Address: firstAddress([]coin.UxOut{originalUxouts[0], originalUxouts[1]}),
-				Hours:   50,
+				Hours:   130,
 				Coins:   2e6 - 1,
 			},
 		},
@@ -356,7 +356,7 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   151,
+				Hours:   272,
 				Coins:   2e6,
 			},
 		},
@@ -395,7 +395,7 @@ func TestCreate(t *testing.T) {
 				To: []coin.TransactionOutput{
 					{
 						Address: addrs[0],
-						Hours:   80,
+						Hours:   175,
 						Coins:   2e6 * 2,
 					},
 				},
@@ -431,11 +431,11 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			unspents:       uxouts,
-			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2], originalUxouts[3]},
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   33,
-				Coins:   4e6 - 1,
+				Hours:   102,
+				Coins:   2e6 - 1,
 			},
 		},
 
@@ -469,11 +469,11 @@ func TestCreate(t *testing.T) {
 				extraWalletAddrs[3]: []coin.UxOut{extraUxouts[3][1], extraUxouts[3][2]},
 				extraWalletAddrs[5]: []coin.UxOut{extraUxouts[5][6]},
 			},
-			chosenUnspents: []coin.UxOut{extraUxouts[0][0], extraUxouts[3][1], extraUxouts[3][2], extraUxouts[5][6]},
+			chosenUnspents: []coin.UxOut{extraUxouts[0][0], extraUxouts[3][1], extraUxouts[3][2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   34,
-				Coins:   4e6 - 1,
+				Hours:   102,
+				Coins:   2e6 - 1,
 			},
 		},
 
@@ -509,10 +509,10 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   76,
+				Hours:   137,
 				Coins:   2e6 - (1e6 + 1e3),
 			},
-			toExpectedHours: []uint64{16, 29, 29, 1},
+			toExpectedHours: []uint64{28, 53, 53, 1},
 		},
 
 		{
@@ -549,7 +549,7 @@ func TestCreate(t *testing.T) {
 			},
 			unspents:        []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			chosenUnspents:  []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
-			toExpectedHours: []uint64{26, 50, 49, 25, 1},
+			toExpectedHours: []uint64{46, 90, 90, 45, 1},
 		},
 
 		{
@@ -584,7 +584,7 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   151,
+				Hours:   272,
 				Coins:   2e6 - (1e6 + 1e3),
 			},
 			toExpectedHours: []uint64{0, 0, 0, 0},
@@ -625,7 +625,7 @@ func TestCreate(t *testing.T) {
 				Hours:   0,
 				Coins:   2e6 - (1e6 + 1e3),
 			},
-			toExpectedHours: []uint64{31, 60, 59, 1},
+			toExpectedHours: []uint64{55, 108, 108, 1},
 		},
 
 		{
@@ -660,10 +660,10 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   147,
+				Hours:   265,
 				Coins:   2e6 - (1e6 + 1e3),
 			},
-			toExpectedHours: []uint64{1, 1, 1, 1},
+			toExpectedHours: []uint64{2, 2, 2, 1},
 		},
 
 		{
@@ -705,7 +705,7 @@ func TestCreate(t *testing.T) {
 				Hours:   1,
 				Coins:   1e6 - 1e3,
 			},
-			toExpectedHours: []uint64{1, 1, 0, 0},
+			toExpectedHours: []uint64{1, 1, 1, 1},
 		},
 
 		{
@@ -798,6 +798,7 @@ func TestCreate(t *testing.T) {
 				}
 			}
 
+			t.Log("len of addrUxOuts:", len(addrUxOuts.Flatten()))
 			txn, inputs, err := Create(tc.params, addrUxOuts, tc.headTime)
 			require.Equal(t, tc.err, err, "%v != %v", tc.err, err)
 			if tc.err != nil {
@@ -807,6 +808,7 @@ func TestCreate(t *testing.T) {
 			err = txn.VerifyUnsigned()
 			require.NoError(t, err)
 
+			t.Log("len of txn.In:", len(txn.In))
 			require.Equal(t, len(inputs), len(txn.In))
 
 			// Checks duplicate inputs in array
@@ -830,7 +832,9 @@ func TestCreate(t *testing.T) {
 			for i, u := range tc.chosenUnspents {
 				chosenUnspents[i] = u
 				chosenUnspentHashes[i] = u.Hash()
+				t.Log(u.Hash())
 			}
+
 			sort.Slice(chosenUnspentHashes, func(i, j int) bool {
 				return bytes.Compare(chosenUnspentHashes[i][:], chosenUnspentHashes[j][:]) < 0
 			})
@@ -847,6 +851,9 @@ func TestCreate(t *testing.T) {
 				return bytes.Compare(sortedTxnIn[i][:], sortedTxnIn[j][:]) < 0
 			})
 
+			t.Log(len(chosenUnspentHashes))
+			t.Log(len(sortedTxnIn))
+			t.Log(len(txn.In))
 			require.Equal(t, chosenUnspentHashes, sortedTxnIn)
 
 			sort.Slice(inputs, func(i, j int) bool {

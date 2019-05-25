@@ -236,12 +236,12 @@ Response:
     "wallet_api_enabled": true,
     "gui_enabled": true,
     "user_verify_transaction": {
-        "burn_factor": 2,
+        "burn_factor": 10,
         "max_transaction_size": 32768,
         "max_decimals": 3
     },
     "unconfirmed_verify_transaction": {
-        "burn_factor": 2,
+        "burn_factor": 10,
         "max_transaction_size": 32768,
         "max_decimals": 3
     },
@@ -3944,7 +3944,7 @@ Result:
     "user_agent": "skycoin:0.25.0",
     "is_trusted_peer": true,
     "unconfirmed_verify_transaction": {
-        "burn_factor": 2,
+        "burn_factor": 10,
         "max_transaction_size": 32768,
         "max_decimals": 3
     }
@@ -3996,7 +3996,7 @@ Result:
             "user_agent": "skycoin:0.25.0",
             "is_trusted_peer": true,
             "unconfirmed_verify_transaction": {
-                "burn_factor": 2,
+                "burn_factor": 10,
                 "max_transaction_size": 32768,
                 "max_decimals": 3
             }

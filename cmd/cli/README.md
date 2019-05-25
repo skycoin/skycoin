@@ -61,19 +61,6 @@ $ cd $GOPATH/src/github.com/skycoin/skycoin/cmd/cli
 $ ./install.sh
 ```
 
-### Enable command autocomplete
-
-If you are in `bash`, run the following command:
-
-```bash
-$ PROG=skycoin-cli source $GOPATH/src/github.com/skycoin/skycoin/cmd/cli/autocomplete/bash_autocomplete
-```
-
-If you are in `zsh`, please replace the `bash_autocomplete` with `zsh_autocomplete` in the previous command.
-
-To avoid run the command everytime when you start a new terminal session, you can copy the script into
-you `~/.bashrc` or `~/.zshrc` file.
-
 ## Environment Setting
 
 The CLI uses environment variable to manage the configurations.
@@ -1867,12 +1854,12 @@ $ skycoin-cli status
         "wallet_api_enabled": true,
         "gui_enabled": true,
         "user_verify_transaction": {
-            "burn_factor": 2,
+            "burn_factor": 10,
             "max_transaction_size": 32768,
             "max_decimals": 3
         },
         "unconfirmed_verify_transaction": {
-            "burn_factor": 2,
+            "burn_factor": 10,
             "max_transaction_size": 32768,
             "max_decimals": 3
         }
@@ -2736,7 +2723,7 @@ FLAGS:
 
 #### Example
 ```bash
-$ skycoin-cli addresscount 
+$ skycoin-cli addresscount
 ```
 <details>
  <summary>View Output</summary>

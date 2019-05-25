@@ -28,6 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/certutil"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -257,9 +258,6 @@ func (c *Coin) Run() error {
 
 		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
 		c.logger.Critical().Infof("Full address: %s", fullAddress)
-		if c.config.Node.PrintWebInterfaceAddress {
-			fmt.Println(fullAddress)
-		}
 	}
 
 	if err := v.Init(); err != nil {
@@ -382,7 +380,10 @@ func (c *Coin) initLogFile() (*os.File, error) {
 func (c *Coin) ConfigureVisor() visor.Config {
 	vc := visor.NewConfig()
 
+	vc.Distribution = params.MainNetDistribution
+
 	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
+	vc.Arbitrating = c.config.Node.RunBlockPublisher
 
 	vc.BlockchainPubkey = c.config.Node.blockchainPubkey
 	vc.BlockchainSeckey = c.config.Node.blockchainSeckey
@@ -395,7 +396,6 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc.GenesisSignature = c.config.Node.genesisSignature
 	vc.GenesisTimestamp = c.config.Node.GenesisTimestamp
 	vc.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
-	vc.Arbitrating = c.config.Node.Arbitrating
 
 	return vc
 }
@@ -464,6 +464,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
+	dc.Daemon.GenesisHash = c.config.Node.genesisHash
 	dc.Daemon.UserAgent = c.config.Node.userAgent
 	dc.Daemon.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 
@@ -600,7 +601,9 @@ func (c *Coin) ParseConfig() error {
 }
 
 // InitTransaction creates the genesis transaction
-func InitTransaction(uxID string, genesisSecKey cipher.SecKey) coin.Transaction {
+func InitTransaction(uxID string, genesisSecKey cipher.SecKey, dist params.Distribution) coin.Transaction {
+	dist.MustValidate()
+
 	var txn coin.Transaction
 
 	output := cipher.MustSHA256FromHex(uxID)
@@ -608,20 +611,8 @@ func InitTransaction(uxID string, genesisSecKey cipher.SecKey) coin.Transaction 
 		log.Panic(err)
 	}
 
-	addrs := params.GetDistributionAddresses()
-
-	if len(addrs) != 100 {
-		log.Panic("Should have 100 distribution addresses")
-	}
-
-	// 1 million per address, measured in droplets
-	if params.DistributionAddressInitialBalance != 1e6 {
-		log.Panic("params.DistributionAddressInitialBalance expected to be 1e6*1e6")
-	}
-
-	for i := range addrs {
-		addr := cipher.MustDecodeBase58Address(addrs[i])
-		if err := txn.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1); err != nil {
+	for _, addr := range dist.AddressesDecoded() {
+		if err := txn.PushOutput(addr, dist.AddressInitialBalance()*droplet.Multiplier, 1); err != nil {
 			log.Panic(err)
 		}
 	}

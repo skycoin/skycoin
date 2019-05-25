@@ -38,14 +38,13 @@ func TestNewParameters(t *testing.T) {
 			MaxBlockTransactionsSize:       1111,
 		},
 		Params: ParamsParameters{
-			MaxCoinSupply:              1e8,
-			DistributionAddressesTotal: 100,
-			InitialUnlockedCount:       25,
-			UnlockAddressRate:          5,
-			UnlockTimeInterval:         60 * 60 * 24 * 365,
-			UserBurnFactor:             3,
-			UserMaxTransactionSize:     999,
-			UserMaxDropletPrecision:    2,
+			MaxCoinSupply:           1e8,
+			UnlockAddressRate:       5,
+			InitialUnlockedCount:    25,
+			UnlockTimeInterval:      60 * 60 * 24 * 365,
+			UserBurnFactor:          3,
+			UserMaxTransactionSize:  999,
+			UserMaxDropletPrecision: 2,
 		},
 	}, coinConfig)
 }

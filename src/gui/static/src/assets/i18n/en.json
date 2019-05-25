@@ -333,6 +333,7 @@
       "error-incorrect-pin": "Unable to perform the operation. The PIN you have entered is not correct.",
       "confirm": "Please, confirm the operation in the hardware wallet.",
       "confirm-and-more": "Please, confirm the operation in the hardware wallet and follow the instructions.",
+      "follow": "Please, follow the instructions indicated in the hardware wallet.",
       "close": "Close",
       "cancel": "Cancel",
       "continue": "Continue",
@@ -340,8 +341,7 @@
       "refused": "The operation failed or was canceled."
     },
     "errors": {
-      "too-many-inputs": "The transaction has too many inputs and can not be processed. Please contact technical support.",
-      "too-many-outputs": "The transaction has too many outputs and can not be processed. Please contact technical support.",
+      "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the hardware wallet service.",
       "timeout": "The operation was cancelled due to inactivity.",
       "invalid-address": "Invalid address."

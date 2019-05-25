@@ -34,7 +34,7 @@
   </div>
 
   <app-hw-message *ngIf="currentState === states.Processing"
-    [text]="'hardware-wallet.general.confirm-and-more' | translate"
+    [text]="(justCheckingSeed ? 'hardware-wallet.general.follow' : 'hardware-wallet.general.confirm-and-more') | translate"
     [icon]="msgIcons.Confirm"
   ></app-hw-message>
 

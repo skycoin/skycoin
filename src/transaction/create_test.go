@@ -265,29 +265,6 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{originalUxouts[0]},
 		},
 
-		// TODO -- belongs in visor_wallet_test.go
-		// {
-		// 	name: "manual, 1 output, no change, unknown address in auxs",
-		// 	params: Params{
-		// 		ChangeAddress: &changeAddress,
-		// 		HoursSelection: HoursSelection{
-		// 			Type: HoursSelectionTypeManual,
-		// 		},
-		// 		Wallet: CreateTransactionWalletParams{},
-		// 		To: []coin.TransactionOutput{
-		// 			{
-		// 				Address: addrs[0],
-		// 				Hours:   50,
-		// 				Coins:   2e6,
-		// 			},
-		// 		},
-		// 	},
-		// 	addressUnspents: coin.AddressUxOuts{
-		// 		testutil.MakeAddress(): []coin.UxOut{extraUxouts[0][0]},
-		// 	},
-		// 	err: ErrUnknownAddress,
-		// },
-
 		{
 			name: "manual, 1 output, change",
 			params: Params{
@@ -509,10 +486,10 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   137,
+				Hours:   136,
 				Coins:   2e6 - (1e6 + 1e3),
 			},
-			toExpectedHours: []uint64{28, 53, 53, 1},
+			toExpectedHours: []uint64{28, 54, 53, 1},
 		},
 
 		{
@@ -702,10 +679,10 @@ func TestCreate(t *testing.T) {
 			chosenUnspents: []coin.UxOut{uxoutsSmallHours[0], uxoutsSmallHours[1], uxoutsSmallHours[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   1,
+				Hours:   2,
 				Coins:   1e6 - 1e3,
 			},
-			toExpectedHours: []uint64{1, 1, 0, 0},
+			toExpectedHours: []uint64{0, 1, 0, 0},
 		},
 
 		{

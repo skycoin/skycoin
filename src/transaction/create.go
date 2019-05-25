@@ -117,7 +117,6 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 		return nil, nil, err
 	}
 	remainingHours := totalInputHours - feeHours
-	changeCoins := totalInputCoins - totalOutCoins
 
 	switch p.HoursSelection.Type {
 	case HoursSelectionTypeManual:
@@ -134,11 +133,6 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 				return nil, nil, err
 			}
 
-			// Save 1 coin hour if there is a change and share factor < 1
-			if p.HoursSelection.ShareFactor.LessThan(decimal.New(1, 0)) && changeCoins > 0 && hours >= 1 {
-				hours--
-			}
-
 			allocatedHoursInt := p.HoursSelection.ShareFactor.Mul(decimal.New(hours, 0)).IntPart()
 			allocatedHours, err := mathutil.Int64ToUint64(allocatedHoursInt)
 			if err != nil {
@@ -148,19 +142,6 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 			toCoins := make([]uint64, len(p.To))
 			for i, to := range p.To {
 				toCoins[i] = to.Coins
-			}
-
-			// If sharefactor > 0 and sharehours < len(p.To), the sharehours cannot ensure each destination
-			// address has at least 1 coin hour. In this case, if we have enough hours, i.e the hours >= len(p.To),
-			// set the sharehours as len(p.To). If we don't have enough hours, i.e. hours < len(p.To),
-			// share all hours we have.
-			toNum := uint64(len(p.To))
-			if p.HoursSelection.ShareFactor.GreaterThan(decimal.New(0, 0)) && allocatedHours < toNum {
-				if hours < int64(toNum) {
-					allocatedHours = uint64(hours)
-				} else {
-					allocatedHours = toNum
-				}
 			}
 
 			addrHours, err = DistributeCoinHoursProportional(toCoins, allocatedHours)
@@ -202,6 +183,7 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 	}
 
 	// Create change output
+	changeCoins := totalInputCoins - totalOutCoins
 	changeHours := remainingHours - totalOutHours
 
 	// If there are no change coins but there are change hours, try to add another

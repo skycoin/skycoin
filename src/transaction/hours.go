@@ -3,6 +3,7 @@ package transaction
 import (
 	"errors"
 	"math/big"
+	"sort"
 
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/util/fee"
@@ -67,6 +68,39 @@ func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, [
 	return changeHours, addrHours, spendHours
 }
 
+// unsortableHighToLowUint64 allows us to sort and unsort a []uint64.
+type unsortableHighToLowUint64 struct {
+	items   []uint64
+	indices []int
+}
+
+func newUnsortableHighToLowUint64(items []uint64) *unsortableHighToLowUint64 {
+	x := &unsortableHighToLowUint64{
+		items:   make([]uint64, len(items)),
+		indices: make([]int, len(items)),
+	}
+
+	copy(x.items, items)
+	for i := 0; i < len(x.indices); i++ {
+		x.indices[i] = i
+	}
+
+	return x
+}
+
+func (u *unsortableHighToLowUint64) Swap(i, j int) {
+	u.items[i], u.items[j] = u.items[j], u.items[i]
+	u.indices[i], u.indices[j] = u.indices[j], u.indices[i]
+}
+
+func (u *unsortableHighToLowUint64) Less(i, j int) bool {
+	return u.items[i] > u.items[j]
+}
+
+func (u *unsortableHighToLowUint64) Len() int {
+	return len(u.items)
+}
+
 // DistributeCoinHoursProportional distributes hours amongst coins proportional to the coins amount
 func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, error) {
 	if len(coins) == 0 {
@@ -96,13 +130,25 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 	}
 
 	addrHours := make([]uint64, len(coins))
-	// When total hours > the number of outputs, assign each output 1 hour, then
-	// assign the remaining hours proportionally.
-	if hours > uint64(len(coins)) {
+	if hours >= uint64(len(coins)) {
+		// When total hours > the number of outputs, assign each output 1 hour, then
+		// assign the remaining hours proportionally.
 		for i := 0; i < len(coins); i++ {
-			addrHours[i] = uint64(1)
-			hours--
+			addrHours[i] = 1
 		}
+
+		hours -= uint64(len(coins))
+	} else if hours > 0 {
+		// If there aren't enough hours to give every output 1 hour,
+		// make sure the outputs with more coins get the 1 hour
+		sortedCoins := newUnsortableHighToLowUint64(coins)
+		sort.Stable(sortedCoins)
+
+		for i := uint64(0); i < hours; i++ {
+			addrHours[sortedCoins.indices[i]] = 1
+		}
+
+		hours = 0
 	}
 
 	if hours == 0 {
@@ -137,8 +183,11 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		}
 
 		fracHours := fracInt.Uint64()
+		addrHours[i], err = mathutil.AddUint64(addrHours[i], fracHours)
+		if err != nil {
+			return nil, err
+		}
 
-		addrHours[i] = addrHours[i] + fracHours
 		assignedHours, err = mathutil.AddUint64(assignedHours, fracHours)
 		if err != nil {
 			return nil, err

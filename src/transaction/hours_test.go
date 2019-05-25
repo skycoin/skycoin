@@ -42,7 +42,7 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 		{
 			name:  "total coins too large after adding",
 			coins: []uint64{10, math.MaxInt64},
-			hours: 1,
+			hours: 100,
 			err:   mathutil.ErrUint64OverflowsInt64,
 		},
 		{
@@ -127,6 +127,27 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 			hours:  4,
 			output: []uint64{1, 1, 1, 1},
 		},
+
+		{
+			name:   "ensure each output gets 1 hour",
+			coins:  []uint64{1000, 1, 1},
+			hours:  3,
+			output: []uint64{1, 1, 1},
+		},
+
+		{
+			name:   "ensure each output gets 1 hour 2",
+			coins:  []uint64{1000, 1000, 1, 1, 1},
+			hours:  5,
+			output: []uint64{1, 1, 1, 1, 1},
+		},
+
+		{
+			name:   "ensure each output gets 1 hour, but there aren't enough",
+			coins:  []uint64{1000, 1, 1, 1, 1, 1, 10000},
+			hours:  5,
+			output: []uint64{1, 1, 1, 1, 0, 0, 1},
+		},
 	}
 
 	for _, tc := range cases {
@@ -140,7 +161,9 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestDistributeCoinHoursAAAProportionalRandom(t *testing.T) {
 	// Randomized tests
 	iterations := 10000
 	maxCoinsLen := 300

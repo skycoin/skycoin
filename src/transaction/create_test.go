@@ -83,7 +83,7 @@ func TestCreate(t *testing.T) {
 	// Create unspents outputs with small coin hours
 	var uxoutsSmallHours []coin.UxOut
 	for i := uint64(0); i < 10; i++ {
-		uxout := makeUxOut(t, secKey, 2e6, 1+i)
+		uxout := makeUxOut(t, secKey, 2e6, 1+i/2)
 		uxout.Head.Time = headTime
 		uxoutsSmallHours = append(uxoutsSmallHours, uxout)
 	}
@@ -705,7 +705,7 @@ func TestCreate(t *testing.T) {
 				Hours:   1,
 				Coins:   1e6 - 1e3,
 			},
-			toExpectedHours: []uint64{1, 1, 1, 1},
+			toExpectedHours: []uint64{1, 1, 0, 0},
 		},
 
 		{
@@ -737,11 +737,11 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			addressUnspents: coin.AddressUxOuts{
-				addrs[0]: uxoutsSmallHours[1:2],
+				addrs[0]: uxoutsSmallHours[2:3],
 				addrs[1]: uxoutsNoHours[0:1],
 				addrs[2]: uxoutsNoHours[1:2],
 			},
-			chosenUnspents: []coin.UxOut{uxoutsSmallHours[1], uxoutsNoHours[0], uxoutsNoHours[1]},
+			chosenUnspents: []coin.UxOut{uxoutsSmallHours[2], uxoutsNoHours[0], uxoutsNoHours[1]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
 				Hours:   1,

@@ -63,10 +63,6 @@ type NodeParameters struct {
 type ParamsParameters struct {
 	// MaxCoinSupply is the maximum supply of coins
 	MaxCoinSupply uint64 `mapstructure:"max_coin_supply"`
-	// DistributionAddressesTotal is the number of distribution addresses
-	DistributionAddressesTotal uint64 `mapstructure:"distribution_addresses_total"`
-	// DistributionAddressInitialBalance is the initial balance of each distribution address
-	DistributionAddressInitialBalance uint64
 	// InitialUnlockedCount is the initial number of unlocked addresses
 	InitialUnlockedCount uint64 `mapstructure:"initial_unlocked_count"`
 	// UnlockAddressRate is the number of addresses to unlock per unlock time interval
@@ -141,7 +137,6 @@ func setDefaults() {
 
 	// params defaults
 	viper.SetDefault("params.max_coin_supply", 1e8)
-	viper.SetDefault("params.distribution_addresses_total", 100)
 	viper.SetDefault("params.initial_unlocked_count", 25)
 	viper.SetDefault("params.unlock_address_rate", 5)
 	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)

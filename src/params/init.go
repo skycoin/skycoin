@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/droplet"
 )
 
@@ -13,7 +12,6 @@ func init() {
 	loadUserBurnFactor()
 	loadUserMaxTransactionSize()
 	loadUserMaxDecimals()
-	decodeDistributionAddresses()
 	sanityCheck()
 }
 
@@ -22,25 +20,7 @@ func sanityCheck() {
 		panic(err)
 	}
 
-	if InitialUnlockedCount > DistributionAddressesTotal {
-		panic("unlocked addresses > total distribution addresses")
-	}
-
-	if uint64(len(distributionAddresses)) != DistributionAddressesTotal {
-		panic("available distribution addresses > total allowed distribution addresses")
-	}
-
-	if len(distributionAddresses) != len(distributionAddressesDecoded) {
-		panic("distributionAddresses != distributionAddressesDecoded")
-	}
-
-	if DistributionAddressInitialBalance*DistributionAddressesTotal > MaxCoinSupply {
-		panic("total balance in distribution addresses > max coin supply")
-	}
-
-	if MaxCoinSupply%DistributionAddressesTotal != 0 {
-		panic("MaxCoinSupply should be perfectly divisible by DistributionAddressesTotal")
-	}
+	MainNetDistribution.MustValidate()
 }
 
 func loadUserBurnFactor() {
@@ -95,11 +75,4 @@ func loadUserMaxDecimals() {
 	}
 
 	UserVerifyTxn.MaxDropletPrecision = uint8(x)
-}
-
-func decodeDistributionAddresses() {
-	distributionAddressesDecoded = make([]cipher.Address, len(distributionAddresses))
-	for i, a := range distributionAddresses {
-		distributionAddressesDecoded[i] = cipher.MustDecodeBase58Address(a)
-	}
 }

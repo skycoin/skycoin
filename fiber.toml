@@ -33,7 +33,6 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 
 [params]
 # max_coin_supply = 1e8
-# distribution_addresses_total = 100
 # initial_unlocked_count = 25
 # unlock_address_rate = 5
 # unlock_time_interval = 60 * 60 * 24 * 365

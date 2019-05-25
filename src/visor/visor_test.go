@@ -328,7 +328,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	var softErr *ErrTxnViolatesSoftConstraint
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
+		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, params.MainNetDistribution, v.Config.UnconfirmedVerifyTxn)
 		return err
 	})
 	require.NoError(t, err)
@@ -417,7 +417,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		var softErr *ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
-			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
+			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, params.MainNetDistribution, v.Config.UnconfirmedVerifyTxn)
 			return err
 		})
 		require.False(t, known)

@@ -116,6 +116,11 @@ func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
 	return v, nil
 }
 
+// VisorConfig returns Config
+func (vs *Visor) VisorConfig() Config {
+	return vs.Config
+}
+
 // Init initializes starts the visor
 func (vs *Visor) Init() error {
 	logger.Info("Visor init")
@@ -250,7 +255,7 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 	if err := vs.db.Update("RefreshUnconfirmed", func(tx *dbutil.Tx) error {
 		var err error
-		hashes, err = vs.unconfirmed.Refresh(tx, vs.blockchain, vs.Config.UnconfirmedVerifyTxn)
+		hashes, err = vs.unconfirmed.Refresh(tx, vs.blockchain, vs.Config.Distribution, vs.Config.UnconfirmedVerifyTxn)
 		return err
 	}); err != nil {
 		return nil, err
@@ -296,7 +301,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.CreateBlockVerifyTxn, TxnSigned); err != nil {
+		if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.Distribution, vs.Config.CreateBlockVerifyTxn, TxnSigned); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.Hash().Hex(), err)
@@ -751,7 +756,7 @@ func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnVi
 
 	if err := vs.db.Update("InjectForeignTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = vs.unconfirmed.InjectTransaction(tx, vs.blockchain, txn, vs.Config.UnconfirmedVerifyTxn)
+		known, softErr, err = vs.unconfirmed.InjectTransaction(tx, vs.blockchain, txn, vs.Config.Distribution, vs.Config.UnconfirmedVerifyTxn)
 		return err
 	}); err != nil {
 		return false, nil, err
@@ -790,12 +795,12 @@ func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (b
 		return false, nil, nil, err
 	}
 
-	head, inputs, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, params.UserVerifyTxn, TxnSigned)
+	head, inputs, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.Distribution, params.UserVerifyTxn, TxnSigned)
 	if err != nil {
 		return false, nil, nil, err
 	}
 
-	known, softErr, err := vs.unconfirmed.InjectTransaction(tx, vs.blockchain, txn, params.UserVerifyTxn)
+	known, softErr, err := vs.unconfirmed.InjectTransaction(tx, vs.blockchain, txn, vs.Config.Distribution, params.UserVerifyTxn)
 	if softErr != nil {
 		logger.WithError(softErr).Warning("InjectUserTransaction vs.unconfirmed.InjectTransaction returned a softErr unexpectedly")
 	}
@@ -2058,7 +2063,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed TxnSignedFlag) (
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, params.UserVerifyTxn); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, vs.Config.Distribution, params.UserVerifyTxn); err != nil {
 			return err
 		}
 
@@ -2319,7 +2324,7 @@ func (vs *Visor) GetRichlist(includeDistribution bool) (Richlist, error) {
 		}
 	}
 
-	lockedAddrs := params.GetLockedDistributionAddressesDecoded()
+	lockedAddrs := vs.Config.Distribution.LockedAddressesDecoded()
 	addrsMap := make(map[cipher.Address]struct{}, len(lockedAddrs))
 	for _, a := range lockedAddrs {
 		addrsMap[a] = struct{}{}
@@ -2331,7 +2336,7 @@ func (vs *Visor) GetRichlist(includeDistribution bool) (Richlist, error) {
 	}
 
 	if !includeDistribution {
-		unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
+		unlockedAddrs := vs.Config.Distribution.UnlockedAddressesDecoded()
 		for _, a := range unlockedAddrs {
 			addrsMap[a] = struct{}{}
 		}

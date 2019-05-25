@@ -36,6 +36,17 @@ sudo yum update -y && sudo yum upgrade -y
 sudo yum install -y git curl make gcc mercurial binutils bzr bison screen
 if [[ "$(cat /etc/redhat-release | grep -o CentOS)" == "CentOS" ]]; then sudo yum install -y build-essential libgmp3-dev; else sudo yum groupinstall -y "Development Tools" "Development Libraries" && sudo yum install -y gmp; fi;
 ```
+#### Archlinux
+First update the system and ensure the dependancies are met
+```sh
+sudo pacman -Syy && sudo pacman -Syu
+sudo pacman -S base-devel
+```
+
+Install the latest version of go on Archlinux with:
+```sh
+sudo pacman -S go
+```
 
 ## Install Go manually
 ### Install Go

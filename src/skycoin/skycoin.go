@@ -258,9 +258,6 @@ func (c *Coin) Run() error {
 
 		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
 		c.logger.Critical().Infof("Full address: %s", fullAddress)
-		if c.config.Node.PrintWebInterfaceAddress {
-			fmt.Println(fullAddress)
-		}
 	}
 
 	if err := v.Init(); err != nil {
@@ -386,6 +383,7 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc.Distribution = params.MainNetDistribution
 
 	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
+	vc.Arbitrating = c.config.Node.RunBlockPublisher
 
 	vc.BlockchainPubkey = c.config.Node.blockchainPubkey
 	vc.BlockchainSeckey = c.config.Node.blockchainSeckey
@@ -398,7 +396,6 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc.GenesisSignature = c.config.Node.genesisSignature
 	vc.GenesisTimestamp = c.config.Node.GenesisTimestamp
 	vc.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
-	vc.Arbitrating = c.config.Node.Arbitrating
 
 	return vc
 }
@@ -467,6 +464,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
+	dc.Daemon.GenesisHash = c.config.Node.genesisHash
 	dc.Daemon.UserAgent = c.config.Node.userAgent
 	dc.Daemon.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 

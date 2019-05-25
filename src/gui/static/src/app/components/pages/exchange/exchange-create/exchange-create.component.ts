@@ -116,13 +116,15 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
     const amount = parseFloat(this.form.get('fromAmount').value);
 
+    const toAddress = (this.form.get('toAddress').value as string).trim();
+
     this.removeExchangeSubscription();
-    this.exchangeSubscription = this.walletService.verifyAddress(this.form.get('toAddress').value).subscribe(addressIsValid => {
+    this.exchangeSubscription = this.walletService.verifyAddress(toAddress).subscribe(addressIsValid => {
       if (addressIsValid) {
         this.exchangeSubscription = this.exchangeService.exchange(
           this.activeTradingPair.pair,
           amount,
-          this.form.get('toAddress').value,
+          toAddress,
           this.activeTradingPair.price,
         ).subscribe((order: ExchangeOrder) => {
           this.submitted.emit({

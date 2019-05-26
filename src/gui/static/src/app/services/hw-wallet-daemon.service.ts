@@ -44,11 +44,11 @@ export class HwWalletDaemonService {
     ), route.includes('/available'));
   }
 
-  post(route: string, params = {}) {
+  post(route: string, params = {}, sendFormData = false) {
     return this.checkResponse(this.http.post(
       this.url + route,
-      JSON.stringify(params),
-      this.returnRequestOptions(),
+      !sendFormData ? JSON.stringify(params) : this.apiService.getQueryString(params),
+      this.returnRequestOptions(sendFormData),
     ));
   }
 
@@ -128,10 +128,10 @@ export class HwWalletDaemonService {
       });
   }
 
-  private returnRequestOptions() {
+  private returnRequestOptions(sendFormData = false) {
     const options = new RequestOptions();
     options.headers = new Headers();
-    options.headers.append('Content-Type', 'application/json');
+    options.headers.append('Content-Type', !sendFormData ? 'application/json' : 'application/x-www-form-urlencoded');
 
     return options;
   }

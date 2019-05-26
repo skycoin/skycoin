@@ -103,6 +103,7 @@ import { LanguageService } from './services/language.service';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { ExchangeHistoryComponent } from './components/pages/exchange/exchange-history/exchange-history.component';
 import { StorageService } from './services/storage.service';
+import { HwRemovePinDialogComponent } from './components/layout/hardware-wallet/hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 
 
 const ROUTES = [
@@ -235,6 +236,7 @@ const ROUTES = [
     HwConfirmAddressDialogComponent,
     SelectLanguageComponent,
     ExchangeHistoryComponent,
+    HwRemovePinDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -263,6 +265,7 @@ const ROUTES = [
     HwConfirmAddressDialogComponent,
     SelectLanguageComponent,
     ExchangeHistoryComponent,
+    HwRemovePinDialogComponent,
   ],
   imports: [
     BrowserModule,

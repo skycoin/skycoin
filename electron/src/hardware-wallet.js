@@ -114,11 +114,11 @@ const pinEvent = function() {
 };
 
 ipcMain.on('hwSendPin', (event, pin) => {
-  if (pin) {
-    lastPinPromiseResolve(pin);
-  } else {
-    lastPinPromiseReject(new Error("Cancelled"))
-  }
+  lastPinPromiseResolve(pin);
+});
+
+ipcMain.on('hwCancelPin', (event) => {
+  lastPinPromiseReject(new Error("Cancelled"))
 });
 
 let lastSeedWordPromiseResolve;

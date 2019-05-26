@@ -83,8 +83,10 @@ export class HwWalletService {
         this.hwWalletPinService.requestPin().subscribe(pin => {
           if (!pin) {
             this.cancelAllOperations();
+            window['ipcRenderer'].send('hwCancelPin');
+          } else {
+            window['ipcRenderer'].send('hwSendPin', pin);
           }
-          window['ipcRenderer'].send('hwSendPin', pin);
         });
       });
       window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
@@ -261,6 +263,29 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.post('/configure_pin_code'),
           ['PIN changed'],
+        );
+      }
+    });
+  }
+
+  removePin(): Observable<OperationResult> {
+    return this.cancelLastAction().flatMap(() => {
+       if (!AppConfig.useHwWalletDaemon) {
+        // Unimplemented.
+        return null;
+      } else {
+        this.prepare();
+
+        const params = {};
+        params['remove_pin'] = true;
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.post(
+            '/configure_pin_code',
+            params,
+            true,
+          ),
+          ['PIN removed'],
         );
       }
     });

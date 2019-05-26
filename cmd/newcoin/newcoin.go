@@ -13,7 +13,7 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/skycoin"
+	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
@@ -130,7 +130,7 @@ func createCoinCommand() cli.Command {
 
 			// -- parse template and create new coin.go and config blockchain.go -- //
 
-			config, err := skycoin.NewParameters(configFile, configDir)
+			config, err := fiber.NewConfig(configFile, configDir)
 			if err != nil {
 				log.Errorf("failed to create new fiber coin config")
 				return err

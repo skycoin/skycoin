@@ -13,6 +13,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -63,19 +64,33 @@ var (
 		"172.104.41.14:6000",
 	}
 
-	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-		CoinName:                       CoinName,
-		GenesisSignatureStr:            GenesisSignatureStr,
-		GenesisAddressStr:              GenesisAddressStr,
-		GenesisCoinVolume:              GenesisCoinVolume,
-		GenesisTimestamp:               GenesisTimestamp,
-		BlockchainPubkeyStr:            BlockchainPubkeyStr,
-		BlockchainSeckeyStr:            BlockchainSeckeyStr,
-		DefaultConnections:             DefaultConnections,
-		PeerListURL:                    "https://downloads.skycoin.net/blockchain/peers.txt",
-		Port:                           6000,
-		WebInterfacePort:               6420,
-		DataDirectory:                  "$HOME/.skycoin",
+	nodeConfig = skycoin.NewNodeConfig(ConfigMode, fiber.NodeConfig{
+		CoinName:            CoinName,
+		GenesisSignatureStr: GenesisSignatureStr,
+		GenesisAddressStr:   GenesisAddressStr,
+		GenesisCoinVolume:   GenesisCoinVolume,
+		GenesisTimestamp:    GenesisTimestamp,
+		BlockchainPubkeyStr: BlockchainPubkeyStr,
+		BlockchainSeckeyStr: BlockchainSeckeyStr,
+		DefaultConnections:  DefaultConnections,
+		PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
+		Port:                6000,
+		WebInterfacePort:    6420,
+		DataDirectory:       "$HOME/.skycoin",
+
+		UnconfirmedBurnFactor:          10,
+		UnconfirmedMaxTransactionSize:  32768,
+		UnconfirmedMaxDropletPrecision: 3,
+		CreateBlockBurnFactor:          10,
+		CreateBlockMaxTransactionSize:  32768,
+		CreateBlockMaxDropletPrecision: 3,
+		MaxBlockTransactionsSize:       32768,
+
+		DisplayName:     "Skycoin",
+		Ticker:          "SKY",
+		CoinHoursName:   "Coin Hours",
+		CoinHoursTicker: "SCH",
+		ExplorerURL:     "https://explorer.skycoin.net",
 	})
 
 	parseFlags = true

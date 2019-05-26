@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Add `display_name`, `ticker`, `coin_hours_display_name`, `coin_hours_ticker`, `explorer_url` to the `/health` endpoint response
+
 ### Removed
 
 - Remove `-arbitrating` option from the daemon CLI options

@@ -7,7 +7,6 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3" -->
 
 - [Install](#install)
-	- [Enable command autocomplete](#enable-command-autocomplete)
 - [Environment Setting](#environment-setting)
 	- [RPC_ADDR](#rpc_addr)
 	- [RPC_USER](#rpc_user)
@@ -47,7 +46,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [List wallet transaction history](#list-wallet-transaction-history)
 	- [List wallet outputs](#list-wallet-outputs)
 	- [Richlist](#richlist)
-    - [Address Count](#address-count)
+	- [Address Count](#address-count)
 	- [CLI version](#cli-version)
 - [Note](#note)
 
@@ -1862,6 +1861,15 @@ $ skycoin-cli status
             "burn_factor": 10,
             "max_transaction_size": 32768,
             "max_decimals": 3
+        },
+        "started_at": 1558864387,
+        "fiber": {
+            "name": "skycoin",
+            "display_name": "Skycoin",
+            "ticker": "SKY",
+            "coin_hours_display_name": "Coin Hours",
+            "coin_hours_ticker": "SCH",
+            "explorer_url": "https://explorer.skycoin.net"
         }
     },
     "cli_config": {

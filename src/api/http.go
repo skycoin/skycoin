@@ -87,7 +87,7 @@ type Config struct {
 // HealthConfig configuration data exposed in /health
 type HealthConfig struct {
 	BuildInfo       readable.BuildInfo
-	CoinName        string
+	Fiber           readable.FiberConfig
 	DaemonUserAgent useragent.Data
 }
 

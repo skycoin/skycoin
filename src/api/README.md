@@ -245,7 +245,15 @@ Response:
         "max_transaction_size": 32768,
         "max_decimals": 3
     },
-    "started_at": 1542443907
+    "started_at": 1542443907,
+    "fiber": {
+        "name": "skycoin",
+        "display_name": "Skycoin",
+        "ticker": "SKY",
+        "coin_hours_display_name": "Coin Hours",
+        "coin_hours_ticker": "SCH",
+        "explorer_url": ""
+    }
 }
 ```
 

@@ -498,12 +498,6 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if r.Header.Get("Content-Type") != ContentTypeJSON {
-			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-			writeHTTPResponse(w, resp)
-			return
-		}
-
 		var req VerifyTransactionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())

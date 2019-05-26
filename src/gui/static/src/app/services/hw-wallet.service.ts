@@ -108,6 +108,7 @@ export class HwWalletService {
         { event: 'hwRecoverMnemonicResponse', successTexts: ['Device recovered', 'The seed is valid and matches the one in the device'] },
         { event: 'hwBackupDeviceResponse', successTexts: ['operation completed'] },
         { event: 'hwWipeResponse', successTexts: ['operation completed'] },
+        { event: 'hwChangeLabelResponse', successTexts: ['Settings applied'] },
         { event: 'hwCancelLastActionResponse' },
         { event: 'hwGetAddressesResponse' },
         { event: 'hwGetFeaturesResponse' },
@@ -139,8 +140,6 @@ export class HwWalletService {
       return Observable.of(window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync'));
     } else {
       return this.hwWalletDaemonService.get('/available').map(response => {
-        this.hwWalletDaemonService.checkHw(false);
-
         return response.data;
       });
     }
@@ -351,6 +350,24 @@ export class HwWalletService {
         return this.processDaemonResponse(
           this.hwWalletDaemonService.delete('/wipe'),
           ['Device wiped'],
+        );
+      }
+    });
+  }
+
+  changeLabel(label: string): Observable<OperationResult> {
+    return this.cancelLastAction().flatMap(() => {
+      if (!AppConfig.useHwWalletDaemon) {
+        const requestId = this.createRandomIdAndPrepare();
+        window['ipcRenderer'].send('hwChangeLabel', requestId, label);
+
+        return this.createRequestResponse(requestId);
+      } else {
+        this.prepare();
+
+        return this.processDaemonResponse(
+          this.hwWalletDaemonService.post('/apply_settings', {label: label}),
+          ['Settings applied'],
         );
       }
     });

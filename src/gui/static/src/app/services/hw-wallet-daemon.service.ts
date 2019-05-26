@@ -41,7 +41,7 @@ export class HwWalletDaemonService {
     return this.checkResponse(this.http.get(
       this.url + route,
       this.returnRequestOptions(),
-    ));
+    ), route.includes('/available'));
   }
 
   post(route: string, params = {}) {
@@ -67,11 +67,17 @@ export class HwWalletDaemonService {
     ));
   }
 
-  private checkResponse(response: Observable<any>) {
+  private checkResponse(response: Observable<any>, checkingConnected = false) {
     return response
       .timeout(50000)
       .flatMap((res: any) => {
         const finalResponse = res.json();
+
+        if (checkingConnected) {
+          this.ngZone.run(() => this.updateHwConnected(!!finalResponse.data));
+        } else {
+          this.updateHwConnected(true);
+        }
 
         if (typeof finalResponse.data === 'string' && (finalResponse.data as string).indexOf('PinMatrixRequest') !== -1) {
           return this.hwWalletPinService.requestPin().flatMap(pin => {
@@ -140,7 +146,7 @@ export class HwWalletDaemonService {
         .delay(wait ? (this.hwConnected ? 2000 : 10000) : 0)
         .flatMap(() => this.get('/available'))
         .subscribe(
-          (response: any) => this.ngZone.run(() => this.updateHwConnected(!!response.data)),
+          null,
           () => this.ngZone.run(() => this.updateHwConnected(false)),
         );
     });

@@ -224,6 +224,14 @@ ipcMain.on('hwSignTransaction', (event, requestId, inputs, outputs) => {
   );
 });
 
+ipcMain.on('hwChangeLabel', (event, requestId, label) => {
+  const promise = deviceWallet.devApplySettings(null, label, null, pinEvent);
+  promise.then(
+    result => { console.log("Change label promise resolved", result); event.sender.send('hwChangeLabelResponse', requestId, result); },
+    error => { console.log("Change label promise errored: ", error); event.sender.send('hwChangeLabelResponse', requestId, { error: error.toString() }); }
+  );
+});
+
 module.exports = {
   setWinRef,
   setWalletsFolderPath

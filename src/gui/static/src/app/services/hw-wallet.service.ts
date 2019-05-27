@@ -10,6 +10,8 @@ import { HwWalletDaemonService } from './hw-wallet-daemon.service';
 import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import BigNumber from 'bignumber.js';
+import { StorageService, StorageType } from './storage.service';
+import { ISubscription } from 'rxjs/Subscription';
 
 export enum OperationResults {
   Success,
@@ -41,12 +43,16 @@ interface EventData {
 @Injectable()
 export class HwWalletService {
 
+  private readonly storageKey = 'hw-wallets';
+
   showOptionsWhenPossible = false;
 
   private requestSequence = 0;
 
   private eventsObservers = new Map<number, Subscriber<OperationResult>>();
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
+
+  private savingDataSubscription: ISubscription;
 
   private signTransactionDialog: MatDialogRef<{}, any>;
 
@@ -61,7 +67,8 @@ export class HwWalletService {
     private dialog: MatDialog,
     private hwWalletDaemonService: HwWalletDaemonService,
     private hwWalletPinService: HwWalletPinService,
-    private hwWalletSeedWordService: HwWalletSeedWordService) {
+    private hwWalletSeedWordService: HwWalletSeedWordService,
+    private storageService: StorageService) {
 
     if (this.hwWalletCompatibilityActivated) {
       if (!AppConfig.useHwWalletDaemon) {
@@ -147,12 +154,29 @@ export class HwWalletService {
     }
   }
 
-  getSavedWalletsDataSync(): string {
-    return window['ipcRenderer'].sendSync('hwGetSavedWalletsDataSync');
+  getSavedWalletsData(): Observable<string> {
+    return this.storageService.get(StorageType.CLIENT, this.storageKey)
+      .map(result => result.data)
+      .catch(err => {
+        try {
+          if (err['_body']) {
+            const errorBody = JSON.parse(err['_body']);
+            if (errorBody && errorBody.error && errorBody.error.code === 404) {
+              return Observable.of(null);
+            }
+          }
+        } catch (e) {}
+
+        return Observable.throw(err);
+      });
   }
 
-  saveWalletsDataSync(walletsData: string) {
-    window['ipcRenderer'].sendSync('hwSaveWalletsDataSync', walletsData);
+  saveWalletsData(walletsData: string) {
+    if (this.savingDataSubscription) {
+      this.savingDataSubscription.unsubscribe();
+    }
+
+    this.savingDataSubscription = this.storageService.store(StorageType.CLIENT, this.storageKey, walletsData).subscribe();
   }
 
   cancelLastAction(): Observable<OperationResult> {

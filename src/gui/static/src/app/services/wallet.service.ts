@@ -601,7 +601,7 @@ export class WalletService {
         }
       });
 
-      this.hwWalletService.saveWalletsDataSync(JSON.stringify(hardwareWallets));
+      this.hwWalletService.saveWalletsData(JSON.stringify(hardwareWallets));
 
       this.wallets.next(wallets);
     });
@@ -640,25 +640,33 @@ export class WalletService {
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(
-      recoveredWallets => {
-        let wallets: Wallet[] = [];
-        if (this.hwWalletService.hwWalletCompatibilityActivated) {
-          this.loadHardwareWallets(wallets);
-        }
-        wallets = wallets.concat(recoveredWallets);
+    let wallets: Wallet[] = [];
+    let softwareWallets: Wallet[] = [];
+
+    this.apiService.getWallets().first().flatMap(recoveredWallets => {
+      softwareWallets = recoveredWallets;
+
+      if (this.hwWalletService.hwWalletCompatibilityActivated) {
+        return this.loadHardwareWallets(wallets);
+      }
+
+      return Observable.of(null);
+
+    }).subscribe(() => {
+        wallets = wallets.concat(softwareWallets);
         this.wallets.next(wallets);
-      },
-      () => this.initialLoadFailed.next(true),
-    );
+    }, () => this.initialLoadFailed.next(true));
   }
 
-  private loadHardwareWallets(wallets: Wallet[]) {
-    const storedWallets: string = this.hwWalletService.getSavedWalletsDataSync();
-    if (storedWallets) {
-      const loadedWallets: Wallet[] = JSON.parse(storedWallets);
-      loadedWallets.map(wallet => wallets.push(wallet));
-    }
+  private loadHardwareWallets(wallets: Wallet[]): Observable<any> {
+    return this.hwWalletService.getSavedWalletsData().map(storedWallets => {
+      if (storedWallets) {
+        const loadedWallets: Wallet[] = JSON.parse(storedWallets);
+        loadedWallets.map(wallet => wallets.push(wallet));
+      }
+
+      return null;
+    });
   }
 
   private retrieveInputAddress(input: string) {

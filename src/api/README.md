@@ -252,7 +252,7 @@ Response:
         "ticker": "SKY",
         "coin_hours_display_name": "Coin Hours",
         "coin_hours_ticker": "SCH",
-        "explorer_url": ""
+        "explorer_url": "https://explorer.skycoin.net"
     }
 }
 ```

@@ -8,7 +8,7 @@ const childProcess = require('child_process');
 
 const axios = require('axios');
 
-const hwCode = require('./hardware-wallet');
+//const hwCode = require('./hardware-wallet');
 
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
@@ -148,7 +148,7 @@ function startSkycoin() {
       .get('http://localhost:4200/api/v1/wallets/folderName')
       .then(response => {
         walletsFolder = response.data.address;
-        hwCode.setWalletsFolderPath(walletsFolder);
+        //hwCode.setWalletsFolderPath(walletsFolder);
       })
       .catch(() => {});
   }
@@ -192,7 +192,7 @@ function createWindow(url) {
       preload: __dirname + '/electron-api.js',
     },
   });
-  hwCode.setWinRef(win);
+  //hwCode.setWinRef(win);
 
   win.webContents.on('did-finish-load', function() {
 	if (!splashLoaded) {
@@ -224,7 +224,7 @@ function createWindow(url) {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
-    hwCode.setWinRef(win);
+    //hwCode.setWinRef(win);
   });
 
   // If in dev mode, allow to open URLs.
@@ -338,7 +338,7 @@ app.on('skycoin-ready', (e) => {
     .get(e.url + '/api/v1/wallets/folderName')
     .then(response => {
       walletsFolder = response.data.address;
-      hwCode.setWalletsFolderPath(walletsFolder);
+      //hwCode.setWalletsFolderPath(walletsFolder);
     })
     .catch(() => {});
 });

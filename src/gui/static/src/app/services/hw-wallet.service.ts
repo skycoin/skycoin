@@ -86,58 +86,64 @@ export class HwWalletService {
         });
       }
 
-      window['ipcRenderer'].on('hwPinRequested', (event) => {
-        this.hwWalletPinService.requestPin().subscribe(pin => {
-          if (!pin) {
-            this.cancelAllOperations();
-            window['ipcRenderer'].send('hwCancelPin');
-          } else {
-            window['ipcRenderer'].send('hwSendPin', pin);
-          }
+      if (!AppConfig.useHwWalletDaemon) {
+        window['ipcRenderer'].on('hwPinRequested', (event) => {
+          this.hwWalletPinService.requestPin().subscribe(pin => {
+            if (!pin) {
+              this.cancelAllOperations();
+              window['ipcRenderer'].send('hwCancelPin');
+            } else {
+              window['ipcRenderer'].send('hwSendPin', pin);
+            }
+          });
         });
-      });
-      window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
-        this.hwWalletSeedWordService.requestWord().subscribe(word => {
-          if (!word) {
-            this.cancelAllOperations();
-            window['ipcRenderer'].send('hwCancelLastAction');
-          }
-          window['ipcRenderer'].send('hwSendSeedWord', word);
+        window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
+          this.hwWalletSeedWordService.requestWord().subscribe(word => {
+            if (!word) {
+              this.cancelAllOperations();
+              window['ipcRenderer'].send('hwCancelLastAction');
+            }
+            window['ipcRenderer'].send('hwSendSeedWord', word);
+          });
         });
-      });
 
-      window['ipcRenderer'].on('hwSignTransactionResponse', (event, requestId, result) => {
-        this.closeTransactionDialog();
-        this.dispatchEvent(requestId, result, true);
-      });
-
-      const data: EventData[] = [
-        { event: 'hwChangePinResponse', successTexts: ['PIN changed'] },
-        { event: 'hwGenerateMnemonicResponse', successTexts: ['operation completed'] },
-        { event: 'hwRecoverMnemonicResponse', successTexts: ['Device recovered', 'The seed is valid and matches the one in the device'] },
-        { event: 'hwBackupDeviceResponse', successTexts: ['operation completed'] },
-        { event: 'hwWipeResponse', successTexts: ['operation completed'] },
-        { event: 'hwChangeLabelResponse', successTexts: ['Settings applied'] },
-        { event: 'hwCancelLastActionResponse' },
-        { event: 'hwGetAddressesResponse' },
-        { event: 'hwGetFeaturesResponse' },
-        { event: 'hwSignMessageResponse' },
-      ];
-
-      data.forEach(item => {
-        window['ipcRenderer'].on(item.event, (event, requestId, result) => {
-          const success = item.successTexts
-            ? typeof result === 'string' && item.successTexts.some(text => (result as string).includes(text))
-            : true;
-
-          this.dispatchEvent(requestId, result, success);
+        window['ipcRenderer'].on('hwSignTransactionResponse', (event, requestId, result) => {
+          this.closeTransactionDialog();
+          this.dispatchEvent(requestId, result, true);
         });
-      });
+
+        const data: EventData[] = [
+          { event: 'hwChangePinResponse', successTexts: ['PIN changed'] },
+          { event: 'hwGenerateMnemonicResponse', successTexts: ['operation completed'] },
+          { event: 'hwRecoverMnemonicResponse', successTexts: ['Device recovered', 'The seed is valid and matches the one in the device'] },
+          { event: 'hwBackupDeviceResponse', successTexts: ['operation completed'] },
+          { event: 'hwWipeResponse', successTexts: ['operation completed'] },
+          { event: 'hwChangeLabelResponse', successTexts: ['Settings applied'] },
+          { event: 'hwCancelLastActionResponse' },
+          { event: 'hwGetAddressesResponse' },
+          { event: 'hwGetFeaturesResponse' },
+          { event: 'hwSignMessageResponse' },
+        ];
+
+        data.forEach(item => {
+          window['ipcRenderer'].on(item.event, (event, requestId, result) => {
+            const success = item.successTexts
+              ? typeof result === 'string' && item.successTexts.some(text => (result as string).includes(text))
+              : true;
+
+            this.dispatchEvent(requestId, result, success);
+          });
+        });
+      }
     }
   }
 
   get hwWalletCompatibilityActivated(): boolean {
-    return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
+    if (!AppConfig.useHwWalletDaemon) {
+      return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
+    } else {
+      return !environment.production;
+    }
   }
 
   get walletConnectedAsyncEvent(): Observable<boolean> {

@@ -579,6 +579,56 @@ func TestGetTransactionByID(t *testing.T) {
 					v.Add("encoded", tc.httpBody.encoded)
 				}
 			}
+			save := endpoint
+			if tc.httpBody.verbose != "" {
+				endpoint += "/verbose"
+
+				if len(v) > 0 {
+					endpoint += "?" + v.Encode()
+				}
+
+				req, err := http.NewRequest(tc.method, endpoint, nil)
+				require.NoError(t, err)
+
+				setCSRFParameters(t, tokenValid, req)
+
+				rr := httptest.NewRecorder()
+
+				cfg := defaultMuxConfig()
+				cfg.disableCSRF = false
+
+				handler := newServerMux(cfg, gateway)
+				handler.ServeHTTP(rr, req)
+
+				status := rr.Code
+
+				if status != http.StatusOK {
+					require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+						strings.TrimSpace(rr.Body.String()), status, tc.err)
+				} else {
+					if tc.verbose {
+						var msg readable.TransactionWithStatusVerbose
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.httpResponse, &msg, tc.name)
+					} else if tc.encoded {
+						var msg TransactionEncodedResponse
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.httpResponse, &msg, tc.name)
+					} else {
+						var msg readable.TransactionWithStatus
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.httpResponse, &msg, tc.name)
+					}
+				}
+
+				require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+				endpoint = save
+			}
+
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
 			}

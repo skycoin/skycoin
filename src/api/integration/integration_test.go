@@ -3407,6 +3407,18 @@ func TestStableNoUnconfirmedPendingTransactionsVerbose(t *testing.T) {
 	require.Empty(t, txns)
 }
 
+func TestStableNoUnconfirmedPendingTransactionsVerboseInPath(t *testing.T) {
+	if !doStable(t) || !dbNoUnconfirmed(t) {
+		return
+	}
+
+	c := newClient()
+
+	txns, err := c.PendingTransactionsVerboseInPath()
+	require.NoError(t, err)
+	require.Empty(t, txns)
+}
+
 func TestStablePendingTransactionsVerbose(t *testing.T) {
 	if !doStable(t) || dbNoUnconfirmed(t) {
 		return
@@ -3430,6 +3442,29 @@ func TestStablePendingTransactionsVerbose(t *testing.T) {
 	checkGoldenFile(t, "verbose-pending-transactions.golden", TestData{txns, &expect})
 }
 
+func TestStablePendingTransactionsVerboseInPath(t *testing.T) {
+	if !doStable(t) || dbNoUnconfirmed(t) {
+		return
+	}
+
+	c := newClient()
+
+	txns, err := c.PendingTransactionsVerboseInPath()
+	require.NoError(t, err)
+
+	// Convert Received and Checked times to UTC for stable comparison
+	for i, txn := range txns {
+		require.False(t, txn.Received.IsZero())
+		require.False(t, txn.Checked.IsZero())
+
+		txns[i].Received = txn.Received.UTC()
+		txns[i].Checked = txn.Checked.UTC()
+	}
+
+	var expect []readable.UnconfirmedTransactionVerbose
+	checkGoldenFile(t, "verbose-pending-transactions.golden", TestData{txns, &expect})
+}
+
 func TestLivePendingTransactionsVerbose(t *testing.T) {
 	if !doLive(t) {
 		return
@@ -3438,6 +3473,17 @@ func TestLivePendingTransactionsVerbose(t *testing.T) {
 	c := newClient()
 
 	_, err := c.PendingTransactionsVerbose()
+	require.NoError(t, err)
+}
+
+func TestLivePendingTransactionsVerboseInPath(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := newClient()
+
+	_, err := c.PendingTransactionsVerboseInPath()
 	require.NoError(t, err)
 }
 

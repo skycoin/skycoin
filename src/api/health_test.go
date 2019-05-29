@@ -125,7 +125,7 @@ func TestHealthHandler(t *testing.T) {
 			}
 			tc.cfg.health.BuildInfo = buildInfo
 
-			tc.cfg.health.CoinName = "skycoin"
+			tc.cfg.health.Fiber.Name = "skycoin"
 			tc.cfg.health.DaemonUserAgent = useragent.Data{
 				Coin:    "skycoin",
 				Version: "0.25.0",

@@ -41,7 +41,15 @@
 			"max_transaction_size": 32768,
 			"max_decimals": 3
 		},
-		"started_at": 0
+		"started_at": 0,
+		"fiber": {
+			"name": "skycoin",
+			"display_name": "Skycoin",
+			"ticker": "SKY",
+			"coin_hours_display_name": "Coin Hours",
+			"coin_hours_ticker": "SCH",
+			"explorer_url": "https://explorer.skycoin.net"
+		}
 	},
 	"cli_config": {
 		"webrpc_address": "http://127.0.0.1:1024"

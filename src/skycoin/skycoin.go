@@ -494,7 +494,7 @@ func (c *Coin) createGUI(gw *api.Gateway, host string) (*api.Server, error) {
 				Commit:  c.config.Build.Commit,
 				Branch:  c.config.Build.Branch,
 			},
-			CoinName:        c.config.Node.CoinName,
+			Fiber:           c.config.Node.Fiber,
 			DaemonUserAgent: c.config.Node.userAgent,
 		},
 		Username: c.config.Node.WebInterfaceUsername,

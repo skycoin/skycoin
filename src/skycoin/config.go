@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/kvstorage"
 
 	"log"
@@ -206,10 +207,12 @@ type NodeConfig struct {
 
 	blockchainPubkey cipher.PubKey
 	blockchainSeckey cipher.SecKey
+
+	Fiber readable.FiberConfig
 }
 
 // NewNodeConfig returns a new node config instance
-func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
+func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 	nodeConfig := NodeConfig{
 		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
@@ -286,9 +289,17 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		ResetCorruptDB: false,
 
 		// Blockchain/transaction validation
-		UnconfirmedVerifyTxn:     params.UserVerifyTxn,
-		CreateBlockVerifyTxn:     params.UserVerifyTxn,
-		MaxBlockTransactionsSize: params.UserVerifyTxn.MaxTransactionSize,
+		UnconfirmedVerifyTxn: params.VerifyTxn{
+			BurnFactor:          node.UnconfirmedBurnFactor,
+			MaxTransactionSize:  node.UnconfirmedMaxTransactionSize,
+			MaxDropletPrecision: node.UnconfirmedMaxDropletPrecision,
+		},
+		CreateBlockVerifyTxn: params.VerifyTxn{
+			BurnFactor:          node.CreateBlockBurnFactor,
+			MaxTransactionSize:  node.CreateBlockMaxTransactionSize,
+			MaxDropletPrecision: node.CreateBlockMaxDropletPrecision,
+		},
+		MaxBlockTransactionsSize: node.MaxBlockTransactionsSize,
 
 		// Wallets
 		WalletDirectory:  "",
@@ -316,6 +327,15 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 		HTTPProf:     false,
 		HTTPProfHost: "localhost:6060",
+
+		Fiber: readable.FiberConfig{
+			Name:            node.CoinName,
+			DisplayName:     node.DisplayName,
+			Ticker:          node.Ticker,
+			CoinHoursName:   node.CoinHoursName,
+			CoinHoursTicker: node.CoinHoursTicker,
+			ExplorerURL:     node.ExplorerURL,
+		},
 	}
 
 	nodeConfig.applyConfigMode(mode)
